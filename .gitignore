@@ -1,0 +1,7 @@
+.DS_Store
+weg-portal
+*.log
+*.env
+*.env.local
+local-*.jpg
+tmp/
