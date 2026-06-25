@@ -111,8 +111,43 @@ func TestParkingMonthsExposeCostsAndPaidFlag(t *testing.T) {
 	if month.KWh != "2,00 kWh" || month.EnergyCost != "0,60 €" || month.GridCost != "0,20 €" || month.TotalCost != "0,80 €" {
 		t.Fatalf("unexpected formatted costs: %+v", month)
 	}
+	if month.AverageAwattar != "0,300 €/kWh" || month.EffectivePrice != "0,400 €/kWh" {
+		t.Fatalf("unexpected average prices: %+v", month)
+	}
+	if month.DetailPath != "/app/parking/month/2026-06" {
+		t.Fatalf("detail path = %q", month.DetailPath)
+	}
 	if month.HourCount != 2 {
 		t.Fatalf("hour count = %d, want 2", month.HourCount)
+	}
+}
+
+func TestParkingMonthDetailsExposeHourlyRows(t *testing.T) {
+	base := time.Date(2026, 6, 25, 10, 0, 0, 0, time.UTC)
+	data := parkingTenantData{
+		Settings: parkingSettings{GridFeeEURPerKWh: 0.10},
+		EnergySamples: []parkingNumericSample{
+			{At: base, Value: 100},
+			{At: base.Add(2 * time.Hour), Value: 102},
+		},
+		PriceSamples: []parkingNumericSample{
+			{At: base, Value: 0.20},
+			{At: base.Add(time.Hour), Value: 0.40},
+		},
+	}
+
+	detail := calculateParkingMonthDetails(data, "2026-06", base.Add(3*time.Hour), time.UTC)
+	if !detail.HasHours || len(detail.Hours) != 2 {
+		t.Fatalf("detail hours = %d, has=%v; want 2 true", len(detail.Hours), detail.HasHours)
+	}
+	if detail.Summary.TotalCost != "0,80 €" || detail.Summary.AverageAwattar != "0,300 €/kWh" {
+		t.Fatalf("unexpected detail summary: %+v", detail.Summary)
+	}
+	if detail.Hours[0].AtLabel != "25.06. 10:00" || detail.Hours[0].TotalCost != "0,30 €" {
+		t.Fatalf("unexpected first hour: %+v", detail.Hours[0])
+	}
+	if detail.Hours[1].AtLabel != "25.06. 11:00" || detail.Hours[1].TotalCost != "0,50 €" {
+		t.Fatalf("unexpected second hour: %+v", detail.Hours[1])
 	}
 }
 
