@@ -117,8 +117,15 @@ After the secret exists, rebuild or switch csb1 so agenix materializes
 `/run/agenix/csb1-weg-portal-env`, then deploy the container:
 
 ```fish
-ssh -p 2222 mba@cs1.barta.cm 'cd ~/Code/nixcfg/hosts/csb1/docker; docker compose pull weg-portal; docker compose up -d weg-portal'
+cd ~/Code/weg-portal
+set version (git describe --tags --match 'v[0-9]*' --abbrev=0 | string replace -r '^v' '')
+test -n "$version"; or set version 0.1.0
+set commit (git rev-parse --short HEAD)
+git archive --format=tar HEAD | ssh -p 2222 mba@cs1.barta.cm "bash -lc 'set -euo pipefail; rm -rf /tmp/weg-portal-deploy; mkdir -p /tmp/weg-portal-deploy; tar -xf - -C /tmp/weg-portal-deploy; cd /tmp/weg-portal-deploy; docker build --build-arg APP_VERSION=$version --build-arg GIT_COMMIT=$commit -t ghcr.io/markus-barta/weg-portal:latest .; cd /home/mba/Code/nixcfg/hosts/csb1/docker; docker compose up -d --no-deps weg-portal'"
 ```
+
+The visible app version is `SEMVER (git-hash)`. Semver is sourced from the latest
+Git tag matching `v*`; the rollout starts at `v0.1.0`.
 
 Smoke checks:
 

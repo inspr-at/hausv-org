@@ -44,6 +44,11 @@ const (
 	authMethodOIDC    = "oidc"
 )
 
+var (
+	appVersion = "0.1.0"
+	gitCommit  = "dev"
+)
+
 type app struct {
 	baseURL               string
 	addr                  string
@@ -921,10 +926,28 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
+	if data == nil {
+		data = map[string]any{}
+	}
+	if _, ok := data["AppVersion"]; !ok {
+		data["AppVersion"] = buildLabel()
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := a.templates.ExecuteTemplate(w, name, data); err != nil {
 		log.Printf("render %s failed: %v", name, err)
 	}
+}
+
+func buildLabel() string {
+	version := strings.TrimPrefix(strings.TrimSpace(appVersion), "v")
+	if version == "" {
+		version = "0.1.0"
+	}
+	commit := strings.TrimSpace(gitCommit)
+	if commit == "" {
+		commit = "dev"
+	}
+	return fmt.Sprintf("%s (%s)", version, commit)
 }
 
 func (a *app) tenantPathRedirect(w http.ResponseWriter, r *http.Request) {
@@ -2621,7 +2644,7 @@ func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; form-action 'self'; base-uri 'self'; frame-ancestors 'none'")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -3005,272 +3028,73 @@ const pageTemplates = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: light;
-      --ink: #17201d;
-      --muted: #5f6f67;
-      --line: rgba(23, 32, 29, .14);
-      --paper: #f8faf7;
-      --leaf: #276447;
-      --leaf-dark: #173f2d;
-      --sky: #dbeef5;
-      --sun: #f3cc73;
+      --ink:#20251f; --muted:#6b6f63; --soft:#9a9485;
+      --line:#e7e0d2; --paper:#f7f3ea; --panel:#fffefb;
+      --gold:#c8993f; --gold-ink:#8a7b3f; --gold-light:#e7c574;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      color: var(--ink);
-      background: #edf3ec;
-    }
-    .hero {
-      position: relative;
-      min-height: 100vh;
-      overflow: hidden;
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-    }
+    body { margin: 0; color: var(--ink); background: #10160f; }
+    .hero { position: relative; min-height: 100vh; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; }
     .hero::before {
-      content: "";
-      position: absolute;
-      inset: -24px;
-      background: url('/assets/jhw22-hero.jpg') center / cover no-repeat;
-      filter: blur(14px) saturate(.94) brightness(.86);
-      transform: scale(1.04);
-      z-index: -2;
+      content: ""; position: absolute; inset: -16px;
+      background: url('/assets/jhw22-hero.jpg') center 42% / cover no-repeat;
+      filter: blur(3px) brightness(.74) saturate(.95); transform: scale(1.05); z-index: -2;
     }
     .hero::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(90deg, rgba(248,250,247,.96) 0%, rgba(248,250,247,.88) 34%, rgba(248,250,247,.48) 62%, rgba(248,250,247,.2) 100%),
-        linear-gradient(180deg, rgba(23,32,29,.1), rgba(23,32,29,.42));
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(16,22,16,.52) 0%, rgba(16,22,16,.3) 34%, rgba(16,22,16,.6) 76%, rgba(16,22,16,.9) 100%);
       z-index: -1;
     }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 24px;
-      padding: 28px clamp(20px, 5vw, 72px);
-    }
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 750;
-      letter-spacing: 0;
-      color: var(--ink);
-      text-decoration: none;
-    }
-    .mark {
-      min-width: 44px;
-      height: 38px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, var(--leaf), #77a979);
-      display: grid;
-      place-items: center;
-      padding: 0 9px;
-      color: white;
-      font-weight: 800;
-    }
-    nav {
-      display: flex;
-      gap: 18px;
-      color: var(--leaf-dark);
-      font-size: 14px;
-      font-weight: 650;
-    }
-    main {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 440px);
-      gap: clamp(28px, 6vw, 92px);
-      align-items: center;
-      padding: 32px clamp(20px, 5vw, 72px) 48px;
-    }
-    .copy {
-      max-width: 760px;
-      padding-bottom: 8vh;
-    }
-    .eyebrow {
-      color: var(--leaf-dark);
-      font-size: 13px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      margin-bottom: 18px;
-    }
-    h1 {
-      margin: 0;
-      font-size: clamp(48px, 7vw, 104px);
-      line-height: .92;
-      letter-spacing: 0;
-      max-width: 860px;
-    }
-    .lead {
-      max-width: 620px;
-      margin: 26px 0 0;
-      font-size: clamp(18px, 2vw, 23px);
-      line-height: 1.45;
-      color: #2d3c36;
-    }
-    .login {
-      background: rgba(248,250,247,.9);
-      border: 1px solid rgba(255,255,255,.68);
-      box-shadow: 0 24px 70px rgba(22, 44, 32, .2);
-      border-radius: 8px;
-      padding: 28px;
-      backdrop-filter: blur(20px);
-    }
-    .login h2 {
-      margin: 0;
-      font-size: 24px;
-      letter-spacing: 0;
-    }
-    .login p {
-      color: var(--muted);
-      line-height: 1.5;
-      margin: 10px 0 22px;
-    }
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 750;
-      color: var(--leaf-dark);
-      margin-bottom: 8px;
-    }
-    input {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 14px 15px;
-      font: inherit;
-      background: white;
-      color: var(--ink);
-    }
-    button {
-      width: 100%;
-      border: 0;
-      border-radius: 8px;
-      padding: 14px 16px;
-      margin-top: 14px;
-      font: inherit;
-      font-weight: 800;
-      color: white;
-      background: var(--leaf);
-      cursor: pointer;
-    }
-    button:hover { background: var(--leaf-dark); }
-    .notice {
-      border: 1px solid rgba(39, 100, 71, .18);
-      background: rgba(39, 100, 71, .08);
-      color: var(--leaf-dark);
-      border-radius: 8px;
-      padding: 12px 14px;
-      font-size: 14px;
-      line-height: 1.4;
-      margin-bottom: 16px;
-    }
-    .notice.warn {
-      border-color: rgba(173, 92, 27, .2);
-      background: rgba(243, 204, 115, .18);
-      color: #6c491a;
-    }
-    .dev-link {
-      display: block;
-      border: 1px solid rgba(39, 100, 71, .26);
-      background: white;
-      color: var(--leaf-dark);
-      border-radius: 8px;
-      padding: 12px 14px;
-      margin: -4px 0 16px;
-      text-align: center;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 800;
-    }
-    .dev-link:hover { border-color: rgba(39, 100, 71, .5); }
-    .sso-button {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 48px;
-      border-radius: 8px;
-      background: #163f5f;
-      color: white;
-      text-decoration: none;
-      font-weight: 850;
-      margin-bottom: 14px;
-    }
-    .sso-button:hover { background: #0f314b; }
-    .divider {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 10px;
-      color: var(--muted);
-      font-size: 13px;
-      margin: 12px 0;
-    }
-    .divider::before,
-    .divider::after {
-      content: "";
-      height: 1px;
-      background: var(--line);
-    }
-    .meta {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1px;
-      margin-top: 32px;
-      max-width: 640px;
-      border: 1px solid rgba(23, 32, 29, .08);
-      background: rgba(23, 32, 29, .08);
-    }
-    .meta div {
-      background: rgba(248,250,247,.74);
-      padding: 18px;
-      min-height: 92px;
-    }
-    .meta strong {
-      display: block;
-      font-size: 24px;
-      margin-bottom: 4px;
-    }
-    .meta span {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.35;
-    }
-    footer {
-      padding: 20px clamp(20px, 5vw, 72px) 26px;
-      color: rgba(255,255,255,.92);
-      font-weight: 650;
-      text-shadow: 0 1px 12px rgba(0,0,0,.28);
-    }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 28px clamp(20px,5vw,72px); color: #fff; }
+    .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; }
+    .mark { min-width: 46px; height: 40px; border-radius: 8px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.4); backdrop-filter: blur(6px); display: grid; place-items: center; padding: 0 9px; color: #fff; font-weight: 700; font-size: 13px; }
+    .brand .name { font-family: Spectral, serif; font-weight: 600; font-size: 17px; }
+    nav { display: flex; gap: 24px; color: rgba(255,255,255,.92); font-size: 14px; font-weight: 600; }
+    main { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(320px,420px); gap: clamp(28px,6vw,64px); align-items: end; padding: 0 clamp(20px,5vw,72px) clamp(40px,8vh,72px); }
+    .copy { max-width: 760px; color: #fff; }
+    .eyebrow { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .2em; color: var(--gold-light); margin-bottom: 18px; }
+    h1 { margin: 0; font-family: Spectral, serif; font-weight: 500; font-size: clamp(46px,7vw,72px); line-height: 1.0; letter-spacing: -.01em; text-shadow: 0 2px 30px rgba(0,0,0,.3); }
+    .lead { max-width: 440px; margin: 24px 0 0; font-size: clamp(17px,2vw,19px); line-height: 1.55; color: rgba(255,255,255,.9); }
+    .meta { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; margin-top: 34px; max-width: 560px; }
+    .meta strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 30px; color: #fff; }
+    .meta span { color: rgba(255,255,255,.78); font-size: 13px; line-height: 1.4; }
+    .login { background: var(--paper); border-radius: 14px; padding: 30px; box-shadow: 0 28px 70px rgba(0,0,0,.42); }
+    .login h2 { margin: 0; font-family: Spectral, serif; font-weight: 600; font-size: 26px; }
+    .login p { color: var(--muted); line-height: 1.5; margin: 11px 0 22px; font-size: 14.5px; }
+    label { display: block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--gold-ink); margin-bottom: 8px; }
+    input { width: 100%; border: 1px solid #e2dac9; border-radius: 10px; padding: 14px 15px; font: inherit; background: #fffefb; color: var(--ink); }
+    button { width: 100%; border: 0; border-radius: 10px; padding: 15px 16px; margin-top: 13px; font: inherit; font-weight: 700; color: #fff; background: var(--ink); cursor: pointer; }
+    button:hover { background: #000; }
+    .notice { border: 1px solid rgba(32,37,31,.16); background: rgba(200,153,63,.1); color: #6a5320; border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.4; margin-bottom: 16px; }
+    .notice.warn { border-color: rgba(173,92,27,.22); background: rgba(231,197,116,.2); color: #6c491a; }
+    .dev-link { display: block; border: 1px solid var(--line); background: #fffefb; color: var(--ink); border-radius: 10px; padding: 12px 14px; margin: -4px 0 16px; text-align: center; text-decoration: none; font-size: 14px; font-weight: 700; }
+    .dev-link:hover { border-color: var(--gold); }
+    .sso-button { display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 10px; background: var(--ink); color: #fff; text-decoration: none; font-weight: 700; margin-bottom: 14px; }
+    .sso-button:hover { background: #000; }
+    .divider { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; margin: 12px 0; }
+    .divider::before, .divider::after { content: ""; height: 1px; background: var(--line); }
+    .foot-note { margin: 16px 0 0; font-size: 13px; line-height: 1.4; color: var(--soft); }
+    footer { padding: 20px clamp(20px,5vw,72px) 26px; color: rgba(255,255,255,.85); font-weight: 500; font-size: 14px; }
+    footer .version { margin-left: 8px; color: rgba(255,255,255,.54); font-size: 12px; }
     @media (max-width: 860px) {
-      header { align-items: flex-start; }
       nav { display: none; }
-      main {
-        grid-template-columns: 1fr;
-        align-items: start;
-        padding-top: 12px;
-      }
-      .copy { padding-bottom: 0; }
-      .login { max-width: 560px; }
+      main { grid-template-columns: 1fr; align-items: start; gap: 28px; }
       .meta { display: none; }
-      h1 { font-size: clamp(40px, 13vw, 64px); }
-      .lead { font-size: 17px; }
+      h1 { font-size: clamp(40px,12vw,56px); }
     }
   </style>
 </head>
 <body>
   <section class="hero">
     <header>
-      <a class="brand" href="/" aria-label="WEG Portal Startseite"><span class="mark">WEG</span><span>{{.Tenant.Address}}</span></a>
+      <a class="brand" href="/" aria-label="WEG Portal Startseite"><span class="mark">WEG</span><span class="name">{{.Tenant.Address}}</span></a>
       <nav aria-label="Portalbereiche">
         <span>Aushang</span>
         <span>Dokumente</span>
@@ -3305,12 +3129,13 @@ const pageTemplates = `
             <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="name@example.com">
             <button type="submit">Anmeldelink senden</button>
           </form>
+          <p class="foot-note">Link 15 Minuten gültig · privat für die Hausgemeinschaft</p>
         {{else}}
           <div class="notice">E-Mail-Anmeldelinks sind nicht aktiv. Bitte SSO verwenden.</div>
         {{end}}
       </section>
     </main>
-    <footer>{{.Tenant.Address}} · Privat für die Hausgemeinschaft</footer>
+    <footer>{{.Tenant.Address}} · Privat für die Hausgemeinschaft <span class="version">{{.AppVersion}}</span></footer>
   </section>
 </body>
 </html>
@@ -3323,152 +3148,105 @@ const pageTemplates = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: light;
-      --ink: #17201d;
-      --muted: #60716a;
-      --line: #dfe7df;
-      --paper: #f7faf6;
-      --leaf: #276447;
+      --ink:#20251f; --muted:#6b6f63; --soft:#9a9485;
+      --line:#e7e0d2; --paper:#f7f3ea; --panel:#fffefb;
+      --gold:#c8993f; --gold-ink:#8a7b3f; --gold-light:#e7c574; --leaf:#2f6b4a;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--paper); color: var(--ink); }
-    header {
-      position: sticky;
-      top: 0;
-      background: rgba(247,250,246,.9);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--line);
-      padding: 16px clamp(18px, 4vw, 52px);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      z-index: 1;
-    }
-    .brand {
-      color: var(--ink);
-      font-weight: 800;
-      text-decoration: none;
-    }
-    .user { color: var(--muted); font-size: 14px; }
-    .top-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .link-button {
-      border: 1px solid var(--line);
-      background: white;
-      border-radius: 8px;
-      color: var(--ink);
-      display: inline-flex;
-      align-items: center;
-      min-height: 41px;
-      padding: 9px 12px;
-      text-decoration: none;
-      font-weight: 700;
-    }
-    form { margin: 0; }
-    button {
-      border: 1px solid var(--line);
-      background: white;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font: inherit;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    main { padding: 34px clamp(18px, 4vw, 52px) 60px; }
-    .grid {
-      display: grid;
-      grid-template-columns: 1.4fr .9fr;
-      gap: 24px;
-      align-items: start;
-    }
-    section {
-      background: white;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 22px;
-    }
-    .wide { grid-column: 1 / -1; }
-    h1 { margin: 0 0 18px; font-size: clamp(32px, 5vw, 56px); letter-spacing: 0; }
-    h2 { margin: 0 0 14px; font-size: 20px; letter-spacing: 0; }
-    .muted { color: var(--muted); line-height: 1.5; }
-    .list { display: grid; gap: 12px; margin-top: 16px; }
-    .item {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 14px;
-      display: grid;
-      gap: 4px;
-      color: inherit;
-      text-decoration: none;
-    }
-    a.item:hover { border-color: rgba(39, 100, 71, .45); }
-    .item strong { font-size: 16px; }
-    .item span { color: var(--muted); font-size: 14px; line-height: 1.4; }
-    .actions {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 18px;
-    }
-    .action {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 16px;
-      min-height: 100px;
-      background: #fbfdfb;
-    }
+    header { position: sticky; top: 0; z-index: 2; background: var(--ink); border-bottom: 2px solid var(--gold); padding: 14px clamp(18px,4vw,52px); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand-wrap { display: flex; align-items: center; gap: 12px; }
+    .mark { width: 36px; height: 32px; border-radius: 7px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 11px; }
+    .brand { color: #fff; font-family: Spectral, serif; font-weight: 600; font-size: 15px; text-decoration: none; }
+    .user { color: rgba(255,255,255,.6); font-size: 13px; margin-top: 3px; }
+    .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .version { color: rgba(255,255,255,.46); font-size: 12px; font-weight: 600; white-space: nowrap; }
+    header form { margin: 0; }
+    header .button, header button { border: 1px solid rgba(255,255,255,.22); background: transparent; border-radius: 9px; color: rgba(255,255,255,.92); min-height: 38px; padding: 8px 13px; font: inherit; font-weight: 600; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; cursor: pointer; }
+    header .button:hover, header button:hover { border-color: var(--gold); color: #fff; }
+    .banner { position: relative; height: 120px; overflow: hidden; border-bottom: 1px solid var(--line); }
+    .banner::before { content: ""; position: absolute; inset: 0; background: url('/assets/jhw22-hero.jpg') center 46% / cover no-repeat; }
+    .banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(247,243,234,.12), rgba(247,243,234,.78) 82%); }
+    .banner-inner { position: absolute; left: clamp(18px,4vw,52px); bottom: 18px; }
+    .banner-kicker { font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--gold-ink); }
+    main { width: min(1240px,100%); margin: 0 auto; padding: 30px clamp(18px,4vw,52px) 60px; display: grid; gap: 22px; }
+    h1 { margin: 0; font-family: Spectral, serif; font-weight: 500; font-size: clamp(34px,5vw,46px); letter-spacing: -.01em; }
+    .lede { margin: 6px 0 0; color: var(--muted); line-height: 1.55; }
+    .kicker { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-ink); border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-bottom: 18px; }
+    .grid { display: grid; grid-template-columns: 1.5fr .9fr; gap: 22px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; }
+    .entries { display: grid; gap: 20px; }
+    .entry h3 { margin: 0 0 6px; font-family: Spectral, serif; font-weight: 600; font-size: 22px; color: var(--ink); }
+    .entry p { margin: 0; color: #5c5f54; line-height: 1.6; font-size: 14.5px; }
+    .entry + .entry { border-top: 1px solid var(--line); padding-top: 20px; }
+    .links { display: grid; }
+    .link-row { display: grid; gap: 4px; padding: 14px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
+    .link-row:last-child { border-bottom: 0; }
+    .lr-title { font-family: Spectral, serif; font-weight: 600; font-size: 17px; color: var(--ink); }
+    .lr-sub { color: var(--soft); font-size: 13px; line-height: 1.4; }
+    a.link-row:hover .lr-title { color: var(--gold-ink); }
+    .info-row { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+    .info { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+    .info strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 16px; margin-bottom: 6px; }
+    .info p { margin: 0; color: var(--soft); font-size: 13.5px; line-height: 1.45; }
     @media (max-width: 860px) {
       header { align-items: flex-start; flex-direction: column; }
-      .grid, .actions { grid-template-columns: 1fr; }
+      .grid, .info-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <header>
-    <div>
-      <a class="brand" href="/app">WEG Portal · {{.Tenant.Address}}</a>
-      <div class="user">Angemeldet als {{.DisplayName}} · Rolle: {{.Role}}</div>
+    <div class="brand-wrap">
+      <span class="mark">WEG</span>
+      <div>
+        <a class="brand" href="/app">WEG Portal · {{.Tenant.Address}}</a>
+        <div class="user">Angemeldet als {{.DisplayName}} · Rolle: {{.Role}}</div>
+      </div>
     </div>
     <div class="top-actions">
-      {{if .CanSeeParking}}<a class="link-button" href="/app/parking">Parkplatznutzung</a>{{end}}
-      {{if .IsAdmin}}<a class="link-button" href="/app/settings/users">Benutzer & Rechte</a>{{end}}
+      {{if .CanSeeParking}}<a class="button" href="/app/parking">Parkplatznutzung</a>{{end}}
+      {{if .IsAdmin}}<a class="button" href="/app/settings/users">Benutzer &amp; Rechte</a>{{end}}
+      <span class="version">{{.AppVersion}}</span>
       <form method="post" action="/auth/logout"><button type="submit">Abmelden</button></form>
     </div>
   </header>
+  <div class="banner"><div class="banner-inner"><span class="banner-kicker">WEG Portal · {{.Tenant.Address}}</span></div></div>
   <main>
-    <h1>Hausüberblick</h1>
+    <div>
+      <h1>Hausüberblick</h1>
+      <p class="lede">Hier landen später offizielle Informationen der Hausgemeinschaft, Termine und kurze Updates.</p>
+    </div>
     <div class="grid">
-      <section>
-        <h2>Aktueller Aushang</h2>
-        <p class="muted">Hier landen später offizielle Informationen der Hausgemeinschaft, Termine und kurze Updates.</p>
-        <div class="list">
-          <div class="item"><strong>Willkommen im Prototyp</strong><span>Der Zugang funktioniert bereits per E-Mail-Link. Inhalte sind noch Beispielmodule.</span></div>
-          <div class="item"><strong>Nächste Ausbaustufe</strong><span>Einladungen, Bewohnerliste, Dokumentenablage und Anliegenverwaltung.</span></div>
+      <section class="panel">
+        <div class="kicker">Aktueller Aushang</div>
+        <div class="entries">
+          <article class="entry"><h3>Willkommen im Prototyp</h3><p>Der Zugang funktioniert bereits per E-Mail-Link. Inhalte sind noch Beispielmodule.</p></article>
+          <article class="entry"><h3>Nächste Ausbaustufe</h3><p>Einladungen, Bewohnerliste, Dokumentenablage und Anliegenverwaltung.</p></article>
         </div>
       </section>
-      <section>
-        <h2>Schnellzugriff</h2>
-        <div class="list">
-          <div class="item"><strong>Dokumente</strong><span>Protokolle, Abrechnungen, Regeln und Pläne.</span></div>
-          <div class="item"><strong>Anliegen</strong><span>Reparaturen, Fragen, Vorschläge und Rückmeldungen.</span></div>
-          <div class="item"><strong>Abstimmungen</strong><span>Vorbereitete Entscheidungen für die Hausgemeinschaft.</span></div>
-          {{if .CanSeeParking}}<a class="item" href="/app/parking"><strong>Parkplatznutzung</strong><span>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</span></a>{{end}}
-          {{if .IsAdmin}}<a class="item" href="/app/settings/users"><strong>Benutzer & Rechte</strong><span>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</span></a>{{end}}
+      <section class="panel">
+        <div class="kicker">Schnellzugriff</div>
+        <div class="links">
+          <div class="link-row"><span class="lr-title">Dokumente</span><span class="lr-sub">Protokolle, Abrechnungen, Regeln und Pläne.</span></div>
+          <div class="link-row"><span class="lr-title">Anliegen</span><span class="lr-sub">Reparaturen, Fragen, Vorschläge und Rückmeldungen.</span></div>
+          <div class="link-row"><span class="lr-title">Abstimmungen</span><span class="lr-sub">Vorbereitete Entscheidungen für die Hausgemeinschaft.</span></div>
+          {{if .CanSeeParking}}<a class="link-row" href="/app/parking"><span class="lr-title">Parkplatznutzung</span><span class="lr-sub">Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</span></a>{{end}}
+          {{if .IsAdmin}}<a class="link-row" href="/app/settings/users"><span class="lr-title">Benutzer &amp; Rechte</span><span class="lr-sub">Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</span></a>{{end}}
         </div>
       </section>
     </div>
-    <div class="actions">
-      <div class="action"><strong>Einladungssystem</strong><p class="muted">Zugriff nur für freigeschaltete E-Mail-Adressen.</p></div>
-      <div class="action"><strong>E-Mail-Faktor</strong><p class="muted">Einmalige Links, 15 Minuten gültig.</p></div>
-      <div class="action"><strong>Web-App</strong><p class="muted">Responsive, ohne Installation, bereit für Homescreen-Pinning.</p></div>
+    <div class="info-row">
+      <div class="info"><strong>Einladungssystem</strong><p>Zugriff nur für freigeschaltete E-Mail-Adressen.</p></div>
+      <div class="info"><strong>E-Mail-Faktor</strong><p>Einmalige Links, 15 Minuten gültig.</p></div>
+      <div class="info"><strong>Web-App</strong><p>Responsive, ohne Installation, bereit für Homescreen-Pinning.</p></div>
     </div>
   </main>
 </body>
@@ -3482,224 +3260,75 @@ const pageTemplates = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: light;
-      --ink: #17201d;
-      --muted: #60716a;
-      --line: #dfe7df;
-      --paper: #f7faf6;
-      --panel: #ffffff;
-      --soft: #eef5ee;
-      --leaf: #276447;
-      --leaf-dark: #173f2d;
-      --warn-bg: #f7efe4;
-      --warn: #744719;
+      --ink:#20251f; --muted:#6b6f63; --soft:#9a9485;
+      --line:#e7e0d2; --paper:#f7f3ea; --panel:#fffefb;
+      --gold:#c8993f; --gold-ink:#8a7b3f; --gold-light:#e7c574; --leaf:#2f6b4a;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--paper); color: var(--ink); }
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      background: rgba(247,250,246,.94);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--line);
-      padding: 14px clamp(16px, 3vw, 40px);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-    .brand { color: var(--ink); font-weight: 800; text-decoration: none; }
-    .user { color: var(--muted); font-size: 14px; margin-top: 3px; }
+    header { position: sticky; top: 0; z-index: 2; background: var(--ink); border-bottom: 2px solid var(--gold); padding: 14px clamp(16px,3vw,40px); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand-wrap { display: flex; align-items: center; gap: 12px; }
+    .mark { width: 36px; height: 32px; border-radius: 7px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 11px; }
+    .brand { color: #fff; font-family: Spectral, serif; font-weight: 600; font-size: 15px; text-decoration: none; }
+    .user { color: rgba(255,255,255,.6); font-size: 13px; margin-top: 3px; }
     .top-actions, .inline-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    main {
-      width: min(1480px, 100%);
-      margin: 0 auto;
-      padding: 26px clamp(14px, 3vw, 40px) 56px;
-      display: grid;
-      gap: 18px;
-    }
-    h1 { margin: 0; font-size: clamp(30px, 4vw, 46px); letter-spacing: 0; }
-    h2 { margin: 0; font-size: 19px; letter-spacing: 0; }
-    h3 { margin: 0; font-size: 15px; letter-spacing: 0; }
+    .version { color: rgba(255,255,255,.46); font-size: 12px; font-weight: 600; white-space: nowrap; }
+    header form { margin: 0; }
+    header .button, header button { border: 1px solid rgba(255,255,255,.22); background: transparent; border-radius: 9px; color: rgba(255,255,255,.92); min-height: 38px; padding: 8px 13px; font: inherit; font-weight: 600; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; white-space: nowrap; }
+    header .button:hover, header button:hover { border-color: var(--gold); color: #fff; }
+    main { width: min(1480px,100%); margin: 0 auto; padding: 26px clamp(14px,3vw,40px) 56px; display: grid; gap: 18px; }
+    h1 { margin: 0; font-family: Spectral, serif; font-weight: 500; font-size: clamp(30px,4vw,46px); letter-spacing: -.01em; }
+    h2 { margin: 0; font-family: Spectral, serif; font-weight: 600; font-size: 21px; }
+    h3 { margin: 0; font-size: 15px; }
     p { margin: 0; }
     form { margin: 0; }
-    .muted { color: var(--muted); line-height: 1.45; }
+    .muted { color: var(--muted); line-height: 1.5; }
     .subtle-note { margin-top: 6px; max-width: 720px; font-size: 14px; }
-    .page-head {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
-      gap: 18px;
-      align-items: end;
-    }
-    .settings {
-      border: 1px solid var(--line);
-      background: var(--panel);
-      border-radius: 8px;
-      padding: 14px;
-      display: grid;
-      gap: 10px;
-    }
-    .settings-form {
-      display: grid;
-      grid-template-columns: minmax(110px, 1fr) auto;
-      gap: 8px;
-      align-items: end;
-    }
-    label {
-      display: grid;
-      gap: 5px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 800;
-    }
-    input {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      min-height: 38px;
-      padding: 8px 10px;
-      font: inherit;
-      color: var(--ink);
-      background: white;
-    }
-    button, .button {
-      border: 1px solid var(--line);
-      background: white;
-      border-radius: 8px;
-      color: var(--ink);
-      min-height: 38px;
-      padding: 8px 12px;
-      font: inherit;
-      font-weight: 750;
-      line-height: 1.15;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    button:hover, .button:hover { border-color: rgba(39,100,71,.45); }
-    .button.primary, button.primary { background: var(--leaf); border-color: var(--leaf); color: white; }
+    .page-head { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,360px); gap: 18px; align-items: end; }
+    .settings { border: 1px solid var(--line); background: var(--panel); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
+    .settings-form { display: grid; grid-template-columns: minmax(110px,1fr) auto; gap: 8px; align-items: end; }
+    label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    input { width: 100%; border: 1px solid #e2dac9; border-radius: 9px; min-height: 38px; padding: 8px 11px; font: inherit; color: var(--ink); background: #fffefb; }
+    button, .button { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; color: var(--ink); min-height: 38px; padding: 8px 13px; font: inherit; font-weight: 600; line-height: 1.15; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; white-space: nowrap; }
+    button:hover, .button:hover { border-color: var(--gold); }
+    .button.primary, button.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
     .button.ghost { background: transparent; }
-    .button.small, button.small { min-height: 31px; padding: 6px 9px; font-size: 12px; }
-    .strip {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel);
-      padding: 14px;
-      display: grid;
-      gap: 12px;
-    }
-    .rule {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      flex-wrap: wrap;
-      color: var(--muted);
-      line-height: 1.45;
-    }
-    .telemetry {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-    .telemetry-item {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fbfdfb;
-      padding: 12px;
-      min-width: 0;
-    }
-    .telemetry-item span, .field span, .stat span {
-      display: block;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 850;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      margin-bottom: 5px;
-    }
-    .telemetry-item strong { display: block; font-size: 20px; line-height: 1.15; }
-    code { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-    .accounting {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel);
-      padding: 16px;
-      display: grid;
-      gap: 14px;
-    }
-    .section-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-    .chart {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 10px;
-    }
-    .chart-row {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 11px;
-      display: grid;
-      gap: 8px;
-      min-width: 0;
-    }
-    .bar { height: 10px; border-radius: 999px; background: #e9eee8; overflow: hidden; }
-    .bar span { display: block; height: 100%; border-radius: inherit; background: var(--leaf); min-width: 2px; }
-    .month-list {
-      display: grid;
-      gap: 9px;
-    }
-    .month-row {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fbfdfb;
-      padding: 12px;
-      display: grid;
-      grid-template-columns: minmax(170px, 1.4fr) repeat(6, minmax(92px, .75fr)) minmax(180px, 1fr);
-      gap: 10px;
-      align-items: center;
-    }
+    .button.small, button.small { min-height: 31px; padding: 6px 10px; font-size: 12px; }
+    .strip { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 16px; display: grid; gap: 12px; }
+    .rule { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; color: var(--muted); line-height: 1.5; }
+    .telemetry { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+    .telemetry-item { border: 1px solid var(--line); border-radius: 10px; background: #fbf8f0; padding: 13px; min-width: 0; }
+    .telemetry-item span, .field span, .stat span { display: block; color: var(--gold-ink); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+    .telemetry-item strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 22px; line-height: 1.1; }
+    code { color: var(--soft); font-size: 12px; overflow-wrap: anywhere; }
+    .accounting { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 18px; display: grid; gap: 14px; }
+    .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+    .chart { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 10px; }
+    .chart-row { border: 1px solid var(--line); border-radius: 10px; padding: 13px; display: grid; gap: 10px; min-width: 0; text-decoration: none; color: inherit; background: #fbf8f0; }
+    .chart-row:hover { border-color: var(--gold); }
+    .chart-row strong { font-family: Spectral, serif; font-weight: 600; font-size: 16px; }
+    .bar { height: 9px; border-radius: 999px; background: #ece5d6; overflow: hidden; }
+    .bar span { display: block; height: 100%; border-radius: inherit; background: var(--gold); min-width: 2px; }
+    .month-list { display: grid; gap: 9px; }
+    .month-row { border: 1px solid var(--line); border-radius: 10px; background: #fbf8f0; padding: 13px; display: grid; grid-template-columns: minmax(170px,1.4fr) repeat(6,minmax(86px,.75fr)) minmax(180px,1fr); gap: 10px; align-items: center; }
     .field { min-width: 0; }
-    .field strong, .amount { font-weight: 850; }
-    .field a { color: var(--leaf-dark); text-decoration: none; font-weight: 850; }
-    .field a:hover { text-decoration: underline; }
-    .mini { color: var(--muted); font-size: 12px; display: block; margin-top: 3px; line-height: 1.35; }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      min-height: 26px;
-      border-radius: 999px;
-      padding: 3px 9px;
-      font-size: 12px;
-      font-weight: 850;
-      background: var(--warn-bg);
-      color: var(--warn);
-      white-space: nowrap;
-    }
-    .pill.ok { background: var(--soft); color: var(--leaf); }
-    .empty {
-      border: 1px solid rgba(39,100,71,.18);
-      background: var(--soft);
-      color: #244333;
-      border-radius: 8px;
-      padding: 14px;
-      line-height: 1.45;
-    }
+    .field strong, .amount { font-weight: 700; }
+    .field a { color: var(--ink); text-decoration: none; font-family: Spectral, serif; font-weight: 600; font-size: 16px; }
+    .field a:hover { color: var(--gold-ink); }
+    .mini { color: var(--soft); font-size: 12px; display: block; margin-top: 3px; line-height: 1.35; }
+    .pill { display: inline-flex; align-items: center; min-height: 26px; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; background: rgba(200,153,63,.16); color: #8a6a1f; white-space: nowrap; }
+    .pill.ok { background: rgba(47,107,74,.12); color: var(--leaf); }
+    .empty { border: 1px solid var(--line); background: #fbf8f0; color: #5c5f54; border-radius: 10px; padding: 14px; line-height: 1.5; }
     @media (max-width: 1120px) {
       .page-head { grid-template-columns: 1fr; align-items: start; }
-      .month-row { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
+      .month-row { grid-template-columns: repeat(4,minmax(120px,1fr)); }
     }
     @media (max-width: 720px) {
       header { align-items: flex-start; flex-direction: column; }
@@ -3711,12 +3340,16 @@ const pageTemplates = `
 </head>
 <body>
   <header>
-    <div>
-      <a class="brand" href="/app">WEG Portal · {{.Tenant.Address}}</a>
-      <div class="user">Angemeldet als {{.DisplayName}} · Rolle: {{.Role}}</div>
+    <div class="brand-wrap">
+      <span class="mark">WEG</span>
+      <div>
+        <a class="brand" href="/app">WEG Portal · {{.Tenant.Address}}</a>
+        <div class="user">Angemeldet als {{.DisplayName}} · Rolle: {{.Role}}</div>
+      </div>
     </div>
     <div class="top-actions">
       <a class="button ghost" href="/app">Zurück</a>
+      <span class="version">{{.AppVersion}}</span>
       <form method="post" action="/auth/logout"><button type="submit">Abmelden</button></form>
     </div>
   </header>
@@ -3827,133 +3460,57 @@ const pageTemplates = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: light;
-      --ink: #17201d;
-      --muted: #60716a;
-      --line: #dfe7df;
-      --paper: #f7faf6;
-      --panel: #ffffff;
-      --soft: #eef5ee;
-      --leaf: #276447;
-      --leaf-dark: #173f2d;
+      --ink:#20251f; --muted:#6b6f63; --soft:#9a9485;
+      --line:#e7e0d2; --paper:#f7f3ea; --panel:#fffefb;
+      --gold:#c8993f; --gold-ink:#8a7b3f; --gold-light:#e7c574; --leaf:#2f6b4a;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--paper); color: var(--ink); }
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      background: rgba(247,250,246,.94);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--line);
-      padding: 14px clamp(16px, 3vw, 40px);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-    .brand { color: var(--ink); font-weight: 800; text-decoration: none; }
+    header { position: sticky; top: 0; z-index: 2; background: var(--ink); border-bottom: 2px solid var(--gold); padding: 14px clamp(16px,3vw,40px); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand-wrap { display: flex; align-items: center; gap: 12px; }
+    .mark { width: 36px; height: 32px; border-radius: 7px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 11px; }
+    .brand { color: #fff; font-family: Spectral, serif; font-weight: 600; font-size: 15px; text-decoration: none; }
     .user, .muted, .mini { color: var(--muted); }
-    .user { font-size: 14px; margin-top: 3px; }
+    .user { color: rgba(255,255,255,.6); font-size: 13px; margin-top: 3px; }
     .top-actions, .summary, .inline-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    main {
-      width: min(1480px, 100%);
-      margin: 0 auto;
-      padding: 26px clamp(14px, 3vw, 40px) 56px;
-      display: grid;
-      gap: 18px;
-    }
-    h1 { margin: 0; font-size: clamp(30px, 4vw, 46px); letter-spacing: 0; }
-    h2 { margin: 0; font-size: 19px; letter-spacing: 0; }
-    p, form { margin: 0; }
-    .button, button {
-      border: 1px solid var(--line);
-      background: white;
-      border-radius: 8px;
-      color: var(--ink);
-      min-height: 38px;
-      padding: 8px 12px;
-      font: inherit;
-      font-weight: 750;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      white-space: nowrap;
-    }
+    .version { color: rgba(255,255,255,.46); font-size: 12px; font-weight: 600; white-space: nowrap; }
+    header form { margin: 0; }
+    header .button, header button { border: 1px solid rgba(255,255,255,.22); background: transparent; border-radius: 9px; color: rgba(255,255,255,.92); min-height: 38px; padding: 8px 13px; font: inherit; font-weight: 600; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; white-space: nowrap; }
+    header .button:hover, header button:hover { border-color: var(--gold); color: #fff; }
+    main { width: min(1480px,100%); margin: 0 auto; padding: 26px clamp(14px,3vw,40px) 56px; display: grid; gap: 18px; }
+    h1 { margin: 0; font-family: Spectral, serif; font-weight: 500; font-size: clamp(30px,4vw,46px); letter-spacing: -.01em; }
+    h2 { margin: 0; font-family: Spectral, serif; font-weight: 600; font-size: 21px; }
+    p { margin: 0; }
+    .button, button { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; color: var(--ink); min-height: 38px; padding: 8px 13px; font: inherit; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; white-space: nowrap; }
     .button.ghost { background: transparent; }
-    .button.small, button.small { min-height: 31px; padding: 6px 9px; font-size: 12px; }
-    .panel {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel);
-      padding: 16px;
-      display: grid;
-      gap: 14px;
-    }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-    }
-    .stat {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px;
-      background: #fbfdfb;
-    }
-    .stat span, th {
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 850;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
-    .stat strong { display: block; margin-top: 5px; font-size: 18px; }
+    .panel { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 18px; display: grid; gap: 14px; }
+    .summary { color: var(--muted); }
+    .mini { color: var(--soft); font-size: 12px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 10px; }
+    .stat { border: 1px solid var(--line); border-radius: 10px; padding: 13px; background: #fbf8f0; }
+    .stat span, th { color: var(--gold-ink); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+    .stat strong { display: block; margin-top: 4px; font-family: Spectral, serif; font-weight: 600; font-size: 20px; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 780px; }
-    th, td { border-bottom: 1px solid var(--line); padding: 10px 8px; text-align: left; font-size: 14px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 11px 8px; text-align: left; font-size: 14px; }
     th { cursor: help; }
-    .amount { font-weight: 850; }
+    .amount { font-weight: 700; }
     .bar-cell { min-width: 150px; }
-    .bar { height: 9px; border-radius: 999px; background: #e9eee8; overflow: hidden; }
-    .bar span { display: block; height: 100%; border-radius: inherit; background: var(--leaf); min-width: 2px; }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      min-height: 26px;
-      border-radius: 999px;
-      padding: 3px 9px;
-      font-size: 12px;
-      font-weight: 850;
-      background: var(--soft);
-      color: var(--leaf);
-      white-space: nowrap;
-    }
-    .empty {
-      border: 1px solid rgba(39,100,71,.18);
-      background: var(--soft);
-      color: #244333;
-      border-radius: 8px;
-      padding: 14px;
-      line-height: 1.45;
-    }
-    .legend {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fbfdfb;
-      padding: 12px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 10px;
-    }
+    .bar { height: 9px; border-radius: 999px; background: #ece5d6; overflow: hidden; }
+    .bar span { display: block; height: 100%; border-radius: inherit; background: var(--gold); min-width: 2px; }
+    .pill { display: inline-flex; align-items: center; min-height: 26px; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; background: rgba(200,153,63,.16); color: #8a6a1f; white-space: nowrap; }
+    .empty { border: 1px solid var(--line); background: #fbf8f0; color: #5c5f54; border-radius: 10px; padding: 14px; line-height: 1.5; }
+    .legend { border: 1px solid var(--line); border-radius: 10px; background: #fbf8f0; padding: 14px; display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 12px; }
     .legend div { min-width: 0; }
-    .legend strong { display: block; margin-bottom: 3px; }
-    .legend span { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .legend strong { display: block; font-family: Spectral, serif; font-weight: 600; margin-bottom: 3px; }
+    .legend span { color: var(--muted); font-size: 13px; line-height: 1.4; }
     @media (max-width: 720px) {
       header { align-items: flex-start; flex-direction: column; }
     }
@@ -3961,13 +3518,17 @@ const pageTemplates = `
 </head>
 <body>
   <header>
-    <div>
-      <a class="brand" href="/app">WEG Portal · {{.Tenant.Address}}</a>
-      <div class="user">Angemeldet als {{.DisplayName}} · Rolle: {{.Role}}</div>
+    <div class="brand-wrap">
+      <span class="mark">WEG</span>
+      <div>
+        <a class="brand" href="/app">WEG Portal · {{.Tenant.Address}}</a>
+        <div class="user">Angemeldet als {{.DisplayName}} · Rolle: {{.Role}}</div>
+      </div>
     </div>
     <div class="top-actions">
       <a class="button ghost" href="{{.Detail.BackPath}}">Monate</a>
       <a class="button ghost" href="/app">Portal</a>
+      <span class="version">{{.AppVersion}}</span>
       <form method="post" action="/auth/logout"><button type="submit">Abmelden</button></form>
     </div>
   </header>
@@ -4048,142 +3609,54 @@ const pageTemplates = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: light;
-      --ink: #17201d;
-      --muted: #60716a;
-      --line: #dfe7df;
-      --paper: #f7faf6;
-      --leaf: #276447;
-      --soft: #eef5ee;
+      --ink:#20251f; --muted:#6b6f63; --soft:#9a9485;
+      --line:#e7e0d2; --paper:#f7f3ea; --panel:#fffefb;
+      --gold:#c8993f; --gold-ink:#8a7b3f; --gold-light:#e7c574; --leaf:#2f6b4a;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--paper); color: var(--ink); }
-    header {
-      position: sticky;
-      top: 0;
-      background: rgba(247,250,246,.92);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--line);
-      padding: 16px clamp(18px, 4vw, 52px);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      z-index: 1;
-    }
-    .brand {
-      color: var(--ink);
-      font-weight: 800;
-      text-decoration: none;
-    }
-    .user { color: var(--muted); font-size: 14px; }
-    .top-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    form { margin: 0; }
-    button, .link-button {
-      border: 1px solid var(--line);
-      background: white;
-      border-radius: 8px;
-      color: var(--ink);
-      min-height: 41px;
-      padding: 9px 12px;
-      font: inherit;
-      font-weight: 700;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    button:disabled {
-      color: var(--muted);
-      cursor: default;
-      background: #f4f7f3;
-    }
-    main {
-      padding: 34px clamp(18px, 4vw, 52px) 60px;
-      display: grid;
-      gap: 22px;
-    }
-    h1 { margin: 0; font-size: clamp(32px, 5vw, 54px); letter-spacing: 0; }
-    h2 { margin: 0 0 14px; font-size: 20px; letter-spacing: 0; }
+    header { position: sticky; top: 0; z-index: 2; background: var(--ink); border-bottom: 2px solid var(--gold); padding: 14px clamp(18px,4vw,52px); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand-wrap { display: flex; align-items: center; gap: 12px; }
+    .mark { width: 36px; height: 32px; border-radius: 7px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 11px; }
+    .brand { color: #fff; font-family: Spectral, serif; font-weight: 600; font-size: 15px; text-decoration: none; }
+    .user { color: rgba(255,255,255,.6); font-size: 13px; margin-top: 3px; }
+    .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .version { color: rgba(255,255,255,.46); font-size: 12px; font-weight: 600; white-space: nowrap; }
+    header form { margin: 0; }
+    header .button, header .link-button, header button { border: 1px solid rgba(255,255,255,.22); background: transparent; border-radius: 9px; color: rgba(255,255,255,.92); min-height: 38px; padding: 8px 13px; font: inherit; font-weight: 600; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; cursor: pointer; }
+    header .button:hover, header .link-button:hover, header button:hover { border-color: var(--gold); color: #fff; }
+    main { width: min(1240px,100%); margin: 0 auto; padding: 34px clamp(18px,4vw,52px) 60px; display: grid; gap: 22px; }
+    h1 { margin: 0; font-family: Spectral, serif; font-weight: 500; font-size: clamp(32px,5vw,46px); letter-spacing: -.01em; }
     p { margin: 0; }
-    .muted { color: var(--muted); line-height: 1.5; }
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
-      gap: 22px;
-      align-items: start;
-    }
-    section {
-      background: white;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 22px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 16px;
-      font-size: 15px;
-    }
-    th, td {
-      border-bottom: 1px solid var(--line);
-      padding: 13px 10px;
-      text-align: left;
-      vertical-align: middle;
-    }
-    th {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-    }
+    .muted { color: var(--muted); line-height: 1.55; }
+    .kicker { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-ink); border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-bottom: 16px; }
+    .layout { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(280px,.65fr); gap: 22px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+    .stack { display: grid; gap: 22px; }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 13px 10px; text-align: left; vertical-align: middle; }
+    th { color: var(--gold-ink); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
     td:first-child, th:first-child { padding-left: 0; }
     td:last-child, th:last-child { padding-right: 0; }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      background: var(--soft);
-      color: var(--leaf);
-      min-height: 28px;
-      padding: 5px 10px;
-      font-size: 13px;
-      font-weight: 800;
-    }
-    .permissions {
-      display: grid;
-      gap: 10px;
-      margin-top: 14px;
-    }
-    .permission {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 14px;
-      background: #fbfdfb;
-    }
-    .permission strong { display: block; margin-bottom: 4px; }
-    .invite {
-      display: grid;
-      gap: 10px;
-      margin-top: 14px;
-    }
-    input, select {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px;
-      font: inherit;
-      background: white;
-      color: var(--ink);
-    }
-    input:disabled, select:disabled { color: var(--muted); background: #f4f7f3; }
+    .pill { display: inline-flex; align-items: center; border-radius: 999px; background: rgba(200,153,63,.16); color: #8a6a1f; min-height: 28px; padding: 5px 11px; font-size: 13px; font-weight: 700; }
+    .pill.ok { background: rgba(47,107,74,.12); color: var(--leaf); }
+    .permissions { display: grid; gap: 10px; }
+    .permission { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: #fbf8f0; }
+    .permission strong { display: block; font-family: Spectral, serif; font-weight: 600; margin-bottom: 4px; }
+    .invite { display: grid; gap: 10px; }
+    input, select { width: 100%; border: 1px solid #e2dac9; border-radius: 9px; padding: 12px; font: inherit; background: #fffefb; color: var(--ink); }
+    input:disabled, select:disabled { color: var(--soft); background: #f3efe5; }
+    button { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; color: var(--ink); min-height: 41px; padding: 10px 13px; font: inherit; font-weight: 600; cursor: pointer; }
+    button:hover { border-color: var(--gold); }
+    button.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+    button:disabled { color: var(--soft); cursor: default; background: #f3efe5; border-color: var(--line); }
     @media (max-width: 860px) {
       header { align-items: flex-start; flex-direction: column; }
       .layout { grid-template-columns: 1fr; }
@@ -4193,23 +3666,27 @@ const pageTemplates = `
 </head>
 <body>
   <header>
-    <div>
-      <a class="brand" href="/app">WEG Portal · {{.Tenant.Address}}</a>
-      <div class="user">Angemeldet als {{.DisplayName}} · Rolle: {{.Role}}</div>
+    <div class="brand-wrap">
+      <span class="mark">WEG</span>
+      <div>
+        <a class="brand" href="/app">WEG Portal · {{.Tenant.Address}}</a>
+        <div class="user">Angemeldet als {{.DisplayName}} · Rolle: {{.Role}}</div>
+      </div>
     </div>
     <div class="top-actions">
       <a class="link-button" href="/app">Zurück</a>
+      <span class="version">{{.AppVersion}}</span>
       <form method="post" action="/auth/logout"><button type="submit">Abmelden</button></form>
     </div>
   </header>
   <main>
     <div>
-      <h1>Benutzer & Rechte</h1>
+      <h1>Benutzer &amp; Rechte</h1>
       <p class="muted">Lokale Verwaltung der eingeladenen E-Mail-Adressen und ihrer Rollen.</p>
     </div>
     <div class="layout">
-      <section>
-        <h2>Zugänge</h2>
+      <section class="panel">
+        <div class="kicker">Zugänge</div>
         <p class="muted">Aktuell kommt diese Liste aus der lokalen Umgebungskonfiguration.</p>
         <table aria-label="Benutzerliste">
           <thead>
@@ -4242,9 +3719,9 @@ const pageTemplates = `
           </tbody>
         </table>
       </section>
-      <div class="permissions">
-        <section>
-          <h2>Rechtegruppen</h2>
+      <div class="stack">
+        <section class="panel">
+          <div class="kicker">Rechtegruppen</div>
           <div class="permissions">
             <div class="permission"><strong>Admin</strong><p class="muted">Zugänge verwalten, Rollen setzen und Portalbereiche vorbereiten.</p></div>
             <div class="permission"><strong>Bewohner</strong><p class="muted">Aushang, Dokumente, Anliegen und Abstimmungen nutzen.</p></div>
@@ -4252,8 +3729,8 @@ const pageTemplates = `
             <div class="permission"><strong>Beirat</strong><p class="muted">Vorgemerkt für spätere Moderation und Freigaben.</p></div>
           </div>
         </section>
-        <section>
-          <h2>Einladung vorbereiten</h2>
+        <section class="panel">
+          <div class="kicker">Einladung vorbereiten</div>
           <p class="muted">Noch ohne Speichern, damit der lokale Prototyp keine falschen Versprechen macht.</p>
           <form class="invite">
             <input type="text" placeholder="Titel" disabled>

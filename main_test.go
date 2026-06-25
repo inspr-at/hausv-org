@@ -68,6 +68,22 @@ func TestRunHealthcheckRejectsWrongPayload(t *testing.T) {
 	}
 }
 
+func TestBuildLabelUsesSemverAndCommit(t *testing.T) {
+	origVersion := appVersion
+	origCommit := gitCommit
+	t.Cleanup(func() {
+		appVersion = origVersion
+		gitCommit = origCommit
+	})
+
+	appVersion = "v0.1.0"
+	gitCommit = "abc1234"
+
+	if got := buildLabel(); got != "0.1.0 (abc1234)" {
+		t.Fatalf("build label = %q, want semver and commit", got)
+	}
+}
+
 func TestSessionSecretRequiredForPublicBaseURL(t *testing.T) {
 	t.Setenv("SESSION_KEY", "")
 
