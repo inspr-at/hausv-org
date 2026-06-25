@@ -24,6 +24,11 @@ WEG_USERS_JSON=<json-array>
 HA_TOKEN=<home-assistant-long-lived-access-token>
 SMTP_USER=resend
 SMTP_PASS=<resend-api-key>
+OIDC_ISSUER=https://auth.inspr.at
+OIDC_CLIENT_ID=<zitadel-web-app-client-id>
+OIDC_CLIENT_SECRET=<zitadel-web-app-client-secret-if-configured>
+OIDC_PROVIDER_NAME=Zitadel
+SESSION_TTL=720h
 ```
 
 Production mail is sent directly through Resend SMTP. Verify `notify.hausv.org` in
@@ -32,6 +37,51 @@ API key only in agenix as `SMTP_PASS`. The production sender is:
 
 ```text
 WEG Portal <noreply@notify.hausv.org>
+```
+
+## Zitadel SSO
+
+Create a Web/OIDC application in Zitadel for the portal.
+
+Use this redirect URI exactly:
+
+```text
+https://jhw22.hausv.org/auth/oidc/callback
+```
+
+Use this post-logout URI if Zitadel asks for one:
+
+```text
+https://jhw22.hausv.org/
+```
+
+The portal requests these scopes:
+
+```text
+openid email profile
+```
+
+Authentication and authorization are separate:
+
+- Zitadel authenticates the person and provides a verified email address.
+- The portal only logs the user in when that email is present in
+  `WEG_USERS_JSON`, `ADMIN_EMAILS`, or `INVITE_EMAILS` for the active tenant.
+- Per-user login methods can be restricted in `WEG_USERS_JSON` via
+  `auth_methods`: `["email"]`, `["oidc"]`, or `["email","oidc"]`.
+
+Example user snippet:
+
+```json
+{
+  "email": "joerg.lehner@gmx.at",
+  "title": "Dr.",
+  "first_name": "Jörg",
+  "last_name": "Lehner",
+  "role": "resident",
+  "tenants": ["jhw22"],
+  "permissions": ["parking"],
+  "auth_methods": ["oidc"]
+}
 ```
 
 Parking accounting is stateful. On csb1 the container writes monthly paid flags,

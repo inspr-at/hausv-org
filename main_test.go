@@ -5,6 +5,7 @@ import (
 	"math"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -57,6 +58,49 @@ func TestSessionSecretCanBeEphemeralForLocalDev(t *testing.T) {
 	}
 	if len(secret) != 32 {
 		t.Fatalf("generated session secret length = %d, want 32", len(secret))
+	}
+}
+
+func TestSignedSessionRoundTripSurvivesNewStore(t *testing.T) {
+	secret := []byte(strings.Repeat("s", 32))
+	first := newSessionStore(secret)
+
+	token, _, err := first.Put("Markus@Barta.com", "JHW22", authMethodOIDC, time.Hour)
+	if err != nil {
+		t.Fatalf("put session: %v", err)
+	}
+
+	second := newSessionStore(secret)
+	email, tenantSlug, authMethod, ok := second.Get(token)
+	if !ok {
+		t.Fatal("session should verify in a new store with the same secret")
+	}
+	if email != "markus@barta.com" || tenantSlug != "jhw22" || authMethod != authMethodOIDC {
+		t.Fatalf("unexpected session claims: %s %s %s", email, tenantSlug, authMethod)
+	}
+
+	other := newSessionStore([]byte(strings.Repeat("x", 32)))
+	if _, _, _, ok := other.Get(token); ok {
+		t.Fatal("session should not verify with a different secret")
+	}
+}
+
+func TestParseUserProfilesNormalizesAuthMethods(t *testing.T) {
+	raw := `[{"email":"joerg.lehner@gmx.at","first_name":"Jörg","last_name":"Lehner","tenants":["jhw22"],"auth_methods":["zitadel"]}]`
+
+	profiles, err := parseUserProfiles(raw, map[string]struct{}{}, map[string]struct{}{}, "jhw22")
+	if err != nil {
+		t.Fatalf("parse profiles: %v", err)
+	}
+	profile := profiles["joerg.lehner@gmx.at"]
+	if !profile.AllowsAuthMethod(authMethodOIDC) {
+		t.Fatal("profile should allow OIDC")
+	}
+	if profile.AllowsAuthMethod(authMethodEmail) {
+		t.Fatal("profile should not allow email login")
+	}
+	if got := profile.UserRow().AuthLabel; got != "Zitadel SSO" {
+		t.Fatalf("auth label = %q", got)
 	}
 }
 

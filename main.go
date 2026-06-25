@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -26,7 +28,9 @@ import (
 	"sync"
 	"time"
 
+	oidc "github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gorilla/websocket"
+	"golang.org/x/oauth2"
 )
 
 //go:embed assets/*
@@ -36,6 +40,8 @@ const (
 	roleAdmin         = "Admin"
 	roleResident      = "Bewohner"
 	permissionParking = "parking"
+	authMethodEmail   = "email"
+	authMethodOIDC    = "oidc"
 )
 
 type app struct {
@@ -49,8 +55,11 @@ type app struct {
 	admins                map[string]struct{}
 	profiles              map[string]userProfile
 	localDevLogin         bool
+	sessionTTL            time.Duration
 	tokens                *tokenStore
 	sessions              *sessionStore
+	oidc                  *oidcLogin
+	oidcFlows             *oidcFlowStore
 	mailer                mailer
 	templates             *template.Template
 	parkingStore          *parkingStore
@@ -72,15 +81,44 @@ type loginToken struct {
 }
 
 type sessionStore struct {
-	mu    sync.Mutex
-	items map[string]session
+	mu      sync.Mutex
+	secret  []byte
+	revoked map[string]time.Time
 }
 
 type session struct {
-	email      string
-	role       string
-	tenantSlug string
-	expiresAt  time.Time
+	Email      string `json:"email"`
+	TenantSlug string `json:"tenant_slug"`
+	AuthMethod string `json:"auth_method"`
+	ExpiresAt  int64  `json:"expires_at"`
+}
+
+type oidcLogin struct {
+	providerName string
+	issuer       string
+	clientID     string
+	clientSecret string
+	redirectURL  string
+	provider     *oidc.Provider
+	verifier     *oidc.IDTokenVerifier
+}
+
+type oidcFlowStore struct {
+	mu    sync.Mutex
+	items map[string]oidcFlow
+}
+
+type oidcFlow struct {
+	tenantSlug   string
+	nonce        string
+	codeVerifier string
+	expiresAt    time.Time
+	used         bool
+}
+
+type oidcUserClaims struct {
+	Email         string `json:"email"`
+	EmailVerified *bool  `json:"email_verified"`
 }
 
 type mailer interface {
@@ -267,6 +305,8 @@ func main() {
 	mux.HandleFunc("GET /", a.home)
 	mux.HandleFunc("POST /auth/request", a.requestLogin)
 	mux.HandleFunc("GET /auth/verify", a.verifyLogin)
+	mux.HandleFunc("GET /auth/oidc/start", a.startOIDCLogin)
+	mux.HandleFunc("GET /auth/oidc/callback", a.finishOIDCLogin)
 	mux.HandleFunc("POST /auth/logout", a.logout)
 	mux.HandleFunc("GET /app", a.portal)
 	mux.HandleFunc("GET /app/parking", a.parking)
@@ -335,8 +375,21 @@ func newApp() (*app, error) {
 	if err := mailTransport.Validate(); err != nil {
 		return nil, err
 	}
-	if publicURL && !mailTransport.Configured() {
-		return nil, fmt.Errorf("SMTP_HOST and MAIL_FROM are required when BASE_URL is public")
+	oidcCtx, cancelOIDC := context.WithTimeout(context.Background(), 10*time.Second)
+	oidcLogin, err := newOIDCLogin(
+		oidcCtx,
+		env("OIDC_ISSUER", ""),
+		env("OIDC_CLIENT_ID", ""),
+		strings.TrimSpace(os.Getenv("OIDC_CLIENT_SECRET")),
+		env("OIDC_REDIRECT_URL", ""),
+		env("OIDC_PROVIDER_NAME", "Zitadel"),
+	)
+	cancelOIDC()
+	if err != nil {
+		return nil, err
+	}
+	if publicURL && !mailTransport.Configured() && !oidcLogin.Configured() {
+		return nil, fmt.Errorf("SMTP or OIDC login is required when BASE_URL is public")
 	}
 
 	parkingDataPath := env("PARKING_DATA_PATH", "tmp/parking.json")
@@ -352,6 +405,10 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid PARKING_HISTORY_START")
 	}
+	sessionTTL, err := parseDuration(env("SESSION_TTL", "720h"))
+	if err != nil || sessionTTL <= 0 {
+		return nil, fmt.Errorf("invalid SESSION_TTL")
+	}
 
 	return &app{
 		baseURL:       baseURL,
@@ -364,11 +421,14 @@ func newApp() (*app, error) {
 		admins:        admins,
 		profiles:      profiles,
 		localDevLogin: localDevLogin,
+		sessionTTL:    sessionTTL,
 		tokens: &tokenStore{
 			secret: secret,
 			items:  map[string]loginToken{},
 		},
-		sessions:              &sessionStore{items: map[string]session{}},
+		sessions:              newSessionStore(secret),
+		oidc:                  oidcLogin,
+		oidcFlows:             &oidcFlowStore{items: map[string]oidcFlow{}},
 		mailer:                mailTransport,
 		templates:             tmpl,
 		parkingStore:          parkingStore,
@@ -390,18 +450,25 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.render(w, "home", map[string]any{
-		"Title":          "WEG Portal " + tenant.Address,
-		"Tenant":         tenant,
-		"Email":          email,
-		"Sent":           r.URL.Query().Get("sent") == "1",
-		"MailConfigured": a.mailer.Configured(),
-		"DevLoginLink":   "",
-		"Denied":         r.URL.Query().Get("denied") == "1",
+		"Title":               "WEG Portal " + tenant.Address,
+		"Tenant":              tenant,
+		"Email":               email,
+		"Sent":                r.URL.Query().Get("sent") == "1",
+		"MailConfigured":      a.mailer.Configured(),
+		"DevLoginLink":        "",
+		"Denied":              r.URL.Query().Get("denied") == "1",
+		"OIDCConfigured":      a.oidc.Configured(),
+		"OIDCProviderName":    a.oidc.ProviderName(),
+		"EmailLoginAvailable": a.emailLoginAvailable(),
 	})
 }
 
 func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
+	if !a.emailLoginAvailable() {
+		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
+		return
+	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
@@ -412,7 +479,7 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
 		return
 	}
-	if !a.isAllowed(email, tenant.Slug) {
+	if !a.isAllowed(email, tenant.Slug) || !a.isAuthMethodAllowed(email, tenant.Slug, authMethodEmail) {
 		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
 		return
 	}
@@ -427,13 +494,16 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	link := a.publicBaseURL(r, tenant) + "/auth/verify?token=" + url.QueryEscape(token)
 	if a.localDevLogin && !a.mailer.Configured() {
 		a.render(w, "home", map[string]any{
-			"Title":          "WEG Portal " + tenant.Address,
-			"Tenant":         tenant,
-			"Email":          email,
-			"Sent":           true,
-			"MailConfigured": false,
-			"DevLoginLink":   link,
-			"Denied":         false,
+			"Title":               "WEG Portal " + tenant.Address,
+			"Tenant":              tenant,
+			"Email":               email,
+			"Sent":                true,
+			"MailConfigured":      false,
+			"DevLoginLink":        link,
+			"Denied":              false,
+			"OIDCConfigured":      a.oidc.Configured(),
+			"OIDCProviderName":    a.oidc.ProviderName(),
+			"EmailLoginAvailable": a.emailLoginAvailable(),
 		})
 		return
 	}
@@ -455,24 +525,156 @@ func (a *app) verifyLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sid, err := randomToken(32)
-	if err != nil {
+	if err := a.startSession(w, email, tenantSlug, authMethodEmail); err != nil {
 		http.Error(w, "Could not create session", http.StatusInternalServerError)
 		return
 	}
-	role := a.roleFor(email, tenantSlug)
-	a.sessions.Put(sid, email, role, tenantSlug, 12*time.Hour)
+	http.Redirect(w, r, "/app", http.StatusSeeOther)
+}
 
+func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
+	if !a.oidc.Configured() {
+		http.NotFound(w, r)
+		return
+	}
+	tenant := a.tenantForRequest(r)
+	state, err := randomToken(32)
+	if err != nil {
+		http.Error(w, "Could not start SSO login", http.StatusInternalServerError)
+		return
+	}
+	nonce, err := randomToken(32)
+	if err != nil {
+		http.Error(w, "Could not start SSO login", http.StatusInternalServerError)
+		return
+	}
+	codeVerifier, err := randomToken(32)
+	if err != nil {
+		http.Error(w, "Could not start SSO login", http.StatusInternalServerError)
+		return
+	}
+	a.oidcFlows.Put(state, oidcFlow{
+		tenantSlug:   tenant.Slug,
+		nonce:        nonce,
+		codeVerifier: codeVerifier,
+	}, 10*time.Minute)
+
+	redirectURL := a.oidc.RedirectURL(r, tenant, a.publicBaseURL(r, tenant))
+	oauthConfig := a.oidc.OAuthConfig(redirectURL)
+	authCodeURL := oauthConfig.AuthCodeURL(
+		state,
+		oidc.Nonce(nonce),
+		oauth2.SetAuthURLParam("code_challenge", pkceChallenge(codeVerifier)),
+		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
+	)
+	http.Redirect(w, r, authCodeURL, http.StatusSeeOther)
+}
+
+func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
+	if !a.oidc.Configured() {
+		http.NotFound(w, r)
+		return
+	}
+	if errText := strings.TrimSpace(r.URL.Query().Get("error")); errText != "" {
+		log.Printf("oidc login failed: %s", errText)
+		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
+		return
+	}
+	flow, ok := a.oidcFlows.Consume(r.URL.Query().Get("state"))
+	if !ok {
+		http.Error(w, "Diese SSO-Anmeldung ist abgelaufen. Bitte erneut anmelden.", http.StatusUnauthorized)
+		return
+	}
+	tenant, ok := a.tenantBySlug(flow.tenantSlug)
+	if !ok {
+		http.Error(w, "Unknown tenant", http.StatusUnauthorized)
+		return
+	}
+	code := strings.TrimSpace(r.URL.Query().Get("code"))
+	if code == "" {
+		http.Error(w, "SSO-Anmeldung ohne Code.", http.StatusUnauthorized)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+	oauthConfig := a.oidc.OAuthConfig(a.oidc.RedirectURL(r, tenant, a.publicBaseURL(r, tenant)))
+	token, err := oauthConfig.Exchange(
+		ctx,
+		code,
+		oauth2.SetAuthURLParam("code_verifier", flow.codeVerifier),
+	)
+	if err != nil {
+		log.Printf("oidc token exchange failed: %v", err)
+		http.Error(w, "SSO-Anmeldung konnte nicht abgeschlossen werden.", http.StatusUnauthorized)
+		return
+	}
+	rawIDToken, ok := token.Extra("id_token").(string)
+	if !ok || rawIDToken == "" {
+		log.Printf("oidc token exchange returned no id_token")
+		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
+		return
+	}
+	idToken, err := a.oidc.verifier.Verify(ctx, rawIDToken)
+	if err != nil {
+		log.Printf("oidc id_token verification failed: %v", err)
+		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
+		return
+	}
+	if idToken.Nonce != flow.nonce {
+		log.Printf("oidc nonce mismatch")
+		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
+		return
+	}
+
+	claims := oidcUserClaims{}
+	if err := idToken.Claims(&claims); err != nil {
+		log.Printf("oidc claims decode failed: %v", err)
+		http.Error(w, "SSO-Anmeldung konnte nicht gelesen werden.", http.StatusUnauthorized)
+		return
+	}
+	if claims.Email == "" || claims.EmailVerified == nil {
+		userInfo, err := a.oidc.provider.UserInfo(ctx, oauth2.StaticTokenSource(token))
+		if err != nil {
+			log.Printf("oidc userinfo failed: %v", err)
+		} else {
+			var extra oidcUserClaims
+			if err := userInfo.Claims(&extra); err == nil {
+				claims.Merge(extra)
+			}
+		}
+	}
+	email := normalizeEmail(claims.Email)
+	if email == "" || claims.EmailVerified == nil || !*claims.EmailVerified {
+		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
+		return
+	}
+	if !a.isAllowed(email, tenant.Slug) || !a.isAuthMethodAllowed(email, tenant.Slug, authMethodOIDC) {
+		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
+		return
+	}
+	if err := a.startSession(w, email, tenant.Slug, authMethodOIDC); err != nil {
+		http.Error(w, "Could not create session", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/app", http.StatusSeeOther)
+}
+
+func (a *app) startSession(w http.ResponseWriter, email string, tenantSlug string, authMethod string) error {
+	token, expiresAt, err := a.sessions.Put(email, tenantSlug, authMethod, a.sessionTTL)
+	if err != nil {
+		return err
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "weg_session",
-		Value:    sid,
+		Value:    token,
 		Path:     "/",
-		Expires:  time.Now().Add(12 * time.Hour),
+		Expires:  expiresAt,
 		HttpOnly: true,
 		Secure:   a.sessionSecure,
 		SameSite: http.SameSiteLaxMode,
 	})
-	http.Redirect(w, r, "/app", http.StatusSeeOther)
+	return nil
 }
 
 func (a *app) logout(w http.ResponseWriter, r *http.Request) {
@@ -742,7 +944,14 @@ func (a *app) currentUser(r *http.Request) (string, string, string, bool) {
 	if err != nil {
 		return "", "", "", false
 	}
-	return a.sessions.Get(c.Value)
+	email, tenantSlug, authMethod, ok := a.sessions.Get(c.Value)
+	if !ok {
+		return "", "", "", false
+	}
+	if !a.isAllowed(email, tenantSlug) || !a.isAuthMethodAllowed(email, tenantSlug, authMethod) {
+		return "", "", "", false
+	}
+	return email, a.roleFor(email, tenantSlug), tenantSlug, true
 }
 
 func (a *app) isAllowed(email string, tenantSlug string) bool {
@@ -754,6 +963,22 @@ func (a *app) isAllowed(email string, tenantSlug string) bool {
 	}
 	_, ok := a.allowed[email]
 	return ok
+}
+
+func (a *app) isAuthMethodAllowed(email string, tenantSlug string, authMethod string) bool {
+	authMethod = normalizeAuthMethod(authMethod)
+	if authMethod == "" {
+		return false
+	}
+	profile, ok := a.profiles[normalizeEmail(email)]
+	if !ok || !profile.HasTenant(tenantSlug) {
+		return false
+	}
+	return profile.AllowsAuthMethod(authMethod)
+}
+
+func (a *app) emailLoginAvailable() bool {
+	return a.mailer.Configured() || a.localDevLogin
 }
 
 func (a *app) roleFor(email string, tenantSlug string) string {
@@ -773,10 +998,11 @@ func (a *app) profileFor(email string) userProfile {
 	}
 	role := a.roleFor(email, a.defaultTenant)
 	return userProfile{
-		Email:   email,
-		Role:    role,
-		Status:  "Eingeladen",
-		Tenants: []string{a.defaultTenant},
+		Email:       email,
+		Role:        role,
+		Status:      "Eingeladen",
+		Tenants:     []string{a.defaultTenant},
+		AuthMethods: defaultAuthMethods(),
 	}
 }
 
@@ -1609,6 +1835,7 @@ type userProfile struct {
 	Status      string   `json:"status"`
 	Tenants     []string `json:"tenants"`
 	Permissions []string `json:"permissions"`
+	AuthMethods []string `json:"auth_methods"`
 }
 
 func (p userProfile) DisplayName() string {
@@ -1629,6 +1856,23 @@ func (p userProfile) HasPermission(permission string) bool {
 	permission = strings.ToLower(strings.TrimSpace(permission))
 	for _, item := range p.Permissions {
 		if strings.ToLower(strings.TrimSpace(item)) == permission {
+			return true
+		}
+	}
+	return false
+}
+
+func (p userProfile) AllowsAuthMethod(method string) bool {
+	method = normalizeAuthMethod(method)
+	if method == "" {
+		return false
+	}
+	methods := p.AuthMethods
+	if len(methods) == 0 {
+		methods = defaultAuthMethods()
+	}
+	for _, item := range methods {
+		if normalizeAuthMethod(item) == method {
 			return true
 		}
 	}
@@ -1662,6 +1906,7 @@ func (p userProfile) UserRow() userRow {
 		Status:          p.Status,
 		Tenants:         strings.Join(p.Tenants, ", "),
 		PermissionLabel: permissionLabel(p.Permissions),
+		AuthLabel:       authMethodsLabel(p.AuthMethods),
 	}
 }
 
@@ -1675,6 +1920,7 @@ type userRow struct {
 	Status          string
 	Tenants         string
 	PermissionLabel string
+	AuthLabel       string
 }
 
 func (s *tokenStore) Put(token string, email string, tenantSlug string, ttl time.Duration) {
@@ -1707,27 +1953,233 @@ func (s *tokenStore) digest(token string) string {
 	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 }
 
-func (s *sessionStore) Put(id string, email string, role string, tenantSlug string, ttl time.Duration) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.items[id] = session{email: email, role: role, tenantSlug: tenantSlug, expiresAt: time.Now().Add(ttl)}
+func newSessionStore(secret []byte) *sessionStore {
+	sum := sha256.Sum256(append([]byte("weg-session-aead-v1."), secret...))
+	key := make([]byte, len(sum))
+	copy(key, sum[:])
+	return &sessionStore{
+		secret:  key,
+		revoked: map[string]time.Time{},
+	}
 }
 
-func (s *sessionStore) Get(id string) (string, string, string, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	item, ok := s.items[id]
-	if !ok || time.Now().After(item.expiresAt) {
-		delete(s.items, id)
+func (s *sessionStore) Put(email string, tenantSlug string, authMethod string, ttl time.Duration) (string, time.Time, error) {
+	expiresAt := time.Now().Add(ttl)
+	item := session{
+		Email:      normalizeEmail(email),
+		TenantSlug: normalizeSlug(tenantSlug),
+		AuthMethod: normalizeAuthMethod(authMethod),
+		ExpiresAt:  expiresAt.Unix(),
+	}
+	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" {
+		return "", time.Time{}, fmt.Errorf("invalid session")
+	}
+	payload, err := json.Marshal(item)
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	block, err := aes.NewCipher(s.secret)
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := rand.Read(nonce); err != nil {
+		return "", time.Time{}, err
+	}
+	ciphertext := gcm.Seal(nil, nonce, payload, []byte("weg-session-v1"))
+	token := "v1." + base64.RawURLEncoding.EncodeToString(nonce) + "." + base64.RawURLEncoding.EncodeToString(ciphertext)
+	return token, expiresAt, nil
+}
+
+func (s *sessionStore) Get(token string) (string, string, string, bool) {
+	item, ok := s.verify(token)
+	if !ok {
 		return "", "", "", false
 	}
-	return item.email, item.role, item.tenantSlug, true
-}
-
-func (s *sessionStore) Delete(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.items, id)
+	s.cleanupLocked()
+	if _, revoked := s.revoked[s.revocationKey(token)]; revoked {
+		return "", "", "", false
+	}
+	return item.Email, item.TenantSlug, item.AuthMethod, true
+}
+
+func (s *sessionStore) Delete(token string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cleanupLocked()
+	if item, ok := s.verify(token); ok {
+		s.revoked[s.revocationKey(token)] = time.Unix(item.ExpiresAt, 0)
+	}
+}
+
+func (s *sessionStore) verify(token string) (session, bool) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 || parts[0] != "v1" {
+		return session{}, false
+	}
+	nonce, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return session{}, false
+	}
+	ciphertext, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return session{}, false
+	}
+	block, err := aes.NewCipher(s.secret)
+	if err != nil {
+		return session{}, false
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil || len(nonce) != gcm.NonceSize() {
+		return session{}, false
+	}
+	payload, err := gcm.Open(nil, nonce, ciphertext, []byte("weg-session-v1"))
+	if err != nil {
+		return session{}, false
+	}
+	var item session
+	if err := json.Unmarshal(payload, &item); err != nil {
+		return session{}, false
+	}
+	item.Email = normalizeEmail(item.Email)
+	item.TenantSlug = normalizeSlug(item.TenantSlug)
+	item.AuthMethod = normalizeAuthMethod(item.AuthMethod)
+	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || item.ExpiresAt <= time.Now().Unix() {
+		return session{}, false
+	}
+	return item, true
+}
+
+func (s *sessionStore) revocationKey(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return base64.RawURLEncoding.EncodeToString(sum[:])
+}
+
+func (s *sessionStore) cleanupLocked() {
+	now := time.Now()
+	for key, expiresAt := range s.revoked {
+		if now.After(expiresAt) {
+			delete(s.revoked, key)
+		}
+	}
+}
+
+func newOIDCLogin(ctx context.Context, issuer string, clientID string, clientSecret string, redirectURL string, providerName string) (*oidcLogin, error) {
+	issuer = strings.TrimRight(strings.TrimSpace(issuer), "/")
+	clientID = strings.TrimSpace(clientID)
+	clientSecret = strings.TrimSpace(clientSecret)
+	redirectURL = strings.TrimSpace(redirectURL)
+	providerName = strings.TrimSpace(providerName)
+	if providerName == "" {
+		providerName = "Zitadel"
+	}
+	if issuer == "" && clientID == "" && clientSecret == "" && redirectURL == "" {
+		return &oidcLogin{providerName: providerName}, nil
+	}
+	if issuer == "" || clientID == "" {
+		return nil, fmt.Errorf("OIDC_ISSUER and OIDC_CLIENT_ID are required when OIDC is configured")
+	}
+	if redirectURL != "" {
+		parsed, err := url.Parse(redirectURL)
+		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+			return nil, fmt.Errorf("OIDC_REDIRECT_URL must be an absolute URL")
+		}
+	}
+	provider, err := oidc.NewProvider(ctx, issuer)
+	if err != nil {
+		return nil, fmt.Errorf("OIDC discovery failed")
+	}
+	return &oidcLogin{
+		providerName: providerName,
+		issuer:       issuer,
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		redirectURL:  redirectURL,
+		provider:     provider,
+		verifier:     provider.Verifier(&oidc.Config{ClientID: clientID}),
+	}, nil
+}
+
+func (o *oidcLogin) Configured() bool {
+	return o != nil && o.issuer != "" && o.clientID != "" && o.provider != nil && o.verifier != nil
+}
+
+func (o *oidcLogin) ProviderName() string {
+	if o == nil || o.providerName == "" {
+		return "SSO"
+	}
+	return o.providerName
+}
+
+func (o *oidcLogin) RedirectURL(_ *http.Request, _ tenantConfig, baseURL string) string {
+	if o.redirectURL != "" {
+		return o.redirectURL
+	}
+	return strings.TrimRight(baseURL, "/") + "/auth/oidc/callback"
+}
+
+func (o *oidcLogin) OAuthConfig(redirectURL string) oauth2.Config {
+	return oauth2.Config{
+		ClientID:     o.clientID,
+		ClientSecret: o.clientSecret,
+		Endpoint:     o.provider.Endpoint(),
+		RedirectURL:  redirectURL,
+		Scopes:       []string{"openid", "email", "profile"},
+	}
+}
+
+func (s *oidcFlowStore) Put(state string, flow oidcFlow, ttl time.Duration) {
+	flow.expiresAt = time.Now().Add(ttl)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cleanupLocked()
+	s.items[state] = flow
+}
+
+func (s *oidcFlowStore) Consume(state string) (oidcFlow, bool) {
+	if state == "" {
+		return oidcFlow{}, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cleanupLocked()
+	flow, ok := s.items[state]
+	if !ok || flow.used || time.Now().After(flow.expiresAt) {
+		delete(s.items, state)
+		return oidcFlow{}, false
+	}
+	flow.used = true
+	delete(s.items, state)
+	return flow, true
+}
+
+func (s *oidcFlowStore) cleanupLocked() {
+	now := time.Now()
+	for state, flow := range s.items {
+		if now.After(flow.expiresAt) {
+			delete(s.items, state)
+		}
+	}
+}
+
+func pkceChallenge(verifier string) string {
+	sum := sha256.Sum256([]byte(verifier))
+	return base64.RawURLEncoding.EncodeToString(sum[:])
+}
+
+func (c *oidcUserClaims) Merge(other oidcUserClaims) {
+	if c.Email == "" {
+		c.Email = other.Email
+	}
+	if c.EmailVerified == nil {
+		c.EmailVerified = other.EmailVerified
+	}
 }
 
 func (m smtpMailer) Configured() bool {
@@ -2259,6 +2711,11 @@ func parseUserProfiles(raw string, allowed map[string]struct{}, admins map[strin
 			}
 			profile.Tenants = normalizeTenants(profile.Tenants, defaultTenant)
 			profile.Permissions = normalizePermissions(profile.Permissions)
+			authMethods, err := normalizeAuthMethods(profile.AuthMethods)
+			if err != nil {
+				return nil, err
+			}
+			profile.AuthMethods = authMethods
 			out[email] = profile
 		}
 	}
@@ -2267,13 +2724,13 @@ func parseUserProfiles(raw string, allowed map[string]struct{}, admins map[strin
 		if _, ok := out[email]; ok {
 			continue
 		}
-		out[email] = userProfile{Email: email, Role: roleAdmin, Status: "Aktiv", Tenants: []string{defaultTenant}}
+		out[email] = userProfile{Email: email, Role: roleAdmin, Status: "Aktiv", Tenants: []string{defaultTenant}, AuthMethods: defaultAuthMethods()}
 	}
 	for email := range allowed {
 		if _, ok := out[email]; ok {
 			continue
 		}
-		out[email] = userProfile{Email: email, Role: roleResident, Status: "Eingeladen", Tenants: []string{defaultTenant}}
+		out[email] = userProfile{Email: email, Role: roleResident, Status: "Eingeladen", Tenants: []string{defaultTenant}, AuthMethods: defaultAuthMethods()}
 	}
 	return out, nil
 }
@@ -2305,6 +2762,64 @@ func normalizePermissions(raw []string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func defaultAuthMethods() []string {
+	return []string{authMethodEmail, authMethodOIDC}
+}
+
+func normalizeAuthMethods(raw []string) ([]string, error) {
+	if len(raw) == 0 {
+		return defaultAuthMethods(), nil
+	}
+	seen := map[string]struct{}{}
+	out := []string{}
+	for _, item := range raw {
+		method := normalizeAuthMethod(item)
+		if method == "" {
+			return nil, fmt.Errorf("invalid auth method %q", item)
+		}
+		if _, ok := seen[method]; ok {
+			continue
+		}
+		seen[method] = struct{}{}
+		out = append(out, method)
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("at least one auth method is required")
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+func normalizeAuthMethod(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case authMethodEmail, "mail", "magic", "magic-link", "magic_link":
+		return authMethodEmail
+	case authMethodOIDC, "sso", "zitadel", "citatel":
+		return authMethodOIDC
+	default:
+		return ""
+	}
+}
+
+func authMethodsLabel(methods []string) string {
+	normalized, err := normalizeAuthMethods(methods)
+	if err != nil {
+		return "Ungültig"
+	}
+	labels := make([]string, 0, len(normalized))
+	for _, method := range normalized {
+		switch method {
+		case authMethodEmail:
+			labels = append(labels, "E-Mail-Link")
+		case authMethodOIDC:
+			labels = append(labels, "Zitadel SSO")
+		default:
+			labels = append(labels, method)
+		}
+	}
+	return strings.Join(labels, ", ")
 }
 
 func normalizeTenants(raw []string, fallback string) []string {
@@ -2609,6 +3124,34 @@ const pageTemplates = `
       font-weight: 800;
     }
     .dev-link:hover { border-color: rgba(39, 100, 71, .5); }
+    .sso-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      border-radius: 8px;
+      background: #163f5f;
+      color: white;
+      text-decoration: none;
+      font-weight: 850;
+      margin-bottom: 14px;
+    }
+    .sso-button:hover { background: #0f314b; }
+    .divider {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 12px 0;
+    }
+    .divider::before,
+    .divider::after {
+      content: "";
+      height: 1px;
+      background: var(--line);
+    }
     .meta {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2678,18 +3221,24 @@ const pageTemplates = `
       </div>
       <section class="login" aria-label="Anmeldung">
         <h2>Anmelden</h2>
-        <p>Geben Sie Ihre E-Mail-Adresse ein. Wenn sie eingeladen ist, schicken wir einen einmaligen Anmeldelink.</p>
+        <p>{{if .OIDCConfigured}}Melden Sie sich per SSO an oder verwenden Sie einen einmaligen E-Mail-Link.{{else}}Geben Sie Ihre E-Mail-Adresse ein. Wenn sie eingeladen ist, schicken wir einen einmaligen Anmeldelink.{{end}}</p>
+        {{if .OIDCConfigured}}<a class="sso-button" href="/auth/oidc/start">Mit {{.OIDCProviderName}} anmelden</a>{{end}}
+        {{if and .OIDCConfigured .EmailLoginAvailable}}<div class="divider"><span>oder</span></div>{{end}}
         {{if .Sent}}
           <div class="notice">Wenn die Adresse eingeladen ist, wurde ein Link verschickt. Bitte Posteingang prüfen.</div>
           {{if not .MailConfigured}}<div class="notice warn">Mailversand ist lokal noch nicht konfiguriert. In Produktion kommt SMTP aus agenix.</div>{{end}}
           {{if .DevLoginLink}}<a class="dev-link" href="{{.DevLoginLink}}">Lokalen Dev-Login öffnen</a>{{end}}
         {{end}}
         {{if .Denied}}<div class="notice warn">Diese Adresse ist noch nicht eingeladen.</div>{{end}}
-        <form method="post" action="/auth/request">
-          <label for="email">E-Mail-Adresse</label>
-          <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="name@example.com">
-          <button type="submit">Anmeldelink senden</button>
-        </form>
+        {{if .EmailLoginAvailable}}
+          <form method="post" action="/auth/request">
+            <label for="email">E-Mail-Adresse</label>
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="name@example.com">
+            <button type="submit">Anmeldelink senden</button>
+          </form>
+        {{else}}
+          <div class="notice">E-Mail-Anmeldelinks sind nicht aktiv. Bitte SSO verwenden.</div>
+        {{end}}
       </section>
     </main>
     <footer>{{.Tenant.Address}} · Privat für die Hausgemeinschaft</footer>
@@ -3601,6 +4150,7 @@ const pageTemplates = `
               <th>E-Mail</th>
               <th>Rolle</th>
               <th>Rechte</th>
+              <th>Anmeldung</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -3614,6 +4164,7 @@ const pageTemplates = `
               <td>{{.Email}}</td>
               <td><span class="pill">{{.Role}}</span></td>
               <td>{{.PermissionLabel}}</td>
+              <td>{{.AuthLabel}}</td>
               <td>{{.Status}}</td>
             </tr>
             {{end}}
