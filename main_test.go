@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"math"
 	"path/filepath"
@@ -101,6 +102,25 @@ func TestParseUserProfilesNormalizesAuthMethods(t *testing.T) {
 	}
 	if got := profile.UserRow().AuthLabel; got != "Zitadel SSO" {
 		t.Fatalf("auth label = %q", got)
+	}
+}
+
+func TestOIDCLoginDefersUnavailableDiscovery(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	login, err := newOIDCLogin(ctx, "https://auth.invalid.example", "client-id", "", "", "Zitadel")
+	if err != nil {
+		t.Fatalf("new OIDC login should not fail hard when discovery is unavailable: %v", err)
+	}
+	if !login.Configured() {
+		t.Fatal("OIDC should remain configured so discovery can be retried later")
+	}
+	if login.provider != nil || login.verifier != nil {
+		t.Fatal("provider should not be initialized after canceled discovery")
+	}
+	if err := login.EnsureProvider(ctx); err == nil {
+		t.Fatal("retry with canceled context should still report discovery failure")
 	}
 }
 

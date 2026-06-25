@@ -94,6 +94,7 @@ type session struct {
 }
 
 type oidcLogin struct {
+	mu           sync.Mutex
 	providerName string
 	issuer       string
 	clientID     string
@@ -538,6 +539,11 @@ func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tenant := a.tenantForRequest(r)
+	if err := a.oidc.EnsureProvider(r.Context()); err != nil {
+		log.Printf("oidc discovery failed during login start: %v", err)
+		http.Error(w, "SSO ist gerade nicht erreichbar. Bitte später erneut versuchen oder den E-Mail-Link verwenden.", http.StatusServiceUnavailable)
+		return
+	}
 	state, err := randomToken(32)
 	if err != nil {
 		http.Error(w, "Could not start SSO login", http.StatusInternalServerError)
@@ -573,6 +579,11 @@ func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
 func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	if !a.oidc.Configured() {
 		http.NotFound(w, r)
+		return
+	}
+	if err := a.oidc.EnsureProvider(r.Context()); err != nil {
+		log.Printf("oidc discovery failed during login callback: %v", err)
+		http.Error(w, "SSO ist gerade nicht erreichbar. Bitte später erneut versuchen.", http.StatusServiceUnavailable)
 		return
 	}
 	if errText := strings.TrimSpace(r.URL.Query().Get("error")); errText != "" {
@@ -2091,23 +2102,21 @@ func newOIDCLogin(ctx context.Context, issuer string, clientID string, clientSec
 			return nil, fmt.Errorf("OIDC_REDIRECT_URL must be an absolute URL")
 		}
 	}
-	provider, err := oidc.NewProvider(ctx, issuer)
-	if err != nil {
-		return nil, fmt.Errorf("OIDC discovery failed")
-	}
-	return &oidcLogin{
+	login := &oidcLogin{
 		providerName: providerName,
 		issuer:       issuer,
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		redirectURL:  redirectURL,
-		provider:     provider,
-		verifier:     provider.Verifier(&oidc.Config{ClientID: clientID}),
-	}, nil
+	}
+	if err := login.EnsureProvider(ctx); err != nil {
+		log.Printf("oidc discovery unavailable at startup, will retry on login: %v", err)
+	}
+	return login, nil
 }
 
 func (o *oidcLogin) Configured() bool {
-	return o != nil && o.issuer != "" && o.clientID != "" && o.provider != nil && o.verifier != nil
+	return o != nil && o.issuer != "" && o.clientID != ""
 }
 
 func (o *oidcLogin) ProviderName() string {
@@ -2132,6 +2141,24 @@ func (o *oidcLogin) OAuthConfig(redirectURL string) oauth2.Config {
 		RedirectURL:  redirectURL,
 		Scopes:       []string{"openid", "email", "profile"},
 	}
+}
+
+func (o *oidcLogin) EnsureProvider(ctx context.Context) error {
+	if !o.Configured() {
+		return fmt.Errorf("OIDC is not configured")
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.provider != nil && o.verifier != nil {
+		return nil
+	}
+	provider, err := oidc.NewProvider(ctx, o.issuer)
+	if err != nil {
+		return fmt.Errorf("OIDC discovery failed")
+	}
+	o.provider = provider
+	o.verifier = provider.Verifier(&oidc.Config{ClientID: o.clientID})
+	return nil
 }
 
 func (s *oidcFlowStore) Put(state string, flow oidcFlow, ttl time.Duration) {
