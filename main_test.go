@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -39,6 +41,30 @@ func TestSMTPMailerRequiresPairedCredentials(t *testing.T) {
 
 	if err := m.Validate(); err == nil {
 		t.Fatal("mailer should reject partial smtp credentials")
+	}
+}
+
+func TestRunHealthcheckAcceptsExpectedPayload(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"service":"weg-portal","status":"ok"}`))
+	}))
+	defer server.Close()
+
+	if err := runHealthcheck(server.URL); err != nil {
+		t.Fatalf("healthcheck should accept expected payload: %v", err)
+	}
+}
+
+func TestRunHealthcheckRejectsWrongPayload(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"service":"other","status":"ok"}`))
+	}))
+	defer server.Close()
+
+	if err := runHealthcheck(server.URL); err == nil {
+		t.Fatal("healthcheck should reject unexpected payload")
 	}
 }
 

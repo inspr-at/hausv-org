@@ -293,6 +293,18 @@ type parkingHourView struct {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		target := "http://127.0.0.1:8080/healthz"
+		if len(os.Args) > 2 {
+			target = os.Args[2]
+		}
+		if err := runHealthcheck(target); err != nil {
+			log.Printf("healthcheck failed: %v", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	a, err := newApp()
 	if err != nil {
 		log.Fatal(err)
@@ -328,6 +340,36 @@ func main() {
 	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
 	}
+}
+
+func runHealthcheck(target string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status %s", resp.Status)
+	}
+	var payload struct {
+		Service string `json:"service"`
+		Status  string `json:"status"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 512)).Decode(&payload); err != nil {
+		return fmt.Errorf("invalid health response: %w", err)
+	}
+	if payload.Service != "weg-portal" || payload.Status != "ok" {
+		return fmt.Errorf("unexpected health response service=%q status=%q", payload.Service, payload.Status)
+	}
+	return nil
 }
 
 func newApp() (*app, error) {
