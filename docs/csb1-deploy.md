@@ -26,10 +26,13 @@ SMTP_USER=resend
 SMTP_PASS=<resend-api-key>
 OIDC_ISSUER=https://auth.inspr.at
 OIDC_CLIENT_ID=<zitadel-web-app-client-id>
-OIDC_CLIENT_SECRET=<zitadel-web-app-client-secret-if-configured>
 OIDC_PROVIDER_NAME=Zitadel
 SESSION_TTL=720h
 ```
+
+For Zitadel Web apps using PKCE, `OIDC_CLIENT_SECRET` is not needed. Only set
+`OIDC_CLIENT_SECRET` if Zitadel creates a confidential client that explicitly
+requires one.
 
 Production mail is sent directly through Resend SMTP. Verify `notify.hausv.org` in
 Resend first, add the DNS records it gives you in Cloudflare, then store the
