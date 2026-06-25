@@ -3486,6 +3486,7 @@ const pageTemplates = `
     p { margin: 0; }
     form { margin: 0; }
     .muted { color: var(--muted); line-height: 1.45; }
+    .subtle-note { margin-top: 6px; max-width: 720px; font-size: 14px; }
     .page-head {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
@@ -3682,6 +3683,7 @@ const pageTemplates = `
       <div>
         <h1>Parkplatznutzung</h1>
         <p class="muted">Private Lade- und Stellplatzabrechnung für die persönlich abgestimmte Nutzung.</p>
+        <p class="muted subtle-note">Sichtbar nur für berechtigte Personen und gedacht für die private Abstimmung der Stellplatz- und Lade-Nutzung.</p>
       </div>
       <div class="settings">
         {{if .IsAdmin}}
