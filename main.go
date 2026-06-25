@@ -25,6 +25,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 //go:embed assets/*
@@ -53,6 +55,7 @@ type app struct {
 	templates             *template.Template
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
+	parkingHistoryStart   time.Time
 }
 
 type tokenStore struct {
@@ -121,6 +124,16 @@ type haHistoryState struct {
 	LastChanged time.Time      `json:"last_changed"`
 	LastUpdated time.Time      `json:"last_updated"`
 	Attributes  map[string]any `json:"attributes"`
+}
+
+type haStatistic struct {
+	Start json.RawMessage `json:"start"`
+	End   json.RawMessage `json:"end"`
+	State *float64        `json:"state"`
+	Sum   *float64        `json:"sum"`
+	Mean  *float64        `json:"mean"`
+	Min   *float64        `json:"min"`
+	Max   *float64        `json:"max"`
 }
 
 type parkingTelemetry struct {
@@ -302,6 +315,10 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid PARKING_SAMPLE_INTERVAL")
 	}
+	parkingHistoryStart, err := parseHistoryStart(env("PARKING_HISTORY_START", ""), time.Now())
+	if err != nil {
+		return nil, fmt.Errorf("invalid PARKING_HISTORY_START")
+	}
 
 	return &app{
 		baseURL:       baseURL,
@@ -323,6 +340,7 @@ func newApp() (*app, error) {
 		templates:             tmpl,
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
+		parkingHistoryStart:   parkingHistoryStart,
 	}, nil
 }
 
@@ -803,9 +821,9 @@ func (a *app) parkingTelemetry(ctx context.Context, tenant tenantConfig) parking
 }
 
 func (a *app) parkingAccounting(ctx context.Context, tenant tenantConfig) parkingAccountingView {
-	seedCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
+	seedCtx, cancel := context.WithTimeout(ctx, 12*time.Second)
 	defer cancel()
-	if err := a.seedParkingHistory(seedCtx, tenant, 35*24*time.Hour); err != nil && tenant.HA.baseURL != "" && tenant.HA.token != "" {
+	if err := a.seedParkingHistory(seedCtx, tenant, a.parkingHistoryStart, time.Now()); err != nil && tenant.HA.baseURL != "" && tenant.HA.token != "" {
 		log.Printf("parking history seed failed for %s: %v", tenant.Slug, err)
 	}
 
@@ -825,27 +843,38 @@ func (a *app) parkingAccounting(ctx context.Context, tenant tenantConfig) parkin
 	if len(months) == 0 {
 		view.Message = "Noch nicht genug Messpunkte für eine Monatsabrechnung. Die App sammelt ab jetzt eigene Messpunkte und liest zusätzlich verfügbare Home-Assistant-Historie ein."
 	} else {
-		view.Message = "Kosten werden stündlich aus Zählerdifferenz, aWATTar-Preis und Netzbetreibergebühren berechnet."
+		view.Message = "Kosten werden stündlich aus Zählerdifferenz, aWATTar-Preis und Netzbetreibergebühren berechnet. Historie wird ab " + a.parkingHistoryStart.In(time.Local).Format("02.01.2006") + " aus Home Assistant nachgezogen, soweit dort Statistikdaten vorhanden sind."
 	}
 	return view
 }
 
-func (a *app) seedParkingHistory(ctx context.Context, tenant tenantConfig, lookback time.Duration) error {
+func (a *app) seedParkingHistory(ctx context.Context, tenant tenantConfig, start time.Time, end time.Time) error {
 	ha := tenant.HA
 	if ha.baseURL == "" || ha.token == "" || ha.meterEnergyEntity == "" || ha.priceEntity == "" {
 		return nil
 	}
-	end := time.Now()
-	start := end.Add(-lookback)
-	history, err := ha.History(ctx, start, end, []string{ha.meterEnergyEntity, ha.priceEntity})
+	energySamples, priceSamples, err := ha.Statistics(ctx, start, end)
 	if err != nil {
-		return err
+		log.Printf("parking statistics backfill failed for %s: %v", tenant.Slug, err)
 	}
-	energySamples := samplesFromHistory(history[ha.meterEnergyEntity])
-	priceSamples := samplesFromHistory(history[ha.priceEntity])
+	restStart := end.Add(-35 * 24 * time.Hour)
+	if restStart.Before(start) {
+		restStart = start
+	}
+	history, err := ha.History(ctx, restStart, end, []string{ha.meterEnergyEntity, ha.priceEntity})
+	if err != nil {
+		if len(energySamples) == 0 && len(priceSamples) == 0 {
+			return err
+		}
+		log.Printf("parking REST history fallback failed for %s: %v", tenant.Slug, err)
+		return a.parkingStore.AppendReadings(tenant.Slug, energySamples, priceSamples)
+	}
+	energySamples = append(energySamples, samplesFromHistory(history[ha.meterEnergyEntity])...)
+	priceSamples = append(priceSamples, samplesFromHistory(history[ha.priceEntity])...)
 	if len(energySamples) == 0 && len(priceSamples) == 0 {
 		return nil
 	}
+	log.Printf("parking history seed found %d energy sample(s) and %d price sample(s) for %s", len(energySamples), len(priceSamples), tenant.Slug)
 	return a.parkingStore.AppendReadings(tenant.Slug, energySamples, priceSamples)
 }
 
@@ -868,6 +897,7 @@ func (a *app) startParkingSampler() func() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
+		a.backfillParkingTenants(ctx)
 		a.sampleParkingTenants(ctx)
 		ticker := time.NewTicker(a.parkingSampleInterval)
 		defer ticker.Stop()
@@ -881,6 +911,21 @@ func (a *app) startParkingSampler() func() {
 		}
 	}()
 	return cancel
+}
+
+func (a *app) backfillParkingTenants(ctx context.Context) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	for _, tenant := range a.tenants {
+		if tenant.HA.baseURL == "" || tenant.HA.token == "" {
+			continue
+		}
+		if err := a.seedParkingHistory(ctx, tenant, a.parkingHistoryStart, time.Now()); err != nil {
+			log.Printf("parking startup history seed failed for %s: %v", tenant.Slug, err)
+			continue
+		}
+		log.Printf("parking startup history seed completed for %s", tenant.Slug)
+	}
 }
 
 func (a *app) sampleParkingTenants(ctx context.Context) {
@@ -1131,6 +1176,75 @@ func samplesFromHistory(history []haHistoryState) []parkingNumericSample {
 		return out[i].At.Before(out[j].At)
 	})
 	return out
+}
+
+func samplesFromStatistics(stats []haStatistic, fields ...string) []parkingNumericSample {
+	out := make([]parkingNumericSample, 0, len(stats))
+	for _, stat := range stats {
+		at, err := parseStatisticTime(stat.Start)
+		if err != nil || at.IsZero() {
+			continue
+		}
+		value, ok := statisticValue(stat, fields...)
+		if !ok {
+			continue
+		}
+		out = append(out, parkingNumericSample{At: at.UTC(), Value: value})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].At.Before(out[j].At)
+	})
+	return out
+}
+
+func statisticValue(stat haStatistic, fields ...string) (float64, bool) {
+	for _, field := range fields {
+		switch field {
+		case "state":
+			if stat.State != nil {
+				return *stat.State, true
+			}
+		case "sum":
+			if stat.Sum != nil {
+				return *stat.Sum, true
+			}
+		case "mean":
+			if stat.Mean != nil {
+				return *stat.Mean, true
+			}
+		case "min":
+			if stat.Min != nil {
+				return *stat.Min, true
+			}
+		case "max":
+			if stat.Max != nil {
+				return *stat.Max, true
+			}
+		}
+	}
+	return 0, false
+}
+
+func parseStatisticTime(raw json.RawMessage) (time.Time, error) {
+	raw = json.RawMessage(strings.TrimSpace(string(raw)))
+	if len(raw) == 0 || string(raw) == "null" {
+		return time.Time{}, errors.New("missing statistic time")
+	}
+	if raw[0] == '"' {
+		var value string
+		if err := json.Unmarshal(raw, &value); err != nil {
+			return time.Time{}, err
+		}
+		return time.Parse(time.RFC3339, value)
+	}
+	var value float64
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return time.Time{}, err
+	}
+	if value > 100000000000 {
+		return time.UnixMilli(int64(value)), nil
+	}
+	return time.Unix(int64(value), 0), nil
 }
 
 func priceAt(samples []parkingNumericSample, at time.Time) (float64, bool) {
@@ -1594,6 +1708,100 @@ func (c homeAssistantConfig) History(ctx context.Context, start time.Time, end t
 	return out, nil
 }
 
+func (c homeAssistantConfig) Statistics(ctx context.Context, start time.Time, end time.Time) ([]parkingNumericSample, []parkingNumericSample, error) {
+	if c.baseURL == "" || c.token == "" || c.meterEnergyEntity == "" || c.priceEntity == "" {
+		return nil, nil, errors.New("home assistant not configured")
+	}
+	wsURL, err := c.websocketURL()
+	if err != nil {
+		return nil, nil, err
+	}
+	conn, _, err := websocket.DefaultDialer.DialContext(ctx, wsURL, nil)
+	if err != nil {
+		return nil, nil, errors.New("home assistant websocket connection failed")
+	}
+	defer conn.Close()
+	if deadline, ok := ctx.Deadline(); ok {
+		_ = conn.SetReadDeadline(deadline)
+		_ = conn.SetWriteDeadline(deadline)
+	}
+
+	var authMessage struct {
+		Type string `json:"type"`
+	}
+	if err := conn.ReadJSON(&authMessage); err != nil {
+		return nil, nil, errors.New("home assistant websocket auth start failed")
+	}
+	if authMessage.Type == "auth_required" {
+		if err := conn.WriteJSON(map[string]string{
+			"type":         "auth",
+			"access_token": c.token,
+		}); err != nil {
+			return nil, nil, errors.New("home assistant websocket auth failed")
+		}
+		if err := conn.ReadJSON(&authMessage); err != nil {
+			return nil, nil, errors.New("home assistant websocket auth response failed")
+		}
+	}
+	if authMessage.Type != "auth_ok" {
+		return nil, nil, errors.New("home assistant websocket auth rejected")
+	}
+
+	const requestID = 1
+	if err := conn.WriteJSON(map[string]any{
+		"id":            requestID,
+		"type":          "recorder/statistics_during_period",
+		"start_time":    start.UTC().Format(time.RFC3339),
+		"end_time":      end.UTC().Format(time.RFC3339),
+		"statistic_ids": []string{c.meterEnergyEntity, c.priceEntity},
+		"period":        "hour",
+		"types":         []string{"state", "sum", "mean"},
+	}); err != nil {
+		return nil, nil, errors.New("home assistant websocket statistics request failed")
+	}
+
+	for {
+		var response struct {
+			ID      int                      `json:"id"`
+			Type    string                   `json:"type"`
+			Success bool                     `json:"success"`
+			Error   map[string]any           `json:"error"`
+			Result  map[string][]haStatistic `json:"result"`
+		}
+		if err := conn.ReadJSON(&response); err != nil {
+			return nil, nil, errors.New("home assistant websocket statistics response failed")
+		}
+		if response.ID != requestID {
+			continue
+		}
+		if response.Type != "result" || !response.Success {
+			return nil, nil, errors.New("home assistant websocket statistics rejected")
+		}
+		energySamples := samplesFromStatistics(response.Result[c.meterEnergyEntity], "state", "sum")
+		priceSamples := samplesFromStatistics(response.Result[c.priceEntity], "state", "mean")
+		return energySamples, priceSamples, nil
+	}
+}
+
+func (c homeAssistantConfig) websocketURL() (string, error) {
+	parsed, err := url.Parse(c.baseURL)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return "", errors.New("invalid home assistant base url")
+	}
+	switch parsed.Scheme {
+	case "http":
+		parsed.Scheme = "ws"
+	case "https":
+		parsed.Scheme = "wss"
+	default:
+		return "", errors.New("unsupported home assistant websocket scheme")
+	}
+	parsed.Path = "/api/websocket"
+	parsed.RawQuery = ""
+	parsed.Fragment = ""
+	return parsed.String(), nil
+}
+
 func (s haHistoryState) timestamp() time.Time {
 	if !s.LastChanged.IsZero() {
 		return s.LastChanged
@@ -1642,6 +1850,17 @@ func parseDuration(raw string) (time.Duration, error) {
 		return 0, err
 	}
 	return time.Duration(minutes) * time.Minute, nil
+}
+
+func parseHistoryStart(raw string, now time.Time) (time.Time, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Date(now.Year(), time.January, 1, 0, 0, 0, 0, time.Local), nil
+	}
+	if t, err := time.ParseInLocation("2006-01-02", raw, time.Local); err == nil {
+		return t, nil
+	}
+	return time.Parse(time.RFC3339, raw)
 }
 
 func formatInputFloat(value float64) string {

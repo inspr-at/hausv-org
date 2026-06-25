@@ -47,6 +47,13 @@ The compose service bind-mounts that path from:
 /var/lib/csb1-docker/weg-portal
 ```
 
+Historical accounting backfill uses Home Assistant recorder statistics from
+`PARKING_HISTORY_START` onward. For the 2026 rollout this is set in compose as:
+
+```text
+PARKING_HISTORY_START=2026-01-01
+```
+
 Generate a session key without printing it to the terminal:
 
 ```fish

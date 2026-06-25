@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"math"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -138,9 +140,63 @@ func TestParkingStorePersistsPaidFlagAndGridFee(t *testing.T) {
 	}
 }
 
+func TestSamplesFromStatisticsUsesMillisecondsAndPreferredFields(t *testing.T) {
+	start := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	state := 123.45
+	sum := 456.78
+	mean := 0.31
+	stats := []haStatistic{
+		{Start: json.RawMessage(strconvFormatInt(start.UnixMilli())), State: &state, Sum: &sum, Mean: &mean},
+	}
+
+	energy := samplesFromStatistics(stats, "state", "sum")
+	if len(energy) != 1 {
+		t.Fatalf("energy samples = %d, want 1", len(energy))
+	}
+	if !energy[0].At.Equal(start) {
+		t.Fatalf("sample time = %s, want %s", energy[0].At, start)
+	}
+	assertClose(t, energy[0].Value, state)
+
+	price := samplesFromStatistics(stats, "mean")
+	if len(price) != 1 {
+		t.Fatalf("price samples = %d, want 1", len(price))
+	}
+	assertClose(t, price[0].Value, mean)
+}
+
+func TestSamplesFromStatisticsFallsBackWhenColumnsAreOmitted(t *testing.T) {
+	start := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+	sum := 44.5
+	stats := []haStatistic{
+		{Start: json.RawMessage(`"` + start.Format(time.RFC3339) + `"`), Sum: &sum},
+	}
+
+	samples := samplesFromStatistics(stats, "state", "sum")
+	if len(samples) != 1 {
+		t.Fatalf("samples = %d, want 1", len(samples))
+	}
+	assertClose(t, samples[0].Value, sum)
+}
+
+func TestParseHistoryStartDefaultsToCurrentYear(t *testing.T) {
+	now := time.Date(2026, 6, 25, 12, 0, 0, 0, time.UTC)
+	start, err := parseHistoryStart("", now)
+	if err != nil {
+		t.Fatalf("parse history start: %v", err)
+	}
+	if start.Year() != 2026 || start.Month() != time.January || start.Day() != 1 {
+		t.Fatalf("history start = %s, want first day of 2026", start)
+	}
+}
+
 func assertClose(t *testing.T, got float64, want float64) {
 	t.Helper()
 	if math.Abs(got-want) > 0.000001 {
 		t.Fatalf("got %.6f, want %.6f", got, want)
 	}
+}
+
+func strconvFormatInt(value int64) string {
+	return strconv.FormatInt(value, 10)
 }
