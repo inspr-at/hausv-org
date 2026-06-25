@@ -237,13 +237,20 @@ type parkingMonthDetailView struct {
 }
 
 type parkingHourView struct {
-	AtLabel        string
-	KWh            string
-	AverageAwattar string
-	EnergyCost     string
-	GridCost       string
-	TotalCost      string
-	ChartPercent   int
+	AtLabel             string
+	AtTitle             string
+	KWh                 string
+	KWhTitle            string
+	AverageAwattar      string
+	AverageAwattarTitle string
+	EnergyCost          string
+	EnergyCostTitle     string
+	GridCost            string
+	GridCostTitle       string
+	TotalCost           string
+	TotalCostTitle      string
+	WeightTitle         string
+	ChartPercent        int
 }
 
 func main() {
@@ -1573,13 +1580,20 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 			}
 		}
 		view.Hours = append(view.Hours, parkingHourView{
-			AtLabel:        hour.At.In(loc).Format("02.01. 15:04"),
-			KWh:            formatKWh(hour.KWh),
-			AverageAwattar: formatEURPerKWh(averageAwattar),
-			EnergyCost:     formatEUR(hour.EnergyCost),
-			GridCost:       formatEUR(hour.GridCost),
-			TotalCost:      formatEUR(total),
-			ChartPercent:   chartPercent,
+			AtLabel:             hour.At.In(loc).Format("02.01. 15:04"),
+			AtTitle:             hour.At.In(loc).Format("02.01.2006 15:04") + " bis " + hour.At.Add(time.Hour).In(loc).Format("15:04"),
+			KWh:                 formatKWh(hour.KWh),
+			KWhTitle:            "Verbrauch: " + formatPreciseKWh(hour.KWh),
+			AverageAwattar:      formatEURPerKWh(averageAwattar),
+			AverageAwattarTitle: "aWATTar Preis dieser Stunde: " + formatPreciseEURPerKWh(averageAwattar),
+			EnergyCost:          formatEUR(hour.EnergyCost),
+			EnergyCostTitle:     "Stromkosten: " + formatPreciseEUR(hour.EnergyCost) + " = " + formatPreciseKWh(hour.KWh) + " × " + formatPreciseEURPerKWh(averageAwattar),
+			GridCost:            formatEUR(hour.GridCost),
+			GridCostTitle:       "Delta: " + formatPreciseEUR(hour.GridCost) + " = " + formatPreciseKWh(hour.KWh) + " × " + formatPreciseEURPerKWh(data.Settings.GridFeeEURPerKWh),
+			TotalCost:           formatEUR(total),
+			TotalCostTitle:      "Summe: " + formatPreciseEUR(total) + " = Strom " + formatPreciseEUR(hour.EnergyCost) + " + Delta " + formatPreciseEUR(hour.GridCost),
+			WeightTitle:         "Relative Höhe der Stundensumme. 100% entspricht der teuersten Stunde dieses Monats.",
+			ChartPercent:        chartPercent,
 		})
 	}
 	view.HasHours = len(view.Hours) > 0
@@ -2028,6 +2042,18 @@ func formatEURPerKWh(value float64) string {
 
 func formatKWh(value float64) string {
 	return strings.Replace(fmt.Sprintf("%.2f kWh", value), ".", ",", 1)
+}
+
+func formatPreciseEUR(value float64) string {
+	return strings.Replace(fmt.Sprintf("%.6f €", value), ".", ",", 1)
+}
+
+func formatPreciseEURPerKWh(value float64) string {
+	return strings.Replace(fmt.Sprintf("%.6f €/kWh", value), ".", ",", 1)
+}
+
+func formatPreciseKWh(value float64) string {
+	return strings.Replace(fmt.Sprintf("%.6f kWh", value), ".", ",", 1)
 }
 
 func formatMonthLabel(month string, loc *time.Location) string {
@@ -3271,6 +3297,7 @@ const pageTemplates = `
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 780px; }
     th, td { border-bottom: 1px solid var(--line); padding: 10px 8px; text-align: left; font-size: 14px; }
+    th { cursor: help; }
     .amount { font-weight: 850; }
     .bar-cell { min-width: 150px; }
     .bar { height: 9px; border-radius: 999px; background: #e9eee8; overflow: hidden; }
@@ -3295,6 +3322,18 @@ const pageTemplates = `
       padding: 14px;
       line-height: 1.45;
     }
+    .legend {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdfb;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px;
+    }
+    .legend div { min-width: 0; }
+    .legend strong { display: block; margin-bottom: 3px; }
+    .legend span { color: var(--muted); font-size: 13px; line-height: 1.35; }
     @media (max-width: 720px) {
       header { align-items: flex-start; flex-direction: column; }
     }
@@ -3335,30 +3374,39 @@ const pageTemplates = `
     </section>
     <section class="panel">
       <h2>Stundenwerte</h2>
+      <div class="legend" aria-label="Legende für Stundenwerte">
+        <div><strong>Stunde</strong><span>Beginn der Abrechnungsstunde; jede Zeile umfasst diese Stunde.</span></div>
+        <div><strong>Verbrauch</strong><span>Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.</span></div>
+        <div><strong>Ø aWATTar</strong><span>Stündlicher aWATTar-Arbeitspreis ohne Delta.</span></div>
+        <div><strong>Strom</strong><span>Verbrauch × aWATTar-Preis.</span></div>
+        <div><strong>Delta</strong><span>Verbrauch × eingestelltes Netzbetreiber-/Basis-Delta.</span></div>
+        <div><strong>Summe</strong><span>Strom plus Delta; dieser Wert fließt in den Monatsbetrag.</span></div>
+        <div><strong>Gewichtung</strong><span>Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.</span></div>
+      </div>
       {{if .Detail.HasHours}}
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Stunde</th>
-                <th>Verbrauch</th>
-                <th>Ø aWATTar</th>
-                <th>Strom</th>
-                <th>Delta</th>
-                <th>Summe</th>
-                <th>Gewichtung</th>
+                <th title="Beginn der Abrechnungsstunde; jede Zeile umfasst diese Stunde.">Stunde</th>
+                <th title="Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.">Verbrauch</th>
+                <th title="Stündlicher aWATTar-Arbeitspreis ohne Delta.">Ø aWATTar</th>
+                <th title="Verbrauch × aWATTar-Preis.">Strom</th>
+                <th title="Verbrauch × eingestelltes Netzbetreiber-/Basis-Delta.">Delta</th>
+                <th title="Strom plus Delta; dieser Wert fließt in den Monatsbetrag.">Summe</th>
+                <th title="Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.">Gewichtung</th>
               </tr>
             </thead>
             <tbody>
               {{range .Detail.Hours}}
                 <tr>
-                  <td>{{.AtLabel}}</td>
-                  <td>{{.KWh}}</td>
-                  <td>{{.AverageAwattar}}</td>
-                  <td>{{.EnergyCost}}</td>
-                  <td>{{.GridCost}}</td>
-                  <td class="amount">{{.TotalCost}}</td>
-                  <td class="bar-cell"><div class="bar"><span style="width: {{.ChartPercent}}%;"></span></div></td>
+                  <td title="{{.AtTitle}}">{{.AtLabel}}</td>
+                  <td title="{{.KWhTitle}}">{{.KWh}}</td>
+                  <td title="{{.AverageAwattarTitle}}">{{.AverageAwattar}}</td>
+                  <td title="{{.EnergyCostTitle}}">{{.EnergyCost}}</td>
+                  <td title="{{.GridCostTitle}}">{{.GridCost}}</td>
+                  <td class="amount" title="{{.TotalCostTitle}}">{{.TotalCost}}</td>
+                  <td class="bar-cell" title="{{.WeightTitle}}"><div class="bar"><span style="width: {{.ChartPercent}}%;"></span></div></td>
                 </tr>
               {{end}}
             </tbody>
