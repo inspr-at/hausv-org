@@ -675,6 +675,51 @@ type ballotVote struct {
 	At     time.Time `json:"at"`
 }
 
+type ballotView struct {
+	ID               string
+	Title            string
+	Description      string
+	HasDescription   bool
+	Type             string
+	Weighting        string
+	Quorum           string
+	HasQuorum        bool
+	Status           string
+	StatusClass      string
+	OpensAt          string
+	HasOpensAt       bool
+	ClosesAt         string
+	HasClosesAt      bool
+	CreatedAt        string
+	UpdatedAt        string
+	Options          []ballotOptionView
+	CanVote          bool
+	CanManage        bool
+	CanOpen          bool
+	CanClose         bool
+	HasVote          bool
+	VoteOption       string
+	VoteWeight       string
+	VotedAt          string
+	ReadOnlyMessage  string
+	HasResults       bool
+	TotalVotes       int
+	TotalWeight      int
+	TotalWeightLabel string
+	EditDialogID     string
+}
+
+type ballotOptionView struct {
+	Value        string
+	Label        string
+	Selected     bool
+	VoteCount    int
+	Weight       int
+	WeightLabel  string
+	Percent      int
+	PercentStyle string
+}
+
 type issueView struct {
 	ID              string
 	Title           string
@@ -969,7 +1014,8 @@ func main() {
 	mux.HandleFunc("POST /app/dokumente", a.uploadDocument)
 	mux.HandleFunc("POST /app/dokumente/replace", a.replaceDocument)
 	mux.HandleFunc("GET /app/dokumente/{id}/download", a.downloadDocument)
-	mux.HandleFunc("POST /app/abstimmungen", a.createBallot)
+	mux.HandleFunc("GET /app/abstimmungen", a.ballots)
+	mux.HandleFunc("POST /app/abstimmungen", a.submitBallot)
 	mux.HandleFunc("POST /app/abstimmungen/open", a.openBallot)
 	mux.HandleFunc("POST /app/abstimmungen/close", a.closeBallot)
 	mux.HandleFunc("GET /app/kontakte", a.contacts)
@@ -2340,6 +2386,105 @@ func (a *app) isDocumentOwner(tenantSlug string, email string, role string, unit
 	return normalizeRole(role) == roleOwner
 }
 
+func (a *app) ballots(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileForTenant(email, tenant.Slug)
+	isAdmin := hasCapability(role, capabilityPlatformAdmin)
+	canManage := hasCapability(role, capabilityManageVotes)
+	canOversight := hasCapability(role, capabilityOversight)
+	now := time.Now()
+	all := []ballot{}
+	if a.voteStore != nil {
+		all = a.voteStore.ListTenant(tenant.Slug)
+	}
+	open := make([]ballot, 0, len(all))
+	for _, item := range all {
+		if normalizeBallotStatus(item.Status) == ballotStatusOpen {
+			open = append(open, item)
+		}
+	}
+	msg, msgOK := voteMessage(r.URL.Query().Get("vote"))
+	a.render(w, "ballots", map[string]any{
+		"Title":              "Abstimmungen",
+		"Tenant":             tenant,
+		"Email":              email,
+		"DisplayName":        profile.DisplayName(),
+		"Initials":           profile.Initials(),
+		"Role":               role,
+		"IsAdmin":            isAdmin,
+		"CanSeeParking":      isAdmin || profile.HasPermission(permissionParking),
+		"CanManageVotes":     canManage,
+		"CanVote":            hasCapability(role, capabilityVote),
+		"CanOversightVotes":  canOversight,
+		"ActivePage":         "abstimmungen",
+		"Ballots":            a.ballotViewsForActor(tenant.Slug, email, role, open, now, canManage || canOversight),
+		"HasBallots":         len(open) > 0,
+		"BallotsEmpty":       emptyState("Keine offenen Abstimmungen", "Offene Beschlüsse und Umlaufbeschlüsse erscheinen hier."),
+		"ManageBallots":      a.ballotViewsForActor(tenant.Slug, email, role, all, now, true),
+		"HasManageBallots":   len(all) > 0,
+		"ManageBallotsEmpty": emptyState("Noch keine Abstimmung", "Neue Entwürfe werden hier angelegt und anschließend geöffnet."),
+		"VoteMsg":            msg,
+		"VoteOK":             msgOK,
+		"NowInput":           formatLocalDateTimeInput(now),
+	})
+}
+
+func (a *app) submitBallot(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(firstNonEmpty(r.FormValue("ballot_id"), r.FormValue("id"))) != "" || strings.TrimSpace(r.FormValue("option")) != "" {
+		a.castVote(w, r)
+		return
+	}
+	a.createBallot(w, r)
+}
+
+func (a *app) castVote(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if !hasCapability(role, capabilityVote) {
+		http.Error(w, "Dieser Zugang ist für Abstimmungen lesend.", http.StatusForbidden)
+		return
+	}
+	if a.voteStore == nil {
+		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
+		return
+	}
+	id := strings.TrimSpace(firstNonEmpty(r.FormValue("ballot_id"), r.FormValue("id")))
+	option := strings.TrimSpace(r.FormValue("option"))
+	updated, found, err := a.castBallotVote(tenant.Slug, email, id, option, time.Now())
+	if !found {
+		http.Redirect(w, r, "/app/abstimmungen?vote=missing", http.StatusSeeOther)
+		return
+	}
+	if err != nil {
+		log.Printf("ballot vote failed for %s/%s/%s: %v", tenant.Slug, id, redactedEmail(email), err)
+		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
+		return
+	}
+	_ = updated
+	http.Redirect(w, r, "/app/abstimmungen?vote=cast", http.StatusSeeOther)
+}
+
 func (a *app) castBallotVote(tenantSlug string, email string, ballotID string, option string, at time.Time) (ballot, bool, error) {
 	if a == nil || a.voteStore == nil {
 		return ballot{}, false, nil
@@ -2384,6 +2529,202 @@ func (a *app) ballotVoteWeight(tenantSlug string, email string, item ballot) (in
 		}
 	}
 	return 0, false
+}
+
+func (a *app) ballotViewsForActor(tenantSlug string, email string, role string, items []ballot, now time.Time, includeResults bool) []ballotView {
+	out := make([]ballotView, 0, len(items))
+	for _, item := range items {
+		out = append(out, a.ballotViewForActor(tenantSlug, email, role, item, now, includeResults))
+	}
+	return out
+}
+
+func (a *app) ballotViewForActor(tenantSlug string, email string, role string, item ballot, now time.Time, includeResults bool) ballotView {
+	item = normalizeBallot(item)
+	weight, eligible := a.ballotVoteWeight(tenantSlug, email, item)
+	status, statusClass, active := ballotStatusForView(item, now)
+	vote, hasVote := item.Votes[normalizeEmail(email)]
+	view := ballotView{
+		ID:              item.ID,
+		Title:           item.Title,
+		Description:     item.Description,
+		HasDescription:  item.Description != "",
+		Type:            item.Type,
+		Weighting:       ballotWeightingLabel(item.Weighting),
+		Quorum:          formatMiteigentumsanteil(item.QuorumPPM),
+		HasQuorum:       item.QuorumPPM > 0,
+		Status:          status,
+		StatusClass:     statusClass,
+		CreatedAt:       formatLocalDateTime(item.CreatedAt),
+		UpdatedAt:       formatLocalDateTime(item.UpdatedAt),
+		CanManage:       hasCapability(role, capabilityManageVotes),
+		CanVote:         hasCapability(role, capabilityVote) && eligible && active,
+		CanOpen:         normalizeBallotStatus(item.Status) == ballotStatusDraft,
+		CanClose:        normalizeBallotStatus(item.Status) == ballotStatusOpen,
+		HasVote:         hasVote,
+		VoteOption:      vote.Option,
+		VoteWeight:      formatBallotWeight(weight),
+		ReadOnlyMessage: ballotReadOnlyMessage(role, item, eligible, active, hasVote),
+		EditDialogID:    "ballot-" + item.ID,
+	}
+	if !item.OpensAt.IsZero() {
+		view.OpensAt = formatLocalDateTime(item.OpensAt)
+		view.HasOpensAt = true
+	}
+	if !item.ClosesAt.IsZero() {
+		view.ClosesAt = formatLocalDateTime(item.ClosesAt)
+		view.HasClosesAt = true
+	}
+	if hasVote {
+		view.VotedAt = formatLocalDateTime(vote.At)
+		view.VoteWeight = formatBallotWeight(vote.Weight)
+	}
+	if includeResults {
+		view.HasResults = true
+	}
+	results := ballotResultCounts(item)
+	for _, option := range item.Options {
+		result := results.Options[option]
+		percent := 0
+		if results.TotalWeight > 0 {
+			percent = (result.Weight*100 + results.TotalWeight/2) / results.TotalWeight
+		}
+		view.Options = append(view.Options, ballotOptionView{
+			Value:        option,
+			Label:        option,
+			Selected:     hasVote && vote.Option == option,
+			VoteCount:    result.Count,
+			Weight:       result.Weight,
+			WeightLabel:  formatBallotResultWeight(item.Weighting, result.Weight),
+			Percent:      percent,
+			PercentStyle: strconv.Itoa(percent),
+		})
+	}
+	view.TotalVotes = results.TotalVotes
+	view.TotalWeight = results.TotalWeight
+	view.TotalWeightLabel = formatBallotResultWeight(item.Weighting, results.TotalWeight)
+	return view
+}
+
+type ballotResultCount struct {
+	Count  int
+	Weight int
+}
+
+type ballotResultSummary struct {
+	Options     map[string]ballotResultCount
+	TotalVotes  int
+	TotalWeight int
+}
+
+func ballotResultCounts(item ballot) ballotResultSummary {
+	out := ballotResultSummary{Options: map[string]ballotResultCount{}}
+	for _, vote := range item.Votes {
+		if !ballotHasOption(item, vote.Option) || vote.Weight <= 0 {
+			continue
+		}
+		result := out.Options[vote.Option]
+		result.Count++
+		result.Weight += vote.Weight
+		out.Options[vote.Option] = result
+		out.TotalVotes++
+		out.TotalWeight += vote.Weight
+	}
+	return out
+}
+
+func ballotStatusForView(item ballot, now time.Time) (string, string, bool) {
+	if now.IsZero() {
+		now = time.Now()
+	}
+	now = now.UTC()
+	switch normalizeBallotStatus(item.Status) {
+	case ballotStatusOpen:
+		if !item.OpensAt.IsZero() && now.Before(item.OpensAt) {
+			return "Geplant", "status-progress", false
+		}
+		if !item.ClosesAt.IsZero() && !now.Before(item.ClosesAt) {
+			return "Frist abgelaufen", "status-closed", false
+		}
+		return ballotStatusOpen, "status-open", true
+	case ballotStatusClosed:
+		return ballotStatusClosed, "status-closed", false
+	default:
+		return ballotStatusDraft, "status-progress", false
+	}
+}
+
+func ballotReadOnlyMessage(role string, item ballot, eligible bool, active bool, hasVote bool) string {
+	if !active {
+		switch normalizeBallotStatus(item.Status) {
+		case ballotStatusDraft:
+			return "Noch nicht geöffnet."
+		case ballotStatusClosed:
+			return "Abstimmung geschlossen."
+		default:
+			if !item.OpensAt.IsZero() && time.Now().UTC().Before(item.OpensAt) {
+				return "Noch nicht gestartet."
+			}
+			if !item.ClosesAt.IsZero() && !time.Now().UTC().Before(item.ClosesAt) {
+				return "Frist abgelaufen."
+			}
+		}
+	}
+	if hasCapability(role, capabilityVote) {
+		if eligible {
+			if hasVote {
+				return "Stimme abgegeben; bis zur Schließung änderbar."
+			}
+			return ""
+		}
+		return "Kein Stimmgewicht für diesen Zugang hinterlegt."
+	}
+	if hasCapability(role, capabilityOversight) {
+		return "Beirat: lesende Übersicht."
+	}
+	return "Nur Eigentümer können abstimmen."
+}
+
+func formatBallotWeight(weight int) string {
+	if weight <= 0 {
+		return ""
+	}
+	if weight == 1 {
+		return "1 Stimme"
+	}
+	return formatMiteigentumsanteil(weight)
+}
+
+func formatBallotResultWeight(weighting string, weight int) string {
+	if weight <= 0 {
+		return "0"
+	}
+	if normalizeBallotWeighting(weighting) == ballotWeightingPerHead {
+		if weight == 1 {
+			return "1 Stimme"
+		}
+		return strconv.Itoa(weight) + " Stimmen"
+	}
+	return formatMiteigentumsanteil(weight)
+}
+
+func voteMessage(status string) (string, bool) {
+	switch status {
+	case "created":
+		return "Abstimmung angelegt.", true
+	case "opened":
+		return "Abstimmung geöffnet.", true
+	case "closed":
+		return "Abstimmung geschlossen.", true
+	case "cast":
+		return "Stimme gespeichert.", true
+	case "missing":
+		return "Abstimmung nicht gefunden.", false
+	case "invalid":
+		return "Bitte Abstimmung, Option und Berechtigung prüfen.", false
+	default:
+		return "", false
+	}
 }
 
 func documentMessage(status string) (string, bool) {
@@ -11594,6 +11935,26 @@ const pageTemplates = `
     .document-versions summary { cursor: pointer; font-weight: 800; color: var(--gold-ink); }
     .version-list { margin-top: 8px; display: grid; gap: 7px; }
     .version-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 12.5px; }
+    .vote-list { display: grid; gap: 12px; }
+    .vote-card { border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fffefb; padding: 16px; display: grid; gap: 13px; }
+    .vote-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+    .vote-card-head > .pill { justify-self: end; }
+    .vote-card h3 { font-size: 20px; overflow-wrap: anywhere; }
+    .vote-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; color: var(--soft); font-size: 12.5px; font-weight: 700; }
+    .vote-options { display: grid; gap: 8px; }
+    .vote-option { min-height: 42px; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); padding: 10px 12px; color: var(--ink); font-size: 14px; font-weight: 700; }
+    .vote-option input { width: auto; min-height: 0; }
+    .vote-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .vote-result { display: grid; gap: 6px; }
+    .vote-result-row { display: grid; grid-template-columns: minmax(110px,.45fr) minmax(120px,1fr) auto; gap: 10px; align-items: center; color: var(--muted); font-size: 13px; }
+    .vote-result-row strong { color: var(--ink); overflow-wrap: anywhere; }
+    .vote-bar { height: 9px; border-radius: var(--radius-pill); background: #ece5d6; overflow: hidden; }
+    .vote-bar span { display: block; height: 100%; min-width: 2px; border-radius: inherit; background: var(--gold); }
+    .vote-manage-list { display: grid; gap: 8px; }
+    .vote-manage-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; border-bottom: 1px solid var(--line); padding: 10px 0; }
+    .vote-manage-row:last-child { border-bottom: 0; }
+    .vote-manage-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .vote-manage-actions form { margin: 0; }
     .empty { border: 1px solid var(--line); background: var(--panel-soft); color: #5c5f54; border-radius: var(--radius-sm); padding: 14px; line-height: 1.5; }
     .empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 18px; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 14px; align-items: center; color: var(--ink); }
     .empty-state-icon { width: 42px; height: 42px; border-radius: var(--radius-sm); display: grid; place-items: center; background: rgba(200,153,63,.16); color: var(--gold-ink); }
@@ -11634,6 +11995,10 @@ const pageTemplates = `
 	      .quick-row { grid-template-columns: 28px minmax(0,1fr); }
 	      .document-row { grid-template-columns: 1fr; }
 	      .document-side { justify-content: flex-start; }
+	      .vote-card-head, .vote-actions, .vote-manage-row { display: grid; grid-template-columns: 1fr; }
+	      .vote-card-head > .pill { justify-self: start; }
+	      .vote-result-row { grid-template-columns: 1fr; }
+	      .vote-manage-actions { justify-content: flex-start; }
       .quick-row .pill { grid-column: 2; justify-self: start; }
 	      .filter-form { grid-template-columns: 1fr; }
 	      .filter-form.document-filter { grid-template-columns: 1fr; }
@@ -11661,7 +12026,7 @@ const pageTemplates = `
       {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
       <a class="nav-item {{if eq .ActivePage "documents"}}active{{end}}" href="/app/dokumente"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</a>
       <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="/app/anliegen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
-      <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</span>
+      <a class="nav-item {{if eq .ActivePage "abstimmungen"}}active{{end}}" href="/app/abstimmungen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</a>
       {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
       {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Audit-Log</a>{{end}}
       <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>
@@ -12520,6 +12885,154 @@ const pageTemplates = `
             </div>
             <p class="mini">Erlaubt sind PDF, JPG, PNG oder WebP bis {{.MaxDocumentSize}}. Dateien werden nicht öffentlich ausgeliefert.</p>
             <button class="button primary" type="submit">Hochladen</button>
+          </div>
+        </form>
+      </dialog>
+      {{end}}
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "ballots"}}
+{{template "appOpen" .}}
+    <script src="/assets/announcements.js" defer></script>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg><span>/</span><span>Abstimmungen</span></span>
+        {{if .CanManageVotes}}<div class="page-actions"><button class="button primary" type="button" data-dialog="ballot-create" aria-haspopup="dialog" aria-controls="ballot-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Abstimmung anlegen</button></div>{{end}}
+      </div>
+      <section class="page">
+        <div>
+          <h1>Abstimmungen</h1>
+          <p class="lede">Beschlüsse, Umlaufbeschlüsse und Stimmabgabe für Eigentümer der Gemeinschaft.</p>
+        </div>
+        {{if .VoteMsg}}<p class="flash {{if .VoteOK}}ok{{end}}">{{.VoteMsg}}</p>{{end}}
+        <div class="home-grid">
+          <section class="panel">
+            <div class="section-head">
+              <div class="kicker">Offene Abstimmungen</div>
+              {{if .HasBallots}}<span class="pill">{{len .Ballots}} offen</span>{{else}}<span class="pill">Noch leer</span>{{end}}
+            </div>
+            {{if .HasBallots}}
+              <div class="vote-list">
+                {{range .Ballots}}
+                  <article class="vote-card">
+                    <div class="vote-card-head">
+                      <div>
+                        <h3>{{.Title}}</h3>
+                        <div class="vote-meta">
+                          <span class="pill {{.StatusClass}}">{{.Status}}</span>
+                          <span>{{.Type}}</span>
+                          <span>{{.Weighting}}</span>
+                          {{if .HasQuorum}}<span>Quorum {{.Quorum}}</span>{{end}}
+                          {{if .HasOpensAt}}<span>ab {{.OpensAt}}</span>{{end}}
+                          {{if .HasClosesAt}}<span>bis {{.ClosesAt}}</span>{{end}}
+                        </div>
+                      </div>
+                      {{if .HasVote}}<span class="pill ok">Stimme gespeichert</span>{{end}}
+                    </div>
+                    {{if .HasDescription}}<p class="muted">{{.Description}}</p>{{end}}
+                    {{if .CanVote}}
+                      <form method="post" action="/app/abstimmungen">
+                        <input type="hidden" name="ballot_id" value="{{.ID}}">
+                        <div class="vote-options">
+                          {{range .Options}}
+                            <label class="vote-option"><input type="radio" name="option" value="{{.Value}}" required{{if .Selected}} checked{{end}}> <span>{{.Label}}</span></label>
+                          {{end}}
+                        </div>
+                        <div class="vote-actions">
+                          <span class="mini">{{if .HasVote}}Aktuell: {{.VoteOption}} · {{.VoteWeight}} · {{.VotedAt}}{{else}}Stimmgewicht: {{.VoteWeight}}{{end}}</span>
+                          <button class="button primary" type="submit">{{if .HasVote}}Stimme ändern{{else}}Stimme speichern{{end}}</button>
+                        </div>
+                      </form>
+                    {{else}}
+                      <div class="vote-options">
+                        {{range .Options}}<div class="vote-option"><span></span><span>{{.Label}}</span></div>{{end}}
+                      </div>
+                      {{if .ReadOnlyMessage}}<p class="empty">{{.ReadOnlyMessage}}</p>{{end}}
+                    {{end}}
+                    {{if .HasResults}}
+                      <div class="vote-result" aria-label="Abstimmungsergebnis">
+                        <div class="vote-meta"><span>{{.TotalVotes}} Stimmen</span><span>{{.TotalWeightLabel}} Gewicht</span></div>
+                        {{range .Options}}
+                          <div class="vote-result-row">
+                            <strong>{{.Label}}</strong>
+                            <span class="vote-bar"><span style="width: {{.PercentStyle}}%;"></span></span>
+                            <span>{{.WeightLabel}} · {{.VoteCount}} Stimmen</span>
+                          </div>
+                        {{end}}
+                      </div>
+                    {{end}}
+                  </article>
+                {{end}}
+              </div>
+            {{else}}
+              {{template "emptyState" .BallotsEmpty}}
+            {{end}}
+          </section>
+
+          <section class="panel">
+            <div class="kicker">Verwaltung</div>
+            {{if .CanManageVotes}}
+              <div class="quick-list">
+                <button class="quick-row" type="button" data-dialog="ballot-create" aria-haspopup="dialog" aria-controls="ballot-create">
+                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                  <div><h3>Abstimmung anlegen</h3><p>Optionen, Frist, Quorum und Gewichtung festlegen.</p></div>
+                  <span class="quick-arrow">›</span>
+                </button>
+              </div>
+              {{if .HasManageBallots}}
+                <div class="vote-manage-list">
+                  {{range .ManageBallots}}
+                    <div class="vote-manage-row">
+                      <div>
+                        <strong>{{.Title}}</strong>
+                        <div class="vote-meta"><span class="pill {{.StatusClass}}">{{.Status}}</span><span>{{.Type}}</span><span>{{.Weighting}}</span><span>{{.UpdatedAt}}</span></div>
+                      </div>
+                      <div class="vote-manage-actions">
+                        {{if .CanOpen}}<form method="post" action="/app/abstimmungen/open"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Öffnen</button></form>{{end}}
+                        {{if .CanClose}}<form method="post" action="/app/abstimmungen/close"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Schließen</button></form>{{end}}
+                      </div>
+                    </div>
+                  {{end}}
+                </div>
+              {{else}}
+                {{template "emptyState" .ManageBallotsEmpty}}
+              {{end}}
+            {{else if .CanOversightVotes}}
+              <p class="empty">Beirat sieht offene Abstimmungen und Ergebnisse lesend.</p>
+            {{else}}
+              <p class="empty">Abstimmungen werden von der Verwaltung angelegt.</p>
+            {{end}}
+          </section>
+        </div>
+      </section>
+
+      {{if .CanManageVotes}}
+      <dialog id="ballot-create" class="dialog" aria-labelledby="ballot-create-title">
+        <form method="post" action="/app/abstimmungen">
+          <div class="dialog-head">
+            <h2 id="ballot-create-title">Abstimmung anlegen</h2>
+            <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+          </div>
+          <div class="dialog-body">
+            <div class="dialog-grid">
+              <label class="full" for="ballot-title">Titel<input id="ballot-title" name="title" required maxlength="160" autocomplete="off"></label>
+              <label for="ballot-type">Typ<select id="ballot-type" name="type" required>
+                <option value="Umlaufbeschluss">Umlaufbeschluss</option>
+                <option value="Versammlung">Versammlung</option>
+              </select></label>
+              <label for="ballot-weighting">Gewichtung<select id="ballot-weighting" name="weighting" required>
+                <option value="per-share">nach Miteigentumsanteil</option>
+                <option value="per-head">pro Kopf</option>
+              </select></label>
+              <label for="ballot-opens">Öffnen optional<input id="ballot-opens" type="datetime-local" name="opens_at" value="{{.NowInput}}"></label>
+              <label for="ballot-closes">Frist optional<input id="ballot-closes" type="datetime-local" name="closes_at"></label>
+              <label for="ballot-quorum">Quorum in %<input id="ballot-quorum" name="quorum_percent" inputmode="decimal" placeholder="50"></label>
+              <label class="full" for="ballot-options">Optionen<textarea id="ballot-options" name="options_text" required placeholder="Ja&#10;Nein&#10;Enthaltung"></textarea></label>
+              <label class="full" for="ballot-description">Beschreibung<textarea id="ballot-description" name="description"></textarea></label>
+            </div>
+            <button class="button primary" type="submit">Anlegen</button>
           </div>
         </form>
       </dialog>

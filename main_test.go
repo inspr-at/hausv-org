@@ -363,6 +363,90 @@ func TestBallotVoteWeightUsesOwnerUnits(t *testing.T) {
 	}
 }
 
+func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
+		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
+	}); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+	created, err := a.voteStore.Create(ballot{
+		TenantSlug: "jhw22",
+		Title:      "Dachsanierung",
+		Options:    []string{"Ja", "Nein"},
+		Type:       ballotTypeCircular,
+		Weighting:  ballotWeightingPerShare,
+		CreatedBy:  "manager@example.com",
+	})
+	if err != nil {
+		t.Fatalf("Create ballot: %v", err)
+	}
+	if _, _, err := a.voteStore.Open("jhw22", created.ID, time.Now()); err != nil {
+		t.Fatalf("Open ballot: %v", err)
+	}
+
+	ownerPage := authedRequest(t, a, "owner@example.com", "/app/abstimmungen", a.ballots)
+	if ownerPage.Code != http.StatusOK {
+		t.Fatalf("owner ballots status = %d", ownerPage.Code)
+	}
+	ownerBody := ownerPage.Body.String()
+	for _, want := range []string{`href="/app/abstimmungen"`, "nav-item active", "Dachsanierung", `name="option"`, "Stimmgewicht: " + formatMiteigentumsanteil(400000)} {
+		if !strings.Contains(ownerBody, want) {
+			t.Fatalf("owner ballots page missing %q:\n%s", want, ownerBody)
+		}
+	}
+	if strings.Contains(ownerBody, `class="nav-item disabled"`) && strings.Contains(ownerBody, "Abstimmungen") {
+		t.Fatalf("Abstimmungen nav item must be a live link:\n%s", ownerBody)
+	}
+
+	vote := authedFormRequest(t, a, "owner@example.com", "/app/abstimmungen", url.Values{
+		"ballot_id": {created.ID},
+		"option":    {"Ja"},
+	}, a.submitBallot)
+	if vote.Code != http.StatusSeeOther {
+		t.Fatalf("owner vote status = %d, want redirect", vote.Code)
+	}
+	stored, _ := a.voteStore.Get("jhw22", created.ID)
+	if got := stored.Votes["owner@example.com"].Weight; got != 400000 {
+		t.Fatalf("owner vote weight = %d, want 400000", got)
+	}
+
+	for _, persona := range []struct {
+		email   string
+		want    string
+		handler http.HandlerFunc
+	}{
+		{"renter@example.com", "Nur Eigentümer können abstimmen.", a.submitBallot},
+		{"beirat@example.com", "Beirat: lesende Übersicht.", a.submitBallot},
+	} {
+		page := authedRequest(t, a, persona.email, "/app/abstimmungen", a.ballots)
+		if page.Code != http.StatusOK {
+			t.Fatalf("%s ballots status = %d", persona.email, page.Code)
+		}
+		body := page.Body.String()
+		if !strings.Contains(body, "Dachsanierung") || !strings.Contains(body, persona.want) {
+			t.Fatalf("%s read-only page missing expected text:\n%s", persona.email, body)
+		}
+		if strings.Contains(body, `name="option"`) {
+			t.Fatalf("%s must not see vote inputs:\n%s", persona.email, body)
+		}
+		post := authedFormRequest(t, a, persona.email, "/app/abstimmungen", url.Values{
+			"ballot_id": {created.ID},
+			"option":    {"Nein"},
+		}, persona.handler)
+		if post.Code != http.StatusForbidden {
+			t.Fatalf("%s vote status = %d, want 403", persona.email, post.Code)
+		}
+	}
+
+	board := authedRequest(t, a, "beirat@example.com", "/app/abstimmungen", a.ballots).Body.String()
+	if !strings.Contains(board, formatMiteigentumsanteil(400000)+" Gewicht") || !strings.Contains(board, formatMiteigentumsanteil(400000)+" · 1 Stimmen") {
+		t.Fatalf("beirat oversight should show weighted aggregate:\n%s", board)
+	}
+}
+
 func TestDocumentStoreCreatePersistAndValidate(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "documents.json")
