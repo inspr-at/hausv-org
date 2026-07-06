@@ -1425,6 +1425,45 @@ func TestDocumentsPageFiltersManagerOnlyMetadata(t *testing.T) {
 	}
 }
 
+func TestDocumentsPageSearchSortAndCategoryEmptyStates(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	oldDoc, err := a.documentStore.Create(documentRecord{
+		TenantSlug: "jhw22",
+		Title:      "Abrechnung 2025",
+		Category:   documentCategoryBilling,
+		Visibility: documentVisibilityAllResidents,
+		UploadedBy: "manager@example.com",
+	}, testMultipartHeader(t, "document", "abrechnung-2025.pdf", []byte("%PDF-1.4\nold\n")), time.Date(2026, 1, 5, 9, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("create old doc: %v", err)
+	}
+	newDoc, err := a.documentStore.Create(documentRecord{
+		TenantSlug: "jhw22",
+		Title:      "Abrechnung 2026",
+		Category:   documentCategoryBilling,
+		Visibility: documentVisibilityAllResidents,
+		UploadedBy: "manager@example.com",
+	}, testMultipartHeader(t, "document", "abrechnung-2026.pdf", []byte("%PDF-1.4\nnew\n")), time.Date(2026, 2, 5, 9, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("create new doc: %v", err)
+	}
+	page := authedRequest(t, a, "manager@example.com", "/app/dokumente?sort=oldest", a.documents)
+	body := page.Body.String()
+	oldIndex := strings.Index(body, oldDoc.Title)
+	newIndex := strings.Index(body, newDoc.Title)
+	if oldIndex < 0 || newIndex < 0 || oldIndex > newIndex {
+		t.Fatalf("oldest sort order not reflected: old=%d new=%d", oldIndex, newIndex)
+	}
+	if !strings.Contains(body, "Keine passenden Dokumente in dieser Kategorie.") {
+		t.Fatal("category empty state missing")
+	}
+	filtered := authedRequest(t, a, "manager@example.com", "/app/dokumente?q=2025", a.documents)
+	filteredBody := filtered.Body.String()
+	if !strings.Contains(filteredBody, oldDoc.Title) || strings.Contains(filteredBody, newDoc.Title) {
+		t.Fatalf("search filtering body = %s", filteredBody)
+	}
+}
+
 func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}

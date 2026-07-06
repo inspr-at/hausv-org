@@ -603,6 +603,7 @@ type documentCategoryView struct {
 	Category     string
 	Documents    []documentView
 	HasDocuments bool
+	EmptyMessage string
 }
 
 type issueView struct {
@@ -1779,10 +1780,13 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request) {
 	profile := a.profileForTenant(email, tenant.Slug)
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := hasCapability(role, capabilityManageDocuments)
-	documents := []documentRecord{}
+	visible := []documentRecord{}
 	if a.documentStore != nil {
-		documents = a.visibleDocumentsForActor(tenant.Slug, email, role)
+		visible = a.visibleDocumentsForActor(tenant.Slug, email, role)
 	}
+	searchQuery := strings.TrimSpace(r.URL.Query().Get("q"))
+	sortMode := selectedDocumentSort(r.URL.Query().Get("sort"))
+	documents := sortDocumentsForView(filterDocuments(visible, searchQuery), sortMode)
 	documentMsg, documentOK := documentMessage(r.URL.Query().Get("doc"))
 	a.render(w, "documents", map[string]any{
 		"Title":              "Dokumente",
@@ -1796,11 +1800,15 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request) {
 		"CanManageDocuments": canManage,
 		"ActivePage":         "documents",
 		"Documents":          documentViews(documents),
-		"DocumentSections":   documentCategorySections(documents),
+		"DocumentSections":   documentCategorySections(documents, true),
 		"HasDocuments":       len(documents) > 0,
+		"HasAnyDocuments":    len(visible) > 0,
 		"DocumentsEmpty":     emptyState("Noch keine Dokumente", "Sobald die Verwaltung ein Dokument hochlädt, erscheint es hier nach Sichtbarkeit gefiltert."),
 		"DocumentMsg":        documentMsg,
 		"DocumentOK":         documentOK,
+		"SearchQuery":        searchQuery,
+		"SortMode":           sortMode,
+		"SortOptions":        documentSortOptions(sortMode),
 		"CategoryOptions":    documentCategoryOptions(""),
 		"VisibilityOptions":  documentVisibilityOptions(""),
 		"UnitOptions":        documentUnitOptions(a.unitStore.ListTenant(tenant.Slug), ""),
@@ -6881,7 +6889,75 @@ func documentViews(items []documentRecord) []documentView {
 	return views
 }
 
-func documentCategorySections(items []documentRecord) []documentCategoryView {
+func filterDocuments(items []documentRecord, query string) []documentRecord {
+	query = strings.ToLower(strings.TrimSpace(query))
+	if query == "" {
+		out := make([]documentRecord, 0, len(items))
+		for _, item := range items {
+			out = append(out, copyDocument(item))
+		}
+		return out
+	}
+	out := []documentRecord{}
+	for _, item := range items {
+		haystack := strings.ToLower(strings.Join([]string{
+			item.Title,
+			item.Category,
+			documentVisibilityLabel(item.Visibility),
+			item.Filename,
+			item.UploadedBy,
+			documentUnitLabel(item.UnitID),
+		}, " "))
+		if strings.Contains(haystack, query) {
+			out = append(out, copyDocument(item))
+		}
+	}
+	return out
+}
+
+func selectedDocumentSort(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "oldest", "title":
+		return strings.ToLower(strings.TrimSpace(raw))
+	default:
+		return "newest"
+	}
+}
+
+func documentSortOptions(selected string) []selectOption {
+	selected = selectedDocumentSort(selected)
+	options := []selectOption{
+		{Value: "newest", Label: "Neueste zuerst", Selected: selected == "newest"},
+		{Value: "oldest", Label: "Älteste zuerst", Selected: selected == "oldest"},
+		{Value: "title", Label: "Titel A-Z", Selected: selected == "title"},
+	}
+	return options
+}
+
+func sortDocumentsForView(items []documentRecord, sortMode string) []documentRecord {
+	out := make([]documentRecord, 0, len(items))
+	for _, item := range items {
+		out = append(out, copyDocument(item))
+	}
+	switch selectedDocumentSort(sortMode) {
+	case "oldest":
+		sort.SliceStable(out, func(i, j int) bool {
+			if !out[i].UploadedAt.Equal(out[j].UploadedAt) {
+				return out[i].UploadedAt.Before(out[j].UploadedAt)
+			}
+			return strings.ToLower(out[i].Title) < strings.ToLower(out[j].Title)
+		})
+	case "title":
+		sort.SliceStable(out, func(i, j int) bool {
+			return strings.ToLower(out[i].Title) < strings.ToLower(out[j].Title)
+		})
+	default:
+		sortDocuments(out)
+	}
+	return out
+}
+
+func documentCategorySections(items []documentRecord, includeEmpty bool) []documentCategoryView {
 	byCategory := map[string][]documentRecord{}
 	for _, item := range items {
 		byCategory[item.Category] = append(byCategory[item.Category], item)
@@ -6889,13 +6965,14 @@ func documentCategorySections(items []documentRecord) []documentCategoryView {
 	sections := []documentCategoryView{}
 	for _, category := range documentCategories() {
 		docs := byCategory[category]
-		if len(docs) == 0 {
+		if len(docs) == 0 && !includeEmpty {
 			continue
 		}
 		sections = append(sections, documentCategoryView{
 			Category:     category,
 			Documents:    documentViews(docs),
-			HasDocuments: true,
+			HasDocuments: len(docs) > 0,
+			EmptyMessage: "Keine passenden Dokumente in dieser Kategorie.",
 		})
 	}
 	return sections
@@ -10527,6 +10604,8 @@ const pageTemplates = `
     .month-cell span { display: block; margin-top: 3px; color: var(--soft); font-size: 12px; }
     .row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .document-sections { display: grid; gap: 14px; }
+    .filter-form.document-filter { grid-template-columns: minmax(280px,1fr) minmax(150px,.28fr) auto; align-items: end; margin-bottom: 12px; }
+    .filter-form.document-filter button { width: auto; margin-top: 0; min-height: 42px; }
     .document-section { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 10px; }
     .document-section:first-child { border-top: 0; padding-top: 0; }
     .document-section h3 { font-size: 18px; }
@@ -10577,7 +10656,8 @@ const pageTemplates = `
 	      .document-row { grid-template-columns: 1fr; }
 	      .document-side { justify-content: flex-start; }
       .quick-row .pill { grid-column: 2; justify-self: start; }
-      .filter-form { grid-template-columns: 1fr; }
+	      .filter-form { grid-template-columns: 1fr; }
+	      .filter-form.document-filter { grid-template-columns: 1fr; }
       .dialog-grid { grid-template-columns: 1fr; }
       .empty-state { grid-template-columns: 1fr; }
       .quick-arrow { display: none; }
@@ -11340,13 +11420,20 @@ const pageTemplates = `
           <section class="panel">
             <div class="section-head">
               <div class="kicker">Ablage</div>
-              {{if .HasDocuments}}<span class="pill">{{len .Documents}} Dokumente</span>{{end}}
+              {{if .HasDocuments}}<span class="pill">{{len .Documents}} Treffer</span>{{else if .HasAnyDocuments}}<span class="pill">0 Treffer</span>{{else}}<span class="pill">Noch leer</span>{{end}}
             </div>
-            {{if .HasDocuments}}
-              <div class="document-sections">
-                {{range .DocumentSections}}
-                  <section class="document-section">
-                    <h3>{{.Category}}</h3>
+            <form class="filter-form document-filter" method="get" action="/app/dokumente">
+              <label for="document-search">Suchen<input id="document-search" name="q" value="{{.SearchQuery}}" placeholder="Titel, Kategorie, Datei oder Person"></label>
+              <label for="document-sort">Sortierung<select id="document-sort" name="sort">
+                {{range .SortOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+              </select></label>
+              <button class="button" type="submit">Suchen</button>
+            </form>
+            <div class="document-sections">
+              {{range .DocumentSections}}
+                <section class="document-section">
+                  <h3>{{.Category}}</h3>
+                  {{if .HasDocuments}}
                     <div class="document-list">
                       {{range .Documents}}
                         <article class="document-row">
@@ -11367,12 +11454,12 @@ const pageTemplates = `
                         </article>
                       {{end}}
                     </div>
-                  </section>
-                {{end}}
-              </div>
-            {{else}}
-              {{template "emptyState" .DocumentsEmpty}}
-            {{end}}
+                  {{else}}
+                    <p class="empty">{{.EmptyMessage}}</p>
+                  {{end}}
+                </section>
+              {{end}}
+            </div>
           </section>
 
           <section class="panel">
