@@ -611,6 +611,14 @@ type contactCardView struct {
 	HasPhone    bool
 }
 
+type emptyStateView struct {
+	Title       string
+	Message     string
+	ActionURL   string
+	ActionLabel string
+	HasAction   bool
+}
+
 type unitMembers struct {
 	Unit    unit
 	Owners  []string
@@ -1326,8 +1334,11 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
 		"Announcements":          announcementViewsWithReadState(filtered, now, true, lastSeen),
 		"HasAnnouncements":       len(filtered) > 0,
 		"HasAnyAnnouncements":    len(archive) > 0,
+		"AnnouncementsEmpty":     emptyState("Keine Beiträge", "Für diese Suche oder Kategorie gibt es keinen Aushang."),
+		"AnnouncementsBlank":     emptyState("Noch keine Beiträge", "Sobald ein Aushang veröffentlicht ist, erscheint er hier."),
 		"AllAnnouncements":       all,
 		"HasAllAnnouncements":    len(all) > 0,
+		"AllAnnouncementsEmpty":  emptyState("Noch kein Aushang gespeichert", "Neue Aushänge erscheinen hier nach dem Speichern."),
 		"AnnounceMsg":            announcementMessage(r.URL.Query().Get("announce")),
 		"NowInput":               now.In(time.Local).Format("2006-01-02T15:04"),
 		"SearchQuery":            searchQuery,
@@ -1486,8 +1497,10 @@ func (a *app) events(w http.ResponseWriter, r *http.Request) {
 		"ActivePage":             "events",
 		"Events":                 eventViews(upcoming, now),
 		"HasEvents":              len(upcoming) > 0,
+		"EventsEmpty":            emptyState("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier."),
 		"AllEvents":              eventViews(all, now),
 		"HasAllEvents":           len(all) > 0,
+		"AllEventsEmpty":         emptyState("Noch kein Termin gespeichert", "Neue Termine erscheinen hier nach dem Speichern."),
 		"EventMsg":               eventMessage(r.URL.Query().Get("event")),
 		"NowInput":               now.In(time.Local).Format("2006-01-02T15:04"),
 	})
@@ -1644,8 +1657,10 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"ActivePage":             "home",
 		"Announcements":          announcements,
 		"HasAnnouncements":       len(announcements) > 0,
+		"AnnouncementsEmpty":     emptyStateAction("Noch keine Beiträge", "Sobald die Verwaltung einen Aushang veröffentlicht, erscheint er hier.", "/app/announcements", "Archiv öffnen"),
 		"Events":                 events,
 		"HasEvents":              len(events) > 0,
+		"EventsEmpty":            emptyStateAction("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier.", "/app/events", "Termine öffnen"),
 	})
 }
 
@@ -1678,12 +1693,16 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request) {
 		"ActivePage":           "contacts",
 		"ManagerContacts":      managerContacts,
 		"HasManagerContacts":   len(managerContacts) > 0,
+		"ManagerEmpty":         emptyState("Kein Verwaltungskontakt", "Der Kontaktblock wird in den Gebäude-Einstellungen gepflegt."),
 		"EmergencyContacts":    emergencyContacts,
 		"HasEmergencyContacts": len(emergencyContacts) > 0,
+		"EmergencyEmpty":       emptyState("Kein Notdienst hinterlegt", "Notdienst und Hausmeister werden in den Gebäude-Einstellungen gepflegt."),
 		"BoardContacts":        boardContacts,
 		"HasBoardContacts":     len(boardContacts) > 0,
+		"BoardEmpty":           emptyState("Kein Beirat hinterlegt", "Beiräte erscheinen hier, sobald sie in Benutzer & Rechte die Beirat-Rolle haben."),
 		"ResidentContacts":     residentContacts,
 		"HasResidentContacts":  len(residentContacts) > 0,
+		"ResidentEmpty":        emptyState("Keine freigegebenen Kontakte", "Kontakte aus der Hausgemeinschaft erscheinen nur nach ausdrücklicher Freigabe im Profil."),
 	})
 }
 
@@ -1836,8 +1855,10 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, boardOnly
 		"BoardFilters":           issueBoardFilterOptions(filters),
 		"Issues":                 issues,
 		"HasIssues":              len(issues) > 0,
+		"IssuesEmpty":            emptyState("Noch kein Anliegen", "Nach dem Absenden erscheint das Anliegen hier mit Status und Rückfragen."),
 		"ManageIssues":           manageIssues,
 		"HasManageIssues":        len(manageIssues) > 0,
+		"ManageIssuesEmpty":      emptyState("Keine Anliegen im Haus", "Sobald ein Anliegen gemeldet wird, erscheint es hier für die Bearbeitung."),
 		"IssueMsg":               msg,
 		"IssueOK":                msgOK,
 	})
@@ -3428,6 +3449,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request) {
 		"UnitMsg":       unitMsg,
 		"UnitOK":        unitOK,
 		"Units":         buildingUnitViews(a.unitStore.ListTenant(tenant.Slug)),
+		"UnitsEmpty":    emptyState("Noch keine Einheiten", "Angelegte Einheiten erscheinen hier mit Anteil und Kontaktlinks."),
 	})
 }
 
@@ -4026,6 +4048,7 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
+	users := a.userRows(tenant.Slug)
 	inviteMsg, inviteOK := inviteMessage(r.URL.Query().Get("invite"))
 	a.render(w, "userSettings", map[string]any{
 		"Title":         "Benutzer & Rechte",
@@ -4034,7 +4057,9 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
 		"DisplayName":   profile.DisplayName(),
 		"Initials":      profile.Initials(),
 		"Role":          role,
-		"Users":         a.userRows(tenant.Slug),
+		"Users":         users,
+		"HasUsers":      len(users) > 0,
+		"UsersEmpty":    emptyStateAction("Noch keine Zugänge", "Sobald eine Person eingeladen ist, erscheint sie hier mit Rolle, Rechten und Anmeldestatus.", "/app/settings/users", "Person einladen"),
 		"InviteMsg":     inviteMsg,
 		"InviteOK":      inviteOK,
 		"IsAdmin":       hasCapability(role, capabilityPlatformAdmin),
@@ -4354,6 +4379,18 @@ func buildLabel() string {
 	return fmt.Sprintf("%s (%s)", version, commit)
 }
 
+func emptyState(title string, message string) emptyStateView {
+	return emptyStateView{Title: title, Message: message}
+}
+
+func emptyStateAction(title string, message string, actionURL string, actionLabel string) emptyStateView {
+	state := emptyState(title, message)
+	state.ActionURL = actionURL
+	state.ActionLabel = actionLabel
+	state.HasAction = actionURL != "" && actionLabel != ""
+	return state
+}
+
 func (a *app) tenantPathRedirect(w http.ResponseWriter, r *http.Request) {
 	slug := normalizeSlug(r.PathValue("tenant"))
 	tenant, ok := a.tenantBySlug(slug)
@@ -4628,9 +4665,6 @@ func (a *app) userRows(tenantSlug string) []userRow {
 			rows = append(rows, row)
 			seen[email] = struct{}{}
 		}
-	}
-	if len(rows) == 0 {
-		rows = append(rows, userProfile{Email: "Noch keine Einladungen", Role: roleResident, Status: "Offen", Tenants: []string{tenantSlug}}.UserRow())
 	}
 	if a.activityStore != nil {
 		for i := range rows {
@@ -8902,6 +8936,11 @@ const pageTemplates = `
     .month-cell span { display: block; margin-top: 3px; color: var(--soft); font-size: 12px; }
     .row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .empty { border: 1px solid var(--line); background: var(--panel-soft); color: #5c5f54; border-radius: 8px; padding: 14px; line-height: 1.5; }
+    .empty-state { border: 1px solid var(--line); border-radius: 8px; background: var(--panel-soft); padding: 18px; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 14px; align-items: center; color: var(--ink); }
+    .empty-state-icon { width: 42px; height: 42px; border-radius: 8px; display: grid; place-items: center; background: rgba(200,153,63,.16); color: var(--gold-ink); }
+    .empty-state-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .empty-state h3 { font-size: 19px; }
+    .empty-state p { margin-top: 4px; color: var(--muted); line-height: 1.45; font-size: 14px; }
     .settings-card { max-width: 620px; display: grid; gap: 16px; }
     .form-grid { display: grid; gap: 12px; }
     label { display: grid; gap: 7px; color: var(--gold-ink); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
@@ -8936,6 +8975,7 @@ const pageTemplates = `
       .quick-row .pill { grid-column: 2; justify-self: start; }
       .filter-form { grid-template-columns: 1fr; }
       .dialog-grid { grid-template-columns: 1fr; }
+      .empty-state { grid-template-columns: 1fr; }
       .quick-arrow { display: none; }
     }
   </style>
@@ -8993,6 +9033,14 @@ const pageTemplates = `
 </html>
 {{end}}
 
+{{define "emptyState"}}
+  <div class="empty-state">
+    <span class="empty-state-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 13h5"/></svg></span>
+    <div><h3>{{.Title}}</h3><p>{{.Message}}</p></div>
+    {{if .HasAction}}<a class="button" href="{{.ActionURL}}">{{.ActionLabel}}</a>{{end}}
+  </div>
+{{end}}
+
 {{define "portal"}}
 {{template "appOpen" .}}
     <main class="app-main">
@@ -9030,7 +9078,7 @@ const pageTemplates = `
                 {{end}}
               </div>
             {{else}}
-              <p class="empty">Noch keine Beiträge. Sobald die Verwaltung einen Aushang veröffentlicht, erscheint er hier.</p>
+              {{template "emptyState" .AnnouncementsEmpty}}
             {{end}}
           </section>
           <section class="panel">
@@ -9048,7 +9096,7 @@ const pageTemplates = `
                 {{end}}
               </div>
             {{else}}
-              <p class="empty" style="margin-bottom:22px">Noch keine kommenden Termine.</p>
+              {{template "emptyState" .EventsEmpty}}
             {{end}}
             <div class="kicker">Schnellzugriff</div>
             <div class="quick-list">
@@ -9108,7 +9156,7 @@ const pageTemplates = `
                 {{end}}
               </div>
             {{else}}
-              <p class="empty">Noch kein Verwaltungskontakt hinterlegt.</p>
+              {{template "emptyState" .ManagerEmpty}}
             {{end}}
           </section>
 
@@ -9128,7 +9176,7 @@ const pageTemplates = `
                 {{end}}
               </div>
             {{else}}
-              <p class="empty">Noch kein Notdienst oder Hausmeister hinterlegt.</p>
+              {{template "emptyState" .EmergencyEmpty}}
             {{end}}
           </section>
 
@@ -9148,7 +9196,7 @@ const pageTemplates = `
                 {{end}}
               </div>
             {{else}}
-              <p class="empty">Noch kein Beirat hinterlegt.</p>
+              {{template "emptyState" .BoardEmpty}}
             {{end}}
           </section>
 
@@ -9168,7 +9216,7 @@ const pageTemplates = `
                 {{end}}
               </div>
             {{else}}
-              <p class="empty">Niemand hat die Freigabe aktiviert.</p>
+              {{template "emptyState" .ResidentEmpty}}
             {{end}}
           </section>
         </div>
@@ -9272,7 +9320,7 @@ const pageTemplates = `
                 {{end}}
               </div>
             {{else}}
-              <p class="empty">Noch kein Anliegen erfasst. Nach dem Absenden erscheint es hier mit Status.</p>
+              {{template "emptyState" .IssuesEmpty}}
             {{end}}
           </aside>
         </div>{{end}}
@@ -9359,7 +9407,7 @@ const pageTemplates = `
                 {{end}}
               </div>
             {{else}}
-              <p class="empty">Noch keine Anliegen im Haus erfasst.</p>
+              {{template "emptyState" .ManageIssuesEmpty}}
             {{end}}
           </section>
         {{end}}
@@ -9421,9 +9469,9 @@ const pageTemplates = `
               </div>
             {{else}}
               {{if .HasAnyAnnouncements}}
-                <p class="empty">Keine Beiträge für diese Suche oder Kategorie.</p>
+                {{template "emptyState" .AnnouncementsEmpty}}
               {{else}}
-                <p class="empty">Noch keine Beiträge.</p>
+                {{template "emptyState" .AnnouncementsBlank}}
               {{end}}
             {{end}}
           </section>
@@ -9476,9 +9524,9 @@ const pageTemplates = `
                       </form>
                     </dialog>
                   {{end}}
-                {{else}}
-                  <p class="empty">Noch kein Aushang gespeichert.</p>
-                {{end}}
+            {{else}}
+                  {{template "emptyState" .AllAnnouncementsEmpty}}
+            {{end}}
               </div>
             {{else}}
               <p class="empty">Veröffentlichen und Bearbeiten ist der Verwaltung vorbehalten.</p>
@@ -9557,7 +9605,7 @@ const pageTemplates = `
                 {{end}}
               </div>
             {{else}}
-              <p class="empty">Noch keine kommenden Termine.</p>
+              {{template "emptyState" .EventsEmpty}}
             {{end}}
           </section>
 
@@ -9611,9 +9659,9 @@ const pageTemplates = `
                       </form>
                     </dialog>
                   {{end}}
-                {{else}}
-                  <p class="empty">Noch kein Termin gespeichert.</p>
-                {{end}}
+            {{else}}
+                  {{template "emptyState" .AllEventsEmpty}}
+            {{end}}
               </div>
             {{else}}
               <p class="empty">Anlegen und Bearbeiten ist der Verwaltung vorbehalten.</p>
@@ -10053,7 +10101,7 @@ const pageTemplates = `
               {{end}}
             </div>
           {{else}}
-            <p class="empty">Noch keine Einheiten hinterlegt.</p>
+            {{template "emptyState" .UnitsEmpty}}
           {{end}}
         </section>
       </section>
@@ -10395,7 +10443,7 @@ const pageTemplates = `
 
       <p class="muted roster-intro">Diese Liste kommt aus der Umgebungskonfiguration und den hier gespeicherten Einladungen.</p>
 
-      <div class="table-wrap">
+      {{if .HasUsers}}<div class="table-wrap">
         <table aria-label="Benutzerliste">
           <thead>
             <tr>
@@ -10485,7 +10533,9 @@ const pageTemplates = `
             {{end}}
           </tbody>
         </table>
-      </div>
+      </div>{{else}}
+        {{template "emptyState" .UsersEmpty}}
+      {{end}}
     </section>
       </section>
     </main>

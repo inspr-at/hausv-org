@@ -1022,6 +1022,18 @@ func TestSettingsHubManagerLinksTenantManagementOnly(t *testing.T) {
 	}
 }
 
+func TestUserRowsDoesNotInjectSyntheticEmptyRow(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles = map[string]userProfile{}
+	a.allowed = map[string]struct{}{}
+	a.admins = map[string]struct{}{}
+
+	rows := a.userRows("jhw22")
+	if len(rows) != 0 {
+		t.Fatalf("empty userRows = %+v, want no synthetic rows", rows)
+	}
+}
+
 func TestRoleManagementUIOffersAllEffectiveRoles(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	for _, profile := range []userProfile{
@@ -1402,7 +1414,7 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 		t.Fatalf("events after delete = %+v, want none", got)
 	}
 	empty := authedRequest(t, a, "resident@example.com", "/app/events", a.events)
-	if !strings.Contains(empty.Body.String(), "Noch keine kommenden Termine.") {
+	if !strings.Contains(empty.Body.String(), "Noch keine kommenden Termine") {
 		t.Fatalf("empty events page should show empty state:\n%s", empty.Body.String())
 	}
 }
