@@ -141,7 +141,9 @@ resident view while staying editable for the Verwaltung.
 Dokumente metadata persists to `/data/documents.json` via `DOC_DATA_PATH`; uploaded
 files are stored under `/data/documents/` via `DOC_FILE_DIR`. The document store
 uses private generated filenames, content-type/size validation, `0600` file modes,
-and does not serve files from `/assets`.
+and does not serve files from `/assets`. Downloads go through the authenticated
+`/app/dokumente/{id}/download` route, which enforces per-document visibility and
+records successful downloads in the audit log.
 
 Notification preferences persist to `/data/notification_prefs.json` via
 `NOTIFICATION_PREF_DATA_PATH`. Missing preferences default to enabled delivery;

@@ -15,6 +15,7 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"mime"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -77,18 +78,19 @@ const (
 )
 
 const (
-	auditActionLogin           = "login"
-	auditActionInviteCreate    = "invite.create"
-	auditActionInviteUpdate    = "invite.update"
-	auditActionInviteDelete    = "invite.delete"
-	auditActionBuildingUpdate  = "building.update"
-	auditActionHeroUpdate      = "building.hero"
-	auditActionUnitSave        = "building.unit.save"
-	auditActionUnitDelete      = "building.unit.delete"
-	auditActionParkingSettings = "parking.settings"
-	auditActionParkingMonth    = "parking.month"
-	auditActionIssueWorkflow   = "issue.workflow"
-	auditActionDocumentUpload  = "document.upload"
+	auditActionLogin            = "login"
+	auditActionInviteCreate     = "invite.create"
+	auditActionInviteUpdate     = "invite.update"
+	auditActionInviteDelete     = "invite.delete"
+	auditActionBuildingUpdate   = "building.update"
+	auditActionHeroUpdate       = "building.hero"
+	auditActionUnitSave         = "building.unit.save"
+	auditActionUnitDelete       = "building.unit.delete"
+	auditActionParkingSettings  = "parking.settings"
+	auditActionParkingMonth     = "parking.month"
+	auditActionIssueWorkflow    = "issue.workflow"
+	auditActionDocumentUpload   = "document.upload"
+	auditActionDocumentDownload = "document.download"
 )
 
 const (
@@ -572,6 +574,7 @@ type documentRecord struct {
 	Title          string    `json:"title"`
 	Category       string    `json:"category"`
 	Visibility     string    `json:"visibility"`
+	UnitID         string    `json:"unit_id,omitempty"`
 	Filename       string    `json:"filename"`
 	StoredFilename string    `json:"stored_filename"`
 	Size           int64     `json:"size"`
@@ -586,11 +589,14 @@ type documentView struct {
 	Category        string
 	Visibility      string
 	VisibilityClass string
+	UnitLabel       string
+	HasUnit         bool
 	Filename        string
 	Size            string
 	ContentType     string
 	UploadedBy      string
 	UploadedAt      string
+	DownloadURL     string
 }
 
 type documentCategoryView struct {
@@ -891,6 +897,7 @@ func main() {
 	mux.HandleFunc("POST /app/events/delete", a.deleteEvent)
 	mux.HandleFunc("GET /app/dokumente", a.documents)
 	mux.HandleFunc("POST /app/dokumente", a.uploadDocument)
+	mux.HandleFunc("GET /app/dokumente/{id}/download", a.downloadDocument)
 	mux.HandleFunc("GET /app/kontakte", a.contacts)
 	mux.HandleFunc("GET /app/anliegen", a.issues)
 	mux.HandleFunc("GET /app/anliegen/board", a.issueBoard)
@@ -1796,6 +1803,7 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request) {
 		"DocumentOK":         documentOK,
 		"CategoryOptions":    documentCategoryOptions(""),
 		"VisibilityOptions":  documentVisibilityOptions(""),
+		"UnitOptions":        documentUnitOptions(a.unitStore.ListTenant(tenant.Slug), ""),
 		"MaxDocumentSize":    formatBytes(maxDocumentBytes),
 	})
 }
@@ -1834,6 +1842,7 @@ func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request) {
 		Title:      strings.TrimSpace(r.FormValue("title")),
 		Category:   normalizeDocumentCategory(r.FormValue("category")),
 		Visibility: normalizeDocumentVisibility(r.FormValue("visibility")),
+		UnitID:     normalizeUnitID(r.FormValue("unit_id")),
 		UploadedBy: email,
 	}, header, time.Now())
 	if err != nil {
@@ -1853,11 +1862,71 @@ func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request) {
 			"title":        created.Title,
 			"category":     created.Category,
 			"visibility":   documentVisibilityLabel(created.Visibility),
+			"unit":         documentUnitAuditLabel(created.UnitID),
 			"size":         formatBytes(created.Size),
 			"content_type": created.ContentType,
 		},
 	})
 	http.Redirect(w, r, "/app/dokumente?doc=uploaded", http.StatusSeeOther)
+}
+
+func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if a.documentStore == nil {
+		http.NotFound(w, r)
+		return
+	}
+	id := strings.TrimSpace(r.PathValue("id"))
+	item, found := a.documentStore.Get(tenant.Slug, id)
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+	if !a.canViewDocument(tenant.Slug, item, email, role) {
+		http.Error(w, "Dieses Dokument ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
+		return
+	}
+	path, ok := a.documentStore.FilePath(item)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		log.Printf("document file open failed for %s/%s: %v", tenant.Slug, item.ID, err)
+		http.NotFound(w, r)
+		return
+	}
+	defer file.Close()
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": item.Filename}))
+	if item.ContentType != "" {
+		w.Header().Set("Content-Type", item.ContentType)
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: email,
+		ActorRole:  role,
+		Action:     auditActionDocumentDownload,
+		TargetType: "document",
+		TargetID:   item.ID,
+		Summary:    "Dokument heruntergeladen",
+		Details: map[string]string{
+			"title":      item.Title,
+			"category":   item.Category,
+			"visibility": documentVisibilityLabel(item.Visibility),
+			"unit":       documentUnitAuditLabel(item.UnitID),
+		},
+	})
+	http.ServeContent(w, r, item.Filename, item.UploadedAt, file)
 }
 
 func documentFileHeader(r *http.Request) *multipart.FileHeader {
@@ -1880,14 +1949,14 @@ func (a *app) visibleDocumentsForActor(tenantSlug string, email string, role str
 	all := a.documentStore.ListTenant(tenantSlug)
 	out := make([]documentRecord, 0, len(all))
 	for _, item := range all {
-		if a.canViewDocumentMetadata(tenantSlug, item, email, role) {
+		if a.canViewDocument(tenantSlug, item, email, role) {
 			out = append(out, item)
 		}
 	}
 	return out
 }
 
-func (a *app) canViewDocumentMetadata(tenantSlug string, item documentRecord, email string, role string) bool {
+func (a *app) canViewDocument(tenantSlug string, item documentRecord, email string, role string) bool {
 	if normalizeSlug(item.TenantSlug) != normalizeSlug(tenantSlug) {
 		return false
 	}
@@ -1898,18 +1967,33 @@ func (a *app) canViewDocumentMetadata(tenantSlug string, item documentRecord, em
 	case documentVisibilityAllResidents:
 		return true
 	case documentVisibilityOwnersOnly:
-		if normalizeRole(role) == roleOwner {
-			return true
-		}
-		if a != nil && a.unitStore != nil {
-			return len(a.unitStore.UnitsForEmail(tenantSlug, email)) > 0
-		}
-		return false
+		return a.isDocumentOwner(tenantSlug, email, role, item.UnitID)
 	case documentVisibilityManagerOnly:
 		return false
 	default:
 		return false
 	}
+}
+
+func (a *app) isDocumentOwner(tenantSlug string, email string, role string, unitID string) bool {
+	tenantSlug = normalizeSlug(tenantSlug)
+	email = normalizeEmail(email)
+	unitID = normalizeUnitID(unitID)
+	if tenantSlug == "" || email == "" {
+		return false
+	}
+	if a != nil && a.unitStore != nil {
+		if unitID != "" {
+			members := a.unitStore.MembersForUnit(tenantSlug, unitID)
+			return members.Found && emailListContains(members.Owners, email)
+		}
+		for _, membership := range a.unitStore.UnitsForEmail(tenantSlug, email) {
+			if membership.Relation == roleOwner {
+				return true
+			}
+		}
+	}
+	return normalizeRole(role) == roleOwner
 }
 
 func documentMessage(status string) (string, bool) {
@@ -3955,6 +4039,7 @@ func auditActionOptions(selected string) []selectOption {
 		auditActionUnitSave,
 		auditActionUnitDelete,
 		auditActionDocumentUpload,
+		auditActionDocumentDownload,
 		auditActionParkingSettings,
 		auditActionParkingMonth,
 		auditActionIssueWorkflow,
@@ -3984,6 +4069,8 @@ func auditActionLabel(action string) string {
 		return "Einheit gelöscht"
 	case auditActionDocumentUpload:
 		return "Dokument hochgeladen"
+	case auditActionDocumentDownload:
+		return "Dokument heruntergeladen"
 	case auditActionParkingSettings:
 		return "Parkplatz-Abrechnung geändert"
 	case auditActionParkingMonth:
@@ -4070,6 +4157,8 @@ func auditDetailLabel(key string) string {
 		return "Größe"
 	case "content_type":
 		return "Dateityp"
+	case "unit":
+		return "Einheit"
 	default:
 		return strings.ReplaceAll(key, "_", " ")
 	}
@@ -6584,6 +6673,7 @@ func normalizeDocumentRecord(item documentRecord) documentRecord {
 	item.Title = truncateAuditValue(strings.TrimSpace(item.Title), 160)
 	item.Category = normalizeDocumentCategory(item.Category)
 	item.Visibility = normalizeDocumentVisibility(item.Visibility)
+	item.UnitID = normalizeUnitID(item.UnitID)
 	item.Filename = sanitizeDocumentFilename(item.Filename)
 	item.StoredFilename = filepath.Base(strings.TrimSpace(item.StoredFilename))
 	item.ContentType = strings.TrimSpace(item.ContentType)
@@ -6690,6 +6780,36 @@ func documentCategoryOptions(selected string) []selectOption {
 	return options
 }
 
+func documentUnitOptions(units []unit, selected string) []selectOption {
+	selected = normalizeUnitID(selected)
+	options := []selectOption{{Value: "", Label: "Gesamtes Haus", Selected: selected == ""}}
+	for _, item := range units {
+		id := normalizeUnitID(item.ID)
+		label := strings.TrimSpace(item.Label)
+		if id == "" || label == "" {
+			continue
+		}
+		options = append(options, selectOption{Value: id, Label: label, Selected: selected == id})
+	}
+	return options
+}
+
+func documentUnitLabel(unitID string) string {
+	unitID = normalizeUnitID(unitID)
+	if unitID == "" {
+		return ""
+	}
+	return unitID
+}
+
+func documentUnitAuditLabel(unitID string) string {
+	unitID = normalizeUnitID(unitID)
+	if unitID == "" {
+		return ""
+	}
+	return unitID
+}
+
 func normalizeDocumentVisibility(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case documentVisibilityAllResidents, "all", "alle", "alle-bewohner":
@@ -6748,11 +6868,14 @@ func documentViews(items []documentRecord) []documentView {
 			Category:        item.Category,
 			Visibility:      documentVisibilityLabel(item.Visibility),
 			VisibilityClass: documentVisibilityClass(item.Visibility),
+			UnitLabel:       documentUnitLabel(item.UnitID),
+			HasUnit:         normalizeUnitID(item.UnitID) != "",
 			Filename:        item.Filename,
 			Size:            formatBytes(item.Size),
 			ContentType:     item.ContentType,
 			UploadedBy:      item.UploadedBy,
 			UploadedAt:      formatLocalDateTime(item.UploadedAt),
+			DownloadURL:     "/app/dokumente/" + url.PathEscape(item.ID) + "/download",
 		})
 	}
 	return views
@@ -9597,7 +9720,7 @@ func normalizeAuditAction(raw string) string {
 	switch raw {
 	case auditActionLogin, auditActionInviteCreate, auditActionInviteUpdate, auditActionInviteDelete,
 		auditActionBuildingUpdate, auditActionHeroUpdate, auditActionUnitSave, auditActionUnitDelete,
-		auditActionDocumentUpload, auditActionParkingSettings, auditActionParkingMonth, auditActionIssueWorkflow:
+		auditActionDocumentUpload, auditActionDocumentDownload, auditActionParkingSettings, auditActionParkingMonth, auditActionIssueWorkflow:
 		return raw
 	default:
 		return ""
@@ -11231,6 +11354,7 @@ const pageTemplates = `
                             <strong>{{.Title}}</strong>
                             <div class="document-meta">
                               <span class="pill {{.VisibilityClass}}">{{.Visibility}}</span>
+                              {{if .HasUnit}}<span class="pill">Einheit {{.UnitLabel}}</span>{{end}}
                               <span>{{.UploadedAt}}</span>
                               <span>{{.Size}}</span>
                               <span class="document-file">{{.Filename}}</span>
@@ -11238,6 +11362,7 @@ const pageTemplates = `
                           </div>
                           <div class="document-side">
                             <span class="pill">{{.Category}}</span>
+                            <a class="button small" href="{{.DownloadURL}}">Herunterladen</a>
                           </div>
                         </article>
                       {{end}}
@@ -11287,6 +11412,9 @@ const pageTemplates = `
               </select></label>
               <label for="document-visibility">Sichtbarkeit<select id="document-visibility" name="visibility" required>
                 {{range .VisibilityOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+              </select></label>
+              <label for="document-unit">Einheit optional<select id="document-unit" name="unit_id">
+                {{range .UnitOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
               </select></label>
               <label class="full" for="document-file">Datei<input id="document-file" type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required></label>
             </div>

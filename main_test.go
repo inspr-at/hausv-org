@@ -1425,6 +1425,89 @@ func TestDocumentsPageFiltersManagerOnlyMetadata(t *testing.T) {
 	}
 }
 
+func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
+		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 10000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
+	}); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+	publicDoc, err := a.documentStore.Create(documentRecord{
+		TenantSlug: "jhw22",
+		Title:      "Hausordnung",
+		Category:   documentCategoryRules,
+		Visibility: documentVisibilityAllResidents,
+		UploadedBy: "manager@example.com",
+	}, testMultipartHeader(t, "document", "hausordnung.pdf", []byte("%PDF-1.4\npublic\n")), time.Now())
+	if err != nil {
+		t.Fatalf("create public doc: %v", err)
+	}
+	ownerDoc, err := a.documentStore.Create(documentRecord{
+		TenantSlug: "jhw22",
+		Title:      "Top 1 Abrechnung",
+		Category:   documentCategoryBilling,
+		Visibility: documentVisibilityOwnersOnly,
+		UnitID:     "top-1",
+		UploadedBy: "manager@example.com",
+	}, testMultipartHeader(t, "document", "top-1.pdf", []byte("%PDF-1.4\nowner\n")), time.Now())
+	if err != nil {
+		t.Fatalf("create owner doc: %v", err)
+	}
+	managerDoc, err := a.documentStore.Create(documentRecord{
+		TenantSlug: "jhw22",
+		Title:      "Interne Notiz",
+		Category:   documentCategoryOther,
+		Visibility: documentVisibilityManagerOnly,
+		UploadedBy: "manager@example.com",
+	}, testMultipartHeader(t, "document", "intern.pdf", []byte("%PDF-1.4\nmanager\n")), time.Now())
+	if err != nil {
+		t.Fatalf("create manager doc: %v", err)
+	}
+
+	cases := []struct {
+		email string
+		doc   documentRecord
+		want  int
+	}{
+		{"resident@example.com", publicDoc, http.StatusOK},
+		{"resident@example.com", ownerDoc, http.StatusForbidden},
+		{"resident@example.com", managerDoc, http.StatusForbidden},
+		{"owner@example.com", publicDoc, http.StatusOK},
+		{"owner@example.com", ownerDoc, http.StatusOK},
+		{"owner@example.com", managerDoc, http.StatusForbidden},
+		{"renter@example.com", publicDoc, http.StatusOK},
+		{"renter@example.com", ownerDoc, http.StatusForbidden},
+		{"beirat@example.com", publicDoc, http.StatusOK},
+		{"manager@example.com", publicDoc, http.StatusOK},
+		{"manager@example.com", ownerDoc, http.StatusOK},
+		{"manager@example.com", managerDoc, http.StatusOK},
+	}
+	authorized := 0
+	for _, tc := range cases {
+		rr := authedPathValueRequest(t, a, tc.email, "/app/dokumente/"+tc.doc.ID+"/download", map[string]string{"id": tc.doc.ID}, a.downloadDocument)
+		if rr.Code != tc.want {
+			t.Fatalf("%s downloading %s status = %d, want %d", tc.email, tc.doc.Title, rr.Code, tc.want)
+		}
+		if tc.want == http.StatusOK {
+			authorized++
+			if !strings.Contains(rr.Header().Get("Content-Disposition"), "attachment") {
+				t.Fatalf("download missing attachment disposition: %q", rr.Header().Get("Content-Disposition"))
+			}
+			if !strings.Contains(rr.Body.String(), "%PDF-1.4") {
+				t.Fatalf("download body missing file content for %s", tc.doc.Title)
+			}
+		}
+	}
+	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionDocumentDownload, Limit: 50})
+	if len(events) != authorized {
+		t.Fatalf("download audit count = %d, want %d: %+v", len(events), authorized, events)
+	}
+}
+
 func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
@@ -2414,6 +2497,22 @@ func authedRequest(t *testing.T, a *app, email string, path string, handler http
 	}
 	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org"+path, nil)
 	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
+	rr := httptest.NewRecorder()
+	handler(rr, req)
+	return rr
+}
+
+func authedPathValueRequest(t *testing.T, a *app, email string, path string, values map[string]string, handler http.HandlerFunc) *httptest.ResponseRecorder {
+	t.Helper()
+	token, _, err := a.sessions.Put(email, "jhw22", authMethodEmail, time.Hour)
+	if err != nil {
+		t.Fatalf("put session: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org"+path, nil)
+	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
+	for key, value := range values {
+		req.SetPathValue(key, value)
+	}
 	rr := httptest.NewRecorder()
 	handler(rr, req)
 	return rr
