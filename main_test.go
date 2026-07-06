@@ -955,6 +955,117 @@ func TestIssueSubmitRejectsInvalidPhotoType(t *testing.T) {
 	}
 }
 
+func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	issue, err := a.issueStore.Create(residentIssue{
+		TenantSlug:   "jhw22",
+		AuthorEmail:  "resident@example.com",
+		AuthorName:   "Resident",
+		Category:     "Reparatur",
+		Title:        "Tür schließt nicht",
+		Body:         "Die Haustür bleibt offen.",
+		LocationType: issueLocationCommon,
+	})
+	if err != nil {
+		t.Fatalf("Create issue: %v", err)
+	}
+
+	update := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/workflow", url.Values{
+		"id":             {issue.ID},
+		"status":         {issueStatusProgress},
+		"priority":       {issuePriorityUrgent},
+		"assignee_email": {"manager@example.com"},
+	}, a.updateIssueWorkflow)
+	if update.Code != http.StatusSeeOther {
+		t.Fatalf("manager workflow status = %d, want redirect", update.Code)
+	}
+	updated, ok := a.issueStore.Get("jhw22", issue.ID)
+	if !ok {
+		t.Fatal("updated issue not found")
+	}
+	if updated.Status != issueStatusProgress || updated.Priority != issuePriorityUrgent || updated.AssigneeEmail != "manager@example.com" {
+		t.Fatalf("updated issue = %+v", updated)
+	}
+	if len(updated.StatusHistory) != 1 || updated.StatusHistory[0].ActorEmail != "manager@example.com" || updated.StatusHistory[0].From != issueStatusNew || updated.StatusHistory[0].To != issueStatusProgress {
+		t.Fatalf("status history = %+v", updated.StatusHistory)
+	}
+
+	page := authedRequest(t, a, "manager@example.com", "/app/anliegen", a.issues)
+	body := page.Body.String()
+	for _, want := range []string{"Anliegen verwalten", "Tür schließt nicht", issuePriorityUrgent, `name="assignee_email"`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("manager issues page should contain %q", want)
+		}
+	}
+}
+
+func TestResidentCanCloseAndReopenOwnIssueOnly(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	own, err := a.issueStore.Create(residentIssue{
+		TenantSlug:   "jhw22",
+		AuthorEmail:  "resident@example.com",
+		AuthorName:   "Resident",
+		Category:     "Frage",
+		Title:        "Eigene Frage",
+		Body:         "Bitte prüfen.",
+		LocationType: issueLocationUnit,
+	})
+	if err != nil {
+		t.Fatalf("Create own issue: %v", err)
+	}
+	other, err := a.issueStore.Create(residentIssue{
+		TenantSlug:   "jhw22",
+		AuthorEmail:  "other@example.com",
+		AuthorName:   "Other",
+		Category:     "Frage",
+		Title:        "Andere Frage",
+		Body:         "Nicht meine.",
+		LocationType: issueLocationCommon,
+	})
+	if err != nil {
+		t.Fatalf("Create other issue: %v", err)
+	}
+
+	closeOwn := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/workflow", url.Values{
+		"id":     {own.ID},
+		"status": {issueStatusDone},
+	}, a.updateIssueWorkflow)
+	if closeOwn.Code != http.StatusSeeOther {
+		t.Fatalf("resident close status = %d, want redirect", closeOwn.Code)
+	}
+	closed, _ := a.issueStore.Get("jhw22", own.ID)
+	if closed.Status != issueStatusDone {
+		t.Fatalf("closed status = %q", closed.Status)
+	}
+	reopenOwn := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/workflow", url.Values{
+		"id":     {own.ID},
+		"status": {issueStatusNew},
+	}, a.updateIssueWorkflow)
+	if reopenOwn.Code != http.StatusSeeOther {
+		t.Fatalf("resident reopen status = %d, want redirect", reopenOwn.Code)
+	}
+	reopened, _ := a.issueStore.Get("jhw22", own.ID)
+	if reopened.Status != issueStatusNew {
+		t.Fatalf("reopened status = %q", reopened.Status)
+	}
+
+	otherUpdate := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/workflow", url.Values{
+		"id":     {other.ID},
+		"status": {issueStatusDone},
+	}, a.updateIssueWorkflow)
+	if otherUpdate.Code != http.StatusForbidden {
+		t.Fatalf("resident other issue status = %d, want 403", otherUpdate.Code)
+	}
+	priorityUpdate := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/workflow", url.Values{
+		"id":       {own.ID},
+		"status":   {issueStatusDone},
+		"priority": {issuePriorityUrgent},
+	}, a.updateIssueWorkflow)
+	if priorityUpdate.Code != http.StatusForbidden {
+		t.Fatalf("resident priority update status = %d, want 403", priorityUpdate.Code)
+	}
+}
+
 func minimalPNG() []byte {
 	return []byte{
 		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,

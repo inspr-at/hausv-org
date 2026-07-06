@@ -38,19 +38,27 @@ import (
 var assets embed.FS
 
 const (
-	roleAdmin           = "Admin"
-	roleManager         = "Verwalter"
-	roleOwner           = "Eigentümer"
-	roleRenter          = "Mieter"
-	roleBeirat          = "Beirat"
-	roleResident        = "Bewohner"
-	permissionParking   = "parking"
-	authMethodEmail     = "email"
-	authMethodOIDC      = "oidc"
-	issueStatusOpen     = "Offen"
-	issuePriorityNorm   = "Normal"
-	issueLocationUnit   = "own-unit"
-	issueLocationCommon = "common"
+	roleAdmin            = "Admin"
+	roleManager          = "Verwalter"
+	roleOwner            = "Eigentümer"
+	roleRenter           = "Mieter"
+	roleBeirat           = "Beirat"
+	roleResident         = "Bewohner"
+	permissionParking    = "parking"
+	authMethodEmail      = "email"
+	authMethodOIDC       = "oidc"
+	issueStatusNew       = "Neu"
+	issueStatusProgress  = "In Bearbeitung"
+	issueStatusDone      = "Erledigt"
+	issueStatusRejected  = "Abgelehnt"
+	issueStatusDuplicate = "Duplikat"
+	issueStatusOpen      = issueStatusNew
+	issuePriorityLow     = "Niedrig"
+	issuePriorityNorm    = "Mittel"
+	issuePriorityHigh    = "Hoch"
+	issuePriorityUrgent  = "Dringend"
+	issueLocationUnit    = "own-unit"
+	issueLocationCommon  = "common"
 )
 
 const (
@@ -306,35 +314,67 @@ type issueStoreData struct {
 }
 
 type residentIssue struct {
-	ID             string    `json:"id"`
-	TenantSlug     string    `json:"tenant"`
-	AuthorEmail    string    `json:"author_email"`
-	AuthorName     string    `json:"author_name"`
-	Category       string    `json:"category"`
-	Title          string    `json:"title"`
-	Body           string    `json:"body"`
-	LocationType   string    `json:"location_type"`
-	LocationDetail string    `json:"location_detail"`
-	PhotoPaths     []string  `json:"photo_paths"`
-	Status         string    `json:"status"`
-	Priority       string    `json:"priority"`
-	AssigneeEmail  string    `json:"assignee_email,omitempty"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID              string              `json:"id"`
+	TenantSlug      string              `json:"tenant"`
+	AuthorEmail     string              `json:"author_email"`
+	AuthorName      string              `json:"author_name"`
+	Category        string              `json:"category"`
+	Title           string              `json:"title"`
+	Body            string              `json:"body"`
+	LocationType    string              `json:"location_type"`
+	LocationDetail  string              `json:"location_detail"`
+	PhotoPaths      []string            `json:"photo_paths"`
+	Status          string              `json:"status"`
+	Priority        string              `json:"priority"`
+	AssigneeEmail   string              `json:"assignee_email,omitempty"`
+	StatusChangedAt time.Time           `json:"status_changed_at,omitempty"`
+	StatusChangedBy string              `json:"status_changed_by,omitempty"`
+	StatusHistory   []issueStatusChange `json:"status_history,omitempty"`
+	CreatedAt       time.Time           `json:"created_at"`
+	UpdatedAt       time.Time           `json:"updated_at"`
+}
+
+type issueStatusChange struct {
+	From       string    `json:"from"`
+	To         string    `json:"to"`
+	ActorEmail string    `json:"actor_email"`
+	ActorName  string    `json:"actor_name"`
+	ChangedAt  time.Time `json:"changed_at"`
+}
+
+type issueWorkflowUpdate struct {
+	Status        string
+	Priority      string
+	AssigneeEmail string
+	ActorEmail    string
+	ActorName     string
+	ChangedAt     time.Time
+}
+
+type selectOption struct {
+	Value    string
+	Label    string
+	Selected bool
 }
 
 type issueView struct {
-	ID          string
-	Title       string
-	Body        string
-	Category    string
-	Status      string
-	StatusClass string
-	Priority    string
-	Location    string
-	CreatedAt   string
-	PhotoCount  int
-	HasPhotos   bool
+	ID              string
+	Title           string
+	Body            string
+	Category        string
+	Status          string
+	StatusClass     string
+	Priority        string
+	AssigneeEmail   string
+	HasAssignee     bool
+	Location        string
+	CreatedAt       string
+	CanClose        bool
+	CanReopen       bool
+	PhotoCount      int
+	HasPhotos       bool
+	StatusOptions   []selectOption
+	PriorityOptions []selectOption
 }
 
 type unitStore struct {
@@ -508,6 +548,7 @@ func main() {
 	mux.HandleFunc("POST /app/announcements/delete", a.deleteAnnouncement)
 	mux.HandleFunc("GET /app/anliegen", a.issues)
 	mux.HandleFunc("POST /app/anliegen", a.createIssue)
+	mux.HandleFunc("POST /app/anliegen/workflow", a.updateIssueWorkflow)
 	mux.HandleFunc("GET /app/parking", a.parking)
 	mux.HandleFunc("GET /app/parking/settings", a.parkingSettings)
 	mux.HandleFunc("GET /app/parking/month/{month}", a.parkingMonth)
@@ -1208,8 +1249,13 @@ func (a *app) issues(w http.ResponseWriter, r *http.Request) {
 	profile := a.profileFor(email)
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	issues := []issueView{}
+	manageIssues := []issueView{}
+	canManageIssues := hasCapability(role, capabilityManageIssues)
 	if a.issueStore != nil {
-		issues = issueViews(a.issueStore.ListAuthor(tenant.Slug, email))
+		issues = issueViewsForActor(a.issueStore.ListAuthor(tenant.Slug, email), role, email)
+		if canManageIssues {
+			manageIssues = issueViewsForActor(a.issueStore.ListTenant(tenant.Slug), role, email)
+		}
 	}
 	msg, msgOK := issueMessage(r.URL.Query().Get("issue"))
 	a.render(w, "issues", map[string]any{
@@ -1222,9 +1268,12 @@ func (a *app) issues(w http.ResponseWriter, r *http.Request) {
 		"IsAdmin":                isAdmin,
 		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
 		"CanManageAnnouncements": canManageAnnouncements(role),
+		"CanManageIssues":        canManageIssues,
 		"ActivePage":             "issues",
 		"Issues":                 issues,
 		"HasIssues":              len(issues) > 0,
+		"ManageIssues":           manageIssues,
+		"HasManageIssues":        len(manageIssues) > 0,
 		"IssueMsg":               msg,
 		"IssueOK":                msgOK,
 	})
@@ -1234,10 +1283,14 @@ func issueMessage(status string) (string, bool) {
 	switch status {
 	case "created":
 		return "Anliegen gespeichert. Die Verwaltung sieht es im nächsten Bearbeitungsschritt.", true
+	case "updated":
+		return "Anliegen aktualisiert.", true
 	case "invalid":
 		return "Bitte Kategorie, Ort, Titel und Beschreibung prüfen.", false
 	case "photo":
 		return "Das Foto konnte nicht übernommen werden. Erlaubt sind JPG, PNG oder WebP bis 5 MB.", false
+	case "missing":
+		return "Dieses Anliegen wurde nicht gefunden.", false
 	case "error":
 		return "Das Anliegen konnte nicht gespeichert werden.", false
 	default:
@@ -1284,6 +1337,65 @@ func (a *app) createIssue(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	http.Redirect(w, r, "/app/anliegen?issue=created", http.StatusSeeOther)
+}
+
+func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimSpace(r.FormValue("id"))
+	existing, found := a.issueStore.Get(tenant.Slug, id)
+	if !found {
+		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
+		return
+	}
+
+	canManage := hasCapability(role, capabilityManageIssues)
+	isOwner := normalizeEmail(existing.AuthorEmail) == normalizeEmail(email)
+	status := normalizeIssueStatus(r.FormValue("status"))
+	if status == "" {
+		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		return
+	}
+	priority := normalizeIssuePriority(r.FormValue("priority"))
+	assignee := normalizeEmail(r.FormValue("assignee_email"))
+	if !canManage {
+		if !isOwner || r.FormValue("priority") != "" || r.FormValue("assignee_email") != "" || !canResidentTransition(existing.Status, status) {
+			http.Error(w, "Dieser Statuswechsel ist der Verwaltung vorbehalten.", http.StatusForbidden)
+			return
+		}
+		priority = normalizeIssuePriority(existing.Priority)
+		assignee = normalizeEmail(existing.AssigneeEmail)
+	}
+	if priority == "" {
+		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileFor(email)
+	if _, _, err := a.issueStore.UpdateWorkflow(tenant.Slug, id, issueWorkflowUpdate{
+		Status:        status,
+		Priority:      priority,
+		AssigneeEmail: assignee,
+		ActorEmail:    email,
+		ActorName:     profile.DisplayName(),
+		ChangedAt:     time.Now(),
+	}); err != nil {
+		log.Printf("issue workflow update failed for %s/%s: %v", tenant.Slug, id, err)
+		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
 }
 
 func (a *app) parking(w http.ResponseWriter, r *http.Request) {
@@ -1869,6 +1981,54 @@ func normalizeIssueCategory(raw string) string {
 	}
 }
 
+func normalizeIssueStatus(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "neu", "offen", "new", "open":
+		return issueStatusNew
+	case "in bearbeitung", "bearbeitung", "in-arbeit", "progress", "in_progress":
+		return issueStatusProgress
+	case "erledigt", "geschlossen", "done", "closed":
+		return issueStatusDone
+	case "abgelehnt", "rejected":
+		return issueStatusRejected
+	case "duplikat", "duplicate":
+		return issueStatusDuplicate
+	default:
+		return ""
+	}
+}
+
+func issueStatuses() []string {
+	return []string{issueStatusNew, issueStatusProgress, issueStatusDone, issueStatusRejected, issueStatusDuplicate}
+}
+
+func normalizeIssuePriority(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "niedrig", "low":
+		return issuePriorityLow
+	case "", "normal", "mittel", "medium":
+		return issuePriorityNorm
+	case "hoch", "high":
+		return issuePriorityHigh
+	case "dringend", "urgent":
+		return issuePriorityUrgent
+	default:
+		return ""
+	}
+}
+
+func issuePriorities() []string {
+	return []string{issuePriorityLow, issuePriorityNorm, issuePriorityHigh, issuePriorityUrgent}
+}
+
+func issueSelectOptions(values []string, selected string) []selectOption {
+	options := make([]selectOption, 0, len(values))
+	for _, value := range values {
+		options = append(options, selectOption{Value: value, Label: value, Selected: value == selected})
+	}
+	return options
+}
+
 func normalizeIssueLocation(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case issueLocationUnit, "eigene einheit", "wohnung", "unit":
@@ -1893,13 +2053,28 @@ func issueLocationLabel(locationType string, detail string) string {
 }
 
 func issueStatusClass(status string) string {
-	switch strings.ToLower(strings.TrimSpace(status)) {
-	case "in arbeit":
+	switch normalizeIssueStatus(status) {
+	case issueStatusProgress:
 		return "status-progress"
-	case "erledigt":
+	case issueStatusDone:
 		return "status-done"
+	case issueStatusRejected, issueStatusDuplicate:
+		return "status-closed"
 	default:
 		return "status-open"
+	}
+}
+
+func canResidentTransition(from string, to string) bool {
+	from = normalizeIssueStatus(from)
+	to = normalizeIssueStatus(to)
+	switch to {
+	case issueStatusDone:
+		return from == issueStatusNew || from == issueStatusProgress
+	case issueStatusNew:
+		return from == issueStatusDone || from == issueStatusRejected || from == issueStatusDuplicate
+	default:
+		return false
 	}
 }
 
@@ -1918,21 +2093,42 @@ func issuePhotoHeader(r *http.Request) (*multipart.FileHeader, bool) {
 }
 
 func issueViews(items []residentIssue) []issueView {
+	return issueViewsForActor(items, "", "")
+}
+
+func issueViewsForActor(items []residentIssue, role string, actorEmail string) []issueView {
 	views := make([]issueView, 0, len(items))
+	actorEmail = normalizeEmail(actorEmail)
+	canManage := hasCapability(role, capabilityManageIssues)
 	for _, item := range items {
 		photoCount := len(item.PhotoPaths)
+		status := normalizeIssueStatus(item.Status)
+		if status == "" {
+			status = issueStatusOpen
+		}
+		priority := normalizeIssuePriority(item.Priority)
+		if priority == "" {
+			priority = issuePriorityNorm
+		}
+		isOwner := normalizeEmail(item.AuthorEmail) == actorEmail
 		views = append(views, issueView{
-			ID:          item.ID,
-			Title:       item.Title,
-			Body:        item.Body,
-			Category:    item.Category,
-			Status:      item.Status,
-			StatusClass: issueStatusClass(item.Status),
-			Priority:    item.Priority,
-			Location:    issueLocationLabel(item.LocationType, item.LocationDetail),
-			CreatedAt:   item.CreatedAt.In(time.Local).Format("02.01.2006 15:04"),
-			PhotoCount:  photoCount,
-			HasPhotos:   photoCount > 0,
+			ID:              item.ID,
+			Title:           item.Title,
+			Body:            item.Body,
+			Category:        item.Category,
+			Status:          status,
+			StatusClass:     issueStatusClass(status),
+			Priority:        priority,
+			AssigneeEmail:   item.AssigneeEmail,
+			HasAssignee:     item.AssigneeEmail != "",
+			Location:        issueLocationLabel(item.LocationType, item.LocationDetail),
+			CreatedAt:       item.CreatedAt.In(time.Local).Format("02.01.2006 15:04"),
+			CanClose:        !canManage && isOwner && canResidentTransition(status, issueStatusDone),
+			CanReopen:       !canManage && isOwner && canResidentTransition(status, issueStatusNew),
+			PhotoCount:      photoCount,
+			HasPhotos:       photoCount > 0,
+			StatusOptions:   issueSelectOptions(issueStatuses(), status),
+			PriorityOptions: issueSelectOptions(issuePriorities(), priority),
 		})
 	}
 	return views
@@ -2650,11 +2846,11 @@ func (s *issueStore) Create(item residentIssue) (residentIssue, error) {
 	if item.TenantSlug == "" || item.AuthorEmail == "" || item.Category == "" || item.LocationType == "" || item.Title == "" || item.Body == "" {
 		return residentIssue{}, fmt.Errorf("invalid issue")
 	}
-	item.Status = strings.TrimSpace(item.Status)
+	item.Status = normalizeIssueStatus(item.Status)
 	if item.Status == "" {
 		item.Status = issueStatusOpen
 	}
-	item.Priority = strings.TrimSpace(item.Priority)
+	item.Priority = normalizeIssuePriority(item.Priority)
 	if item.Priority == "" {
 		item.Priority = issuePriorityNorm
 	}
@@ -2667,6 +2863,14 @@ func (s *issueStore) Create(item residentIssue) (residentIssue, error) {
 		item.UpdatedAt = item.CreatedAt
 	} else {
 		item.UpdatedAt = item.UpdatedAt.UTC()
+	}
+	if item.StatusChangedAt.IsZero() {
+		item.StatusChangedAt = item.CreatedAt
+	} else {
+		item.StatusChangedAt = item.StatusChangedAt.UTC()
+	}
+	if item.StatusChangedBy == "" {
+		item.StatusChangedBy = item.AuthorEmail
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -2710,6 +2914,79 @@ func (s *issueStore) ListAuthor(tenantSlug string, email string) []residentIssue
 	}
 	sortIssues(out)
 	return out
+}
+
+func (s *issueStore) Get(tenantSlug string, id string) (residentIssue, bool) {
+	if s == nil {
+		return residentIssue{}, false
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	if tenantSlug == "" || id == "" {
+		return residentIssue{}, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, item := range s.data.Issues {
+		if normalizeSlug(item.TenantSlug) == tenantSlug && item.ID == id {
+			return copyIssue(item), true
+		}
+	}
+	return residentIssue{}, false
+}
+
+func (s *issueStore) UpdateWorkflow(tenantSlug string, id string, update issueWorkflowUpdate) (residentIssue, bool, error) {
+	if s == nil {
+		return residentIssue{}, false, nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	status := normalizeIssueStatus(update.Status)
+	priority := normalizeIssuePriority(update.Priority)
+	if tenantSlug == "" || id == "" || status == "" || priority == "" {
+		return residentIssue{}, false, fmt.Errorf("invalid issue workflow update")
+	}
+	if update.ChangedAt.IsZero() {
+		update.ChangedAt = time.Now()
+	}
+	changedAt := update.ChangedAt.UTC()
+	actorEmail := normalizeEmail(update.ActorEmail)
+	actorName := strings.TrimSpace(update.ActorName)
+	assignee := normalizeEmail(update.AssigneeEmail)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, existing := range s.data.Issues {
+		if normalizeSlug(existing.TenantSlug) != tenantSlug || existing.ID != id {
+			continue
+		}
+		updated := existing
+		oldStatus := normalizeIssueStatus(updated.Status)
+		if oldStatus == "" {
+			oldStatus = issueStatusOpen
+		}
+		updated.Status = status
+		updated.Priority = priority
+		updated.AssigneeEmail = assignee
+		updated.UpdatedAt = changedAt
+		if oldStatus != status {
+			updated.StatusChangedAt = changedAt
+			updated.StatusChangedBy = actorEmail
+			updated.StatusHistory = append(updated.StatusHistory, issueStatusChange{
+				From:       oldStatus,
+				To:         status,
+				ActorEmail: actorEmail,
+				ActorName:  actorName,
+				ChangedAt:  changedAt,
+			})
+		}
+		s.data.Issues[i] = updated
+		if err := s.saveLocked(); err != nil {
+			return residentIssue{}, false, err
+		}
+		return copyIssue(updated), true, nil
+	}
+	return residentIssue{}, false, nil
 }
 
 func (s *issueStore) SavePhoto(tenantSlug string, issueID string, header *multipart.FileHeader) (string, error) {
@@ -2809,6 +3086,7 @@ func (s *issueStore) saveLocked() error {
 
 func copyIssue(item residentIssue) residentIssue {
 	item.PhotoPaths = append([]string(nil), item.PhotoPaths...)
+	item.StatusHistory = append([]issueStatusChange(nil), item.StatusHistory...)
 	return item
 }
 
@@ -5719,6 +5997,7 @@ const pageTemplates = `
     .pill.status-open { background: rgba(200,153,63,.16); color: #8a6a1f; }
     .pill.status-progress { background: rgba(32,37,31,.08); color: var(--ink); }
     .pill.status-done { background: rgba(47,107,74,.12); color: var(--leaf); }
+    .pill.status-closed { background: rgba(158,42,43,.1); color: #9e2a2b; }
     .issue-layout { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(280px,.8fr); gap: 22px; align-items: start; }
     .issue-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
     .issue-form label { display: grid; gap: 7px; color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
@@ -5740,6 +6019,13 @@ const pageTemplates = `
     .issue-card h3 { font-size: 18px; }
     .issue-meta { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; color: var(--soft); font-size: 12.5px; font-weight: 700; }
     .issue-location { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .issue-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+    .issue-actions form { margin: 0; }
+    .issue-actions label { display: grid; gap: 5px; min-width: 150px; color: var(--gold-ink); font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .issue-actions label.assignee { flex: 1 1 240px; }
+    .issue-actions input, .issue-actions select { width: 100%; border: 1px solid #e2dac9; border-radius: 7px; min-height: 38px; padding: 8px 10px; color: var(--ink); background: #fffefb; font: inherit; font-size: 13px; }
+    .issue-actions button { min-height: 38px; border: 1px solid var(--ink); border-radius: 7px; padding: 8px 12px; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+    .issue-actions .ghost { background: transparent; color: var(--ink); border-color: var(--line); }
     .dialog { border: 1px solid var(--line); border-radius: 10px; padding: 0; width: min(680px, calc(100vw - 28px)); color: var(--ink); background: var(--panel); box-shadow: 0 28px 70px rgba(0,0,0,.34); }
     .dialog::backdrop { background: rgba(23,32,25,.42); }
     .dialog form { margin: 0; }
@@ -5988,10 +6274,17 @@ const pageTemplates = `
                     <div class="issue-meta">
                       <span class="pill {{.StatusClass}}">{{.Status}}</span>
                       <span class="pill">{{.Category}}</span>
+                      <span class="pill">{{.Priority}}</span>
                       <span>{{.CreatedAt}}</span>
                     </div>
                     <h3>{{.Title}}</h3>
-                    <p class="issue-location">{{.Location}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
+                    <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
+                    {{if or .CanClose .CanReopen}}
+                      <div class="issue-actions">
+                        {{if .CanClose}}<form method="post" action="/app/anliegen/workflow"><input type="hidden" name="id" value="{{.ID}}"><input type="hidden" name="status" value="Erledigt"><button class="ghost" type="submit">Erledigt melden</button></form>{{end}}
+                        {{if .CanReopen}}<form method="post" action="/app/anliegen/workflow"><input type="hidden" name="id" value="{{.ID}}"><input type="hidden" name="status" value="Neu"><button class="ghost" type="submit">Wieder öffnen</button></form>{{end}}
+                      </div>
+                    {{end}}
                   </article>
                 {{end}}
               </div>
@@ -6000,6 +6293,51 @@ const pageTemplates = `
             {{end}}
           </aside>
         </div>
+        {{if .CanManageIssues}}
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <div class="kicker">Anliegen verwalten</div>
+                <p class="muted">Status, Priorität und Zuständigkeit innerhalb der Hausverwaltung setzen.</p>
+              </div>
+            </div>
+            {{if .HasManageIssues}}
+              <div class="issue-list">
+                {{range .ManageIssues}}
+                  <article class="issue-card">
+                    <div class="issue-meta">
+                      <span class="pill {{.StatusClass}}">{{.Status}}</span>
+                      <span class="pill">{{.Category}}</span>
+                      <span class="pill">{{.Priority}}</span>
+                      <span>{{.CreatedAt}}</span>
+                    </div>
+                    <h3>{{.Title}}</h3>
+                    <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
+                    <form class="issue-actions" method="post" action="/app/anliegen/workflow">
+                      <input type="hidden" name="id" value="{{.ID}}">
+                      <label>Status
+                        <select name="status">
+                          {{range .StatusOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                        </select>
+                      </label>
+                      <label>Priorität
+                        <select name="priority">
+                          {{range .PriorityOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                        </select>
+                      </label>
+                      <label class="assignee">Zuständig
+                        <input type="email" name="assignee_email" value="{{.AssigneeEmail}}" placeholder="name@example.com">
+                      </label>
+                      <button type="submit">Aktualisieren</button>
+                    </form>
+                  </article>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty">Noch keine Anliegen im Haus erfasst.</p>
+            {{end}}
+          </section>
+        {{end}}
       </section>
     </main>
 {{template "appClose" .}}
