@@ -67,8 +67,11 @@ const (
 )
 
 const (
-	maxIssuePhotoBytes = 5 << 20
-	maxIssueFormBytes  = maxIssuePhotoBytes + (1 << 20)
+	defaultTenantHeroImageURL = "/assets/jhw22-hero.jpg"
+	maxIssuePhotoBytes        = 5 << 20
+	maxIssueFormBytes         = maxIssuePhotoBytes + (1 << 20)
+	maxTenantHeroBytes        = 5 << 20
+	maxTenantHeroFormBytes    = maxTenantHeroBytes + (1 << 20)
 )
 
 type capability string
@@ -115,6 +118,8 @@ type app struct {
 	eventStore            *eventStore
 	notificationPrefs     *notificationPrefStore
 	profileOverlays       *profileOverlayStore
+	tenantOverrides       *tenantOverrideStore
+	tenantHeroDir         string
 	inviteStore           *inviteStore
 	activityStore         *activityStore
 	unitStore             *unitStore
@@ -195,11 +200,15 @@ type smtpMailer struct {
 }
 
 type tenantConfig struct {
-	Slug    string              `json:"slug"`
-	Name    string              `json:"name"`
-	Address string              `json:"address"`
-	Host    string              `json:"host"`
-	HA      homeAssistantConfig `json:"-"`
+	Slug         string              `json:"slug"`
+	Name         string              `json:"name"`
+	Address      string              `json:"address"`
+	ContactName  string              `json:"contact_name,omitempty"`
+	ContactEmail string              `json:"contact_email,omitempty"`
+	ContactPhone string              `json:"contact_phone,omitempty"`
+	HeroImageURL string              `json:"hero_image_url,omitempty"`
+	Host         string              `json:"host"`
+	HA           homeAssistantConfig `json:"-"`
 }
 
 type homeAssistantConfig struct {
@@ -309,6 +318,27 @@ type profileOverlay struct {
 	LastName  string    `json:"last_name"`
 	Phone     string    `json:"phone,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
+}
+
+type tenantOverrideStore struct {
+	mu   sync.Mutex
+	path string
+	data tenantOverrideStoreData
+}
+
+type tenantOverrideStoreData struct {
+	Tenants map[string]tenantOverride `json:"tenants"`
+}
+
+type tenantOverride struct {
+	MetaSet      bool      `json:"meta_set,omitempty"`
+	Name         string    `json:"name,omitempty"`
+	Address      string    `json:"address,omitempty"`
+	ContactName  string    `json:"contact_name,omitempty"`
+	ContactEmail string    `json:"contact_email,omitempty"`
+	ContactPhone string    `json:"contact_phone,omitempty"`
+	HeroImage    string    `json:"hero_image,omitempty"`
+	UpdatedAt    time.Time `json:"updated_at,omitempty"`
 }
 
 type notificationPreferences struct {
@@ -550,6 +580,16 @@ type profileUnitView struct {
 	Share    string
 }
 
+type buildingUnitView struct {
+	ID                 string
+	Label              string
+	Share              string
+	ShareValue         string
+	OwnerEmails        string
+	RenterEmails       string
+	DeleteConfirmLabel string
+}
+
 type unitMembers struct {
 	Unit    unit
 	Owners  []string
@@ -683,6 +723,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /assets/", http.FileServerFS(assets))
+	mux.HandleFunc("GET /tenant-hero/{tenant}", a.tenantHeroImage)
 	mux.HandleFunc("GET /healthz", a.health)
 	mux.HandleFunc("GET /", a.home)
 	mux.HandleFunc("POST /auth/request", a.requestLogin)
@@ -710,6 +751,11 @@ func main() {
 	mux.HandleFunc("POST /app/parking/settings", a.updateParkingSettings)
 	mux.HandleFunc("POST /app/parking/month", a.updateParkingMonth)
 	mux.HandleFunc("GET /app/settings", a.settingsHub)
+	mux.HandleFunc("GET /app/settings/building", a.buildingSettings)
+	mux.HandleFunc("POST /app/settings/building", a.updateBuildingSettings)
+	mux.HandleFunc("POST /app/settings/building/hero", a.updateBuildingHero)
+	mux.HandleFunc("POST /app/settings/building/units", a.upsertBuildingUnit)
+	mux.HandleFunc("POST /app/settings/building/units/delete", a.deleteBuildingUnit)
 	mux.HandleFunc("GET /app/settings/profile", a.profileSettings)
 	mux.HandleFunc("POST /app/settings/profile", a.updateProfileSettings)
 	mux.HandleFunc("GET /app/settings/notifications", a.notificationSettings)
@@ -851,6 +897,12 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	tenantDataPath := env("TENANT_DATA_PATH", "tmp/tenant_overrides.json")
+	tenantOverrides, err := newTenantOverrideStore(tenantDataPath)
+	if err != nil {
+		return nil, err
+	}
+	tenantHeroDir := env("TENANT_HERO_DIR", filepath.Join(filepath.Dir(tenantDataPath), "tenant-heroes"))
 	inviteDataPath := env("INVITE_DATA_PATH", "tmp/invites.json")
 	invites, err := newInviteStore(inviteDataPath)
 	if err != nil {
@@ -916,6 +968,8 @@ func newApp() (*app, error) {
 		eventStore:            events,
 		notificationPrefs:     notificationPrefs,
 		profileOverlays:       profileOverlays,
+		tenantOverrides:       tenantOverrides,
+		tenantHeroDir:         tenantHeroDir,
 		inviteStore:           invites,
 		activityStore:         activity,
 		unitStore:             units,
@@ -942,8 +996,9 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 	if a.unitStore != nil {
 		unitCount = a.unitStore.UnitCount(tenant.Slug)
 	}
+	titleName := firstNonEmpty(tenant.Name, "WEG Portal")
 	a.render(w, "home", map[string]any{
-		"Title":               "WEG Portal " + tenant.Address,
+		"Title":               titleName + " " + tenant.Address,
 		"Tenant":              tenant,
 		"Email":               email,
 		"UnitCount":           unitCount,
@@ -2863,6 +2918,20 @@ func issuePhotoHeader(r *http.Request) (*multipart.FileHeader, bool) {
 	return files[0], true
 }
 
+func tenantHeroHeader(r *http.Request) (*multipart.FileHeader, bool) {
+	if r.MultipartForm == nil {
+		return nil, false
+	}
+	files := r.MultipartForm.File["hero_image"]
+	if len(files) == 0 {
+		files = r.MultipartForm.File["photo"]
+	}
+	if len(files) == 0 || files[0] == nil || files[0].Filename == "" || files[0].Size == 0 {
+		return nil, false
+	}
+	return files[0], true
+}
+
 func issueBoardAction(boardOnly bool) string {
 	if boardOnly {
 		return "/app/anliegen/board"
@@ -3184,6 +3253,335 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request) {
 		"CanSeeParking": isAdmin || profile.HasPermission(permissionParking),
 		"ActivePage":    "settings",
 	})
+}
+
+func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request) {
+	tenant, email, role, profile, ok := a.buildingSettingsContext(w, r)
+	if !ok {
+		return
+	}
+	buildingMsg, buildingOK := buildingSettingsMessage(r.URL.Query().Get("building"))
+	heroMsg, heroOK := buildingHeroMessage(r.URL.Query().Get("hero"))
+	unitMsg, unitOK := buildingUnitMessage(r.URL.Query().Get("unit"))
+	a.render(w, "buildingSettings", map[string]any{
+		"Title":         "Gebäude",
+		"Tenant":        tenant,
+		"Email":         email,
+		"DisplayName":   profile.DisplayName(),
+		"Initials":      profile.Initials(),
+		"Role":          role,
+		"IsAdmin":       hasCapability(role, capabilityPlatformAdmin),
+		"CanSeeParking": hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
+		"ActivePage":    "settings",
+		"BuildingMsg":   buildingMsg,
+		"BuildingOK":    buildingOK,
+		"HeroMsg":       heroMsg,
+		"HeroOK":        heroOK,
+		"UnitMsg":       unitMsg,
+		"UnitOK":        unitOK,
+		"Units":         buildingUnitViews(a.unitStore.ListTenant(tenant.Slug)),
+	})
+}
+
+func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request) {
+	tenant, _, _, _, ok := a.buildingSettingsContext(w, r)
+	if !ok {
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	override, err := tenantOverrideFromForm(r.Form)
+	if err != nil {
+		http.Redirect(w, r, "/app/settings/building?building=invalid", http.StatusSeeOther)
+		return
+	}
+	if a.tenantOverrides != nil {
+		if err := a.tenantOverrides.SetMeta(tenant.Slug, override); err != nil {
+			log.Printf("building settings save failed for %s: %v", tenant.Slug, err)
+			http.Redirect(w, r, "/app/settings/building?building=error", http.StatusSeeOther)
+			return
+		}
+	}
+	http.Redirect(w, r, "/app/settings/building?building=saved", http.StatusSeeOther)
+}
+
+func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request) {
+	tenant, _, _, _, ok := a.buildingSettingsContext(w, r)
+	if !ok {
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseMultipartForm(maxTenantHeroFormBytes); err != nil {
+		http.Redirect(w, r, "/app/settings/building?hero=invalid", http.StatusSeeOther)
+		return
+	}
+	header, ok := tenantHeroHeader(r)
+	if !ok {
+		http.Redirect(w, r, "/app/settings/building?hero=invalid", http.StatusSeeOther)
+		return
+	}
+	filename, err := a.saveTenantHeroImage(tenant.Slug, header)
+	if err != nil {
+		log.Printf("tenant hero upload failed for %s: %v", tenant.Slug, err)
+		http.Redirect(w, r, "/app/settings/building?hero=invalid", http.StatusSeeOther)
+		return
+	}
+	if a.tenantOverrides != nil {
+		if err := a.tenantOverrides.SetHeroImage(tenant.Slug, filename); err != nil {
+			log.Printf("tenant hero save failed for %s: %v", tenant.Slug, err)
+			http.Redirect(w, r, "/app/settings/building?hero=error", http.StatusSeeOther)
+			return
+		}
+	}
+	http.Redirect(w, r, "/app/settings/building?hero=saved", http.StatusSeeOther)
+}
+
+func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request) {
+	tenant, _, _, _, ok := a.buildingSettingsContext(w, r)
+	if !ok {
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	item, err := buildingUnitFromForm(tenant.Slug, r.Form)
+	if err != nil {
+		http.Redirect(w, r, "/app/settings/building?unit=invalid", http.StatusSeeOther)
+		return
+	}
+	origID := normalizeUnitID(r.FormValue("orig_id"))
+	units := a.unitStore.ListTenant(tenant.Slug)
+	replaced := false
+	for i := range units {
+		if normalizeUnitID(units[i].ID) == item.ID && (origID == "" || origID != item.ID) {
+			http.Redirect(w, r, "/app/settings/building?unit=duplicate", http.StatusSeeOther)
+			return
+		}
+	}
+	if origID == "" {
+		origID = item.ID
+	}
+	for i := range units {
+		if normalizeUnitID(units[i].ID) == origID {
+			units[i] = item
+			replaced = true
+			break
+		}
+	}
+	if !replaced {
+		units = append(units, item)
+	}
+	if err := a.unitStore.SetTenantUnits(tenant.Slug, units); err != nil {
+		log.Printf("unit save failed for %s: %v", tenant.Slug, err)
+		http.Redirect(w, r, "/app/settings/building?unit=error", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/app/settings/building?unit=saved", http.StatusSeeOther)
+}
+
+func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request) {
+	tenant, _, _, _, ok := a.buildingSettingsContext(w, r)
+	if !ok {
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	deleteID := normalizeUnitID(r.FormValue("id"))
+	if deleteID == "" {
+		http.Redirect(w, r, "/app/settings/building?unit=invalid", http.StatusSeeOther)
+		return
+	}
+	units := a.unitStore.ListTenant(tenant.Slug)
+	kept := units[:0]
+	removed := false
+	for _, item := range units {
+		if normalizeUnitID(item.ID) == deleteID {
+			removed = true
+			continue
+		}
+		kept = append(kept, item)
+	}
+	if !removed {
+		http.Redirect(w, r, "/app/settings/building?unit=missing", http.StatusSeeOther)
+		return
+	}
+	if err := a.unitStore.SetTenantUnits(tenant.Slug, kept); err != nil {
+		log.Printf("unit delete failed for %s: %v", tenant.Slug, err)
+		http.Redirect(w, r, "/app/settings/building?unit=error", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/app/settings/building?unit=deleted", http.StatusSeeOther)
+}
+
+func (a *app) buildingSettingsContext(w http.ResponseWriter, r *http.Request) (tenantConfig, string, string, userProfile, bool) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return tenantConfig{}, "", "", userProfile{}, false
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return tenantConfig{}, "", "", userProfile{}, false
+	}
+	if !hasCapability(role, capabilityManageBuilding) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return tenantConfig{}, "", "", userProfile{}, false
+	}
+	return tenant, email, role, a.profileForTenant(email, tenant.Slug), true
+}
+
+func tenantOverrideFromForm(values url.Values) (tenantOverride, error) {
+	override := tenantOverride{
+		MetaSet:      true,
+		Name:         strings.TrimSpace(values.Get("name")),
+		Address:      strings.TrimSpace(values.Get("address")),
+		ContactName:  strings.TrimSpace(values.Get("contact_name")),
+		ContactEmail: normalizeEmail(values.Get("contact_email")),
+		ContactPhone: strings.TrimSpace(values.Get("contact_phone")),
+	}
+	if override.Name == "" || override.Address == "" {
+		return tenantOverride{}, fmt.Errorf("building name and address are required")
+	}
+	if len([]rune(override.Name)) > 160 || len([]rune(override.Address)) > 500 || len([]rune(override.ContactName)) > 160 || len([]rune(override.ContactPhone)) > 80 {
+		return tenantOverride{}, fmt.Errorf("building field too long")
+	}
+	if rawEmail := strings.TrimSpace(values.Get("contact_email")); rawEmail != "" {
+		if _, err := mail.ParseAddress(rawEmail); err != nil || override.ContactEmail == "" {
+			return tenantOverride{}, fmt.Errorf("invalid contact email")
+		}
+	}
+	return override, nil
+}
+
+func buildingUnitFromForm(tenantSlug string, values url.Values) (unit, error) {
+	label := strings.TrimSpace(values.Get("label"))
+	id := normalizeUnitID(values.Get("id"))
+	if id == "" {
+		id = normalizeUnitID(label)
+	}
+	if label == "" || id == "" {
+		return unit{}, fmt.Errorf("unit label required")
+	}
+	share, err := strconv.Atoi(strings.TrimSpace(firstNonEmpty(values.Get("miteigentumsanteil"), "0")))
+	if err != nil || share < 0 || share > 1000000 {
+		return unit{}, fmt.Errorf("invalid miteigentumsanteil")
+	}
+	owners, err := emailListFromText(values.Get("owner_emails"))
+	if err != nil {
+		return unit{}, err
+	}
+	renters, err := emailListFromText(values.Get("renter_emails"))
+	if err != nil {
+		return unit{}, err
+	}
+	return unit{
+		ID:                    id,
+		TenantSlug:            normalizeSlug(tenantSlug),
+		Label:                 label,
+		MiteigentumsanteilPPM: share,
+		OwnerEmails:           owners,
+		RenterEmails:          renters,
+	}, nil
+}
+
+func emailListFromText(raw string) ([]string, error) {
+	parts := strings.FieldsFunc(raw, func(r rune) bool {
+		return r == ',' || r == ';' || r == '\n' || r == '\r' || r == '\t'
+	})
+	emails := make([]string, 0, len(parts))
+	for _, part := range parts {
+		email := normalizeEmail(part)
+		if email == "" {
+			continue
+		}
+		if _, err := mail.ParseAddress(part); err != nil {
+			return nil, fmt.Errorf("invalid email")
+		}
+		emails = append(emails, email)
+	}
+	return normalizeEmailList(emails), nil
+}
+
+func buildingUnitViews(units []unit) []buildingUnitView {
+	views := make([]buildingUnitView, 0, len(units))
+	for _, item := range units {
+		views = append(views, buildingUnitView{
+			ID:                 item.ID,
+			Label:              item.Label,
+			Share:              formatMiteigentumsanteil(item.MiteigentumsanteilPPM),
+			ShareValue:         strconv.Itoa(item.MiteigentumsanteilPPM),
+			OwnerEmails:        strings.Join(item.OwnerEmails, ", "),
+			RenterEmails:       strings.Join(item.RenterEmails, ", "),
+			DeleteConfirmLabel: "Einheit " + item.Label + " entfernen",
+		})
+	}
+	return views
+}
+
+func buildingSettingsMessage(status string) (string, bool) {
+	switch status {
+	case "saved":
+		return "Gebäudedaten gespeichert.", true
+	case "invalid":
+		return "Bitte Name, Adresse und Kontaktdaten prüfen.", false
+	case "error":
+		return "Die Gebäudedaten konnten nicht gespeichert werden.", false
+	default:
+		return "", false
+	}
+}
+
+func buildingHeroMessage(status string) (string, bool) {
+	switch status {
+	case "saved":
+		return "Hero-Bild gespeichert.", true
+	case "invalid":
+		return "Bitte ein JPG-, PNG- oder WebP-Bild bis 5 MB auswählen.", false
+	case "error":
+		return "Das Hero-Bild konnte nicht gespeichert werden.", false
+	default:
+		return "", false
+	}
+}
+
+func buildingUnitMessage(status string) (string, bool) {
+	switch status {
+	case "saved":
+		return "Einheit gespeichert.", true
+	case "deleted":
+		return "Einheit entfernt.", true
+	case "invalid":
+		return "Bitte Einheit, Anteil und E-Mail-Links prüfen.", false
+	case "duplicate":
+		return "Diese Einheit existiert bereits.", false
+	case "missing":
+		return "Diese Einheit wurde nicht gefunden.", false
+	case "error":
+		return "Die Einheiten konnten nicht gespeichert werden.", false
+	default:
+		return "", false
+	}
 }
 
 func (a *app) profileSettings(w http.ResponseWriter, r *http.Request) {
@@ -3816,11 +4214,34 @@ func (a *app) tenantPathRedirect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, target, http.StatusMovedPermanently)
 }
 
+func (a *app) tenantHeroImage(w http.ResponseWriter, r *http.Request) {
+	slug := normalizeSlug(r.PathValue("tenant"))
+	if slug == "" {
+		http.NotFound(w, r)
+		return
+	}
+	if _, ok := a.tenants[slug]; !ok {
+		http.NotFound(w, r)
+		return
+	}
+	override, ok := a.tenantOverrides.Get(slug)
+	if !ok || override.HeroImage == "" {
+		http.NotFound(w, r)
+		return
+	}
+	filename := filepath.Base(override.HeroImage)
+	if filename == "" || filename == "." || filename != override.HeroImage {
+		http.NotFound(w, r)
+		return
+	}
+	http.ServeFile(w, r, filepath.Join(a.tenantHeroDir, filename))
+}
+
 func (a *app) tenantForRequest(r *http.Request) tenantConfig {
 	host := normalizeHost(r.Host)
 	for _, tenant := range a.tenants {
 		if tenant.Host != "" && tenant.Host == host {
-			return tenant
+			return a.withTenantOverride(tenant)
 		}
 	}
 	if a.rootDomain != "" && strings.HasSuffix(host, "."+a.rootDomain) {
@@ -3835,7 +4256,38 @@ func (a *app) tenantForRequest(r *http.Request) tenantConfig {
 
 func (a *app) tenantBySlug(slug string) (tenantConfig, bool) {
 	tenant, ok := a.tenants[normalizeSlug(slug)]
-	return tenant, ok
+	if !ok {
+		return tenantConfig{}, false
+	}
+	return a.withTenantOverride(tenant), true
+}
+
+func (a *app) withTenantOverride(tenant tenantConfig) tenantConfig {
+	if strings.TrimSpace(tenant.HeroImageURL) == "" {
+		tenant.HeroImageURL = defaultTenantHeroImageURL
+	}
+	if a.tenantOverrides == nil {
+		return tenant
+	}
+	override, ok := a.tenantOverrides.Get(tenant.Slug)
+	if !ok {
+		return tenant
+	}
+	if override.MetaSet {
+		if override.Name != "" {
+			tenant.Name = override.Name
+		}
+		if override.Address != "" {
+			tenant.Address = override.Address
+		}
+		tenant.ContactName = override.ContactName
+		tenant.ContactEmail = override.ContactEmail
+		tenant.ContactPhone = override.ContactPhone
+	}
+	if override.HeroImage != "" {
+		tenant.HeroImageURL = "/tenant-hero/" + tenant.Slug
+	}
+	return tenant
 }
 
 func (a *app) publicBaseURL(r *http.Request, tenant tenantConfig) string {
@@ -4302,6 +4754,157 @@ func normalizeProfileOverlay(overlay profileOverlay) profileOverlay {
 	return overlay
 }
 
+func newTenantOverrideStore(path string) (*tenantOverrideStore, error) {
+	store := &tenantOverrideStore{path: path, data: tenantOverrideStoreData{Tenants: map[string]tenantOverride{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read tenant data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid tenant data")
+	}
+	if store.data.Tenants == nil {
+		store.data.Tenants = map[string]tenantOverride{}
+	}
+	normalized := map[string]tenantOverride{}
+	for slug, override := range store.data.Tenants {
+		slug = normalizeSlug(slug)
+		if slug == "" {
+			continue
+		}
+		normalized[slug] = normalizeTenantOverride(override)
+	}
+	store.data.Tenants = normalized
+	return store, nil
+}
+
+func (s *tenantOverrideStore) Get(tenantSlug string) (tenantOverride, bool) {
+	if s == nil {
+		return tenantOverride{}, false
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" {
+		return tenantOverride{}, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	override, ok := s.data.Tenants[tenantSlug]
+	return override, ok
+}
+
+func (s *tenantOverrideStore) Set(tenantSlug string, override tenantOverride) error {
+	override.MetaSet = true
+	return s.set(tenantSlug, override)
+}
+
+func (s *tenantOverrideStore) SetMeta(tenantSlug string, meta tenantOverride) error {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" {
+		return fmt.Errorf("invalid tenant")
+	}
+	meta = normalizeTenantOverride(meta)
+	meta.MetaSet = true
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.Tenants == nil {
+		s.data.Tenants = map[string]tenantOverride{}
+	}
+	current := normalizeTenantOverride(s.data.Tenants[tenantSlug])
+	meta.HeroImage = current.HeroImage
+	meta.UpdatedAt = time.Now().UTC()
+	s.data.Tenants[tenantSlug] = meta
+	return s.saveLocked()
+}
+
+func (s *tenantOverrideStore) SetHeroImage(tenantSlug string, filename string) error {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	filename = filepath.Base(strings.TrimSpace(filename))
+	if tenantSlug == "" || filename == "." || filename == string(filepath.Separator) || filename == "" {
+		return fmt.Errorf("invalid tenant hero image")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.Tenants == nil {
+		s.data.Tenants = map[string]tenantOverride{}
+	}
+	override := normalizeTenantOverride(s.data.Tenants[tenantSlug])
+	override.HeroImage = filename
+	override.UpdatedAt = time.Now().UTC()
+	s.data.Tenants[tenantSlug] = override
+	return s.saveLocked()
+}
+
+func (s *tenantOverrideStore) set(tenantSlug string, override tenantOverride) error {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" {
+		return fmt.Errorf("invalid tenant")
+	}
+	override = normalizeTenantOverride(override)
+	override.UpdatedAt = time.Now().UTC()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.Tenants == nil {
+		s.data.Tenants = map[string]tenantOverride{}
+	}
+	s.data.Tenants[tenantSlug] = override
+	return s.saveLocked()
+}
+
+func (s *tenantOverrideStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create tenant data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode tenant data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write tenant data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace tenant data")
+	}
+	return nil
+}
+
+func normalizeTenantOverride(override tenantOverride) tenantOverride {
+	override.Name = strings.TrimSpace(override.Name)
+	override.Address = strings.TrimSpace(override.Address)
+	override.ContactName = strings.TrimSpace(override.ContactName)
+	override.ContactEmail = normalizeEmail(override.ContactEmail)
+	override.ContactPhone = strings.TrimSpace(override.ContactPhone)
+	override.HeroImage = filepath.Base(strings.TrimSpace(override.HeroImage))
+	if override.HeroImage == "." || override.HeroImage == string(filepath.Separator) {
+		override.HeroImage = ""
+	}
+	if !override.UpdatedAt.IsZero() {
+		override.UpdatedAt = override.UpdatedAt.UTC()
+	}
+	return override
+}
+
 func (s *notificationPrefStore) Get(email string) notificationPreferences {
 	prefs := defaultNotificationPreferences()
 	if s == nil {
@@ -4612,6 +5215,71 @@ func (s *issueStore) AddComment(tenantSlug string, id string, comment issueComme
 		return copyIssue(updated), true, nil
 	}
 	return residentIssue{}, false, nil
+}
+
+func (a *app) saveTenantHeroImage(tenantSlug string, header *multipart.FileHeader) (string, error) {
+	if header == nil || header.Filename == "" || header.Size == 0 {
+		return "", fmt.Errorf("tenant hero image required")
+	}
+	if a.tenantHeroDir == "" {
+		return "", fmt.Errorf("tenant hero image directory unavailable")
+	}
+	if header.Size > maxTenantHeroBytes {
+		return "", fmt.Errorf("tenant hero image too large")
+	}
+	file, err := header.Open()
+	if err != nil {
+		return "", fmt.Errorf("could not open tenant hero image")
+	}
+	defer file.Close()
+
+	sniff := make([]byte, 512)
+	n, readErr := file.Read(sniff)
+	if readErr != nil && !errors.Is(readErr, io.EOF) {
+		return "", fmt.Errorf("could not read tenant hero image")
+	}
+	contentType := http.DetectContentType(sniff[:n])
+	ext, ok := issuePhotoExtension(contentType)
+	if !ok {
+		return "", fmt.Errorf("unsupported tenant hero image type")
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("could not rewind tenant hero image")
+	}
+
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" {
+		return "", fmt.Errorf("tenant required")
+	}
+	if err := os.MkdirAll(a.tenantHeroDir, 0o755); err != nil {
+		return "", fmt.Errorf("could not create tenant hero image directory")
+	}
+	tmp, err := os.CreateTemp(a.tenantHeroDir, tenantSlug+"-hero-*.tmp")
+	if err != nil {
+		return "", fmt.Errorf("could not create tenant hero image")
+	}
+	tmpName := tmp.Name()
+	written, copyErr := io.Copy(tmp, io.LimitReader(file, maxTenantHeroBytes+1))
+	closeErr := tmp.Close()
+	if copyErr != nil || closeErr != nil {
+		_ = os.Remove(tmpName)
+		return "", fmt.Errorf("could not write tenant hero image")
+	}
+	if written > maxTenantHeroBytes {
+		_ = os.Remove(tmpName)
+		return "", fmt.Errorf("tenant hero image too large")
+	}
+	filename := tenantSlug + "-hero" + ext
+	dest := filepath.Join(a.tenantHeroDir, filename)
+	if err := os.Chmod(tmpName, 0o600); err != nil {
+		_ = os.Remove(tmpName)
+		return "", fmt.Errorf("could not protect tenant hero image")
+	}
+	if err := os.Rename(tmpName, dest); err != nil {
+		_ = os.Remove(tmpName)
+		return "", fmt.Errorf("could not replace tenant hero image")
+	}
+	return filename, nil
 }
 
 func (s *issueStore) SavePhoto(tenantSlug string, issueID string, header *multipart.FileHeader) (string, error) {
@@ -7038,6 +7706,12 @@ func parseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 			if tenant.Address == "" {
 				tenant.Address = tenant.Slug
 			}
+			tenant.ContactName = strings.TrimSpace(tenant.ContactName)
+			tenant.ContactEmail = normalizeEmail(tenant.ContactEmail)
+			tenant.ContactPhone = strings.TrimSpace(tenant.ContactPhone)
+			if tenant.HeroImageURL == "" {
+				tenant.HeroImageURL = defaultTenantHeroImageURL
+			}
 			tenant.Host = normalizeHost(tenant.Host)
 			if tenant.Host == "" && rootDomain != "" {
 				tenant.Host = tenant.Slug + "." + rootDomain
@@ -7056,11 +7730,12 @@ func parseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 			host = defaultTenant + "." + rootDomain
 		}
 		out[defaultTenant] = tenantConfig{
-			Slug:    defaultTenant,
-			Name:    "WEG Portal",
-			Address: "Janischhofweg 22",
-			Host:    host,
-			HA:      defaultHA,
+			Slug:         defaultTenant,
+			Name:         "WEG Portal",
+			Address:      "Janischhofweg 22",
+			HeroImageURL: defaultTenantHeroImageURL,
+			Host:         host,
+			HA:           defaultHA,
 		}
 	}
 	return out, nil
@@ -7740,7 +8415,7 @@ const pageTemplates = `
     .hero { position: relative; min-height: 100vh; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; }
     .hero::before {
       content: ""; position: absolute; inset: -16px;
-      background: url('/assets/jhw22-hero.jpg') center 42% / cover no-repeat;
+      background: url('{{.Tenant.HeroImageURL}}') center 42% / cover no-repeat;
       filter: blur(3px) brightness(.74) saturate(.95); transform: scale(1.05); z-index: -2;
     }
     .hero::after {
@@ -7794,7 +8469,7 @@ const pageTemplates = `
 <body>
   <section class="hero">
     <header>
-      <a class="brand" href="/" aria-label="WEG Portal Startseite"><span class="mark">WEG</span><span class="name">{{.Tenant.Address}}</span></a>
+      <a class="brand" href="/" aria-label="WEG Portal Startseite"><span class="mark">WEG</span><span class="name">{{.Tenant.Name}}</span></a>
       <nav aria-label="Seitennavigation">
         <a href="#login">Anmelden</a>
       </nav>
@@ -7904,7 +8579,7 @@ const pageTemplates = `
     .button.small, button.small { min-height: 31px; padding: 6px 10px; font-size: 12px; }
     .button.ghost { background: transparent; }
     .banner { position: relative; height: 128px; overflow: hidden; border-bottom: 1px solid var(--line); background: #e9e4d7; }
-    .banner::before { content: ""; position: absolute; inset: 0; background: url('/assets/jhw22-hero.jpg') center 47% / cover no-repeat; }
+    .banner::before { content: ""; position: absolute; inset: 0; background: url('{{.Tenant.HeroImageURL}}') center 47% / cover no-repeat; }
     .banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(23,32,25,.1), rgba(247,243,234,.72) 76%, rgba(247,243,234,.92)); }
     .banner-kicker { position: absolute; left: clamp(28px,4vw,44px); bottom: 18px; color: var(--gold-ink); font-size: 12px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
     .home-grid { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(340px,.85fr); gap: 22px; align-items: start; }
@@ -8093,7 +8768,7 @@ const pageTemplates = `
     <div class="side-brand">
       <a class="side-mark" href="/app">WEG</a>
       <div>
-        <a class="side-title" href="/app">WEG Portal</a>
+        <a class="side-title" href="/app">{{.Tenant.Name}}</a>
         <span class="side-sub">{{.Tenant.Address}}</span>
       </div>
     </div>
@@ -8901,29 +9576,181 @@ const pageTemplates = `
           </section>
           <section class="panel">
             <div class="kicker">Verwaltung</div>
-            {{if .CanManageUsers}}
+            {{if or .CanManageUsers .CanManageBuilding .IsAdmin}}
               <div class="quick-list">
+                {{if .CanManageBuilding}}<a class="quick-row" href="/app/settings/building">
+                  <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/><path d="M8 10h.01M16 10h.01"/></svg>
+                  <div><h3>Gebäude</h3><p>Adresse, Kontakt, Hero-Bild und Einheiten verwalten.</p></div>
+                  <span class="quick-arrow">›</span>
+                </a>{{end}}
+                {{if .CanManageUsers}}
                 <a class="quick-row" href="/app/settings/users">
                   <svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg>
                   <div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div>
                   <span class="quick-arrow">›</span>
                 </a>
+                {{end}}
                 {{if .IsAdmin}}<a class="quick-row" href="/app/parking/settings">
                   <svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg>
                   <div><h3>Parkplatz-Abrechnung</h3><p>Netzgebühr und Abrechnungswerte für die private Parkplatznutzung.</p></div>
                   <span class="quick-arrow">›</span>
                 </a>{{end}}
-                <div class="quick-row disabled">
-                  <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/><path d="M8 10h.01M16 10h.01"/></svg>
-                  <div><h3>Gebäude</h3><p>Adresse, Kontakte, Einheiten und Hausdaten werden hier zusammengeführt.</p></div>
-                  <span class="pill">Vorbereitet</span>
-                </div>
               </div>
             {{else}}
               <p class="empty">Verwaltungsbereiche sind nur für berechtigte Personen sichtbar.</p>
             {{end}}
           </section>
         </div>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "buildingSettings"}}
+{{template "appOpen" .}}
+    <style>
+      .building .building-grid { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(320px,.85fr); gap: 22px; align-items: start; }
+      .building .settings-card { max-width: none; }
+      .building .meta-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+      .building .meta-form .full, .building .unit-form .full { grid-column: 1 / -1; }
+      .building .meta-form .f-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+      .building textarea { min-height: 92px; }
+      .building .hero-preview { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-soft); }
+      .building .hero-form { display: grid; gap: 12px; }
+      .building .unit-panel { display: grid; gap: 18px; }
+      .building .unit-add, .building .unit-editor { border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: var(--panel-soft); }
+      .building .unit-list { display: grid; gap: 12px; }
+      .building .unit-form { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 10px; align-items: end; }
+      .building .unit-form .f-label { grid-column: span 4; }
+      .building .unit-form .f-share { grid-column: span 3; }
+      .building .unit-form .f-owners, .building .unit-form .f-renters { grid-column: span 6; }
+      .building .unit-form .f-actions { grid-column: span 5; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+      .building .unit-delete { display: inline; margin: 0; }
+      .building .unit-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+      .building .unit-summary strong { font-family: Spectral, serif; font-size: 20px; }
+      @media (max-width: 960px) { .building .building-grid { grid-template-columns: 1fr; } }
+      @media (max-width: 760px) {
+        .building .meta-form, .building .unit-form { grid-template-columns: 1fr; }
+        .building .unit-form .f-label, .building .unit-form .f-share, .building .unit-form .f-owners, .building .unit-form .f-renters, .building .unit-form .f-actions { grid-column: 1 / -1; }
+        .building .meta-form .f-actions, .building .unit-form .f-actions { justify-content: stretch; }
+        .building .unit-form .f-actions .button { flex: 1 1 auto; }
+      }
+    </style>
+    <main class="app-main building">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Gebäude</span></span>
+        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a></div>
+      </div>
+      <section class="page wide">
+        <div>
+          <h1>Gebäude</h1>
+          <p class="lede">Stammdaten, Kontaktblock, Titelbild und Einheiten für {{.Tenant.Address}}.</p>
+        </div>
+        <div class="building-grid">
+          <section class="panel settings-card">
+            <div>
+              <h2>Stammdaten</h2>
+              <p class="muted">Diese Angaben überschreiben die Umgebungswerte für diesen Tenant.</p>
+            </div>
+            {{if .BuildingMsg}}<p class="flash {{if .BuildingOK}}ok{{end}}">{{.BuildingMsg}}</p>{{end}}
+            <form class="meta-form" method="post" action="/app/settings/building">
+              <label class="full" for="building-name">Name
+                <input id="building-name" type="text" name="name" value="{{.Tenant.Name}}" maxlength="160" required>
+              </label>
+              <label class="full" for="building-address">Adresse
+                <textarea id="building-address" name="address" maxlength="500" required>{{.Tenant.Address}}</textarea>
+              </label>
+              <label for="contact-name">Verwalter Kontakt
+                <input id="contact-name" type="text" name="contact_name" value="{{.Tenant.ContactName}}" maxlength="160" placeholder="Name oder Firma">
+              </label>
+              <label for="contact-email">Kontakt-E-Mail
+                <input id="contact-email" type="email" name="contact_email" value="{{.Tenant.ContactEmail}}" maxlength="160" autocomplete="email">
+              </label>
+              <label for="contact-phone">Kontakt-Telefon
+                <input id="contact-phone" type="tel" name="contact_phone" value="{{.Tenant.ContactPhone}}" maxlength="80" autocomplete="tel">
+              </label>
+              <div class="f-actions"><button class="button primary" type="submit">Stammdaten speichern</button></div>
+            </form>
+          </section>
+
+          <aside class="panel settings-card">
+            <div>
+              <h2>Hero-Bild</h2>
+              <p class="muted">Das Bild erscheint auf der Startseite und im App-Banner.</p>
+            </div>
+            <img class="hero-preview" src="{{.Tenant.HeroImageURL}}" alt="">
+            {{if .HeroMsg}}<p class="flash {{if .HeroOK}}ok{{end}}">{{.HeroMsg}}</p>{{end}}
+            <form class="hero-form" method="post" action="/app/settings/building/hero" enctype="multipart/form-data">
+              <label for="hero-image">Bilddatei
+                <span class="file-control"><input id="hero-image" type="file" name="hero_image" accept="image/jpeg,image/png,image/webp" required><span>Bild auswählen</span></span>
+              </label>
+              <button class="button primary" type="submit">Hero-Bild speichern</button>
+              <span class="mini">JPG, PNG oder WebP bis 5 MB.</span>
+            </form>
+          </aside>
+        </div>
+
+        <section class="panel unit-panel">
+          <div class="section-head">
+            <div>
+              <h2>Einheiten</h2>
+              <p class="muted">Wohneinheiten, Miteigentumsanteile und Eigentümer/Mieter-Links je Tenant.</p>
+            </div>
+          </div>
+          {{if .UnitMsg}}<p class="flash {{if .UnitOK}}ok{{end}}">{{.UnitMsg}}</p>{{end}}
+          <div class="unit-add">
+            <div class="unit-summary"><strong>Neue Einheit</strong><span class="pill">Anlegen</span></div>
+            <form class="unit-form" method="post" action="/app/settings/building/units">
+              <label class="f-label">Einheit
+                <input type="text" name="label" maxlength="120" required placeholder="Top 1">
+              </label>
+              <label class="f-share">Miteigentumsanteil
+                <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="0" inputmode="numeric">
+              </label>
+              <label class="f-owners">Eigentümer E-Mails
+                <input type="text" name="owner_emails" placeholder="name@example.com, zweite@example.com">
+              </label>
+              <label class="f-renters">Mieter E-Mails
+                <input type="text" name="renter_emails" placeholder="name@example.com">
+              </label>
+              <div class="f-actions"><button class="button primary" type="submit">Einheit anlegen</button></div>
+            </form>
+          </div>
+          {{if .Units}}
+            <div class="unit-list">
+              {{range .Units}}
+                <article class="unit-editor">
+                  <div class="unit-summary"><strong>{{.Label}}</strong><span class="pill">{{.Share}}</span></div>
+                  <form class="unit-form" method="post" action="/app/settings/building/units">
+                    <input type="hidden" name="orig_id" value="{{.ID}}">
+                    <input type="hidden" name="id" value="{{.ID}}">
+                    <label class="f-label">Einheit
+                      <input type="text" name="label" value="{{.Label}}" maxlength="120" required>
+                    </label>
+                    <label class="f-share">Miteigentumsanteil
+                      <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="{{.ShareValue}}" inputmode="numeric">
+                    </label>
+                    <label class="f-owners">Eigentümer E-Mails
+                      <input type="text" name="owner_emails" value="{{.OwnerEmails}}">
+                    </label>
+                    <label class="f-renters">Mieter E-Mails
+                      <input type="text" name="renter_emails" value="{{.RenterEmails}}">
+                    </label>
+                    <div class="f-actions">
+                      <button class="button primary" type="submit">Speichern</button>
+                    </div>
+                  </form>
+                  <form class="unit-delete" method="post" action="/app/settings/building/units/delete">
+                    <input type="hidden" name="id" value="{{.ID}}">
+                    <button class="button small ghost" type="submit" aria-label="{{.DeleteConfirmLabel}}">Entfernen</button>
+                  </form>
+                </article>
+              {{end}}
+            </div>
+          {{else}}
+            <p class="empty">Noch keine Einheiten hinterlegt.</p>
+          {{end}}
+        </section>
       </section>
     </main>
 {{template "appClose" .}}

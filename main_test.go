@@ -681,8 +681,12 @@ func TestProfileOverlayStorePersists(t *testing.T) {
 	if err := store.Set("Resident@Example.com", profileOverlay{Title: "Dr.", FirstName: "Resi", LastName: "Dent", Phone: "+43 1 234"}); err != nil {
 		t.Fatalf("set overlay: %v", err)
 	}
-	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
-		t.Fatalf("store file mode = %v err=%v, want 0600", info.Mode().Perm(), err)
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat tenant override store: %v", err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("store file mode = %v, want 0600", info.Mode().Perm())
 	}
 	reopened, err := newProfileOverlayStore(path)
 	if err != nil {
@@ -691,6 +695,58 @@ func TestProfileOverlayStorePersists(t *testing.T) {
 	overlay, ok := reopened.Get("resident@example.com")
 	if !ok || overlay.FirstName != "Resi" || overlay.Phone != "+43 1 234" {
 		t.Fatalf("overlay = %+v ok=%v", overlay, ok)
+	}
+}
+
+func TestTenantOverrideStoreLayersOverEnvDefaults(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tenants.json")
+	store, err := newTenantOverrideStore(path)
+	if err != nil {
+		t.Fatalf("newTenantOverrideStore: %v", err)
+	}
+	if err := store.Set("JHW22", tenantOverride{
+		Name:         "WEG Sonneneck",
+		Address:      "Neue Gasse 7",
+		ContactName:  "Hausverwaltung Nord",
+		ContactEmail: "Office@Example.com",
+		ContactPhone: "+43 1 999",
+	}); err != nil {
+		t.Fatalf("set tenant override: %v", err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat tenant override store: %v", err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("store file mode = %v, want 0600", info.Mode().Perm())
+	}
+
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.tenants["jhw22"] = tenantConfig{
+		Slug:         "jhw22",
+		Name:         "Env Name",
+		Address:      "Env Address",
+		ContactName:  "Env Contact",
+		ContactEmail: "env@example.com",
+		ContactPhone: "+43 1 111",
+		HeroImageURL: "/assets/env.jpg",
+		Host:         "jhw22.hausv.org",
+	}
+	a.tenantOverrides = store
+
+	tenant, ok := a.tenantBySlug("jhw22")
+	if !ok {
+		t.Fatal("tenant not found")
+	}
+	if tenant.Name != "WEG Sonneneck" || tenant.Address != "Neue Gasse 7" || tenant.ContactEmail != "office@example.com" || tenant.HeroImageURL != "/assets/env.jpg" {
+		t.Fatalf("tenant override = %+v", tenant)
+	}
+	if err := store.SetHeroImage("jhw22", "jhw22-hero.png"); err != nil {
+		t.Fatalf("set hero image: %v", err)
+	}
+	tenant, _ = a.tenantBySlug("jhw22")
+	if tenant.HeroImageURL != "/tenant-hero/jhw22" || tenant.ContactName != "Hausverwaltung Nord" {
+		t.Fatalf("tenant after hero override = %+v", tenant)
 	}
 }
 
@@ -747,6 +803,124 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 	}
 }
 
+func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+
+	resident := authedRequest(t, a, "resident@example.com", "/app/settings/building", a.buildingSettings)
+	if resident.Code != http.StatusForbidden {
+		t.Fatalf("resident building settings status = %d, want 403", resident.Code)
+	}
+	hub := authedRequest(t, a, "manager@example.com", "/app/settings", a.settingsHub)
+	if !strings.Contains(hub.Body.String(), `href="/app/settings/building"`) {
+		t.Fatalf("manager settings hub should link building settings:\n%s", hub.Body.String())
+	}
+
+	saveMeta := authedFormRequest(t, a, "manager@example.com", "/app/settings/building", url.Values{
+		"name":          {"WEG Sonneneck"},
+		"address":       {"Neue Gasse 7"},
+		"contact_name":  {"Hausverwaltung Nord"},
+		"contact_email": {"office@example.com"},
+		"contact_phone": {"+43 1 999"},
+	}, a.updateBuildingSettings)
+	if saveMeta.Code != http.StatusSeeOther {
+		t.Fatalf("building meta save status = %d", saveMeta.Code)
+	}
+	tenant, _ := a.tenantBySlug("jhw22")
+	if tenant.Name != "WEG Sonneneck" || tenant.Address != "Neue Gasse 7" || tenant.ContactName != "Hausverwaltung Nord" || tenant.ContactEmail != "office@example.com" || tenant.ContactPhone != "+43 1 999" {
+		t.Fatalf("tenant after meta save = %+v", tenant)
+	}
+	homeReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
+	home := httptest.NewRecorder()
+	a.home(home, homeReq)
+	if !strings.Contains(home.Body.String(), "WEG Sonneneck") || !strings.Contains(home.Body.String(), "Neue Gasse 7") || !strings.Contains(home.Body.String(), defaultTenantHeroImageURL) {
+		t.Fatalf("home should render layered name, address and default hero:\n%s", home.Body.String())
+	}
+
+	png := []byte{
+		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+		0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+		0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89,
+	}
+	uploadHero := authedMultipartFileRequest(t, a, "manager@example.com", "/app/settings/building/hero", nil, "hero_image", "hero.png", png, a.updateBuildingHero)
+	if uploadHero.Code != http.StatusSeeOther {
+		t.Fatalf("hero upload status = %d", uploadHero.Code)
+	}
+	tenant, _ = a.tenantBySlug("jhw22")
+	if tenant.HeroImageURL != "/tenant-hero/jhw22" {
+		t.Fatalf("tenant hero url = %q", tenant.HeroImageURL)
+	}
+	heroPath := filepath.Join(a.tenantHeroDir, "jhw22-hero.png")
+	heroInfo, err := os.Stat(heroPath)
+	if err != nil {
+		t.Fatalf("stat hero file: %v", err)
+	}
+	if heroInfo.Mode().Perm() != 0o600 {
+		t.Fatalf("hero file mode = %v, want 0600", heroInfo.Mode().Perm())
+	}
+	heroReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/tenant-hero/jhw22", nil)
+	heroReq.SetPathValue("tenant", "jhw22")
+	hero := httptest.NewRecorder()
+	a.tenantHeroImage(hero, heroReq)
+	if hero.Code != http.StatusOK || !strings.HasPrefix(hero.Header().Get("Content-Type"), "image/png") {
+		t.Fatalf("hero response status=%d content-type=%q", hero.Code, hero.Header().Get("Content-Type"))
+	}
+	homeAfterHeroReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
+	homeAfterHero := httptest.NewRecorder()
+	a.home(homeAfterHero, homeAfterHeroReq)
+	if !strings.Contains(homeAfterHero.Body.String(), "/tenant-hero/jhw22") {
+		t.Fatalf("home should render uploaded hero path:\n%s", homeAfterHero.Body.String())
+	}
+	portal := authedRequest(t, a, "manager@example.com", "/app", a.portal)
+	if !strings.Contains(portal.Body.String(), "/tenant-hero/jhw22") {
+		t.Fatalf("portal should render uploaded hero path:\n%s", portal.Body.String())
+	}
+
+	addUnit := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units", url.Values{
+		"label":              {"Top 1"},
+		"miteigentumsanteil": {"12345"},
+		"owner_emails":       {"owner@example.com; second@example.com"},
+		"renter_emails":      {"resident@example.com"},
+	}, a.upsertBuildingUnit)
+	if addUnit.Code != http.StatusSeeOther {
+		t.Fatalf("unit add status = %d", addUnit.Code)
+	}
+	units := a.unitStore.ListTenant("jhw22")
+	if len(units) != 1 || units[0].ID != "top-1" || units[0].MiteigentumsanteilPPM != 12345 || len(units[0].OwnerEmails) != 2 || units[0].RenterEmails[0] != "resident@example.com" {
+		t.Fatalf("units after add = %+v", units)
+	}
+	page := authedRequest(t, a, "manager@example.com", "/app/settings/building", a.buildingSettings)
+	for _, want := range []string{"WEG Sonneneck", "Neue Gasse 7", "Top 1", "12345 / 1.000.000", `value="owner@example.com, second@example.com"`} {
+		if !strings.Contains(page.Body.String(), want) {
+			t.Fatalf("building page should contain %q", want)
+		}
+	}
+
+	editUnit := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units", url.Values{
+		"orig_id":            {"top-1"},
+		"id":                 {"top-1"},
+		"label":              {"Top 1A"},
+		"miteigentumsanteil": {"23456"},
+		"owner_emails":       {"owner@example.com"},
+		"renter_emails":      {""},
+	}, a.upsertBuildingUnit)
+	if editUnit.Code != http.StatusSeeOther {
+		t.Fatalf("unit edit status = %d", editUnit.Code)
+	}
+	units = a.unitStore.ListTenant("jhw22")
+	if len(units) != 1 || units[0].Label != "Top 1A" || units[0].MiteigentumsanteilPPM != 23456 || len(units[0].RenterEmails) != 0 {
+		t.Fatalf("units after edit = %+v", units)
+	}
+
+	deleteUnit := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units/delete", url.Values{"id": {"top-1"}}, a.deleteBuildingUnit)
+	if deleteUnit.Code != http.StatusSeeOther {
+		t.Fatalf("unit delete status = %d", deleteUnit.Code)
+	}
+	if units := a.unitStore.ListTenant("jhw22"); len(units) != 0 {
+		t.Fatalf("units after delete = %+v", units)
+	}
+}
+
 func TestSettingsHubAdminLinksManagementSections(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
@@ -755,7 +929,7 @@ func TestSettingsHubAdminLinksManagementSections(t *testing.T) {
 		t.Fatalf("settings hub status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/app/settings/users"`, `href="/app/parking/settings"`, "Parkplatz-Abrechnung", "Gebäude"} {
+	for _, want := range []string{`href="/app/settings/building"`, `href="/app/settings/users"`, `href="/app/parking/settings"`, "Parkplatz-Abrechnung", "Gebäude"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("admin settings hub should contain %q", want)
 		}
@@ -770,7 +944,7 @@ func TestSettingsHubManagerLinksTenantManagementOnly(t *testing.T) {
 		t.Fatalf("settings hub status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/app/settings/users"`, "Benutzer &amp; Rechte", "Gebäude"} {
+	for _, want := range []string{`href="/app/settings/building"`, `href="/app/settings/users"`, "Benutzer &amp; Rechte", "Gebäude"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("manager settings hub should contain %q", want)
 		}
@@ -1759,6 +1933,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("profile overlay store: %v", err)
 	}
+	tenantOverrideStore, err := newTenantOverrideStore("")
+	if err != nil {
+		t.Fatalf("tenant override store: %v", err)
+	}
 	inviteStore, err := newInviteStore("")
 	if err != nil {
 		t.Fatalf("invite store: %v", err)
@@ -1780,7 +1958,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		rootDomain:    "hausv.org",
 		defaultTenant: "jhw22",
 		tenants: map[string]tenantConfig{
-			"jhw22": {Slug: "jhw22", Name: "WEG Portal", Address: "Janischhofweg 22", Host: "jhw22.hausv.org"},
+			"jhw22": {Slug: "jhw22", Name: "WEG Portal", Address: "Janischhofweg 22", HeroImageURL: defaultTenantHeroImageURL, Host: "jhw22.hausv.org"},
 		},
 		profiles: map[string]userProfile{
 			profile.Email: profile,
@@ -1797,6 +1975,8 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		eventStore:            eventStore,
 		notificationPrefs:     notificationPrefStore,
 		profileOverlays:       profileOverlayStore,
+		tenantOverrides:       tenantOverrideStore,
+		tenantHeroDir:         filepath.Join(t.TempDir(), "tenant-heroes"),
 		inviteStore:           inviteStore,
 		activityStore:         activityStore,
 		unitStore:             unitStore,
@@ -1835,6 +2015,10 @@ func authedFormRequest(t *testing.T, a *app, email string, path string, values u
 }
 
 func authedMultipartRequest(t *testing.T, a *app, email string, path string, fields map[string]string, filename string, fileBody []byte, handler http.HandlerFunc) *httptest.ResponseRecorder {
+	return authedMultipartFileRequest(t, a, email, path, fields, "photo", filename, fileBody, handler)
+}
+
+func authedMultipartFileRequest(t *testing.T, a *app, email string, path string, fields map[string]string, fileField string, filename string, fileBody []byte, handler http.HandlerFunc) *httptest.ResponseRecorder {
 	t.Helper()
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
@@ -1844,7 +2028,7 @@ func authedMultipartRequest(t *testing.T, a *app, email string, path string, fie
 		}
 	}
 	if filename != "" {
-		part, err := writer.CreateFormFile("photo", filename)
+		part, err := writer.CreateFormFile(fileField, filename)
 		if err != nil {
 			t.Fatalf("CreateFormFile: %v", err)
 		}

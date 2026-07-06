@@ -148,6 +148,12 @@ Self-service profile display/contact overlays persist to
 role, permission, tenant or auth-method fields; env/invite records remain
 authoritative for authorization.
 
+Gebäude-/Tenant-Einstellungen persist to `/data/tenant_overrides.json` via
+`TENANT_DATA_PATH`; uploaded tenant hero images are stored below
+`/data/tenant-heroes` via `TENANT_HERO_DIR`. Overrides are layered over
+`WEG_TENANTS_JSON` defaults and carry display/contact/hero fields only, never
+roles, permissions, auth methods or secret-bearing configuration.
+
 Wohneinheiten and ownership/renter links persist to `/data/units.json` via
 `UNIT_DATA_PATH`. Each unit stores tenant, id, label, Miteigentumsanteil and
 owner/renter email links; the file uses the same mutexed atomic JSON-store pattern
@@ -180,7 +186,7 @@ cd ~/Code/weg-portal
 set version (git describe --tags --match 'v[0-9]*' --abbrev=0 | string replace -r '^v' '')
 test -n "$version"; or set version 0.1.0
 set commit (git rev-parse --short HEAD)
-git archive --format=tar HEAD | ssh -p 2222 mba@cs1.barta.cm "bash -lc 'set -euo pipefail; rm -rf /tmp/weg-portal-deploy; mkdir -p /tmp/weg-portal-deploy; tar -xf - -C /tmp/weg-portal-deploy; cd /tmp/weg-portal-deploy; docker build --build-arg APP_VERSION=$version --build-arg GIT_COMMIT=$commit -t ghcr.io/markus-barta/weg-portal:latest .; cd /home/mba/Code/nixcfg/hosts/csb1/docker; docker compose up -d --no-deps weg-portal'"
+git archive --format=tar HEAD | ssh -p 2222 mba@cs1.barta.cm "bash -lc 'set -euo pipefail; tmpdir=\$(mktemp -d /tmp/weg-portal-deploy.XXXXXX); tar -xf - -C \"\$tmpdir\"; cd \"\$tmpdir\"; docker build --build-arg APP_VERSION=$version --build-arg GIT_COMMIT=$commit -t ghcr.io/markus-barta/weg-portal:latest .; cd /home/mba/Code/nixcfg/hosts/csb1/docker; docker compose up -d --no-deps weg-portal'"
 ```
 
 The visible app version is `SEMVER (git-hash)`. Semver is sourced from the latest
