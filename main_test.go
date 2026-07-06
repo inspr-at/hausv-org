@@ -762,12 +762,13 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 	}
 
 	save := authedFormRequest(t, a, "resident@example.com", "/app/settings/profile", url.Values{
-		"title":       {"Dr."},
-		"first_name":  {"Resi"},
-		"last_name":   {"Dent"},
-		"phone":       {"+43 1 234"},
-		"role":        {"Admin"},
-		"permissions": {permissionParking},
+		"title":            {"Dr."},
+		"first_name":       {"Resi"},
+		"last_name":        {"Dent"},
+		"phone":            {"+43 1 234"},
+		"directory_opt_in": {"on"},
+		"role":             {"Admin"},
+		"permissions":      {permissionParking},
 	}, a.updateProfileSettings)
 	if save.Code != http.StatusSeeOther {
 		t.Fatalf("profile save status = %d, want redirect", save.Code)
@@ -778,6 +779,9 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 	}
 	if profile.Role != roleResident || profile.HasPermission(permissionParking) {
 		t.Fatalf("profile self-edit escalated authz: %+v", profile)
+	}
+	if !profile.DirectoryOptIn {
+		t.Fatalf("profile directory opt-in not applied: %+v", profile)
 	}
 	if parking := authedRequest(t, a, "resident@example.com", "/app/parking", a.parking); parking.Code != http.StatusNotFound {
 		t.Fatalf("parking status = %d, want 404 without parking permission", parking.Code)
@@ -792,14 +796,73 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 		t.Fatalf("profile page status = %d", page.Code)
 	}
 	body := page.Body.String()
-	for _, want := range []string{`value="Dr."`, `value="Resi"`, `value="Dent"`, "43 1 234", roleResident, "Top 1", "12345 / 1.000.000"} {
+	for _, want := range []string{`value="Dr."`, `value="Resi"`, `value="Dent"`, "43 1 234", `name="directory_opt_in" checked`, roleResident, "Top 1", "12345 / 1.000.000"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("profile page should contain %q", want)
 		}
 	}
 	row := userRowForEmail(t, a.userRows("jhw22"), "resident@example.com")
-	if row.DisplayName != "Dr. Resi Dent" || row.Phone != "+43 1 234" || row.Role != roleResident || row.ParkingChecked {
+	if row.DisplayName != "Dr. Resi Dent" || row.Phone != "+43 1 234" || !row.DirectoryOptIn || row.Role != roleResident || row.ParkingChecked {
 		t.Fatalf("roster row = %+v, want overlay display without authz escalation", row)
+	}
+}
+
+func TestContactsPageShowsBuildingBoardAndOptInDirectory(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Phone: "+43 1 234", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["private@example.com"] = userProfile{Email: "private@example.com", FirstName: "Privat", LastName: "Person", Phone: "+43 1 555", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["board@example.com"] = userProfile{Email: "board@example.com", FirstName: "Berta", LastName: "Beirat", Phone: "+43 1 777", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+
+	saveMeta := authedFormRequest(t, a, "manager@example.com", "/app/settings/building", url.Values{
+		"name":            {"WEG Portal"},
+		"address":         {"Janischhofweg 22"},
+		"contact_name":    {"Hausverwaltung Nord"},
+		"contact_email":   {"office@example.com"},
+		"contact_phone":   {"+43 1 999"},
+		"emergency_name":  {"Notdienst 24"},
+		"emergency_phone": {"144"},
+		"caretaker_name":  {"Hausmeister Max"},
+		"caretaker_email": {"hausmeister@example.com"},
+		"caretaker_phone": {"+43 1 888"},
+	}, a.updateBuildingSettings)
+	if saveMeta.Code != http.StatusSeeOther {
+		t.Fatalf("building settings save status = %d", saveMeta.Code)
+	}
+
+	page := authedRequest(t, a, "resident@example.com", "/app/kontakte", a.contacts)
+	if page.Code != http.StatusOK {
+		t.Fatalf("contacts status = %d", page.Code)
+	}
+	body := page.Body.String()
+	for _, want := range []string{`href="/app/kontakte"`, "nav-item active", "Hausverwaltung Nord", "office@example.com", "Notdienst 24", "144", "Hausmeister Max", "hausmeister@example.com", "Berta Beirat", "board@example.com", "43 1 777"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("contacts page should contain %q", want)
+		}
+	}
+	for _, forbidden := range []string{"resident@example.com", "43 1 234", "private@example.com", "43 1 555"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("contacts page exposed non-opt-in contact %q", forbidden)
+		}
+	}
+
+	optIn := authedFormRequest(t, a, "resident@example.com", "/app/settings/profile", url.Values{
+		"first_name":       {"Resi"},
+		"last_name":        {"Dent"},
+		"phone":            {"+43 1 234"},
+		"directory_opt_in": {"on"},
+	}, a.updateProfileSettings)
+	if optIn.Code != http.StatusSeeOther {
+		t.Fatalf("profile opt-in status = %d", optIn.Code)
+	}
+	page = authedRequest(t, a, "resident@example.com", "/app/kontakte", a.contacts)
+	body = page.Body.String()
+	for _, want := range []string{"Resi Dent", "resident@example.com", "43 1 234"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("contacts page after opt-in should contain %q", want)
+		}
+	}
+	if strings.Contains(body, "private@example.com") || strings.Contains(body, "43 1 555") {
+		t.Fatal("contacts page must keep non-opt-in residents hidden")
 	}
 }
 
@@ -817,17 +880,22 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	}
 
 	saveMeta := authedFormRequest(t, a, "manager@example.com", "/app/settings/building", url.Values{
-		"name":          {"WEG Sonneneck"},
-		"address":       {"Neue Gasse 7"},
-		"contact_name":  {"Hausverwaltung Nord"},
-		"contact_email": {"office@example.com"},
-		"contact_phone": {"+43 1 999"},
+		"name":            {"WEG Sonneneck"},
+		"address":         {"Neue Gasse 7"},
+		"contact_name":    {"Hausverwaltung Nord"},
+		"contact_email":   {"office@example.com"},
+		"contact_phone":   {"+43 1 999"},
+		"emergency_name":  {"Notdienst 24"},
+		"emergency_phone": {"144"},
+		"caretaker_name":  {"Hausmeister Max"},
+		"caretaker_email": {"hausmeister@example.com"},
+		"caretaker_phone": {"+43 1 888"},
 	}, a.updateBuildingSettings)
 	if saveMeta.Code != http.StatusSeeOther {
 		t.Fatalf("building meta save status = %d", saveMeta.Code)
 	}
 	tenant, _ := a.tenantBySlug("jhw22")
-	if tenant.Name != "WEG Sonneneck" || tenant.Address != "Neue Gasse 7" || tenant.ContactName != "Hausverwaltung Nord" || tenant.ContactEmail != "office@example.com" || tenant.ContactPhone != "+43 1 999" {
+	if tenant.Name != "WEG Sonneneck" || tenant.Address != "Neue Gasse 7" || tenant.ContactName != "Hausverwaltung Nord" || tenant.ContactEmail != "office@example.com" || tenant.ContactPhone != "+43 1 999" || tenant.EmergencyName != "Notdienst 24" || tenant.EmergencyPhone != "144" || tenant.CaretakerName != "Hausmeister Max" || tenant.CaretakerEmail != "hausmeister@example.com" || tenant.CaretakerPhone != "+43 1 888" {
 		t.Fatalf("tenant after meta save = %+v", tenant)
 	}
 	homeReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)

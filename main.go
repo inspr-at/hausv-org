@@ -200,15 +200,20 @@ type smtpMailer struct {
 }
 
 type tenantConfig struct {
-	Slug         string              `json:"slug"`
-	Name         string              `json:"name"`
-	Address      string              `json:"address"`
-	ContactName  string              `json:"contact_name,omitempty"`
-	ContactEmail string              `json:"contact_email,omitempty"`
-	ContactPhone string              `json:"contact_phone,omitempty"`
-	HeroImageURL string              `json:"hero_image_url,omitempty"`
-	Host         string              `json:"host"`
-	HA           homeAssistantConfig `json:"-"`
+	Slug           string              `json:"slug"`
+	Name           string              `json:"name"`
+	Address        string              `json:"address"`
+	ContactName    string              `json:"contact_name,omitempty"`
+	ContactEmail   string              `json:"contact_email,omitempty"`
+	ContactPhone   string              `json:"contact_phone,omitempty"`
+	EmergencyName  string              `json:"emergency_name,omitempty"`
+	EmergencyPhone string              `json:"emergency_phone,omitempty"`
+	CaretakerName  string              `json:"caretaker_name,omitempty"`
+	CaretakerEmail string              `json:"caretaker_email,omitempty"`
+	CaretakerPhone string              `json:"caretaker_phone,omitempty"`
+	HeroImageURL   string              `json:"hero_image_url,omitempty"`
+	Host           string              `json:"host"`
+	HA             homeAssistantConfig `json:"-"`
 }
 
 type homeAssistantConfig struct {
@@ -313,11 +318,12 @@ type profileOverlayStoreData struct {
 }
 
 type profileOverlay struct {
-	Title     string    `json:"title"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Phone     string    `json:"phone,omitempty"`
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	Title          string    `json:"title"`
+	FirstName      string    `json:"first_name"`
+	LastName       string    `json:"last_name"`
+	Phone          string    `json:"phone,omitempty"`
+	DirectoryOptIn bool      `json:"directory_opt_in,omitempty"`
+	UpdatedAt      time.Time `json:"updated_at,omitempty"`
 }
 
 type tenantOverrideStore struct {
@@ -331,14 +337,19 @@ type tenantOverrideStoreData struct {
 }
 
 type tenantOverride struct {
-	MetaSet      bool      `json:"meta_set,omitempty"`
-	Name         string    `json:"name,omitempty"`
-	Address      string    `json:"address,omitempty"`
-	ContactName  string    `json:"contact_name,omitempty"`
-	ContactEmail string    `json:"contact_email,omitempty"`
-	ContactPhone string    `json:"contact_phone,omitempty"`
-	HeroImage    string    `json:"hero_image,omitempty"`
-	UpdatedAt    time.Time `json:"updated_at,omitempty"`
+	MetaSet        bool      `json:"meta_set,omitempty"`
+	Name           string    `json:"name,omitempty"`
+	Address        string    `json:"address,omitempty"`
+	ContactName    string    `json:"contact_name,omitempty"`
+	ContactEmail   string    `json:"contact_email,omitempty"`
+	ContactPhone   string    `json:"contact_phone,omitempty"`
+	EmergencyName  string    `json:"emergency_name,omitempty"`
+	EmergencyPhone string    `json:"emergency_phone,omitempty"`
+	CaretakerName  string    `json:"caretaker_name,omitempty"`
+	CaretakerEmail string    `json:"caretaker_email,omitempty"`
+	CaretakerPhone string    `json:"caretaker_phone,omitempty"`
+	HeroImage      string    `json:"hero_image,omitempty"`
+	UpdatedAt      time.Time `json:"updated_at,omitempty"`
 }
 
 type notificationPreferences struct {
@@ -590,6 +601,16 @@ type buildingUnitView struct {
 	DeleteConfirmLabel string
 }
 
+type contactCardView struct {
+	Name        string
+	Role        string
+	Description string
+	Email       string
+	Phone       string
+	HasEmail    bool
+	HasPhone    bool
+}
+
 type unitMembers struct {
 	Unit    unit
 	Owners  []string
@@ -740,6 +761,7 @@ func main() {
 	mux.HandleFunc("POST /app/events", a.createEvent)
 	mux.HandleFunc("POST /app/events/edit", a.editEvent)
 	mux.HandleFunc("POST /app/events/delete", a.deleteEvent)
+	mux.HandleFunc("GET /app/kontakte", a.contacts)
 	mux.HandleFunc("GET /app/anliegen", a.issues)
 	mux.HandleFunc("GET /app/anliegen/board", a.issueBoard)
 	mux.HandleFunc("POST /app/anliegen", a.createIssue)
@@ -1625,6 +1647,132 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"Events":                 events,
 		"HasEvents":              len(events) > 0,
 	})
+}
+
+func (a *app) contacts(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileForTenant(email, tenant.Slug)
+	isAdmin := hasCapability(role, capabilityPlatformAdmin)
+	managerContacts := managerContactViews(tenant)
+	emergencyContacts := emergencyContactViews(tenant)
+	boardContacts := a.boardContactViews(tenant.Slug)
+	residentContacts := a.residentDirectoryViews(tenant.Slug)
+	a.render(w, "contacts", map[string]any{
+		"Title":                "Kontakte",
+		"Tenant":               tenant,
+		"Email":                email,
+		"DisplayName":          profile.DisplayName(),
+		"Initials":             profile.Initials(),
+		"Role":                 role,
+		"IsAdmin":              isAdmin,
+		"CanSeeParking":        isAdmin || profile.HasPermission(permissionParking),
+		"ActivePage":           "contacts",
+		"ManagerContacts":      managerContacts,
+		"HasManagerContacts":   len(managerContacts) > 0,
+		"EmergencyContacts":    emergencyContacts,
+		"HasEmergencyContacts": len(emergencyContacts) > 0,
+		"BoardContacts":        boardContacts,
+		"HasBoardContacts":     len(boardContacts) > 0,
+		"ResidentContacts":     residentContacts,
+		"HasResidentContacts":  len(residentContacts) > 0,
+	})
+}
+
+func managerContactViews(tenant tenantConfig) []contactCardView {
+	contact := contactCardView{
+		Name:        firstNonEmpty(tenant.ContactName, tenant.Name, "Hausverwaltung"),
+		Role:        roleManager,
+		Description: "Verwaltung",
+		Email:       tenant.ContactEmail,
+		Phone:       tenant.ContactPhone,
+	}
+	if contact.Email == "" && contact.Phone == "" && strings.TrimSpace(tenant.ContactName) == "" {
+		return nil
+	}
+	contact.HasEmail = contact.Email != ""
+	contact.HasPhone = contact.Phone != ""
+	return []contactCardView{contact}
+}
+
+func emergencyContactViews(tenant tenantConfig) []contactCardView {
+	contacts := []contactCardView{}
+	if tenant.EmergencyName != "" || tenant.EmergencyPhone != "" {
+		contacts = append(contacts, contactCardView{
+			Name:        firstNonEmpty(tenant.EmergencyName, "Notdienst"),
+			Role:        "Notdienst",
+			Description: "Dringende Fälle außerhalb der regulären Verwaltung",
+			Phone:       tenant.EmergencyPhone,
+			HasPhone:    tenant.EmergencyPhone != "",
+		})
+	}
+	if tenant.CaretakerName != "" || tenant.CaretakerEmail != "" || tenant.CaretakerPhone != "" {
+		contacts = append(contacts, contactCardView{
+			Name:        firstNonEmpty(tenant.CaretakerName, "Hausmeister"),
+			Role:        "Hausmeister",
+			Description: "Operativer Kontakt im Haus",
+			Email:       tenant.CaretakerEmail,
+			Phone:       tenant.CaretakerPhone,
+			HasEmail:    tenant.CaretakerEmail != "",
+			HasPhone:    tenant.CaretakerPhone != "",
+		})
+	}
+	return contacts
+}
+
+func (a *app) boardContactViews(tenantSlug string) []contactCardView {
+	contacts := []contactCardView{}
+	for _, row := range a.userRows(tenantSlug) {
+		if row.Role != roleBeirat || normalizeEmail(row.Email) == "" {
+			continue
+		}
+		contacts = append(contacts, contactCardView{
+			Name:        row.DisplayName,
+			Role:        roleBeirat,
+			Description: "Beirat",
+			Email:       row.Email,
+			Phone:       row.Phone,
+			HasEmail:    row.Email != "",
+			HasPhone:    row.Phone != "",
+		})
+	}
+	return contacts
+}
+
+func (a *app) residentDirectoryViews(tenantSlug string) []contactCardView {
+	contacts := []contactCardView{}
+	for _, row := range a.userRows(tenantSlug) {
+		if !row.DirectoryOptIn || !residentDirectoryRole(row.Role) || normalizeEmail(row.Email) == "" {
+			continue
+		}
+		contacts = append(contacts, contactCardView{
+			Name:        row.DisplayName,
+			Role:        row.Role,
+			Description: "Hausgemeinschaft",
+			Email:       row.Email,
+			Phone:       row.Phone,
+			HasEmail:    row.Email != "",
+			HasPhone:    row.Phone != "",
+		})
+	}
+	return contacts
+}
+
+func residentDirectoryRole(role string) bool {
+	switch normalizeRole(role) {
+	case roleOwner, roleRenter, roleResident:
+		return true
+	default:
+		return false
+	}
 }
 
 func (a *app) issues(w http.ResponseWriter, r *http.Request) {
@@ -3453,22 +3601,32 @@ func (a *app) buildingSettingsContext(w http.ResponseWriter, r *http.Request) (t
 
 func tenantOverrideFromForm(values url.Values) (tenantOverride, error) {
 	override := tenantOverride{
-		MetaSet:      true,
-		Name:         strings.TrimSpace(values.Get("name")),
-		Address:      strings.TrimSpace(values.Get("address")),
-		ContactName:  strings.TrimSpace(values.Get("contact_name")),
-		ContactEmail: normalizeEmail(values.Get("contact_email")),
-		ContactPhone: strings.TrimSpace(values.Get("contact_phone")),
+		MetaSet:        true,
+		Name:           strings.TrimSpace(values.Get("name")),
+		Address:        strings.TrimSpace(values.Get("address")),
+		ContactName:    strings.TrimSpace(values.Get("contact_name")),
+		ContactEmail:   normalizeEmail(values.Get("contact_email")),
+		ContactPhone:   strings.TrimSpace(values.Get("contact_phone")),
+		EmergencyName:  strings.TrimSpace(values.Get("emergency_name")),
+		EmergencyPhone: strings.TrimSpace(values.Get("emergency_phone")),
+		CaretakerName:  strings.TrimSpace(values.Get("caretaker_name")),
+		CaretakerEmail: normalizeEmail(values.Get("caretaker_email")),
+		CaretakerPhone: strings.TrimSpace(values.Get("caretaker_phone")),
 	}
 	if override.Name == "" || override.Address == "" {
 		return tenantOverride{}, fmt.Errorf("building name and address are required")
 	}
-	if len([]rune(override.Name)) > 160 || len([]rune(override.Address)) > 500 || len([]rune(override.ContactName)) > 160 || len([]rune(override.ContactPhone)) > 80 {
+	if len([]rune(override.Name)) > 160 || len([]rune(override.Address)) > 500 || len([]rune(override.ContactName)) > 160 || len([]rune(override.ContactPhone)) > 80 || len([]rune(override.EmergencyName)) > 160 || len([]rune(override.EmergencyPhone)) > 80 || len([]rune(override.CaretakerName)) > 160 || len([]rune(override.CaretakerPhone)) > 80 {
 		return tenantOverride{}, fmt.Errorf("building field too long")
 	}
 	if rawEmail := strings.TrimSpace(values.Get("contact_email")); rawEmail != "" {
 		if _, err := mail.ParseAddress(rawEmail); err != nil || override.ContactEmail == "" {
 			return tenantOverride{}, fmt.Errorf("invalid contact email")
+		}
+	}
+	if rawEmail := strings.TrimSpace(values.Get("caretaker_email")); rawEmail != "" {
+		if _, err := mail.ParseAddress(rawEmail); err != nil || override.CaretakerEmail == "" {
+			return tenantOverride{}, fmt.Errorf("invalid caretaker email")
 		}
 	}
 	return override, nil
@@ -3652,10 +3810,11 @@ func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request) {
 
 func profileOverlayFromForm(values url.Values) (profileOverlay, error) {
 	overlay := profileOverlay{
-		Title:     strings.TrimSpace(values.Get("title")),
-		FirstName: strings.TrimSpace(values.Get("first_name")),
-		LastName:  strings.TrimSpace(values.Get("last_name")),
-		Phone:     strings.TrimSpace(values.Get("phone")),
+		Title:          strings.TrimSpace(values.Get("title")),
+		FirstName:      strings.TrimSpace(values.Get("first_name")),
+		LastName:       strings.TrimSpace(values.Get("last_name")),
+		Phone:          strings.TrimSpace(values.Get("phone")),
+		DirectoryOptIn: values.Get("directory_opt_in") != "",
 	}
 	if len([]rune(overlay.Title)) > 40 || len([]rune(overlay.FirstName)) > 120 || len([]rune(overlay.LastName)) > 120 || len([]rune(overlay.Phone)) > 80 {
 		return profileOverlay{}, fmt.Errorf("profile field too long")
@@ -4283,6 +4442,11 @@ func (a *app) withTenantOverride(tenant tenantConfig) tenantConfig {
 		tenant.ContactName = override.ContactName
 		tenant.ContactEmail = override.ContactEmail
 		tenant.ContactPhone = override.ContactPhone
+		tenant.EmergencyName = override.EmergencyName
+		tenant.EmergencyPhone = override.EmergencyPhone
+		tenant.CaretakerName = override.CaretakerName
+		tenant.CaretakerEmail = override.CaretakerEmail
+		tenant.CaretakerPhone = override.CaretakerPhone
 	}
 	if override.HeroImage != "" {
 		tenant.HeroImageURL = "/tenant-hero/" + tenant.Slug
@@ -4357,6 +4521,7 @@ func (a *app) withProfileOverlay(profile userProfile) userProfile {
 	profile.FirstName = overlay.FirstName
 	profile.LastName = overlay.LastName
 	profile.Phone = overlay.Phone
+	profile.DirectoryOptIn = overlay.DirectoryOptIn
 	return profile
 }
 
@@ -4895,6 +5060,11 @@ func normalizeTenantOverride(override tenantOverride) tenantOverride {
 	override.ContactName = strings.TrimSpace(override.ContactName)
 	override.ContactEmail = normalizeEmail(override.ContactEmail)
 	override.ContactPhone = strings.TrimSpace(override.ContactPhone)
+	override.EmergencyName = strings.TrimSpace(override.EmergencyName)
+	override.EmergencyPhone = strings.TrimSpace(override.EmergencyPhone)
+	override.CaretakerName = strings.TrimSpace(override.CaretakerName)
+	override.CaretakerEmail = normalizeEmail(override.CaretakerEmail)
+	override.CaretakerPhone = strings.TrimSpace(override.CaretakerPhone)
 	override.HeroImage = filepath.Base(strings.TrimSpace(override.HeroImage))
 	if override.HeroImage == "." || override.HeroImage == string(filepath.Separator) {
 		override.HeroImage = ""
@@ -6687,6 +6857,7 @@ type userProfile struct {
 	FirstName         string                      `json:"first_name"`
 	LastName          string                      `json:"last_name"`
 	Phone             string                      `json:"phone"`
+	DirectoryOptIn    bool                        `json:"directory_opt_in,omitempty"`
 	Role              string                      `json:"role"`
 	Status            string                      `json:"status"`
 	Tenants           []string                    `json:"tenants"`
@@ -6820,6 +6991,7 @@ func (p userProfile) UserRow() userRow {
 		FirstName:        p.FirstName,
 		LastName:         p.LastName,
 		Phone:            p.Phone,
+		DirectoryOptIn:   p.DirectoryOptIn,
 		DisplayName:      p.DisplayName(),
 		Initials:         p.Initials(),
 		Role:             p.Role,
@@ -6841,6 +7013,7 @@ type userRow struct {
 	FirstName        string
 	LastName         string
 	Phone            string
+	DirectoryOptIn   bool
 	DisplayName      string
 	Initials         string
 	Role             string
@@ -7709,6 +7882,11 @@ func parseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 			tenant.ContactName = strings.TrimSpace(tenant.ContactName)
 			tenant.ContactEmail = normalizeEmail(tenant.ContactEmail)
 			tenant.ContactPhone = strings.TrimSpace(tenant.ContactPhone)
+			tenant.EmergencyName = strings.TrimSpace(tenant.EmergencyName)
+			tenant.EmergencyPhone = strings.TrimSpace(tenant.EmergencyPhone)
+			tenant.CaretakerName = strings.TrimSpace(tenant.CaretakerName)
+			tenant.CaretakerEmail = normalizeEmail(tenant.CaretakerEmail)
+			tenant.CaretakerPhone = strings.TrimSpace(tenant.CaretakerPhone)
 			if tenant.HeroImageURL == "" {
 				tenant.HeroImageURL = defaultTenantHeroImageURL
 			}
@@ -8776,6 +8954,7 @@ const pageTemplates = `
       <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="nav-label">Hausüberblick</span></a>
       <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
       <a class="nav-item {{if eq .ActivePage "events"}}active{{end}}" href="/app/events"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></span><span class="nav-label">Termine</span></a>
+      <a class="nav-item {{if eq .ActivePage "contacts"}}active{{end}}" href="/app/kontakte"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg></span><span class="nav-label">Kontakte</span></a>
       {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</span>
       <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="/app/anliegen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
@@ -8875,11 +9054,122 @@ const pageTemplates = `
             <div class="quick-list">
               <a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><div><h3>Aushang</h3><p>Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p></div>{{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
               <a class="quick-row" href="/app/events"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg><div><h3>Termine</h3><p>Versammlungen, Wartungen, Fristen und gemeinsame Hausereignisse.</p></div><span class="quick-arrow">›</span></a>
+              <a class="quick-row" href="/app/kontakte"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg><div><h3>Kontakte</h3><p>Verwaltung, Notdienst, Beirat und freigegebene Kontakte.</p></div><span class="quick-arrow">›</span></a>
               <a class="quick-row" href="/app/anliegen"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><div><h3>Anliegen</h3><p>Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.</p></div>{{if .HasOpenIssues}}<span class="pill unread">{{.OpenIssues}} offen</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
               {{if .CanSeeParking}}<a class="quick-row" href="/app/parking"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg><div><h3>Parkplatznutzung</h3><p>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .CanManageUsers}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .CanManageAnnouncements}}<a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><div><h3>Aushang verwalten</h3><p>Beiträge verfassen, fixieren, planen und löschen.</p></div><span class="quick-arrow">›</span></a>{{end}}
             </div>
+          </section>
+        </div>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "contacts"}}
+{{template "appOpen" .}}
+    <style>
+      .contacts .contact-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px; align-items: start; }
+      .contacts .contact-section { display: grid; gap: 14px; }
+      .contacts .contact-list { display: grid; gap: 10px; }
+      .contacts .contact-card { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--panel-soft); display: grid; gap: 10px; }
+      .contacts .contact-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+      .contacts .contact-head strong { font-family: Spectral, serif; font-size: 20px; line-height: 1.12; overflow-wrap: anywhere; }
+      .contacts .contact-lines { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); font-size: 13.5px; font-weight: 700; }
+      .contacts .contact-lines a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(200,153,63,.5); }
+      .contacts .contact-lines a:hover { color: var(--gold-ink); }
+      .contacts .directory-panel { grid-column: 1 / -1; }
+      @media (max-width: 900px) { .contacts .contact-grid { grid-template-columns: 1fr; } .contacts .directory-panel { grid-column: 1; } }
+    </style>
+    <main class="app-main contacts">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg><span>/</span><span>Kontakte</span></span>
+      </div>
+      <section class="page wide">
+        <div>
+          <h1>Kontakte</h1>
+          <p class="lede">Verwaltung, Notdienst, Hausmeister, Beirat und freigegebene Kontakte für {{.Tenant.Address}}.</p>
+        </div>
+        <div class="contact-grid">
+          <section class="panel contact-section">
+            <div>
+              <div class="kicker">Verwaltung</div>
+              <h2>Hausverwaltung</h2>
+            </div>
+            {{if .HasManagerContacts}}
+              <div class="contact-list">
+                {{range .ManagerContacts}}
+                  <article class="contact-card">
+                    <div class="contact-head"><strong>{{.Name}}</strong><span class="pill">{{.Role}}</span></div>
+                    <p class="muted">{{.Description}}</p>
+                    <div class="contact-lines">{{if .HasEmail}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}{{if .HasPhone}}<a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}</div>
+                  </article>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty">Noch kein Verwaltungskontakt hinterlegt.</p>
+            {{end}}
+          </section>
+
+          <section class="panel contact-section">
+            <div>
+              <div class="kicker">Notfall</div>
+              <h2>Notdienst &amp; Hausmeister</h2>
+            </div>
+            {{if .HasEmergencyContacts}}
+              <div class="contact-list">
+                {{range .EmergencyContacts}}
+                  <article class="contact-card">
+                    <div class="contact-head"><strong>{{.Name}}</strong><span class="pill">{{.Role}}</span></div>
+                    <p class="muted">{{.Description}}</p>
+                    <div class="contact-lines">{{if .HasEmail}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}{{if .HasPhone}}<a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}</div>
+                  </article>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty">Noch kein Notdienst oder Hausmeister hinterlegt.</p>
+            {{end}}
+          </section>
+
+          <section class="panel contact-section">
+            <div>
+              <div class="kicker">Beirat</div>
+              <h2>Beirat</h2>
+            </div>
+            {{if .HasBoardContacts}}
+              <div class="contact-list">
+                {{range .BoardContacts}}
+                  <article class="contact-card">
+                    <div class="contact-head"><strong>{{.Name}}</strong><span class="pill">{{.Role}}</span></div>
+                    <p class="muted">{{.Description}}</p>
+                    <div class="contact-lines">{{if .HasEmail}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}{{if .HasPhone}}<a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}</div>
+                  </article>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty">Noch kein Beirat hinterlegt.</p>
+            {{end}}
+          </section>
+
+          <section class="panel contact-section directory-panel">
+            <div>
+              <div class="kicker">Hausgemeinschaft</div>
+              <h2>Freigegebene Kontakte</h2>
+            </div>
+            {{if .HasResidentContacts}}
+              <div class="contact-list">
+                {{range .ResidentContacts}}
+                  <article class="contact-card">
+                    <div class="contact-head"><strong>{{.Name}}</strong><span class="pill">{{.Role}}</span></div>
+                    <p class="muted">{{.Description}}</p>
+                    <div class="contact-lines">{{if .HasEmail}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}{{if .HasPhone}}<a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}</div>
+                  </article>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty">Niemand hat die Freigabe aktiviert.</p>
+            {{end}}
           </section>
         </div>
       </section>
@@ -9669,6 +9959,21 @@ const pageTemplates = `
               <label for="contact-phone">Kontakt-Telefon
                 <input id="contact-phone" type="tel" name="contact_phone" value="{{.Tenant.ContactPhone}}" maxlength="80" autocomplete="tel">
               </label>
+              <label for="emergency-name">Notdienst
+                <input id="emergency-name" type="text" name="emergency_name" value="{{.Tenant.EmergencyName}}" maxlength="160" placeholder="Notdienst">
+              </label>
+              <label for="emergency-phone">Notdienst-Telefon
+                <input id="emergency-phone" type="tel" name="emergency_phone" value="{{.Tenant.EmergencyPhone}}" maxlength="80" autocomplete="tel">
+              </label>
+              <label for="caretaker-name">Hausmeister
+                <input id="caretaker-name" type="text" name="caretaker_name" value="{{.Tenant.CaretakerName}}" maxlength="160">
+              </label>
+              <label for="caretaker-email">Hausmeister-E-Mail
+                <input id="caretaker-email" type="email" name="caretaker_email" value="{{.Tenant.CaretakerEmail}}" maxlength="160" autocomplete="email">
+              </label>
+              <label for="caretaker-phone">Hausmeister-Telefon
+                <input id="caretaker-phone" type="tel" name="caretaker_phone" value="{{.Tenant.CaretakerPhone}}" maxlength="80" autocomplete="tel">
+              </label>
               <div class="f-actions"><button class="button primary" type="submit">Stammdaten speichern</button></div>
             </form>
           </section>
@@ -9766,6 +10071,8 @@ const pageTemplates = `
       .profile .profile-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
       .profile .profile-form .short { grid-column: span 1; }
       .profile .profile-form .full { grid-column: 1 / -1; }
+      .profile .directory-check { grid-column: 1 / -1; min-height: 42px; display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+      .profile .directory-check input { width: auto; min-height: 0; }
       .profile .readonly-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 10px; }
       .profile .readonly-box { border: 1px solid var(--line); border-radius: 8px; padding: 13px; background: var(--panel-soft); display: grid; gap: 8px; }
       .profile .readonly-box strong { font-family: Spectral, serif; font-size: 18px; }
@@ -9793,6 +10100,7 @@ const pageTemplates = `
             <label class="short" for="profile-phone">Telefon optional<input id="profile-phone" name="phone" value="{{.Profile.Phone}}" maxlength="80" autocomplete="tel"></label>
             <label for="profile-first">Vorname<input id="profile-first" name="first_name" value="{{.Profile.FirstName}}" maxlength="120" autocomplete="given-name"></label>
             <label for="profile-last">Nachname<input id="profile-last" name="last_name" value="{{.Profile.LastName}}" maxlength="120" autocomplete="family-name"></label>
+            <label class="directory-check" for="profile-directory"><input id="profile-directory" type="checkbox" name="directory_opt_in"{{if .Profile.DirectoryOptIn}} checked{{end}}>Im Kontakte-Verzeichnis anzeigen</label>
             <div class="full row-actions">
               <button class="button primary" type="submit">Speichern</button>
               <a class="button" href="/app/settings">Abbrechen</a>

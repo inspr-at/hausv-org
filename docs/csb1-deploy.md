@@ -151,8 +151,11 @@ authoritative for authorization.
 Gebäude-/Tenant-Einstellungen persist to `/data/tenant_overrides.json` via
 `TENANT_DATA_PATH`; uploaded tenant hero images are stored below
 `/data/tenant-heroes` via `TENANT_HERO_DIR`. Overrides are layered over
-`WEG_TENANTS_JSON` defaults and carry display/contact/hero fields only, never
-roles, permissions, auth methods or secret-bearing configuration.
+`WEG_TENANTS_JSON` defaults and carry display/contact/emergency/hero fields
+only, never roles, permissions, auth methods or secret-bearing configuration.
+The `/app/kontakte` page reads these fields plus Beirat role assignments;
+resident directory entries appear only after the user explicitly opts in from
+their profile.
 
 Wohneinheiten and ownership/renter links persist to `/data/units.json` via
 `UNIT_DATA_PATH`. Each unit stores tenant, id, label, Miteigentumsanteil and
