@@ -38,6 +38,7 @@ var assets embed.FS
 
 const (
 	roleAdmin         = "Admin"
+	roleManager       = "Verwalter"
 	roleResident      = "Bewohner"
 	permissionParking = "parking"
 	authMethodEmail   = "email"
@@ -67,6 +68,7 @@ type app struct {
 	oidcFlows             *oidcFlowStore
 	mailer                mailer
 	templates             *template.Template
+	announcementStore     *announcementStore
 	inviteStore           *inviteStore
 	activityStore         *activityStore
 	parkingStore          *parkingStore
@@ -202,6 +204,53 @@ type parkingEntityRef struct {
 	EntityID string
 }
 
+type announcementStore struct {
+	mu   sync.Mutex
+	path string
+	data announcementStoreData
+}
+
+type announcementStoreData struct {
+	Announcements []announcement `json:"announcements"`
+}
+
+type announcement struct {
+	ID          string     `json:"id"`
+	TenantSlug  string     `json:"tenant"`
+	Title       string     `json:"title"`
+	Body        string     `json:"body"`
+	Category    string     `json:"category"`
+	Pinned      bool       `json:"pinned"`
+	PublishedAt time.Time  `json:"published_at"`
+	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
+	AuthorEmail string     `json:"author_email"`
+	AuthorName  string     `json:"author_name"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+type announcementView struct {
+	ID                 string
+	Title              string
+	Body               string
+	BodyHTML           template.HTML
+	Category           string
+	CategoryClass      string
+	Pinned             bool
+	PinnedChecked      bool
+	PublishedAt        string
+	PublishedAtInput   string
+	ExpiresAt          string
+	ExpiresAtInput     string
+	HasExpiresAt       bool
+	Author             string
+	Status             string
+	Published          bool
+	Expired            bool
+	EditDialogID       string
+	DeleteConfirmLabel string
+}
+
 type parkingStore struct {
 	mu   sync.Mutex
 	path string
@@ -330,11 +379,16 @@ func main() {
 	mux.HandleFunc("GET /auth/oidc/callback", a.finishOIDCLogin)
 	mux.HandleFunc("POST /auth/logout", a.logout)
 	mux.HandleFunc("GET /app", a.portal)
+	mux.HandleFunc("GET /app/announcements", a.announcements)
+	mux.HandleFunc("POST /app/announcements", a.createAnnouncement)
+	mux.HandleFunc("POST /app/announcements/edit", a.editAnnouncement)
+	mux.HandleFunc("POST /app/announcements/delete", a.deleteAnnouncement)
 	mux.HandleFunc("GET /app/parking", a.parking)
 	mux.HandleFunc("GET /app/parking/settings", a.parkingSettings)
 	mux.HandleFunc("GET /app/parking/month/{month}", a.parkingMonth)
 	mux.HandleFunc("POST /app/parking/settings", a.updateParkingSettings)
 	mux.HandleFunc("POST /app/parking/month", a.updateParkingMonth)
+	mux.HandleFunc("GET /app/settings", a.settingsHub)
 	mux.HandleFunc("GET /app/settings/users", a.userSettings)
 	mux.HandleFunc("POST /app/settings/users", a.createInvite)
 	mux.HandleFunc("POST /app/settings/users/edit", a.editInvite)
@@ -447,6 +501,11 @@ func newApp() (*app, error) {
 		return nil, fmt.Errorf("SMTP or OIDC login is required when BASE_URL is public")
 	}
 
+	announcementDataPath := env("ANNOUNCE_DATA_PATH", "tmp/announcements.json")
+	announcements, err := newAnnouncementStore(announcementDataPath)
+	if err != nil {
+		return nil, err
+	}
 	inviteDataPath := env("INVITE_DATA_PATH", "tmp/invites.json")
 	invites, err := newInviteStore(inviteDataPath)
 	if err != nil {
@@ -496,6 +555,7 @@ func newApp() (*app, error) {
 		oidcFlows:             &oidcFlowStore{items: map[string]oidcFlow{}},
 		mailer:                mailTransport,
 		templates:             tmpl,
+		announcementStore:     announcements,
 		inviteStore:           invites,
 		activityStore:         activity,
 		parkingStore:          parkingStore,
@@ -775,6 +835,152 @@ func (a *app) logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileFor(email)
+	isAdmin := role == roleAdmin
+	canManage := canManageAnnouncements(role)
+	visible := []announcementView{}
+	all := []announcementView{}
+	if a.announcementStore != nil {
+		visible = announcementViews(a.announcementStore.Visible(tenant.Slug, time.Now()), time.Now(), false)
+		if canManage {
+			all = announcementViews(a.announcementStore.ListTenant(tenant.Slug), time.Now(), true)
+		}
+	}
+	a.render(w, "announcements", map[string]any{
+		"Title":                  "Aushang",
+		"Tenant":                 tenant,
+		"Email":                  email,
+		"DisplayName":            profile.DisplayName(),
+		"Initials":               profile.Initials(),
+		"Role":                   role,
+		"IsAdmin":                isAdmin,
+		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
+		"CanManageAnnouncements": canManage,
+		"ActivePage":             "announcements",
+		"Announcements":          visible,
+		"HasAnnouncements":       len(visible) > 0,
+		"AllAnnouncements":       all,
+		"HasAllAnnouncements":    len(all) > 0,
+		"AnnounceMsg":            announcementMessage(r.URL.Query().Get("announce")),
+		"NowInput":               time.Now().In(time.Local).Format("2006-01-02T15:04"),
+	})
+}
+
+func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !canManageAnnouncements(role) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	profile := a.profileFor(email)
+	item, err := announcementFromForm(r, tenant.Slug, profile, time.Now())
+	if err != nil {
+		http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
+		return
+	}
+	if _, err := a.announcementStore.Create(item); err != nil {
+		log.Printf("announcement create failed for %s: %v", tenant.Slug, err)
+		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/app/announcements?announce=created", http.StatusSeeOther)
+}
+
+func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !canManageAnnouncements(role) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimSpace(r.FormValue("id"))
+	profile := a.profileFor(email)
+	item, err := announcementFromForm(r, tenant.Slug, profile, time.Now())
+	if err != nil {
+		http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
+		return
+	}
+	ok, err = a.announcementStore.Update(id, item)
+	if err != nil {
+		log.Printf("announcement update failed for %s: %v", tenant.Slug, err)
+		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
+		return
+	}
+	if !ok {
+		http.Redirect(w, r, "/app/announcements?announce=missing", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/app/announcements?announce=updated", http.StatusSeeOther)
+}
+
+func (a *app) deleteAnnouncement(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	_, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !canManageAnnouncements(role) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	removed, err := a.announcementStore.Delete(tenant.Slug, strings.TrimSpace(r.FormValue("id")))
+	if err != nil {
+		log.Printf("announcement delete failed for %s: %v", tenant.Slug, err)
+		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
+		return
+	}
+	if !removed {
+		http.Redirect(w, r, "/app/announcements?announce=missing", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/app/announcements?announce=deleted", http.StatusSeeOther)
+}
+
 func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	email, role, tenantSlug, ok := a.currentUser(r)
@@ -788,16 +994,27 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 	}
 	profile := a.profileFor(email)
 	isAdmin := role == roleAdmin
+	canManage := canManageAnnouncements(role)
+	announcements := []announcementView{}
+	if a.announcementStore != nil {
+		announcements = announcementViews(a.announcementStore.Visible(tenant.Slug, time.Now()), time.Now(), false)
+		if len(announcements) > 3 {
+			announcements = announcements[:3]
+		}
+	}
 	a.render(w, "portal", map[string]any{
-		"Title":         "WEG Portal",
-		"Tenant":        tenant,
-		"Email":         email,
-		"DisplayName":   profile.DisplayName(),
-		"Initials":      profile.Initials(),
-		"Role":          role,
-		"IsAdmin":       isAdmin,
-		"CanSeeParking": isAdmin || profile.HasPermission(permissionParking),
-		"ActivePage":    "home",
+		"Title":                  "WEG Portal",
+		"Tenant":                 tenant,
+		"Email":                  email,
+		"DisplayName":            profile.DisplayName(),
+		"Initials":               profile.Initials(),
+		"Role":                   role,
+		"IsAdmin":                isAdmin,
+		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
+		"CanManageAnnouncements": canManage,
+		"ActivePage":             "home",
+		"Announcements":          announcements,
+		"HasAnnouncements":       len(announcements) > 0,
 	})
 }
 
@@ -852,7 +1069,7 @@ func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	settingsMsg, settingsOK := parkingSettingsMessage(r.URL.Query().Get("settings"))
 	a.render(w, "parkingSettings", map[string]any{
-		"Title":         "Parkplatz-Einstellungen",
+		"Title":         "Parkplatz-Abrechnung",
 		"Tenant":        tenant,
 		"Email":         email,
 		"DisplayName":   profile.DisplayName(),
@@ -967,12 +1184,230 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 func parkingSettingsMessage(status string) (string, bool) {
 	switch status {
 	case "saved":
-		return "Parkplatz-Einstellungen gespeichert.", true
+		return "Parkplatz-Abrechnung gespeichert.", true
 	case "invalid":
 		return "Bitte eine gültige Netzgebühr zwischen 0 und 5 €/kWh eingeben.", false
 	default:
 		return "", false
 	}
+}
+
+func announcementMessage(status string) string {
+	switch status {
+	case "created":
+		return "Aushang gespeichert."
+	case "updated":
+		return "Aushang aktualisiert."
+	case "deleted":
+		return "Aushang gelöscht."
+	case "invalid":
+		return "Bitte Titel, Text und Veröffentlichungsdatum prüfen."
+	case "missing":
+		return "Dieser Aushang wurde nicht gefunden."
+	case "error":
+		return "Der Aushang konnte nicht gespeichert werden."
+	default:
+		return ""
+	}
+}
+
+func canManageAnnouncements(role string) bool {
+	switch normalizeRole(role) {
+	case roleAdmin, roleManager:
+		return true
+	default:
+		return false
+	}
+}
+
+func sameOriginPost(r *http.Request) bool {
+	if r.Method != http.MethodPost {
+		return true
+	}
+	host := normalizeHost(r.Host)
+	if host == "" {
+		return false
+	}
+	if origin := strings.TrimSpace(r.Header.Get("Origin")); origin != "" {
+		parsed, err := url.Parse(origin)
+		return err == nil && normalizeHost(parsed.Host) == host
+	}
+	if referer := strings.TrimSpace(r.Header.Get("Referer")); referer != "" {
+		parsed, err := url.Parse(referer)
+		return err == nil && normalizeHost(parsed.Host) == host
+	}
+	return true
+}
+
+func announcementFromForm(r *http.Request, tenantSlug string, author userProfile, now time.Time) (announcement, error) {
+	title := strings.TrimSpace(r.FormValue("title"))
+	body := strings.TrimSpace(r.FormValue("body"))
+	if title == "" || body == "" {
+		return announcement{}, fmt.Errorf("title and body are required")
+	}
+	if len([]rune(title)) > 140 {
+		return announcement{}, fmt.Errorf("title too long")
+	}
+	if len([]rune(body)) > 5000 {
+		return announcement{}, fmt.Errorf("body too long")
+	}
+	publishedAt, err := parseOptionalLocalDateTime(r.FormValue("published_at"), now)
+	if err != nil {
+		return announcement{}, err
+	}
+	expiresAt, err := parseOptionalExpiry(r.FormValue("expires_at"))
+	if err != nil {
+		return announcement{}, err
+	}
+	item := announcement{
+		TenantSlug:  normalizeSlug(tenantSlug),
+		Title:       title,
+		Body:        body,
+		Category:    normalizeAnnouncementCategory(r.FormValue("category")),
+		Pinned:      parseBool(r.FormValue("pinned")),
+		PublishedAt: publishedAt.UTC(),
+		ExpiresAt:   expiresAt,
+		AuthorEmail: normalizeEmail(author.Email),
+		AuthorName:  author.DisplayName(),
+	}
+	if item.TenantSlug == "" {
+		return announcement{}, fmt.Errorf("tenant is required")
+	}
+	return item, nil
+}
+
+func parseOptionalLocalDateTime(raw string, fallback time.Time) (time.Time, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return fallback, nil
+	}
+	for _, layout := range []string{"2006-01-02T15:04", "2006-01-02 15:04", "2006-01-02"} {
+		if t, err := time.ParseInLocation(layout, raw, time.Local); err == nil {
+			return t, nil
+		}
+	}
+	if t, err := time.Parse(time.RFC3339, raw); err == nil {
+		return t, nil
+	}
+	return time.Time{}, fmt.Errorf("invalid datetime")
+}
+
+func parseOptionalExpiry(raw string) (*time.Time, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	t, err := parseOptionalLocalDateTime(raw, time.Time{})
+	if err != nil {
+		return nil, err
+	}
+	t = t.UTC()
+	return &t, nil
+}
+
+func normalizeAnnouncementCategory(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "dringend", "urgent":
+		return "Dringend"
+	case "termin", "date", "event":
+		return "Termin"
+	case "wartung", "maintenance":
+		return "Wartung"
+	default:
+		return "Info"
+	}
+}
+
+func announcementViews(items []announcement, now time.Time, includeStatus bool) []announcementView {
+	views := make([]announcementView, 0, len(items))
+	for _, item := range items {
+		views = append(views, announcementViewFrom(item, now, includeStatus))
+	}
+	return views
+}
+
+func announcementViewFrom(item announcement, now time.Time, includeStatus bool) announcementView {
+	published := !item.PublishedAt.After(now)
+	expired := item.ExpiresAt != nil && !item.ExpiresAt.After(now)
+	status := ""
+	switch {
+	case expired:
+		status = "Abgelaufen"
+	case !published:
+		status = "Geplant"
+	case item.Pinned:
+		status = "Fixiert"
+	default:
+		status = "Veröffentlicht"
+	}
+	if !includeStatus {
+		status = ""
+	}
+	expiresAt := ""
+	expiresAtInput := ""
+	if item.ExpiresAt != nil {
+		expiresAt = item.ExpiresAt.In(time.Local).Format("02.01.2006 15:04")
+		expiresAtInput = item.ExpiresAt.In(time.Local).Format("2006-01-02T15:04")
+	}
+	author := strings.TrimSpace(item.AuthorName)
+	if author == "" {
+		author = item.AuthorEmail
+	}
+	return announcementView{
+		ID:                 item.ID,
+		Title:              item.Title,
+		Body:               item.Body,
+		BodyHTML:           plainTextHTML(item.Body),
+		Category:           item.Category,
+		CategoryClass:      strings.ToLower(normalizeSlug(item.Category)),
+		Pinned:             item.Pinned,
+		PinnedChecked:      item.Pinned,
+		PublishedAt:        item.PublishedAt.In(time.Local).Format("02.01.2006 15:04"),
+		PublishedAtInput:   item.PublishedAt.In(time.Local).Format("2006-01-02T15:04"),
+		ExpiresAt:          expiresAt,
+		ExpiresAtInput:     expiresAtInput,
+		HasExpiresAt:       item.ExpiresAt != nil,
+		Author:             author,
+		Status:             status,
+		Published:          published,
+		Expired:            expired,
+		EditDialogID:       "announcement-edit-" + item.ID,
+		DeleteConfirmLabel: "Aushang \"" + item.Title + "\" wirklich löschen?",
+	}
+}
+
+func plainTextHTML(body string) template.HTML {
+	escaped := template.HTMLEscapeString(strings.TrimSpace(body))
+	escaped = strings.ReplaceAll(escaped, "\r\n", "\n")
+	escaped = strings.ReplaceAll(escaped, "\n\n", "<br><br>")
+	escaped = strings.ReplaceAll(escaped, "\n", "<br>")
+	return template.HTML(escaped)
+}
+
+func (a *app) settingsHub(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileFor(email)
+	isAdmin := role == roleAdmin
+	a.render(w, "settingsHub", map[string]any{
+		"Title":         "Einstellungen",
+		"Tenant":        tenant,
+		"Email":         email,
+		"DisplayName":   profile.DisplayName(),
+		"Initials":      profile.Initials(),
+		"Role":          role,
+		"IsAdmin":       isAdmin,
+		"CanSeeParking": isAdmin || profile.HasPermission(permissionParking),
+		"ActivePage":    "settings",
+	})
 }
 
 func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
@@ -993,12 +1428,12 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
 	profile := a.profileFor(email)
 	inviteMsg, inviteOK := inviteMessage(r.URL.Query().Get("invite"))
 	a.render(w, "userSettings", map[string]any{
-		"Title":       "Benutzer & Rechte",
-		"Tenant":      tenant,
-		"Email":       email,
-		"DisplayName": profile.DisplayName(),
-		"Initials":    profile.Initials(),
-		"Role":        role,
+		"Title":         "Benutzer & Rechte",
+		"Tenant":        tenant,
+		"Email":         email,
+		"DisplayName":   profile.DisplayName(),
+		"Initials":      profile.Initials(),
+		"Role":          role,
 		"Users":         a.userRows(tenant.Slug),
 		"InviteMsg":     inviteMsg,
 		"InviteOK":      inviteOK,
@@ -1426,6 +1861,179 @@ func (a *app) userRows(tenantSlug string) []userRow {
 		return rows[i].Email < rows[j].Email
 	})
 	return rows
+}
+
+func newAnnouncementStore(path string) (*announcementStore, error) {
+	store := &announcementStore{path: path, data: announcementStoreData{Announcements: []announcement{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read announcement data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid announcement data")
+	}
+	return store, nil
+}
+
+func (s *announcementStore) Create(item announcement) (announcement, error) {
+	now := time.Now().UTC()
+	item.ID = ""
+	item.CreatedAt = now
+	item.UpdatedAt = now
+	if item.PublishedAt.IsZero() {
+		item.PublishedAt = now
+	}
+	if item.Category == "" {
+		item.Category = "Info"
+	}
+	id, err := randomToken(12)
+	if err != nil {
+		return announcement{}, err
+	}
+	item.ID = id
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data.Announcements = append(s.data.Announcements, item)
+	if err := s.saveLocked(); err != nil {
+		return announcement{}, err
+	}
+	return item, nil
+}
+
+func (s *announcementStore) Update(id string, updated announcement) (bool, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return false, nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, existing := range s.data.Announcements {
+		if existing.ID != id || normalizeSlug(existing.TenantSlug) != normalizeSlug(updated.TenantSlug) {
+			continue
+		}
+		updated.ID = existing.ID
+		updated.CreatedAt = existing.CreatedAt
+		updated.UpdatedAt = time.Now().UTC()
+		if updated.PublishedAt.IsZero() {
+			updated.PublishedAt = existing.PublishedAt
+		}
+		if updated.AuthorEmail == "" {
+			updated.AuthorEmail = existing.AuthorEmail
+		}
+		if updated.AuthorName == "" {
+			updated.AuthorName = existing.AuthorName
+		}
+		s.data.Announcements[i] = updated
+		if err := s.saveLocked(); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
+func (s *announcementStore) Delete(tenantSlug string, id string) (bool, error) {
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return false, nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	kept := s.data.Announcements[:0]
+	removed := false
+	for _, item := range s.data.Announcements {
+		if item.ID == id && normalizeSlug(item.TenantSlug) == tenantSlug {
+			removed = true
+			continue
+		}
+		kept = append(kept, item)
+	}
+	if !removed {
+		return false, nil
+	}
+	s.data.Announcements = kept
+	if err := s.saveLocked(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *announcementStore) Visible(tenantSlug string, now time.Time) []announcement {
+	tenantSlug = normalizeSlug(tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []announcement{}
+	for _, item := range s.data.Announcements {
+		if normalizeSlug(item.TenantSlug) != tenantSlug {
+			continue
+		}
+		if item.PublishedAt.After(now) {
+			continue
+		}
+		if item.ExpiresAt != nil && !item.ExpiresAt.After(now) {
+			continue
+		}
+		out = append(out, item)
+	}
+	sortAnnouncements(out)
+	return out
+}
+
+func (s *announcementStore) ListTenant(tenantSlug string) []announcement {
+	tenantSlug = normalizeSlug(tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []announcement{}
+	for _, item := range s.data.Announcements {
+		if normalizeSlug(item.TenantSlug) == tenantSlug {
+			out = append(out, item)
+		}
+	}
+	sortAnnouncements(out)
+	return out
+}
+
+func (s *announcementStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create announcement data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode announcement data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write announcement data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace announcement data")
+	}
+	return nil
+}
+
+func sortAnnouncements(items []announcement) {
+	sort.SliceStable(items, func(i, j int) bool {
+		if items[i].Pinned != items[j].Pinned {
+			return items[i].Pinned
+		}
+		if !items[i].PublishedAt.Equal(items[j].PublishedAt) {
+			return items[i].PublishedAt.After(items[j].PublishedAt)
+		}
+		return items[i].CreatedAt.After(items[j].CreatedAt)
+	})
 }
 
 func (a *app) parkingTelemetry(ctx context.Context, tenant tenantConfig) parkingTelemetry {
@@ -3454,6 +4062,8 @@ func normalizeRole(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "admin":
 		return roleAdmin
+	case "verwalter", "verwaltung", "manager", "property-manager", "property_manager":
+		return roleManager
 	case "bewohner", "resident":
 		return roleResident
 	default:
@@ -3688,13 +4298,16 @@ const pageTemplates = `
     .mark { min-width: 46px; height: 40px; border-radius: 8px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.4); backdrop-filter: blur(6px); display: grid; place-items: center; padding: 0 9px; color: #fff; font-weight: 700; font-size: 13px; }
     .brand .name { font-family: Spectral, serif; font-weight: 600; font-size: 17px; }
     nav { display: flex; gap: 24px; color: rgba(255,255,255,.92); font-size: 14px; font-weight: 600; }
+    nav a { color: inherit; text-decoration: none; padding-bottom: 4px; border-bottom: 1px solid rgba(231,197,116,.65); }
+    nav a:hover { color: #fff; border-bottom-color: var(--gold-light); }
     main { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(320px,420px); gap: clamp(28px,6vw,64px); align-items: end; padding: 0 clamp(20px,5vw,72px) clamp(40px,8vh,72px); }
     .copy { max-width: 760px; color: #fff; }
     .eyebrow { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .2em; color: var(--gold-light); margin-bottom: 18px; }
     h1 { margin: 0; font-family: Spectral, serif; font-weight: 500; font-size: clamp(46px,7vw,72px); line-height: 1.0; letter-spacing: -.01em; text-shadow: 0 2px 30px rgba(0,0,0,.3); }
     .lead { max-width: 440px; margin: 24px 0 0; font-size: clamp(17px,2vw,19px); line-height: 1.55; color: rgba(255,255,255,.9); }
-    .meta { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; margin-top: 34px; max-width: 560px; }
-    .meta strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 30px; color: #fff; }
+    .meta { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; margin-top: 34px; max-width: 620px; }
+    .meta div { border-left: 1px solid rgba(231,197,116,.58); padding-left: 16px; min-width: 0; }
+    .meta strong { display: block; font-weight: 700; font-size: 14px; color: #fff; margin-bottom: 6px; }
     .meta span { color: rgba(255,255,255,.78); font-size: 13px; line-height: 1.4; }
     .login { background: var(--paper); border-radius: 14px; padding: 30px; box-shadow: 0 28px 70px rgba(0,0,0,.42); }
     .login h2 { margin: 0; font-family: Spectral, serif; font-weight: 600; font-size: 26px; }
@@ -3726,24 +4339,22 @@ const pageTemplates = `
   <section class="hero">
     <header>
       <a class="brand" href="/" aria-label="WEG Portal Startseite"><span class="mark">WEG</span><span class="name">{{.Tenant.Address}}</span></a>
-      <nav aria-label="Portalbereiche">
-        <span>Aushang</span>
-        <span>Dokumente</span>
-        <span>Anliegen</span>
+      <nav aria-label="Seitennavigation">
+        <a href="#login">Anmelden</a>
       </nav>
     </header>
     <main>
       <div class="copy">
         <div class="eyebrow">WEG Portal</div>
         <h1>Alles rund um unser gemeinsames Haus.</h1>
-        <p class="lead">Alle Neuigkeiten, Unterlagen, Anliegen und Abstimmungen, erreichbar per persönlichem E-Mail-Zugang.</p>
+        <p class="lead">Der private digitale Eingang für die Hausgemeinschaft, erreichbar per persönlichem E-Mail-Zugang oder SSO.</p>
         <div class="meta" aria-label="Portalüberblick">
-          <div><strong>12</strong><span>Wohneinheiten, ein gemeinsamer digitaler Eingang.</span></div>
-          <div><strong>15 min</strong><span>Gültigkeit für jeden E-Mail-Anmeldelink.</span></div>
-          <div><strong>1</strong><span>Ort für Aushang, Dokumente und Kontakt.</span></div>
+          <div><strong>Eingeladen</strong><span>Zugang nur für freigegebene E-Mail-Adressen der Hausgemeinschaft.</span></div>
+          <div><strong>Einmalig</strong><span>Anmeldung per SSO oder zeitlich begrenztem E-Mail-Link.</span></div>
+          <div><strong>Parkplatz</strong><span>Verbrauch und Abrechnung bleiben im geschützten Portal.</span></div>
         </div>
       </div>
-      <section class="login" aria-label="Anmeldung">
+      <section id="login" class="login" aria-label="Anmeldung">
         <h2>Anmelden</h2>
         <p>{{if .OIDCConfigured}}Melden Sie sich per SSO an oder verwenden Sie einen einmaligen E-Mail-Link.{{else}}Geben Sie Ihre E-Mail-Adresse ein. Wenn sie eingeladen ist, schicken wir einen einmaligen Anmeldelink.{{end}}</p>
         {{if .OIDCConfigured}}<a class="sso-button" href="/auth/oidc/start">Mit {{.OIDCProviderName}} anmelden</a>{{end}}
@@ -3841,13 +4452,24 @@ const pageTemplates = `
     .home-grid { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(340px,.85fr); gap: 22px; align-items: start; }
     .entries { display: grid; gap: 22px; }
     .entry + .entry { border-top: 1px solid var(--line); padding-top: 22px; }
-    .entry p { margin-top: 8px; color: #5c5f54; line-height: 1.6; }
+    .entry-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+    .entry h3 a { color: inherit; text-decoration: none; }
+    .entry h3 a:hover { color: var(--gold-ink); }
+    .entry p, .entry-body { margin-top: 8px; color: #5c5f54; line-height: 1.6; }
+    .entry-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; color: var(--soft); font-size: 12.5px; }
+    .entry-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .quick-list { display: grid; }
-    .quick-row { display: grid; grid-template-columns: 30px 1fr auto; gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }
+    .quick-row { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }
+    button.quick-row { width: 100%; border: 0; border-bottom: 1px solid var(--line); background: transparent; font: inherit; text-align: left; cursor: pointer; }
+    button.quick-row:hover { color: var(--gold-ink); }
     .quick-row:last-child { border-bottom: 0; }
+    .quick-row > div { min-width: 0; }
     .quick-row svg, .info-icon svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; color: var(--ink); }
     .quick-row h3 { font-size: 18px; }
-    .quick-row p { margin-top: 3px; color: var(--soft); font-size: 13.5px; line-height: 1.35; }
+    .quick-row p { margin-top: 3px; color: var(--soft); font-size: 13.5px; line-height: 1.35; overflow-wrap: anywhere; }
+    .quick-row.disabled { cursor: default; }
+    .quick-row.disabled h3, .quick-row.disabled svg { color: var(--muted); }
+    .quick-row .pill { justify-self: end; }
     .quick-arrow { color: var(--gold-ink); font-size: 24px; line-height: 1; }
     .info-row { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
     .info-card { display: grid; grid-template-columns: 66px 1fr auto; gap: 16px; align-items: center; padding: 18px 20px; }
@@ -3860,6 +4482,23 @@ const pageTemplates = `
     .pill { display: inline-flex; align-items: center; min-height: 26px; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 800; background: rgba(200,153,63,.16); color: #8a6a1f; white-space: nowrap; }
     .pill.ok { background: rgba(47,107,74,.12); color: var(--leaf); }
     .pill.ok::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; margin-right: 8px; }
+    .pill.dringend { background: rgba(158,42,43,.12); color: #9e2a2b; }
+    .pill.termin { background: rgba(47,107,74,.12); color: var(--leaf); }
+    .pill.wartung { background: rgba(173,92,27,.14); color: #8a551f; }
+    .pill.info { background: rgba(200,153,63,.16); color: #8a6a1f; }
+    .dialog { border: 1px solid var(--line); border-radius: 10px; padding: 0; width: min(680px, calc(100vw - 28px)); color: var(--ink); background: var(--panel); box-shadow: 0 28px 70px rgba(0,0,0,.34); }
+    .dialog::backdrop { background: rgba(23,32,25,.42); }
+    .dialog form { margin: 0; }
+    .dialog-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
+    .dialog-head h2 { font-size: 25px; }
+    .dialog-close { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-soft); color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; }
+    .dialog-body { display: grid; gap: 14px; padding: 20px 22px 22px; }
+    .dialog-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+    .dialog-grid .full { grid-column: 1 / -1; }
+    textarea { width: 100%; border: 1px solid #e2dac9; border-radius: 7px; min-height: 150px; padding: 10px 12px; color: var(--ink); background: #fffefb; resize: vertical; font: inherit; line-height: 1.45; }
+    select { width: 100%; border: 1px solid #e2dac9; border-radius: 7px; min-height: 42px; padding: 9px 12px; color: var(--ink); background: #fffefb; font: inherit; }
+    .check-row { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; color: var(--ink); font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+    .check-row input { width: auto; min-height: 0; }
     .metric-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
     .metric-card, .month-card { min-width: 0; background: var(--panel-soft); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
     .metric-label, .field-label, th { color: var(--gold-ink); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
@@ -3915,7 +4554,9 @@ const pageTemplates = `
       h1 { font-size: clamp(36px,12vw,48px); }
       .metric-grid { grid-template-columns: 1fr; }
       .info-card { grid-template-columns: 52px 1fr; }
-      .quick-row { grid-template-columns: 28px 1fr; }
+      .quick-row { grid-template-columns: 28px minmax(0,1fr); }
+      .quick-row .pill { grid-column: 2; justify-self: start; }
+      .dialog-grid { grid-template-columns: 1fr; }
       .quick-arrow, .info-card .quick-arrow { display: none; }
     }
   </style>
@@ -3932,12 +4573,13 @@ const pageTemplates = `
     </div>
     <nav class="side-nav">
       <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span>Hausüberblick</a>
+      <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span>Aushang</a>
       {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</span>
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen</span>
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</span>
       {{if .IsAdmin}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
-      {{if and .IsAdmin .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/parking/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>{{end}}
+      <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>
     </nav>
     <div class="side-foot">
       <div class="side-user">
@@ -3978,33 +4620,180 @@ const pageTemplates = `
       <section class="page">
         <div>
           <h1>Hausüberblick</h1>
-          <p class="lede">Hier landen später offizielle Informationen der Hausgemeinschaft, Termine und kurze Updates.</p>
+          <p class="lede">Aktuelle Informationen der Hausgemeinschaft und direkte Wege zu den freigeschalteten Bereichen.</p>
         </div>
         <div class="home-grid">
           <section class="panel">
-            <div class="kicker">Aktueller Aushang</div>
-            <div class="entries">
-              <article class="entry"><h3>Willkommen im Prototyp</h3><p>Der Zugang funktioniert bereits per E-Mail-Link. Inhalte sind noch Beispielmodule.</p></article>
-              <article class="entry"><h3>Nächste Ausbaustufe</h3><p>Einladungen, Bewohnerliste, Dokumentenablage und Anliegenverwaltung.</p></article>
+            <div class="section-head">
+              <div class="kicker">Aktueller Aushang</div>
+              <a class="button small" href="/app/announcements">Archiv öffnen</a>
             </div>
+            {{if .HasAnnouncements}}
+              <div class="entries">
+                {{range .Announcements}}
+                  <article class="entry">
+                    <div class="entry-head">
+                      <div>
+                        <h3><a href="/app/announcements">{{.Title}}</a></h3>
+                        <div class="entry-meta">
+                          <span class="pill {{.CategoryClass}}">{{.Category}}</span>
+                          {{if .Pinned}}<span class="pill">Fixiert</span>{{end}}
+                          <span>{{.PublishedAt}}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="entry-body">{{.BodyHTML}}</div>
+                  </article>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty">Noch keine Beiträge. Sobald die Verwaltung einen Aushang veröffentlicht, erscheint er hier.</p>
+            {{end}}
           </section>
           <section class="panel">
             <div class="kicker">Schnellzugriff</div>
             <div class="quick-list">
-              <div class="quick-row"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><div><h3>Dokumente</h3><p>Protokolle, Abrechnungen, Regeln und Pläne.</p></div><span class="quick-arrow">›</span></div>
-              <div class="quick-row"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><div><h3>Anliegen</h3><p>Reparaturen, Fragen, Vorschläge und Rückmeldungen.</p></div><span class="quick-arrow">›</span></div>
-              <div class="quick-row"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg><div><h3>Abstimmungen</h3><p>Vorbereitete Entscheidungen für die Hausgemeinschaft.</p></div><span class="quick-arrow">›</span></div>
+              <a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><div><h3>Aushang</h3><p>Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p></div><span class="quick-arrow">›</span></a>
               {{if .CanSeeParking}}<a class="quick-row" href="/app/parking"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg><div><h3>Parkplatznutzung</h3><p>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .IsAdmin}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
+              {{if .CanManageAnnouncements}}<a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><div><h3>Aushang verwalten</h3><p>Beiträge verfassen, fixieren, planen und löschen.</p></div><span class="quick-arrow">›</span></a>{{end}}
             </div>
           </section>
         </div>
-        <div class="info-row">
-          <section class="panel info-card"><span class="info-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16v11H4z"/><path d="m4 7 8 6 8-6"/></svg></span><div><h3>Einladungssystem</h3><p>Zugriff nur für freigeschaltete E-Mail-Adressen.</p></div><span class="quick-arrow">›</span></section>
-          <section class="panel info-card"><span class="info-icon"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.4 2.9 8 7 10 4.1-2 7-5.6 7-10V6z"/><path d="M9.5 12.5 11 14l3.5-4"/></svg></span><div><h3>E-Mail-Faktor</h3><p>Einmalige Links, 15 Minuten gültig.</p></div><span class="quick-arrow">›</span></section>
-          <section class="panel info-card"><span class="info-icon"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg></span><div><h3>Web-App</h3><p>Responsive, ohne Installation, bereit für Homescreen-Pinning.</p></div><span class="quick-arrow">›</span></section>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "announcements"}}
+{{template "appOpen" .}}
+    <script src="/assets/announcements.js" defer></script>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><span>/</span><span>Aushang</span></span>
+        {{if .CanManageAnnouncements}}<div class="page-actions"><button class="button primary" type="button" data-dialog="announcement-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Neu verfassen</button></div>{{end}}
+      </div>
+      <section class="page">
+        <div>
+          <h1>Aushang</h1>
+          <p class="lede">Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p>
+        </div>
+        {{if .AnnounceMsg}}<p class="flash ok">{{.AnnounceMsg}}</p>{{end}}
+        <div class="home-grid">
+          <section class="panel">
+            <div class="section-head">
+              <div class="kicker">Aktuelle Beiträge</div>
+              {{if .HasAnnouncements}}<span class="pill">{{len .Announcements}} sichtbar</span>{{end}}
+            </div>
+            {{if .HasAnnouncements}}
+              <div class="entries">
+                {{range .Announcements}}
+                  <article class="entry">
+                    <div class="entry-head">
+                      <div>
+                        <h3>{{.Title}}</h3>
+                        <div class="entry-meta">
+                          <span class="pill {{.CategoryClass}}">{{.Category}}</span>
+                          {{if .Pinned}}<span class="pill">Fixiert</span>{{end}}
+                          <span>{{.PublishedAt}}</span>
+                          {{if .HasExpiresAt}}<span>bis {{.ExpiresAt}}</span>{{end}}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="entry-body">{{.BodyHTML}}</div>
+                  </article>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty">Noch keine Beiträge.</p>
+            {{end}}
+          </section>
+
+          <section class="panel">
+            <div class="kicker">Aushang verwalten</div>
+            {{if .CanManageAnnouncements}}
+              <div class="quick-list">
+                <button class="quick-row" type="button" data-dialog="announcement-create">
+                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                  <div><h3>Neu verfassen</h3><p>Kategorie, Fixierung, Veröffentlichung und Ablaufdatum setzen.</p></div>
+                  <span class="quick-arrow">›</span>
+                </button>
+                {{if .HasAllAnnouncements}}
+                  {{range .AllAnnouncements}}
+                    <div class="quick-row">
+                      <svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg>
+                      <div><h3>{{.Title}}</h3><p>{{.Category}} · {{.PublishedAt}}{{if .Status}} · {{.Status}}{{end}}</p></div>
+                      <span class="entry-actions">
+                        <button class="button small" type="button" data-dialog="{{.EditDialogID}}">Bearbeiten</button>
+                        <form method="post" action="/app/announcements/delete" data-confirm="{{.DeleteConfirmLabel}}">
+                          <input type="hidden" name="id" value="{{.ID}}">
+                          <button class="button small" type="submit">Löschen</button>
+                        </form>
+                      </span>
+                    </div>
+                    <dialog id="{{.EditDialogID}}" class="dialog">
+                      <form method="post" action="/app/announcements/edit">
+                        <input type="hidden" name="id" value="{{.ID}}">
+                        <div class="dialog-head">
+                          <h2>Aushang bearbeiten</h2>
+                          <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+                        </div>
+                        <div class="dialog-body">
+                          <div class="dialog-grid">
+                            <label class="full" for="title-{{.ID}}">Titel<input id="title-{{.ID}}" name="title" value="{{.Title}}" required maxlength="140"></label>
+                            <label for="category-{{.ID}}">Kategorie<select id="category-{{.ID}}" name="category">
+                              <option value="Info"{{if eq .Category "Info"}} selected{{end}}>Info</option>
+                              <option value="Termin"{{if eq .Category "Termin"}} selected{{end}}>Termin</option>
+                              <option value="Wartung"{{if eq .Category "Wartung"}} selected{{end}}>Wartung</option>
+                              <option value="Dringend"{{if eq .Category "Dringend"}} selected{{end}}>Dringend</option>
+                            </select></label>
+                            <label for="published-{{.ID}}">Veröffentlichen<input id="published-{{.ID}}" type="datetime-local" name="published_at" value="{{.PublishedAtInput}}"></label>
+                            <label for="expires-{{.ID}}">Ablauf optional<input id="expires-{{.ID}}" type="datetime-local" name="expires_at" value="{{.ExpiresAtInput}}"></label>
+                            <label class="check-row"><input type="checkbox" name="pinned" value="true"{{if .PinnedChecked}} checked{{end}}> oben fixieren</label>
+                            <label class="full" for="body-{{.ID}}">Text<textarea id="body-{{.ID}}" name="body" required>{{.Body}}</textarea></label>
+                          </div>
+                          <button class="button primary" type="submit">Speichern</button>
+                        </div>
+                      </form>
+                    </dialog>
+                  {{end}}
+                {{else}}
+                  <p class="empty">Noch kein Aushang gespeichert.</p>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty">Veröffentlichen und Bearbeiten ist der Verwaltung vorbehalten.</p>
+            {{end}}
+          </section>
         </div>
       </section>
+
+      {{if .CanManageAnnouncements}}
+      <dialog id="announcement-create" class="dialog">
+        <form method="post" action="/app/announcements">
+          <div class="dialog-head">
+            <h2>Neu verfassen</h2>
+            <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+          </div>
+          <div class="dialog-body">
+            <div class="dialog-grid">
+              <label class="full" for="announcement-title">Titel<input id="announcement-title" name="title" required maxlength="140"></label>
+              <label for="announcement-category">Kategorie<select id="announcement-category" name="category">
+                <option value="Info">Info</option>
+                <option value="Termin">Termin</option>
+                <option value="Wartung">Wartung</option>
+                <option value="Dringend">Dringend</option>
+              </select></label>
+              <label for="announcement-published">Veröffentlichen<input id="announcement-published" type="datetime-local" name="published_at" value="{{.NowInput}}"></label>
+              <label for="announcement-expires">Ablauf optional<input id="announcement-expires" type="datetime-local" name="expires_at"></label>
+              <label class="check-row"><input type="checkbox" name="pinned" value="true"> oben fixieren</label>
+              <label class="full" for="announcement-body">Text<textarea id="announcement-body" name="body" required></textarea></label>
+            </div>
+            <button class="button primary" type="submit">Veröffentlichen</button>
+          </div>
+        </form>
+      </dialog>
+      {{end}}
     </main>
 {{template "appClose" .}}
 {{end}}
@@ -4016,7 +4805,7 @@ const pageTemplates = `
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><span>Parkplatznutzung</span></span>
         <div class="page-actions">
           <a class="button" href="/app/parking"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 4v6h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 20v-6h-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10a7 7 0 0 1 12-3M19 14a7 7 0 0 1-12 3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Aktualisieren</a>
-          {{if .IsAdmin}}<a class="button" href="/app/parking/settings"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>Einstellungen</a>{{end}}
+          {{if .IsAdmin}}<a class="button" href="/app/parking/settings"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>Abrechnung konfigurieren</a>{{end}}
         </div>
       </div>
       <section class="page wide">
@@ -4192,16 +4981,73 @@ const pageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
-{{define "parkingSettings"}}
+{{define "settingsHub"}}
 {{template "appOpen" .}}
     <main class="app-main">
       <div class="content-top">
-        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/parking">Parkplatznutzung</a><span>/</span><span>Einstellungen</span></span>
-        <div class="page-actions"><a class="button" href="/app/parking">Zur Übersicht</a></div>
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><span>Einstellungen</span></span>
       </div>
       <section class="page">
         <div>
           <h1>Einstellungen</h1>
+          <p class="lede">Persönliche Einstellungen und Verwaltungsbereiche für {{.Tenant.Address}}.</p>
+        </div>
+        <div class="home-grid">
+          <section class="panel">
+            <div class="kicker">Konto</div>
+            <div class="quick-list">
+              <div class="quick-row disabled">
+                <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>
+                <div><h3>Profil</h3><p>{{.Email}} · {{.Role}}</p></div>
+                <span class="pill">Aktiv</span>
+              </div>
+              <div class="quick-row disabled">
+                <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+                <div><h3>Benachrichtigungen</h3><p>E-Mail-Präferenzen werden hier gebündelt, sobald Ereignisbenachrichtigungen aktiv sind.</p></div>
+                <span class="pill">Vorbereitet</span>
+              </div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="kicker">Verwaltung</div>
+            {{if .IsAdmin}}
+              <div class="quick-list">
+                <a class="quick-row" href="/app/settings/users">
+                  <svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg>
+                  <div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div>
+                  <span class="quick-arrow">›</span>
+                </a>
+                <a class="quick-row" href="/app/parking/settings">
+                  <svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg>
+                  <div><h3>Parkplatz-Abrechnung</h3><p>Netzgebühr und Abrechnungswerte für die private Parkplatznutzung.</p></div>
+                  <span class="quick-arrow">›</span>
+                </a>
+                <div class="quick-row disabled">
+                  <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/><path d="M8 10h.01M16 10h.01"/></svg>
+                  <div><h3>Gebäude</h3><p>Adresse, Kontakte, Einheiten und Hausdaten werden hier zusammengeführt.</p></div>
+                  <span class="pill">Vorbereitet</span>
+                </div>
+              </div>
+            {{else}}
+              <p class="empty">Verwaltungsbereiche sind nur für berechtigte Personen sichtbar.</p>
+            {{end}}
+          </section>
+        </div>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "parkingSettings"}}
+{{template "appOpen" .}}
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz-Abrechnung</span></span>
+        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a><a class="button" href="/app/parking">Zur Parkplatznutzung</a></div>
+      </div>
+      <section class="page">
+        <div>
+          <h1>Parkplatz-Abrechnung</h1>
           <p class="lede">Abrechnungswerte für die private Parkplatznutzung.</p>
         </div>
         <section class="panel settings-card">

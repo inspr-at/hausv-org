@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"html/template"
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -337,6 +340,244 @@ func TestOIDCLoginDefersUnavailableDiscovery(t *testing.T) {
 	if err := login.EnsureProvider(ctx); err == nil {
 		t.Fatal("retry with canceled context should still report discovery failure")
 	}
+}
+
+func TestSettingsHubVisibleToResidentWithoutAdminSections(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	rr := authedRequest(t, a, "resident@example.com", "/app/settings", a.settingsHub)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("settings hub status = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	for _, want := range []string{`href="/app/settings"`, "Profil", "Benachrichtigungen"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("settings hub should contain %q", want)
+		}
+	}
+	if strings.Contains(body, `href="/app/parking/settings"`) {
+		t.Fatal("resident settings hub must not expose parking settings")
+	}
+}
+
+func TestSettingsHubAdminLinksManagementSections(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	rr := authedRequest(t, a, "admin@example.com", "/app/settings", a.settingsHub)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("settings hub status = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	for _, want := range []string{`href="/app/settings/users"`, `href="/app/parking/settings"`, "Parkplatz-Abrechnung", "Gebäude"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("admin settings hub should contain %q", want)
+		}
+	}
+}
+
+func TestParkingSettingsIsParkingSpecificNotGlobalSettings(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	rr := authedRequest(t, a, "admin@example.com", "/app/parking/settings", a.parkingSettings)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("parking settings status = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	for _, want := range []string{"Parkplatz-Abrechnung", `href="/app/settings"`, "Zurück zu Einstellungen"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("parking settings should contain %q", want)
+		}
+	}
+	if strings.Contains(body, "<h1>Einstellungen</h1>") {
+		t.Fatal("parking settings page must not use generic Einstellungen heading")
+	}
+}
+
+func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "announcements.json")
+	store, err := newAnnouncementStore(path)
+	if err != nil {
+		t.Fatalf("newAnnouncementStore: %v", err)
+	}
+	now := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
+	expiredAt := now.Add(-time.Hour)
+	future, err := store.Create(announcement{TenantSlug: "jhw22", Title: "Future", Body: "Later", Category: "Info", PublishedAt: now.Add(time.Hour)})
+	if err != nil || future.ID == "" {
+		t.Fatalf("create future: item=%+v err=%v", future, err)
+	}
+	expired, _ := store.Create(announcement{TenantSlug: "jhw22", Title: "Expired", Body: "Old", Category: "Info", PublishedAt: now.Add(-2 * time.Hour), ExpiresAt: &expiredAt})
+	normal, _ := store.Create(announcement{TenantSlug: "jhw22", Title: "Normal", Body: "Visible", Category: "Termin", PublishedAt: now.Add(-30 * time.Minute)})
+	pinned, _ := store.Create(announcement{TenantSlug: "jhw22", Title: "Pinned", Body: "Top", Category: "Dringend", Pinned: true, PublishedAt: now.Add(-2 * time.Hour)})
+	_, _ = store.Create(announcement{TenantSlug: "other", Title: "Other", Body: "Hidden", Category: "Info", PublishedAt: now.Add(-time.Hour)})
+
+	visible := store.Visible("jhw22", now)
+	if len(visible) != 2 {
+		t.Fatalf("visible len = %d, want 2 (future=%s expired=%s normal=%s pinned=%s)", len(visible), future.ID, expired.ID, normal.ID, pinned.ID)
+	}
+	if visible[0].Title != "Pinned" || visible[1].Title != "Normal" {
+		t.Fatalf("visible order = %q, %q; want pinned first then recent", visible[0].Title, visible[1].Title)
+	}
+
+	updated := normal
+	updated.Title = "Updated"
+	if ok, err := store.Update(normal.ID, updated); !ok || err != nil {
+		t.Fatalf("update: ok=%v err=%v", ok, err)
+	}
+	if removed, err := store.Delete("jhw22", pinned.ID); !removed || err != nil {
+		t.Fatalf("delete: removed=%v err=%v", removed, err)
+	}
+	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("store file mode = %v err=%v, want 0600", info.Mode().Perm(), err)
+	}
+	reopened, err := newAnnouncementStore(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	all := reopened.ListTenant("jhw22")
+	if len(all) != 3 {
+		t.Fatalf("reopened list len = %d, want 3 after delete", len(all))
+	}
+	foundUpdated := false
+	for _, item := range all {
+		if item.ID == normal.ID && item.Title == "Updated" {
+			foundUpdated = true
+		}
+	}
+	if !foundUpdated {
+		t.Fatal("updated announcement did not persist")
+	}
+}
+
+func TestPortalUsesAnnouncementEmptyStateWithoutPrototypeCopy(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	rr := authedRequest(t, a, "resident@example.com", "/app", a.portal)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("portal status = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	for _, forbidden := range []string{"Willkommen im Prototyp", "Beispielmodule", "Nächste Ausbaustufe"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("portal must not contain placeholder copy %q", forbidden)
+		}
+	}
+	if !strings.Contains(body, "Noch keine Beiträge") || !strings.Contains(body, `href="/app/announcements"`) {
+		t.Fatal("portal should show announcement empty state and real archive link")
+	}
+}
+
+func TestAnnouncementRoutesGateWritesAndAllowResidentRead(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	read := authedRequest(t, a, "resident@example.com", "/app/announcements", a.announcements)
+	if read.Code != http.StatusOK {
+		t.Fatalf("resident announcement read status = %d", read.Code)
+	}
+	write := authedFormRequest(t, a, "resident@example.com", "/app/announcements", url.Values{
+		"title": {"Resident post"},
+		"body":  {"Nope"},
+	}, a.createAnnouncement)
+	if write.Code != http.StatusForbidden {
+		t.Fatalf("resident create status = %d, want 403", write.Code)
+	}
+}
+
+func TestAnnouncementCreateRejectsCrossOriginAndPersistsSameOrigin(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	values := url.Values{
+		"title":        {"Liftwartung"},
+		"body":         {"Der Lift ist am Freitag vormittags außer Betrieb."},
+		"category":     {"Wartung"},
+		"published_at": {"2026-07-06T12:30"},
+		"pinned":       {"true"},
+	}
+
+	cross := authedFormRequestWithOrigin(t, a, "admin@example.com", "/app/announcements", values, "https://evil.example", a.createAnnouncement)
+	if cross.Code != http.StatusForbidden {
+		t.Fatalf("cross-origin create status = %d, want 403", cross.Code)
+	}
+
+	same := authedFormRequest(t, a, "admin@example.com", "/app/announcements", values, a.createAnnouncement)
+	if same.Code != http.StatusSeeOther {
+		t.Fatalf("same-origin create status = %d, want redirect", same.Code)
+	}
+	visible := a.announcementStore.Visible("jhw22", time.Date(2026, 7, 6, 13, 0, 0, 0, time.Local))
+	if len(visible) != 1 || visible[0].Title != "Liftwartung" || !visible[0].Pinned {
+		t.Fatalf("created visible announcement = %+v", visible)
+	}
+}
+
+func newTestPortalApp(t *testing.T, profile userProfile) *app {
+	t.Helper()
+	tmpl, err := template.New("pages").Parse(pageTemplates)
+	if err != nil {
+		t.Fatalf("parse templates: %v", err)
+	}
+	profile.Email = normalizeEmail(profile.Email)
+	profile.Tenants = normalizeTenants(profile.Tenants, "jhw22")
+	authMethods, err := normalizeAuthMethods(profile.AuthMethods)
+	if err != nil {
+		t.Fatalf("normalize auth methods: %v", err)
+	}
+	profile.AuthMethods = authMethods
+	parkingStore, err := newParkingStore("")
+	if err != nil {
+		t.Fatalf("parking store: %v", err)
+	}
+	announcementStore, err := newAnnouncementStore("")
+	if err != nil {
+		t.Fatalf("announcement store: %v", err)
+	}
+	return &app{
+		baseURL:       "http://localhost:8080",
+		rootDomain:    "hausv.org",
+		defaultTenant: "jhw22",
+		tenants: map[string]tenantConfig{
+			"jhw22": {Slug: "jhw22", Name: "WEG Portal", Address: "Janischhofweg 22", Host: "jhw22.hausv.org"},
+		},
+		profiles: map[string]userProfile{
+			profile.Email: profile,
+		},
+		allowed:           map[string]struct{}{},
+		admins:            map[string]struct{}{},
+		sessionTTL:        time.Hour,
+		sessions:          newSessionStore([]byte(strings.Repeat("s", 32))),
+		templates:         tmpl,
+		announcementStore: announcementStore,
+		parkingStore:      parkingStore,
+	}
+}
+
+func authedRequest(t *testing.T, a *app, email string, path string, handler http.HandlerFunc) *httptest.ResponseRecorder {
+	t.Helper()
+	token, _, err := a.sessions.Put(email, "jhw22", authMethodEmail, time.Hour)
+	if err != nil {
+		t.Fatalf("put session: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org"+path, nil)
+	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
+	rr := httptest.NewRecorder()
+	handler(rr, req)
+	return rr
+}
+
+func authedFormRequest(t *testing.T, a *app, email string, path string, values url.Values, handler http.HandlerFunc) *httptest.ResponseRecorder {
+	return authedFormRequestWithOrigin(t, a, email, path, values, "http://jhw22.hausv.org", handler)
+}
+
+func authedFormRequestWithOrigin(t *testing.T, a *app, email string, path string, values url.Values, origin string, handler http.HandlerFunc) *httptest.ResponseRecorder {
+	t.Helper()
+	token, _, err := a.sessions.Put(email, "jhw22", authMethodEmail, time.Hour)
+	if err != nil {
+		t.Fatalf("put session: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org"+path, strings.NewReader(values.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Origin", origin)
+	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
+	rr := httptest.NewRecorder()
+	handler(rr, req)
+	return rr
 }
 
 func TestParkingHourlyUsageAppliesHourlyAwattarPrices(t *testing.T) {

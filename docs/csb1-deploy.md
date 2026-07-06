@@ -111,6 +111,12 @@ shows `Aktiv` + "zuletzt angemeldet: <date>"; invited-but-never-logged-in shows
 "noch nie angemeldet"), so it stays consistent for both env and invited users
 without mutating their records.
 
+Aushang/Hausjournal entries persist to `/data/announcements.json` via
+`ANNOUNCE_DATA_PATH`. The store uses the same JSON-store pattern as invites and
+parking data: mutexed writes, atomic temp-file replacement, and file mode `0600`.
+The dashboard shows only published, unexpired entries; admin/Verwalter authoring
+controls live under `/app/announcements`.
+
 Historical accounting backfill uses Home Assistant recorder statistics from
 `PARKING_HISTORY_START` onward. For the 2026 rollout this is set in compose as:
 
