@@ -119,6 +119,11 @@ Per-user read state persists to `/data/announcement_reads.json` via
 only published, unexpired entries; admin/Verwalter authoring controls live under
 `/app/announcements`.
 
+Notification preferences persist to `/data/notification_prefs.json` via
+`NOTIFICATION_PREF_DATA_PATH`. Missing preferences default to enabled delivery;
+explicit event opt-outs and the global unsubscribe flag are checked before
+non-authentication emails are sent.
+
 Wohneinheiten and ownership/renter links persist to `/data/units.json` via
 `UNIT_DATA_PATH`. Each unit stores tenant, id, label, Miteigentumsanteil and
 owner/renter email links; the file uses the same mutexed atomic JSON-store pattern

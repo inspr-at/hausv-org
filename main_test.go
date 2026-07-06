@@ -549,6 +549,31 @@ func TestSettingsHubVisibleToResidentWithoutAdminSections(t *testing.T) {
 	}
 }
 
+func TestNotificationSettingsPersistAndRender(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	save := authedFormRequest(t, a, "resident@example.com", "/app/settings/notifications", url.Values{
+		"email_enabled": {"on"},
+		"events":        {notificationEventAnnouncement, notificationEventDocument},
+	}, a.updateNotificationSettings)
+	if save.Code != http.StatusSeeOther {
+		t.Fatalf("notification settings save status = %d", save.Code)
+	}
+	prefs := a.notificationPrefs.Get("resident@example.com")
+	if prefs.Unsubscribed || !prefs.Email[notificationEventAnnouncement] || !prefs.Email[notificationEventDocument] || prefs.Email[notificationEventIssue] {
+		t.Fatalf("saved notification prefs = %+v", prefs)
+	}
+
+	page := authedRequest(t, a, "resident@example.com", "/app/settings/notifications", a.notificationSettings)
+	if page.Code != http.StatusOK {
+		t.Fatalf("notification settings status = %d", page.Code)
+	}
+	body := page.Body.String()
+	if !strings.Contains(body, `href="/app/settings"`) || !strings.Contains(body, `value="announcement" checked`) || strings.Contains(body, `value="issue" checked`) {
+		t.Fatalf("notification settings page did not reflect saved prefs:\n%s", body)
+	}
+}
+
 func TestSettingsHubAdminLinksManagementSections(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
@@ -1166,6 +1191,53 @@ func TestResidentCannotCommentOnOtherIssue(t *testing.T) {
 	}
 }
 
+func TestNotificationFrameworkDedupesRecipientsAndHonorsPrefs(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "actor@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["enabled@example.com"] = userProfile{Email: "enabled@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["muted@example.com"] = userProfile{Email: "muted@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["unsubscribed@example.com"] = userProfile{Email: "unsubscribed@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	mailer := &recordingMailer{}
+	a.mailer = mailer
+	if err := a.notificationPrefs.Set("muted@example.com", notificationPreferences{Email: map[string]bool{notificationEventIssue: false}}); err != nil {
+		t.Fatalf("Set muted prefs: %v", err)
+	}
+	if err := a.notificationPrefs.Set("unsubscribed@example.com", notificationPreferences{Unsubscribed: true}); err != nil {
+		t.Fatalf("Set unsubscribed prefs: %v", err)
+	}
+
+	a.notify(portalNotification{
+		Event:      notificationEventIssue,
+		Tenant:     a.tenants["jhw22"],
+		Recipients: []string{"enabled@example.com", "ENABLED@example.com", "muted@example.com", "unsubscribed@example.com", "actor@example.com"},
+		ActorEmail: "actor@example.com",
+		Subject:    "Anliegen aktualisiert",
+		Lines:      []string{"Status geändert."},
+	})
+
+	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "enabled@example.com" || !strings.Contains(mailer.notifications[0].Body, "Status geändert.") {
+		t.Fatalf("notifications = %+v", mailer.notifications)
+	}
+}
+
+func TestPublishedAnnouncementNotifiesTenantRecipients(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	mailer := &recordingMailer{}
+	a.mailer = mailer
+
+	create := authedFormRequest(t, a, "manager@example.com", "/app/announcements", url.Values{
+		"title":    {"Liftwartung"},
+		"body":     {"Lift am Freitag außer Betrieb."},
+		"category": {"Wartung"},
+	}, a.createAnnouncement)
+	if create.Code != http.StatusSeeOther {
+		t.Fatalf("announcement create status = %d", create.Code)
+	}
+	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "resident@example.com" || !strings.Contains(mailer.notifications[0].Subject, "Neuer Aushang") {
+		t.Fatalf("announcement notifications = %+v", mailer.notifications)
+	}
+}
+
 func minimalPNG() []byte {
 	return []byte{
 		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
@@ -1304,6 +1376,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("announcement read store: %v", err)
 	}
+	notificationPrefStore, err := newNotificationPrefStore("")
+	if err != nil {
+		t.Fatalf("notification pref store: %v", err)
+	}
 	inviteStore, err := newInviteStore("")
 	if err != nil {
 		t.Fatalf("invite store: %v", err)
@@ -1339,6 +1415,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		templates:             tmpl,
 		announcementStore:     announcementStore,
 		announcementReadStore: announcementReadStore,
+		notificationPrefs:     notificationPrefStore,
 		inviteStore:           inviteStore,
 		activityStore:         activityStore,
 		unitStore:             unitStore,

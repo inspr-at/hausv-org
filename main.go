@@ -38,27 +38,32 @@ import (
 var assets embed.FS
 
 const (
-	roleAdmin            = "Admin"
-	roleManager          = "Verwalter"
-	roleOwner            = "Eigentümer"
-	roleRenter           = "Mieter"
-	roleBeirat           = "Beirat"
-	roleResident         = "Bewohner"
-	permissionParking    = "parking"
-	authMethodEmail      = "email"
-	authMethodOIDC       = "oidc"
-	issueStatusNew       = "Neu"
-	issueStatusProgress  = "In Bearbeitung"
-	issueStatusDone      = "Erledigt"
-	issueStatusRejected  = "Abgelehnt"
-	issueStatusDuplicate = "Duplikat"
-	issueStatusOpen      = issueStatusNew
-	issuePriorityLow     = "Niedrig"
-	issuePriorityNorm    = "Mittel"
-	issuePriorityHigh    = "Hoch"
-	issuePriorityUrgent  = "Dringend"
-	issueLocationUnit    = "own-unit"
-	issueLocationCommon  = "common"
+	roleAdmin                     = "Admin"
+	roleManager                   = "Verwalter"
+	roleOwner                     = "Eigentümer"
+	roleRenter                    = "Mieter"
+	roleBeirat                    = "Beirat"
+	roleResident                  = "Bewohner"
+	permissionParking             = "parking"
+	authMethodEmail               = "email"
+	authMethodOIDC                = "oidc"
+	issueStatusNew                = "Neu"
+	issueStatusProgress           = "In Bearbeitung"
+	issueStatusDone               = "Erledigt"
+	issueStatusRejected           = "Abgelehnt"
+	issueStatusDuplicate          = "Duplikat"
+	issueStatusOpen               = issueStatusNew
+	issuePriorityLow              = "Niedrig"
+	issuePriorityNorm             = "Mittel"
+	issuePriorityHigh             = "Hoch"
+	issuePriorityUrgent           = "Dringend"
+	issueLocationUnit             = "own-unit"
+	issueLocationCommon           = "common"
+	notificationEventAnnouncement = "announcement"
+	notificationEventIssue        = "issue"
+	notificationEventVote         = "vote"
+	notificationEventDocument     = "document"
+	notificationEventPayment      = "payment"
 )
 
 const (
@@ -107,6 +112,7 @@ type app struct {
 	templates             *template.Template
 	announcementStore     *announcementStore
 	announcementReadStore *announcementReadStore
+	notificationPrefs     *notificationPrefStore
 	inviteStore           *inviteStore
 	activityStore         *activityStore
 	unitStore             *unitStore
@@ -263,6 +269,39 @@ type announcementReadStore struct {
 
 type announcementReadStoreData struct {
 	Seen map[string]map[string]time.Time `json:"seen"`
+}
+
+type notificationPrefStore struct {
+	mu   sync.Mutex
+	path string
+	data notificationPrefStoreData
+}
+
+type notificationPrefStoreData struct {
+	Users map[string]notificationPreferences `json:"users"`
+}
+
+type notificationPreferences struct {
+	Email        map[string]bool `json:"email"`
+	Unsubscribed bool            `json:"unsubscribed,omitempty"`
+}
+
+type notificationEventOption struct {
+	Key         string
+	Label       string
+	Description string
+	Checked     bool
+}
+
+type portalNotification struct {
+	Event      string
+	Tenant     tenantConfig
+	Recipients []string
+	ActorEmail string
+	Subject    string
+	Lines      []string
+	ActionURL  string
+	ActionText string
 }
 
 type announcement struct {
@@ -574,6 +613,8 @@ func main() {
 	mux.HandleFunc("POST /app/parking/settings", a.updateParkingSettings)
 	mux.HandleFunc("POST /app/parking/month", a.updateParkingMonth)
 	mux.HandleFunc("GET /app/settings", a.settingsHub)
+	mux.HandleFunc("GET /app/settings/notifications", a.notificationSettings)
+	mux.HandleFunc("POST /app/settings/notifications", a.updateNotificationSettings)
 	mux.HandleFunc("GET /app/settings/users", a.userSettings)
 	mux.HandleFunc("POST /app/settings/users", a.createInvite)
 	mux.HandleFunc("POST /app/settings/users/edit", a.editInvite)
@@ -696,6 +737,11 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	notificationPrefDataPath := env("NOTIFICATION_PREF_DATA_PATH", "tmp/notification_prefs.json")
+	notificationPrefs, err := newNotificationPrefStore(notificationPrefDataPath)
+	if err != nil {
+		return nil, err
+	}
 	inviteDataPath := env("INVITE_DATA_PATH", "tmp/invites.json")
 	invites, err := newInviteStore(inviteDataPath)
 	if err != nil {
@@ -758,6 +804,7 @@ func newApp() (*app, error) {
 		templates:             tmpl,
 		announcementStore:     announcements,
 		announcementReadStore: announcementReads,
+		notificationPrefs:     notificationPrefs,
 		inviteStore:           invites,
 		activityStore:         activity,
 		unitStore:             units,
@@ -1133,11 +1180,13 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 		return
 	}
-	if _, err := a.announcementStore.Create(item); err != nil {
+	created, err := a.announcementStore.Create(item)
+	if err != nil {
 		log.Printf("announcement create failed for %s: %v", tenant.Slug, err)
 		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
 		return
 	}
+	a.notifyAnnouncementPublished(tenant, created, email)
 	http.Redirect(w, r, "/app/announcements?announce=created", http.StatusSeeOther)
 }
 
@@ -1475,42 +1524,95 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) notifyIssueCreated(tenant tenantConfig, issue residentIssue) {
 	recipients := a.issueManagerEmails(tenant.Slug)
-	subject := "Neues Anliegen: " + issue.Title
-	body := strings.Join([]string{
-		"Es wurde ein neues Anliegen für " + tenant.Address + " erfasst.",
-		"",
-		issue.Title,
-		issue.Category + " · " + issueLocationLabel(issue.LocationType, issue.LocationDetail),
-		"",
-		issue.Body,
-	}, "\n")
-	a.sendIssueNotifications(recipients, subject, body)
+	a.notify(portalNotification{
+		Event:      notificationEventIssue,
+		Tenant:     tenant,
+		Recipients: recipients,
+		ActorEmail: issue.AuthorEmail,
+		Subject:    "Neues Anliegen: " + issue.Title,
+		Lines: []string{
+			"Es wurde ein neues Anliegen für " + tenant.Address + " erfasst.",
+			"",
+			issue.Title,
+			issue.Category + " · " + issueLocationLabel(issue.LocationType, issue.LocationDetail),
+			"",
+			issue.Body,
+		},
+	})
 }
 
 func (a *app) notifyIssueUpdated(tenant tenantConfig, issue residentIssue, actorEmail string, subject string) {
 	recipients := []string{issue.AuthorEmail, issue.AssigneeEmail}
-	body := strings.Join([]string{
-		"Ein Anliegen für " + tenant.Address + " wurde aktualisiert.",
-		"",
-		issue.Title,
-		"Status: " + normalizeIssueStatus(issue.Status),
-		"Priorität: " + normalizeIssuePriority(issue.Priority),
-	}, "\n")
-	a.sendIssueNotifications(excludeEmail(uniqueEmails(recipients), actorEmail), subject, body)
+	a.notify(portalNotification{
+		Event:      notificationEventIssue,
+		Tenant:     tenant,
+		Recipients: recipients,
+		ActorEmail: actorEmail,
+		Subject:    subject,
+		Lines: []string{
+			"Ein Anliegen für " + tenant.Address + " wurde aktualisiert.",
+			"",
+			issue.Title,
+			"Status: " + normalizeIssueStatus(issue.Status),
+			"Priorität: " + normalizeIssuePriority(issue.Priority),
+		},
+	})
 }
 
-func (a *app) sendIssueNotifications(recipients []string, subject string, body string) {
+func (a *app) notifyAnnouncementPublished(tenant tenantConfig, item announcement, actorEmail string) {
+	now := time.Now()
+	if item.PublishedAt.After(now) || (item.ExpiresAt != nil && !item.ExpiresAt.After(now)) {
+		return
+	}
+	a.notify(portalNotification{
+		Event:      notificationEventAnnouncement,
+		Tenant:     tenant,
+		Recipients: a.tenantNotificationEmails(tenant.Slug),
+		ActorEmail: actorEmail,
+		Subject:    "Neuer Aushang: " + item.Title,
+		Lines: []string{
+			"Für " + tenant.Address + " wurde ein neuer Aushang veröffentlicht.",
+			"",
+			item.Title,
+			"Kategorie: " + item.Category,
+			"",
+			item.Body,
+		},
+	})
+}
+
+func (a *app) notify(event portalNotification) {
 	if a.mailer == nil || !a.mailer.Configured() {
 		return
 	}
-	for _, recipient := range uniqueEmails(recipients) {
+	event.Event = normalizeNotificationEvent(event.Event)
+	if event.Event == "" {
+		return
+	}
+	body := event.Body()
+	for _, recipient := range excludeEmail(uniqueEmails(event.Recipients), event.ActorEmail) {
 		if recipient == "" {
 			continue
 		}
-		if err := a.mailer.SendNotification(recipient, subject, body); err != nil {
-			log.Printf("issue notification failed for %s: %v", redactedEmail(recipient), err)
+		if a.notificationPrefs != nil && !a.notificationPrefs.EmailEnabled(recipient, event.Event) {
+			continue
+		}
+		if err := a.mailer.SendNotification(recipient, event.Subject, body); err != nil {
+			log.Printf("notification delivery failed for %s: %v", redactedEmail(recipient), err)
 		}
 	}
+}
+
+func (event portalNotification) Body() string {
+	lines := append([]string(nil), event.Lines...)
+	if event.ActionURL != "" {
+		actionText := strings.TrimSpace(event.ActionText)
+		if actionText == "" {
+			actionText = "Öffnen"
+		}
+		lines = append(lines, "", actionText+": "+event.ActionURL)
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (a *app) issueManagerEmails(tenantSlug string) []string {
@@ -1527,6 +1629,27 @@ func (a *app) issueManagerEmails(tenantSlug string) []string {
 	if a.inviteStore != nil {
 		for _, profile := range a.inviteStore.List() {
 			if profile.HasTenant(tenantSlug) && hasCapability(profile.Role, capabilityManageIssues) {
+				recipients = append(recipients, profile.Email)
+			}
+		}
+	}
+	return uniqueEmails(recipients)
+}
+
+func (a *app) tenantNotificationEmails(tenantSlug string) []string {
+	tenantSlug = normalizeSlug(tenantSlug)
+	recipients := []string{}
+	for email, profile := range a.profiles {
+		if profile.HasTenant(tenantSlug) {
+			recipients = append(recipients, email)
+		}
+	}
+	for email := range a.admins {
+		recipients = append(recipients, email)
+	}
+	if a.inviteStore != nil {
+		for _, profile := range a.inviteStore.List() {
+			if profile.HasTenant(tenantSlug) {
 				recipients = append(recipients, profile.Email)
 			}
 		}
@@ -2318,6 +2441,158 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileFor(email)
+	prefs := defaultNotificationPreferences()
+	if a.notificationPrefs != nil {
+		prefs = a.notificationPrefs.Get(email)
+	}
+	isAdmin := hasCapability(role, capabilityPlatformAdmin)
+	notifyMsg, notifyOK := notificationSettingsMessage(r.URL.Query().Get("notify"))
+	a.render(w, "notificationSettings", map[string]any{
+		"Title":                     "Benachrichtigungen",
+		"Tenant":                    tenant,
+		"Email":                     email,
+		"DisplayName":               profile.DisplayName(),
+		"Initials":                  profile.Initials(),
+		"Role":                      role,
+		"IsAdmin":                   isAdmin,
+		"CanSeeParking":             isAdmin || profile.HasPermission(permissionParking),
+		"ActivePage":                "settings",
+		"NotifyMsg":                 notifyMsg,
+		"NotifyOK":                  notifyOK,
+		"EmailNotificationsEnabled": !prefs.Unsubscribed,
+		"NotificationEvents":        notificationEventOptions(prefs),
+	})
+}
+
+func (a *app) updateNotificationSettings(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, _, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	if a.notificationPrefs != nil {
+		if err := a.notificationPrefs.Set(email, notificationPreferencesFromForm(r.Form)); err != nil {
+			log.Printf("notification preference save failed for %s: %v", redactedEmail(email), err)
+			http.Redirect(w, r, "/app/settings/notifications?notify=error", http.StatusSeeOther)
+			return
+		}
+	}
+	http.Redirect(w, r, "/app/settings/notifications?notify=saved", http.StatusSeeOther)
+}
+
+func notificationSettingsMessage(status string) (string, bool) {
+	switch status {
+	case "saved":
+		return "Benachrichtigungen gespeichert.", true
+	case "error":
+		return "Benachrichtigungen konnten nicht gespeichert werden.", false
+	default:
+		return "", false
+	}
+}
+
+func notificationEventCatalog() []notificationEventOption {
+	return []notificationEventOption{
+		{Key: notificationEventAnnouncement, Label: "Aushang", Description: "Neue veröffentlichte Aushänge"},
+		{Key: notificationEventIssue, Label: "Anliegen", Description: "Neue Anliegen, Kommentare und Statusänderungen"},
+		{Key: notificationEventVote, Label: "Abstimmungen", Description: "Neue Abstimmungen und Erinnerungen"},
+		{Key: notificationEventDocument, Label: "Dokumente", Description: "Neu bereitgestellte Dokumente"},
+		{Key: notificationEventPayment, Label: "Zahlungen", Description: "Fällige oder überfällige Zahlungen"},
+	}
+}
+
+func notificationEventOptions(prefs notificationPreferences) []notificationEventOption {
+	prefs = mergeNotificationPreferences(prefs)
+	out := notificationEventCatalog()
+	for i := range out {
+		out[i].Checked = prefs.Email[out[i].Key]
+	}
+	return out
+}
+
+func notificationPreferencesFromForm(values url.Values) notificationPreferences {
+	enabled := map[string]struct{}{}
+	for _, raw := range values["events"] {
+		event := normalizeNotificationEvent(raw)
+		if event != "" {
+			enabled[event] = struct{}{}
+		}
+	}
+	prefs := notificationPreferences{
+		Email:        map[string]bool{},
+		Unsubscribed: values.Get("email_enabled") == "",
+	}
+	for _, event := range notificationEventCatalog() {
+		_, ok := enabled[event.Key]
+		prefs.Email[event.Key] = ok
+	}
+	return prefs
+}
+
+func defaultNotificationPreferences() notificationPreferences {
+	prefs := notificationPreferences{Email: map[string]bool{}}
+	for _, event := range notificationEventCatalog() {
+		prefs.Email[event.Key] = true
+	}
+	return prefs
+}
+
+func mergeNotificationPreferences(prefs notificationPreferences) notificationPreferences {
+	merged := defaultNotificationPreferences()
+	merged.Unsubscribed = prefs.Unsubscribed
+	for event, enabled := range prefs.Email {
+		event = normalizeNotificationEvent(event)
+		if event == "" {
+			continue
+		}
+		merged.Email[event] = enabled
+	}
+	return merged
+}
+
+func normalizeNotificationPreferences(prefs notificationPreferences) notificationPreferences {
+	normalized := notificationPreferences{
+		Email:        map[string]bool{},
+		Unsubscribed: prefs.Unsubscribed,
+	}
+	merged := mergeNotificationPreferences(prefs)
+	for _, event := range notificationEventCatalog() {
+		normalized.Email[event.Key] = merged.Email[event.Key]
+	}
+	return normalized
+}
+
+func normalizeNotificationEvent(raw string) string {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	for _, event := range notificationEventCatalog() {
+		if raw == event.Key {
+			return event.Key
+		}
+	}
+	return ""
+}
+
 func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	email, role, tenantSlug, ok := a.currentUser(r)
@@ -2951,6 +3226,117 @@ func (s *announcementReadStore) saveLocked() error {
 	}
 	if err := os.Rename(tmp, s.path); err != nil {
 		return fmt.Errorf("could not replace announcement read data")
+	}
+	return nil
+}
+
+func newNotificationPrefStore(path string) (*notificationPrefStore, error) {
+	store := &notificationPrefStore{path: path, data: notificationPrefStoreData{Users: map[string]notificationPreferences{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read notification preference data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid notification preference data")
+	}
+	if store.data.Users == nil {
+		store.data.Users = map[string]notificationPreferences{}
+	}
+	normalized := map[string]notificationPreferences{}
+	for email, prefs := range store.data.Users {
+		email = normalizeEmail(email)
+		if email == "" {
+			continue
+		}
+		normalized[email] = normalizeNotificationPreferences(prefs)
+	}
+	store.data.Users = normalized
+	return store, nil
+}
+
+func (s *notificationPrefStore) Get(email string) notificationPreferences {
+	prefs := defaultNotificationPreferences()
+	if s == nil {
+		return prefs
+	}
+	email = normalizeEmail(email)
+	if email == "" {
+		return prefs
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if stored, ok := s.data.Users[email]; ok {
+		prefs = mergeNotificationPreferences(stored)
+	}
+	return prefs
+}
+
+func (s *notificationPrefStore) Set(email string, prefs notificationPreferences) error {
+	if s == nil {
+		return nil
+	}
+	email = normalizeEmail(email)
+	if email == "" {
+		return fmt.Errorf("invalid notification preference email")
+	}
+	prefs = normalizeNotificationPreferences(prefs)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.Users == nil {
+		s.data.Users = map[string]notificationPreferences{}
+	}
+	s.data.Users[email] = prefs
+	return s.saveLocked()
+}
+
+func (s *notificationPrefStore) EmailEnabled(email string, event string) bool {
+	event = normalizeNotificationEvent(event)
+	if event == "" {
+		return false
+	}
+	prefs := defaultNotificationPreferences()
+	if s != nil {
+		prefs = s.Get(email)
+	}
+	if prefs.Unsubscribed {
+		return false
+	}
+	if prefs.Email == nil {
+		return true
+	}
+	enabled, ok := prefs.Email[event]
+	if !ok {
+		return true
+	}
+	return enabled
+}
+
+func (s *notificationPrefStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create notification preference data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode notification preference data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write notification preference data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace notification preference data")
 	}
 	return nil
 }
@@ -6974,11 +7360,11 @@ const pageTemplates = `
                 <div><h3>Profil</h3><p>{{.Email}} · {{.Role}}</p></div>
                 <span class="pill">Aktiv</span>
               </div>
-              <div class="quick-row disabled">
+              <a class="quick-row" href="/app/settings/notifications">
                 <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
-                <div><h3>Benachrichtigungen</h3><p>E-Mail-Präferenzen werden hier gebündelt, sobald Ereignisbenachrichtigungen aktiv sind.</p></div>
-                <span class="pill">Vorbereitet</span>
-              </div>
+                <div><h3>Benachrichtigungen</h3><p>E-Mail-Ereignisse pro Bereich steuern.</p></div>
+                <span class="quick-arrow">›</span>
+              </a>
             </div>
           </section>
           <section class="panel">
@@ -7006,6 +7392,57 @@ const pageTemplates = `
             {{end}}
           </section>
         </div>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "notificationSettings"}}
+{{template "appOpen" .}}
+    <style>
+      .notifications .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+      .notifications .settings-card { max-width: 760px; display: grid; gap: 16px; }
+      .notifications .notify-flash { margin: 0; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
+      .notifications .notify-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
+      .notifications .notify-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
+      .notifications .toggle-list { display: grid; gap: 10px; }
+      .notifications .toggle-row { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 11px; align-items: start; border: 1px solid var(--line); border-radius: 9px; padding: 13px; background: var(--panel-soft); color: var(--ink); }
+      .notifications .toggle-row input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--gold); }
+      .notifications .toggle-row strong { display: block; font-size: 14px; }
+      .notifications .toggle-row span { display: block; color: var(--muted); font-size: 13px; line-height: 1.45; margin-top: 2px; }
+      .notifications .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    </style>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Benachrichtigungen</span></span>
+        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a></div>
+      </div>
+      <section class="page notifications">
+        <div>
+          <h1>Benachrichtigungen</h1>
+          <p class="lede">{{.Email}}</p>
+        </div>
+        <section class="panel settings-card">
+          {{if .NotifyMsg}}<p class="notify-flash{{if .NotifyOK}} ok{{else}} warn{{end}}">{{.NotifyMsg}}</p>{{end}}
+          <form class="form-grid" method="post" action="/app/settings/notifications">
+            <div class="toggle-list full">
+              <label class="toggle-row">
+                <input type="checkbox" name="email_enabled" value="on"{{if .EmailNotificationsEnabled}} checked{{end}}>
+                <span><strong>E-Mail-Benachrichtigungen</strong><span>Globale Zustellung für dieses Konto.</span></span>
+              </label>
+              {{range .NotificationEvents}}
+              <label class="toggle-row">
+                <input type="checkbox" name="events" value="{{.Key}}"{{if .Checked}} checked{{end}}>
+                <span><strong>{{.Label}}</strong><span>{{.Description}}</span></span>
+              </label>
+              {{end}}
+            </div>
+            <div class="actions full">
+              <button class="button primary" type="submit">Speichern</button>
+              <a class="button" href="/app/settings">Abbrechen</a>
+            </div>
+          </form>
+        </section>
       </section>
     </main>
 {{template "appClose" .}}
