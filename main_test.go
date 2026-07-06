@@ -67,6 +67,31 @@ func TestSMTPMailerRequiresPairedCredentials(t *testing.T) {
 	}
 }
 
+func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
+	wants := []string{
+		`{{define "designTokens"}}`,
+		`{{template "designTokens" .}}`,
+		`--font-sans:`,
+		`--space-6:24px`,
+		`--radius-sm:8px`,
+		`--shadow-panel:0 12px 30px rgba(32,37,31,.04)`,
+		`Shared components: panel, button, pill, quick-row, table-wrap, dialog, flash and empty-state.`,
+		`.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-6); box-shadow: var(--shadow-panel); }`,
+		`.empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm);`,
+	}
+	for _, want := range wants {
+		if !strings.Contains(pageTemplates, want) {
+			t.Fatalf("pageTemplates missing shared design-system marker %q", want)
+		}
+	}
+	if got := strings.Count(pageTemplates, "--ink:#20251f"); got != 1 {
+		t.Fatalf("color token block is duplicated %d times, want once", got)
+	}
+	if got := strings.Count(pageTemplates, `{{template "designTokens" .}}`); got != 2 {
+		t.Fatalf("design token partial is used %d times, want home and app styles", got)
+	}
+}
+
 func TestInviteStoreAddDedupeGetList(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "invites.json")
 	store, err := newInviteStore(path)
