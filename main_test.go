@@ -303,6 +303,52 @@ func TestDocumentStoreCreatePersistAndValidate(t *testing.T) {
 	}
 }
 
+func TestDocumentStoreReplaceKeepsVersionHistory(t *testing.T) {
+	dir := t.TempDir()
+	store, err := newDocumentStore(filepath.Join(dir, "documents.json"), filepath.Join(dir, "documents"))
+	if err != nil {
+		t.Fatalf("newDocumentStore: %v", err)
+	}
+	created, err := store.Create(documentRecord{
+		TenantSlug: "jhw22",
+		Title:      "Hausordnung",
+		Category:   documentCategoryRules,
+		Visibility: documentVisibilityAllResidents,
+		UploadedBy: "manager@example.com",
+	}, testMultipartHeader(t, "document", "hausordnung-v1.pdf", []byte("%PDF-1.4\nv1\n")), time.Date(2026, 1, 1, 9, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	replacement, replaced, err := store.Replace("jhw22", created.ID, "manager@example.com", testMultipartHeader(t, "document", "hausordnung-v2.pdf", []byte("%PDF-1.4\nv2\n")), time.Date(2026, 2, 1, 9, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("Replace: %v", err)
+	}
+	if !replacement.Current || replacement.Version != 2 || replacement.SeriesID != created.SeriesID || replacement.SupersedesID != created.ID {
+		t.Fatalf("replacement metadata = %+v", replacement)
+	}
+	if replaced.Current || replaced.ReplacedByID != replacement.ID {
+		t.Fatalf("replaced metadata = %+v", replaced)
+	}
+	current := store.ListCurrentTenant("jhw22")
+	if len(current) != 1 || current[0].ID != replacement.ID {
+		t.Fatalf("current docs = %+v", current)
+	}
+	versions := store.Versions("jhw22", created.SeriesID)
+	if len(versions) != 2 || versions[0].Version != 2 || versions[1].Version != 1 {
+		t.Fatalf("versions = %+v", versions)
+	}
+	if oldPath, ok := store.FilePath(replaced); !ok {
+		t.Fatal("old version path missing")
+	} else if _, err := os.Stat(oldPath); err != nil {
+		t.Fatalf("old version file missing: %v", err)
+	}
+	if newPath, ok := store.FilePath(replacement); !ok {
+		t.Fatal("new version path missing")
+	} else if _, err := os.Stat(newPath); err != nil {
+		t.Fatalf("new version file missing: %v", err)
+	}
+}
+
 func TestIssueStoreCreateListPersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "issues.json")
 	store, err := newIssueStore(path, filepath.Join(t.TempDir(), "issue-attachments"))
@@ -1544,6 +1590,47 @@ func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
 	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionDocumentDownload, Limit: 50})
 	if len(events) != authorized {
 		t.Fatalf("download audit count = %d, want %d: %+v", len(events), authorized, events)
+	}
+}
+
+func TestDocumentReplaceShowsHistoryAndDownloadAuditVersion(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	created, err := a.documentStore.Create(documentRecord{
+		TenantSlug: "jhw22",
+		Title:      "Hausordnung",
+		Category:   documentCategoryRules,
+		Visibility: documentVisibilityAllResidents,
+		UploadedBy: "manager@example.com",
+	}, testMultipartHeader(t, "document", "hausordnung-v1.pdf", []byte("%PDF-1.4\nv1\n")), time.Date(2026, 1, 1, 9, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("create doc: %v", err)
+	}
+	replace := authedMultipartFileRequest(t, a, "manager@example.com", "/app/dokumente/replace", map[string]string{"id": created.ID}, "document", "hausordnung-v2.pdf", []byte("%PDF-1.4\nv2\n"), a.replaceDocument)
+	if replace.Code != http.StatusSeeOther {
+		t.Fatalf("replace status = %d, want redirect", replace.Code)
+	}
+	current := a.documentStore.ListCurrentTenant("jhw22")
+	if len(current) != 1 || current[0].Version != 2 {
+		t.Fatalf("current docs = %+v", current)
+	}
+	page := authedRequest(t, a, "manager@example.com", "/app/dokumente", a.documents)
+	body := page.Body.String()
+	for _, want := range []string{"Version 2", "Ältere Versionen", "Version 1", "Ersetzen"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("documents page missing %q", want)
+		}
+	}
+	downloadOld := authedPathValueRequest(t, a, "manager@example.com", "/app/dokumente/"+created.ID+"/download", map[string]string{"id": created.ID}, a.downloadDocument)
+	if downloadOld.Code != http.StatusOK || !strings.Contains(downloadOld.Body.String(), "v1") {
+		t.Fatalf("old version download status/body = %d %q", downloadOld.Code, downloadOld.Body.String())
+	}
+	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionDocumentDownload, Limit: 10})
+	if len(events) != 1 || events[0].TargetID != created.ID || events[0].Details["version"] != "Version 1" {
+		t.Fatalf("download audit events = %+v", events)
+	}
+	replaceEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionDocumentReplace, Limit: 10})
+	if len(replaceEvents) != 1 || replaceEvents[0].Details["version"] != "Version 2" || replaceEvents[0].Details["previous"] != "Version 1" {
+		t.Fatalf("replace audit events = %+v", replaceEvents)
 	}
 }
 

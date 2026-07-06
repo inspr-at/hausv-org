@@ -91,6 +91,7 @@ const (
 	auditActionIssueWorkflow    = "issue.workflow"
 	auditActionDocumentUpload   = "document.upload"
 	auditActionDocumentDownload = "document.download"
+	auditActionDocumentReplace  = "document.replace"
 )
 
 const (
@@ -570,6 +571,11 @@ type documentStoreData struct {
 
 type documentRecord struct {
 	ID             string    `json:"id"`
+	SeriesID       string    `json:"series_id,omitempty"`
+	Version        int       `json:"version"`
+	Current        bool      `json:"current"`
+	SupersedesID   string    `json:"supersedes_id,omitempty"`
+	ReplacedByID   string    `json:"replaced_by_id,omitempty"`
 	TenantSlug     string    `json:"tenant"`
 	Title          string    `json:"title"`
 	Category       string    `json:"category"`
@@ -597,6 +603,19 @@ type documentView struct {
 	UploadedBy      string
 	UploadedAt      string
 	DownloadURL     string
+	VersionLabel    string
+	ReplaceDialogID string
+	Versions        []documentVersionView
+	HasVersions     bool
+}
+
+type documentVersionView struct {
+	ID          string
+	Version     string
+	Filename    string
+	Size        string
+	UploadedAt  string
+	DownloadURL string
 }
 
 type documentCategoryView struct {
@@ -898,6 +917,7 @@ func main() {
 	mux.HandleFunc("POST /app/events/delete", a.deleteEvent)
 	mux.HandleFunc("GET /app/dokumente", a.documents)
 	mux.HandleFunc("POST /app/dokumente", a.uploadDocument)
+	mux.HandleFunc("POST /app/dokumente/replace", a.replaceDocument)
 	mux.HandleFunc("GET /app/dokumente/{id}/download", a.downloadDocument)
 	mux.HandleFunc("GET /app/kontakte", a.contacts)
 	mux.HandleFunc("GET /app/anliegen", a.issues)
@@ -1799,8 +1819,8 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request) {
 		"CanSeeParking":      isAdmin || profile.HasPermission(permissionParking),
 		"CanManageDocuments": canManage,
 		"ActivePage":         "documents",
-		"Documents":          documentViews(documents),
-		"DocumentSections":   documentCategorySections(documents, true),
+		"Documents":          a.documentViewsForActor(tenant.Slug, email, role, documents),
+		"DocumentSections":   a.documentCategorySectionsForActor(tenant.Slug, email, role, documents, true),
 		"HasDocuments":       len(documents) > 0,
 		"HasAnyDocuments":    len(visible) > 0,
 		"DocumentsEmpty":     emptyState("Noch keine Dokumente", "Sobald die Verwaltung ein Dokument hochlädt, erscheint es hier nach Sichtbarkeit gefiltert."),
@@ -1878,6 +1898,63 @@ func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/dokumente?doc=uploaded", http.StatusSeeOther)
 }
 
+func (a *app) replaceDocument(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !hasCapability(role, capabilityManageDocuments) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if a.documentStore == nil {
+		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxDocumentFormBytes)
+	if err := r.ParseMultipartForm(maxDocumentBytes); err != nil {
+		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
+		return
+	}
+	header := documentFileHeader(r)
+	if header == nil {
+		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
+		return
+	}
+	replacement, replaced, err := a.documentStore.Replace(tenant.Slug, strings.TrimSpace(r.FormValue("id")), email, header, time.Now())
+	if err != nil {
+		log.Printf("document replace failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
+		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: email,
+		ActorRole:  role,
+		Action:     auditActionDocumentReplace,
+		TargetType: "document",
+		TargetID:   replacement.ID,
+		Summary:    "Dokument ersetzt",
+		Details: map[string]string{
+			"title":        replacement.Title,
+			"category":     replacement.Category,
+			"visibility":   documentVisibilityLabel(replacement.Visibility),
+			"version":      documentVersionLabel(replacement.Version),
+			"previous":     documentVersionLabel(replaced.Version),
+			"previous_id":  replaced.ID,
+			"content_type": replacement.ContentType,
+			"size":         formatBytes(replacement.Size),
+		},
+	})
+	http.Redirect(w, r, "/app/dokumente?doc=replaced", http.StatusSeeOther)
+}
+
 func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	email, role, tenantSlug, ok := a.currentUser(r)
@@ -1932,6 +2009,7 @@ func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request) {
 			"category":   item.Category,
 			"visibility": documentVisibilityLabel(item.Visibility),
 			"unit":       documentUnitAuditLabel(item.UnitID),
+			"version":    documentVersionLabel(item.Version),
 		},
 	})
 	http.ServeContent(w, r, item.Filename, item.UploadedAt, file)
@@ -1954,7 +2032,7 @@ func (a *app) visibleDocumentsForActor(tenantSlug string, email string, role str
 	if a == nil || a.documentStore == nil {
 		return nil
 	}
-	all := a.documentStore.ListTenant(tenantSlug)
+	all := a.documentStore.ListCurrentTenant(tenantSlug)
 	out := make([]documentRecord, 0, len(all))
 	for _, item := range all {
 		if a.canViewDocument(tenantSlug, item, email, role) {
@@ -2008,6 +2086,8 @@ func documentMessage(status string) (string, bool) {
 	switch status {
 	case "uploaded":
 		return "Dokument hochgeladen.", true
+	case "replaced":
+		return "Neue Version gespeichert.", true
 	case "invalid":
 		return "Bitte Titel, Kategorie, Sichtbarkeit und Datei prüfen. Erlaubt sind PDF, JPG, PNG oder WebP bis 20 MB.", false
 	default:
@@ -4048,6 +4128,7 @@ func auditActionOptions(selected string) []selectOption {
 		auditActionUnitDelete,
 		auditActionDocumentUpload,
 		auditActionDocumentDownload,
+		auditActionDocumentReplace,
 		auditActionParkingSettings,
 		auditActionParkingMonth,
 		auditActionIssueWorkflow,
@@ -4079,6 +4160,8 @@ func auditActionLabel(action string) string {
 		return "Dokument hochgeladen"
 	case auditActionDocumentDownload:
 		return "Dokument heruntergeladen"
+	case auditActionDocumentReplace:
+		return "Dokument ersetzt"
 	case auditActionParkingSettings:
 		return "Parkplatz-Abrechnung geändert"
 	case auditActionParkingMonth:
@@ -4167,6 +4250,12 @@ func auditDetailLabel(key string) string {
 		return "Dateityp"
 	case "unit":
 		return "Einheit"
+	case "version":
+		return "Version"
+	case "previous":
+		return "Vorherige Version"
+	case "previous_id":
+		return "Vorherige ID"
 	default:
 		return strings.ReplaceAll(key, "_", " ")
 	}
@@ -6489,74 +6578,153 @@ func (s *documentStore) Create(item documentRecord, header *multipart.FileHeader
 	if s == nil {
 		return documentRecord{}, fmt.Errorf("document store unavailable")
 	}
-	if header == nil || header.Filename == "" || header.Size <= 0 {
-		return documentRecord{}, fmt.Errorf("document file required")
-	}
-	if s.fileDir == "" {
-		return documentRecord{}, fmt.Errorf("document file directory unavailable")
-	}
-	if header.Size > maxDocumentBytes {
-		return documentRecord{}, fmt.Errorf("document file too large")
-	}
-	item.ID = ""
 	if now.IsZero() {
 		now = time.Now()
 	}
 	item.UploadedAt = now.UTC()
-	item.Filename = sanitizeDocumentFilename(header.Filename)
-	item.StoredFilename = ""
-	item.Size = 0
-	item.ContentType = ""
+	fileSave, err := s.saveUploadedDocumentFile(item.TenantSlug, header)
+	if err != nil {
+		return documentRecord{}, err
+	}
+	item.ID = fileSave.ID
+	item.SeriesID = fileSave.ID
+	item.Version = 1
+	item.Current = true
+	item.Filename = fileSave.Filename
+	item.StoredFilename = fileSave.StoredFilename
+	item.Size = fileSave.Size
+	item.ContentType = fileSave.ContentType
 	item = normalizeDocumentRecord(item)
 	if item.TenantSlug == "" || item.Title == "" || item.Category == "" || item.Visibility == "" || item.UploadedBy == "" {
+		_ = os.Remove(fileSave.Path)
 		return documentRecord{}, fmt.Errorf("invalid document metadata")
 	}
-
-	file, err := header.Open()
-	if err != nil {
-		return documentRecord{}, fmt.Errorf("could not open document")
-	}
-	defer file.Close()
-	sniff := make([]byte, 512)
-	n, readErr := file.Read(sniff)
-	if readErr != nil && !errors.Is(readErr, io.EOF) {
-		return documentRecord{}, fmt.Errorf("could not read document")
-	}
-	if n == 0 {
-		return documentRecord{}, fmt.Errorf("document file required")
-	}
-	contentType := http.DetectContentType(sniff[:n])
-	ext, ok := documentExtension(contentType)
-	if !ok {
-		return documentRecord{}, fmt.Errorf("unsupported document type")
-	}
-	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		return documentRecord{}, fmt.Errorf("could not rewind document")
-	}
-	id, err := randomToken(12)
-	if err != nil {
-		return documentRecord{}, err
-	}
-	item.ID = id
-	item.ContentType = contentType
-	item.StoredFilename = id + ext
-
-	storedPath, written, err := s.writeDocumentFile(item.TenantSlug, item.StoredFilename, file)
-	if err != nil {
-		return documentRecord{}, err
-	}
-	item.Size = written
-	item = normalizeDocumentRecord(item)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.data.Documents = append(s.data.Documents, item)
 	sortDocuments(s.data.Documents)
 	if err := s.saveLocked(); err != nil {
-		_ = os.Remove(storedPath)
+		_ = os.Remove(fileSave.Path)
 		return documentRecord{}, err
 	}
 	return copyDocument(item), nil
+}
+
+type documentFileSave struct {
+	ID             string
+	Filename       string
+	StoredFilename string
+	ContentType    string
+	Size           int64
+	Path           string
+}
+
+func (s *documentStore) saveUploadedDocumentFile(tenantSlug string, header *multipart.FileHeader) (documentFileSave, error) {
+	if header == nil || header.Filename == "" || header.Size <= 0 {
+		return documentFileSave{}, fmt.Errorf("document file required")
+	}
+	if s.fileDir == "" {
+		return documentFileSave{}, fmt.Errorf("document file directory unavailable")
+	}
+	if header.Size > maxDocumentBytes {
+		return documentFileSave{}, fmt.Errorf("document file too large")
+	}
+	file, err := header.Open()
+	if err != nil {
+		return documentFileSave{}, fmt.Errorf("could not open document")
+	}
+	defer file.Close()
+	sniff := make([]byte, 512)
+	n, readErr := file.Read(sniff)
+	if readErr != nil && !errors.Is(readErr, io.EOF) {
+		return documentFileSave{}, fmt.Errorf("could not read document")
+	}
+	if n == 0 {
+		return documentFileSave{}, fmt.Errorf("document file required")
+	}
+	contentType := http.DetectContentType(sniff[:n])
+	ext, ok := documentExtension(contentType)
+	if !ok {
+		return documentFileSave{}, fmt.Errorf("unsupported document type")
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return documentFileSave{}, fmt.Errorf("could not rewind document")
+	}
+	id, err := randomToken(12)
+	if err != nil {
+		return documentFileSave{}, err
+	}
+	storedFilename := id + ext
+	storedPath, written, err := s.writeDocumentFile(tenantSlug, storedFilename, file)
+	if err != nil {
+		return documentFileSave{}, err
+	}
+	return documentFileSave{
+		ID:             id,
+		Filename:       sanitizeDocumentFilename(header.Filename),
+		StoredFilename: storedFilename,
+		ContentType:    contentType,
+		Size:           written,
+		Path:           storedPath,
+	}, nil
+}
+
+func (s *documentStore) Replace(tenantSlug string, id string, uploadedBy string, header *multipart.FileHeader, now time.Time) (documentRecord, documentRecord, error) {
+	if s == nil {
+		return documentRecord{}, documentRecord{}, fmt.Errorf("document store unavailable")
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	uploadedBy = normalizeEmail(uploadedBy)
+	if tenantSlug == "" || id == "" || uploadedBy == "" {
+		return documentRecord{}, documentRecord{}, fmt.Errorf("invalid document replacement")
+	}
+	existing, found := s.Get(tenantSlug, id)
+	if !found || !existing.Current {
+		return documentRecord{}, documentRecord{}, fmt.Errorf("document not found")
+	}
+	if now.IsZero() {
+		now = time.Now()
+	}
+	fileSave, err := s.saveUploadedDocumentFile(tenantSlug, header)
+	if err != nil {
+		return documentRecord{}, documentRecord{}, err
+	}
+	replacement := existing
+	replacement.ID = fileSave.ID
+	replacement.Version = existing.Version + 1
+	replacement.Current = true
+	replacement.SupersedesID = existing.ID
+	replacement.ReplacedByID = ""
+	replacement.Filename = fileSave.Filename
+	replacement.StoredFilename = fileSave.StoredFilename
+	replacement.Size = fileSave.Size
+	replacement.ContentType = fileSave.ContentType
+	replacement.UploadedBy = uploadedBy
+	replacement.UploadedAt = now.UTC()
+	replacement = normalizeDocumentRecord(replacement)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, item := range s.data.Documents {
+		if normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != existing.ID || !item.Current {
+			continue
+		}
+		item.Current = false
+		item.ReplacedByID = replacement.ID
+		replaced := normalizeDocumentRecord(item)
+		s.data.Documents[i] = replaced
+		s.data.Documents = append(s.data.Documents, replacement)
+		sortDocuments(s.data.Documents)
+		if err := s.saveLocked(); err != nil {
+			_ = os.Remove(fileSave.Path)
+			return documentRecord{}, documentRecord{}, err
+		}
+		return copyDocument(replacement), copyDocument(replaced), nil
+	}
+	_ = os.Remove(fileSave.Path)
+	return documentRecord{}, documentRecord{}, fmt.Errorf("document not current")
 }
 
 func (s *documentStore) writeDocumentFile(tenantSlug string, storedFilename string, file multipart.File) (string, int64, error) {
@@ -6607,6 +6775,44 @@ func (s *documentStore) ListTenant(tenantSlug string) []documentRecord {
 		}
 	}
 	sortDocuments(out)
+	return out
+}
+
+func (s *documentStore) ListCurrentTenant(tenantSlug string) []documentRecord {
+	all := s.ListTenant(tenantSlug)
+	out := []documentRecord{}
+	for _, item := range all {
+		if item.Current {
+			out = append(out, item)
+		}
+	}
+	sortDocuments(out)
+	return out
+}
+
+func (s *documentStore) Versions(tenantSlug string, seriesID string) []documentRecord {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	seriesID = strings.TrimSpace(seriesID)
+	if tenantSlug == "" || seriesID == "" {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []documentRecord{}
+	for _, item := range s.data.Documents {
+		if normalizeSlug(item.TenantSlug) == tenantSlug && item.SeriesID == seriesID {
+			out = append(out, copyDocument(item))
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Version != out[j].Version {
+			return out[i].Version > out[j].Version
+		}
+		return out[i].UploadedAt.After(out[j].UploadedAt)
+	})
 	return out
 }
 
@@ -6677,6 +6883,18 @@ func normalizeDocuments(items []documentRecord) []documentRecord {
 
 func normalizeDocumentRecord(item documentRecord) documentRecord {
 	item.ID = strings.TrimSpace(item.ID)
+	item.SeriesID = strings.TrimSpace(item.SeriesID)
+	if item.SeriesID == "" && item.ID != "" {
+		item.SeriesID = item.ID
+	}
+	if item.Version <= 0 {
+		item.Version = 1
+	}
+	item.SupersedesID = strings.TrimSpace(item.SupersedesID)
+	item.ReplacedByID = strings.TrimSpace(item.ReplacedByID)
+	if !item.Current && item.ReplacedByID == "" {
+		item.Current = true
+	}
 	item.TenantSlug = normalizeSlug(item.TenantSlug)
 	item.Title = truncateAuditValue(strings.TrimSpace(item.Title), 160)
 	item.Category = normalizeDocumentCategory(item.Category)
@@ -6870,23 +7088,82 @@ func documentVisibilityClass(visibility string) string {
 func documentViews(items []documentRecord) []documentView {
 	views := make([]documentView, 0, len(items))
 	for _, item := range items {
-		views = append(views, documentView{
-			ID:              item.ID,
-			Title:           item.Title,
-			Category:        item.Category,
-			Visibility:      documentVisibilityLabel(item.Visibility),
-			VisibilityClass: documentVisibilityClass(item.Visibility),
-			UnitLabel:       documentUnitLabel(item.UnitID),
-			HasUnit:         normalizeUnitID(item.UnitID) != "",
-			Filename:        item.Filename,
-			Size:            formatBytes(item.Size),
-			ContentType:     item.ContentType,
-			UploadedBy:      item.UploadedBy,
-			UploadedAt:      formatLocalDateTime(item.UploadedAt),
-			DownloadURL:     "/app/dokumente/" + url.PathEscape(item.ID) + "/download",
-		})
+		views = append(views, documentViewFrom(item))
 	}
 	return views
+}
+
+func (a *app) documentViewsForActor(tenantSlug string, email string, role string, items []documentRecord) []documentView {
+	views := make([]documentView, 0, len(items))
+	for _, item := range items {
+		view := documentViewFrom(item)
+		if a != nil && a.documentStore != nil {
+			for _, version := range a.documentStore.Versions(tenantSlug, item.SeriesID) {
+				if version.Current || !a.canViewDocument(tenantSlug, version, email, role) {
+					continue
+				}
+				view.Versions = append(view.Versions, documentVersionView{
+					ID:          version.ID,
+					Version:     documentVersionLabel(version.Version),
+					Filename:    version.Filename,
+					Size:        formatBytes(version.Size),
+					UploadedAt:  formatLocalDateTime(version.UploadedAt),
+					DownloadURL: "/app/dokumente/" + url.PathEscape(version.ID) + "/download",
+				})
+			}
+		}
+		view.HasVersions = len(view.Versions) > 0
+		views = append(views, view)
+	}
+	return views
+}
+
+func documentViewFrom(item documentRecord) documentView {
+	return documentView{
+		ID:              item.ID,
+		Title:           item.Title,
+		Category:        item.Category,
+		Visibility:      documentVisibilityLabel(item.Visibility),
+		VisibilityClass: documentVisibilityClass(item.Visibility),
+		UnitLabel:       documentUnitLabel(item.UnitID),
+		HasUnit:         normalizeUnitID(item.UnitID) != "",
+		Filename:        item.Filename,
+		Size:            formatBytes(item.Size),
+		ContentType:     item.ContentType,
+		UploadedBy:      item.UploadedBy,
+		UploadedAt:      formatLocalDateTime(item.UploadedAt),
+		DownloadURL:     "/app/dokumente/" + url.PathEscape(item.ID) + "/download",
+		VersionLabel:    documentVersionLabel(item.Version),
+		ReplaceDialogID: "document-replace-" + item.ID,
+	}
+}
+
+func documentVersionLabel(version int) string {
+	if version <= 0 {
+		version = 1
+	}
+	return "Version " + strconv.Itoa(version)
+}
+
+func (a *app) documentCategorySectionsForActor(tenantSlug string, email string, role string, items []documentRecord, includeEmpty bool) []documentCategoryView {
+	byCategory := map[string][]documentRecord{}
+	for _, item := range items {
+		byCategory[item.Category] = append(byCategory[item.Category], item)
+	}
+	sections := []documentCategoryView{}
+	for _, category := range documentCategories() {
+		docs := byCategory[category]
+		if len(docs) == 0 && !includeEmpty {
+			continue
+		}
+		sections = append(sections, documentCategoryView{
+			Category:     category,
+			Documents:    a.documentViewsForActor(tenantSlug, email, role, docs),
+			HasDocuments: len(docs) > 0,
+			EmptyMessage: "Keine passenden Dokumente in dieser Kategorie.",
+		})
+	}
+	return sections
 }
 
 func filterDocuments(items []documentRecord, query string) []documentRecord {
@@ -9797,7 +10074,8 @@ func normalizeAuditAction(raw string) string {
 	switch raw {
 	case auditActionLogin, auditActionInviteCreate, auditActionInviteUpdate, auditActionInviteDelete,
 		auditActionBuildingUpdate, auditActionHeroUpdate, auditActionUnitSave, auditActionUnitDelete,
-		auditActionDocumentUpload, auditActionDocumentDownload, auditActionParkingSettings, auditActionParkingMonth, auditActionIssueWorkflow:
+		auditActionDocumentUpload, auditActionDocumentDownload, auditActionDocumentReplace,
+		auditActionParkingSettings, auditActionParkingMonth, auditActionIssueWorkflow:
 		return raw
 	default:
 		return ""
@@ -10615,6 +10893,10 @@ const pageTemplates = `
     .document-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; color: var(--muted); font-size: 12.5px; }
     .document-file { color: var(--soft); overflow-wrap: anywhere; }
     .document-side { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+    .document-versions { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 10px; }
+    .document-versions summary { cursor: pointer; font-weight: 800; color: var(--gold-ink); }
+    .version-list { margin-top: 8px; display: grid; gap: 7px; }
+    .version-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 12.5px; }
     .empty { border: 1px solid var(--line); background: var(--panel-soft); color: #5c5f54; border-radius: var(--radius-sm); padding: 14px; line-height: 1.5; }
     .empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 18px; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 14px; align-items: center; color: var(--ink); }
     .empty-state-icon { width: 42px; height: 42px; border-radius: var(--radius-sm); display: grid; place-items: center; background: rgba(200,153,63,.16); color: var(--gold-ink); }
@@ -11442,6 +11724,7 @@ const pageTemplates = `
                             <div class="document-meta">
                               <span class="pill {{.VisibilityClass}}">{{.Visibility}}</span>
                               {{if .HasUnit}}<span class="pill">Einheit {{.UnitLabel}}</span>{{end}}
+                              <span>{{.VersionLabel}}</span>
                               <span>{{.UploadedAt}}</span>
                               <span>{{.Size}}</span>
                               <span class="document-file">{{.Filename}}</span>
@@ -11450,8 +11733,41 @@ const pageTemplates = `
                           <div class="document-side">
                             <span class="pill">{{.Category}}</span>
                             <a class="button small" href="{{.DownloadURL}}">Herunterladen</a>
+                            {{if $.CanManageDocuments}}<button class="button small" type="button" data-dialog="{{.ReplaceDialogID}}" aria-haspopup="dialog" aria-controls="{{.ReplaceDialogID}}">Ersetzen</button>{{end}}
                           </div>
+                          {{if .HasVersions}}
+                            <details class="document-versions">
+                              <summary>Ältere Versionen</summary>
+                              <div class="version-list">
+                                {{range .Versions}}
+                                  <div class="version-row">
+                                    <span>{{.Version}} · {{.UploadedAt}} · {{.Size}} · {{.Filename}}</span>
+                                    <a class="button small" href="{{.DownloadURL}}">Herunterladen</a>
+                                  </div>
+                                {{end}}
+                              </div>
+                            </details>
+                          {{end}}
                         </article>
+                        {{if $.CanManageDocuments}}
+                        <dialog id="{{.ReplaceDialogID}}" class="dialog" aria-labelledby="{{.ReplaceDialogID}}-title">
+                          <form method="post" action="/app/dokumente/replace" enctype="multipart/form-data">
+                            <input type="hidden" name="id" value="{{.ID}}">
+                            <div class="dialog-head">
+                              <h2 id="{{.ReplaceDialogID}}-title">Neue Version hochladen</h2>
+                              <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+                            </div>
+                            <div class="dialog-body">
+                              <p class="mini">{{.Title}} · aktuell {{.VersionLabel}}</p>
+                              <div class="dialog-grid">
+                                <label class="full" for="{{.ReplaceDialogID}}-file">Datei<input id="{{.ReplaceDialogID}}-file" type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required></label>
+                              </div>
+                              <p class="mini">Kategorie, Sichtbarkeit und Einheit bleiben unverändert; die bisherige Version bleibt im Verlauf abrufbar.</p>
+                              <button class="button primary" type="submit">Version speichern</button>
+                            </div>
+                          </form>
+                        </dialog>
+                        {{end}}
                       {{end}}
                     </div>
                   {{else}}
