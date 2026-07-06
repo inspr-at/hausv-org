@@ -72,6 +72,8 @@ const (
 	maxIssueFormBytes         = maxIssuePhotoBytes + (1 << 20)
 	maxTenantHeroBytes        = 5 << 20
 	maxTenantHeroFormBytes    = maxTenantHeroBytes + (1 << 20)
+	maxDocumentBytes          = 20 << 20
+	maxDocumentFormBytes      = maxDocumentBytes + (1 << 20)
 )
 
 const (
@@ -86,6 +88,20 @@ const (
 	auditActionParkingSettings = "parking.settings"
 	auditActionParkingMonth    = "parking.month"
 	auditActionIssueWorkflow   = "issue.workflow"
+	auditActionDocumentUpload  = "document.upload"
+)
+
+const (
+	documentCategoryProtocol = "Protokoll"
+	documentCategoryBilling  = "Abrechnung"
+	documentCategoryRules    = "Hausordnung"
+	documentCategoryContract = "Vertrag"
+	documentCategoryPlan     = "Plan"
+	documentCategoryOther    = "Sonstiges"
+
+	documentVisibilityAllResidents = "all-residents"
+	documentVisibilityOwnersOnly   = "owners-only"
+	documentVisibilityManagerOnly  = "verwalter-only"
 )
 
 type capability string
@@ -139,6 +155,7 @@ type app struct {
 	unitStore             *unitStore
 	issueStore            *issueStore
 	auditStore            *auditStore
+	documentStore         *documentStore
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
@@ -538,6 +555,50 @@ type selectOption struct {
 	Selected bool
 }
 
+type documentStore struct {
+	mu      sync.Mutex
+	path    string
+	fileDir string
+	data    documentStoreData
+}
+
+type documentStoreData struct {
+	Documents []documentRecord `json:"documents"`
+}
+
+type documentRecord struct {
+	ID             string    `json:"id"`
+	TenantSlug     string    `json:"tenant"`
+	Title          string    `json:"title"`
+	Category       string    `json:"category"`
+	Visibility     string    `json:"visibility"`
+	Filename       string    `json:"filename"`
+	StoredFilename string    `json:"stored_filename"`
+	Size           int64     `json:"size"`
+	ContentType    string    `json:"content_type"`
+	UploadedBy     string    `json:"uploaded_by"`
+	UploadedAt     time.Time `json:"uploaded_at"`
+}
+
+type documentView struct {
+	ID              string
+	Title           string
+	Category        string
+	Visibility      string
+	VisibilityClass string
+	Filename        string
+	Size            string
+	ContentType     string
+	UploadedBy      string
+	UploadedAt      string
+}
+
+type documentCategoryView struct {
+	Category     string
+	Documents    []documentView
+	HasDocuments bool
+}
+
 type issueView struct {
 	ID              string
 	Title           string
@@ -828,6 +889,8 @@ func main() {
 	mux.HandleFunc("POST /app/events", a.createEvent)
 	mux.HandleFunc("POST /app/events/edit", a.editEvent)
 	mux.HandleFunc("POST /app/events/delete", a.deleteEvent)
+	mux.HandleFunc("GET /app/dokumente", a.documents)
+	mux.HandleFunc("POST /app/dokumente", a.uploadDocument)
 	mux.HandleFunc("GET /app/kontakte", a.contacts)
 	mux.HandleFunc("GET /app/anliegen", a.issues)
 	mux.HandleFunc("GET /app/anliegen/board", a.issueBoard)
@@ -1019,6 +1082,12 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	documentDataPath := env("DOC_DATA_PATH", "tmp/documents.json")
+	defaultDocumentFileDir := filepath.Join(filepath.Dir(documentDataPath), "documents")
+	documents, err := newDocumentStore(documentDataPath, env("DOC_FILE_DIR", defaultDocumentFileDir))
+	if err != nil {
+		return nil, err
+	}
 	parkingDataPath := env("PARKING_DATA_PATH", "tmp/parking.json")
 	parkingStore, err := newParkingStore(parkingDataPath)
 	if err != nil {
@@ -1070,6 +1139,7 @@ func newApp() (*app, error) {
 		unitStore:             units,
 		issueStore:            issues,
 		auditStore:            auditStore,
+		documentStore:         documents,
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
@@ -1686,6 +1756,171 @@ func (a *app) deleteEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/app/events?event=deleted", http.StatusSeeOther)
+}
+
+func (a *app) documents(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileForTenant(email, tenant.Slug)
+	isAdmin := hasCapability(role, capabilityPlatformAdmin)
+	canManage := hasCapability(role, capabilityManageDocuments)
+	documents := []documentRecord{}
+	if a.documentStore != nil {
+		documents = a.visibleDocumentsForActor(tenant.Slug, email, role)
+	}
+	documentMsg, documentOK := documentMessage(r.URL.Query().Get("doc"))
+	a.render(w, "documents", map[string]any{
+		"Title":              "Dokumente",
+		"Tenant":             tenant,
+		"Email":              email,
+		"DisplayName":        profile.DisplayName(),
+		"Initials":           profile.Initials(),
+		"Role":               role,
+		"IsAdmin":            isAdmin,
+		"CanSeeParking":      isAdmin || profile.HasPermission(permissionParking),
+		"CanManageDocuments": canManage,
+		"ActivePage":         "documents",
+		"Documents":          documentViews(documents),
+		"DocumentSections":   documentCategorySections(documents),
+		"HasDocuments":       len(documents) > 0,
+		"DocumentsEmpty":     emptyState("Noch keine Dokumente", "Sobald die Verwaltung ein Dokument hochlädt, erscheint es hier nach Sichtbarkeit gefiltert."),
+		"DocumentMsg":        documentMsg,
+		"DocumentOK":         documentOK,
+		"CategoryOptions":    documentCategoryOptions(""),
+		"VisibilityOptions":  documentVisibilityOptions(""),
+		"MaxDocumentSize":    formatBytes(maxDocumentBytes),
+	})
+}
+
+func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !hasCapability(role, capabilityManageDocuments) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if a.documentStore == nil {
+		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxDocumentFormBytes)
+	if err := r.ParseMultipartForm(maxDocumentBytes); err != nil {
+		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
+		return
+	}
+	header := documentFileHeader(r)
+	if header == nil {
+		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
+		return
+	}
+	created, err := a.documentStore.Create(documentRecord{
+		TenantSlug: tenant.Slug,
+		Title:      strings.TrimSpace(r.FormValue("title")),
+		Category:   normalizeDocumentCategory(r.FormValue("category")),
+		Visibility: normalizeDocumentVisibility(r.FormValue("visibility")),
+		UploadedBy: email,
+	}, header, time.Now())
+	if err != nil {
+		log.Printf("document upload failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
+		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: email,
+		ActorRole:  role,
+		Action:     auditActionDocumentUpload,
+		TargetType: "document",
+		TargetID:   created.ID,
+		Summary:    "Dokument hochgeladen",
+		Details: map[string]string{
+			"title":        created.Title,
+			"category":     created.Category,
+			"visibility":   documentVisibilityLabel(created.Visibility),
+			"size":         formatBytes(created.Size),
+			"content_type": created.ContentType,
+		},
+	})
+	http.Redirect(w, r, "/app/dokumente?doc=uploaded", http.StatusSeeOther)
+}
+
+func documentFileHeader(r *http.Request) *multipart.FileHeader {
+	if r == nil || r.MultipartForm == nil {
+		return nil
+	}
+	for _, name := range []string{"document", "file"} {
+		files := r.MultipartForm.File[name]
+		if len(files) > 0 {
+			return files[0]
+		}
+	}
+	return nil
+}
+
+func (a *app) visibleDocumentsForActor(tenantSlug string, email string, role string) []documentRecord {
+	if a == nil || a.documentStore == nil {
+		return nil
+	}
+	all := a.documentStore.ListTenant(tenantSlug)
+	out := make([]documentRecord, 0, len(all))
+	for _, item := range all {
+		if a.canViewDocumentMetadata(tenantSlug, item, email, role) {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+func (a *app) canViewDocumentMetadata(tenantSlug string, item documentRecord, email string, role string) bool {
+	if normalizeSlug(item.TenantSlug) != normalizeSlug(tenantSlug) {
+		return false
+	}
+	if hasCapability(role, capabilityManageDocuments) {
+		return true
+	}
+	switch normalizeDocumentVisibility(item.Visibility) {
+	case documentVisibilityAllResidents:
+		return true
+	case documentVisibilityOwnersOnly:
+		if normalizeRole(role) == roleOwner {
+			return true
+		}
+		if a != nil && a.unitStore != nil {
+			return len(a.unitStore.UnitsForEmail(tenantSlug, email)) > 0
+		}
+		return false
+	case documentVisibilityManagerOnly:
+		return false
+	default:
+		return false
+	}
+}
+
+func documentMessage(status string) (string, bool) {
+	switch status {
+	case "uploaded":
+		return "Dokument hochgeladen.", true
+	case "invalid":
+		return "Bitte Titel, Kategorie, Sichtbarkeit und Datei prüfen. Erlaubt sind PDF, JPG, PNG oder WebP bis 20 MB.", false
+	default:
+		return "", false
+	}
 }
 
 func (a *app) portal(w http.ResponseWriter, r *http.Request) {
@@ -2582,7 +2817,7 @@ func roleCapabilityLabels(role string) []string {
 	case roleAdmin:
 		return []string{"Plattformverwaltung", "Alle Bereiche"}
 	case roleManager:
-		return []string{"Aushang verwalten", "Benutzer verwalten", "Gebäude verwalten"}
+		return []string{"Aushang verwalten", "Dokumente verwalten", "Benutzer verwalten", "Gebäude verwalten"}
 	case roleOwner:
 		return []string{"Eigentümer-Dokumente", "Abstimmungen"}
 	case roleRenter:
@@ -3719,6 +3954,7 @@ func auditActionOptions(selected string) []selectOption {
 		auditActionHeroUpdate,
 		auditActionUnitSave,
 		auditActionUnitDelete,
+		auditActionDocumentUpload,
 		auditActionParkingSettings,
 		auditActionParkingMonth,
 		auditActionIssueWorkflow,
@@ -3746,6 +3982,8 @@ func auditActionLabel(action string) string {
 		return "Einheit gespeichert"
 	case auditActionUnitDelete:
 		return "Einheit gelöscht"
+	case auditActionDocumentUpload:
+		return "Dokument hochgeladen"
 	case auditActionParkingSettings:
 		return "Parkplatz-Abrechnung geändert"
 	case auditActionParkingMonth:
@@ -3785,6 +4023,8 @@ func auditTargetTypeLabel(targetType string) string {
 		return "Parkplatz"
 	case "issue":
 		return "Anliegen"
+	case "document":
+		return "Dokument"
 	default:
 		return strings.TrimSpace(targetType)
 	}
@@ -3820,6 +4060,16 @@ func auditDetailLabel(key string) string {
 		return "Einheit"
 	case "share":
 		return "Anteil"
+	case "title":
+		return "Titel"
+	case "category":
+		return "Kategorie"
+	case "visibility":
+		return "Sichtbarkeit"
+	case "size":
+		return "Größe"
+	case "content_type":
+		return "Dateityp"
 	default:
 		return strings.ReplaceAll(key, "_", " ")
 	}
@@ -4821,6 +5071,9 @@ func enrichCapabilityData(data map[string]any) {
 	}
 	if _, ok := data["CanManageAnnouncements"]; !ok {
 		data["CanManageAnnouncements"] = hasCapability(role, capabilityManageAnnouncements)
+	}
+	if _, ok := data["CanManageDocuments"]; !ok {
+		data["CanManageDocuments"] = hasCapability(role, capabilityManageDocuments)
 	}
 	if _, ok := data["CanManageBuilding"]; !ok {
 		data["CanManageBuilding"] = hasCapability(role, capabilityManageBuilding)
@@ -6108,6 +6361,437 @@ func sortIssues(items []residentIssue) {
 		}
 		return items[i].CreatedAt.After(items[j].CreatedAt)
 	})
+}
+
+func newDocumentStore(path string, fileDir string) (*documentStore, error) {
+	if fileDir == "" && path != "" {
+		fileDir = filepath.Join(filepath.Dir(path), "documents")
+	}
+	store := &documentStore{path: path, fileDir: fileDir, data: documentStoreData{Documents: []documentRecord{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read document data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid document data")
+	}
+	store.data.Documents = normalizeDocuments(store.data.Documents)
+	return store, nil
+}
+
+func (s *documentStore) Create(item documentRecord, header *multipart.FileHeader, now time.Time) (documentRecord, error) {
+	if s == nil {
+		return documentRecord{}, fmt.Errorf("document store unavailable")
+	}
+	if header == nil || header.Filename == "" || header.Size <= 0 {
+		return documentRecord{}, fmt.Errorf("document file required")
+	}
+	if s.fileDir == "" {
+		return documentRecord{}, fmt.Errorf("document file directory unavailable")
+	}
+	if header.Size > maxDocumentBytes {
+		return documentRecord{}, fmt.Errorf("document file too large")
+	}
+	item.ID = ""
+	if now.IsZero() {
+		now = time.Now()
+	}
+	item.UploadedAt = now.UTC()
+	item.Filename = sanitizeDocumentFilename(header.Filename)
+	item.StoredFilename = ""
+	item.Size = 0
+	item.ContentType = ""
+	item = normalizeDocumentRecord(item)
+	if item.TenantSlug == "" || item.Title == "" || item.Category == "" || item.Visibility == "" || item.UploadedBy == "" {
+		return documentRecord{}, fmt.Errorf("invalid document metadata")
+	}
+
+	file, err := header.Open()
+	if err != nil {
+		return documentRecord{}, fmt.Errorf("could not open document")
+	}
+	defer file.Close()
+	sniff := make([]byte, 512)
+	n, readErr := file.Read(sniff)
+	if readErr != nil && !errors.Is(readErr, io.EOF) {
+		return documentRecord{}, fmt.Errorf("could not read document")
+	}
+	if n == 0 {
+		return documentRecord{}, fmt.Errorf("document file required")
+	}
+	contentType := http.DetectContentType(sniff[:n])
+	ext, ok := documentExtension(contentType)
+	if !ok {
+		return documentRecord{}, fmt.Errorf("unsupported document type")
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return documentRecord{}, fmt.Errorf("could not rewind document")
+	}
+	id, err := randomToken(12)
+	if err != nil {
+		return documentRecord{}, err
+	}
+	item.ID = id
+	item.ContentType = contentType
+	item.StoredFilename = id + ext
+
+	storedPath, written, err := s.writeDocumentFile(item.TenantSlug, item.StoredFilename, file)
+	if err != nil {
+		return documentRecord{}, err
+	}
+	item.Size = written
+	item = normalizeDocumentRecord(item)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data.Documents = append(s.data.Documents, item)
+	sortDocuments(s.data.Documents)
+	if err := s.saveLocked(); err != nil {
+		_ = os.Remove(storedPath)
+		return documentRecord{}, err
+	}
+	return copyDocument(item), nil
+}
+
+func (s *documentStore) writeDocumentFile(tenantSlug string, storedFilename string, file multipart.File) (string, int64, error) {
+	tenantSlug = normalizeSlug(tenantSlug)
+	storedFilename = filepath.Base(storedFilename)
+	if tenantSlug == "" || storedFilename == "" || storedFilename == "." || storedFilename == string(filepath.Separator) {
+		return "", 0, fmt.Errorf("invalid document storage target")
+	}
+	dir := filepath.Join(s.fileDir, tenantSlug)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", 0, fmt.Errorf("could not create document directory")
+	}
+	tmp, err := os.CreateTemp(dir, storedFilename+".*.tmp")
+	if err != nil {
+		return "", 0, fmt.Errorf("could not create document file")
+	}
+	tmpName := tmp.Name()
+	written, copyErr := io.Copy(tmp, io.LimitReader(file, maxDocumentBytes+1))
+	chmodErr := tmp.Chmod(0o600)
+	closeErr := tmp.Close()
+	if copyErr != nil || chmodErr != nil || closeErr != nil {
+		_ = os.Remove(tmpName)
+		return "", 0, fmt.Errorf("could not write document file")
+	}
+	if written <= 0 || written > maxDocumentBytes {
+		_ = os.Remove(tmpName)
+		return "", 0, fmt.Errorf("document file too large")
+	}
+	dest := filepath.Join(dir, storedFilename)
+	if err := os.Rename(tmpName, dest); err != nil {
+		_ = os.Remove(tmpName)
+		return "", 0, fmt.Errorf("could not store document file")
+	}
+	return dest, written, nil
+}
+
+func (s *documentStore) ListTenant(tenantSlug string) []documentRecord {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []documentRecord{}
+	for _, item := range s.data.Documents {
+		if normalizeSlug(item.TenantSlug) == tenantSlug {
+			out = append(out, copyDocument(item))
+		}
+	}
+	sortDocuments(out)
+	return out
+}
+
+func (s *documentStore) Get(tenantSlug string, id string) (documentRecord, bool) {
+	if s == nil {
+		return documentRecord{}, false
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	if tenantSlug == "" || id == "" {
+		return documentRecord{}, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, item := range s.data.Documents {
+		if normalizeSlug(item.TenantSlug) == tenantSlug && item.ID == id {
+			return copyDocument(item), true
+		}
+	}
+	return documentRecord{}, false
+}
+
+func (s *documentStore) FilePath(item documentRecord) (string, bool) {
+	if s == nil || s.fileDir == "" {
+		return "", false
+	}
+	tenantSlug := normalizeSlug(item.TenantSlug)
+	storedFilename := filepath.Base(item.StoredFilename)
+	if tenantSlug == "" || storedFilename == "" || storedFilename == "." || storedFilename == string(filepath.Separator) {
+		return "", false
+	}
+	return filepath.Join(s.fileDir, tenantSlug, storedFilename), true
+}
+
+func (s *documentStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create document data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode document data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write document data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace document data")
+	}
+	return nil
+}
+
+func normalizeDocuments(items []documentRecord) []documentRecord {
+	out := make([]documentRecord, 0, len(items))
+	for _, item := range items {
+		item = normalizeDocumentRecord(item)
+		if item.ID == "" || item.TenantSlug == "" || item.Title == "" || item.StoredFilename == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	sortDocuments(out)
+	return out
+}
+
+func normalizeDocumentRecord(item documentRecord) documentRecord {
+	item.ID = strings.TrimSpace(item.ID)
+	item.TenantSlug = normalizeSlug(item.TenantSlug)
+	item.Title = truncateAuditValue(strings.TrimSpace(item.Title), 160)
+	item.Category = normalizeDocumentCategory(item.Category)
+	item.Visibility = normalizeDocumentVisibility(item.Visibility)
+	item.Filename = sanitizeDocumentFilename(item.Filename)
+	item.StoredFilename = filepath.Base(strings.TrimSpace(item.StoredFilename))
+	item.ContentType = strings.TrimSpace(item.ContentType)
+	item.UploadedBy = normalizeEmail(item.UploadedBy)
+	if item.Size < 0 {
+		item.Size = 0
+	}
+	if item.UploadedAt.IsZero() {
+		item.UploadedAt = time.Now()
+	}
+	item.UploadedAt = item.UploadedAt.UTC()
+	return item
+}
+
+func copyDocument(item documentRecord) documentRecord {
+	return item
+}
+
+func sortDocuments(items []documentRecord) {
+	sort.SliceStable(items, func(i, j int) bool {
+		if !items[i].UploadedAt.Equal(items[j].UploadedAt) {
+			return items[i].UploadedAt.After(items[j].UploadedAt)
+		}
+		if items[i].Category != items[j].Category {
+			return items[i].Category < items[j].Category
+		}
+		return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
+	})
+}
+
+func documentExtension(contentType string) (string, bool) {
+	switch contentType {
+	case "application/pdf":
+		return ".pdf", true
+	case "image/jpeg":
+		return ".jpg", true
+	case "image/png":
+		return ".png", true
+	case "image/webp":
+		return ".webp", true
+	default:
+		return "", false
+	}
+}
+
+func sanitizeDocumentFilename(raw string) string {
+	name := filepath.Base(strings.TrimSpace(raw))
+	if name == "." || name == string(filepath.Separator) {
+		name = ""
+	}
+	name = strings.Map(func(r rune) rune {
+		if r < 32 || r == 127 || r == '/' || r == '\\' {
+			return -1
+		}
+		return r
+	}, name)
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "dokument"
+	}
+	if len([]rune(name)) > 120 {
+		runes := []rune(name)
+		name = string(runes[:120])
+	}
+	return name
+}
+
+func normalizeDocumentCategory(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case strings.ToLower(documentCategoryProtocol):
+		return documentCategoryProtocol
+	case strings.ToLower(documentCategoryBilling):
+		return documentCategoryBilling
+	case strings.ToLower(documentCategoryRules):
+		return documentCategoryRules
+	case strings.ToLower(documentCategoryContract):
+		return documentCategoryContract
+	case strings.ToLower(documentCategoryPlan), "pläne", "plaene":
+		return documentCategoryPlan
+	case "", strings.ToLower(documentCategoryOther):
+		return documentCategoryOther
+	default:
+		return ""
+	}
+}
+
+func documentCategories() []string {
+	return []string{
+		documentCategoryProtocol,
+		documentCategoryBilling,
+		documentCategoryRules,
+		documentCategoryContract,
+		documentCategoryPlan,
+		documentCategoryOther,
+	}
+}
+
+func documentCategoryOptions(selected string) []selectOption {
+	selected = normalizeDocumentCategory(selected)
+	options := make([]selectOption, 0, len(documentCategories()))
+	for _, category := range documentCategories() {
+		options = append(options, selectOption{Value: category, Label: category, Selected: selected == category})
+	}
+	return options
+}
+
+func normalizeDocumentVisibility(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case documentVisibilityAllResidents, "all", "alle", "alle-bewohner":
+		return documentVisibilityAllResidents
+	case documentVisibilityOwnersOnly, "owner", "owners", "eigentuemer", "eigentümer":
+		return documentVisibilityOwnersOnly
+	case documentVisibilityManagerOnly, "manager", "verwalter", "verwaltung":
+		return documentVisibilityManagerOnly
+	default:
+		return ""
+	}
+}
+
+func documentVisibilityOptions(selected string) []selectOption {
+	selected = normalizeDocumentVisibility(selected)
+	values := []string{documentVisibilityAllResidents, documentVisibilityOwnersOnly, documentVisibilityManagerOnly}
+	options := make([]selectOption, 0, len(values))
+	for _, value := range values {
+		options = append(options, selectOption{Value: value, Label: documentVisibilityLabel(value), Selected: selected == value})
+	}
+	return options
+}
+
+func documentVisibilityLabel(visibility string) string {
+	switch normalizeDocumentVisibility(visibility) {
+	case documentVisibilityAllResidents:
+		return "Alle Bewohner"
+	case documentVisibilityOwnersOnly:
+		return "Nur Eigentümer"
+	case documentVisibilityManagerOnly:
+		return "Nur Verwaltung"
+	default:
+		return ""
+	}
+}
+
+func documentVisibilityClass(visibility string) string {
+	switch normalizeDocumentVisibility(visibility) {
+	case documentVisibilityAllResidents:
+		return "ok"
+	case documentVisibilityOwnersOnly:
+		return "unread"
+	case documentVisibilityManagerOnly:
+		return "role-admin"
+	default:
+		return ""
+	}
+}
+
+func documentViews(items []documentRecord) []documentView {
+	views := make([]documentView, 0, len(items))
+	for _, item := range items {
+		views = append(views, documentView{
+			ID:              item.ID,
+			Title:           item.Title,
+			Category:        item.Category,
+			Visibility:      documentVisibilityLabel(item.Visibility),
+			VisibilityClass: documentVisibilityClass(item.Visibility),
+			Filename:        item.Filename,
+			Size:            formatBytes(item.Size),
+			ContentType:     item.ContentType,
+			UploadedBy:      item.UploadedBy,
+			UploadedAt:      formatLocalDateTime(item.UploadedAt),
+		})
+	}
+	return views
+}
+
+func documentCategorySections(items []documentRecord) []documentCategoryView {
+	byCategory := map[string][]documentRecord{}
+	for _, item := range items {
+		byCategory[item.Category] = append(byCategory[item.Category], item)
+	}
+	sections := []documentCategoryView{}
+	for _, category := range documentCategories() {
+		docs := byCategory[category]
+		if len(docs) == 0 {
+			continue
+		}
+		sections = append(sections, documentCategoryView{
+			Category:     category,
+			Documents:    documentViews(docs),
+			HasDocuments: true,
+		})
+	}
+	return sections
+}
+
+func formatBytes(size int64) string {
+	if size < 0 {
+		size = 0
+	}
+	const kb = 1024
+	const mb = 1024 * kb
+	switch {
+	case size >= mb:
+		return formatDecimal(float64(size)/float64(mb), 1) + " MB"
+	case size >= kb:
+		return formatDecimal(float64(size)/float64(kb), 1) + " KB"
+	default:
+		return strconv.FormatInt(size, 10) + " B"
+	}
 }
 
 func newUnitStore(path string) (*unitStore, error) {
@@ -8913,7 +9597,7 @@ func normalizeAuditAction(raw string) string {
 	switch raw {
 	case auditActionLogin, auditActionInviteCreate, auditActionInviteUpdate, auditActionInviteDelete,
 		auditActionBuildingUpdate, auditActionHeroUpdate, auditActionUnitSave, auditActionUnitDelete,
-		auditActionParkingSettings, auditActionParkingMonth, auditActionIssueWorkflow:
+		auditActionDocumentUpload, auditActionParkingSettings, auditActionParkingMonth, auditActionIssueWorkflow:
 		return raw
 	default:
 		return ""
@@ -9719,6 +10403,16 @@ const pageTemplates = `
     .month-cell a:hover { color: var(--gold-ink); }
     .month-cell span { display: block; margin-top: 3px; color: var(--soft); font-size: 12px; }
     .row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .document-sections { display: grid; gap: 14px; }
+    .document-section { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 10px; }
+    .document-section:first-child { border-top: 0; padding-top: 0; }
+    .document-section h3 { font-size: 18px; }
+    .document-list { display: grid; gap: 8px; }
+    .document-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); background: #fffefb; padding: 12px 14px; }
+    .document-row strong { display: block; font-size: 15px; }
+    .document-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; color: var(--muted); font-size: 12.5px; }
+    .document-file { color: var(--soft); overflow-wrap: anywhere; }
+    .document-side { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
     .empty { border: 1px solid var(--line); background: var(--panel-soft); color: #5c5f54; border-radius: var(--radius-sm); padding: 14px; line-height: 1.5; }
     .empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 18px; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 14px; align-items: center; color: var(--ink); }
     .empty-state-icon { width: 42px; height: 42px; border-radius: var(--radius-sm); display: grid; place-items: center; background: rgba(200,153,63,.16); color: var(--gold-ink); }
@@ -9757,6 +10451,8 @@ const pageTemplates = `
 	      .issue-board-filter { grid-template-columns: 1fr; }
 	      .issue-board-filter label, .issue-board-filter label.assignee, .issue-board-filter label.sort, .issue-board-filter .board-filter-actions { grid-column: 1 / -1; }
 	      .quick-row { grid-template-columns: 28px minmax(0,1fr); }
+	      .document-row { grid-template-columns: 1fr; }
+	      .document-side { justify-content: flex-start; }
       .quick-row .pill { grid-column: 2; justify-self: start; }
       .filter-form { grid-template-columns: 1fr; }
       .dialog-grid { grid-template-columns: 1fr; }
@@ -9781,7 +10477,7 @@ const pageTemplates = `
       <a class="nav-item {{if eq .ActivePage "events"}}active{{end}}" href="/app/events"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></span><span class="nav-label">Termine</span></a>
       <a class="nav-item {{if eq .ActivePage "contacts"}}active{{end}}" href="/app/kontakte"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg></span><span class="nav-label">Kontakte</span></a>
       {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
-      <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</span>
+      <a class="nav-item {{if eq .ActivePage "documents"}}active{{end}}" href="/app/dokumente"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</a>
       <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="/app/anliegen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</span>
       {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
@@ -9903,6 +10599,7 @@ const pageTemplates = `
               <a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><div><h3>Aushang</h3><p>Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p></div>{{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
               <a class="quick-row" href="/app/events"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg><div><h3>Termine</h3><p>Versammlungen, Wartungen, Fristen und gemeinsame Hausereignisse.</p></div><span class="quick-arrow">›</span></a>
               <a class="quick-row" href="/app/kontakte"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg><div><h3>Kontakte</h3><p>Verwaltung, Notdienst, Beirat und freigegebene Kontakte.</p></div><span class="quick-arrow">›</span></a>
+              <a class="quick-row" href="/app/dokumente"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><div><h3>Dokumente</h3><p>Protokolle, Abrechnungen und Unterlagen nach Berechtigung.</p></div><span class="quick-arrow">›</span></a>
               <a class="quick-row" href="/app/anliegen"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><div><h3>Anliegen</h3><p>Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.</p></div>{{if .HasOpenIssues}}<span class="pill unread">{{.OpenIssues}} offen</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
               {{if .CanSeeParking}}<a class="quick-row" href="/app/parking"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg><div><h3>Parkplatznutzung</h3><p>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .CanManageUsers}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
@@ -10502,6 +11199,107 @@ const pageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
+{{define "documents"}}
+{{template "appOpen" .}}
+    <script src="/assets/announcements.js" defer></script>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><span>/</span><span>Dokumente</span></span>
+        {{if .CanManageDocuments}}<div class="page-actions"><button class="button primary" type="button" data-dialog="document-upload" aria-haspopup="dialog" aria-controls="document-upload"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Dokument hochladen</button></div>{{end}}
+      </div>
+      <section class="page">
+        <div>
+          <h1>Dokumente</h1>
+          <p class="lede">Protokolle, Abrechnungen, Hausordnung und Unterlagen nach Berechtigung der jeweiligen Person.</p>
+        </div>
+        {{if .DocumentMsg}}<p class="flash {{if .DocumentOK}}ok{{end}}">{{.DocumentMsg}}</p>{{end}}
+        <div class="home-grid">
+          <section class="panel">
+            <div class="section-head">
+              <div class="kicker">Ablage</div>
+              {{if .HasDocuments}}<span class="pill">{{len .Documents}} Dokumente</span>{{end}}
+            </div>
+            {{if .HasDocuments}}
+              <div class="document-sections">
+                {{range .DocumentSections}}
+                  <section class="document-section">
+                    <h3>{{.Category}}</h3>
+                    <div class="document-list">
+                      {{range .Documents}}
+                        <article class="document-row">
+                          <div>
+                            <strong>{{.Title}}</strong>
+                            <div class="document-meta">
+                              <span class="pill {{.VisibilityClass}}">{{.Visibility}}</span>
+                              <span>{{.UploadedAt}}</span>
+                              <span>{{.Size}}</span>
+                              <span class="document-file">{{.Filename}}</span>
+                            </div>
+                          </div>
+                          <div class="document-side">
+                            <span class="pill">{{.Category}}</span>
+                          </div>
+                        </article>
+                      {{end}}
+                    </div>
+                  </section>
+                {{end}}
+              </div>
+            {{else}}
+              {{template "emptyState" .DocumentsEmpty}}
+            {{end}}
+          </section>
+
+          <section class="panel">
+            <div class="kicker">Dokumentenverwaltung</div>
+            {{if .CanManageDocuments}}
+              <div class="quick-list">
+                <button class="quick-row" type="button" data-dialog="document-upload" aria-haspopup="dialog" aria-controls="document-upload">
+                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                  <div><h3>Dokument hochladen</h3><p>Kategorie, Sichtbarkeit und Datei bis {{.MaxDocumentSize}} speichern.</p></div>
+                  <span class="quick-arrow">›</span>
+                </button>
+                <div class="legend" aria-label="Sichtbarkeiten für Dokumente">
+                  <div><strong>Alle Bewohner</strong><span>Allgemeine Informationen wie Hausordnung oder Hinweise.</span></div>
+                  <div><strong>Nur Eigentümer</strong><span>Unterlagen für Eigentümer, etwa Protokolle oder Abrechnungen.</span></div>
+                  <div><strong>Nur Verwaltung</strong><span>Interne Arbeitsdokumente der Verwaltung.</span></div>
+                </div>
+              </div>
+            {{else}}
+              <p class="empty">Hochladen und Sichtbarkeit setzen ist der Verwaltung vorbehalten.</p>
+            {{end}}
+          </section>
+        </div>
+      </section>
+
+      {{if .CanManageDocuments}}
+      <dialog id="document-upload" class="dialog" aria-labelledby="document-upload-title">
+        <form method="post" action="/app/dokumente" enctype="multipart/form-data">
+          <div class="dialog-head">
+            <h2 id="document-upload-title">Dokument hochladen</h2>
+            <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+          </div>
+          <div class="dialog-body">
+            <div class="dialog-grid">
+              <label class="full" for="document-title">Titel<input id="document-title" name="title" required maxlength="160" autocomplete="off"></label>
+              <label for="document-category">Kategorie<select id="document-category" name="category" required>
+                {{range .CategoryOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+              </select></label>
+              <label for="document-visibility">Sichtbarkeit<select id="document-visibility" name="visibility" required>
+                {{range .VisibilityOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+              </select></label>
+              <label class="full" for="document-file">Datei<input id="document-file" type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required></label>
+            </div>
+            <p class="mini">Erlaubt sind PDF, JPG, PNG oder WebP bis {{.MaxDocumentSize}}. Dateien werden nicht öffentlich ausgeliefert.</p>
+            <button class="button primary" type="submit">Hochladen</button>
+          </div>
+        </form>
+      </dialog>
+      {{end}}
+    </main>
+{{template "appClose" .}}
+{{end}}
+
 {{define "parking"}}
 {{template "appOpen" .}}
     <main class="app-main">
@@ -10714,7 +11512,7 @@ const pageTemplates = `
           </section>
           <section class="panel">
             <div class="kicker">Verwaltung</div>
-            {{if or .CanManageUsers .CanManageBuilding .IsAdmin}}
+            {{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .IsAdmin}}
               <div class="quick-list">
                 {{if .CanManageBuilding}}<a class="quick-row" href="/app/settings/building">
                   <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/><path d="M8 10h.01M16 10h.01"/></svg>
@@ -10725,6 +11523,13 @@ const pageTemplates = `
                 <a class="quick-row" href="/app/settings/users">
                   <svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg>
                   <div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div>
+                  <span class="quick-arrow">›</span>
+                </a>
+                {{end}}
+                {{if .CanManageDocuments}}
+                <a class="quick-row" href="/app/dokumente">
+                  <svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg>
+                  <div><h3>Dokumente</h3><p>Unterlagen hochladen, kategorisieren und Sichtbarkeit setzen.</p></div>
                   <span class="quick-arrow">›</span>
                 </a>
                 {{end}}

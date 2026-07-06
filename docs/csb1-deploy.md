@@ -138,6 +138,11 @@ Termine/Kalender entries persist to `/data/events.json` via `EVENT_DATA_PATH`.
 The dashboard agenda renders upcoming entries; past entries roll off the
 resident view while staying editable for the Verwaltung.
 
+Dokumente metadata persists to `/data/documents.json` via `DOC_DATA_PATH`; uploaded
+files are stored under `/data/documents/` via `DOC_FILE_DIR`. The document store
+uses private generated filenames, content-type/size validation, `0600` file modes,
+and does not serve files from `/assets`.
+
 Notification preferences persist to `/data/notification_prefs.json` via
 `NOTIFICATION_PREF_DATA_PATH`. Missing preferences default to enabled delivery;
 explicit event opt-outs and the global unsubscribe flag are checked before

@@ -250,6 +250,59 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 	}
 }
 
+func TestDocumentStoreCreatePersistAndValidate(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "documents.json")
+	fileDir := filepath.Join(dir, "documents")
+	store, err := newDocumentStore(path, fileDir)
+	if err != nil {
+		t.Fatalf("newDocumentStore: %v", err)
+	}
+	created, err := store.Create(documentRecord{
+		TenantSlug: "JHW22",
+		Title:      "Hausordnung",
+		Category:   documentCategoryRules,
+		Visibility: documentVisibilityAllResidents,
+		UploadedBy: "Manager@Example.com",
+	}, testMultipartHeader(t, "document", "../Hausordnung.pdf", []byte("%PDF-1.4\n% weg portal test\n")), time.Date(2026, 7, 7, 9, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if created.ID == "" || created.TenantSlug != "jhw22" || created.Filename != "Hausordnung.pdf" || created.StoredFilename == created.Filename {
+		t.Fatalf("created document not normalized/private: %+v", created)
+	}
+	if created.ContentType != "application/pdf" || created.UploadedBy != "manager@example.com" || created.Size <= 0 {
+		t.Fatalf("created document metadata = %+v", created)
+	}
+	storedPath, ok := store.FilePath(created)
+	if !ok {
+		t.Fatal("FilePath not available")
+	}
+	if info, err := os.Stat(storedPath); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("stored file mode = %v err=%v, want 0600", info.Mode().Perm(), err)
+	}
+	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("metadata file mode = %v err=%v, want 0600", info.Mode().Perm(), err)
+	}
+	reopened, err := newDocumentStore(path, fileDir)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	docs := reopened.ListTenant("JHW22")
+	if len(docs) != 1 || docs[0].Title != "Hausordnung" {
+		t.Fatalf("reopened docs = %+v", docs)
+	}
+	if _, err := store.Create(documentRecord{
+		TenantSlug: "jhw22",
+		Title:      "Script",
+		Category:   documentCategoryOther,
+		Visibility: documentVisibilityAllResidents,
+		UploadedBy: "manager@example.com",
+	}, testMultipartHeader(t, "document", "script.txt", []byte("<script>alert(1)</script>")), time.Now()); err == nil {
+		t.Fatal("unsupported document type should be rejected")
+	}
+}
+
 func TestIssueStoreCreateListPersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "issues.json")
 	store, err := newIssueStore(path, filepath.Join(t.TempDir(), "issue-attachments"))
@@ -1298,6 +1351,80 @@ func TestAuditLogRecordsInviteAndGatesAccess(t *testing.T) {
 	}
 }
 
+func TestDocumentUploadRecordsMetadataAndAudit(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	fields := map[string]string{
+		"title":      "Hausordnung",
+		"category":   documentCategoryRules,
+		"visibility": documentVisibilityAllResidents,
+	}
+	upload := authedMultipartFileRequest(t, a, "manager@example.com", "/app/dokumente", fields, "document", "hausordnung.pdf", []byte("%PDF-1.4\n% weg portal test\n"), a.uploadDocument)
+	if upload.Code != http.StatusSeeOther {
+		t.Fatalf("upload status = %d, want redirect", upload.Code)
+	}
+	docs := a.documentStore.ListTenant("jhw22")
+	if len(docs) != 1 || docs[0].Title != "Hausordnung" || docs[0].Visibility != documentVisibilityAllResidents {
+		t.Fatalf("stored docs = %+v", docs)
+	}
+	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionDocumentUpload, Limit: 10})
+	if len(events) != 1 || events[0].TargetID != docs[0].ID || events[0].Details["title"] != "Hausordnung" {
+		t.Fatalf("audit events = %+v", events)
+	}
+	page := authedRequest(t, a, "resident@example.com", "/app/dokumente", a.documents)
+	if page.Code != http.StatusOK {
+		t.Fatalf("resident documents status = %d, want 200", page.Code)
+	}
+	body := page.Body.String()
+	for _, want := range []string{`href="/app/dokumente"`, "Hausordnung", "Alle Bewohner"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("documents page missing %q", want)
+		}
+	}
+	residentUpload := authedMultipartFileRequest(t, a, "resident@example.com", "/app/dokumente", fields, "document", "resident.pdf", []byte("%PDF-1.4\n% weg portal test\n"), a.uploadDocument)
+	if residentUpload.Code != http.StatusForbidden {
+		t.Fatalf("resident upload status = %d, want 403", residentUpload.Code)
+	}
+}
+
+func TestDocumentsPageFiltersManagerOnlyMetadata(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	if _, err := a.documentStore.Create(documentRecord{
+		TenantSlug: "jhw22",
+		Title:      "Internes Protokoll",
+		Category:   documentCategoryProtocol,
+		Visibility: documentVisibilityManagerOnly,
+		UploadedBy: "manager@example.com",
+	}, testMultipartHeader(t, "document", "intern.pdf", []byte("%PDF-1.4\n% intern\n")), time.Now()); err != nil {
+		t.Fatalf("create manager-only doc: %v", err)
+	}
+	if _, err := a.documentStore.Create(documentRecord{
+		TenantSlug: "jhw22",
+		Title:      "Hausordnung",
+		Category:   documentCategoryRules,
+		Visibility: documentVisibilityAllResidents,
+		UploadedBy: "manager@example.com",
+	}, testMultipartHeader(t, "document", "hausordnung.pdf", []byte("%PDF-1.4\n% public\n")), time.Now()); err != nil {
+		t.Fatalf("create public doc: %v", err)
+	}
+	residentPage := authedRequest(t, a, "resident@example.com", "/app/dokumente", a.documents)
+	if residentPage.Code != http.StatusOK {
+		t.Fatalf("resident documents status = %d, want 200", residentPage.Code)
+	}
+	body := residentPage.Body.String()
+	if strings.Contains(body, "Internes Protokoll") {
+		t.Fatal("resident page must not expose manager-only document metadata")
+	}
+	if !strings.Contains(body, "Hausordnung") {
+		t.Fatal("resident page should show all-residents document")
+	}
+	managerPage := authedRequest(t, a, "manager@example.com", "/app/dokumente", a.documents)
+	if !strings.Contains(managerPage.Body.String(), "Internes Protokoll") {
+		t.Fatal("manager page should show manager-only document")
+	}
+}
+
 func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
@@ -2229,6 +2356,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("audit store: %v", err)
 	}
+	documentStore, err := newDocumentStore("", filepath.Join(t.TempDir(), "documents"))
+	if err != nil {
+		t.Fatalf("document store: %v", err)
+	}
 	return &app{
 		baseURL:       "http://localhost:8080",
 		rootDomain:    "hausv.org",
@@ -2258,6 +2389,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		unitStore:             unitStore,
 		issueStore:            issueStore,
 		auditStore:            auditStore,
+		documentStore:         documentStore,
 		parkingStore:          parkingStore,
 	}
 }
@@ -2293,6 +2425,32 @@ func authedFormRequest(t *testing.T, a *app, email string, path string, values u
 
 func authedMultipartRequest(t *testing.T, a *app, email string, path string, fields map[string]string, filename string, fileBody []byte, handler http.HandlerFunc) *httptest.ResponseRecorder {
 	return authedMultipartFileRequest(t, a, email, path, fields, "photo", filename, fileBody, handler)
+}
+
+func testMultipartHeader(t *testing.T, field string, filename string, fileBody []byte) *multipart.FileHeader {
+	t.Helper()
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile(field, filename)
+	if err != nil {
+		t.Fatalf("CreateFormFile: %v", err)
+	}
+	if _, err := part.Write(fileBody); err != nil {
+		t.Fatalf("write multipart file: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("multipart close: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/upload", &body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	if err := req.ParseMultipartForm(maxDocumentBytes); err != nil {
+		t.Fatalf("ParseMultipartForm: %v", err)
+	}
+	files := req.MultipartForm.File[field]
+	if len(files) != 1 {
+		t.Fatalf("multipart files for %s = %d, want 1", field, len(files))
+	}
+	return files[0]
 }
 
 func authedMultipartFileRequest(t *testing.T, a *app, email string, path string, fields map[string]string, fileField string, filename string, fileBody []byte, handler http.HandlerFunc) *httptest.ResponseRecorder {
