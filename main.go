@@ -174,6 +174,7 @@ type oidcUserClaims struct {
 type mailer interface {
 	SendMagicLink(to string, link string) error
 	SendInvite(to string, loginURL string, address string) error
+	SendNotification(to string, subject string, body string) error
 	Configured() bool
 }
 
@@ -330,8 +331,23 @@ type residentIssue struct {
 	StatusChangedAt time.Time           `json:"status_changed_at,omitempty"`
 	StatusChangedBy string              `json:"status_changed_by,omitempty"`
 	StatusHistory   []issueStatusChange `json:"status_history,omitempty"`
+	Comments        []issueComment      `json:"comments,omitempty"`
 	CreatedAt       time.Time           `json:"created_at"`
 	UpdatedAt       time.Time           `json:"updated_at"`
+}
+
+type issueComment struct {
+	ID          string    `json:"id"`
+	AuthorEmail string    `json:"author_email"`
+	AuthorName  string    `json:"author_name"`
+	Body        string    `json:"body"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type issueCommentView struct {
+	Author    string
+	Body      string
+	CreatedAt string
 }
 
 type issueStatusChange struct {
@@ -373,6 +389,8 @@ type issueView struct {
 	CanReopen       bool
 	PhotoCount      int
 	HasPhotos       bool
+	Comments        []issueCommentView
+	HasComments     bool
 	StatusOptions   []selectOption
 	PriorityOptions []selectOption
 }
@@ -548,6 +566,7 @@ func main() {
 	mux.HandleFunc("POST /app/announcements/delete", a.deleteAnnouncement)
 	mux.HandleFunc("GET /app/anliegen", a.issues)
 	mux.HandleFunc("POST /app/anliegen", a.createIssue)
+	mux.HandleFunc("POST /app/anliegen/comment", a.addIssueComment)
 	mux.HandleFunc("POST /app/anliegen/workflow", a.updateIssueWorkflow)
 	mux.HandleFunc("GET /app/parking", a.parking)
 	mux.HandleFunc("GET /app/parking/settings", a.parkingSettings)
@@ -1330,13 +1349,67 @@ func (a *app) createIssue(w http.ResponseWriter, r *http.Request) {
 			}
 			item.PhotoPaths = []string{photoPath}
 		}
-		if _, err := a.issueStore.Create(item); err != nil {
+		created, err := a.issueStore.Create(item)
+		if err != nil {
 			log.Printf("issue create failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
 			http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
 			return
 		}
+		a.notifyIssueCreated(tenant, created)
 	}
 	http.Redirect(w, r, "/app/anliegen?issue=created", http.StatusSeeOther)
+}
+
+func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimSpace(r.FormValue("id"))
+	existing, found := a.issueStore.Get(tenant.Slug, id)
+	if !found {
+		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
+		return
+	}
+	canManage := hasCapability(role, capabilityManageIssues)
+	isOwner := normalizeEmail(existing.AuthorEmail) == normalizeEmail(email)
+	if !canManage && !isOwner {
+		http.Error(w, "Dieser Kommentar ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	body := strings.TrimSpace(r.FormValue("body"))
+	if body == "" || len([]rune(body)) > 3000 {
+		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileFor(email)
+	updated, ok, err := a.issueStore.AddComment(tenant.Slug, id, issueComment{
+		AuthorEmail: email,
+		AuthorName:  profile.DisplayName(),
+		Body:        body,
+		CreatedAt:   time.Now(),
+	})
+	if err != nil {
+		log.Printf("issue comment failed for %s/%s: %v", tenant.Slug, id, err)
+		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
+		return
+	}
+	if !ok {
+		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
+		return
+	}
+	a.notifyIssueUpdated(tenant, updated, email, "Neuer Kommentar zu Anliegen \""+updated.Title+"\"")
+	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
 }
 
 func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
@@ -1383,19 +1456,82 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profile := a.profileFor(email)
-	if _, _, err := a.issueStore.UpdateWorkflow(tenant.Slug, id, issueWorkflowUpdate{
+	updated, _, err := a.issueStore.UpdateWorkflow(tenant.Slug, id, issueWorkflowUpdate{
 		Status:        status,
 		Priority:      priority,
 		AssigneeEmail: assignee,
 		ActorEmail:    email,
 		ActorName:     profile.DisplayName(),
 		ChangedAt:     time.Now(),
-	}); err != nil {
+	})
+	if err != nil {
 		log.Printf("issue workflow update failed for %s/%s: %v", tenant.Slug, id, err)
 		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
 		return
 	}
+	a.notifyIssueUpdated(tenant, updated, email, "Anliegen \""+updated.Title+"\" aktualisiert")
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
+}
+
+func (a *app) notifyIssueCreated(tenant tenantConfig, issue residentIssue) {
+	recipients := a.issueManagerEmails(tenant.Slug)
+	subject := "Neues Anliegen: " + issue.Title
+	body := strings.Join([]string{
+		"Es wurde ein neues Anliegen für " + tenant.Address + " erfasst.",
+		"",
+		issue.Title,
+		issue.Category + " · " + issueLocationLabel(issue.LocationType, issue.LocationDetail),
+		"",
+		issue.Body,
+	}, "\n")
+	a.sendIssueNotifications(recipients, subject, body)
+}
+
+func (a *app) notifyIssueUpdated(tenant tenantConfig, issue residentIssue, actorEmail string, subject string) {
+	recipients := []string{issue.AuthorEmail, issue.AssigneeEmail}
+	body := strings.Join([]string{
+		"Ein Anliegen für " + tenant.Address + " wurde aktualisiert.",
+		"",
+		issue.Title,
+		"Status: " + normalizeIssueStatus(issue.Status),
+		"Priorität: " + normalizeIssuePriority(issue.Priority),
+	}, "\n")
+	a.sendIssueNotifications(excludeEmail(uniqueEmails(recipients), actorEmail), subject, body)
+}
+
+func (a *app) sendIssueNotifications(recipients []string, subject string, body string) {
+	if a.mailer == nil || !a.mailer.Configured() {
+		return
+	}
+	for _, recipient := range uniqueEmails(recipients) {
+		if recipient == "" {
+			continue
+		}
+		if err := a.mailer.SendNotification(recipient, subject, body); err != nil {
+			log.Printf("issue notification failed for %s: %v", redactedEmail(recipient), err)
+		}
+	}
+}
+
+func (a *app) issueManagerEmails(tenantSlug string) []string {
+	tenantSlug = normalizeSlug(tenantSlug)
+	recipients := []string{}
+	for email, profile := range a.profiles {
+		if profile.HasTenant(tenantSlug) && hasCapability(profile.Role, capabilityManageIssues) {
+			recipients = append(recipients, email)
+		}
+	}
+	for email := range a.admins {
+		recipients = append(recipients, email)
+	}
+	if a.inviteStore != nil {
+		for _, profile := range a.inviteStore.List() {
+			if profile.HasTenant(tenantSlug) && hasCapability(profile.Role, capabilityManageIssues) {
+				recipients = append(recipients, profile.Email)
+			}
+		}
+	}
+	return uniqueEmails(recipients)
 }
 
 func (a *app) parking(w http.ResponseWriter, r *http.Request) {
@@ -2102,6 +2238,7 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 	canManage := hasCapability(role, capabilityManageIssues)
 	for _, item := range items {
 		photoCount := len(item.PhotoPaths)
+		comments := issueCommentViews(item.Comments)
 		status := normalizeIssueStatus(item.Status)
 		if status == "" {
 			status = issueStatusOpen
@@ -2127,8 +2264,29 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 			CanReopen:       !canManage && isOwner && canResidentTransition(status, issueStatusNew),
 			PhotoCount:      photoCount,
 			HasPhotos:       photoCount > 0,
+			Comments:        comments,
+			HasComments:     len(comments) > 0,
 			StatusOptions:   issueSelectOptions(issueStatuses(), status),
 			PriorityOptions: issueSelectOptions(issuePriorities(), priority),
+		})
+	}
+	return views
+}
+
+func issueCommentViews(comments []issueComment) []issueCommentView {
+	views := make([]issueCommentView, 0, len(comments))
+	sort.SliceStable(comments, func(i, j int) bool {
+		return comments[i].CreatedAt.Before(comments[j].CreatedAt)
+	})
+	for _, comment := range comments {
+		author := strings.TrimSpace(comment.AuthorName)
+		if author == "" {
+			author = comment.AuthorEmail
+		}
+		views = append(views, issueCommentView{
+			Author:    author,
+			Body:      comment.Body,
+			CreatedAt: comment.CreatedAt.In(time.Local).Format("02.01.2006 15:04"),
 		})
 	}
 	return views
@@ -2989,6 +3147,48 @@ func (s *issueStore) UpdateWorkflow(tenantSlug string, id string, update issueWo
 	return residentIssue{}, false, nil
 }
 
+func (s *issueStore) AddComment(tenantSlug string, id string, comment issueComment) (residentIssue, bool, error) {
+	if s == nil {
+		return residentIssue{}, false, nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	comment.Body = strings.TrimSpace(comment.Body)
+	comment.AuthorEmail = normalizeEmail(comment.AuthorEmail)
+	comment.AuthorName = strings.TrimSpace(comment.AuthorName)
+	if tenantSlug == "" || id == "" || comment.Body == "" || len([]rune(comment.Body)) > 3000 || comment.AuthorEmail == "" {
+		return residentIssue{}, false, fmt.Errorf("invalid issue comment")
+	}
+	if comment.ID == "" {
+		commentID, err := randomToken(10)
+		if err != nil {
+			return residentIssue{}, false, err
+		}
+		comment.ID = commentID
+	}
+	if comment.CreatedAt.IsZero() {
+		comment.CreatedAt = time.Now().UTC()
+	} else {
+		comment.CreatedAt = comment.CreatedAt.UTC()
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, existing := range s.data.Issues {
+		if normalizeSlug(existing.TenantSlug) != tenantSlug || existing.ID != id {
+			continue
+		}
+		updated := existing
+		updated.Comments = append(updated.Comments, comment)
+		updated.UpdatedAt = comment.CreatedAt
+		s.data.Issues[i] = updated
+		if err := s.saveLocked(); err != nil {
+			return residentIssue{}, false, err
+		}
+		return copyIssue(updated), true, nil
+	}
+	return residentIssue{}, false, nil
+}
+
 func (s *issueStore) SavePhoto(tenantSlug string, issueID string, header *multipart.FileHeader) (string, error) {
 	if s == nil || header == nil || header.Filename == "" || header.Size == 0 {
 		return "", nil
@@ -3087,6 +3287,7 @@ func (s *issueStore) saveLocked() error {
 func copyIssue(item residentIssue) residentIssue {
 	item.PhotoPaths = append([]string(nil), item.PhotoPaths...)
 	item.StatusHistory = append([]issueStatusChange(nil), item.StatusHistory...)
+	item.Comments = append([]issueComment(nil), item.Comments...)
 	return item
 }
 
@@ -4684,6 +4885,38 @@ func (m smtpMailer) SendInvite(to string, loginURL string, address string) error
 	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
 }
 
+func (m smtpMailer) SendNotification(to string, subject string, body string) error {
+	if !m.Configured() {
+		return errors.New("smtp not configured")
+	}
+	addr := net.JoinHostPort(m.host, m.port)
+	fromAddr, err := mail.ParseAddress(m.from)
+	if err != nil {
+		return fmt.Errorf("invalid MAIL_FROM")
+	}
+	subject = strings.TrimSpace(subject)
+	if subject == "" {
+		subject = "WEG Portal Benachrichtigung"
+	}
+	body = strings.TrimSpace(body)
+	if body == "" {
+		body = "Es gibt eine neue Aktualisierung im WEG Portal."
+	}
+	msg := strings.Join([]string{
+		"From: " + m.from,
+		"To: " + to,
+		"Subject: " + subject,
+		"MIME-Version: 1.0",
+		"Content-Type: text/plain; charset=UTF-8",
+		"",
+		body,
+		"",
+		"Freundliche Grüße",
+		"WEG Portal",
+	}, "\r\n")
+	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
+}
+
 func newHomeAssistantConfig() homeAssistantConfig {
 	return homeAssistantConfig{
 		baseURL:           strings.TrimRight(env("HA_BASE_URL", ""), "/"),
@@ -5635,6 +5868,22 @@ func normalizeEmailList(raw []string) []string {
 	return out
 }
 
+func uniqueEmails(raw []string) []string {
+	return normalizeEmailList(raw)
+}
+
+func excludeEmail(raw []string, excluded string) []string {
+	excluded = normalizeEmail(excluded)
+	out := []string{}
+	for _, email := range uniqueEmails(raw) {
+		if email == "" || email == excluded {
+			continue
+		}
+		out = append(out, email)
+	}
+	return out
+}
+
 func emailListContains(list []string, email string) bool {
 	email = normalizeEmail(email)
 	for _, item := range list {
@@ -6026,6 +6275,12 @@ const pageTemplates = `
     .issue-actions input, .issue-actions select { width: 100%; border: 1px solid #e2dac9; border-radius: 7px; min-height: 38px; padding: 8px 10px; color: var(--ink); background: #fffefb; font: inherit; font-size: 13px; }
     .issue-actions button { min-height: 38px; border: 1px solid var(--ink); border-radius: 7px; padding: 8px 12px; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
     .issue-actions .ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+    .comment-thread { display: grid; gap: 8px; border-top: 1px dashed var(--line); padding-top: 10px; }
+    .comment { display: grid; gap: 3px; border-left: 3px solid rgba(200,153,63,.35); padding-left: 9px; color: var(--ink); }
+    .comment-meta { color: var(--soft); font-size: 12px; font-weight: 800; }
+    .comment-form { display: grid; gap: 8px; }
+    .comment-form textarea { min-height: 84px; }
+    .comment-form button { justify-self: start; min-height: 38px; border: 1px solid var(--ink); border-radius: 7px; padding: 8px 12px; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
     .dialog { border: 1px solid var(--line); border-radius: 10px; padding: 0; width: min(680px, calc(100vw - 28px)); color: var(--ink); background: var(--panel); box-shadow: 0 28px 70px rgba(0,0,0,.34); }
     .dialog::backdrop { background: rgba(23,32,25,.42); }
     .dialog form { margin: 0; }
@@ -6279,6 +6534,18 @@ const pageTemplates = `
                     </div>
                     <h3>{{.Title}}</h3>
                     <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
+                    <div class="comment-thread">
+                      {{if .HasComments}}
+                        {{range .Comments}}<div class="comment"><span class="comment-meta">{{.Author}} · {{.CreatedAt}}</span><p>{{.Body}}</p></div>{{end}}
+                      {{else}}
+                        <p class="empty">Noch keine Kommentare.</p>
+                      {{end}}
+                    </div>
+                    <form class="comment-form" method="post" action="/app/anliegen/comment">
+                      <input type="hidden" name="id" value="{{.ID}}">
+                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Ergänzung schreiben"></textarea>
+                      <button type="submit">Kommentar senden</button>
+                    </form>
                     {{if or .CanClose .CanReopen}}
                       <div class="issue-actions">
                         {{if .CanClose}}<form method="post" action="/app/anliegen/workflow"><input type="hidden" name="id" value="{{.ID}}"><input type="hidden" name="status" value="Erledigt"><button class="ghost" type="submit">Erledigt melden</button></form>{{end}}
@@ -6313,6 +6580,18 @@ const pageTemplates = `
                     </div>
                     <h3>{{.Title}}</h3>
                     <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
+                    <div class="comment-thread">
+                      {{if .HasComments}}
+                        {{range .Comments}}<div class="comment"><span class="comment-meta">{{.Author}} · {{.CreatedAt}}</span><p>{{.Body}}</p></div>{{end}}
+                      {{else}}
+                        <p class="empty">Noch keine Kommentare.</p>
+                      {{end}}
+                    </div>
+                    <form class="comment-form" method="post" action="/app/anliegen/comment">
+                      <input type="hidden" name="id" value="{{.ID}}">
+                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Rückfrage schreiben"></textarea>
+                      <button type="submit">Kommentar senden</button>
+                    </form>
                     <form class="issue-actions" method="post" action="/app/anliegen/workflow">
                       <input type="hidden" name="id" value="{{.ID}}">
                       <label>Status

@@ -18,6 +18,24 @@ import (
 	"time"
 )
 
+type sentNotification struct {
+	To      string
+	Subject string
+	Body    string
+}
+
+type recordingMailer struct {
+	notifications []sentNotification
+}
+
+func (m *recordingMailer) SendMagicLink(string, string) error      { return nil }
+func (m *recordingMailer) SendInvite(string, string, string) error { return nil }
+func (m *recordingMailer) Configured() bool                        { return true }
+func (m *recordingMailer) SendNotification(to string, subject string, body string) error {
+	m.notifications = append(m.notifications, sentNotification{To: to, Subject: subject, Body: body})
+	return nil
+}
+
 func TestSMTPMailerAllowsInternalRelayWithoutAuth(t *testing.T) {
 	m := smtpMailer{
 		host: "smtp",
@@ -1063,6 +1081,88 @@ func TestResidentCanCloseAndReopenOwnIssueOnly(t *testing.T) {
 	}, a.updateIssueWorkflow)
 	if priorityUpdate.Code != http.StatusForbidden {
 		t.Fatalf("resident priority update status = %d, want 403", priorityUpdate.Code)
+	}
+}
+
+func TestIssueCommentsRenderAndNotify(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	mailer := &recordingMailer{}
+	a.mailer = mailer
+
+	create := authedMultipartRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+		"category":      "Frage",
+		"location_type": issueLocationCommon,
+		"title":         "Kommentar Test",
+		"body":          "Bitte um Rückmeldung.",
+	}, "", nil, a.createIssue)
+	if create.Code != http.StatusSeeOther {
+		t.Fatalf("create status = %d", create.Code)
+	}
+	issues := a.issueStore.ListAuthor("jhw22", "resident@example.com")
+	if len(issues) != 1 {
+		t.Fatalf("issues = %+v", issues)
+	}
+	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "manager@example.com" || !strings.Contains(mailer.notifications[0].Subject, "Neues Anliegen") {
+		t.Fatalf("new issue notifications = %+v", mailer.notifications)
+	}
+
+	managerComment := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/comment", url.Values{
+		"id":   {issues[0].ID},
+		"body": {"Ich prüfe das und melde mich."},
+	}, a.addIssueComment)
+	if managerComment.Code != http.StatusSeeOther {
+		t.Fatalf("manager comment status = %d", managerComment.Code)
+	}
+	updated, _ := a.issueStore.Get("jhw22", issues[0].ID)
+	if len(updated.Comments) != 1 || updated.Comments[0].AuthorEmail != "manager@example.com" {
+		t.Fatalf("comments after manager = %+v", updated.Comments)
+	}
+	if len(mailer.notifications) != 2 || mailer.notifications[1].To != "resident@example.com" || !strings.Contains(mailer.notifications[1].Subject, "Neuer Kommentar") {
+		t.Fatalf("comment notifications = %+v", mailer.notifications)
+	}
+
+	residentComment := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/comment", url.Values{
+		"id":   {issues[0].ID},
+		"body": {"Danke, ich ergänze ein Foto später."},
+	}, a.addIssueComment)
+	if residentComment.Code != http.StatusSeeOther {
+		t.Fatalf("resident comment status = %d", residentComment.Code)
+	}
+	page := authedRequest(t, a, "resident@example.com", "/app/anliegen", a.issues)
+	body := page.Body.String()
+	first := strings.Index(body, "Ich prüfe das")
+	second := strings.Index(body, "Danke, ich ergänze")
+	if first < 0 || second < 0 || first > second {
+		t.Fatalf("comments should render chronologically:\n%s", body)
+	}
+}
+
+func TestResidentCannotCommentOnOtherIssue(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	other, err := a.issueStore.Create(residentIssue{
+		TenantSlug:   "jhw22",
+		AuthorEmail:  "other@example.com",
+		AuthorName:   "Other",
+		Category:     "Frage",
+		Title:        "Nicht meine",
+		Body:         "Privat.",
+		LocationType: issueLocationCommon,
+	})
+	if err != nil {
+		t.Fatalf("Create other issue: %v", err)
+	}
+
+	comment := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/comment", url.Values{
+		"id":   {other.ID},
+		"body": {"Kann ich nicht sehen."},
+	}, a.addIssueComment)
+	if comment.Code != http.StatusForbidden {
+		t.Fatalf("other comment status = %d, want 403", comment.Code)
+	}
+	unchanged, _ := a.issueStore.Get("jhw22", other.ID)
+	if len(unchanged.Comments) != 0 {
+		t.Fatalf("other issue comments = %+v", unchanged.Comments)
 	}
 }
 
