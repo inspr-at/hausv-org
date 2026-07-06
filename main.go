@@ -92,6 +92,9 @@ const (
 	auditActionDocumentUpload   = "document.upload"
 	auditActionDocumentDownload = "document.download"
 	auditActionDocumentReplace  = "document.replace"
+	auditActionVoteCreate       = "vote.create"
+	auditActionVoteOpen         = "vote.open"
+	auditActionVoteClose        = "vote.close"
 )
 
 const (
@@ -105,6 +108,18 @@ const (
 	documentVisibilityAllResidents = "all-residents"
 	documentVisibilityOwnersOnly   = "owners-only"
 	documentVisibilityManagerOnly  = "verwalter-only"
+)
+
+const (
+	ballotTypeMeeting  = "Versammlung"
+	ballotTypeCircular = "Umlaufbeschluss"
+
+	ballotWeightingPerShare = "per-share"
+	ballotWeightingPerHead  = "per-head"
+
+	ballotStatusDraft  = "Entwurf"
+	ballotStatusOpen   = "Offen"
+	ballotStatusClosed = "Geschlossen"
 )
 
 type capability string
@@ -159,6 +174,7 @@ type app struct {
 	issueStore            *issueStore
 	auditStore            *auditStore
 	documentStore         *documentStore
+	voteStore             *voteStore
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
@@ -625,6 +641,40 @@ type documentCategoryView struct {
 	EmptyMessage string
 }
 
+type voteStore struct {
+	mu   sync.Mutex
+	path string
+	data voteStoreData
+}
+
+type voteStoreData struct {
+	Ballots []ballot `json:"ballots"`
+}
+
+type ballot struct {
+	ID          string                `json:"id"`
+	TenantSlug  string                `json:"tenant"`
+	Title       string                `json:"title"`
+	Description string                `json:"description,omitempty"`
+	Options     []string              `json:"options"`
+	Type        string                `json:"type"`
+	Weighting   string                `json:"weighting"`
+	QuorumPPM   int                   `json:"quorum_ppm"`
+	OpensAt     time.Time             `json:"opens_at,omitempty"`
+	ClosesAt    time.Time             `json:"closes_at,omitempty"`
+	CreatedBy   string                `json:"created_by"`
+	CreatedAt   time.Time             `json:"created_at"`
+	UpdatedAt   time.Time             `json:"updated_at"`
+	Status      string                `json:"status"`
+	Votes       map[string]ballotVote `json:"votes,omitempty"`
+}
+
+type ballotVote struct {
+	Option string    `json:"option"`
+	Weight int       `json:"weight"`
+	At     time.Time `json:"at"`
+}
+
 type issueView struct {
 	ID              string
 	Title           string
@@ -919,6 +969,9 @@ func main() {
 	mux.HandleFunc("POST /app/dokumente", a.uploadDocument)
 	mux.HandleFunc("POST /app/dokumente/replace", a.replaceDocument)
 	mux.HandleFunc("GET /app/dokumente/{id}/download", a.downloadDocument)
+	mux.HandleFunc("POST /app/abstimmungen", a.createBallot)
+	mux.HandleFunc("POST /app/abstimmungen/open", a.openBallot)
+	mux.HandleFunc("POST /app/abstimmungen/close", a.closeBallot)
 	mux.HandleFunc("GET /app/kontakte", a.contacts)
 	mux.HandleFunc("GET /app/anliegen", a.issues)
 	mux.HandleFunc("GET /app/anliegen/board", a.issueBoard)
@@ -1116,6 +1169,11 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	voteDataPath := env("VOTE_DATA_PATH", "tmp/votes.json")
+	votes, err := newVoteStore(voteDataPath)
+	if err != nil {
+		return nil, err
+	}
 	parkingDataPath := env("PARKING_DATA_PATH", "tmp/parking.json")
 	parkingStore, err := newParkingStore(parkingDataPath)
 	if err != nil {
@@ -1168,6 +1226,7 @@ func newApp() (*app, error) {
 		issueStore:            issues,
 		auditStore:            auditStore,
 		documentStore:         documents,
+		voteStore:             votes,
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
@@ -2015,6 +2074,205 @@ func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, item.Filename, item.UploadedAt, file)
 }
 
+func (a *app) createBallot(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !hasCapability(role, capabilityManageVotes) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if a.voteStore == nil {
+		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	item, err := ballotFromForm(r, tenant.Slug, email)
+	if err != nil {
+		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
+		return
+	}
+	created, err := a.voteStore.Create(item)
+	if err != nil {
+		log.Printf("ballot create failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
+		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: email,
+		ActorRole:  role,
+		Action:     auditActionVoteCreate,
+		TargetType: "ballot",
+		TargetID:   created.ID,
+		Summary:    "Abstimmung angelegt",
+		Details: map[string]string{
+			"title":     created.Title,
+			"type":      created.Type,
+			"weighting": ballotWeightingLabel(created.Weighting),
+			"quorum":    formatMiteigentumsanteil(created.QuorumPPM),
+		},
+	})
+	http.Redirect(w, r, "/app/abstimmungen?vote=created", http.StatusSeeOther)
+}
+
+func (a *app) openBallot(w http.ResponseWriter, r *http.Request) {
+	a.updateBallotStatus(w, r, ballotStatusOpen)
+}
+
+func (a *app) closeBallot(w http.ResponseWriter, r *http.Request) {
+	a.updateBallotStatus(w, r, ballotStatusClosed)
+}
+
+func (a *app) updateBallotStatus(w http.ResponseWriter, r *http.Request, status string) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !hasCapability(role, capabilityManageVotes) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if a.voteStore == nil {
+		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimSpace(r.FormValue("id"))
+	var (
+		updated ballot
+		found   bool
+		err     error
+		action  string
+		summary string
+		statusQ string
+	)
+	switch status {
+	case ballotStatusOpen:
+		updated, found, err = a.voteStore.Open(tenant.Slug, id, time.Now())
+		action = auditActionVoteOpen
+		summary = "Abstimmung geöffnet"
+		statusQ = "opened"
+	case ballotStatusClosed:
+		updated, found, err = a.voteStore.Close(tenant.Slug, id, time.Now())
+		action = auditActionVoteClose
+		summary = "Abstimmung geschlossen"
+		statusQ = "closed"
+	default:
+		err = fmt.Errorf("invalid ballot status")
+	}
+	if err != nil {
+		log.Printf("ballot status update failed for %s/%s: %v", tenant.Slug, id, err)
+		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
+		return
+	}
+	if !found {
+		http.Redirect(w, r, "/app/abstimmungen?vote=missing", http.StatusSeeOther)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: email,
+		ActorRole:  role,
+		Action:     action,
+		TargetType: "ballot",
+		TargetID:   updated.ID,
+		Summary:    summary,
+		Details: map[string]string{
+			"title":  updated.Title,
+			"status": updated.Status,
+		},
+	})
+	http.Redirect(w, r, "/app/abstimmungen?vote="+statusQ, http.StatusSeeOther)
+}
+
+func ballotFromForm(r *http.Request, tenantSlug string, createdBy string) (ballot, error) {
+	opensAt, err := parseOptionalLocalDateTime(r.FormValue("opens_at"), time.Time{})
+	if err != nil {
+		return ballot{}, err
+	}
+	closesAt, err := parseOptionalLocalDateTime(r.FormValue("closes_at"), time.Time{})
+	if err != nil {
+		return ballot{}, err
+	}
+	if !opensAt.IsZero() {
+		opensAt = opensAt.UTC()
+	}
+	if !closesAt.IsZero() {
+		closesAt = closesAt.UTC()
+	}
+	quorum, err := parseBallotQuorumPPM(r.FormValue("quorum_ppm"), r.FormValue("quorum_percent"))
+	if err != nil {
+		return ballot{}, err
+	}
+	item := ballot{
+		TenantSlug:  tenantSlug,
+		Title:       strings.TrimSpace(r.FormValue("title")),
+		Description: strings.TrimSpace(r.FormValue("description")),
+		Options:     ballotOptionsFromForm(r),
+		Type:        normalizeBallotType(r.FormValue("type")),
+		Weighting:   normalizeBallotWeighting(r.FormValue("weighting")),
+		QuorumPPM:   quorum,
+		OpensAt:     opensAt,
+		ClosesAt:    closesAt,
+		CreatedBy:   createdBy,
+	}
+	item = normalizeBallot(item)
+	if item.Title == "" || len(item.Options) < 2 || item.Type == "" || item.Weighting == "" || item.CreatedBy == "" {
+		return ballot{}, fmt.Errorf("invalid ballot")
+	}
+	return item, nil
+}
+
+func ballotOptionsFromForm(r *http.Request) []string {
+	out := append([]string(nil), r.Form["options"]...)
+	if text := strings.TrimSpace(r.FormValue("options_text")); text != "" {
+		for _, line := range strings.Split(text, "\n") {
+			out = append(out, line)
+		}
+	}
+	return out
+}
+
+func parseBallotQuorumPPM(rawPPM string, rawPercent string) (int, error) {
+	rawPPM = strings.TrimSpace(rawPPM)
+	if rawPPM != "" {
+		value, err := strconv.Atoi(rawPPM)
+		if err != nil || value < 0 || value > 1_000_000 {
+			return 0, fmt.Errorf("invalid quorum")
+		}
+		return value, nil
+	}
+	rawPercent = strings.TrimSpace(rawPercent)
+	if rawPercent == "" {
+		return 0, nil
+	}
+	value, err := parseDecimal(rawPercent)
+	if err != nil || value < 0 || value > 100 {
+		return 0, fmt.Errorf("invalid quorum")
+	}
+	return int(value * 10_000), nil
+}
+
 func documentFileHeader(r *http.Request) *multipart.FileHeader {
 	if r == nil || r.MultipartForm == nil {
 		return nil
@@ -2080,6 +2338,52 @@ func (a *app) isDocumentOwner(tenantSlug string, email string, role string, unit
 		}
 	}
 	return normalizeRole(role) == roleOwner
+}
+
+func (a *app) castBallotVote(tenantSlug string, email string, ballotID string, option string, at time.Time) (ballot, bool, error) {
+	if a == nil || a.voteStore == nil {
+		return ballot{}, false, nil
+	}
+	item, found := a.voteStore.Get(tenantSlug, ballotID)
+	if !found {
+		return ballot{}, false, nil
+	}
+	weight, eligible := a.ballotVoteWeight(tenantSlug, email, item)
+	if !eligible {
+		return ballot{}, true, fmt.Errorf("not eligible to vote")
+	}
+	return a.voteStore.CastVote(tenantSlug, ballotID, email, option, weight, at)
+}
+
+func (a *app) ballotVoteWeight(tenantSlug string, email string, item ballot) (int, bool) {
+	if a == nil {
+		return 0, false
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	email = normalizeEmail(email)
+	if tenantSlug == "" || email == "" {
+		return 0, false
+	}
+	ownerShare := 0
+	if a != nil && a.unitStore != nil {
+		for _, membership := range a.unitStore.UnitsForEmail(tenantSlug, email) {
+			if membership.Relation == roleOwner {
+				ownerShare += membership.Unit.MiteigentumsanteilPPM
+			}
+		}
+	}
+	isOwner := ownerShare > 0 || normalizeRole(a.roleFor(email, tenantSlug)) == roleOwner
+	switch normalizeBallotWeighting(item.Weighting) {
+	case ballotWeightingPerHead:
+		if isOwner {
+			return 1, true
+		}
+	case ballotWeightingPerShare:
+		if ownerShare > 0 {
+			return ownerShare, true
+		}
+	}
+	return 0, false
 }
 
 func documentMessage(status string) (string, bool) {
@@ -4129,6 +4433,9 @@ func auditActionOptions(selected string) []selectOption {
 		auditActionDocumentUpload,
 		auditActionDocumentDownload,
 		auditActionDocumentReplace,
+		auditActionVoteCreate,
+		auditActionVoteOpen,
+		auditActionVoteClose,
 		auditActionParkingSettings,
 		auditActionParkingMonth,
 		auditActionIssueWorkflow,
@@ -4162,6 +4469,12 @@ func auditActionLabel(action string) string {
 		return "Dokument heruntergeladen"
 	case auditActionDocumentReplace:
 		return "Dokument ersetzt"
+	case auditActionVoteCreate:
+		return "Abstimmung angelegt"
+	case auditActionVoteOpen:
+		return "Abstimmung geöffnet"
+	case auditActionVoteClose:
+		return "Abstimmung geschlossen"
 	case auditActionParkingSettings:
 		return "Parkplatz-Abrechnung geändert"
 	case auditActionParkingMonth:
@@ -4203,6 +4516,8 @@ func auditTargetTypeLabel(targetType string) string {
 		return "Anliegen"
 	case "document":
 		return "Dokument"
+	case "ballot":
+		return "Abstimmung"
 	default:
 		return strings.TrimSpace(targetType)
 	}
@@ -4256,6 +4571,12 @@ func auditDetailLabel(key string) string {
 		return "Vorherige Version"
 	case "previous_id":
 		return "Vorherige ID"
+	case "type":
+		return "Typ"
+	case "weighting":
+		return "Gewichtung"
+	case "quorum":
+		return "Quorum"
 	default:
 		return strings.ReplaceAll(key, "_", " ")
 	}
@@ -7271,6 +7592,381 @@ func formatBytes(size int64) string {
 	}
 }
 
+func newVoteStore(path string) (*voteStore, error) {
+	store := &voteStore{path: path, data: voteStoreData{Ballots: []ballot{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read vote data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid vote data")
+	}
+	store.data.Ballots = normalizeBallots(store.data.Ballots)
+	return store, nil
+}
+
+func (s *voteStore) Create(item ballot) (ballot, error) {
+	if s == nil {
+		return ballot{}, fmt.Errorf("vote store unavailable")
+	}
+	now := time.Now().UTC()
+	id, err := randomToken(12)
+	if err != nil {
+		return ballot{}, err
+	}
+	item.ID = id
+	item.Status = ballotStatusDraft
+	item.CreatedAt = now
+	item.UpdatedAt = now
+	item.Votes = nil
+	item = normalizeBallot(item)
+	if item.TenantSlug == "" || item.Title == "" || len(item.Options) < 2 || item.Type == "" || item.Weighting == "" || item.CreatedBy == "" {
+		return ballot{}, fmt.Errorf("invalid ballot")
+	}
+	if !item.OpensAt.IsZero() && !item.ClosesAt.IsZero() && !item.ClosesAt.After(item.OpensAt) {
+		return ballot{}, fmt.Errorf("ballot close must be after open")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data.Ballots = append(s.data.Ballots, item)
+	sortBallots(s.data.Ballots)
+	if err := s.saveLocked(); err != nil {
+		return ballot{}, err
+	}
+	return copyBallot(item), nil
+}
+
+func (s *voteStore) Open(tenantSlug string, id string, at time.Time) (ballot, bool, error) {
+	return s.setStatus(tenantSlug, id, ballotStatusOpen, at)
+}
+
+func (s *voteStore) Close(tenantSlug string, id string, at time.Time) (ballot, bool, error) {
+	return s.setStatus(tenantSlug, id, ballotStatusClosed, at)
+}
+
+func (s *voteStore) setStatus(tenantSlug string, id string, status string, at time.Time) (ballot, bool, error) {
+	if s == nil {
+		return ballot{}, false, nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	status = normalizeBallotStatus(status)
+	if tenantSlug == "" || id == "" || status == "" {
+		return ballot{}, false, fmt.Errorf("invalid ballot status")
+	}
+	if at.IsZero() {
+		at = time.Now()
+	}
+	at = at.UTC()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, item := range s.data.Ballots {
+		if normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != id {
+			continue
+		}
+		if item.Status == ballotStatusClosed && status == ballotStatusOpen {
+			return ballot{}, true, fmt.Errorf("closed ballot cannot reopen")
+		}
+		item.Status = status
+		if status == ballotStatusOpen && item.OpensAt.IsZero() {
+			item.OpensAt = at
+		}
+		if status == ballotStatusClosed && (item.ClosesAt.IsZero() || item.ClosesAt.After(at)) {
+			item.ClosesAt = at
+		}
+		item.UpdatedAt = at
+		item = normalizeBallot(item)
+		s.data.Ballots[i] = item
+		sortBallots(s.data.Ballots)
+		if err := s.saveLocked(); err != nil {
+			return ballot{}, true, err
+		}
+		return copyBallot(item), true, nil
+	}
+	return ballot{}, false, nil
+}
+
+func (s *voteStore) CastVote(tenantSlug string, id string, email string, option string, weight int, at time.Time) (ballot, bool, error) {
+	if s == nil {
+		return ballot{}, false, nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	email = normalizeEmail(email)
+	option = strings.TrimSpace(option)
+	if tenantSlug == "" || id == "" || email == "" || option == "" || weight <= 0 {
+		return ballot{}, false, fmt.Errorf("invalid vote")
+	}
+	if at.IsZero() {
+		at = time.Now()
+	}
+	at = at.UTC()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, item := range s.data.Ballots {
+		if normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != id {
+			continue
+		}
+		item = normalizeBallot(item)
+		if item.Status != ballotStatusOpen {
+			return ballot{}, true, fmt.Errorf("ballot is not open")
+		}
+		if !item.OpensAt.IsZero() && at.Before(item.OpensAt) {
+			return ballot{}, true, fmt.Errorf("ballot is not open yet")
+		}
+		if !item.ClosesAt.IsZero() && !at.Before(item.ClosesAt) {
+			return ballot{}, true, fmt.Errorf("ballot is closed")
+		}
+		if !ballotHasOption(item, option) {
+			return ballot{}, true, fmt.Errorf("invalid vote option")
+		}
+		if item.Votes == nil {
+			item.Votes = map[string]ballotVote{}
+		}
+		item.Votes[email] = ballotVote{Option: option, Weight: weight, At: at}
+		item.UpdatedAt = at
+		item = normalizeBallot(item)
+		s.data.Ballots[i] = item
+		sortBallots(s.data.Ballots)
+		if err := s.saveLocked(); err != nil {
+			return ballot{}, true, err
+		}
+		return copyBallot(item), true, nil
+	}
+	return ballot{}, false, nil
+}
+
+func (s *voteStore) ListTenant(tenantSlug string) []ballot {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ballot{}
+	for _, item := range s.data.Ballots {
+		if normalizeSlug(item.TenantSlug) == tenantSlug {
+			out = append(out, copyBallot(item))
+		}
+	}
+	sortBallots(out)
+	return out
+}
+
+func (s *voteStore) Get(tenantSlug string, id string) (ballot, bool) {
+	if s == nil {
+		return ballot{}, false
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	if tenantSlug == "" || id == "" {
+		return ballot{}, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, item := range s.data.Ballots {
+		if normalizeSlug(item.TenantSlug) == tenantSlug && item.ID == id {
+			return copyBallot(normalizeBallot(item)), true
+		}
+	}
+	return ballot{}, false
+}
+
+func (s *voteStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create vote data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode vote data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write vote data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace vote data")
+	}
+	return nil
+}
+
+func normalizeBallots(items []ballot) []ballot {
+	out := make([]ballot, 0, len(items))
+	for _, item := range items {
+		item = normalizeBallot(item)
+		if item.ID == "" || item.TenantSlug == "" || item.Title == "" || len(item.Options) < 2 || item.Type == "" || item.Weighting == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	sortBallots(out)
+	return out
+}
+
+func normalizeBallot(item ballot) ballot {
+	item.ID = strings.TrimSpace(item.ID)
+	item.TenantSlug = normalizeSlug(item.TenantSlug)
+	item.Title = truncateAuditValue(strings.TrimSpace(item.Title), 160)
+	item.Description = truncateAuditValue(strings.TrimSpace(item.Description), 5000)
+	item.Options = normalizeBallotOptions(item.Options)
+	item.Type = normalizeBallotType(item.Type)
+	item.Weighting = normalizeBallotWeighting(item.Weighting)
+	item.Status = normalizeBallotStatus(item.Status)
+	item.CreatedBy = normalizeEmail(item.CreatedBy)
+	if item.QuorumPPM < 0 {
+		item.QuorumPPM = 0
+	}
+	if item.QuorumPPM > 1_000_000 {
+		item.QuorumPPM = 1_000_000
+	}
+	if !item.OpensAt.IsZero() {
+		item.OpensAt = item.OpensAt.UTC().Truncate(time.Second)
+	}
+	if !item.ClosesAt.IsZero() {
+		item.ClosesAt = item.ClosesAt.UTC().Truncate(time.Second)
+	}
+	if item.CreatedAt.IsZero() {
+		item.CreatedAt = time.Now()
+	}
+	item.CreatedAt = item.CreatedAt.UTC().Truncate(time.Second)
+	if item.UpdatedAt.IsZero() {
+		item.UpdatedAt = item.CreatedAt
+	}
+	item.UpdatedAt = item.UpdatedAt.UTC().Truncate(time.Second)
+	if len(item.Votes) == 0 {
+		item.Votes = nil
+	} else {
+		votes := map[string]ballotVote{}
+		for email, vote := range item.Votes {
+			email = normalizeEmail(email)
+			vote.Option = strings.TrimSpace(vote.Option)
+			if email == "" || vote.Option == "" || vote.Weight <= 0 || !ballotHasOption(item, vote.Option) {
+				continue
+			}
+			if vote.At.IsZero() {
+				vote.At = item.UpdatedAt
+			}
+			vote.At = vote.At.UTC().Truncate(time.Second)
+			votes[email] = vote
+		}
+		item.Votes = votes
+		if len(item.Votes) == 0 {
+			item.Votes = nil
+		}
+	}
+	return item
+}
+
+func normalizeBallotOptions(raw []string) []string {
+	out := []string{}
+	seen := map[string]struct{}{}
+	for _, option := range raw {
+		option = truncateAuditValue(strings.TrimSpace(option), 120)
+		if option == "" {
+			continue
+		}
+		key := strings.ToLower(option)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, option)
+		if len(out) >= 12 {
+			break
+		}
+	}
+	return out
+}
+
+func normalizeBallotType(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "versammlung", "meeting", "eigentuemerversammlung", "eigentümerversammlung":
+		return ballotTypeMeeting
+	case "", "umlauf", "umlaufbeschluss", "circular", "resolution":
+		return ballotTypeCircular
+	default:
+		return ""
+	}
+}
+
+func normalizeBallotWeighting(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "per-head", "head", "kopf", "pro-kopf":
+		return ballotWeightingPerHead
+	case "", "per-share", "share", "anteil", "miteigentumsanteil":
+		return ballotWeightingPerShare
+	default:
+		return ""
+	}
+}
+
+func normalizeBallotStatus(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "entwurf", "draft":
+		return ballotStatusDraft
+	case "offen", "open":
+		return ballotStatusOpen
+	case "geschlossen", "closed":
+		return ballotStatusClosed
+	default:
+		return ""
+	}
+}
+
+func ballotHasOption(item ballot, option string) bool {
+	option = strings.TrimSpace(option)
+	for _, existing := range item.Options {
+		if existing == option {
+			return true
+		}
+	}
+	return false
+}
+
+func copyBallot(item ballot) ballot {
+	item.Options = append([]string(nil), item.Options...)
+	if len(item.Votes) > 0 {
+		votes := map[string]ballotVote{}
+		for email, vote := range item.Votes {
+			votes[email] = vote
+		}
+		item.Votes = votes
+	}
+	return item
+}
+
+func sortBallots(items []ballot) {
+	sort.SliceStable(items, func(i, j int) bool {
+		if !items[i].UpdatedAt.Equal(items[j].UpdatedAt) {
+			return items[i].UpdatedAt.After(items[j].UpdatedAt)
+		}
+		return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
+	})
+}
+
+func ballotWeightingLabel(weighting string) string {
+	switch normalizeBallotWeighting(weighting) {
+	case ballotWeightingPerHead:
+		return "pro Kopf"
+	case ballotWeightingPerShare:
+		return "nach Miteigentumsanteil"
+	default:
+		return ""
+	}
+}
+
 func newUnitStore(path string) (*unitStore, error) {
 	store := &unitStore{path: path, data: unitStoreData{Units: []unit{}}}
 	if path == "" {
@@ -10075,6 +10771,7 @@ func normalizeAuditAction(raw string) string {
 	case auditActionLogin, auditActionInviteCreate, auditActionInviteUpdate, auditActionInviteDelete,
 		auditActionBuildingUpdate, auditActionHeroUpdate, auditActionUnitSave, auditActionUnitDelete,
 		auditActionDocumentUpload, auditActionDocumentDownload, auditActionDocumentReplace,
+		auditActionVoteCreate, auditActionVoteOpen, auditActionVoteClose,
 		auditActionParkingSettings, auditActionParkingMonth, auditActionIssueWorkflow:
 		return raw
 	default:

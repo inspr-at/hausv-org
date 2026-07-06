@@ -145,6 +145,11 @@ and does not serve files from `/assets`. Downloads go through the authenticated
 `/app/dokumente/{id}/download` route, which enforces per-document visibility and
 records successful downloads in the audit log.
 
+Abstimmungen persist to `/data/votes.json` via `VOTE_DATA_PATH`. Ballots store
+options, type, weighting, quorum, open/close timestamps and per-owner votes. The
+store uses the same mutexed atomic JSON pattern and `0600` file mode; vote weights
+come from the Wohneinheiten ownership links for Miteigentumsanteil voting.
+
 Notification preferences persist to `/data/notification_prefs.json` via
 `NOTIFICATION_PREF_DATA_PATH`. Missing preferences default to enabled delivery;
 explicit event opt-outs and the global unsubscribe flag are checked before

@@ -250,6 +250,119 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 	}
 }
 
+func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "votes.json")
+	store, err := newVoteStore(path)
+	if err != nil {
+		t.Fatalf("newVoteStore: %v", err)
+	}
+	created, err := store.Create(ballot{
+		TenantSlug:  "JHW22",
+		Title:       "Ladestation beschließen",
+		Description: "Soll eine Wallbox angeschafft werden?",
+		Options:     []string{"Ja", "Nein", "Ja"},
+		Type:        ballotTypeCircular,
+		Weighting:   ballotWeightingPerShare,
+		QuorumPPM:   500000,
+		ClosesAt:    time.Now().Add(24 * time.Hour),
+		CreatedBy:   "Manager@Example.com",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if created.ID == "" || created.Status != ballotStatusDraft || created.TenantSlug != "jhw22" || len(created.Options) != 2 || created.CreatedBy != "manager@example.com" {
+		t.Fatalf("created ballot = %+v", created)
+	}
+	opened, found, err := store.Open("jhw22", created.ID, time.Now())
+	if err != nil || !found || opened.Status != ballotStatusOpen {
+		t.Fatalf("Open = %+v found=%v err=%v", opened, found, err)
+	}
+	voted, found, err := store.CastVote("jhw22", created.ID, "Owner@Example.com", "Ja", 12345, time.Now())
+	if err != nil || !found {
+		t.Fatalf("CastVote first found=%v err=%v", found, err)
+	}
+	if vote := voted.Votes["owner@example.com"]; vote.Option != "Ja" || vote.Weight != 12345 {
+		t.Fatalf("first vote = %+v", vote)
+	}
+	voted, found, err = store.CastVote("jhw22", created.ID, "owner@example.com", "Nein", 12345, time.Now())
+	if err != nil || !found || len(voted.Votes) != 1 || voted.Votes["owner@example.com"].Option != "Nein" {
+		t.Fatalf("mutable vote = %+v found=%v err=%v", voted.Votes, found, err)
+	}
+	closed, found, err := store.Close("jhw22", created.ID, time.Now())
+	if err != nil || !found || closed.Status != ballotStatusClosed {
+		t.Fatalf("Close = %+v found=%v err=%v", closed, found, err)
+	}
+	if _, _, err := store.CastVote("jhw22", created.ID, "owner@example.com", "Ja", 12345, time.Now()); err == nil {
+		t.Fatal("closed ballot should reject votes")
+	}
+	info, err := os.Stat(path)
+	if err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("vote store file mode = %v err=%v, want 0600", info.Mode().Perm(), err)
+	}
+	reopened, err := newVoteStore(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	loaded, ok := reopened.Get("jhw22", created.ID)
+	if !ok || loaded.Status != ballotStatusClosed || loaded.Votes["owner@example.com"].Option != "Nein" {
+		t.Fatalf("loaded ballot = %+v ok=%v", loaded, ok)
+	}
+}
+
+func TestBallotVoteWeightUsesOwnerUnits(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
+		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 12345, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
+		{ID: "top-2", TenantSlug: "jhw22", Label: "Top 2", MiteigentumsanteilPPM: 22222, OwnerEmails: []string{"owner@example.com"}},
+	}); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+	shareBallot, err := a.voteStore.Create(ballot{
+		TenantSlug: "jhw22",
+		Title:      "Sanierung",
+		Options:    []string{"Ja", "Nein"},
+		Type:       ballotTypeCircular,
+		Weighting:  ballotWeightingPerShare,
+		CreatedBy:  "manager@example.com",
+	})
+	if err != nil {
+		t.Fatalf("Create share ballot: %v", err)
+	}
+	if _, _, err := a.voteStore.Open("jhw22", shareBallot.ID, time.Now()); err != nil {
+		t.Fatalf("Open share ballot: %v", err)
+	}
+	updated, found, err := a.castBallotVote("jhw22", "owner@example.com", shareBallot.ID, "Ja", time.Now())
+	if err != nil || !found {
+		t.Fatalf("owner cast share vote found=%v err=%v", found, err)
+	}
+	if got := updated.Votes["owner@example.com"].Weight; got != 34567 {
+		t.Fatalf("owner share vote weight = %d, want 34567", got)
+	}
+	if _, _, err := a.castBallotVote("jhw22", "renter@example.com", shareBallot.ID, "Ja", time.Now()); err == nil {
+		t.Fatal("renter should not be eligible for owner ballot")
+	}
+	headBallot, err := a.voteStore.Create(ballot{
+		TenantSlug: "jhw22",
+		Title:      "Pro Kopf",
+		Options:    []string{"Ja", "Nein"},
+		Type:       ballotTypeMeeting,
+		Weighting:  ballotWeightingPerHead,
+		CreatedBy:  "manager@example.com",
+	})
+	if err != nil {
+		t.Fatalf("Create head ballot: %v", err)
+	}
+	if _, _, err := a.voteStore.Open("jhw22", headBallot.ID, time.Now()); err != nil {
+		t.Fatalf("Open head ballot: %v", err)
+	}
+	updated, found, err = a.castBallotVote("jhw22", "owner@example.com", headBallot.ID, "Nein", time.Now())
+	if err != nil || !found || updated.Votes["owner@example.com"].Weight != 1 {
+		t.Fatalf("owner cast head vote = %+v found=%v err=%v", updated.Votes["owner@example.com"], found, err)
+	}
+}
+
 func TestDocumentStoreCreatePersistAndValidate(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "documents.json")
@@ -1677,6 +1790,39 @@ func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	if write.Code != http.StatusSeeOther {
 		t.Fatalf("manager announcement create status = %d, want redirect", write.Code)
 	}
+	ballotCreate := authedFormRequest(t, a, "manager@example.com", "/app/abstimmungen", url.Values{
+		"title":          {"Dachsanierung"},
+		"description":    {"Beschluss zur Beauftragung"},
+		"options_text":   {"Ja\nNein\nEnthaltung"},
+		"type":           {ballotTypeCircular},
+		"weighting":      {ballotWeightingPerShare},
+		"quorum_percent": {"50"},
+	}, a.createBallot)
+	if ballotCreate.Code != http.StatusSeeOther {
+		t.Fatalf("manager ballot create status = %d, want redirect", ballotCreate.Code)
+	}
+	ballots := a.voteStore.ListTenant("jhw22")
+	if len(ballots) != 1 || ballots[0].Title != "Dachsanierung" || ballots[0].QuorumPPM != 500000 {
+		t.Fatalf("created ballots = %+v", ballots)
+	}
+	open := authedFormRequest(t, a, "manager@example.com", "/app/abstimmungen/open", url.Values{"id": {ballots[0].ID}}, a.openBallot)
+	if open.Code != http.StatusSeeOther {
+		t.Fatalf("manager ballot open status = %d, want redirect", open.Code)
+	}
+	close := authedFormRequest(t, a, "manager@example.com", "/app/abstimmungen/close", url.Values{"id": {ballots[0].ID}}, a.closeBallot)
+	if close.Code != http.StatusSeeOther {
+		t.Fatalf("manager ballot close status = %d, want redirect", close.Code)
+	}
+	closed, _ := a.voteStore.Get("jhw22", ballots[0].ID)
+	if closed.Status != ballotStatusClosed {
+		t.Fatalf("closed ballot = %+v", closed)
+	}
+	for _, action := range []string{auditActionVoteCreate, auditActionVoteOpen, auditActionVoteClose} {
+		events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: action, Limit: 10})
+		if len(events) != 1 {
+			t.Fatalf("audit events for %s = %+v", action, events)
+		}
+	}
 	parkingSettings := authedRequest(t, a, "manager@example.com", "/app/parking/settings", a.parkingSettings)
 	if parkingSettings.Code != http.StatusForbidden {
 		t.Fatalf("manager parking settings status = %d, want 403", parkingSettings.Code)
@@ -1689,6 +1835,13 @@ func TestResidentCannotManageTenantUsers(t *testing.T) {
 	users := authedRequest(t, a, "resident@example.com", "/app/settings/users", a.userSettings)
 	if users.Code != http.StatusForbidden {
 		t.Fatalf("resident user settings status = %d, want 403", users.Code)
+	}
+	ballotCreate := authedFormRequest(t, a, "resident@example.com", "/app/abstimmungen", url.Values{
+		"title":        {"Nicht erlaubt"},
+		"options_text": {"Ja\nNein"},
+	}, a.createBallot)
+	if ballotCreate.Code != http.StatusForbidden {
+		t.Fatalf("resident ballot create status = %d, want 403", ballotCreate.Code)
 	}
 }
 
@@ -2569,6 +2722,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("document store: %v", err)
 	}
+	voteStore, err := newVoteStore("")
+	if err != nil {
+		t.Fatalf("vote store: %v", err)
+	}
 	return &app{
 		baseURL:       "http://localhost:8080",
 		rootDomain:    "hausv.org",
@@ -2599,6 +2756,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		issueStore:            issueStore,
 		auditStore:            auditStore,
 		documentStore:         documentStore,
+		voteStore:             voteStore,
 		parkingStore:          parkingStore,
 	}
 }
