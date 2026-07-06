@@ -1,10 +1,27 @@
 // Benutzer & Rechte: open the per-row edit dialog and confirm deletes.
 // Served as a same-origin file so it satisfies the strict CSP (default-src 'self').
+var dialogTriggers = new WeakMap();
+
+function focusFirstDialogField(dialog) {
+  var field = dialog.querySelector(
+    "[autofocus], input:not([type='hidden']), select, textarea, button:not([aria-label='Schließen'])"
+  );
+  if (field && field.focus) field.focus();
+}
+
+function openEditDialog(trigger) {
+  var dialog = document.getElementById("edit-" + trigger.dataset.edit);
+  if (!dialog || !dialog.showModal) return;
+  dialogTriggers.set(dialog, trigger);
+  trigger.setAttribute("aria-expanded", "true");
+  dialog.showModal();
+  focusFirstDialogField(dialog);
+}
+
 document.addEventListener("click", function (e) {
   var b = e.target.closest(".users .row-edit");
   if (b) {
-    var d = document.getElementById("edit-" + b.dataset.edit);
-    if (d && d.showModal) d.showModal();
+    openEditDialog(b);
   }
 });
 document.addEventListener("submit", function (e) {
@@ -36,3 +53,15 @@ document.addEventListener("change", function (e) {
     applyRolePreset(e.target);
   }
 });
+
+document.addEventListener(
+  "close",
+  function (e) {
+    if (!e.target || e.target.nodeName !== "DIALOG") return;
+    var trigger = dialogTriggers.get(e.target);
+    if (!trigger) return;
+    trigger.setAttribute("aria-expanded", "false");
+    if (trigger.focus) trigger.focus();
+  },
+  true
+);

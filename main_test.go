@@ -92,6 +92,66 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 	}
 }
 
+func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
+	wants := []string{
+		`:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible`,
+		`aria-haspopup="dialog" aria-controls="announcement-create"`,
+		`<dialog id="announcement-create" class="dialog" aria-labelledby="announcement-create-title">`,
+		`aria-haspopup="dialog" aria-controls="event-create"`,
+		`<dialog id="event-create" class="dialog" aria-labelledby="event-create-title">`,
+		`aria-describedby="role-help"`,
+		`<span id="role-help" class="popup" role="tooltip">`,
+		`aria-label="E-Mail-Adresse" autocomplete="email" required`,
+		`aria-label="Kommentar oder Rückfrage"`,
+	}
+	for _, want := range wants {
+		if !strings.Contains(pageTemplates, want) {
+			t.Fatalf("pageTemplates missing accessibility convention %q", want)
+		}
+	}
+	for _, path := range []string{"assets/announcements.js", "assets/users.js"} {
+		body, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		text := string(body)
+		for _, want := range []string{"dialogTriggers", `aria-expanded`, "focusFirstDialogField"} {
+			if !strings.Contains(text, want) {
+				t.Fatalf("%s missing dialog focus convention %q", path, want)
+			}
+		}
+	}
+}
+
+func TestFormattingUsesDeATConventions(t *testing.T) {
+	at := time.Date(2026, 7, 6, 9, 5, 0, 0, time.Local)
+	tests := map[string]string{
+		"date":        formatLocalDate(at),
+		"datetime":    formatLocalDateTime(at),
+		"input":       formatLocalDateTimeInput(at),
+		"decimal":     formatDecimal(1234567.89, 2),
+		"negative":    formatDecimal(-1234.5, 1),
+		"eur_per_kwh": formatEURPerKWh(0.1234),
+		"share":       formatMiteigentumsanteil(12345),
+		"month":       formatMonthLabel("2026-01", time.Local),
+	}
+	wants := map[string]string{
+		"date":        "06.07.2026",
+		"datetime":    "06.07.2026 09:05",
+		"input":       "2026-07-06T09:05",
+		"decimal":     "1.234.567,89",
+		"negative":    "-1.234,5",
+		"eur_per_kwh": "0,123 €/kWh",
+		"share":       "12.345 / 1.000.000",
+		"month":       "Jänner 2026",
+	}
+	for name, got := range tests {
+		if got != wants[name] {
+			t.Fatalf("%s = %q, want %q", name, got, wants[name])
+		}
+	}
+}
+
 func TestInviteStoreAddDedupeGetList(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "invites.json")
 	store, err := newInviteStore(path)
@@ -821,7 +881,7 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 		t.Fatalf("profile page status = %d", page.Code)
 	}
 	body := page.Body.String()
-	for _, want := range []string{`value="Dr."`, `value="Resi"`, `value="Dent"`, "43 1 234", `name="directory_opt_in" checked`, roleResident, "Top 1", "12345 / 1.000.000"} {
+	for _, want := range []string{`value="Dr."`, `value="Resi"`, `value="Dent"`, "43 1 234", `name="directory_opt_in" checked`, roleResident, "Top 1", "12.345 / 1.000.000"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("profile page should contain %q", want)
 		}
@@ -983,7 +1043,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatalf("units after add = %+v", units)
 	}
 	page := authedRequest(t, a, "manager@example.com", "/app/settings/building", a.buildingSettings)
-	for _, want := range []string{"WEG Sonneneck", "Neue Gasse 7", "Top 1", "12345 / 1.000.000", `value="owner@example.com, second@example.com"`} {
+	for _, want := range []string{"WEG Sonneneck", "Neue Gasse 7", "Top 1", "12.345 / 1.000.000", `value="owner@example.com, second@example.com"`} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("building page should contain %q", want)
 		}

@@ -1347,7 +1347,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
 		"HasAllAnnouncements":    len(all) > 0,
 		"AllAnnouncementsEmpty":  emptyState("Noch kein Aushang gespeichert", "Neue Aushänge erscheinen hier nach dem Speichern."),
 		"AnnounceMsg":            announcementMessage(r.URL.Query().Get("announce")),
-		"NowInput":               now.In(time.Local).Format("2006-01-02T15:04"),
+		"NowInput":               formatLocalDateTimeInput(now),
 		"SearchQuery":            searchQuery,
 		"SelectedCategory":       selectedCategory,
 		"CategoryFilters":        announcementFilterViews(searchQuery, selectedCategory),
@@ -1509,7 +1509,7 @@ func (a *app) events(w http.ResponseWriter, r *http.Request) {
 		"HasAllEvents":           len(all) > 0,
 		"AllEventsEmpty":         emptyState("Noch kein Termin gespeichert", "Neue Termine erscheinen hier nach dem Speichern."),
 		"EventMsg":               eventMessage(r.URL.Query().Get("event")),
-		"NowInput":               now.In(time.Local).Format("2006-01-02T15:04"),
+		"NowInput":               formatLocalDateTimeInput(now),
 	})
 }
 
@@ -2854,8 +2854,8 @@ func announcementViewFrom(item announcement, now time.Time, includeStatus bool, 
 	expiresAt := ""
 	expiresAtInput := ""
 	if item.ExpiresAt != nil {
-		expiresAt = item.ExpiresAt.In(time.Local).Format("02.01.2006 15:04")
-		expiresAtInput = item.ExpiresAt.In(time.Local).Format("2006-01-02T15:04")
+		expiresAt = formatLocalDateTime(*item.ExpiresAt)
+		expiresAtInput = formatLocalDateTimeInput(*item.ExpiresAt)
 	}
 	author := strings.TrimSpace(item.AuthorName)
 	if author == "" {
@@ -2870,8 +2870,8 @@ func announcementViewFrom(item announcement, now time.Time, includeStatus bool, 
 		CategoryClass:      strings.ToLower(normalizeSlug(item.Category)),
 		Pinned:             item.Pinned,
 		PinnedChecked:      item.Pinned,
-		PublishedAt:        item.PublishedAt.In(time.Local).Format("02.01.2006 15:04"),
-		PublishedAtInput:   item.PublishedAt.In(time.Local).Format("2006-01-02T15:04"),
+		PublishedAt:        formatLocalDateTime(item.PublishedAt),
+		PublishedAtInput:   formatLocalDateTimeInput(item.PublishedAt),
 		ExpiresAt:          expiresAt,
 		ExpiresAtInput:     expiresAtInput,
 		HasExpiresAt:       item.ExpiresAt != nil,
@@ -2906,8 +2906,8 @@ func eventViewFrom(item houseEvent, now time.Time) houseEventView {
 	endsAtInput := ""
 	if item.EndsAt != nil {
 		endsLocal := item.EndsAt.In(time.Local)
-		endsAt = endsLocal.Format("02.01.2006 15:04")
-		endsAtInput = endsLocal.Format("2006-01-02T15:04")
+		endsAt = formatLocalDateTime(endsLocal)
+		endsAtInput = formatLocalDateTimeInput(endsLocal)
 	}
 	author := strings.TrimSpace(item.AuthorName)
 	if author == "" {
@@ -2925,8 +2925,8 @@ func eventViewFrom(item houseEvent, now time.Time) houseEventView {
 		CategoryClass:      eventCategoryClass(item.Category),
 		Location:           location,
 		HasLocation:        location != "",
-		StartsAt:           startLocal.Format("02.01.2006 15:04"),
-		StartsAtInput:      startLocal.Format("2006-01-02T15:04"),
+		StartsAt:           formatLocalDateTime(startLocal),
+		StartsAtInput:      formatLocalDateTimeInput(startLocal),
 		EndsAt:             endsAt,
 		EndsAtInput:        endsAtInput,
 		HasEndsAt:          item.EndsAt != nil,
@@ -2944,13 +2944,13 @@ func eventViewFrom(item houseEvent, now time.Time) houseEventView {
 func eventTimeRange(item houseEvent) string {
 	startLocal := item.StartsAt.In(time.Local)
 	if item.EndsAt == nil {
-		return startLocal.Format("15:04")
+		return formatLocalTime(startLocal)
 	}
 	endLocal := item.EndsAt.In(time.Local)
 	if sameLocalDate(startLocal, endLocal) {
-		return startLocal.Format("15:04") + " bis " + endLocal.Format("15:04")
+		return formatLocalTime(startLocal) + " bis " + formatLocalTime(endLocal)
 	}
-	return startLocal.Format("02.01. 15:04") + " bis " + endLocal.Format("02.01. 15:04")
+	return formatLocalShortDateTime(startLocal) + " bis " + formatLocalShortDateTime(endLocal)
 }
 
 func eventRollsOffAt(item houseEvent) time.Time {
@@ -3427,7 +3427,7 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 			AssigneeEmail:   item.AssigneeEmail,
 			HasAssignee:     item.AssigneeEmail != "",
 			Location:        issueLocationLabel(item.LocationType, item.LocationDetail),
-			CreatedAt:       item.CreatedAt.In(time.Local).Format("02.01.2006 15:04"),
+			CreatedAt:       formatLocalDateTime(item.CreatedAt),
 			CanComment:      canManage || canResidentAct,
 			CanClose:        canResidentAct && canResidentTransition(status, issueStatusDone),
 			CanReopen:       canResidentAct && canResidentTransition(status, issueStatusNew),
@@ -3455,7 +3455,7 @@ func issueCommentViews(comments []issueComment) []issueCommentView {
 		views = append(views, issueCommentView{
 			Author:    author,
 			Body:      comment.Body,
-			CreatedAt: comment.CreatedAt.In(time.Local).Format("02.01.2006 15:04"),
+			CreatedAt: formatLocalDateTime(comment.CreatedAt),
 		})
 	}
 	return views
@@ -3940,7 +3940,7 @@ func formatMiteigentumsanteil(ppm int) string {
 	if ppm <= 0 {
 		return "ohne Anteil"
 	}
-	return fmt.Sprintf("%d / 1.000.000", ppm)
+	return formatDecimal(float64(ppm), 0) + " / 1.000.000"
 }
 
 func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request) {
@@ -4736,7 +4736,7 @@ func (a *app) userRows(tenantSlug string) []userRow {
 			}
 			if rec, ok := a.activityStore.Get(rows[i].Email); ok {
 				rows[i].Status = "Aktiv"
-				rows[i].LastSeen = "zuletzt angemeldet: " + rec.LastLogin.In(time.Local).Format("02.01.2006")
+				rows[i].LastSeen = "zuletzt angemeldet: " + formatLocalDate(rec.LastLogin)
 			} else if rows[i].Status == "Eingeladen" {
 				rows[i].LastSeen = "noch nie angemeldet"
 			}
@@ -6256,12 +6256,12 @@ func (a *app) parkingAccounting(ctx context.Context, tenant tenantConfig) parkin
 	}
 	if len(data.EnergySamples) > 0 {
 		last := data.EnergySamples[len(data.EnergySamples)-1].At.In(time.Local)
-		view.LastSampleLabel = last.Format("02.01.2006 15:04")
+		view.LastSampleLabel = formatLocalDateTime(last)
 	}
 	if len(months) == 0 {
 		view.Message = "Noch nicht genug Messpunkte für eine Monatsabrechnung. Die App sammelt ab jetzt eigene Messpunkte und liest zusätzlich verfügbare Home-Assistant-Historie ein."
 	} else {
-		view.Message = "Kosten werden stündlich aus Zählerdifferenz, aWATTar-Preis und Netzbetreibergebühren berechnet. Historie wird ab " + a.parkingHistoryStart.In(time.Local).Format("02.01.2006") + " aus Home Assistant nachgezogen, soweit dort Statistikdaten vorhanden sind."
+		view.Message = "Kosten werden stündlich aus Zählerdifferenz, aWATTar-Preis und Netzbetreibergebühren berechnet. Historie wird ab " + formatLocalDate(a.parkingHistoryStart) + " aus Home Assistant nachgezogen, soweit dort Statistikdaten vorhanden sind."
 	}
 	return view
 }
@@ -6280,7 +6280,7 @@ func (a *app) parkingMonthDetails(ctx context.Context, tenant tenantConfig, mont
 	view.Message = "Stundenwerte aus Zählerdifferenz und dem in dieser Stunde gültigen aWATTar-Preis."
 	if len(data.EnergySamples) > 0 {
 		last := data.EnergySamples[len(data.EnergySamples)-1].At.In(time.Local)
-		view.LastSampleLabel = last.Format("02.01.2006 15:04")
+		view.LastSampleLabel = formatLocalDateTime(last)
 	}
 	return view
 }
@@ -6928,8 +6928,8 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 			}
 		}
 		view.Hours = append(view.Hours, parkingHourView{
-			AtLabel:             hour.At.In(loc).Format("02.01. 15:04"),
-			AtTitle:             hour.At.In(loc).Format("02.01.2006 15:04") + " bis " + hour.At.Add(time.Hour).In(loc).Format("15:04"),
+			AtLabel:             formatDateTimeIn(hour.At, loc, deATShortDateTimeLayout),
+			AtTitle:             formatDateTimeIn(hour.At, loc, deATDateTimeLayout) + " bis " + formatDateTimeIn(hour.At.Add(time.Hour), loc, deATTimeLayout),
 			KWh:                 formatKWh(hour.KWh),
 			KWhTitle:            "Verbrauch: " + formatPreciseKWh(hour.KWh),
 			AverageAwattar:      formatEURPerKWh(averageAwattar),
@@ -7779,6 +7779,43 @@ func parseHistoryStart(raw string, now time.Time) (time.Time, error) {
 	return time.Parse(time.RFC3339, raw)
 }
 
+const (
+	deATDateLayout          = "02.01.2006"
+	deATDateTimeLayout      = "02.01.2006 15:04"
+	deATShortDateTimeLayout = "02.01. 15:04"
+	deATTimeLayout          = "15:04"
+	htmlDateTimeLocalLayout = "2006-01-02T15:04"
+)
+
+// User-facing formatting convention: de-AT copy uses local time, dot-grouped
+// thousands and comma decimals. HTML control values use browser-native layouts.
+func formatLocalDate(t time.Time) string {
+	return formatDateTimeIn(t, time.Local, deATDateLayout)
+}
+
+func formatLocalDateTime(t time.Time) string {
+	return formatDateTimeIn(t, time.Local, deATDateTimeLayout)
+}
+
+func formatLocalShortDateTime(t time.Time) string {
+	return formatDateTimeIn(t, time.Local, deATShortDateTimeLayout)
+}
+
+func formatLocalTime(t time.Time) string {
+	return formatDateTimeIn(t, time.Local, deATTimeLayout)
+}
+
+func formatLocalDateTimeInput(t time.Time) string {
+	return formatDateTimeIn(t, time.Local, htmlDateTimeLocalLayout)
+}
+
+func formatDateTimeIn(t time.Time, loc *time.Location, layout string) string {
+	if loc == nil {
+		loc = time.Local
+	}
+	return t.In(loc).Format(layout)
+}
+
 func formatInputFloat(value float64) string {
 	return formatDecimal(value, 3)
 }
@@ -7851,7 +7888,7 @@ func formatPeriodLabel(first time.Time, last time.Time, loc *time.Location) stri
 	if loc == nil {
 		loc = time.Local
 	}
-	return first.In(loc).Format("02.01. 15:04") + " bis " + last.In(loc).Format("02.01. 15:04")
+	return formatDateTimeIn(first, loc, deATShortDateTimeLayout) + " bis " + formatDateTimeIn(last, loc, deATShortDateTimeLayout)
 }
 
 func paidLabel(paid bool) string {
@@ -8699,6 +8736,8 @@ const pageTemplates = `
     }
     * { box-sizing: border-box; }
     body { margin: 0; color: var(--ink); background: #10160f; }
+    /* Accessibility convention: all keyboard-reachable controls keep a visible focus ring. */
+    :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
     .hero { position: relative; min-height: 100vh; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; }
     .hero::before {
       content: ""; position: absolute; inset: -16px;
@@ -8814,6 +8853,8 @@ const pageTemplates = `
     body { margin: 0; background: var(--paper); color: var(--ink); }
     a { color: inherit; }
     button, input { font: inherit; }
+    /* Accessibility convention: all keyboard-reachable controls keep a visible focus ring. */
+    :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
     .app-shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0,1fr); background: var(--paper); }
     .sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 24px; padding: 22px 16px 18px; color: rgba(255,255,255,.86); background: radial-gradient(circle at 20% 0%, rgba(255,255,255,.08), transparent 28%), var(--nav); border-right: 1px solid rgba(255,255,255,.08); }
     .side-brand { display: grid; grid-template-columns: 50px 1fr; gap: 14px; align-items: center; padding: 0 8px 12px; }
@@ -9398,7 +9439,7 @@ const pageTemplates = `
                     </div>
 	                    {{if .CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment">
 	                      <input type="hidden" name="id" value="{{.ID}}">
-	                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Ergänzung schreiben"></textarea>
+	                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Ergänzung schreiben" aria-label="Kommentar oder Ergänzung"></textarea>
 	                      <button type="submit">Kommentar senden</button>
 	                    </form>{{end}}
                     {{if or .CanClose .CanReopen}}
@@ -9474,7 +9515,7 @@ const pageTemplates = `
                     </div>
 	                    {{if .CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment">
 	                      <input type="hidden" name="id" value="{{.ID}}">
-	                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Rückfrage schreiben"></textarea>
+	                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Rückfrage schreiben" aria-label="Kommentar oder Rückfrage"></textarea>
 	                      <button type="submit">Kommentar senden</button>
 	                    </form>{{end}}
                     <form class="issue-actions" method="post" action="/app/anliegen/workflow">
@@ -9513,7 +9554,7 @@ const pageTemplates = `
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><span>/</span><span>Aushang</span></span>
-        {{if .CanManageAnnouncements}}<div class="page-actions"><button class="button primary" type="button" data-dialog="announcement-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Neu verfassen</button></div>{{end}}
+        {{if .CanManageAnnouncements}}<div class="page-actions"><button class="button primary" type="button" data-dialog="announcement-create" aria-haspopup="dialog" aria-controls="announcement-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Neu verfassen</button></div>{{end}}
       </div>
       <section class="page">
         <div>
@@ -9571,7 +9612,7 @@ const pageTemplates = `
             <div class="kicker">Aushang verwalten</div>
             {{if .CanManageAnnouncements}}
               <div class="quick-list">
-                <button class="quick-row" type="button" data-dialog="announcement-create">
+                <button class="quick-row" type="button" data-dialog="announcement-create" aria-haspopup="dialog" aria-controls="announcement-create">
                   <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
                   <div><h3>Neu verfassen</h3><p>Kategorie, Fixierung, Veröffentlichung und Ablaufdatum setzen.</p></div>
                   <span class="quick-arrow">›</span>
@@ -9582,18 +9623,18 @@ const pageTemplates = `
                       <svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg>
                       <div><h3>{{.Title}}</h3><p>{{.Category}} · {{.PublishedAt}}{{if .Status}} · {{.Status}}{{end}}</p></div>
                       <span class="entry-actions">
-                        <button class="button small" type="button" data-dialog="{{.EditDialogID}}">Bearbeiten</button>
+                        <button class="button small" type="button" data-dialog="{{.EditDialogID}}" aria-haspopup="dialog" aria-controls="{{.EditDialogID}}">Bearbeiten</button>
                         <form method="post" action="/app/announcements/delete" data-confirm="{{.DeleteConfirmLabel}}">
                           <input type="hidden" name="id" value="{{.ID}}">
                           <button class="button small" type="submit">Löschen</button>
                         </form>
                       </span>
                     </div>
-                    <dialog id="{{.EditDialogID}}" class="dialog">
+                    <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
                       <form method="post" action="/app/announcements/edit">
                         <input type="hidden" name="id" value="{{.ID}}">
                         <div class="dialog-head">
-                          <h2>Aushang bearbeiten</h2>
+                          <h2 id="{{.EditDialogID}}-title">Aushang bearbeiten</h2>
                           <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
                         </div>
                         <div class="dialog-body">
@@ -9627,10 +9668,10 @@ const pageTemplates = `
       </section>
 
       {{if .CanManageAnnouncements}}
-      <dialog id="announcement-create" class="dialog">
+      <dialog id="announcement-create" class="dialog" aria-labelledby="announcement-create-title">
         <form method="post" action="/app/announcements">
           <div class="dialog-head">
-            <h2>Neu verfassen</h2>
+            <h2 id="announcement-create-title">Neu verfassen</h2>
             <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
           </div>
           <div class="dialog-body">
@@ -9662,7 +9703,7 @@ const pageTemplates = `
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg><span>/</span><span>Termine</span></span>
-        {{if .CanManageEvents}}<div class="page-actions"><button class="button primary" type="button" data-dialog="event-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Termin anlegen</button></div>{{end}}
+        {{if .CanManageEvents}}<div class="page-actions"><button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Termin anlegen</button></div>{{end}}
       </div>
       <section class="page">
         <div>
@@ -9704,7 +9745,7 @@ const pageTemplates = `
             <div class="kicker">Termine verwalten</div>
             {{if .CanManageEvents}}
               <div class="quick-list">
-                <button class="quick-row" type="button" data-dialog="event-create">
+                <button class="quick-row" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create">
                   <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
                   <div><h3>Termin anlegen</h3><p>Kategorie, Zeitpunkt, Ort und Details speichern.</p></div>
                   <span class="quick-arrow">›</span>
@@ -9715,18 +9756,18 @@ const pageTemplates = `
                       <svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>
                       <div><h3>{{.Title}}</h3><p>{{.Category}} · {{.StartsAt}}{{if .Past}} · vergangen{{end}}</p></div>
                       <span class="entry-actions">
-                        <button class="button small" type="button" data-dialog="{{.EditDialogID}}">Bearbeiten</button>
+                        <button class="button small" type="button" data-dialog="{{.EditDialogID}}" aria-haspopup="dialog" aria-controls="{{.EditDialogID}}">Bearbeiten</button>
                         <form method="post" action="/app/events/delete" data-confirm="{{.DeleteConfirmLabel}}">
                           <input type="hidden" name="id" value="{{.ID}}">
                           <button class="button small" type="submit">Löschen</button>
                         </form>
                       </span>
                     </div>
-                    <dialog id="{{.EditDialogID}}" class="dialog">
+                    <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
                       <form method="post" action="/app/events/edit">
                         <input type="hidden" name="id" value="{{.ID}}">
                         <div class="dialog-head">
-                          <h2>Termin bearbeiten</h2>
+                          <h2 id="{{.EditDialogID}}-title">Termin bearbeiten</h2>
                           <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
                         </div>
                         <div class="dialog-body">
@@ -9762,10 +9803,10 @@ const pageTemplates = `
       </section>
 
       {{if .CanManageEvents}}
-      <dialog id="event-create" class="dialog">
+      <dialog id="event-create" class="dialog" aria-labelledby="event-create-title">
         <form method="post" action="/app/events">
           <div class="dialog-head">
-            <h2>Termin anlegen</h2>
+            <h2 id="event-create-title">Termin anlegen</h2>
             <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
           </div>
           <div class="dialog-body">
@@ -10508,11 +10549,11 @@ const pageTemplates = `
           {{if .InviteMsg}}<p class="invite-flash{{if .InviteOK}} ok{{else}} warn{{end}}">{{.InviteMsg}}</p>{{end}}
           <p class="muted" style="margin-bottom:12px">Die eingeladene Person wird gespeichert und erhält eine E-Mail mit dem Anmelde-Link. Sie kann sich danach mit dieser Adresse anmelden.</p>
           <form class="invite-form" method="post" action="/app/settings/users">
-            <input class="f-titel" type="text" name="title" placeholder="Titel">
-            <input class="f-vorname" type="text" name="first_name" placeholder="Vorname">
-            <input class="f-nachname" type="text" name="last_name" placeholder="Nachname">
-            <input class="f-email" type="email" name="email" placeholder="name@example.com" required>
-            <select class="f-role" name="role">
+            <input class="f-titel" type="text" name="title" placeholder="Titel" aria-label="Titel">
+            <input class="f-vorname" type="text" name="first_name" placeholder="Vorname" aria-label="Vorname">
+            <input class="f-nachname" type="text" name="last_name" placeholder="Nachname" aria-label="Nachname">
+            <input class="f-email" type="email" name="email" placeholder="name@example.com" aria-label="E-Mail-Adresse" autocomplete="email" required>
+            <select class="f-role" name="role" aria-label="Rolle">
               <option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions="">Mieter</option>
               <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions="">Eigentümer</option>
               <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions="">Beirat</option>
@@ -10542,8 +10583,8 @@ const pageTemplates = `
               <th class="col-role">
                 <span class="th-label">Rolle
                   <span class="info">
-                    <button type="button" class="info-btn" aria-label="Rollen und Rechte erklärt"><svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><circle cx="8" cy="3.5" r="1.15" fill="currentColor"/><rect x="6.9" y="6.3" width="2.2" height="6.3" rx="1.1" fill="currentColor"/></svg></button>
-                    <span class="popup" role="tooltip">
+                    <button type="button" class="info-btn" aria-label="Rollen und Rechte erklärt" aria-describedby="role-help"><svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><circle cx="8" cy="3.5" r="1.15" fill="currentColor"/><rect x="6.9" y="6.3" width="2.2" height="6.3" rx="1.1" fill="currentColor"/></svg></button>
+                    <span id="role-help" class="popup" role="tooltip">
                       <span class="popup-title">Rollen &amp; Rechte</span>
                       <span class="popup-grid">
                         <span class="permission"><strong><span class="rdot admin"></span>Admin</strong><span class="muted">Zugänge verwalten, Rollen setzen und Portalbereiche vorbereiten.</span></span>
@@ -10582,18 +10623,18 @@ const pageTemplates = `
               <td class="col-status" data-label="Status"><span class="pill {{if eq .Status "Aktiv"}}status-active{{else}}status-pending{{end}}"><span class="dot"></span>{{.Status}}</span>{{if .LastSeen}}<span class="last-seen">{{.LastSeen}}</span>{{end}}</td>
               <td class="col-actions" data-label="">
                 {{if .Editable}}
-                <button type="button" class="row-edit" data-edit="{{.Email}}" aria-label="Bearbeiten"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.83-2.83L5 17.2z"/><path d="M13.5 6.5 17 10"/></svg></button>
-                <dialog id="edit-{{.Email}}" class="edit-dialog">
+                <button type="button" class="row-edit" data-edit="{{.Email}}" aria-label="Bearbeiten" aria-haspopup="dialog" aria-controls="edit-{{.Email}}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.83-2.83L5 17.2z"/><path d="M13.5 6.5 17 10"/></svg></button>
+                <dialog id="edit-{{.Email}}" class="edit-dialog" aria-labelledby="edit-title-{{.Email}}">
                   <div class="dlg-x"><form method="dialog"><button aria-label="Schließen">&times;</button></form></div>
-                  <h2>Zugang bearbeiten</h2>
+                  <h2 id="edit-title-{{.Email}}">Zugang bearbeiten</h2>
                   <p class="dlg-sub">{{.Email}}</p>
                   <form method="post" action="/app/settings/users/edit" class="dlg-form">
                     <input type="hidden" name="orig_email" value="{{.Email}}">
-                    <input class="f-titel" type="text" name="title" value="{{.Title}}" placeholder="Titel">
-                    <input class="f-vorname" type="text" name="first_name" value="{{.FirstName}}" placeholder="Vorname">
-                    <input class="f-nachname" type="text" name="last_name" value="{{.LastName}}" placeholder="Nachname">
-                    <input class="f-email" type="email" name="email" value="{{.Email}}" required>
-                    <select class="f-role" name="role">
+                    <input class="f-titel" type="text" name="title" value="{{.Title}}" placeholder="Titel" aria-label="Titel">
+                    <input class="f-vorname" type="text" name="first_name" value="{{.FirstName}}" placeholder="Vorname" aria-label="Vorname">
+                    <input class="f-nachname" type="text" name="last_name" value="{{.LastName}}" placeholder="Nachname" aria-label="Nachname">
+                    <input class="f-email" type="email" name="email" value="{{.Email}}" aria-label="E-Mail-Adresse" autocomplete="email" required>
+                    <select class="f-role" name="role" aria-label="Rolle">
                       <option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions=""{{if eq .Role "Mieter"}} selected{{end}}>Mieter</option>
                       <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions=""{{if eq .Role "Eigentümer"}} selected{{end}}>Eigentümer</option>
                       <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions=""{{if eq .Role "Beirat"}} selected{{end}}>Beirat</option>
