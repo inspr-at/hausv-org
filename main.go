@@ -336,6 +336,8 @@ func main() {
 	mux.HandleFunc("POST /app/parking/month", a.updateParkingMonth)
 	mux.HandleFunc("GET /app/settings/users", a.userSettings)
 	mux.HandleFunc("POST /app/settings/users", a.createInvite)
+	mux.HandleFunc("POST /app/settings/users/edit", a.editInvite)
+	mux.HandleFunc("POST /app/settings/users/delete", a.deleteInvite)
 	mux.HandleFunc("GET /{tenant}", a.tenantPathRedirect)
 	mux.HandleFunc("GET /{tenant}/{rest...}", a.tenantPathRedirect)
 
@@ -779,6 +781,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"Tenant":        tenant,
 		"Email":         email,
 		"DisplayName":   profile.DisplayName(),
+		"Initials":      profile.Initials(),
 		"Role":          role,
 		"IsAdmin":       isAdmin,
 		"CanSeeParking": isAdmin || profile.HasPermission(permissionParking),
@@ -809,6 +812,7 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request) {
 		"Tenant":        tenant,
 		"Email":         email,
 		"DisplayName":   profile.DisplayName(),
+		"Initials":      profile.Initials(),
 		"Role":          role,
 		"IsAdmin":       isAdmin,
 		"CanSeeParking": true,
@@ -840,6 +844,7 @@ func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request) {
 		"Tenant":        tenant,
 		"Email":         email,
 		"DisplayName":   profile.DisplayName(),
+		"Initials":      profile.Initials(),
 		"Role":          role,
 		"IsAdmin":       true,
 		"CanSeeParking": true,
@@ -881,6 +886,7 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request) {
 		"Tenant":        tenant,
 		"Email":         email,
 		"DisplayName":   profile.DisplayName(),
+		"Initials":      profile.Initials(),
 		"Role":          role,
 		"IsAdmin":       role == roleAdmin,
 		"CanSeeParking": true,
@@ -979,6 +985,7 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
 		"Tenant":      tenant,
 		"Email":       email,
 		"DisplayName": profile.DisplayName(),
+		"Initials":    profile.Initials(),
 		"Role":        role,
 		"Users":         a.userRows(tenant.Slug),
 		"InviteMsg":     inviteMsg,
@@ -1001,6 +1008,12 @@ func inviteMessage(status string) (string, bool) {
 		return "Bitte eine gültige E-Mail-Adresse angeben.", false
 	case "error":
 		return "Die Einladung konnte nicht gespeichert werden.", false
+	case "updated":
+		return "Änderungen gespeichert.", true
+	case "deleted":
+		return "Zugang gelöscht.", true
+	case "not_editable":
+		return "Dieser Eintrag kommt aus der Konfiguration und kann hier nicht geändert werden.", false
 	default:
 		return "", false
 	}
@@ -1069,6 +1082,98 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) redirectInvite(w http.ResponseWriter, r *http.Request, status string) {
 	http.Redirect(w, r, "/app/settings/users?invite="+url.QueryEscape(status), http.StatusSeeOther)
+}
+
+func (a *app) editInvite(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	_, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if role != roleAdmin {
+		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	orig := normalizeEmail(r.FormValue("orig_email"))
+	existing, isInvite := a.inviteStore.Get(orig)
+	if !isInvite {
+		// Only persisted invites are editable; env-config users are read-only.
+		a.redirectInvite(w, r, "not_editable")
+		return
+	}
+
+	newEmail := normalizeEmail(r.FormValue("email"))
+	if _, err := mail.ParseAddress(newEmail); err != nil {
+		a.redirectInvite(w, r, "invalid_email")
+		return
+	}
+	if newEmail != orig {
+		if _, inEnv := a.profiles[newEmail]; inEnv {
+			a.redirectInvite(w, r, "exists")
+			return
+		}
+	}
+
+	newRole := normalizeRole(r.FormValue("role"))
+	if newRole == "" {
+		newRole = roleResident
+	}
+	updated := existing
+	updated.Email = newEmail
+	updated.Title = strings.TrimSpace(r.FormValue("title"))
+	updated.FirstName = strings.TrimSpace(r.FormValue("first_name"))
+	updated.LastName = strings.TrimSpace(r.FormValue("last_name"))
+	updated.Role = newRole
+	if len(updated.Tenants) == 0 {
+		updated.Tenants = []string{tenant.Slug}
+	}
+	if len(updated.AuthMethods) == 0 {
+		updated.AuthMethods = defaultAuthMethods()
+	}
+
+	changed, err := a.inviteStore.Update(orig, updated)
+	if err != nil {
+		a.redirectInvite(w, r, "exists")
+		return
+	}
+	if !changed {
+		a.redirectInvite(w, r, "not_editable")
+		return
+	}
+	a.redirectInvite(w, r, "updated")
+}
+
+func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	_, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if role != roleAdmin {
+		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	removed, err := a.inviteStore.Delete(normalizeEmail(r.FormValue("email")))
+	if err != nil {
+		a.redirectInvite(w, r, "error")
+		return
+	}
+	if !removed {
+		a.redirectInvite(w, r, "not_editable")
+		return
+	}
+	a.redirectInvite(w, r, "deleted")
 }
 
 func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
@@ -1277,7 +1382,9 @@ func (a *app) userRows(tenantSlug string) []userRow {
 			if !profile.HasTenant(tenantSlug) {
 				continue
 			}
-			rows = append(rows, profile.UserRow())
+			row := profile.UserRow()
+			row.Editable = true
+			rows = append(rows, row)
 			seen[email] = struct{}{}
 		}
 	}
@@ -2197,6 +2304,7 @@ type userRow struct {
 	PermissionList  []string
 	AuthLabel       string
 	AuthList        []string
+	Editable        bool
 }
 
 func (s *tokenStore) Put(token string, email string, tenantSlug string, ttl time.Duration) {
@@ -3183,6 +3291,62 @@ func (s *inviteStore) saveLocked() error {
 	return nil
 }
 
+// Update replaces the invite keyed by oldEmail with updated. Returns false (no
+// error) when oldEmail is not a persisted invite. When the email changes it
+// must not collide with another invite (caller also checks the env directory).
+func (s *inviteStore) Update(oldEmail string, updated userProfile) (bool, error) {
+	oldEmail = normalizeEmail(oldEmail)
+	updated.Email = normalizeEmail(updated.Email)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	idx := -1
+	for i, existing := range s.data.Invites {
+		if normalizeEmail(existing.Email) == oldEmail {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return false, nil
+	}
+	if updated.Email != oldEmail {
+		for i, existing := range s.data.Invites {
+			if i != idx && normalizeEmail(existing.Email) == updated.Email {
+				return false, fmt.Errorf("email already invited")
+			}
+		}
+	}
+	s.data.Invites[idx] = updated
+	if err := s.saveLocked(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// Delete removes the invite for email. Returns whether one was removed.
+func (s *inviteStore) Delete(email string) (bool, error) {
+	email = normalizeEmail(email)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	kept := s.data.Invites[:0]
+	removed := false
+	for _, existing := range s.data.Invites {
+		if normalizeEmail(existing.Email) == email {
+			removed = true
+			continue
+		}
+		kept = append(kept, existing)
+	}
+	if !removed {
+		return false, nil
+	}
+	s.data.Invites = kept
+	if err := s.saveLocked(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func normalizeRole(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "admin":
@@ -3674,7 +3838,7 @@ const pageTemplates = `
     </nav>
     <div class="side-foot">
       <div class="side-user">
-        <span class="avatar">MB</span>
+        <span class="avatar">{{.Initials}}</span>
         <div><strong>{{.DisplayName}}</strong><span>{{.Role}}</span></div>
       </div>
       <span class="side-version">{{.AppVersion}}</span>
@@ -4032,6 +4196,27 @@ const pageTemplates = `
       .users .rdot.resident { background: var(--leaf); }
       .users .rdot.beirat { background: #8a8d80; }
       .users .rdot.right { background: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold); }
+      .users .col-actions { width: 44px; }
+      .users td.col-actions { text-align: right; }
+      .users .row-edit { border: 1px solid transparent; background: transparent; border-radius: 8px; width: 32px; height: 32px; display: inline-grid; place-items: center; color: var(--soft); cursor: pointer; padding: 0; }
+      .users .row-edit:hover { border-color: var(--line); background: var(--panel-soft); color: var(--gold-ink); }
+      .users .row-edit svg { stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .users .edit-dialog { position: relative; width: min(440px, 92vw); border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--panel); color: var(--ink); box-shadow: 0 30px 80px rgba(32,37,31,.32); }
+      .users .edit-dialog::backdrop { background: rgba(32,37,31,.42); }
+      .users .edit-dialog h2 { margin: 0 0 4px; font-family: Spectral, serif; font-weight: 600; font-size: 19px; }
+      .users .edit-dialog .dlg-sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; word-break: break-word; }
+      .users .dlg-x { position: absolute; top: 12px; right: 12px; }
+      .users .dlg-x button { border: 0; background: transparent; font-size: 22px; line-height: 1; color: var(--soft); cursor: pointer; padding: 2px 6px; }
+      .users .dlg-x button:hover { color: var(--ink); }
+      .users .dlg-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .users .dlg-form input, .users .dlg-form select, .users .dlg-form button { grid-column: 1 / -1; }
+      .users .dlg-form .f-vorname, .users .dlg-form .f-nachname { grid-column: span 1; }
+      .users .dlg-form button { border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 10px; min-height: 44px; padding: 10px 13px; font: inherit; font-weight: 700; cursor: pointer; }
+      .users .dlg-form button:hover { background: #2c3329; }
+      .users .dlg-delete { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+      .users .dlg-delete span { color: var(--muted); font-size: 12.5px; }
+      .users .dlg-delete .danger { border: 1px solid rgba(150,40,40,.32); background: rgba(150,40,40,.07); color: #9a2b2b; border-radius: 10px; min-height: 40px; padding: 8px 15px; font: inherit; font-weight: 700; cursor: pointer; }
+      .users .dlg-delete .danger:hover { background: rgba(150,40,40,.14); }
       @media (max-width: 760px) {
         .users .table-wrap { overflow: visible; }
         .users table, .users thead, .users tbody, .users tr, .users td { display: block; width: 100%; }
@@ -4046,6 +4231,15 @@ const pageTemplates = `
       }
       @media (max-width: 560px) { .users .popup-grid { grid-template-columns: 1fr; } .users .popup-grid .permission:nth-child(2) { border-top: 1px solid var(--line); padding-top: 12px; } }
     </style>
+    <script>
+    document.addEventListener("click", function (e) {
+      var b = e.target.closest(".users .row-edit");
+      if (b) { var d = document.getElementById("edit-" + b.dataset.edit); if (d && d.showModal) d.showModal(); }
+    });
+    document.addEventListener("submit", function (e) {
+      if (e.target.closest(".users .dlg-delete") && !confirm("Diesen Zugang wirklich löschen?")) e.preventDefault();
+    });
+    </script>
     <main class="app-main">
       <div class="content-top"><span class="crumb"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg>Benutzer &amp; Rechte</span></div>
       <section class="page users">
@@ -4109,6 +4303,7 @@ const pageTemplates = `
               <th>Rechte</th>
               <th>Anmeldung</th>
               <th class="col-status">Status</th>
+              <th class="col-actions" aria-label="Aktionen"></th>
             </tr>
           </thead>
           <tbody>
@@ -4127,6 +4322,36 @@ const pageTemplates = `
               <td data-label="Rechte"><div class="chips">{{range .PermissionList}}<span class="chip{{if eq . "Standard"}} plain{{end}}">{{.}}</span>{{end}}</div></td>
               <td data-label="Anmeldung"><div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div></td>
               <td class="col-status" data-label="Status"><span class="pill {{if eq .Status "Aktiv"}}status-active{{else}}status-pending{{end}}"><span class="dot"></span>{{.Status}}</span></td>
+              <td class="col-actions" data-label="">
+                {{if .Editable}}
+                <button type="button" class="row-edit" data-edit="{{.Email}}" aria-label="Bearbeiten"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.83-2.83L5 17.2z"/><path d="M13.5 6.5 17 10"/></svg></button>
+                <dialog id="edit-{{.Email}}" class="edit-dialog">
+                  <div class="dlg-x"><form method="dialog"><button aria-label="Schließen">&times;</button></form></div>
+                  <h2>Zugang bearbeiten</h2>
+                  <p class="dlg-sub">{{.Email}}</p>
+                  <form method="post" action="/app/settings/users/edit" class="dlg-form">
+                    <input type="hidden" name="orig_email" value="{{.Email}}">
+                    <input class="f-titel" type="text" name="title" value="{{.Title}}" placeholder="Titel">
+                    <input class="f-vorname" type="text" name="first_name" value="{{.FirstName}}" placeholder="Vorname">
+                    <input class="f-nachname" type="text" name="last_name" value="{{.LastName}}" placeholder="Nachname">
+                    <input class="f-email" type="email" name="email" value="{{.Email}}" required>
+                    <select class="f-role" name="role">
+                      <option value="Bewohner"{{if eq .Role "Bewohner"}} selected{{end}}>Bewohner</option>
+                      <option value="Admin"{{if eq .Role "Admin"}} selected{{end}}>Admin</option>
+                      <option value="Beirat"{{if eq .Role "Beirat"}} selected{{end}}>Beirat</option>
+                    </select>
+                    <button type="submit">Speichern</button>
+                  </form>
+                  <div class="dlg-delete">
+                    <span>Dauerhaft entfernen</span>
+                    <form method="post" action="/app/settings/users/delete">
+                      <input type="hidden" name="email" value="{{.Email}}">
+                      <button type="submit" class="danger">Löschen</button>
+                    </form>
+                  </div>
+                </dialog>
+                {{end}}
+              </td>
             </tr>
             {{end}}
           </tbody>

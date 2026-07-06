@@ -116,6 +116,61 @@ func TestDirectoryProfileEnvWinsAndInviteGrantsLogin(t *testing.T) {
 	}
 }
 
+func TestInviteStoreUpdateRekeyAndDelete(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "invites.json")
+	store, err := newInviteStore(path)
+	if err != nil {
+		t.Fatalf("newInviteStore: %v", err)
+	}
+	mustAdd := func(email, first string) {
+		if _, err := store.Add(userProfile{Email: email, FirstName: first, Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+			t.Fatalf("Add %s: %v", email, err)
+		}
+	}
+	mustAdd("old@example.com", "Old")
+	mustAdd("other@example.com", "Other")
+
+	// updating a non-invite -> false, no error
+	if ok, err := store.Update("ghost@example.com", userProfile{Email: "ghost@example.com"}); ok || err != nil {
+		t.Fatalf("Update of non-invite: ok=%v err=%v (want false,nil)", ok, err)
+	}
+
+	// re-key old -> new + role change (case-insensitive key)
+	ok, err := store.Update("old@example.com", userProfile{Email: "New@example.com", FirstName: "New", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	if err != nil || !ok {
+		t.Fatalf("Update rekey: ok=%v err=%v", ok, err)
+	}
+	if _, found := store.Get("old@example.com"); found {
+		t.Fatal("old email should be gone after re-key")
+	}
+	got, found := store.Get("new@example.com")
+	if !found || got.Role != roleAdmin || got.FirstName != "New" {
+		t.Fatalf("re-keyed entry = %+v found=%v", got, found)
+	}
+
+	// re-keying onto an existing invite -> error, entry unchanged
+	if ok, err := store.Update("new@example.com", userProfile{Email: "other@example.com"}); ok || err == nil {
+		t.Fatalf("Update onto existing email: ok=%v err=%v (want false,err)", ok, err)
+	}
+	if _, found := store.Get("new@example.com"); !found {
+		t.Fatal("entry must survive a rejected re-key")
+	}
+
+	// delete
+	if ok, err := store.Delete("new@example.com"); !ok || err != nil {
+		t.Fatalf("Delete: ok=%v err=%v", ok, err)
+	}
+	if _, found := store.Get("new@example.com"); found {
+		t.Fatal("entry should be gone after delete")
+	}
+	if ok, _ := store.Delete("new@example.com"); ok {
+		t.Fatal("second delete should report false")
+	}
+	if n := len(store.List()); n != 1 {
+		t.Fatalf("List len = %d, want 1 (other@ remains)", n)
+	}
+}
+
 func TestRunHealthcheckAcceptsExpectedPayload(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
