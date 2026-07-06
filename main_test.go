@@ -1350,6 +1350,34 @@ func TestPortalUsesAnnouncementEmptyStateWithoutPrototypeCopy(t *testing.T) {
 	}
 }
 
+func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	now := time.Now()
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now.Add(-time.Hour)})
+	_, _ = a.eventStore.Create(houseEvent{TenantSlug: "jhw22", Title: "Versammlung", Category: "Eigentümerversammlung", StartsAt: now.Add(48 * time.Hour)})
+	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Eigenes Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
+	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "jhw22", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Privates Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
+
+	resident := authedRequest(t, a, "resident@example.com", "/app", a.portal).Body.String()
+	for _, want := range []string{"Was ist neu", "Neue Aushänge", "1 ungelesener Beitrag", "Offene Anliegen", "1 offenes Anliegen", `href="/app/anliegen"`, "Kommende Termine", "1 Termin geplant"} {
+		if !strings.Contains(resident, want) {
+			t.Fatalf("resident digest should contain %q", want)
+		}
+	}
+	if strings.Contains(resident, "2 offene Anliegen") || strings.Contains(resident, `href="/app/anliegen/board"`) {
+		t.Fatalf("resident digest must be role-scoped:\n%s", resident)
+	}
+
+	manager := authedRequest(t, a, "manager@example.com", "/app", a.portal).Body.String()
+	for _, want := range []string{"Offene Anliegen im Haus", "2 offene Anliegen", `href="/app/anliegen/board"`} {
+		if !strings.Contains(manager, want) {
+			t.Fatalf("manager digest should contain %q", want)
+		}
+	}
+}
+
 func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}

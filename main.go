@@ -619,6 +619,13 @@ type emptyStateView struct {
 	HasAction   bool
 }
 
+type dashboardDigestItem struct {
+	Title  string
+	Detail string
+	URL    string
+	Badge  string
+}
+
 type unitMembers struct {
 	Unit    unit
 	Owners  []string
@@ -1643,6 +1650,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 			events = events[:4]
 		}
 	}
+	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen)
 	a.render(w, "portal", map[string]any{
 		"Title":                  "WEG Portal",
 		"Tenant":                 tenant,
@@ -1655,6 +1663,9 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"CanManageAnnouncements": canManage,
 		"CanManageEvents":        canManageEvents(role),
 		"ActivePage":             "home",
+		"Digest":                 digest,
+		"HasDigest":              len(digest) > 0,
+		"DigestEmpty":            emptyState("Nichts Neues", "Aktuell gibt es keine ungelesenen Aushänge, offenen Anliegen oder anstehenden Termine."),
 		"Announcements":          announcements,
 		"HasAnnouncements":       len(announcements) > 0,
 		"AnnouncementsEmpty":     emptyStateAction("Noch keine Beiträge", "Sobald die Verwaltung einen Aushang veröffentlicht, erscheint er hier.", "/app/announcements", "Archiv öffnen"),
@@ -1662,6 +1673,58 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"HasEvents":              len(events) > 0,
 		"EventsEmpty":            emptyStateAction("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier.", "/app/events", "Termine öffnen"),
 	})
+}
+
+func (a *app) dashboardDigestItems(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time) []dashboardDigestItem {
+	items := []dashboardDigestItem{}
+	if a.announcementStore != nil {
+		unread := unreadAnnouncementCount(a.announcementStore.Visible(tenantSlug, now), lastSeen, now)
+		if unread > 0 {
+			items = append(items, dashboardDigestItem{
+				Title:  "Neue Aushänge",
+				Detail: pluralizeCount(unread, "ungelesener Beitrag", "ungelesene Beiträge"),
+				URL:    "/app/announcements",
+				Badge:  strconv.Itoa(unread),
+			})
+		}
+	}
+	if a.issueStore != nil {
+		open := issueOpenCount(a.visibleIssuesForActor(tenantSlug, email, role))
+		if open > 0 {
+			url := "/app/anliegen"
+			title := "Offene Anliegen"
+			detail := pluralizeCount(open, "offenes Anliegen", "offene Anliegen")
+			if hasCapability(role, capabilityManageIssues) {
+				url = "/app/anliegen/board"
+				title = "Offene Anliegen im Haus"
+			}
+			items = append(items, dashboardDigestItem{
+				Title:  title,
+				Detail: detail,
+				URL:    url,
+				Badge:  strconv.Itoa(open),
+			})
+		}
+	}
+	if a.eventStore != nil {
+		upcoming := a.eventStore.Upcoming(tenantSlug, now)
+		if len(upcoming) > 0 {
+			items = append(items, dashboardDigestItem{
+				Title:  "Kommende Termine",
+				Detail: pluralizeCount(len(upcoming), "Termin geplant", "Termine geplant"),
+				URL:    "/app/events",
+				Badge:  strconv.Itoa(len(upcoming)),
+			})
+		}
+	}
+	return items
+}
+
+func pluralizeCount(count int, singular string, plural string) string {
+	if count == 1 {
+		return "1 " + singular
+	}
+	return strconv.Itoa(count) + " " + plural
 }
 
 func (a *app) contacts(w http.ResponseWriter, r *http.Request) {
@@ -8822,6 +8885,10 @@ const pageTemplates = `
     .quick-row.disabled h3, .quick-row.disabled svg { color: var(--muted); }
     .quick-row .pill { justify-self: end; }
     .quick-arrow { color: var(--gold-ink); font-size: 24px; line-height: 1; }
+    .digest-panel { grid-column: 1 / -1; }
+    .digest-panel .quick-list { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+    .digest-panel .quick-row { border: 1px solid var(--line); border-radius: 8px; padding: 13px; background: var(--panel-soft); }
+    .digest-panel .quick-row:last-child { border-bottom: 1px solid var(--line); }
     .agenda-list { display: grid; gap: 10px; margin-bottom: 22px; }
     .event-card { display: grid; grid-template-columns: 58px minmax(0,1fr); gap: 13px; align-items: start; border: 1px solid var(--line); border-radius: 8px; padding: 12px; color: inherit; background: var(--panel-soft); text-decoration: none; }
     .event-card:hover { border-color: var(--gold); }
@@ -8958,6 +9025,7 @@ const pageTemplates = `
       .side-foot { margin-top: 4px; grid-template-columns: 1fr auto; align-items: center; }
       .logout-form { justify-self: end; min-width: 160px; }
       .home-grid, .metric-grid, .issue-layout { grid-template-columns: 1fr; }
+      .digest-panel .quick-list { grid-template-columns: 1fr; }
       .month-strip { grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); }
     }
     @media (max-width: 680px) {
@@ -9052,6 +9120,20 @@ const pageTemplates = `
           <p class="lede">Aktuelle Informationen der Hausgemeinschaft und direkte Wege zu den freigeschalteten Bereichen.</p>
         </div>
         <div class="home-grid">
+          <section class="panel digest-panel">
+            <div class="section-head">
+              <div class="kicker">Was ist neu</div>
+            </div>
+            {{if .HasDigest}}
+              <div class="quick-list">
+                {{range .Digest}}
+                  <a class="quick-row" href="{{.URL}}"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg><div><h3>{{.Title}}</h3><p>{{.Detail}}</p></div><span class="pill unread">{{.Badge}}</span></a>
+                {{end}}
+              </div>
+            {{else}}
+              {{template "emptyState" .DigestEmpty}}
+            {{end}}
+          </section>
           <section class="panel">
             <div class="section-head">
               <div class="kicker">Aktueller Aushang</div>
