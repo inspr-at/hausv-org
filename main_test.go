@@ -1219,6 +1219,85 @@ func TestEditInviteCanRevokeParkingPermission(t *testing.T) {
 	}
 }
 
+func TestAuditStoreAppendListFilterAndSanitize(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "audit.jsonl")
+	store, err := newAuditStore(path)
+	if err != nil {
+		t.Fatalf("newAuditStore: %v", err)
+	}
+	if err := store.Append(auditEvent{
+		TenantSlug: "jhw22",
+		ActorEmail: "Admin@Example.com",
+		ActorRole:  roleAdmin,
+		Action:     auditActionInviteCreate,
+		TargetType: "user",
+		TargetID:   "resident@example.com",
+		Summary:    "Einladung gespeichert",
+		Details: map[string]string{
+			"role_to":     roleResident,
+			"secret_note": "must-not-persist",
+		},
+	}); err != nil {
+		t.Fatalf("append invite audit: %v", err)
+	}
+	if err := store.Append(auditEvent{
+		TenantSlug: "other",
+		ActorEmail: "admin@example.com",
+		Action:     auditActionLogin,
+		TargetType: "session",
+		TargetID:   "admin@example.com",
+		Summary:    "Anmeldung erfolgreich",
+	}); err != nil {
+		t.Fatalf("append login audit: %v", err)
+	}
+	reopened, err := newAuditStore(path)
+	if err != nil {
+		t.Fatalf("reopen audit store: %v", err)
+	}
+	events := reopened.List(auditFilter{TenantSlug: "jhw22", Action: auditActionInviteCreate, Query: "resident", Limit: 10})
+	if len(events) != 1 {
+		t.Fatalf("filtered audit events = %+v, want one", events)
+	}
+	if events[0].ActorEmail != "admin@example.com" || events[0].Details["secret_note"] != "" {
+		t.Fatalf("audit event not normalized/sanitized: %+v", events[0])
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read audit file: %v", err)
+	}
+	if lines := strings.Count(strings.TrimSpace(string(raw)), "\n") + 1; lines != 2 {
+		t.Fatalf("audit file lines = %d, want 2", lines)
+	}
+}
+
+func TestAuditLogRecordsInviteAndGatesAccess(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	values := url.Values{
+		"email":       {"new.resident@example.com"},
+		"first_name":  {"New"},
+		"last_name":   {"Resident"},
+		"role":        {"Mieter"},
+		"permissions": {permissionParking},
+	}
+	create := authedFormRequest(t, a, "manager@example.com", "/app/settings/users", values, a.createInvite)
+	if create.Code != http.StatusSeeOther {
+		t.Fatalf("create invite status = %d, want redirect", create.Code)
+	}
+	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionInviteCreate, Query: "new.resident", Limit: 10})
+	if len(events) != 1 || events[0].ActorEmail != "manager@example.com" || events[0].TargetID != "new.resident@example.com" {
+		t.Fatalf("invite audit events = %+v", events)
+	}
+	body := authedRequest(t, a, "manager@example.com", "/app/audit", a.auditLog)
+	if body.Code != http.StatusOK || !strings.Contains(body.Body.String(), "Einladung angelegt") || !strings.Contains(body.Body.String(), "new.resident@example.com") {
+		t.Fatalf("manager audit page status/body = %d\n%s", body.Code, body.Body.String())
+	}
+	resident := authedRequest(t, a, "resident@example.com", "/app/audit", a.auditLog)
+	if resident.Code != http.StatusForbidden {
+		t.Fatalf("resident audit status = %d, want 403", resident.Code)
+	}
+}
+
 func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
@@ -2146,6 +2225,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("issue store: %v", err)
 	}
+	auditStore, err := newAuditStore("")
+	if err != nil {
+		t.Fatalf("audit store: %v", err)
+	}
 	return &app{
 		baseURL:       "http://localhost:8080",
 		rootDomain:    "hausv.org",
@@ -2174,6 +2257,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		activityStore:         activityStore,
 		unitStore:             unitStore,
 		issueStore:            issueStore,
+		auditStore:            auditStore,
 		parkingStore:          parkingStore,
 	}
 }

@@ -74,6 +74,20 @@ const (
 	maxTenantHeroFormBytes    = maxTenantHeroBytes + (1 << 20)
 )
 
+const (
+	auditActionLogin           = "login"
+	auditActionInviteCreate    = "invite.create"
+	auditActionInviteUpdate    = "invite.update"
+	auditActionInviteDelete    = "invite.delete"
+	auditActionBuildingUpdate  = "building.update"
+	auditActionHeroUpdate      = "building.hero"
+	auditActionUnitSave        = "building.unit.save"
+	auditActionUnitDelete      = "building.unit.delete"
+	auditActionParkingSettings = "parking.settings"
+	auditActionParkingMonth    = "parking.month"
+	auditActionIssueWorkflow   = "issue.workflow"
+)
+
 type capability string
 
 const (
@@ -124,6 +138,7 @@ type app struct {
 	activityStore         *activityStore
 	unitStore             *unitStore
 	issueStore            *issueStore
+	auditStore            *auditStore
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
@@ -626,6 +641,43 @@ type dashboardDigestItem struct {
 	Badge  string
 }
 
+type auditEvent struct {
+	At         time.Time         `json:"at"`
+	TenantSlug string            `json:"tenant"`
+	ActorEmail string            `json:"actor_email"`
+	ActorRole  string            `json:"actor_role,omitempty"`
+	Action     string            `json:"action"`
+	TargetType string            `json:"target_type,omitempty"`
+	TargetID   string            `json:"target_id,omitempty"`
+	Summary    string            `json:"summary"`
+	Details    map[string]string `json:"details,omitempty"`
+}
+
+type auditFilter struct {
+	TenantSlug string
+	Action     string
+	Query      string
+	Limit      int
+}
+
+type auditEventView struct {
+	At         string
+	Action     string
+	ActionText string
+	Actor      string
+	ActorRole  string
+	Target     string
+	TargetType string
+	Summary    string
+	Details    []auditDetailView
+	HasDetails bool
+}
+
+type auditDetailView struct {
+	Key   string
+	Value string
+}
+
 type unitMembers struct {
 	Unit    unit
 	Owners  []string
@@ -787,6 +839,7 @@ func main() {
 	mux.HandleFunc("GET /app/parking/month/{month}", a.parkingMonth)
 	mux.HandleFunc("POST /app/parking/settings", a.updateParkingSettings)
 	mux.HandleFunc("POST /app/parking/month", a.updateParkingMonth)
+	mux.HandleFunc("GET /app/audit", a.auditLog)
 	mux.HandleFunc("GET /app/settings", a.settingsHub)
 	mux.HandleFunc("GET /app/settings/building", a.buildingSettings)
 	mux.HandleFunc("POST /app/settings/building", a.updateBuildingSettings)
@@ -961,6 +1014,11 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	auditDataPath := env("AUDIT_DATA_PATH", "tmp/audit.jsonl")
+	auditStore, err := newAuditStore(auditDataPath)
+	if err != nil {
+		return nil, err
+	}
 	parkingDataPath := env("PARKING_DATA_PATH", "tmp/parking.json")
 	parkingStore, err := newParkingStore(parkingDataPath)
 	if err != nil {
@@ -1011,6 +1069,7 @@ func newApp() (*app, error) {
 		activityStore:         activity,
 		unitStore:             units,
 		issueStore:            issues,
+		auditStore:            auditStore,
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
@@ -1277,6 +1336,18 @@ func (a *app) startSession(w http.ResponseWriter, email string, tenantSlug strin
 			log.Printf("activity record failed for %s: %v", redactedEmail(email), err)
 		}
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenantSlug,
+		ActorEmail: email,
+		ActorRole:  a.roleFor(email, tenantSlug),
+		Action:     auditActionLogin,
+		TargetType: "session",
+		TargetID:   email,
+		Summary:    "Anmeldung erfolgreich",
+		Details: map[string]string{
+			"auth_method": strings.Join(authMethodsLabelList([]string{authMethod}), ", "),
+		},
+	})
 	return nil
 }
 
@@ -2108,6 +2179,19 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
 		return
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: email,
+		ActorRole:  role,
+		Action:     auditActionIssueWorkflow,
+		TargetType: "issue",
+		TargetID:   updated.ID,
+		Summary:    "Anliegen-Workflow geändert",
+		Details: map[string]string{
+			"status":   normalizeIssueStatus(updated.Status),
+			"priority": normalizeIssuePriority(updated.Priority),
+		},
+	})
 	a.notifyIssueUpdated(tenant, updated, email, "Anliegen \""+updated.Title+"\" aktualisiert")
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
 }
@@ -2355,7 +2439,7 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
-	_, role, tenantSlug, ok := a.currentUser(r)
+	actorEmail, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
@@ -2378,12 +2462,24 @@ func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save parking settings", http.StatusInternalServerError)
 		return
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionParkingSettings,
+		TargetType: "parking",
+		TargetID:   tenant.Slug,
+		Summary:    "Parkplatz-Abrechnung geändert",
+		Details: map[string]string{
+			"grid_fee": formatEURPerKWh(gridFee),
+		},
+	})
 	http.Redirect(w, r, "/app/parking/settings?settings=saved", http.StatusSeeOther)
 }
 
 func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
-	_, role, tenantSlug, ok := a.currentUser(r)
+	actorEmail, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
@@ -2407,6 +2503,19 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save parking month", http.StatusInternalServerError)
 		return
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionParkingMonth,
+		TargetType: "parking",
+		TargetID:   month,
+		Summary:    "Monatsstatus geändert",
+		Details: map[string]string{
+			"month": formatMonthLabel(month, time.Local),
+			"paid":  paidLabel(paid),
+		},
+	})
 	http.Redirect(w, r, "/app/parking?month=saved", http.StatusSeeOther)
 }
 
@@ -3516,8 +3625,217 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (a *app) auditLog(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !canViewAudit(role) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	profile := a.profileForTenant(email, tenant.Slug)
+	action := normalizeAuditAction(r.URL.Query().Get("action"))
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	events := []auditEvent{}
+	if a.auditStore != nil {
+		events = a.auditStore.List(auditFilter{
+			TenantSlug: tenant.Slug,
+			Action:     action,
+			Query:      query,
+			Limit:      200,
+		})
+	}
+	a.render(w, "auditLog", map[string]any{
+		"Title":         "Audit-Log",
+		"Tenant":        tenant,
+		"Email":         email,
+		"DisplayName":   profile.DisplayName(),
+		"Initials":      profile.Initials(),
+		"Role":          role,
+		"IsAdmin":       hasCapability(role, capabilityPlatformAdmin),
+		"CanSeeParking": hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
+		"ActivePage":    "audit",
+		"Events":        auditEventViews(events),
+		"HasEvents":     len(events) > 0,
+		"EventsEmpty":   emptyState("Noch keine Audit-Einträge", "Sensible Aktionen erscheinen hier, sobald sie im Portal ausgeführt werden."),
+		"ActionOptions": auditActionOptions(action),
+		"ActionFilter":  action,
+		"SearchQuery":   query,
+	})
+}
+
+func canViewAudit(role string) bool {
+	role = normalizeRole(role)
+	return role == roleAdmin || role == roleManager
+}
+
+func auditEventViews(events []auditEvent) []auditEventView {
+	views := make([]auditEventView, 0, len(events))
+	for _, event := range events {
+		views = append(views, auditEventViewFrom(event))
+	}
+	return views
+}
+
+func auditEventViewFrom(event auditEvent) auditEventView {
+	details := make([]auditDetailView, 0, len(event.Details))
+	keys := make([]string, 0, len(event.Details))
+	for key := range event.Details {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		details = append(details, auditDetailView{Key: auditDetailLabel(key), Value: event.Details[key]})
+	}
+	return auditEventView{
+		At:         formatLocalDateTime(event.At),
+		Action:     event.Action,
+		ActionText: auditActionLabel(event.Action),
+		Actor:      event.ActorEmail,
+		ActorRole:  event.ActorRole,
+		Target:     auditTargetLabel(event.TargetType, event.TargetID),
+		TargetType: auditTargetTypeLabel(event.TargetType),
+		Summary:    event.Summary,
+		Details:    details,
+		HasDetails: len(details) > 0,
+	}
+}
+
+func auditActionOptions(selected string) []selectOption {
+	options := []selectOption{{Value: "", Label: "Alle Aktionen", Selected: selected == ""}}
+	for _, action := range []string{
+		auditActionLogin,
+		auditActionInviteCreate,
+		auditActionInviteUpdate,
+		auditActionInviteDelete,
+		auditActionBuildingUpdate,
+		auditActionHeroUpdate,
+		auditActionUnitSave,
+		auditActionUnitDelete,
+		auditActionParkingSettings,
+		auditActionParkingMonth,
+		auditActionIssueWorkflow,
+	} {
+		options = append(options, selectOption{Value: action, Label: auditActionLabel(action), Selected: selected == action})
+	}
+	return options
+}
+
+func auditActionLabel(action string) string {
+	switch normalizeAuditAction(action) {
+	case auditActionLogin:
+		return "Anmeldung"
+	case auditActionInviteCreate:
+		return "Einladung angelegt"
+	case auditActionInviteUpdate:
+		return "Einladung geändert"
+	case auditActionInviteDelete:
+		return "Einladung gelöscht"
+	case auditActionBuildingUpdate:
+		return "Gebäude geändert"
+	case auditActionHeroUpdate:
+		return "Hero-Bild geändert"
+	case auditActionUnitSave:
+		return "Einheit gespeichert"
+	case auditActionUnitDelete:
+		return "Einheit gelöscht"
+	case auditActionParkingSettings:
+		return "Parkplatz-Abrechnung geändert"
+	case auditActionParkingMonth:
+		return "Monatsstatus geändert"
+	case auditActionIssueWorkflow:
+		return "Anliegen-Workflow geändert"
+	default:
+		return action
+	}
+}
+
+func auditTargetLabel(targetType string, targetID string) string {
+	targetType = auditTargetTypeLabel(targetType)
+	targetID = strings.TrimSpace(targetID)
+	if targetType == "" {
+		return targetID
+	}
+	if targetID == "" {
+		return targetType
+	}
+	return targetType + ": " + targetID
+}
+
+func auditTargetTypeLabel(targetType string) string {
+	switch strings.TrimSpace(targetType) {
+	case "user":
+		return "Person"
+	case "session":
+		return "Sitzung"
+	case "building":
+		return "Gebäude"
+	case "hero":
+		return "Hero-Bild"
+	case "unit":
+		return "Einheit"
+	case "parking":
+		return "Parkplatz"
+	case "issue":
+		return "Anliegen"
+	default:
+		return strings.TrimSpace(targetType)
+	}
+}
+
+func auditDetailLabel(key string) string {
+	switch key {
+	case "auth_method":
+		return "Anmeldung"
+	case "role_from":
+		return "Rolle vorher"
+	case "role_to":
+		return "Rolle neu"
+	case "permissions_from":
+		return "Rechte vorher"
+	case "permissions_to":
+		return "Rechte neu"
+	case "mail_status":
+		return "E-Mail"
+	case "changed_fields":
+		return "Geänderte Felder"
+	case "grid_fee":
+		return "Netzgebühr"
+	case "month":
+		return "Monat"
+	case "paid":
+		return "Status"
+	case "status":
+		return "Status"
+	case "priority":
+		return "Priorität"
+	case "unit_label":
+		return "Einheit"
+	case "share":
+		return "Anteil"
+	default:
+		return strings.ReplaceAll(key, "_", " ")
+	}
+}
+
+func (a *app) recordAudit(event auditEvent) {
+	if a == nil || a.auditStore == nil {
+		return
+	}
+	if err := a.auditStore.Append(event); err != nil {
+		log.Printf("audit record failed for %s: %v", event.Action, err)
+	}
+}
+
 func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request) {
-	tenant, _, _, _, ok := a.buildingSettingsContext(w, r)
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
 	if !ok {
 		return
 	}
@@ -3541,11 +3859,23 @@ func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionBuildingUpdate,
+		TargetType: "building",
+		TargetID:   tenant.Slug,
+		Summary:    "Gebäudedaten geändert",
+		Details: map[string]string{
+			"changed_fields": "Stammdaten, Kontaktblock, Notdienst, Hausmeister",
+		},
+	})
 	http.Redirect(w, r, "/app/settings/building?building=saved", http.StatusSeeOther)
 }
 
 func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request) {
-	tenant, _, _, _, ok := a.buildingSettingsContext(w, r)
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
 	if !ok {
 		return
 	}
@@ -3575,11 +3905,20 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionHeroUpdate,
+		TargetType: "hero",
+		TargetID:   tenant.Slug,
+		Summary:    "Hero-Bild geändert",
+	})
 	http.Redirect(w, r, "/app/settings/building?hero=saved", http.StatusSeeOther)
 }
 
 func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request) {
-	tenant, _, _, _, ok := a.buildingSettingsContext(w, r)
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
 	if !ok {
 		return
 	}
@@ -3623,11 +3962,24 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/settings/building?unit=error", http.StatusSeeOther)
 		return
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionUnitSave,
+		TargetType: "unit",
+		TargetID:   item.ID,
+		Summary:    "Einheit gespeichert",
+		Details: map[string]string{
+			"unit_label": item.Label,
+			"share":      formatMiteigentumsanteil(item.MiteigentumsanteilPPM),
+		},
+	})
 	http.Redirect(w, r, "/app/settings/building?unit=saved", http.StatusSeeOther)
 }
 
 func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request) {
-	tenant, _, _, _, ok := a.buildingSettingsContext(w, r)
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
 	if !ok {
 		return
 	}
@@ -3647,9 +3999,11 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request) {
 	units := a.unitStore.ListTenant(tenant.Slug)
 	kept := units[:0]
 	removed := false
+	removedUnit := unit{}
 	for _, item := range units {
 		if normalizeUnitID(item.ID) == deleteID {
 			removed = true
+			removedUnit = item
 			continue
 		}
 		kept = append(kept, item)
@@ -3663,6 +4017,19 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/settings/building?unit=error", http.StatusSeeOther)
 		return
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionUnitDelete,
+		TargetType: "unit",
+		TargetID:   deleteID,
+		Summary:    "Einheit gelöscht",
+		Details: map[string]string{
+			"unit_label": removedUnit.Label,
+			"share":      formatMiteigentumsanteil(removedUnit.MiteigentumsanteilPPM),
+		},
+	})
 	http.Redirect(w, r, "/app/settings/building?unit=deleted", http.StatusSeeOther)
 }
 
@@ -4164,9 +4531,32 @@ func canAssignUserRole(actorRole string, targetRole string) bool {
 	return hasCapability(actorRole, capabilityManageUsers)
 }
 
+func auditChangedUserFields(before userProfile, after userProfile) []string {
+	changed := []string{}
+	if normalizeEmail(before.Email) != normalizeEmail(after.Email) {
+		changed = append(changed, "E-Mail")
+	}
+	if strings.TrimSpace(before.Title) != strings.TrimSpace(after.Title) {
+		changed = append(changed, "Titel")
+	}
+	if strings.TrimSpace(before.FirstName) != strings.TrimSpace(after.FirstName) || strings.TrimSpace(before.LastName) != strings.TrimSpace(after.LastName) {
+		changed = append(changed, "Name")
+	}
+	if normalizeRole(before.Role) != normalizeRole(after.Role) {
+		changed = append(changed, "Rolle")
+	}
+	if strings.Join(normalizePermissions(before.Permissions), ",") != strings.Join(normalizePermissions(after.Permissions), ",") {
+		changed = append(changed, "Rechte")
+	}
+	if len(changed) == 0 {
+		changed = append(changed, "Metadaten")
+	}
+	return changed
+}
+
 func (a *app) createInvite(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
-	_, role, tenantSlug, ok := a.currentUser(r)
+	actorEmail, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
@@ -4224,9 +4614,37 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request) {
 	loginURL := a.publicBaseURL(r, tenant) + "/"
 	if err := a.mailer.SendInvite(inviteEmail, loginURL, tenant.Address); err != nil {
 		log.Printf("invite email delivery failed for %s: %v", redactedEmail(inviteEmail), err)
+		a.recordAudit(auditEvent{
+			TenantSlug: tenant.Slug,
+			ActorEmail: actorEmail,
+			ActorRole:  role,
+			Action:     auditActionInviteCreate,
+			TargetType: "user",
+			TargetID:   inviteEmail,
+			Summary:    "Einladung gespeichert",
+			Details: map[string]string{
+				"role_to":        profile.Role,
+				"permissions_to": strings.Join(permissionLabelList(profile.Permissions), ", "),
+				"mail_status":    "nicht zugestellt",
+			},
+		})
 		a.redirectInvite(w, r, "saved_no_mail")
 		return
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionInviteCreate,
+		TargetType: "user",
+		TargetID:   inviteEmail,
+		Summary:    "Einladung gespeichert",
+		Details: map[string]string{
+			"role_to":        profile.Role,
+			"permissions_to": strings.Join(permissionLabelList(profile.Permissions), ", "),
+			"mail_status":    "verschickt",
+		},
+	})
 	a.redirectInvite(w, r, "invited")
 }
 
@@ -4236,7 +4654,7 @@ func (a *app) redirectInvite(w http.ResponseWriter, r *http.Request, status stri
 
 func (a *app) editInvite(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
-	_, role, tenantSlug, ok := a.currentUser(r)
+	actorEmail, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
@@ -4305,12 +4723,28 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionInviteUpdate,
+		TargetType: "user",
+		TargetID:   updated.Email,
+		Summary:    "Einladung geändert",
+		Details: map[string]string{
+			"changed_fields":   strings.Join(auditChangedUserFields(existing, updated), ", "),
+			"role_from":        normalizeRole(existing.Role),
+			"role_to":          normalizeRole(updated.Role),
+			"permissions_from": strings.Join(permissionLabelList(existing.Permissions), ", "),
+			"permissions_to":   strings.Join(permissionLabelList(updated.Permissions), ", "),
+		},
+	})
 	a.redirectInvite(w, r, "updated")
 }
 
 func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
-	_, role, tenantSlug, ok := a.currentUser(r)
+	actorEmail, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
@@ -4342,6 +4776,19 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionInviteDelete,
+		TargetType: "user",
+		TargetID:   deleteEmail,
+		Summary:    "Einladung gelöscht",
+		Details: map[string]string{
+			"role_from":        normalizeRole(existing.Role),
+			"permissions_from": strings.Join(permissionLabelList(existing.Permissions), ", "),
+		},
+	})
 	a.redirectInvite(w, r, "deleted")
 }
 
@@ -4377,6 +4824,9 @@ func enrichCapabilityData(data map[string]any) {
 	}
 	if _, ok := data["CanManageBuilding"]; !ok {
 		data["CanManageBuilding"] = hasCapability(role, capabilityManageBuilding)
+	}
+	if _, ok := data["CanViewAudit"]; !ok {
+		data["CanViewAudit"] = canViewAudit(role)
 	}
 }
 
@@ -8334,6 +8784,219 @@ func (s *activityStore) saveLocked() error {
 	return nil
 }
 
+type auditStore struct {
+	path    string
+	mu      sync.Mutex
+	entries []auditEvent
+}
+
+func newAuditStore(path string) (*auditStore, error) {
+	store := &auditStore{path: path, entries: []auditEvent{}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read audit data")
+	}
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" {
+		return store, nil
+	}
+	if strings.HasPrefix(trimmed, "[") {
+		if err := json.Unmarshal([]byte(trimmed), &store.entries); err != nil {
+			return nil, fmt.Errorf("invalid audit data")
+		}
+		for i := range store.entries {
+			store.entries[i] = normalizeAuditEvent(store.entries[i])
+		}
+		return store, nil
+	}
+	for i, line := range strings.Split(trimmed, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var event auditEvent
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			return nil, fmt.Errorf("invalid audit data on line %d", i+1)
+		}
+		store.entries = append(store.entries, normalizeAuditEvent(event))
+	}
+	return store, nil
+}
+
+func (s *auditStore) Append(event auditEvent) error {
+	if s == nil {
+		return nil
+	}
+	event = normalizeAuditEvent(event)
+	if event.Action == "" {
+		return nil
+	}
+	raw, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("could not encode audit event")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.path != "" {
+		if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+			return fmt.Errorf("could not create audit data directory")
+		}
+		f, err := os.OpenFile(s.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+		if err != nil {
+			return fmt.Errorf("could not open audit data")
+		}
+		if _, err := f.Write(append(raw, '\n')); err != nil {
+			_ = f.Close()
+			return fmt.Errorf("could not append audit data")
+		}
+		if err := f.Close(); err != nil {
+			return fmt.Errorf("could not close audit data")
+		}
+	}
+	s.entries = append(s.entries, copyAuditEvent(event))
+	return nil
+}
+
+func (s *auditStore) List(filter auditFilter) []auditEvent {
+	if s == nil {
+		return nil
+	}
+	filter.TenantSlug = normalizeSlug(filter.TenantSlug)
+	filter.Action = normalizeAuditAction(filter.Action)
+	filter.Query = strings.ToLower(strings.TrimSpace(filter.Query))
+	if filter.Limit <= 0 || filter.Limit > 500 {
+		filter.Limit = 200
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]auditEvent, 0, min(filter.Limit, len(s.entries)))
+	for i := len(s.entries) - 1; i >= 0 && len(out) < filter.Limit; i-- {
+		event := s.entries[i]
+		if filter.TenantSlug != "" && normalizeSlug(event.TenantSlug) != filter.TenantSlug {
+			continue
+		}
+		if filter.Action != "" && normalizeAuditAction(event.Action) != filter.Action {
+			continue
+		}
+		if filter.Query != "" && !auditEventMatches(event, filter.Query) {
+			continue
+		}
+		out = append(out, copyAuditEvent(event))
+	}
+	return out
+}
+
+func normalizeAuditEvent(event auditEvent) auditEvent {
+	event.TenantSlug = normalizeSlug(event.TenantSlug)
+	event.ActorEmail = normalizeEmail(event.ActorEmail)
+	event.ActorRole = normalizeRole(event.ActorRole)
+	event.Action = normalizeAuditAction(event.Action)
+	event.TargetType = strings.TrimSpace(event.TargetType)
+	event.TargetID = strings.TrimSpace(event.TargetID)
+	event.Summary = truncateAuditValue(event.Summary, 220)
+	event.Details = sanitizeAuditDetails(event.Details)
+	if event.At.IsZero() {
+		event.At = time.Now()
+	}
+	event.At = event.At.UTC().Truncate(time.Second)
+	return event
+}
+
+func normalizeAuditAction(raw string) string {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	switch raw {
+	case auditActionLogin, auditActionInviteCreate, auditActionInviteUpdate, auditActionInviteDelete,
+		auditActionBuildingUpdate, auditActionHeroUpdate, auditActionUnitSave, auditActionUnitDelete,
+		auditActionParkingSettings, auditActionParkingMonth, auditActionIssueWorkflow:
+		return raw
+	default:
+		return ""
+	}
+}
+
+func sanitizeAuditDetails(details map[string]string) map[string]string {
+	if len(details) == 0 {
+		return nil
+	}
+	out := map[string]string{}
+	for key, value := range details {
+		key = strings.ToLower(strings.TrimSpace(key))
+		key = strings.ReplaceAll(key, " ", "_")
+		if key == "" || auditDetailKeySensitive(key) {
+			continue
+		}
+		value = truncateAuditValue(value, 180)
+		if value == "" {
+			continue
+		}
+		out[key] = value
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func auditDetailKeySensitive(key string) bool {
+	key = strings.ToLower(key)
+	for _, marker := range []string{"secret", "token", "password", "passwd", "private_key", "client_secret"} {
+		if strings.Contains(key, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func truncateAuditValue(value string, limit int) string {
+	value = strings.TrimSpace(value)
+	if limit <= 0 {
+		return ""
+	}
+	runes := []rune(value)
+	if len(runes) <= limit {
+		return value
+	}
+	return string(runes[:limit-1]) + "…"
+}
+
+func copyAuditEvent(event auditEvent) auditEvent {
+	if event.Details != nil {
+		details := make(map[string]string, len(event.Details))
+		for key, value := range event.Details {
+			details[key] = value
+		}
+		event.Details = details
+	}
+	return event
+}
+
+func auditEventMatches(event auditEvent, query string) bool {
+	haystack := strings.ToLower(strings.Join([]string{
+		event.ActorEmail,
+		event.ActorRole,
+		event.Action,
+		event.TargetType,
+		event.TargetID,
+		event.Summary,
+		strings.Join(auditDetailValues(event.Details), " "),
+	}, " "))
+	return strings.Contains(haystack, query)
+}
+
+func auditDetailValues(details map[string]string) []string {
+	values := make([]string, 0, len(details))
+	for key, value := range details {
+		values = append(values, key, value)
+	}
+	return values
+}
+
 func normalizeRole(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "admin", "administrator", "platform-admin", "platform_admin":
@@ -8918,6 +9581,7 @@ const pageTemplates = `
     .entry-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .archive-tools { display: grid; gap: 12px; margin: -4px 0 20px; }
     .filter-form { display: grid; grid-template-columns: minmax(220px,1fr) auto; gap: 10px; align-items: end; }
+    .filter-form.audit-filter { grid-template-columns: minmax(180px,.55fr) minmax(240px,1fr) auto; margin-bottom: 16px; }
     .filter-form label { margin: 0; }
     .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
     .filter-tab { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 6px 12px; color: var(--muted); background: var(--panel); text-decoration: none; font-size: 13px; font-weight: 800; }
@@ -8971,6 +9635,9 @@ const pageTemplates = `
     .pill.status-progress { background: rgba(32,37,31,.08); color: var(--ink); }
     .pill.status-done { background: rgba(47,107,74,.12); color: var(--leaf); }
     .pill.status-closed { background: rgba(158,42,43,.1); color: #9e2a2b; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--panel-soft); color: #6f6a5c; border-radius: var(--radius-sm); padding: 4px 10px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+    .chip strong { color: var(--gold-ink); }
     .issue-layout { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(280px,.8fr); gap: 22px; align-items: start; }
     .issue-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
     .issue-form label { display: grid; gap: 7px; color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
@@ -9118,6 +9785,7 @@ const pageTemplates = `
       <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="/app/anliegen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</span>
       {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
+      {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Audit-Log</a>{{end}}
       <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>
     </nav>
     <div class="side-foot">
@@ -10060,6 +10728,13 @@ const pageTemplates = `
                   <span class="quick-arrow">›</span>
                 </a>
                 {{end}}
+                {{if .CanViewAudit}}
+                <a class="quick-row" href="/app/audit">
+                  <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+                  <div><h3>Audit-Log</h3><p>Sensible Aktionen und Änderungen im Portal nachvollziehen.</p></div>
+                  <span class="quick-arrow">›</span>
+                </a>
+                {{end}}
                 {{if .IsAdmin}}<a class="quick-row" href="/app/parking/settings">
                   <svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg>
                   <div><h3>Parkplatz-Abrechnung</h3><p>Netzgebühr und Abrechnungswerte für die private Parkplatznutzung.</p></div>
@@ -10071,6 +10746,70 @@ const pageTemplates = `
             {{end}}
           </section>
         </div>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "auditLog"}}
+{{template "appOpen" .}}
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>/</span><span>Audit-Log</span></span>
+        <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>
+      </div>
+      <section class="page wide">
+        <div>
+          <h1>Audit-Log</h1>
+          <p class="lede">Sensible Aktionen im Portal, begrenzt auf {{.Tenant.Address}}.</p>
+        </div>
+        <section class="panel accounting">
+          <form class="filter-form audit-filter" method="get" action="/app/audit">
+            <label for="audit-action">Aktion
+              <select id="audit-action" name="action">
+                {{range .ActionOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+              </select>
+            </label>
+            <label for="audit-search">Suche
+              <input id="audit-search" type="search" name="q" value="{{.SearchQuery}}" placeholder="Person, Ziel oder Aktion">
+            </label>
+            <button class="button" type="submit">Filtern</button>
+          </form>
+          {{if .HasEvents}}
+            <div class="table-wrap">
+              <table aria-label="Audit-Log">
+                <thead>
+                  <tr>
+                    <th>Zeitpunkt</th>
+                    <th>Aktion</th>
+                    <th>Wer</th>
+                    <th>Ziel</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{range .Events}}
+                    <tr>
+                      <td class="month-cell"><strong>{{.At}}</strong></td>
+                      <td><span class="pill">{{.ActionText}}</span><span class="mini">{{.Summary}}</span></td>
+                      <td><strong>{{.Actor}}</strong>{{if .ActorRole}}<span class="mini">{{.ActorRole}}</span>{{end}}</td>
+                      <td>{{if .Target}}<strong>{{.Target}}</strong>{{else}}<span class="mini">-</span>{{end}}</td>
+                      <td>
+                        {{if .HasDetails}}
+                          <div class="chips">{{range .Details}}<span class="chip"><strong>{{.Key}}:</strong> {{.Value}}</span>{{end}}</div>
+                        {{else}}
+                          <span class="mini">Keine weiteren Details</span>
+                        {{end}}
+                      </td>
+                    </tr>
+                  {{end}}
+                </tbody>
+              </table>
+            </div>
+          {{else}}
+            {{template "emptyState" .EventsEmpty}}
+          {{end}}
+        </section>
       </section>
     </main>
 {{template "appClose" .}}
