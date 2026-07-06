@@ -143,6 +143,11 @@ Notification preferences persist to `/data/notification_prefs.json` via
 explicit event opt-outs and the global unsubscribe flag are checked before
 non-authentication emails are sent.
 
+Self-service profile display/contact overlays persist to
+`/data/profile_overlays.json` via `PROFILE_DATA_PATH`. These overlays never carry
+role, permission, tenant or auth-method fields; env/invite records remain
+authoritative for authorization.
+
 Wohneinheiten and ownership/renter links persist to `/data/units.json` via
 `UNIT_DATA_PATH`. Each unit stores tenant, id, label, Miteigentumsanteil and
 owner/renter email links; the file uses the same mutexed atomic JSON-store pattern

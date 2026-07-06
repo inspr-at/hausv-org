@@ -672,6 +672,81 @@ func TestNotificationSettingsPersistAndRender(t *testing.T) {
 	}
 }
 
+func TestProfileOverlayStorePersists(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "profiles.json")
+	store, err := newProfileOverlayStore(path)
+	if err != nil {
+		t.Fatalf("newProfileOverlayStore: %v", err)
+	}
+	if err := store.Set("Resident@Example.com", profileOverlay{Title: "Dr.", FirstName: "Resi", LastName: "Dent", Phone: "+43 1 234"}); err != nil {
+		t.Fatalf("set overlay: %v", err)
+	}
+	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("store file mode = %v err=%v, want 0600", info.Mode().Perm(), err)
+	}
+	reopened, err := newProfileOverlayStore(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	overlay, ok := reopened.Get("resident@example.com")
+	if !ok || overlay.FirstName != "Resi" || overlay.Phone != "+43 1 234" {
+		t.Fatalf("overlay = %+v ok=%v", overlay, ok)
+	}
+}
+
+func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{
+		ID:                    "top-1",
+		Label:                 "Top 1",
+		MiteigentumsanteilPPM: 12345,
+		RenterEmails:          []string{"resident@example.com"},
+	}}); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+
+	save := authedFormRequest(t, a, "resident@example.com", "/app/settings/profile", url.Values{
+		"title":       {"Dr."},
+		"first_name":  {"Resi"},
+		"last_name":   {"Dent"},
+		"phone":       {"+43 1 234"},
+		"role":        {"Admin"},
+		"permissions": {permissionParking},
+	}, a.updateProfileSettings)
+	if save.Code != http.StatusSeeOther {
+		t.Fatalf("profile save status = %d, want redirect", save.Code)
+	}
+	profile := a.profileForTenant("resident@example.com", "jhw22")
+	if profile.DisplayName() != "Dr. Resi Dent" || profile.Phone != "+43 1 234" {
+		t.Fatalf("profile overlay not applied: %+v", profile)
+	}
+	if profile.Role != roleResident || profile.HasPermission(permissionParking) {
+		t.Fatalf("profile self-edit escalated authz: %+v", profile)
+	}
+	if parking := authedRequest(t, a, "resident@example.com", "/app/parking", a.parking); parking.Code != http.StatusNotFound {
+		t.Fatalf("parking status = %d, want 404 without parking permission", parking.Code)
+	}
+
+	settings := authedRequest(t, a, "resident@example.com", "/app/settings", a.settingsHub)
+	if !strings.Contains(settings.Body.String(), `href="/app/settings/profile"`) {
+		t.Fatalf("settings hub should link to profile:\n%s", settings.Body.String())
+	}
+	page := authedRequest(t, a, "resident@example.com", "/app/settings/profile", a.profileSettings)
+	if page.Code != http.StatusOK {
+		t.Fatalf("profile page status = %d", page.Code)
+	}
+	body := page.Body.String()
+	for _, want := range []string{`value="Dr."`, `value="Resi"`, `value="Dent"`, "43 1 234", roleResident, "Top 1", "12345 / 1.000.000"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("profile page should contain %q", want)
+		}
+	}
+	row := userRowForEmail(t, a.userRows("jhw22"), "resident@example.com")
+	if row.DisplayName != "Dr. Resi Dent" || row.Phone != "+43 1 234" || row.Role != roleResident || row.ParkingChecked {
+		t.Fatalf("roster row = %+v, want overlay display without authz escalation", row)
+	}
+}
+
 func TestSettingsHubAdminLinksManagementSections(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
@@ -1680,6 +1755,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("notification pref store: %v", err)
 	}
+	profileOverlayStore, err := newProfileOverlayStore("")
+	if err != nil {
+		t.Fatalf("profile overlay store: %v", err)
+	}
 	inviteStore, err := newInviteStore("")
 	if err != nil {
 		t.Fatalf("invite store: %v", err)
@@ -1717,6 +1796,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		announcementReadStore: announcementReadStore,
 		eventStore:            eventStore,
 		notificationPrefs:     notificationPrefStore,
+		profileOverlays:       profileOverlayStore,
 		inviteStore:           inviteStore,
 		activityStore:         activityStore,
 		unitStore:             unitStore,

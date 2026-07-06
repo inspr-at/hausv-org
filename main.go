@@ -114,6 +114,7 @@ type app struct {
 	announcementReadStore *announcementReadStore
 	eventStore            *eventStore
 	notificationPrefs     *notificationPrefStore
+	profileOverlays       *profileOverlayStore
 	inviteStore           *inviteStore
 	activityStore         *activityStore
 	unitStore             *unitStore
@@ -290,6 +291,24 @@ type notificationPrefStore struct {
 
 type notificationPrefStoreData struct {
 	Users map[string]notificationPreferences `json:"users"`
+}
+
+type profileOverlayStore struct {
+	mu   sync.Mutex
+	path string
+	data profileOverlayStoreData
+}
+
+type profileOverlayStoreData struct {
+	Profiles map[string]profileOverlay `json:"profiles"`
+}
+
+type profileOverlay struct {
+	Title     string    `json:"title"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Phone     string    `json:"phone,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
 type notificationPreferences struct {
@@ -525,6 +544,12 @@ type unitMembership struct {
 	Relation string
 }
 
+type profileUnitView struct {
+	Label    string
+	Relation string
+	Share    string
+}
+
 type unitMembers struct {
 	Unit    unit
 	Owners  []string
@@ -685,6 +710,8 @@ func main() {
 	mux.HandleFunc("POST /app/parking/settings", a.updateParkingSettings)
 	mux.HandleFunc("POST /app/parking/month", a.updateParkingMonth)
 	mux.HandleFunc("GET /app/settings", a.settingsHub)
+	mux.HandleFunc("GET /app/settings/profile", a.profileSettings)
+	mux.HandleFunc("POST /app/settings/profile", a.updateProfileSettings)
 	mux.HandleFunc("GET /app/settings/notifications", a.notificationSettings)
 	mux.HandleFunc("POST /app/settings/notifications", a.updateNotificationSettings)
 	mux.HandleFunc("GET /app/settings/users", a.userSettings)
@@ -819,6 +846,11 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	profileDataPath := env("PROFILE_DATA_PATH", "tmp/profile_overlays.json")
+	profileOverlays, err := newProfileOverlayStore(profileDataPath)
+	if err != nil {
+		return nil, err
+	}
 	inviteDataPath := env("INVITE_DATA_PATH", "tmp/invites.json")
 	invites, err := newInviteStore(inviteDataPath)
 	if err != nil {
@@ -883,6 +915,7 @@ func newApp() (*app, error) {
 		announcementReadStore: announcementReads,
 		eventStore:            events,
 		notificationPrefs:     notificationPrefs,
+		profileOverlays:       profileOverlays,
 		inviteStore:           invites,
 		activityStore:         activity,
 		unitStore:             units,
@@ -3153,6 +3186,121 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (a *app) profileSettings(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileForTenant(email, tenant.Slug)
+	isAdmin := hasCapability(role, capabilityPlatformAdmin)
+	units := profileUnitViews(a.unitStore.UnitsForEmail(tenant.Slug, email))
+	profileMsg, profileOK := profileSettingsMessage(r.URL.Query().Get("profile"))
+	a.render(w, "profileSettings", map[string]any{
+		"Title":                  "Profil",
+		"Tenant":                 tenant,
+		"Email":                  email,
+		"DisplayName":            profile.DisplayName(),
+		"Initials":               profile.Initials(),
+		"Role":                   role,
+		"IsAdmin":                isAdmin,
+		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
+		"CanManageAnnouncements": canManageAnnouncements(role),
+		"ActivePage":             "settings",
+		"Profile":                profile,
+		"ProfileMsg":             profileMsg,
+		"ProfileOK":              profileOK,
+		"PermissionList":         permissionLabelList(profile.Permissions),
+		"AuthList":               authMethodsLabelList(profile.AuthMethods),
+		"Units":                  units,
+		"HasUnits":               len(units) > 0,
+	})
+}
+
+func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, _, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	overlay, err := profileOverlayFromForm(r.Form)
+	if err != nil {
+		http.Redirect(w, r, "/app/settings/profile?profile=invalid", http.StatusSeeOther)
+		return
+	}
+	if a.profileOverlays != nil {
+		if err := a.profileOverlays.Set(email, overlay); err != nil {
+			log.Printf("profile save failed for %s: %v", redactedEmail(email), err)
+			http.Redirect(w, r, "/app/settings/profile?profile=error", http.StatusSeeOther)
+			return
+		}
+	}
+	http.Redirect(w, r, "/app/settings/profile?profile=saved", http.StatusSeeOther)
+}
+
+func profileOverlayFromForm(values url.Values) (profileOverlay, error) {
+	overlay := profileOverlay{
+		Title:     strings.TrimSpace(values.Get("title")),
+		FirstName: strings.TrimSpace(values.Get("first_name")),
+		LastName:  strings.TrimSpace(values.Get("last_name")),
+		Phone:     strings.TrimSpace(values.Get("phone")),
+	}
+	if len([]rune(overlay.Title)) > 40 || len([]rune(overlay.FirstName)) > 120 || len([]rune(overlay.LastName)) > 120 || len([]rune(overlay.Phone)) > 80 {
+		return profileOverlay{}, fmt.Errorf("profile field too long")
+	}
+	return overlay, nil
+}
+
+func profileSettingsMessage(status string) (string, bool) {
+	switch status {
+	case "saved":
+		return "Profil gespeichert.", true
+	case "invalid":
+		return "Bitte die Profildaten prüfen.", false
+	case "error":
+		return "Das Profil konnte nicht gespeichert werden.", false
+	default:
+		return "", false
+	}
+}
+
+func profileUnitViews(units []unitMembership) []profileUnitView {
+	views := make([]profileUnitView, 0, len(units))
+	for _, membership := range units {
+		relation := normalizeRole(membership.Relation)
+		if relation == "" {
+			relation = membership.Relation
+		}
+		views = append(views, profileUnitView{
+			Label:    membership.Unit.Label,
+			Relation: relation,
+			Share:    formatMiteigentumsanteil(membership.Unit.MiteigentumsanteilPPM),
+		})
+	}
+	return views
+}
+
+func formatMiteigentumsanteil(ppm int) string {
+	if ppm <= 0 {
+		return "ohne Anteil"
+	}
+	return fmt.Sprintf("%d / 1.000.000", ppm)
+}
+
 func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	email, role, tenantSlug, ok := a.currentUser(r)
@@ -3735,14 +3883,29 @@ func (a *app) currentUser(r *http.Request) (string, string, string, bool) {
 func (a *app) directoryProfile(email string) (userProfile, bool) {
 	email = normalizeEmail(email)
 	if profile, ok := a.profiles[email]; ok {
-		return profile, true
+		return a.withProfileOverlay(profile), true
 	}
 	if a.inviteStore != nil {
 		if profile, ok := a.inviteStore.Get(email); ok {
-			return profile, true
+			return a.withProfileOverlay(profile), true
 		}
 	}
 	return userProfile{}, false
+}
+
+func (a *app) withProfileOverlay(profile userProfile) userProfile {
+	if a.profileOverlays == nil {
+		return profile
+	}
+	overlay, ok := a.profileOverlays.Get(profile.Email)
+	if !ok {
+		return profile
+	}
+	profile.Title = overlay.Title
+	profile.FirstName = overlay.FirstName
+	profile.LastName = overlay.LastName
+	profile.Phone = overlay.Phone
+	return profile
 }
 
 func (a *app) isAllowed(email string, tenantSlug string) bool {
@@ -3812,6 +3975,7 @@ func (a *app) userRows(tenantSlug string) []userRow {
 	seen := map[string]struct{}{}
 	rows := make([]userRow, 0, len(a.profiles)+len(a.admins)+len(a.allowed))
 	for email, profile := range a.profiles {
+		profile = a.withProfileOverlay(profile)
 		if !profile.HasTenant(tenantSlug) {
 			continue
 		}
@@ -3834,6 +3998,7 @@ func (a *app) userRows(tenantSlug string) []userRow {
 	}
 	if a.inviteStore != nil {
 		for _, profile := range a.inviteStore.List() {
+			profile = a.withProfileOverlay(profile)
 			email := normalizeEmail(profile.Email)
 			if _, ok := seen[email]; ok {
 				continue
@@ -4037,6 +4202,104 @@ func newNotificationPrefStore(path string) (*notificationPrefStore, error) {
 	}
 	store.data.Users = normalized
 	return store, nil
+}
+
+func newProfileOverlayStore(path string) (*profileOverlayStore, error) {
+	store := &profileOverlayStore{path: path, data: profileOverlayStoreData{Profiles: map[string]profileOverlay{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read profile data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid profile data")
+	}
+	if store.data.Profiles == nil {
+		store.data.Profiles = map[string]profileOverlay{}
+	}
+	normalized := map[string]profileOverlay{}
+	for email, overlay := range store.data.Profiles {
+		email = normalizeEmail(email)
+		if email == "" {
+			continue
+		}
+		normalized[email] = normalizeProfileOverlay(overlay)
+	}
+	store.data.Profiles = normalized
+	return store, nil
+}
+
+func (s *profileOverlayStore) Get(email string) (profileOverlay, bool) {
+	if s == nil {
+		return profileOverlay{}, false
+	}
+	email = normalizeEmail(email)
+	if email == "" {
+		return profileOverlay{}, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	overlay, ok := s.data.Profiles[email]
+	return overlay, ok
+}
+
+func (s *profileOverlayStore) Set(email string, overlay profileOverlay) error {
+	if s == nil {
+		return nil
+	}
+	email = normalizeEmail(email)
+	if email == "" {
+		return fmt.Errorf("invalid profile email")
+	}
+	overlay = normalizeProfileOverlay(overlay)
+	overlay.UpdatedAt = time.Now().UTC()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.Profiles == nil {
+		s.data.Profiles = map[string]profileOverlay{}
+	}
+	s.data.Profiles[email] = overlay
+	return s.saveLocked()
+}
+
+func (s *profileOverlayStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create profile data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode profile data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write profile data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace profile data")
+	}
+	return nil
+}
+
+func normalizeProfileOverlay(overlay profileOverlay) profileOverlay {
+	overlay.Title = strings.TrimSpace(overlay.Title)
+	overlay.FirstName = strings.TrimSpace(overlay.FirstName)
+	overlay.LastName = strings.TrimSpace(overlay.LastName)
+	overlay.Phone = strings.TrimSpace(overlay.Phone)
+	if !overlay.UpdatedAt.IsZero() {
+		overlay.UpdatedAt = overlay.UpdatedAt.UTC()
+	}
+	return overlay
 }
 
 func (s *notificationPrefStore) Get(email string) notificationPreferences {
@@ -5755,6 +6018,7 @@ type userProfile struct {
 	Title             string                      `json:"title"`
 	FirstName         string                      `json:"first_name"`
 	LastName          string                      `json:"last_name"`
+	Phone             string                      `json:"phone"`
 	Role              string                      `json:"role"`
 	Status            string                      `json:"status"`
 	Tenants           []string                    `json:"tenants"`
@@ -5887,6 +6151,7 @@ func (p userProfile) UserRow() userRow {
 		Title:            p.Title,
 		FirstName:        p.FirstName,
 		LastName:         p.LastName,
+		Phone:            p.Phone,
 		DisplayName:      p.DisplayName(),
 		Initials:         p.Initials(),
 		Role:             p.Role,
@@ -5907,6 +6172,7 @@ type userRow struct {
 	Title            string
 	FirstName        string
 	LastName         string
+	Phone            string
 	DisplayName      string
 	Initials         string
 	Role             string
@@ -6821,6 +7087,7 @@ func parseUserProfiles(raw string, allowed map[string]struct{}, admins map[strin
 			profile.Title = strings.TrimSpace(profile.Title)
 			profile.FirstName = strings.TrimSpace(profile.FirstName)
 			profile.LastName = strings.TrimSpace(profile.LastName)
+			profile.Phone = strings.TrimSpace(profile.Phone)
 			profile.Role = normalizeRole(profile.Role)
 			if profile.Role == "" {
 				if _, ok := admins[email]; ok {
@@ -8620,11 +8887,11 @@ const pageTemplates = `
           <section class="panel">
             <div class="kicker">Konto</div>
             <div class="quick-list">
-              <div class="quick-row disabled">
+              <a class="quick-row" href="/app/settings/profile">
                 <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>
                 <div><h3>Profil</h3><p>{{.Email}} · {{.Role}}</p></div>
-                <span class="pill">Aktiv</span>
-              </div>
+                <span class="quick-arrow">›</span>
+              </a>
               <a class="quick-row" href="/app/settings/notifications">
                 <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
                 <div><h3>Benachrichtigungen</h3><p>E-Mail-Ereignisse pro Bereich steuern.</p></div>
@@ -8657,6 +8924,77 @@ const pageTemplates = `
             {{end}}
           </section>
         </div>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "profileSettings"}}
+{{template "appOpen" .}}
+    <style>
+      .profile .settings-card { max-width: 820px; display: grid; gap: 18px; }
+      .profile .profile-flash { margin: 0; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
+      .profile .profile-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
+      .profile .profile-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
+      .profile .profile-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+      .profile .profile-form .short { grid-column: span 1; }
+      .profile .profile-form .full { grid-column: 1 / -1; }
+      .profile .readonly-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 10px; }
+      .profile .readonly-box { border: 1px solid var(--line); border-radius: 8px; padding: 13px; background: var(--panel-soft); display: grid; gap: 8px; }
+      .profile .readonly-box strong { font-family: Spectral, serif; font-size: 18px; }
+      .profile .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+      .profile .chip { display: inline-flex; align-items: center; border: 1px solid var(--line); background: var(--panel); color: #6f6a5c; border-radius: 8px; padding: 4px 10px; font-size: 12.5px; font-weight: 700; }
+      .profile .unit-list { display: grid; gap: 8px; }
+      .profile .unit-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding-top: 8px; }
+      .profile .unit-row:first-child { border-top: 0; padding-top: 0; }
+      @media (max-width: 680px) { .profile .profile-form { grid-template-columns: 1fr; } .profile .profile-form .short { grid-column: 1 / -1; } }
+    </style>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Profil</span></span>
+        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a></div>
+      </div>
+      <section class="page profile">
+        <div>
+          <h1>Profil</h1>
+          <p class="lede">{{.Email}}</p>
+        </div>
+        <section class="panel settings-card">
+          {{if .ProfileMsg}}<p class="profile-flash{{if .ProfileOK}} ok{{else}} warn{{end}}">{{.ProfileMsg}}</p>{{end}}
+          <form class="profile-form" method="post" action="/app/settings/profile">
+            <label class="short" for="profile-title">Titel<input id="profile-title" name="title" value="{{.Profile.Title}}" maxlength="40" autocomplete="honorific-prefix"></label>
+            <label class="short" for="profile-phone">Telefon optional<input id="profile-phone" name="phone" value="{{.Profile.Phone}}" maxlength="80" autocomplete="tel"></label>
+            <label for="profile-first">Vorname<input id="profile-first" name="first_name" value="{{.Profile.FirstName}}" maxlength="120" autocomplete="given-name"></label>
+            <label for="profile-last">Nachname<input id="profile-last" name="last_name" value="{{.Profile.LastName}}" maxlength="120" autocomplete="family-name"></label>
+            <div class="full row-actions">
+              <button class="button primary" type="submit">Speichern</button>
+              <a class="button" href="/app/settings">Abbrechen</a>
+            </div>
+          </form>
+          <div class="readonly-grid">
+            <div class="readonly-box">
+              <span class="field-label">Rolle</span>
+              <strong>{{.Role}}</strong>
+              <div class="chips">{{range .PermissionList}}<span class="chip">{{.}}</span>{{end}}</div>
+            </div>
+            <div class="readonly-box">
+              <span class="field-label">Anmeldung</span>
+              <div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div>
+            </div>
+            <div class="readonly-box">
+              <span class="field-label">Einheiten</span>
+              {{if .HasUnits}}
+                <div class="unit-list">
+                  {{range .Units}}
+                    <div class="unit-row"><span><strong>{{.Label}}</strong><span class="mini">{{.Relation}}</span></span><span class="chip">{{.Share}}</span></div>
+                  {{end}}
+                </div>
+              {{else}}
+                <p class="muted">Keine Einheit verknüpft.</p>
+              {{end}}
+            </div>
+          </div>
+        </section>
       </section>
     </main>
 {{template "appClose" .}}
@@ -8960,6 +9298,7 @@ const pageTemplates = `
                   <div>
                     <div class="person-name">{{.DisplayName}}</div>
                     <div class="person-mail">{{.Email}}</div>
+                    {{if .Phone}}<div class="person-mail">{{.Phone}}</div>{{end}}
                   </div>
                 </div>
               </td>
