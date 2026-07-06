@@ -1191,6 +1191,87 @@ func TestResidentCannotCommentOnOtherIssue(t *testing.T) {
 	}
 }
 
+func TestIssueVisibilityByPersona(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["board@example.com"] = userProfile{Email: "board@example.com", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	for _, item := range []residentIssue{
+		{TenantSlug: "jhw22", AuthorEmail: "renter@example.com", AuthorName: "Renter", Category: "Frage", Title: "Renter private", Body: "Own unit.", LocationType: issueLocationUnit},
+		{TenantSlug: "jhw22", AuthorEmail: "owner@example.com", AuthorName: "Owner", Category: "Frage", Title: "Owner private", Body: "Own unit.", LocationType: issueLocationUnit},
+		{TenantSlug: "jhw22", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Common roof", Body: "Shared.", LocationType: issueLocationCommon},
+		{TenantSlug: "jhw22", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Other private", Body: "Hidden.", LocationType: issueLocationUnit},
+	} {
+		if _, err := a.issueStore.Create(item); err != nil {
+			t.Fatalf("Create issue %q: %v", item.Title, err)
+		}
+	}
+
+	renter := authedRequest(t, a, "renter@example.com", "/app/anliegen", a.issues).Body.String()
+	if !strings.Contains(renter, "Renter private") || strings.Contains(renter, "Common roof") || strings.Contains(renter, "Other private") {
+		t.Fatalf("renter visibility wrong:\n%s", renter)
+	}
+	owner := authedRequest(t, a, "owner@example.com", "/app/anliegen", a.issues).Body.String()
+	if !strings.Contains(owner, "Owner private") || !strings.Contains(owner, "Common roof") || strings.Contains(owner, "Other private") || strings.Contains(owner, "Renter private") {
+		t.Fatalf("owner visibility wrong:\n%s", owner)
+	}
+	board := authedRequest(t, a, "board@example.com", "/app/anliegen", a.issues).Body.String()
+	for _, want := range []string{"Renter private", "Owner private", "Common roof", "Other private"} {
+		if !strings.Contains(board, want) {
+			t.Fatalf("beirat view missing %q:\n%s", want, board)
+		}
+	}
+	if strings.Contains(board, "Kommentar senden") || strings.Contains(board, "Anliegen senden") {
+		t.Fatalf("beirat view must be read-only:\n%s", board)
+	}
+
+	boardComment := authedFormRequest(t, a, "board@example.com", "/app/anliegen/comment", url.Values{
+		"id":   {a.issueStore.ListAuthor("jhw22", "owner@example.com")[0].ID},
+		"body": {"Read-only should fail."},
+	}, a.addIssueComment)
+	if boardComment.Code != http.StatusForbidden {
+		t.Fatalf("beirat comment status = %d, want 403", boardComment.Code)
+	}
+}
+
+func TestIssueTriageBoardFiltersAndOpenCounts(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	old := time.Now().Add(-48 * time.Hour)
+	for _, item := range []residentIssue{
+		{TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident", Category: "Reparatur", Title: "Urgent repair", Body: "Broken.", LocationType: issueLocationCommon, Status: issueStatusProgress, Priority: issuePriorityUrgent, AssigneeEmail: "manager@example.com", CreatedAt: old, UpdatedAt: old},
+		{TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident", Category: "Frage", Title: "Regular question", Body: "Question.", LocationType: issueLocationCommon, Status: issueStatusNew, Priority: issuePriorityNorm},
+		{TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident", Category: "Vorschlag", Title: "Closed suggestion", Body: "Done.", LocationType: issueLocationCommon, Status: issueStatusDone, Priority: issuePriorityLow},
+	} {
+		if _, err := a.issueStore.Create(item); err != nil {
+			t.Fatalf("Create issue %q: %v", item.Title, err)
+		}
+	}
+
+	residentBoard := authedRequest(t, a, "resident@example.com", "/app/anliegen/board", a.issueBoard)
+	if residentBoard.Code != http.StatusForbidden {
+		t.Fatalf("resident board status = %d, want 403", residentBoard.Code)
+	}
+	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board?status=In+Bearbeitung&priority=Dringend&category=Reparatur&assignee=manager@example.com&sort=age", a.issueBoard)
+	if board.Code != http.StatusOK {
+		t.Fatalf("manager board status = %d", board.Code)
+	}
+	body := board.Body.String()
+	for _, want := range []string{"Anliegen verwalten", "Urgent repair", `name="assignee"`, "Zurücksetzen"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("triage board should contain %q:\n%s", want, body)
+		}
+	}
+	if strings.Contains(body, "Regular question") || strings.Contains(body, "Closed suggestion") {
+		t.Fatalf("triage board filter leaked other issues:\n%s", body)
+	}
+
+	dashboard := authedRequest(t, a, "manager@example.com", "/app", a.portal).Body.String()
+	if !strings.Contains(dashboard, "2 offen") || !strings.Contains(dashboard, "nav-badge") {
+		t.Fatalf("dashboard should surface open issue count:\n%s", dashboard)
+	}
+}
+
 func TestNotificationFrameworkDedupesRecipientsAndHonorsPrefs(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "actor@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["enabled@example.com"] = userProfile{Email: "enabled@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}

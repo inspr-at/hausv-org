@@ -416,6 +416,8 @@ type issueView struct {
 	ID              string
 	Title           string
 	Body            string
+	Author          string
+	AuthorEmail     string
 	Category        string
 	Status          string
 	StatusClass     string
@@ -424,6 +426,7 @@ type issueView struct {
 	HasAssignee     bool
 	Location        string
 	CreatedAt       string
+	CanComment      bool
 	CanClose        bool
 	CanReopen       bool
 	PhotoCount      int
@@ -432,6 +435,19 @@ type issueView struct {
 	HasComments     bool
 	StatusOptions   []selectOption
 	PriorityOptions []selectOption
+}
+
+type issueBoardFilterView struct {
+	Status          string
+	Priority        string
+	Category        string
+	Assignee        string
+	Sort            string
+	StatusOptions   []selectOption
+	PriorityOptions []selectOption
+	CategoryOptions []selectOption
+	SortOptions     []selectOption
+	HasActive       bool
 }
 
 type unitStore struct {
@@ -604,6 +620,7 @@ func main() {
 	mux.HandleFunc("POST /app/announcements/edit", a.editAnnouncement)
 	mux.HandleFunc("POST /app/announcements/delete", a.deleteAnnouncement)
 	mux.HandleFunc("GET /app/anliegen", a.issues)
+	mux.HandleFunc("GET /app/anliegen/board", a.issueBoard)
 	mux.HandleFunc("POST /app/anliegen", a.createIssue)
 	mux.HandleFunc("POST /app/anliegen/comment", a.addIssueComment)
 	mux.HandleFunc("POST /app/anliegen/workflow", a.updateIssueWorkflow)
@@ -1304,6 +1321,14 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) issues(w http.ResponseWriter, r *http.Request) {
+	a.renderIssuesPage(w, r, false)
+}
+
+func (a *app) issueBoard(w http.ResponseWriter, r *http.Request) {
+	a.renderIssuesPage(w, r, true)
+}
+
+func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, boardOnly bool) {
 	tenant := a.tenantForRequest(r)
 	email, role, tenantSlug, ok := a.currentUser(r)
 	if !ok {
@@ -1319,10 +1344,22 @@ func (a *app) issues(w http.ResponseWriter, r *http.Request) {
 	issues := []issueView{}
 	manageIssues := []issueView{}
 	canManageIssues := hasCapability(role, capabilityManageIssues)
+	canCreateIssue := !hasCapability(role, capabilityOversight) || canManageIssues
+	if boardOnly && !canManageIssues {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	filters := issueBoardFiltersFromQuery(r.URL.Query())
 	if a.issueStore != nil {
-		issues = issueViewsForActor(a.issueStore.ListAuthor(tenant.Slug, email), role, email)
+		if !boardOnly {
+			if canManageIssues {
+				issues = issueViewsForActor(a.issueStore.ListAuthor(tenant.Slug, email), role, email)
+			} else {
+				issues = issueViewsForActor(a.visibleIssuesForActor(tenant.Slug, email, role), role, email)
+			}
+		}
 		if canManageIssues {
-			manageIssues = issueViewsForActor(a.issueStore.ListTenant(tenant.Slug), role, email)
+			manageIssues = issueViewsForActor(filterIssueBoard(a.issueStore.ListTenant(tenant.Slug), filters), role, email)
 		}
 	}
 	msg, msgOK := issueMessage(r.URL.Query().Get("issue"))
@@ -1337,7 +1374,11 @@ func (a *app) issues(w http.ResponseWriter, r *http.Request) {
 		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
 		"CanManageAnnouncements": canManageAnnouncements(role),
 		"CanManageIssues":        canManageIssues,
+		"CanCreateIssue":         canCreateIssue,
 		"ActivePage":             "issues",
+		"BoardOnly":              boardOnly,
+		"BoardAction":            issueBoardAction(boardOnly),
+		"BoardFilters":           issueBoardFilterOptions(filters),
 		"Issues":                 issues,
 		"HasIssues":              len(issues) > 0,
 		"ManageIssues":           manageIssues,
@@ -1431,8 +1472,13 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	canManage := hasCapability(role, capabilityManageIssues)
+	readOnly := hasCapability(role, capabilityOversight) && !canManage
+	if !a.canViewIssueForActor(tenant.Slug, existing, email, role) {
+		http.Error(w, "Dieser Kommentar ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
 	isOwner := normalizeEmail(existing.AuthorEmail) == normalizeEmail(email)
-	if !canManage && !isOwner {
+	if readOnly || (!canManage && !isOwner) {
 		http.Error(w, "Dieser Kommentar ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -1484,6 +1530,11 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	canManage := hasCapability(role, capabilityManageIssues)
+	readOnly := hasCapability(role, capabilityOversight) && !canManage
+	if !a.canViewIssueForActor(tenant.Slug, existing, email, role) {
+		http.Error(w, "Dieser Statuswechsel ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
 	isOwner := normalizeEmail(existing.AuthorEmail) == normalizeEmail(email)
 	status := normalizeIssueStatus(r.FormValue("status"))
 	if status == "" {
@@ -1493,7 +1544,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
 	priority := normalizeIssuePriority(r.FormValue("priority"))
 	assignee := normalizeEmail(r.FormValue("assignee_email"))
 	if !canManage {
-		if !isOwner || r.FormValue("priority") != "" || r.FormValue("assignee_email") != "" || !canResidentTransition(existing.Status, status) {
+		if readOnly || !isOwner || r.FormValue("priority") != "" || r.FormValue("assignee_email") != "" || !canResidentTransition(existing.Status, status) {
 			http.Error(w, "Dieser Statuswechsel ist der Verwaltung vorbehalten.", http.StatusForbidden)
 			return
 		}
@@ -2351,6 +2402,230 @@ func issuePhotoHeader(r *http.Request) (*multipart.FileHeader, bool) {
 	return files[0], true
 }
 
+func issueBoardAction(boardOnly bool) string {
+	if boardOnly {
+		return "/app/anliegen/board"
+	}
+	return "/app/anliegen"
+}
+
+func issueBoardFiltersFromQuery(values url.Values) issueBoardFilterView {
+	priority := ""
+	if raw := strings.TrimSpace(values.Get("priority")); raw != "" {
+		priority = normalizeIssuePriority(raw)
+	}
+	filters := issueBoardFilterView{
+		Status:   normalizeIssueStatus(values.Get("status")),
+		Priority: priority,
+		Category: normalizeIssueCategory(values.Get("category")),
+		Assignee: normalizeEmail(values.Get("assignee")),
+		Sort:     normalizeIssueBoardSort(values.Get("sort")),
+	}
+	if filters.Sort == "" {
+		filters.Sort = "updated"
+	}
+	filters.HasActive = filters.Status != "" || filters.Priority != "" || filters.Category != "" || filters.Assignee != "" || filters.Sort != "updated"
+	return filters
+}
+
+func issueBoardFilterOptions(filters issueBoardFilterView) issueBoardFilterView {
+	filters.StatusOptions = issueFilterOptions(issueStatuses(), filters.Status, "Alle Status")
+	filters.PriorityOptions = issueFilterOptions(issuePriorities(), filters.Priority, "Alle Prioritäten")
+	filters.CategoryOptions = issueFilterOptions(issueCategories(), filters.Category, "Alle Kategorien")
+	filters.SortOptions = []selectOption{
+		{Value: "updated", Label: "Zuletzt aktualisiert", Selected: filters.Sort == "updated"},
+		{Value: "age", Label: "Älteste zuerst", Selected: filters.Sort == "age"},
+		{Value: "priority", Label: "Priorität", Selected: filters.Sort == "priority"},
+		{Value: "status", Label: "Status", Selected: filters.Sort == "status"},
+		{Value: "category", Label: "Kategorie", Selected: filters.Sort == "category"},
+		{Value: "assignee", Label: "Zuständigkeit", Selected: filters.Sort == "assignee"},
+	}
+	return filters
+}
+
+func issueFilterOptions(values []string, selected string, allLabel string) []selectOption {
+	options := []selectOption{{Value: "", Label: allLabel, Selected: selected == ""}}
+	for _, value := range values {
+		options = append(options, selectOption{Value: value, Label: value, Selected: value == selected})
+	}
+	return options
+}
+
+func issueCategories() []string {
+	return []string{"Reparatur", "Frage", "Vorschlag", "Sonstiges"}
+}
+
+func normalizeIssueBoardSort(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "updated", "aktualisiert":
+		return "updated"
+	case "age", "alter", "oldest":
+		return "age"
+	case "priority", "priorität":
+		return "priority"
+	case "status":
+		return "status"
+	case "category", "kategorie":
+		return "category"
+	case "assignee", "zuständig", "zustaendig":
+		return "assignee"
+	default:
+		return ""
+	}
+}
+
+func filterIssueBoard(items []residentIssue, filters issueBoardFilterView) []residentIssue {
+	out := make([]residentIssue, 0, len(items))
+	for _, item := range items {
+		if filters.Status != "" && normalizeIssueStatus(item.Status) != filters.Status {
+			continue
+		}
+		if filters.Priority != "" && normalizeIssuePriority(item.Priority) != filters.Priority {
+			continue
+		}
+		if filters.Category != "" && normalizeIssueCategory(item.Category) != filters.Category {
+			continue
+		}
+		if filters.Assignee != "" && normalizeEmail(item.AssigneeEmail) != filters.Assignee {
+			continue
+		}
+		out = append(out, item)
+	}
+	sortIssueBoard(out, filters.Sort)
+	return out
+}
+
+func sortIssueBoard(items []residentIssue, sortMode string) {
+	sortMode = normalizeIssueBoardSort(sortMode)
+	if sortMode == "" || sortMode == "updated" {
+		sortIssues(items)
+		return
+	}
+	sort.SliceStable(items, func(i, j int) bool {
+		switch sortMode {
+		case "age":
+			if !items[i].CreatedAt.Equal(items[j].CreatedAt) {
+				return items[i].CreatedAt.Before(items[j].CreatedAt)
+			}
+		case "priority":
+			if issuePriorityRank(items[i].Priority) != issuePriorityRank(items[j].Priority) {
+				return issuePriorityRank(items[i].Priority) > issuePriorityRank(items[j].Priority)
+			}
+		case "status":
+			if issueStatusRank(items[i].Status) != issueStatusRank(items[j].Status) {
+				return issueStatusRank(items[i].Status) < issueStatusRank(items[j].Status)
+			}
+		case "category":
+			if items[i].Category != items[j].Category {
+				return items[i].Category < items[j].Category
+			}
+		case "assignee":
+			left := normalizeEmail(items[i].AssigneeEmail)
+			right := normalizeEmail(items[j].AssigneeEmail)
+			if left != right {
+				return left < right
+			}
+		}
+		if !items[i].UpdatedAt.Equal(items[j].UpdatedAt) {
+			return items[i].UpdatedAt.After(items[j].UpdatedAt)
+		}
+		return items[i].CreatedAt.After(items[j].CreatedAt)
+	})
+}
+
+func issuePriorityRank(priority string) int {
+	switch normalizeIssuePriority(priority) {
+	case issuePriorityUrgent:
+		return 4
+	case issuePriorityHigh:
+		return 3
+	case issuePriorityNorm:
+		return 2
+	case issuePriorityLow:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func issueStatusRank(status string) int {
+	switch normalizeIssueStatus(status) {
+	case issueStatusNew:
+		return 1
+	case issueStatusProgress:
+		return 2
+	case issueStatusDone:
+		return 3
+	case issueStatusRejected:
+		return 4
+	case issueStatusDuplicate:
+		return 5
+	default:
+		return 9
+	}
+}
+
+func issueOpenCount(items []residentIssue) int {
+	count := 0
+	for _, item := range items {
+		if issueIsOpen(item) {
+			count++
+		}
+	}
+	return count
+}
+
+func issueIsOpen(item residentIssue) bool {
+	switch normalizeIssueStatus(item.Status) {
+	case issueStatusDone, issueStatusRejected, issueStatusDuplicate:
+		return false
+	default:
+		return true
+	}
+}
+
+func (a *app) visibleIssuesForActor(tenantSlug string, email string, role string) []residentIssue {
+	if a.issueStore == nil {
+		return nil
+	}
+	all := a.issueStore.ListTenant(tenantSlug)
+	out := make([]residentIssue, 0, len(all))
+	for _, item := range all {
+		if a.canViewIssueForActor(tenantSlug, item, email, role) {
+			out = append(out, item)
+		}
+	}
+	sortIssues(out)
+	return out
+}
+
+func (a *app) canViewIssueForActor(tenantSlug string, item residentIssue, email string, role string) bool {
+	tenantSlug = normalizeSlug(tenantSlug)
+	email = normalizeEmail(email)
+	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug || email == "" {
+		return false
+	}
+	if hasCapability(role, capabilityManageIssues) || hasCapability(role, capabilityOversight) {
+		return true
+	}
+	if normalizeEmail(item.AuthorEmail) == email {
+		return true
+	}
+	return normalizeIssueLocation(item.LocationType) == issueLocationCommon && a.actorCanSeeCommonIssues(tenantSlug, email, role)
+}
+
+func (a *app) actorCanSeeCommonIssues(tenantSlug string, email string, role string) bool {
+	if normalizeRole(role) == roleOwner {
+		return true
+	}
+	for _, membership := range a.unitStore.UnitsForEmail(tenantSlug, email) {
+		if normalizeRole(membership.Relation) == roleOwner {
+			return true
+		}
+	}
+	return false
+}
+
 func issueViews(items []residentIssue) []issueView {
 	return issueViewsForActor(items, "", "")
 }
@@ -2359,6 +2634,7 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 	views := make([]issueView, 0, len(items))
 	actorEmail = normalizeEmail(actorEmail)
 	canManage := hasCapability(role, capabilityManageIssues)
+	readOnly := hasCapability(role, capabilityOversight) && !canManage
 	for _, item := range items {
 		photoCount := len(item.PhotoPaths)
 		comments := issueCommentViews(item.Comments)
@@ -2371,10 +2647,17 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 			priority = issuePriorityNorm
 		}
 		isOwner := normalizeEmail(item.AuthorEmail) == actorEmail
+		author := strings.TrimSpace(item.AuthorName)
+		if author == "" {
+			author = item.AuthorEmail
+		}
+		canResidentAct := !canManage && !readOnly && isOwner
 		views = append(views, issueView{
 			ID:              item.ID,
 			Title:           item.Title,
 			Body:            item.Body,
+			Author:          author,
+			AuthorEmail:     item.AuthorEmail,
 			Category:        item.Category,
 			Status:          status,
 			StatusClass:     issueStatusClass(status),
@@ -2383,8 +2666,9 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 			HasAssignee:     item.AssigneeEmail != "",
 			Location:        issueLocationLabel(item.LocationType, item.LocationDetail),
 			CreatedAt:       item.CreatedAt.In(time.Local).Format("02.01.2006 15:04"),
-			CanClose:        !canManage && isOwner && canResidentTransition(status, issueStatusDone),
-			CanReopen:       !canManage && isOwner && canResidentTransition(status, issueStatusNew),
+			CanComment:      canManage || canResidentAct,
+			CanClose:        canResidentAct && canResidentTransition(status, issueStatusDone),
+			CanReopen:       canResidentAct && canResidentTransition(status, issueStatusNew),
 			PhotoCount:      photoCount,
 			HasPhotos:       photoCount > 0,
 			Comments:        comments,
@@ -2849,6 +3133,7 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	}
 	enrichCapabilityData(data)
 	a.enrichUnreadAnnouncementData(data)
+	a.enrichIssueData(data)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := a.templates.ExecuteTemplate(w, name, data); err != nil {
 		log.Printf("render %s failed: %v", name, err)
@@ -2900,6 +3185,28 @@ func (a *app) enrichUnreadAnnouncementData(data map[string]any) {
 	count := unreadAnnouncementCount(a.announcementStore.Visible(tenant.Slug, now), lastSeen, now)
 	data["UnreadAnnouncements"] = count
 	data["HasUnreadAnnouncements"] = count > 0
+}
+
+func (a *app) enrichIssueData(data map[string]any) {
+	if _, ok := data["OpenIssues"]; ok {
+		if _, hasFlag := data["HasOpenIssues"]; !hasFlag {
+			if count, ok := data["OpenIssues"].(int); ok {
+				data["HasOpenIssues"] = count > 0
+			}
+		}
+		return
+	}
+	tenant, ok := data["Tenant"].(tenantConfig)
+	if !ok || tenant.Slug == "" || a.issueStore == nil {
+		data["OpenIssues"] = 0
+		data["HasOpenIssues"] = false
+		return
+	}
+	email, _ := data["Email"].(string)
+	role, _ := data["Role"].(string)
+	count := issueOpenCount(a.visibleIssuesForActor(tenant.Slug, email, role))
+	data["OpenIssues"] = count
+	data["HasOpenIssues"] = count > 0
 }
 
 func buildLabel() string {
@@ -6661,6 +6968,14 @@ const pageTemplates = `
     .issue-actions input, .issue-actions select { width: 100%; border: 1px solid #e2dac9; border-radius: 7px; min-height: 38px; padding: 8px 10px; color: var(--ink); background: #fffefb; font: inherit; font-size: 13px; }
     .issue-actions button { min-height: 38px; border: 1px solid var(--ink); border-radius: 7px; padding: 8px 12px; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
     .issue-actions .ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+    .issue-board-filter { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); gap: 10px; margin-bottom: 14px; align-items: end; }
+    .issue-board-filter label { display: grid; gap: 5px; color: var(--gold-ink); font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; grid-column: span 2; }
+    .issue-board-filter label.assignee { grid-column: span 3; }
+    .issue-board-filter label.sort { grid-column: span 3; }
+    .issue-board-filter input, .issue-board-filter select { width: 100%; border: 1px solid #e2dac9; border-radius: 7px; min-height: 38px; padding: 8px 10px; color: var(--ink); background: #fffefb; font: inherit; font-size: 13px; }
+    .issue-board-filter .board-filter-actions { grid-column: span 2; display: flex; gap: 8px; align-items: center; }
+    .issue-board-filter button, .issue-board-filter a { min-height: 38px; border: 1px solid var(--ink); border-radius: 7px; padding: 8px 12px; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+    .issue-board-filter a { background: transparent; color: var(--ink); border-color: var(--line); }
     .comment-thread { display: grid; gap: 8px; border-top: 1px dashed var(--line); padding-top: 10px; }
     .comment { display: grid; gap: 3px; border-left: 3px solid rgba(200,153,63,.35); padding-left: 9px; color: var(--ink); }
     .comment-meta { color: var(--soft); font-size: 12px; font-weight: 800; }
@@ -6733,9 +7048,11 @@ const pageTemplates = `
       .content-top { height: auto; min-height: 58px; flex-direction: column; align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
       .page { padding-left: 18px; padding-right: 18px; }
       h1 { font-size: clamp(36px,12vw,48px); }
-      .metric-grid { grid-template-columns: 1fr; }
-      .issue-form { grid-template-columns: 1fr; }
-      .quick-row { grid-template-columns: 28px minmax(0,1fr); }
+	      .metric-grid { grid-template-columns: 1fr; }
+	      .issue-form { grid-template-columns: 1fr; }
+	      .issue-board-filter { grid-template-columns: 1fr; }
+	      .issue-board-filter label, .issue-board-filter label.assignee, .issue-board-filter label.sort, .issue-board-filter .board-filter-actions { grid-column: 1 / -1; }
+	      .quick-row { grid-template-columns: 28px minmax(0,1fr); }
       .quick-row .pill { grid-column: 2; justify-self: start; }
       .filter-form { grid-template-columns: 1fr; }
       .dialog-grid { grid-template-columns: 1fr; }
@@ -6758,7 +7075,7 @@ const pageTemplates = `
       <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
       {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</span>
-      <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="/app/anliegen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen</a>
+      <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="/app/anliegen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</span>
       {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
       <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>
@@ -6838,7 +7155,7 @@ const pageTemplates = `
             <div class="kicker">Schnellzugriff</div>
             <div class="quick-list">
               <a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><div><h3>Aushang</h3><p>Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p></div>{{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
-              <a class="quick-row" href="/app/anliegen"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><div><h3>Anliegen</h3><p>Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.</p></div><span class="quick-arrow">›</span></a>
+              <a class="quick-row" href="/app/anliegen"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><div><h3>Anliegen</h3><p>Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.</p></div>{{if .HasOpenIssues}}<span class="pill unread">{{.OpenIssues}} offen</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
               {{if .CanSeeParking}}<a class="quick-row" href="/app/parking"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg><div><h3>Parkplatznutzung</h3><p>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .CanManageUsers}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .CanManageAnnouncements}}<a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><div><h3>Aushang verwalten</h3><p>Beiträge verfassen, fixieren, planen und löschen.</p></div><span class="quick-arrow">›</span></a>{{end}}
@@ -6855,13 +7172,15 @@ const pageTemplates = `
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><span>/</span><span>Anliegen</span></span>
+        {{if .CanManageIssues}}<div class="page-actions">{{if .BoardOnly}}<a class="button" href="/app/anliegen">Zurück zu Anliegen</a>{{else}}<a class="button" href="/app/anliegen/board">Triage-Board</a>{{end}}</div>{{end}}
       </div>
       <section class="page">
         <div>
           <h1>Anliegen</h1>
           <p class="lede">Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.</p>
         </div>
-        <div class="issue-layout">
+        {{if not .BoardOnly}}<div class="issue-layout">
+          {{if .CanCreateIssue}}
           <section class="panel">
             <div class="section-head">
               <div>
@@ -6901,10 +7220,11 @@ const pageTemplates = `
               <button type="submit">Anliegen senden</button>
             </form>
           </section>
+          {{end}}
           <aside class="panel">
             <div class="section-head">
               <div>
-                <div class="kicker">Meine letzten Anliegen</div>
+                <div class="kicker">{{if and .CanManageIssues (not .BoardOnly)}}Meine eigenen Anliegen{{else if eq .Role "Beirat"}}Anliegen im Haus{{else}}Meine letzten Anliegen{{end}}</div>
                 <p class="muted">Status und Rückfragen werden hier zusammengeführt.</p>
               </div>
             </div>
@@ -6918,8 +7238,8 @@ const pageTemplates = `
                       <span class="pill">{{.Priority}}</span>
                       <span>{{.CreatedAt}}</span>
                     </div>
-                    <h3>{{.Title}}</h3>
-                    <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
+	                    <h3>{{.Title}}</h3>
+	                    <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
                     <div class="comment-thread">
                       {{if .HasComments}}
                         {{range .Comments}}<div class="comment"><span class="comment-meta">{{.Author}} · {{.CreatedAt}}</span><p>{{.Body}}</p></div>{{end}}
@@ -6927,11 +7247,11 @@ const pageTemplates = `
                         <p class="empty">Noch keine Kommentare.</p>
                       {{end}}
                     </div>
-                    <form class="comment-form" method="post" action="/app/anliegen/comment">
-                      <input type="hidden" name="id" value="{{.ID}}">
-                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Ergänzung schreiben"></textarea>
-                      <button type="submit">Kommentar senden</button>
-                    </form>
+	                    {{if .CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment">
+	                      <input type="hidden" name="id" value="{{.ID}}">
+	                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Ergänzung schreiben"></textarea>
+	                      <button type="submit">Kommentar senden</button>
+	                    </form>{{end}}
                     {{if or .CanClose .CanReopen}}
                       <div class="issue-actions">
                         {{if .CanClose}}<form method="post" action="/app/anliegen/workflow"><input type="hidden" name="id" value="{{.ID}}"><input type="hidden" name="status" value="Erledigt"><button class="ghost" type="submit">Erledigt melden</button></form>{{end}}
@@ -6945,7 +7265,7 @@ const pageTemplates = `
               <p class="empty">Noch kein Anliegen erfasst. Nach dem Absenden erscheint es hier mit Status.</p>
             {{end}}
           </aside>
-        </div>
+        </div>{{end}}
         {{if .CanManageIssues}}
           <section class="panel">
             <div class="section-head">
@@ -6954,16 +7274,46 @@ const pageTemplates = `
                 <p class="muted">Status, Priorität und Zuständigkeit innerhalb der Hausverwaltung setzen.</p>
               </div>
             </div>
+            <form class="issue-board-filter" method="get" action="{{.BoardAction}}">
+              <label>Status
+                <select name="status">
+                  {{range .BoardFilters.StatusOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                </select>
+              </label>
+              <label>Priorität
+                <select name="priority">
+                  {{range .BoardFilters.PriorityOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                </select>
+              </label>
+              <label>Kategorie
+                <select name="category">
+                  {{range .BoardFilters.CategoryOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                </select>
+              </label>
+              <label class="assignee">Zuständig
+                <input type="email" name="assignee" value="{{.BoardFilters.Assignee}}" placeholder="name@example.com">
+              </label>
+              <label class="sort">Sortierung
+                <select name="sort">
+                  {{range .BoardFilters.SortOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                </select>
+              </label>
+              <div class="board-filter-actions">
+                <button type="submit">Filtern</button>
+                {{if .BoardFilters.HasActive}}<a href="{{.BoardAction}}">Zurücksetzen</a>{{end}}
+              </div>
+            </form>
             {{if .HasManageIssues}}
               <div class="issue-list">
                 {{range .ManageIssues}}
                   <article class="issue-card">
                     <div class="issue-meta">
                       <span class="pill {{.StatusClass}}">{{.Status}}</span>
-                      <span class="pill">{{.Category}}</span>
-                      <span class="pill">{{.Priority}}</span>
-                      <span>{{.CreatedAt}}</span>
-                    </div>
+	                      <span class="pill">{{.Category}}</span>
+	                      <span class="pill">{{.Priority}}</span>
+	                      <span>{{.Author}}</span>
+	                      <span>{{.CreatedAt}}</span>
+	                    </div>
                     <h3>{{.Title}}</h3>
                     <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
                     <div class="comment-thread">
@@ -6973,11 +7323,11 @@ const pageTemplates = `
                         <p class="empty">Noch keine Kommentare.</p>
                       {{end}}
                     </div>
-                    <form class="comment-form" method="post" action="/app/anliegen/comment">
-                      <input type="hidden" name="id" value="{{.ID}}">
-                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Rückfrage schreiben"></textarea>
-                      <button type="submit">Kommentar senden</button>
-                    </form>
+	                    {{if .CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment">
+	                      <input type="hidden" name="id" value="{{.ID}}">
+	                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Rückfrage schreiben"></textarea>
+	                      <button type="submit">Kommentar senden</button>
+	                    </form>{{end}}
                     <form class="issue-actions" method="post" action="/app/anliegen/workflow">
                       <input type="hidden" name="id" value="{{.ID}}">
                       <label>Status
