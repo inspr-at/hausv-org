@@ -442,8 +442,117 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	}
 
 	board := authedRequest(t, a, "beirat@example.com", "/app/abstimmungen", a.ballots).Body.String()
-	if !strings.Contains(board, formatMiteigentumsanteil(400000)+" Gewicht") || !strings.Contains(board, formatMiteigentumsanteil(400000)+" · 1 Stimmen") {
+	if !strings.Contains(board, "Teilnahme 100,0 %") || !strings.Contains(board, formatMiteigentumsanteil(400000)+" · 1 Stimmen") {
 		t.Fatalf("beirat oversight should show weighted aggregate:\n%s", board)
+	}
+}
+
+func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "owner1@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["owner2@example.com"] = userProfile{Email: "owner2@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
+		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner1@example.com"}, RenterEmails: []string{"renter@example.com"}},
+		{ID: "top-2", TenantSlug: "jhw22", Label: "Top 2", MiteigentumsanteilPPM: 600000, OwnerEmails: []string{"owner2@example.com"}},
+	}); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+	deadline := time.Now().Add(time.Hour)
+	created, err := a.voteStore.Create(ballot{
+		TenantSlug: "jhw22",
+		Title:      "Fassade",
+		Options:    []string{"Ja", "Nein"},
+		Type:       ballotTypeCircular,
+		Weighting:  ballotWeightingPerShare,
+		QuorumPPM:  500000,
+		ClosesAt:   deadline,
+		CreatedBy:  "manager@example.com",
+	})
+	if err != nil {
+		t.Fatalf("Create ballot: %v", err)
+	}
+	if _, _, err := a.voteStore.Open("jhw22", created.ID, time.Now()); err != nil {
+		t.Fatalf("Open ballot: %v", err)
+	}
+	if _, _, err := a.castBallotVote("jhw22", "owner1@example.com", created.ID, "Ja", time.Now()); err != nil {
+		t.Fatalf("owner1 vote: %v", err)
+	}
+	item, _ := a.voteStore.Get("jhw22", created.ID)
+	view := a.ballotViewForActor("jhw22", "beirat@example.com", roleBeirat, item, time.Now(), true)
+	if view.TotalWeightLabel != formatMiteigentumsanteil(400000) || view.EligibleWeightLabel != formatMiteigentumsanteil(1000000) || view.Participation != "40,0 %" || view.QuorumStatus != "Quorum offen" || view.WinnerLabel != "Ja" {
+		t.Fatalf("single-vote tally = %+v", view)
+	}
+	if _, _, err := a.castBallotVote("jhw22", "owner2@example.com", created.ID, "Nein", time.Now()); err != nil {
+		t.Fatalf("owner2 vote: %v", err)
+	}
+	item, _ = a.voteStore.Get("jhw22", created.ID)
+	view = a.ballotViewForActor("jhw22", "beirat@example.com", roleBeirat, item, time.Now(), true)
+	if view.TotalWeightLabel != formatMiteigentumsanteil(1000000) || view.Participation != "100,0 %" || view.QuorumStatus != "Quorum erreicht" || view.WinnerLabel != "Nein" {
+		t.Fatalf("full tally = %+v", view)
+	}
+
+	openProtocol := authedPathValueRequest(t, a, "owner1@example.com", "/app/abstimmungen/"+created.ID+"/protokoll", map[string]string{"id": created.ID}, a.ballotProtocol)
+	if openProtocol.Code != http.StatusConflict {
+		t.Fatalf("open protocol status = %d, want 409", openProtocol.Code)
+	}
+	closed, err := a.voteStore.CloseExpiredTenant("jhw22", deadline.Add(time.Minute))
+	if err != nil || len(closed) != 1 || closed[0].Status != ballotStatusClosed {
+		t.Fatalf("CloseExpiredTenant = %+v err=%v", closed, err)
+	}
+	protocol := authedPathValueRequest(t, a, "owner1@example.com", "/app/abstimmungen/"+created.ID+"/protokoll", map[string]string{"id": created.ID}, a.ballotProtocol)
+	if protocol.Code != http.StatusOK {
+		t.Fatalf("protocol status = %d", protocol.Code)
+	}
+	if got := protocol.Header().Get("Content-Disposition"); !strings.Contains(got, "attachment") || !strings.Contains(got, "protokoll") {
+		t.Fatalf("protocol content disposition = %q", got)
+	}
+	body := protocol.Body.String()
+	for _, want := range []string{"Abstimmungsprotokoll", "Fassade", "Quorum erreicht", "Nein", "100,0 %"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("protocol missing %q:\n%s", want, body)
+		}
+	}
+	renterProtocol := authedPathValueRequest(t, a, "renter@example.com", "/app/abstimmungen/"+created.ID+"/protokoll", map[string]string{"id": created.ID}, a.ballotProtocol)
+	if renterProtocol.Code != http.StatusForbidden {
+		t.Fatalf("renter protocol status = %d, want 403", renterProtocol.Code)
+	}
+}
+
+func TestBallotVoteAfterDeadlineAutoCloses(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
+		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 1000000, OwnerEmails: []string{"owner@example.com"}},
+	}); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+	now := time.Now()
+	created, err := a.voteStore.Create(ballot{
+		TenantSlug: "jhw22",
+		Title:      "Deadline",
+		Options:    []string{"Ja", "Nein"},
+		Type:       ballotTypeCircular,
+		Weighting:  ballotWeightingPerShare,
+		OpensAt:    now.Add(-2 * time.Hour),
+		ClosesAt:   now.Add(-time.Hour),
+		CreatedBy:  "manager@example.com",
+	})
+	if err != nil {
+		t.Fatalf("Create ballot: %v", err)
+	}
+	if _, _, err := a.voteStore.Open("jhw22", created.ID, now.Add(-2*time.Hour)); err != nil {
+		t.Fatalf("Open ballot: %v", err)
+	}
+	if _, _, err := a.castBallotVote("jhw22", "owner@example.com", created.ID, "Ja", now); err == nil {
+		t.Fatal("vote after deadline should fail")
+	}
+	closed, _ := a.voteStore.Get("jhw22", created.ID)
+	if closed.Status != ballotStatusClosed {
+		t.Fatalf("deadline vote should auto-close ballot: %+v", closed)
+	}
+	page := authedRequest(t, a, "owner@example.com", "/app/abstimmungen", a.ballots).Body.String()
+	if strings.Contains(page, `name="option"`) || !strings.Contains(page, "Abstimmung geschlossen.") {
+		t.Fatalf("closed ballot should render read-only:\n%s", page)
 	}
 }
 

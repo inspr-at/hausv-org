@@ -676,37 +676,45 @@ type ballotVote struct {
 }
 
 type ballotView struct {
-	ID               string
-	Title            string
-	Description      string
-	HasDescription   bool
-	Type             string
-	Weighting        string
-	Quorum           string
-	HasQuorum        bool
-	Status           string
-	StatusClass      string
-	OpensAt          string
-	HasOpensAt       bool
-	ClosesAt         string
-	HasClosesAt      bool
-	CreatedAt        string
-	UpdatedAt        string
-	Options          []ballotOptionView
-	CanVote          bool
-	CanManage        bool
-	CanOpen          bool
-	CanClose         bool
-	HasVote          bool
-	VoteOption       string
-	VoteWeight       string
-	VotedAt          string
-	ReadOnlyMessage  string
-	HasResults       bool
-	TotalVotes       int
-	TotalWeight      int
-	TotalWeightLabel string
-	EditDialogID     string
+	ID                  string
+	Title               string
+	Description         string
+	HasDescription      bool
+	Type                string
+	Weighting           string
+	Quorum              string
+	HasQuorum           bool
+	Status              string
+	StatusClass         string
+	OpensAt             string
+	HasOpensAt          bool
+	ClosesAt            string
+	HasClosesAt         bool
+	CreatedAt           string
+	UpdatedAt           string
+	Options             []ballotOptionView
+	CanVote             bool
+	CanManage           bool
+	CanOpen             bool
+	CanClose            bool
+	HasVote             bool
+	VoteOption          string
+	VoteWeight          string
+	VotedAt             string
+	ReadOnlyMessage     string
+	HasResults          bool
+	TotalVotes          int
+	TotalWeight         int
+	TotalWeightLabel    string
+	EligibleWeightLabel string
+	Participation       string
+	QuorumStatus        string
+	QuorumClass         string
+	WinnerLabel         string
+	HasWinner           bool
+	ProtocolURL         string
+	HasProtocol         bool
+	EditDialogID        string
 }
 
 type ballotOptionView struct {
@@ -1018,6 +1026,7 @@ func main() {
 	mux.HandleFunc("POST /app/abstimmungen", a.submitBallot)
 	mux.HandleFunc("POST /app/abstimmungen/open", a.openBallot)
 	mux.HandleFunc("POST /app/abstimmungen/close", a.closeBallot)
+	mux.HandleFunc("GET /app/abstimmungen/{id}/protokoll", a.ballotProtocol)
 	mux.HandleFunc("GET /app/kontakte", a.contacts)
 	mux.HandleFunc("GET /app/anliegen", a.issues)
 	mux.HandleFunc("GET /app/anliegen/board", a.issueBoard)
@@ -2404,12 +2413,16 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	all := []ballot{}
 	if a.voteStore != nil {
+		if _, err := a.voteStore.CloseExpiredTenant(tenant.Slug, now); err != nil {
+			log.Printf("ballot auto-close failed for %s: %v", tenant.Slug, err)
+		}
 		all = a.voteStore.ListTenant(tenant.Slug)
 	}
-	open := make([]ballot, 0, len(all))
+	visible := make([]ballot, 0, len(all))
 	for _, item := range all {
-		if normalizeBallotStatus(item.Status) == ballotStatusOpen {
-			open = append(open, item)
+		switch normalizeBallotStatus(item.Status) {
+		case ballotStatusOpen, ballotStatusClosed:
+			visible = append(visible, item)
 		}
 	}
 	msg, msgOK := voteMessage(r.URL.Query().Get("vote"))
@@ -2426,9 +2439,10 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request) {
 		"CanVote":            hasCapability(role, capabilityVote),
 		"CanOversightVotes":  canOversight,
 		"ActivePage":         "abstimmungen",
-		"Ballots":            a.ballotViewsForActor(tenant.Slug, email, role, open, now, canManage || canOversight),
-		"HasBallots":         len(open) > 0,
-		"BallotsEmpty":       emptyState("Keine offenen Abstimmungen", "Offene Beschlüsse und Umlaufbeschlüsse erscheinen hier."),
+		"Ballots":            a.ballotViewsForActor(tenant.Slug, email, role, visible, now, canManage || canOversight),
+		"HasBallots":         len(visible) > 0,
+		"BallotCountLabel":   pluralizeCount(len(visible), "Eintrag", "Einträge"),
+		"BallotsEmpty":       emptyState("Keine Abstimmungen", "Geöffnete und abgeschlossene Beschlüsse erscheinen hier."),
 		"ManageBallots":      a.ballotViewsForActor(tenant.Slug, email, role, all, now, true),
 		"HasManageBallots":   len(all) > 0,
 		"ManageBallotsEmpty": emptyState("Noch keine Abstimmung", "Neue Entwürfe werden hier angelegt und anschließend geöffnet."),
@@ -2483,6 +2497,49 @@ func (a *app) castVote(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = updated
 	http.Redirect(w, r, "/app/abstimmungen?vote=cast", http.StatusSeeOther)
+}
+
+func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !hasCapability(role, capabilityVote) && !hasCapability(role, capabilityOversight) && !hasCapability(role, capabilityManageVotes) {
+		http.Error(w, "Dieses Protokoll ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
+		return
+	}
+	if a.voteStore == nil {
+		http.NotFound(w, r)
+		return
+	}
+	now := time.Now()
+	if _, err := a.voteStore.CloseExpiredTenant(tenant.Slug, now); err != nil {
+		log.Printf("ballot auto-close failed for %s: %v", tenant.Slug, err)
+	}
+	id := strings.TrimSpace(r.PathValue("id"))
+	item, found := a.voteStore.Get(tenant.Slug, id)
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+	if normalizeBallotStatus(item.Status) != ballotStatusClosed {
+		http.Error(w, "Protokoll erst nach Abschluss verfügbar.", http.StatusConflict)
+		return
+	}
+	view := a.ballotViewForActor(tenant.Slug, email, role, item, now, true)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": "abstimmung-" + item.ID + "-protokoll.html"}))
+	if err := a.templates.ExecuteTemplate(w, "ballotProtocol", map[string]any{
+		"Title":       "Abstimmungsprotokoll",
+		"Tenant":      tenant,
+		"Ballot":      view,
+		"GeneratedAt": formatLocalDateTime(now),
+		"AppVersion":  buildLabel(),
+	}); err != nil {
+		log.Printf("render ballotProtocol failed: %v", err)
+	}
 }
 
 func (a *app) castBallotVote(tenantSlug string, email string, ballotID string, option string, at time.Time) (ballot, bool, error) {
@@ -2544,28 +2601,41 @@ func (a *app) ballotViewForActor(tenantSlug string, email string, role string, i
 	weight, eligible := a.ballotVoteWeight(tenantSlug, email, item)
 	status, statusClass, active := ballotStatusForView(item, now)
 	vote, hasVote := item.Votes[normalizeEmail(email)]
+	rawStatus := normalizeBallotStatus(item.Status)
+	tally := a.computeBallotTally(tenantSlug, item)
 	view := ballotView{
-		ID:              item.ID,
-		Title:           item.Title,
-		Description:     item.Description,
-		HasDescription:  item.Description != "",
-		Type:            item.Type,
-		Weighting:       ballotWeightingLabel(item.Weighting),
-		Quorum:          formatMiteigentumsanteil(item.QuorumPPM),
-		HasQuorum:       item.QuorumPPM > 0,
-		Status:          status,
-		StatusClass:     statusClass,
-		CreatedAt:       formatLocalDateTime(item.CreatedAt),
-		UpdatedAt:       formatLocalDateTime(item.UpdatedAt),
-		CanManage:       hasCapability(role, capabilityManageVotes),
-		CanVote:         hasCapability(role, capabilityVote) && eligible && active,
-		CanOpen:         normalizeBallotStatus(item.Status) == ballotStatusDraft,
-		CanClose:        normalizeBallotStatus(item.Status) == ballotStatusOpen,
-		HasVote:         hasVote,
-		VoteOption:      vote.Option,
-		VoteWeight:      formatBallotWeight(weight),
-		ReadOnlyMessage: ballotReadOnlyMessage(role, item, eligible, active, hasVote),
-		EditDialogID:    "ballot-" + item.ID,
+		ID:                  item.ID,
+		Title:               item.Title,
+		Description:         item.Description,
+		HasDescription:      item.Description != "",
+		Type:                item.Type,
+		Weighting:           ballotWeightingLabel(item.Weighting),
+		Quorum:              formatPPMPercent(item.QuorumPPM),
+		HasQuorum:           item.QuorumPPM > 0,
+		Status:              status,
+		StatusClass:         statusClass,
+		CreatedAt:           formatLocalDateTime(item.CreatedAt),
+		UpdatedAt:           formatLocalDateTime(item.UpdatedAt),
+		CanManage:           hasCapability(role, capabilityManageVotes),
+		CanVote:             hasCapability(role, capabilityVote) && eligible && active,
+		CanOpen:             rawStatus == ballotStatusDraft,
+		CanClose:            rawStatus == ballotStatusOpen,
+		HasVote:             hasVote,
+		VoteOption:          vote.Option,
+		VoteWeight:          formatBallotWeight(weight),
+		ReadOnlyMessage:     ballotReadOnlyMessage(role, item, eligible, active, hasVote),
+		TotalVotes:          tally.TotalVotes,
+		TotalWeight:         tally.TotalWeight,
+		TotalWeightLabel:    tally.TotalWeightLabel,
+		EligibleWeightLabel: tally.EligibleWeightLabel,
+		Participation:       tally.ParticipationLabel,
+		QuorumStatus:        tally.QuorumStatus,
+		QuorumClass:         tally.QuorumClass,
+		WinnerLabel:         tally.WinnerLabel,
+		HasWinner:           tally.WinnerLabel != "",
+		ProtocolURL:         "/app/abstimmungen/" + url.PathEscape(item.ID) + "/protokoll",
+		HasProtocol:         rawStatus == ballotStatusClosed && (hasCapability(role, capabilityVote) || hasCapability(role, capabilityOversight) || hasCapability(role, capabilityManageVotes)),
+		EditDialogID:        "ballot-" + item.ID,
 	}
 	if !item.OpensAt.IsZero() {
 		view.OpensAt = formatLocalDateTime(item.OpensAt)
@@ -2579,16 +2649,11 @@ func (a *app) ballotViewForActor(tenantSlug string, email string, role string, i
 		view.VotedAt = formatLocalDateTime(vote.At)
 		view.VoteWeight = formatBallotWeight(vote.Weight)
 	}
-	if includeResults {
+	if includeResults || rawStatus == ballotStatusClosed {
 		view.HasResults = true
 	}
-	results := ballotResultCounts(item)
 	for _, option := range item.Options {
-		result := results.Options[option]
-		percent := 0
-		if results.TotalWeight > 0 {
-			percent = (result.Weight*100 + results.TotalWeight/2) / results.TotalWeight
-		}
+		result := tally.Options[option]
 		view.Options = append(view.Options, ballotOptionView{
 			Value:        option,
 			Label:        option,
@@ -2596,29 +2661,37 @@ func (a *app) ballotViewForActor(tenantSlug string, email string, role string, i
 			VoteCount:    result.Count,
 			Weight:       result.Weight,
 			WeightLabel:  formatBallotResultWeight(item.Weighting, result.Weight),
-			Percent:      percent,
-			PercentStyle: strconv.Itoa(percent),
+			Percent:      result.Percent,
+			PercentStyle: strconv.Itoa(result.Percent),
 		})
 	}
-	view.TotalVotes = results.TotalVotes
-	view.TotalWeight = results.TotalWeight
-	view.TotalWeightLabel = formatBallotResultWeight(item.Weighting, results.TotalWeight)
 	return view
 }
 
 type ballotResultCount struct {
-	Count  int
-	Weight int
+	Count   int
+	Weight  int
+	Percent int
 }
 
 type ballotResultSummary struct {
-	Options     map[string]ballotResultCount
-	TotalVotes  int
-	TotalWeight int
+	Options             map[string]ballotResultCount
+	TotalVotes          int
+	TotalWeight         int
+	TotalWeightLabel    string
+	EligibleWeight      int
+	EligibleWeightLabel string
+	ParticipationPPM    int
+	ParticipationLabel  string
+	QuorumReached       bool
+	QuorumStatus        string
+	QuorumClass         string
+	WinnerLabel         string
 }
 
-func ballotResultCounts(item ballot) ballotResultSummary {
+func (a *app) computeBallotTally(tenantSlug string, item ballot) ballotResultSummary {
 	out := ballotResultSummary{Options: map[string]ballotResultCount{}}
+	item = normalizeBallot(item)
 	for _, vote := range item.Votes {
 		if !ballotHasOption(item, vote.Option) || vote.Weight <= 0 {
 			continue
@@ -2630,7 +2703,101 @@ func ballotResultCounts(item ballot) ballotResultSummary {
 		out.TotalVotes++
 		out.TotalWeight += vote.Weight
 	}
+	if out.TotalWeight > 0 {
+		for option, result := range out.Options {
+			result.Percent = (result.Weight*100 + out.TotalWeight/2) / out.TotalWeight
+			out.Options[option] = result
+		}
+	}
+	out.EligibleWeight = a.ballotEligibleWeightTotal(tenantSlug, item)
+	if out.EligibleWeight < out.TotalWeight {
+		out.EligibleWeight = out.TotalWeight
+	}
+	if out.EligibleWeight > 0 {
+		out.ParticipationPPM = (out.TotalWeight*1_000_000 + out.EligibleWeight/2) / out.EligibleWeight
+	}
+	out.TotalWeightLabel = formatBallotResultWeight(item.Weighting, out.TotalWeight)
+	out.EligibleWeightLabel = formatBallotResultWeight(item.Weighting, out.EligibleWeight)
+	out.ParticipationLabel = formatPPMPercent(out.ParticipationPPM)
+	out.QuorumReached = item.QuorumPPM == 0 || out.ParticipationPPM >= item.QuorumPPM
+	if item.QuorumPPM == 0 {
+		out.QuorumStatus = "Kein Quorum"
+		out.QuorumClass = "ok"
+	} else if out.QuorumReached {
+		out.QuorumStatus = "Quorum erreicht"
+		out.QuorumClass = "ok"
+	} else {
+		out.QuorumStatus = "Quorum offen"
+		out.QuorumClass = "status-open"
+	}
+	out.WinnerLabel = ballotWinnerLabel(out.Options)
 	return out
+}
+
+func (a *app) ballotEligibleWeightTotal(tenantSlug string, item ballot) int {
+	weights := map[string]int{}
+	tenantSlug = normalizeSlug(tenantSlug)
+	switch normalizeBallotWeighting(item.Weighting) {
+	case ballotWeightingPerHead:
+		if a != nil && a.unitStore != nil {
+			for _, unit := range a.unitStore.ListTenant(tenantSlug) {
+				for _, email := range unit.OwnerEmails {
+					if email = normalizeEmail(email); email != "" {
+						weights[email] = 1
+					}
+				}
+			}
+		}
+		if a != nil {
+			for _, row := range a.userRows(tenantSlug) {
+				email := normalizeEmail(row.Email)
+				if email != "" && normalizeRole(row.Role) == roleOwner {
+					weights[email] = 1
+				}
+			}
+		}
+	case ballotWeightingPerShare:
+		if a != nil && a.unitStore != nil {
+			for _, unit := range a.unitStore.ListTenant(tenantSlug) {
+				if unit.MiteigentumsanteilPPM <= 0 {
+					continue
+				}
+				for _, email := range unit.OwnerEmails {
+					if email = normalizeEmail(email); email != "" {
+						weights[email] += unit.MiteigentumsanteilPPM
+					}
+				}
+			}
+		}
+	}
+	total := 0
+	for _, weight := range weights {
+		total += weight
+	}
+	return total
+}
+
+func ballotWinnerLabel(options map[string]ballotResultCount) string {
+	if len(options) == 0 {
+		return ""
+	}
+	maxWeight := 0
+	for _, result := range options {
+		if result.Weight > maxWeight {
+			maxWeight = result.Weight
+		}
+	}
+	if maxWeight <= 0 {
+		return ""
+	}
+	winners := []string{}
+	for option, result := range options {
+		if result.Weight == maxWeight {
+			winners = append(winners, option)
+		}
+	}
+	sort.Strings(winners)
+	return strings.Join(winners, ", ")
 }
 
 func ballotStatusForView(item ballot, now time.Time) (string, string, bool) {
@@ -2706,6 +2873,16 @@ func formatBallotResultWeight(weighting string, weight int) string {
 		return strconv.Itoa(weight) + " Stimmen"
 	}
 	return formatMiteigentumsanteil(weight)
+}
+
+func formatPPMPercent(ppm int) string {
+	if ppm < 0 {
+		ppm = 0
+	}
+	if ppm > 1_000_000 {
+		ppm = 1_000_000
+	}
+	return formatDecimal(float64(ppm)/10_000, 1) + " %"
 }
 
 func voteMessage(status string) (string, bool) {
@@ -7994,6 +8171,44 @@ func (s *voteStore) Close(tenantSlug string, id string, at time.Time) (ballot, b
 	return s.setStatus(tenantSlug, id, ballotStatusClosed, at)
 }
 
+func (s *voteStore) CloseExpiredTenant(tenantSlug string, at time.Time) ([]ballot, error) {
+	if s == nil {
+		return nil, nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" {
+		return nil, fmt.Errorf("invalid tenant")
+	}
+	if at.IsZero() {
+		at = time.Now()
+	}
+	at = at.UTC()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	closed := []ballot{}
+	changed := false
+	for i, item := range s.data.Ballots {
+		item = normalizeBallot(item)
+		if normalizeSlug(item.TenantSlug) != tenantSlug || item.Status != ballotStatusOpen || item.ClosesAt.IsZero() || at.Before(item.ClosesAt) {
+			continue
+		}
+		item.Status = ballotStatusClosed
+		item.UpdatedAt = at
+		item = normalizeBallot(item)
+		s.data.Ballots[i] = item
+		closed = append(closed, copyBallot(item))
+		changed = true
+	}
+	if !changed {
+		return nil, nil
+	}
+	sortBallots(s.data.Ballots)
+	if err := s.saveLocked(); err != nil {
+		return nil, err
+	}
+	return closed, nil
+}
+
 func (s *voteStore) setStatus(tenantSlug string, id string, status string, at time.Time) (ballot, bool, error) {
 	if s == nil {
 		return ballot{}, false, nil
@@ -8065,6 +8280,14 @@ func (s *voteStore) CastVote(tenantSlug string, id string, email string, option 
 			return ballot{}, true, fmt.Errorf("ballot is not open yet")
 		}
 		if !item.ClosesAt.IsZero() && !at.Before(item.ClosesAt) {
+			item.Status = ballotStatusClosed
+			item.UpdatedAt = at
+			item = normalizeBallot(item)
+			s.data.Ballots[i] = item
+			sortBallots(s.data.Ballots)
+			if err := s.saveLocked(); err != nil {
+				return ballot{}, true, err
+			}
 			return ballot{}, true, fmt.Errorf("ballot is closed")
 		}
 		if !ballotHasOption(item, option) {
@@ -12893,6 +13116,91 @@ const pageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
+{{define "ballotProtocol"}}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f7f3ea; color: #20251f; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: min(920px,100%); margin: 0 auto; padding: 42px 28px; }
+    h1, h2, h3 { font-family: Spectral, serif; margin: 0; }
+    h1 { font-size: 42px; line-height: 1; }
+    h2 { font-size: 24px; margin-top: 28px; }
+    h3 { font-size: 18px; }
+    p { margin: 0; line-height: 1.5; }
+    .protocol-head { display: grid; gap: 10px; border-bottom: 2px solid #20251f; padding-bottom: 22px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px; color: #6b6f63; font-size: 13px; font-weight: 700; }
+    .pill { display: inline-flex; align-items: center; min-height: 26px; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 800; background: rgba(200,153,63,.16); color: #8a6a1f; }
+    .pill.ok { background: rgba(47,107,74,.12); color: #2f6b4a; }
+    .summary { margin-top: 24px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+    .box { border: 1px solid #e7e0d2; border-radius: 8px; background: #fffefb; padding: 14px; }
+    .box span { display: block; color: #8a7b3f; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+    .box strong { display: block; margin-top: 6px; font-family: Spectral, serif; font-size: 22px; }
+    table { width: 100%; margin-top: 14px; border-collapse: collapse; background: #fffefb; border: 1px solid #e7e0d2; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid #e7e0d2; text-align: left; }
+    th { color: #8a7b3f; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+    tr:last-child td { border-bottom: 0; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    footer { margin-top: 28px; color: #6b6f63; font-size: 12px; }
+    @media print {
+      body { background: #fff; }
+      main { padding: 24px 0; }
+      .box, table { break-inside: avoid; }
+    }
+    @media (max-width: 680px) {
+      main { padding: 28px 18px; }
+      h1 { font-size: 34px; }
+      .summary { grid-template-columns: 1fr; }
+      table { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="protocol-head">
+      <div class="meta"><span>{{.Tenant.Name}}</span><span>{{.Tenant.Address}}</span><span>Erstellt {{.GeneratedAt}}</span></div>
+      <h1>Abstimmungsprotokoll</h1>
+      <h2>{{.Ballot.Title}}</h2>
+      <div class="meta">
+        <span class="pill {{.Ballot.StatusClass}}">{{.Ballot.Status}}</span>
+        <span>{{.Ballot.Type}}</span>
+        <span>{{.Ballot.Weighting}}</span>
+        {{if .Ballot.HasQuorum}}<span>Quorum {{.Ballot.Quorum}}</span>{{end}}
+        {{if .Ballot.HasClosesAt}}<span>Frist {{.Ballot.ClosesAt}}</span>{{end}}
+      </div>
+      {{if .Ballot.HasDescription}}<p>{{.Ballot.Description}}</p>{{end}}
+    </section>
+
+    <section class="summary" aria-label="Zusammenfassung">
+      <div class="box"><span>Teilnahme</span><strong>{{.Ballot.Participation}}</strong></div>
+      <div class="box"><span>Stimmgewicht</span><strong>{{.Ballot.TotalWeightLabel}}</strong></div>
+      <div class="box"><span>Quorum</span><strong>{{.Ballot.QuorumStatus}}</strong></div>
+      <div class="box"><span>Stimmberechtigt</span><strong>{{.Ballot.EligibleWeightLabel}}</strong></div>
+      <div class="box"><span>Stimmen</span><strong>{{.Ballot.TotalVotes}}</strong></div>
+      <div class="box"><span>Ergebnis</span><strong>{{if .Ballot.HasWinner}}{{.Ballot.WinnerLabel}}{{else}}Keine Stimmen{{end}}</strong></div>
+    </section>
+
+    <section>
+      <h2>Auszählung</h2>
+      <table aria-label="Auszählung">
+        <thead><tr><th>Option</th><th class="num">Gewicht</th><th class="num">Stimmen</th><th class="num">Anteil</th></tr></thead>
+        <tbody>
+          {{range .Ballot.Options}}
+            <tr><td><strong>{{.Label}}</strong></td><td class="num">{{.WeightLabel}}</td><td class="num">{{.VoteCount}}</td><td class="num">{{.Percent}} %</td></tr>
+          {{end}}
+        </tbody>
+      </table>
+    </section>
+    <footer>{{.AppVersion}}</footer>
+  </main>
+</body>
+</html>
+{{end}}
+
 {{define "ballots"}}
 {{template "appOpen" .}}
     <script src="/assets/announcements.js" defer></script>
@@ -12910,8 +13218,8 @@ const pageTemplates = `
         <div class="home-grid">
           <section class="panel">
             <div class="section-head">
-              <div class="kicker">Offene Abstimmungen</div>
-              {{if .HasBallots}}<span class="pill">{{len .Ballots}} offen</span>{{else}}<span class="pill">Noch leer</span>{{end}}
+              <div class="kicker">Abstimmungen</div>
+              {{if .HasBallots}}<span class="pill">{{.BallotCountLabel}}</span>{{else}}<span class="pill">Noch leer</span>{{end}}
             </div>
             {{if .HasBallots}}
               <div class="vote-list">
@@ -12953,7 +13261,14 @@ const pageTemplates = `
                     {{end}}
                     {{if .HasResults}}
                       <div class="vote-result" aria-label="Abstimmungsergebnis">
-                        <div class="vote-meta"><span>{{.TotalVotes}} Stimmen</span><span>{{.TotalWeightLabel}} Gewicht</span></div>
+                        <div class="vote-meta">
+                          <span>{{.TotalVotes}} Stimmen</span>
+                          <span>{{.TotalWeightLabel}} von {{.EligibleWeightLabel}}</span>
+                          <span>Teilnahme {{.Participation}}</span>
+                          <span class="pill {{.QuorumClass}}">{{.QuorumStatus}}</span>
+                          {{if .HasWinner}}<span>Ergebnis {{.WinnerLabel}}</span>{{end}}
+                          {{if .HasProtocol}}<a class="button small" href="{{.ProtocolURL}}">Protokoll</a>{{end}}
+                        </div>
                         {{range .Options}}
                           <div class="vote-result-row">
                             <strong>{{.Label}}</strong>
@@ -12992,6 +13307,7 @@ const pageTemplates = `
                       <div class="vote-manage-actions">
                         {{if .CanOpen}}<form method="post" action="/app/abstimmungen/open"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Öffnen</button></form>{{end}}
                         {{if .CanClose}}<form method="post" action="/app/abstimmungen/close"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Schließen</button></form>{{end}}
+                        {{if .HasProtocol}}<a class="button small" href="{{.ProtocolURL}}">Protokoll</a>{{end}}
                       </div>
                     </div>
                   {{end}}
