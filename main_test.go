@@ -797,6 +797,35 @@ func TestPortalUsesAnnouncementEmptyStateWithoutPrototypeCopy(t *testing.T) {
 	}
 }
 
+func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	now := time.Now().Add(-2 * time.Hour)
+	expiredAt := now.Add(time.Hour)
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Normaler Hinweis", Body: "Aktuell", Category: "Info", PublishedAt: now.Add(time.Hour)})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Fixierter Hinweis", Body: "Wichtig", Category: "Dringend", Pinned: true, PublishedAt: now})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Alter Hinweis", Body: "Abgelaufen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Geplanter Hinweis", Body: "Zukunft", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
+
+	rr := authedRequest(t, a, "resident@example.com", "/app", a.portal)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("portal status = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	pinnedIndex := strings.Index(body, "Fixierter Hinweis")
+	normalIndex := strings.Index(body, "Normaler Hinweis")
+	if pinnedIndex < 0 || normalIndex < 0 || pinnedIndex > normalIndex {
+		t.Fatalf("portal should render pinned current announcement before normal current announcement:\n%s", body)
+	}
+	for _, forbidden := range []string{"Alter Hinweis", "Geplanter Hinweis", "info-card", `class="quick-row disabled"`} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("portal must not contain %q", forbidden)
+		}
+	}
+	if !strings.Contains(body, `<a class="quick-row" href="/app/announcements"`) {
+		t.Fatal("portal quick rows should be live links")
+	}
+}
+
 func TestAnnouncementArchiveFiltersSearchesAndIncludesPast(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now().Add(-2 * time.Hour)
