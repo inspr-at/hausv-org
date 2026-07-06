@@ -1121,7 +1121,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := canManageAnnouncements(role)
 	now := time.Now()
@@ -1191,7 +1191,7 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	item, err := announcementFromForm(r, tenant.Slug, profile, time.Now())
 	if err != nil {
 		http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
@@ -1227,7 +1227,7 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := strings.TrimSpace(r.FormValue("id"))
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	item, err := announcementFromForm(r, tenant.Slug, profile, time.Now())
 	if err != nil {
 		http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
@@ -1289,7 +1289,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := canManageAnnouncements(role)
 	announcements := []announcementView{}
@@ -1339,7 +1339,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, boardOnly
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	issues := []issueView{}
 	manageIssues := []issueView{}
@@ -1423,7 +1423,7 @@ func (a *app) createIssue(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	item, err := issueFromForm(r, tenant.Slug, profile, time.Now())
 	if err != nil {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
@@ -1487,7 +1487,7 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	updated, ok, err := a.issueStore.AddComment(tenant.Slug, id, issueComment{
 		AuthorEmail: email,
 		AuthorName:  profile.DisplayName(),
@@ -1555,7 +1555,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	updated, _, err := a.issueStore.UpdateWorkflow(tenant.Slug, id, issueWorkflowUpdate{
 		Status:        status,
 		Priority:      priority,
@@ -1670,7 +1670,7 @@ func (a *app) issueManagerEmails(tenantSlug string) []string {
 	tenantSlug = normalizeSlug(tenantSlug)
 	recipients := []string{}
 	for email, profile := range a.profiles {
-		if profile.HasTenant(tenantSlug) && hasCapability(profile.Role, capabilityManageIssues) {
+		if profile.HasTenant(tenantSlug) && hasCapability(profile.ForTenant(tenantSlug).Role, capabilityManageIssues) {
 			recipients = append(recipients, email)
 		}
 	}
@@ -1679,7 +1679,7 @@ func (a *app) issueManagerEmails(tenantSlug string) []string {
 	}
 	if a.inviteStore != nil {
 		for _, profile := range a.inviteStore.List() {
-			if profile.HasTenant(tenantSlug) && hasCapability(profile.Role, capabilityManageIssues) {
+			if profile.HasTenant(tenantSlug) && hasCapability(profile.ForTenant(tenantSlug).Role, capabilityManageIssues) {
 				recipients = append(recipients, profile.Email)
 			}
 		}
@@ -1719,7 +1719,7 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	if !hasCapability(role, capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
 		return
@@ -1752,7 +1752,7 @@ func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	if !hasCapability(role, capabilityManageParking) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
@@ -1785,7 +1785,7 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	if !hasCapability(role, capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
 		return
@@ -2710,7 +2710,7 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	a.render(w, "settingsHub", map[string]any{
 		"Title":         "Einstellungen",
@@ -2736,7 +2736,7 @@ func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	prefs := defaultNotificationPreferences()
 	if a.notificationPrefs != nil {
 		prefs = a.notificationPrefs.Get(email)
@@ -2892,7 +2892,7 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
 	}
-	profile := a.profileFor(email)
+	profile := a.profileForTenant(email, tenant.Slug)
 	inviteMsg, inviteOK := inviteMessage(r.URL.Query().Get("invite"))
 	a.render(w, "userSettings", map[string]any{
 		"Title":         "Benutzer & Rechte",
@@ -3345,8 +3345,11 @@ func (a *app) emailLoginAvailable() bool {
 }
 
 func (a *app) roleFor(email string, tenantSlug string) string {
-	if profile, ok := a.directoryProfile(email); ok && profile.Role != "" {
-		return normalizeRole(profile.Role)
+	if profile, ok := a.directoryProfile(email); ok {
+		profile = profile.ForTenant(tenantSlug)
+		if profile.Role != "" {
+			return normalizeRole(profile.Role)
+		}
 	}
 	if _, ok := a.admins[email]; ok {
 		return roleAdmin
@@ -3355,16 +3358,24 @@ func (a *app) roleFor(email string, tenantSlug string) string {
 }
 
 func (a *app) profileFor(email string) userProfile {
+	return a.profileForTenant(email, a.defaultTenant)
+}
+
+func (a *app) profileForTenant(email string, tenantSlug string) userProfile {
 	email = normalizeEmail(email)
-	if profile, ok := a.directoryProfile(email); ok {
-		return profile
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" {
+		tenantSlug = a.defaultTenant
 	}
-	role := a.roleFor(email, a.defaultTenant)
+	if profile, ok := a.directoryProfile(email); ok {
+		return profile.ForTenant(tenantSlug)
+	}
+	role := a.roleFor(email, tenantSlug)
 	return userProfile{
 		Email:       email,
 		Role:        role,
 		Status:      "Eingeladen",
-		Tenants:     []string{a.defaultTenant},
+		Tenants:     []string{tenantSlug},
 		AuthMethods: defaultAuthMethods(),
 	}
 }
@@ -3376,7 +3387,7 @@ func (a *app) userRows(tenantSlug string) []userRow {
 		if !profile.HasTenant(tenantSlug) {
 			continue
 		}
-		rows = append(rows, profile.UserRow())
+		rows = append(rows, profile.ForTenant(tenantSlug).UserRow())
 		seen[email] = struct{}{}
 	}
 	for email := range a.admins {
@@ -3402,7 +3413,7 @@ func (a *app) userRows(tenantSlug string) []userRow {
 			if !profile.HasTenant(tenantSlug) {
 				continue
 			}
-			row := profile.UserRow()
+			row := profile.ForTenant(tenantSlug).UserRow()
 			row.Editable = true
 			rows = append(rows, row)
 			seen[email] = struct{}{}
@@ -5084,15 +5095,21 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 }
 
 type userProfile struct {
-	Email       string   `json:"email"`
-	Title       string   `json:"title"`
-	FirstName   string   `json:"first_name"`
-	LastName    string   `json:"last_name"`
-	Role        string   `json:"role"`
-	Status      string   `json:"status"`
-	Tenants     []string `json:"tenants"`
-	Permissions []string `json:"permissions"`
-	AuthMethods []string `json:"auth_methods"`
+	Email             string                      `json:"email"`
+	Title             string                      `json:"title"`
+	FirstName         string                      `json:"first_name"`
+	LastName          string                      `json:"last_name"`
+	Role              string                      `json:"role"`
+	Status            string                      `json:"status"`
+	Tenants           []string                    `json:"tenants"`
+	Permissions       []string                    `json:"permissions"`
+	TenantMemberships map[string]tenantMembership `json:"tenant_memberships,omitempty"`
+	AuthMethods       []string                    `json:"auth_methods"`
+}
+
+type tenantMembership struct {
+	Role        string   `json:"role,omitempty"`
+	Permissions []string `json:"permissions,omitempty"`
 }
 
 func (p userProfile) DisplayName() string {
@@ -5137,6 +5154,39 @@ func (p userProfile) HasPermission(permission string) bool {
 	return false
 }
 
+func (p userProfile) ForTenant(tenantSlug string) userProfile {
+	tenantSlug = normalizeSlug(tenantSlug)
+	out := p
+	out.Email = normalizeEmail(out.Email)
+	out.Role = normalizeRole(out.Role)
+	out.Tenants = normalizeTenants(out.Tenants, "")
+	out.Permissions = normalizePermissions(out.Permissions)
+	out.AuthMethods = append([]string(nil), out.AuthMethods...)
+	if membership, ok := p.membershipForTenant(tenantSlug); ok {
+		out.Tenants = normalizeTenants(append(out.Tenants, tenantSlug), "")
+		if role := normalizeRole(membership.Role); role != "" {
+			out.Role = role
+		}
+		if membership.Permissions != nil {
+			out.Permissions = normalizePermissions(membership.Permissions)
+		}
+	}
+	return out
+}
+
+func (p userProfile) membershipForTenant(tenantSlug string) (tenantMembership, bool) {
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" {
+		return tenantMembership{}, false
+	}
+	for rawSlug, membership := range p.TenantMemberships {
+		if normalizeSlug(rawSlug) == tenantSlug {
+			return membership, true
+		}
+	}
+	return tenantMembership{}, false
+}
+
 func (p userProfile) AllowsAuthMethod(method string) bool {
 	method = normalizeAuthMethod(method)
 	if method == "" {
@@ -5160,6 +5210,10 @@ func (p userProfile) HasTenant(tenantSlug string) bool {
 		if normalizeSlug(item) == tenantSlug {
 			return true
 		}
+	}
+	_, ok := p.membershipForTenant(tenantSlug)
+	if ok {
+		return true
 	}
 	return false
 }
@@ -6122,7 +6176,8 @@ func parseUserProfiles(raw string, allowed map[string]struct{}, admins map[strin
 			if profile.Status == "" {
 				profile.Status = "Eingeladen"
 			}
-			profile.Tenants = normalizeTenants(profile.Tenants, defaultTenant)
+			profile.TenantMemberships = normalizeTenantMemberships(profile.TenantMemberships)
+			profile.Tenants = normalizeTenants(append(profile.Tenants, tenantMembershipSlugs(profile.TenantMemberships)...), defaultTenant)
 			profile.Permissions = normalizePermissions(profile.Permissions)
 			authMethods, err := normalizeAuthMethods(profile.AuthMethods)
 			if err != nil {
@@ -6404,6 +6459,39 @@ func normalizePermissions(raw []string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func normalizeTenantMemberships(raw map[string]tenantMembership) map[string]tenantMembership {
+	if len(raw) == 0 {
+		return nil
+	}
+	out := map[string]tenantMembership{}
+	for slug, membership := range raw {
+		slug = normalizeSlug(slug)
+		if slug == "" {
+			continue
+		}
+		membership.Role = normalizeRole(membership.Role)
+		if membership.Permissions != nil {
+			membership.Permissions = normalizePermissions(membership.Permissions)
+		}
+		out[slug] = membership
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func tenantMembershipSlugs(memberships map[string]tenantMembership) []string {
+	slugs := []string{}
+	for slug := range memberships {
+		slug = normalizeSlug(slug)
+		if slug != "" {
+			slugs = append(slugs, slug)
+		}
+	}
+	return slugs
 }
 
 func defaultAuthMethods() []string {

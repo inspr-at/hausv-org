@@ -87,6 +87,21 @@ Example user snippet:
 }
 ```
 
+For multi-building accounts, `tenant_memberships` can override role and
+permissions per tenant while the top-level values remain the default:
+
+```json
+{
+  "email": "person@example.invalid",
+  "role": "resident",
+  "tenants": ["jhw22", "haus-b"],
+  "tenant_memberships": {
+    "jhw22": {"role": "manager", "permissions": ["parking"]},
+    "haus-b": {"role": "resident", "permissions": []}
+  }
+}
+```
+
 Parking accounting is stateful. On csb1 the container writes monthly paid flags,
 grid/base surcharge settings, meter readings, and aWATTar price readings to:
 

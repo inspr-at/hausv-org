@@ -466,6 +466,104 @@ func TestParseUserProfilesNormalizesAuthMethods(t *testing.T) {
 	}
 }
 
+func TestParseUserProfilesNormalizesTenantMemberships(t *testing.T) {
+	raw := `[{"email":"multi@example.com","role":"resident","permissions":["parking"],"tenant_memberships":{"JHW22":{"role":"Hausverwaltung"},"Haus-B":{"role":"Mieter","permissions":[]}}}]`
+
+	profiles, err := parseUserProfiles(raw, map[string]struct{}{}, map[string]struct{}{}, "jhw22")
+	if err != nil {
+		t.Fatalf("parse profiles: %v", err)
+	}
+	profile := profiles["multi@example.com"]
+	if !profile.HasTenant("jhw22") || !profile.HasTenant("haus-b") {
+		t.Fatalf("tenant membership keys should grant tenant membership: %+v", profile)
+	}
+
+	jhwProfile := profile.ForTenant("jhw22")
+	if jhwProfile.Role != roleManager || !jhwProfile.HasPermission(permissionParking) {
+		t.Fatalf("jhw22 profile = %+v, want manager inheriting parking permission", jhwProfile)
+	}
+
+	otherProfile := profile.ForTenant("haus-b")
+	if otherProfile.Role != roleRenter || otherProfile.HasPermission(permissionParking) {
+		t.Fatalf("haus-b profile = %+v, want renter with parking explicitly cleared", otherProfile)
+	}
+}
+
+func TestRoleForUsesTenantMembershipOverride(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{
+		Email:       "multi@example.com",
+		FirstName:   "Multi",
+		LastName:    "Tenant",
+		Role:        roleResident,
+		Tenants:     []string{"jhw22", "haus-b"},
+		Permissions: []string{permissionParking},
+		TenantMemberships: map[string]tenantMembership{
+			"jhw22":  {Role: roleManager},
+			"haus-b": {Role: roleResident, Permissions: []string{}},
+		},
+		AuthMethods: defaultAuthMethods(),
+	})
+	a.tenants["haus-b"] = tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Haus B", Host: "haus-b.hausv.org"}
+
+	if got := a.roleFor("multi@example.com", "jhw22"); got != roleManager {
+		t.Fatalf("roleFor jhw22 = %q, want %q", got, roleManager)
+	}
+	if got := a.roleFor("multi@example.com", "haus-b"); got != roleResident {
+		t.Fatalf("roleFor haus-b = %q, want %q", got, roleResident)
+	}
+
+	jhwProfile := a.profileForTenant("multi@example.com", "jhw22")
+	if jhwProfile.Role != roleManager || !jhwProfile.HasPermission(permissionParking) {
+		t.Fatalf("jhw22 profile = %+v, want manager with parking", jhwProfile)
+	}
+	otherProfile := a.profileForTenant("multi@example.com", "haus-b")
+	if otherProfile.Role != roleResident || otherProfile.HasPermission(permissionParking) {
+		t.Fatalf("haus-b profile = %+v, want resident without parking", otherProfile)
+	}
+
+	token, _, err := a.sessions.Put("multi@example.com", "jhw22", authMethodEmail, time.Hour)
+	if err != nil {
+		t.Fatalf("put session: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app", nil)
+	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
+	_, role, tenantSlug, ok := a.currentUser(req)
+	if !ok || tenantSlug != "jhw22" || role != roleManager {
+		t.Fatalf("currentUser ok=%v tenant=%q role=%q, want jhw22 manager", ok, tenantSlug, role)
+	}
+
+	jhwRow := userRowForEmail(t, a.userRows("jhw22"), "multi@example.com")
+	if jhwRow.Role != roleManager || !jhwRow.ParkingChecked {
+		t.Fatalf("jhw22 row = %+v, want manager with parking checked", jhwRow)
+	}
+	otherRow := userRowForEmail(t, a.userRows("haus-b"), "multi@example.com")
+	if otherRow.Role != roleResident || otherRow.ParkingChecked {
+		t.Fatalf("haus-b row = %+v, want resident without parking", otherRow)
+	}
+}
+
+func TestRoleForBackwardsCompatibleDefault(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{
+		Email:       "owner@example.com",
+		Role:        roleOwner,
+		Tenants:     []string{"jhw22"},
+		Permissions: []string{permissionParking},
+		AuthMethods: defaultAuthMethods(),
+	})
+
+	if got := a.roleFor("owner@example.com", "jhw22"); got != roleOwner {
+		t.Fatalf("roleFor default tenant = %q, want %q", got, roleOwner)
+	}
+	profile := a.profileForTenant("owner@example.com", "jhw22")
+	if profile.Role != roleOwner || !profile.HasPermission(permissionParking) {
+		t.Fatalf("profileForTenant = %+v, want owner retaining global parking permission", profile)
+	}
+	defaultProfile := a.profileFor("owner@example.com")
+	if defaultProfile.Role != roleOwner || !defaultProfile.HasPermission(permissionParking) {
+		t.Fatalf("profileFor default = %+v, want backwards-compatible global role/permission", defaultProfile)
+	}
+}
+
 func TestOIDCLoginDefersUnavailableDiscovery(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -1439,7 +1537,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		t.Fatalf("parse templates: %v", err)
 	}
 	profile.Email = normalizeEmail(profile.Email)
-	profile.Tenants = normalizeTenants(profile.Tenants, "jhw22")
+	profile.Role = normalizeRole(profile.Role)
+	profile.Permissions = normalizePermissions(profile.Permissions)
+	profile.TenantMemberships = normalizeTenantMemberships(profile.TenantMemberships)
+	profile.Tenants = normalizeTenants(append(profile.Tenants, tenantMembershipSlugs(profile.TenantMemberships)...), "jhw22")
 	authMethods, err := normalizeAuthMethods(profile.AuthMethods)
 	if err != nil {
 		t.Fatalf("normalize auth methods: %v", err)
@@ -1503,6 +1604,18 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		issueStore:            issueStore,
 		parkingStore:          parkingStore,
 	}
+}
+
+func userRowForEmail(t *testing.T, rows []userRow, email string) userRow {
+	t.Helper()
+	email = normalizeEmail(email)
+	for _, row := range rows {
+		if normalizeEmail(row.Email) == email {
+			return row
+		}
+	}
+	t.Fatalf("row for %s not found in %+v", email, rows)
+	return userRow{}
 }
 
 func authedRequest(t *testing.T, a *app, email string, path string, handler http.HandlerFunc) *httptest.ResponseRecorder {
