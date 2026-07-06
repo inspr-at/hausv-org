@@ -119,6 +119,12 @@ Per-user read state persists to `/data/announcement_reads.json` via
 only published, unexpired entries; admin/Verwalter authoring controls live under
 `/app/announcements`.
 
+Wohneinheiten and ownership/renter links persist to `/data/units.json` via
+`UNIT_DATA_PATH`. Each unit stores tenant, id, label, Miteigentumsanteil and
+owner/renter email links; the file uses the same mutexed atomic JSON-store pattern
+and `0600` file mode. The public landing only shows a Wohneinheiten count when
+that count comes from this store.
+
 Historical accounting backfill uses Home Assistant recorder statistics from
 `PARKING_HISTORY_START` onward. For the 2026 rollout this is set in compose as:
 

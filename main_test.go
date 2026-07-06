@@ -82,6 +82,69 @@ func TestInviteStoreAddDedupeGetList(t *testing.T) {
 	}
 }
 
+func TestUnitStoreSetListResolvePersist(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "units.json")
+	store, err := newUnitStore(path)
+	if err != nil {
+		t.Fatalf("newUnitStore: %v", err)
+	}
+	if err := store.SetTenantUnits("jhw22", []unit{
+		{
+			ID:                    "Top_2",
+			Label:                 "Top 2",
+			MiteigentumsanteilPPM: 12345,
+			OwnerEmails:           []string{"Owner@Example.com", "owner@example.com"},
+			RenterEmails:          []string{"Renter@Example.com"},
+		},
+		{
+			Label:                 "Top 1",
+			MiteigentumsanteilPPM: 22222,
+			OwnerEmails:           []string{"second-owner@example.com"},
+		},
+	}); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+
+	units := store.ListTenant("JHW22")
+	if len(units) != 2 {
+		t.Fatalf("ListTenant len = %d, want 2", len(units))
+	}
+	if units[0].ID != "top-1" || units[0].Label != "Top 1" || units[1].ID != "top-2" {
+		t.Fatalf("units not normalized/sorted: %+v", units)
+	}
+	if got := units[1].OwnerEmails; len(got) != 1 || got[0] != "owner@example.com" {
+		t.Fatalf("owners not normalized/deduped: %+v", got)
+	}
+	if units[1].MiteigentumsanteilPPM != 12345 {
+		t.Fatalf("share = %d, want 12345", units[1].MiteigentumsanteilPPM)
+	}
+
+	memberships := store.UnitsForEmail("jhw22", "OWNER@example.com")
+	if len(memberships) != 1 || memberships[0].Unit.ID != "top-2" || memberships[0].Relation != roleOwner {
+		t.Fatalf("owner memberships = %+v", memberships)
+	}
+	renterMemberships := store.UnitsForEmail("jhw22", "renter@example.com")
+	if len(renterMemberships) != 1 || renterMemberships[0].Relation != roleRenter {
+		t.Fatalf("renter memberships = %+v", renterMemberships)
+	}
+	members := store.MembersForUnit("jhw22", "top-2")
+	if !members.Found || len(members.Owners) != 1 || members.Owners[0] != "owner@example.com" || len(members.Renters) != 1 || members.Renters[0] != "renter@example.com" {
+		t.Fatalf("members = %+v", members)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("store file mode = %v err=%v, want 0600", info.Mode().Perm(), err)
+	}
+	reopened, err := newUnitStore(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	if got := reopened.UnitCount("jhw22"); got != 2 {
+		t.Fatalf("reopened UnitCount = %d, want 2", got)
+	}
+}
+
 func TestDirectoryProfileEnvWinsAndInviteGrantsLogin(t *testing.T) {
 	store, err := newInviteStore("")
 	if err != nil {
@@ -257,6 +320,30 @@ func TestBuildLabelUsesSemverAndCommit(t *testing.T) {
 
 	if got := buildLabel(); got != "0.1.0 (abc1234)" {
 		t.Fatalf("build label = %q, want semver and commit", got)
+	}
+}
+
+func TestHomeUsesUnitCountFromStore(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
+		{ID: "top-1", Label: "Top 1", OwnerEmails: []string{"owner1@example.com"}},
+		{ID: "top-2", Label: "Top 2", OwnerEmails: []string{"owner2@example.com"}},
+	}); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
+	rr := httptest.NewRecorder()
+	a.home(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("home status = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "<strong>2</strong>") || !strings.Contains(body, "Wohneinheiten im Haus") {
+		t.Fatalf("home should render real unit count, body: %s", body)
+	}
+	if strings.Contains(body, "12 Wohneinheiten") {
+		t.Fatal("home must not render the old hardcoded unit count")
 	}
 }
 
@@ -705,6 +792,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("announcement read store: %v", err)
 	}
+	unitStore, err := newUnitStore("")
+	if err != nil {
+		t.Fatalf("unit store: %v", err)
+	}
 	return &app{
 		baseURL:       "http://localhost:8080",
 		rootDomain:    "hausv.org",
@@ -719,9 +810,12 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		admins:                map[string]struct{}{},
 		sessionTTL:            time.Hour,
 		sessions:              newSessionStore([]byte(strings.Repeat("s", 32))),
+		oidc:                  &oidcLogin{},
+		mailer:                smtpMailer{},
 		templates:             tmpl,
 		announcementStore:     announcementStore,
 		announcementReadStore: announcementReadStore,
+		unitStore:             unitStore,
 		parkingStore:          parkingStore,
 	}
 }

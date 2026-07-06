@@ -87,6 +87,7 @@ type app struct {
 	announcementReadStore *announcementReadStore
 	inviteStore           *inviteStore
 	activityStore         *activityStore
+	unitStore             *unitStore
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
@@ -276,6 +277,37 @@ type announcementView struct {
 	Unread             bool
 	EditDialogID       string
 	DeleteConfirmLabel string
+}
+
+type unitStore struct {
+	mu   sync.Mutex
+	path string
+	data unitStoreData
+}
+
+type unitStoreData struct {
+	Units []unit `json:"units"`
+}
+
+type unit struct {
+	ID                    string   `json:"id"`
+	TenantSlug            string   `json:"tenant"`
+	Label                 string   `json:"label"`
+	MiteigentumsanteilPPM int      `json:"miteigentumsanteil"`
+	OwnerEmails           []string `json:"owner_emails,omitempty"`
+	RenterEmails          []string `json:"renter_emails,omitempty"`
+}
+
+type unitMembership struct {
+	Unit     unit
+	Relation string
+}
+
+type unitMembers struct {
+	Unit    unit
+	Owners  []string
+	Renters []string
+	Found   bool
 }
 
 type announcementFilterView struct {
@@ -554,6 +586,11 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	unitDataPath := env("UNIT_DATA_PATH", "tmp/units.json")
+	units, err := newUnitStore(unitDataPath)
+	if err != nil {
+		return nil, err
+	}
 	parkingDataPath := env("PARKING_DATA_PATH", "tmp/parking.json")
 	parkingStore, err := newParkingStore(parkingDataPath)
 	if err != nil {
@@ -597,6 +634,7 @@ func newApp() (*app, error) {
 		announcementReadStore: announcementReads,
 		inviteStore:           invites,
 		activityStore:         activity,
+		unitStore:             units,
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
@@ -615,10 +653,17 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app", http.StatusSeeOther)
 		return
 	}
+	unitCount := 0
+	if a.unitStore != nil {
+		unitCount = a.unitStore.UnitCount(tenant.Slug)
+	}
 	a.render(w, "home", map[string]any{
 		"Title":               "WEG Portal " + tenant.Address,
 		"Tenant":              tenant,
 		"Email":               email,
+		"UnitCount":           unitCount,
+		"UnitCountLabel":      unitCountLabel(unitCount),
+		"HasUnitCount":        unitCount > 0,
 		"Sent":                r.URL.Query().Get("sent") == "1",
 		"MailConfigured":      a.mailer.Configured(),
 		"DevLoginLink":        "",
@@ -2216,6 +2261,144 @@ func (s *announcementReadStore) saveLocked() error {
 	}
 	if err := os.Rename(tmp, s.path); err != nil {
 		return fmt.Errorf("could not replace announcement read data")
+	}
+	return nil
+}
+
+func newUnitStore(path string) (*unitStore, error) {
+	store := &unitStore{path: path, data: unitStoreData{Units: []unit{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read unit data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid unit data")
+	}
+	store.data.Units = normalizeUnits(store.data.Units, "")
+	return store, nil
+}
+
+func (s *unitStore) SetTenantUnits(tenantSlug string, units []unit) error {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" {
+		return nil
+	}
+	normalized := normalizeUnits(units, tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	kept := s.data.Units[:0]
+	for _, existing := range s.data.Units {
+		if normalizeSlug(existing.TenantSlug) != tenantSlug {
+			kept = append(kept, existing)
+		}
+	}
+	s.data.Units = append(kept, normalized...)
+	sortUnits(s.data.Units)
+	return s.saveLocked()
+}
+
+func (s *unitStore) ListTenant(tenantSlug string) []unit {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []unit{}
+	for _, item := range s.data.Units {
+		if normalizeSlug(item.TenantSlug) == tenantSlug {
+			out = append(out, copyUnit(item))
+		}
+	}
+	sortUnits(out)
+	return out
+}
+
+func (s *unitStore) UnitCount(tenantSlug string) int {
+	return len(s.ListTenant(tenantSlug))
+}
+
+func (s *unitStore) UnitsForEmail(tenantSlug string, email string) []unitMembership {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	email = normalizeEmail(email)
+	if tenantSlug == "" || email == "" {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []unitMembership{}
+	for _, item := range s.data.Units {
+		if normalizeSlug(item.TenantSlug) != tenantSlug {
+			continue
+		}
+		relation := ""
+		if emailListContains(item.OwnerEmails, email) {
+			relation = roleOwner
+		} else if emailListContains(item.RenterEmails, email) {
+			relation = roleRenter
+		}
+		if relation != "" {
+			out = append(out, unitMembership{Unit: copyUnit(item), Relation: relation})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return unitLess(out[i].Unit, out[j].Unit)
+	})
+	return out
+}
+
+func (s *unitStore) MembersForUnit(tenantSlug string, unitID string) unitMembers {
+	if s == nil {
+		return unitMembers{}
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	unitID = normalizeUnitID(unitID)
+	if tenantSlug == "" || unitID == "" {
+		return unitMembers{}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, item := range s.data.Units {
+		if normalizeSlug(item.TenantSlug) == tenantSlug && normalizeSlug(item.ID) == unitID {
+			item = copyUnit(item)
+			return unitMembers{Unit: item, Owners: append([]string(nil), item.OwnerEmails...), Renters: append([]string(nil), item.RenterEmails...), Found: true}
+		}
+	}
+	return unitMembers{}
+}
+
+func (s *unitStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create unit data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode unit data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write unit data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace unit data")
 	}
 	return nil
 }
@@ -3978,6 +4161,13 @@ func formatMonthLabel(month string, loc *time.Location) string {
 	return names[int(t.Month())-1] + " " + strconv.Itoa(t.Year())
 }
 
+func unitCountLabel(count int) string {
+	if count == 1 {
+		return "Wohneinheit"
+	}
+	return "Wohneinheiten"
+}
+
 func formatPeriodLabel(first time.Time, last time.Time, loc *time.Location) string {
 	if first.IsZero() || last.IsZero() {
 		return "Noch keine Messwerte"
@@ -4543,6 +4733,104 @@ func normalizeSlug(raw string) string {
 	return raw
 }
 
+func normalizeUnitID(raw string) string {
+	raw = normalizeSlug(raw)
+	raw = strings.Join(strings.Fields(raw), "-")
+	raw = strings.ReplaceAll(raw, "/", "-")
+	return raw
+}
+
+func normalizeUnits(raw []unit, fallbackTenant string) []unit {
+	out := make([]unit, 0, len(raw))
+	seen := map[string]struct{}{}
+	for _, item := range raw {
+		item.TenantSlug = normalizeSlug(firstNonEmpty(item.TenantSlug, fallbackTenant))
+		item.ID = normalizeUnitID(item.ID)
+		item.Label = strings.TrimSpace(item.Label)
+		if item.ID == "" && item.Label != "" {
+			item.ID = normalizeUnitID(item.Label)
+		}
+		if item.Label == "" {
+			item.Label = item.ID
+		}
+		if item.TenantSlug == "" || item.ID == "" {
+			continue
+		}
+		if item.MiteigentumsanteilPPM < 0 {
+			item.MiteigentumsanteilPPM = 0
+		}
+		item.OwnerEmails = normalizeEmailList(item.OwnerEmails)
+		item.RenterEmails = normalizeEmailList(item.RenterEmails)
+		key := item.TenantSlug + "/" + item.ID
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, item)
+	}
+	sortUnits(out)
+	return out
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func normalizeEmailList(raw []string) []string {
+	out := []string{}
+	seen := map[string]struct{}{}
+	for _, item := range raw {
+		email := normalizeEmail(item)
+		if email == "" {
+			continue
+		}
+		if _, ok := seen[email]; ok {
+			continue
+		}
+		seen[email] = struct{}{}
+		out = append(out, email)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func emailListContains(list []string, email string) bool {
+	email = normalizeEmail(email)
+	for _, item := range list {
+		if normalizeEmail(item) == email {
+			return true
+		}
+	}
+	return false
+}
+
+func copyUnit(item unit) unit {
+	item.OwnerEmails = append([]string(nil), item.OwnerEmails...)
+	item.RenterEmails = append([]string(nil), item.RenterEmails...)
+	return item
+}
+
+func sortUnits(units []unit) {
+	sort.Slice(units, func(i, j int) bool {
+		return unitLess(units[i], units[j])
+	})
+}
+
+func unitLess(a unit, b unit) bool {
+	if a.TenantSlug != b.TenantSlug {
+		return a.TenantSlug < b.TenantSlug
+	}
+	if strings.ToLower(a.Label) != strings.ToLower(b.Label) {
+		return strings.ToLower(a.Label) < strings.ToLower(b.Label)
+	}
+	return a.ID < b.ID
+}
+
 func normalizeHost(raw string) string {
 	raw = strings.TrimSpace(strings.ToLower(raw))
 	if raw == "" {
@@ -4695,7 +4983,8 @@ const pageTemplates = `
     @media (max-width: 860px) {
       nav { display: none; }
       main { grid-template-columns: 1fr; align-items: start; gap: 28px; }
-      .meta { display: none; }
+      .meta { grid-template-columns: 1fr; gap: 12px; max-width: 320px; margin-top: 22px; }
+      .meta div:not(:first-child) { display: none; }
       h1 { font-size: clamp(40px,12vw,56px); }
     }
   </style>
@@ -4714,7 +5003,7 @@ const pageTemplates = `
         <h1>Alles rund um unser gemeinsames Haus.</h1>
         <p class="lead">Der private digitale Eingang für die Hausgemeinschaft, erreichbar per persönlichem E-Mail-Zugang oder SSO.</p>
         <div class="meta" aria-label="Portalüberblick">
-          <div><strong>Eingeladen</strong><span>Zugang nur für freigegebene E-Mail-Adressen der Hausgemeinschaft.</span></div>
+          {{if .HasUnitCount}}<div><strong>{{.UnitCount}}</strong><span>{{.UnitCountLabel}} im Haus, direkt aus den hinterlegten Einheiten.</span></div>{{else}}<div><strong>Eingeladen</strong><span>Zugang nur für freigegebene E-Mail-Adressen der Hausgemeinschaft.</span></div>{{end}}
           <div><strong>Einmalig</strong><span>Anmeldung per SSO oder zeitlich begrenztem E-Mail-Link.</span></div>
           <div><strong>Parkplatz</strong><span>Verbrauch und Abrechnung bleiben im geschützten Portal.</span></div>
         </div>
