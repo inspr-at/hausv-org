@@ -1776,6 +1776,7 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request) {
 		Role:        inviteRole,
 		Status:      "Eingeladen",
 		Tenants:     []string{tenant.Slug},
+		Permissions: parsePermissionForm(r.Form),
 		AuthMethods: defaultAuthMethods(),
 	}
 
@@ -1849,6 +1850,7 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request) {
 	updated.FirstName = strings.TrimSpace(r.FormValue("first_name"))
 	updated.LastName = strings.TrimSpace(r.FormValue("last_name"))
 	updated.Role = newRole
+	updated.Permissions = parsePermissionForm(r.Form)
 	if len(updated.Tenants) == 0 {
 		updated.Tenants = []string{tenant.Slug}
 	}
@@ -3458,6 +3460,7 @@ func (p userProfile) UserRow() userRow {
 		Tenants:          strings.Join(p.Tenants, ", "),
 		PermissionLabel:  permissionLabel(p.Permissions),
 		PermissionList:   permissionLabelList(p.Permissions),
+		ParkingChecked:   p.HasPermission(permissionParking),
 		AuthLabel:        authMethodsLabel(p.AuthMethods),
 		AuthList:         authMethodsLabelList(p.AuthMethods),
 	}
@@ -3477,6 +3480,7 @@ type userRow struct {
 	Tenants          string
 	PermissionLabel  string
 	PermissionList   []string
+	ParkingChecked   bool
 	AuthLabel        string
 	AuthList         []string
 	Editable         bool
@@ -4847,6 +4851,19 @@ func permissionLabel(permissions []string) string {
 	return strings.Join(permissionLabelList(permissions), ", ")
 }
 
+func parsePermissionForm(values url.Values) []string {
+	allowed := map[string]struct{}{
+		permissionParking: {},
+	}
+	out := []string{}
+	for _, permission := range normalizePermissions(values["permissions"]) {
+		if _, ok := allowed[permission]; ok {
+			out = append(out, permission)
+		}
+	}
+	return out
+}
+
 func permissionLabelList(permissions []string) []string {
 	labels := []string{}
 	for _, permission := range normalizePermissions(permissions) {
@@ -5776,7 +5793,15 @@ const pageTemplates = `
       .users .invite-form .f-email { grid-column: span 4; }
       .users .invite-form .f-role { grid-column: span 5; }
       .users .invite-form .f-submit { grid-column: span 7; }
+      .users .invite-form .f-permissions, .users .dlg-form .f-permissions { grid-column: 1 / -1; }
       .users input, .users select { width: 100%; border: 1px solid #e2dac9; border-radius: 9px; padding: 12px; font: inherit; background: #fffefb; color: var(--ink); }
+      .users .permission-fieldset { border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: #fffefb; display: grid; gap: 10px; }
+      .users .permission-fieldset legend { padding: 0 6px; color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+      .users .preset-label { display: inline-flex; width: fit-content; min-height: 24px; align-items: center; border: 1px solid rgba(200,153,63,.28); border-radius: 999px; padding: 3px 9px; background: rgba(200,153,63,.12); color: #8a6a1f; font-size: 11.5px; font-weight: 800; }
+      .users .permission-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 8px; }
+      .users .permission-check { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 9px; align-items: start; border: 1px solid var(--line); border-radius: 8px; padding: 10px; color: var(--ink); background: var(--panel-soft); text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; }
+      .users .permission-check input, .users .dlg-form .permission-check input { width: auto; min-height: 0; margin: 2px 0 0; accent-color: var(--gold); grid-column: auto; }
+      .users .permission-check span { display: block; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.35; margin-top: 3px; }
       .users .invite-form button { border: 1px solid var(--ink); background: var(--ink); border-radius: 10px; color: #fff; min-height: 44px; padding: 10px 13px; font: inherit; font-weight: 700; cursor: pointer; }
       .users .invite-form button:hover { background: #2c3329; }
       .users .invite-flash { margin: 0 0 12px; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
@@ -5900,13 +5925,20 @@ const pageTemplates = `
             <input class="f-nachname" type="text" name="last_name" placeholder="Nachname">
             <input class="f-email" type="email" name="email" placeholder="name@example.com" required>
             <select class="f-role" name="role">
-              <option value="Mieter">Mieter</option>
-              <option value="Eigentümer">Eigentümer</option>
-              <option value="Beirat">Beirat</option>
-              <option value="Verwalter">Verwalter</option>
-              <option value="Admin">Admin</option>
-              <option value="Bewohner">Bewohner</option>
+              <option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions="">Mieter</option>
+              <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions="">Eigentümer</option>
+              <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions="">Beirat</option>
+              <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions="">Verwalter</option>
+              <option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking">Admin</option>
+              <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions="">Bewohner</option>
             </select>
+            <fieldset class="permission-fieldset f-permissions">
+              <legend>Sonderrechte</legend>
+              <span class="preset-label" data-preset-label>Standardzugriff</span>
+              <div class="permission-grid">
+                <label class="permission-check"><input type="checkbox" name="permissions" value="parking" data-permission="parking"><strong>Parkplatznutzung</strong><span>Privater Bereich für Stellplatz- und Ladeabrechnung.</span></label>
+              </div>
+            </fieldset>
             <button class="f-submit" type="submit">Einladung senden</button>
           </form>
         </div>
@@ -5973,13 +6005,20 @@ const pageTemplates = `
                     <input class="f-nachname" type="text" name="last_name" value="{{.LastName}}" placeholder="Nachname">
                     <input class="f-email" type="email" name="email" value="{{.Email}}" required>
                     <select class="f-role" name="role">
-                      <option value="Mieter"{{if eq .Role "Mieter"}} selected{{end}}>Mieter</option>
-                      <option value="Eigentümer"{{if eq .Role "Eigentümer"}} selected{{end}}>Eigentümer</option>
-                      <option value="Beirat"{{if eq .Role "Beirat"}} selected{{end}}>Beirat</option>
-                      <option value="Verwalter"{{if eq .Role "Verwalter"}} selected{{end}}>Verwalter</option>
-                      <option value="Admin"{{if eq .Role "Admin"}} selected{{end}}>Admin</option>
-                      <option value="Bewohner"{{if eq .Role "Bewohner"}} selected{{end}}>Bewohner</option>
+                      <option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions=""{{if eq .Role "Mieter"}} selected{{end}}>Mieter</option>
+                      <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions=""{{if eq .Role "Eigentümer"}} selected{{end}}>Eigentümer</option>
+                      <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions=""{{if eq .Role "Beirat"}} selected{{end}}>Beirat</option>
+                      <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions=""{{if eq .Role "Verwalter"}} selected{{end}}>Verwalter</option>
+                      <option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking"{{if eq .Role "Admin"}} selected{{end}}>Admin</option>
+                      <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions=""{{if eq .Role "Bewohner"}} selected{{end}}>Bewohner</option>
                     </select>
+                    <fieldset class="permission-fieldset f-permissions">
+                      <legend>Sonderrechte</legend>
+                      <span class="preset-label" data-preset-label>Gespeicherte Rechte</span>
+                      <div class="permission-grid">
+                        <label class="permission-check"><input type="checkbox" name="permissions" value="parking" data-permission="parking"{{if .ParkingChecked}} checked{{end}}><strong>Parkplatznutzung</strong><span>Privater Bereich für Stellplatz- und Ladeabrechnung.</span></label>
+                      </div>
+                    </fieldset>
                     <button type="submit">Speichern</button>
                   </form>
                   <div class="dlg-delete">

@@ -533,6 +533,79 @@ func TestRoleManagementUIOffersAllEffectiveRoles(t *testing.T) {
 	}
 }
 
+func TestRoleManagementUIOffersPermissionCheckboxesAndPresets(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
+		t.Fatalf("Add invite: %v", err)
+	}
+
+	rr := authedRequest(t, a, "admin@example.com", "/app/settings/users", a.userSettings)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("user settings status = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	for _, want := range []string{
+		`name="permissions" value="parking"`,
+		`data-permission="parking"`,
+		`data-preset-permissions="parking"`,
+		"Parkplatznutzung",
+		`checked><strong>Parkplatznutzung`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("permission UI should contain %q", want)
+		}
+	}
+}
+
+func TestInviteCreatedWithParkingPermissionGrantsParkingAccess(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	values := url.Values{
+		"email":       {"parker@example.com"},
+		"first_name":  {"Pat"},
+		"last_name":   {"Parker"},
+		"role":        {"Mieter"},
+		"permissions": {permissionParking},
+	}
+	create := authedFormRequest(t, a, "admin@example.com", "/app/settings/users", values, a.createInvite)
+	if create.Code != http.StatusSeeOther {
+		t.Fatalf("create invite status = %d, want redirect", create.Code)
+	}
+	profile, ok := a.inviteStore.Get("parker@example.com")
+	if !ok || !profile.HasPermission(permissionParking) {
+		t.Fatalf("stored invite = %+v ok=%v, want parking permission", profile, ok)
+	}
+	parking := authedRequest(t, a, "parker@example.com", "/app/parking", a.parking)
+	if parking.Code != http.StatusOK {
+		t.Fatalf("parking status = %d, want 200 for invited parking user", parking.Code)
+	}
+}
+
+func TestEditInviteCanRevokeParkingPermission(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
+		t.Fatalf("Add invite: %v", err)
+	}
+	values := url.Values{
+		"orig_email": {"parker@example.com"},
+		"email":      {"parker@example.com"},
+		"first_name": {"Pat"},
+		"last_name":  {"Parker"},
+		"role":       {"Mieter"},
+	}
+	edit := authedFormRequest(t, a, "admin@example.com", "/app/settings/users/edit", values, a.editInvite)
+	if edit.Code != http.StatusSeeOther {
+		t.Fatalf("edit invite status = %d, want redirect", edit.Code)
+	}
+	profile, ok := a.inviteStore.Get("parker@example.com")
+	if !ok || profile.HasPermission(permissionParking) {
+		t.Fatalf("stored invite = %+v ok=%v, want parking revoked", profile, ok)
+	}
+	parking := authedRequest(t, a, "parker@example.com", "/app/parking", a.parking)
+	if parking.Code != http.StatusNotFound {
+		t.Fatalf("parking status = %d, want 404 after parking revoke", parking.Code)
+	}
+}
+
 func TestManagerCanManageAnnouncementsButNotPlatformSettings(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
@@ -792,6 +865,14 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("announcement read store: %v", err)
 	}
+	inviteStore, err := newInviteStore("")
+	if err != nil {
+		t.Fatalf("invite store: %v", err)
+	}
+	activityStore, err := newActivityStore("")
+	if err != nil {
+		t.Fatalf("activity store: %v", err)
+	}
 	unitStore, err := newUnitStore("")
 	if err != nil {
 		t.Fatalf("unit store: %v", err)
@@ -815,6 +896,8 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		templates:             tmpl,
 		announcementStore:     announcementStore,
 		announcementReadStore: announcementReadStore,
+		inviteStore:           inviteStore,
+		activityStore:         activityStore,
 		unitStore:             unitStore,
 		parkingStore:          parkingStore,
 	}

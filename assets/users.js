@@ -12,3 +12,27 @@ document.addEventListener("submit", function (e) {
     e.preventDefault();
   }
 });
+
+function applyRolePreset(select) {
+  var option = select.options[select.selectedIndex];
+  if (!option) return;
+  var form = select.closest("form");
+  if (!form) return;
+  var preset = (option.dataset.presetPermissions || "")
+    .split(",")
+    .map(function (item) {
+      return item.trim();
+    })
+    .filter(Boolean);
+  form.querySelectorAll("[data-permission]").forEach(function (input) {
+    input.checked = preset.indexOf(input.dataset.permission) !== -1;
+  });
+  var label = form.querySelector("[data-preset-label]");
+  if (label) label.textContent = option.dataset.presetLabel || "Standardzugriff";
+}
+
+document.addEventListener("change", function (e) {
+  if (e.target.matches(".users .f-role")) {
+    applyRolePreset(e.target);
+  }
+});
