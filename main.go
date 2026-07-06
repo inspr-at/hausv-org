@@ -3675,12 +3675,13 @@ const pageTemplates = `
     .count { color: var(--soft); font-size: 12px; font-weight: 700; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
     .roster-intro { margin: 2px 0 4px; }
     /* invite disclosure (relocated from sidebar) */
-    .disclosure { border: 1px solid var(--line); border-radius: 11px; background: #fbf8f0; overflow: hidden; }
-    .disclosure > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 11px; padding: 13px 16px; font-weight: 700; font-size: 14px; color: var(--ink); user-select: none; }
+    .disclosure { border: 1px solid var(--line); border-radius: 11px; background: #fbf8f0; }
+    .disclosure > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 11px; padding: 13px 16px; font-weight: 700; font-size: 14px; color: var(--ink); user-select: none; border-radius: 10px; }
     .disclosure > summary::-webkit-details-marker { display: none; }
     .disclosure > summary:hover { color: var(--gold-ink); }
     .disclosure > summary:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
-    .invite-plus { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--ink); color: #fff; font-size: 15px; line-height: 1; font-weight: 600; }
+    .disclosure[open] > summary { border-radius: 10px 10px 0 0; }
+    .invite-plus { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--ink); color: #fff; }
     .summary-sub { margin-left: auto; font-weight: 600; font-size: 12.5px; color: var(--soft); }
     .disclosure-body { padding: 4px 16px 18px; }
     .invite-form { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; }
@@ -3721,19 +3722,20 @@ const pageTemplates = `
     /* role legend as (i) popover on the header */
     .th-label { display: inline-flex; align-items: center; gap: 6px; }
     .info { position: relative; display: inline-flex; }
-    .info-btn { width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--gold-ink); background: transparent; color: var(--gold-ink); font-family: Spectral, serif; font-style: italic; font-weight: 700; font-size: 11px; line-height: 1; text-transform: none; display: grid; place-items: center; padding: 0; cursor: help; }
+    .info-btn { width: 17px; height: 17px; border-radius: 50%; border: 1px solid var(--gold-ink); background: transparent; color: var(--gold-ink); display: grid; place-items: center; padding: 0; cursor: help; }
     .info-btn:hover, .info-btn:focus-visible { background: var(--gold-ink); color: #fff; outline: none; }
     .info-btn:focus-visible { box-shadow: 0 0 0 2px rgba(200,153,63,.4); }
-    .popup { position: absolute; top: calc(100% + 11px); left: -12px; width: min(480px, 88vw); max-height: min(78vh, 520px); overflow-y: auto; overscroll-behavior: contain; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 46px rgba(32,37,31,.17), 0 3px 9px rgba(32,37,31,.05); padding: 16px 19px 18px; z-index: 8; opacity: 0; visibility: hidden; transform: translateY(-6px); transition: opacity .16s ease, transform .16s ease; text-transform: none; letter-spacing: normal; }
+    .popup { position: absolute; top: calc(100% + 11px); left: -12px; width: min(480px, 88vw); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 46px rgba(32,37,31,.17), 0 3px 9px rgba(32,37,31,.05); padding: 16px 19px 18px; z-index: 8; opacity: 0; visibility: hidden; transform: translateY(-6px); transition: opacity .16s ease, transform .16s ease; text-transform: none; letter-spacing: normal; }
     .popup::before { content: ""; position: absolute; top: -6px; left: 19px; width: 12px; height: 12px; background: var(--panel); border-left: 1px solid var(--line); border-top: 1px solid var(--line); border-radius: 3px 0 0 0; transform: rotate(45deg); }
+    .popup::after { content: ""; position: absolute; top: -15px; left: 0; right: 0; height: 15px; }
     .info:hover .popup, .info:focus-within .popup { opacity: 1; visibility: visible; transform: translateY(0); }
     .popup-title { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 15px; color: var(--ink); padding-bottom: 11px; border-bottom: 1px solid var(--line); }
-    .popup-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 26px; }
+    .popup-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); column-gap: 26px; }
     .popup .permission { display: block; padding: 12px 0; }
     .popup-grid .permission:nth-child(1), .popup-grid .permission:nth-child(2) { padding-top: 14px; }
     .popup-grid .permission:nth-child(3), .popup-grid .permission:nth-child(4) { border-top: 1px solid var(--line); }
     .popup .permission strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 13.5px; color: var(--ink); margin-bottom: 3px; }
-    .popup .permission .muted { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); line-height: 1.5; }
+    .popup .permission .muted { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); line-height: 1.5; overflow-wrap: break-word; }
     .rdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 9px; vertical-align: middle; }
     .rdot.admin { background: var(--gold); }
     .rdot.resident { background: var(--leaf); }
@@ -3784,7 +3786,7 @@ const pageTemplates = `
 
       <details class="disclosure invite-bar">
         <summary>
-          <span class="invite-plus">+</span>
+          <span class="invite-plus"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>
           Einladung vorbereiten
           <span class="summary-sub">Prototyp &mdash; speichert noch nicht</span>
         </summary>
@@ -3815,7 +3817,7 @@ const pageTemplates = `
               <th class="col-role">
                 <span class="th-label">Rolle
                   <span class="info">
-                    <button type="button" class="info-btn" aria-label="Rollen und Rechte erklärt">i</button>
+                    <button type="button" class="info-btn" aria-label="Rollen und Rechte erklärt"><svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><circle cx="8" cy="3.5" r="1.15" fill="currentColor"/><rect x="6.9" y="6.3" width="2.2" height="6.3" rx="1.1" fill="currentColor"/></svg></button>
                     <span class="popup" role="tooltip">
                       <span class="popup-title">Rollen &amp; Rechte</span>
                       <span class="popup-grid">
