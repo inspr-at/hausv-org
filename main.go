@@ -4335,15 +4335,7 @@ const pageTemplates = `
       }
       @media (max-width: 560px) { .users .popup-grid { grid-template-columns: 1fr; } .users .popup-grid .permission:nth-child(2) { border-top: 1px solid var(--line); padding-top: 12px; } }
     </style>
-    <script>
-    document.addEventListener("click", function (e) {
-      var b = e.target.closest(".users .row-edit");
-      if (b) { var d = document.getElementById("edit-" + b.dataset.edit); if (d && d.showModal) d.showModal(); }
-    });
-    document.addEventListener("submit", function (e) {
-      if (e.target.closest(".users .dlg-delete") && !confirm("Diesen Zugang wirklich löschen?")) e.preventDefault();
-    });
-    </script>
+    <script src="/assets/users.js" defer></script>
     <main class="app-main">
       <div class="content-top"><span class="crumb"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg>Benutzer &amp; Rechte</span></div>
       <section class="page users">
