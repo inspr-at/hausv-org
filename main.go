@@ -1928,6 +1928,24 @@ func (p userProfile) DisplayName() string {
 	return p.Email
 }
 
+// Initials returns up to two uppercase letters for the avatar badge, derived
+// from first+last name, falling back to the first glyph of the display name.
+func (p userProfile) Initials() string {
+	first := initialLetter(p.FirstName)
+	last := initialLetter(p.LastName)
+	if first == "" && last == "" {
+		return strings.ToUpper(initialLetter(p.DisplayName()))
+	}
+	return strings.ToUpper(first + last)
+}
+
+func initialLetter(s string) string {
+	for _, r := range strings.TrimSpace(s) {
+		return string(r)
+	}
+	return ""
+}
+
 func (p userProfile) HasPermission(permission string) bool {
 	permission = strings.ToLower(strings.TrimSpace(permission))
 	for _, item := range p.Permissions {
@@ -1978,11 +1996,14 @@ func (p userProfile) UserRow() userRow {
 		FirstName:       p.FirstName,
 		LastName:        p.LastName,
 		DisplayName:     p.DisplayName(),
+		Initials:        p.Initials(),
 		Role:            p.Role,
 		Status:          p.Status,
 		Tenants:         strings.Join(p.Tenants, ", "),
 		PermissionLabel: permissionLabel(p.Permissions),
+		PermissionList:  permissionLabelList(p.Permissions),
 		AuthLabel:       authMethodsLabel(p.AuthMethods),
+		AuthList:        authMethodsLabelList(p.AuthMethods),
 	}
 }
 
@@ -1992,11 +2013,14 @@ type userRow struct {
 	FirstName       string
 	LastName        string
 	DisplayName     string
+	Initials        string
 	Role            string
 	Status          string
 	Tenants         string
 	PermissionLabel string
+	PermissionList  []string
 	AuthLabel       string
+	AuthList        []string
 }
 
 func (s *tokenStore) Put(token string, email string, tenantSlug string, ttl time.Duration) {
@@ -2896,9 +2920,13 @@ func normalizeAuthMethod(raw string) string {
 }
 
 func authMethodsLabel(methods []string) string {
+	return strings.Join(authMethodsLabelList(methods), ", ")
+}
+
+func authMethodsLabelList(methods []string) []string {
 	normalized, err := normalizeAuthMethods(methods)
 	if err != nil {
-		return "Ungültig"
+		return []string{"Ungültig"}
 	}
 	labels := make([]string, 0, len(normalized))
 	for _, method := range normalized {
@@ -2911,7 +2939,7 @@ func authMethodsLabel(methods []string) string {
 			labels = append(labels, method)
 		}
 	}
-	return strings.Join(labels, ", ")
+	return labels
 }
 
 func normalizeTenants(raw []string, fallback string) []string {
@@ -2954,6 +2982,10 @@ func normalizeHost(raw string) string {
 }
 
 func permissionLabel(permissions []string) string {
+	return strings.Join(permissionLabelList(permissions), ", ")
+}
+
+func permissionLabelList(permissions []string) []string {
 	labels := []string{}
 	for _, permission := range normalizePermissions(permissions) {
 		switch permission {
@@ -2964,9 +2996,9 @@ func permissionLabel(permissions []string) string {
 		}
 	}
 	if len(labels) == 0 {
-		return "Standard"
+		return []string{"Standard"}
 	}
-	return strings.Join(labels, ", ")
+	return labels
 }
 
 func normalizeEmail(v string) string {
@@ -3636,32 +3668,92 @@ const pageTemplates = `
     h1 { margin: 0; font-family: Spectral, serif; font-weight: 500; font-size: clamp(32px,5vw,46px); letter-spacing: -.01em; }
     p { margin: 0; }
     .muted { color: var(--muted); line-height: 1.55; }
-    .kicker { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-ink); border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-bottom: 16px; }
-    .layout { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(280px,.65fr); gap: 22px; align-items: start; }
     .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
-    .stack { display: grid; gap: 22px; }
-    table { width: 100%; border-collapse: collapse; font-size: 15px; }
-    th, td { border-bottom: 1px solid var(--line); padding: 13px 10px; text-align: left; vertical-align: middle; }
-    th { color: var(--gold-ink); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
-    td:first-child, th:first-child { padding-left: 0; }
-    td:last-child, th:last-child { padding-right: 0; }
-    .pill { display: inline-flex; align-items: center; border-radius: 999px; background: rgba(200,153,63,.16); color: #8a6a1f; min-height: 28px; padding: 5px 11px; font-size: 13px; font-weight: 700; }
-    .pill.ok { background: rgba(47,107,74,.12); color: var(--leaf); }
-    .permissions { display: grid; gap: 10px; }
-    .permission { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: #fbf8f0; }
-    .permission strong { display: block; font-family: Spectral, serif; font-weight: 600; margin-bottom: 4px; }
-    .invite { display: grid; gap: 10px; }
+    .stack { display: grid; gap: 14px; }
+    .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-bottom: 14px; }
+    .kicker { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-ink); }
+    .count { color: var(--soft); font-size: 12px; font-weight: 700; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+    .roster-intro { margin: 2px 0 4px; }
+    /* invite disclosure (relocated from sidebar) */
+    .disclosure { border: 1px solid var(--line); border-radius: 11px; background: #fbf8f0; overflow: hidden; }
+    .disclosure > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 11px; padding: 13px 16px; font-weight: 700; font-size: 14px; color: var(--ink); user-select: none; }
+    .disclosure > summary::-webkit-details-marker { display: none; }
+    .disclosure > summary:hover { color: var(--gold-ink); }
+    .disclosure > summary:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+    .invite-plus { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--ink); color: #fff; font-size: 15px; line-height: 1; font-weight: 600; }
+    .summary-sub { margin-left: auto; font-weight: 600; font-size: 12.5px; color: var(--soft); }
+    .disclosure-body { padding: 4px 16px 18px; }
+    .invite-form { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; }
+    .invite-form .f-titel { grid-column: span 2; }
+    .invite-form .f-vorname { grid-column: span 3; }
+    .invite-form .f-nachname { grid-column: span 3; }
+    .invite-form .f-email { grid-column: span 4; }
+    .invite-form .f-role { grid-column: span 5; }
+    .invite-form .f-submit { grid-column: span 7; }
     input, select { width: 100%; border: 1px solid #e2dac9; border-radius: 9px; padding: 12px; font: inherit; background: #fffefb; color: var(--ink); }
     input:disabled, select:disabled { color: var(--soft); background: #f3efe5; }
-    button { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; color: var(--ink); min-height: 41px; padding: 10px 13px; font: inherit; font-weight: 600; cursor: pointer; }
-    button:hover { border-color: var(--gold); }
-    button.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
-    button:disabled { color: var(--soft); cursor: default; background: #f3efe5; border-color: var(--line); }
-    @media (max-width: 860px) {
+    .invite-form button { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; color: var(--soft); min-height: 44px; padding: 10px 13px; font: inherit; font-weight: 700; cursor: default; }
+    /* roster */
+    .table-wrap { overflow: visible; }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    thead th { color: var(--gold-ink); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; text-align: left; padding: 4px 14px 12px; border-bottom: 2px solid var(--line); white-space: nowrap; }
+    tbody td { padding: 15px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr { transition: background .12s ease; }
+    tbody tr:hover { background: #faf6ec; }
+    th:first-child, td:first-child { padding-left: 4px; }
+    th:last-child, td:last-child { padding-right: 4px; }
+    .person { display: flex; align-items: center; gap: 13px; min-width: 220px; }
+    .avatar { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; font-weight: 700; color: var(--gold-ink); background: rgba(200,153,63,.15); border: 1px solid rgba(200,153,63,.32); }
+    .person-name { font-weight: 600; line-height: 1.25; }
+    .person-mail { color: var(--muted); font-size: 13px; margin-top: 2px; word-break: break-word; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fbf8f0; color: #6f6a5c; border-radius: 8px; padding: 4px 10px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+    .chip.plain { color: var(--soft); }
+    .pill { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; min-height: 28px; padding: 4px 12px; font-size: 13px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
+    .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .9; }
+    .pill.role-admin { background: rgba(200,153,63,.16); color: #8a6a1f; border-color: rgba(200,153,63,.28); }
+    .pill.role-resident { background: rgba(47,107,74,.11); color: var(--leaf); border-color: rgba(47,107,74,.2); }
+    .pill.role-beirat { background: rgba(32,37,31,.06); color: #4b4f45; border-color: rgba(32,37,31,.12); }
+    .pill.status-active { background: rgba(47,107,74,.12); color: var(--leaf); }
+    .pill.status-pending { background: rgba(200,153,63,.14); color: #93701d; }
+    th.col-role, td.col-role, th.col-status, td.col-status { white-space: nowrap; }
+    /* role legend as (i) popover on the header */
+    .th-label { display: inline-flex; align-items: center; gap: 6px; }
+    .info { position: relative; display: inline-flex; }
+    .info-btn { width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--gold-ink); background: transparent; color: var(--gold-ink); font-family: Spectral, serif; font-style: italic; font-weight: 700; font-size: 11px; line-height: 1; text-transform: none; display: grid; place-items: center; padding: 0; cursor: help; }
+    .info-btn:hover, .info-btn:focus-visible { background: var(--gold-ink); color: #fff; outline: none; }
+    .info-btn:focus-visible { box-shadow: 0 0 0 2px rgba(200,153,63,.4); }
+    .popup { position: absolute; top: calc(100% + 11px); left: -12px; width: min(480px, 88vw); max-height: min(78vh, 520px); overflow-y: auto; overscroll-behavior: contain; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 46px rgba(32,37,31,.17), 0 3px 9px rgba(32,37,31,.05); padding: 16px 19px 18px; z-index: 8; opacity: 0; visibility: hidden; transform: translateY(-6px); transition: opacity .16s ease, transform .16s ease; text-transform: none; letter-spacing: normal; }
+    .popup::before { content: ""; position: absolute; top: -6px; left: 19px; width: 12px; height: 12px; background: var(--panel); border-left: 1px solid var(--line); border-top: 1px solid var(--line); border-radius: 3px 0 0 0; transform: rotate(45deg); }
+    .info:hover .popup, .info:focus-within .popup { opacity: 1; visibility: visible; transform: translateY(0); }
+    .popup-title { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 15px; color: var(--ink); padding-bottom: 11px; border-bottom: 1px solid var(--line); }
+    .popup-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 26px; }
+    .popup .permission { display: block; padding: 12px 0; }
+    .popup-grid .permission:nth-child(1), .popup-grid .permission:nth-child(2) { padding-top: 14px; }
+    .popup-grid .permission:nth-child(3), .popup-grid .permission:nth-child(4) { border-top: 1px solid var(--line); }
+    .popup .permission strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 13.5px; color: var(--ink); margin-bottom: 3px; }
+    .popup .permission .muted { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); line-height: 1.5; }
+    .rdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 9px; vertical-align: middle; }
+    .rdot.admin { background: var(--gold); }
+    .rdot.resident { background: var(--leaf); }
+    .rdot.beirat { background: #8a8d80; }
+    .rdot.right { background: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold); }
+    @media (max-width: 760px) {
       header { align-items: flex-start; flex-direction: column; }
-      .layout { grid-template-columns: 1fr; }
-      table { display: block; overflow-x: auto; white-space: nowrap; }
+      .table-wrap { overflow: visible; }
+      table, thead, tbody, tr, td { display: block; width: 100%; }
+      thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      tbody tr { border: 1px solid var(--line); border-radius: 11px; padding: 14px; margin-bottom: 12px; background: var(--panel); }
+      tbody tr:hover { background: var(--panel); }
+      tbody td { border: 0; padding: 0; }
+      tbody td.col-person { margin-bottom: 12px; }
+      tbody td[data-label]:not(.col-person) { display: grid; grid-template-columns: 96px 1fr; align-items: start; gap: 10px; padding: 7px 0; border-top: 1px dashed var(--line); }
+      tbody td[data-label]:not(.col-person)::before { content: attr(data-label); color: var(--gold-ink); font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding-top: 5px; }
+      .invite-form > * { grid-column: 1 / -1 !important; }
     }
+    @media (max-width: 560px) { .popup-grid { grid-template-columns: 1fr; } .popup-grid .permission:nth-child(2) { border-top: 1px solid var(--line); padding-top: 12px; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
 </head>
 <body>
@@ -3684,69 +3776,85 @@ const pageTemplates = `
       <h1>Benutzer &amp; Rechte</h1>
       <p class="muted">Lokale Verwaltung der eingeladenen E-Mail-Adressen und ihrer Rollen.</p>
     </div>
-    <div class="layout">
-      <section class="panel">
-        <div class="kicker">Zugänge</div>
-        <p class="muted">Aktuell kommt diese Liste aus der lokalen Umgebungskonfiguration.</p>
+    <section class="panel stack">
+      <div class="panel-head">
+        <span class="kicker">Zugänge</span>
+        <span class="count">{{len .Users}} {{if eq (len .Users) 1}}Person{{else}}Personen{{end}}</span>
+      </div>
+
+      <details class="disclosure invite-bar">
+        <summary>
+          <span class="invite-plus">+</span>
+          Einladung vorbereiten
+          <span class="summary-sub">Prototyp &mdash; speichert noch nicht</span>
+        </summary>
+        <div class="disclosure-body">
+          <p class="muted" style="margin-bottom:12px">Noch ohne Speichern, damit der lokale Prototyp keine falschen Versprechen macht.</p>
+          <form class="invite-form" onsubmit="return false">
+            <input class="f-titel" type="text" placeholder="Titel" disabled>
+            <input class="f-vorname" type="text" placeholder="Vorname" disabled>
+            <input class="f-nachname" type="text" placeholder="Nachname" disabled>
+            <input class="f-email" type="email" placeholder="name@example.com" disabled>
+            <select class="f-role" disabled>
+              <option>Bewohner</option>
+              <option>Admin</option>
+              <option>Beirat</option>
+            </select>
+            <button class="f-submit" type="button" disabled>Einladung vorbereiten</button>
+          </form>
+        </div>
+      </details>
+
+      <p class="muted roster-intro">Aktuell kommt diese Liste aus der lokalen Umgebungskonfiguration.</p>
+
+      <div class="table-wrap">
         <table aria-label="Benutzerliste">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Titel</th>
-              <th>Vorname</th>
-              <th>Nachname</th>
-              <th>E-Mail</th>
-              <th>Rolle</th>
+              <th class="col-person">Person</th>
+              <th class="col-role">
+                <span class="th-label">Rolle
+                  <span class="info">
+                    <button type="button" class="info-btn" aria-label="Rollen und Rechte erklärt">i</button>
+                    <span class="popup" role="tooltip">
+                      <span class="popup-title">Rollen &amp; Rechte</span>
+                      <span class="popup-grid">
+                        <span class="permission"><strong><span class="rdot admin"></span>Admin</strong><span class="muted">Zugänge verwalten, Rollen setzen und Portalbereiche vorbereiten.</span></span>
+                        <span class="permission"><strong><span class="rdot resident"></span>Bewohner</strong><span class="muted">Aushang, Dokumente, Anliegen und Abstimmungen nutzen.</span></span>
+                        <span class="permission"><strong><span class="rdot right"></span>Parkplatznutzung</strong><span class="muted">Separates Sonderrecht für einen privaten, abgestimmten Bereich.</span></span>
+                        <span class="permission"><strong><span class="rdot beirat"></span>Beirat</strong><span class="muted">Vorgemerkt für spätere Moderation und Freigaben.</span></span>
+                      </span>
+                    </span>
+                  </span>
+                </span>
+              </th>
               <th>Rechte</th>
               <th>Anmeldung</th>
-              <th>Status</th>
+              <th class="col-status">Status</th>
             </tr>
           </thead>
           <tbody>
             {{range .Users}}
             <tr>
-              <td>{{.DisplayName}}</td>
-              <td>{{.Title}}</td>
-              <td>{{.FirstName}}</td>
-              <td>{{.LastName}}</td>
-              <td>{{.Email}}</td>
-              <td><span class="pill">{{.Role}}</span></td>
-              <td>{{.PermissionLabel}}</td>
-              <td>{{.AuthLabel}}</td>
-              <td>{{.Status}}</td>
+              <td class="col-person" data-label="Person">
+                <div class="person">
+                  <span class="avatar">{{.Initials}}</span>
+                  <div>
+                    <div class="person-name">{{.DisplayName}}</div>
+                    <div class="person-mail">{{.Email}}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="col-role" data-label="Rolle"><span class="pill {{if eq .Role "Admin"}}role-admin{{else if eq .Role "Bewohner"}}role-resident{{else}}role-beirat{{end}}"><span class="dot"></span>{{.Role}}</span></td>
+              <td data-label="Rechte"><div class="chips">{{range .PermissionList}}<span class="chip{{if eq . "Standard"}} plain{{end}}">{{.}}</span>{{end}}</div></td>
+              <td data-label="Anmeldung"><div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div></td>
+              <td class="col-status" data-label="Status"><span class="pill {{if eq .Status "Aktiv"}}status-active{{else}}status-pending{{end}}"><span class="dot"></span>{{.Status}}</span></td>
             </tr>
             {{end}}
           </tbody>
         </table>
-      </section>
-      <div class="stack">
-        <section class="panel">
-          <div class="kicker">Rechtegruppen</div>
-          <div class="permissions">
-            <div class="permission"><strong>Admin</strong><p class="muted">Zugänge verwalten, Rollen setzen und Portalbereiche vorbereiten.</p></div>
-            <div class="permission"><strong>Bewohner</strong><p class="muted">Aushang, Dokumente, Anliegen und Abstimmungen nutzen.</p></div>
-            <div class="permission"><strong>Parkplatznutzung</strong><p class="muted">Separates Sonderrecht für einen privaten, abgestimmten Bereich.</p></div>
-            <div class="permission"><strong>Beirat</strong><p class="muted">Vorgemerkt für spätere Moderation und Freigaben.</p></div>
-          </div>
-        </section>
-        <section class="panel">
-          <div class="kicker">Einladung vorbereiten</div>
-          <p class="muted">Noch ohne Speichern, damit der lokale Prototyp keine falschen Versprechen macht.</p>
-          <form class="invite">
-            <input type="text" placeholder="Titel" disabled>
-            <input type="text" placeholder="Vorname" disabled>
-            <input type="text" placeholder="Nachname" disabled>
-            <input type="email" placeholder="name@example.com" disabled>
-            <select disabled>
-              <option>Bewohner</option>
-              <option>Admin</option>
-              <option>Beirat</option>
-            </select>
-            <button type="button" disabled>Einladung vorbereiten</button>
-          </form>
-        </section>
       </div>
-    </div>
+    </section>
   </main>
 </body>
 </html>
