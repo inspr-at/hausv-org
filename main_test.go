@@ -44,6 +44,78 @@ func TestSMTPMailerRequiresPairedCredentials(t *testing.T) {
 	}
 }
 
+func TestInviteStoreAddDedupeGetList(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "invites.json")
+	store, err := newInviteStore(path)
+	if err != nil {
+		t.Fatalf("newInviteStore: %v", err)
+	}
+	p := userProfile{Email: "New.Person@example.com", FirstName: "New", LastName: "Person", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	added, err := store.Add(p)
+	if err != nil || !added {
+		t.Fatalf("first Add: added=%v err=%v", added, err)
+	}
+	// dedupe is case-insensitive and must not overwrite the stored profile
+	again, err := store.Add(userProfile{Email: "new.person@example.com", Role: roleAdmin})
+	if err != nil {
+		t.Fatalf("dedupe Add err: %v", err)
+	}
+	if again {
+		t.Fatal("dedupe Add should return false for an existing email")
+	}
+	got, ok := store.Get("NEW.PERSON@example.com")
+	if !ok || got.LastName != "Person" || got.Role != roleResident {
+		t.Fatalf("Get returned %+v ok=%v; dedupe must not have overwritten the role", got, ok)
+	}
+	if n := len(store.List()); n != 1 {
+		t.Fatalf("List len = %d, want 1", n)
+	}
+	reopened, err := newInviteStore(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	if _, ok := reopened.Get("new.person@example.com"); !ok {
+		t.Fatal("invite did not persist across reopen")
+	}
+}
+
+func TestDirectoryProfileEnvWinsAndInviteGrantsLogin(t *testing.T) {
+	store, err := newInviteStore("")
+	if err != nil {
+		t.Fatalf("newInviteStore: %v", err)
+	}
+	// an invite trying to claim admin for an email that is an env resident
+	if _, err := store.Add(userProfile{Email: "resident@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	// a brand-new invited-only user
+	if _, err := store.Add(userProfile{Email: "invited@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	a := &app{
+		defaultTenant: "jhw22",
+		profiles: map[string]userProfile{
+			"resident@example.com": {Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()},
+		},
+		inviteStore: store,
+	}
+	// env is authoritative: the invite must NOT escalate the env resident to admin
+	if p, ok := a.directoryProfile("resident@example.com"); !ok || p.Role != roleResident {
+		t.Fatalf("env must win: got role %q ok=%v", p.Role, ok)
+	}
+	// the invited-only user resolves from the store and may log into the tenant
+	if p, ok := a.directoryProfile("invited@example.com"); !ok || p.Role != roleResident {
+		t.Fatalf("invited user should resolve: got %+v ok=%v", p, ok)
+	}
+	if !a.isAllowed("invited@example.com", "jhw22") {
+		t.Fatal("invited user should be allowed for jhw22")
+	}
+	// an unknown email is still denied
+	if a.isAllowed("stranger@example.com", "jhw22") {
+		t.Fatal("stranger must not be allowed")
+	}
+}
+
 func TestRunHealthcheckAcceptsExpectedPayload(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

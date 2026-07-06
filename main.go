@@ -67,6 +67,7 @@ type app struct {
 	oidcFlows             *oidcFlowStore
 	mailer                mailer
 	templates             *template.Template
+	inviteStore           *inviteStore
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
@@ -129,6 +130,7 @@ type oidcUserClaims struct {
 
 type mailer interface {
 	SendMagicLink(to string, link string) error
+	SendInvite(to string, loginURL string, address string) error
 	Configured() bool
 }
 
@@ -332,6 +334,7 @@ func main() {
 	mux.HandleFunc("POST /app/parking/settings", a.updateParkingSettings)
 	mux.HandleFunc("POST /app/parking/month", a.updateParkingMonth)
 	mux.HandleFunc("GET /app/settings/users", a.userSettings)
+	mux.HandleFunc("POST /app/settings/users", a.createInvite)
 	mux.HandleFunc("GET /{tenant}", a.tenantPathRedirect)
 	mux.HandleFunc("GET /{tenant}/{rest...}", a.tenantPathRedirect)
 
@@ -440,6 +443,11 @@ func newApp() (*app, error) {
 		return nil, fmt.Errorf("SMTP or OIDC login is required when BASE_URL is public")
 	}
 
+	inviteDataPath := env("INVITE_DATA_PATH", "tmp/invites.json")
+	invites, err := newInviteStore(inviteDataPath)
+	if err != nil {
+		return nil, err
+	}
 	parkingDataPath := env("PARKING_DATA_PATH", "tmp/parking.json")
 	parkingStore, err := newParkingStore(parkingDataPath)
 	if err != nil {
@@ -479,6 +487,7 @@ func newApp() (*app, error) {
 		oidcFlows:             &oidcFlowStore{items: map[string]oidcFlow{}},
 		mailer:                mailTransport,
 		templates:             tmpl,
+		inviteStore:           invites,
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
@@ -915,6 +924,7 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profile := a.profileFor(email)
+	inviteMsg, inviteOK := inviteMessage(r.URL.Query().Get("invite"))
 	a.render(w, "userSettings", map[string]any{
 		"Title":       "Benutzer & Rechte",
 		"Tenant":      tenant,
@@ -922,7 +932,91 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
 		"DisplayName": profile.DisplayName(),
 		"Role":        role,
 		"Users":       a.userRows(tenant.Slug),
+		"InviteMsg":   inviteMsg,
+		"InviteOK":    inviteOK,
 	})
+}
+
+func inviteMessage(status string) (string, bool) {
+	switch status {
+	case "invited":
+		return "Einladung gespeichert und per E-Mail verschickt.", true
+	case "saved_no_mail":
+		return "Einladung gespeichert. Die E-Mail konnte nicht zugestellt werden.", false
+	case "exists":
+		return "Diese E-Mail-Adresse ist bereits eingetragen.", false
+	case "invalid_email":
+		return "Bitte eine gültige E-Mail-Adresse angeben.", false
+	case "error":
+		return "Die Einladung konnte nicht gespeichert werden.", false
+	default:
+		return "", false
+	}
+}
+
+func (a *app) createInvite(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	_, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if role != roleAdmin {
+		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	inviteEmail := normalizeEmail(r.FormValue("email"))
+	if _, err := mail.ParseAddress(inviteEmail); err != nil {
+		a.redirectInvite(w, r, "invalid_email")
+		return
+	}
+	if _, exists := a.profiles[inviteEmail]; exists {
+		a.redirectInvite(w, r, "exists")
+		return
+	}
+
+	inviteRole := normalizeRole(r.FormValue("role"))
+	if inviteRole == "" {
+		inviteRole = roleResident
+	}
+	profile := userProfile{
+		Email:       inviteEmail,
+		Title:       strings.TrimSpace(r.FormValue("title")),
+		FirstName:   strings.TrimSpace(r.FormValue("first_name")),
+		LastName:    strings.TrimSpace(r.FormValue("last_name")),
+		Role:        inviteRole,
+		Status:      "Eingeladen",
+		Tenants:     []string{tenant.Slug},
+		AuthMethods: defaultAuthMethods(),
+	}
+
+	added, err := a.inviteStore.Add(profile)
+	if err != nil {
+		log.Printf("invite persistence failed for %s: %v", redactedEmail(inviteEmail), err)
+		a.redirectInvite(w, r, "error")
+		return
+	}
+	if !added {
+		a.redirectInvite(w, r, "exists")
+		return
+	}
+
+	loginURL := a.publicBaseURL(r, tenant) + "/"
+	if err := a.mailer.SendInvite(inviteEmail, loginURL, tenant.Address); err != nil {
+		log.Printf("invite email delivery failed for %s: %v", redactedEmail(inviteEmail), err)
+		a.redirectInvite(w, r, "saved_no_mail")
+		return
+	}
+	a.redirectInvite(w, r, "invited")
+}
+
+func (a *app) redirectInvite(w http.ResponseWriter, r *http.Request, status string) {
+	http.Redirect(w, r, "/app/settings/users?invite="+url.QueryEscape(status), http.StatusSeeOther)
 }
 
 func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
@@ -1030,8 +1124,24 @@ func (a *app) currentUser(r *http.Request) (string, string, string, bool) {
 	return email, a.roleFor(email, tenantSlug), tenantSlug, true
 }
 
+// directoryProfile resolves a profile from the env directory first, then falls
+// back to persisted invites. Env is authoritative: an invite can never override
+// or escalate an env-defined user, so existing logins are unaffected.
+func (a *app) directoryProfile(email string) (userProfile, bool) {
+	email = normalizeEmail(email)
+	if profile, ok := a.profiles[email]; ok {
+		return profile, true
+	}
+	if a.inviteStore != nil {
+		if profile, ok := a.inviteStore.Get(email); ok {
+			return profile, true
+		}
+	}
+	return userProfile{}, false
+}
+
 func (a *app) isAllowed(email string, tenantSlug string) bool {
-	if profile, ok := a.profiles[email]; ok && profile.HasTenant(tenantSlug) {
+	if profile, ok := a.directoryProfile(email); ok && profile.HasTenant(tenantSlug) {
 		return true
 	}
 	if _, ok := a.admins[email]; ok {
@@ -1046,7 +1156,7 @@ func (a *app) isAuthMethodAllowed(email string, tenantSlug string, authMethod st
 	if authMethod == "" {
 		return false
 	}
-	profile, ok := a.profiles[normalizeEmail(email)]
+	profile, ok := a.directoryProfile(email)
 	if !ok || !profile.HasTenant(tenantSlug) {
 		return false
 	}
@@ -1058,7 +1168,7 @@ func (a *app) emailLoginAvailable() bool {
 }
 
 func (a *app) roleFor(email string, tenantSlug string) string {
-	if profile, ok := a.profiles[email]; ok && profile.Role != "" {
+	if profile, ok := a.directoryProfile(email); ok && profile.Role != "" {
 		return profile.Role
 	}
 	if _, ok := a.admins[email]; ok {
@@ -1069,7 +1179,7 @@ func (a *app) roleFor(email string, tenantSlug string) string {
 
 func (a *app) profileFor(email string) userProfile {
 	email = normalizeEmail(email)
-	if profile, ok := a.profiles[email]; ok {
+	if profile, ok := a.directoryProfile(email); ok {
 		return profile
 	}
 	role := a.roleFor(email, a.defaultTenant)
@@ -1104,6 +1214,20 @@ func (a *app) userRows(tenantSlug string) []userRow {
 			continue
 		}
 		rows = append(rows, userProfile{Email: email, Role: roleResident, Status: "Eingeladen", Tenants: []string{tenantSlug}}.UserRow())
+		seen[email] = struct{}{}
+	}
+	if a.inviteStore != nil {
+		for _, profile := range a.inviteStore.List() {
+			email := normalizeEmail(profile.Email)
+			if _, ok := seen[email]; ok {
+				continue
+			}
+			if !profile.HasTenant(tenantSlug) {
+				continue
+			}
+			rows = append(rows, profile.UserRow())
+			seen[email] = struct{}{}
+		}
 	}
 	if len(rows) == 0 {
 		rows = append(rows, userProfile{Email: "Noch keine Einladungen", Role: roleResident, Status: "Offen", Tenants: []string{tenantSlug}}.UserRow())
@@ -2357,6 +2481,37 @@ func (m smtpMailer) SendMagicLink(to string, link string) error {
 	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
 }
 
+func (m smtpMailer) SendInvite(to string, loginURL string, address string) error {
+	if !m.Configured() {
+		return errors.New("smtp not configured")
+	}
+	addr := net.JoinHostPort(m.host, m.port)
+	fromAddr, err := mail.ParseAddress(m.from)
+	if err != nil {
+		return fmt.Errorf("invalid MAIL_FROM")
+	}
+	msg := strings.Join([]string{
+		"From: " + m.from,
+		"To: " + to,
+		"Subject: Einladung zum WEG Portal " + address,
+		"MIME-Version: 1.0",
+		"Content-Type: text/plain; charset=UTF-8",
+		"",
+		"Hallo,",
+		"",
+		"Sie wurden zum WEG Portal \"" + address + "\" eingeladen.",
+		"Melden Sie sich mit dieser E-Mail-Adresse an:",
+		loginURL,
+		"",
+		"Beim Anmelden erhalten Sie einen einmaligen Login-Link per E-Mail",
+		"oder nutzen Ihren SSO-Zugang.",
+		"",
+		"Freundliche Grüße",
+		"WEG Portal",
+	}, "\r\n")
+	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
+}
+
 func newHomeAssistantConfig() homeAssistantConfig {
 	return homeAssistantConfig{
 		baseURL:           strings.TrimRight(env("HA_BASE_URL", ""), "/"),
@@ -2849,6 +3004,94 @@ func parseUserProfiles(raw string, allowed map[string]struct{}, admins map[strin
 		out[email] = userProfile{Email: email, Role: roleResident, Status: "Eingeladen", Tenants: []string{defaultTenant}, AuthMethods: defaultAuthMethods()}
 	}
 	return out, nil
+}
+
+type inviteStore struct {
+	path string
+	mu   sync.Mutex
+	data inviteStoreData
+}
+
+type inviteStoreData struct {
+	Invites []userProfile `json:"invites"`
+}
+
+func newInviteStore(path string) (*inviteStore, error) {
+	store := &inviteStore{path: path, data: inviteStoreData{Invites: []userProfile{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read invite data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid invite data")
+	}
+	return store, nil
+}
+
+func (s *inviteStore) Get(email string) (userProfile, bool) {
+	email = normalizeEmail(email)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, profile := range s.data.Invites {
+		if normalizeEmail(profile.Email) == email {
+			return profile, true
+		}
+	}
+	return userProfile{}, false
+}
+
+func (s *inviteStore) List() []userProfile {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]userProfile(nil), s.data.Invites...)
+}
+
+// Add persists a new invite. Returns false (no error) when the email is already
+// invited. Callers must ensure the email is not already in the env directory.
+func (s *inviteStore) Add(profile userProfile) (bool, error) {
+	profile.Email = normalizeEmail(profile.Email)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, existing := range s.data.Invites {
+		if normalizeEmail(existing.Email) == profile.Email {
+			return false, nil
+		}
+	}
+	s.data.Invites = append(s.data.Invites, profile)
+	if err := s.saveLocked(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *inviteStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create invite data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode invite data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write invite data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace invite data")
+	}
+	return nil
 }
 
 func normalizeRole(raw string) string {
@@ -3693,7 +3936,11 @@ const pageTemplates = `
     .invite-form .f-submit { grid-column: span 7; }
     input, select { width: 100%; border: 1px solid #e2dac9; border-radius: 9px; padding: 12px; font: inherit; background: #fffefb; color: var(--ink); }
     input:disabled, select:disabled { color: var(--soft); background: #f3efe5; }
-    .invite-form button { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; color: var(--soft); min-height: 44px; padding: 10px 13px; font: inherit; font-weight: 700; cursor: default; }
+    .invite-form button { border: 1px solid var(--ink); background: var(--ink); border-radius: 10px; color: #fff; min-height: 44px; padding: 10px 13px; font: inherit; font-weight: 700; cursor: pointer; }
+    .invite-form button:hover { background: #2c3329; }
+    .invite-flash { margin: 0 0 12px; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
+    .invite-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
+    .invite-flash.warn { background: rgba(200,153,63,.14); color: #93701d; border-color: rgba(200,153,63,.3); }
     /* roster */
     .table-wrap { overflow: visible; }
     table { width: 100%; border-collapse: collapse; font-size: 15px; }
@@ -3784,30 +4031,31 @@ const pageTemplates = `
         <span class="count">{{len .Users}} {{if eq (len .Users) 1}}Person{{else}}Personen{{end}}</span>
       </div>
 
-      <details class="disclosure invite-bar">
+      <details class="disclosure invite-bar"{{if .InviteMsg}} open{{end}}>
         <summary>
           <span class="invite-plus"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>
-          Einladung vorbereiten
-          <span class="summary-sub">Prototyp &mdash; speichert noch nicht</span>
+          Person einladen
+          <span class="summary-sub">Speichert &amp; lädt per E-Mail ein</span>
         </summary>
         <div class="disclosure-body">
-          <p class="muted" style="margin-bottom:12px">Noch ohne Speichern, damit der lokale Prototyp keine falschen Versprechen macht.</p>
-          <form class="invite-form" onsubmit="return false">
-            <input class="f-titel" type="text" placeholder="Titel" disabled>
-            <input class="f-vorname" type="text" placeholder="Vorname" disabled>
-            <input class="f-nachname" type="text" placeholder="Nachname" disabled>
-            <input class="f-email" type="email" placeholder="name@example.com" disabled>
-            <select class="f-role" disabled>
-              <option>Bewohner</option>
-              <option>Admin</option>
-              <option>Beirat</option>
+          {{if .InviteMsg}}<p class="invite-flash{{if .InviteOK}} ok{{else}} warn{{end}}">{{.InviteMsg}}</p>{{end}}
+          <p class="muted" style="margin-bottom:12px">Die eingeladene Person wird gespeichert und erhält eine E-Mail mit dem Anmelde-Link. Sie kann sich danach mit dieser Adresse anmelden.</p>
+          <form class="invite-form" method="post" action="/app/settings/users">
+            <input class="f-titel" type="text" name="title" placeholder="Titel">
+            <input class="f-vorname" type="text" name="first_name" placeholder="Vorname">
+            <input class="f-nachname" type="text" name="last_name" placeholder="Nachname">
+            <input class="f-email" type="email" name="email" placeholder="name@example.com" required>
+            <select class="f-role" name="role">
+              <option value="Bewohner">Bewohner</option>
+              <option value="Admin">Admin</option>
+              <option value="Beirat">Beirat</option>
             </select>
-            <button class="f-submit" type="button" disabled>Einladung vorbereiten</button>
+            <button class="f-submit" type="submit">Einladung senden</button>
           </form>
         </div>
       </details>
 
-      <p class="muted roster-intro">Aktuell kommt diese Liste aus der lokalen Umgebungskonfiguration.</p>
+      <p class="muted roster-intro">Diese Liste kommt aus der Umgebungskonfiguration und den hier gespeicherten Einladungen.</p>
 
       <div class="table-wrap">
         <table aria-label="Benutzerliste">

@@ -100,6 +100,11 @@ The compose service bind-mounts that path from:
 /var/lib/csb1-docker/weg-portal
 ```
 
+Invited users (Benutzer & Rechte -> "Person einladen") persist to `/data/invites.json`
+via `INVITE_DATA_PATH` in compose, on the same bind-mount, so they survive redeploys.
+Env-config users (`WEG_USERS_JSON`/`ADMIN_EMAILS`/`INVITE_EMAILS`) stay authoritative;
+a stored invite can never override or escalate an env-defined user.
+
 Historical accounting backfill uses Home Assistant recorder statistics from
 `PARKING_HISTORY_START` onward. For the 2026 rollout this is set in compose as:
 
