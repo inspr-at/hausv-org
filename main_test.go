@@ -458,7 +458,9 @@ func TestNormalizeRoleAliasesAndCapabilityMatrix(t *testing.T) {
 		{roleAdmin, capabilityManageUsers, true},
 		{roleAdmin, capabilityManageParking, true},
 		{roleManager, capabilityManageAnnouncements, true},
-		{roleManager, capabilityManageUsers, false},
+		{roleManager, capabilityManageUsers, true},
+		{roleManager, capabilityManageParking, false},
+		{roleManager, capabilityPlatformAdmin, false},
 		{roleOwner, capabilityVote, true},
 		{roleOwner, capabilityOwnerDocuments, true},
 		{roleRenter, capabilityVote, false},
@@ -506,6 +508,24 @@ func TestSettingsHubAdminLinksManagementSections(t *testing.T) {
 	}
 }
 
+func TestSettingsHubManagerLinksTenantManagementOnly(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	rr := authedRequest(t, a, "manager@example.com", "/app/settings", a.settingsHub)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("settings hub status = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	for _, want := range []string{`href="/app/settings/users"`, "Benutzer &amp; Rechte", "Gebäude"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("manager settings hub should contain %q", want)
+		}
+	}
+	if strings.Contains(body, `href="/app/parking/settings"`) {
+		t.Fatal("manager settings hub must not expose parking accounting config")
+	}
+}
+
 func TestRoleManagementUIOffersAllEffectiveRoles(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	for _, profile := range []userProfile{
@@ -525,7 +545,7 @@ func TestRoleManagementUIOffersAllEffectiveRoles(t *testing.T) {
 	for _, want := range []string{
 		`value="Mieter"`, `value="Eigentümer"`, `value="Beirat"`, `value="Verwalter"`, `value="Admin"`,
 		"role-owner", "role-renter", "role-manager", "role-beirat",
-		"Eigentümer-Dokumente", "Abstimmungen", "Aushang verwalten", "Leserechte",
+		"Eigentümer-Dokumente", "Abstimmungen", "Aushang verwalten", "Gebäude verwalten", "Leserechte",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("role management UI should contain %q", want)
@@ -606,12 +626,40 @@ func TestEditInviteCanRevokeParkingPermission(t *testing.T) {
 	}
 }
 
-func TestManagerCanManageAnnouncementsButNotPlatformSettings(t *testing.T) {
+func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
 	users := authedRequest(t, a, "manager@example.com", "/app/settings/users", a.userSettings)
-	if users.Code != http.StatusForbidden {
-		t.Fatalf("manager user settings status = %d, want 403", users.Code)
+	if users.Code != http.StatusOK {
+		t.Fatalf("manager user settings status = %d, want 200", users.Code)
+	}
+	if !strings.Contains(users.Body.String(), "Benutzer &amp; Rechte") {
+		t.Fatal("manager should see user management page")
+	}
+	if strings.Contains(users.Body.String(), `<option value="Admin"`) {
+		t.Fatal("manager user management must not offer Admin role assignment")
+	}
+	adminInvite := authedFormRequest(t, a, "manager@example.com", "/app/settings/users", url.Values{
+		"email": {"new-admin@example.com"},
+		"role":  {"Admin"},
+	}, a.createInvite)
+	if adminInvite.Code != http.StatusSeeOther {
+		t.Fatalf("manager admin invite status = %d, want redirect", adminInvite.Code)
+	}
+	if _, ok := a.inviteStore.Get("new-admin@example.com"); ok {
+		t.Fatal("manager must not be able to create an Admin invite")
+	}
+	if _, err := a.inviteStore.Add(userProfile{Email: "persisted-admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+		t.Fatalf("Add admin invite: %v", err)
+	}
+	deleteAdmin := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/delete", url.Values{
+		"email": {"persisted-admin@example.com"},
+	}, a.deleteInvite)
+	if deleteAdmin.Code != http.StatusSeeOther {
+		t.Fatalf("manager admin delete status = %d, want redirect", deleteAdmin.Code)
+	}
+	if _, ok := a.inviteStore.Get("persisted-admin@example.com"); !ok {
+		t.Fatal("manager must not be able to delete an Admin invite")
 	}
 	values := url.Values{
 		"title": {"Manager post"},
@@ -620,6 +668,19 @@ func TestManagerCanManageAnnouncementsButNotPlatformSettings(t *testing.T) {
 	write := authedFormRequest(t, a, "manager@example.com", "/app/announcements", values, a.createAnnouncement)
 	if write.Code != http.StatusSeeOther {
 		t.Fatalf("manager announcement create status = %d, want redirect", write.Code)
+	}
+	parkingSettings := authedRequest(t, a, "manager@example.com", "/app/parking/settings", a.parkingSettings)
+	if parkingSettings.Code != http.StatusForbidden {
+		t.Fatalf("manager parking settings status = %d, want 403", parkingSettings.Code)
+	}
+}
+
+func TestResidentCannotManageTenantUsers(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	users := authedRequest(t, a, "resident@example.com", "/app/settings/users", a.userSettings)
+	if users.Code != http.StatusForbidden {
+		t.Fatalf("resident user settings status = %d, want 403", users.Code)
 	}
 }
 

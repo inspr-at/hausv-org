@@ -55,6 +55,10 @@ const (
 	capabilityManageUsers         capability = "manage-users"
 	capabilityManageParking       capability = "manage-parking"
 	capabilityManageAnnouncements capability = "manage-announcements"
+	capabilityManageDocuments     capability = "manage-documents"
+	capabilityManageIssues        capability = "manage-issues"
+	capabilityManageVotes         capability = "manage-votes"
+	capabilityManageBuilding      capability = "manage-building"
 	capabilityOwnerDocuments      capability = "owner-documents"
 	capabilityVote                capability = "vote"
 	capabilityOversight           capability = "oversight"
@@ -1330,9 +1334,9 @@ func hasCapability(role string, action capability) bool {
 		return true
 	}
 	switch action {
-	case capabilityPlatformAdmin, capabilityManageUsers, capabilityManageParking:
+	case capabilityPlatformAdmin, capabilityManageParking:
 		return false
-	case capabilityManageAnnouncements:
+	case capabilityManageUsers, capabilityManageAnnouncements, capabilityManageDocuments, capabilityManageIssues, capabilityManageVotes, capabilityManageBuilding:
 		return role == roleManager
 	case capabilityOwnerDocuments, capabilityVote:
 		return role == roleOwner
@@ -1349,7 +1353,7 @@ func roleCapabilityLabels(role string) []string {
 	case roleAdmin:
 		return []string{"Plattformverwaltung", "Alle Bereiche"}
 	case roleManager:
-		return []string{"Aushang verwalten", "Übersicht"}
+		return []string{"Aushang verwalten", "Benutzer verwalten", "Gebäude verwalten"}
 	case roleOwner:
 		return []string{"Eigentümer-Dokumente", "Abstimmungen"}
 	case roleRenter:
@@ -1733,9 +1737,19 @@ func inviteMessage(status string) (string, bool) {
 		return "Zugang gelöscht.", true
 	case "not_editable":
 		return "Dieser Eintrag kommt aus der Konfiguration und kann hier nicht geändert werden.", false
+	case "forbidden_role":
+		return "Nur Plattform-Admins können die Admin-Rolle vergeben.", false
 	default:
 		return "", false
 	}
+}
+
+func canAssignUserRole(actorRole string, targetRole string) bool {
+	targetRole = normalizeRole(targetRole)
+	if targetRole == roleAdmin {
+		return hasCapability(actorRole, capabilityPlatformAdmin)
+	}
+	return hasCapability(actorRole, capabilityManageUsers)
 }
 
 func (a *app) createInvite(w http.ResponseWriter, r *http.Request) {
@@ -1767,6 +1781,10 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request) {
 	inviteRole := normalizeRole(r.FormValue("role"))
 	if inviteRole == "" {
 		inviteRole = roleResident
+	}
+	if !canAssignUserRole(role, inviteRole) {
+		a.redirectInvite(w, r, "forbidden_role")
+		return
 	}
 	profile := userProfile{
 		Email:       inviteEmail,
@@ -1827,6 +1845,10 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
+	if normalizeRole(existing.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
+		a.redirectInvite(w, r, "not_editable")
+		return
+	}
 
 	newEmail := normalizeEmail(r.FormValue("email"))
 	if _, err := mail.ParseAddress(newEmail); err != nil {
@@ -1843,6 +1865,10 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request) {
 	newRole := normalizeRole(r.FormValue("role"))
 	if newRole == "" {
 		newRole = roleResident
+	}
+	if !canAssignUserRole(role, newRole) {
+		a.redirectInvite(w, r, "forbidden_role")
+		return
 	}
 	updated := existing
 	updated.Email = newEmail
@@ -1885,7 +1911,17 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	removed, err := a.inviteStore.Delete(normalizeEmail(r.FormValue("email")))
+	deleteEmail := normalizeEmail(r.FormValue("email"))
+	existing, isInvite := a.inviteStore.Get(deleteEmail)
+	if !isInvite {
+		a.redirectInvite(w, r, "not_editable")
+		return
+	}
+	if normalizeRole(existing.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
+		a.redirectInvite(w, r, "not_editable")
+		return
+	}
+	removed, err := a.inviteStore.Delete(deleteEmail)
 	if err != nil {
 		a.redirectInvite(w, r, "error")
 		return
@@ -1904,10 +1940,30 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	if _, ok := data["AppVersion"]; !ok {
 		data["AppVersion"] = buildLabel()
 	}
+	enrichCapabilityData(data)
 	a.enrichUnreadAnnouncementData(data)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := a.templates.ExecuteTemplate(w, name, data); err != nil {
 		log.Printf("render %s failed: %v", name, err)
+	}
+}
+
+func enrichCapabilityData(data map[string]any) {
+	role, _ := data["Role"].(string)
+	if role == "" {
+		return
+	}
+	if _, ok := data["IsAdmin"]; !ok {
+		data["IsAdmin"] = hasCapability(role, capabilityPlatformAdmin)
+	}
+	if _, ok := data["CanManageUsers"]; !ok {
+		data["CanManageUsers"] = hasCapability(role, capabilityManageUsers)
+	}
+	if _, ok := data["CanManageAnnouncements"]; !ok {
+		data["CanManageAnnouncements"] = hasCapability(role, capabilityManageAnnouncements)
+	}
+	if _, ok := data["CanManageBuilding"]; !ok {
+		data["CanManageBuilding"] = hasCapability(role, capabilityManageBuilding)
 	}
 }
 
@@ -5259,7 +5315,7 @@ const pageTemplates = `
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</span>
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen</span>
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</span>
-      {{if .IsAdmin}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
+      {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
       <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>
     </nav>
     <div class="side-foot">
@@ -5338,7 +5394,7 @@ const pageTemplates = `
             <div class="quick-list">
               <a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><div><h3>Aushang</h3><p>Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p></div>{{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
               {{if .CanSeeParking}}<a class="quick-row" href="/app/parking"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg><div><h3>Parkplatznutzung</h3><p>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</p></div><span class="quick-arrow">›</span></a>{{end}}
-              {{if .IsAdmin}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
+              {{if .CanManageUsers}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .CanManageAnnouncements}}<a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><div><h3>Aushang verwalten</h3><p>Beiträge verfassen, fixieren, planen und löschen.</p></div><span class="quick-arrow">›</span></a>{{end}}
             </div>
           </section>
@@ -5709,18 +5765,18 @@ const pageTemplates = `
           </section>
           <section class="panel">
             <div class="kicker">Verwaltung</div>
-            {{if .IsAdmin}}
+            {{if .CanManageUsers}}
               <div class="quick-list">
                 <a class="quick-row" href="/app/settings/users">
                   <svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg>
                   <div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div>
                   <span class="quick-arrow">›</span>
                 </a>
-                <a class="quick-row" href="/app/parking/settings">
+                {{if .IsAdmin}}<a class="quick-row" href="/app/parking/settings">
                   <svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg>
                   <div><h3>Parkplatz-Abrechnung</h3><p>Netzgebühr und Abrechnungswerte für die private Parkplatznutzung.</p></div>
                   <span class="quick-arrow">›</span>
-                </a>
+                </a>{{end}}
                 <div class="quick-row disabled">
                   <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/><path d="M8 10h.01M16 10h.01"/></svg>
                   <div><h3>Gebäude</h3><p>Adresse, Kontakte, Einheiten und Hausdaten werden hier zusammengeführt.</p></div>
@@ -5800,8 +5856,8 @@ const pageTemplates = `
       .users .preset-label { display: inline-flex; width: fit-content; min-height: 24px; align-items: center; border: 1px solid rgba(200,153,63,.28); border-radius: 999px; padding: 3px 9px; background: rgba(200,153,63,.12); color: #8a6a1f; font-size: 11.5px; font-weight: 800; }
       .users .permission-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 8px; }
       .users .permission-check { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 9px; align-items: start; border: 1px solid var(--line); border-radius: 8px; padding: 10px; color: var(--ink); background: var(--panel-soft); text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; }
-      .users .permission-check input, .users .dlg-form .permission-check input { width: auto; min-height: 0; margin: 2px 0 0; accent-color: var(--gold); grid-column: auto; }
-      .users .permission-check span { display: block; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.35; margin-top: 3px; }
+      .users .permission-check input, .users .dlg-form .permission-check input { width: auto; min-height: 0; margin: 2px 0 0; accent-color: var(--gold); grid-row: 1 / span 2; }
+      .users .permission-check span { display: block; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.35; margin-top: 3px; grid-column: 2; }
       .users .invite-form button { border: 1px solid var(--ink); background: var(--ink); border-radius: 10px; color: #fff; min-height: 44px; padding: 10px 13px; font: inherit; font-weight: 700; cursor: pointer; }
       .users .invite-form button:hover { background: #2c3329; }
       .users .invite-flash { margin: 0 0 12px; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
@@ -5929,7 +5985,7 @@ const pageTemplates = `
               <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions="">Eigentümer</option>
               <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions="">Beirat</option>
               <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions="">Verwalter</option>
-              <option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking">Admin</option>
+              {{if .IsAdmin}}<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking">Admin</option>{{end}}
               <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions="">Bewohner</option>
             </select>
             <fieldset class="permission-fieldset f-permissions">
@@ -5959,7 +6015,7 @@ const pageTemplates = `
                       <span class="popup-title">Rollen &amp; Rechte</span>
                       <span class="popup-grid">
                         <span class="permission"><strong><span class="rdot admin"></span>Admin</strong><span class="muted">Zugänge verwalten, Rollen setzen und Portalbereiche vorbereiten.</span></span>
-                        <span class="permission"><strong><span class="rdot manager"></span>Verwalter</strong><span class="muted">Aushang verwalten und übergreifende Leserechte vorbereiten.</span></span>
+                        <span class="permission"><strong><span class="rdot manager"></span>Verwalter</strong><span class="muted">Tenant-Verwaltung ohne Plattform- oder Parkplatzkonfiguration.</span></span>
                         <span class="permission"><strong><span class="rdot owner"></span>Eigentümer</strong><span class="muted">Bewohnerbereich plus Eigentümer-Dokumente und Abstimmungen.</span></span>
                         <span class="permission"><strong><span class="rdot renter"></span>Mieter</strong><span class="muted">Bewohnerbereich ohne Eigentümer-Abstimmungen.</span></span>
                         <span class="permission"><strong><span class="rdot beirat"></span>Beirat</strong><span class="muted">Bewohnerbereich plus lesende Übersicht.</span></span>
@@ -6009,7 +6065,7 @@ const pageTemplates = `
                       <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions=""{{if eq .Role "Eigentümer"}} selected{{end}}>Eigentümer</option>
                       <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions=""{{if eq .Role "Beirat"}} selected{{end}}>Beirat</option>
                       <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions=""{{if eq .Role "Verwalter"}} selected{{end}}>Verwalter</option>
-                      <option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking"{{if eq .Role "Admin"}} selected{{end}}>Admin</option>
+                      {{if $.IsAdmin}}<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking"{{if eq .Role "Admin"}} selected{{end}}>Admin</option>{{end}}
                       <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions=""{{if eq .Role "Bewohner"}} selected{{end}}>Bewohner</option>
                     </select>
                     <fieldset class="permission-fieldset f-permissions">
