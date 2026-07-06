@@ -105,6 +105,12 @@ via `INVITE_DATA_PATH` in compose, on the same bind-mount, so they survive redep
 Env-config users (`WEG_USERS_JSON`/`ADMIN_EMAILS`/`INVITE_EMAILS`) stay authoritative;
 a stored invite can never override or escalate an env-defined user.
 
+Login activity (last-login per email) persists to `/data/activity.json` via
+`ACTIVITY_DATA_PATH`. The roster derives status from it (a user who has logged in
+shows `Aktiv` + "zuletzt angemeldet: <date>"; invited-but-never-logged-in shows
+"noch nie angemeldet"), so it stays consistent for both env and invited users
+without mutating their records.
+
 Historical accounting backfill uses Home Assistant recorder statistics from
 `PARKING_HISTORY_START` onward. For the 2026 rollout this is set in compose as:
 

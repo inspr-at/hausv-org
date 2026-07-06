@@ -171,6 +171,52 @@ func TestInviteStoreUpdateRekeyAndDelete(t *testing.T) {
 	}
 }
 
+func TestActivityStoreTouchGetPersist(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "activity.json")
+	store, err := newActivityStore(path)
+	if err != nil {
+		t.Fatalf("newActivityStore: %v", err)
+	}
+	if _, ok := store.Get("nobody@example.com"); ok {
+		t.Fatal("empty store should have no records")
+	}
+	when := time.Date(2026, 7, 6, 10, 0, 0, 0, time.UTC)
+	if err := store.Touch("Person@Example.com", when, authMethodEmail); err != nil {
+		t.Fatalf("Touch: %v", err)
+	}
+	rec, ok := store.Get("person@example.com") // case-insensitive key
+	if !ok || !rec.LastLogin.Equal(when) {
+		t.Fatalf("Get = %+v ok=%v", rec, ok)
+	}
+	reopened, err := newActivityStore(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	if _, ok := reopened.Get("person@example.com"); !ok {
+		t.Fatal("activity did not persist across reopen")
+	}
+}
+
+func TestUserRowsDeriveStatusFromActivity(t *testing.T) {
+	act, _ := newActivityStore("")
+	_ = act.Touch("loggedin@example.com", time.Date(2026, 7, 6, 9, 0, 0, 0, time.UTC), authMethodOIDC)
+	inv, _ := newInviteStore("")
+	_, _ = inv.Add(userProfile{Email: "loggedin@example.com", Role: roleResident, Status: "Eingeladen", Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	_, _ = inv.Add(userProfile{Email: "never@example.com", Role: roleResident, Status: "Eingeladen", Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := &app{defaultTenant: "jhw22", profiles: map[string]userProfile{}, inviteStore: inv, activityStore: act}
+
+	byEmail := map[string]userRow{}
+	for _, r := range a.userRows("jhw22") {
+		byEmail[r.Email] = r
+	}
+	if got := byEmail["loggedin@example.com"]; got.Status != "Aktiv" || !strings.Contains(got.LastSeen, "zuletzt angemeldet") {
+		t.Fatalf("logged-in invite: status=%q lastseen=%q (want Aktiv + zuletzt)", got.Status, got.LastSeen)
+	}
+	if got := byEmail["never@example.com"]; got.Status != "Eingeladen" || got.LastSeen != "noch nie angemeldet" {
+		t.Fatalf("never-logged-in invite: status=%q lastseen=%q", got.Status, got.LastSeen)
+	}
+}
+
 func TestRunHealthcheckAcceptsExpectedPayload(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

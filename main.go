@@ -68,6 +68,7 @@ type app struct {
 	mailer                mailer
 	templates             *template.Template
 	inviteStore           *inviteStore
+	activityStore         *activityStore
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
@@ -451,6 +452,11 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	activityDataPath := env("ACTIVITY_DATA_PATH", "tmp/activity.json")
+	activity, err := newActivityStore(activityDataPath)
+	if err != nil {
+		return nil, err
+	}
 	parkingDataPath := env("PARKING_DATA_PATH", "tmp/parking.json")
 	parkingStore, err := newParkingStore(parkingDataPath)
 	if err != nil {
@@ -491,6 +497,7 @@ func newApp() (*app, error) {
 		mailer:                mailTransport,
 		templates:             tmpl,
 		inviteStore:           invites,
+		activityStore:         activity,
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
@@ -744,6 +751,11 @@ func (a *app) startSession(w http.ResponseWriter, email string, tenantSlug strin
 		Secure:   a.sessionSecure,
 		SameSite: http.SameSiteLaxMode,
 	})
+	if a.activityStore != nil {
+		if err := a.activityStore.Touch(email, time.Now(), authMethod); err != nil {
+			log.Printf("activity record failed for %s: %v", redactedEmail(email), err)
+		}
+	}
 	return nil
 }
 
@@ -1390,6 +1402,19 @@ func (a *app) userRows(tenantSlug string) []userRow {
 	}
 	if len(rows) == 0 {
 		rows = append(rows, userProfile{Email: "Noch keine Einladungen", Role: roleResident, Status: "Offen", Tenants: []string{tenantSlug}}.UserRow())
+	}
+	if a.activityStore != nil {
+		for i := range rows {
+			if !strings.Contains(rows[i].Email, "@") {
+				continue
+			}
+			if rec, ok := a.activityStore.Get(rows[i].Email); ok {
+				rows[i].Status = "Aktiv"
+				rows[i].LastSeen = "zuletzt angemeldet: " + rec.LastLogin.In(time.Local).Format("02.01.2006")
+			} else if rows[i].Status == "Eingeladen" {
+				rows[i].LastSeen = "noch nie angemeldet"
+			}
+		}
 	}
 	sort.Slice(rows, func(i, j int) bool {
 		if rows[i].Role != rows[j].Role {
@@ -2305,6 +2330,7 @@ type userRow struct {
 	AuthLabel       string
 	AuthList        []string
 	Editable        bool
+	LastSeen        string
 }
 
 func (s *tokenStore) Put(token string, email string, tenantSlug string, ttl time.Duration) {
@@ -3347,6 +3373,83 @@ func (s *inviteStore) Delete(email string) (bool, error) {
 	return true, nil
 }
 
+type activityStore struct {
+	path string
+	mu   sync.Mutex
+	data map[string]activityRecord
+}
+
+type activityRecord struct {
+	LastLogin  time.Time `json:"last_login"`
+	AuthMethod string    `json:"auth_method,omitempty"`
+}
+
+func newActivityStore(path string) (*activityStore, error) {
+	store := &activityStore{path: path, data: map[string]activityRecord{}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read activity data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid activity data")
+	}
+	if store.data == nil {
+		store.data = map[string]activityRecord{}
+	}
+	return store, nil
+}
+
+// Touch records a successful login. Best-effort: callers log failures but do
+// not block login on a persistence error.
+func (s *activityStore) Touch(email string, at time.Time, authMethod string) error {
+	email = normalizeEmail(email)
+	if email == "" {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data[email] = activityRecord{LastLogin: at.UTC(), AuthMethod: authMethod}
+	return s.saveLocked()
+}
+
+func (s *activityStore) Get(email string) (activityRecord, bool) {
+	email = normalizeEmail(email)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rec, ok := s.data[email]
+	return rec, ok
+}
+
+func (s *activityStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create activity data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode activity data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write activity data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace activity data")
+	}
+	return nil
+}
+
 func normalizeRole(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "admin":
@@ -4174,6 +4277,7 @@ const pageTemplates = `
       .users .pill.role-beirat { background: rgba(32,37,31,.06); color: #4b4f45; border-color: rgba(32,37,31,.12); }
       .users .pill.status-active { background: rgba(47,107,74,.12); color: var(--leaf); }
       .users .pill.status-pending { background: rgba(200,153,63,.14); color: #93701d; }
+      .users .last-seen { display: block; color: var(--soft); font-size: 11.5px; margin-top: 5px; white-space: nowrap; }
       .users th.col-role, .users td.col-role, .users th.col-status, .users td.col-status { white-space: nowrap; }
       .users .th-label { display: inline-flex; align-items: center; gap: 6px; }
       .users .info { position: relative; display: inline-flex; }
@@ -4321,7 +4425,7 @@ const pageTemplates = `
               <td class="col-role" data-label="Rolle"><span class="pill {{if eq .Role "Admin"}}role-admin{{else if eq .Role "Bewohner"}}role-resident{{else}}role-beirat{{end}}"><span class="dot"></span>{{.Role}}</span></td>
               <td data-label="Rechte"><div class="chips">{{range .PermissionList}}<span class="chip{{if eq . "Standard"}} plain{{end}}">{{.}}</span>{{end}}</div></td>
               <td data-label="Anmeldung"><div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div></td>
-              <td class="col-status" data-label="Status"><span class="pill {{if eq .Status "Aktiv"}}status-active{{else}}status-pending{{end}}"><span class="dot"></span>{{.Status}}</span></td>
+              <td class="col-status" data-label="Status"><span class="pill {{if eq .Status "Aktiv"}}status-active{{else}}status-pending{{end}}"><span class="dot"></span>{{.Status}}</span>{{if .LastSeen}}<span class="last-seen">{{.LastSeen}}</span>{{end}}</td>
               <td class="col-actions" data-label="">
                 {{if .Editable}}
                 <button type="button" class="row-edit" data-edit="{{.Email}}" aria-label="Bearbeiten"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.83-2.83L5 17.2z"/><path d="M13.5 6.5 17 10"/></svg></button>
