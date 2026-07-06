@@ -330,6 +330,7 @@ func main() {
 	mux.HandleFunc("POST /auth/logout", a.logout)
 	mux.HandleFunc("GET /app", a.portal)
 	mux.HandleFunc("GET /app/parking", a.parking)
+	mux.HandleFunc("GET /app/parking/settings", a.parkingSettings)
 	mux.HandleFunc("GET /app/parking/month/{month}", a.parkingMonth)
 	mux.HandleFunc("POST /app/parking/settings", a.updateParkingSettings)
 	mux.HandleFunc("POST /app/parking/month", a.updateParkingMonth)
@@ -781,6 +782,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"Role":          role,
 		"IsAdmin":       isAdmin,
 		"CanSeeParking": isAdmin || profile.HasPermission(permissionParking),
+		"ActivePage":    "home",
 	})
 }
 
@@ -803,14 +805,48 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request) {
 	isAdmin := role == roleAdmin
 	telemetry := a.parkingTelemetry(r.Context(), tenant)
 	a.render(w, "parking", map[string]any{
-		"Title":       "Parkplatznutzung",
-		"Tenant":      tenant,
-		"Email":       email,
-		"DisplayName": profile.DisplayName(),
-		"Role":        role,
-		"IsAdmin":     isAdmin,
-		"Telemetry":   telemetry,
-		"Accounting":  a.parkingAccounting(r.Context(), tenant),
+		"Title":         "Parkplatznutzung",
+		"Tenant":        tenant,
+		"Email":         email,
+		"DisplayName":   profile.DisplayName(),
+		"Role":          role,
+		"IsAdmin":       isAdmin,
+		"CanSeeParking": true,
+		"ActivePage":    "parking",
+		"Telemetry":     telemetry,
+		"Accounting":    a.parkingAccounting(r.Context(), tenant),
+	})
+}
+
+func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileFor(email)
+	if role != roleAdmin {
+		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
+		return
+	}
+	settingsMsg, settingsOK := parkingSettingsMessage(r.URL.Query().Get("settings"))
+	a.render(w, "parkingSettings", map[string]any{
+		"Title":         "Parkplatz-Einstellungen",
+		"Tenant":        tenant,
+		"Email":         email,
+		"DisplayName":   profile.DisplayName(),
+		"Role":          role,
+		"IsAdmin":       true,
+		"CanSeeParking": true,
+		"ActivePage":    "settings",
+		"Accounting":    a.parkingAccounting(r.Context(), tenant),
+		"SettingsMsg":   settingsMsg,
+		"SettingsOK":    settingsOK,
 	})
 }
 
@@ -841,13 +877,15 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.render(w, "parkingMonth", map[string]any{
-		"Title":       "Parkplatznutzung · " + view.MonthLabel,
-		"Tenant":      tenant,
-		"Email":       email,
-		"DisplayName": profile.DisplayName(),
-		"Role":        role,
-		"IsAdmin":     role == roleAdmin,
-		"Detail":      view,
+		"Title":         "Parkplatznutzung · " + view.MonthLabel,
+		"Tenant":        tenant,
+		"Email":         email,
+		"DisplayName":   profile.DisplayName(),
+		"Role":          role,
+		"IsAdmin":       role == roleAdmin,
+		"CanSeeParking": true,
+		"ActivePage":    "parking",
+		"Detail":        view,
 	})
 }
 
@@ -868,7 +906,7 @@ func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	gridFee, err := parseDecimal(r.FormValue("grid_fee_eur_per_kwh"))
 	if err != nil || gridFee < 0 || gridFee > 5 {
-		http.Redirect(w, r, "/app/parking?settings=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/parking/settings?settings=invalid", http.StatusSeeOther)
 		return
 	}
 	if err := a.parkingStore.SetGridFee(tenant.Slug, gridFee); err != nil {
@@ -876,7 +914,7 @@ func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save parking settings", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/app/parking?settings=saved", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/parking/settings?settings=saved", http.StatusSeeOther)
 }
 
 func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
@@ -906,6 +944,17 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/app/parking?month=saved", http.StatusSeeOther)
+}
+
+func parkingSettingsMessage(status string) (string, bool) {
+	switch status {
+	case "saved":
+		return "Parkplatz-Einstellungen gespeichert.", true
+	case "invalid":
+		return "Bitte eine gültige Netzgebühr zwischen 0 und 5 €/kWh eingeben.", false
+	default:
+		return "", false
+	}
 }
 
 func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
@@ -2015,9 +2064,9 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 			EnergyCost:          formatEUR(hour.EnergyCost),
 			EnergyCostTitle:     "Stromkosten: " + formatPreciseEUR(hour.EnergyCost) + " = " + formatPreciseKWh(hour.KWh) + " × " + formatPreciseEURPerKWh(averageAwattar),
 			GridCost:            formatEUR(hour.GridCost),
-			GridCostTitle:       "Delta: " + formatPreciseEUR(hour.GridCost) + " = " + formatPreciseKWh(hour.KWh) + " × " + formatPreciseEURPerKWh(data.Settings.GridFeeEURPerKWh),
+			GridCostTitle:       "Netzgebühr: " + formatPreciseEUR(hour.GridCost) + " = " + formatPreciseKWh(hour.KWh) + " × " + formatPreciseEURPerKWh(data.Settings.GridFeeEURPerKWh),
 			TotalCost:           formatEUR(total),
-			TotalCostTitle:      "Summe: " + formatPreciseEUR(total) + " = Strom " + formatPreciseEUR(hour.EnergyCost) + " + Delta " + formatPreciseEUR(hour.GridCost),
+			TotalCostTitle:      "Summe: " + formatPreciseEUR(total) + " = Strom " + formatPreciseEUR(hour.EnergyCost) + " + Netzgebühr " + formatPreciseEUR(hour.GridCost),
 			WeightTitle:         "Relative Höhe der Stundensumme. 100% entspricht der teuersten Stunde dieses Monats.",
 			ChartPercent:        chartPercent,
 		})
@@ -2703,6 +2752,22 @@ func formatHAValue(state haState) string {
 	if value == "" {
 		value = "unbekannt"
 	}
+	if number, err := parseHAFloat(value); err == nil {
+		switch unit {
+		case "kWh":
+			return formatDecimal(number, 2) + " kWh"
+		case "W":
+			return formatDecimal(number, 1) + " W"
+		case "€/kWh", "EUR/kWh":
+			return formatDecimal(number, 6) + " €/kWh"
+		case "€", "EUR":
+			return formatDecimal(number, 2) + " €"
+		}
+		if unit != "" {
+			return formatDecimal(number, 2) + " " + unit
+		}
+		return formatDecimal(number, 2)
+	}
 	if unit == "" {
 		return value
 	}
@@ -2752,31 +2817,52 @@ func parseHistoryStart(raw string, now time.Time) (time.Time, error) {
 }
 
 func formatInputFloat(value float64) string {
-	return strconv.FormatFloat(value, 'f', 3, 64)
+	return formatDecimal(value, 3)
 }
 
 func formatEUR(value float64) string {
-	return strings.Replace(fmt.Sprintf("%.2f €", value), ".", ",", 1)
+	return formatDecimal(value, 2) + " €"
 }
 
 func formatEURPerKWh(value float64) string {
-	return strings.Replace(fmt.Sprintf("%.3f €/kWh", value), ".", ",", 1)
+	return formatDecimal(value, 3) + " €/kWh"
 }
 
 func formatKWh(value float64) string {
-	return strings.Replace(fmt.Sprintf("%.2f kWh", value), ".", ",", 1)
+	return formatDecimal(value, 2) + " kWh"
 }
 
 func formatPreciseEUR(value float64) string {
-	return strings.Replace(fmt.Sprintf("%.6f €", value), ".", ",", 1)
+	return formatDecimal(value, 6) + " €"
 }
 
 func formatPreciseEURPerKWh(value float64) string {
-	return strings.Replace(fmt.Sprintf("%.6f €/kWh", value), ".", ",", 1)
+	return formatDecimal(value, 6) + " €/kWh"
 }
 
 func formatPreciseKWh(value float64) string {
-	return strings.Replace(fmt.Sprintf("%.6f kWh", value), ".", ",", 1)
+	return formatDecimal(value, 6) + " kWh"
+}
+
+func formatDecimal(value float64, decimals int) string {
+	if decimals < 0 {
+		decimals = 0
+	}
+	sign := ""
+	if value < 0 {
+		sign = "-"
+		value = -value
+	}
+	raw := fmt.Sprintf("%.*f", decimals, value)
+	parts := strings.SplitN(raw, ".", 2)
+	intPart := parts[0]
+	for i := len(intPart) - 3; i > 0; i -= 3 {
+		intPart = intPart[:i] + "." + intPart[i:]
+	}
+	if decimals == 0 || len(parts) == 1 {
+		return sign + intPart
+	}
+	return sign + intPart + "," + parts[1]
 }
 
 func formatMonthLabel(month string, loc *time.Location) string {
@@ -2800,9 +2886,9 @@ func formatPeriodLabel(first time.Time, last time.Time, loc *time.Location) stri
 
 func paidLabel(paid bool) string {
 	if paid {
-		return "Bezahlt"
+		return "BEZAHLT"
 	}
-	return "Offen"
+	return "OFFEN"
 }
 
 func togglePaidLabel(paid bool) string {
@@ -3416,13 +3502,7 @@ const pageTemplates = `
 </html>
 {{end}}
 
-{{define "portal"}}
-<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{.Title}}</title>
+{{define "appStyles"}}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -3431,450 +3511,445 @@ const pageTemplates = `
       color-scheme: light;
       --ink:#20251f; --muted:#6b6f63; --soft:#9a9485;
       --line:#e7e0d2; --paper:#f7f3ea; --panel:#fffefb;
-      --gold:#c8993f; --gold-ink:#8a7b3f; --gold-light:#e7c574; --leaf:#2f6b4a;
+      --panel-soft:#fbf8f0; --gold:#c8993f; --gold-ink:#8a7b3f;
+      --gold-light:#e7c574; --leaf:#2f6b4a; --nav:#172019; --nav-2:#20291f;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--paper); color: var(--ink); }
-    header { position: sticky; top: 0; z-index: 2; background: var(--ink); border-bottom: 2px solid var(--gold); padding: 14px clamp(18px,4vw,52px); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-    .brand-wrap { display: flex; align-items: center; gap: 12px; }
-    .mark { width: 36px; height: 32px; border-radius: 7px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 11px; }
-    .brand { color: #fff; font-family: Spectral, serif; font-weight: 600; font-size: 15px; text-decoration: none; }
-    .user { color: rgba(255,255,255,.6); font-size: 13px; margin-top: 3px; }
-    .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .version { color: rgba(255,255,255,.46); font-size: 12px; font-weight: 600; white-space: nowrap; }
-    header form { margin: 0; }
-    header .button, header button { border: 1px solid rgba(255,255,255,.22); background: transparent; border-radius: 9px; color: rgba(255,255,255,.92); min-height: 38px; padding: 8px 13px; font: inherit; font-weight: 600; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; cursor: pointer; }
-    header .button:hover, header button:hover { border-color: var(--gold); color: #fff; }
-    .banner { position: relative; height: 120px; overflow: hidden; border-bottom: 1px solid var(--line); }
-    .banner::before { content: ""; position: absolute; inset: 0; background: url('/assets/jhw22-hero.jpg') center 46% / cover no-repeat; }
-    .banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(247,243,234,.12), rgba(247,243,234,.78) 82%); }
-    .banner-inner { position: absolute; left: clamp(18px,4vw,52px); bottom: 18px; }
-    .banner-kicker { font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--gold-ink); }
-    main { width: min(1240px,100%); margin: 0 auto; padding: 30px clamp(18px,4vw,52px) 60px; display: grid; gap: 22px; }
-    h1 { margin: 0; font-family: Spectral, serif; font-weight: 500; font-size: clamp(34px,5vw,46px); letter-spacing: -.01em; }
-    .lede { margin: 6px 0 0; color: var(--muted); line-height: 1.55; }
-    .kicker { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-ink); border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-bottom: 18px; }
-    .grid { display: grid; grid-template-columns: 1.5fr .9fr; gap: 22px; align-items: start; }
-    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; }
-    .entries { display: grid; gap: 20px; }
-    .entry h3 { margin: 0 0 6px; font-family: Spectral, serif; font-weight: 600; font-size: 22px; color: var(--ink); }
-    .entry p { margin: 0; color: #5c5f54; line-height: 1.6; font-size: 14.5px; }
-    .entry + .entry { border-top: 1px solid var(--line); padding-top: 20px; }
-    .links { display: grid; }
-    .link-row { display: grid; gap: 4px; padding: 14px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
-    .link-row:last-child { border-bottom: 0; }
-    .lr-title { font-family: Spectral, serif; font-weight: 600; font-size: 17px; color: var(--ink); }
-    .lr-sub { color: var(--soft); font-size: 13px; line-height: 1.4; }
-    a.link-row:hover .lr-title { color: var(--gold-ink); }
-    .info-row { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
-    .info { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
-    .info strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 16px; margin-bottom: 6px; }
-    .info p { margin: 0; color: var(--soft); font-size: 13.5px; line-height: 1.45; }
-    @media (max-width: 860px) {
-      header { align-items: flex-start; flex-direction: column; }
-      .grid, .info-row { grid-template-columns: 1fr; }
+    a { color: inherit; }
+    button, input { font: inherit; }
+    .app-shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0,1fr); background: var(--paper); }
+    .sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 24px; padding: 22px 16px 18px; color: rgba(255,255,255,.86); background: radial-gradient(circle at 20% 0%, rgba(255,255,255,.08), transparent 28%), var(--nav); border-right: 1px solid rgba(255,255,255,.08); }
+    .side-brand { display: grid; grid-template-columns: 50px 1fr; gap: 14px; align-items: center; padding: 0 8px 12px; }
+    .side-mark { width: 48px; height: 48px; border-radius: 8px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 13px; border: 1px solid rgba(255,255,255,.43); background: rgba(255,255,255,.08); }
+    .side-title { display: block; font-family: Spectral, serif; font-size: 18px; font-weight: 600; line-height: 1.1; color: #fff; text-decoration: none; }
+    .side-sub { display: block; margin-top: 5px; font-size: 14px; color: rgba(255,255,255,.72); }
+    .side-nav { display: grid; gap: 7px; }
+    .nav-item { position: relative; min-height: 46px; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 7px; color: rgba(255,255,255,.78); text-decoration: none; font-size: 15px; font-weight: 600; }
+    .nav-item:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .nav-item.active { color: #fff; background: rgba(255,255,255,.08); }
+    .nav-item.active::before { content: ""; position: absolute; left: -16px; top: 0; bottom: 0; width: 4px; background: var(--gold); }
+    .nav-item.disabled { color: rgba(255,255,255,.38); cursor: default; }
+    .nav-item.disabled:hover { background: transparent; }
+    .nav-icon { width: 23px; height: 23px; display: grid; place-items: center; flex: 0 0 auto; color: currentColor; }
+    .nav-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .side-foot { margin-top: auto; border-top: 1px solid rgba(255,255,255,.16); padding: 18px 8px 0; display: grid; gap: 14px; }
+    .side-user { display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: center; }
+    .avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: #fff; font-weight: 800; border: 1px solid rgba(255,255,255,.25); }
+    .side-user strong { display: block; color: #fff; font-size: 14px; }
+    .side-user span, .side-version { color: rgba(255,255,255,.64); font-size: 13px; }
+    .logout-form { margin: 0; }
+    .logout-button { width: 100%; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgba(255,255,255,.24); border-radius: 7px; color: rgba(255,255,255,.92); background: transparent; font-weight: 700; cursor: pointer; }
+    .logout-button:hover { border-color: var(--gold); color: #fff; }
+    .app-main { min-width: 0; padding-bottom: 58px; }
+    .content-top { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 clamp(28px,4vw,44px); border-bottom: 1px solid var(--line); background: rgba(255,254,251,.72); }
+    .crumb { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
+    .crumb svg, .action svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+    .page-actions { display: flex; align-items: center; gap: 10px; }
+    .page { width: min(1220px,100%); margin: 0 auto; padding: 34px clamp(28px,4vw,44px) 0; display: grid; gap: 24px; }
+    .page.wide { width: min(1280px,100%); }
+    h1 { margin: 0; font-family: Spectral, serif; font-weight: 500; font-size: clamp(42px,5vw,54px); line-height: 1; }
+    h2 { margin: 0; font-family: Spectral, serif; font-weight: 600; font-size: 23px; line-height: 1.1; }
+    h3 { margin: 0; font-family: Spectral, serif; font-weight: 600; font-size: 20px; line-height: 1.2; }
+    p { margin: 0; }
+    .lede { margin-top: 14px; color: var(--muted); font-size: 16px; line-height: 1.55; }
+    .muted { color: var(--muted); line-height: 1.5; }
+    .subtle-note { margin-top: 6px; max-width: 760px; font-size: 14.5px; }
+    .kicker { color: var(--gold-ink); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; border-bottom: 2px solid var(--ink); padding-bottom: 11px; margin-bottom: 20px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; box-shadow: 0 12px 30px rgba(32,37,31,.04); }
+    .panel.compact { padding: 18px; }
+    .button, button.action { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); background: var(--panel); border-radius: 7px; color: var(--ink); padding: 8px 13px; font-weight: 700; line-height: 1.15; text-decoration: none; cursor: pointer; white-space: nowrap; }
+    .button:hover, button.action:hover { border-color: var(--gold); }
+    .button.primary, button.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .button.small, button.small { min-height: 31px; padding: 6px 10px; font-size: 12px; }
+    .button.ghost { background: transparent; }
+    .banner { position: relative; height: 128px; overflow: hidden; border-bottom: 1px solid var(--line); background: #e9e4d7; }
+    .banner::before { content: ""; position: absolute; inset: 0; background: url('/assets/jhw22-hero.jpg') center 47% / cover no-repeat; }
+    .banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(23,32,25,.1), rgba(247,243,234,.72) 76%, rgba(247,243,234,.92)); }
+    .banner-kicker { position: absolute; left: clamp(28px,4vw,44px); bottom: 18px; color: var(--gold-ink); font-size: 12px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    .home-grid { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(340px,.85fr); gap: 22px; align-items: start; }
+    .entries { display: grid; gap: 22px; }
+    .entry + .entry { border-top: 1px solid var(--line); padding-top: 22px; }
+    .entry p { margin-top: 8px; color: #5c5f54; line-height: 1.6; }
+    .quick-list { display: grid; }
+    .quick-row { display: grid; grid-template-columns: 30px 1fr auto; gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }
+    .quick-row:last-child { border-bottom: 0; }
+    .quick-row svg, .info-icon svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; color: var(--ink); }
+    .quick-row h3 { font-size: 18px; }
+    .quick-row p { margin-top: 3px; color: var(--soft); font-size: 13.5px; line-height: 1.35; }
+    .quick-arrow { color: var(--gold-ink); font-size: 24px; line-height: 1; }
+    .info-row { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
+    .info-card { display: grid; grid-template-columns: 66px 1fr auto; gap: 16px; align-items: center; padding: 18px 20px; }
+    .info-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 8px; background: #f3eee5; }
+    .info-card p { margin-top: 5px; color: var(--soft); font-size: 13.5px; line-height: 1.35; }
+    .status-strip { display: grid; gap: 14px; }
+    .rule { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; color: var(--ink); line-height: 1.5; }
+    .rule p { flex: 1 1 640px; min-width: 0; }
+    .rule .pill { margin-left: auto; }
+    .pill { display: inline-flex; align-items: center; min-height: 26px; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 800; background: rgba(200,153,63,.16); color: #8a6a1f; white-space: nowrap; }
+    .pill.ok { background: rgba(47,107,74,.12); color: var(--leaf); }
+    .pill.ok::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; margin-right: 8px; }
+    .metric-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+    .metric-card, .month-card { min-width: 0; background: var(--panel-soft); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+    .metric-label, .field-label, th { color: var(--gold-ink); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+    .metric-value { display: block; margin-top: 7px; font-family: Spectral, serif; font-size: 26px; font-weight: 600; line-height: 1.08; }
+    code, .mini { color: var(--soft); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+    .accounting { display: grid; gap: 16px; }
+    .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .month-strip { display: grid; grid-template-columns: repeat(7,minmax(120px,1fr)); gap: 10px; }
+    .month-card { display: grid; gap: 10px; color: inherit; text-decoration: none; }
+    .month-card:hover { border-color: var(--gold); }
+    .month-card strong { font-family: Spectral, serif; font-size: 16px; }
+    .bar { height: 9px; border-radius: 999px; background: #ece5d6; overflow: hidden; }
+    .bar span { display: block; height: 100%; min-width: 2px; border-radius: inherit; background: var(--gold); }
+    .amount { font-weight: 800; font-variant-numeric: tabular-nums; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    table { width: 100%; border-collapse: collapse; min-width: 980px; }
+    th, td { padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    th { text-align: left; background: rgba(251,248,240,.7); }
+    td { font-size: 14px; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .month-cell strong { display: block; font-family: Spectral, serif; font-size: 17px; }
+    .month-cell a { text-decoration: none; }
+    .month-cell a:hover { color: var(--gold-ink); }
+    .month-cell span { display: block; margin-top: 3px; color: var(--soft); font-size: 12px; }
+    .row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .empty { border: 1px solid var(--line); background: var(--panel-soft); color: #5c5f54; border-radius: 8px; padding: 14px; line-height: 1.5; }
+    .settings-card { max-width: 620px; display: grid; gap: 16px; }
+    .form-grid { display: grid; gap: 12px; }
+    label { display: grid; gap: 7px; color: var(--gold-ink); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+    input { width: 100%; border: 1px solid #e2dac9; border-radius: 7px; min-height: 42px; padding: 9px 12px; color: var(--ink); background: #fffefb; }
+    .flash { padding: 10px 13px; border-radius: 7px; font-size: 13.5px; font-weight: 700; border: 1px solid rgba(200,153,63,.28); background: rgba(200,153,63,.14); color: #8a6a1f; }
+    .flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
+    .legend { border: 1px solid var(--line); border-radius: 8px; background: var(--panel-soft); padding: 14px; display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 12px; }
+    .legend strong { display: block; font-family: Spectral, serif; margin-bottom: 3px; }
+    .legend span { display: block; color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .bar-cell { min-width: 150px; }
+    @media (max-width: 1120px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; padding: 16px; }
+      .side-nav { grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); }
+      .side-foot { margin-top: 4px; grid-template-columns: 1fr auto; align-items: center; }
+      .logout-form { justify-self: end; min-width: 160px; }
+      .home-grid, .metric-grid, .info-row { grid-template-columns: 1fr; }
+      .month-strip { grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); }
+    }
+    @media (max-width: 680px) {
+      .side-brand, .side-user { grid-template-columns: auto 1fr; }
+      .side-foot { grid-template-columns: 1fr; }
+      .logout-form { justify-self: stretch; }
+      .content-top { height: auto; min-height: 58px; flex-direction: column; align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
+      .page { padding-left: 18px; padding-right: 18px; }
+      h1 { font-size: clamp(36px,12vw,48px); }
+      .metric-grid { grid-template-columns: 1fr; }
+      .info-card { grid-template-columns: 52px 1fr; }
+      .quick-row { grid-template-columns: 28px 1fr; }
+      .quick-arrow, .info-card .quick-arrow { display: none; }
     }
   </style>
-</head>
-<body>
-  <header>
-    <div class="brand-wrap">
-      <span class="mark">WEG</span>
+{{end}}
+
+{{define "sidebar"}}
+  <aside class="sidebar" aria-label="Portalnavigation">
+    <div class="side-brand">
+      <a class="side-mark" href="/app">WEG</a>
       <div>
-        <a class="brand" href="/app">WEG Portal · {{.Tenant.Address}}</a>
-        <div class="user">Angemeldet als {{.DisplayName}} · Rolle: {{.Role}}</div>
+        <a class="side-title" href="/app">WEG Portal</a>
+        <span class="side-sub">{{.Tenant.Address}}</span>
       </div>
     </div>
-    <div class="top-actions">
-      {{if .CanSeeParking}}<a class="button" href="/app/parking">Parkplatznutzung</a>{{end}}
-      {{if .IsAdmin}}<a class="button" href="/app/settings/users">Benutzer &amp; Rechte</a>{{end}}
-      <span class="version">{{.AppVersion}}</span>
-      <form method="post" action="/auth/logout"><button type="submit">Abmelden</button></form>
+    <nav class="side-nav">
+      <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span>Hausüberblick</a>
+      {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
+      <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</span>
+      <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen</span>
+      <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</span>
+      {{if .IsAdmin}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
+      {{if and .IsAdmin .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/parking/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>{{end}}
+    </nav>
+    <div class="side-foot">
+      <div class="side-user">
+        <span class="avatar">MB</span>
+        <div><strong>{{.DisplayName}}</strong><span>{{.Role}}</span></div>
+      </div>
+      <span class="side-version">{{.AppVersion}}</span>
+      <form class="logout-form" method="post" action="/auth/logout"><button class="logout-button" type="submit">Abmelden</button></form>
     </div>
-  </header>
-  <div class="banner"><div class="banner-inner"><span class="banner-kicker">WEG Portal · {{.Tenant.Address}}</span></div></div>
-  <main>
-    <div>
-      <h1>Hausüberblick</h1>
-      <p class="lede">Hier landen später offizielle Informationen der Hausgemeinschaft, Termine und kurze Updates.</p>
-    </div>
-    <div class="grid">
-      <section class="panel">
-        <div class="kicker">Aktueller Aushang</div>
-        <div class="entries">
-          <article class="entry"><h3>Willkommen im Prototyp</h3><p>Der Zugang funktioniert bereits per E-Mail-Link. Inhalte sind noch Beispielmodule.</p></article>
-          <article class="entry"><h3>Nächste Ausbaustufe</h3><p>Einladungen, Bewohnerliste, Dokumentenablage und Anliegenverwaltung.</p></article>
-        </div>
-      </section>
-      <section class="panel">
-        <div class="kicker">Schnellzugriff</div>
-        <div class="links">
-          <div class="link-row"><span class="lr-title">Dokumente</span><span class="lr-sub">Protokolle, Abrechnungen, Regeln und Pläne.</span></div>
-          <div class="link-row"><span class="lr-title">Anliegen</span><span class="lr-sub">Reparaturen, Fragen, Vorschläge und Rückmeldungen.</span></div>
-          <div class="link-row"><span class="lr-title">Abstimmungen</span><span class="lr-sub">Vorbereitete Entscheidungen für die Hausgemeinschaft.</span></div>
-          {{if .CanSeeParking}}<a class="link-row" href="/app/parking"><span class="lr-title">Parkplatznutzung</span><span class="lr-sub">Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</span></a>{{end}}
-          {{if .IsAdmin}}<a class="link-row" href="/app/settings/users"><span class="lr-title">Benutzer &amp; Rechte</span><span class="lr-sub">Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</span></a>{{end}}
-        </div>
-      </section>
-    </div>
-    <div class="info-row">
-      <div class="info"><strong>Einladungssystem</strong><p>Zugriff nur für freigeschaltete E-Mail-Adressen.</p></div>
-      <div class="info"><strong>E-Mail-Faktor</strong><p>Einmalige Links, 15 Minuten gültig.</p></div>
-      <div class="info"><strong>Web-App</strong><p>Responsive, ohne Installation, bereit für Homescreen-Pinning.</p></div>
-    </div>
-  </main>
+  </aside>
+{{end}}
+
+{{define "appOpen"}}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  {{template "appStyles" .}}
+</head>
+<body>
+  <div class="app-shell">
+    {{template "sidebar" .}}
+{{end}}
+
+{{define "appClose"}}
+  </div>
 </body>
 </html>
+{{end}}
+
+{{define "portal"}}
+{{template "appOpen" .}}
+    <main class="app-main">
+      <div class="content-top"><span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg>Hausüberblick</span></div>
+      <div class="banner"><span class="banner-kicker">WEG Portal · {{.Tenant.Address}}</span></div>
+      <section class="page">
+        <div>
+          <h1>Hausüberblick</h1>
+          <p class="lede">Hier landen später offizielle Informationen der Hausgemeinschaft, Termine und kurze Updates.</p>
+        </div>
+        <div class="home-grid">
+          <section class="panel">
+            <div class="kicker">Aktueller Aushang</div>
+            <div class="entries">
+              <article class="entry"><h3>Willkommen im Prototyp</h3><p>Der Zugang funktioniert bereits per E-Mail-Link. Inhalte sind noch Beispielmodule.</p></article>
+              <article class="entry"><h3>Nächste Ausbaustufe</h3><p>Einladungen, Bewohnerliste, Dokumentenablage und Anliegenverwaltung.</p></article>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="kicker">Schnellzugriff</div>
+            <div class="quick-list">
+              <div class="quick-row"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><div><h3>Dokumente</h3><p>Protokolle, Abrechnungen, Regeln und Pläne.</p></div><span class="quick-arrow">›</span></div>
+              <div class="quick-row"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><div><h3>Anliegen</h3><p>Reparaturen, Fragen, Vorschläge und Rückmeldungen.</p></div><span class="quick-arrow">›</span></div>
+              <div class="quick-row"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg><div><h3>Abstimmungen</h3><p>Vorbereitete Entscheidungen für die Hausgemeinschaft.</p></div><span class="quick-arrow">›</span></div>
+              {{if .CanSeeParking}}<a class="quick-row" href="/app/parking"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg><div><h3>Parkplatznutzung</h3><p>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</p></div><span class="quick-arrow">›</span></a>{{end}}
+              {{if .IsAdmin}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
+            </div>
+          </section>
+        </div>
+        <div class="info-row">
+          <section class="panel info-card"><span class="info-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16v11H4z"/><path d="m4 7 8 6 8-6"/></svg></span><div><h3>Einladungssystem</h3><p>Zugriff nur für freigeschaltete E-Mail-Adressen.</p></div><span class="quick-arrow">›</span></section>
+          <section class="panel info-card"><span class="info-icon"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.4 2.9 8 7 10 4.1-2 7-5.6 7-10V6z"/><path d="M9.5 12.5 11 14l3.5-4"/></svg></span><div><h3>E-Mail-Faktor</h3><p>Einmalige Links, 15 Minuten gültig.</p></div><span class="quick-arrow">›</span></section>
+          <section class="panel info-card"><span class="info-icon"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg></span><div><h3>Web-App</h3><p>Responsive, ohne Installation, bereit für Homescreen-Pinning.</p></div><span class="quick-arrow">›</span></section>
+        </div>
+      </section>
+    </main>
+{{template "appClose" .}}
 {{end}}
 
 {{define "parking"}}
-<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{.Title}}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      color-scheme: light;
-      --ink:#20251f; --muted:#6b6f63; --soft:#9a9485;
-      --line:#e7e0d2; --paper:#f7f3ea; --panel:#fffefb;
-      --gold:#c8993f; --gold-ink:#8a7b3f; --gold-light:#e7c574; --leaf:#2f6b4a;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--paper); color: var(--ink); }
-    header { position: sticky; top: 0; z-index: 2; background: var(--ink); border-bottom: 2px solid var(--gold); padding: 14px clamp(16px,3vw,40px); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-    .brand-wrap { display: flex; align-items: center; gap: 12px; }
-    .mark { width: 36px; height: 32px; border-radius: 7px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 11px; }
-    .brand { color: #fff; font-family: Spectral, serif; font-weight: 600; font-size: 15px; text-decoration: none; }
-    .user { color: rgba(255,255,255,.6); font-size: 13px; margin-top: 3px; }
-    .top-actions, .inline-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .version { color: rgba(255,255,255,.46); font-size: 12px; font-weight: 600; white-space: nowrap; }
-    header form { margin: 0; }
-    header .button, header button { border: 1px solid rgba(255,255,255,.22); background: transparent; border-radius: 9px; color: rgba(255,255,255,.92); min-height: 38px; padding: 8px 13px; font: inherit; font-weight: 600; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; white-space: nowrap; }
-    header .button:hover, header button:hover { border-color: var(--gold); color: #fff; }
-    main { width: min(1480px,100%); margin: 0 auto; padding: 26px clamp(14px,3vw,40px) 56px; display: grid; gap: 18px; }
-    h1 { margin: 0; font-family: Spectral, serif; font-weight: 500; font-size: clamp(30px,4vw,46px); letter-spacing: -.01em; }
-    h2 { margin: 0; font-family: Spectral, serif; font-weight: 600; font-size: 21px; }
-    h3 { margin: 0; font-size: 15px; }
-    p { margin: 0; }
-    form { margin: 0; }
-    .muted { color: var(--muted); line-height: 1.5; }
-    .subtle-note { margin-top: 6px; max-width: 720px; font-size: 14px; }
-    .page-head { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,360px); gap: 18px; align-items: end; }
-    .settings { border: 1px solid var(--line); background: var(--panel); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
-    .settings-form { display: grid; grid-template-columns: minmax(110px,1fr) auto; gap: 8px; align-items: end; }
-    label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 700; }
-    input { width: 100%; border: 1px solid #e2dac9; border-radius: 9px; min-height: 38px; padding: 8px 11px; font: inherit; color: var(--ink); background: #fffefb; }
-    button, .button { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; color: var(--ink); min-height: 38px; padding: 8px 13px; font: inherit; font-weight: 600; line-height: 1.15; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; white-space: nowrap; }
-    button:hover, .button:hover { border-color: var(--gold); }
-    .button.primary, button.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
-    .button.ghost { background: transparent; }
-    .button.small, button.small { min-height: 31px; padding: 6px 10px; font-size: 12px; }
-    .strip { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 16px; display: grid; gap: 12px; }
-    .rule { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; color: var(--muted); line-height: 1.5; }
-    .telemetry { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
-    .telemetry-item { border: 1px solid var(--line); border-radius: 10px; background: #fbf8f0; padding: 13px; min-width: 0; }
-    .telemetry-item span, .field span, .stat span { display: block; color: var(--gold-ink); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-    .telemetry-item strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 22px; line-height: 1.1; }
-    code { color: var(--soft); font-size: 12px; overflow-wrap: anywhere; }
-    .accounting { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 18px; display: grid; gap: 14px; }
-    .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
-    .chart { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 10px; }
-    .chart-row { border: 1px solid var(--line); border-radius: 10px; padding: 13px; display: grid; gap: 10px; min-width: 0; text-decoration: none; color: inherit; background: #fbf8f0; }
-    .chart-row:hover { border-color: var(--gold); }
-    .chart-row strong { font-family: Spectral, serif; font-weight: 600; font-size: 16px; }
-    .bar { height: 9px; border-radius: 999px; background: #ece5d6; overflow: hidden; }
-    .bar span { display: block; height: 100%; border-radius: inherit; background: var(--gold); min-width: 2px; }
-    .month-list { display: grid; gap: 9px; }
-    .month-row { border: 1px solid var(--line); border-radius: 10px; background: #fbf8f0; padding: 13px; display: grid; grid-template-columns: minmax(170px,1.4fr) repeat(6,minmax(86px,.75fr)) minmax(180px,1fr); gap: 10px; align-items: center; }
-    .field { min-width: 0; }
-    .field strong, .amount { font-weight: 700; }
-    .field a { color: var(--ink); text-decoration: none; font-family: Spectral, serif; font-weight: 600; font-size: 16px; }
-    .field a:hover { color: var(--gold-ink); }
-    .mini { color: var(--soft); font-size: 12px; display: block; margin-top: 3px; line-height: 1.35; }
-    .pill { display: inline-flex; align-items: center; min-height: 26px; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; background: rgba(200,153,63,.16); color: #8a6a1f; white-space: nowrap; }
-    .pill.ok { background: rgba(47,107,74,.12); color: var(--leaf); }
-    .empty { border: 1px solid var(--line); background: #fbf8f0; color: #5c5f54; border-radius: 10px; padding: 14px; line-height: 1.5; }
-    @media (max-width: 1120px) {
-      .page-head { grid-template-columns: 1fr; align-items: start; }
-      .month-row { grid-template-columns: repeat(4,minmax(120px,1fr)); }
-    }
-    @media (max-width: 720px) {
-      header { align-items: flex-start; flex-direction: column; }
-      .telemetry { grid-template-columns: 1fr; }
-      .settings-form, .month-row { grid-template-columns: 1fr 1fr; }
-      .field:first-child, .field.status-field { grid-column: 1 / -1; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="brand-wrap">
-      <span class="mark">WEG</span>
-      <div>
-        <a class="brand" href="/app">WEG Portal · {{.Tenant.Address}}</a>
-        <div class="user">Angemeldet als {{.DisplayName}} · Rolle: {{.Role}}</div>
-      </div>
-    </div>
-    <div class="top-actions">
-      <a class="button ghost" href="/app">Zurück</a>
-      <span class="version">{{.AppVersion}}</span>
-      <form method="post" action="/auth/logout"><button type="submit">Abmelden</button></form>
-    </div>
-  </header>
-  <main>
-    <div class="page-head">
-      <div>
-        <h1>Parkplatznutzung</h1>
-        <p class="muted">Private Lade- und Stellplatzabrechnung für die persönlich abgestimmte Nutzung.</p>
-        <p class="muted subtle-note">Sichtbar nur für berechtigte Personen und gedacht für die private Abstimmung der Stellplatz- und Lade-Nutzung.</p>
-      </div>
-      <div class="settings">
-        {{if .IsAdmin}}
-          <form class="settings-form" method="post" action="/app/parking/settings">
-            <label>Delta je kWh
-              <input type="number" min="0" max="5" step="0.001" name="grid_fee_eur_per_kwh" value="{{.Accounting.GridFeeValue}}">
-            </label>
-            <button class="primary" type="submit">Speichern</button>
-          </form>
-        {{else}}
-          <div><span class="mini">Delta je kWh</span><strong>{{.Accounting.GridFeeLabel}}</strong></div>
-        {{end}}
-        {{if .Accounting.LastSampleLabel}}<span class="mini">Letzter Zählerwert: {{.Accounting.LastSampleLabel}}</span>{{end}}
-      </div>
-    </div>
-
-    <section class="strip">
-      <div class="rule">
-        <p>Nutzung nur nach persönlicher Absprache. Die Monatswerte berechnen sich stündlich aus Zählerdifferenz, aWATTar-Preis und Delta.</p>
-        {{if .Telemetry.Configured}}<span class="pill ok">Home Assistant aktiv</span>{{end}}
-      </div>
-      {{if .Telemetry.Connected}}
-        <div class="telemetry">
-          {{range .Telemetry.Metrics}}
-            <div class="telemetry-item">
-              <span>{{.Label}}</span>
-              <strong>{{.Value}}</strong>
-              <code>{{.Detail}}</code>
-            </div>
-          {{end}}
+{{template "appOpen" .}}
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><span>Parkplatznutzung</span></span>
+        <div class="page-actions">
+          <a class="button" href="/app/parking"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 4v6h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 20v-6h-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10a7 7 0 0 1 12-3M19 14a7 7 0 0 1-12 3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Aktualisieren</a>
+          {{if .IsAdmin}}<a class="button" href="/app/parking/settings"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>Einstellungen</a>{{end}}
         </div>
-      {{else}}
-        <p class="empty">{{.Telemetry.Message}}</p>
-      {{end}}
-    </section>
-
-    <section class="accounting">
-      <div class="section-head">
+      </div>
+      <section class="page wide">
         <div>
-          <h2>Monatsabrechnung</h2>
-          <p class="muted">{{.Accounting.Message}}</p>
+          <h1>Parkplatznutzung</h1>
+          <p class="lede">Private Lade- und Stellplatzabrechnung für die persönlich abgestimmte Nutzung.</p>
+          <p class="muted subtle-note">Sichtbar nur für berechtigte Personen und gedacht für die private Abstimmung der Stellplatz- und Lade-Nutzung.</p>
         </div>
-      </div>
-      {{if .Accounting.HasMonths}}
-        <div class="chart">
-          {{range .Accounting.Months}}
-            <a class="chart-row" href="{{.DetailPath}}">
-              <strong>{{.MonthLabel}}</strong>
-              <div class="bar"><span style="width: {{.ChartPercent}}%;"></span></div>
-              <span class="amount">{{.TotalCost}}</span>
-            </a>
-          {{end}}
-        </div>
-        <div class="month-list">
-          {{range .Accounting.Months}}
-            <div class="month-row">
-              <div class="field">
-                <span>Monat</span>
-                <a href="{{.DetailPath}}">{{.MonthLabel}}</a>
-                {{if .Partial}}<span class="mini">Teilmonat</span>{{end}}
-                <span class="mini">{{.HourCount}} Stunden</span>
-              </div>
-              <div class="field"><span>Verbrauch</span><strong>{{.KWh}}</strong></div>
-              <div class="field"><span>Ø aWATTar</span><strong>{{.AverageAwattar}}</strong></div>
-              <div class="field"><span>Ø effektiv</span><strong>{{.EffectivePrice}}</strong></div>
-              <div class="field"><span>Strom</span><strong>{{.EnergyCost}}</strong></div>
-              <div class="field"><span>Delta</span><strong>{{.GridCost}}</strong></div>
-              <div class="field"><span>Summe</span><strong class="amount">{{.TotalCost}}</strong></div>
-              <div class="field status-field">
-                <span>Status</span>
-                <span class="pill {{if .Paid}}ok{{end}}">{{.PaidLabel}}</span>
-                <div class="inline-actions" style="margin-top: 7px;">
-                  <a class="button small" href="{{.DetailPath}}">Details</a>
-                  {{if $.IsAdmin}}
-                    <form method="post" action="/app/parking/month">
-                      <input type="hidden" name="month" value="{{.Month}}">
-                      <input type="hidden" name="paid" value="{{.TogglePaidValue}}">
-                      <button class="small" type="submit">{{.ToggleLabel}}</button>
-                    </form>
-                  {{end}}
+
+        <section class="panel status-strip">
+          <div class="rule">
+            <p>Nutzung nur nach persönlicher Absprache. Die Monatswerte berechnen sich stündlich aus Zählerdifferenz, aWATTar-Preis und Netzgebühr.</p>
+            {{if .Telemetry.Configured}}<span class="pill ok">Home Assistant aktiv</span>{{end}}
+          </div>
+          {{if .Telemetry.Connected}}
+            <div class="metric-grid">
+              {{range .Telemetry.Metrics}}
+                <div class="metric-card">
+                  <span class="metric-label">{{.Label}}</span>
+                  <strong class="metric-value">{{.Value}}</strong>
+                  <code>{{.Detail}}</code>
                 </div>
-              </div>
+              {{end}}
             </div>
+          {{else}}
+            <p class="empty">{{.Telemetry.Message}}</p>
           {{end}}
-        </div>
-      {{else}}
-        <p class="empty">Noch keine Monatswerte. Sobald zwei Zählerstände und mindestens ein aWATTar-Preis vorliegen, erscheint hier die erste Abrechnung.</p>
-      {{end}}
-    </section>
-  </main>
-</body>
-</html>
+        </section>
+
+        <section class="panel accounting">
+          <div class="section-head">
+            <div>
+              <h2>Monatsabrechnung</h2>
+              <p class="muted">{{.Accounting.Message}}</p>
+            </div>
+          </div>
+          {{if .Accounting.HasMonths}}
+            <div class="month-strip">
+              {{range .Accounting.Months}}
+                <a class="month-card" href="{{.DetailPath}}">
+                  <strong>{{.MonthLabel}}</strong>
+                  <div class="bar"><span style="width: {{.ChartPercent}}%;"></span></div>
+                  <span class="amount">{{.TotalCost}}</span>
+                </a>
+              {{end}}
+            </div>
+            <div class="table-wrap">
+              <table aria-label="Monatsabrechnung Parkplatznutzung">
+                <thead>
+                  <tr>
+                    <th>Monat</th>
+                    <th class="num">Verbrauch</th>
+                    <th class="num">Ø aWATTar</th>
+                    <th class="num">Ø effektiv</th>
+                    <th class="num">Strom</th>
+                    <th class="num">Netzgeb.</th>
+                    <th class="num">Summe</th>
+                    <th>Status</th>
+                    <th>Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{range .Accounting.Months}}
+                    <tr>
+                      <td class="month-cell"><a href="{{.DetailPath}}"><strong>{{.MonthLabel}}</strong></a>{{if .Partial}}<span>Teilmonat</span>{{end}}<span>{{.HourCount}} Stunden</span></td>
+                      <td class="num">{{.KWh}}</td>
+                      <td class="num">{{.AverageAwattar}}</td>
+                      <td class="num">{{.EffectivePrice}}</td>
+                      <td class="num">{{.EnergyCost}}</td>
+                      <td class="num">{{.GridCost}}</td>
+                      <td class="num amount">{{.TotalCost}}</td>
+                      <td><span class="pill {{if .Paid}}ok{{end}}">{{.PaidLabel}}</span></td>
+                      <td>
+                        <div class="row-actions">
+                          <a class="button small" href="{{.DetailPath}}">Details</a>
+                          {{if $.IsAdmin}}
+                            <form method="post" action="/app/parking/month">
+                              <input type="hidden" name="month" value="{{.Month}}">
+                              <input type="hidden" name="paid" value="{{.TogglePaidValue}}">
+                              <button class="button small" type="submit">{{.ToggleLabel}}</button>
+                            </form>
+                          {{end}}
+                        </div>
+                      </td>
+                    </tr>
+                  {{end}}
+                </tbody>
+              </table>
+            </div>
+          {{else}}
+            <p class="empty">Noch keine Monatswerte. Sobald zwei Zählerstände und mindestens ein aWATTar-Preis vorliegen, erscheint hier die erste Abrechnung.</p>
+          {{end}}
+        </section>
+      </section>
+    </main>
+{{template "appClose" .}}
 {{end}}
 
 {{define "parkingMonth"}}
-<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{.Title}}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      color-scheme: light;
-      --ink:#20251f; --muted:#6b6f63; --soft:#9a9485;
-      --line:#e7e0d2; --paper:#f7f3ea; --panel:#fffefb;
-      --gold:#c8993f; --gold-ink:#8a7b3f; --gold-light:#e7c574; --leaf:#2f6b4a;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--paper); color: var(--ink); }
-    header { position: sticky; top: 0; z-index: 2; background: var(--ink); border-bottom: 2px solid var(--gold); padding: 14px clamp(16px,3vw,40px); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-    .brand-wrap { display: flex; align-items: center; gap: 12px; }
-    .mark { width: 36px; height: 32px; border-radius: 7px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 11px; }
-    .brand { color: #fff; font-family: Spectral, serif; font-weight: 600; font-size: 15px; text-decoration: none; }
-    .user, .muted, .mini { color: var(--muted); }
-    .user { color: rgba(255,255,255,.6); font-size: 13px; margin-top: 3px; }
-    .top-actions, .summary, .inline-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .version { color: rgba(255,255,255,.46); font-size: 12px; font-weight: 600; white-space: nowrap; }
-    header form { margin: 0; }
-    header .button, header button { border: 1px solid rgba(255,255,255,.22); background: transparent; border-radius: 9px; color: rgba(255,255,255,.92); min-height: 38px; padding: 8px 13px; font: inherit; font-weight: 600; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; white-space: nowrap; }
-    header .button:hover, header button:hover { border-color: var(--gold); color: #fff; }
-    main { width: min(1480px,100%); margin: 0 auto; padding: 26px clamp(14px,3vw,40px) 56px; display: grid; gap: 18px; }
-    h1 { margin: 0; font-family: Spectral, serif; font-weight: 500; font-size: clamp(30px,4vw,46px); letter-spacing: -.01em; }
-    h2 { margin: 0; font-family: Spectral, serif; font-weight: 600; font-size: 21px; }
-    p { margin: 0; }
-    .button, button { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; color: var(--ink); min-height: 38px; padding: 8px 13px; font: inherit; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; white-space: nowrap; }
-    .button.ghost { background: transparent; }
-    .panel { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 18px; display: grid; gap: 14px; }
-    .summary { color: var(--muted); }
-    .mini { color: var(--soft); font-size: 12px; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 10px; }
-    .stat { border: 1px solid var(--line); border-radius: 10px; padding: 13px; background: #fbf8f0; }
-    .stat span, th { color: var(--gold-ink); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
-    .stat strong { display: block; margin-top: 4px; font-family: Spectral, serif; font-weight: 600; font-size: 20px; }
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 780px; }
-    th, td { border-bottom: 1px solid var(--line); padding: 11px 8px; text-align: left; font-size: 14px; }
-    th { cursor: help; }
-    .amount { font-weight: 700; }
-    .bar-cell { min-width: 150px; }
-    .bar { height: 9px; border-radius: 999px; background: #ece5d6; overflow: hidden; }
-    .bar span { display: block; height: 100%; border-radius: inherit; background: var(--gold); min-width: 2px; }
-    .pill { display: inline-flex; align-items: center; min-height: 26px; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; background: rgba(200,153,63,.16); color: #8a6a1f; white-space: nowrap; }
-    .empty { border: 1px solid var(--line); background: #fbf8f0; color: #5c5f54; border-radius: 10px; padding: 14px; line-height: 1.5; }
-    .legend { border: 1px solid var(--line); border-radius: 10px; background: #fbf8f0; padding: 14px; display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 12px; }
-    .legend div { min-width: 0; }
-    .legend strong { display: block; font-family: Spectral, serif; font-weight: 600; margin-bottom: 3px; }
-    .legend span { color: var(--muted); font-size: 13px; line-height: 1.4; }
-    @media (max-width: 720px) {
-      header { align-items: flex-start; flex-direction: column; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="brand-wrap">
-      <span class="mark">WEG</span>
-      <div>
-        <a class="brand" href="/app">WEG Portal · {{.Tenant.Address}}</a>
-        <div class="user">Angemeldet als {{.DisplayName}} · Rolle: {{.Role}}</div>
+{{template "appOpen" .}}
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/parking">Parkplatznutzung</a><span>/</span><span>{{.Detail.MonthLabel}}</span></span>
+        <div class="page-actions"><a class="button" href="{{.Detail.BackPath}}">Monate</a></div>
       </div>
-    </div>
-    <div class="top-actions">
-      <a class="button ghost" href="{{.Detail.BackPath}}">Monate</a>
-      <a class="button ghost" href="/app">Portal</a>
-      <span class="version">{{.AppVersion}}</span>
-      <form method="post" action="/auth/logout"><button type="submit">Abmelden</button></form>
-    </div>
-  </header>
-  <main>
-    <div>
-      <h1>{{.Detail.MonthLabel}}</h1>
-      <p class="muted">{{.Detail.Message}}</p>
-    </div>
-    <section class="panel">
-      <div class="summary">
-        <span class="pill">Delta {{.Detail.GridFeeLabel}}</span>
-        {{if .Detail.LastSampleLabel}}<span class="mini">Letzter Zählerwert: {{.Detail.LastSampleLabel}}</span>{{end}}
-      </div>
-      {{if .Detail.Summary.Month}}
-        <div class="stats">
-          <div class="stat"><span>Verbrauch</span><strong>{{.Detail.Summary.KWh}}</strong></div>
-          <div class="stat"><span>Ø aWATTar</span><strong>{{.Detail.Summary.AverageAwattar}}</strong></div>
-          <div class="stat"><span>Ø effektiv</span><strong>{{.Detail.Summary.EffectivePrice}}</strong></div>
-          <div class="stat"><span>Strom</span><strong>{{.Detail.Summary.EnergyCost}}</strong></div>
-          <div class="stat"><span>Delta</span><strong>{{.Detail.Summary.GridCost}}</strong></div>
-          <div class="stat"><span>Summe</span><strong>{{.Detail.Summary.TotalCost}}</strong></div>
+      <section class="page wide">
+        <div>
+          <h1>{{.Detail.MonthLabel}}</h1>
+          <p class="lede">{{.Detail.Message}}</p>
         </div>
-      {{end}}
-    </section>
-    <section class="panel">
-      <h2>Stundenwerte</h2>
-      <div class="legend" aria-label="Legende für Stundenwerte">
-        <div><strong>Stunde</strong><span>Beginn der Abrechnungsstunde; jede Zeile umfasst diese Stunde.</span></div>
-        <div><strong>Verbrauch</strong><span>Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.</span></div>
-        <div><strong>Ø aWATTar</strong><span>Stündlicher aWATTar-Arbeitspreis ohne Delta.</span></div>
-        <div><strong>Strom</strong><span>Verbrauch × aWATTar-Preis.</span></div>
-        <div><strong>Delta</strong><span>Verbrauch × eingestelltes Netzbetreiber-/Basis-Delta.</span></div>
-        <div><strong>Summe</strong><span>Strom plus Delta; dieser Wert fließt in den Monatsbetrag.</span></div>
-        <div><strong>Gewichtung</strong><span>Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.</span></div>
+        <section class="panel status-strip">
+          <div class="rule">
+            <span class="pill">Netzgebühr {{.Detail.GridFeeLabel}}</span>
+            {{if .Detail.LastSampleLabel}}<span class="mini">Letzter Zählerwert: {{.Detail.LastSampleLabel}}</span>{{end}}
+          </div>
+          {{if .Detail.Summary.Month}}
+            <div class="metric-grid">
+              <div class="metric-card"><span class="metric-label">Verbrauch</span><strong class="metric-value">{{.Detail.Summary.KWh}}</strong></div>
+              <div class="metric-card"><span class="metric-label">Ø aWATTar</span><strong class="metric-value">{{.Detail.Summary.AverageAwattar}}</strong></div>
+              <div class="metric-card"><span class="metric-label">Ø effektiv</span><strong class="metric-value">{{.Detail.Summary.EffectivePrice}}</strong></div>
+              <div class="metric-card"><span class="metric-label">Strom</span><strong class="metric-value">{{.Detail.Summary.EnergyCost}}</strong></div>
+              <div class="metric-card"><span class="metric-label">Netzgeb.</span><strong class="metric-value">{{.Detail.Summary.GridCost}}</strong></div>
+              <div class="metric-card"><span class="metric-label">Summe</span><strong class="metric-value">{{.Detail.Summary.TotalCost}}</strong></div>
+            </div>
+          {{end}}
+        </section>
+        <section class="panel accounting">
+          <h2>Stundenwerte</h2>
+          <div class="legend" aria-label="Legende für Stundenwerte">
+            <div><strong>Stunde</strong><span>Beginn der Abrechnungsstunde; jede Zeile umfasst diese Stunde.</span></div>
+            <div><strong>Verbrauch</strong><span>Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.</span></div>
+            <div><strong>Ø aWATTar</strong><span>Stündlicher aWATTar-Arbeitspreis ohne Netzgebühr.</span></div>
+            <div><strong>Strom</strong><span>Verbrauch × aWATTar-Preis.</span></div>
+            <div><strong>Netzgeb.</strong><span>Verbrauch × eingestellte Netzgebühr.</span></div>
+            <div><strong>Summe</strong><span>Strom plus Netzgebühr; dieser Wert fließt in den Monatsbetrag.</span></div>
+            <div><strong>Gewichtung</strong><span>Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.</span></div>
+          </div>
+          {{if .Detail.HasHours}}
+            <div class="table-wrap">
+              <table aria-label="Stundenwerte Parkplatznutzung">
+                <thead>
+                  <tr>
+                    <th title="Beginn der Abrechnungsstunde; jede Zeile umfasst diese Stunde.">Stunde</th>
+                    <th class="num" title="Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.">Verbrauch</th>
+                    <th class="num" title="Stündlicher aWATTar-Arbeitspreis ohne Netzgebühr.">Ø aWATTar</th>
+                    <th class="num" title="Verbrauch × aWATTar-Preis.">Strom</th>
+                    <th class="num" title="Verbrauch × eingestellte Netzgebühr.">Netzgeb.</th>
+                    <th class="num" title="Strom plus Netzgebühr; dieser Wert fließt in den Monatsbetrag.">Summe</th>
+                    <th title="Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.">Gewichtung</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{range .Detail.Hours}}
+                    <tr>
+                      <td title="{{.AtTitle}}">{{.AtLabel}}</td>
+                      <td class="num" title="{{.KWhTitle}}">{{.KWh}}</td>
+                      <td class="num" title="{{.AverageAwattarTitle}}">{{.AverageAwattar}}</td>
+                      <td class="num" title="{{.EnergyCostTitle}}">{{.EnergyCost}}</td>
+                      <td class="num" title="{{.GridCostTitle}}">{{.GridCost}}</td>
+                      <td class="num amount" title="{{.TotalCostTitle}}">{{.TotalCost}}</td>
+                      <td class="bar-cell" title="{{.WeightTitle}}"><div class="bar"><span style="width: {{.ChartPercent}}%;"></span></div></td>
+                    </tr>
+                  {{end}}
+                </tbody>
+              </table>
+            </div>
+          {{else}}
+            <p class="empty">Für diesen Monat sind noch keine Stundenwerte gespeichert.</p>
+          {{end}}
+        </section>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "parkingSettings"}}
+{{template "appOpen" .}}
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/parking">Parkplatznutzung</a><span>/</span><span>Einstellungen</span></span>
+        <div class="page-actions"><a class="button" href="/app/parking">Zur Übersicht</a></div>
       </div>
-      {{if .Detail.HasHours}}
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th title="Beginn der Abrechnungsstunde; jede Zeile umfasst diese Stunde.">Stunde</th>
-                <th title="Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.">Verbrauch</th>
-                <th title="Stündlicher aWATTar-Arbeitspreis ohne Delta.">Ø aWATTar</th>
-                <th title="Verbrauch × aWATTar-Preis.">Strom</th>
-                <th title="Verbrauch × eingestelltes Netzbetreiber-/Basis-Delta.">Delta</th>
-                <th title="Strom plus Delta; dieser Wert fließt in den Monatsbetrag.">Summe</th>
-                <th title="Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.">Gewichtung</th>
-              </tr>
-            </thead>
-            <tbody>
-              {{range .Detail.Hours}}
-                <tr>
-                  <td title="{{.AtTitle}}">{{.AtLabel}}</td>
-                  <td title="{{.KWhTitle}}">{{.KWh}}</td>
-                  <td title="{{.AverageAwattarTitle}}">{{.AverageAwattar}}</td>
-                  <td title="{{.EnergyCostTitle}}">{{.EnergyCost}}</td>
-                  <td title="{{.GridCostTitle}}">{{.GridCost}}</td>
-                  <td class="amount" title="{{.TotalCostTitle}}">{{.TotalCost}}</td>
-                  <td class="bar-cell" title="{{.WeightTitle}}"><div class="bar"><span style="width: {{.ChartPercent}}%;"></span></div></td>
-                </tr>
-              {{end}}
-            </tbody>
-          </table>
+      <section class="page">
+        <div>
+          <h1>Einstellungen</h1>
+          <p class="lede">Abrechnungswerte für die private Parkplatznutzung.</p>
         </div>
-      {{else}}
-        <p class="empty">Für diesen Monat sind noch keine Stundenwerte gespeichert.</p>
-      {{end}}
-    </section>
-  </main>
-</body>
-</html>
+        <section class="panel settings-card">
+          <div>
+            <h2>Netzgebühr</h2>
+            <p class="muted">Kurzer Aufschlag je kWh für Netzbetreibergebühren und lokale Basisanteile. Dieser Wert fließt in die Monatsabrechnung ein.</p>
+          </div>
+          {{if .SettingsMsg}}<p class="flash {{if .SettingsOK}}ok{{end}}">{{.SettingsMsg}}</p>{{end}}
+          <form class="form-grid" method="post" action="/app/parking/settings">
+            <label for="grid_fee_eur_per_kwh">Netzgebühr je kWh</label>
+            <input id="grid_fee_eur_per_kwh" type="text" inputmode="decimal" name="grid_fee_eur_per_kwh" value="{{.Accounting.GridFeeValue}}" autocomplete="off">
+            <button class="button primary" type="submit">Speichern</button>
+            {{if .Accounting.LastSampleLabel}}<span class="mini">Letzter Zählerwert: {{.Accounting.LastSampleLabel}}</span>{{end}}
+          </form>
+        </section>
+      </section>
+    </main>
+{{template "appClose" .}}
 {{end}}
 
 {{define "userSettings"}}

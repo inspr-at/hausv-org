@@ -330,7 +330,7 @@ func TestParkingMonthDetailsExposeHourlyRows(t *testing.T) {
 	if detail.Hours[0].EnergyCostTitle != "Stromkosten: 0,200000 € = 1,000000 kWh × 0,200000 €/kWh" {
 		t.Fatalf("unexpected energy title: %q", detail.Hours[0].EnergyCostTitle)
 	}
-	if detail.Hours[0].TotalCostTitle != "Summe: 0,300000 € = Strom 0,200000 € + Delta 0,100000 €" {
+	if detail.Hours[0].TotalCostTitle != "Summe: 0,300000 € = Strom 0,200000 € + Netzgebühr 0,100000 €" {
 		t.Fatalf("unexpected total title: %q", detail.Hours[0].TotalCostTitle)
 	}
 	if detail.Hours[1].AtLabel != "25.06. 11:00" || detail.Hours[1].TotalCost != "0,50 €" {
