@@ -15,6 +15,7 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/mail"
@@ -37,15 +38,24 @@ import (
 var assets embed.FS
 
 const (
-	roleAdmin         = "Admin"
-	roleManager       = "Verwalter"
-	roleOwner         = "Eigentümer"
-	roleRenter        = "Mieter"
-	roleBeirat        = "Beirat"
-	roleResident      = "Bewohner"
-	permissionParking = "parking"
-	authMethodEmail   = "email"
-	authMethodOIDC    = "oidc"
+	roleAdmin           = "Admin"
+	roleManager         = "Verwalter"
+	roleOwner           = "Eigentümer"
+	roleRenter          = "Mieter"
+	roleBeirat          = "Beirat"
+	roleResident        = "Bewohner"
+	permissionParking   = "parking"
+	authMethodEmail     = "email"
+	authMethodOIDC      = "oidc"
+	issueStatusOpen     = "Offen"
+	issuePriorityNorm   = "Normal"
+	issueLocationUnit   = "own-unit"
+	issueLocationCommon = "common"
+)
+
+const (
+	maxIssuePhotoBytes = 5 << 20
+	maxIssueFormBytes  = maxIssuePhotoBytes + (1 << 20)
 )
 
 type capability string
@@ -92,6 +102,7 @@ type app struct {
 	inviteStore           *inviteStore
 	activityStore         *activityStore
 	unitStore             *unitStore
+	issueStore            *issueStore
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
@@ -283,6 +294,49 @@ type announcementView struct {
 	DeleteConfirmLabel string
 }
 
+type issueStore struct {
+	mu            sync.Mutex
+	path          string
+	attachmentDir string
+	data          issueStoreData
+}
+
+type issueStoreData struct {
+	Issues []residentIssue `json:"issues"`
+}
+
+type residentIssue struct {
+	ID             string    `json:"id"`
+	TenantSlug     string    `json:"tenant"`
+	AuthorEmail    string    `json:"author_email"`
+	AuthorName     string    `json:"author_name"`
+	Category       string    `json:"category"`
+	Title          string    `json:"title"`
+	Body           string    `json:"body"`
+	LocationType   string    `json:"location_type"`
+	LocationDetail string    `json:"location_detail"`
+	PhotoPaths     []string  `json:"photo_paths"`
+	Status         string    `json:"status"`
+	Priority       string    `json:"priority"`
+	AssigneeEmail  string    `json:"assignee_email,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+type issueView struct {
+	ID          string
+	Title       string
+	Body        string
+	Category    string
+	Status      string
+	StatusClass string
+	Priority    string
+	Location    string
+	CreatedAt   string
+	PhotoCount  int
+	HasPhotos   bool
+}
+
 type unitStore struct {
 	mu   sync.Mutex
 	path string
@@ -452,6 +506,8 @@ func main() {
 	mux.HandleFunc("POST /app/announcements", a.createAnnouncement)
 	mux.HandleFunc("POST /app/announcements/edit", a.editAnnouncement)
 	mux.HandleFunc("POST /app/announcements/delete", a.deleteAnnouncement)
+	mux.HandleFunc("GET /app/anliegen", a.issues)
+	mux.HandleFunc("POST /app/anliegen", a.createIssue)
 	mux.HandleFunc("GET /app/parking", a.parking)
 	mux.HandleFunc("GET /app/parking/settings", a.parkingSettings)
 	mux.HandleFunc("GET /app/parking/month/{month}", a.parkingMonth)
@@ -595,6 +651,12 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	issueDataPath := env("ISSUE_DATA_PATH", "tmp/issues.json")
+	defaultIssueAttachmentDir := filepath.Join(filepath.Dir(issueDataPath), "issue-attachments")
+	issues, err := newIssueStore(issueDataPath, env("ISSUE_ATTACHMENT_DIR", defaultIssueAttachmentDir))
+	if err != nil {
+		return nil, err
+	}
 	parkingDataPath := env("PARKING_DATA_PATH", "tmp/parking.json")
 	parkingStore, err := newParkingStore(parkingDataPath)
 	if err != nil {
@@ -639,6 +701,7 @@ func newApp() (*app, error) {
 		inviteStore:           invites,
 		activityStore:         activity,
 		unitStore:             units,
+		issueStore:            issues,
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
@@ -1129,6 +1192,98 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"Announcements":          announcements,
 		"HasAnnouncements":       len(announcements) > 0,
 	})
+}
+
+func (a *app) issues(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileFor(email)
+	isAdmin := hasCapability(role, capabilityPlatformAdmin)
+	issues := []issueView{}
+	if a.issueStore != nil {
+		issues = issueViews(a.issueStore.ListAuthor(tenant.Slug, email))
+	}
+	msg, msgOK := issueMessage(r.URL.Query().Get("issue"))
+	a.render(w, "issues", map[string]any{
+		"Title":                  "Anliegen",
+		"Tenant":                 tenant,
+		"Email":                  email,
+		"DisplayName":            profile.DisplayName(),
+		"Initials":               profile.Initials(),
+		"Role":                   role,
+		"IsAdmin":                isAdmin,
+		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
+		"CanManageAnnouncements": canManageAnnouncements(role),
+		"ActivePage":             "issues",
+		"Issues":                 issues,
+		"HasIssues":              len(issues) > 0,
+		"IssueMsg":               msg,
+		"IssueOK":                msgOK,
+	})
+}
+
+func issueMessage(status string) (string, bool) {
+	switch status {
+	case "created":
+		return "Anliegen gespeichert. Die Verwaltung sieht es im nächsten Bearbeitungsschritt.", true
+	case "invalid":
+		return "Bitte Kategorie, Ort, Titel und Beschreibung prüfen.", false
+	case "photo":
+		return "Das Foto konnte nicht übernommen werden. Erlaubt sind JPG, PNG oder WebP bis 5 MB.", false
+	case "error":
+		return "Das Anliegen konnte nicht gespeichert werden.", false
+	default:
+		return "", false
+	}
+}
+
+func (a *app) createIssue(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, _, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxIssueFormBytes)
+	if err := r.ParseMultipartForm(maxIssuePhotoBytes); err != nil {
+		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileFor(email)
+	item, err := issueFromForm(r, tenant.Slug, profile, time.Now())
+	if err != nil {
+		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		return
+	}
+	if a.issueStore != nil {
+		photo, hasPhoto := issuePhotoHeader(r)
+		if hasPhoto {
+			photoPath, err := a.issueStore.SavePhoto(tenant.Slug, item.ID, photo)
+			if err != nil {
+				http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
+				return
+			}
+			item.PhotoPaths = []string{photoPath}
+		}
+		if _, err := a.issueStore.Create(item); err != nil {
+			log.Printf("issue create failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
+			http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
+			return
+		}
+	}
+	http.Redirect(w, r, "/app/anliegen?issue=created", http.StatusSeeOther)
 }
 
 func (a *app) parking(w http.ResponseWriter, r *http.Request) {
@@ -1658,6 +1813,129 @@ func plainTextHTML(body string) template.HTML {
 	escaped = strings.ReplaceAll(escaped, "\n\n", "<br><br>")
 	escaped = strings.ReplaceAll(escaped, "\n", "<br>")
 	return template.HTML(escaped)
+}
+
+func issueFromForm(r *http.Request, tenantSlug string, author userProfile, now time.Time) (residentIssue, error) {
+	id, err := randomToken(12)
+	if err != nil {
+		return residentIssue{}, err
+	}
+	title := strings.TrimSpace(r.FormValue("title"))
+	body := strings.TrimSpace(r.FormValue("body"))
+	if title == "" || body == "" || len([]rune(title)) > 140 || len([]rune(body)) > 4000 {
+		return residentIssue{}, fmt.Errorf("invalid issue text")
+	}
+	locationType := normalizeIssueLocation(r.FormValue("location_type"))
+	if locationType == "" {
+		return residentIssue{}, fmt.Errorf("invalid location")
+	}
+	locationDetail := strings.TrimSpace(r.FormValue("location_detail"))
+	if len([]rune(locationDetail)) > 160 {
+		return residentIssue{}, fmt.Errorf("location detail too long")
+	}
+	category := normalizeIssueCategory(r.FormValue("category"))
+	if category == "" {
+		return residentIssue{}, fmt.Errorf("invalid category")
+	}
+	return residentIssue{
+		ID:             id,
+		TenantSlug:     normalizeSlug(tenantSlug),
+		AuthorEmail:    normalizeEmail(author.Email),
+		AuthorName:     author.DisplayName(),
+		Category:       category,
+		Title:          title,
+		Body:           body,
+		LocationType:   locationType,
+		LocationDetail: locationDetail,
+		Status:         issueStatusOpen,
+		Priority:       issuePriorityNorm,
+		CreatedAt:      now.UTC(),
+		UpdatedAt:      now.UTC(),
+	}, nil
+}
+
+func normalizeIssueCategory(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "reparatur", "repair", "mangel", "mängel", "schaden":
+		return "Reparatur"
+	case "frage", "question":
+		return "Frage"
+	case "vorschlag", "idee", "suggestion":
+		return "Vorschlag"
+	case "sonstiges", "sonstige", "other":
+		return "Sonstiges"
+	default:
+		return ""
+	}
+}
+
+func normalizeIssueLocation(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case issueLocationUnit, "eigene einheit", "wohnung", "unit":
+		return issueLocationUnit
+	case issueLocationCommon, "gemeinschaft", "allgemeinbereich":
+		return issueLocationCommon
+	default:
+		return ""
+	}
+}
+
+func issueLocationLabel(locationType string, detail string) string {
+	label := "Gemeinschaft"
+	if normalizeIssueLocation(locationType) == issueLocationUnit {
+		label = "Eigene Einheit"
+	}
+	detail = strings.TrimSpace(detail)
+	if detail == "" {
+		return label
+	}
+	return label + " · " + detail
+}
+
+func issueStatusClass(status string) string {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "in arbeit":
+		return "status-progress"
+	case "erledigt":
+		return "status-done"
+	default:
+		return "status-open"
+	}
+}
+
+func issuePhotoHeader(r *http.Request) (*multipart.FileHeader, bool) {
+	if r.MultipartForm == nil {
+		return nil, false
+	}
+	files := r.MultipartForm.File["photo"]
+	if len(files) == 0 {
+		files = r.MultipartForm.File["photos"]
+	}
+	if len(files) == 0 || files[0] == nil || files[0].Filename == "" || files[0].Size == 0 {
+		return nil, false
+	}
+	return files[0], true
+}
+
+func issueViews(items []residentIssue) []issueView {
+	views := make([]issueView, 0, len(items))
+	for _, item := range items {
+		photoCount := len(item.PhotoPaths)
+		views = append(views, issueView{
+			ID:          item.ID,
+			Title:       item.Title,
+			Body:        item.Body,
+			Category:    item.Category,
+			Status:      item.Status,
+			StatusClass: issueStatusClass(item.Status),
+			Priority:    item.Priority,
+			Location:    issueLocationLabel(item.LocationType, item.LocationDetail),
+			CreatedAt:   item.CreatedAt.In(time.Local).Format("02.01.2006 15:04"),
+			PhotoCount:  photoCount,
+			HasPhotos:   photoCount > 0,
+		})
+	}
+	return views
 }
 
 func (a *app) settingsHub(w http.ResponseWriter, r *http.Request) {
@@ -2321,6 +2599,226 @@ func (s *announcementReadStore) saveLocked() error {
 		return fmt.Errorf("could not replace announcement read data")
 	}
 	return nil
+}
+
+func newIssueStore(path string, attachmentDir string) (*issueStore, error) {
+	if attachmentDir == "" && path != "" {
+		attachmentDir = filepath.Join(filepath.Dir(path), "issue-attachments")
+	}
+	store := &issueStore{path: path, attachmentDir: attachmentDir, data: issueStoreData{Issues: []residentIssue{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read issue data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid issue data")
+	}
+	if store.data.Issues == nil {
+		store.data.Issues = []residentIssue{}
+	}
+	return store, nil
+}
+
+func (s *issueStore) Create(item residentIssue) (residentIssue, error) {
+	if s == nil {
+		return item, nil
+	}
+	now := time.Now().UTC()
+	if item.ID == "" {
+		id, err := randomToken(12)
+		if err != nil {
+			return residentIssue{}, err
+		}
+		item.ID = id
+	}
+	item.TenantSlug = normalizeSlug(item.TenantSlug)
+	item.AuthorEmail = normalizeEmail(item.AuthorEmail)
+	item.Category = normalizeIssueCategory(item.Category)
+	item.LocationType = normalizeIssueLocation(item.LocationType)
+	item.Title = strings.TrimSpace(item.Title)
+	item.Body = strings.TrimSpace(item.Body)
+	item.LocationDetail = strings.TrimSpace(item.LocationDetail)
+	if item.TenantSlug == "" || item.AuthorEmail == "" || item.Category == "" || item.LocationType == "" || item.Title == "" || item.Body == "" {
+		return residentIssue{}, fmt.Errorf("invalid issue")
+	}
+	item.Status = strings.TrimSpace(item.Status)
+	if item.Status == "" {
+		item.Status = issueStatusOpen
+	}
+	item.Priority = strings.TrimSpace(item.Priority)
+	if item.Priority == "" {
+		item.Priority = issuePriorityNorm
+	}
+	if item.CreatedAt.IsZero() {
+		item.CreatedAt = now
+	} else {
+		item.CreatedAt = item.CreatedAt.UTC()
+	}
+	if item.UpdatedAt.IsZero() {
+		item.UpdatedAt = item.CreatedAt
+	} else {
+		item.UpdatedAt = item.UpdatedAt.UTC()
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data.Issues = append(s.data.Issues, item)
+	if err := s.saveLocked(); err != nil {
+		return residentIssue{}, err
+	}
+	return item, nil
+}
+
+func (s *issueStore) ListTenant(tenantSlug string) []residentIssue {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []residentIssue{}
+	for _, item := range s.data.Issues {
+		if normalizeSlug(item.TenantSlug) == tenantSlug {
+			out = append(out, copyIssue(item))
+		}
+	}
+	sortIssues(out)
+	return out
+}
+
+func (s *issueStore) ListAuthor(tenantSlug string, email string) []residentIssue {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	email = normalizeEmail(email)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []residentIssue{}
+	for _, item := range s.data.Issues {
+		if normalizeSlug(item.TenantSlug) == tenantSlug && normalizeEmail(item.AuthorEmail) == email {
+			out = append(out, copyIssue(item))
+		}
+	}
+	sortIssues(out)
+	return out
+}
+
+func (s *issueStore) SavePhoto(tenantSlug string, issueID string, header *multipart.FileHeader) (string, error) {
+	if s == nil || header == nil || header.Filename == "" || header.Size == 0 {
+		return "", nil
+	}
+	if s.attachmentDir == "" {
+		return "", fmt.Errorf("issue attachment directory unavailable")
+	}
+	if header.Size > maxIssuePhotoBytes {
+		return "", fmt.Errorf("issue photo too large")
+	}
+	file, err := header.Open()
+	if err != nil {
+		return "", fmt.Errorf("could not open issue photo")
+	}
+	defer file.Close()
+
+	sniff := make([]byte, 512)
+	n, readErr := file.Read(sniff)
+	if readErr != nil && !errors.Is(readErr, io.EOF) {
+		return "", fmt.Errorf("could not read issue photo")
+	}
+	contentType := http.DetectContentType(sniff[:n])
+	ext, ok := issuePhotoExtension(contentType)
+	if !ok {
+		return "", fmt.Errorf("unsupported issue photo type")
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("could not rewind issue photo")
+	}
+
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" {
+		tenantSlug = "tenant"
+	}
+	issueID = normalizeSlug(issueID)
+	if issueID == "" {
+		return "", fmt.Errorf("issue id required")
+	}
+	dir := filepath.Join(s.attachmentDir, tenantSlug)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", fmt.Errorf("could not create issue attachment directory")
+	}
+	filename := issueID + "-photo" + ext
+	dest := filepath.Join(dir, filename)
+	out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return "", fmt.Errorf("could not create issue attachment")
+	}
+	written, copyErr := io.Copy(out, io.LimitReader(file, maxIssuePhotoBytes+1))
+	closeErr := out.Close()
+	if copyErr != nil || closeErr != nil {
+		_ = os.Remove(dest)
+		return "", fmt.Errorf("could not write issue attachment")
+	}
+	if written > maxIssuePhotoBytes {
+		_ = os.Remove(dest)
+		return "", fmt.Errorf("issue photo too large")
+	}
+	return filepath.ToSlash(filepath.Join(filepath.Base(s.attachmentDir), tenantSlug, filename)), nil
+}
+
+func issuePhotoExtension(contentType string) (string, bool) {
+	switch contentType {
+	case "image/jpeg":
+		return ".jpg", true
+	case "image/png":
+		return ".png", true
+	case "image/webp":
+		return ".webp", true
+	default:
+		return "", false
+	}
+}
+
+func (s *issueStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create issue data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode issue data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write issue data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace issue data")
+	}
+	return nil
+}
+
+func copyIssue(item residentIssue) residentIssue {
+	item.PhotoPaths = append([]string(nil), item.PhotoPaths...)
+	return item
+}
+
+func sortIssues(items []residentIssue) {
+	sort.SliceStable(items, func(i, j int) bool {
+		if !items[i].UpdatedAt.Equal(items[j].UpdatedAt) {
+			return items[i].UpdatedAt.After(items[j].UpdatedAt)
+		}
+		return items[i].CreatedAt.After(items[j].CreatedAt)
+	})
 }
 
 func newUnitStore(path string) (*unitStore, error) {
@@ -5218,6 +5716,30 @@ const pageTemplates = `
     .pill.wartung { background: rgba(173,92,27,.14); color: #8a551f; }
     .pill.info { background: rgba(200,153,63,.16); color: #8a6a1f; }
     .pill.unread { background: var(--gold); color: #172019; }
+    .pill.status-open { background: rgba(200,153,63,.16); color: #8a6a1f; }
+    .pill.status-progress { background: rgba(32,37,31,.08); color: var(--ink); }
+    .pill.status-done { background: rgba(47,107,74,.12); color: var(--leaf); }
+    .issue-layout { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(280px,.8fr); gap: 22px; align-items: start; }
+    .issue-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+    .issue-form label { display: grid; gap: 7px; color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .issue-form .full { grid-column: 1 / -1; }
+    .issue-form input, .issue-form select, .issue-form textarea { width: 100%; border: 1px solid #e2dac9; border-radius: 8px; padding: 12px; font: inherit; background: #fffefb; color: var(--ink); }
+    .issue-form textarea { min-height: 148px; resize: vertical; line-height: 1.45; }
+    .issue-form input[type=file] { padding: 10px; color: var(--muted); }
+    .file-control { position: relative; min-height: 44px; display: flex; align-items: center; gap: 10px; border: 1px solid #e2dac9; border-radius: 8px; padding: 10px 12px; background: #fffefb; color: var(--ink); overflow: hidden; }
+    .file-control input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .file-control span { pointer-events: none; font-size: 13px; font-weight: 800; letter-spacing: 0; text-transform: none; }
+    .issue-form .hint { margin-top: 2px; color: var(--soft); font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+    .issue-form button { grid-column: 1 / -1; min-height: 46px; border: 1px solid var(--ink); border-radius: 8px; background: var(--ink); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+    .issue-form button:hover { background: #2c3329; }
+    .issue-flash { margin: 0 0 14px; padding: 11px 13px; border-radius: 8px; font-size: 13.5px; font-weight: 700; border: 1px solid transparent; }
+    .issue-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
+    .issue-flash.warn { background: rgba(200,153,63,.14); color: #93701d; border-color: rgba(200,153,63,.3); }
+    .issue-list { display: grid; gap: 10px; }
+    .issue-card { border: 1px solid var(--line); border-radius: 8px; padding: 13px; background: #fffefb; display: grid; gap: 10px; }
+    .issue-card h3 { font-size: 18px; }
+    .issue-meta { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; color: var(--soft); font-size: 12.5px; font-weight: 700; }
+    .issue-location { color: var(--muted); font-size: 13px; line-height: 1.35; }
     .dialog { border: 1px solid var(--line); border-radius: 10px; padding: 0; width: min(680px, calc(100vw - 28px)); color: var(--ink); background: var(--panel); box-shadow: 0 28px 70px rgba(0,0,0,.34); }
     .dialog::backdrop { background: rgba(23,32,25,.42); }
     .dialog form { margin: 0; }
@@ -5274,7 +5796,7 @@ const pageTemplates = `
       .side-nav { grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); }
       .side-foot { margin-top: 4px; grid-template-columns: 1fr auto; align-items: center; }
       .logout-form { justify-self: end; min-width: 160px; }
-      .home-grid, .metric-grid { grid-template-columns: 1fr; }
+      .home-grid, .metric-grid, .issue-layout { grid-template-columns: 1fr; }
       .month-strip { grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); }
     }
     @media (max-width: 680px) {
@@ -5285,6 +5807,7 @@ const pageTemplates = `
       .page { padding-left: 18px; padding-right: 18px; }
       h1 { font-size: clamp(36px,12vw,48px); }
       .metric-grid { grid-template-columns: 1fr; }
+      .issue-form { grid-template-columns: 1fr; }
       .quick-row { grid-template-columns: 28px minmax(0,1fr); }
       .quick-row .pill { grid-column: 2; justify-self: start; }
       .filter-form { grid-template-columns: 1fr; }
@@ -5308,7 +5831,7 @@ const pageTemplates = `
       <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
       {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</span>
-      <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen</span>
+      <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="/app/anliegen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen</a>
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</span>
       {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
       <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>
@@ -5388,11 +5911,94 @@ const pageTemplates = `
             <div class="kicker">Schnellzugriff</div>
             <div class="quick-list">
               <a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><div><h3>Aushang</h3><p>Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p></div>{{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
+              <a class="quick-row" href="/app/anliegen"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><div><h3>Anliegen</h3><p>Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.</p></div><span class="quick-arrow">›</span></a>
               {{if .CanSeeParking}}<a class="quick-row" href="/app/parking"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg><div><h3>Parkplatznutzung</h3><p>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .CanManageUsers}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .CanManageAnnouncements}}<a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><div><h3>Aushang verwalten</h3><p>Beiträge verfassen, fixieren, planen und löschen.</p></div><span class="quick-arrow">›</span></a>{{end}}
             </div>
           </section>
+        </div>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "issues"}}
+{{template "appOpen" .}}
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><span>/</span><span>Anliegen</span></span>
+      </div>
+      <section class="page">
+        <div>
+          <h1>Anliegen</h1>
+          <p class="lede">Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.</p>
+        </div>
+        <div class="issue-layout">
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <div class="kicker">Neues Anliegen</div>
+                <p class="muted">Bitte so konkret wie möglich beschreiben. Ein Foto ist optional.</p>
+              </div>
+            </div>
+            {{if .IssueMsg}}<p class="issue-flash{{if .IssueOK}} ok{{else}} warn{{end}}">{{.IssueMsg}}</p>{{end}}
+            <form class="issue-form" method="post" action="/app/anliegen" enctype="multipart/form-data">
+              <label>Kategorie
+                <select name="category" required>
+                  <option value="Reparatur">Reparatur</option>
+                  <option value="Frage">Frage</option>
+                  <option value="Vorschlag">Vorschlag</option>
+                  <option value="Sonstiges">Sonstiges</option>
+                </select>
+              </label>
+              <label>Ort
+                <select name="location_type" required>
+                  <option value="common">Gemeinschaftsbereich</option>
+                  <option value="own-unit">Eigene Einheit</option>
+                </select>
+              </label>
+              <label class="full">Titel
+                <input type="text" name="title" maxlength="140" required placeholder="Kurz zusammenfassen">
+              </label>
+              <label class="full">Beschreibung
+                <textarea name="body" maxlength="4000" required placeholder="Was ist passiert? Seit wann? Gibt es eine Dringlichkeit?"></textarea>
+              </label>
+              <label class="full">Details zum Ort
+                <input type="text" name="location_detail" maxlength="160" placeholder="z. B. Stiegenhaus, Garage, Top 3">
+              </label>
+              <label class="full">Foto
+                <span class="file-control"><input type="file" name="photo" accept="image/jpeg,image/png,image/webp"><span>Foto auswählen</span></span>
+                <span class="hint">Optional, JPG/PNG/WebP bis 5 MB.</span>
+              </label>
+              <button type="submit">Anliegen senden</button>
+            </form>
+          </section>
+          <aside class="panel">
+            <div class="section-head">
+              <div>
+                <div class="kicker">Meine letzten Anliegen</div>
+                <p class="muted">Status und Rückfragen werden hier zusammengeführt.</p>
+              </div>
+            </div>
+            {{if .HasIssues}}
+              <div class="issue-list">
+                {{range .Issues}}
+                  <article class="issue-card">
+                    <div class="issue-meta">
+                      <span class="pill {{.StatusClass}}">{{.Status}}</span>
+                      <span class="pill">{{.Category}}</span>
+                      <span>{{.CreatedAt}}</span>
+                    </div>
+                    <h3>{{.Title}}</h3>
+                    <p class="issue-location">{{.Location}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
+                  </article>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty">Noch kein Anliegen erfasst. Nach dem Absenden erscheint es hier mit Status.</p>
+            {{end}}
+          </aside>
         </div>
       </section>
     </main>

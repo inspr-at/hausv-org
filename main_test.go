@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"html/template"
 	"math"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -142,6 +144,42 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 	}
 	if got := reopened.UnitCount("jhw22"); got != 2 {
 		t.Fatalf("reopened UnitCount = %d, want 2", got)
+	}
+}
+
+func TestIssueStoreCreateListPersist(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "issues.json")
+	store, err := newIssueStore(path, filepath.Join(t.TempDir(), "issue-attachments"))
+	if err != nil {
+		t.Fatalf("newIssueStore: %v", err)
+	}
+	created, err := store.Create(residentIssue{
+		TenantSlug:     "JHW22",
+		AuthorEmail:    "Resident@Example.com",
+		AuthorName:     "Resident",
+		Category:       "Reparatur",
+		Title:          "Licht im Stiegenhaus",
+		Body:           "Das Licht flackert.",
+		LocationType:   issueLocationCommon,
+		LocationDetail: "Stiege 1",
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if created.ID == "" || created.Status != issueStatusOpen || created.Priority != issuePriorityNorm {
+		t.Fatalf("created issue defaults = %+v", created)
+	}
+	info, err := os.Stat(path)
+	if err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("issue store file mode = %v err=%v, want 0600", info.Mode().Perm(), err)
+	}
+	reopened, err := newIssueStore(path, "")
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	byAuthor := reopened.ListAuthor("jhw22", "resident@example.com")
+	if len(byAuthor) != 1 || byAuthor[0].Title != "Licht im Stiegenhaus" || byAuthor[0].TenantSlug != "jhw22" {
+		t.Fatalf("ListAuthor = %+v", byAuthor)
 	}
 }
 
@@ -826,6 +864,106 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 	}
 }
 
+func TestIssuesPageRendersResidentFormAndNav(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	rr := authedRequest(t, a, "resident@example.com", "/app/anliegen", a.issues)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("issues status = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	for _, want := range []string{`href="/app/anliegen"`, "Anliegen", "Neues Anliegen", `enctype="multipart/form-data"`, `name="category"`, `name="location_type"`, `name="photo"`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("issues page should contain %q", want)
+		}
+	}
+	if strings.Contains(body, `class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5`) {
+		t.Fatal("Anliegen nav item must be a live link, not a disabled placeholder")
+	}
+}
+
+func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	attachmentDir := filepath.Join(t.TempDir(), "issue-attachments")
+	store, err := newIssueStore(filepath.Join(t.TempDir(), "issues.json"), attachmentDir)
+	if err != nil {
+		t.Fatalf("newIssueStore: %v", err)
+	}
+	a.issueStore = store
+
+	rr := authedMultipartRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+		"category":        "Reparatur",
+		"location_type":   issueLocationCommon,
+		"location_detail": "Stiegenhaus",
+		"title":           "Licht flackert",
+		"body":            "Das Licht im Stiegenhaus flackert seit gestern.",
+	}, "licht.png", minimalPNG(), a.createIssue)
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("submit issue status = %d, want redirect", rr.Code)
+	}
+	if loc := rr.Header().Get("Location"); loc != "/app/anliegen?issue=created" {
+		t.Fatalf("redirect = %q", loc)
+	}
+	issues := store.ListAuthor("jhw22", "resident@example.com")
+	if len(issues) != 1 {
+		t.Fatalf("stored issues = %+v", issues)
+	}
+	issue := issues[0]
+	if issue.Category != "Reparatur" || issue.LocationType != issueLocationCommon || issue.LocationDetail != "Stiegenhaus" || issue.Status != issueStatusOpen {
+		t.Fatalf("stored issue fields = %+v", issue)
+	}
+	if len(issue.PhotoPaths) != 1 {
+		t.Fatalf("photo paths = %+v, want one", issue.PhotoPaths)
+	}
+	photoPath := filepath.Join(attachmentDir, "jhw22", filepath.Base(issue.PhotoPaths[0]))
+	info, err := os.Stat(photoPath)
+	if err != nil {
+		t.Fatalf("stat photo: %v", err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("photo mode = %v, want 0600", info.Mode().Perm())
+	}
+
+	page := authedRequest(t, a, "resident@example.com", "/app/anliegen", a.issues)
+	if !strings.Contains(page.Body.String(), "Licht flackert") || !strings.Contains(page.Body.String(), "1 Foto") {
+		t.Fatalf("issues page should show submitted issue with photo count:\n%s", page.Body.String())
+	}
+}
+
+func TestIssueSubmitRejectsInvalidPhotoType(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	store, err := newIssueStore(filepath.Join(t.TempDir(), "issues.json"), filepath.Join(t.TempDir(), "issue-attachments"))
+	if err != nil {
+		t.Fatalf("newIssueStore: %v", err)
+	}
+	a.issueStore = store
+
+	rr := authedMultipartRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+		"category":      "Frage",
+		"location_type": issueLocationUnit,
+		"title":         "Dokument hochladen",
+		"body":          "Wo soll ich das melden?",
+	}, "not-a-photo.txt", []byte("plain text"), a.createIssue)
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("invalid photo status = %d, want redirect", rr.Code)
+	}
+	if loc := rr.Header().Get("Location"); loc != "/app/anliegen?issue=photo" {
+		t.Fatalf("redirect = %q", loc)
+	}
+	if got := store.ListAuthor("jhw22", "resident@example.com"); len(got) != 0 {
+		t.Fatalf("invalid photo must not create issue, got %+v", got)
+	}
+}
+
+func minimalPNG() []byte {
+	return []byte{
+		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+		0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+		0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+		0x08, 0x02, 0x00, 0x00, 0x00,
+	}
+}
+
 func TestAnnouncementArchiveFiltersSearchesAndIncludesPast(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now().Add(-2 * time.Hour)
@@ -967,6 +1105,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("unit store: %v", err)
 	}
+	issueStore, err := newIssueStore("", "")
+	if err != nil {
+		t.Fatalf("issue store: %v", err)
+	}
 	return &app{
 		baseURL:       "http://localhost:8080",
 		rootDomain:    "hausv.org",
@@ -989,6 +1131,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		inviteStore:           inviteStore,
 		activityStore:         activityStore,
 		unitStore:             unitStore,
+		issueStore:            issueStore,
 		parkingStore:          parkingStore,
 	}
 }
@@ -1008,6 +1151,40 @@ func authedRequest(t *testing.T, a *app, email string, path string, handler http
 
 func authedFormRequest(t *testing.T, a *app, email string, path string, values url.Values, handler http.HandlerFunc) *httptest.ResponseRecorder {
 	return authedFormRequestWithOrigin(t, a, email, path, values, "http://jhw22.hausv.org", handler)
+}
+
+func authedMultipartRequest(t *testing.T, a *app, email string, path string, fields map[string]string, filename string, fileBody []byte, handler http.HandlerFunc) *httptest.ResponseRecorder {
+	t.Helper()
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			t.Fatalf("WriteField %s: %v", key, err)
+		}
+	}
+	if filename != "" {
+		part, err := writer.CreateFormFile("photo", filename)
+		if err != nil {
+			t.Fatalf("CreateFormFile: %v", err)
+		}
+		if _, err := part.Write(fileBody); err != nil {
+			t.Fatalf("write photo: %v", err)
+		}
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("multipart close: %v", err)
+	}
+	token, _, err := a.sessions.Put(email, "jhw22", authMethodEmail, time.Hour)
+	if err != nil {
+		t.Fatalf("put session: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org"+path, &body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Origin", "http://jhw22.hausv.org")
+	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
+	rr := httptest.NewRecorder()
+	handler(rr, req)
+	return rr
 }
 
 func authedFormRequestWithOrigin(t *testing.T, a *app, email string, path string, values url.Values, origin string, handler http.HandlerFunc) *httptest.ResponseRecorder {

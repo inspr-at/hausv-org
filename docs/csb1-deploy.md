@@ -125,6 +125,11 @@ owner/renter email links; the file uses the same mutexed atomic JSON-store patte
 and `0600` file mode. The public landing only shows a Wohneinheiten count when
 that count comes from this store.
 
+Anliegen submitted by residents persist to `/data/issues.json` via
+`ISSUE_DATA_PATH`. Optional uploaded photos are validated as JPG/PNG/WebP up to
+5 MB and written under `/data/issue-attachments/` via `ISSUE_ATTACHMENT_DIR`;
+the JSON file and attachment files use mode `0600`.
+
 Historical accounting backfill uses Home Assistant recorder statistics from
 `PARKING_HISTORY_START` onward. For the 2026 rollout this is set in compose as:
 
