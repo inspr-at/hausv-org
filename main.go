@@ -69,6 +69,7 @@ type app struct {
 	mailer                mailer
 	templates             *template.Template
 	announcementStore     *announcementStore
+	announcementReadStore *announcementReadStore
 	inviteStore           *inviteStore
 	activityStore         *activityStore
 	parkingStore          *parkingStore
@@ -214,6 +215,16 @@ type announcementStoreData struct {
 	Announcements []announcement `json:"announcements"`
 }
 
+type announcementReadStore struct {
+	mu   sync.Mutex
+	path string
+	data announcementReadStoreData
+}
+
+type announcementReadStoreData struct {
+	Seen map[string]map[string]time.Time `json:"seen"`
+}
+
 type announcement struct {
 	ID          string     `json:"id"`
 	TenantSlug  string     `json:"tenant"`
@@ -247,8 +258,15 @@ type announcementView struct {
 	Status             string
 	Published          bool
 	Expired            bool
+	Unread             bool
 	EditDialogID       string
 	DeleteConfirmLabel string
+}
+
+type announcementFilterView struct {
+	Label  string
+	URL    string
+	Active bool
 }
 
 type parkingStore struct {
@@ -506,6 +524,11 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	announcementReadDataPath := env("ANNOUNCE_READ_DATA_PATH", "tmp/announcement_reads.json")
+	announcementReads, err := newAnnouncementReadStore(announcementReadDataPath)
+	if err != nil {
+		return nil, err
+	}
 	inviteDataPath := env("INVITE_DATA_PATH", "tmp/invites.json")
 	invites, err := newInviteStore(inviteDataPath)
 	if err != nil {
@@ -556,6 +579,7 @@ func newApp() (*app, error) {
 		mailer:                mailTransport,
 		templates:             tmpl,
 		announcementStore:     announcements,
+		announcementReadStore: announcementReads,
 		inviteStore:           invites,
 		activityStore:         activity,
 		parkingStore:          parkingStore,
@@ -849,12 +873,21 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
 	profile := a.profileFor(email)
 	isAdmin := role == roleAdmin
 	canManage := canManageAnnouncements(role)
-	visible := []announcementView{}
+	now := time.Now()
+	selectedCategory := selectedAnnouncementCategory(r.URL.Query().Get("category"))
+	searchQuery := strings.TrimSpace(r.URL.Query().Get("q"))
+	lastSeen := time.Time{}
+	if a.announcementReadStore != nil {
+		lastSeen = a.announcementReadStore.LastSeen(tenant.Slug, email)
+	}
+	archive := []announcement{}
+	filtered := []announcement{}
 	all := []announcementView{}
 	if a.announcementStore != nil {
-		visible = announcementViews(a.announcementStore.Visible(tenant.Slug, time.Now()), time.Now(), false)
+		archive = a.announcementStore.Archive(tenant.Slug, now)
+		filtered = filterAnnouncements(archive, selectedCategory, searchQuery)
 		if canManage {
-			all = announcementViews(a.announcementStore.ListTenant(tenant.Slug), time.Now(), true)
+			all = announcementViewsWithReadState(a.announcementStore.ListTenant(tenant.Slug), now, true, lastSeen)
 		}
 	}
 	a.render(w, "announcements", map[string]any{
@@ -868,13 +901,24 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
 		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
 		"CanManageAnnouncements": canManage,
 		"ActivePage":             "announcements",
-		"Announcements":          visible,
-		"HasAnnouncements":       len(visible) > 0,
+		"Announcements":          announcementViewsWithReadState(filtered, now, true, lastSeen),
+		"HasAnnouncements":       len(filtered) > 0,
+		"HasAnyAnnouncements":    len(archive) > 0,
 		"AllAnnouncements":       all,
 		"HasAllAnnouncements":    len(all) > 0,
 		"AnnounceMsg":            announcementMessage(r.URL.Query().Get("announce")),
-		"NowInput":               time.Now().In(time.Local).Format("2006-01-02T15:04"),
+		"NowInput":               now.In(time.Local).Format("2006-01-02T15:04"),
+		"SearchQuery":            searchQuery,
+		"SelectedCategory":       selectedCategory,
+		"CategoryFilters":        announcementFilterViews(searchQuery, selectedCategory),
+		"UnreadAnnouncements":    0,
+		"HasUnreadAnnouncements": false,
 	})
+	if a.announcementReadStore != nil {
+		if err := a.announcementReadStore.MarkSeen(tenant.Slug, email, now); err != nil {
+			log.Printf("announcement read mark failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
+		}
+	}
 }
 
 func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request) {
@@ -996,8 +1040,13 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 	isAdmin := role == roleAdmin
 	canManage := canManageAnnouncements(role)
 	announcements := []announcementView{}
+	now := time.Now()
+	lastSeen := time.Time{}
+	if a.announcementReadStore != nil {
+		lastSeen = a.announcementReadStore.LastSeen(tenant.Slug, email)
+	}
 	if a.announcementStore != nil {
-		announcements = announcementViews(a.announcementStore.Visible(tenant.Slug, time.Now()), time.Now(), false)
+		announcements = announcementViewsWithReadState(a.announcementStore.Visible(tenant.Slug, now), now, false, lastSeen)
 		if len(announcements) > 3 {
 			announcements = announcements[:3]
 		}
@@ -1318,15 +1367,102 @@ func normalizeAnnouncementCategory(raw string) string {
 	}
 }
 
+func selectedAnnouncementCategory(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || strings.EqualFold(raw, "all") || strings.EqualFold(raw, "alle") {
+		return ""
+	}
+	return normalizeAnnouncementCategory(raw)
+}
+
+func filterAnnouncements(items []announcement, category string, query string) []announcement {
+	category = selectedAnnouncementCategory(category)
+	query = strings.ToLower(strings.TrimSpace(query))
+	if category == "" && query == "" {
+		return items
+	}
+	out := []announcement{}
+	for _, item := range items {
+		if category != "" && item.Category != category {
+			continue
+		}
+		if query != "" {
+			haystack := strings.ToLower(item.Title + "\n" + item.Body + "\n" + item.Category)
+			if !strings.Contains(haystack, query) {
+				continue
+			}
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+func announcementFilterViews(query string, selectedCategory string) []announcementFilterView {
+	selectedCategory = selectedAnnouncementCategory(selectedCategory)
+	categories := []string{"", "Info", "Termin", "Wartung", "Dringend"}
+	labels := map[string]string{"": "Alle"}
+	out := make([]announcementFilterView, 0, len(categories))
+	for _, category := range categories {
+		label := labels[category]
+		if label == "" {
+			label = category
+		}
+		values := url.Values{}
+		if strings.TrimSpace(query) != "" {
+			values.Set("q", strings.TrimSpace(query))
+		}
+		if category != "" {
+			values.Set("category", category)
+		}
+		filterURL := "/app/announcements"
+		if encoded := values.Encode(); encoded != "" {
+			filterURL += "?" + encoded
+		}
+		out = append(out, announcementFilterView{
+			Label:  label,
+			URL:    filterURL,
+			Active: category == selectedCategory,
+		})
+	}
+	return out
+}
+
+func unreadAnnouncementCount(items []announcement, lastSeen time.Time, now time.Time) int {
+	count := 0
+	for _, item := range items {
+		if announcementUnread(item, lastSeen, now) {
+			count++
+		}
+	}
+	return count
+}
+
+func announcementUnread(item announcement, lastSeen time.Time, now time.Time) bool {
+	if item.PublishedAt.After(now) {
+		return false
+	}
+	if item.ExpiresAt != nil && !item.ExpiresAt.After(now) {
+		return false
+	}
+	if lastSeen.IsZero() {
+		return true
+	}
+	return item.PublishedAt.After(lastSeen)
+}
+
 func announcementViews(items []announcement, now time.Time, includeStatus bool) []announcementView {
+	return announcementViewsWithReadState(items, now, includeStatus, time.Time{})
+}
+
+func announcementViewsWithReadState(items []announcement, now time.Time, includeStatus bool, lastSeen time.Time) []announcementView {
 	views := make([]announcementView, 0, len(items))
 	for _, item := range items {
-		views = append(views, announcementViewFrom(item, now, includeStatus))
+		views = append(views, announcementViewFrom(item, now, includeStatus, lastSeen))
 	}
 	return views
 }
 
-func announcementViewFrom(item announcement, now time.Time, includeStatus bool) announcementView {
+func announcementViewFrom(item announcement, now time.Time, includeStatus bool, lastSeen time.Time) announcementView {
 	published := !item.PublishedAt.After(now)
 	expired := item.ExpiresAt != nil && !item.ExpiresAt.After(now)
 	status := ""
@@ -1371,6 +1507,7 @@ func announcementViewFrom(item announcement, now time.Time, includeStatus bool) 
 		Status:             status,
 		Published:          published,
 		Expired:            expired,
+		Unread:             announcementUnread(item, lastSeen, now),
 		EditDialogID:       "announcement-edit-" + item.ID,
 		DeleteConfirmLabel: "Aushang \"" + item.Title + "\" wirklich löschen?",
 	}
@@ -1630,10 +1767,39 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	if _, ok := data["AppVersion"]; !ok {
 		data["AppVersion"] = buildLabel()
 	}
+	a.enrichUnreadAnnouncementData(data)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := a.templates.ExecuteTemplate(w, name, data); err != nil {
 		log.Printf("render %s failed: %v", name, err)
 	}
+}
+
+func (a *app) enrichUnreadAnnouncementData(data map[string]any) {
+	if _, ok := data["UnreadAnnouncements"]; ok {
+		if _, hasFlag := data["HasUnreadAnnouncements"]; !hasFlag {
+			if count, ok := data["UnreadAnnouncements"].(int); ok {
+				data["HasUnreadAnnouncements"] = count > 0
+			}
+		}
+		return
+	}
+	tenant, ok := data["Tenant"].(tenantConfig)
+	if !ok || tenant.Slug == "" || a.announcementStore == nil || a.announcementReadStore == nil {
+		data["UnreadAnnouncements"] = 0
+		data["HasUnreadAnnouncements"] = false
+		return
+	}
+	email, ok := data["Email"].(string)
+	if !ok || strings.TrimSpace(email) == "" {
+		data["UnreadAnnouncements"] = 0
+		data["HasUnreadAnnouncements"] = false
+		return
+	}
+	now := time.Now()
+	lastSeen := a.announcementReadStore.LastSeen(tenant.Slug, email)
+	count := unreadAnnouncementCount(a.announcementStore.Visible(tenant.Slug, now), lastSeen, now)
+	data["UnreadAnnouncements"] = count
+	data["HasUnreadAnnouncements"] = count > 0
 }
 
 func buildLabel() string {
@@ -1884,6 +2050,86 @@ func newAnnouncementStore(path string) (*announcementStore, error) {
 	return store, nil
 }
 
+func newAnnouncementReadStore(path string) (*announcementReadStore, error) {
+	store := &announcementReadStore{path: path, data: announcementReadStoreData{Seen: map[string]map[string]time.Time{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read announcement read data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid announcement read data")
+	}
+	if store.data.Seen == nil {
+		store.data.Seen = map[string]map[string]time.Time{}
+	}
+	return store, nil
+}
+
+func (s *announcementReadStore) LastSeen(tenantSlug string, email string) time.Time {
+	if s == nil {
+		return time.Time{}
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	email = normalizeEmail(email)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if tenantSlug == "" || email == "" {
+		return time.Time{}
+	}
+	return s.data.Seen[tenantSlug][email]
+}
+
+func (s *announcementReadStore) MarkSeen(tenantSlug string, email string, seenAt time.Time) error {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	email = normalizeEmail(email)
+	if tenantSlug == "" || email == "" {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.Seen == nil {
+		s.data.Seen = map[string]map[string]time.Time{}
+	}
+	if s.data.Seen[tenantSlug] == nil {
+		s.data.Seen[tenantSlug] = map[string]time.Time{}
+	}
+	s.data.Seen[tenantSlug][email] = seenAt.UTC()
+	return s.saveLocked()
+}
+
+func (s *announcementReadStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create announcement read data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode announcement read data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write announcement read data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace announcement read data")
+	}
+	return nil
+}
+
 func (s *announcementStore) Create(item announcement) (announcement, error) {
 	now := time.Now().UTC()
 	item.ID = ""
@@ -1981,6 +2227,24 @@ func (s *announcementStore) Visible(tenantSlug string, now time.Time) []announce
 			continue
 		}
 		if item.ExpiresAt != nil && !item.ExpiresAt.After(now) {
+			continue
+		}
+		out = append(out, item)
+	}
+	sortAnnouncements(out)
+	return out
+}
+
+func (s *announcementStore) Archive(tenantSlug string, now time.Time) []announcement {
+	tenantSlug = normalizeSlug(tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []announcement{}
+	for _, item := range s.data.Announcements {
+		if normalizeSlug(item.TenantSlug) != tenantSlug {
+			continue
+		}
+		if item.PublishedAt.After(now) {
 			continue
 		}
 		out = append(out, item)
@@ -4415,6 +4679,8 @@ const pageTemplates = `
     .nav-item.disabled:hover { background: transparent; }
     .nav-icon { width: 23px; height: 23px; display: grid; place-items: center; flex: 0 0 auto; color: currentColor; }
     .nav-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-label { min-width: 0; }
+    .nav-badge { margin-left: auto; min-width: 25px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 0 7px; background: var(--gold); color: #172019; font-size: 11px; font-weight: 900; line-height: 1; }
     .side-foot { margin-top: auto; border-top: 1px solid rgba(255,255,255,.16); padding: 18px 8px 0; display: grid; gap: 14px; }
     .side-user { display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: center; }
     .avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: #fff; font-weight: 800; border: 1px solid rgba(255,255,255,.25); }
@@ -4458,6 +4724,12 @@ const pageTemplates = `
     .entry p, .entry-body { margin-top: 8px; color: #5c5f54; line-height: 1.6; }
     .entry-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; color: var(--soft); font-size: 12.5px; }
     .entry-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .archive-tools { display: grid; gap: 12px; margin: -4px 0 20px; }
+    .filter-form { display: grid; grid-template-columns: minmax(220px,1fr) auto; gap: 10px; align-items: end; }
+    .filter-form label { margin: 0; }
+    .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-tab { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; color: var(--muted); background: var(--panel); text-decoration: none; font-size: 13px; font-weight: 800; }
+    .filter-tab.active, .filter-tab:hover { border-color: var(--gold); color: var(--ink); background: rgba(200,153,63,.14); }
     .quick-list { display: grid; }
     .quick-row { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }
     button.quick-row { width: 100%; border: 0; border-bottom: 1px solid var(--line); background: transparent; font: inherit; text-align: left; cursor: pointer; }
@@ -4486,6 +4758,7 @@ const pageTemplates = `
     .pill.termin { background: rgba(47,107,74,.12); color: var(--leaf); }
     .pill.wartung { background: rgba(173,92,27,.14); color: #8a551f; }
     .pill.info { background: rgba(200,153,63,.16); color: #8a6a1f; }
+    .pill.unread { background: var(--gold); color: #172019; }
     .dialog { border: 1px solid var(--line); border-radius: 10px; padding: 0; width: min(680px, calc(100vw - 28px)); color: var(--ink); background: var(--panel); box-shadow: 0 28px 70px rgba(0,0,0,.34); }
     .dialog::backdrop { background: rgba(23,32,25,.42); }
     .dialog form { margin: 0; }
@@ -4556,6 +4829,7 @@ const pageTemplates = `
       .info-card { grid-template-columns: 52px 1fr; }
       .quick-row { grid-template-columns: 28px minmax(0,1fr); }
       .quick-row .pill { grid-column: 2; justify-self: start; }
+      .filter-form { grid-template-columns: 1fr; }
       .dialog-grid { grid-template-columns: 1fr; }
       .quick-arrow, .info-card .quick-arrow { display: none; }
     }
@@ -4572,8 +4846,8 @@ const pageTemplates = `
       </div>
     </div>
     <nav class="side-nav">
-      <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span>Hausüberblick</a>
-      <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span>Aushang</a>
+      <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="nav-label">Hausüberblick</span></a>
+      <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
       {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</span>
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen</span>
@@ -4626,6 +4900,7 @@ const pageTemplates = `
           <section class="panel">
             <div class="section-head">
               <div class="kicker">Aktueller Aushang</div>
+              {{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{end}}
               <a class="button small" href="/app/announcements">Archiv öffnen</a>
             </div>
             {{if .HasAnnouncements}}
@@ -4637,6 +4912,7 @@ const pageTemplates = `
                         <h3><a href="/app/announcements">{{.Title}}</a></h3>
                         <div class="entry-meta">
                           <span class="pill {{.CategoryClass}}">{{.Category}}</span>
+                          {{if .Unread}}<span class="pill unread">neu</span>{{end}}
                           {{if .Pinned}}<span class="pill">Fixiert</span>{{end}}
                           <span>{{.PublishedAt}}</span>
                         </div>
@@ -4653,7 +4929,7 @@ const pageTemplates = `
           <section class="panel">
             <div class="kicker">Schnellzugriff</div>
             <div class="quick-list">
-              <a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><div><h3>Aushang</h3><p>Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p></div><span class="quick-arrow">›</span></a>
+              <a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><div><h3>Aushang</h3><p>Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p></div>{{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
               {{if .CanSeeParking}}<a class="quick-row" href="/app/parking"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg><div><h3>Parkplatznutzung</h3><p>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .IsAdmin}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .CanManageAnnouncements}}<a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><div><h3>Aushang verwalten</h3><p>Beiträge verfassen, fixieren, planen und löschen.</p></div><span class="quick-arrow">›</span></a>{{end}}
@@ -4682,8 +4958,18 @@ const pageTemplates = `
         <div class="home-grid">
           <section class="panel">
             <div class="section-head">
-              <div class="kicker">Aktuelle Beiträge</div>
-              {{if .HasAnnouncements}}<span class="pill">{{len .Announcements}} sichtbar</span>{{end}}
+              <div class="kicker">Archiv</div>
+              {{if .HasAnnouncements}}<span class="pill">{{len .Announcements}} Treffer</span>{{end}}
+            </div>
+            <div class="archive-tools">
+              <form class="filter-form" method="get" action="/app/announcements">
+                {{if .SelectedCategory}}<input type="hidden" name="category" value="{{.SelectedCategory}}">{{end}}
+                <label for="announcement-search">Suche<input id="announcement-search" name="q" value="{{.SearchQuery}}" placeholder="Titel, Text oder Kategorie"></label>
+                <button class="button" type="submit">Suchen</button>
+              </form>
+              <div class="filter-tabs" aria-label="Aushang-Kategorien">
+                {{range .CategoryFilters}}<a class="filter-tab {{if .Active}}active{{end}}" href="{{.URL}}">{{.Label}}</a>{{end}}
+              </div>
             </div>
             {{if .HasAnnouncements}}
               <div class="entries">
@@ -4694,7 +4980,9 @@ const pageTemplates = `
                         <h3>{{.Title}}</h3>
                         <div class="entry-meta">
                           <span class="pill {{.CategoryClass}}">{{.Category}}</span>
+                          {{if .Unread}}<span class="pill unread">neu</span>{{end}}
                           {{if .Pinned}}<span class="pill">Fixiert</span>{{end}}
+                          {{if .Status}}<span class="pill">{{.Status}}</span>{{end}}
                           <span>{{.PublishedAt}}</span>
                           {{if .HasExpiresAt}}<span>bis {{.ExpiresAt}}</span>{{end}}
                         </div>
@@ -4705,7 +4993,11 @@ const pageTemplates = `
                 {{end}}
               </div>
             {{else}}
-              <p class="empty">Noch keine Beiträge.</p>
+              {{if .HasAnyAnnouncements}}
+                <p class="empty">Keine Beiträge für diese Suche oder Kategorie.</p>
+              {{else}}
+                <p class="empty">Noch keine Beiträge.</p>
+              {{end}}
             {{end}}
           </section>
 

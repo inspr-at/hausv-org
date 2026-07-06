@@ -448,6 +448,28 @@ func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 	}
 }
 
+func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "announcement_reads.json")
+	store, err := newAnnouncementReadStore(path)
+	if err != nil {
+		t.Fatalf("newAnnouncementReadStore: %v", err)
+	}
+	seenAt := time.Date(2026, 7, 6, 12, 30, 0, 0, time.UTC)
+	if err := store.MarkSeen("jhw22", "Resident@Example.com", seenAt); err != nil {
+		t.Fatalf("mark seen: %v", err)
+	}
+	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("read store file mode = %v err=%v, want 0600", info.Mode().Perm(), err)
+	}
+	reopened, err := newAnnouncementReadStore(path)
+	if err != nil {
+		t.Fatalf("reopen read store: %v", err)
+	}
+	if got := reopened.LastSeen("jhw22", "resident@example.com"); !got.Equal(seenAt) {
+		t.Fatalf("last seen = %v, want %v", got, seenAt)
+	}
+}
+
 func TestPortalUsesAnnouncementEmptyStateWithoutPrototypeCopy(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
@@ -463,6 +485,69 @@ func TestPortalUsesAnnouncementEmptyStateWithoutPrototypeCopy(t *testing.T) {
 	}
 	if !strings.Contains(body, "Noch keine Beiträge") || !strings.Contains(body, `href="/app/announcements"`) {
 		t.Fatal("portal should show announcement empty state and real archive link")
+	}
+}
+
+func TestAnnouncementArchiveFiltersSearchesAndIncludesPast(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	now := time.Now().Add(-2 * time.Hour)
+	expiredAt := time.Now().Add(-time.Hour)
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Hausfest", Body: "Sommertermin", Category: "Termin", PublishedAt: now})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Alter Hinweis", Body: "Vergangen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Geplant", Body: "Noch nicht sichtbar", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
+
+	all := authedRequest(t, a, "resident@example.com", "/app/announcements", a.announcements)
+	if all.Code != http.StatusOK {
+		t.Fatalf("archive status = %d", all.Code)
+	}
+	body := all.Body.String()
+	for _, want := range []string{"Liftwartung", "Hausfest", "Alter Hinweis", "Abgelaufen", "Suche", "Wartung"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("archive should contain %q", want)
+		}
+	}
+	if strings.Contains(body, "Geplant") {
+		t.Fatal("archive must not expose future announcements to residents")
+	}
+
+	filtered := authedRequest(t, a, "resident@example.com", "/app/announcements?category=Wartung&q=Lift", a.announcements)
+	if filtered.Code != http.StatusOK {
+		t.Fatalf("filtered archive status = %d", filtered.Code)
+	}
+	body = filtered.Body.String()
+	if !strings.Contains(body, "Liftwartung") || strings.Contains(body, "Hausfest") || strings.Contains(body, "Alter Hinweis") {
+		t.Fatalf("filtered archive body did not match expected search/category result:\n%s", body)
+	}
+}
+
+func TestAnnouncementUnreadBadgeClearsAfterArchiveView(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Neue Wartung", Body: "Heute", Category: "Wartung", PublishedAt: time.Now().Add(-time.Hour)})
+
+	before := authedRequest(t, a, "resident@example.com", "/app", a.portal)
+	if before.Code != http.StatusOK {
+		t.Fatalf("portal before status = %d", before.Code)
+	}
+	if body := before.Body.String(); !strings.Contains(body, "Neue Wartung") || !strings.Contains(body, `pill unread">neu`) || !strings.Contains(body, `<span class="nav-badge">1</span>`) {
+		t.Fatalf("portal should show unread announcement and nav badge before archive view:\n%s", body)
+	}
+
+	archive := authedRequest(t, a, "resident@example.com", "/app/announcements", a.announcements)
+	if archive.Code != http.StatusOK {
+		t.Fatalf("archive status = %d", archive.Code)
+	}
+	if got := a.announcementReadStore.LastSeen("jhw22", "resident@example.com"); got.IsZero() {
+		t.Fatal("archive view should mark announcements as seen")
+	}
+
+	after := authedRequest(t, a, "resident@example.com", "/app", a.portal)
+	if after.Code != http.StatusOK {
+		t.Fatalf("portal after status = %d", after.Code)
+	}
+	body := after.Body.String()
+	if strings.Contains(body, `<span class="nav-badge">`) || strings.Contains(body, `pill unread">neu`) {
+		t.Fatalf("portal should clear unread badges after archive view:\n%s", body)
 	}
 }
 
@@ -528,6 +613,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("announcement store: %v", err)
 	}
+	announcementReadStore, err := newAnnouncementReadStore("")
+	if err != nil {
+		t.Fatalf("announcement read store: %v", err)
+	}
 	return &app{
 		baseURL:       "http://localhost:8080",
 		rootDomain:    "hausv.org",
@@ -538,13 +627,14 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		profiles: map[string]userProfile{
 			profile.Email: profile,
 		},
-		allowed:           map[string]struct{}{},
-		admins:            map[string]struct{}{},
-		sessionTTL:        time.Hour,
-		sessions:          newSessionStore([]byte(strings.Repeat("s", 32))),
-		templates:         tmpl,
-		announcementStore: announcementStore,
-		parkingStore:      parkingStore,
+		allowed:               map[string]struct{}{},
+		admins:                map[string]struct{}{},
+		sessionTTL:            time.Hour,
+		sessions:              newSessionStore([]byte(strings.Repeat("s", 32))),
+		templates:             tmpl,
+		announcementStore:     announcementStore,
+		announcementReadStore: announcementReadStore,
+		parkingStore:          parkingStore,
 	}
 }
 
