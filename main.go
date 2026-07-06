@@ -112,6 +112,7 @@ type app struct {
 	templates             *template.Template
 	announcementStore     *announcementStore
 	announcementReadStore *announcementReadStore
+	eventStore            *eventStore
 	notificationPrefs     *notificationPrefStore
 	inviteStore           *inviteStore
 	activityStore         *activityStore
@@ -271,6 +272,16 @@ type announcementReadStoreData struct {
 	Seen map[string]map[string]time.Time `json:"seen"`
 }
 
+type eventStore struct {
+	mu   sync.Mutex
+	path string
+	data eventStoreData
+}
+
+type eventStoreData struct {
+	Events []houseEvent `json:"events"`
+}
+
 type notificationPrefStore struct {
 	mu   sync.Mutex
 	path string
@@ -338,6 +349,46 @@ type announcementView struct {
 	Published          bool
 	Expired            bool
 	Unread             bool
+	EditDialogID       string
+	DeleteConfirmLabel string
+}
+
+type houseEvent struct {
+	ID          string     `json:"id"`
+	TenantSlug  string     `json:"tenant"`
+	Title       string     `json:"title"`
+	Body        string     `json:"body,omitempty"`
+	Category    string     `json:"category"`
+	Location    string     `json:"location,omitempty"`
+	StartsAt    time.Time  `json:"starts_at"`
+	EndsAt      *time.Time `json:"ends_at,omitempty"`
+	AuthorEmail string     `json:"author_email"`
+	AuthorName  string     `json:"author_name"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+type houseEventView struct {
+	ID                 string
+	Title              string
+	Body               string
+	BodyHTML           template.HTML
+	HasBody            bool
+	Category           string
+	CategoryClass      string
+	Location           string
+	HasLocation        bool
+	StartsAt           string
+	StartsAtInput      string
+	EndsAt             string
+	EndsAtInput        string
+	HasEndsAt          bool
+	DateBadgeDay       string
+	DateBadgeMonth     string
+	TimeRange          string
+	Status             string
+	Past               bool
+	Author             string
 	EditDialogID       string
 	DeleteConfirmLabel string
 }
@@ -619,6 +670,10 @@ func main() {
 	mux.HandleFunc("POST /app/announcements", a.createAnnouncement)
 	mux.HandleFunc("POST /app/announcements/edit", a.editAnnouncement)
 	mux.HandleFunc("POST /app/announcements/delete", a.deleteAnnouncement)
+	mux.HandleFunc("GET /app/events", a.events)
+	mux.HandleFunc("POST /app/events", a.createEvent)
+	mux.HandleFunc("POST /app/events/edit", a.editEvent)
+	mux.HandleFunc("POST /app/events/delete", a.deleteEvent)
 	mux.HandleFunc("GET /app/anliegen", a.issues)
 	mux.HandleFunc("GET /app/anliegen/board", a.issueBoard)
 	mux.HandleFunc("POST /app/anliegen", a.createIssue)
@@ -754,6 +809,11 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	eventDataPath := env("EVENT_DATA_PATH", "tmp/events.json")
+	events, err := newEventStore(eventDataPath)
+	if err != nil {
+		return nil, err
+	}
 	notificationPrefDataPath := env("NOTIFICATION_PREF_DATA_PATH", "tmp/notification_prefs.json")
 	notificationPrefs, err := newNotificationPrefStore(notificationPrefDataPath)
 	if err != nil {
@@ -821,6 +881,7 @@ func newApp() (*app, error) {
 		templates:             tmpl,
 		announcementStore:     announcements,
 		announcementReadStore: announcementReads,
+		eventStore:            events,
 		notificationPrefs:     notificationPrefs,
 		inviteStore:           invites,
 		activityStore:         activity,
@@ -1278,6 +1339,154 @@ func (a *app) deleteAnnouncement(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/announcements?announce=deleted", http.StatusSeeOther)
 }
 
+func (a *app) events(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	profile := a.profileForTenant(email, tenant.Slug)
+	isAdmin := hasCapability(role, capabilityPlatformAdmin)
+	canManage := canManageEvents(role)
+	now := time.Now()
+	upcoming := []houseEvent{}
+	all := []houseEvent{}
+	if a.eventStore != nil {
+		upcoming = a.eventStore.Upcoming(tenant.Slug, now)
+		if canManage {
+			all = a.eventStore.ListTenant(tenant.Slug)
+		}
+	}
+	a.render(w, "events", map[string]any{
+		"Title":                  "Termine",
+		"Tenant":                 tenant,
+		"Email":                  email,
+		"DisplayName":            profile.DisplayName(),
+		"Initials":               profile.Initials(),
+		"Role":                   role,
+		"IsAdmin":                isAdmin,
+		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
+		"CanManageAnnouncements": canManageAnnouncements(role),
+		"CanManageEvents":        canManage,
+		"ActivePage":             "events",
+		"Events":                 eventViews(upcoming, now),
+		"HasEvents":              len(upcoming) > 0,
+		"AllEvents":              eventViews(all, now),
+		"HasAllEvents":           len(all) > 0,
+		"EventMsg":               eventMessage(r.URL.Query().Get("event")),
+		"NowInput":               now.In(time.Local).Format("2006-01-02T15:04"),
+	})
+}
+
+func (a *app) createEvent(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !canManageEvents(role) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	profile := a.profileForTenant(email, tenant.Slug)
+	item, err := eventFromForm(r, tenant.Slug, profile)
+	if err != nil {
+		http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
+		return
+	}
+	if _, err := a.eventStore.Create(item); err != nil {
+		log.Printf("event create failed for %s: %v", tenant.Slug, err)
+		http.Redirect(w, r, "/app/events?event=error", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/app/events?event=created", http.StatusSeeOther)
+}
+
+func (a *app) editEvent(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !canManageEvents(role) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimSpace(r.FormValue("id"))
+	profile := a.profileForTenant(email, tenant.Slug)
+	item, err := eventFromForm(r, tenant.Slug, profile)
+	if err != nil {
+		http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
+		return
+	}
+	ok, err = a.eventStore.Update(id, item)
+	if err != nil {
+		log.Printf("event update failed for %s: %v", tenant.Slug, err)
+		http.Redirect(w, r, "/app/events?event=error", http.StatusSeeOther)
+		return
+	}
+	if !ok {
+		http.Redirect(w, r, "/app/events?event=missing", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/app/events?event=updated", http.StatusSeeOther)
+}
+
+func (a *app) deleteEvent(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	_, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !canManageEvents(role) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	removed, err := a.eventStore.Delete(tenant.Slug, strings.TrimSpace(r.FormValue("id")))
+	if err != nil {
+		log.Printf("event delete failed for %s: %v", tenant.Slug, err)
+		http.Redirect(w, r, "/app/events?event=error", http.StatusSeeOther)
+		return
+	}
+	if !removed {
+		http.Redirect(w, r, "/app/events?event=missing", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/app/events?event=deleted", http.StatusSeeOther)
+}
+
 func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	email, role, tenantSlug, ok := a.currentUser(r)
@@ -1304,6 +1513,13 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 			announcements = announcements[:3]
 		}
 	}
+	events := []houseEventView{}
+	if a.eventStore != nil {
+		events = eventViews(a.eventStore.Upcoming(tenant.Slug, now), now)
+		if len(events) > 4 {
+			events = events[:4]
+		}
+	}
 	a.render(w, "portal", map[string]any{
 		"Title":                  "WEG Portal",
 		"Tenant":                 tenant,
@@ -1314,9 +1530,12 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"IsAdmin":                isAdmin,
 		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
 		"CanManageAnnouncements": canManage,
+		"CanManageEvents":        canManageEvents(role),
 		"ActivePage":             "home",
 		"Announcements":          announcements,
 		"HasAnnouncements":       len(announcements) > 0,
+		"Events":                 events,
+		"HasEvents":              len(events) > 0,
 	})
 }
 
@@ -1905,6 +2124,10 @@ func canManageAnnouncements(role string) bool {
 	return hasCapability(role, capabilityManageAnnouncements)
 }
 
+func canManageEvents(role string) bool {
+	return hasCapability(role, capabilityManageAnnouncements)
+}
+
 func hasCapability(role string, action capability) bool {
 	role = normalizeRole(role)
 	if role == roleAdmin {
@@ -2041,6 +2264,85 @@ func announcementFromForm(r *http.Request, tenantSlug string, author userProfile
 	return item, nil
 }
 
+func eventMessage(status string) string {
+	switch status {
+	case "created":
+		return "Termin gespeichert."
+	case "updated":
+		return "Termin aktualisiert."
+	case "deleted":
+		return "Termin gelöscht."
+	case "invalid":
+		return "Bitte Titel und Datum prüfen."
+	case "missing":
+		return "Dieser Termin wurde nicht gefunden."
+	case "error":
+		return "Der Termin konnte nicht gespeichert werden."
+	default:
+		return ""
+	}
+}
+
+func eventFromForm(r *http.Request, tenantSlug string, author userProfile) (houseEvent, error) {
+	title := strings.TrimSpace(r.FormValue("title"))
+	if title == "" {
+		return houseEvent{}, fmt.Errorf("title is required")
+	}
+	if len([]rune(title)) > 140 {
+		return houseEvent{}, fmt.Errorf("title too long")
+	}
+	body := strings.TrimSpace(r.FormValue("body"))
+	if len([]rune(body)) > 3000 {
+		return houseEvent{}, fmt.Errorf("body too long")
+	}
+	startsAt, err := parseRequiredLocalDateTime(r.FormValue("starts_at"))
+	if err != nil {
+		return houseEvent{}, err
+	}
+	endsAt, err := parseOptionalEventEnd(r.FormValue("ends_at"), startsAt)
+	if err != nil {
+		return houseEvent{}, err
+	}
+	item := houseEvent{
+		TenantSlug:  normalizeSlug(tenantSlug),
+		Title:       title,
+		Body:        body,
+		Category:    normalizeEventCategory(r.FormValue("category")),
+		Location:    strings.TrimSpace(r.FormValue("location")),
+		StartsAt:    startsAt.UTC(),
+		EndsAt:      endsAt,
+		AuthorEmail: normalizeEmail(author.Email),
+		AuthorName:  author.DisplayName(),
+	}
+	if item.TenantSlug == "" {
+		return houseEvent{}, fmt.Errorf("tenant is required")
+	}
+	return item, nil
+}
+
+func parseRequiredLocalDateTime(raw string) (time.Time, error) {
+	if strings.TrimSpace(raw) == "" {
+		return time.Time{}, fmt.Errorf("datetime is required")
+	}
+	return parseOptionalLocalDateTime(raw, time.Time{})
+}
+
+func parseOptionalEventEnd(raw string, startsAt time.Time) (*time.Time, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	endsAt, err := parseOptionalLocalDateTime(raw, time.Time{})
+	if err != nil {
+		return nil, err
+	}
+	if !endsAt.After(startsAt) {
+		return nil, fmt.Errorf("event end must be after start")
+	}
+	endsAt = endsAt.UTC()
+	return &endsAt, nil
+}
+
 func parseOptionalLocalDateTime(raw string, fallback time.Time) (time.Time, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -2055,6 +2357,40 @@ func parseOptionalLocalDateTime(raw string, fallback time.Time) (time.Time, erro
 		return t, nil
 	}
 	return time.Time{}, fmt.Errorf("invalid datetime")
+}
+
+func normalizeEventCategory(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "versammlung", "eigentuemerversammlung", "eigentümerversammlung", "versammlung der eigentümer", "meeting":
+		return "Eigentümerversammlung"
+	case "reinigung", "cleaning":
+		return "Reinigung"
+	case "wartung", "maintenance":
+		return "Wartung"
+	case "ablesung", "ablesetermin", "reading":
+		return "Ablesung"
+	case "frist", "deadline":
+		return "Frist"
+	default:
+		return "Sonstiges"
+	}
+}
+
+func eventCategoryClass(raw string) string {
+	switch normalizeEventCategory(raw) {
+	case "Eigentümerversammlung":
+		return "versammlung"
+	case "Reinigung":
+		return "reinigung"
+	case "Wartung":
+		return "wartung"
+	case "Ablesung":
+		return "ablesung"
+	case "Frist":
+		return "frist"
+	default:
+		return "sonstiges"
+	}
 }
 
 func parseOptionalExpiry(raw string) (*time.Time, error) {
@@ -2227,6 +2563,98 @@ func announcementViewFrom(item announcement, now time.Time, includeStatus bool, 
 		EditDialogID:       "announcement-edit-" + item.ID,
 		DeleteConfirmLabel: "Aushang \"" + item.Title + "\" wirklich löschen?",
 	}
+}
+
+func eventViews(items []houseEvent, now time.Time) []houseEventView {
+	views := make([]houseEventView, 0, len(items))
+	for _, item := range items {
+		views = append(views, eventViewFrom(item, now))
+	}
+	return views
+}
+
+func eventViewFrom(item houseEvent, now time.Time) houseEventView {
+	startLocal := item.StartsAt.In(time.Local)
+	past := !eventRollsOffAt(item).After(now)
+	status := "Geplant"
+	if past {
+		status = "Vergangen"
+	} else if sameLocalDate(startLocal, now.In(time.Local)) {
+		status = "Heute"
+	}
+	endsAt := ""
+	endsAtInput := ""
+	if item.EndsAt != nil {
+		endsLocal := item.EndsAt.In(time.Local)
+		endsAt = endsLocal.Format("02.01.2006 15:04")
+		endsAtInput = endsLocal.Format("2006-01-02T15:04")
+	}
+	author := strings.TrimSpace(item.AuthorName)
+	if author == "" {
+		author = item.AuthorEmail
+	}
+	body := strings.TrimSpace(item.Body)
+	location := strings.TrimSpace(item.Location)
+	return houseEventView{
+		ID:                 item.ID,
+		Title:              item.Title,
+		Body:               item.Body,
+		BodyHTML:           plainTextHTML(item.Body),
+		HasBody:            body != "",
+		Category:           item.Category,
+		CategoryClass:      eventCategoryClass(item.Category),
+		Location:           location,
+		HasLocation:        location != "",
+		StartsAt:           startLocal.Format("02.01.2006 15:04"),
+		StartsAtInput:      startLocal.Format("2006-01-02T15:04"),
+		EndsAt:             endsAt,
+		EndsAtInput:        endsAtInput,
+		HasEndsAt:          item.EndsAt != nil,
+		DateBadgeDay:       startLocal.Format("02"),
+		DateBadgeMonth:     germanMonthShort(startLocal),
+		TimeRange:          eventTimeRange(item),
+		Status:             status,
+		Past:               past,
+		Author:             author,
+		EditDialogID:       "event-edit-" + item.ID,
+		DeleteConfirmLabel: "Termin \"" + item.Title + "\" wirklich löschen?",
+	}
+}
+
+func eventTimeRange(item houseEvent) string {
+	startLocal := item.StartsAt.In(time.Local)
+	if item.EndsAt == nil {
+		return startLocal.Format("15:04")
+	}
+	endLocal := item.EndsAt.In(time.Local)
+	if sameLocalDate(startLocal, endLocal) {
+		return startLocal.Format("15:04") + " bis " + endLocal.Format("15:04")
+	}
+	return startLocal.Format("02.01. 15:04") + " bis " + endLocal.Format("02.01. 15:04")
+}
+
+func eventRollsOffAt(item houseEvent) time.Time {
+	if item.EndsAt != nil {
+		return *item.EndsAt
+	}
+	startLocal := item.StartsAt.In(time.Local)
+	year, month, day := startLocal.Date()
+	return time.Date(year, month, day, 23, 59, 59, 0, time.Local).UTC()
+}
+
+func sameLocalDate(a time.Time, b time.Time) bool {
+	ay, am, ad := a.Date()
+	by, bm, bd := b.Date()
+	return ay == by && am == bm && ad == bd
+}
+
+func germanMonthShort(t time.Time) string {
+	months := [...]string{"Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"}
+	month := int(t.Month())
+	if month < 1 || month > len(months) {
+		return ""
+	}
+	return months[month-1]
 }
 
 func plainTextHTML(body string) template.HTML {
@@ -3492,6 +3920,36 @@ func newAnnouncementReadStore(path string) (*announcementReadStore, error) {
 	return store, nil
 }
 
+func newEventStore(path string) (*eventStore, error) {
+	store := &eventStore{path: path, data: eventStoreData{Events: []houseEvent{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read event data")
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid event data")
+	}
+	events := make([]houseEvent, 0, len(store.data.Events))
+	for _, item := range store.data.Events {
+		normalized, ok := normalizeHouseEvent(item)
+		if ok {
+			events = append(events, normalized)
+		}
+	}
+	store.data.Events = events
+	sortEvents(store.data.Events)
+	return store, nil
+}
+
 func (s *announcementReadStore) LastSeen(tenantSlug string, email string) time.Time {
 	if s == nil {
 		return time.Time{}
@@ -4140,6 +4598,204 @@ func (s *unitStore) saveLocked() error {
 		return fmt.Errorf("could not replace unit data")
 	}
 	return nil
+}
+
+func (s *eventStore) Create(item houseEvent) (houseEvent, error) {
+	if s == nil {
+		return item, nil
+	}
+	now := time.Now().UTC()
+	item.ID = ""
+	item.CreatedAt = now
+	item.UpdatedAt = now
+	normalized, ok := normalizeHouseEvent(item)
+	if !ok {
+		return houseEvent{}, fmt.Errorf("invalid event")
+	}
+	id, err := randomToken(12)
+	if err != nil {
+		return houseEvent{}, err
+	}
+	normalized.ID = id
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data.Events = append(s.data.Events, normalized)
+	sortEvents(s.data.Events)
+	if err := s.saveLocked(); err != nil {
+		return houseEvent{}, err
+	}
+	return normalized, nil
+}
+
+func (s *eventStore) Update(id string, updated houseEvent) (bool, error) {
+	if s == nil {
+		return false, nil
+	}
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return false, nil
+	}
+	normalized, ok := normalizeHouseEvent(updated)
+	if !ok {
+		return false, fmt.Errorf("invalid event")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, existing := range s.data.Events {
+		if existing.ID != id || normalizeSlug(existing.TenantSlug) != normalizeSlug(normalized.TenantSlug) {
+			continue
+		}
+		normalized.ID = existing.ID
+		normalized.CreatedAt = existing.CreatedAt
+		normalized.UpdatedAt = time.Now().UTC()
+		if normalized.AuthorEmail == "" {
+			normalized.AuthorEmail = existing.AuthorEmail
+		}
+		if normalized.AuthorName == "" {
+			normalized.AuthorName = existing.AuthorName
+		}
+		s.data.Events[i] = normalized
+		sortEvents(s.data.Events)
+		if err := s.saveLocked(); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
+func (s *eventStore) Delete(tenantSlug string, id string) (bool, error) {
+	if s == nil {
+		return false, nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	if tenantSlug == "" || id == "" {
+		return false, nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	kept := s.data.Events[:0]
+	removed := false
+	for _, item := range s.data.Events {
+		if item.ID == id && normalizeSlug(item.TenantSlug) == tenantSlug {
+			removed = true
+			continue
+		}
+		kept = append(kept, item)
+	}
+	if !removed {
+		return false, nil
+	}
+	s.data.Events = kept
+	if err := s.saveLocked(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *eventStore) ListTenant(tenantSlug string) []houseEvent {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []houseEvent{}
+	for _, item := range s.data.Events {
+		if normalizeSlug(item.TenantSlug) == tenantSlug {
+			out = append(out, copyEvent(item))
+		}
+	}
+	sortEvents(out)
+	return out
+}
+
+func (s *eventStore) Upcoming(tenantSlug string, now time.Time) []houseEvent {
+	tenantSlug = normalizeSlug(tenantSlug)
+	items := s.ListTenant(tenantSlug)
+	out := []houseEvent{}
+	for _, item := range items {
+		if eventRollsOffAt(item).After(now) {
+			out = append(out, item)
+		}
+	}
+	sortEvents(out)
+	return out
+}
+
+func (s *eventStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create event data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode event data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write event data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace event data")
+	}
+	return nil
+}
+
+func normalizeHouseEvent(item houseEvent) (houseEvent, bool) {
+	item.ID = strings.TrimSpace(item.ID)
+	item.TenantSlug = normalizeSlug(item.TenantSlug)
+	item.Title = strings.TrimSpace(item.Title)
+	item.Body = strings.TrimSpace(item.Body)
+	item.Category = normalizeEventCategory(item.Category)
+	item.Location = strings.TrimSpace(item.Location)
+	item.AuthorEmail = normalizeEmail(item.AuthorEmail)
+	item.AuthorName = strings.TrimSpace(item.AuthorName)
+	item.StartsAt = item.StartsAt.UTC().Truncate(time.Second)
+	if item.EndsAt != nil {
+		endsAt := item.EndsAt.UTC().Truncate(time.Second)
+		if !endsAt.After(item.StartsAt) {
+			return houseEvent{}, false
+		}
+		item.EndsAt = &endsAt
+	}
+	if item.CreatedAt.IsZero() {
+		item.CreatedAt = time.Now().UTC()
+	} else {
+		item.CreatedAt = item.CreatedAt.UTC().Truncate(time.Second)
+	}
+	if item.UpdatedAt.IsZero() {
+		item.UpdatedAt = item.CreatedAt
+	} else {
+		item.UpdatedAt = item.UpdatedAt.UTC().Truncate(time.Second)
+	}
+	if item.TenantSlug == "" || item.Title == "" || item.StartsAt.IsZero() {
+		return houseEvent{}, false
+	}
+	return item, true
+}
+
+func copyEvent(item houseEvent) houseEvent {
+	if item.EndsAt != nil {
+		endsAt := *item.EndsAt
+		item.EndsAt = &endsAt
+	}
+	return item
+}
+
+func sortEvents(items []houseEvent) {
+	sort.SliceStable(items, func(i, j int) bool {
+		if !items[i].StartsAt.Equal(items[j].StartsAt) {
+			return items[i].StartsAt.Before(items[j].StartsAt)
+		}
+		if strings.ToLower(items[i].Title) != strings.ToLower(items[j].Title) {
+			return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
+		}
+		return items[i].ID < items[j].ID
+	})
 }
 
 func (s *announcementStore) Create(item announcement) (announcement, error) {
@@ -7012,6 +7668,17 @@ const pageTemplates = `
     .quick-row.disabled h3, .quick-row.disabled svg { color: var(--muted); }
     .quick-row .pill { justify-self: end; }
     .quick-arrow { color: var(--gold-ink); font-size: 24px; line-height: 1; }
+    .agenda-list { display: grid; gap: 10px; margin-bottom: 22px; }
+    .event-card { display: grid; grid-template-columns: 58px minmax(0,1fr); gap: 13px; align-items: start; border: 1px solid var(--line); border-radius: 8px; padding: 12px; color: inherit; background: var(--panel-soft); text-decoration: none; }
+    .event-card:hover { border-color: var(--gold); }
+    .event-card.past { opacity: .68; }
+    .date-badge { min-height: 58px; display: grid; place-items: center; align-content: center; gap: 2px; border-radius: 8px; background: var(--ink); color: #fff; font-weight: 800; text-align: center; }
+    .date-badge strong { font-family: Spectral, serif; font-size: 24px; line-height: .95; }
+    .date-badge span { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+    .event-info { min-width: 0; display: grid; gap: 7px; }
+    .event-info h3 { font-size: 18px; overflow-wrap: anywhere; }
+    .event-info p { color: var(--muted); line-height: 1.45; font-size: 13.5px; }
+    .event-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; color: var(--soft); font-size: 12.5px; font-weight: 700; }
     .status-strip { display: grid; gap: 14px; }
     .rule { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; color: var(--ink); line-height: 1.5; }
     .rule p { flex: 1 1 640px; min-width: 0; }
@@ -7023,6 +7690,11 @@ const pageTemplates = `
     .pill.termin { background: rgba(47,107,74,.12); color: var(--leaf); }
     .pill.wartung { background: rgba(173,92,27,.14); color: #8a551f; }
     .pill.info { background: rgba(200,153,63,.16); color: #8a6a1f; }
+    .pill.versammlung { background: rgba(32,37,31,.08); color: var(--ink); }
+    .pill.reinigung { background: rgba(76,103,138,.11); color: #365475; }
+    .pill.ablesung { background: rgba(47,107,74,.12); color: var(--leaf); }
+    .pill.frist { background: rgba(158,42,43,.12); color: #9e2a2b; }
+    .pill.sonstiges { background: rgba(200,153,63,.16); color: #8a6a1f; }
     .pill.unread { background: var(--gold); color: #172019; }
     .pill.status-open { background: rgba(200,153,63,.16); color: #8a6a1f; }
     .pill.status-progress { background: rgba(32,37,31,.08); color: var(--ink); }
@@ -7161,6 +7833,7 @@ const pageTemplates = `
     <nav class="side-nav">
       <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="nav-label">Hausüberblick</span></a>
       <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
+      <a class="nav-item {{if eq .ActivePage "events"}}active{{end}}" href="/app/events"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></span><span class="nav-label">Termine</span></a>
       {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
       <span class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</span>
       <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="/app/anliegen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
@@ -7240,9 +7913,26 @@ const pageTemplates = `
             {{end}}
           </section>
           <section class="panel">
+            <div class="kicker">Nächste Termine</div>
+            {{if .HasEvents}}
+              <div class="agenda-list">
+                {{range .Events}}
+                  <a class="event-card" href="/app/events">
+                    <span class="date-badge"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
+                    <span class="event-info">
+                      <h3>{{.Title}}</h3>
+                      <span class="event-meta"><span class="pill {{.CategoryClass}}">{{.Category}}</span><span>{{.TimeRange}}</span>{{if .HasLocation}}<span>{{.Location}}</span>{{end}}</span>
+                    </span>
+                  </a>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty" style="margin-bottom:22px">Noch keine kommenden Termine.</p>
+            {{end}}
             <div class="kicker">Schnellzugriff</div>
             <div class="quick-list">
               <a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><div><h3>Aushang</h3><p>Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p></div>{{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
+              <a class="quick-row" href="/app/events"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg><div><h3>Termine</h3><p>Versammlungen, Wartungen, Fristen und gemeinsame Hausereignisse.</p></div><span class="quick-arrow">›</span></a>
               <a class="quick-row" href="/app/anliegen"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><div><h3>Anliegen</h3><p>Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.</p></div>{{if .HasOpenIssues}}<span class="pill unread">{{.OpenIssues}} offen</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
               {{if .CanSeeParking}}<a class="quick-row" href="/app/parking"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg><div><h3>Parkplatznutzung</h3><p>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .CanManageUsers}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
@@ -7587,6 +8277,143 @@ const pageTemplates = `
               <label class="full" for="announcement-body">Text<textarea id="announcement-body" name="body" required></textarea></label>
             </div>
             <button class="button primary" type="submit">Veröffentlichen</button>
+          </div>
+        </form>
+      </dialog>
+      {{end}}
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "events"}}
+{{template "appOpen" .}}
+    <script src="/assets/announcements.js" defer></script>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg><span>/</span><span>Termine</span></span>
+        {{if .CanManageEvents}}<div class="page-actions"><button class="button primary" type="button" data-dialog="event-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Termin anlegen</button></div>{{end}}
+      </div>
+      <section class="page">
+        <div>
+          <h1>Termine</h1>
+          <p class="lede">Versammlungen, Wartungen, Fristen und gemeinsame Ereignisse im Haus.</p>
+        </div>
+        {{if .EventMsg}}<p class="flash ok">{{.EventMsg}}</p>{{end}}
+        <div class="home-grid">
+          <section class="panel">
+            <div class="section-head">
+              <div class="kicker">Kommende Termine</div>
+              {{if .HasEvents}}<span class="pill">{{len .Events}} geplant</span>{{end}}
+            </div>
+            {{if .HasEvents}}
+              <div class="agenda-list">
+                {{range .Events}}
+                  <article class="event-card">
+                    <span class="date-badge"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
+                    <div class="event-info">
+                      <h3>{{.Title}}</h3>
+                      <div class="event-meta">
+                        <span class="pill {{.CategoryClass}}">{{.Category}}</span>
+                        <span>{{.StartsAt}}</span>
+                        <span>{{.TimeRange}}</span>
+                        {{if .HasLocation}}<span>{{.Location}}</span>{{end}}
+                        {{if .Status}}<span class="pill">{{.Status}}</span>{{end}}
+                      </div>
+                      {{if .HasBody}}<div class="entry-body">{{.BodyHTML}}</div>{{end}}
+                    </div>
+                  </article>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty">Noch keine kommenden Termine.</p>
+            {{end}}
+          </section>
+
+          <section class="panel">
+            <div class="kicker">Termine verwalten</div>
+            {{if .CanManageEvents}}
+              <div class="quick-list">
+                <button class="quick-row" type="button" data-dialog="event-create">
+                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                  <div><h3>Termin anlegen</h3><p>Kategorie, Zeitpunkt, Ort und Details speichern.</p></div>
+                  <span class="quick-arrow">›</span>
+                </button>
+                {{if .HasAllEvents}}
+                  {{range .AllEvents}}
+                    <div class="quick-row">
+                      <svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>
+                      <div><h3>{{.Title}}</h3><p>{{.Category}} · {{.StartsAt}}{{if .Past}} · vergangen{{end}}</p></div>
+                      <span class="entry-actions">
+                        <button class="button small" type="button" data-dialog="{{.EditDialogID}}">Bearbeiten</button>
+                        <form method="post" action="/app/events/delete" data-confirm="{{.DeleteConfirmLabel}}">
+                          <input type="hidden" name="id" value="{{.ID}}">
+                          <button class="button small" type="submit">Löschen</button>
+                        </form>
+                      </span>
+                    </div>
+                    <dialog id="{{.EditDialogID}}" class="dialog">
+                      <form method="post" action="/app/events/edit">
+                        <input type="hidden" name="id" value="{{.ID}}">
+                        <div class="dialog-head">
+                          <h2>Termin bearbeiten</h2>
+                          <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+                        </div>
+                        <div class="dialog-body">
+                          <div class="dialog-grid">
+                            <label class="full" for="event-title-{{.ID}}">Titel<input id="event-title-{{.ID}}" name="title" value="{{.Title}}" required maxlength="140"></label>
+                            <label for="event-category-{{.ID}}">Kategorie<select id="event-category-{{.ID}}" name="category">
+                              <option value="Eigentümerversammlung"{{if eq .Category "Eigentümerversammlung"}} selected{{end}}>Eigentümerversammlung</option>
+                              <option value="Reinigung"{{if eq .Category "Reinigung"}} selected{{end}}>Reinigung</option>
+                              <option value="Wartung"{{if eq .Category "Wartung"}} selected{{end}}>Wartung</option>
+                              <option value="Ablesung"{{if eq .Category "Ablesung"}} selected{{end}}>Ablesung</option>
+                              <option value="Frist"{{if eq .Category "Frist"}} selected{{end}}>Frist</option>
+                              <option value="Sonstiges"{{if eq .Category "Sonstiges"}} selected{{end}}>Sonstiges</option>
+                            </select></label>
+                            <label for="event-start-{{.ID}}">Beginn<input id="event-start-{{.ID}}" type="datetime-local" name="starts_at" value="{{.StartsAtInput}}" required></label>
+                            <label for="event-end-{{.ID}}">Ende optional<input id="event-end-{{.ID}}" type="datetime-local" name="ends_at" value="{{.EndsAtInput}}"></label>
+                            <label class="full" for="event-location-{{.ID}}">Ort<input id="event-location-{{.ID}}" name="location" value="{{.Location}}" maxlength="160"></label>
+                            <label class="full" for="event-body-{{.ID}}">Details<textarea id="event-body-{{.ID}}" name="body">{{.Body}}</textarea></label>
+                          </div>
+                          <button class="button primary" type="submit">Speichern</button>
+                        </div>
+                      </form>
+                    </dialog>
+                  {{end}}
+                {{else}}
+                  <p class="empty">Noch kein Termin gespeichert.</p>
+                {{end}}
+              </div>
+            {{else}}
+              <p class="empty">Anlegen und Bearbeiten ist der Verwaltung vorbehalten.</p>
+            {{end}}
+          </section>
+        </div>
+      </section>
+
+      {{if .CanManageEvents}}
+      <dialog id="event-create" class="dialog">
+        <form method="post" action="/app/events">
+          <div class="dialog-head">
+            <h2>Termin anlegen</h2>
+            <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+          </div>
+          <div class="dialog-body">
+            <div class="dialog-grid">
+              <label class="full" for="event-title">Titel<input id="event-title" name="title" required maxlength="140"></label>
+              <label for="event-category">Kategorie<select id="event-category" name="category">
+                <option value="Eigentümerversammlung">Eigentümerversammlung</option>
+                <option value="Reinigung">Reinigung</option>
+                <option value="Wartung">Wartung</option>
+                <option value="Ablesung">Ablesung</option>
+                <option value="Frist">Frist</option>
+                <option value="Sonstiges">Sonstiges</option>
+              </select></label>
+              <label for="event-start">Beginn<input id="event-start" type="datetime-local" name="starts_at" value="{{.NowInput}}" required></label>
+              <label for="event-end">Ende optional<input id="event-end" type="datetime-local" name="ends_at"></label>
+              <label class="full" for="event-location">Ort<input id="event-location" name="location" maxlength="160"></label>
+              <label class="full" for="event-body">Details<textarea id="event-body" name="body"></textarea></label>
+            </div>
+            <button class="button primary" type="submit">Speichern</button>
           </div>
         </form>
       </dialog>

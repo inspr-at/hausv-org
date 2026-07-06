@@ -134,6 +134,10 @@ Per-user read state persists to `/data/announcement_reads.json` via
 only published, unexpired entries; admin/Verwalter authoring controls live under
 `/app/announcements`.
 
+Termine/Kalender entries persist to `/data/events.json` via `EVENT_DATA_PATH`.
+The dashboard agenda renders upcoming entries; past entries roll off the
+resident view while staying editable for the Verwaltung.
+
 Notification preferences persist to `/data/notification_prefs.json` via
 `NOTIFICATION_PREF_DATA_PATH`. Missing preferences default to enabled delivery;
 explicit event opt-outs and the global unsubscribe flag are checked before

@@ -958,6 +958,51 @@ func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
 	}
 }
 
+func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "events.json")
+	store, err := newEventStore(path)
+	if err != nil {
+		t.Fatalf("newEventStore: %v", err)
+	}
+	now := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
+	past, err := store.Create(houseEvent{TenantSlug: "jhw22", Title: "Alte Reinigung", Category: "Reinigung", StartsAt: now.AddDate(0, 0, -2)})
+	if err != nil {
+		t.Fatalf("create past: %v", err)
+	}
+	future, err := store.Create(houseEvent{TenantSlug: "jhw22", Title: "Eigentümerversammlung", Category: "meeting", Location: "Hof", StartsAt: now.Add(48 * time.Hour)})
+	if err != nil {
+		t.Fatalf("create future: %v", err)
+	}
+	_, _ = store.Create(houseEvent{TenantSlug: "other", Title: "Other", Category: "Wartung", StartsAt: now.Add(24 * time.Hour)})
+
+	upcoming := store.Upcoming("jhw22", now)
+	if len(upcoming) != 1 || upcoming[0].ID != future.ID || upcoming[0].Category != "Eigentümerversammlung" {
+		t.Fatalf("upcoming = %+v, want only normalized future event", upcoming)
+	}
+
+	updated := future
+	updated.Title = "Versammlung aktualisiert"
+	updated.StartsAt = now.Add(72 * time.Hour)
+	if ok, err := store.Update(future.ID, updated); !ok || err != nil {
+		t.Fatalf("update: ok=%v err=%v", ok, err)
+	}
+	if removed, err := store.Delete("jhw22", past.ID); !removed || err != nil {
+		t.Fatalf("delete past: removed=%v err=%v", removed, err)
+	}
+	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("store file mode = %v err=%v, want 0600", info.Mode().Perm(), err)
+	}
+
+	reopened, err := newEventStore(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	events := reopened.ListTenant("jhw22")
+	if len(events) != 1 || events[0].Title != "Versammlung aktualisiert" {
+		t.Fatalf("reopened events = %+v", events)
+	}
+}
+
 func TestPortalUsesAnnouncementEmptyStateWithoutPrototypeCopy(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
@@ -973,6 +1018,75 @@ func TestPortalUsesAnnouncementEmptyStateWithoutPrototypeCopy(t *testing.T) {
 	}
 	if !strings.Contains(body, "Noch keine Beiträge") || !strings.Contains(body, `href="/app/announcements"`) {
 		t.Fatal("portal should show announcement empty state and real archive link")
+	}
+}
+
+func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	start := time.Now().Add(48 * time.Hour).In(time.Local).Format("2006-01-02T15:04")
+
+	create := authedFormRequest(t, a, "manager@example.com", "/app/events", url.Values{
+		"title":     {"Liftwartung"},
+		"category":  {"Wartung"},
+		"starts_at": {start},
+		"location":  {"Stiegenhaus"},
+		"body":      {"Lift außer Betrieb."},
+	}, a.createEvent)
+	if create.Code != http.StatusSeeOther {
+		t.Fatalf("create event status = %d, want redirect", create.Code)
+	}
+	events := a.eventStore.ListTenant("jhw22")
+	if len(events) != 1 || events[0].Title != "Liftwartung" || events[0].Category != "Wartung" {
+		t.Fatalf("stored events = %+v", events)
+	}
+
+	page := authedRequest(t, a, "resident@example.com", "/app/events", a.events)
+	if page.Code != http.StatusOK {
+		t.Fatalf("resident events status = %d", page.Code)
+	}
+	body := page.Body.String()
+	for _, want := range []string{"Liftwartung", "Stiegenhaus", "Lift außer Betrieb.", `href="/app/events"`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("events page should contain %q", want)
+		}
+	}
+	for _, forbidden := range []string{`data-dialog="event-create"`, `action="/app/events/delete"`} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("resident events page must not contain management control %q", forbidden)
+		}
+	}
+	dashboard := authedRequest(t, a, "resident@example.com", "/app", a.portal)
+	if dashboard.Code != http.StatusOK || !strings.Contains(dashboard.Body.String(), "Liftwartung") {
+		t.Fatalf("dashboard should show upcoming event, status=%d body=\n%s", dashboard.Code, dashboard.Body.String())
+	}
+
+	editedStart := time.Now().Add(72 * time.Hour).In(time.Local).Format("2006-01-02T15:04")
+	edit := authedFormRequest(t, a, "manager@example.com", "/app/events/edit", url.Values{
+		"id":        {events[0].ID},
+		"title":     {"Hofreinigung"},
+		"category":  {"Reinigung"},
+		"starts_at": {editedStart},
+		"location":  {"Hof"},
+	}, a.editEvent)
+	if edit.Code != http.StatusSeeOther {
+		t.Fatalf("edit event status = %d, want redirect", edit.Code)
+	}
+	events = a.eventStore.ListTenant("jhw22")
+	if len(events) != 1 || events[0].Title != "Hofreinigung" || events[0].Category != "Reinigung" || events[0].Location != "Hof" {
+		t.Fatalf("edited events = %+v", events)
+	}
+
+	deleteResp := authedFormRequest(t, a, "manager@example.com", "/app/events/delete", url.Values{"id": {events[0].ID}}, a.deleteEvent)
+	if deleteResp.Code != http.StatusSeeOther {
+		t.Fatalf("delete event status = %d, want redirect", deleteResp.Code)
+	}
+	if got := a.eventStore.Upcoming("jhw22", time.Now()); len(got) != 0 {
+		t.Fatalf("events after delete = %+v, want none", got)
+	}
+	empty := authedRequest(t, a, "resident@example.com", "/app/events", a.events)
+	if !strings.Contains(empty.Body.String(), "Noch keine kommenden Termine.") {
+		t.Fatalf("empty events page should show empty state:\n%s", empty.Body.String())
 	}
 }
 
@@ -1558,6 +1672,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("announcement read store: %v", err)
 	}
+	eventStore, err := newEventStore("")
+	if err != nil {
+		t.Fatalf("event store: %v", err)
+	}
 	notificationPrefStore, err := newNotificationPrefStore("")
 	if err != nil {
 		t.Fatalf("notification pref store: %v", err)
@@ -1597,6 +1715,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		templates:             tmpl,
 		announcementStore:     announcementStore,
 		announcementReadStore: announcementReadStore,
+		eventStore:            eventStore,
 		notificationPrefs:     notificationPrefStore,
 		inviteStore:           inviteStore,
 		activityStore:         activityStore,
