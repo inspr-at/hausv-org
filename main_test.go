@@ -342,6 +342,50 @@ func TestOIDCLoginDefersUnavailableDiscovery(t *testing.T) {
 	}
 }
 
+func TestNormalizeRoleAliasesAndCapabilityMatrix(t *testing.T) {
+	aliases := map[string]string{
+		"admin":            roleAdmin,
+		"property-manager": roleManager,
+		"Hausverwaltung":   roleManager,
+		"Eigentuemer":      roleOwner,
+		"eigentümer":       roleOwner,
+		"owner":            roleOwner,
+		"tenant":           roleRenter,
+		"Mieter":           roleRenter,
+		"advisory-board":   roleBeirat,
+		"Beirat":           roleBeirat,
+		"resident":         roleResident,
+		"Bewohner":         roleResident,
+	}
+	for raw, want := range aliases {
+		if got := normalizeRole(raw); got != want {
+			t.Fatalf("normalizeRole(%q) = %q, want %q", raw, got, want)
+		}
+	}
+
+	cases := []struct {
+		role string
+		cap  capability
+		want bool
+	}{
+		{roleAdmin, capabilityManageUsers, true},
+		{roleAdmin, capabilityManageParking, true},
+		{roleManager, capabilityManageAnnouncements, true},
+		{roleManager, capabilityManageUsers, false},
+		{roleOwner, capabilityVote, true},
+		{roleOwner, capabilityOwnerDocuments, true},
+		{roleRenter, capabilityVote, false},
+		{roleBeirat, capabilityOversight, true},
+		{roleBeirat, capabilityManageAnnouncements, false},
+		{roleResident, capabilityOversight, false},
+	}
+	for _, tc := range cases {
+		if got := hasCapability(tc.role, tc.cap); got != tc.want {
+			t.Fatalf("hasCapability(%q, %q) = %v, want %v", tc.role, tc.cap, got, tc.want)
+		}
+	}
+}
+
 func TestSettingsHubVisibleToResidentWithoutAdminSections(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
@@ -372,6 +416,50 @@ func TestSettingsHubAdminLinksManagementSections(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("admin settings hub should contain %q", want)
 		}
+	}
+}
+
+func TestRoleManagementUIOffersAllEffectiveRoles(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	for _, profile := range []userProfile{
+		{Email: "owner@example.com", FirstName: "Eva", LastName: "Owner", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()},
+		{Email: "renter@example.com", FirstName: "Max", LastName: "Renter", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()},
+		{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()},
+		{Email: "board@example.com", FirstName: "Berta", LastName: "Beirat", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()},
+	} {
+		a.profiles[profile.Email] = profile
+	}
+
+	rr := authedRequest(t, a, "admin@example.com", "/app/settings/users", a.userSettings)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("user settings status = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	for _, want := range []string{
+		`value="Mieter"`, `value="Eigentümer"`, `value="Beirat"`, `value="Verwalter"`, `value="Admin"`,
+		"role-owner", "role-renter", "role-manager", "role-beirat",
+		"Eigentümer-Dokumente", "Abstimmungen", "Aushang verwalten", "Leserechte",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("role management UI should contain %q", want)
+		}
+	}
+}
+
+func TestManagerCanManageAnnouncementsButNotPlatformSettings(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	users := authedRequest(t, a, "manager@example.com", "/app/settings/users", a.userSettings)
+	if users.Code != http.StatusForbidden {
+		t.Fatalf("manager user settings status = %d, want 403", users.Code)
+	}
+	values := url.Values{
+		"title": {"Manager post"},
+		"body":  {"Allowed"},
+	}
+	write := authedFormRequest(t, a, "manager@example.com", "/app/announcements", values, a.createAnnouncement)
+	if write.Code != http.StatusSeeOther {
+		t.Fatalf("manager announcement create status = %d, want redirect", write.Code)
 	}
 }
 

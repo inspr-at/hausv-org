@@ -39,10 +39,25 @@ var assets embed.FS
 const (
 	roleAdmin         = "Admin"
 	roleManager       = "Verwalter"
+	roleOwner         = "Eigentümer"
+	roleRenter        = "Mieter"
+	roleBeirat        = "Beirat"
 	roleResident      = "Bewohner"
 	permissionParking = "parking"
 	authMethodEmail   = "email"
 	authMethodOIDC    = "oidc"
+)
+
+type capability string
+
+const (
+	capabilityPlatformAdmin       capability = "platform-admin"
+	capabilityManageUsers         capability = "manage-users"
+	capabilityManageParking       capability = "manage-parking"
+	capabilityManageAnnouncements capability = "manage-announcements"
+	capabilityOwnerDocuments      capability = "owner-documents"
+	capabilityVote                capability = "vote"
+	capabilityOversight           capability = "oversight"
 )
 
 var (
@@ -871,7 +886,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profile := a.profileFor(email)
-	isAdmin := role == roleAdmin
+	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := canManageAnnouncements(role)
 	now := time.Now()
 	selectedCategory := selectedAnnouncementCategory(r.URL.Query().Get("category"))
@@ -1037,7 +1052,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profile := a.profileFor(email)
-	isAdmin := role == roleAdmin
+	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := canManageAnnouncements(role)
 	announcements := []announcementView{}
 	now := time.Now()
@@ -1079,11 +1094,11 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profile := a.profileFor(email)
-	if role != roleAdmin && !profile.HasPermission(permissionParking) {
+	if !hasCapability(role, capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
 		return
 	}
-	isAdmin := role == roleAdmin
+	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	telemetry := a.parkingTelemetry(r.Context(), tenant)
 	a.render(w, "parking", map[string]any{
 		"Title":         "Parkplatznutzung",
@@ -1112,7 +1127,7 @@ func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profile := a.profileFor(email)
-	if role != roleAdmin {
+	if !hasCapability(role, capabilityManageParking) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -1145,7 +1160,7 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profile := a.profileFor(email)
-	if role != roleAdmin && !profile.HasPermission(permissionParking) {
+	if !hasCapability(role, capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
 		return
 	}
@@ -1166,7 +1181,7 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request) {
 		"DisplayName":   profile.DisplayName(),
 		"Initials":      profile.Initials(),
 		"Role":          role,
-		"IsAdmin":       role == roleAdmin,
+		"IsAdmin":       hasCapability(role, capabilityPlatformAdmin),
 		"CanSeeParking": true,
 		"ActivePage":    "parking",
 		"Detail":        view,
@@ -1180,7 +1195,7 @@ func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	if role != roleAdmin {
+	if !hasCapability(role, capabilityManageParking) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -1208,7 +1223,7 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	if role != roleAdmin {
+	if !hasCapability(role, capabilityManageParking) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -1261,11 +1276,86 @@ func announcementMessage(status string) string {
 }
 
 func canManageAnnouncements(role string) bool {
-	switch normalizeRole(role) {
-	case roleAdmin, roleManager:
+	return hasCapability(role, capabilityManageAnnouncements)
+}
+
+func hasCapability(role string, action capability) bool {
+	role = normalizeRole(role)
+	if role == roleAdmin {
 		return true
+	}
+	switch action {
+	case capabilityPlatformAdmin, capabilityManageUsers, capabilityManageParking:
+		return false
+	case capabilityManageAnnouncements:
+		return role == roleManager
+	case capabilityOwnerDocuments, capabilityVote:
+		return role == roleOwner
+	case capabilityOversight:
+		return role == roleBeirat || role == roleManager
 	default:
 		return false
+	}
+}
+
+func roleCapabilityLabels(role string) []string {
+	role = normalizeRole(role)
+	switch role {
+	case roleAdmin:
+		return []string{"Plattformverwaltung", "Alle Bereiche"}
+	case roleManager:
+		return []string{"Aushang verwalten", "Übersicht"}
+	case roleOwner:
+		return []string{"Eigentümer-Dokumente", "Abstimmungen"}
+	case roleRenter:
+		return []string{"Bewohnerbereich"}
+	case roleBeirat:
+		return []string{"Übersicht", "Leserechte"}
+	case roleResident:
+		return []string{"Bewohnerbereich"}
+	default:
+		if role == "" {
+			return []string{"Bewohnerbereich"}
+		}
+		return []string{role}
+	}
+}
+
+func roleSortRank(role string) int {
+	switch normalizeRole(role) {
+	case roleAdmin:
+		return 0
+	case roleManager:
+		return 1
+	case roleBeirat:
+		return 2
+	case roleOwner:
+		return 3
+	case roleRenter:
+		return 4
+	case roleResident:
+		return 5
+	default:
+		return 6
+	}
+}
+
+func roleClass(role string) string {
+	switch normalizeRole(role) {
+	case roleAdmin:
+		return "role-admin"
+	case roleManager:
+		return "role-manager"
+	case roleOwner:
+		return "role-owner"
+	case roleRenter:
+		return "role-renter"
+	case roleBeirat:
+		return "role-beirat"
+	case roleResident:
+		return "role-resident"
+	default:
+		return "role-resident"
 	}
 }
 
@@ -1533,7 +1623,7 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profile := a.profileFor(email)
-	isAdmin := role == roleAdmin
+	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	a.render(w, "settingsHub", map[string]any{
 		"Title":         "Einstellungen",
 		"Tenant":        tenant,
@@ -1558,7 +1648,7 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	if role != roleAdmin {
+	if !hasCapability(role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -1574,8 +1664,8 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
 		"Users":         a.userRows(tenant.Slug),
 		"InviteMsg":     inviteMsg,
 		"InviteOK":      inviteOK,
-		"IsAdmin":       role == roleAdmin,
-		"CanSeeParking": role == roleAdmin || profile.HasPermission(permissionParking),
+		"IsAdmin":       hasCapability(role, capabilityPlatformAdmin),
+		"CanSeeParking": hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
 		"ActivePage":    "users",
 	})
 }
@@ -1610,7 +1700,7 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	if role != roleAdmin {
+	if !hasCapability(role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -1675,7 +1765,7 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	if role != roleAdmin {
+	if !hasCapability(role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -1740,7 +1830,7 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	if role != roleAdmin {
+	if !hasCapability(role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -1939,7 +2029,7 @@ func (a *app) emailLoginAvailable() bool {
 
 func (a *app) roleFor(email string, tenantSlug string) string {
 	if profile, ok := a.directoryProfile(email); ok && profile.Role != "" {
-		return profile.Role
+		return normalizeRole(profile.Role)
 	}
 	if _, ok := a.admins[email]; ok {
 		return roleAdmin
@@ -2019,7 +2109,7 @@ func (a *app) userRows(tenantSlug string) []userRow {
 	}
 	sort.Slice(rows, func(i, j int) bool {
 		if rows[i].Role != rows[j].Role {
-			return rows[i].Role == roleAdmin
+			return roleSortRank(rows[i].Role) < roleSortRank(rows[j].Role)
 		}
 		if rows[i].LastName != rows[j].LastName {
 			return rows[i].LastName < rows[j].LastName
@@ -3167,42 +3257,47 @@ func (p userProfile) UserRow() userRow {
 	if p.Role == "" {
 		p.Role = roleResident
 	}
+	p.Role = normalizeRole(p.Role)
 	if p.Status == "" {
 		p.Status = "Eingeladen"
 	}
 	return userRow{
-		Email:           p.Email,
-		Title:           p.Title,
-		FirstName:       p.FirstName,
-		LastName:        p.LastName,
-		DisplayName:     p.DisplayName(),
-		Initials:        p.Initials(),
-		Role:            p.Role,
-		Status:          p.Status,
-		Tenants:         strings.Join(p.Tenants, ", "),
-		PermissionLabel: permissionLabel(p.Permissions),
-		PermissionList:  permissionLabelList(p.Permissions),
-		AuthLabel:       authMethodsLabel(p.AuthMethods),
-		AuthList:        authMethodsLabelList(p.AuthMethods),
+		Email:            p.Email,
+		Title:            p.Title,
+		FirstName:        p.FirstName,
+		LastName:         p.LastName,
+		DisplayName:      p.DisplayName(),
+		Initials:         p.Initials(),
+		Role:             p.Role,
+		RoleClass:        roleClass(p.Role),
+		RoleCapabilities: roleCapabilityLabels(p.Role),
+		Status:           p.Status,
+		Tenants:          strings.Join(p.Tenants, ", "),
+		PermissionLabel:  permissionLabel(p.Permissions),
+		PermissionList:   permissionLabelList(p.Permissions),
+		AuthLabel:        authMethodsLabel(p.AuthMethods),
+		AuthList:         authMethodsLabelList(p.AuthMethods),
 	}
 }
 
 type userRow struct {
-	Email           string
-	Title           string
-	FirstName       string
-	LastName        string
-	DisplayName     string
-	Initials        string
-	Role            string
-	Status          string
-	Tenants         string
-	PermissionLabel string
-	PermissionList  []string
-	AuthLabel       string
-	AuthList        []string
-	Editable        bool
-	LastSeen        string
+	Email            string
+	Title            string
+	FirstName        string
+	LastName         string
+	DisplayName      string
+	Initials         string
+	Role             string
+	RoleClass        string
+	RoleCapabilities []string
+	Status           string
+	Tenants          string
+	PermissionLabel  string
+	PermissionList   []string
+	AuthLabel        string
+	AuthList         []string
+	Editable         bool
+	LastSeen         string
 }
 
 func (s *tokenStore) Put(token string, email string, tenantSlug string, ttl time.Duration) {
@@ -4324,11 +4419,17 @@ func (s *activityStore) saveLocked() error {
 
 func normalizeRole(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "admin":
+	case "admin", "administrator", "platform-admin", "platform_admin":
 		return roleAdmin
-	case "verwalter", "verwaltung", "manager", "property-manager", "property_manager":
+	case "verwalter", "verwaltung", "hausverwaltung", "manager", "property-manager", "property_manager", "property manager":
 		return roleManager
-	case "bewohner", "resident":
+	case "eigentuemer", "eigentümer", "wohnungseigentuemer", "wohnungseigentümer", "owner", "homeowner", "property-owner", "property_owner":
+		return roleOwner
+	case "mieter", "tenant", "renter", "lessee":
+		return roleRenter
+	case "beirat", "board", "advisory-board", "advisory_board", "committee":
+		return roleBeirat
+	case "bewohner", "resident", "user":
 		return roleResident
 	default:
 		return strings.TrimSpace(raw)
@@ -5408,9 +5509,14 @@ const pageTemplates = `
       .users .chips { display: flex; flex-wrap: wrap; gap: 6px; }
       .users .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel-soft); color: #6f6a5c; border-radius: 8px; padding: 4px 10px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
       .users .chip.plain { color: var(--soft); }
+      .users .role-caps { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+      .users .role-cap { display: inline-flex; align-items: center; min-height: 22px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; color: var(--muted); background: var(--panel-soft); font-size: 11.5px; font-weight: 700; white-space: nowrap; }
       .users .pill { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; min-height: 28px; padding: 4px 12px; font-size: 13px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
       .users .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .9; }
       .users .pill.role-admin { background: rgba(200,153,63,.16); color: #8a6a1f; border-color: rgba(200,153,63,.28); }
+      .users .pill.role-manager { background: rgba(32,37,31,.08); color: var(--ink); border-color: rgba(32,37,31,.15); }
+      .users .pill.role-owner { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.22); }
+      .users .pill.role-renter { background: rgba(76,103,138,.11); color: #365475; border-color: rgba(76,103,138,.22); }
       .users .pill.role-resident { background: rgba(47,107,74,.11); color: var(--leaf); border-color: rgba(47,107,74,.2); }
       .users .pill.role-beirat { background: rgba(32,37,31,.06); color: #4b4f45; border-color: rgba(32,37,31,.12); }
       .users .pill.status-active { background: rgba(47,107,74,.12); color: var(--leaf); }
@@ -5430,11 +5536,14 @@ const pageTemplates = `
       .users .popup-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); column-gap: 26px; }
       .users .popup .permission { display: block; padding: 12px 0; }
       .users .popup-grid .permission:nth-child(1), .users .popup-grid .permission:nth-child(2) { padding-top: 14px; }
-      .users .popup-grid .permission:nth-child(3), .users .popup-grid .permission:nth-child(4) { border-top: 1px solid var(--line); }
+      .users .popup-grid .permission:nth-child(n+3) { border-top: 1px solid var(--line); }
       .users .popup .permission strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 13.5px; color: var(--ink); margin-bottom: 3px; }
       .users .popup .permission .muted { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); line-height: 1.5; overflow-wrap: break-word; }
       .users .rdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 9px; vertical-align: middle; }
       .users .rdot.admin { background: var(--gold); }
+      .users .rdot.manager { background: var(--ink); }
+      .users .rdot.owner { background: var(--leaf); }
+      .users .rdot.renter { background: #365475; }
       .users .rdot.resident { background: var(--leaf); }
       .users .rdot.beirat { background: #8a8d80; }
       .users .rdot.right { background: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold); }
@@ -5471,7 +5580,7 @@ const pageTemplates = `
         .users tbody td[data-label]:not(.col-person)::before { content: attr(data-label); color: var(--gold-ink); font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding-top: 5px; }
         .users .invite-form > * { grid-column: 1 / -1 !important; }
       }
-      @media (max-width: 560px) { .users .popup-grid { grid-template-columns: 1fr; } .users .popup-grid .permission:nth-child(2) { border-top: 1px solid var(--line); padding-top: 12px; } }
+      @media (max-width: 560px) { .users .popup-grid { grid-template-columns: 1fr; } .users .popup-grid .permission:nth-child(n+2) { border-top: 1px solid var(--line); padding-top: 12px; } }
     </style>
     <script src="/assets/users.js" defer></script>
     <main class="app-main">
@@ -5502,9 +5611,12 @@ const pageTemplates = `
             <input class="f-nachname" type="text" name="last_name" placeholder="Nachname">
             <input class="f-email" type="email" name="email" placeholder="name@example.com" required>
             <select class="f-role" name="role">
-              <option value="Bewohner">Bewohner</option>
-              <option value="Admin">Admin</option>
+              <option value="Mieter">Mieter</option>
+              <option value="Eigentümer">Eigentümer</option>
               <option value="Beirat">Beirat</option>
+              <option value="Verwalter">Verwalter</option>
+              <option value="Admin">Admin</option>
+              <option value="Bewohner">Bewohner</option>
             </select>
             <button class="f-submit" type="submit">Einladung senden</button>
           </form>
@@ -5526,9 +5638,11 @@ const pageTemplates = `
                       <span class="popup-title">Rollen &amp; Rechte</span>
                       <span class="popup-grid">
                         <span class="permission"><strong><span class="rdot admin"></span>Admin</strong><span class="muted">Zugänge verwalten, Rollen setzen und Portalbereiche vorbereiten.</span></span>
-                        <span class="permission"><strong><span class="rdot resident"></span>Bewohner</strong><span class="muted">Aushang, Dokumente, Anliegen und Abstimmungen nutzen.</span></span>
-                        <span class="permission"><strong><span class="rdot right"></span>Parkplatznutzung</strong><span class="muted">Separates Sonderrecht für einen privaten, abgestimmten Bereich.</span></span>
-                        <span class="permission"><strong><span class="rdot beirat"></span>Beirat</strong><span class="muted">Vorgemerkt für spätere Moderation und Freigaben.</span></span>
+                        <span class="permission"><strong><span class="rdot manager"></span>Verwalter</strong><span class="muted">Aushang verwalten und übergreifende Leserechte vorbereiten.</span></span>
+                        <span class="permission"><strong><span class="rdot owner"></span>Eigentümer</strong><span class="muted">Bewohnerbereich plus Eigentümer-Dokumente und Abstimmungen.</span></span>
+                        <span class="permission"><strong><span class="rdot renter"></span>Mieter</strong><span class="muted">Bewohnerbereich ohne Eigentümer-Abstimmungen.</span></span>
+                        <span class="permission"><strong><span class="rdot beirat"></span>Beirat</strong><span class="muted">Bewohnerbereich plus lesende Übersicht.</span></span>
+                        <span class="permission"><strong><span class="rdot right"></span>Parkplatznutzung</strong><span class="muted">Separates Sonderrecht für den privaten Parkplatzbereich.</span></span>
                       </span>
                     </span>
                   </span>
@@ -5552,7 +5666,7 @@ const pageTemplates = `
                   </div>
                 </div>
               </td>
-              <td class="col-role" data-label="Rolle"><span class="pill {{if eq .Role "Admin"}}role-admin{{else if eq .Role "Bewohner"}}role-resident{{else}}role-beirat{{end}}"><span class="dot"></span>{{.Role}}</span></td>
+              <td class="col-role" data-label="Rolle"><span class="pill {{.RoleClass}}"><span class="dot"></span>{{.Role}}</span><div class="role-caps">{{range .RoleCapabilities}}<span class="role-cap">{{.}}</span>{{end}}</div></td>
               <td data-label="Rechte"><div class="chips">{{range .PermissionList}}<span class="chip{{if eq . "Standard"}} plain{{end}}">{{.}}</span>{{end}}</div></td>
               <td data-label="Anmeldung"><div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div></td>
               <td class="col-status" data-label="Status"><span class="pill {{if eq .Status "Aktiv"}}status-active{{else}}status-pending{{end}}"><span class="dot"></span>{{.Status}}</span>{{if .LastSeen}}<span class="last-seen">{{.LastSeen}}</span>{{end}}</td>
@@ -5570,9 +5684,12 @@ const pageTemplates = `
                     <input class="f-nachname" type="text" name="last_name" value="{{.LastName}}" placeholder="Nachname">
                     <input class="f-email" type="email" name="email" value="{{.Email}}" required>
                     <select class="f-role" name="role">
-                      <option value="Bewohner"{{if eq .Role "Bewohner"}} selected{{end}}>Bewohner</option>
-                      <option value="Admin"{{if eq .Role "Admin"}} selected{{end}}>Admin</option>
+                      <option value="Mieter"{{if eq .Role "Mieter"}} selected{{end}}>Mieter</option>
+                      <option value="Eigentümer"{{if eq .Role "Eigentümer"}} selected{{end}}>Eigentümer</option>
                       <option value="Beirat"{{if eq .Role "Beirat"}} selected{{end}}>Beirat</option>
+                      <option value="Verwalter"{{if eq .Role "Verwalter"}} selected{{end}}>Verwalter</option>
+                      <option value="Admin"{{if eq .Role "Admin"}} selected{{end}}>Admin</option>
+                      <option value="Bewohner"{{if eq .Role "Bewohner"}} selected{{end}}>Bewohner</option>
                     </select>
                     <button type="submit">Speichern</button>
                   </form>
