@@ -3334,6 +3334,52 @@ func TestParkingMonthDetailsExposeHourlyRows(t *testing.T) {
 	}
 }
 
+func TestParkingStatementCSVAccessAndFigures(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()})
+	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	base := time.Date(2026, 6, 25, 10, 0, 0, 0, time.UTC)
+	if err := a.parkingStore.AppendReadings("jhw22", []parkingNumericSample{
+		{At: base, Value: 100},
+		{At: base.Add(2 * time.Hour), Value: 102},
+	}, []parkingNumericSample{
+		{At: base, Value: 0.20},
+		{At: base.Add(time.Hour), Value: 0.40},
+	}); err != nil {
+		t.Fatalf("AppendReadings: %v", err)
+	}
+	if err := a.parkingStore.SetMonthPaid("jhw22", "2026-06", true); err != nil {
+		t.Fatalf("SetMonthPaid: %v", err)
+	}
+
+	resident := authedPathValueRequest(t, a, "parker@example.com", "/app/parking/export/2026", map[string]string{"year": "2026"}, a.parkingStatement)
+	if resident.Code != http.StatusOK {
+		t.Fatalf("resident export status = %d", resident.Code)
+	}
+	if got := resident.Header().Get("Content-Disposition"); !strings.Contains(got, "attachment") || !strings.Contains(got, "parkplatzabrechnung-2026-parker-example.com.csv") {
+		t.Fatalf("content disposition = %q", got)
+	}
+	body := resident.Body.String()
+	for _, want := range []string{"WEG Portal Parkplatzabrechnung", "Pat Parker", "parker@example.com", "Juni 2026", "2,00 kWh", "0,60 €", "0,20 €", "0,80 €", "BEZAHLT", "Gesamt"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("statement CSV missing %q:\n%s", want, body)
+		}
+	}
+
+	manager := authedPathValueRequest(t, a, "manager@example.com", "/app/parking/export/2026?user=parker@example.com", map[string]string{"year": "2026"}, a.parkingStatement)
+	if manager.Code != http.StatusOK || !strings.Contains(manager.Body.String(), "parker@example.com") {
+		t.Fatalf("manager export status/body = %d\n%s", manager.Code, manager.Body.String())
+	}
+	other := authedPathValueRequest(t, a, "other@example.com", "/app/parking/export/2026?user=parker@example.com", map[string]string{"year": "2026"}, a.parkingStatement)
+	if other.Code != http.StatusNotFound {
+		t.Fatalf("other resident export status = %d, want 404", other.Code)
+	}
+	noParking := authedPathValueRequest(t, a, "other@example.com", "/app/parking/export/2026", map[string]string{"year": "2026"}, a.parkingStatement)
+	if noParking.Code != http.StatusNotFound {
+		t.Fatalf("resident without parking export status = %d, want 404", noParking.Code)
+	}
+}
+
 func TestParkingStorePersistsPaidFlagAndGridFee(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "parking.json")
 	store, err := newParkingStore(path)

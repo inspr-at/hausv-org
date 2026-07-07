@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"embed"
 	"encoding/base64"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -942,6 +943,10 @@ type parkingMonthView struct {
 	MonthLabel      string
 	DetailPath      string
 	PeriodLabel     string
+	KWhValue        float64
+	EnergyCostValue float64
+	GridCostValue   float64
+	TotalCostValue  float64
 	KWh             string
 	EnergyCost      string
 	GridCost        string
@@ -1047,6 +1052,7 @@ func main() {
 	mux.HandleFunc("GET /app/parking", a.parking)
 	mux.HandleFunc("GET /app/parking/settings", a.parkingSettings)
 	mux.HandleFunc("GET /app/parking/month/{month}", a.parkingMonth)
+	mux.HandleFunc("GET /app/parking/export/{year}", a.parkingStatement)
 	mux.HandleFunc("POST /app/parking/settings", a.updateParkingSettings)
 	mux.HandleFunc("POST /app/parking/month", a.updateParkingMonth)
 	mux.HandleFunc("GET /app/audit", a.auditLog)
@@ -3799,6 +3805,7 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request) {
 		"ActivePage":    "parking",
 		"Telemetry":     telemetry,
 		"Accounting":    a.parkingAccounting(r.Context(), tenant),
+		"StatementYear": time.Now().In(time.Local).Year(),
 	})
 }
 
@@ -3873,6 +3880,177 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request) {
 		"ActivePage":    "parking",
 		"Detail":        view,
 	})
+}
+
+func (a *app) parkingStatement(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	year, ok := parkingStatementYear(r.PathValue("year"))
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	actor := a.profileForTenant(email, tenant.Slug)
+	targetEmail := normalizeEmail(r.URL.Query().Get("user"))
+	if targetEmail == "" {
+		targetEmail = email
+	}
+	target, ok := a.parkingStatementTarget(tenant.Slug, email, role, actor, targetEmail)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	statement := a.buildParkingStatement(r.Context(), tenant, target, year)
+	filename := "parkplatzabrechnung-" + strconv.Itoa(year) + "-" + safeFilenamePart(target.Email) + ".csv"
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
+	if err := writeParkingStatementCSV(w, statement); err != nil {
+		log.Printf("parking statement export failed for %s/%d: %v", tenant.Slug, year, err)
+	}
+}
+
+func parkingStatementYear(raw string) (int, bool) {
+	year, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || year < 2000 || year > 2100 {
+		return 0, false
+	}
+	return year, true
+}
+
+func (a *app) parkingStatementTarget(tenantSlug string, actorEmail string, actorRole string, actor userProfile, targetEmail string) (userProfile, bool) {
+	tenantSlug = normalizeSlug(tenantSlug)
+	targetEmail = normalizeEmail(targetEmail)
+	if tenantSlug == "" || targetEmail == "" {
+		return userProfile{}, false
+	}
+	isManager := hasCapability(actorRole, capabilityManageUsers) || hasCapability(actorRole, capabilityPlatformAdmin)
+	if targetEmail != normalizeEmail(actorEmail) && !isManager {
+		return userProfile{}, false
+	}
+	target := a.profileForTenant(targetEmail, tenantSlug)
+	if !target.HasTenant(tenantSlug) {
+		return userProfile{}, false
+	}
+	targetIsAdmin := hasCapability(target.Role, capabilityPlatformAdmin)
+	targetCanPark := targetIsAdmin || target.HasPermission(permissionParking)
+	if !targetCanPark {
+		return userProfile{}, false
+	}
+	if !isManager {
+		actorCanPark := hasCapability(actorRole, capabilityPlatformAdmin) || actor.HasPermission(permissionParking)
+		if !actorCanPark || targetEmail != normalizeEmail(actorEmail) {
+			return userProfile{}, false
+		}
+	}
+	return target, true
+}
+
+type parkingStatementView struct {
+	Tenant       tenantConfig
+	User         userProfile
+	Year         int
+	GeneratedAt  string
+	GridFeeLabel string
+	Months       []parkingMonthView
+	HasMonths    bool
+	TotalKWh     string
+	EnergyCost   string
+	GridCost     string
+	TotalCost    string
+}
+
+func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, user userProfile, year int) parkingStatementView {
+	seedCtx, cancel := context.WithTimeout(ctx, 12*time.Second)
+	defer cancel()
+	if err := a.seedParkingHistory(seedCtx, tenant, a.parkingHistoryStart, time.Now()); err != nil && tenant.HA.baseURL != "" && tenant.HA.token != "" {
+		log.Printf("parking history seed failed for %s: %v", tenant.Slug, err)
+	}
+	data := a.parkingStore.TenantData(tenant.Slug)
+	months := []parkingMonthView{}
+	totalKWh := 0.0
+	energyCost := 0.0
+	gridCost := 0.0
+	totalCost := 0.0
+	for _, month := range calculateParkingMonths(data, time.Now(), time.Local) {
+		if !strings.HasPrefix(month.Month, strconv.Itoa(year)+"-") {
+			continue
+		}
+		months = append(months, month)
+		totalKWh += month.KWhValue
+		energyCost += month.EnergyCostValue
+		gridCost += month.GridCostValue
+		totalCost += month.TotalCostValue
+	}
+	return parkingStatementView{
+		Tenant:       tenant,
+		User:         user,
+		Year:         year,
+		GeneratedAt:  formatLocalDateTime(time.Now()),
+		GridFeeLabel: formatEURPerKWh(data.Settings.GridFeeEURPerKWh),
+		Months:       months,
+		HasMonths:    len(months) > 0,
+		TotalKWh:     formatKWh(totalKWh),
+		EnergyCost:   formatEUR(energyCost),
+		GridCost:     formatEUR(gridCost),
+		TotalCost:    formatEUR(totalCost),
+	}
+}
+
+func writeParkingStatementCSV(w io.Writer, statement parkingStatementView) error {
+	writer := csv.NewWriter(w)
+	writer.Comma = ';'
+	rows := [][]string{
+		{"WEG Portal Parkplatzabrechnung"},
+		{"Gebäude", statement.Tenant.Name},
+		{"Adresse", statement.Tenant.Address},
+		{"Person", statement.User.DisplayName()},
+		{"E-Mail", statement.User.Email},
+		{"Jahr", strconv.Itoa(statement.Year)},
+		{"Erstellt", statement.GeneratedAt},
+		{"Netzgebühr", statement.GridFeeLabel},
+		{},
+		{"Monat", "Zeitraum", "kWh", "aWATTar Ø", "Effektivpreis", "Strom", "Netzgeb.", "Summe", "Status"},
+	}
+	for _, row := range rows {
+		if err := writer.Write(row); err != nil {
+			return err
+		}
+	}
+	for _, month := range statement.Months {
+		if err := writer.Write([]string{month.MonthLabel, month.PeriodLabel, month.KWh, month.AverageAwattar, month.EffectivePrice, month.EnergyCost, month.GridCost, month.TotalCost, month.PaidLabel}); err != nil {
+			return err
+		}
+	}
+	if err := writer.Write([]string{"Gesamt", "", statement.TotalKWh, "", "", statement.EnergyCost, statement.GridCost, statement.TotalCost, ""}); err != nil {
+		return err
+	}
+	writer.Flush()
+	return writer.Error()
+}
+
+func safeFilenamePart(raw string) string {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	var b strings.Builder
+	for _, r := range raw {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' {
+			b.WriteRune(r)
+			continue
+		}
+		b.WriteByte('-')
+	}
+	out := strings.Trim(b.String(), "-.")
+	if out == "" {
+		return "person"
+	}
+	return out
 }
 
 func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request) {
@@ -5984,6 +6162,7 @@ func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request) {
 		"AccessRowsEmpty": emptyState("Noch keine Zugänge", "Sobald Personen eingeladen sind, kann der Parkplatz-Zugriff hier gepflegt werden."),
 		"AccessMsg":       accessMsg,
 		"AccessOK":        accessOK,
+		"StatementYear":   time.Now().In(time.Local).Year(),
 	})
 }
 
@@ -10155,6 +10334,10 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 			MonthLabel:      formatMonthLabel(month, loc),
 			DetailPath:      "/app/parking/month/" + month,
 			PeriodLabel:     formatPeriodLabel(agg.first, agg.last, loc),
+			KWhValue:        agg.kWh,
+			EnergyCostValue: agg.energyCost,
+			GridCostValue:   agg.gridCost,
+			TotalCostValue:  total,
 			KWh:             formatKWh(agg.kWh),
 			EnergyCost:      formatEUR(agg.energyCost),
 			GridCost:        formatEUR(agg.gridCost),
@@ -13808,6 +13991,7 @@ const pageTemplates = `
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><span>Parkplatznutzung</span></span>
         <div class="page-actions">
           <a class="button" href="/app/parking"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 4v6h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 20v-6h-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10a7 7 0 0 1 12-3M19 14a7 7 0 0 1-12 3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Aktualisieren</a>
+          <a class="button" href="/app/parking/export/{{.StatementYear}}">CSV exportieren</a>
           {{if .IsAdmin}}<a class="button" href="/app/parking/settings"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>Abrechnung konfigurieren</a>{{end}}
         </div>
       </div>
@@ -14426,7 +14610,7 @@ const pageTemplates = `
       .parking-access .person { display: grid; gap: 2px; min-width: 0; }
       .parking-access .person strong { font-family: Spectral, serif; font-size: 17px; overflow-wrap: anywhere; }
       .parking-access .person span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
-      .parking-access .actions { display: flex; justify-content: flex-end; }
+      .parking-access .actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
       .parking-access .access-flash { margin: 0 0 14px; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
       .parking-access .access-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
       .parking-access .access-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
@@ -14463,6 +14647,7 @@ const pageTemplates = `
                   <td data-label="Quelle">{{if .Editable}}<span class="mini">Portal</span>{{else}}<span class="mini">Konfiguration</span>{{end}}</td>
                   <td data-label="Aktion">
                     <div class="actions">
+                      {{if .ParkingChecked}}<a class="button small" href="/app/parking/export/{{$.StatementYear}}?user={{.Email}}">CSV</a>{{end}}
                       {{if and .Editable (or $.IsAdmin (ne .Role "Admin"))}}
                         <form method="post" action="/app/settings/parking-access">
                           <input type="hidden" name="email" value="{{.Email}}">
