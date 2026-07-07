@@ -910,7 +910,15 @@ type parkingTenantData struct {
 }
 
 type parkingSettings struct {
+	GridFeeEURPerKWh float64         `json:"grid_fee_eur_per_kwh"`
+	BaseFeeEUR       float64         `json:"base_fee_eur,omitempty"`
+	Tariffs          []parkingTariff `json:"tariffs,omitempty"`
+}
+
+type parkingTariff struct {
+	EffectiveFrom    string  `json:"effective_from"`
 	GridFeeEURPerKWh float64 `json:"grid_fee_eur_per_kwh"`
+	BaseFeeEUR       float64 `json:"base_fee_eur,omitempty"`
 }
 
 type parkingMonthState struct {
@@ -932,10 +940,22 @@ type parkingAccountingView struct {
 	Message          string
 	GridFeeValue     string
 	GridFeeLabel     string
+	BaseFeeValue     string
+	BaseFeeLabel     string
+	EffectiveFrom    string
+	Tariffs          []parkingTariffView
+	HasTariffs       bool
 	Months           []parkingMonthView
 	HasMonths        bool
 	LastSampleLabel  string
 	HistoryAvailable bool
+}
+
+type parkingTariffView struct {
+	EffectiveFrom      string
+	EffectiveFromInput string
+	GridFee            string
+	BaseFee            string
 }
 
 type parkingMonthView struct {
@@ -946,10 +966,12 @@ type parkingMonthView struct {
 	KWhValue        float64
 	EnergyCostValue float64
 	GridCostValue   float64
+	BaseFeeValue    float64
 	TotalCostValue  float64
 	KWh             string
 	EnergyCost      string
 	GridCost        string
+	BaseFee         string
 	TotalCost       string
 	AverageAwattar  string
 	EffectivePrice  string
@@ -3964,6 +3986,7 @@ type parkingStatementView struct {
 	TotalKWh     string
 	EnergyCost   string
 	GridCost     string
+	BaseFee      string
 	TotalCost    string
 }
 
@@ -3978,6 +4001,7 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 	totalKWh := 0.0
 	energyCost := 0.0
 	gridCost := 0.0
+	baseFee := 0.0
 	totalCost := 0.0
 	for _, month := range calculateParkingMonths(data, time.Now(), time.Local) {
 		if !strings.HasPrefix(month.Month, strconv.Itoa(year)+"-") {
@@ -3987,6 +4011,7 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 		totalKWh += month.KWhValue
 		energyCost += month.EnergyCostValue
 		gridCost += month.GridCostValue
+		baseFee += month.BaseFeeValue
 		totalCost += month.TotalCostValue
 	}
 	return parkingStatementView{
@@ -3994,14 +4019,24 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 		User:         user,
 		Year:         year,
 		GeneratedAt:  formatLocalDateTime(time.Now()),
-		GridFeeLabel: formatEURPerKWh(data.Settings.GridFeeEURPerKWh),
+		GridFeeLabel: parkingStatementTariffLabel(data.Settings),
 		Months:       months,
 		HasMonths:    len(months) > 0,
 		TotalKWh:     formatKWh(totalKWh),
 		EnergyCost:   formatEUR(energyCost),
 		GridCost:     formatEUR(gridCost),
+		BaseFee:      formatEUR(baseFee),
 		TotalCost:    formatEUR(totalCost),
 	}
+}
+
+func parkingStatementTariffLabel(settings parkingSettings) string {
+	settings = normalizeParkingSettings(settings)
+	if len(settings.Tariffs) == 1 {
+		tariff := settings.Tariffs[0]
+		return formatEURPerKWh(tariff.GridFeeEURPerKWh) + ", Basis " + formatEUR(tariff.BaseFeeEUR)
+	}
+	return "laut Tarifhistorie"
 }
 
 func writeParkingStatementCSV(w io.Writer, statement parkingStatementView) error {
@@ -4015,9 +4050,9 @@ func writeParkingStatementCSV(w io.Writer, statement parkingStatementView) error
 		{"E-Mail", statement.User.Email},
 		{"Jahr", strconv.Itoa(statement.Year)},
 		{"Erstellt", statement.GeneratedAt},
-		{"Netzgebühr", statement.GridFeeLabel},
+		{"Tarif", statement.GridFeeLabel},
 		{},
-		{"Monat", "Zeitraum", "kWh", "aWATTar Ø", "Effektivpreis", "Strom", "Netzgeb.", "Summe", "Status"},
+		{"Monat", "Zeitraum", "kWh", "aWATTar Ø", "Effektivpreis", "Strom", "Netzgeb.", "Basis", "Summe", "Status"},
 	}
 	for _, row := range rows {
 		if err := writer.Write(row); err != nil {
@@ -4025,11 +4060,11 @@ func writeParkingStatementCSV(w io.Writer, statement parkingStatementView) error
 		}
 	}
 	for _, month := range statement.Months {
-		if err := writer.Write([]string{month.MonthLabel, month.PeriodLabel, month.KWh, month.AverageAwattar, month.EffectivePrice, month.EnergyCost, month.GridCost, month.TotalCost, month.PaidLabel}); err != nil {
+		if err := writer.Write([]string{month.MonthLabel, month.PeriodLabel, month.KWh, month.AverageAwattar, month.EffectivePrice, month.EnergyCost, month.GridCost, month.BaseFee, month.TotalCost, month.PaidLabel}); err != nil {
 			return err
 		}
 	}
-	if err := writer.Write([]string{"Gesamt", "", statement.TotalKWh, "", "", statement.EnergyCost, statement.GridCost, statement.TotalCost, ""}); err != nil {
+	if err := writer.Write([]string{"Gesamt", "", statement.TotalKWh, "", "", statement.EnergyCost, statement.GridCost, statement.BaseFee, statement.TotalCost, ""}); err != nil {
 		return err
 	}
 	writer.Flush()
@@ -4068,12 +4103,12 @@ func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	gridFee, err := parseDecimal(r.FormValue("grid_fee_eur_per_kwh"))
-	if err != nil || gridFee < 0 || gridFee > 5 {
+	tariff, err := parkingTariffFromForm(r.Form)
+	if err != nil {
 		http.Redirect(w, r, "/app/parking/settings?settings=invalid", http.StatusSeeOther)
 		return
 	}
-	if err := a.parkingStore.SetGridFee(tenant.Slug, gridFee); err != nil {
+	if err := a.parkingStore.UpsertTariff(tenant.Slug, tariff); err != nil {
 		log.Printf("parking settings save failed for %s: %v", tenant.Slug, err)
 		http.Error(w, "Could not save parking settings", http.StatusInternalServerError)
 		return
@@ -4087,10 +4122,35 @@ func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request) {
 		TargetID:   tenant.Slug,
 		Summary:    "Parkplatz-Abrechnung geändert",
 		Details: map[string]string{
-			"grid_fee": formatEURPerKWh(gridFee),
+			"effective_from": formatParkingTariffDate(tariff.EffectiveFrom),
+			"grid_fee":       formatEURPerKWh(tariff.GridFeeEURPerKWh),
+			"base_fee":       formatEUR(tariff.BaseFeeEUR),
 		},
 	})
 	http.Redirect(w, r, "/app/parking/settings?settings=saved", http.StatusSeeOther)
+}
+
+func parkingTariffFromForm(values url.Values) (parkingTariff, error) {
+	effectiveFrom := normalizeParkingTariffDate(values.Get("effective_from"))
+	if effectiveFrom == "" {
+		effectiveFrom = time.Now().In(time.Local).Format("2006-01-02")
+	}
+	gridFee, err := parseDecimal(values.Get("grid_fee_eur_per_kwh"))
+	if err != nil || gridFee < 0 || gridFee > 5 {
+		return parkingTariff{}, fmt.Errorf("invalid grid fee")
+	}
+	baseFee := 0.0
+	if strings.TrimSpace(values.Get("base_fee_eur")) != "" {
+		baseFee, err = parseDecimal(values.Get("base_fee_eur"))
+		if err != nil || baseFee < 0 || baseFee > 5000 {
+			return parkingTariff{}, fmt.Errorf("invalid base fee")
+		}
+	}
+	return normalizeParkingTariff(parkingTariff{
+		EffectiveFrom:    effectiveFrom,
+		GridFeeEURPerKWh: gridFee,
+		BaseFeeEUR:       baseFee,
+	}), nil
 }
 
 func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
@@ -4140,7 +4200,7 @@ func parkingSettingsMessage(status string) (string, bool) {
 	case "saved":
 		return "Parkplatz-Abrechnung gespeichert.", true
 	case "invalid":
-		return "Bitte eine gültige Netzgebühr zwischen 0 und 5 €/kWh eingeben.", false
+		return "Bitte Gültigkeitsdatum, Netzgebühr und Basisgebühr prüfen.", false
 	default:
 		return "", false
 	}
@@ -5452,6 +5512,10 @@ func auditDetailLabel(key string) string {
 		return "Geänderte Felder"
 	case "grid_fee":
 		return "Netzgebühr"
+	case "base_fee":
+		return "Basisgebühr"
+	case "effective_from":
+		return "Gültig ab"
 	case "month":
 		return "Monat"
 	case "paid":
@@ -9724,9 +9788,16 @@ func (a *app) parkingAccounting(ctx context.Context, tenant tenantConfig) parkin
 
 	data := a.parkingStore.TenantData(tenant.Slug)
 	months := calculateParkingMonths(data, time.Now(), time.Local)
+	currentTariff := parkingTariffAt(data.Settings, time.Now(), time.Local)
+	tariffs := parkingTariffViews(data.Settings)
 	view := parkingAccountingView{
-		GridFeeValue:     formatInputFloat(data.Settings.GridFeeEURPerKWh),
-		GridFeeLabel:     formatEURPerKWh(data.Settings.GridFeeEURPerKWh),
+		GridFeeValue:     formatInputFloat(currentTariff.GridFeeEURPerKWh),
+		GridFeeLabel:     formatEURPerKWh(currentTariff.GridFeeEURPerKWh),
+		BaseFeeValue:     formatInputFloat(currentTariff.BaseFeeEUR),
+		BaseFeeLabel:     formatEUR(currentTariff.BaseFeeEUR),
+		EffectiveFrom:    currentTariff.EffectiveFrom,
+		Tariffs:          tariffs,
+		HasTariffs:       len(tariffs) > 0,
 		Months:           months,
 		HasMonths:        len(months) > 0,
 		HistoryAvailable: len(data.EnergySamples) >= 2 && len(data.PriceSamples) > 0,
@@ -9753,8 +9824,8 @@ func (a *app) parkingMonthDetails(ctx context.Context, tenant tenantConfig, mont
 	data := a.parkingStore.TenantData(tenant.Slug)
 	view := calculateParkingMonthDetails(data, month, time.Now(), time.Local)
 	view.BackPath = "/app/parking"
-	view.GridFeeLabel = formatEURPerKWh(data.Settings.GridFeeEURPerKWh)
-	view.Message = "Stundenwerte aus Zählerdifferenz und dem in dieser Stunde gültigen aWATTar-Preis."
+	view.GridFeeLabel = formatEURPerKWh(parkingTariffForMonth(data.Settings, month, time.Local).GridFeeEURPerKWh)
+	view.Message = "Stundenwerte aus Zählerdifferenz, aWATTar-Preis und stündlicher Netzgebühr; die Monatsbasis steht in der Zusammenfassung."
 	if len(data.EnergySamples) > 0 {
 		last := data.EnergySamples[len(data.EnergySamples)-1].At.In(time.Local)
 		view.LastSampleLabel = formatLocalDateTime(last)
@@ -9905,6 +9976,10 @@ func newParkingStore(path string) (*parkingStore, error) {
 	if store.data.Tenants == nil {
 		store.data.Tenants = map[string]parkingTenantData{}
 	}
+	for slug, data := range store.data.Tenants {
+		data.Settings = normalizeParkingSettings(data.Settings)
+		store.data.Tenants[normalizeSlug(slug)] = data
+	}
 	return store, nil
 }
 
@@ -9912,6 +9987,7 @@ func (s *parkingStore) TenantData(tenantSlug string) parkingTenantData {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	data := s.tenantLocked(tenantSlug)
+	data.Settings = normalizeParkingSettings(data.Settings)
 	data.Months = copyMonthStates(data.Months)
 	data.EnergySamples = append([]parkingNumericSample(nil), data.EnergySamples...)
 	data.PriceSamples = append([]parkingNumericSample(nil), data.PriceSamples...)
@@ -9923,7 +9999,38 @@ func (s *parkingStore) SetGridFee(tenantSlug string, gridFee float64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	data := s.tenantLocked(tenantSlug)
+	data.Settings = normalizeParkingSettings(data.Settings)
+	if len(data.Settings.Tariffs) > 0 {
+		data.Settings.Tariffs[len(data.Settings.Tariffs)-1].GridFeeEURPerKWh = gridFee
+	}
 	data.Settings.GridFeeEURPerKWh = gridFee
+	data.Settings = normalizeParkingSettings(data.Settings)
+	s.data.Tenants[normalizeSlug(tenantSlug)] = data
+	return s.saveLocked()
+}
+
+func (s *parkingStore) UpsertTariff(tenantSlug string, tariff parkingTariff) error {
+	tariff = normalizeParkingTariff(tariff)
+	if tariff.EffectiveFrom == "" {
+		return fmt.Errorf("invalid tariff")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data := s.tenantLocked(tenantSlug)
+	replaced := false
+	for i, existing := range data.Settings.Tariffs {
+		if existing.EffectiveFrom == tariff.EffectiveFrom {
+			data.Settings.Tariffs[i] = tariff
+			replaced = true
+			break
+		}
+	}
+	if !replaced {
+		data.Settings.Tariffs = append(data.Settings.Tariffs, tariff)
+	}
+	data.Settings.GridFeeEURPerKWh = tariff.GridFeeEURPerKWh
+	data.Settings.BaseFeeEUR = tariff.BaseFeeEUR
+	data.Settings = normalizeParkingSettings(data.Settings)
 	s.data.Tenants[normalizeSlug(tenantSlug)] = data
 	return s.saveLocked()
 }
@@ -9998,6 +10105,7 @@ func (s *parkingStore) tenantLocked(tenantSlug string) parkingTenantData {
 	if !ok {
 		data = defaultParkingTenantData()
 	}
+	data.Settings = normalizeParkingSettings(data.Settings)
 	if data.Months == nil {
 		data.Months = map[string]parkingMonthState{}
 	}
@@ -10038,9 +10146,138 @@ func (s *parkingStore) saveLocked() error {
 
 func defaultParkingTenantData() parkingTenantData {
 	return parkingTenantData{
-		Settings: parkingSettings{GridFeeEURPerKWh: 0.10},
+		Settings: normalizeParkingSettings(parkingSettings{GridFeeEURPerKWh: 0.10}),
 		Months:   map[string]parkingMonthState{},
 	}
+}
+
+func normalizeParkingSettings(settings parkingSettings) parkingSettings {
+	if settings.GridFeeEURPerKWh < 0 {
+		settings.GridFeeEURPerKWh = 0
+	}
+	if settings.GridFeeEURPerKWh > 5 {
+		settings.GridFeeEURPerKWh = 5
+	}
+	if settings.BaseFeeEUR < 0 {
+		settings.BaseFeeEUR = 0
+	}
+	if settings.BaseFeeEUR > 5000 {
+		settings.BaseFeeEUR = 5000
+	}
+	tariffs := make([]parkingTariff, 0, len(settings.Tariffs)+1)
+	seen := map[string]int{}
+	for _, tariff := range settings.Tariffs {
+		tariff = normalizeParkingTariff(tariff)
+		if tariff.EffectiveFrom == "" {
+			continue
+		}
+		if idx, ok := seen[tariff.EffectiveFrom]; ok {
+			tariffs[idx] = tariff
+			continue
+		}
+		seen[tariff.EffectiveFrom] = len(tariffs)
+		tariffs = append(tariffs, tariff)
+	}
+	if len(tariffs) == 0 {
+		tariffs = append(tariffs, parkingTariff{
+			EffectiveFrom:    "2000-01-01",
+			GridFeeEURPerKWh: settings.GridFeeEURPerKWh,
+			BaseFeeEUR:       settings.BaseFeeEUR,
+		})
+	}
+	sort.Slice(tariffs, func(i, j int) bool {
+		return tariffs[i].EffectiveFrom < tariffs[j].EffectiveFrom
+	})
+	settings.Tariffs = tariffs
+	current := tariffs[len(tariffs)-1]
+	settings.GridFeeEURPerKWh = current.GridFeeEURPerKWh
+	settings.BaseFeeEUR = current.BaseFeeEUR
+	return settings
+}
+
+func normalizeParkingTariff(tariff parkingTariff) parkingTariff {
+	tariff.EffectiveFrom = normalizeParkingTariffDate(tariff.EffectiveFrom)
+	if tariff.GridFeeEURPerKWh < 0 {
+		tariff.GridFeeEURPerKWh = 0
+	}
+	if tariff.GridFeeEURPerKWh > 5 {
+		tariff.GridFeeEURPerKWh = 5
+	}
+	if tariff.BaseFeeEUR < 0 {
+		tariff.BaseFeeEUR = 0
+	}
+	if tariff.BaseFeeEUR > 5000 {
+		tariff.BaseFeeEUR = 5000
+	}
+	return tariff
+}
+
+func normalizeParkingTariffDate(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if t, err := time.Parse("2006-01-02", raw); err == nil {
+		return t.Format("2006-01-02")
+	}
+	if t, err := time.Parse("2006-01", raw); err == nil {
+		return t.Format("2006-01-02")
+	}
+	return ""
+}
+
+func parkingTariffAt(settings parkingSettings, at time.Time, loc *time.Location) parkingTariff {
+	settings = normalizeParkingSettings(settings)
+	if loc == nil {
+		loc = time.Local
+	}
+	if at.IsZero() {
+		at = time.Now()
+	}
+	day := at.In(loc).Format("2006-01-02")
+	selected := settings.Tariffs[0]
+	for _, tariff := range settings.Tariffs {
+		if tariff.EffectiveFrom <= day {
+			selected = tariff
+			continue
+		}
+		break
+	}
+	return selected
+}
+
+func parkingTariffForMonth(settings parkingSettings, month string, loc *time.Location) parkingTariff {
+	if loc == nil {
+		loc = time.Local
+	}
+	first, err := time.ParseInLocation("2006-01", month, loc)
+	if err != nil {
+		return parkingTariffAt(settings, time.Now(), loc)
+	}
+	return parkingTariffAt(settings, first, loc)
+}
+
+func parkingTariffViews(settings parkingSettings) []parkingTariffView {
+	settings = normalizeParkingSettings(settings)
+	views := make([]parkingTariffView, 0, len(settings.Tariffs))
+	for i := len(settings.Tariffs) - 1; i >= 0; i-- {
+		tariff := settings.Tariffs[i]
+		views = append(views, parkingTariffView{
+			EffectiveFrom:      formatParkingTariffDate(tariff.EffectiveFrom),
+			EffectiveFromInput: tariff.EffectiveFrom,
+			GridFee:            formatEURPerKWh(tariff.GridFeeEURPerKWh),
+			BaseFee:            formatEUR(tariff.BaseFeeEUR),
+		})
+	}
+	return views
+}
+
+func formatParkingTariffDate(raw string) string {
+	t, err := time.Parse("2006-01-02", raw)
+	if err != nil {
+		return raw
+	}
+	return formatLocalDate(t)
 }
 
 func copyMonthStates(in map[string]parkingMonthState) map[string]parkingMonthState {
@@ -10183,6 +10420,14 @@ type parkingHourUsage struct {
 }
 
 func calculateParkingHourlyUsage(energySamples []parkingNumericSample, priceSamples []parkingNumericSample, gridFeeEURPerKWh float64, now time.Time) []parkingHourUsage {
+	return calculateParkingHourlyUsageWithSettings(energySamples, priceSamples, parkingSettings{GridFeeEURPerKWh: gridFeeEURPerKWh}, now, time.Local)
+}
+
+func calculateParkingHourlyUsageWithSettings(energySamples []parkingNumericSample, priceSamples []parkingNumericSample, settings parkingSettings, now time.Time, loc *time.Location) []parkingHourUsage {
+	if loc == nil {
+		loc = time.Local
+	}
+	settings = normalizeParkingSettings(settings)
 	keepAfter := now.AddDate(-1, -1, 0)
 	energySamples = normalizeNumericSamples(append([]parkingNumericSample(nil), energySamples...), keepAfter)
 	priceSamples = normalizeNumericSamples(append([]parkingNumericSample(nil), priceSamples...), keepAfter)
@@ -10221,13 +10466,14 @@ func calculateParkingHourlyUsage(energySamples []parkingNumericSample, priceSamp
 				cursor = segmentEnd
 				continue
 			}
+			tariff := parkingTariffAt(settings, cursor, loc)
 			hour := cursor.Truncate(time.Hour)
 			out = append(out, parkingHourUsage{
 				At:         hour,
 				KWh:        kWh,
 				PriceEUR:   price,
 				EnergyCost: price * kWh,
-				GridCost:   gridFeeEURPerKWh * kWh,
+				GridCost:   tariff.GridFeeEURPerKWh * kWh,
 			})
 			cursor = segmentEnd
 		}
@@ -10255,7 +10501,8 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 	if loc == nil {
 		loc = time.Local
 	}
-	hours := calculateParkingHourlyUsage(data.EnergySamples, data.PriceSamples, data.Settings.GridFeeEURPerKWh, now)
+	data.Settings = normalizeParkingSettings(data.Settings)
+	hours := calculateParkingHourlyUsageWithSettings(data.EnergySamples, data.PriceSamples, data.Settings, now, loc)
 	if len(hours) == 0 {
 		return nil
 	}
@@ -10304,7 +10551,8 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 	months := make([]string, 0, len(aggregates))
 	for month, agg := range aggregates {
 		months = append(months, month)
-		total := agg.energyCost + agg.gridCost
+		tariff := parkingTariffForMonth(data.Settings, month, loc)
+		total := agg.energyCost + agg.gridCost + tariff.BaseFeeEUR
 		if total > maxTotal {
 			maxTotal = total
 		}
@@ -10313,7 +10561,9 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 	out := make([]parkingMonthView, 0, len(months))
 	for _, month := range months {
 		agg := aggregates[month]
-		total := agg.energyCost + agg.gridCost
+		tariff := parkingTariffForMonth(data.Settings, month, loc)
+		gridCost := agg.gridCost
+		total := agg.energyCost + gridCost + tariff.BaseFeeEUR
 		averageAwattar := 0.0
 		effectivePrice := 0.0
 		if agg.kWh > 0 {
@@ -10336,11 +10586,13 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 			PeriodLabel:     formatPeriodLabel(agg.first, agg.last, loc),
 			KWhValue:        agg.kWh,
 			EnergyCostValue: agg.energyCost,
-			GridCostValue:   agg.gridCost,
+			GridCostValue:   gridCost,
+			BaseFeeValue:    tariff.BaseFeeEUR,
 			TotalCostValue:  total,
 			KWh:             formatKWh(agg.kWh),
 			EnergyCost:      formatEUR(agg.energyCost),
-			GridCost:        formatEUR(agg.gridCost),
+			GridCost:        formatEUR(gridCost),
+			BaseFee:         formatEUR(tariff.BaseFeeEUR),
 			TotalCost:       formatEUR(total),
 			AverageAwattar:  formatEURPerKWh(averageAwattar),
 			EffectivePrice:  formatEURPerKWh(effectivePrice),
@@ -10372,7 +10624,8 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 			break
 		}
 	}
-	hours := calculateParkingHourlyUsage(data.EnergySamples, data.PriceSamples, data.Settings.GridFeeEURPerKWh, now)
+	data.Settings = normalizeParkingSettings(data.Settings)
+	hours := calculateParkingHourlyUsageWithSettings(data.EnergySamples, data.PriceSamples, data.Settings, now, loc)
 	if len(hours) == 0 {
 		return view
 	}
@@ -10401,6 +10654,7 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 		if hour.KWh > 0 {
 			averageAwattar = hour.EnergyCost / hour.KWh
 		}
+		tariff := parkingTariffAt(data.Settings, hour.At, loc)
 		chartPercent := 0
 		if maxTotal > 0 {
 			chartPercent = int(total / maxTotal * 100)
@@ -10418,7 +10672,7 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 			EnergyCost:          formatEUR(hour.EnergyCost),
 			EnergyCostTitle:     "Stromkosten: " + formatPreciseEUR(hour.EnergyCost) + " = " + formatPreciseKWh(hour.KWh) + " × " + formatPreciseEURPerKWh(averageAwattar),
 			GridCost:            formatEUR(hour.GridCost),
-			GridCostTitle:       "Netzgebühr: " + formatPreciseEUR(hour.GridCost) + " = " + formatPreciseKWh(hour.KWh) + " × " + formatPreciseEURPerKWh(data.Settings.GridFeeEURPerKWh),
+			GridCostTitle:       "Netzgebühr: " + formatPreciseEUR(hour.GridCost) + " = " + formatPreciseKWh(hour.KWh) + " × " + formatPreciseEURPerKWh(tariff.GridFeeEURPerKWh),
 			TotalCost:           formatEUR(total),
 			TotalCostTitle:      "Summe: " + formatPreciseEUR(total) + " = Strom " + formatPreciseEUR(hour.EnergyCost) + " + Netzgebühr " + formatPreciseEUR(hour.GridCost),
 			WeightTitle:         "Relative Höhe der Stundensumme. 100% entspricht der teuersten Stunde dieses Monats.",
@@ -14004,7 +14258,7 @@ const pageTemplates = `
 
         <section class="panel status-strip">
           <div class="rule">
-            <p>Nutzung nur nach persönlicher Absprache. Die Monatswerte berechnen sich stündlich aus Zählerdifferenz, aWATTar-Preis und Netzgebühr.</p>
+            <p>Nutzung nur nach persönlicher Absprache. Die Monatswerte berechnen sich aus Zählerdifferenz, aWATTar-Preis, Netzgebühr und Basisgebühr.</p>
             {{if .Telemetry.Configured}}<span class="pill ok">Home Assistant aktiv</span>{{end}}
           </div>
           {{if .Telemetry.Connected}}
@@ -14049,6 +14303,7 @@ const pageTemplates = `
                     <th class="num">Ø effektiv</th>
                     <th class="num">Strom</th>
                     <th class="num">Netzgeb.</th>
+                    <th class="num">Basis</th>
                     <th class="num">Summe</th>
                     <th>Status</th>
                     <th>Aktionen</th>
@@ -14063,6 +14318,7 @@ const pageTemplates = `
                       <td class="num">{{.EffectivePrice}}</td>
                       <td class="num">{{.EnergyCost}}</td>
                       <td class="num">{{.GridCost}}</td>
+                      <td class="num">{{.BaseFee}}</td>
                       <td class="num amount">{{.TotalCost}}</td>
                       <td><span class="pill {{if .Paid}}ok{{end}}">{{.PaidLabel}}</span></td>
                       <td>
@@ -14115,6 +14371,7 @@ const pageTemplates = `
               <div class="metric-card"><span class="metric-label">Ø effektiv</span><strong class="metric-value">{{.Detail.Summary.EffectivePrice}}</strong></div>
               <div class="metric-card"><span class="metric-label">Strom</span><strong class="metric-value">{{.Detail.Summary.EnergyCost}}</strong></div>
               <div class="metric-card"><span class="metric-label">Netzgeb.</span><strong class="metric-value">{{.Detail.Summary.GridCost}}</strong></div>
+              <div class="metric-card"><span class="metric-label">Basis</span><strong class="metric-value">{{.Detail.Summary.BaseFee}}</strong></div>
               <div class="metric-card"><span class="metric-label">Summe</span><strong class="metric-value">{{.Detail.Summary.TotalCost}}</strong></div>
             </div>
           {{end}}
@@ -14126,8 +14383,8 @@ const pageTemplates = `
             <div><strong>Verbrauch</strong><span>Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.</span></div>
             <div><strong>Ø aWATTar</strong><span>Stündlicher aWATTar-Arbeitspreis ohne Netzgebühr.</span></div>
             <div><strong>Strom</strong><span>Verbrauch × aWATTar-Preis.</span></div>
-            <div><strong>Netzgeb.</strong><span>Verbrauch × eingestellte Netzgebühr.</span></div>
-            <div><strong>Summe</strong><span>Strom plus Netzgebühr; dieser Wert fließt in den Monatsbetrag.</span></div>
+            <div><strong>Netzgeb.</strong><span>Verbrauch × in dieser Stunde gültige Netzgebühr.</span></div>
+            <div><strong>Summe</strong><span>Strom plus Netzgebühr für diese Stunde.</span></div>
             <div><strong>Gewichtung</strong><span>Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.</span></div>
           </div>
           {{if .Detail.HasHours}}
@@ -14139,8 +14396,8 @@ const pageTemplates = `
                     <th class="num" title="Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.">Verbrauch</th>
                     <th class="num" title="Stündlicher aWATTar-Arbeitspreis ohne Netzgebühr.">Ø aWATTar</th>
                     <th class="num" title="Verbrauch × aWATTar-Preis.">Strom</th>
-                    <th class="num" title="Verbrauch × eingestellte Netzgebühr.">Netzgeb.</th>
-                    <th class="num" title="Strom plus Netzgebühr; dieser Wert fließt in den Monatsbetrag.">Summe</th>
+                    <th class="num" title="Verbrauch × in dieser Stunde gültige Netzgebühr.">Netzgeb.</th>
+                    <th class="num" title="Strom plus Netzgebühr für diese Stunde.">Summe</th>
                     <th title="Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.">Gewichtung</th>
                   </tr>
                 </thead>
@@ -14686,16 +14943,27 @@ const pageTemplates = `
         </div>
         <section class="panel settings-card">
           <div>
-            <h2>Netzgebühr</h2>
-            <p class="muted">Kurzer Aufschlag je kWh für Netzbetreibergebühren und lokale Basisanteile. Dieser Wert fließt in die Monatsabrechnung ein.</p>
+            <h2>Tarif</h2>
+            <p class="muted">Netzgebühr je kWh und optionale monatliche Basisgebühr werden nach Gültigkeitsdatum auf die Abrechnung angewendet.</p>
           </div>
           {{if .SettingsMsg}}<p class="flash {{if .SettingsOK}}ok{{end}}">{{.SettingsMsg}}</p>{{end}}
           <form class="form-grid" method="post" action="/app/parking/settings">
+            <label for="effective_from">Gültig ab</label>
+            <input id="effective_from" type="date" name="effective_from" value="{{.Accounting.EffectiveFrom}}" autocomplete="off">
             <label for="grid_fee_eur_per_kwh">Netzgebühr je kWh</label>
             <input id="grid_fee_eur_per_kwh" type="text" inputmode="decimal" name="grid_fee_eur_per_kwh" value="{{.Accounting.GridFeeValue}}" autocomplete="off">
+            <label for="base_fee_eur">Basisgebühr je Monat</label>
+            <input id="base_fee_eur" type="text" inputmode="decimal" name="base_fee_eur" value="{{.Accounting.BaseFeeValue}}" autocomplete="off">
             <button class="button primary" type="submit">Speichern</button>
             {{if .Accounting.LastSampleLabel}}<span class="mini">Letzter Zählerwert: {{.Accounting.LastSampleLabel}}</span>{{end}}
           </form>
+          {{if .Accounting.HasTariffs}}
+            <div class="legend" aria-label="Tarifhistorie">
+              {{range .Accounting.Tariffs}}
+                <div><strong>{{.EffectiveFrom}}</strong><span>{{.GridFee}} · Basis {{.BaseFee}}</span></div>
+              {{end}}
+            </div>
+          {{end}}
         </section>
       </section>
     </main>

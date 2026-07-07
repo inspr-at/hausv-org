@@ -2212,6 +2212,37 @@ func TestParkingSettingsIsParkingSpecificNotGlobalSettings(t *testing.T) {
 	}
 }
 
+func TestParkingSettingsSavesEffectiveTariffHistory(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	save := authedFormRequest(t, a, "admin@example.com", "/app/parking/settings", url.Values{
+		"effective_from":       {"2026-07-01"},
+		"grid_fee_eur_per_kwh": {"0.12"},
+		"base_fee_eur":         {"5.50"},
+	}, a.updateParkingSettings)
+	if save.Code != http.StatusSeeOther {
+		t.Fatalf("parking tariff save status = %d, want redirect", save.Code)
+	}
+	data := a.parkingStore.TenantData("jhw22")
+	tariff := parkingTariffAt(data.Settings, time.Date(2026, 7, 15, 0, 0, 0, 0, time.Local), time.Local)
+	if tariff.EffectiveFrom != "2026-07-01" {
+		t.Fatalf("saved tariff = %+v", tariff)
+	}
+	assertClose(t, tariff.GridFeeEURPerKWh, 0.12)
+	assertClose(t, tariff.BaseFeeEUR, 5.50)
+	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionParkingSettings, Limit: 10})
+	if len(events) != 1 || events[0].Details["base_fee"] != "5,50 €" || events[0].Details["effective_from"] == "" {
+		t.Fatalf("parking tariff audit events = %+v", events)
+	}
+	page := authedRequest(t, a, "admin@example.com", "/app/parking/settings", a.parkingSettings)
+	body := page.Body.String()
+	for _, want := range []string{"Tarif", "2026-07-01", "0,120 €/kWh", "Basis 5,50 €"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("parking settings page missing %q:\n%s", want, body)
+		}
+	}
+}
+
 func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "announcements.json")
 	store, err := newAnnouncementStore(path)
@@ -3296,6 +3327,40 @@ func TestParkingMonthsExposeCostsAndPaidFlag(t *testing.T) {
 	}
 }
 
+func TestParkingTariffHistoryAppliesPerHourAndMonthlyBaseFee(t *testing.T) {
+	base := time.Date(2026, 6, 30, 23, 0, 0, 0, time.UTC)
+	data := parkingTenantData{
+		Settings: parkingSettings{Tariffs: []parkingTariff{
+			{EffectiveFrom: "2026-06-01", GridFeeEURPerKWh: 0.10, BaseFeeEUR: 1},
+			{EffectiveFrom: "2026-07-01", GridFeeEURPerKWh: 0.20, BaseFeeEUR: 2},
+		}},
+		EnergySamples: []parkingNumericSample{
+			{At: base, Value: 100},
+			{At: base.Add(2 * time.Hour), Value: 102},
+		},
+		PriceSamples: []parkingNumericSample{
+			{At: base, Value: 0.30},
+		},
+	}
+
+	months := calculateParkingMonths(data, base.Add(3*time.Hour), time.UTC)
+	if len(months) != 2 {
+		t.Fatalf("months = %+v, want two tariff periods", months)
+	}
+	july := months[0]
+	june := months[1]
+	if july.Month != "2026-07" || july.GridCost != "0,20 €" || july.BaseFee != "2,00 €" || july.TotalCost != "2,50 €" || july.BaseFeeValue != 2 {
+		t.Fatalf("july tariff result = %+v", july)
+	}
+	if june.Month != "2026-06" || june.GridCost != "0,10 €" || june.BaseFee != "1,00 €" || june.TotalCost != "1,40 €" || june.BaseFeeValue != 1 {
+		t.Fatalf("june tariff result = %+v", june)
+	}
+	detail := calculateParkingMonthDetails(data, "2026-07", base.Add(3*time.Hour), time.UTC)
+	if !detail.HasHours || detail.Summary.TotalCost != "2,50 €" || !strings.Contains(detail.Hours[0].GridCostTitle, "0,200000 €/kWh") {
+		t.Fatalf("july detail tariff result = %+v", detail)
+	}
+}
+
 func TestParkingMonthDetailsExposeHourlyRows(t *testing.T) {
 	base := time.Date(2026, 6, 25, 10, 0, 0, 0, time.UTC)
 	data := parkingTenantData{
@@ -3360,7 +3425,7 @@ func TestParkingStatementCSVAccessAndFigures(t *testing.T) {
 		t.Fatalf("content disposition = %q", got)
 	}
 	body := resident.Body.String()
-	for _, want := range []string{"WEG Portal Parkplatzabrechnung", "Pat Parker", "parker@example.com", "Juni 2026", "2,00 kWh", "0,60 €", "0,20 €", "0,80 €", "BEZAHLT", "Gesamt"} {
+	for _, want := range []string{"WEG Portal Parkplatzabrechnung", "Pat Parker", "parker@example.com", "Juni 2026", "2,00 kWh", "0,60 €", "0,20 €", "0,00 €", "0,80 €", "BEZAHLT", "Gesamt"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("statement CSV missing %q:\n%s", want, body)
 		}
