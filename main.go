@@ -1060,6 +1060,8 @@ func main() {
 	mux.HandleFunc("POST /app/settings/profile", a.updateProfileSettings)
 	mux.HandleFunc("GET /app/settings/notifications", a.notificationSettings)
 	mux.HandleFunc("POST /app/settings/notifications", a.updateNotificationSettings)
+	mux.HandleFunc("GET /app/settings/parking-access", a.parkingAccessSettings)
+	mux.HandleFunc("POST /app/settings/parking-access", a.updateParkingAccess)
 	mux.HandleFunc("GET /app/settings/users", a.userSettings)
 	mux.HandleFunc("POST /app/settings/users", a.createInvite)
 	mux.HandleFunc("POST /app/settings/users/edit", a.editInvite)
@@ -5958,6 +5960,137 @@ func normalizeNotificationEvent(raw string) string {
 		}
 	}
 	return ""
+}
+
+func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request) {
+	tenant, email, role, profile, ok := a.parkingAccessContext(w, r)
+	if !ok {
+		return
+	}
+	accessMsg, accessOK := parkingAccessMessage(r.URL.Query().Get("parking_access"))
+	rows := a.userRows(tenant.Slug)
+	a.render(w, "parkingAccessSettings", map[string]any{
+		"Title":           "Parkplatz-Zugriff",
+		"Tenant":          tenant,
+		"Email":           email,
+		"DisplayName":     profile.DisplayName(),
+		"Initials":        profile.Initials(),
+		"Role":            role,
+		"IsAdmin":         hasCapability(role, capabilityPlatformAdmin),
+		"CanSeeParking":   hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
+		"ActivePage":      "settings",
+		"AccessRows":      rows,
+		"HasAccessRows":   len(rows) > 0,
+		"AccessRowsEmpty": emptyState("Noch keine Zugänge", "Sobald Personen eingeladen sind, kann der Parkplatz-Zugriff hier gepflegt werden."),
+		"AccessMsg":       accessMsg,
+		"AccessOK":        accessOK,
+	})
+}
+
+func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request) {
+	tenant, actorEmail, role, _, ok := a.parkingAccessContext(w, r)
+	if !ok {
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	targetEmail := normalizeEmail(r.FormValue("email"))
+	enabled := r.FormValue("parking") == "1"
+	if a.inviteStore == nil {
+		http.Redirect(w, r, "/app/settings/parking-access?parking_access=error", http.StatusSeeOther)
+		return
+	}
+	existing, isInvite := a.inviteStore.Get(targetEmail)
+	if !isInvite {
+		http.Redirect(w, r, "/app/settings/parking-access?parking_access=not_editable", http.StatusSeeOther)
+		return
+	}
+	if !existing.HasTenant(tenant.Slug) {
+		http.Redirect(w, r, "/app/settings/parking-access?parking_access=invalid", http.StatusSeeOther)
+		return
+	}
+	if normalizeRole(existing.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
+		http.Redirect(w, r, "/app/settings/parking-access?parking_access=not_editable", http.StatusSeeOther)
+		return
+	}
+	updated := existing
+	updated.Permissions = setPermission(updated.Permissions, permissionParking, enabled)
+	if len(updated.Tenants) == 0 {
+		updated.Tenants = []string{tenant.Slug}
+	}
+	if len(updated.AuthMethods) == 0 {
+		updated.AuthMethods = defaultAuthMethods()
+	}
+	changed, err := a.inviteStore.Update(targetEmail, updated)
+	if err != nil {
+		log.Printf("parking access update failed for %s: %v", redactedEmail(targetEmail), err)
+		http.Redirect(w, r, "/app/settings/parking-access?parking_access=error", http.StatusSeeOther)
+		return
+	}
+	if !changed {
+		http.Redirect(w, r, "/app/settings/parking-access?parking_access=not_editable", http.StatusSeeOther)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionInviteUpdate,
+		TargetType: "user",
+		TargetID:   updated.Email,
+		Summary:    "Parkplatz-Zugriff geändert",
+		Details: map[string]string{
+			"changed_fields":   "Parkplatz-Zugriff",
+			"permissions_from": strings.Join(permissionLabelList(existing.Permissions), ", "),
+			"permissions_to":   strings.Join(permissionLabelList(updated.Permissions), ", "),
+		},
+	})
+	status := "revoked"
+	if enabled {
+		status = "granted"
+	}
+	http.Redirect(w, r, "/app/settings/parking-access?parking_access="+status, http.StatusSeeOther)
+}
+
+func (a *app) parkingAccessContext(w http.ResponseWriter, r *http.Request) (tenantConfig, string, string, userProfile, bool) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return tenantConfig{}, "", "", userProfile{}, false
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return tenantConfig{}, "", "", userProfile{}, false
+	}
+	if !hasCapability(role, capabilityManageUsers) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return tenantConfig{}, "", "", userProfile{}, false
+	}
+	return tenant, email, role, a.profileForTenant(email, tenant.Slug), true
+}
+
+func parkingAccessMessage(status string) (string, bool) {
+	switch status {
+	case "granted":
+		return "Parkplatz-Zugriff freigegeben.", true
+	case "revoked":
+		return "Parkplatz-Zugriff entzogen.", true
+	case "not_editable":
+		return "Dieser Eintrag kommt aus der Konfiguration und kann hier nicht geändert werden.", false
+	case "invalid":
+		return "Bitte den Zugang prüfen.", false
+	case "error":
+		return "Der Parkplatz-Zugriff konnte nicht gespeichert werden.", false
+	default:
+		return "", false
+	}
 }
 
 func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
@@ -12016,6 +12149,21 @@ func parsePermissionForm(values url.Values) []string {
 	return out
 }
 
+func setPermission(raw []string, permission string, enabled bool) []string {
+	permission = strings.ToLower(strings.TrimSpace(permission))
+	out := []string{}
+	for _, item := range normalizePermissions(raw) {
+		if item == permission {
+			continue
+		}
+		out = append(out, item)
+	}
+	if enabled && permission != "" {
+		out = append(out, permission)
+	}
+	return normalizePermissions(out)
+}
+
 func permissionLabelList(permissions []string) []string {
 	labels := []string{}
 	for _, permission := range normalizePermissions(permissions) {
@@ -13878,6 +14026,11 @@ const pageTemplates = `
                   <div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div>
                   <span class="quick-arrow">›</span>
                 </a>
+                <a class="quick-row" href="/app/settings/parking-access">
+                  <svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg>
+                  <div><h3>Parkplatz-Zugriff</h3><p>Parkplatznutzung für Bewohner freigeben oder entziehen.</p></div>
+                  <span class="quick-arrow">›</span>
+                </a>
                 {{end}}
                 {{if .CanManageDocuments}}
                 <a class="quick-row" href="/app/dokumente">
@@ -14257,6 +14410,77 @@ const pageTemplates = `
               <a class="button" href="/app/settings">Abbrechen</a>
             </div>
           </form>
+        </section>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "parkingAccessSettings"}}
+{{template "appOpen" .}}
+    <style>
+      .parking-access .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+      .parking-access .access-table { width: 100%; border-collapse: collapse; }
+      .parking-access .access-table th, .parking-access .access-table td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+      .parking-access .access-table th { color: var(--gold-ink); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+      .parking-access .person { display: grid; gap: 2px; min-width: 0; }
+      .parking-access .person strong { font-family: Spectral, serif; font-size: 17px; overflow-wrap: anywhere; }
+      .parking-access .person span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+      .parking-access .actions { display: flex; justify-content: flex-end; }
+      .parking-access .access-flash { margin: 0 0 14px; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
+      .parking-access .access-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
+      .parking-access .access-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
+      @media (max-width: 680px) {
+        .parking-access .access-table, .parking-access .access-table tbody, .parking-access .access-table tr, .parking-access .access-table td { display: block; width: 100%; }
+        .parking-access .access-table thead { display: none; }
+        .parking-access .access-table tr { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; background: var(--panel-soft); }
+        .parking-access .access-table td { border-bottom: 0; padding: 7px 0; }
+        .parking-access .access-table td::before { content: attr(data-label); display: block; color: var(--gold-ink); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+        .parking-access .actions { justify-content: flex-start; }
+      }
+    </style>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz-Zugriff</span></span>
+        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a></div>
+      </div>
+      <section class="page parking-access">
+        <div>
+          <h1>Parkplatz-Zugriff</h1>
+          <p class="lede">Berechtigungen für die private Stellplatz- und Ladeabrechnung.</p>
+        </div>
+        <section class="panel">
+          {{if .AccessMsg}}<p class="access-flash{{if .AccessOK}} ok{{else}} warn{{end}}">{{.AccessMsg}}</p>{{end}}
+          {{if .HasAccessRows}}
+            <table class="access-table" aria-label="Parkplatz-Zugriff">
+              <thead><tr><th>Person</th><th>Rolle</th><th>Status</th><th>Quelle</th><th></th></tr></thead>
+              <tbody>
+                {{range .AccessRows}}
+                <tr>
+                  <td data-label="Person"><span class="person"><strong>{{.DisplayName}}</strong><span>{{.Email}}</span></span></td>
+                  <td data-label="Rolle"><span class="role-pill {{.RoleClass}}">{{.Role}}</span></td>
+                  <td data-label="Status">{{if .ParkingChecked}}<span class="pill ok">Freigegeben</span>{{else}}<span class="pill">Kein Zugriff</span>{{end}}</td>
+                  <td data-label="Quelle">{{if .Editable}}<span class="mini">Portal</span>{{else}}<span class="mini">Konfiguration</span>{{end}}</td>
+                  <td data-label="Aktion">
+                    <div class="actions">
+                      {{if and .Editable (or $.IsAdmin (ne .Role "Admin"))}}
+                        <form method="post" action="/app/settings/parking-access">
+                          <input type="hidden" name="email" value="{{.Email}}">
+                          <input type="hidden" name="parking" value="{{if .ParkingChecked}}0{{else}}1{{end}}">
+                          <button class="button small" type="submit">{{if .ParkingChecked}}Entziehen{{else}}Freigeben{{end}}</button>
+                        </form>
+                      {{else}}
+                        <span class="mini">Schreibgeschützt</span>
+                      {{end}}
+                    </div>
+                  </td>
+                </tr>
+                {{end}}
+              </tbody>
+            </table>
+          {{else}}
+            {{template "emptyState" .AccessRowsEmpty}}
+          {{end}}
         </section>
       </section>
     </main>

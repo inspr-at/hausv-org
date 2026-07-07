@@ -1205,6 +1205,9 @@ func TestSettingsHubVisibleToResidentWithoutAdminSections(t *testing.T) {
 	if strings.Contains(body, `href="/app/parking/settings"`) {
 		t.Fatal("resident settings hub must not expose parking settings")
 	}
+	if strings.Contains(body, `href="/app/settings/parking-access"`) {
+		t.Fatal("resident settings hub must not expose parking access management")
+	}
 }
 
 func TestNotificationSettingsPersistAndRender(t *testing.T) {
@@ -1557,7 +1560,7 @@ func TestSettingsHubAdminLinksManagementSections(t *testing.T) {
 		t.Fatalf("settings hub status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/app/settings/building"`, `href="/app/settings/users"`, `href="/app/parking/settings"`, "Parkplatz-Abrechnung", "Gebäude"} {
+	for _, want := range []string{`href="/app/settings/building"`, `href="/app/settings/users"`, `href="/app/settings/parking-access"`, `href="/app/parking/settings"`, "Parkplatz-Abrechnung", "Parkplatz-Zugriff", "Gebäude"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("admin settings hub should contain %q", want)
 		}
@@ -1572,7 +1575,7 @@ func TestSettingsHubManagerLinksTenantManagementOnly(t *testing.T) {
 		t.Fatalf("settings hub status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/app/settings/building"`, `href="/app/settings/users"`, "Benutzer &amp; Rechte", "Gebäude"} {
+	for _, want := range []string{`href="/app/settings/building"`, `href="/app/settings/users"`, `href="/app/settings/parking-access"`, "Benutzer &amp; Rechte", "Parkplatz-Zugriff", "Gebäude"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("manager settings hub should contain %q", want)
 		}
@@ -1691,6 +1694,86 @@ func TestEditInviteCanRevokeParkingPermission(t *testing.T) {
 	parking := authedRequest(t, a, "parker@example.com", "/app/parking", a.parking)
 	if parking.Code != http.StatusNotFound {
 		t.Fatalf("parking status = %d, want 404 after parking revoke", parking.Code)
+	}
+}
+
+func TestParkingAccessPageGrantsAndRevokesInvitePermission(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+		t.Fatalf("Add invite: %v", err)
+	}
+
+	page := authedRequest(t, a, "manager@example.com", "/app/settings/parking-access", a.parkingAccessSettings)
+	if page.Code != http.StatusOK {
+		t.Fatalf("parking access status = %d, want 200", page.Code)
+	}
+	body := page.Body.String()
+	for _, want := range []string{"Parkplatz-Zugriff", "parker@example.com", "Freigeben", "Portal"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("parking access page missing %q:\n%s", want, body)
+		}
+	}
+
+	grant := authedFormRequest(t, a, "manager@example.com", "/app/settings/parking-access", url.Values{
+		"email":   {"parker@example.com"},
+		"parking": {"1"},
+	}, a.updateParkingAccess)
+	if grant.Code != http.StatusSeeOther {
+		t.Fatalf("grant status = %d, want redirect", grant.Code)
+	}
+	profile, ok := a.inviteStore.Get("parker@example.com")
+	if !ok || !profile.HasPermission(permissionParking) {
+		t.Fatalf("stored profile after grant = %+v ok=%v", profile, ok)
+	}
+	if parking := authedRequest(t, a, "parker@example.com", "/app/parking", a.parking); parking.Code != http.StatusOK {
+		t.Fatalf("parking status after grant = %d, want 200", parking.Code)
+	}
+
+	revoke := authedFormRequest(t, a, "manager@example.com", "/app/settings/parking-access", url.Values{
+		"email":   {"parker@example.com"},
+		"parking": {"0"},
+	}, a.updateParkingAccess)
+	if revoke.Code != http.StatusSeeOther {
+		t.Fatalf("revoke status = %d, want redirect", revoke.Code)
+	}
+	profile, ok = a.inviteStore.Get("parker@example.com")
+	if !ok || profile.HasPermission(permissionParking) {
+		t.Fatalf("stored profile after revoke = %+v ok=%v", profile, ok)
+	}
+	if parking := authedRequest(t, a, "parker@example.com", "/app/parking", a.parking); parking.Code != http.StatusNotFound {
+		t.Fatalf("parking status after revoke = %d, want 404", parking.Code)
+	}
+	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionInviteUpdate, Query: "parker", Limit: 10})
+	if len(events) != 2 || events[0].Summary != "Parkplatz-Zugriff geändert" {
+		t.Fatalf("parking access audit events = %+v", events)
+	}
+}
+
+func TestParkingAccessPageKeepsEnvUsersReadOnly(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["env-parker@example.com"] = userProfile{Email: "env-parker@example.com", FirstName: "Env", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+
+	page := authedRequest(t, a, "manager@example.com", "/app/settings/parking-access", a.parkingAccessSettings)
+	if page.Code != http.StatusOK {
+		t.Fatalf("parking access status = %d, want 200", page.Code)
+	}
+	body := page.Body.String()
+	if !strings.Contains(body, "env-parker@example.com") || !strings.Contains(body, "Konfiguration") || !strings.Contains(body, "Schreibgeschützt") {
+		t.Fatalf("env user should render read-only:\n%s", body)
+	}
+
+	grant := authedFormRequest(t, a, "manager@example.com", "/app/settings/parking-access", url.Values{
+		"email":   {"env-parker@example.com"},
+		"parking": {"1"},
+	}, a.updateParkingAccess)
+	if grant.Code != http.StatusSeeOther || !strings.Contains(grant.Header().Get("Location"), "not_editable") {
+		t.Fatalf("env grant redirect = %d %q", grant.Code, grant.Header().Get("Location"))
+	}
+	if a.profiles["env-parker@example.com"].HasPermission(permissionParking) {
+		t.Fatal("env profile must not be mutated by parking access page")
+	}
+	if parking := authedRequest(t, a, "env-parker@example.com", "/app/parking", a.parking); parking.Code != http.StatusNotFound {
+		t.Fatalf("env parking status = %d, want 404", parking.Code)
 	}
 }
 
