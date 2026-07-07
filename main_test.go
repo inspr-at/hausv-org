@@ -412,6 +412,13 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	if got := stored.Votes["owner@example.com"].Weight; got != 400000 {
 		t.Fatalf("owner vote weight = %d, want 400000", got)
 	}
+	voteEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionVoteCast, Limit: 10})
+	if len(voteEvents) != 1 || voteEvents[0].TargetID != created.ID || voteEvents[0].Details["weight"] == "" || voteEvents[0].Details["cast_at"] == "" {
+		t.Fatalf("vote audit event should record timestamp/weight without option: %+v", voteEvents)
+	}
+	if _, ok := voteEvents[0].Details["option"]; ok {
+		t.Fatalf("vote audit event should record timestamp/weight without option: %+v", voteEvents)
+	}
 
 	for _, persona := range []struct {
 		email   string
@@ -553,6 +560,69 @@ func TestBallotVoteAfterDeadlineAutoCloses(t *testing.T) {
 	page := authedRequest(t, a, "owner@example.com", "/app/abstimmungen", a.ballots).Body.String()
 	if strings.Contains(page, `name="option"`) || !strings.Contains(page, "Abstimmung geschlossen.") {
 		t.Fatalf("closed ballot should render read-only:\n%s", page)
+	}
+}
+
+func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["owner1@example.com"] = userProfile{Email: "owner1@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["owner2@example.com"] = userProfile{Email: "owner2@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["owner3@example.com"] = userProfile{Email: "owner3@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
+		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 300000, OwnerEmails: []string{"owner1@example.com"}},
+		{ID: "top-2", TenantSlug: "jhw22", Label: "Top 2", MiteigentumsanteilPPM: 300000, OwnerEmails: []string{"owner2@example.com"}},
+		{ID: "top-3", TenantSlug: "jhw22", Label: "Top 3", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner3@example.com"}},
+	}); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+	mailer := &recordingMailer{}
+	a.mailer = mailer
+	if err := a.notificationPrefs.Set("owner3@example.com", notificationPreferences{Email: map[string]bool{notificationEventVote: false}}); err != nil {
+		t.Fatalf("Set owner3 prefs: %v", err)
+	}
+	now := time.Now()
+	created, err := a.voteStore.Create(ballot{
+		TenantSlug:            "jhw22",
+		Title:                 "Reminder",
+		Options:               []string{"Ja", "Nein"},
+		Type:                  ballotTypeCircular,
+		Weighting:             ballotWeightingPerShare,
+		ClosesAt:              now.Add(2 * time.Hour),
+		CreatedBy:             "manager@example.com",
+		ReminderBeforeMinutes: 180,
+	})
+	if err != nil {
+		t.Fatalf("Create ballot: %v", err)
+	}
+	if _, _, err := a.voteStore.Open("jhw22", created.ID, now); err != nil {
+		t.Fatalf("Open ballot: %v", err)
+	}
+	if _, _, err := a.castBallotVote("jhw22", "owner1@example.com", created.ID, "Ja", now); err != nil {
+		t.Fatalf("owner1 vote: %v", err)
+	}
+
+	if sent := a.sendDueBallotReminders(now.Add(30 * time.Minute)); sent != 1 {
+		t.Fatalf("sendDueBallotReminders sent = %d, want 1", sent)
+	}
+	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "owner2@example.com" || !strings.Contains(mailer.notifications[0].Subject, "Reminder") {
+		t.Fatalf("reminder notifications = %+v", mailer.notifications)
+	}
+	updated, _ := a.voteStore.Get("jhw22", created.ID)
+	if _, ok := updated.ReminderSentAt["owner2@example.com"]; !ok {
+		t.Fatalf("owner2 should be marked reminded: %+v", updated.ReminderSentAt)
+	}
+	if _, ok := updated.ReminderSentAt["owner1@example.com"]; ok {
+		t.Fatalf("owner1 voted and should not be marked reminded: %+v", updated.ReminderSentAt)
+	}
+	if _, ok := updated.ReminderSentAt["owner3@example.com"]; ok {
+		t.Fatalf("reminder sent state = %+v", updated.ReminderSentAt)
+	}
+	if sent := a.sendDueBallotReminders(now.Add(time.Hour)); sent != 0 || len(mailer.notifications) != 1 {
+		t.Fatalf("duplicate reminders sent=%d notifications=%+v", sent, mailer.notifications)
+	}
+	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionVoteReminder, Limit: 10})
+	if len(events) != 1 || events[0].Details["recipients"] != "1" || events[0].Details["title"] != "Reminder" {
+		t.Fatalf("reminder audit events = %+v", events)
 	}
 }
 
@@ -1983,19 +2053,22 @@ func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	if write.Code != http.StatusSeeOther {
 		t.Fatalf("manager announcement create status = %d, want redirect", write.Code)
 	}
+	ballotDeadline := time.Now().Add(48 * time.Hour).In(time.Local).Format("2006-01-02T15:04")
 	ballotCreate := authedFormRequest(t, a, "manager@example.com", "/app/abstimmungen", url.Values{
-		"title":          {"Dachsanierung"},
-		"description":    {"Beschluss zur Beauftragung"},
-		"options_text":   {"Ja\nNein\nEnthaltung"},
-		"type":           {ballotTypeCircular},
-		"weighting":      {ballotWeightingPerShare},
-		"quorum_percent": {"50"},
+		"title":                 {"Dachsanierung"},
+		"description":           {"Beschluss zur Beauftragung"},
+		"options_text":          {"Ja\nNein\nEnthaltung"},
+		"type":                  {ballotTypeCircular},
+		"weighting":             {ballotWeightingPerShare},
+		"quorum_percent":        {"50"},
+		"closes_at":             {ballotDeadline},
+		"reminder_before_hours": {"12"},
 	}, a.createBallot)
 	if ballotCreate.Code != http.StatusSeeOther {
 		t.Fatalf("manager ballot create status = %d, want redirect", ballotCreate.Code)
 	}
 	ballots := a.voteStore.ListTenant("jhw22")
-	if len(ballots) != 1 || ballots[0].Title != "Dachsanierung" || ballots[0].QuorumPPM != 500000 {
+	if len(ballots) != 1 || ballots[0].Title != "Dachsanierung" || ballots[0].QuorumPPM != 500000 || ballots[0].ReminderBeforeMinutes != 720 {
 		t.Fatalf("created ballots = %+v", ballots)
 	}
 	open := authedFormRequest(t, a, "manager@example.com", "/app/abstimmungen/open", url.Values{"id": {ballots[0].ID}}, a.openBallot)

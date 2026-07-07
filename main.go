@@ -95,6 +95,8 @@ const (
 	auditActionVoteCreate       = "vote.create"
 	auditActionVoteOpen         = "vote.open"
 	auditActionVoteClose        = "vote.close"
+	auditActionVoteCast         = "vote.cast"
+	auditActionVoteReminder     = "vote.reminder"
 )
 
 const (
@@ -120,6 +122,9 @@ const (
 	ballotStatusDraft  = "Entwurf"
 	ballotStatusOpen   = "Offen"
 	ballotStatusClosed = "Geschlossen"
+
+	defaultBallotReminderBeforeMinutes = 24 * 60
+	maxBallotReminderBeforeMinutes     = 30 * 24 * 60
 )
 
 type capability string
@@ -175,6 +180,7 @@ type app struct {
 	auditStore            *auditStore
 	documentStore         *documentStore
 	voteStore             *voteStore
+	voteReminderInterval  time.Duration
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
@@ -652,21 +658,23 @@ type voteStoreData struct {
 }
 
 type ballot struct {
-	ID          string                `json:"id"`
-	TenantSlug  string                `json:"tenant"`
-	Title       string                `json:"title"`
-	Description string                `json:"description,omitempty"`
-	Options     []string              `json:"options"`
-	Type        string                `json:"type"`
-	Weighting   string                `json:"weighting"`
-	QuorumPPM   int                   `json:"quorum_ppm"`
-	OpensAt     time.Time             `json:"opens_at,omitempty"`
-	ClosesAt    time.Time             `json:"closes_at,omitempty"`
-	CreatedBy   string                `json:"created_by"`
-	CreatedAt   time.Time             `json:"created_at"`
-	UpdatedAt   time.Time             `json:"updated_at"`
-	Status      string                `json:"status"`
-	Votes       map[string]ballotVote `json:"votes,omitempty"`
+	ID                    string                `json:"id"`
+	TenantSlug            string                `json:"tenant"`
+	Title                 string                `json:"title"`
+	Description           string                `json:"description,omitempty"`
+	Options               []string              `json:"options"`
+	Type                  string                `json:"type"`
+	Weighting             string                `json:"weighting"`
+	QuorumPPM             int                   `json:"quorum_ppm"`
+	OpensAt               time.Time             `json:"opens_at,omitempty"`
+	ClosesAt              time.Time             `json:"closes_at,omitempty"`
+	CreatedBy             string                `json:"created_by"`
+	CreatedAt             time.Time             `json:"created_at"`
+	UpdatedAt             time.Time             `json:"updated_at"`
+	Status                string                `json:"status"`
+	Votes                 map[string]ballotVote `json:"votes,omitempty"`
+	ReminderBeforeMinutes int                   `json:"reminder_before_minutes,omitempty"`
+	ReminderSentAt        map[string]time.Time  `json:"reminder_sent_at,omitempty"`
 }
 
 type ballotVote struct {
@@ -684,6 +692,7 @@ type ballotView struct {
 	Weighting           string
 	Quorum              string
 	HasQuorum           bool
+	ReminderLabel       string
 	Status              string
 	StatusClass         string
 	OpensAt             string
@@ -998,6 +1007,8 @@ func main() {
 	}
 	stopSampler := a.startParkingSampler()
 	defer stopSampler()
+	stopVoteReminders := a.startVoteReminderWorker()
+	defer stopVoteReminders()
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /assets/", http.FileServerFS(assets))
@@ -1238,6 +1249,10 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid PARKING_SAMPLE_INTERVAL")
 	}
+	voteReminderInterval, err := parseDuration(env("VOTE_REMINDER_INTERVAL", "1h"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid VOTE_REMINDER_INTERVAL")
+	}
 	parkingHistoryStart, err := parseHistoryStart(env("PARKING_HISTORY_START", ""), time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("invalid PARKING_HISTORY_START")
@@ -1282,6 +1297,7 @@ func newApp() (*app, error) {
 		auditStore:            auditStore,
 		documentStore:         documents,
 		voteStore:             votes,
+		voteReminderInterval:  voteReminderInterval,
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
@@ -2176,6 +2192,7 @@ func (a *app) createBallot(w http.ResponseWriter, r *http.Request) {
 			"type":      created.Type,
 			"weighting": ballotWeightingLabel(created.Weighting),
 			"quorum":    formatMiteigentumsanteil(created.QuorumPPM),
+			"reminder":  formatBallotReminder(created.ReminderBeforeMinutes),
 		},
 	})
 	http.Redirect(w, r, "/app/abstimmungen?vote=created", http.StatusSeeOther)
@@ -2279,17 +2296,22 @@ func ballotFromForm(r *http.Request, tenantSlug string, createdBy string) (ballo
 	if err != nil {
 		return ballot{}, err
 	}
+	reminderBefore, err := parseBallotReminderBeforeMinutes(r.FormValue("reminder_before_minutes"), r.FormValue("reminder_before_hours"))
+	if err != nil {
+		return ballot{}, err
+	}
 	item := ballot{
-		TenantSlug:  tenantSlug,
-		Title:       strings.TrimSpace(r.FormValue("title")),
-		Description: strings.TrimSpace(r.FormValue("description")),
-		Options:     ballotOptionsFromForm(r),
-		Type:        normalizeBallotType(r.FormValue("type")),
-		Weighting:   normalizeBallotWeighting(r.FormValue("weighting")),
-		QuorumPPM:   quorum,
-		OpensAt:     opensAt,
-		ClosesAt:    closesAt,
-		CreatedBy:   createdBy,
+		TenantSlug:            tenantSlug,
+		Title:                 strings.TrimSpace(r.FormValue("title")),
+		Description:           strings.TrimSpace(r.FormValue("description")),
+		Options:               ballotOptionsFromForm(r),
+		Type:                  normalizeBallotType(r.FormValue("type")),
+		Weighting:             normalizeBallotWeighting(r.FormValue("weighting")),
+		QuorumPPM:             quorum,
+		OpensAt:               opensAt,
+		ClosesAt:              closesAt,
+		CreatedBy:             createdBy,
+		ReminderBeforeMinutes: reminderBefore,
 	}
 	item = normalizeBallot(item)
 	if item.Title == "" || len(item.Options) < 2 || item.Type == "" || item.Weighting == "" || item.CreatedBy == "" {
@@ -2326,6 +2348,27 @@ func parseBallotQuorumPPM(rawPPM string, rawPercent string) (int, error) {
 		return 0, fmt.Errorf("invalid quorum")
 	}
 	return int(value * 10_000), nil
+}
+
+func parseBallotReminderBeforeMinutes(rawMinutes string, rawHours string) (int, error) {
+	rawMinutes = strings.TrimSpace(rawMinutes)
+	if rawMinutes != "" {
+		value, err := strconv.Atoi(rawMinutes)
+		if err != nil || value <= 0 || value > maxBallotReminderBeforeMinutes {
+			return 0, fmt.Errorf("invalid reminder")
+		}
+		return value, nil
+	}
+	rawHours = strings.TrimSpace(rawHours)
+	if rawHours == "" {
+		return defaultBallotReminderBeforeMinutes, nil
+	}
+	value, err := parseDecimal(rawHours)
+	minutes := int(value * 60)
+	if err != nil || minutes <= 0 || minutes > maxBallotReminderBeforeMinutes {
+		return 0, fmt.Errorf("invalid reminder")
+	}
+	return minutes, nil
 }
 
 func documentFileHeader(r *http.Request) *multipart.FileHeader {
@@ -2495,7 +2538,22 @@ func (a *app) castVote(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 		return
 	}
-	_ = updated
+	if vote, ok := updated.Votes[normalizeEmail(email)]; ok {
+		a.recordAudit(auditEvent{
+			TenantSlug: tenant.Slug,
+			ActorEmail: email,
+			ActorRole:  role,
+			Action:     auditActionVoteCast,
+			TargetType: "ballot",
+			TargetID:   updated.ID,
+			Summary:    "Stimme gespeichert",
+			Details: map[string]string{
+				"title":   updated.Title,
+				"weight":  formatBallotResultWeight(updated.Weighting, vote.Weight),
+				"cast_at": formatLocalDateTime(vote.At),
+			},
+		})
+	}
 	http.Redirect(w, r, "/app/abstimmungen?vote=cast", http.StatusSeeOther)
 }
 
@@ -2612,6 +2670,7 @@ func (a *app) ballotViewForActor(tenantSlug string, email string, role string, i
 		Weighting:           ballotWeightingLabel(item.Weighting),
 		Quorum:              formatPPMPercent(item.QuorumPPM),
 		HasQuorum:           item.QuorumPPM > 0,
+		ReminderLabel:       formatBallotReminder(item.ReminderBeforeMinutes),
 		Status:              status,
 		StatusClass:         statusClass,
 		CreatedAt:           formatLocalDateTime(item.CreatedAt),
@@ -2735,6 +2794,14 @@ func (a *app) computeBallotTally(tenantSlug string, item ballot) ballotResultSum
 }
 
 func (a *app) ballotEligibleWeightTotal(tenantSlug string, item ballot) int {
+	total := 0
+	for _, weight := range a.ballotEligibleWeights(tenantSlug, item) {
+		total += weight
+	}
+	return total
+}
+
+func (a *app) ballotEligibleWeights(tenantSlug string, item ballot) map[string]int {
 	weights := map[string]int{}
 	tenantSlug = normalizeSlug(tenantSlug)
 	switch normalizeBallotWeighting(item.Weighting) {
@@ -2770,11 +2837,7 @@ func (a *app) ballotEligibleWeightTotal(tenantSlug string, item ballot) int {
 			}
 		}
 	}
-	total := 0
-	for _, weight := range weights {
-		total += weight
-	}
-	return total
+	return weights
 }
 
 func ballotWinnerLabel(options map[string]ballotResultCount) string {
@@ -2883,6 +2946,23 @@ func formatPPMPercent(ppm int) string {
 		ppm = 1_000_000
 	}
 	return formatDecimal(float64(ppm)/10_000, 1) + " %"
+}
+
+func formatBallotReminder(minutes int) string {
+	if minutes <= 0 {
+		minutes = defaultBallotReminderBeforeMinutes
+	}
+	if minutes%60 == 0 {
+		hours := minutes / 60
+		if hours == 1 {
+			return "1 Stunde vorher"
+		}
+		return strconv.Itoa(hours) + " Stunden vorher"
+	}
+	if minutes == 1 {
+		return "1 Minute vorher"
+	}
+	return strconv.Itoa(minutes) + " Minuten vorher"
 }
 
 func voteMessage(status string) (string, bool) {
@@ -3484,15 +3564,143 @@ func (a *app) notifyAnnouncementPublished(tenant tenantConfig, item announcement
 	})
 }
 
-func (a *app) notify(event portalNotification) {
+func (a *app) startVoteReminderWorker() func() {
+	if a.voteReminderInterval <= 0 || a.voteStore == nil {
+		return func() {}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		a.sendDueBallotReminders(time.Now())
+		ticker := time.NewTicker(a.voteReminderInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				a.sendDueBallotReminders(time.Now())
+			}
+		}
+	}()
+	return cancel
+}
+
+func (a *app) sendDueBallotReminders(now time.Time) int {
+	if a == nil || a.voteStore == nil {
+		return 0
+	}
+	if now.IsZero() {
+		now = time.Now()
+	}
+	sentTotal := 0
+	for _, tenant := range a.tenants {
+		if _, err := a.voteStore.CloseExpiredTenant(tenant.Slug, now); err != nil {
+			log.Printf("ballot auto-close failed for %s: %v", tenant.Slug, err)
+		}
+		for _, item := range a.voteStore.ListTenant(tenant.Slug) {
+			if !ballotReminderDue(item, now) {
+				continue
+			}
+			recipients := a.ballotReminderRecipients(tenant.Slug, item)
+			if len(recipients) == 0 {
+				continue
+			}
+			event := portalNotification{
+				Event:      notificationEventVote,
+				Tenant:     tenant,
+				Recipients: recipients,
+				Subject:    "Erinnerung: Abstimmung " + item.Title,
+				ActionText: "Abstimmung öffnen",
+				ActionURL:  tenant.PublicURL("/app/abstimmungen"),
+				Lines: []string{
+					"Für " + tenant.Address + " läuft eine Abstimmung demnächst ab.",
+					"",
+					item.Title,
+					"Frist: " + formatLocalDateTime(item.ClosesAt),
+				},
+			}
+			sent := a.notify(event)
+			if len(sent) == 0 {
+				continue
+			}
+			if _, _, err := a.voteStore.MarkReminderSent(tenant.Slug, item.ID, sent, now); err != nil {
+				log.Printf("ballot reminder mark failed for %s/%s: %v", tenant.Slug, item.ID, err)
+				continue
+			}
+			a.recordAudit(auditEvent{
+				TenantSlug: tenant.Slug,
+				ActorEmail: "system",
+				ActorRole:  "System",
+				Action:     auditActionVoteReminder,
+				TargetType: "ballot",
+				TargetID:   item.ID,
+				Summary:    "Abstimmungs-Erinnerung gesendet",
+				Details: map[string]string{
+					"title":      item.Title,
+					"recipients": strconv.Itoa(len(sent)),
+					"deadline":   formatLocalDateTime(item.ClosesAt),
+				},
+			})
+			sentTotal += len(sent)
+		}
+	}
+	return sentTotal
+}
+
+func ballotReminderDue(item ballot, now time.Time) bool {
+	item = normalizeBallot(item)
+	if now.IsZero() {
+		now = time.Now()
+	}
+	now = now.UTC()
+	if item.Status != ballotStatusOpen || item.ClosesAt.IsZero() || !now.Before(item.ClosesAt) {
+		return false
+	}
+	return item.ClosesAt.Sub(now) <= time.Duration(item.ReminderBeforeMinutes)*time.Minute
+}
+
+func (a *app) ballotReminderRecipients(tenantSlug string, item ballot) []string {
+	weights := a.ballotEligibleWeights(tenantSlug, item)
+	recipients := make([]string, 0, len(weights))
+	for email := range weights {
+		if _, voted := item.Votes[email]; voted {
+			continue
+		}
+		if _, reminded := item.ReminderSentAt[email]; reminded {
+			continue
+		}
+		recipients = append(recipients, email)
+	}
+	sort.Strings(recipients)
+	return recipients
+}
+
+func (a *app) notify(event portalNotification) []string {
 	if a.mailer == nil || !a.mailer.Configured() {
-		return
+		return nil
 	}
 	event.Event = normalizeNotificationEvent(event.Event)
 	if event.Event == "" {
-		return
+		return nil
 	}
 	body := event.Body()
+	sent := []string{}
+	for _, recipient := range a.notificationRecipients(event) {
+		if err := a.mailer.SendNotification(recipient, event.Subject, body); err != nil {
+			log.Printf("notification delivery failed for %s: %v", redactedEmail(recipient), err)
+			continue
+		}
+		sent = append(sent, recipient)
+	}
+	return sent
+}
+
+func (a *app) notificationRecipients(event portalNotification) []string {
+	event.Event = normalizeNotificationEvent(event.Event)
+	if event.Event == "" {
+		return nil
+	}
+	out := []string{}
 	for _, recipient := range excludeEmail(uniqueEmails(event.Recipients), event.ActorEmail) {
 		if recipient == "" {
 			continue
@@ -3500,10 +3708,9 @@ func (a *app) notify(event portalNotification) {
 		if a.notificationPrefs != nil && !a.notificationPrefs.EmailEnabled(recipient, event.Event) {
 			continue
 		}
-		if err := a.mailer.SendNotification(recipient, event.Subject, body); err != nil {
-			log.Printf("notification delivery failed for %s: %v", redactedEmail(recipient), err)
-		}
+		out = append(out, recipient)
 	}
+	return out
 }
 
 func (event portalNotification) Body() string {
@@ -4954,6 +5161,8 @@ func auditActionOptions(selected string) []selectOption {
 		auditActionVoteCreate,
 		auditActionVoteOpen,
 		auditActionVoteClose,
+		auditActionVoteCast,
+		auditActionVoteReminder,
 		auditActionParkingSettings,
 		auditActionParkingMonth,
 		auditActionIssueWorkflow,
@@ -4993,6 +5202,10 @@ func auditActionLabel(action string) string {
 		return "Abstimmung geöffnet"
 	case auditActionVoteClose:
 		return "Abstimmung geschlossen"
+	case auditActionVoteCast:
+		return "Stimme gespeichert"
+	case auditActionVoteReminder:
+		return "Abstimmungs-Erinnerung gesendet"
 	case auditActionParkingSettings:
 		return "Parkplatz-Abrechnung geändert"
 	case auditActionParkingMonth:
@@ -5095,6 +5308,16 @@ func auditDetailLabel(key string) string {
 		return "Gewichtung"
 	case "quorum":
 		return "Quorum"
+	case "reminder":
+		return "Erinnerung"
+	case "weight":
+		return "Stimmgewicht"
+	case "cast_at":
+		return "Stimmabgabe"
+	case "recipients":
+		return "Empfänger"
+	case "deadline":
+		return "Frist"
 	default:
 		return strings.ReplaceAll(key, "_", " ")
 	}
@@ -8309,6 +8532,45 @@ func (s *voteStore) CastVote(tenantSlug string, id string, email string, option 
 	return ballot{}, false, nil
 }
 
+func (s *voteStore) MarkReminderSent(tenantSlug string, id string, recipients []string, at time.Time) (ballot, bool, error) {
+	if s == nil {
+		return ballot{}, false, nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	recipients = normalizeEmailList(recipients)
+	if tenantSlug == "" || id == "" || len(recipients) == 0 {
+		return ballot{}, false, fmt.Errorf("invalid reminder")
+	}
+	if at.IsZero() {
+		at = time.Now()
+	}
+	at = at.UTC()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, item := range s.data.Ballots {
+		if normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != id {
+			continue
+		}
+		item = normalizeBallot(item)
+		if item.ReminderSentAt == nil {
+			item.ReminderSentAt = map[string]time.Time{}
+		}
+		for _, recipient := range recipients {
+			item.ReminderSentAt[recipient] = at
+		}
+		item.UpdatedAt = at
+		item = normalizeBallot(item)
+		s.data.Ballots[i] = item
+		sortBallots(s.data.Ballots)
+		if err := s.saveLocked(); err != nil {
+			return ballot{}, true, err
+		}
+		return copyBallot(item), true, nil
+	}
+	return ballot{}, false, nil
+}
+
 func (s *voteStore) ListTenant(tenantSlug string) []ballot {
 	if s == nil {
 		return nil
@@ -8409,6 +8671,12 @@ func normalizeBallot(item ballot) ballot {
 		item.UpdatedAt = item.CreatedAt
 	}
 	item.UpdatedAt = item.UpdatedAt.UTC().Truncate(time.Second)
+	if item.ReminderBeforeMinutes <= 0 {
+		item.ReminderBeforeMinutes = defaultBallotReminderBeforeMinutes
+	}
+	if item.ReminderBeforeMinutes > maxBallotReminderBeforeMinutes {
+		item.ReminderBeforeMinutes = maxBallotReminderBeforeMinutes
+	}
 	if len(item.Votes) == 0 {
 		item.Votes = nil
 	} else {
@@ -8428,6 +8696,25 @@ func normalizeBallot(item ballot) ballot {
 		item.Votes = votes
 		if len(item.Votes) == 0 {
 			item.Votes = nil
+		}
+	}
+	if len(item.ReminderSentAt) == 0 {
+		item.ReminderSentAt = nil
+	} else {
+		sent := map[string]time.Time{}
+		for email, at := range item.ReminderSentAt {
+			email = normalizeEmail(email)
+			if email == "" {
+				continue
+			}
+			if at.IsZero() {
+				at = item.UpdatedAt
+			}
+			sent[email] = at.UTC().Truncate(time.Second)
+		}
+		item.ReminderSentAt = sent
+		if len(item.ReminderSentAt) == 0 {
+			item.ReminderSentAt = nil
 		}
 	}
 	return item
@@ -8507,6 +8794,13 @@ func copyBallot(item ballot) ballot {
 			votes[email] = vote
 		}
 		item.Votes = votes
+	}
+	if len(item.ReminderSentAt) > 0 {
+		sent := map[string]time.Time{}
+		for email, at := range item.ReminderSentAt {
+			sent[email] = at
+		}
+		item.ReminderSentAt = sent
 	}
 	return item
 }
@@ -11335,7 +11629,7 @@ func normalizeAuditAction(raw string) string {
 	case auditActionLogin, auditActionInviteCreate, auditActionInviteUpdate, auditActionInviteDelete,
 		auditActionBuildingUpdate, auditActionHeroUpdate, auditActionUnitSave, auditActionUnitDelete,
 		auditActionDocumentUpload, auditActionDocumentDownload, auditActionDocumentReplace,
-		auditActionVoteCreate, auditActionVoteOpen, auditActionVoteClose,
+		auditActionVoteCreate, auditActionVoteOpen, auditActionVoteClose, auditActionVoteCast, auditActionVoteReminder,
 		auditActionParkingSettings, auditActionParkingMonth, auditActionIssueWorkflow:
 		return raw
 	default:
@@ -13233,6 +13527,7 @@ const pageTemplates = `
                           <span>{{.Type}}</span>
                           <span>{{.Weighting}}</span>
                           {{if .HasQuorum}}<span>Quorum {{.Quorum}}</span>{{end}}
+                          {{if .HasClosesAt}}<span>Erinnerung {{.ReminderLabel}}</span>{{end}}
                           {{if .HasOpensAt}}<span>ab {{.OpensAt}}</span>{{end}}
                           {{if .HasClosesAt}}<span>bis {{.ClosesAt}}</span>{{end}}
                         </div>
@@ -13302,7 +13597,7 @@ const pageTemplates = `
                     <div class="vote-manage-row">
                       <div>
                         <strong>{{.Title}}</strong>
-                        <div class="vote-meta"><span class="pill {{.StatusClass}}">{{.Status}}</span><span>{{.Type}}</span><span>{{.Weighting}}</span><span>{{.UpdatedAt}}</span></div>
+                        <div class="vote-meta"><span class="pill {{.StatusClass}}">{{.Status}}</span><span>{{.Type}}</span><span>{{.Weighting}}</span>{{if .HasClosesAt}}<span>Erinnerung {{.ReminderLabel}}</span>{{end}}<span>{{.UpdatedAt}}</span></div>
                       </div>
                       <div class="vote-manage-actions">
                         {{if .CanOpen}}<form method="post" action="/app/abstimmungen/open"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Öffnen</button></form>{{end}}
@@ -13345,6 +13640,7 @@ const pageTemplates = `
               <label for="ballot-opens">Öffnen optional<input id="ballot-opens" type="datetime-local" name="opens_at" value="{{.NowInput}}"></label>
               <label for="ballot-closes">Frist optional<input id="ballot-closes" type="datetime-local" name="closes_at"></label>
               <label for="ballot-quorum">Quorum in %<input id="ballot-quorum" name="quorum_percent" inputmode="decimal" placeholder="50"></label>
+              <label for="ballot-reminder">Erinnerung vor Frist (h)<input id="ballot-reminder" name="reminder_before_hours" inputmode="decimal" value="24"></label>
               <label class="full" for="ballot-options">Optionen<textarea id="ballot-options" name="options_text" required placeholder="Ja&#10;Nein&#10;Enthaltung"></textarea></label>
               <label class="full" for="ballot-description">Beschreibung<textarea id="ballot-description" name="description"></textarea></label>
             </div>
