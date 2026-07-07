@@ -3068,41 +3068,106 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 	if a.announcementReadStore != nil {
 		lastSeen = a.announcementReadStore.LastSeen(tenant.Slug, email)
 	}
+	unreadAnnouncements := 0
 	if a.announcementStore != nil {
-		announcements = announcementViewsWithReadState(a.announcementStore.Visible(tenant.Slug, now), now, false, lastSeen)
+		visible := a.announcementStore.Visible(tenant.Slug, now)
+		unreadAnnouncements = unreadAnnouncementCount(visible, lastSeen, now)
+		announcements = announcementViewsWithReadState(visible, now, false, lastSeen)
 		if len(announcements) > 3 {
 			announcements = announcements[:3]
 		}
 	}
+	eventCount := 0
 	events := []houseEventView{}
 	if a.eventStore != nil {
-		events = eventViews(a.eventStore.Upcoming(tenant.Slug, now), now)
+		upcoming := a.eventStore.Upcoming(tenant.Slug, now)
+		eventCount = len(upcoming)
+		events = eventViews(upcoming, now)
 		if len(events) > 4 {
 			events = events[:4]
 		}
 	}
-	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen)
+	issueURL := "/app/anliegen"
+	issueTitle := "Offene Anliegen"
+	if hasCapability(role, capabilityManageIssues) {
+		issueURL = "/app/anliegen/board"
+		issueTitle = "Offene Anliegen im Haus"
+	}
+	openIssues := []residentIssue{}
+	if a.issueStore != nil {
+		for _, item := range a.visibleIssuesForActor(tenant.Slug, email, role) {
+			if issueIsOpen(item) {
+				openIssues = append(openIssues, item)
+			}
+		}
+	}
+	issuePreviews := issueViewsForActor(openIssues, role, email)
+	if len(issuePreviews) > 2 {
+		issuePreviews = issuePreviews[:2]
+	}
+	documents := []documentView{}
+	documentCount := 0
+	if a.documentStore != nil {
+		visible := sortDocumentsForView(a.visibleDocumentsForActor(tenant.Slug, email, role), "newest")
+		documentCount = len(visible)
+		if len(visible) > 3 {
+			visible = visible[:3]
+		}
+		documents = a.documentViewsForActor(tenant.Slug, email, role, visible)
+	}
+	canSeeParking := isAdmin || profile.HasPermission(permissionParking)
+	parkingTitle := "Alles erledigt"
+	parkingDetail := "keine offenen Posten"
+	parkingPillClass := "ok"
+	if canSeeParking {
+		balance := a.parkingBalance(tenant.Slug)
+		if balance.Outstanding > 0 {
+			parkingTitle = "Offen " + formatEUR(balance.Outstanding)
+			parkingDetail = "für die Stellplatznutzung"
+			parkingPillClass = "info"
+		}
+		if balance.Overdue > 0 {
+			parkingDetail = "Überfällig " + formatEUR(balance.Overdue)
+			parkingPillClass = "dringend"
+		}
+	}
 	a.render(w, "portal", map[string]any{
-		"Title":                  "WEG Portal",
-		"Tenant":                 tenant,
-		"Email":                  email,
-		"DisplayName":            profile.DisplayName(),
-		"Initials":               profile.Initials(),
-		"Role":                   role,
-		"IsAdmin":                isAdmin,
-		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
-		"CanManageAnnouncements": canManage,
-		"CanManageEvents":        canManageEvents(role),
-		"ActivePage":             "home",
-		"Digest":                 digest,
-		"HasDigest":              len(digest) > 0,
-		"DigestEmpty":            emptyState("Nichts Neues", "Aktuell gibt es keine ungelesenen Aushänge, offenen Anliegen oder anstehenden Termine."),
-		"Announcements":          announcements,
-		"HasAnnouncements":       len(announcements) > 0,
-		"AnnouncementsEmpty":     emptyStateAction("Noch keine Beiträge", "Sobald die Verwaltung einen Aushang veröffentlicht, erscheint er hier.", "/app/announcements", "Archiv öffnen"),
-		"Events":                 events,
-		"HasEvents":              len(events) > 0,
-		"EventsEmpty":            emptyStateAction("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier.", "/app/events", "Termine öffnen"),
+		"Title":                     "WEG Portal",
+		"Tenant":                    tenant,
+		"Email":                     email,
+		"DisplayName":               profile.DisplayName(),
+		"Initials":                  profile.Initials(),
+		"Role":                      role,
+		"IsAdmin":                   isAdmin,
+		"CanSeeParking":             canSeeParking,
+		"CanManageAnnouncements":    canManage,
+		"CanManageEvents":           canManageEvents(role),
+		"ActivePage":                "home",
+		"UnreadAnnouncements":       unreadAnnouncements,
+		"AnnouncementSummaryDetail": pluralizeCount(unreadAnnouncements, "ungelesener Beitrag", "ungelesene Beiträge"),
+		"EventCount":                eventCount,
+		"EventSummaryDetail":        pluralizeCount(eventCount, "Termin geplant", "Termine geplant"),
+		"IssueCount":                len(openIssues),
+		"IssueSummaryTitle":         issueTitle,
+		"IssueSummaryURL":           issueURL,
+		"IssueSummaryDetail":        pluralizeCount(len(openIssues), "offenes Anliegen", "offene Anliegen"),
+		"DashboardIssues":           issuePreviews,
+		"HasDashboardIssues":        len(issuePreviews) > 0,
+		"DashboardIssuesEmpty":      emptyStateAction("Alles erledigt", "Aktuell sind keine offenen Anliegen sichtbar.", issueURL, "Anliegen öffnen"),
+		"DashboardDocuments":        documents,
+		"HasDashboardDocuments":     len(documents) > 0,
+		"DocumentCount":             documentCount,
+		"DocumentSummaryDetail":     pluralizeCount(documentCount, "Dokument sichtbar", "Dokumente sichtbar"),
+		"DashboardDocumentsEmpty":   emptyStateAction("Noch keine Dokumente", "Sichtbare Unterlagen erscheinen hier nach Rolle und Berechtigung.", "/app/dokumente", "Dokumente öffnen"),
+		"ParkingStatusTitle":        parkingTitle,
+		"ParkingStatusDetail":       parkingDetail,
+		"ParkingStatusClass":        parkingPillClass,
+		"Announcements":             announcements,
+		"HasAnnouncements":          len(announcements) > 0,
+		"AnnouncementsEmpty":        emptyStateAction("Noch keine Beiträge", "Sobald die Verwaltung einen Aushang veröffentlicht, erscheint er hier.", "/app/announcements", "Archiv öffnen"),
+		"Events":                    events,
+		"HasEvents":                 len(events) > 0,
+		"EventsEmpty":               emptyStateAction("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier.", "/app/events", "Termine öffnen"),
 	})
 }
 
@@ -13308,7 +13373,30 @@ const pageTemplates = `
     .banner::before { content: ""; position: absolute; inset: 0; background: url('{{.Tenant.HeroImageURL}}') center 47% / cover no-repeat; }
     .banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(23,32,25,.1), rgba(247,243,234,.72) 76%, rgba(247,243,234,.92)); }
     .banner-kicker { position: absolute; left: clamp(28px,4vw,44px); bottom: 18px; color: var(--gold-ink); font-size: 12px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
-    .home-grid { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(340px,.85fr); gap: 22px; align-items: start; }
+    .home-grid { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(360px,.95fr); gap: 22px; align-items: start; }
+    .home-stack { display: grid; gap: 22px; min-width: 0; }
+    .home-status-panel { grid-column: 1 / -1; }
+    .home-status-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 10px; }
+    .status-card { min-width: 0; display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px; background: var(--panel-soft); color: inherit; text-decoration: none; }
+    .status-card:hover { border-color: var(--gold); }
+    .status-icon { width: 42px; height: 42px; border-radius: var(--radius-sm); display: grid; place-items: center; background: rgba(200,153,63,.14); color: var(--gold-ink); }
+    .status-icon svg { width: 23px; height: 23px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .status-card strong { display: block; font-family: var(--font-serif); font-size: 21px; line-height: 1.05; }
+    .status-card span { display: block; min-width: 0; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
+    .status-card .status-label { color: var(--soft); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .home-list { display: grid; gap: 10px; }
+    .home-list-row { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; background: var(--panel-soft); color: inherit; text-decoration: none; }
+    .home-list-row:hover { border-color: var(--gold); }
+    .home-list-row svg { width: 21px; height: 21px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .home-list-icon { width: 42px; height: 42px; border-radius: var(--radius-sm); display: grid; place-items: center; background: rgba(200,153,63,.12); color: var(--gold-ink); }
+    .home-list-row strong { display: block; font-size: 15px; overflow-wrap: anywhere; }
+    .home-list-row span { display: block; margin-top: 3px; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
+    .home-card-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .parking-summary { display: grid; grid-template-columns: 54px minmax(0,1fr) auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: linear-gradient(90deg, rgba(76,103,138,.08), rgba(251,248,240,.92)); }
+    .parking-summary .status-icon { width: 54px; height: 54px; background: rgba(76,103,138,.12); color: #365475; }
+    .parking-summary strong { display: block; font-family: var(--font-serif); font-size: 20px; line-height: 1.15; }
+    .parking-summary p { margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .parking-summary .pill, .home-list-row .pill { justify-self: end; }
     .entries { display: grid; gap: 22px; }
     .entry + .entry { border-top: 1px solid var(--line); padding-top: 22px; }
     .entry-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
@@ -13548,6 +13636,10 @@ const pageTemplates = `
 	      .filter-form.document-filter { grid-template-columns: 1fr; }
       .dialog-grid { grid-template-columns: 1fr; }
       .empty-state { grid-template-columns: 1fr; }
+      .home-status-grid { grid-template-columns: 1fr; }
+      .home-list-row, .parking-summary { grid-template-columns: 1fr; }
+      .parking-summary .pill, .home-list-row .pill { justify-self: start; }
+      .home-list-row .quick-arrow { display: none; }
       .quick-arrow { display: none; }
     }
   </style>
@@ -13622,80 +13714,153 @@ const pageTemplates = `
       <section class="page">
         <div>
           <h1>Hausüberblick</h1>
-          <p class="lede">Aktuelle Informationen der Hausgemeinschaft und direkte Wege zu den freigeschalteten Bereichen.</p>
+          <p class="lede">Aktuelle Informationen, offene Punkte und die wichtigsten nächsten Schritte der Hausgemeinschaft.</p>
         </div>
         <div class="home-grid">
-          <section class="panel digest-panel">
+          <section class="panel home-status-panel">
             <div class="section-head">
               <div class="kicker">Was ist neu</div>
             </div>
-            {{if .HasDigest}}
-              <div class="quick-list">
-                {{range .Digest}}
-                  <a class="quick-row" href="{{.URL}}"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg><div><h3>{{.Title}}</h3><p>{{.Detail}}</p></div><span class="pill unread">{{.Badge}}</span></a>
-                {{end}}
-              </div>
-            {{else}}
-              {{template "emptyState" .DigestEmpty}}
-            {{end}}
-          </section>
-          <section class="panel">
-            <div class="section-head">
-              <div class="kicker">Aktueller Aushang</div>
-              {{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{end}}
-              <a class="button small" href="/app/announcements">Archiv öffnen</a>
+            <div class="home-status-grid">
+              <a class="status-card" href="/app/announcements">
+                <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span>
+                <span><span class="status-label">Neue Aushänge</span><strong>{{.UnreadAnnouncements}}</strong><span>{{.AnnouncementSummaryDetail}}</span></span>
+              </a>
+              <a class="status-card" href="/app/events">
+                <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/></svg></span>
+                <span><span class="status-label">Kommende Termine</span><strong>{{.EventCount}}</strong><span>{{.EventSummaryDetail}}</span></span>
+              </a>
+              <a class="status-card" href="{{.IssueSummaryURL}}">
+                <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>
+                <span><span class="status-label">{{.IssueSummaryTitle}}</span><strong>{{.IssueCount}}</strong><span>{{.IssueSummaryDetail}}</span></span>
+              </a>
+              <a class="status-card" href="/app/dokumente">
+                <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>
+                <span><span class="status-label">Dokumente</span><strong>{{.DocumentCount}}</strong><span>{{.DocumentSummaryDetail}}</span></span>
+              </a>
+              {{if .CanSeeParking}}
+                <a class="status-card" href="/app/parking">
+                  <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>
+                  <span><span class="status-label">Parkplatz</span><strong>{{.ParkingStatusTitle}}</strong><span>{{.ParkingStatusDetail}}</span></span>
+                </a>
+              {{end}}
             </div>
-            {{if .HasAnnouncements}}
-              <div class="entries">
-                {{range .Announcements}}
-                  <article class="entry">
-                    <div class="entry-head">
-                      <div>
-                        <h3><a href="/app/announcements">{{.Title}}</a></h3>
-                        <div class="entry-meta">
-                          <span class="pill {{.CategoryClass}}">{{.Category}}</span>
-                          {{if .Unread}}<span class="pill unread">neu</span>{{end}}
-                          {{if .Pinned}}<span class="pill">Fixiert</span>{{end}}
-                          <span>{{.PublishedAt}}</span>
+          </section>
+
+          <div class="home-stack">
+            <section class="panel">
+              <div class="section-head">
+                <div class="kicker">Aktueller Aushang</div>
+                {{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{end}}
+                <a class="button small" href="/app/announcements">Archiv öffnen</a>
+              </div>
+              {{if .HasAnnouncements}}
+                <div class="entries">
+                  {{range .Announcements}}
+                    <article class="entry">
+                      <div class="entry-head">
+                        <div>
+                          <h3><a href="/app/announcements">{{.Title}}</a></h3>
+                          <div class="entry-meta">
+                            <span class="pill {{.CategoryClass}}">{{.Category}}</span>
+                            {{if .Unread}}<span class="pill unread">neu</span>{{end}}
+                            {{if .Pinned}}<span class="pill">Fixiert</span>{{end}}
+                            <span>{{.PublishedAt}}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div class="entry-body">{{.BodyHTML}}</div>
-                  </article>
-                {{end}}
+                      <div class="entry-body">{{.BodyHTML}}</div>
+                    </article>
+                  {{end}}
+                </div>
+              {{else}}
+                {{template "emptyState" .AnnouncementsEmpty}}
+              {{end}}
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div class="kicker">Offene Anliegen</div>
+                <a class="button small" href="{{.IssueSummaryURL}}">Anliegen öffnen</a>
               </div>
-            {{else}}
-              {{template "emptyState" .AnnouncementsEmpty}}
-            {{end}}
-          </section>
-          <section class="panel">
-            <div class="kicker">Nächste Termine</div>
-            {{if .HasEvents}}
-              <div class="agenda-list">
-                {{range .Events}}
-                  <a class="event-card" href="/app/events">
-                    <span class="date-badge"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
-                    <span class="event-info">
-                      <h3>{{.Title}}</h3>
-                      <span class="event-meta"><span class="pill {{.CategoryClass}}">{{.Category}}</span><span>{{.TimeRange}}</span>{{if .HasLocation}}<span>{{.Location}}</span>{{end}}</span>
-                    </span>
-                  </a>
-                {{end}}
+              {{if .HasDashboardIssues}}
+                <div class="home-list">
+                  {{range .DashboardIssues}}
+                    <a class="home-list-row" href="{{$.IssueSummaryURL}}">
+                      <span class="home-list-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>
+                      <span><strong>{{.Title}}</strong><span>{{.Priority}} · {{.CreatedAt}}{{if .Location}} · {{.Location}}{{end}}</span></span>
+                      <span class="pill {{.StatusClass}}">{{.Status}}</span>
+                    </a>
+                  {{end}}
+                </div>
+              {{else}}
+                {{template "emptyState" .DashboardIssuesEmpty}}
+              {{end}}
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div class="kicker">Dokumente</div>
+                <a class="button small" href="/app/dokumente">Dokumente öffnen</a>
               </div>
-            {{else}}
-              {{template "emptyState" .EventsEmpty}}
+              {{if .HasDashboardDocuments}}
+                <div class="home-list">
+                  {{range .DashboardDocuments}}
+                    <a class="home-list-row" href="/app/dokumente">
+                      <span class="home-list-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>
+                      <span><strong>{{.Title}}</strong><span>{{.Category}} · {{.Size}} · {{.UploadedAt}}</span></span>
+                      <span class="quick-arrow">›</span>
+                    </a>
+                  {{end}}
+                </div>
+                <div class="home-card-actions"><a class="button small" href="/app/dokumente">Alle Dokumente anzeigen</a></div>
+              {{else}}
+                {{template "emptyState" .DashboardDocumentsEmpty}}
+              {{end}}
+            </section>
+          </div>
+
+          <div class="home-stack">
+            <section class="panel">
+              <div class="section-head">
+                <div class="kicker">Nächste Termine</div>
+                <a class="button small" href="/app/events">Termine öffnen</a>
+              </div>
+              {{if .HasEvents}}
+                <div class="agenda-list">
+                  {{range .Events}}
+                    <a class="event-card" href="/app/events">
+                      <span class="date-badge"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
+                      <span class="event-info">
+                        <h3>{{.Title}}</h3>
+                        <span class="event-meta"><span class="pill {{.CategoryClass}}">{{.Category}}</span><span>{{.TimeRange}}</span>{{if .HasLocation}}<span>{{.Location}}</span>{{end}}</span>
+                      </span>
+                    </a>
+                  {{end}}
+                </div>
+              {{else}}
+                {{template "emptyState" .EventsEmpty}}
+              {{end}}
+            </section>
+
+            {{if .CanSeeParking}}
+              <section class="panel">
+                <div class="section-head">
+                  <div class="kicker">Parkplatznutzung</div>
+                  <a class="button small" href="/app/parking">Parkplatz öffnen</a>
+                </div>
+                <div class="parking-summary">
+                  <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>
+                  <span><strong>{{.ParkingStatusTitle}}</strong><p>{{.ParkingStatusDetail}}</p></span>
+                  <span class="pill {{.ParkingStatusClass}}">{{.ParkingStatusTitle}}</span>
+                </div>
+                <div class="home-card-actions">
+                  <a class="button small" href="/app/parking">Nutzungsübersicht</a>
+                  {{if .IsAdmin}}<a class="button small" href="/app/parking/settings">Abrechnungen</a>{{end}}
+                </div>
+              </section>
             {{end}}
-            <div class="kicker">Schnellzugriff</div>
-            <div class="quick-list">
-              <a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><div><h3>Aushang</h3><p>Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p></div>{{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
-              <a class="quick-row" href="/app/events"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg><div><h3>Termine</h3><p>Versammlungen, Wartungen, Fristen und gemeinsame Hausereignisse.</p></div><span class="quick-arrow">›</span></a>
-              <a class="quick-row" href="/app/kontakte"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg><div><h3>Kontakte</h3><p>Verwaltung, Notdienst, Beirat und freigegebene Kontakte.</p></div><span class="quick-arrow">›</span></a>
-              <a class="quick-row" href="/app/dokumente"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><div><h3>Dokumente</h3><p>Protokolle, Abrechnungen und Unterlagen nach Berechtigung.</p></div><span class="quick-arrow">›</span></a>
-              <a class="quick-row" href="/app/anliegen"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><div><h3>Anliegen</h3><p>Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.</p></div>{{if .HasOpenIssues}}<span class="pill unread">{{.OpenIssues}} offen</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
-              {{if .CanSeeParking}}<a class="quick-row" href="/app/parking"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg><div><h3>Parkplatznutzung</h3><p>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</p></div><span class="quick-arrow">›</span></a>{{end}}
-              {{if .CanManageUsers}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
-            </div>
-          </section>
+          </div>
         </div>
       </section>
     </main>

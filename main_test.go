@@ -2457,6 +2457,36 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 	}
 }
 
+func TestPortalDashboardShowsRoleScopedDocumentsAndParking(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["parker@example.com"] = userProfile{Email: "parker@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+
+	upload := authedMultipartFileRequest(t, a, "manager@example.com", "/app/dokumente", map[string]string{
+		"title":      "Hausordnung",
+		"category":   documentCategoryRules,
+		"visibility": documentVisibilityAllResidents,
+	}, "document", "hausordnung.pdf", []byte("%PDF-1.4\n% weg portal test\n"), a.uploadDocument)
+	if upload.Code != http.StatusSeeOther {
+		t.Fatalf("upload status = %d, want redirect", upload.Code)
+	}
+
+	parker := authedRequest(t, a, "parker@example.com", "/app", a.portal).Body.String()
+	for _, want := range []string{"Dokumente", "Hausordnung", "Parkplatznutzung", "Alles erledigt"} {
+		if !strings.Contains(parker, want) {
+			t.Fatalf("parking user dashboard should contain %q", want)
+		}
+	}
+
+	resident := authedRequest(t, a, "resident@example.com", "/app", a.portal).Body.String()
+	if !strings.Contains(resident, "Hausordnung") {
+		t.Fatal("resident dashboard should show all-resident documents")
+	}
+	if strings.Contains(resident, "Parkplatznutzung") || strings.Contains(resident, `href="/app/parking"`) {
+		t.Fatal("resident without parking permission must not see parking dashboard links")
+	}
+}
+
 func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
@@ -2545,13 +2575,13 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 	if pinnedIndex < 0 || normalIndex < 0 || pinnedIndex > normalIndex {
 		t.Fatalf("portal should render pinned current announcement before normal current announcement:\n%s", body)
 	}
-	for _, forbidden := range []string{"Alter Hinweis", "Geplanter Hinweis", "info-card", `class="quick-row disabled"`} {
+	for _, forbidden := range []string{"Alter Hinweis", "Geplanter Hinweis", "info-card", `class="quick-row disabled"`, "Schnellzugriff", `class="quick-row" href="/app/announcements"`} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("portal must not contain %q", forbidden)
 		}
 	}
-	if !strings.Contains(body, `<a class="quick-row" href="/app/announcements"`) {
-		t.Fatal("portal quick rows should be live links")
+	if !strings.Contains(body, `href="/app/announcements"`) || !strings.Contains(body, "Aktueller Aushang") {
+		t.Fatal("portal should keep the announcement card and archive link")
 	}
 }
 
