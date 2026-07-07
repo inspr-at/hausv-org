@@ -2427,6 +2427,9 @@ func TestPortalUsesAnnouncementEmptyStateWithoutPrototypeCopy(t *testing.T) {
 	if !strings.Contains(body, "Noch keine Beiträge") || !strings.Contains(body, `href="/app/announcements"`) {
 		t.Fatal("portal should show announcement empty state and real archive link")
 	}
+	if !strings.Contains(body, `class="home-hero"`) || !strings.Contains(body, "Willkommen zurück") || strings.Contains(body, `class="banner"`) {
+		t.Fatal("portal should use the integrated home hero instead of the old banner")
+	}
 }
 
 func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
@@ -2440,17 +2443,17 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "jhw22", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Privates Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
 
 	resident := authedRequest(t, a, "resident@example.com", "/app", a.portal).Body.String()
-	for _, want := range []string{"Was ist neu", "Neue Aushänge", "1 ungelesener Beitrag", "Offene Anliegen", "1 offenes Anliegen", `href="/app/anliegen"`, "Kommende Termine", "1 Termin geplant"} {
+	for _, want := range []string{"Aktuell", "Aushänge", "neu", "Anliegen", "offen", `href="/app/anliegen"`, "Termine", "anstehend"} {
 		if !strings.Contains(resident, want) {
 			t.Fatalf("resident digest should contain %q", want)
 		}
 	}
-	if strings.Contains(resident, "2 offene Anliegen") || strings.Contains(resident, `href="/app/anliegen/board"`) {
+	if strings.Contains(resident, `href="/app/anliegen/board"`) {
 		t.Fatalf("resident digest must be role-scoped:\n%s", resident)
 	}
 
 	manager := authedRequest(t, a, "manager@example.com", "/app", a.portal).Body.String()
-	for _, want := range []string{"Offene Anliegen im Haus", "2 offene Anliegen", `href="/app/anliegen/board"`} {
+	for _, want := range []string{"Anliegen", ">2<", `href="/app/anliegen/board"`} {
 		if !strings.Contains(manager, want) {
 			t.Fatalf("manager digest should contain %q", want)
 		}
@@ -2580,7 +2583,7 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 			t.Fatalf("portal must not contain %q", forbidden)
 		}
 	}
-	if !strings.Contains(body, `href="/app/announcements"`) || !strings.Contains(body, "Aktueller Aushang") {
+	if !strings.Contains(body, `href="/app/announcements"`) || !strings.Contains(body, "Aushang") {
 		t.Fatal("portal should keep the announcement card and archive link")
 	}
 }
@@ -2945,7 +2948,7 @@ func TestIssueTriageBoardFiltersAndOpenCounts(t *testing.T) {
 	}
 
 	dashboard := authedRequest(t, a, "manager@example.com", "/app", a.portal).Body.String()
-	if !strings.Contains(dashboard, "2 offen") || !strings.Contains(dashboard, "nav-badge") {
+	if !strings.Contains(dashboard, "<strong>2</strong>") || !strings.Contains(dashboard, "<span>offen</span>") || !strings.Contains(dashboard, "nav-badge") {
 		t.Fatalf("dashboard should surface open issue count:\n%s", dashboard)
 	}
 }

@@ -622,10 +622,12 @@ type documentView struct {
 	UnitLabel       string
 	HasUnit         bool
 	Filename        string
+	FileKind        string
 	Size            string
 	ContentType     string
 	UploadedBy      string
 	UploadedAt      string
+	UploadedDate    string
 	DownloadURL     string
 	VersionLabel    string
 	ReplaceDialogID string
@@ -3118,16 +3120,19 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 	canSeeParking := isAdmin || profile.HasPermission(permissionParking)
 	parkingTitle := "Alles erledigt"
 	parkingDetail := "keine offenen Posten"
+	parkingSummaryDetail := "Für alle Stellplätze sind keine offenen Meldungen oder Zahlungsrückstände vorhanden."
 	parkingPillClass := "ok"
 	if canSeeParking {
 		balance := a.parkingBalance(tenant.Slug)
 		if balance.Outstanding > 0 {
 			parkingTitle = "Offen " + formatEUR(balance.Outstanding)
 			parkingDetail = "für die Stellplatznutzung"
+			parkingSummaryDetail = "Offene Beträge für die Stellplatznutzung sind vorhanden."
 			parkingPillClass = "info"
 		}
 		if balance.Overdue > 0 {
 			parkingDetail = "Überfällig " + formatEUR(balance.Overdue)
+			parkingSummaryDetail = "Überfällige Beträge sollten geprüft und zugeordnet werden."
 			parkingPillClass = "dringend"
 		}
 	}
@@ -3136,6 +3141,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"Tenant":                    tenant,
 		"Email":                     email,
 		"DisplayName":               profile.DisplayName(),
+		"GreetingName":              firstNonEmpty(profile.FirstName, profile.DisplayName()),
 		"Initials":                  profile.Initials(),
 		"Role":                      role,
 		"IsAdmin":                   isAdmin,
@@ -3160,7 +3166,9 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"DocumentSummaryDetail":     pluralizeCount(documentCount, "Dokument sichtbar", "Dokumente sichtbar"),
 		"DashboardDocumentsEmpty":   emptyStateAction("Noch keine Dokumente", "Sichtbare Unterlagen erscheinen hier nach Rolle und Berechtigung.", "/app/dokumente", "Dokumente öffnen"),
 		"ParkingStatusTitle":        parkingTitle,
+		"ParkingStatusValue":        parkingTitle,
 		"ParkingStatusDetail":       parkingDetail,
+		"ParkingSummaryDetail":      parkingSummaryDetail,
 		"ParkingStatusClass":        parkingPillClass,
 		"Announcements":             announcements,
 		"HasAnnouncements":          len(announcements) > 0,
@@ -8891,14 +8899,31 @@ func documentViewFrom(item documentRecord) documentView {
 		UnitLabel:       documentUnitLabel(item.UnitID),
 		HasUnit:         normalizeUnitID(item.UnitID) != "",
 		Filename:        item.Filename,
+		FileKind:        documentFileKind(item),
 		Size:            formatBytes(item.Size),
 		ContentType:     item.ContentType,
 		UploadedBy:      item.UploadedBy,
 		UploadedAt:      formatLocalDateTime(item.UploadedAt),
+		UploadedDate:    formatLocalDate(item.UploadedAt),
 		DownloadURL:     "/app/dokumente/" + url.PathEscape(item.ID) + "/download",
 		VersionLabel:    documentVersionLabel(item.Version),
 		ReplaceDialogID: "document-replace-" + item.ID,
 	}
+}
+
+func documentFileKind(item documentRecord) string {
+	contentType := strings.ToLower(strings.TrimSpace(item.ContentType))
+	if strings.Contains(contentType, "pdf") {
+		return "PDF"
+	}
+	if strings.HasPrefix(contentType, "image/") {
+		return "Bild"
+	}
+	ext := strings.TrimPrefix(strings.ToUpper(filepath.Ext(item.Filename)), ".")
+	if ext != "" && len([]rune(ext)) <= 5 {
+		return ext
+	}
+	return "Datei"
 }
 
 func documentVersionLabel(version int) string {
@@ -13369,20 +13394,34 @@ const pageTemplates = `
     .button.primary, button.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
     .button.small, button.small { min-height: 31px; padding: 6px 10px; font-size: 12px; }
     .button.ghost { background: transparent; }
-    .banner { position: relative; height: 128px; overflow: hidden; border-bottom: 1px solid var(--line); background: #e9e4d7; }
-    .banner::before { content: ""; position: absolute; inset: 0; background: url('{{.Tenant.HeroImageURL}}') center 47% / cover no-repeat; }
-    .banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(23,32,25,.1), rgba(247,243,234,.72) 76%, rgba(247,243,234,.92)); }
-    .banner-kicker { position: absolute; left: clamp(28px,4vw,44px); bottom: 18px; color: var(--gold-ink); font-size: 12px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    .home-hero { position: relative; min-height: 178px; display: flex; align-items: center; overflow: hidden; border-bottom: 1px solid var(--line); background: #f7f3ea; padding: 38px clamp(28px,4vw,72px) 36px; }
+    .home-hero::before { content: ""; position: absolute; inset: 0 0 0 34%; background: url('{{.Tenant.HeroImageURL}}') center 47% / cover no-repeat; }
+    .home-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(247,243,234,.98) 0%, rgba(247,243,234,.94) 34%, rgba(247,243,234,.58) 63%, rgba(247,243,234,.2) 100%); }
+    .home-hero-copy { position: relative; z-index: 1; width: min(720px,100%); }
+    .home-hero h1 { font-size: clamp(44px,5.2vw,58px); }
+    .home-hero p { margin-top: 15px; color: var(--muted); font-size: 16px; line-height: 1.5; }
+    .home-page { padding-top: 24px; }
     .home-grid { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(360px,.95fr); gap: 22px; align-items: start; }
     .home-stack { display: grid; gap: 22px; min-width: 0; }
-    .home-status-panel { grid-column: 1 / -1; }
-    .home-status-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 10px; }
-    .status-card { min-width: 0; display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px; background: var(--panel-soft); color: inherit; text-decoration: none; }
-    .status-card:hover { border-color: var(--gold); }
-    .status-icon { width: 42px; height: 42px; border-radius: var(--radius-sm); display: grid; place-items: center; background: rgba(200,153,63,.14); color: var(--gold-ink); }
-    .status-icon svg { width: 23px; height: 23px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .status-card strong { display: block; font-family: var(--font-serif); font-size: 21px; line-height: 1.05; }
-    .status-card span { display: block; min-width: 0; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
+    .home-grid .section-head { margin-bottom: 18px; }
+    .home-grid .section-head .kicker { margin-bottom: 0; }
+    .section-link { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; }
+    .section-link::after { content: "›"; color: var(--gold-ink); font-size: 21px; line-height: 1; }
+    .section-link:hover { color: var(--gold-ink); }
+    .home-status-panel { grid-column: 1 / -1; padding: 22px; }
+    .home-status-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+    .home-status-head .kicker { margin-bottom: 0; }
+    .home-status-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: 28px; align-items: center; }
+    .status-card { min-width: 0; display: grid; grid-template-columns: 56px minmax(0,1fr); gap: 14px; align-items: center; color: inherit; text-decoration: none; }
+    .status-card:hover strong { color: var(--gold-ink); }
+    .status-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: rgba(200,153,63,.14); color: var(--gold-ink); }
+    .status-icon svg { width: 25px; height: 25px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .status-card.status-announcements .status-icon { background: rgba(47,107,74,.12); color: var(--leaf); }
+    .status-card.status-events .status-icon { background: rgba(200,153,63,.15); color: var(--gold-ink); }
+    .status-card.status-issues .status-icon { background: rgba(158,42,43,.1); color: #9e2a2b; }
+    .status-card.status-parking .status-icon { background: rgba(76,103,138,.12); color: #365475; }
+    .status-card strong { display: block; font-family: var(--font-serif); font-size: 22px; line-height: 1.03; }
+    .status-card span { display: block; min-width: 0; color: var(--muted); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
     .status-card .status-label { color: var(--soft); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
     .home-list { display: grid; gap: 10px; }
     .home-list-row { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; background: var(--panel-soft); color: inherit; text-decoration: none; }
@@ -13391,11 +13430,31 @@ const pageTemplates = `
     .home-list-icon { width: 42px; height: 42px; border-radius: var(--radius-sm); display: grid; place-items: center; background: rgba(200,153,63,.12); color: var(--gold-ink); }
     .home-list-row strong { display: block; font-size: 15px; overflow-wrap: anywhere; }
     .home-list-row span { display: block; margin-top: 3px; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
-    .home-card-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
-    .parking-summary { display: grid; grid-template-columns: 54px minmax(0,1fr) auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: linear-gradient(90deg, rgba(76,103,138,.08), rgba(251,248,240,.92)); }
+    .home-card-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; }
+    .home-card-actions .section-link { min-height: 34px; padding: 0 2px; }
+    .home-events-list, .document-dashboard-list { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fffefb; }
+    .home-event-row { display: grid; grid-template-columns: 56px minmax(0,1fr) auto; gap: 14px; align-items: center; min-height: 74px; padding: 12px 14px; color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); }
+    .home-event-row:last-child { border-bottom: 0; }
+    .home-event-row:hover, .document-dashboard-row:hover { background: rgba(200,153,63,.07); }
+    .home-date { display: grid; justify-items: center; align-content: center; min-height: 48px; color: var(--ink); font-weight: 800; text-transform: uppercase; }
+    .home-date strong { font-family: var(--font-serif); font-size: 24px; line-height: 1; }
+    .home-date span { margin-top: 3px; font-size: 11px; letter-spacing: .06em; }
+    .home-event-copy strong { display: block; font-size: 14px; line-height: 1.25; overflow-wrap: anywhere; }
+    .home-event-copy span { display: block; margin-top: 5px; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
+    .document-dashboard-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto auto 24px; gap: 14px; align-items: center; min-height: 44px; padding: 10px 12px; color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+    .document-dashboard-row:last-child { border-bottom: 0; }
+    .document-file-title { min-width: 0; display: inline-flex; align-items: center; gap: 9px; }
+    .document-file-title svg, .document-download svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .document-file-title svg { flex: 0 0 auto; color: #b65045; }
+    .document-file-title strong { min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+    .document-dashboard-row > span:not(.document-file-title):not(.document-download) { color: var(--muted); white-space: nowrap; }
+    .document-download { color: var(--gold-ink); display: grid; place-items: center; }
+    .parking-summary { display: grid; grid-template-columns: 60px minmax(0,1fr) auto; gap: 15px; align-items: center; border: 1px solid #d9e1ea; border-radius: var(--radius-sm); padding: 16px; background: linear-gradient(90deg, rgba(76,103,138,.11), rgba(251,248,240,.94)); }
     .parking-summary .status-icon { width: 54px; height: 54px; background: rgba(76,103,138,.12); color: #365475; }
-    .parking-summary strong { display: block; font-family: var(--font-serif); font-size: 20px; line-height: 1.15; }
+    .parking-summary strong { display: block; font-family: var(--font-serif); font-size: 21px; line-height: 1.15; }
     .parking-summary p { margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .parking-check { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; justify-self: end; background: rgba(47,107,74,.12); color: var(--leaf); border: 1px solid rgba(47,107,74,.16); }
+    .parking-check svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .parking-summary .pill, .home-list-row .pill { justify-self: end; }
     .entries { display: grid; gap: 22px; }
     .entry + .entry { border-top: 1px solid var(--line); padding-top: 22px; }
@@ -13618,6 +13677,11 @@ const pageTemplates = `
       .side-foot { grid-template-columns: 1fr; }
       .logout-form { justify-self: stretch; }
       .content-top { height: auto; min-height: 58px; flex-direction: column; align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
+      .home-hero { min-height: 224px; align-items: flex-end; padding: 96px 18px 30px; }
+      .home-hero::before { inset: 0; background-position: center top; }
+      .home-hero::after { background: linear-gradient(180deg, rgba(247,243,234,.28) 0%, rgba(247,243,234,.86) 50%, rgba(247,243,234,.98) 100%); }
+      .home-hero h1 { font-size: clamp(40px,12vw,52px); }
+      .home-hero p { font-size: 15px; }
       .page { padding-left: 18px; padding-right: 18px; }
       h1 { font-size: clamp(36px,12vw,48px); }
 	      .metric-grid { grid-template-columns: 1fr; }
@@ -13636,9 +13700,16 @@ const pageTemplates = `
 	      .filter-form.document-filter { grid-template-columns: 1fr; }
       .dialog-grid { grid-template-columns: 1fr; }
       .empty-state { grid-template-columns: 1fr; }
+      .home-status-head { display: grid; gap: 12px; }
       .home-status-grid { grid-template-columns: 1fr; }
+      .status-card { grid-template-columns: 54px minmax(0,1fr); }
       .home-list-row, .parking-summary { grid-template-columns: 1fr; }
+      .home-event-row { grid-template-columns: 52px minmax(0,1fr); }
+      .document-dashboard-row { grid-template-columns: 1fr; gap: 5px; align-items: start; }
+      .document-dashboard-row > span:not(.document-file-title):not(.document-download) { white-space: normal; }
+      .document-download { justify-self: start; }
       .parking-summary .pill, .home-list-row .pill { justify-self: start; }
+      .parking-check { justify-self: start; }
       .home-list-row .quick-arrow { display: none; }
       .quick-arrow { display: none; }
     }
@@ -13710,38 +13781,36 @@ const pageTemplates = `
 {{template "appOpen" .}}
     <main class="app-main">
       <div class="content-top"><span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg>Hausüberblick</span></div>
-      <div class="banner"><span class="banner-kicker">WEG Portal · {{.Tenant.Address}}</span></div>
-      <section class="page">
-        <div>
+      <section class="home-hero">
+        <div class="home-hero-copy">
           <h1>Hausüberblick</h1>
-          <p class="lede">Aktuelle Informationen, offene Punkte und die wichtigsten nächsten Schritte der Hausgemeinschaft.</p>
+          <p>Willkommen zurück, {{.GreetingName}}! Hier finden Sie einen schnellen Überblick über alles Wichtige.</p>
         </div>
+      </section>
+      <section class="page home-page">
         <div class="home-grid">
           <section class="panel home-status-panel">
-            <div class="section-head">
-              <div class="kicker">Was ist neu</div>
+            <div class="home-status-head">
+              <div class="kicker">Aktuell</div>
+              <a class="section-link" href="/app/announcements">Archiv öffnen</a>
             </div>
             <div class="home-status-grid">
-              <a class="status-card" href="/app/announcements">
+              <a class="status-card status-announcements" href="/app/announcements">
                 <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span>
-                <span><span class="status-label">Neue Aushänge</span><strong>{{.UnreadAnnouncements}}</strong><span>{{.AnnouncementSummaryDetail}}</span></span>
+                <span><span class="status-label">Aushänge</span><strong>{{.UnreadAnnouncements}}</strong><span>neu</span></span>
               </a>
-              <a class="status-card" href="/app/events">
+              <a class="status-card status-events" href="/app/events">
                 <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/></svg></span>
-                <span><span class="status-label">Kommende Termine</span><strong>{{.EventCount}}</strong><span>{{.EventSummaryDetail}}</span></span>
+                <span><span class="status-label">Termine</span><strong>{{.EventCount}}</strong><span>anstehend</span></span>
               </a>
-              <a class="status-card" href="{{.IssueSummaryURL}}">
+              <a class="status-card status-issues" href="{{.IssueSummaryURL}}">
                 <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>
-                <span><span class="status-label">{{.IssueSummaryTitle}}</span><strong>{{.IssueCount}}</strong><span>{{.IssueSummaryDetail}}</span></span>
-              </a>
-              <a class="status-card" href="/app/dokumente">
-                <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>
-                <span><span class="status-label">Dokumente</span><strong>{{.DocumentCount}}</strong><span>{{.DocumentSummaryDetail}}</span></span>
+                <span><span class="status-label">Anliegen</span><strong>{{.IssueCount}}</strong><span>offen</span></span>
               </a>
               {{if .CanSeeParking}}
-                <a class="status-card" href="/app/parking">
+                <a class="status-card status-parking" href="/app/parking">
                   <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>
-                  <span><span class="status-label">Parkplatz</span><strong>{{.ParkingStatusTitle}}</strong><span>{{.ParkingStatusDetail}}</span></span>
+                  <span><span class="status-label">Parkplatz</span><strong>{{.ParkingStatusValue}}</strong><span>{{.ParkingStatusDetail}}</span></span>
                 </a>
               {{end}}
             </div>
@@ -13750,9 +13819,9 @@ const pageTemplates = `
           <div class="home-stack">
             <section class="panel">
               <div class="section-head">
-                <div class="kicker">Aktueller Aushang</div>
+                <div class="kicker">Aushang</div>
                 {{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{end}}
-                <a class="button small" href="/app/announcements">Archiv öffnen</a>
+                <a class="section-link" href="/app/announcements">Archiv öffnen</a>
               </div>
               {{if .HasAnnouncements}}
                 <div class="entries">
@@ -13781,7 +13850,7 @@ const pageTemplates = `
             <section class="panel">
               <div class="section-head">
                 <div class="kicker">Offene Anliegen</div>
-                <a class="button small" href="{{.IssueSummaryURL}}">Anliegen öffnen</a>
+                <a class="section-link" href="{{.IssueSummaryURL}}">Anliegen öffnen</a>
               </div>
               {{if .HasDashboardIssues}}
                 <div class="home-list">
@@ -13801,19 +13870,21 @@ const pageTemplates = `
             <section class="panel">
               <div class="section-head">
                 <div class="kicker">Dokumente</div>
-                <a class="button small" href="/app/dokumente">Dokumente öffnen</a>
+                <a class="section-link" href="/app/dokumente">Dokumente öffnen</a>
               </div>
               {{if .HasDashboardDocuments}}
-                <div class="home-list">
+                <div class="document-dashboard-list">
                   {{range .DashboardDocuments}}
-                    <a class="home-list-row" href="/app/dokumente">
-                      <span class="home-list-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>
-                      <span><strong>{{.Title}}</strong><span>{{.Category}} · {{.Size}} · {{.UploadedAt}}</span></span>
-                      <span class="quick-arrow">›</span>
+                    <a class="document-dashboard-row" href="{{.DownloadURL}}">
+                      <span class="document-file-title"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><strong>{{.Title}}</strong></span>
+                      <span>{{.FileKind}}</span>
+                      <span>{{.Size}}</span>
+                      <span>{{.UploadedDate}}</span>
+                      <span class="document-download"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></span>
                     </a>
                   {{end}}
                 </div>
-                <div class="home-card-actions"><a class="button small" href="/app/dokumente">Alle Dokumente anzeigen</a></div>
+                <div class="home-card-actions"><a class="section-link" href="/app/dokumente">Alle Dokumente anzeigen</a></div>
               {{else}}
                 {{template "emptyState" .DashboardDocumentsEmpty}}
               {{end}}
@@ -13824,20 +13895,22 @@ const pageTemplates = `
             <section class="panel">
               <div class="section-head">
                 <div class="kicker">Nächste Termine</div>
-                <a class="button small" href="/app/events">Termine öffnen</a>
+                <a class="section-link" href="/app/events">Termine öffnen</a>
               </div>
               {{if .HasEvents}}
-                <div class="agenda-list">
+                <div class="home-events-list">
                   {{range .Events}}
-                    <a class="event-card" href="/app/events">
-                      <span class="date-badge"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
-                      <span class="event-info">
-                        <h3>{{.Title}}</h3>
-                        <span class="event-meta"><span class="pill {{.CategoryClass}}">{{.Category}}</span><span>{{.TimeRange}}</span>{{if .HasLocation}}<span>{{.Location}}</span>{{end}}</span>
+                    <a class="home-event-row" href="/app/events">
+                      <span class="home-date"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
+                      <span class="home-event-copy">
+                        <strong>{{.Title}}</strong>
+                        <span>{{.StartsAt}}{{if .HasLocation}} · {{.Location}}{{end}}</span>
                       </span>
+                      <span class="quick-arrow">›</span>
                     </a>
                   {{end}}
                 </div>
+                <div class="home-card-actions"><a class="section-link" href="/app/events">Alle Termine anzeigen</a></div>
               {{else}}
                 {{template "emptyState" .EventsEmpty}}
               {{end}}
@@ -13847,12 +13920,16 @@ const pageTemplates = `
               <section class="panel">
                 <div class="section-head">
                   <div class="kicker">Parkplatznutzung</div>
-                  <a class="button small" href="/app/parking">Parkplatz öffnen</a>
+                  <a class="section-link" href="/app/parking">Parkplatz öffnen</a>
                 </div>
                 <div class="parking-summary">
                   <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>
-                  <span><strong>{{.ParkingStatusTitle}}</strong><p>{{.ParkingStatusDetail}}</p></span>
-                  <span class="pill {{.ParkingStatusClass}}">{{.ParkingStatusTitle}}</span>
+                  <span><strong>{{.ParkingStatusTitle}}</strong><p>{{.ParkingSummaryDetail}}</p></span>
+                  {{if eq .ParkingStatusClass "ok"}}
+                    <span class="parking-check"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>
+                  {{else}}
+                    <span class="pill {{.ParkingStatusClass}}">{{.ParkingStatusTitle}}</span>
+                  {{end}}
                 </div>
                 <div class="home-card-actions">
                   <a class="button small" href="/app/parking">Nutzungsübersicht</a>
