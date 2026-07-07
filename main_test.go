@@ -78,6 +78,7 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 		`Shared components: panel, button, pill, quick-row, table-wrap, dialog, flash and empty-state.`,
 		`.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-6); box-shadow: var(--shadow-panel); }`,
 		`.empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm);`,
+		`.parking-access .access-table, .parking-access .access-table tbody, .parking-access .access-table tr, .parking-access .access-table td { display: block; width: 100%; min-width: 0; }`,
 	}
 	for _, want := range wants {
 		if !strings.Contains(pageTemplates, want) {
@@ -1779,6 +1780,46 @@ func TestParkingAccessPageKeepsEnvUsersReadOnly(t *testing.T) {
 	}
 	if parking := authedRequest(t, a, "env-parker@example.com", "/app/parking", a.parking); parking.Code != http.StatusNotFound {
 		t.Fatalf("env parking status = %d, want 404", parking.Code)
+	}
+}
+
+func TestNavigationActionsStayScopedToRelevantPages(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	portal := authedRequest(t, a, "admin@example.com", "/app", a.portal)
+	if portal.Code != http.StatusOK {
+		t.Fatalf("portal status = %d, want 200", portal.Code)
+	}
+	if strings.Contains(portal.Body.String(), "Aushang verwalten") {
+		t.Fatal("portal should not duplicate the Aushang destination with an admin-only quick link")
+	}
+
+	access := authedRequest(t, a, "admin@example.com", "/app/settings/parking-access", a.parkingAccessSettings)
+	if access.Code != http.StatusOK {
+		t.Fatalf("parking access status = %d, want 200", access.Code)
+	}
+	accessBody := access.Body.String()
+	for _, want := range []string{`action="/app/parking/reminders"`, `name="return_to" value="parking_access"`} {
+		if !strings.Contains(accessBody, want) {
+			t.Fatalf("parking access page missing %q", want)
+		}
+	}
+
+	for _, tc := range []struct {
+		name string
+		path string
+		fn   http.HandlerFunc
+	}{
+		{name: "building", path: "/app/settings/building", fn: a.buildingSettings},
+		{name: "profile", path: "/app/settings/profile", fn: a.profileSettings},
+	} {
+		rr := authedRequest(t, a, "admin@example.com", tc.path, tc.fn)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("%s status = %d, want 200", tc.name, rr.Code)
+		}
+		if strings.Contains(rr.Body.String(), `action="/app/parking/reminders"`) {
+			t.Fatalf("%s page should not expose parking reminders", tc.name)
+		}
 	}
 }
 

@@ -13694,7 +13694,6 @@ const pageTemplates = `
               <a class="quick-row" href="/app/anliegen"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><div><h3>Anliegen</h3><p>Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.</p></div>{{if .HasOpenIssues}}<span class="pill unread">{{.OpenIssues}} offen</span>{{else}}<span class="quick-arrow">›</span>{{end}}</a>
               {{if .CanSeeParking}}<a class="quick-row" href="/app/parking"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg><div><h3>Parkplatznutzung</h3><p>Privater Bereich für die abgestimmte Nutzung des Stellplatzes.</p></div><span class="quick-arrow">›</span></a>{{end}}
               {{if .CanManageUsers}}<a class="quick-row" href="/app/settings/users"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg><div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div><span class="quick-arrow">›</span></a>{{end}}
-              {{if .CanManageAnnouncements}}<a class="quick-row" href="/app/announcements"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><div><h3>Aushang verwalten</h3><p>Beiträge verfassen, fixieren, planen und löschen.</p></div><span class="quick-arrow">›</span></a>{{end}}
             </div>
           </section>
         </div>
@@ -15063,7 +15062,7 @@ const pageTemplates = `
     <main class="app-main building">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Gebäude</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a><form method="post" action="/app/parking/reminders"><input type="hidden" name="return_to" value="parking_access"><button class="button" type="submit">Erinnerungen senden</button></form></div>
+        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a></div>
       </div>
       <section class="page wide">
         <div>
@@ -15335,7 +15334,7 @@ const pageTemplates = `
       .parking-access .access-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
       .parking-access .access-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
       @media (max-width: 680px) {
-        .parking-access .access-table, .parking-access .access-table tbody, .parking-access .access-table tr, .parking-access .access-table td { display: block; width: 100%; }
+        .parking-access .access-table, .parking-access .access-table tbody, .parking-access .access-table tr, .parking-access .access-table td { display: block; width: 100%; min-width: 0; }
         .parking-access .access-table thead { display: none; }
         .parking-access .access-table tr { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; background: var(--panel-soft); }
         .parking-access .access-table td { border-bottom: 0; padding: 7px 0; }
@@ -15346,7 +15345,7 @@ const pageTemplates = `
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz-Zugriff</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a></div>
+        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a><form method="post" action="/app/parking/reminders"><input type="hidden" name="return_to" value="parking_access"><button class="button" type="submit">Erinnerungen senden</button></form></div>
       </div>
       <section class="page parking-access">
         <div>
