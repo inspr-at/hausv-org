@@ -103,6 +103,11 @@ func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
 		`<span id="role-help" class="popup" role="tooltip">`,
 		`aria-label="E-Mail-Adresse" autocomplete="email" required`,
 		`aria-label="Kommentar oder Rückfrage"`,
+		`role="region" aria-label="Monatsabrechnung Parkplatznutzung"`,
+		`<caption class="sr-only">Monatsabrechnung Parkplatznutzung`,
+		`<th scope="row" class="month-cell">`,
+		`role="region" aria-label="Stundenwerte Parkplatznutzung"`,
+		`<caption class="sr-only">Stundenwerte Parkplatznutzung`,
 	}
 	for _, want := range wants {
 		if !strings.Contains(pageTemplates, want) {

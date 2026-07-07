@@ -13284,7 +13284,8 @@ const pageTemplates = `
     .content-top { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 clamp(28px,4vw,44px); border-bottom: 1px solid var(--line); background: rgba(255,254,251,.72); }
     .crumb { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
     .crumb svg, .action svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-    .page-actions { display: flex; align-items: center; gap: 10px; }
+    .page-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+    .page-actions form { min-width: 0; }
     .page { width: min(1220px,100%); margin: 0 auto; padding: 34px clamp(28px,4vw,44px) 0; display: grid; gap: 24px; }
     .page.wide { width: min(1280px,100%); }
     h1 { margin: 0; font-family: var(--font-serif); font-weight: 500; font-size: clamp(42px,5vw,54px); line-height: 1; }
@@ -13444,10 +13445,13 @@ const pageTemplates = `
     .bar { height: 9px; border-radius: var(--radius-pill); background: #ece5d6; overflow: hidden; }
     .bar span { display: block; height: 100%; min-width: 2px; border-radius: inherit; background: var(--gold); }
     .amount { font-weight: 800; font-variant-numeric: tabular-nums; }
-    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .table-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); }
+    .table-wrap:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
     table { width: 100%; border-collapse: collapse; min-width: 980px; }
     th, td { padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
     th { text-align: left; background: rgba(251,248,240,.7); }
+    tbody th { background: transparent; font-weight: 600; }
     td { font-size: 14px; }
     tbody tr:last-child td { border-bottom: 0; }
     .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -14739,26 +14743,27 @@ const pageTemplates = `
                 </a>
               {{end}}
             </div>
-            <div class="table-wrap">
-              <table aria-label="Monatsabrechnung Parkplatznutzung">
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Monatsabrechnung Parkplatznutzung">
+              <table>
+                <caption class="sr-only">Monatsabrechnung Parkplatznutzung mit Verbrauch, Preisen, Kosten, Zahlungsstatus und Aktionen.</caption>
                 <thead>
                   <tr>
-                    <th>Monat</th>
-                    <th class="num">Verbrauch</th>
-                    <th class="num">Ø aWATTar</th>
-                    <th class="num">Ø effektiv</th>
-                    <th class="num">Strom</th>
-                    <th class="num">Netzgeb.</th>
-                    <th class="num">Basis</th>
-                    <th class="num">Summe</th>
-                    <th>Status</th>
-                    <th>Aktionen</th>
+                    <th scope="col">Monat</th>
+                    <th scope="col" class="num">Verbrauch</th>
+                    <th scope="col" class="num">Ø aWATTar</th>
+                    <th scope="col" class="num">Ø effektiv</th>
+                    <th scope="col" class="num">Strom</th>
+                    <th scope="col" class="num">Netzgeb.</th>
+                    <th scope="col" class="num">Basis</th>
+                    <th scope="col" class="num">Summe</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Aktionen</th>
                   </tr>
                 </thead>
                 <tbody>
                   {{range .Accounting.Months}}
                     <tr>
-                      <td class="month-cell"><a href="{{.DetailPath}}"><strong>{{.MonthLabel}}</strong></a>{{if .Partial}}<span>Teilmonat</span>{{end}}<span>{{.HourCount}} Stunden</span></td>
+                      <th scope="row" class="month-cell"><a href="{{.DetailPath}}"><strong>{{.MonthLabel}}</strong></a>{{if .Partial}}<span>Teilmonat</span>{{end}}<span>{{.HourCount}} Stunden</span></th>
                       <td class="num">{{.KWh}}</td>
                       <td class="num">{{.AverageAwattar}}</td>
                       <td class="num">{{.EffectivePrice}}</td>
@@ -14845,23 +14850,24 @@ const pageTemplates = `
             <div><strong>Gewichtung</strong><span>Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.</span></div>
           </div>
           {{if .Detail.HasHours}}
-            <div class="table-wrap">
-              <table aria-label="Stundenwerte Parkplatznutzung">
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Stundenwerte Parkplatznutzung">
+              <table>
+                <caption class="sr-only">Stundenwerte Parkplatznutzung mit Verbrauch, aWATTar-Preis, Stromkosten, Netzgebühr, Summe und Gewichtung.</caption>
                 <thead>
                   <tr>
-                    <th title="Beginn der Abrechnungsstunde; jede Zeile umfasst diese Stunde.">Stunde</th>
-                    <th class="num" title="Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.">Verbrauch</th>
-                    <th class="num" title="Stündlicher aWATTar-Arbeitspreis ohne Netzgebühr.">Ø aWATTar</th>
-                    <th class="num" title="Verbrauch × aWATTar-Preis.">Strom</th>
-                    <th class="num" title="Verbrauch × in dieser Stunde gültige Netzgebühr.">Netzgeb.</th>
-                    <th class="num" title="Strom plus Netzgebühr für diese Stunde.">Summe</th>
-                    <th title="Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.">Gewichtung</th>
+                    <th scope="col" title="Beginn der Abrechnungsstunde; jede Zeile umfasst diese Stunde.">Stunde</th>
+                    <th scope="col" class="num" title="Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.">Verbrauch</th>
+                    <th scope="col" class="num" title="Stündlicher aWATTar-Arbeitspreis ohne Netzgebühr.">Ø aWATTar</th>
+                    <th scope="col" class="num" title="Verbrauch × aWATTar-Preis.">Strom</th>
+                    <th scope="col" class="num" title="Verbrauch × in dieser Stunde gültige Netzgebühr.">Netzgeb.</th>
+                    <th scope="col" class="num" title="Strom plus Netzgebühr für diese Stunde.">Summe</th>
+                    <th scope="col" title="Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.">Gewichtung</th>
                   </tr>
                 </thead>
                 <tbody>
                   {{range .Detail.Hours}}
                     <tr>
-                      <td title="{{.AtTitle}}">{{.AtLabel}}</td>
+                      <th scope="row" title="{{.AtTitle}}">{{.AtLabel}}</th>
                       <td class="num" title="{{.KWhTitle}}">{{.KWh}}</td>
                       <td class="num" title="{{.AverageAwattarTitle}}">{{.AverageAwattar}}</td>
                       <td class="num" title="{{.EnergyCostTitle}}">{{.EnergyCost}}</td>
