@@ -89,6 +89,7 @@ const (
 	auditActionUnitDelete       = "building.unit.delete"
 	auditActionParkingSettings  = "parking.settings"
 	auditActionParkingMonth     = "parking.month"
+	auditActionParkingReminder  = "parking.reminder"
 	auditActionIssueWorkflow    = "issue.workflow"
 	auditActionDocumentUpload   = "document.upload"
 	auditActionDocumentDownload = "document.download"
@@ -922,7 +923,12 @@ type parkingTariff struct {
 }
 
 type parkingMonthState struct {
-	Paid bool `json:"paid"`
+	Paid             bool                 `json:"paid"`
+	PaidAt           time.Time            `json:"paid_at,omitempty"`
+	PaidBy           string               `json:"paid_by,omitempty"`
+	PaymentMethod    string               `json:"payment_method,omitempty"`
+	PaymentReference string               `json:"payment_reference,omitempty"`
+	ReminderSentAt   map[string]time.Time `json:"reminder_sent_at,omitempty"`
 }
 
 type parkingStoredSample struct {
@@ -947,6 +953,12 @@ type parkingAccountingView struct {
 	HasTariffs       bool
 	Months           []parkingMonthView
 	HasMonths        bool
+	OutstandingValue float64
+	Outstanding      string
+	HasOutstanding   bool
+	OverdueValue     float64
+	Overdue          string
+	HasOverdue       bool
 	LastSampleLabel  string
 	HistoryAvailable bool
 }
@@ -959,31 +971,39 @@ type parkingTariffView struct {
 }
 
 type parkingMonthView struct {
-	Month           string
-	MonthLabel      string
-	DetailPath      string
-	PeriodLabel     string
-	KWhValue        float64
-	EnergyCostValue float64
-	GridCostValue   float64
-	BaseFeeValue    float64
-	TotalCostValue  float64
-	KWh             string
-	EnergyCost      string
-	GridCost        string
-	BaseFee         string
-	TotalCost       string
-	AverageAwattar  string
-	EffectivePrice  string
-	AveragePrice    string
-	Paid            bool
-	PaidLabel       string
-	TogglePaidValue string
-	ToggleLabel     string
-	ChartPercent    int
-	Partial         bool
-	SampleCount     int
-	HourCount       int
+	Month            string
+	MonthLabel       string
+	DetailPath       string
+	PeriodLabel      string
+	KWhValue         float64
+	EnergyCostValue  float64
+	GridCostValue    float64
+	BaseFeeValue     float64
+	TotalCostValue   float64
+	KWh              string
+	EnergyCost       string
+	GridCost         string
+	BaseFee          string
+	TotalCost        string
+	AverageAwattar   string
+	EffectivePrice   string
+	AveragePrice     string
+	Paid             bool
+	PaidLabel        string
+	PaidAtInput      string
+	PaidAtLabel      string
+	PaidBy           string
+	PaymentMethod    string
+	PaymentReference string
+	PaymentDetails   string
+	Outstanding      bool
+	Overdue          bool
+	TogglePaidValue  string
+	ToggleLabel      string
+	ChartPercent     int
+	Partial          bool
+	SampleCount      int
+	HourCount        int
 }
 
 type parkingMonthDetailView struct {
@@ -1077,6 +1097,7 @@ func main() {
 	mux.HandleFunc("GET /app/parking/export/{year}", a.parkingStatement)
 	mux.HandleFunc("POST /app/parking/settings", a.updateParkingSettings)
 	mux.HandleFunc("POST /app/parking/month", a.updateParkingMonth)
+	mux.HandleFunc("POST /app/parking/reminders", a.sendParkingReminders)
 	mux.HandleFunc("GET /app/audit", a.auditLog)
 	mux.HandleFunc("GET /app/settings", a.settingsHub)
 	mux.HandleFunc("GET /app/settings/building", a.buildingSettings)
@@ -3815,19 +3836,24 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request) {
 	}
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	telemetry := a.parkingTelemetry(r.Context(), tenant)
+	parkingMsg, parkingOK := parkingMessage(r.URL.Query().Get("month"), r.URL.Query().Get("reminder"))
 	a.render(w, "parking", map[string]any{
-		"Title":         "Parkplatznutzung",
-		"Tenant":        tenant,
-		"Email":         email,
-		"DisplayName":   profile.DisplayName(),
-		"Initials":      profile.Initials(),
-		"Role":          role,
-		"IsAdmin":       isAdmin,
-		"CanSeeParking": true,
-		"ActivePage":    "parking",
-		"Telemetry":     telemetry,
-		"Accounting":    a.parkingAccounting(r.Context(), tenant),
-		"StatementYear": time.Now().In(time.Local).Year(),
+		"Title":                    "Parkplatznutzung",
+		"Tenant":                   tenant,
+		"Email":                    email,
+		"DisplayName":              profile.DisplayName(),
+		"Initials":                 profile.Initials(),
+		"Role":                     role,
+		"IsAdmin":                  isAdmin,
+		"CanManageParkingPayments": hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking),
+		"CanSeeParking":            true,
+		"ActivePage":               "parking",
+		"Telemetry":                telemetry,
+		"Accounting":               a.parkingAccounting(r.Context(), tenant),
+		"ParkingMsg":               parkingMsg,
+		"ParkingOK":                parkingOK,
+		"TodayInput":               time.Now().In(time.Local).Format("2006-01-02"),
+		"StatementYear":            time.Now().In(time.Local).Year(),
 	})
 }
 
@@ -4173,11 +4199,33 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
 		return
 	}
-	paid := parseBool(r.FormValue("paid"))
-	if err := a.parkingStore.SetMonthPaid(tenant.Slug, month, paid); err != nil {
+	payment, err := parkingPaymentFromForm(r.Form, actorEmail)
+	if err != nil {
+		http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
+		return
+	}
+	if err := a.parkingStore.SetMonthPayment(tenant.Slug, month, payment); err != nil {
 		log.Printf("parking month save failed for %s: %v", tenant.Slug, err)
 		http.Error(w, "Could not save parking month", http.StatusInternalServerError)
 		return
+	}
+	details := map[string]string{
+		"month": formatMonthLabel(month, time.Local),
+		"paid":  paidLabel(payment.Paid),
+	}
+	if payment.Paid {
+		if !payment.PaidAt.IsZero() {
+			details["paid_at"] = formatLocalDate(payment.PaidAt.In(time.Local))
+		}
+		if payment.PaidBy != "" {
+			details["paid_by"] = payment.PaidBy
+		}
+		if payment.PaymentMethod != "" {
+			details["payment_method"] = payment.PaymentMethod
+		}
+		if payment.PaymentReference != "" {
+			details["payment_reference"] = payment.PaymentReference
+		}
 	}
 	a.recordAudit(auditEvent{
 		TenantSlug: tenant.Slug,
@@ -4187,12 +4235,186 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 		TargetType: "parking",
 		TargetID:   month,
 		Summary:    "Monatsstatus geändert",
-		Details: map[string]string{
-			"month": formatMonthLabel(month, time.Local),
-			"paid":  paidLabel(paid),
-		},
+		Details:    details,
 	})
 	http.Redirect(w, r, "/app/parking?month=saved", http.StatusSeeOther)
+}
+
+func (a *app) sendParkingReminders(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	actorEmail, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !hasCapability(role, capabilityManageUsers) && !hasCapability(role, capabilityManageParking) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	returnToAccess := r.FormValue("return_to") == "parking_access"
+	sent := a.sendParkingPaymentReminders(tenant, actorEmail, role, time.Now())
+	status := "none"
+	if sent > 0 {
+		status = "sent"
+	}
+	if returnToAccess {
+		http.Redirect(w, r, "/app/settings/parking-access?parking_access=reminder_"+status, http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/app/parking?reminder="+status, http.StatusSeeOther)
+}
+
+func (a *app) sendParkingPaymentReminders(tenant tenantConfig, actorEmail string, actorRole string, now time.Time) int {
+	if a == nil || a.parkingStore == nil {
+		return 0
+	}
+	if now.IsZero() {
+		now = time.Now()
+	}
+	data := a.parkingStore.TenantData(tenant.Slug)
+	months := calculateParkingMonths(data, now, time.Local)
+	if len(months) == 0 {
+		return 0
+	}
+	sentTotal := 0
+	for _, row := range a.userRows(tenant.Slug) {
+		if !row.ParkingChecked {
+			continue
+		}
+		recipientMonths := parkingReminderMonths(months, data.Months, row.Email)
+		if len(recipientMonths) == 0 {
+			continue
+		}
+		monthIDs := make([]string, 0, len(recipientMonths))
+		balance := 0.0
+		lines := []string{
+			"Für " + tenant.Address + " sind Parkplatz-Abrechnungen überfällig.",
+			"",
+			"Überfällige Monate:",
+		}
+		for _, month := range recipientMonths {
+			monthIDs = append(monthIDs, month.Month)
+			balance += month.TotalCostValue
+			lines = append(lines, month.MonthLabel+": "+month.TotalCost)
+		}
+		lines = append(lines, "", "Offener Betrag: "+formatEUR(balance))
+		sent := a.notify(portalNotification{
+			Event:      notificationEventPayment,
+			Tenant:     tenant,
+			Recipients: []string{row.Email},
+			ActorEmail: actorEmail,
+			Subject:    "Zahlungserinnerung Parkplatznutzung",
+			ActionText: "Parkplatzabrechnung öffnen",
+			ActionURL:  tenant.PublicURL("/app/parking"),
+			Lines:      lines,
+		})
+		if len(sent) == 0 {
+			continue
+		}
+		if err := a.parkingStore.MarkPaymentReminderSent(tenant.Slug, monthIDs, sent, now); err != nil {
+			log.Printf("parking reminder mark failed for %s/%s: %v", tenant.Slug, redactedEmail(row.Email), err)
+			continue
+		}
+		a.recordAudit(auditEvent{
+			TenantSlug: tenant.Slug,
+			ActorEmail: actorEmail,
+			ActorRole:  actorRole,
+			Action:     auditActionParkingReminder,
+			TargetType: "parking",
+			TargetID:   row.Email,
+			Summary:    "Zahlungserinnerung gesendet",
+			Details: map[string]string{
+				"recipients": strconv.Itoa(len(sent)),
+				"balance":    formatEUR(balance),
+				"month":      strings.Join(monthIDs, ", "),
+			},
+		})
+		sentTotal += len(sent)
+	}
+	return sentTotal
+}
+
+func parkingReminderMonths(months []parkingMonthView, states map[string]parkingMonthState, email string) []parkingMonthView {
+	email = normalizeEmail(email)
+	if email == "" {
+		return nil
+	}
+	out := []parkingMonthView{}
+	for _, month := range months {
+		if !month.Overdue {
+			continue
+		}
+		state := normalizeParkingMonthState(states[month.Month])
+		if _, ok := state.ReminderSentAt[email]; ok {
+			continue
+		}
+		out = append(out, month)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Month < out[j].Month
+	})
+	return out
+}
+
+func parkingPaymentFromForm(values url.Values, actorEmail string) (parkingMonthState, error) {
+	paid := parseBool(values.Get("paid"))
+	state := parkingMonthState{Paid: paid}
+	if !paid {
+		return state, nil
+	}
+	paidAt := time.Now().In(time.Local)
+	if raw := strings.TrimSpace(values.Get("paid_at")); raw != "" {
+		parsed, err := parseParkingPaidAt(raw)
+		if err != nil {
+			return parkingMonthState{}, err
+		}
+		paidAt = parsed
+	}
+	state.PaidAt = paidAt.UTC()
+	state.PaidBy = normalizeEmail(actorEmail)
+	state.PaymentMethod = cleanParkingPaymentField(values.Get("payment_method"))
+	state.PaymentReference = cleanParkingPaymentField(values.Get("payment_reference"))
+	return state, nil
+}
+
+func parseParkingPaidAt(raw string) (time.Time, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, fmt.Errorf("missing paid date")
+	}
+	if t, err := time.ParseInLocation("2006-01-02", raw, time.Local); err == nil {
+		return t, nil
+	}
+	if t, err := time.ParseInLocation("2006-01-02T15:04", raw, time.Local); err == nil {
+		return t, nil
+	}
+	return time.Time{}, fmt.Errorf("invalid paid date")
+}
+
+func cleanParkingPaymentField(raw string) string {
+	raw = strings.Join(strings.Fields(strings.TrimSpace(raw)), " ")
+	return truncateAuditValue(raw, 120)
+}
+
+func parkingMessage(monthStatus string, reminderStatus string) (string, bool) {
+	switch reminderStatus {
+	case "sent":
+		return "Zahlungserinnerungen gesendet.", true
+	case "none":
+		return "Keine überfälligen offenen Parkplatzbeträge mit aktiver Benachrichtigung gefunden.", false
+	}
+	switch monthStatus {
+	case "saved":
+		return "Zahlungsstatus gespeichert.", true
+	case "invalid":
+		return "Bitte Monat und Zahlungsdaten prüfen.", false
+	default:
+		return "", false
+	}
 }
 
 func parkingSettingsMessage(status string) (string, bool) {
@@ -5405,6 +5627,7 @@ func auditActionOptions(selected string) []selectOption {
 		auditActionVoteReminder,
 		auditActionParkingSettings,
 		auditActionParkingMonth,
+		auditActionParkingReminder,
 		auditActionIssueWorkflow,
 	} {
 		options = append(options, selectOption{Value: action, Label: auditActionLabel(action), Selected: selected == action})
@@ -5450,6 +5673,8 @@ func auditActionLabel(action string) string {
 		return "Parkplatz-Abrechnung geändert"
 	case auditActionParkingMonth:
 		return "Monatsstatus geändert"
+	case auditActionParkingReminder:
+		return "Zahlungserinnerung gesendet"
 	case auditActionIssueWorkflow:
 		return "Anliegen-Workflow geändert"
 	default:
@@ -5520,6 +5745,16 @@ func auditDetailLabel(key string) string {
 		return "Monat"
 	case "paid":
 		return "Status"
+	case "paid_at":
+		return "Bezahlt am"
+	case "paid_by":
+		return "Erfasst von"
+	case "payment_method":
+		return "Zahlungsart"
+	case "payment_reference":
+		return "Referenz"
+	case "balance":
+		return "Offener Betrag"
 	case "status":
 		return "Status"
 	case "priority":
@@ -6210,7 +6445,7 @@ func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	accessMsg, accessOK := parkingAccessMessage(r.URL.Query().Get("parking_access"))
-	rows := a.userRows(tenant.Slug)
+	rows := a.parkingAccessRows(tenant.Slug)
 	a.render(w, "parkingAccessSettings", map[string]any{
 		"Title":           "Parkplatz-Zugriff",
 		"Tenant":          tenant,
@@ -6325,6 +6560,10 @@ func parkingAccessMessage(status string) (string, bool) {
 		return "Parkplatz-Zugriff freigegeben.", true
 	case "revoked":
 		return "Parkplatz-Zugriff entzogen.", true
+	case "reminder_sent":
+		return "Zahlungserinnerungen gesendet.", true
+	case "reminder_none":
+		return "Keine überfälligen offenen Parkplatzbeträge mit aktiver Benachrichtigung gefunden.", false
 	case "not_editable":
 		return "Dieser Eintrag kommt aus der Konfiguration und kann hier nicht geändert werden.", false
 	case "invalid":
@@ -7079,6 +7318,27 @@ func (a *app) userRows(tenantSlug string) []userRow {
 		return rows[i].Email < rows[j].Email
 	})
 	return rows
+}
+
+func (a *app) parkingAccessRows(tenantSlug string) []userRow {
+	rows := a.userRows(tenantSlug)
+	balance := a.parkingBalance(tenantSlug)
+	for i := range rows {
+		if !rows[i].ParkingChecked || balance.Outstanding <= 0 {
+			continue
+		}
+		rows[i].OutstandingBalance = formatEUR(balance.Outstanding)
+		rows[i].HasOutstanding = true
+	}
+	return rows
+}
+
+func (a *app) parkingBalance(tenantSlug string) parkingBalanceView {
+	if a == nil || a.parkingStore == nil {
+		return parkingBalanceView{}
+	}
+	data := a.parkingStore.TenantData(tenantSlug)
+	return parkingBalanceSummary(calculateParkingMonths(data, time.Now(), time.Local))
 }
 
 func newAnnouncementStore(path string) (*announcementStore, error) {
@@ -9788,6 +10048,7 @@ func (a *app) parkingAccounting(ctx context.Context, tenant tenantConfig) parkin
 
 	data := a.parkingStore.TenantData(tenant.Slug)
 	months := calculateParkingMonths(data, time.Now(), time.Local)
+	balance := parkingBalanceSummary(months)
 	currentTariff := parkingTariffAt(data.Settings, time.Now(), time.Local)
 	tariffs := parkingTariffViews(data.Settings)
 	view := parkingAccountingView{
@@ -9800,6 +10061,12 @@ func (a *app) parkingAccounting(ctx context.Context, tenant tenantConfig) parkin
 		HasTariffs:       len(tariffs) > 0,
 		Months:           months,
 		HasMonths:        len(months) > 0,
+		OutstandingValue: balance.Outstanding,
+		Outstanding:      formatEUR(balance.Outstanding),
+		HasOutstanding:   balance.Outstanding > 0,
+		OverdueValue:     balance.Overdue,
+		Overdue:          formatEUR(balance.Overdue),
+		HasOverdue:       balance.Overdue > 0,
 		HistoryAvailable: len(data.EnergySamples) >= 2 && len(data.PriceSamples) > 0,
 	}
 	if len(data.EnergySamples) > 0 {
@@ -9978,6 +10245,7 @@ func newParkingStore(path string) (*parkingStore, error) {
 	}
 	for slug, data := range store.data.Tenants {
 		data.Settings = normalizeParkingSettings(data.Settings)
+		data.Months = normalizeParkingMonthStates(data.Months)
 		store.data.Tenants[normalizeSlug(slug)] = data
 	}
 	return store, nil
@@ -10036,13 +10304,51 @@ func (s *parkingStore) UpsertTariff(tenantSlug string, tariff parkingTariff) err
 }
 
 func (s *parkingStore) SetMonthPaid(tenantSlug string, month string, paid bool) error {
+	return s.SetMonthPayment(tenantSlug, month, parkingMonthState{Paid: paid})
+}
+
+func (s *parkingStore) SetMonthPayment(tenantSlug string, month string, state parkingMonthState) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	data := s.tenantLocked(tenantSlug)
 	if data.Months == nil {
 		data.Months = map[string]parkingMonthState{}
 	}
-	data.Months[month] = parkingMonthState{Paid: paid}
+	data.Months[month] = normalizeParkingMonthState(state)
+	s.data.Tenants[normalizeSlug(tenantSlug)] = data
+	return s.saveLocked()
+}
+
+func (s *parkingStore) MarkPaymentReminderSent(tenantSlug string, months []string, recipients []string, at time.Time) error {
+	tenantSlug = normalizeSlug(tenantSlug)
+	months = normalizeParkingMonths(months)
+	recipients = uniqueEmails(recipients)
+	if tenantSlug == "" || len(months) == 0 || len(recipients) == 0 {
+		return nil
+	}
+	if at.IsZero() {
+		at = time.Now()
+	}
+	at = at.UTC()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data := s.tenantLocked(tenantSlug)
+	if data.Months == nil {
+		data.Months = map[string]parkingMonthState{}
+	}
+	for _, month := range months {
+		state := normalizeParkingMonthState(data.Months[month])
+		if state.Paid {
+			continue
+		}
+		if state.ReminderSentAt == nil {
+			state.ReminderSentAt = map[string]time.Time{}
+		}
+		for _, recipient := range recipients {
+			state.ReminderSentAt[recipient] = at
+		}
+		data.Months[month] = normalizeParkingMonthState(state)
+	}
 	s.data.Tenants[normalizeSlug(tenantSlug)] = data
 	return s.saveLocked()
 }
@@ -10109,6 +10415,7 @@ func (s *parkingStore) tenantLocked(tenantSlug string) parkingTenantData {
 	if data.Months == nil {
 		data.Months = map[string]parkingMonthState{}
 	}
+	data.Months = normalizeParkingMonthStates(data.Months)
 	if len(data.Samples) > 0 {
 		for _, sample := range data.Samples {
 			data.EnergySamples = append(data.EnergySamples, parkingNumericSample{At: sample.At, Value: sample.EnergyKWh})
@@ -10283,8 +10590,70 @@ func formatParkingTariffDate(raw string) string {
 func copyMonthStates(in map[string]parkingMonthState) map[string]parkingMonthState {
 	out := map[string]parkingMonthState{}
 	for month, state := range in {
-		out[month] = state
+		out[month] = normalizeParkingMonthState(state)
 	}
+	return out
+}
+
+func normalizeParkingMonthStates(in map[string]parkingMonthState) map[string]parkingMonthState {
+	out := map[string]parkingMonthState{}
+	for month, state := range in {
+		if _, err := time.Parse("2006-01", month); err != nil {
+			continue
+		}
+		out[month] = normalizeParkingMonthState(state)
+	}
+	return out
+}
+
+func normalizeParkingMonthState(state parkingMonthState) parkingMonthState {
+	if !state.Paid {
+		state.PaidAt = time.Time{}
+		state.PaidBy = ""
+		state.PaymentMethod = ""
+		state.PaymentReference = ""
+	}
+	if !state.PaidAt.IsZero() {
+		state.PaidAt = state.PaidAt.UTC()
+	}
+	state.PaidBy = normalizeEmail(state.PaidBy)
+	state.PaymentMethod = cleanParkingPaymentField(state.PaymentMethod)
+	state.PaymentReference = cleanParkingPaymentField(state.PaymentReference)
+	if len(state.ReminderSentAt) == 0 {
+		state.ReminderSentAt = nil
+		return state
+	}
+	sent := map[string]time.Time{}
+	for email, at := range state.ReminderSentAt {
+		email = normalizeEmail(email)
+		if email == "" || at.IsZero() {
+			continue
+		}
+		sent[email] = at.UTC()
+	}
+	if len(sent) == 0 {
+		state.ReminderSentAt = nil
+	} else {
+		state.ReminderSentAt = sent
+	}
+	return state
+}
+
+func normalizeParkingMonths(months []string) []string {
+	out := []string{}
+	seen := map[string]struct{}{}
+	for _, month := range months {
+		month = strings.TrimSpace(month)
+		if _, err := time.Parse("2006-01", month); err != nil {
+			continue
+		}
+		if _, ok := seen[month]; ok {
+			continue
+		}
+		seen[month] = struct{}{}
+		out = append(out, month)
+	}
+	sort.Strings(out)
 	return out
 }
 
@@ -10419,6 +10788,24 @@ type parkingHourUsage struct {
 	GridCost   float64
 }
 
+type parkingBalanceView struct {
+	Outstanding float64
+	Overdue     float64
+}
+
+func parkingBalanceSummary(months []parkingMonthView) parkingBalanceView {
+	var summary parkingBalanceView
+	for _, month := range months {
+		if month.Outstanding {
+			summary.Outstanding += month.TotalCostValue
+		}
+		if month.Overdue {
+			summary.Overdue += month.TotalCostValue
+		}
+	}
+	return summary
+}
+
 func calculateParkingHourlyUsage(energySamples []parkingNumericSample, priceSamples []parkingNumericSample, gridFeeEURPerKWh float64, now time.Time) []parkingHourUsage {
 	return calculateParkingHourlyUsageWithSettings(energySamples, priceSamples, parkingSettings{GridFeeEURPerKWh: gridFeeEURPerKWh}, now, time.Local)
 }
@@ -10501,7 +10888,11 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 	if loc == nil {
 		loc = time.Local
 	}
+	if now.IsZero() {
+		now = time.Now()
+	}
 	data.Settings = normalizeParkingSettings(data.Settings)
+	data.Months = normalizeParkingMonthStates(data.Months)
 	hours := calculateParkingHourlyUsageWithSettings(data.EnergySamples, data.PriceSamples, data.Settings, now, loc)
 	if len(hours) == 0 {
 		return nil
@@ -10559,6 +10950,7 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(months)))
 	out := make([]parkingMonthView, 0, len(months))
+	currentMonth := now.In(loc).Format("2006-01")
 	for _, month := range months {
 		agg := aggregates[month]
 		tariff := parkingTariffForMonth(data.Settings, month, loc)
@@ -10577,34 +10969,51 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 				chartPercent = 3
 			}
 		}
-		paid := data.Months[month].Paid
+		state := normalizeParkingMonthState(data.Months[month])
+		paid := state.Paid
 		firstOfMonth, _ := time.ParseInLocation("2006-01", month, loc)
+		paidAtInput := ""
+		paidAtLabel := ""
+		if !state.PaidAt.IsZero() {
+			paidAtInput = formatDateTimeIn(state.PaidAt, loc, "2006-01-02")
+			paidAtLabel = formatDateTimeIn(state.PaidAt, loc, deATDateLayout)
+		}
+		outstanding := !paid && total > 0
+		overdue := outstanding && month < currentMonth
 		out = append(out, parkingMonthView{
-			Month:           month,
-			MonthLabel:      formatMonthLabel(month, loc),
-			DetailPath:      "/app/parking/month/" + month,
-			PeriodLabel:     formatPeriodLabel(agg.first, agg.last, loc),
-			KWhValue:        agg.kWh,
-			EnergyCostValue: agg.energyCost,
-			GridCostValue:   gridCost,
-			BaseFeeValue:    tariff.BaseFeeEUR,
-			TotalCostValue:  total,
-			KWh:             formatKWh(agg.kWh),
-			EnergyCost:      formatEUR(agg.energyCost),
-			GridCost:        formatEUR(gridCost),
-			BaseFee:         formatEUR(tariff.BaseFeeEUR),
-			TotalCost:       formatEUR(total),
-			AverageAwattar:  formatEURPerKWh(averageAwattar),
-			EffectivePrice:  formatEURPerKWh(effectivePrice),
-			AveragePrice:    formatEURPerKWh(effectivePrice),
-			Paid:            paid,
-			PaidLabel:       paidLabel(paid),
-			TogglePaidValue: boolFormValue(!paid),
-			ToggleLabel:     togglePaidLabel(paid),
-			ChartPercent:    chartPercent,
-			Partial:         agg.hourCount == 0 || agg.first.In(loc).After(firstOfMonth.Add(24*time.Hour)),
-			SampleCount:     len(data.EnergySamples),
-			HourCount:       agg.hourCount,
+			Month:            month,
+			MonthLabel:       formatMonthLabel(month, loc),
+			DetailPath:       "/app/parking/month/" + month,
+			PeriodLabel:      formatPeriodLabel(agg.first, agg.last, loc),
+			KWhValue:         agg.kWh,
+			EnergyCostValue:  agg.energyCost,
+			GridCostValue:    gridCost,
+			BaseFeeValue:     tariff.BaseFeeEUR,
+			TotalCostValue:   total,
+			KWh:              formatKWh(agg.kWh),
+			EnergyCost:       formatEUR(agg.energyCost),
+			GridCost:         formatEUR(gridCost),
+			BaseFee:          formatEUR(tariff.BaseFeeEUR),
+			TotalCost:        formatEUR(total),
+			AverageAwattar:   formatEURPerKWh(averageAwattar),
+			EffectivePrice:   formatEURPerKWh(effectivePrice),
+			AveragePrice:     formatEURPerKWh(effectivePrice),
+			Paid:             paid,
+			PaidLabel:        paidLabel(paid),
+			PaidAtInput:      paidAtInput,
+			PaidAtLabel:      paidAtLabel,
+			PaidBy:           state.PaidBy,
+			PaymentMethod:    state.PaymentMethod,
+			PaymentReference: state.PaymentReference,
+			PaymentDetails:   parkingPaymentDetails(state, loc),
+			Outstanding:      outstanding,
+			Overdue:          overdue,
+			TogglePaidValue:  boolFormValue(!paid),
+			ToggleLabel:      togglePaidLabel(paid),
+			ChartPercent:     chartPercent,
+			Partial:          agg.hourCount == 0 || agg.first.In(loc).After(firstOfMonth.Add(24*time.Hour)),
+			SampleCount:      len(data.EnergySamples),
+			HourCount:        agg.hourCount,
 		})
 	}
 	return out
@@ -10840,26 +11249,28 @@ func (p userProfile) UserRow() userRow {
 }
 
 type userRow struct {
-	Email            string
-	Title            string
-	FirstName        string
-	LastName         string
-	Phone            string
-	DirectoryOptIn   bool
-	DisplayName      string
-	Initials         string
-	Role             string
-	RoleClass        string
-	RoleCapabilities []string
-	Status           string
-	Tenants          string
-	PermissionLabel  string
-	PermissionList   []string
-	ParkingChecked   bool
-	AuthLabel        string
-	AuthList         []string
-	Editable         bool
-	LastSeen         string
+	Email              string
+	Title              string
+	FirstName          string
+	LastName           string
+	Phone              string
+	DirectoryOptIn     bool
+	DisplayName        string
+	Initials           string
+	Role               string
+	RoleClass          string
+	RoleCapabilities   []string
+	Status             string
+	Tenants            string
+	PermissionLabel    string
+	PermissionList     []string
+	ParkingChecked     bool
+	OutstandingBalance string
+	HasOutstanding     bool
+	AuthLabel          string
+	AuthList           []string
+	Editable           bool
+	LastSeen           string
 }
 
 func (s *tokenStore) Put(token string, email string, tenantSlug string, ttl time.Duration) {
@@ -11633,6 +12044,30 @@ func paidLabel(paid bool) string {
 	return "OFFEN"
 }
 
+func parkingPaymentDetails(state parkingMonthState, loc *time.Location) string {
+	state = normalizeParkingMonthState(state)
+	if !state.Paid {
+		return ""
+	}
+	if loc == nil {
+		loc = time.Local
+	}
+	parts := []string{}
+	if !state.PaidAt.IsZero() {
+		parts = append(parts, "bezahlt am "+formatDateTimeIn(state.PaidAt, loc, deATDateLayout))
+	}
+	if state.PaymentMethod != "" {
+		parts = append(parts, state.PaymentMethod)
+	}
+	if state.PaymentReference != "" {
+		parts = append(parts, "Ref. "+state.PaymentReference)
+	}
+	if state.PaidBy != "" {
+		parts = append(parts, "erfasst von "+state.PaidBy)
+	}
+	return strings.Join(parts, " · ")
+}
+
 func togglePaidLabel(paid bool) string {
 	if paid {
 		return "Als offen markieren"
@@ -12200,7 +12635,7 @@ func normalizeAuditAction(raw string) string {
 		auditActionBuildingUpdate, auditActionHeroUpdate, auditActionUnitSave, auditActionUnitDelete,
 		auditActionDocumentUpload, auditActionDocumentDownload, auditActionDocumentReplace,
 		auditActionVoteCreate, auditActionVoteOpen, auditActionVoteClose, auditActionVoteCast, auditActionVoteReminder,
-		auditActionParkingSettings, auditActionParkingMonth, auditActionIssueWorkflow:
+		auditActionParkingSettings, auditActionParkingMonth, auditActionParkingReminder, auditActionIssueWorkflow:
 		return raw
 	default:
 		return ""
@@ -13021,6 +13456,9 @@ const pageTemplates = `
     .month-cell a:hover { color: var(--gold-ink); }
     .month-cell span { display: block; margin-top: 3px; color: var(--soft); font-size: 12px; }
     .row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .status-cell { display: grid; gap: 4px; }
+    .payment-form { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .payment-form input { width: auto; max-width: 128px; min-height: 34px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: #fffefb; color: var(--ink); font: inherit; font-size: 12.5px; }
     .document-sections { display: grid; gap: 14px; }
     .filter-form.document-filter { grid-template-columns: minmax(280px,1fr) minmax(150px,.28fr) auto; align-items: end; margin-bottom: 12px; }
     .filter-form.document-filter button { width: auto; margin-top: 0; min-height: 42px; }
@@ -14246,6 +14684,7 @@ const pageTemplates = `
         <div class="page-actions">
           <a class="button" href="/app/parking"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 4v6h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 20v-6h-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10a7 7 0 0 1 12-3M19 14a7 7 0 0 1-12 3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Aktualisieren</a>
           <a class="button" href="/app/parking/export/{{.StatementYear}}">CSV exportieren</a>
+          {{if .CanManageParkingPayments}}<form method="post" action="/app/parking/reminders"><button class="button" type="submit">Erinnerungen senden</button></form>{{end}}
           {{if .IsAdmin}}<a class="button" href="/app/parking/settings"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>Abrechnung konfigurieren</a>{{end}}
         </div>
       </div>
@@ -14277,11 +14716,18 @@ const pageTemplates = `
         </section>
 
         <section class="panel accounting">
+          {{if .ParkingMsg}}<p class="flash {{if .ParkingOK}}ok{{end}}">{{.ParkingMsg}}</p>{{end}}
           <div class="section-head">
             <div>
               <h2>Monatsabrechnung</h2>
               <p class="muted">{{.Accounting.Message}}</p>
             </div>
+            {{if .Accounting.HasOutstanding}}
+              <div class="row-actions">
+                <span class="pill">Offen {{.Accounting.Outstanding}}</span>
+                {{if .Accounting.HasOverdue}}<span class="pill dringend">Überfällig {{.Accounting.Overdue}}</span>{{end}}
+              </div>
+            {{end}}
           </div>
           {{if .Accounting.HasMonths}}
             <div class="month-strip">
@@ -14320,16 +14766,27 @@ const pageTemplates = `
                       <td class="num">{{.GridCost}}</td>
                       <td class="num">{{.BaseFee}}</td>
                       <td class="num amount">{{.TotalCost}}</td>
-                      <td><span class="pill {{if .Paid}}ok{{end}}">{{.PaidLabel}}</span></td>
+                      <td class="status-cell"><span class="pill {{if .Paid}}ok{{else if .Overdue}}dringend{{end}}">{{.PaidLabel}}</span>{{if .PaymentDetails}}<span class="mini">{{.PaymentDetails}}</span>{{else if .Overdue}}<span class="mini">Überfällig</span>{{end}}</td>
                       <td>
                         <div class="row-actions">
                           <a class="button small" href="{{.DetailPath}}">Details</a>
-                          {{if $.IsAdmin}}
+                          {{if $.CanManageParkingPayments}}
+                            {{if .Paid}}
                             <form method="post" action="/app/parking/month">
                               <input type="hidden" name="month" value="{{.Month}}">
-                              <input type="hidden" name="paid" value="{{.TogglePaidValue}}">
+                              <input type="hidden" name="paid" value="false">
                               <button class="button small" type="submit">{{.ToggleLabel}}</button>
                             </form>
+                            {{else}}
+                            <form class="payment-form" method="post" action="/app/parking/month">
+                              <input type="hidden" name="month" value="{{.Month}}">
+                              <input type="hidden" name="paid" value="true">
+                              <input type="date" name="paid_at" value="{{$.TodayInput}}" aria-label="Bezahlt am">
+                              <input type="text" name="payment_method" maxlength="120" placeholder="Zahlungsart" aria-label="Zahlungsart">
+                              <input type="text" name="payment_reference" maxlength="120" placeholder="Referenz" aria-label="Referenz">
+                              <button class="button small" type="submit">{{.ToggleLabel}}</button>
+                            </form>
+                            {{end}}
                           {{end}}
                         </div>
                       </td>
@@ -14600,7 +15057,7 @@ const pageTemplates = `
     <main class="app-main building">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Gebäude</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a></div>
+        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a><form method="post" action="/app/parking/reminders"><input type="hidden" name="return_to" value="parking_access"><button class="button" type="submit">Erinnerungen senden</button></form></div>
       </div>
       <section class="page wide">
         <div>
@@ -14894,13 +15351,14 @@ const pageTemplates = `
           {{if .AccessMsg}}<p class="access-flash{{if .AccessOK}} ok{{else}} warn{{end}}">{{.AccessMsg}}</p>{{end}}
           {{if .HasAccessRows}}
             <table class="access-table" aria-label="Parkplatz-Zugriff">
-              <thead><tr><th>Person</th><th>Rolle</th><th>Status</th><th>Quelle</th><th></th></tr></thead>
+              <thead><tr><th>Person</th><th>Rolle</th><th>Status</th><th>Offen</th><th>Quelle</th><th></th></tr></thead>
               <tbody>
                 {{range .AccessRows}}
                 <tr>
                   <td data-label="Person"><span class="person"><strong>{{.DisplayName}}</strong><span>{{.Email}}</span></span></td>
                   <td data-label="Rolle"><span class="role-pill {{.RoleClass}}">{{.Role}}</span></td>
                   <td data-label="Status">{{if .ParkingChecked}}<span class="pill ok">Freigegeben</span>{{else}}<span class="pill">Kein Zugriff</span>{{end}}</td>
+                  <td data-label="Offen">{{if .HasOutstanding}}<span class="pill">{{.OutstandingBalance}}</span>{{else}}<span class="mini">-</span>{{end}}</td>
                   <td data-label="Quelle">{{if .Editable}}<span class="mini">Portal</span>{{else}}<span class="mini">Konfiguration</span>{{end}}</td>
                   <td data-label="Aktion">
                     <div class="actions">

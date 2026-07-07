@@ -3361,6 +3361,106 @@ func TestParkingTariffHistoryAppliesPerHourAndMonthlyBaseFee(t *testing.T) {
 	}
 }
 
+func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
+		t.Fatalf("Add invite: %v", err)
+	}
+	base := time.Date(2026, 6, 25, 10, 0, 0, 0, time.UTC)
+	if err := a.parkingStore.AppendReadings("jhw22", []parkingNumericSample{
+		{At: base, Value: 100},
+		{At: base.Add(2 * time.Hour), Value: 102},
+	}, []parkingNumericSample{
+		{At: base, Value: 0.20},
+		{At: base.Add(time.Hour), Value: 0.40},
+	}); err != nil {
+		t.Fatalf("AppendReadings: %v", err)
+	}
+
+	parkerPage := authedRequest(t, a, "parker@example.com", "/app/parking", a.parking)
+	if parkerPage.Code != http.StatusOK || !strings.Contains(parkerPage.Body.String(), "Offen 0,80 €") {
+		t.Fatalf("parker outstanding page = %d\n%s", parkerPage.Code, parkerPage.Body.String())
+	}
+	accessPage := authedRequest(t, a, "admin@example.com", "/app/settings/parking-access", a.parkingAccessSettings)
+	if accessPage.Code != http.StatusOK || !strings.Contains(accessPage.Body.String(), "parker@example.com") || !strings.Contains(accessPage.Body.String(), "0,80 €") {
+		t.Fatalf("access outstanding page = %d\n%s", accessPage.Code, accessPage.Body.String())
+	}
+
+	save := authedFormRequest(t, a, "admin@example.com", "/app/parking/month", url.Values{
+		"month":             {"2026-06"},
+		"paid":              {"true"},
+		"paid_at":           {"2026-07-05"},
+		"payment_method":    {"Überweisung"},
+		"payment_reference": {"ABC-123"},
+	}, a.updateParkingMonth)
+	if save.Code != http.StatusSeeOther {
+		t.Fatalf("payment save status = %d, want redirect", save.Code)
+	}
+	state := a.parkingStore.TenantData("jhw22").Months["2026-06"]
+	if !state.Paid || state.PaidBy != "admin@example.com" || state.PaymentMethod != "Überweisung" || state.PaymentReference != "ABC-123" || formatLocalDate(state.PaidAt) != "05.07.2026" {
+		t.Fatalf("stored payment state = %+v", state)
+	}
+	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionParkingMonth, Limit: 10})
+	if len(events) != 1 || events[0].Details["paid_by"] != "admin@example.com" || events[0].Details["payment_reference"] != "ABC-123" {
+		t.Fatalf("payment audit events = %+v", events)
+	}
+	paidPage := authedRequest(t, a, "parker@example.com", "/app/parking", a.parking)
+	body := paidPage.Body.String()
+	for _, want := range []string{"BEZAHLT", "bezahlt am 05.07.2026", "Überweisung", "Ref. ABC-123"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("paid page missing %q:\n%s", want, body)
+		}
+	}
+}
+
+func TestParkingPaymentRemindersRespectPreferencesAndDedupe(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	for _, profile := range []userProfile{
+		{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()},
+		{Email: "muted@example.com", FirstName: "Mute", LastName: "User", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()},
+	} {
+		if _, err := a.inviteStore.Add(profile); err != nil {
+			t.Fatalf("Add invite %s: %v", profile.Email, err)
+		}
+	}
+	mailer := &recordingMailer{}
+	a.mailer = mailer
+	if err := a.notificationPrefs.Set("muted@example.com", notificationPreferences{Email: map[string]bool{notificationEventPayment: false}}); err != nil {
+		t.Fatalf("Set prefs: %v", err)
+	}
+	base := time.Date(2026, 6, 25, 10, 0, 0, 0, time.UTC)
+	if err := a.parkingStore.AppendReadings("jhw22", []parkingNumericSample{
+		{At: base, Value: 100},
+		{At: base.Add(2 * time.Hour), Value: 102},
+	}, []parkingNumericSample{
+		{At: base, Value: 0.20},
+		{At: base.Add(time.Hour), Value: 0.40},
+	}); err != nil {
+		t.Fatalf("AppendReadings: %v", err)
+	}
+
+	now := time.Date(2026, 7, 7, 12, 0, 0, 0, time.Local)
+	sent := a.sendParkingPaymentReminders(a.tenants["jhw22"], "manager@example.com", roleManager, now)
+	if sent != 1 || len(mailer.notifications) != 1 {
+		t.Fatalf("reminders sent=%d notifications=%+v", sent, mailer.notifications)
+	}
+	notification := mailer.notifications[0]
+	if notification.To != "parker@example.com" || !strings.Contains(notification.Subject, "Zahlungserinnerung") || !strings.Contains(notification.Body, "Juni 2026") || !strings.Contains(notification.Body, "0,80 €") {
+		t.Fatalf("payment reminder notification = %+v", notification)
+	}
+	state := a.parkingStore.TenantData("jhw22").Months["2026-06"]
+	if _, ok := state.ReminderSentAt["parker@example.com"]; !ok {
+		t.Fatalf("reminder timestamp not stored: %+v", state)
+	}
+	if _, ok := state.ReminderSentAt["muted@example.com"]; ok {
+		t.Fatalf("muted recipient should not be marked reminded: %+v", state)
+	}
+	again := a.sendParkingPaymentReminders(a.tenants["jhw22"], "manager@example.com", roleManager, now.Add(time.Hour))
+	if again != 0 || len(mailer.notifications) != 1 {
+		t.Fatalf("duplicate reminders sent=%d notifications=%+v", again, mailer.notifications)
+	}
+}
+
 func TestParkingMonthDetailsExposeHourlyRows(t *testing.T) {
 	base := time.Date(2026, 6, 25, 10, 0, 0, 0, time.UTC)
 	data := parkingTenantData{
