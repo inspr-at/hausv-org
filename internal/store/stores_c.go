@@ -673,8 +673,16 @@ func (s *IssueStore) SavePhoto(tenantSlug string, issueID string, upload Uploade
 	return filepath.ToSlash(filepath.Join(filepath.Base(s.attachmentDir), tenantSlug, filename)), nil
 }
 
+// stripContentTypeParams drops the parameters from a media type, e.g.
+// "text/xml; charset=utf-8" -> "text/xml". http.DetectContentType returns the
+// charset form for XML, which never matched the exact-string switches below, so
+// legitimate XML uploads were silently rejected (HAUSV-144).
+func stripContentTypeParams(contentType string) string {
+	return strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+}
+
 func IssuePhotoExtension(contentType string) (string, bool) {
-	switch contentType {
+	switch stripContentTypeParams(contentType) {
 	case "image/jpeg":
 		return ".jpg", true
 	case "image/png":
@@ -1581,7 +1589,7 @@ func SortDocuments(items []DocumentRecord) {
 }
 
 func DocumentExtension(contentType string) (string, bool) {
-	switch contentType {
+	switch stripContentTypeParams(contentType) {
 	case "application/pdf":
 		return ".pdf", true
 	case "image/jpeg":
