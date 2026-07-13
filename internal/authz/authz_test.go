@@ -85,3 +85,22 @@ func TestServiceProviderTransitionInvariants(t *testing.T) {
 		}
 	}
 }
+
+// The full forward chain: any forward step is allowed, any backward step is not,
+// and reopening to Neu is never allowed.
+func TestServiceProviderTransitionFullChain(t *testing.T) {
+	chain := []string{
+		store.IssueStatusNew, store.IssueStatusAccepted, store.IssueStatusScheduled,
+		store.IssueStatusProgress, store.IssueStatusDone,
+	}
+	for i := range chain {
+		for j := range chain {
+			from, to := chain[i], chain[j]
+			// Forward (or same) is allowed, except a move TO Neu is never allowed.
+			want := j >= i && to != store.IssueStatusNew
+			if got := CanServiceProviderTransition(from, to); got != want {
+				t.Errorf("CanServiceProviderTransition(%q, %q) = %v, want %v", from, to, got, want)
+			}
+		}
+	}
+}

@@ -846,7 +846,7 @@ func IssueLocationLabel(locationType string, detail string) string {
 
 func IssueStatusClass(status string) string {
 	switch store.NormalizeIssueStatus(status) {
-	case store.IssueStatusProgress:
+	case store.IssueStatusProgress, store.IssueStatusAccepted, store.IssueStatusScheduled:
 		return "status-progress"
 	case store.IssueStatusDone:
 		return "status-done"
@@ -1782,7 +1782,7 @@ func GermanMonthShort(t time.Time) string {
 }
 
 func IssueStatuses() []string {
-	return []string{store.IssueStatusNew, store.IssueStatusProgress, store.IssueStatusDone, store.IssueStatusRejected, store.IssueStatusDuplicate}
+	return []string{store.IssueStatusNew, store.IssueStatusAccepted, store.IssueStatusScheduled, store.IssueStatusProgress, store.IssueStatusDone, store.IssueStatusRejected, store.IssueStatusDuplicate}
 }
 
 func IssuePriorities() []string {

@@ -623,6 +623,8 @@ const (
 	authMethodEmail               = store.AuthMethodEmail
 	authMethodOIDC                = store.AuthMethodOIDC
 	issueStatusNew                = store.IssueStatusNew
+	issueStatusAccepted           = store.IssueStatusAccepted
+	issueStatusScheduled          = store.IssueStatusScheduled
 	issueStatusProgress           = store.IssueStatusProgress
 	issueStatusDone               = store.IssueStatusDone
 	issueStatusRejected           = store.IssueStatusRejected
@@ -2071,7 +2073,7 @@ func unreadAnnouncementCount(items []announcement, lastSeen time.Time, now time.
 }
 
 func serviceProviderIssueStatuses() []string {
-	return []string{issueStatusProgress, issueStatusDone}
+	return []string{issueStatusAccepted, issueStatusScheduled, issueStatusProgress, issueStatusDone}
 }
 
 func parseIssueEstimateAmountCents(raw string) (int64, error) {

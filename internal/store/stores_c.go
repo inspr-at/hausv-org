@@ -257,6 +257,10 @@ func NormalizeIssueStatus(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "neu", "offen", "new", "open":
 		return IssueStatusNew
+	case "angenommen", "accepted":
+		return IssueStatusAccepted
+	case "termin vereinbart", "termin", "scheduled":
+		return IssueStatusScheduled
 	case "in bearbeitung", "bearbeitung", "in-arbeit", "progress", "in_progress":
 		return IssueStatusProgress
 	case "erledigt", "geschlossen", "done", "closed":

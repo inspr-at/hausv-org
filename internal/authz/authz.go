@@ -81,17 +81,39 @@ func CanResidentTransition(from string, to string) bool {
 	}
 }
 
-func CanServiceProviderTransition(from string, to string) bool {
-	from = store.NormalizeIssueStatus(from)
-	to = store.NormalizeIssueStatus(to)
-	switch to {
+// serviceProviderStatusRank orders the states a provider may move an assigned
+// issue through: Neu → Angenommen → Termin vereinbart → In Bearbeitung →
+// Erledigt. Off-chain states (Abgelehnt, Duplikat) return ok=false.
+func serviceProviderStatusRank(status string) (int, bool) {
+	switch store.NormalizeIssueStatus(status) {
+	case store.IssueStatusNew:
+		return 0, true
+	case store.IssueStatusAccepted:
+		return 1, true
+	case store.IssueStatusScheduled:
+		return 2, true
 	case store.IssueStatusProgress:
-		return from == store.IssueStatusNew || from == store.IssueStatusProgress
+		return 3, true
 	case store.IssueStatusDone:
-		return from == store.IssueStatusNew || from == store.IssueStatusProgress
+		return 4, true
 	default:
+		return 0, false
+	}
+}
+
+// CanServiceProviderTransition allows a provider to advance an issue forward
+// along the chain only. Reopening to Neu and the off-chain states (Abgelehnt,
+// Duplikat) stay manager-only.
+func CanServiceProviderTransition(from string, to string) bool {
+	toRank, toOK := serviceProviderStatusRank(to)
+	if !toOK || store.NormalizeIssueStatus(to) == store.IssueStatusNew {
 		return false
 	}
+	fromRank, fromOK := serviceProviderStatusRank(from)
+	if !fromOK {
+		return false
+	}
+	return toRank >= fromRank
 }
 
 func CanViewAudit(role string) bool {

@@ -3824,6 +3824,43 @@ func TestIssueCommentAllowsPhotoOnlyButRejectsEmpty(t *testing.T) {
 	}
 }
 
+// HAUSV-128: a provider can advance an assigned issue into the new states
+// (Angenommen) and keeps access; reopening to Neu is blocked.
+func TestServiceProviderCanAcceptButNotReopen(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	issue, err := a.issueStore.Create(residentIssue{
+		TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident",
+		Category: "Reparatur", Title: "Annehmen", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
+		AssigneeEmail: "service@example.com",
+	})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	accept := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+		"id":     {issue.ID},
+		"status": {issueStatusAccepted},
+	})
+	if accept.Code != http.StatusSeeOther {
+		t.Fatalf("accept status = %d, want redirect", accept.Code)
+	}
+	updated, ok := a.issueStore.Get("jhw22", issue.ID)
+	if !ok || updated.Status != issueStatusAccepted {
+		t.Fatalf("status after accept = %q, want %q", updated.Status, issueStatusAccepted)
+	}
+	if !a.canViewIssueForActor("jhw22", updated, "service@example.com", roleServiceProvider) {
+		t.Fatal("Angenommen must keep the issue open and accessible to the provider")
+	}
+
+	reopen := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+		"id":     {issue.ID},
+		"status": {issueStatusNew},
+	})
+	if reopen.Code != http.StatusForbidden {
+		t.Fatalf("provider reopen status = %d, want 403", reopen.Code)
+	}
+}
+
 func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}

@@ -21,6 +21,8 @@ const (
 	AuthMethodOIDC  = "oidc"
 
 	IssueStatusNew       = "Neu"
+	IssueStatusAccepted  = "Angenommen"
+	IssueStatusScheduled = "Termin vereinbart"
 	IssueStatusProgress  = "In Bearbeitung"
 	IssueStatusDone      = "Erledigt"
 	IssueStatusRejected  = "Abgelehnt"
