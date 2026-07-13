@@ -4,5 +4,8 @@
 .git
 local-*.jpg
 tmp/
-hausv-org
-weg-portal
+# Anchor to root: these are the compiled binaries at the repo root. Unanchored,
+# the pattern `hausv-org` also excluded the cmd/hausv-org PACKAGE dir, breaking
+# `go build ./cmd/hausv-org` in the image.
+/hausv-org
+/weg-portal
