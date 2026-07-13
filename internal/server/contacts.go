@@ -8,17 +8,8 @@ import (
 	"time"
 )
 
-func (a *app) contacts(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
@@ -63,19 +54,10 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	actorEmail, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
 	if !canManageContacts(role) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -113,19 +95,10 @@ func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/kontakte?contact=saved", http.StatusSeeOther)
 }
 
-func (a *app) deactivateManagedContact(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	actorEmail, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) deactivateManagedContact(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
 	if !canManageContacts(role) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
