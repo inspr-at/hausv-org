@@ -1745,7 +1745,27 @@ func (a *app) parseCalendarFeedToken(token string) (calendarFeedPayload, bool) {
 	if payload.Email == "" || payload.TenantSlug == "" {
 		return calendarFeedPayload{}, false
 	}
+	// Bound a leaked feed URL's lifetime (HAUSV-147). Calendar clients poll a
+	// subscription for months, so the cap is generous rather than short — a
+	// re-subscribe (new URL) refreshes it. IssuedAt==0 is a pre-expiry token; we
+	// accept it rather than lock existing subscribers out.
+	if payload.IssuedAt > 0 && time.Since(time.Unix(payload.IssuedAt, 0)) > maxCalendarFeedAge {
+		return calendarFeedPayload{}, false
+	}
 	return payload, true
+}
+
+// maxCalendarFeedAge caps how long a signed calendar-feed URL stays valid.
+const maxCalendarFeedAge = 400 * 24 * time.Hour
+
+// signedCalendarFeedTokenAt mints a feed token as if issued at `at`. Test helper
+// for the expiry check (HAUSV-147); not used in production.
+func (a *app) signedCalendarFeedTokenAt(email, tenantSlug string, at time.Time) string {
+	payload := calendarFeedPayload{Email: normalizeEmail(email), TenantSlug: normalizeSlug(tenantSlug), IssuedAt: at.Unix()}
+	raw, _ := json.Marshal(payload)
+	signedPart := "v1." + base64.RawURLEncoding.EncodeToString(raw)
+	sig, _ := a.signCalendarFeed(signedPart)
+	return signedPart + "." + base64.RawURLEncoding.EncodeToString(sig)
 }
 
 func (a *app) signCalendarFeed(value string) ([]byte, error) {
