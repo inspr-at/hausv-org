@@ -13,6 +13,7 @@ import (
 	"github.com/markus-barta/hausv-org/internal/config"
 	"github.com/markus-barta/hausv-org/internal/homeassistant"
 	appmail "github.com/markus-barta/hausv-org/internal/mail"
+	"github.com/markus-barta/hausv-org/internal/view"
 	"github.com/markus-barta/hausv-org/internal/web"
 	"html/template"
 	_ "image/png"
@@ -39,6 +40,164 @@ import (
 	oidc "github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
+
+// ── extracted to view ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+type (
+	announcementFilterView  = view.AnnouncementFilterView
+	announcementView        = view.AnnouncementView
+	attachmentGroup         = view.AttachmentGroup
+	attachmentView          = view.AttachmentView
+	auditDetailView         = view.AuditDetailView
+	auditEventView          = view.AuditEventView
+	auditFilterChipView     = view.AuditFilterChipView
+	auditStatsView          = view.AuditStatsView
+	ballotOptionView        = view.BallotOptionView
+	ballotResultCount       = view.BallotResultCount
+	ballotResultSummary     = view.BallotResultSummary
+	ballotView              = view.BallotView
+	buildingUnitView        = view.BuildingUnitView
+	contactCardView         = view.ContactCardView
+	contactOptionView       = view.ContactOptionView
+	dashboardDigestItem     = view.DashboardDigestItem
+	documentCategoryView    = view.DocumentCategoryView
+	documentVersionView     = view.DocumentVersionView
+	documentView            = view.DocumentView
+	emptyStateView          = view.EmptyStateView
+	houseEventView          = view.HouseEventView
+	issueBoardFilterView    = view.IssueBoardFilterView
+	issueCommentView        = view.IssueCommentView
+	issueView               = view.IssueView
+	managedContactView      = view.ManagedContactView
+	notificationEventOption = view.NotificationEventOption
+	parkingAccountingView   = view.ParkingAccountingView
+	parkingBalanceView      = view.ParkingBalanceView
+	parkingHourView         = view.ParkingHourView
+	parkingMonthDetailView  = view.ParkingMonthDetailView
+	parkingMonthView        = view.ParkingMonthView
+	parkingStatementView    = view.ParkingStatementView
+	parkingTariffView       = view.ParkingTariffView
+	profileUnitView         = view.ProfileUnitView
+	selectOption            = view.SelectOption
+	unitPaymentStatusView   = view.UnitPaymentStatusView
+	userRow                 = view.UserRow
+)
+
+var announcementViewFrom = view.AnnouncementViewFrom
+var attachmentViewFromRecord = view.AttachmentViewFromRecord
+var auditActionLabel = view.AuditActionLabel
+var auditActionOptions = view.AuditActionOptions
+var auditActionTone = view.AuditActionTone
+var auditDetailLabel = view.AuditDetailLabel
+var auditEventViewFrom = view.AuditEventViewFrom
+var auditTargetLabel = view.AuditTargetLabel
+var auditTargetTypeLabel = view.AuditTargetTypeLabel
+var auditToneLabel = view.AuditToneLabel
+var authMethodsLabel = view.AuthMethodsLabel
+var ballotWeightingLabel = view.BallotWeightingLabel
+var ballotWinnerLabel = view.BallotWinnerLabel
+var billableUnitCountLabel = view.BillableUnitCountLabel
+var contactKindOptions = view.ContactKindOptions
+var contactStatusLabel = view.ContactStatusLabel
+var documentCategoryOptions = view.DocumentCategoryOptions
+var documentSortOptions = view.DocumentSortOptions
+var documentUnitAuditLabel = view.DocumentUnitAuditLabel
+var documentUnitLabel = view.DocumentUnitLabel
+var documentUnitOptions = view.DocumentUnitOptions
+var documentVersionLabel = view.DocumentVersionLabel
+var documentViewFrom = view.DocumentViewFrom
+var documentVisibilityClass = view.DocumentVisibilityClass
+var documentVisibilityLabel = view.DocumentVisibilityLabel
+var documentVisibilityOptions = view.DocumentVisibilityOptions
+var emptyState = view.EmptyState
+var eventCategoryClass = view.EventCategoryClass
+var eventViewFrom = view.EventViewFrom
+var formatBallotReminder = view.FormatBallotReminder
+var formatBallotResultWeight = view.FormatBallotResultWeight
+var formatBallotSharePercent = view.FormatBallotSharePercent
+var formatBallotShareWeight = view.FormatBallotShareWeight
+var formatBallotWeight = view.FormatBallotWeight
+var formatBillableUnitWeight = view.FormatBillableUnitWeight
+var formatBytes = view.FormatBytes
+var formatDateTimeIn = view.FormatDateTimeIn
+var formatDecimal = view.FormatDecimal
+var formatEUR = view.FormatEUR
+var formatEURPerKWh = view.FormatEURPerKWh
+var formatInputFloat = view.FormatInputFloat
+var formatIssueEstimateAmount = view.FormatIssueEstimateAmount
+var formatIssueEstimateInput = view.FormatIssueEstimateInput
+var formatKWh = view.FormatKWh
+var formatLocalDate = view.FormatLocalDate
+var formatLocalDateTime = view.FormatLocalDateTime
+var formatLocalDateTimeInput = view.FormatLocalDateTimeInput
+var formatLocalShortDateTime = view.FormatLocalShortDateTime
+var formatLocalTime = view.FormatLocalTime
+var formatMiteigentumsanteil = view.FormatMiteigentumsanteil
+var formatMonthLabel = view.FormatMonthLabel
+var formatPPMPercent = view.FormatPPMPercent
+var formatParkingTariffDate = view.FormatParkingTariffDate
+var formatPeriodLabel = view.FormatPeriodLabel
+var formatPreciseEUR = view.FormatPreciseEUR
+var formatPreciseEURPerKWh = view.FormatPreciseEURPerKWh
+var formatPreciseKWh = view.FormatPreciseKWh
+var issueBoardFilterOptions = view.IssueBoardFilterOptions
+var issueFilterOptions = view.IssueFilterOptions
+var issueLocationLabel = view.IssueLocationLabel
+var issueSelectOptions = view.IssueSelectOptions
+var issueStatusClass = view.IssueStatusClass
+var managedContactViewFrom = view.ManagedContactViewFrom
+var normalizeTenantBrandIcon = view.NormalizeTenantBrandIcon
+var notificationEventOptions = view.NotificationEventOptions
+var paidLabel = view.PaidLabel
+var parkingStatementTariffLabel = view.ParkingStatementTariffLabel
+var permissionLabel = view.PermissionLabel
+var roleClass = view.RoleClass
+var tenantBrandIconLabel = view.TenantBrandIconLabel
+var tenantBrandIconOptions = view.TenantBrandIconOptions
+var togglePaidLabel = view.TogglePaidLabel
+var unitBillableLabel = view.UnitBillableLabel
+var unitCountLabel = view.UnitCountLabel
+var unitPaymentRelationLabel = view.UnitPaymentRelationLabel
+var unitPaymentStatusClass = view.UnitPaymentStatusClass
+var unitPaymentStatusLabel = view.UnitPaymentStatusLabel
+var unitPaymentStatusOptions = view.UnitPaymentStatusOptions
+var unitPaymentStatusViewFromUnit = view.UnitPaymentStatusViewFromUnit
+var unitTypeLabel = view.UnitTypeLabel
+var unitTypeOptions = view.UnitTypeOptions
+
+// ── extracted to view ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+var authMethodsLabelList = view.AuthMethodsLabelList
+var permissionLabelList = view.PermissionLabelList
+
+// ── extracted to view ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+var documentCanPreview = view.DocumentCanPreview
+var documentFileKind = view.DocumentFileKind
+var selectedDocumentSort = view.SelectedDocumentSort
+
+// ── extracted to view ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+var documentCategories = view.DocumentCategories
+
+// ── extracted to view ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+var notificationEventCatalog = view.NotificationEventCatalog
+var unitPaymentStatusDetail = view.UnitPaymentStatusDetail
+
+// ── extracted to view ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+var eventTimeRange = view.EventTimeRange
+var germanMonthShort = view.GermanMonthShort
+var issueCategories = view.IssueCategories
+var issuePriorities = view.IssuePriorities
+var issueStatuses = view.IssueStatuses
+
+// ── extracted to view ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+var announcementUnread = view.AnnouncementUnread
+var plainTextHTML = view.PlainTextHTML
+var sameLocalDate = view.SameLocalDate
 
 // ── extracted to auth ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
@@ -581,478 +740,6 @@ const (
 	tenantBrandParking      = "parking"
 )
 
-type notificationEventOption struct {
-	Key         string
-	Label       string
-	Description string
-	Checked     bool
-}
-
-type announcementView struct {
-	ID                 string
-	Title              string
-	Body               string
-	BodyHTML           template.HTML
-	Category           string
-	CategoryClass      string
-	Pinned             bool
-	PinnedChecked      bool
-	PublishedAt        string
-	PublishedAtInput   string
-	ExpiresAt          string
-	ExpiresAtInput     string
-	HasExpiresAt       bool
-	Author             string
-	Status             string
-	Published          bool
-	Expired            bool
-	Unread             bool
-	Attachments        []attachmentView
-	HasAttachments     bool
-	EditDialogID       string
-	DeleteConfirmLabel string
-}
-
-type houseEventView struct {
-	ID                 string
-	Title              string
-	Body               string
-	BodyHTML           template.HTML
-	HasBody            bool
-	Category           string
-	CategoryClass      string
-	Location           string
-	HasLocation        bool
-	StartsAt           string
-	StartsAtInput      string
-	EndsAt             string
-	EndsAtInput        string
-	HasEndsAt          bool
-	DateBadgeDay       string
-	DateBadgeMonth     string
-	TimeRange          string
-	Status             string
-	Past               bool
-	Author             string
-	Attachments        []attachmentView
-	HasAttachments     bool
-	EditDialogID       string
-	DeleteConfirmLabel string
-}
-
-type issueCommentView struct {
-	ID             string
-	Author         string
-	Body           string
-	CreatedAt      string
-	CanDelete      bool
-	DeleteURL      string
-	Attachments    []attachmentView
-	HasAttachments bool
-}
-
-type attachmentView struct {
-	ID          string
-	Filename    string
-	Size        string
-	ContentType string
-	UploadedBy  string
-	CreatedAt   string
-	URL         string
-	PreviewURL  string
-	ThumbURL    string
-	IsImage     bool
-	IsPDF       bool
-	CanDelete   bool
-	DeleteURL   string
-}
-
-type attachmentGroup struct {
-	Attachments    []attachmentView
-	HasAttachments bool
-}
-
-type selectOption struct {
-	Value    string
-	Label    string
-	Selected bool
-}
-
-type documentView struct {
-	ID              string
-	Title           string
-	Category        string
-	Visibility      string
-	VisibilityClass string
-	UnitLabel       string
-	HasUnit         bool
-	Filename        string
-	FileKind        string
-	Size            string
-	ContentType     string
-	UploadedBy      string
-	UploadedAt      string
-	UploadedDate    string
-	DownloadURL     string
-	PreviewURL      string
-	CanPreview      bool
-	IsImage         bool
-	IsPDF           bool
-	VersionLabel    string
-	ReplaceDialogID string
-	Versions        []documentVersionView
-	HasVersions     bool
-}
-
-type documentVersionView struct {
-	ID          string
-	Version     string
-	Filename    string
-	Size        string
-	UploadedAt  string
-	DownloadURL string
-}
-
-type documentCategoryView struct {
-	Category     string
-	Documents    []documentView
-	HasDocuments bool
-	EmptyMessage string
-}
-
-type ballotView struct {
-	ID                  string
-	Title               string
-	Description         string
-	HasDescription      bool
-	Type                string
-	Weighting           string
-	Quorum              string
-	HasQuorum           bool
-	ReminderLabel       string
-	Status              string
-	StatusClass         string
-	OpensAt             string
-	HasOpensAt          bool
-	ClosesAt            string
-	HasClosesAt         bool
-	CreatedAt           string
-	UpdatedAt           string
-	Options             []ballotOptionView
-	CanVote             bool
-	CanManage           bool
-	CanOpen             bool
-	CanClose            bool
-	HasVote             bool
-	VoteOption          string
-	VoteWeight          string
-	VotedAt             string
-	ReadOnlyMessage     string
-	HasResults          bool
-	TotalVotes          int
-	TotalWeight         int
-	TotalWeightLabel    string
-	EligibleWeightLabel string
-	Participation       string
-	QuorumStatus        string
-	QuorumClass         string
-	WinnerLabel         string
-	HasWinner           bool
-	ProtocolURL         string
-	HasProtocol         bool
-	Attachments         []attachmentView
-	HasAttachments      bool
-	EditDialogID        string
-}
-
-type ballotOptionView struct {
-	Value        string
-	Label        string
-	Selected     bool
-	VoteCount    int
-	Weight       int
-	WeightLabel  string
-	Percent      int
-	PercentStyle string
-}
-
-type issueView struct {
-	ID                      string
-	Title                   string
-	Body                    string
-	Author                  string
-	AuthorEmail             string
-	Category                string
-	Status                  string
-	StatusClass             string
-	Priority                string
-	AssigneeEmail           string
-	HasAssignee             bool
-	Location                string
-	CreatedAt               string
-	CanComment              bool
-	CanClose                bool
-	CanReopen               bool
-	CanServiceUpdate        bool
-	ServiceProposal         string
-	HasServiceProposal      bool
-	CanEditEstimate         bool
-	EstimateAmount          string
-	EstimateAmountValue     string
-	EstimateNote            string
-	HasEstimate             bool
-	EstimateAttachments     []attachmentView
-	HasEstimateAttachments  bool
-	EstimateAttachmentGroup attachmentGroup
-	PhotoCount              int
-	HasPhotos               bool
-	Attachments             []attachmentView
-	HasAttachments          bool
-	Comments                []issueCommentView
-	HasComments             bool
-	StatusOptions           []selectOption
-	ServiceStatusOptions    []selectOption
-	PriorityOptions         []selectOption
-}
-
-type issueBoardFilterView struct {
-	Status          string
-	Priority        string
-	Category        string
-	Assignee        string
-	Sort            string
-	StatusOptions   []selectOption
-	PriorityOptions []selectOption
-	CategoryOptions []selectOption
-	SortOptions     []selectOption
-	HasActive       bool
-}
-
-type profileUnitView struct {
-	Label    string
-	Relation string
-	Share    string
-}
-
-type unitPaymentStatusView struct {
-	UnitID        string
-	UnitLabel     string
-	UnitTypeLabel string
-	Relation      string
-	Status        string
-	StatusValue   string
-	StatusClass   string
-	Detail        string
-	UpdatedAt     string
-	UpdatedBy     string
-	HasUpdatedAt  bool
-	StatusOptions []selectOption
-}
-
-type buildingUnitView struct {
-	ID                 string
-	Label              string
-	UnitType           string
-	UnitTypeLabel      string
-	TypeOptions        []selectOption
-	BillableLabel      string
-	Share              string
-	ShareValue         string
-	OwnerEmails        string
-	RenterEmails       string
-	DeleteConfirmLabel string
-}
-
-type contactCardView struct {
-	Name        string
-	Role        string
-	Description string
-	Email       string
-	Phone       string
-	HasEmail    bool
-	HasPhone    bool
-}
-
-type managedContactView struct {
-	ID                 string
-	Kind               string
-	KindOptions        []selectOption
-	Name               string
-	Company            string
-	DisplayName        string
-	Description        string
-	Email              string
-	Phone              string
-	Notes              string
-	Active             bool
-	StatusLabel        string
-	HasEmail           bool
-	HasPhone           bool
-	EditDialogID       string
-	DeleteConfirmLabel string
-}
-
-type contactOptionView struct {
-	Email string
-	Label string
-}
-
-type emptyStateView struct {
-	Title       string
-	Message     string
-	ActionURL   string
-	ActionLabel string
-	HasAction   bool
-}
-
-type dashboardDigestItem struct {
-	Title  string
-	Detail string
-	URL    string
-	Badge  string
-}
-
-type auditEventView struct {
-	At             string
-	AtDate         string
-	AtTime         string
-	AtISO          string
-	DateHeader     string
-	ShowDateHeader bool
-	Action         string
-	ActionText     string
-	ActionTone     string
-	ToneLabel      string
-	Actor          string
-	ActorRole      string
-	Target         string
-	TargetType     string
-	HasTarget      bool
-	Summary        string
-	Details        []auditDetailView
-	HasDetails     bool
-}
-
-type auditDetailView struct {
-	Key   string
-	Value string
-}
-
-type auditStatsView struct {
-	TotalEvents      int
-	ActorCount       int
-	TodayCount       int
-	FilterSummary    string
-	ActiveFilters    []auditFilterChipView
-	HasActiveFilters bool
-}
-
-type auditFilterChipView struct {
-	Label string
-	Value string
-}
-
-type announcementFilterView struct {
-	Label  string
-	URL    string
-	Active bool
-}
-
-type parkingAccountingView struct {
-	Message          string
-	GridFeeValue     string
-	GridFeeLabel     string
-	BaseFeeValue     string
-	BaseFeeLabel     string
-	EffectiveFrom    string
-	Tariffs          []parkingTariffView
-	HasTariffs       bool
-	Months           []parkingMonthView
-	HasMonths        bool
-	OutstandingValue float64
-	Outstanding      string
-	HasOutstanding   bool
-	OverdueValue     float64
-	Overdue          string
-	HasOverdue       bool
-	LastSampleLabel  string
-	HistoryAvailable bool
-}
-
-type parkingTariffView struct {
-	EffectiveFrom      string
-	EffectiveFromInput string
-	GridFee            string
-	BaseFee            string
-}
-
-type parkingMonthView struct {
-	Month            string
-	MonthLabel       string
-	DetailPath       string
-	PeriodLabel      string
-	KWhValue         float64
-	EnergyCostValue  float64
-	GridCostValue    float64
-	BaseFeeValue     float64
-	TotalCostValue   float64
-	KWh              string
-	EnergyCost       string
-	GridCost         string
-	BaseFee          string
-	TotalCost        string
-	AverageAwattar   string
-	EffectivePrice   string
-	AveragePrice     string
-	Paid             bool
-	PaidLabel        string
-	PaidAtInput      string
-	PaidAtLabel      string
-	PaidBy           string
-	PaymentMethod    string
-	PaymentReference string
-	PaymentDetails   string
-	Outstanding      bool
-	Overdue          bool
-	TogglePaidValue  string
-	ToggleLabel      string
-	ChartPercent     int
-	Partial          bool
-	SampleCount      int
-	HourCount        int
-	Attachments      []attachmentView
-	HasAttachments   bool
-}
-
-type parkingMonthDetailView struct {
-	Month           string
-	MonthLabel      string
-	BackPath        string
-	Message         string
-	GridFeeLabel    string
-	LastSampleLabel string
-	Summary         parkingMonthView
-	Hours           []parkingHourView
-	HasHours        bool
-}
-
-type parkingHourView struct {
-	AtLabel             string
-	AtTitle             string
-	KWh                 string
-	KWhTitle            string
-	AverageAwattar      string
-	AverageAwattarTitle string
-	EnergyCost          string
-	EnergyCostTitle     string
-	GridCost            string
-	GridCostTitle       string
-	TotalCost           string
-	TotalCostTitle      string
-	WeightTitle         string
-	ChartPercent        int
-}
-
 // routes builds the application's ServeMux. Extracted from main() so that
 // tests exercise the real route patterns instead of calling handler methods
 // directly — a test that fakes r.SetPathValue cannot catch a wrong pattern.
@@ -1143,23 +830,6 @@ func (a *app) routes() *http.ServeMux {
 // what main() serves and what the tests drive.
 func (a *app) handler() http.Handler {
 	return securityHeaders(a.routes())
-}
-
-// notificationEventCatalog pairs the store's event vocabulary with the German
-// labels shown in the UI. The keys belong to the store; the words belong here.
-func notificationEventCatalog() []notificationEventOption {
-	labels := map[string][2]string{
-		store.NotificationEventAnnouncement: {"Aushang", "Neue veröffentlichte Aushänge"},
-		store.NotificationEventIssue:        {"Anliegen", "Neue Anliegen, Kommentare und Statusänderungen"},
-		store.NotificationEventVote:         {"Abstimmungen", "Neue Abstimmungen und Erinnerungen"},
-		store.NotificationEventDocument:     {"Dokumente", "Neu bereitgestellte Dokumente"},
-		store.NotificationEventPayment:      {"Zahlungen", "Fällige oder überfällige Zahlungen"},
-	}
-	out := make([]notificationEventOption, 0, len(store.NotificationEvents))
-	for _, key := range store.NotificationEvents {
-		out = append(out, notificationEventOption{Key: key, Label: labels[key][0], Description: labels[key][1]})
-	}
-	return out
 }
 
 func main() {
@@ -3435,27 +3105,6 @@ func (a *app) ballotViewForActor(tenantSlug string, email string, role string, i
 	return view
 }
 
-type ballotResultCount struct {
-	Count   int
-	Weight  int
-	Percent int
-}
-
-type ballotResultSummary struct {
-	Options             map[string]ballotResultCount
-	TotalVotes          int
-	TotalWeight         int
-	TotalWeightLabel    string
-	EligibleWeight      int
-	EligibleWeightLabel string
-	ParticipationPPM    int
-	ParticipationLabel  string
-	QuorumReached       bool
-	QuorumStatus        string
-	QuorumClass         string
-	WinnerLabel         string
-}
-
 func (a *app) computeBallotTally(tenantSlug string, item ballot) ballotResultSummary {
 	out := ballotResultSummary{Options: map[string]ballotResultCount{}}
 	item = normalizeBallot(item)
@@ -3548,29 +3197,6 @@ func (a *app) ballotEligibleWeights(tenantSlug string, item ballot) map[string]i
 	return weights
 }
 
-func ballotWinnerLabel(options map[string]ballotResultCount) string {
-	if len(options) == 0 {
-		return ""
-	}
-	maxWeight := 0
-	for _, result := range options {
-		if result.Weight > maxWeight {
-			maxWeight = result.Weight
-		}
-	}
-	if maxWeight <= 0 {
-		return ""
-	}
-	winners := []string{}
-	for option, result := range options {
-		if result.Weight == maxWeight {
-			winners = append(winners, option)
-		}
-	}
-	sort.Strings(winners)
-	return strings.Join(winners, ", ")
-}
-
 func ballotStatusForView(item ballot, now time.Time) (string, string, bool) {
 	if now.IsZero() {
 		now = time.Now()
@@ -3621,83 +3247,6 @@ func ballotReadOnlyMessage(role string, item ballot, eligible bool, active bool,
 		return "Beirat: lesende Übersicht."
 	}
 	return "Nur Eigentümer können abstimmen."
-}
-
-func formatBallotWeight(weight int) string {
-	if weight <= 0 {
-		return ""
-	}
-	if weight == 1 {
-		return "1 Stimme"
-	}
-	return formatBallotShareWeight(weight)
-}
-
-func formatBallotResultWeight(weighting string, weight int) string {
-	if weight <= 0 {
-		return "0"
-	}
-	if normalizeBallotWeighting(weighting) == ballotWeightingPerHead {
-		if weight == 1 {
-			return "1 Stimme"
-		}
-		return strconv.Itoa(weight) + " Stimmen"
-	}
-	return formatBallotShareWeight(weight)
-}
-
-func formatPPMPercent(ppm int) string {
-	if ppm < 0 {
-		ppm = 0
-	}
-	if ppm > 1_000_000 {
-		ppm = 1_000_000
-	}
-	return formatDecimal(float64(ppm)/10_000, 1) + " %"
-}
-
-func formatBallotShareWeight(ppm int) string {
-	if ppm <= 0 {
-		return "0"
-	}
-	percent := formatBallotSharePercent(ppm)
-	if ppm < 1000 {
-		return strconv.Itoa(ppm) + " Anteile (" + percent + ")"
-	}
-	return percent + " Miteigentumsanteil"
-}
-
-func formatBallotSharePercent(ppm int) string {
-	if ppm < 0 {
-		ppm = 0
-	}
-	if ppm > 1_000_000 {
-		ppm = 1_000_000
-	}
-	decimals := 1
-	if ppm > 0 && ppm < 1000 {
-		decimals = 3
-	} else if ppm > 0 && ppm < 10000 {
-		decimals = 2
-	}
-	return formatDecimal(float64(ppm)/10_000, decimals) + " %"
-}
-
-func formatBallotReminder(minutes int) string {
-	if minutes <= 0 {
-		minutes = defaultBallotReminderBeforeMinutes
-	}
-	if minutes%60 == 0 {
-		hours := minutes / 60
-		if hours == 1 {
-			return "1 Stunde vorher"
-		}
-		return strconv.Itoa(hours) + " Stunden vorher"
-	}
-	if minutes == 1 {
-		return "1 Minute vorher"
-	}
-	return strconv.Itoa(minutes) + " Minuten vorher"
 }
 
 func voteMessage(status string) (string, bool) {
@@ -4113,39 +3662,6 @@ func (a *app) serviceContactOptions(tenantSlug string) []contactOptionView {
 		options = append(options, contactOptionView{Email: email, Label: label})
 	}
 	return options
-}
-
-func managedContactViewFrom(item managedContact) managedContactView {
-	displayName := managedContactDisplayName(item)
-	description := strings.TrimSpace(item.Company)
-	if description == "" || strings.EqualFold(description, displayName) {
-		description = strings.TrimSpace(item.Notes)
-	}
-	return managedContactView{
-		ID:                 item.ID,
-		Kind:               item.Kind,
-		KindOptions:        contactKindOptions(item.Kind),
-		Name:               item.Name,
-		Company:            item.Company,
-		DisplayName:        displayName,
-		Description:        description,
-		Email:              item.Email,
-		Phone:              item.Phone,
-		Notes:              item.Notes,
-		Active:             item.Active,
-		StatusLabel:        contactStatusLabel(item.Active),
-		HasEmail:           normalizeEmail(item.Email) != "",
-		HasPhone:           strings.TrimSpace(item.Phone) != "",
-		EditDialogID:       "contact-edit-" + item.ID,
-		DeleteConfirmLabel: "Kontakt \"" + displayName + "\" deaktivieren?",
-	}
-}
-
-func contactStatusLabel(active bool) string {
-	if active {
-		return "Aktiv"
-	}
-	return "Inaktiv"
 }
 
 func managerContactViews(tenant tenantConfig) []contactCardView {
@@ -5291,21 +4807,6 @@ func (a *app) parkingStatementTarget(tenantSlug string, actorEmail string, actor
 	return target, true
 }
 
-type parkingStatementView struct {
-	Tenant       tenantConfig
-	User         userProfile
-	Year         int
-	GeneratedAt  string
-	GridFeeLabel string
-	Months       []parkingMonthView
-	HasMonths    bool
-	TotalKWh     string
-	EnergyCost   string
-	GridCost     string
-	BaseFee      string
-	TotalCost    string
-}
-
 func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, user userProfile, year int) parkingStatementView {
 	seedCtx, cancel := context.WithTimeout(ctx, 12*time.Second)
 	defer cancel()
@@ -5344,15 +4845,6 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 		BaseFee:      formatEUR(baseFee),
 		TotalCost:    formatEUR(totalCost),
 	}
-}
-
-func parkingStatementTariffLabel(settings parkingSettings) string {
-	settings = normalizeParkingSettings(settings)
-	if len(settings.Tariffs) == 1 {
-		tariff := settings.Tariffs[0]
-		return formatEURPerKWh(tariff.GridFeeEURPerKWh) + ", Basis " + formatEUR(tariff.BaseFeeEUR)
-	}
-	return "laut Tarifhistorie"
 }
 
 func writeParkingStatementCSV(w io.Writer, statement parkingStatementView) error {
@@ -5818,27 +5310,6 @@ func roleSortRank(role string) int {
 	}
 }
 
-func roleClass(role string) string {
-	switch normalizeRole(role) {
-	case roleAdmin:
-		return "role-admin"
-	case roleManager:
-		return "role-manager"
-	case roleOwner:
-		return "role-owner"
-	case roleRenter:
-		return "role-renter"
-	case roleBeirat:
-		return "role-beirat"
-	case roleResident:
-		return "role-resident"
-	case roleServiceProvider:
-		return "role-service"
-	default:
-		return "role-resident"
-	}
-}
-
 func sameOriginPost(r *http.Request) bool {
 	if r.Method != http.MethodPost {
 		return true
@@ -5990,23 +5461,6 @@ func parseOptionalLocalDateTime(raw string, fallback time.Time) (time.Time, erro
 	return time.Time{}, fmt.Errorf("invalid datetime")
 }
 
-func eventCategoryClass(raw string) string {
-	switch normalizeEventCategory(raw) {
-	case "Eigentümerversammlung":
-		return "versammlung"
-	case "Reinigung":
-		return "reinigung"
-	case "Wartung":
-		return "wartung"
-	case "Ablesung":
-		return "ablesung"
-	case "Frist":
-		return "frist"
-	default:
-		return "sonstiges"
-	}
-}
-
 func parseOptionalExpiry(raw string) (*time.Time, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -6090,19 +5544,6 @@ func unreadAnnouncementCount(items []announcement, lastSeen time.Time, now time.
 	return count
 }
 
-func announcementUnread(item announcement, lastSeen time.Time, now time.Time) bool {
-	if item.PublishedAt.After(now) {
-		return false
-	}
-	if item.ExpiresAt != nil && !item.ExpiresAt.After(now) {
-		return false
-	}
-	if lastSeen.IsZero() {
-		return true
-	}
-	return item.PublishedAt.After(lastSeen)
-}
-
 func announcementViews(items []announcement, now time.Time, includeStatus bool) []announcementView {
 	return announcementViewsWithReadState(items, now, includeStatus, time.Time{})
 }
@@ -6131,57 +5572,6 @@ func (a *app) announcementViewsWithReadState(tenantSlug string, items []announce
 	return views
 }
 
-func announcementViewFrom(item announcement, now time.Time, includeStatus bool, lastSeen time.Time) announcementView {
-	published := !item.PublishedAt.After(now)
-	expired := item.ExpiresAt != nil && !item.ExpiresAt.After(now)
-	status := ""
-	switch {
-	case expired:
-		status = "Abgelaufen"
-	case !published:
-		status = "Geplant"
-	case item.Pinned:
-		status = "Fixiert"
-	default:
-		status = "Veröffentlicht"
-	}
-	if !includeStatus {
-		status = ""
-	}
-	expiresAt := ""
-	expiresAtInput := ""
-	if item.ExpiresAt != nil {
-		expiresAt = formatLocalDateTime(*item.ExpiresAt)
-		expiresAtInput = formatLocalDateTimeInput(*item.ExpiresAt)
-	}
-	author := strings.TrimSpace(item.AuthorName)
-	if author == "" {
-		author = item.AuthorEmail
-	}
-	return announcementView{
-		ID:                 item.ID,
-		Title:              item.Title,
-		Body:               item.Body,
-		BodyHTML:           plainTextHTML(item.Body),
-		Category:           item.Category,
-		CategoryClass:      strings.ToLower(normalizeSlug(item.Category)),
-		Pinned:             item.Pinned,
-		PinnedChecked:      item.Pinned,
-		PublishedAt:        formatLocalDateTime(item.PublishedAt),
-		PublishedAtInput:   formatLocalDateTimeInput(item.PublishedAt),
-		ExpiresAt:          expiresAt,
-		ExpiresAtInput:     expiresAtInput,
-		HasExpiresAt:       item.ExpiresAt != nil,
-		Author:             author,
-		Status:             status,
-		Published:          published,
-		Expired:            expired,
-		Unread:             announcementUnread(item, lastSeen, now),
-		EditDialogID:       "announcement-edit-" + item.ID,
-		DeleteConfirmLabel: "Aushang \"" + item.Title + "\" wirklich löschen?",
-	}
-}
-
 func eventViews(items []houseEvent, now time.Time) []houseEventView {
 	views := make([]houseEventView, 0, len(items))
 	for _, item := range items {
@@ -6204,89 +5594,6 @@ func (a *app) eventViews(tenantSlug string, items []houseEvent, now time.Time, a
 		views[i].HasAttachments = true
 	}
 	return views
-}
-
-func eventViewFrom(item houseEvent, now time.Time) houseEventView {
-	startLocal := item.StartsAt.In(time.Local)
-	past := !eventRollsOffAt(item).After(now)
-	status := "Geplant"
-	if past {
-		status = "Vergangen"
-	} else if sameLocalDate(startLocal, now.In(time.Local)) {
-		status = "Heute"
-	}
-	endsAt := ""
-	endsAtInput := ""
-	if item.EndsAt != nil {
-		endsLocal := item.EndsAt.In(time.Local)
-		endsAt = formatLocalDateTime(endsLocal)
-		endsAtInput = formatLocalDateTimeInput(endsLocal)
-	}
-	author := strings.TrimSpace(item.AuthorName)
-	if author == "" {
-		author = item.AuthorEmail
-	}
-	body := strings.TrimSpace(item.Body)
-	location := strings.TrimSpace(item.Location)
-	return houseEventView{
-		ID:                 item.ID,
-		Title:              item.Title,
-		Body:               item.Body,
-		BodyHTML:           plainTextHTML(item.Body),
-		HasBody:            body != "",
-		Category:           item.Category,
-		CategoryClass:      eventCategoryClass(item.Category),
-		Location:           location,
-		HasLocation:        location != "",
-		StartsAt:           formatLocalDateTime(startLocal),
-		StartsAtInput:      formatLocalDateTimeInput(startLocal),
-		EndsAt:             endsAt,
-		EndsAtInput:        endsAtInput,
-		HasEndsAt:          item.EndsAt != nil,
-		DateBadgeDay:       startLocal.Format("02"),
-		DateBadgeMonth:     germanMonthShort(startLocal),
-		TimeRange:          eventTimeRange(item),
-		Status:             status,
-		Past:               past,
-		Author:             author,
-		EditDialogID:       "event-edit-" + item.ID,
-		DeleteConfirmLabel: "Termin \"" + item.Title + "\" wirklich löschen?",
-	}
-}
-
-func eventTimeRange(item houseEvent) string {
-	startLocal := item.StartsAt.In(time.Local)
-	if item.EndsAt == nil {
-		return formatLocalTime(startLocal)
-	}
-	endLocal := item.EndsAt.In(time.Local)
-	if sameLocalDate(startLocal, endLocal) {
-		return formatLocalTime(startLocal) + " bis " + formatLocalTime(endLocal)
-	}
-	return formatLocalShortDateTime(startLocal) + " bis " + formatLocalShortDateTime(endLocal)
-}
-
-func sameLocalDate(a time.Time, b time.Time) bool {
-	ay, am, ad := a.Date()
-	by, bm, bd := b.Date()
-	return ay == by && am == bm && ad == bd
-}
-
-func germanMonthShort(t time.Time) string {
-	months := [...]string{"Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"}
-	month := int(t.Month())
-	if month < 1 || month > len(months) {
-		return ""
-	}
-	return months[month-1]
-}
-
-func plainTextHTML(body string) template.HTML {
-	escaped := template.HTMLEscapeString(strings.TrimSpace(body))
-	escaped = strings.ReplaceAll(escaped, "\r\n", "\n")
-	escaped = strings.ReplaceAll(escaped, "\n\n", "<br><br>")
-	escaped = strings.ReplaceAll(escaped, "\n", "<br>")
-	return template.HTML(escaped)
 }
 
 func issueFromForm(r *http.Request, tenantSlug string, author userProfile, now time.Time) (residentIssue, error) {
@@ -6328,49 +5635,8 @@ func issueFromForm(r *http.Request, tenantSlug string, author userProfile, now t
 	}, nil
 }
 
-func issueStatuses() []string {
-	return []string{issueStatusNew, issueStatusProgress, issueStatusDone, issueStatusRejected, issueStatusDuplicate}
-}
-
 func serviceProviderIssueStatuses() []string {
 	return []string{issueStatusProgress, issueStatusDone}
-}
-
-func issuePriorities() []string {
-	return []string{issuePriorityLow, issuePriorityNorm, issuePriorityHigh, issuePriorityUrgent}
-}
-
-func issueSelectOptions(values []string, selected string) []selectOption {
-	options := make([]selectOption, 0, len(values))
-	for _, value := range values {
-		options = append(options, selectOption{Value: value, Label: value, Selected: value == selected})
-	}
-	return options
-}
-
-func issueLocationLabel(locationType string, detail string) string {
-	label := "Gemeinschaft"
-	if normalizeIssueLocation(locationType) == issueLocationUnit {
-		label = "Eigene Einheit"
-	}
-	detail = strings.TrimSpace(detail)
-	if detail == "" {
-		return label
-	}
-	return label + " · " + detail
-}
-
-func issueStatusClass(status string) string {
-	switch normalizeIssueStatus(status) {
-	case issueStatusProgress:
-		return "status-progress"
-	case issueStatusDone:
-		return "status-done"
-	case issueStatusRejected, issueStatusDuplicate:
-		return "status-closed"
-	default:
-		return "status-open"
-	}
 }
 
 func issueServiceProposalFromForm(values url.Values) (string, bool, error) {
@@ -6417,20 +5683,6 @@ func parseIssueEstimateAmountCents(raw string) (int64, error) {
 		raw = strings.ReplaceAll(raw, ",", ".")
 	}
 	return integrations.ParseDecimalCents(raw)
-}
-
-func formatIssueEstimateAmount(cents int64) string {
-	if cents <= 0 {
-		return ""
-	}
-	return formatEUR(float64(cents) / 100)
-}
-
-func formatIssueEstimateInput(cents int64) string {
-	if cents <= 0 {
-		return ""
-	}
-	return formatDecimal(float64(cents)/100, 2)
 }
 
 func issuePhotoHeader(r *http.Request) (*multipart.FileHeader, bool) {
@@ -6523,33 +5775,6 @@ func issueBoardFiltersFromQuery(values url.Values) issueBoardFilterView {
 	}
 	filters.HasActive = filters.Status != "" || filters.Priority != "" || filters.Category != "" || filters.Assignee != "" || filters.Sort != "updated"
 	return filters
-}
-
-func issueBoardFilterOptions(filters issueBoardFilterView) issueBoardFilterView {
-	filters.StatusOptions = issueFilterOptions(issueStatuses(), filters.Status, "Alle Status")
-	filters.PriorityOptions = issueFilterOptions(issuePriorities(), filters.Priority, "Alle Prioritäten")
-	filters.CategoryOptions = issueFilterOptions(issueCategories(), filters.Category, "Alle Kategorien")
-	filters.SortOptions = []selectOption{
-		{Value: "updated", Label: "Zuletzt aktualisiert", Selected: filters.Sort == "updated"},
-		{Value: "age", Label: "Älteste zuerst", Selected: filters.Sort == "age"},
-		{Value: "priority", Label: "Priorität", Selected: filters.Sort == "priority"},
-		{Value: "status", Label: "Status", Selected: filters.Sort == "status"},
-		{Value: "category", Label: "Kategorie", Selected: filters.Sort == "category"},
-		{Value: "assignee", Label: "Zuständigkeit", Selected: filters.Sort == "assignee"},
-	}
-	return filters
-}
-
-func issueFilterOptions(values []string, selected string, allLabel string) []selectOption {
-	options := []selectOption{{Value: "", Label: allLabel, Selected: selected == ""}}
-	for _, value := range values {
-		options = append(options, selectOption{Value: value, Label: value, Selected: value == selected})
-	}
-	return options
-}
-
-func issueCategories() []string {
-	return []string{"Reparatur", "Frage", "Vorschlag", "Sonstiges"}
 }
 
 func normalizeIssueBoardSort(raw string) string {
@@ -6962,26 +6187,6 @@ func (a *app) attachmentViewsForEntity(tenantSlug string, entityType string, ent
 	return views
 }
 
-func attachmentViewFromRecord(item attachmentRecord, canDelete bool) attachmentView {
-	escapedID := url.PathEscape(item.ID)
-	contentType := strings.ToLower(strings.TrimSpace(item.ContentType))
-	return attachmentView{
-		ID:          item.ID,
-		Filename:    item.Filename,
-		Size:        formatBytes(item.Size),
-		ContentType: contentType,
-		UploadedBy:  item.UploadedBy,
-		CreatedAt:   formatLocalDateTime(item.CreatedAt),
-		URL:         "/app/attachments/" + escapedID,
-		PreviewURL:  "/app/attachments/" + escapedID + "/preview",
-		ThumbURL:    "/app/attachments/" + escapedID + "/thumb",
-		IsImage:     isImageContentType(contentType),
-		IsPDF:       strings.Split(contentType, ";")[0] == "application/pdf",
-		CanDelete:   canDelete,
-		DeleteURL:   "/app/attachments/delete",
-	}
-}
-
 func issueViews(items []residentIssue) []issueView {
 	return issueViewsForActor(items, "", "")
 }
@@ -7202,37 +6407,6 @@ func auditEventViews(events []auditEvent) []auditEventView {
 	return views
 }
 
-func auditEventViewFrom(event auditEvent) auditEventView {
-	details := make([]auditDetailView, 0, len(event.Details))
-	keys := make([]string, 0, len(event.Details))
-	for key := range event.Details {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		details = append(details, auditDetailView{Key: auditDetailLabel(key), Value: event.Details[key]})
-	}
-	target := auditTargetLabel(event.TargetType, event.TargetID)
-	return auditEventView{
-		At:         formatLocalDateTime(event.At),
-		AtDate:     formatLocalDate(event.At),
-		AtTime:     formatLocalTime(event.At),
-		AtISO:      event.At.Format(time.RFC3339),
-		Action:     event.Action,
-		ActionText: auditActionLabel(event.Action),
-		ActionTone: auditActionTone(event.Action),
-		ToneLabel:  auditToneLabel(event.Action),
-		Actor:      event.ActorEmail,
-		ActorRole:  event.ActorRole,
-		Target:     target,
-		TargetType: auditTargetTypeLabel(event.TargetType),
-		HasTarget:  target != "",
-		Summary:    event.Summary,
-		Details:    details,
-		HasDetails: len(details) > 0,
-	}
-}
-
 func auditStats(events []auditEvent, action string, query string) auditStatsView {
 	stats := auditStatsView{
 		TotalEvents:   len(events),
@@ -7280,261 +6454,6 @@ func auditDateHeader(t time.Time) string {
 		return "Gestern"
 	}
 	return formatLocalDate(t)
-}
-
-func auditActionOptions(selected string) []selectOption {
-	options := []selectOption{{Value: "", Label: "Alle Aktionen", Selected: selected == ""}}
-	for _, action := range []string{
-		auditActionLogin,
-		auditActionInviteCreate,
-		auditActionInviteUpdate,
-		auditActionInviteDelete,
-		auditActionBuildingUpdate,
-		auditActionHeroUpdate,
-		auditActionUnitSave,
-		auditActionUnitDelete,
-		auditActionUnitPayment,
-		auditActionDocumentUpload,
-		auditActionDocumentDownload,
-		auditActionDocumentReplace,
-		auditActionHandoverCreate,
-		auditActionHandoverConfirm,
-		auditActionHandoverFile,
-		auditActionVoteCreate,
-		auditActionVoteOpen,
-		auditActionVoteClose,
-		auditActionVoteCast,
-		auditActionVoteReminder,
-		auditActionParkingSettings,
-		auditActionParkingMonth,
-		auditActionParkingReminder,
-		auditActionIssueWorkflow,
-		auditActionIssueEstimate,
-		auditActionIssueServiceAdd,
-		auditActionIssueServiceDrop,
-		auditActionContactSave,
-		auditActionContactDelete,
-	} {
-		options = append(options, selectOption{Value: action, Label: auditActionLabel(action), Selected: selected == action})
-	}
-	return options
-}
-
-func auditActionLabel(action string) string {
-	switch normalizeAuditAction(action) {
-	case auditActionLogin:
-		return "Anmeldung"
-	case auditActionInviteCreate:
-		return "Einladung angelegt"
-	case auditActionInviteUpdate:
-		return "Einladung geändert"
-	case auditActionInviteDelete:
-		return "Einladung gelöscht"
-	case auditActionBuildingUpdate:
-		return "Gebäude geändert"
-	case auditActionHeroUpdate:
-		return "Hero-Bild geändert"
-	case auditActionUnitSave:
-		return "Einheit gespeichert"
-	case auditActionUnitDelete:
-		return "Einheit gelöscht"
-	case auditActionUnitPayment:
-		return "Zahlungsstatus geändert"
-	case auditActionDocumentUpload:
-		return "Dokument hochgeladen"
-	case auditActionDocumentDownload:
-		return "Dokument heruntergeladen"
-	case auditActionDocumentReplace:
-		return "Dokument ersetzt"
-	case auditActionHandoverCreate:
-		return "Übergabe angelegt"
-	case auditActionHandoverConfirm:
-		return "Übergabe bestätigt"
-	case auditActionHandoverFile:
-		return "Übergabe abgelegt"
-	case auditActionVoteCreate:
-		return "Abstimmung angelegt"
-	case auditActionVoteOpen:
-		return "Abstimmung geöffnet"
-	case auditActionVoteClose:
-		return "Abstimmung geschlossen"
-	case auditActionVoteCast:
-		return "Stimme gespeichert"
-	case auditActionVoteReminder:
-		return "Abstimmungs-Erinnerung gesendet"
-	case auditActionParkingSettings:
-		return "Parkplatz-Abrechnung geändert"
-	case auditActionParkingMonth:
-		return "Monatsstatus geändert"
-	case auditActionParkingReminder:
-		return "Zahlungserinnerung gesendet"
-	case auditActionIssueWorkflow:
-		return "Anliegen-Workflow geändert"
-	case auditActionIssueEstimate:
-		return "Kostenvoranschlag aktualisiert"
-	case auditActionIssueServiceAdd:
-		return "Dienstleister eingeladen"
-	case auditActionIssueServiceDrop:
-		return "Dienstleister-Zugriff entzogen"
-	case auditActionContactSave:
-		return "Kontakt gespeichert"
-	case auditActionContactDelete:
-		return "Kontakt deaktiviert"
-	default:
-		return action
-	}
-}
-
-func auditActionTone(action string) string {
-	switch normalizeAuditAction(action) {
-	case auditActionInviteCreate, auditActionUnitSave, auditActionDocumentUpload, auditActionHandoverCreate, auditActionHandoverConfirm, auditActionVoteCreate, auditActionVoteOpen, auditActionVoteCast, auditActionVoteReminder, auditActionParkingReminder, auditActionIssueServiceAdd, auditActionContactSave, auditActionLogin:
-		return "add"
-	case auditActionInviteDelete, auditActionUnitDelete, auditActionDocumentReplace, auditActionVoteClose, auditActionIssueServiceDrop, auditActionContactDelete:
-		return "danger"
-	default:
-		return "change"
-	}
-}
-
-func auditToneLabel(action string) string {
-	switch auditActionTone(action) {
-	case "add":
-		return "Hinzugefügt"
-	case "danger":
-		return "Kritisch"
-	default:
-		return "Geändert"
-	}
-}
-
-func auditTargetLabel(targetType string, targetID string) string {
-	targetType = auditTargetTypeLabel(targetType)
-	targetID = strings.TrimSpace(targetID)
-	if targetType == "" {
-		return targetID
-	}
-	if targetID == "" {
-		return targetType
-	}
-	return targetType + ": " + targetID
-}
-
-func auditTargetTypeLabel(targetType string) string {
-	switch strings.TrimSpace(targetType) {
-	case "user":
-		return "Person"
-	case "session":
-		return "Sitzung"
-	case "building":
-		return "Gebäude"
-	case "hero":
-		return "Hero-Bild"
-	case "unit":
-		return "Einheit"
-	case "parking":
-		return "Parkplatz"
-	case "issue":
-		return "Anliegen"
-	case "document":
-		return "Dokument"
-	case "ballot":
-		return "Abstimmung"
-	case "handover":
-		return "Übergabe"
-	default:
-		return strings.TrimSpace(targetType)
-	}
-}
-
-func auditDetailLabel(key string) string {
-	switch key {
-	case "auth_method":
-		return "Anmeldung"
-	case "role_from":
-		return "Rolle vorher"
-	case "role_to":
-		return "Rolle neu"
-	case "permissions_from":
-		return "Rechte vorher"
-	case "permissions_to":
-		return "Rechte neu"
-	case "mail_status":
-		return "E-Mail"
-	case "changed_fields":
-		return "Geänderte Felder"
-	case "grid_fee":
-		return "Netzgebühr"
-	case "base_fee":
-		return "Basisgebühr"
-	case "effective_from":
-		return "Gültig ab"
-	case "month":
-		return "Monat"
-	case "paid":
-		return "Status"
-	case "paid_at":
-		return "Bezahlt am"
-	case "paid_by":
-		return "Erfasst von"
-	case "payment_method":
-		return "Zahlungsart"
-	case "payment_reference":
-		return "Referenz"
-	case "estimate_amount":
-		return "Kostenschätzung"
-	case "file_count":
-		return "Dateien"
-	case "has_file":
-		return "Datei"
-	case "balance":
-		return "Offener Betrag"
-	case "status":
-		return "Status"
-	case "priority":
-		return "Priorität"
-	case "unit_label":
-		return "Einheit"
-	case "share":
-		return "Anteil"
-	case "title":
-		return "Titel"
-	case "category":
-		return "Kategorie"
-	case "visibility":
-		return "Sichtbarkeit"
-	case "size":
-		return "Größe"
-	case "content_type":
-		return "Dateityp"
-	case "unit":
-		return "Einheit"
-	case "version":
-		return "Version"
-	case "previous":
-		return "Vorherige Version"
-	case "previous_id":
-		return "Vorherige ID"
-	case "type":
-		return "Typ"
-	case "weighting":
-		return "Gewichtung"
-	case "quorum":
-		return "Quorum"
-	case "reminder":
-		return "Erinnerung"
-	case "weight":
-		return "Stimmgewicht"
-	case "cast_at":
-		return "Stimmabgabe"
-	case "recipients":
-		return "Empfänger"
-	case "deadline":
-		return "Frist"
-	case "document_id":
-		return "Dokument"
-	default:
-		return strings.ReplaceAll(key, "_", " ")
-	}
 }
 
 func (a *app) recordAudit(event auditEvent) {
@@ -8016,138 +6935,6 @@ func (a *app) unitPaymentStatusViewsForEmail(tenantSlug string, email string) []
 	return views
 }
 
-func unitPaymentStatusViewFromUnit(item unit, relation string, record unitPaymentStatus, hasRecord bool) unitPaymentStatusView {
-	status := unitPaymentStatusOpen
-	if hasRecord {
-		status = record.Status
-	}
-	view := unitPaymentStatusView{
-		UnitID:        item.ID,
-		UnitLabel:     item.Label,
-		UnitTypeLabel: unitTypeLabel(item.UnitType),
-		Relation:      unitPaymentRelationLabel(relation),
-		Status:        unitPaymentStatusLabel(status),
-		StatusValue:   normalizeUnitPaymentStatus(status),
-		StatusClass:   unitPaymentStatusClass(status),
-		Detail:        unitPaymentStatusDetail(status, hasRecord),
-		StatusOptions: unitPaymentStatusOptions(status),
-	}
-	if hasRecord && !record.UpdatedAt.IsZero() {
-		view.UpdatedAt = formatDateTimeIn(record.UpdatedAt, time.Local, deATShortDateTimeLayout)
-		view.HasUpdatedAt = true
-	}
-	if hasRecord {
-		view.UpdatedBy = record.UpdatedBy
-	}
-	return view
-}
-
-func unitPaymentRelationLabel(relation string) string {
-	switch normalizeRole(relation) {
-	case roleOwner:
-		return "Eigentümer"
-	case roleRenter:
-		return "Mieter"
-	default:
-		return strings.TrimSpace(relation)
-	}
-}
-
-func unitTypeOptions(selected string) []selectOption {
-	selected = normalizeUnitType(selected)
-	options := []selectOption{
-		{Value: unitTypeResidential, Label: "Wohnung"},
-		{Value: unitTypeCommercial, Label: "Geschäftslokal"},
-		{Value: unitTypeParking, Label: "Stellplatz"},
-		{Value: unitTypeStorage, Label: "Keller / Lager"},
-		{Value: unitTypeOther, Label: "Sonstiges"},
-	}
-	for i := range options {
-		options[i].Selected = options[i].Value == selected
-	}
-	return options
-}
-
-func unitTypeLabel(unitType string) string {
-	switch normalizeUnitType(unitType) {
-	case unitTypeResidential:
-		return "Wohnung"
-	case unitTypeCommercial:
-		return "Geschäftslokal"
-	case unitTypeParking:
-		return "Stellplatz"
-	case unitTypeStorage:
-		return "Keller / Lager"
-	case unitTypeOther:
-		return "Sonstiges"
-	default:
-		return "Einheit"
-	}
-}
-
-func unitBillableLabel(weight int) string {
-	if weight <= 0 {
-		return "zählt nicht als WE"
-	}
-	return "zählt als " + formatBillableUnitWeight(weight) + " WE"
-}
-
-func unitPaymentStatusLabel(status string) string {
-	switch normalizeUnitPaymentStatus(status) {
-	case unitPaymentStatusPaid:
-		return "Bezahlt"
-	case unitPaymentStatusPartial:
-		return "Teilbezahlt"
-	case unitPaymentStatusOverdue:
-		return "Überfällig"
-	default:
-		return "Offen"
-	}
-}
-
-func unitPaymentStatusClass(status string) string {
-	switch normalizeUnitPaymentStatus(status) {
-	case unitPaymentStatusPaid:
-		return "ok"
-	case unitPaymentStatusPartial:
-		return "info"
-	case unitPaymentStatusOverdue:
-		return "dringend"
-	default:
-		return ""
-	}
-}
-
-func unitPaymentStatusDetail(status string, hasRecord bool) string {
-	if !hasRecord {
-		return "Noch nicht gesetzt."
-	}
-	switch normalizeUnitPaymentStatus(status) {
-	case unitPaymentStatusPaid:
-		return "Als bezahlt markiert."
-	case unitPaymentStatusPartial:
-		return "Teilzahlung vorgemerkt."
-	case unitPaymentStatusOverdue:
-		return "Bitte zeitnah prüfen."
-	default:
-		return "Offen vorgemerkt."
-	}
-}
-
-func unitPaymentStatusOptions(selected string) []selectOption {
-	selected = normalizeUnitPaymentStatus(selected)
-	options := []selectOption{
-		{Value: unitPaymentStatusOpen, Label: unitPaymentStatusLabel(unitPaymentStatusOpen)},
-		{Value: unitPaymentStatusPaid, Label: unitPaymentStatusLabel(unitPaymentStatusPaid)},
-		{Value: unitPaymentStatusPartial, Label: unitPaymentStatusLabel(unitPaymentStatusPartial)},
-		{Value: unitPaymentStatusOverdue, Label: unitPaymentStatusLabel(unitPaymentStatusOverdue)},
-	}
-	for i := range options {
-		options[i].Selected = options[i].Value == selected
-	}
-	return options
-}
-
 func buildingSettingsMessage(status string) (string, bool) {
 	switch status {
 	case "saved":
@@ -8325,13 +7112,6 @@ func profileUnitViews(units []unitMembership) []profileUnitView {
 	return views
 }
 
-func formatMiteigentumsanteil(ppm int) string {
-	if ppm <= 0 {
-		return "ohne Anteil"
-	}
-	return formatDecimal(float64(ppm), 0) + " / 1.000.000"
-}
-
 func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	email, role, tenantSlug, ok := a.currentUser(r)
@@ -8407,15 +7187,6 @@ func notificationSettingsMessage(status string) (string, bool) {
 	default:
 		return "", false
 	}
-}
-
-func notificationEventOptions(prefs notificationPreferences) []notificationEventOption {
-	prefs = mergeNotificationPreferences(prefs)
-	out := notificationEventCatalog()
-	for i := range out {
-		out[i].Checked = prefs.Email[out[i].Key]
-	}
-	return out
 }
 
 func notificationPreferencesFromForm(values url.Values) notificationPreferences {
@@ -9018,10 +7789,6 @@ func (a *app) enrichIssueData(data map[string]any) {
 	data["HasOpenIssues"] = count > 0
 }
 
-func emptyState(title string, message string) emptyStateView {
-	return emptyStateView{Title: title, Message: message}
-}
-
 func emptyStateAction(title string, message string, actionURL string, actionLabel string) emptyStateView {
 	state := emptyState(title, message)
 	state.ActionURL = actionURL
@@ -9546,58 +8313,6 @@ func normalizeTenantOverride(override tenantOverride) tenantOverride {
 	return override
 }
 
-func normalizeTenantBrandIcon(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "", tenantBrandCommunity, "weg":
-		return tenantBrandCommunity
-	case tenantBrandSingleHome, "single", "home", "house":
-		return tenantBrandSingleHome
-	case tenantBrandMultiTenant, "multi", "building", "apartment":
-		return tenantBrandMultiTenant
-	case tenantBrandMixedUse, "mixed", "business":
-		return tenantBrandMixedUse
-	case tenantBrandAddressPlate, "address", "plaque", "plate":
-		return tenantBrandAddressPlate
-	case tenantBrandParking, "garage":
-		return tenantBrandParking
-	default:
-		return ""
-	}
-}
-
-func tenantBrandIconLabel(icon string) string {
-	switch normalizeTenantBrandIcon(icon) {
-	case tenantBrandSingleHome:
-		return "Einfamilienhaus"
-	case tenantBrandMultiTenant:
-		return "Mehrparteienhaus"
-	case tenantBrandMixedUse:
-		return "Gemischt genutzt"
-	case tenantBrandAddressPlate:
-		return "Adressschild"
-	case tenantBrandParking:
-		return "Parkplatz / Ladeplatz"
-	default:
-		return "Hausgemeinschaft"
-	}
-}
-
-func tenantBrandIconOptions(selected string) []selectOption {
-	selected = normalizeTenantBrandIcon(selected)
-	options := []selectOption{
-		{Value: tenantBrandCommunity, Label: tenantBrandIconLabel(tenantBrandCommunity)},
-		{Value: tenantBrandMultiTenant, Label: tenantBrandIconLabel(tenantBrandMultiTenant)},
-		{Value: tenantBrandSingleHome, Label: tenantBrandIconLabel(tenantBrandSingleHome)},
-		{Value: tenantBrandMixedUse, Label: tenantBrandIconLabel(tenantBrandMixedUse)},
-		{Value: tenantBrandAddressPlate, Label: tenantBrandIconLabel(tenantBrandAddressPlate)},
-		{Value: tenantBrandParking, Label: tenantBrandIconLabel(tenantBrandParking)},
-	}
-	for i := range options {
-		options[i].Selected = options[i].Value == selected
-	}
-	return options
-}
-
 func normalizeTenantBrandAbbreviation(raw string) string {
 	raw = strings.ToUpper(strings.TrimSpace(raw))
 	if raw == "" {
@@ -9747,16 +8462,6 @@ func managedContactFromForm(tenantSlug string, values url.Values) (managedContac
 	})
 }
 
-func contactKindOptions(selected string) []selectOption {
-	selected = normalizeContactKind(selected)
-	kinds := []string{"Dienstleister", "Hausmeister", "Notdienst", "Verwaltung", "Sonstiges"}
-	options := make([]selectOption, 0, len(kinds))
-	for _, kind := range kinds {
-		options = append(options, selectOption{Value: kind, Label: kind, Selected: selected == kind})
-	}
-	return options
-}
-
 func storeEBInterfaceInvoiceDocument(store *documentStore, invoice integrations.Invoice, uploadedBy string, data []byte, now time.Time) (documentRecord, error) {
 	if store == nil {
 		return documentRecord{}, fmt.Errorf("document store unavailable")
@@ -9776,92 +8481,6 @@ func storeEBInterfaceInvoiceDocument(store *documentStore, invoice integrations.
 		Visibility: documentVisibilityManagerOnly,
 		UploadedBy: uploadedBy,
 	}, "ebinterface-"+filenameToken+".xml", "application/xml", data, now)
-}
-
-func documentCategories() []string {
-	return []string{
-		documentCategoryProtocol,
-		documentCategoryBilling,
-		documentCategoryRules,
-		documentCategoryContract,
-		documentCategoryPlan,
-		documentCategoryOther,
-	}
-}
-
-func documentCategoryOptions(selected string) []selectOption {
-	selected = normalizeDocumentCategory(selected)
-	options := make([]selectOption, 0, len(documentCategories()))
-	for _, category := range documentCategories() {
-		options = append(options, selectOption{Value: category, Label: category, Selected: selected == category})
-	}
-	return options
-}
-
-func documentUnitOptions(units []unit, selected string) []selectOption {
-	selected = normalizeUnitID(selected)
-	options := []selectOption{{Value: "", Label: "Gesamtes Haus", Selected: selected == ""}}
-	for _, item := range units {
-		id := normalizeUnitID(item.ID)
-		label := strings.TrimSpace(item.Label)
-		if id == "" || label == "" {
-			continue
-		}
-		options = append(options, selectOption{Value: id, Label: label, Selected: selected == id})
-	}
-	return options
-}
-
-func documentUnitLabel(unitID string) string {
-	unitID = normalizeUnitID(unitID)
-	if unitID == "" {
-		return ""
-	}
-	return unitID
-}
-
-func documentUnitAuditLabel(unitID string) string {
-	unitID = normalizeUnitID(unitID)
-	if unitID == "" {
-		return ""
-	}
-	return unitID
-}
-
-func documentVisibilityOptions(selected string) []selectOption {
-	selected = normalizeDocumentVisibility(selected)
-	values := []string{documentVisibilityAllResidents, documentVisibilityOwnersOnly, documentVisibilityManagerOnly}
-	options := make([]selectOption, 0, len(values))
-	for _, value := range values {
-		options = append(options, selectOption{Value: value, Label: documentVisibilityLabel(value), Selected: selected == value})
-	}
-	return options
-}
-
-func documentVisibilityLabel(visibility string) string {
-	switch normalizeDocumentVisibility(visibility) {
-	case documentVisibilityAllResidents:
-		return "Alle Bewohner"
-	case documentVisibilityOwnersOnly:
-		return "Nur Eigentümer"
-	case documentVisibilityManagerOnly:
-		return "Nur Verwaltung"
-	default:
-		return ""
-	}
-}
-
-func documentVisibilityClass(visibility string) string {
-	switch normalizeDocumentVisibility(visibility) {
-	case documentVisibilityAllResidents:
-		return "ok"
-	case documentVisibilityOwnersOnly:
-		return "unread"
-	case documentVisibilityManagerOnly:
-		return "role-admin"
-	default:
-		return ""
-	}
 }
 
 func documentViews(items []documentRecord) []documentView {
@@ -9895,61 +8514,6 @@ func (a *app) documentViewsForActor(tenantSlug string, email string, role string
 		views = append(views, view)
 	}
 	return views
-}
-
-func documentViewFrom(item documentRecord) documentView {
-	contentType := strings.ToLower(strings.TrimSpace(item.ContentType))
-	canPreview := documentCanPreview(contentType)
-	return documentView{
-		ID:              item.ID,
-		Title:           item.Title,
-		Category:        item.Category,
-		Visibility:      documentVisibilityLabel(item.Visibility),
-		VisibilityClass: documentVisibilityClass(item.Visibility),
-		UnitLabel:       documentUnitLabel(item.UnitID),
-		HasUnit:         normalizeUnitID(item.UnitID) != "",
-		Filename:        item.Filename,
-		FileKind:        documentFileKind(item),
-		Size:            formatBytes(item.Size),
-		ContentType:     item.ContentType,
-		UploadedBy:      item.UploadedBy,
-		UploadedAt:      formatLocalDateTime(item.UploadedAt),
-		UploadedDate:    formatLocalDate(item.UploadedAt),
-		DownloadURL:     "/app/dokumente/" + url.PathEscape(item.ID) + "/download",
-		PreviewURL:      "/app/dokumente/" + url.PathEscape(item.ID) + "/preview",
-		CanPreview:      canPreview,
-		IsImage:         isImageContentType(contentType),
-		IsPDF:           strings.Split(contentType, ";")[0] == "application/pdf",
-		VersionLabel:    documentVersionLabel(item.Version),
-		ReplaceDialogID: "document-replace-" + item.ID,
-	}
-}
-
-func documentCanPreview(contentType string) bool {
-	contentType = strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
-	return isImageContentType(contentType) || contentType == "application/pdf"
-}
-
-func documentFileKind(item documentRecord) string {
-	contentType := strings.ToLower(strings.TrimSpace(item.ContentType))
-	if strings.Contains(contentType, "pdf") {
-		return "PDF"
-	}
-	if strings.HasPrefix(contentType, "image/") {
-		return "Bild"
-	}
-	ext := strings.TrimPrefix(strings.ToUpper(filepath.Ext(item.Filename)), ".")
-	if ext != "" && len([]rune(ext)) <= 5 {
-		return ext
-	}
-	return "Datei"
-}
-
-func documentVersionLabel(version int) string {
-	if version <= 0 {
-		version = 1
-	}
-	return "Version " + strconv.Itoa(version)
 }
 
 func (a *app) documentCategorySectionsForActor(tenantSlug string, email string, role string, items []documentRecord, includeEmpty bool) []documentCategoryView {
@@ -9999,25 +8563,6 @@ func filterDocuments(items []documentRecord, query string) []documentRecord {
 	return out
 }
 
-func selectedDocumentSort(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "oldest", "title":
-		return strings.ToLower(strings.TrimSpace(raw))
-	default:
-		return "newest"
-	}
-}
-
-func documentSortOptions(selected string) []selectOption {
-	selected = selectedDocumentSort(selected)
-	options := []selectOption{
-		{Value: "newest", Label: "Neueste zuerst", Selected: selected == "newest"},
-		{Value: "oldest", Label: "Älteste zuerst", Selected: selected == "oldest"},
-		{Value: "title", Label: "Titel A-Z", Selected: selected == "title"},
-	}
-	return options
-}
-
 func sortDocumentsForView(items []documentRecord, sortMode string) []documentRecord {
 	out := make([]documentRecord, 0, len(items))
 	for _, item := range items {
@@ -10060,33 +8605,6 @@ func documentCategorySections(items []documentRecord, includeEmpty bool) []docum
 		})
 	}
 	return sections
-}
-
-func formatBytes(size int64) string {
-	if size < 0 {
-		size = 0
-	}
-	const kb = 1024
-	const mb = 1024 * kb
-	switch {
-	case size >= mb:
-		return formatDecimal(float64(size)/float64(mb), 1) + " MB"
-	case size >= kb:
-		return formatDecimal(float64(size)/float64(kb), 1) + " KB"
-	default:
-		return strconv.FormatInt(size, 10) + " B"
-	}
-}
-
-func ballotWeightingLabel(weighting string) string {
-	switch normalizeBallotWeighting(weighting) {
-	case ballotWeightingPerHead:
-		return "pro Kopf"
-	case ballotWeightingPerShare:
-		return "nach Miteigentumsanteil"
-	default:
-		return ""
-	}
 }
 
 func (a *app) parkingTelemetry(ctx context.Context, tenant tenantConfig) parkingTelemetry {
@@ -10387,14 +8905,6 @@ func parkingTariffViews(settings parkingSettings) []parkingTariffView {
 	return views
 }
 
-func formatParkingTariffDate(raw string) string {
-	t, err := time.Parse("2006-01-02", raw)
-	if err != nil {
-		return raw
-	}
-	return formatLocalDate(t)
-}
-
 func priceAt(samples []parkingNumericSample, at time.Time) (float64, bool) {
 	if len(samples) == 0 {
 		return 0, false
@@ -10414,11 +8924,6 @@ type parkingHourUsage struct {
 	PriceEUR   float64
 	EnergyCost float64
 	GridCost   float64
-}
-
-type parkingBalanceView struct {
-	Outstanding float64
-	Overdue     float64
 }
 
 func parkingBalanceSummary(months []parkingMonthView) parkingBalanceView {
@@ -10750,31 +9255,6 @@ func userRowFrom(p userProfile) userRow {
 	}
 }
 
-type userRow struct {
-	Email              string
-	Title              string
-	FirstName          string
-	LastName           string
-	Phone              string
-	DirectoryOptIn     bool
-	DisplayName        string
-	Initials           string
-	Role               string
-	RoleClass          string
-	RoleCapabilities   []string
-	Status             string
-	Tenants            string
-	PermissionLabel    string
-	PermissionList     []string
-	ParkingChecked     bool
-	OutstandingBalance string
-	HasOutstanding     bool
-	AuthLabel          string
-	AuthList           []string
-	Editable           bool
-	LastSeen           string
-}
-
 func formatHAValue(state haState) string {
 	unit, _ := state.Attributes["unit_of_measurement"].(string)
 	value := strings.TrimSpace(state.State)
@@ -10819,135 +9299,6 @@ const (
 	htmlDateTimeLocalLayout = "2006-01-02T15:04"
 )
 
-// User-facing formatting convention: de-AT copy uses local time, dot-grouped
-// thousands and comma decimals. HTML control values use browser-native layouts.
-func formatLocalDate(t time.Time) string {
-	return formatDateTimeIn(t, time.Local, deATDateLayout)
-}
-
-func formatLocalDateTime(t time.Time) string {
-	return formatDateTimeIn(t, time.Local, deATDateTimeLayout)
-}
-
-func formatLocalShortDateTime(t time.Time) string {
-	return formatDateTimeIn(t, time.Local, deATShortDateTimeLayout)
-}
-
-func formatLocalTime(t time.Time) string {
-	return formatDateTimeIn(t, time.Local, deATTimeLayout)
-}
-
-func formatLocalDateTimeInput(t time.Time) string {
-	return formatDateTimeIn(t, time.Local, htmlDateTimeLocalLayout)
-}
-
-func formatDateTimeIn(t time.Time, loc *time.Location, layout string) string {
-	if loc == nil {
-		loc = time.Local
-	}
-	return t.In(loc).Format(layout)
-}
-
-func formatInputFloat(value float64) string {
-	return formatDecimal(value, 3)
-}
-
-func formatEUR(value float64) string {
-	return formatDecimal(value, 2) + " €"
-}
-
-func formatEURPerKWh(value float64) string {
-	return formatDecimal(value, 3) + " €/kWh"
-}
-
-func formatKWh(value float64) string {
-	return formatDecimal(value, 2) + " kWh"
-}
-
-func formatPreciseEUR(value float64) string {
-	return formatDecimal(value, 6) + " €"
-}
-
-func formatPreciseEURPerKWh(value float64) string {
-	return formatDecimal(value, 6) + " €/kWh"
-}
-
-func formatPreciseKWh(value float64) string {
-	return formatDecimal(value, 6) + " kWh"
-}
-
-func formatDecimal(value float64, decimals int) string {
-	if decimals < 0 {
-		decimals = 0
-	}
-	sign := ""
-	if value < 0 {
-		sign = "-"
-		value = -value
-	}
-	raw := fmt.Sprintf("%.*f", decimals, value)
-	parts := strings.SplitN(raw, ".", 2)
-	intPart := parts[0]
-	for i := len(intPart) - 3; i > 0; i -= 3 {
-		intPart = intPart[:i] + "." + intPart[i:]
-	}
-	if decimals == 0 || len(parts) == 1 {
-		return sign + intPart
-	}
-	return sign + intPart + "," + parts[1]
-}
-
-func formatMonthLabel(month string, loc *time.Location) string {
-	t, err := time.ParseInLocation("2006-01", month, loc)
-	if err != nil {
-		return month
-	}
-	names := []string{"Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
-	return names[int(t.Month())-1] + " " + strconv.Itoa(t.Year())
-}
-
-func unitCountLabel(count int) string {
-	if count == 1 {
-		return "Wohneinheit"
-	}
-	return "Wohneinheiten"
-}
-
-func billableUnitCountLabel(weight int) string {
-	if weight == unitBillableFullPPM {
-		return "Wohneinheit"
-	}
-	return "Wohneinheiten"
-}
-
-func formatBillableUnitWeight(weight int) string {
-	if weight <= 0 {
-		return "0"
-	}
-	value := float64(weight) / float64(unitBillableFullPPM)
-	if weight%unitBillableFullPPM == 0 {
-		return formatDecimal(value, 0)
-	}
-	return strings.TrimRight(strings.TrimRight(formatDecimal(value, 2), "0"), ",")
-}
-
-func formatPeriodLabel(first time.Time, last time.Time, loc *time.Location) string {
-	if first.IsZero() || last.IsZero() {
-		return "Noch keine Messwerte"
-	}
-	if loc == nil {
-		loc = time.Local
-	}
-	return formatDateTimeIn(first, loc, deATShortDateTimeLayout) + " bis " + formatDateTimeIn(last, loc, deATShortDateTimeLayout)
-}
-
-func paidLabel(paid bool) string {
-	if paid {
-		return "BEZAHLT"
-	}
-	return "OFFEN"
-}
-
 func parkingPaymentDetails(state parkingMonthState, loc *time.Location) string {
 	state = normalizeParkingMonthState(state)
 	if !state.Paid {
@@ -10972,13 +9323,6 @@ func parkingPaymentDetails(state parkingMonthState, loc *time.Location) string {
 	return strings.Join(parts, " · ")
 }
 
-func togglePaidLabel(paid bool) string {
-	if paid {
-		return "Als offen markieren"
-	}
-	return "Als bezahlt markieren"
-}
-
 func boolFormValue(value bool) string {
 	if value {
 		return "true"
@@ -10997,29 +9341,6 @@ func securityHeaders(next http.Handler) http.Handler {
 
 func truncateRunes(value string, limit int) string { return textutil.Truncate(value, limit) }
 
-func authMethodsLabel(methods []string) string {
-	return strings.Join(authMethodsLabelList(methods), ", ")
-}
-
-func authMethodsLabelList(methods []string) []string {
-	normalized, err := normalizeAuthMethods(methods)
-	if err != nil {
-		return []string{"Ungültig"}
-	}
-	labels := make([]string, 0, len(normalized))
-	for _, method := range normalized {
-		switch method {
-		case authMethodEmail:
-			labels = append(labels, "E-Mail-Link")
-		case authMethodOIDC:
-			labels = append(labels, "Zitadel SSO")
-		default:
-			labels = append(labels, method)
-		}
-	}
-	return labels
-}
-
 func normalizeSlug(raw string) string { return textutil.Slug(raw) }
 
 func firstNonEmpty(values ...string) string { return textutil.FirstNonEmpty(values...) }
@@ -11034,10 +9355,6 @@ func excludeEmail(raw []string, excluded string) []string {
 		out = append(out, email)
 	}
 	return out
-}
-
-func permissionLabel(permissions []string) string {
-	return strings.Join(permissionLabelList(permissions), ", ")
 }
 
 func parsePermissionForm(values url.Values) []string {
@@ -11066,22 +9383,6 @@ func setPermission(raw []string, permission string, enabled bool) []string {
 		out = append(out, permission)
 	}
 	return normalizePermissions(out)
-}
-
-func permissionLabelList(permissions []string) []string {
-	labels := []string{}
-	for _, permission := range normalizePermissions(permissions) {
-		switch permission {
-		case permissionParking:
-			labels = append(labels, "Parkplatznutzung")
-		default:
-			labels = append(labels, permission)
-		}
-	}
-	if len(labels) == 0 {
-		return []string{"Standard"}
-	}
-	return labels
 }
 
 func normalizeEmail(v string) string { return textutil.Email(v) }
