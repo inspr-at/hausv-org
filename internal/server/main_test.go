@@ -3735,6 +3735,59 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 	}
 }
 
+// HAUSV-128 AC-b: a service provider's own actions on an assigned issue —
+// status changes AND uploads — must be visible in the Verwaltung audit-log.
+// Before this, comment/photo uploads left no trace.
+func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	issue, err := a.issueStore.Create(residentIssue{
+		TenantSlug:    "jhw22",
+		AuthorEmail:   "resident@example.com",
+		AuthorName:    "Resident",
+		Category:      "Reparatur",
+		Title:         "Treppenhauslicht",
+		Body:          "Bitte prüfen.",
+		LocationType:  issueLocationCommon,
+		AssigneeEmail: "service@example.com",
+	})
+	if err != nil {
+		t.Fatalf("Create issue: %v", err)
+	}
+
+	comment := authedMultipartFilesRequest(t, a, "service@example.com", "/app/anliegen/comment", map[string]string{
+		"id":   issue.ID,
+		"body": "Foto vom Schaden angehängt.",
+	}, []multipartTestFile{{Field: "attachments", Filename: "schaden.png", Body: minimalPNG()}})
+	if comment.Code != http.StatusSeeOther {
+		t.Fatalf("service comment status = %d, want redirect", comment.Code)
+	}
+
+	status := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+		"id":     {issue.ID},
+		"status": {issueStatusProgress},
+	})
+	if status.Code != http.StatusSeeOther {
+		t.Fatalf("service status change = %d, want redirect", status.Code)
+	}
+
+	commentEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIssueComment, Limit: 10})
+	if len(commentEvents) == 0 {
+		t.Fatal("provider comment produced no issue.comment audit event")
+	}
+	if commentEvents[0].ActorEmail != "service@example.com" {
+		t.Fatalf("comment audit actor = %q, want the provider", commentEvents[0].ActorEmail)
+	}
+	if commentEvents[0].Details["has_file"] != "true" {
+		t.Fatalf("comment audit has_file = %q, want true (photo upload must be traceable)", commentEvents[0].Details["has_file"])
+	}
+
+	workflowEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIssueWorkflow, Limit: 10})
+	if len(workflowEvents) == 0 || workflowEvents[0].ActorEmail != "service@example.com" {
+		t.Fatalf("provider status change not audited with provider as actor: %+v", workflowEvents)
+	}
+}
+
 func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}

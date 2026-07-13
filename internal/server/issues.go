@@ -254,6 +254,20 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: email,
+		ActorRole:  role,
+		Action:     auditActionIssueComment,
+		TargetType: "issue",
+		TargetID:   updated.ID,
+		Summary:    "Kommentar zu Anliegen hinzugefügt",
+		Details: map[string]string{
+			"comment_id": commentID,
+			"has_file":   strconv.FormatBool(len(uploaded) > 0),
+			"file_count": strconv.Itoa(len(uploaded)),
+		},
+	})
 	a.notifyIssueUpdated(tenant, updated, email, "Neuer Kommentar zu Anliegen \""+updated.Title+"\"")
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
 }
@@ -289,6 +303,18 @@ func (a *app) deleteIssueComment(w http.ResponseWriter, r *http.Request, ac auth
 			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
 		}
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: email,
+		ActorRole:  role,
+		Action:     auditActionIssueCommentDelete,
+		TargetType: "issue",
+		TargetID:   updated.ID,
+		Summary:    "Kommentar zu Anliegen gelöscht",
+		Details: map[string]string{
+			"comment_id": comment.ID,
+		},
+	})
 	a.notifyIssueUpdated(tenant, updated, email, "Kommentar zu Anliegen \""+updated.Title+"\" gelöscht")
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
 }

@@ -975,6 +975,8 @@ func AuditActionOptions(selected string) []SelectOption {
 		store.AuditActionIssueEstimate,
 		store.AuditActionIssueServiceAdd,
 		store.AuditActionIssueServiceDrop,
+		store.AuditActionIssueComment,
+		store.AuditActionIssueCommentDelete,
 		store.AuditActionContactSave,
 		store.AuditActionContactDelete,
 	} {
@@ -1039,6 +1041,10 @@ func AuditActionLabel(action string) string {
 		return "Dienstleister eingeladen"
 	case store.AuditActionIssueServiceDrop:
 		return "Dienstleister-Zugriff entzogen"
+	case store.AuditActionIssueComment:
+		return "Kommentar hinzugefügt"
+	case store.AuditActionIssueCommentDelete:
+		return "Kommentar gelöscht"
 	case store.AuditActionContactSave:
 		return "Kontakt gespeichert"
 	case store.AuditActionContactDelete:

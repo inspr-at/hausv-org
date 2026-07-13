@@ -24,32 +24,34 @@ const (
 )
 
 const (
-	AuditActionLogin            = "login"
-	AuditActionInviteCreate     = "invite.create"
-	AuditActionInviteUpdate     = "invite.update"
-	AuditActionInviteDelete     = "invite.delete"
-	AuditActionBuildingUpdate   = "building.update"
-	AuditActionHeroUpdate       = "building.hero"
-	AuditActionUnitSave         = "building.unit.save"
-	AuditActionUnitDelete       = "building.unit.delete"
-	AuditActionUnitPayment      = "building.unit.payment"
-	AuditActionParkingSettings  = "parking.settings"
-	AuditActionParkingMonth     = "parking.month"
-	AuditActionParkingReminder  = "parking.reminder"
-	AuditActionIssueWorkflow    = "issue.workflow"
-	AuditActionIssueEstimate    = "issue.estimate"
-	AuditActionIssueServiceAdd  = "issue.service.add"
-	AuditActionIssueServiceDrop = "issue.service.drop"
-	AuditActionContactSave      = "contact.save"
-	AuditActionContactDelete    = "contact.delete"
-	AuditActionDocumentUpload   = "document.upload"
-	AuditActionDocumentDownload = "document.download"
-	AuditActionDocumentReplace  = "document.replace"
-	AuditActionVoteCreate       = "vote.create"
-	AuditActionVoteOpen         = "vote.open"
-	AuditActionVoteClose        = "vote.close"
-	AuditActionVoteCast         = "vote.cast"
-	AuditActionVoteReminder     = "vote.reminder"
+	AuditActionLogin              = "login"
+	AuditActionInviteCreate       = "invite.create"
+	AuditActionInviteUpdate       = "invite.update"
+	AuditActionInviteDelete       = "invite.delete"
+	AuditActionBuildingUpdate     = "building.update"
+	AuditActionHeroUpdate         = "building.hero"
+	AuditActionUnitSave           = "building.unit.save"
+	AuditActionUnitDelete         = "building.unit.delete"
+	AuditActionUnitPayment        = "building.unit.payment"
+	AuditActionParkingSettings    = "parking.settings"
+	AuditActionParkingMonth       = "parking.month"
+	AuditActionParkingReminder    = "parking.reminder"
+	AuditActionIssueWorkflow      = "issue.workflow"
+	AuditActionIssueEstimate      = "issue.estimate"
+	AuditActionIssueServiceAdd    = "issue.service.add"
+	AuditActionIssueServiceDrop   = "issue.service.drop"
+	AuditActionIssueComment       = "issue.comment"
+	AuditActionIssueCommentDelete = "issue.comment.delete"
+	AuditActionContactSave        = "contact.save"
+	AuditActionContactDelete      = "contact.delete"
+	AuditActionDocumentUpload     = "document.upload"
+	AuditActionDocumentDownload   = "document.download"
+	AuditActionDocumentReplace    = "document.replace"
+	AuditActionVoteCreate         = "vote.create"
+	AuditActionVoteOpen           = "vote.open"
+	AuditActionVoteClose          = "vote.close"
+	AuditActionVoteCast           = "vote.cast"
+	AuditActionVoteReminder       = "vote.reminder"
 )
 
 const (
@@ -1539,6 +1541,7 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionVoteCreate, AuditActionVoteOpen, AuditActionVoteClose, AuditActionVoteCast, AuditActionVoteReminder,
 		AuditActionParkingSettings, AuditActionParkingMonth, AuditActionParkingReminder, AuditActionIssueWorkflow,
 		AuditActionIssueEstimate, AuditActionIssueServiceAdd, AuditActionIssueServiceDrop,
+		AuditActionIssueComment, AuditActionIssueCommentDelete,
 		AuditActionContactSave, AuditActionContactDelete:
 		return raw
 	default:
