@@ -15,17 +15,8 @@ import (
 	"github.com/markus-barta/hausv-org/internal/homeassistant"
 )
 
-func (a *app) parking(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
@@ -60,17 +51,8 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	profile := a.profileForTenant(email, tenant.Slug)
 	if !hasCapability(role, capabilityManageParking) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
@@ -93,17 +75,8 @@ func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	profile := a.profileForTenant(email, tenant.Slug)
 	if !hasCapability(role, capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
@@ -154,17 +127,8 @@ func (a *app) hydrateParkingMonth(tenantSlug string, email string, role string, 
 	return month
 }
 
-func (a *app) parkingStatement(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) parkingStatement(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	year, ok := parkingStatementYear(r.PathValue("year"))
 	if !ok {
 		http.NotFound(w, r)
@@ -265,17 +229,8 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 	}
 }
 
-func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	actorEmail, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
-		return
-	}
+func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityManageParking) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
@@ -334,17 +289,8 @@ func parkingTariffFromForm(values url.Values) (parkingTariff, error) {
 	}), nil
 }
 
-func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	actorEmail, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
-		return
-	}
+func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
 	actor := a.profileForTenant(actorEmail, tenant.Slug)
 	canManagePayment := hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking) || hasCapability(role, capabilityPlatformAdmin)
 	canMarkPayment := canManagePayment || actor.HasPermission(permissionParking)
@@ -427,19 +373,10 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/parking?month=saved", http.StatusSeeOther)
 }
 
-func (a *app) sendParkingReminders(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	actorEmail, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) sendParkingReminders(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityManageUsers) && !hasCapability(role, capabilityManageParking) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	returnToAccess := r.FormValue("return_to") == "parking_access"
