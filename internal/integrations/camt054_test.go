@@ -1,4 +1,4 @@
-package main
+package integrations
 
 import (
 	"context"
@@ -13,7 +13,7 @@ func TestCAMT054AdapterParsesPaymentAdviceGoldenFile(t *testing.T) {
 		t.Fatalf("open fixture: %v", err)
 	}
 	defer f.Close()
-	result, err := camt054Adapter{}.ParsePayments(context.Background(), integrationSource{Filename: "testdata/camt054-2019.xml"}, f)
+	result, err := CAMT054Adapter{}.ParsePayments(context.Background(), Source{Filename: "testdata/camt054-2019.xml"}, f)
 	if err != nil {
 		t.Fatalf("ParsePayments: %v", err)
 	}
@@ -21,7 +21,7 @@ func TestCAMT054AdapterParsesPaymentAdviceGoldenFile(t *testing.T) {
 		t.Fatalf("result = %+v", result)
 	}
 	payment := result.Payments[0]
-	if payment.Source.Format != integrationFormatCAMT054 || payment.Source.Version != "2019/camt.054.001.08" {
+	if payment.Source.Format != FormatCAMT054 || payment.Source.Version != "2019/camt.054.001.08" {
 		t.Fatalf("source = %+v", payment.Source)
 	}
 	if payment.Reference != "HV-JHW22-202607-GHI789" || payment.Amount.Cents != 13304 || payment.Amount.Currency != "EUR" {
@@ -33,7 +33,7 @@ func TestCAMT054AdapterParsesPaymentAdviceGoldenFile(t *testing.T) {
 }
 
 func TestCAMT054AdapterRejectsUnsupportedNamespaceAsReportError(t *testing.T) {
-	result, err := camt054Adapter{}.ParsePayments(context.Background(), integrationSource{}, strings.NewReader(`<Document xmlns="urn:example"><BkToCstmrDbtCdtNtfctn /></Document>`))
+	result, err := CAMT054Adapter{}.ParsePayments(context.Background(), Source{}, strings.NewReader(`<Document xmlns="urn:example"><BkToCstmrDbtCdtNtfctn /></Document>`))
 	if err != nil {
 		t.Fatalf("ParsePayments: %v", err)
 	}

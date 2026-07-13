@@ -14,6 +14,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/markus-barta/hausv-org/internal/integrations"
+	"github.com/markus-barta/hausv-org/internal/textutil"
 	"github.com/markus-barta/hausv-org/internal/version"
 	"html/template"
 	"image"
@@ -6831,7 +6833,7 @@ func parseIssueEstimateAmountCents(raw string) (int64, error) {
 	} else if strings.Count(raw, ",") == 1 && strings.Count(raw, ".") == 0 {
 		raw = strings.ReplaceAll(raw, ",", ".")
 	}
-	return parseDecimalCents(raw)
+	return integrations.ParseDecimalCents(raw)
 }
 
 func formatIssueEstimateAmount(cents int64) string {
@@ -12088,6 +12090,27 @@ func (s *documentStore) writeGeneratedDocumentFile(tenantSlug string, storedFile
 	return path, nil
 }
 
+func storeEBInterfaceInvoiceDocument(store *documentStore, invoice integrations.Invoice, uploadedBy string, data []byte, now time.Time) (documentRecord, error) {
+	if store == nil {
+		return documentRecord{}, fmt.Errorf("document store unavailable")
+	}
+	title := "E-Rechnung"
+	if strings.TrimSpace(invoice.InvoiceNumber) != "" {
+		title += " " + strings.TrimSpace(invoice.InvoiceNumber)
+	}
+	if strings.TrimSpace(invoice.IssuerName) != "" {
+		title += " - " + strings.TrimSpace(invoice.IssuerName)
+	}
+	filenameToken := integrations.SanitizeFilenameToken(firstNonEmpty(invoice.InvoiceNumber, invoice.ExternalID, "rechnung"))
+	return store.CreateGenerated(documentRecord{
+		TenantSlug: invoice.TenantSlug,
+		Title:      title,
+		Category:   documentCategoryBilling,
+		Visibility: documentVisibilityManagerOnly,
+		UploadedBy: uploadedBy,
+	}, "ebinterface-"+filenameToken+".xml", "application/xml", data, now)
+}
+
 func (s *documentStore) saveLocked() error {
 	return saveJSONAtomic(s.path, s.data, "document")
 }
@@ -16427,11 +16450,7 @@ func normalizeTenants(raw []string, fallback string) []string {
 	return out
 }
 
-func normalizeSlug(raw string) string {
-	raw = strings.ToLower(strings.TrimSpace(raw))
-	raw = strings.ReplaceAll(raw, "_", "-")
-	return raw
-}
+func normalizeSlug(raw string) string { return textutil.Slug(raw) }
 
 func normalizeUnitID(raw string) string {
 	raw = normalizeSlug(raw)
@@ -16513,14 +16532,7 @@ func normalizeUnits(raw []unit, fallbackTenant string) []unit {
 	return out
 }
 
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return value
-		}
-	}
-	return ""
-}
+func firstNonEmpty(values ...string) string { return textutil.FirstNonEmpty(values...) }
 
 func normalizeEmailList(raw []string) []string {
 	out := []string{}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/markus-barta/hausv-org/internal/integrations"
 	"strings"
 	"testing"
 )
@@ -15,7 +16,7 @@ func TestApplyImportedPaymentsToUnitStatusesReportsAndAppliesOnlyClearMatches(t 
 	if err := a.unitStore.SetTenantUnits("jhw22", units); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	candidates, err := unitPaymentReferenceCandidates("jhw22", "2026-07", units, map[string]moneyAmount{
+	candidates, err := unitPaymentReferenceCandidates("jhw22", "2026-07", units, map[string]integrations.MoneyAmount{
 		"top-1": {Currency: "EUR", Cents: 10000},
 		"top-2": {Currency: "EUR", Cents: 10000},
 		"top-3": {Currency: "EUR", Cents: 10000},
@@ -29,14 +30,14 @@ func TestApplyImportedPaymentsToUnitStatusesReportsAndAppliesOnlyClearMatches(t 
 		UnitID:         "top-duplicate",
 		UnitLabel:      "Top Duplicate",
 		Reference:      duplicateReference,
-		ExpectedAmount: moneyAmount{Currency: "EUR", Cents: 10000},
+		ExpectedAmount: integrations.MoneyAmount{Currency: "EUR", Cents: 10000},
 	})
-	payments := []canonicalPayment{
-		{TenantSlug: "jhw22", ExternalID: "p-1", Reference: candidates[0].Reference, Amount: moneyAmount{Currency: "EUR", Cents: 10000}},
-		{TenantSlug: "jhw22", ExternalID: "p-2", Reference: candidates[1].Reference, Amount: moneyAmount{Currency: "EUR", Cents: 6000}},
-		{TenantSlug: "jhw22", ExternalID: "p-3", Reference: duplicateReference, Amount: moneyAmount{Currency: "EUR", Cents: 10000}},
-		{TenantSlug: "jhw22", ExternalID: "p-4", Amount: moneyAmount{Currency: "EUR", Cents: 10000}},
-		{TenantSlug: "jhw22", ExternalID: "p-5", Reference: "HV-JHW22-UNKNOWN-123", Amount: moneyAmount{Currency: "EUR", Cents: 10000}},
+	payments := []integrations.Payment{
+		{TenantSlug: "jhw22", ExternalID: "p-1", Reference: candidates[0].Reference, Amount: integrations.MoneyAmount{Currency: "EUR", Cents: 10000}},
+		{TenantSlug: "jhw22", ExternalID: "p-2", Reference: candidates[1].Reference, Amount: integrations.MoneyAmount{Currency: "EUR", Cents: 6000}},
+		{TenantSlug: "jhw22", ExternalID: "p-3", Reference: duplicateReference, Amount: integrations.MoneyAmount{Currency: "EUR", Cents: 10000}},
+		{TenantSlug: "jhw22", ExternalID: "p-4", Amount: integrations.MoneyAmount{Currency: "EUR", Cents: 10000}},
+		{TenantSlug: "jhw22", ExternalID: "p-5", Reference: "HV-JHW22-UNKNOWN-123", Amount: integrations.MoneyAmount{Currency: "EUR", Cents: 10000}},
 	}
 
 	report, err := a.applyImportedPaymentsToUnitStatuses(payments, candidates, "manager@example.com", roleManager)

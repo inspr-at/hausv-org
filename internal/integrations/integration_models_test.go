@@ -1,4 +1,4 @@
-package main
+package integrations
 
 import (
 	"context"
@@ -10,18 +10,18 @@ import (
 )
 
 func TestCanonicalIntegrationValidationReportsRecordLevelErrors(t *testing.T) {
-	valid := canonicalPayment{
+	valid := Payment{
 		TenantSlug:  "JHW22",
 		ExternalID:  "txn-1",
-		Amount:      moneyAmount{Currency: "EUR", Cents: 1234},
+		Amount:      MoneyAmount{Currency: "EUR", Cents: 1234},
 		BookingDate: time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC),
-		Source:      integrationSource{Format: integrationFormatCAMT053, Version: "2019"},
+		Source:      Source{Format: FormatCAMT053, Version: "2019"},
 	}
 	if errs := valid.Validate(); len(errs) != 0 {
 		t.Fatalf("valid payment errors = %+v", errs)
 	}
 
-	invalid := canonicalPayment{ExternalID: "txn-2", Amount: moneyAmount{Currency: "EURO", Cents: -1}}
+	invalid := Payment{ExternalID: "txn-2", Amount: MoneyAmount{Currency: "EURO", Cents: -1}}
 	errs := invalid.Validate()
 	if len(errs) != 3 {
 		t.Fatalf("invalid payment errors = %+v, want tenant/amount/date", errs)
@@ -29,7 +29,7 @@ func TestCanonicalIntegrationValidationReportsRecordLevelErrors(t *testing.T) {
 	for _, want := range []string{"tenant_slug", "amount", "booking_date"} {
 		found := false
 		for _, err := range errs {
-			if err.Field == want && err.RecordID == "txn-2" && err.RecordType == integrationRecordPayment {
+			if err.Field == want && err.RecordID == "txn-2" && err.RecordType == RecordPayment {
 				found = true
 				break
 			}
@@ -38,25 +38,25 @@ func TestCanonicalIntegrationValidationReportsRecordLevelErrors(t *testing.T) {
 			t.Fatalf("missing record-level error for %q in %+v", want, errs)
 		}
 	}
-	report := buildIntegrationReport(integrationSource{Format: integrationFormatCAMT053}, 1, errs)
+	report := buildReport(Source{Format: FormatCAMT053}, 1, errs)
 	if report.Accepted != 1 || report.Rejected != 3 || !report.HasErrors() {
 		t.Fatalf("report = %+v", report)
 	}
 }
 
 func TestCanonicalIntegrationAdaptersAreFormatNeutral(t *testing.T) {
-	var _ paymentImportAdapter = fakePaymentAdapter{}
-	var _ paymentImportAdapter = camt054Adapter{}
-	var _ invoiceImportAdapter = fakeInvoiceAdapter{}
-	var _ invoiceImportAdapter = ebInterfaceAdapter{}
-	var _ exportDataAdapter = fakeExportAdapter{}
-	var _ exportDataAdapter = bmdRawDataAdapter{}
+	var _ PaymentImportAdapter = fakePaymentAdapter{}
+	var _ PaymentImportAdapter = CAMT054Adapter{}
+	var _ InvoiceImportAdapter = fakeInvoiceAdapter{}
+	var _ InvoiceImportAdapter = EBInterfaceAdapter{}
+	var _ ExportDataAdapter = fakeExportAdapter{}
+	var _ ExportDataAdapter = BMDRawDataAdapter{}
 
-	payments, err := fakePaymentAdapter{}.ParsePayments(context.Background(), integrationSource{Format: integrationFormatCAMT053}, strings.NewReader("fixture"))
+	payments, err := fakePaymentAdapter{}.ParsePayments(context.Background(), Source{Format: FormatCAMT053}, strings.NewReader("fixture"))
 	if err != nil {
 		t.Fatalf("ParsePayments: %v", err)
 	}
-	if len(payments.Payments) != 1 || payments.Payments[0].Source.Format != integrationFormatCAMT053 {
+	if len(payments.Payments) != 1 || payments.Payments[0].Source.Format != FormatCAMT053 {
 		t.Fatalf("payments = %+v", payments)
 	}
 	if payments.Report.Accepted != 1 || payments.Report.Rejected != 0 {
@@ -64,11 +64,11 @@ func TestCanonicalIntegrationAdaptersAreFormatNeutral(t *testing.T) {
 	}
 
 	var out strings.Builder
-	report, err := fakeExportAdapter{}.WriteExportData(context.Background(), &out, []canonicalExportRecord{{
+	report, err := fakeExportAdapter{}.WriteExportData(context.Background(), &out, []ExportRecord{{
 		TenantSlug: "jhw22",
 		RecordID:   "raw-1",
 		Kind:       "parking-payment-status",
-		Amount:     moneyAmount{Currency: "EUR", Cents: 99},
+		Amount:     MoneyAmount{Currency: "EUR", Cents: 99},
 	}})
 	if err != nil {
 		t.Fatalf("WriteExportData: %v", err)
@@ -80,17 +80,17 @@ func TestCanonicalIntegrationAdaptersAreFormatNeutral(t *testing.T) {
 
 func TestInterfaceDocumentationCoversQAGatesAndAustrianFormats(t *testing.T) {
 	for _, path := range []string{
-		"docs/interface-qa.md",
-		"docs/camt054-evaluation.md",
-		"docs/bmd-rawdata-verification.md",
-		"docs/austrian-interface-decisions.md",
-		"docs/integration-architecture.md",
+		"../../docs/interface-qa.md",
+		"../../docs/camt054-evaluation.md",
+		"../../docs/bmd-rawdata-verification.md",
+		"../../docs/austrian-interface-decisions.md",
+		"../../docs/integration-architecture.md",
 	} {
 		if _, err := os.Stat(path); err != nil {
 			t.Fatalf("missing interface documentation %s: %v", path, err)
 		}
 	}
-	qa, err := os.ReadFile("docs/interface-qa.md")
+	qa, err := os.ReadFile("../../docs/interface-qa.md")
 	if err != nil {
 		t.Fatalf("read interface QA doc: %v", err)
 	}
@@ -113,12 +113,12 @@ func TestInterfaceDocumentationCoversQAGatesAndAustrianFormats(t *testing.T) {
 }
 
 func TestCanonicalModelsKeepAccountingOutOfProductScope(t *testing.T) {
-	record := canonicalExportRecord{
+	record := ExportRecord{
 		TenantSlug: "jhw22",
 		RecordID:   "parking-2026-06",
 		Kind:       "payment-status",
 		Reference:  "HVP-JHW22-202606-A1B2C3",
-		Amount:     moneyAmount{Currency: "EUR", Cents: 13304},
+		Amount:     MoneyAmount{Currency: "EUR", Cents: 13304},
 		Fields: map[string]string{
 			"status": "paid",
 			"scope":  "transparency",
@@ -137,35 +137,35 @@ func TestCanonicalModelsKeepAccountingOutOfProductScope(t *testing.T) {
 
 type fakePaymentAdapter struct{}
 
-func (fakePaymentAdapter) ParsePayments(_ context.Context, source integrationSource, _ io.Reader) (paymentImportResult, error) {
-	payment := canonicalPayment{
+func (fakePaymentAdapter) ParsePayments(_ context.Context, source Source, _ io.Reader) (PaymentImportResult, error) {
+	payment := Payment{
 		TenantSlug:  "jhw22",
 		ExternalID:  "fixture-1",
-		Amount:      moneyAmount{Currency: "EUR", Cents: 100},
+		Amount:      MoneyAmount{Currency: "EUR", Cents: 100},
 		BookingDate: time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC),
 		Source:      source,
 	}
-	return paymentImportResult{Payments: []canonicalPayment{payment}, Report: buildIntegrationReport(source, 1, payment.Validate())}, nil
+	return PaymentImportResult{Payments: []Payment{payment}, Report: buildReport(source, 1, payment.Validate())}, nil
 }
 
 type fakeInvoiceAdapter struct{}
 
-func (fakeInvoiceAdapter) ParseInvoices(_ context.Context, source integrationSource, _ io.Reader) (invoiceImportResult, error) {
-	invoice := canonicalInvoice{
+func (fakeInvoiceAdapter) ParseInvoices(_ context.Context, source Source, _ io.Reader) (InvoiceImportResult, error) {
+	invoice := Invoice{
 		TenantSlug:    "jhw22",
 		ExternalID:    "invoice-1",
 		InvoiceNumber: "RE-1",
-		Amount:        moneyAmount{Currency: "EUR", Cents: 100},
+		Amount:        MoneyAmount{Currency: "EUR", Cents: 100},
 		IssueDate:     time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC),
 		Source:        source,
 	}
-	return invoiceImportResult{Invoices: []canonicalInvoice{invoice}, Report: buildIntegrationReport(source, 1, invoice.Validate())}, nil
+	return InvoiceImportResult{Invoices: []Invoice{invoice}, Report: buildReport(source, 1, invoice.Validate())}, nil
 }
 
 type fakeExportAdapter struct{}
 
-func (fakeExportAdapter) WriteExportData(_ context.Context, w io.Writer, records []canonicalExportRecord) (integrationReport, error) {
-	errors := []integrationRecordError{}
+func (fakeExportAdapter) WriteExportData(_ context.Context, w io.Writer, records []ExportRecord) (Report, error) {
+	errors := []RecordError{}
 	accepted := 0
 	for _, record := range records {
 		if errs := record.Validate(); len(errs) > 0 {
@@ -174,8 +174,8 @@ func (fakeExportAdapter) WriteExportData(_ context.Context, w io.Writer, records
 		}
 		accepted++
 		if _, err := io.WriteString(w, record.RecordID+"\n"); err != nil {
-			return integrationReport{}, err
+			return Report{}, err
 		}
 	}
-	return buildIntegrationReport(integrationSource{Format: integrationFormatManualCSV}, accepted, errors), nil
+	return buildReport(Source{Format: FormatManualCSV}, accepted, errors), nil
 }

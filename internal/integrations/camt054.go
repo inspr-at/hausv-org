@@ -1,4 +1,4 @@
-package main
+package integrations
 
 import (
 	"context"
@@ -7,40 +7,40 @@ import (
 	"strings"
 )
 
-type camt054Adapter struct{}
+type CAMT054Adapter struct{}
 
-func (camt054Adapter) ParsePayments(ctx context.Context, source integrationSource, r io.Reader) (paymentImportResult, error) {
+func (CAMT054Adapter) ParsePayments(ctx context.Context, source Source, r io.Reader) (PaymentImportResult, error) {
 	select {
 	case <-ctx.Done():
-		return paymentImportResult{}, ctx.Err()
+		return PaymentImportResult{}, ctx.Err()
 	default:
 	}
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return paymentImportResult{}, err
+		return PaymentImportResult{}, err
 	}
 	var document camt054Document
 	if err := xml.Unmarshal(data, &document); err != nil {
-		return paymentImportResult{}, err
+		return PaymentImportResult{}, err
 	}
 	version, ok := camt054VersionFromNamespace(document.XMLName.Space)
 	if !ok {
-		report := buildIntegrationReport(source, 0, []integrationRecordError{{
-			RecordType: integrationRecordPayment,
+		report := buildReport(source, 0, []RecordError{{
+			RecordType: RecordPayment,
 			Field:      "namespace",
 			Message:    "unsupported camt.054 namespace",
 		}})
-		return paymentImportResult{Report: report}, nil
+		return PaymentImportResult{Report: report}, nil
 	}
 	if source.Format == "" {
-		source.Format = integrationFormatCAMT054
+		source.Format = FormatCAMT054
 	}
 	if source.Version == "" {
 		source.Version = version
 	}
 
-	payments := []canonicalPayment{}
-	errors := []integrationRecordError{}
+	payments := []Payment{}
+	errors := []RecordError{}
 	for notificationIndex, notification := range document.CustomerNotification.Notifications {
 		for entryIndex, entry := range notification.Entries {
 			payment, recordErrors := camtPaymentFromEntry(source, notification, entry, notificationIndex, entryIndex)
@@ -51,9 +51,9 @@ func (camt054Adapter) ParsePayments(ctx context.Context, source integrationSourc
 			payments = append(payments, payment)
 		}
 	}
-	return paymentImportResult{
+	return PaymentImportResult{
 		Payments: payments,
-		Report:   buildIntegrationReport(source, len(payments), errors),
+		Report:   buildReport(source, len(payments), errors),
 	}, nil
 }
 

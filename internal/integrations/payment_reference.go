@@ -1,9 +1,10 @@
-package main
+package integrations
 
 import (
 	"crypto/sha256"
 	"encoding/base32"
 	"fmt"
+	"github.com/markus-barta/hausv-org/internal/textutil"
 	"strings"
 )
 
@@ -13,14 +14,14 @@ const (
 	paymentReferenceHashLen   = 10
 )
 
-type paymentReferenceInput struct {
+type PaymentReferenceInput struct {
 	TenantSlug string
 	Scope      string
 	SubjectID  string
 	Period     string
 }
 
-func generatePaymentReference(input paymentReferenceInput, existing map[string]struct{}) (string, error) {
+func GeneratePaymentReference(input PaymentReferenceInput, existing map[string]struct{}) (string, error) {
 	tenantToken, err := paymentReferenceTenantToken(input.TenantSlug)
 	if err != nil {
 		return "", err
@@ -28,7 +29,7 @@ func generatePaymentReference(input paymentReferenceInput, existing map[string]s
 	periodToken := paymentReferencePeriodToken(input.Period)
 	normalizedExisting := map[string]struct{}{}
 	for reference := range existing {
-		normalized := normalizePaymentReference(reference)
+		normalized := NormalizePaymentReference(reference)
 		if normalized != "" {
 			normalizedExisting[normalized] = struct{}{}
 		}
@@ -36,7 +37,7 @@ func generatePaymentReference(input paymentReferenceInput, existing map[string]s
 	for counter := 0; counter < 1024; counter++ {
 		hashToken := paymentReferenceHash(input, counter)
 		reference := paymentReferencePrefix + "-" + tenantToken + "-" + periodToken + "-" + hashToken
-		if err := validatePaymentReference(reference); err != nil {
+		if err := ValidatePaymentReference(reference); err != nil {
 			return "", err
 		}
 		if _, exists := normalizedExisting[reference]; !exists {
@@ -46,7 +47,7 @@ func generatePaymentReference(input paymentReferenceInput, existing map[string]s
 	return "", fmt.Errorf("could not generate unique payment reference")
 }
 
-func validatePaymentReference(reference string) error {
+func ValidatePaymentReference(reference string) error {
 	reference = strings.TrimSpace(reference)
 	if reference == "" {
 		return fmt.Errorf("payment reference required")
@@ -69,7 +70,7 @@ func validatePaymentReference(reference string) error {
 	return nil
 }
 
-func normalizePaymentReference(reference string) string {
+func NormalizePaymentReference(reference string) string {
 	reference = strings.ToUpper(strings.TrimSpace(reference))
 	reference = strings.Join(strings.Fields(reference), "")
 	return reference
@@ -112,9 +113,9 @@ func paymentReferenceASCII(raw string) string {
 	return b.String()
 }
 
-func paymentReferenceHash(input paymentReferenceInput, counter int) string {
+func paymentReferenceHash(input PaymentReferenceInput, counter int) string {
 	raw := strings.Join([]string{
-		normalizeSlug(input.TenantSlug),
+		textutil.Slug(input.TenantSlug),
 		strings.ToLower(strings.TrimSpace(input.Scope)),
 		strings.ToLower(strings.TrimSpace(input.SubjectID)),
 		strings.ToLower(strings.TrimSpace(input.Period)),

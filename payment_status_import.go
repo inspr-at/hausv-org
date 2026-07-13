@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/markus-barta/hausv-org/internal/integrations"
 	"strings"
 )
 
@@ -10,7 +11,7 @@ type unitPaymentReferenceCandidate struct {
 	UnitID         string
 	UnitLabel      string
 	Reference      string
-	ExpectedAmount moneyAmount
+	ExpectedAmount integrations.MoneyAmount
 }
 
 type unitPaymentImportDecision string
@@ -29,8 +30,8 @@ type unitPaymentImportRow struct {
 	UnitLabel      string
 	Status         string
 	Reason         string
-	Amount         moneyAmount
-	ExpectedAmount moneyAmount
+	Amount         integrations.MoneyAmount
+	ExpectedAmount integrations.MoneyAmount
 }
 
 type unitPaymentImportReport struct {
@@ -40,7 +41,7 @@ type unitPaymentImportReport struct {
 	Rows     []unitPaymentImportRow
 }
 
-func unitPaymentReferenceCandidates(tenantSlug string, period string, units []unit, expected map[string]moneyAmount) ([]unitPaymentReferenceCandidate, error) {
+func unitPaymentReferenceCandidates(tenantSlug string, period string, units []unit, expected map[string]integrations.MoneyAmount) ([]unitPaymentReferenceCandidate, error) {
 	tenantSlug = normalizeSlug(tenantSlug)
 	if tenantSlug == "" {
 		return nil, fmt.Errorf("tenant required")
@@ -52,7 +53,7 @@ func unitPaymentReferenceCandidates(tenantSlug string, period string, units []un
 		if unitID == "" {
 			continue
 		}
-		reference, err := generatePaymentReference(paymentReferenceInput{
+		reference, err := integrations.GeneratePaymentReference(integrations.PaymentReferenceInput{
 			TenantSlug: tenantSlug,
 			Scope:      "unit-payment-status",
 			SubjectID:  unitID,
@@ -73,7 +74,7 @@ func unitPaymentReferenceCandidates(tenantSlug string, period string, units []un
 	return candidates, nil
 }
 
-func (a *app) applyImportedPaymentsToUnitStatuses(payments []canonicalPayment, candidates []unitPaymentReferenceCandidate, actorEmail string, actorRole string) (unitPaymentImportReport, error) {
+func (a *app) applyImportedPaymentsToUnitStatuses(payments []integrations.Payment, candidates []unitPaymentReferenceCandidate, actorEmail string, actorRole string) (unitPaymentImportReport, error) {
 	report := reconcileImportedPaymentsWithUnitStatus(payments, candidates)
 	if a == nil || a.unitPaymentStore == nil {
 		return report, fmt.Errorf("unit payment status store not configured")
@@ -102,18 +103,18 @@ func (a *app) applyImportedPaymentsToUnitStatuses(payments []canonicalPayment, c
 			Details: map[string]string{
 				"unit_label": row.UnitLabel,
 				"status":     unitPaymentStatusLabel(record.Status),
-				"source":     string(integrationFormatCAMT053),
+				"source":     string(integrations.FormatCAMT053),
 			},
 		})
 	}
 	return report, nil
 }
 
-func reconcileImportedPaymentsWithUnitStatus(payments []canonicalPayment, candidates []unitPaymentReferenceCandidate) unitPaymentImportReport {
+func reconcileImportedPaymentsWithUnitStatus(payments []integrations.Payment, candidates []unitPaymentReferenceCandidate) unitPaymentImportReport {
 	byReference := map[string][]unitPaymentReferenceCandidate{}
 	for _, candidate := range candidates {
-		normalized := normalizePaymentReference(candidate.Reference)
-		if validatePaymentReference(normalized) != nil {
+		normalized := integrations.NormalizePaymentReference(candidate.Reference)
+		if integrations.ValidatePaymentReference(normalized) != nil {
 			continue
 		}
 		candidate.Reference = normalized
@@ -137,8 +138,8 @@ func reconcileImportedPaymentsWithUnitStatus(payments []canonicalPayment, candid
 	return report
 }
 
-func reconcileImportedPayment(payment canonicalPayment, candidates map[string][]unitPaymentReferenceCandidate) unitPaymentImportRow {
-	reference := normalizePaymentReference(payment.Reference)
+func reconcileImportedPayment(payment integrations.Payment, candidates map[string][]unitPaymentReferenceCandidate) unitPaymentImportRow {
+	reference := integrations.NormalizePaymentReference(payment.Reference)
 	row := unitPaymentImportRow{
 		PaymentID: strings.TrimSpace(payment.ExternalID),
 		Reference: reference,
@@ -149,7 +150,7 @@ func reconcileImportedPayment(payment canonicalPayment, candidates map[string][]
 		row.Reason = "Zahlungsreferenz fehlt."
 		return row
 	}
-	if validatePaymentReference(reference) != nil {
+	if integrations.ValidatePaymentReference(reference) != nil {
 		row.Decision = unitPaymentImportRejected
 		row.Reason = "Zahlungsreferenz ist ungültig."
 		return row
@@ -186,7 +187,7 @@ func reconcileImportedPayment(payment canonicalPayment, candidates map[string][]
 	return row
 }
 
-func importedPaymentStatusSuggestion(amount moneyAmount, expected moneyAmount) (string, string, bool) {
+func importedPaymentStatusSuggestion(amount integrations.MoneyAmount, expected integrations.MoneyAmount) (string, string, bool) {
 	if err := amount.Validate(); err != nil || amount.Cents <= 0 {
 		return "", "Zahlungsbetrag ist ungültig.", false
 	}
@@ -206,9 +207,9 @@ func importedPaymentStatusSuggestion(amount moneyAmount, expected moneyAmount) (
 }
 
 func candidateTenant(candidates []unitPaymentReferenceCandidate, reference string) string {
-	reference = normalizePaymentReference(reference)
+	reference = integrations.NormalizePaymentReference(reference)
 	for _, candidate := range candidates {
-		if normalizePaymentReference(candidate.Reference) == reference {
+		if integrations.NormalizePaymentReference(candidate.Reference) == reference {
 			return normalizeSlug(candidate.TenantSlug)
 		}
 	}

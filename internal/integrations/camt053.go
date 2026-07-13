@@ -1,4 +1,4 @@
-package main
+package integrations
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
+	"github.com/markus-barta/hausv-org/internal/textutil"
 	"io"
 	"regexp"
 	"strconv"
@@ -15,40 +16,40 @@ import (
 
 var camtPaymentReferencePattern = regexp.MustCompile(`HV-[A-Z0-9-]{1,32}`)
 
-type camt053Adapter struct{}
+type CAMT053Adapter struct{}
 
-func (camt053Adapter) ParsePayments(ctx context.Context, source integrationSource, r io.Reader) (paymentImportResult, error) {
+func (CAMT053Adapter) ParsePayments(ctx context.Context, source Source, r io.Reader) (PaymentImportResult, error) {
 	select {
 	case <-ctx.Done():
-		return paymentImportResult{}, ctx.Err()
+		return PaymentImportResult{}, ctx.Err()
 	default:
 	}
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return paymentImportResult{}, err
+		return PaymentImportResult{}, err
 	}
 	var document camtDocument
 	if err := xml.Unmarshal(data, &document); err != nil {
-		return paymentImportResult{}, err
+		return PaymentImportResult{}, err
 	}
 	version, ok := camt053VersionFromNamespace(document.XMLName.Space)
 	if !ok {
-		report := buildIntegrationReport(source, 0, []integrationRecordError{{
-			RecordType: integrationRecordPayment,
+		report := buildReport(source, 0, []RecordError{{
+			RecordType: RecordPayment,
 			Field:      "namespace",
 			Message:    "unsupported camt.053 namespace",
 		}})
-		return paymentImportResult{Report: report}, nil
+		return PaymentImportResult{Report: report}, nil
 	}
 	if source.Format == "" {
-		source.Format = integrationFormatCAMT053
+		source.Format = FormatCAMT053
 	}
 	if source.Version == "" {
 		source.Version = version
 	}
 
-	payments := []canonicalPayment{}
-	errors := []integrationRecordError{}
+	payments := []Payment{}
+	errors := []RecordError{}
 	for statementIndex, statement := range document.CustomerStatement.Statements {
 		for entryIndex, entry := range statement.Entries {
 			payment, recordErrors := camtPaymentFromEntry(source, statement, entry, statementIndex, entryIndex)
@@ -59,9 +60,9 @@ func (camt053Adapter) ParsePayments(ctx context.Context, source integrationSourc
 			payments = append(payments, payment)
 		}
 	}
-	return paymentImportResult{
+	return PaymentImportResult{
 		Payments: payments,
-		Report:   buildIntegrationReport(source, len(payments), errors),
+		Report:   buildReport(source, len(payments), errors),
 	}, nil
 }
 
@@ -76,32 +77,32 @@ func camt053VersionFromNamespace(namespace string) (string, bool) {
 	}
 }
 
-func camtPaymentFromEntry(source integrationSource, statement camtStatement, entry camtEntry, statementIndex int, entryIndex int) (canonicalPayment, []integrationRecordError) {
+func camtPaymentFromEntry(source Source, statement camtStatement, entry camtEntry, statementIndex int, entryIndex int) (Payment, []RecordError) {
 	recordID := camtEntryRecordID(statement, entry, statementIndex, entryIndex)
-	errors := []integrationRecordError{}
+	errors := []RecordError{}
 	if strings.ToUpper(strings.TrimSpace(entry.CreditDebitIndicator)) != "CRDT" {
-		return canonicalPayment{}, []integrationRecordError{{
-			RecordType: integrationRecordPayment,
+		return Payment{}, []RecordError{{
+			RecordType: RecordPayment,
 			RecordID:   recordID,
 			Field:      "credit_debit_indicator",
 			Message:    "only incoming credit entries are imported",
 		}}
 	}
-	amountCents, err := parseDecimalCents(entry.Amount.Value)
+	amountCents, err := ParseDecimalCents(entry.Amount.Value)
 	if err != nil {
-		errors = append(errors, integrationRecordError{RecordType: integrationRecordPayment, RecordID: recordID, Field: "amount", Message: err.Error()})
+		errors = append(errors, RecordError{RecordType: RecordPayment, RecordID: recordID, Field: "amount", Message: err.Error()})
 	}
 	bookingDate, err := parseCAMTDateChoice(entry.BookingDate)
 	if err != nil {
-		errors = append(errors, integrationRecordError{RecordType: integrationRecordPayment, RecordID: recordID, Field: "booking_date", Message: err.Error()})
+		errors = append(errors, RecordError{RecordType: RecordPayment, RecordID: recordID, Field: "booking_date", Message: err.Error()})
 	}
 	valueDate, _ := parseCAMTDateChoice(entry.ValueDate)
 	tx := entry.FirstTransaction()
-	payment := canonicalPayment{
-		TenantSlug:      normalizeSlug(statement.Account.OwnerName),
+	payment := Payment{
+		TenantSlug:      textutil.Slug(statement.Account.OwnerName),
 		ExternalID:      recordID,
 		Reference:       camtPaymentReference(tx),
-		Amount:          moneyAmount{Currency: strings.ToUpper(strings.TrimSpace(entry.Amount.Currency)), Cents: amountCents},
+		Amount:          MoneyAmount{Currency: strings.ToUpper(strings.TrimSpace(entry.Amount.Currency)), Cents: amountCents},
 		BookingDate:     bookingDate,
 		ValueDate:       valueDate,
 		DebtorName:      strings.TrimSpace(tx.RelatedParties.Debtor.Name),
@@ -111,7 +112,7 @@ func camtPaymentFromEntry(source integrationSource, statement camtStatement, ent
 		RawDigest:       camtEntryDigest(recordID, entry.Amount.Value, entry.BookingDate.Date, entry.BookingDate.DateTime),
 	}
 	if payment.TenantSlug == "" {
-		payment.TenantSlug = normalizeSlug(statement.ID)
+		payment.TenantSlug = textutil.Slug(statement.ID)
 	}
 	errors = append(errors, payment.Validate()...)
 	return payment, errors
@@ -139,13 +140,13 @@ func camtPaymentReference(tx camtTransactionDetails) string {
 	}
 	candidates = append(candidates, tx.Remittance.Unstructured...)
 	for _, candidate := range candidates {
-		normalized := normalizePaymentReference(candidate)
-		if err := validatePaymentReference(normalized); err == nil && strings.HasPrefix(normalized, paymentReferencePrefix+"-") {
+		normalized := NormalizePaymentReference(candidate)
+		if err := ValidatePaymentReference(normalized); err == nil && strings.HasPrefix(normalized, paymentReferencePrefix+"-") {
 			return normalized
 		}
 		for _, match := range camtPaymentReferencePattern.FindAllString(normalized, -1) {
 			match = strings.Trim(match, "-")
-			if err := validatePaymentReference(match); err == nil {
+			if err := ValidatePaymentReference(match); err == nil {
 				return match
 			}
 		}
@@ -171,7 +172,7 @@ func parseCAMTDateChoice(choice camtDateChoice) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("date required")
 }
 
-func parseDecimalCents(raw string) (int64, error) {
+func ParseDecimalCents(raw string) (int64, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return 0, fmt.Errorf("amount required")

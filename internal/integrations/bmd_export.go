@@ -1,18 +1,19 @@
-package main
+package integrations
 
 import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"github.com/markus-barta/hausv-org/internal/textutil"
 	"io"
 	"sort"
 	"strings"
 	"time"
 )
 
-const bmdRawDataVersion = "raw-v0"
+const RawDataVersion = "raw-v0"
 
-var bmdRawDataHeader = []string{
+var RawDataHeader = []string{
 	"tenant_slug",
 	"record_id",
 	"kind",
@@ -51,21 +52,21 @@ var bmdRawDataAccountingFields = map[string]struct{}{
 	"vat_code":       {},
 }
 
-type bmdRawDataAdapter struct{}
+type BMDRawDataAdapter struct{}
 
-func (bmdRawDataAdapter) WriteExportData(ctx context.Context, w io.Writer, records []canonicalExportRecord) (integrationReport, error) {
-	source := integrationSource{Format: integrationFormatBMD, Version: bmdRawDataVersion}
+func (BMDRawDataAdapter) WriteExportData(ctx context.Context, w io.Writer, records []ExportRecord) (Report, error) {
+	source := Source{Format: FormatBMD, Version: RawDataVersion}
 	writer := csv.NewWriter(w)
 	writer.Comma = ';'
-	if err := writer.Write(bmdRawDataHeader); err != nil {
-		return integrationReport{}, err
+	if err := writer.Write(RawDataHeader); err != nil {
+		return Report{}, err
 	}
 
 	accepted := 0
-	errors := []integrationRecordError{}
+	errors := []RecordError{}
 	for _, record := range records {
 		if err := ctx.Err(); err != nil {
-			return integrationReport{}, err
+			return Report{}, err
 		}
 		recordErrors := bmdRawDataRecordErrors(record)
 		if len(recordErrors) > 0 {
@@ -73,39 +74,39 @@ func (bmdRawDataAdapter) WriteExportData(ctx context.Context, w io.Writer, recor
 			continue
 		}
 		if err := writer.Write(bmdRawDataRow(record)); err != nil {
-			return integrationReport{}, err
+			return Report{}, err
 		}
 		accepted++
 	}
 	writer.Flush()
 	if err := writer.Error(); err != nil {
-		return integrationReport{}, err
+		return Report{}, err
 	}
-	return buildIntegrationReport(source, accepted, errors), nil
+	return buildReport(source, accepted, errors), nil
 }
 
-func bmdRawDataRecordErrors(record canonicalExportRecord) []integrationRecordError {
+func bmdRawDataRecordErrors(record ExportRecord) []RecordError {
 	errors := record.Validate()
 	if record.Occurred.IsZero() {
-		errors = append(errors, integrationRecordError{RecordType: integrationRecordExportRawData, RecordID: record.RecordID, Field: "occurred", Message: "event date required for BMD raw data candidate"})
+		errors = append(errors, RecordError{RecordType: RecordExportRawData, RecordID: record.RecordID, Field: "occurred", Message: "event date required for BMD raw data candidate"})
 	}
 	for key := range record.Fields {
 		normalized := normalizeBMDRawDataField(key)
 		if _, reserved := bmdRawDataAccountingFields[normalized]; reserved {
-			errors = append(errors, integrationRecordError{RecordType: integrationRecordExportRawData, RecordID: record.RecordID, Field: key, Message: "accounting account fields are out of scope before Steuerberater verification"})
+			errors = append(errors, RecordError{RecordType: RecordExportRawData, RecordID: record.RecordID, Field: key, Message: "accounting account fields are out of scope before Steuerberater verification"})
 			continue
 		}
 		if _, allowed := bmdRawDataAllowedFields[normalized]; !allowed {
-			errors = append(errors, integrationRecordError{RecordType: integrationRecordExportRawData, RecordID: record.RecordID, Field: key, Message: "field is not part of BMD raw data candidate v0"})
+			errors = append(errors, RecordError{RecordType: RecordExportRawData, RecordID: record.RecordID, Field: key, Message: "field is not part of BMD raw data candidate v0"})
 		}
 	}
 	return errors
 }
 
-func bmdRawDataRow(record canonicalExportRecord) []string {
+func bmdRawDataRow(record ExportRecord) []string {
 	fields := normalizeBMDRawDataFields(record.Fields)
 	return []string{
-		normalizeSlug(record.TenantSlug),
+		textutil.Slug(record.TenantSlug),
 		strings.TrimSpace(record.RecordID),
 		strings.TrimSpace(record.Kind),
 		formatBMDRawDataDate(record.Occurred),

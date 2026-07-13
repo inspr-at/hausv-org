@@ -1,4 +1,4 @@
-package main
+package integrations
 
 import (
 	"strings"
@@ -6,17 +6,17 @@ import (
 )
 
 func TestGeneratePaymentReferenceIsReadableValidAndShort(t *testing.T) {
-	reference, err := generatePaymentReference(paymentReferenceInput{
+	reference, err := GeneratePaymentReference(PaymentReferenceInput{
 		TenantSlug: "Jänischhofweg 22 / Graz",
 		Scope:      "parking",
 		SubjectID:  "top-11",
 		Period:     "2026-06",
 	}, nil)
 	if err != nil {
-		t.Fatalf("generatePaymentReference: %v", err)
+		t.Fatalf("GeneratePaymentReference: %v", err)
 	}
-	if err := validatePaymentReference(reference); err != nil {
-		t.Fatalf("validatePaymentReference(%q): %v", reference, err)
+	if err := ValidatePaymentReference(reference); err != nil {
+		t.Fatalf("ValidatePaymentReference(%q): %v", reference, err)
 	}
 	if len(reference) > paymentReferenceMaxLength {
 		t.Fatalf("reference len = %d, want <= %d: %q", len(reference), paymentReferenceMaxLength, reference)
@@ -35,48 +35,48 @@ func TestValidatePaymentReferenceRejectsSpecialCharactersAndLength(t *testing.T)
 		"HV-JHW22--202606-ABC",
 		"HV-JHW22-202606-ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 	} {
-		if err := validatePaymentReference(bad); err == nil {
-			t.Fatalf("validatePaymentReference(%q) succeeded, want error", bad)
+		if err := ValidatePaymentReference(bad); err == nil {
+			t.Fatalf("ValidatePaymentReference(%q) succeeded, want error", bad)
 		}
 	}
 	for _, good := range []string{
 		"HV-JHW22-202606-ABC123",
 		"HV-HAUS10-GEN-Z9Y8X7W6V5",
 	} {
-		if err := validatePaymentReference(good); err != nil {
-			t.Fatalf("validatePaymentReference(%q): %v", good, err)
+		if err := ValidatePaymentReference(good); err != nil {
+			t.Fatalf("ValidatePaymentReference(%q): %v", good, err)
 		}
 	}
 }
 
 func TestGeneratePaymentReferenceAvoidsTenantCollisions(t *testing.T) {
-	input := paymentReferenceInput{
+	input := PaymentReferenceInput{
 		TenantSlug: "jhw22",
 		Scope:      "parking",
 		SubjectID:  "top-11",
 		Period:     "2026-06",
 	}
-	first, err := generatePaymentReference(input, nil)
+	first, err := GeneratePaymentReference(input, nil)
 	if err != nil {
 		t.Fatalf("first reference: %v", err)
 	}
-	second, err := generatePaymentReference(input, map[string]struct{}{first: {}})
+	second, err := GeneratePaymentReference(input, map[string]struct{}{first: {}})
 	if err != nil {
 		t.Fatalf("second reference: %v", err)
 	}
 	if first == second {
 		t.Fatalf("collision not avoided: %q", first)
 	}
-	if err := validatePaymentReference(second); err != nil {
+	if err := ValidatePaymentReference(second); err != nil {
 		t.Fatalf("second reference invalid: %v", err)
 	}
 }
 
 func TestPaymentReferenceNormalizesWhitespaceOnlyForLookup(t *testing.T) {
-	if got := normalizePaymentReference(" hv-jhw22-202606-abc123 "); got != "HV-JHW22-202606-ABC123" {
-		t.Fatalf("normalizePaymentReference = %q", got)
+	if got := NormalizePaymentReference(" hv-jhw22-202606-abc123 "); got != "HV-JHW22-202606-ABC123" {
+		t.Fatalf("NormalizePaymentReference = %q", got)
 	}
-	if err := validatePaymentReference(normalizePaymentReference(" hv-jhw22-202606-abc123 ")); err != nil {
+	if err := ValidatePaymentReference(NormalizePaymentReference(" hv-jhw22-202606-abc123 ")); err != nil {
 		t.Fatalf("normalized reference should validate: %v", err)
 	}
 }

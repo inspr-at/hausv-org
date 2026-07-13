@@ -1,4 +1,4 @@
-package main
+package integrations
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestBMDRawDataAdapterWritesCandidateCSV(t *testing.T) {
-	record := canonicalExportRecord{
+	record := ExportRecord{
 		TenantSlug: "JHW22",
 		RecordID:   "parking-2026-06-top-11",
 		Kind:       "payment-status",
@@ -17,7 +17,7 @@ func TestBMDRawDataAdapterWritesCandidateCSV(t *testing.T) {
 		UnitID:     "top-11",
 		PersonRef:  "person:max",
 		Reference:  "HV-JHW22-202606-A1B2C3",
-		Amount:     moneyAmount{Currency: "EUR", Cents: 13304},
+		Amount:     MoneyAmount{Currency: "EUR", Cents: 13304},
 		Fields: map[string]string{
 			"period":             "2026-06",
 			"status":             "paid",
@@ -29,11 +29,11 @@ func TestBMDRawDataAdapterWritesCandidateCSV(t *testing.T) {
 	}
 
 	var out strings.Builder
-	report, err := bmdRawDataAdapter{}.WriteExportData(context.Background(), &out, []canonicalExportRecord{record})
+	report, err := BMDRawDataAdapter{}.WriteExportData(context.Background(), &out, []ExportRecord{record})
 	if err != nil {
 		t.Fatalf("WriteExportData: %v", err)
 	}
-	if report.Source.Format != integrationFormatBMD || report.Source.Version != bmdRawDataVersion || report.Accepted != 1 || report.Rejected != 0 {
+	if report.Source.Format != FormatBMD || report.Source.Version != RawDataVersion || report.Accepted != 1 || report.Rejected != 0 {
 		t.Fatalf("report = %+v", report)
 	}
 	want, err := os.ReadFile("testdata/bmd-raw-v0.csv")
@@ -46,12 +46,12 @@ func TestBMDRawDataAdapterWritesCandidateCSV(t *testing.T) {
 }
 
 func TestBMDRawDataAdapterRejectsBookingFields(t *testing.T) {
-	record := canonicalExportRecord{
+	record := ExportRecord{
 		TenantSlug: "jhw22",
 		RecordID:   "raw-1",
 		Kind:       "payment-status",
 		Occurred:   time.Date(2026, 7, 8, 0, 0, 0, 0, time.Local),
-		Amount:     moneyAmount{Currency: "EUR", Cents: 100},
+		Amount:     MoneyAmount{Currency: "EUR", Cents: 100},
 		Fields: map[string]string{
 			"debit_account": "4000",
 			"tax_code":      "20",
@@ -60,7 +60,7 @@ func TestBMDRawDataAdapterRejectsBookingFields(t *testing.T) {
 	}
 
 	var out strings.Builder
-	report, err := bmdRawDataAdapter{}.WriteExportData(context.Background(), &out, []canonicalExportRecord{record})
+	report, err := BMDRawDataAdapter{}.WriteExportData(context.Background(), &out, []ExportRecord{record})
 	if err != nil {
 		t.Fatalf("WriteExportData: %v", err)
 	}
@@ -85,18 +85,18 @@ func TestBMDRawDataAdapterRejectsBookingFields(t *testing.T) {
 }
 
 func TestBMDRawDataAdapterRejectsUnmappedFieldsAndMissingDate(t *testing.T) {
-	record := canonicalExportRecord{
+	record := ExportRecord{
 		TenantSlug: "jhw22",
 		RecordID:   "raw-2",
 		Kind:       "payment-status",
-		Amount:     moneyAmount{Currency: "EUR", Cents: 100},
+		Amount:     MoneyAmount{Currency: "EUR", Cents: 100},
 		Fields: map[string]string{
 			"custom_note": "not mapped yet",
 		},
 	}
 
 	var out strings.Builder
-	report, err := bmdRawDataAdapter{}.WriteExportData(context.Background(), &out, []canonicalExportRecord{record})
+	report, err := BMDRawDataAdapter{}.WriteExportData(context.Background(), &out, []ExportRecord{record})
 	if err != nil {
 		t.Fatalf("WriteExportData: %v", err)
 	}

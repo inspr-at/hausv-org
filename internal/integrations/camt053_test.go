@@ -1,4 +1,4 @@
-package main
+package integrations
 
 import (
 	"context"
@@ -24,7 +24,7 @@ func TestCAMT053AdapterParses2009And2019GoldenFiles(t *testing.T) {
 				t.Fatalf("open fixture: %v", err)
 			}
 			defer f.Close()
-			result, err := camt053Adapter{}.ParsePayments(context.Background(), integrationSource{Format: integrationFormatCAMT053, Filename: tc.fixture}, f)
+			result, err := CAMT053Adapter{}.ParsePayments(context.Background(), Source{Format: FormatCAMT053, Filename: tc.fixture}, f)
 			if err != nil {
 				t.Fatalf("ParsePayments: %v", err)
 			}
@@ -62,7 +62,7 @@ func TestCAMT053AdapterReportsBadRecordsWithoutAborting(t *testing.T) {
     </Stmt>
   </BkToCstmrStmt>
 </Document>`
-	result, err := camt053Adapter{}.ParsePayments(context.Background(), integrationSource{}, strings.NewReader(xml))
+	result, err := CAMT053Adapter{}.ParsePayments(context.Background(), Source{}, strings.NewReader(xml))
 	if err != nil {
 		t.Fatalf("ParsePayments: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestCAMT053AdapterReportsBadRecordsWithoutAborting(t *testing.T) {
 }
 
 func TestCAMT053AdapterRejectsUnsupportedNamespaceAsReportError(t *testing.T) {
-	result, err := camt053Adapter{}.ParsePayments(context.Background(), integrationSource{}, strings.NewReader(`<Document xmlns="urn:example"><BkToCstmrStmt /></Document>`))
+	result, err := CAMT053Adapter{}.ParsePayments(context.Background(), Source{}, strings.NewReader(`<Document xmlns="urn:example"><BkToCstmrStmt /></Document>`))
 	if err != nil {
 		t.Fatalf("ParsePayments: %v", err)
 	}
