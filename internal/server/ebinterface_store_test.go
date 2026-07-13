@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestEBInterfaceInvoiceCanBeStoredAsProtectedDocument(t *testing.T) {
-	data, err := os.ReadFile("internal/integrations/testdata/ebinterface-6p0.xml")
+	data, err := os.ReadFile("../integrations/testdata/ebinterface-6p0.xml")
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
 	}

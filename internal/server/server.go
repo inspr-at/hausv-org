@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -830,40 +830,6 @@ func (a *app) routes() *http.ServeMux {
 // what main() serves and what the tests drive.
 func (a *app) handler() http.Handler {
 	return securityHeaders(a.routes())
-}
-
-func main() {
-	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
-		target := "http://127.0.0.1:8080/healthz"
-		if len(os.Args) > 2 {
-			target = os.Args[2]
-		}
-		if err := runHealthcheck(target); err != nil {
-			log.Printf("healthcheck failed: %v", err)
-			os.Exit(1)
-		}
-		return
-	}
-
-	a, err := newApp()
-	if err != nil {
-		log.Fatal(err)
-	}
-	stopSampler := a.startParkingSampler()
-	defer stopSampler()
-	stopVoteReminders := a.startVoteReminderWorker()
-	defer stopVoteReminders()
-
-	server := &http.Server{
-		Addr:              a.addr,
-		Handler:           a.handler(),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-
-	log.Printf("weg-portal listening on %s", a.addr)
-	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		log.Fatal(err)
-	}
 }
 
 func runHealthcheck(target string) error {
@@ -9386,3 +9352,27 @@ func setPermission(raw []string, permission string, enabled bool) []string {
 }
 
 func normalizeEmail(v string) string { return textutil.Email(v) }
+
+// ── package API for cmd/ ────────────────────────────────────────────────────
+// The app type stays unexported: the composition root only needs to build it,
+// start its workers and serve its handler.
+
+// New builds the application from the environment.
+func New() (*app, error) { return newApp() }
+
+// Handler is the fully wrapped HTTP handler, middleware included.
+func (a *app) Handler() http.Handler { return a.handler() }
+
+// Addr is the listen address.
+func (a *app) Addr() string { return a.addr }
+
+// StartParkingSampler starts the Home Assistant sampling worker; the returned
+// func stops it.
+func (a *app) StartParkingSampler() func() { return a.startParkingSampler() }
+
+// StartVoteReminderWorker starts the ballot-reminder worker; the returned func
+// stops it.
+func (a *app) StartVoteReminderWorker() func() { return a.startVoteReminderWorker() }
+
+// RunHealthcheck is the container health probe.
+func RunHealthcheck(target string) error { return runHealthcheck(target) }

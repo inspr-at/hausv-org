@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -74,8 +74,6 @@ type handoverConfirmationView struct {
 	ConfirmedAt  string
 	HasConfirmed bool
 }
-
-
 
 func handoverUnitOptions(units []unit, selected string) []selectOption {
 	selected = normalizeUnitID(selected)
