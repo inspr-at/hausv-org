@@ -9433,6 +9433,9 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request) {
 	a.redirectInvite(w, r, "deleted")
 }
 
+// render prepares page data and writes the template. The data preparation
+// reaches into stores (unread announcements, open issues), so this stays in the
+// HTTP layer — see executeTemplate for the part that does not.
 func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	if data == nil {
 		data = map[string]any{}
@@ -9452,8 +9455,17 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 		data["HasReleaseNotes"] = len(notes) > 0
 	}
 	enrichCapabilityData(data)
+	// These two read from the announcement and issue stores. They are the reason
+	// render() cannot itself live in a pure rendering package.
 	a.enrichUnreadAnnouncementData(data)
 	a.enrichIssueData(data)
+	a.executeTemplate(w, name, data)
+}
+
+// executeTemplate is the pure rendering step: no store access, no business
+// logic — just template + data → HTML. This is the piece that becomes
+// internal/web.Renderer.
+func (a *app) executeTemplate(w http.ResponseWriter, name string, data map[string]any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := a.templates.ExecuteTemplate(w, name, data); err != nil {
 		log.Printf("render %s failed: %v", name, err)
@@ -10309,24 +10321,7 @@ func (s *announcementReadStore) MarkSeen(tenantSlug string, email string, seenAt
 }
 
 func (s *announcementReadStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create announcement read data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode announcement read data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write announcement read data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace announcement read data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "announcement read")
 }
 
 func newNotificationPrefStore(path string) (*notificationPrefStore, error) {
@@ -10429,24 +10424,7 @@ func (s *profileOverlayStore) Set(email string, overlay profileOverlay) error {
 }
 
 func (s *profileOverlayStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create profile data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode profile data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write profile data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace profile data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "profile")
 }
 
 func normalizeProfileOverlay(overlay profileOverlay) profileOverlay {
@@ -10599,24 +10577,7 @@ func (s *tenantOverrideStore) set(tenantSlug string, override tenantOverride) er
 }
 
 func (s *tenantOverrideStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create tenant data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode tenant data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write tenant data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace tenant data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "tenant")
 }
 
 func normalizeTenantOverride(override tenantOverride) tenantOverride {
@@ -10786,24 +10747,7 @@ func (s *notificationPrefStore) EmailEnabled(email string, event string) bool {
 }
 
 func (s *notificationPrefStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create notification preference data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode notification preference data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write notification preference data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace notification preference data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "notification preference")
 }
 
 func newIssueStore(path string, attachmentDir string) (*issueStore, error) {
@@ -11300,24 +11244,7 @@ func issuePhotoExtension(contentType string) (string, bool) {
 }
 
 func (s *issueStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create issue data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode issue data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write issue data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace issue data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "issue")
 }
 
 func copyIssue(item residentIssue) residentIssue {
@@ -11477,24 +11404,7 @@ func (s *unitPaymentStatusStore) ListTenant(tenantSlug string) []unitPaymentStat
 }
 
 func (s *unitPaymentStatusStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create unit payment status data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode unit payment status data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write unit payment status data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace unit payment status data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "unit payment status")
 }
 
 func (s *contactBookStore) Upsert(item managedContact) (managedContact, bool, error) {
@@ -11596,24 +11506,7 @@ func (s *contactBookStore) ListTenant(tenantSlug string, includeInactive bool) [
 }
 
 func (s *contactBookStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create contact data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode contact data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write contact data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace contact data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "contact")
 }
 
 func managedContactFromForm(tenantSlug string, values url.Values) (managedContact, error) {
@@ -11941,24 +11834,7 @@ func (s *attachmentStore) FilePath(item attachmentRecord, variant string) (strin
 }
 
 func (s *attachmentStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create attachment data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode attachment data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write attachment data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace attachment data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "attachment")
 }
 
 func (s *attachmentStore) rollbackCreatedAttachmentsLocked(items []attachmentRecord) {
@@ -12510,24 +12386,7 @@ func (s *documentStore) writeGeneratedDocumentFile(tenantSlug string, storedFile
 }
 
 func (s *documentStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create document data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode document data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write document data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace document data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "document")
 }
 
 func normalizeDocuments(items []documentRecord) []documentRecord {
@@ -13262,24 +13121,7 @@ func (s *voteStore) Get(tenantSlug string, id string) (ballot, bool) {
 }
 
 func (s *voteStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create vote data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode vote data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write vote data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace vote data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "vote")
 }
 
 func normalizeBallots(items []ballot) []ballot {
@@ -13609,24 +13451,7 @@ func (s *unitStore) MembersForUnit(tenantSlug string, unitID string) unitMembers
 }
 
 func (s *unitStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create unit data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode unit data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write unit data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace unit data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "unit")
 }
 
 func (s *eventStore) Create(item houseEvent) (houseEvent, error) {
@@ -13754,24 +13579,7 @@ func (s *eventStore) Upcoming(tenantSlug string, now time.Time) []houseEvent {
 }
 
 func (s *eventStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create event data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode event data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write event data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace event data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "event")
 }
 
 func normalizeHouseEvent(item houseEvent) (houseEvent, bool) {
@@ -13964,25 +13772,39 @@ func (s *announcementStore) ListTenant(tenantSlug string) []announcement {
 	return out
 }
 
-func (s *announcementStore) saveLocked() error {
-	if s.path == "" {
+// saveJSONAtomic is the store layer's single persistence primitive: marshal,
+// write to a temp file, rename into place. The rename is what makes it atomic —
+// a crash mid-write leaves the previous file intact rather than a truncated one.
+//
+// An empty path means "in-memory only" and is a no-op. Every store constructor
+// accepts path == "" and the entire test suite relies on it.
+//
+// noun appears in the error messages ("could not encode <noun> data"), which is
+// why it is a parameter rather than derived: it keeps the 17 stores' existing
+// error strings byte-identical.
+func saveJSONAtomic(path string, v any, noun string) error {
+	if path == "" {
 		return nil
 	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create announcement data directory")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("could not create %s data directory", noun)
 	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
+	raw, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		return fmt.Errorf("could not encode announcement data")
+		return fmt.Errorf("could not encode %s data", noun)
 	}
-	tmp := s.path + ".tmp"
+	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write announcement data")
+		return fmt.Errorf("could not write %s data", noun)
 	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace announcement data")
+	if err := os.Rename(tmp, path); err != nil {
+		return fmt.Errorf("could not replace %s data", noun)
 	}
 	return nil
+}
+
+func (s *announcementStore) saveLocked() error {
+	return saveJSONAtomic(s.path, s.data, "announcement")
 }
 
 func sortAnnouncements(items []announcement) {
@@ -14461,24 +14283,7 @@ func (s *parkingStore) tenantLocked(tenantSlug string) parkingTenantData {
 }
 
 func (s *parkingStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create parking data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode parking data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write parking data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace parking data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "parking")
 }
 
 func defaultParkingTenantData() parkingTenantData {
@@ -16414,24 +16219,7 @@ func (s *inviteStore) Add(profile userProfile) (bool, error) {
 }
 
 func (s *inviteStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create invite data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode invite data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write invite data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace invite data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "invite")
 }
 
 // Update replaces the invite keyed by oldEmail with updated. Returns false (no
@@ -16547,24 +16335,7 @@ func (s *activityStore) Get(email string) (activityRecord, bool) {
 }
 
 func (s *activityStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create activity data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode activity data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write activity data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace activity data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "activity")
 }
 
 type auditStore struct {

@@ -13,7 +13,6 @@ import (
 	"net/mail"
 	"net/url"
 	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -301,24 +300,7 @@ func (s *handoverStore) SetFiledDocument(tenantSlug string, id string, documentI
 }
 
 func (s *handoverStore) saveLocked() error {
-	if s.path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("could not create handover data directory")
-	}
-	raw, err := json.MarshalIndent(s.data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode handover data")
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write handover data")
-	}
-	if err := os.Rename(tmp, s.path); err != nil {
-		return fmt.Errorf("could not replace handover data")
-	}
-	return nil
+	return saveJSONAtomic(s.path, s.data, "handover")
 }
 
 func normalizeHandovers(items []handoverRecord) []handoverRecord {
