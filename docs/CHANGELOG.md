@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.7.0] - 2026-07-13
+
+### Verbessert
+
+- **Fundament für schnellere Weiterentwicklung gelegt.** Die Anwendung ist intern klar in Bausteine gegliedert; neue Funktionen lassen sich dadurch zügiger und sicherer ergänzen.
+- **Qualitätssicherung ausgebaut.** Jede Seite wird nun automatisch mit dem Vorzustand verglichen, damit Änderungen keine ungewollten Nebenwirkungen haben.
+
 ## [0.6.13] - 2026-07-09
 
 ### Verbessert
