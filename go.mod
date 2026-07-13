@@ -1,4 +1,4 @@
-module github.com/markus-barta/weg-portal
+module github.com/markus-barta/hausv-org
 
 go 1.24.0
 
