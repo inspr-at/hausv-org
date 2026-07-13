@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -1290,13 +1291,23 @@ func NewAuditStore(path string) (*AuditStore, error) {
 		}
 		return store, nil
 	}
-	for i, line := range strings.Split(trimmed, "\n") {
+	lines := strings.Split(trimmed, "\n")
+	for i, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
 		var event AuditEvent
 		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			// A crash mid-append leaves a truncated final line. The audit log is
+			// best-effort; it must not be able to prevent the whole app from
+			// booting (HAUSV-136). Drop an unparseable LAST line; still fail on a
+			// bad line in the middle, which signals real corruption, not a torn
+			// append.
+			if i == len(lines)-1 {
+				log.Printf("audit: dropping unparseable trailing line %d (likely a torn append): %v", i+1, err)
+				break
+			}
 			return nil, fmt.Errorf("invalid audit data on line %d", i+1)
 		}
 		store.entries = append(store.entries, NormalizeAuditEvent(event))
@@ -1329,6 +1340,12 @@ func (s *AuditStore) Append(event AuditEvent) error {
 		if _, err := f.Write(append(raw, '\n')); err != nil {
 			_ = f.Close()
 			return fmt.Errorf("could not append audit data")
+		}
+		// fsync so an acknowledged audit write survives a crash, and so a crash
+		// mid-append can only lose a whole line, not corrupt one (HAUSV-136/137).
+		if err := f.Sync(); err != nil {
+			_ = f.Close()
+			return fmt.Errorf("could not sync audit data")
 		}
 		if err := f.Close(); err != nil {
 			return fmt.Errorf("could not close audit data")

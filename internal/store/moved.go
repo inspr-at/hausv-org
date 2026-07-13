@@ -769,13 +769,42 @@ func SaveJSONAtomic(path string, v any, noun string) error {
 		return fmt.Errorf("could not encode %s data", noun)
 	}
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+	// Write + fsync the temp file, then rename, then fsync the directory.
+	// Without the fsyncs the rename is atomic but NOT durable: a power cut can
+	// leave a zero-length/garbage file or revert the rename, even though the
+	// user was told "saved" (HAUSV-137).
+	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+	if err != nil {
+		return fmt.Errorf("could not write %s data", noun)
+	}
+	if _, err := f.Write(raw); err != nil {
+		f.Close()
+		return fmt.Errorf("could not write %s data", noun)
+	}
+	if err := f.Sync(); err != nil {
+		f.Close()
+		return fmt.Errorf("could not write %s data", noun)
+	}
+	if err := f.Close(); err != nil {
 		return fmt.Errorf("could not write %s data", noun)
 	}
 	if err := os.Rename(tmp, path); err != nil {
 		return fmt.Errorf("could not replace %s data", noun)
 	}
+	syncDir(filepath.Dir(path))
 	return nil
+}
+
+// syncDir fsyncs a directory so a rename into it becomes durable. Best-effort:
+// some filesystems don't support directory fsync, and a failure here should not
+// fail an otherwise-successful write.
+func syncDir(dir string) {
+	d, err := os.Open(dir)
+	if err != nil {
+		return
+	}
+	_ = d.Sync()
+	_ = d.Close()
 }
 
 type ActivityStore struct {
