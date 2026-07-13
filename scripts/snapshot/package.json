@@ -1,0 +1,7 @@
+{
+  "name": "hausv-snapshot",
+  "private": true,
+  "type": "module",
+  "description": "Visual + HTML regression harness. Uses the system Chromium; never downloads a browser.",
+  "dependencies": { "playwright": "1.49.1" }
+}

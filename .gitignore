@@ -8,3 +8,7 @@ weg-portal
 *.env.local
 local-*.jpg
 tmp/
+
+# snapshot harness deps (system Chromium is used; no browser is downloaded)
+scripts/snapshot/node_modules/
+scripts/snapshot/package-lock.json
