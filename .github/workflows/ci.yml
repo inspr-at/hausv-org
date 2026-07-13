@@ -19,10 +19,45 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          # Pull the newest patch of the go.mod minor so stdlib CVE fixes land
+          # (HAUSV-139: the crypto/tls fix shipped in a patch release).
+          check-latest: true
           cache: true
 
-      - name: Test
-        run: go test ./...
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "These files are not gofmt-clean:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: Test (race)
+        run: go test -race ./...
 
       - name: Build
         run: go build ./...
+
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        # Never pushed — this only proves the Dockerfile still builds, which
+        # `go test` cannot (HAUSV-139).
+        run: docker build --build-arg APP_VERSION=ci --build-arg GIT_COMMIT="${GITHUB_SHA::7}" -t hausv-org:ci ./
