@@ -3714,7 +3714,7 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 		t.Fatalf("service workflow update = %+v ok=%v", updated, ok)
 	}
 	residentPage := authedRequest(t, a, "resident@example.com", "/app/anliegen").Body.String()
-	if !strings.Contains(residentPage, "Terminvorschlag:") || !strings.Contains(residentPage, "Dienstag, 14. Juli, 9-11 Uhr") || !strings.Contains(residentPage, "Leuchte ist bestellt") {
+	if !strings.Contains(residentPage, "Hinweis:") || !strings.Contains(residentPage, "Dienstag, 14. Juli, 9-11 Uhr") || !strings.Contains(residentPage, "Leuchte ist bestellt") {
 		t.Fatalf("resident should see service proposal and comment:\n%s", residentPage)
 	}
 
@@ -3858,6 +3858,51 @@ func TestServiceProviderCanAcceptButNotReopen(t *testing.T) {
 	})
 	if reopen.Code != http.StatusForbidden {
 		t.Fatalf("provider reopen status = %d, want 403", reopen.Code)
+	}
+}
+
+// HAUSV-128: "Termin vereinbart" requires a structured date, and a structured
+// appointment renders as a real dated VEVENT (not the old dateless VTODO).
+func TestServiceProviderScheduledRequiresDateAndEmitsEvent(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	issue, err := a.issueStore.Create(residentIssue{
+		TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident",
+		Category: "Reparatur", Title: "Termin", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
+		AssigneeEmail: "service@example.com",
+	})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	noDate := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+		"id":     {issue.ID},
+		"status": {issueStatusScheduled},
+	})
+	if noDate.Code != http.StatusSeeOther || noDate.Header().Get("Location") != "/app/anliegen?issue=termin" {
+		t.Fatalf("scheduled without date = %d loc=%q, want redirect to termin", noDate.Code, noDate.Header().Get("Location"))
+	}
+	if u, _ := a.issueStore.Get("jhw22", issue.ID); u.Status == issueStatusScheduled {
+		t.Fatal("status must not become Termin vereinbart without a date")
+	}
+
+	withDate := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+		"id":            {issue.ID},
+		"status":        {issueStatusScheduled},
+		"service_start": {"2026-07-14T09:00"},
+		"service_end":   {"2026-07-14T11:00"},
+	})
+	if withDate.Code != http.StatusSeeOther || withDate.Header().Get("Location") != "/app/anliegen?issue=updated" {
+		t.Fatalf("scheduled with date = %d loc=%q, want redirect to updated", withDate.Code, withDate.Header().Get("Location"))
+	}
+	updated, ok := a.issueStore.Get("jhw22", issue.ID)
+	if !ok || updated.Status != issueStatusScheduled || updated.ServiceProposedStart.IsZero() {
+		t.Fatalf("scheduled issue = %+v, want status scheduled + start set", updated)
+	}
+
+	var b strings.Builder
+	writeCalendarIssueProposal(&b, tenantConfig{Slug: "jhw22"}, updated, time.Now())
+	if ics := b.String(); !strings.Contains(ics, "BEGIN:VEVENT") || !strings.Contains(ics, "DTSTART:") {
+		t.Fatalf("structured appointment must emit a dated VEVENT:\n%s", ics)
 	}
 }
 

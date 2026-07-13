@@ -68,32 +68,34 @@ type IssueStoreData struct {
 }
 
 type ResidentIssue struct {
-	ID                  string              `json:"id"`
-	TenantSlug          string              `json:"tenant"`
-	AuthorEmail         string              `json:"author_email"`
-	AuthorName          string              `json:"author_name"`
-	Category            string              `json:"category"`
-	Title               string              `json:"title"`
-	Body                string              `json:"body"`
-	LocationType        string              `json:"location_type"`
-	LocationDetail      string              `json:"location_detail"`
-	PhotoPaths          []string            `json:"photo_paths"`
-	Status              string              `json:"status"`
-	Priority            string              `json:"priority"`
-	AssigneeEmail       string              `json:"assignee_email,omitempty"`
-	StatusChangedAt     time.Time           `json:"status_changed_at,omitempty"`
-	StatusChangedBy     string              `json:"status_changed_by,omitempty"`
-	StatusHistory       []IssueStatusChange `json:"status_history,omitempty"`
-	ServiceProposal     string              `json:"service_proposal,omitempty"`
-	ServiceProposedBy   string              `json:"service_proposed_by,omitempty"`
-	ServiceProposedAt   time.Time           `json:"service_proposed_at,omitempty"`
-	EstimateAmountCents int64               `json:"estimate_amount_cents,omitempty"`
-	EstimateNote        string              `json:"estimate_note,omitempty"`
-	EstimateUpdatedBy   string              `json:"estimate_updated_by,omitempty"`
-	EstimateUpdatedAt   time.Time           `json:"estimate_updated_at,omitempty"`
-	Comments            []IssueComment      `json:"comments,omitempty"`
-	CreatedAt           time.Time           `json:"created_at"`
-	UpdatedAt           time.Time           `json:"updated_at"`
+	ID                   string              `json:"id"`
+	TenantSlug           string              `json:"tenant"`
+	AuthorEmail          string              `json:"author_email"`
+	AuthorName           string              `json:"author_name"`
+	Category             string              `json:"category"`
+	Title                string              `json:"title"`
+	Body                 string              `json:"body"`
+	LocationType         string              `json:"location_type"`
+	LocationDetail       string              `json:"location_detail"`
+	PhotoPaths           []string            `json:"photo_paths"`
+	Status               string              `json:"status"`
+	Priority             string              `json:"priority"`
+	AssigneeEmail        string              `json:"assignee_email,omitempty"`
+	StatusChangedAt      time.Time           `json:"status_changed_at,omitempty"`
+	StatusChangedBy      string              `json:"status_changed_by,omitempty"`
+	StatusHistory        []IssueStatusChange `json:"status_history,omitempty"`
+	ServiceProposal      string              `json:"service_proposal,omitempty"`
+	ServiceProposedBy    string              `json:"service_proposed_by,omitempty"`
+	ServiceProposedAt    time.Time           `json:"service_proposed_at,omitempty"`
+	ServiceProposedStart time.Time           `json:"service_proposed_start,omitempty"`
+	ServiceProposedEnd   time.Time           `json:"service_proposed_end,omitempty"`
+	EstimateAmountCents  int64               `json:"estimate_amount_cents,omitempty"`
+	EstimateNote         string              `json:"estimate_note,omitempty"`
+	EstimateUpdatedBy    string              `json:"estimate_updated_by,omitempty"`
+	EstimateUpdatedAt    time.Time           `json:"estimate_updated_at,omitempty"`
+	Comments             []IssueComment      `json:"comments,omitempty"`
+	CreatedAt            time.Time           `json:"created_at"`
+	UpdatedAt            time.Time           `json:"updated_at"`
 }
 
 type IssueComment struct {
@@ -117,6 +119,8 @@ type IssueWorkflowUpdate struct {
 	Priority              string
 	AssigneeEmail         string
 	ServiceProposal       string
+	ServiceProposedStart  time.Time
+	ServiceProposedEnd    time.Time
 	UpdateServiceProposal bool
 	EstimateAmountCents   int64
 	EstimateNote          string
@@ -475,9 +479,20 @@ func (s *IssueStore) UpdateWorkflow(tenantSlug string, id string, update IssueWo
 			updated.ServiceProposal = strings.TrimSpace(update.ServiceProposal)
 			updated.ServiceProposedBy = actorEmail
 			updated.ServiceProposedAt = changedAt
-			if updated.ServiceProposal == "" {
+			start := update.ServiceProposedStart
+			end := update.ServiceProposedEnd
+			if !start.IsZero() {
+				start = start.UTC()
+			}
+			if !end.IsZero() {
+				end = end.UTC()
+			}
+			updated.ServiceProposedStart = start
+			updated.ServiceProposedEnd = end
+			if updated.ServiceProposal == "" && start.IsZero() {
 				updated.ServiceProposedBy = ""
 				updated.ServiceProposedAt = time.Time{}
+				updated.ServiceProposedEnd = time.Time{}
 			}
 		}
 		if update.UpdateEstimate {

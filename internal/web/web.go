@@ -1975,7 +1975,7 @@ const PageTemplates = `
                     </div>
 	                    <h3>{{.Title}}</h3>
 		                    <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
-	                    {{if .HasServiceProposal}}<p class="issue-proposal"><strong>Terminvorschlag:</strong> {{.ServiceProposal}}</p>{{end}}
+	                    {{if .HasServiceAppointment}}<p class="issue-proposal"><strong>Termin:</strong> {{.ServiceAppointment}}</p>{{end}}{{if .HasServiceProposal}}<p class="issue-proposal"><strong>Hinweis:</strong> {{.ServiceProposal}}</p>{{end}}
 	                    {{template "issueEstimate" .}}
                     {{template "attachmentStrip" .}}
                     <div class="comment-thread">
@@ -2001,8 +2001,14 @@ const PageTemplates = `
 	                            {{range .ServiceStatusOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
 	                          </select>
 	                        </label>
-	                        <label class="proposal">Terminvorschlag
-	                          <input type="text" name="service_proposal" value="{{.ServiceProposal}}" maxlength="180" placeholder="z. B. Di 9-11 Uhr">
+	                        <label class="proposal">Termin (Start)
+	                          <input type="datetime-local" name="service_start" value="{{.ServiceStartInput}}">
+	                        </label>
+	                        <label class="proposal">Termin (Ende, optional)
+	                          <input type="datetime-local" name="service_end" value="{{.ServiceEndInput}}">
+	                        </label>
+	                        <label class="proposal">Hinweis (optional)
+	                          <input type="text" name="service_proposal" value="{{.ServiceProposal}}" maxlength="180" placeholder="z. B. Zugang über Hinterhof">
 	                        </label>
 	                        <button type="submit">Status senden</button>
 	                      </form>
@@ -2099,7 +2105,7 @@ const PageTemplates = `
 	                    </div>
 	                    <h3>{{.Title}}</h3>
 	                    <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
-	                    {{if .HasServiceProposal}}<p class="issue-proposal"><strong>Terminvorschlag:</strong> {{.ServiceProposal}}</p>{{end}}
+	                    {{if .HasServiceAppointment}}<p class="issue-proposal"><strong>Termin:</strong> {{.ServiceAppointment}}</p>{{end}}{{if .HasServiceProposal}}<p class="issue-proposal"><strong>Hinweis:</strong> {{.ServiceProposal}}</p>{{end}}
 	                    {{template "attachmentStrip" .}}
                     <details class="issue-card-tools">
                       <summary>Kommentar &amp; Status</summary>

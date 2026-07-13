@@ -117,6 +117,8 @@ func issueMessage(status string) (string, bool) {
 		return "Anhänge konnten nicht übernommen werden. Erlaubt sind Bilddateien oder PDF bis 10 MB, maximal 10 Dateien.", false
 	case "missing":
 		return "Dieses Anliegen wurde nicht gefunden.", false
+	case "termin":
+		return "Für den Status \"Termin vereinbart\" bitte Datum und Uhrzeit angeben.", false
 	case "error":
 		return "Das Anliegen konnte nicht gespeichert werden.", false
 	default:
@@ -352,7 +354,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	}
 	priority := normalizeIssuePriority(r.FormValue("priority"))
 	assignee := normalizeEmail(r.FormValue("assignee_email"))
-	serviceProposal, serviceProposalProvided, err := issueServiceProposalFromForm(r.Form)
+	proposal, serviceProposalProvided, err := issueServiceProposalFromForm(r.Form)
 	if err != nil {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 		return
@@ -399,6 +401,16 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 		return
 	}
+	if status == issueStatusScheduled {
+		scheduledStart := existing.ServiceProposedStart
+		if serviceProposalProvided {
+			scheduledStart = proposal.Start
+		}
+		if scheduledStart.IsZero() {
+			http.Redirect(w, r, "/app/anliegen?issue=termin", http.StatusSeeOther)
+			return
+		}
+	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	var uploadedEstimates []attachmentRecord
 	if len(estimateHeaders) > 0 {
@@ -413,7 +425,9 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		Status:                status,
 		Priority:              priority,
 		AssigneeEmail:         assignee,
-		ServiceProposal:       serviceProposal,
+		ServiceProposal:       proposal.Text,
+		ServiceProposedStart:  proposal.Start,
+		ServiceProposedEnd:    proposal.End,
 		UpdateServiceProposal: serviceProposalProvided,
 		EstimateAmountCents:   estimateAmount,
 		EstimateNote:          estimateNote,
@@ -529,15 +543,35 @@ func issueFromForm(r *http.Request, tenantSlug string, author userProfile, now t
 	}, nil
 }
 
-func issueServiceProposalFromForm(values url.Values) (string, bool, error) {
-	if _, ok := values["service_proposal"]; !ok {
-		return "", false, nil
+type serviceProposalInput struct {
+	Text  string
+	Start time.Time
+	End   time.Time
+}
+
+func issueServiceProposalFromForm(values url.Values) (serviceProposalInput, bool, error) {
+	_, hasText := values["service_proposal"]
+	_, hasStart := values["service_start"]
+	_, hasEnd := values["service_end"]
+	if !hasText && !hasStart && !hasEnd {
+		return serviceProposalInput{}, false, nil
 	}
-	proposal := strings.TrimSpace(values.Get("service_proposal"))
-	if len([]rune(proposal)) > 180 {
-		return "", true, fmt.Errorf("service proposal too long")
+	text := strings.TrimSpace(values.Get("service_proposal"))
+	if len([]rune(text)) > 180 {
+		return serviceProposalInput{}, true, fmt.Errorf("service proposal too long")
 	}
-	return proposal, true, nil
+	start, err := parseOptionalLocalDateTime(values.Get("service_start"), time.Time{})
+	if err != nil {
+		return serviceProposalInput{}, true, err
+	}
+	end, err := parseOptionalLocalDateTime(values.Get("service_end"), time.Time{})
+	if err != nil {
+		return serviceProposalInput{}, true, err
+	}
+	if !start.IsZero() && !end.IsZero() && end.Before(start) {
+		return serviceProposalInput{}, true, fmt.Errorf("appointment end before start")
+	}
+	return serviceProposalInput{Text: text, Start: start, End: end}, true, nil
 }
 
 func issueEstimateFromForm(values url.Values) (int64, string, bool, error) {
@@ -821,37 +855,41 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 		canServiceAct := isServiceProviderRole(role) && issueAssignedToActor(item, actorEmail) && issueIsOpen(item)
 		hasEstimate := item.EstimateAmountCents > 0 || strings.TrimSpace(item.EstimateNote) != ""
 		views = append(views, issueView{
-			ID:                   item.ID,
-			Title:                item.Title,
-			Body:                 item.Body,
-			Author:               author,
-			AuthorEmail:          item.AuthorEmail,
-			Category:             item.Category,
-			Status:               status,
-			StatusClass:          issueStatusClass(status),
-			Priority:             priority,
-			AssigneeEmail:        item.AssigneeEmail,
-			HasAssignee:          item.AssigneeEmail != "",
-			Location:             issueLocationLabel(item.LocationType, item.LocationDetail),
-			CreatedAt:            formatLocalDateTime(item.CreatedAt),
-			CanComment:           canManage || canResidentAct || canServiceAct,
-			CanClose:             canResidentAct && canResidentTransition(status, issueStatusDone),
-			CanReopen:            canResidentAct && canResidentTransition(status, issueStatusNew),
-			CanServiceUpdate:     canServiceAct,
-			ServiceProposal:      item.ServiceProposal,
-			HasServiceProposal:   strings.TrimSpace(item.ServiceProposal) != "",
-			CanEditEstimate:      canManage || canServiceAct,
-			EstimateAmount:       formatIssueEstimateAmount(item.EstimateAmountCents),
-			EstimateAmountValue:  formatIssueEstimateInput(item.EstimateAmountCents),
-			EstimateNote:         item.EstimateNote,
-			HasEstimate:          hasEstimate,
-			PhotoCount:           photoCount,
-			HasPhotos:            photoCount > 0,
-			Comments:             comments,
-			HasComments:          len(comments) > 0,
-			StatusOptions:        issueSelectOptions(issueStatuses(), status),
-			ServiceStatusOptions: issueSelectOptions(serviceProviderIssueStatuses(), status),
-			PriorityOptions:      issueSelectOptions(issuePriorities(), priority),
+			ID:                    item.ID,
+			Title:                 item.Title,
+			Body:                  item.Body,
+			Author:                author,
+			AuthorEmail:           item.AuthorEmail,
+			Category:              item.Category,
+			Status:                status,
+			StatusClass:           issueStatusClass(status),
+			Priority:              priority,
+			AssigneeEmail:         item.AssigneeEmail,
+			HasAssignee:           item.AssigneeEmail != "",
+			Location:              issueLocationLabel(item.LocationType, item.LocationDetail),
+			CreatedAt:             formatLocalDateTime(item.CreatedAt),
+			CanComment:            canManage || canResidentAct || canServiceAct,
+			CanClose:              canResidentAct && canResidentTransition(status, issueStatusDone),
+			CanReopen:             canResidentAct && canResidentTransition(status, issueStatusNew),
+			CanServiceUpdate:      canServiceAct,
+			ServiceProposal:       item.ServiceProposal,
+			HasServiceProposal:    strings.TrimSpace(item.ServiceProposal) != "",
+			ServiceAppointment:    formatIssueAppointment(item.ServiceProposedStart, item.ServiceProposedEnd),
+			HasServiceAppointment: !item.ServiceProposedStart.IsZero(),
+			ServiceStartInput:     issueAppointmentInput(item.ServiceProposedStart),
+			ServiceEndInput:       issueAppointmentInput(item.ServiceProposedEnd),
+			CanEditEstimate:       canManage || canServiceAct,
+			EstimateAmount:        formatIssueEstimateAmount(item.EstimateAmountCents),
+			EstimateAmountValue:   formatIssueEstimateInput(item.EstimateAmountCents),
+			EstimateNote:          item.EstimateNote,
+			HasEstimate:           hasEstimate,
+			PhotoCount:            photoCount,
+			HasPhotos:             photoCount > 0,
+			Comments:              comments,
+			HasComments:           len(comments) > 0,
+			StatusOptions:         issueSelectOptions(issueStatuses(), status),
+			ServiceStatusOptions:  issueSelectOptions(serviceProviderIssueStatuses(), status),
+			PriorityOptions:       issueSelectOptions(issuePriorities(), priority),
 		})
 	}
 	return views

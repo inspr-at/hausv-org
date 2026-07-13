@@ -1219,7 +1219,7 @@ func (a *app) renderCalendarFeed(tenant tenantConfig, profile userProfile, role 
 	}
 	if a != nil && a.issueStore != nil {
 		for _, item := range a.issueStore.ListTenant(tenantSlug) {
-			if strings.TrimSpace(item.ServiceProposal) == "" || !a.canViewIssueForActor(tenantSlug, item, email, role) {
+			if (strings.TrimSpace(item.ServiceProposal) == "" && item.ServiceProposedStart.IsZero()) || !a.canViewIssueForActor(tenantSlug, item, email, role) {
 				continue
 			}
 			writeCalendarIssueProposal(&b, tenant, item, now)
@@ -1260,10 +1260,6 @@ func (a *app) writeCalendarEvent(b *strings.Builder, tenant tenantConfig, item h
 }
 
 func writeCalendarIssueProposal(b *strings.Builder, tenant tenantConfig, item residentIssue, now time.Time) {
-	calendarLine(b, "BEGIN", "VTODO")
-	calendarLine(b, "UID", "issue-proposal-"+item.ID+"@"+tenant.Slug+".hausv.org")
-	calendarLine(b, "DTSTAMP", calendarDateTime(now))
-	calendarLine(b, "SUMMARY", "Terminvorschlag: "+item.Title)
 	description := strings.TrimSpace(item.ServiceProposal)
 	if description != "" {
 		description += "\n\n"
@@ -1272,6 +1268,29 @@ func writeCalendarIssueProposal(b *strings.Builder, tenant tenantConfig, item re
 	if status := strings.TrimSpace(item.Status); status != "" {
 		description += "\nStatus: " + status
 	}
+
+	// A structured appointment becomes a real dated VEVENT; a legacy free-text
+	// proposal stays a dateless VTODO (HAUSV-128).
+	if !item.ServiceProposedStart.IsZero() {
+		end := item.ServiceProposedEnd
+		if end.IsZero() {
+			end = item.ServiceProposedStart.Add(time.Hour)
+		}
+		calendarLine(b, "BEGIN", "VEVENT")
+		calendarLine(b, "UID", "issue-proposal-"+item.ID+"@"+tenant.Slug+".hausv.org")
+		calendarLine(b, "DTSTAMP", calendarDateTime(now))
+		calendarLine(b, "DTSTART", calendarDateTime(item.ServiceProposedStart))
+		calendarLine(b, "DTEND", calendarDateTime(end))
+		calendarLine(b, "SUMMARY", "Termin: "+item.Title)
+		calendarLine(b, "DESCRIPTION", description)
+		calendarLine(b, "END", "VEVENT")
+		return
+	}
+
+	calendarLine(b, "BEGIN", "VTODO")
+	calendarLine(b, "UID", "issue-proposal-"+item.ID+"@"+tenant.Slug+".hausv.org")
+	calendarLine(b, "DTSTAMP", calendarDateTime(now))
+	calendarLine(b, "SUMMARY", "Terminvorschlag: "+item.Title)
 	calendarLine(b, "DESCRIPTION", description)
 	calendarLine(b, "STATUS", "NEEDS-ACTION")
 	calendarLine(b, "END", "VTODO")
@@ -2074,6 +2093,28 @@ func unreadAnnouncementCount(items []announcement, lastSeen time.Time, now time.
 
 func serviceProviderIssueStatuses() []string {
 	return []string{issueStatusAccepted, issueStatusScheduled, issueStatusProgress, issueStatusDone}
+}
+
+// issueAppointmentInput formats a proposed appointment time for a datetime-local
+// form input, or "" when unset.
+func issueAppointmentInput(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return formatLocalDateTimeInput(t)
+}
+
+// formatIssueAppointment renders the proposed appointment for display, or "" when
+// no start is set.
+func formatIssueAppointment(start, end time.Time) string {
+	if start.IsZero() {
+		return ""
+	}
+	out := formatLocalDateTime(start)
+	if !end.IsZero() {
+		out += " – " + formatLocalDateTime(end)
+	}
+	return out
 }
 
 func parseIssueEstimateAmountCents(raw string) (int64, error) {

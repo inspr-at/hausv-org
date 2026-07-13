@@ -252,6 +252,10 @@ type IssueView struct {
 	CanServiceUpdate        bool
 	ServiceProposal         string
 	HasServiceProposal      bool
+	ServiceAppointment      string
+	HasServiceAppointment   bool
+	ServiceStartInput       string
+	ServiceEndInput         string
 	CanEditEstimate         bool
 	EstimateAmount          string
 	EstimateAmountValue     string
