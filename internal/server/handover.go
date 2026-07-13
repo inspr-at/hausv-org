@@ -542,6 +542,13 @@ func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/uebergaben?handover=missing", http.StatusSeeOther)
 		return
 	}
+	// Idempotent: if already filed, don't generate a SECOND document (HAUSV-148).
+	// This catches the common retry — a double submit or a click after a slow
+	// response — where the first filing already set FiledDocumentID.
+	if item.FiledDocumentID != "" {
+		http.Redirect(w, r, "/app/uebergaben?handover=filed#handover-"+url.PathEscape(item.ID), http.StatusSeeOther)
+		return
+	}
 	attachments := []attachmentRecord{}
 	if a.attachmentStore != nil {
 		attachments = a.attachmentStore.ListEntity(tenant.Slug, "handover", item.ID)
