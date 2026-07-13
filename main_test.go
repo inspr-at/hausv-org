@@ -4158,7 +4158,7 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 	if err != nil {
 		t.Fatalf("Create issue: %v", err)
 	}
-	issueAttachments, err := a.attachmentStore.CreateUploaded("jhw22", "issue", issue.ID, "resident@example.com", []*multipart.FileHeader{
+	issueAttachments, err := a.attachmentStore.CreateUploaded("jhw22", "issue", issue.ID, "resident@example.com", []uploadedFile{
 		testMultipartHeader(t, "attachments", "schaden.png", minimalPNG()),
 	}, time.Now())
 	if err != nil || len(issueAttachments) != 1 {
@@ -4172,7 +4172,7 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 	if err != nil || !found || len(commented.Comments) != 1 {
 		t.Fatalf("AddComment issue=%+v found=%v err=%v", commented, found, err)
 	}
-	commentAttachments, err := a.attachmentStore.CreateUploaded("jhw22", "issue-comment", commented.Comments[0].ID, "service@example.com", []*multipart.FileHeader{
+	commentAttachments, err := a.attachmentStore.CreateUploaded("jhw22", "issue-comment", commented.Comments[0].ID, "service@example.com", []uploadedFile{
 		testMultipartHeader(t, "attachments", "bestand.png", minimalPNG()),
 	}, time.Now())
 	if err != nil || len(commentAttachments) != 1 {
@@ -4694,7 +4694,7 @@ func authedMultipartFilesRequest(t *testing.T, a *app, email string, path string
 	return rr
 }
 
-func testMultipartHeader(t *testing.T, field string, filename string, fileBody []byte) *multipart.FileHeader {
+func testMultipartHeader(t *testing.T, field string, filename string, fileBody []byte) uploadedFile {
 	t.Helper()
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
@@ -4717,7 +4717,7 @@ func testMultipartHeader(t *testing.T, field string, filename string, fileBody [
 	if len(files) != 1 {
 		t.Fatalf("multipart files for %s = %d, want 1", field, len(files))
 	}
-	return files[0]
+	return uploadedFileFromHeader(files[0])
 }
 
 func authedMultipartFileRequest(t *testing.T, a *app, email string, path string, fields map[string]string, fileField string, filename string, fileBody []byte) *httptest.ResponseRecorder {

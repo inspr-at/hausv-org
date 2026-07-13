@@ -583,7 +583,7 @@ func (a *app) createHandover(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/app/uebergaben?handover=invalid", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "handover", item.ID, email, attachmentHeaders, now)
+		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "handover", item.ID, email, uploadedFilesFromHeaders(attachmentHeaders), now)
 		if err != nil {
 			http.Redirect(w, r, "/app/uebergaben?handover=invalid", http.StatusSeeOther)
 			return

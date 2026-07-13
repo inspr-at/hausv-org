@@ -2107,7 +2107,7 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 			return
 		}
-		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "announcement", created.ID, email, attachmentHeaders, time.Now()); err != nil {
+		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "announcement", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
 			_, _ = a.announcementStore.Delete(tenant.Slug, created.ID)
 			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 			return
@@ -2154,7 +2154,7 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "announcement", id, email, attachmentHeaders, time.Now())
+		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "announcement", id, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
 		if err != nil {
 			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 			return
@@ -2495,7 +2495,7 @@ func (a *app) createEvent(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
 			return
 		}
-		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "event", created.ID, email, attachmentHeaders, time.Now()); err != nil {
+		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "event", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
 			_, _ = a.eventStore.Delete(tenant.Slug, created.ID)
 			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
 			return
@@ -2541,7 +2541,7 @@ func (a *app) editEvent(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "event", id, email, attachmentHeaders, time.Now())
+		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "event", id, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
 		if err != nil {
 			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
 			return
@@ -2687,7 +2687,7 @@ func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request) {
 		Visibility: normalizeDocumentVisibility(r.FormValue("visibility")),
 		UnitID:     normalizeUnitID(r.FormValue("unit_id")),
 		UploadedBy: email,
-	}, header, time.Now())
+	}, uploadedFileFromHeader(header), time.Now())
 	if err != nil {
 		log.Printf("document upload failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
@@ -2742,7 +2742,7 @@ func (a *app) replaceDocument(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
 		return
 	}
-	replacement, replaced, err := a.documentStore.Replace(tenant.Slug, strings.TrimSpace(r.FormValue("id")), email, header, time.Now())
+	replacement, replaced, err := a.documentStore.Replace(tenant.Slug, strings.TrimSpace(r.FormValue("id")), email, uploadedFileFromHeader(header), time.Now())
 	if err != nil {
 		log.Printf("document replace failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
@@ -3117,7 +3117,7 @@ func (a *app) createBallot(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 			return
 		}
-		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "ballot", created.ID, email, attachmentHeaders, time.Now()); err != nil {
+		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "ballot", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
 			_, _ = a.voteStore.Delete(tenant.Slug, created.ID)
 			http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 			return
@@ -4650,7 +4650,7 @@ func (a *app) createIssue(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue", item.ID, email, attachmentHeaders, now)
+		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue", item.ID, email, uploadedFilesFromHeaders(attachmentHeaders), now)
 		if err != nil {
 			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
 			return
@@ -4731,7 +4731,7 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue-comment", commentID, email, attachmentHeaders, time.Now())
+		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue-comment", commentID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
 		if err != nil {
 			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
 			return
@@ -4894,7 +4894,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
 	profile := a.profileForTenant(email, tenant.Slug)
 	var uploadedEstimates []attachmentRecord
 	if len(estimateHeaders) > 0 {
-		uploadedEstimates, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue-estimate", id, email, estimateHeaders, time.Now())
+		uploadedEstimates, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue-estimate", id, email, uploadedFilesFromHeaders(estimateHeaders), time.Now())
 		if err != nil {
 			log.Printf("issue estimate upload failed for %s/%s: %v", tenant.Slug, id, err)
 			http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
@@ -5779,7 +5779,7 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "parking", month, actorEmail, attachmentHeaders, time.Now())
+		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "parking", month, actorEmail, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
 		if err != nil {
 			log.Printf("parking attachment upload failed for %s/%s/%s: %v", tenant.Slug, month, redactedEmail(actorEmail), err)
 			http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
@@ -11187,17 +11187,53 @@ func (a *app) removeTenantHeroImage(filename string) error {
 	return err
 }
 
-func (s *issueStore) SavePhoto(tenantSlug string, issueID string, header *multipart.FileHeader) (string, error) {
-	if s == nil || header == nil || header.Filename == "" || header.Size == 0 {
+// uploadedFile is what the store layer needs from an upload: a name, a size,
+// and a way to read the bytes. Deliberately NOT *multipart.FileHeader — that
+// drags mime/multipart (the HTTP transport) into the store layer and blocks
+// extracting it as a package.
+//
+// Open returns a ReadSeekCloser because the stores sniff the first 512 bytes
+// for content-type detection and then rewind; a plain io.ReadCloser would
+// silently break that.
+type uploadedFile struct {
+	Filename string
+	Size     int64
+	// DeclaredType is the client-supplied Content-Type from the multipart part.
+	// It is only a hint — the stores still sniff the bytes.
+	DeclaredType string
+	Open         func() (io.ReadSeekCloser, error)
+}
+
+// uploadedFileFromHeader adapts an HTTP multipart upload at the handler
+// boundary — the only place the two representations meet.
+func uploadedFileFromHeader(h *multipart.FileHeader) uploadedFile {
+	return uploadedFile{
+		Filename:     h.Filename,
+		Size:         h.Size,
+		DeclaredType: h.Header.Get("Content-Type"),
+		Open:         func() (io.ReadSeekCloser, error) { return h.Open() },
+	}
+}
+
+func uploadedFilesFromHeaders(hs []*multipart.FileHeader) []uploadedFile {
+	out := make([]uploadedFile, 0, len(hs))
+	for _, h := range hs {
+		out = append(out, uploadedFileFromHeader(h))
+	}
+	return out
+}
+
+func (s *issueStore) SavePhoto(tenantSlug string, issueID string, upload uploadedFile) (string, error) {
+	if s == nil || upload.Open == nil || upload.Filename == "" || upload.Size == 0 {
 		return "", nil
 	}
 	if s.attachmentDir == "" {
 		return "", fmt.Errorf("issue attachment directory unavailable")
 	}
-	if header.Size > maxIssuePhotoBytes {
+	if upload.Size > maxIssuePhotoBytes {
 		return "", fmt.Errorf("issue photo too large")
 	}
-	file, err := header.Open()
+	file, err := upload.Open()
 	if err != nil {
 		return "", fmt.Errorf("could not open issue photo")
 	}
@@ -11674,8 +11710,8 @@ func sortManagedContacts(items []managedContact) {
 	})
 }
 
-func (s *attachmentStore) CreateUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, headers []*multipart.FileHeader, now time.Time) ([]attachmentRecord, error) {
-	if s == nil || len(headers) == 0 {
+func (s *attachmentStore) CreateUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, uploads []uploadedFile, now time.Time) ([]attachmentRecord, error) {
+	if s == nil || len(uploads) == 0 {
 		return nil, nil
 	}
 	tenantSlug = normalizeSlug(tenantSlug)
@@ -11689,11 +11725,11 @@ func (s *attachmentStore) CreateUploaded(tenantSlug string, entityType string, e
 	defer s.mu.Unlock()
 
 	created := []attachmentRecord{}
-	for _, header := range headers {
-		if header == nil || strings.TrimSpace(header.Filename) == "" || header.Size == 0 {
+	for _, upload := range uploads {
+		if upload.Open == nil || strings.TrimSpace(upload.Filename) == "" || upload.Size == 0 {
 			continue
 		}
-		if header.Size > maxAttachmentBytes {
+		if upload.Size > maxAttachmentBytes {
 			s.rollbackCreatedAttachmentsLocked(created)
 			return nil, fmt.Errorf("attachment too large")
 		}
@@ -11702,7 +11738,7 @@ func (s *attachmentStore) CreateUploaded(tenantSlug string, entityType string, e
 			s.rollbackCreatedAttachmentsLocked(created)
 			return nil, err
 		}
-		fileSave, err := s.saveUploadedAttachmentFile(tenantSlug, id, header)
+		fileSave, err := s.saveUploadedAttachmentFile(tenantSlug, id, upload)
 		if err != nil {
 			s.rollbackCreatedAttachmentsLocked(created)
 			return nil, err
@@ -11713,7 +11749,7 @@ func (s *attachmentStore) CreateUploaded(tenantSlug string, entityType string, e
 			EntityType:         entityType,
 			EntityID:           entityID,
 			UploadedBy:         uploadedBy,
-			Filename:           sanitizeDocumentFilename(header.Filename),
+			Filename:           sanitizeDocumentFilename(upload.Filename),
 			StoredFilename:     fileSave.StoredFilename,
 			ContentType:        fileSave.ContentType,
 			Size:               fileSave.Size,
@@ -11750,11 +11786,11 @@ type attachmentFileSave struct {
 	ThumbSize          int64
 }
 
-func (s *attachmentStore) saveUploadedAttachmentFile(tenantSlug string, id string, header *multipart.FileHeader) (attachmentFileSave, error) {
+func (s *attachmentStore) saveUploadedAttachmentFile(tenantSlug string, id string, upload uploadedFile) (attachmentFileSave, error) {
 	if s.fileDir == "" {
 		return attachmentFileSave{}, fmt.Errorf("attachment file directory unavailable")
 	}
-	file, err := header.Open()
+	file, err := upload.Open()
 	if err != nil {
 		return attachmentFileSave{}, fmt.Errorf("could not open attachment")
 	}
@@ -11770,7 +11806,7 @@ func (s *attachmentStore) saveUploadedAttachmentFile(tenantSlug string, id strin
 	if len(data) == 0 {
 		return attachmentFileSave{}, fmt.Errorf("empty attachment")
 	}
-	contentType := detectAttachmentContentType(data, header)
+	contentType := detectAttachmentContentType(data, upload)
 	if rejectActiveAttachmentContent(contentType) {
 		return attachmentFileSave{}, fmt.Errorf("unsafe attachment content")
 	}
@@ -11953,15 +11989,15 @@ func (s *attachmentStore) removeAttachmentRecordLocked(item attachmentRecord) {
 	}
 }
 
-func detectAttachmentContentType(data []byte, header *multipart.FileHeader) string {
+func detectAttachmentContentType(data []byte, upload uploadedFile) string {
 	limit := len(data)
 	if limit > 512 {
 		limit = 512
 	}
 	detected := http.DetectContentType(data[:limit])
 	declared := ""
-	if header != nil {
-		declared = strings.ToLower(strings.TrimSpace(header.Header.Get("Content-Type")))
+	if upload.DeclaredType != "" {
+		declared = strings.ToLower(strings.TrimSpace(upload.DeclaredType))
 	}
 	if detected == "application/octet-stream" && declared != "" {
 		if _, ok := attachmentExtension(declared); ok {
@@ -12127,7 +12163,7 @@ func newDocumentStore(path string, fileDir string) (*documentStore, error) {
 	return store, nil
 }
 
-func (s *documentStore) Create(item documentRecord, header *multipart.FileHeader, now time.Time) (documentRecord, error) {
+func (s *documentStore) Create(item documentRecord, upload uploadedFile, now time.Time) (documentRecord, error) {
 	if s == nil {
 		return documentRecord{}, fmt.Errorf("document store unavailable")
 	}
@@ -12135,7 +12171,7 @@ func (s *documentStore) Create(item documentRecord, header *multipart.FileHeader
 		now = time.Now()
 	}
 	item.UploadedAt = now.UTC()
-	fileSave, err := s.saveUploadedDocumentFile(item.TenantSlug, header)
+	fileSave, err := s.saveUploadedDocumentFile(item.TenantSlug, upload)
 	if err != nil {
 		return documentRecord{}, err
 	}
@@ -12173,17 +12209,17 @@ type documentFileSave struct {
 	Path           string
 }
 
-func (s *documentStore) saveUploadedDocumentFile(tenantSlug string, header *multipart.FileHeader) (documentFileSave, error) {
-	if header == nil || header.Filename == "" || header.Size <= 0 {
+func (s *documentStore) saveUploadedDocumentFile(tenantSlug string, upload uploadedFile) (documentFileSave, error) {
+	if upload.Open == nil || upload.Filename == "" || upload.Size <= 0 {
 		return documentFileSave{}, fmt.Errorf("document file required")
 	}
 	if s.fileDir == "" {
 		return documentFileSave{}, fmt.Errorf("document file directory unavailable")
 	}
-	if header.Size > maxDocumentBytes {
+	if upload.Size > maxDocumentBytes {
 		return documentFileSave{}, fmt.Errorf("document file too large")
 	}
-	file, err := header.Open()
+	file, err := upload.Open()
 	if err != nil {
 		return documentFileSave{}, fmt.Errorf("could not open document")
 	}
@@ -12215,7 +12251,7 @@ func (s *documentStore) saveUploadedDocumentFile(tenantSlug string, header *mult
 	}
 	return documentFileSave{
 		ID:             id,
-		Filename:       sanitizeDocumentFilename(header.Filename),
+		Filename:       sanitizeDocumentFilename(upload.Filename),
 		StoredFilename: storedFilename,
 		ContentType:    contentType,
 		Size:           written,
@@ -12223,7 +12259,7 @@ func (s *documentStore) saveUploadedDocumentFile(tenantSlug string, header *mult
 	}, nil
 }
 
-func (s *documentStore) Replace(tenantSlug string, id string, uploadedBy string, header *multipart.FileHeader, now time.Time) (documentRecord, documentRecord, error) {
+func (s *documentStore) Replace(tenantSlug string, id string, uploadedBy string, upload uploadedFile, now time.Time) (documentRecord, documentRecord, error) {
 	if s == nil {
 		return documentRecord{}, documentRecord{}, fmt.Errorf("document store unavailable")
 	}
@@ -12240,7 +12276,7 @@ func (s *documentStore) Replace(tenantSlug string, id string, uploadedBy string,
 	if now.IsZero() {
 		now = time.Now()
 	}
-	fileSave, err := s.saveUploadedDocumentFile(tenantSlug, header)
+	fileSave, err := s.saveUploadedDocumentFile(tenantSlug, upload)
 	if err != nil {
 		return documentRecord{}, documentRecord{}, err
 	}
@@ -12280,7 +12316,7 @@ func (s *documentStore) Replace(tenantSlug string, id string, uploadedBy string,
 	return documentRecord{}, documentRecord{}, fmt.Errorf("document not current")
 }
 
-func (s *documentStore) writeDocumentFile(tenantSlug string, storedFilename string, file multipart.File) (string, int64, error) {
+func (s *documentStore) writeDocumentFile(tenantSlug string, storedFilename string, file io.Reader) (string, int64, error) {
 	tenantSlug = normalizeSlug(tenantSlug)
 	storedFilename = filepath.Base(storedFilename)
 	if tenantSlug == "" || storedFilename == "" || storedFilename == "." || storedFilename == string(filepath.Separator) {
