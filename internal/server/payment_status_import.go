@@ -2,8 +2,9 @@ package server
 
 import (
 	"fmt"
-	"github.com/markus-barta/hausv-org/internal/integrations"
 	"strings"
+
+	"github.com/markus-barta/hausv-org/internal/integrations"
 )
 
 type unitPaymentReferenceCandidate struct {

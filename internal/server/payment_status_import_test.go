@@ -1,9 +1,10 @@
 package server
 
 import (
-	"github.com/markus-barta/hausv-org/internal/integrations"
 	"strings"
 	"testing"
+
+	"github.com/markus-barta/hausv-org/internal/integrations"
 )
 
 func TestApplyImportedPaymentsToUnitStatusesReportsAndAppliesOnlyClearMatches(t *testing.T) {

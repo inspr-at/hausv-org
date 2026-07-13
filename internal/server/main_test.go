@@ -5,9 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/markus-barta/hausv-org/internal/auth"
-	"github.com/markus-barta/hausv-org/internal/version"
-	"github.com/markus-barta/hausv-org/internal/web"
 	"html/template"
 	"image"
 	"image/color"
@@ -23,6 +20,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/markus-barta/hausv-org/internal/auth"
+	"github.com/markus-barta/hausv-org/internal/version"
+	"github.com/markus-barta/hausv-org/internal/web"
 )
 
 type sentNotification struct {
