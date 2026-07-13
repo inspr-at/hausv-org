@@ -3,14 +3,14 @@
 The csb1 stack expects the production env at:
 
 ```fish
-/run/agenix/csb1-weg-portal-env
+/run/agenix/csb1-hausv-org-env
 ```
 
 Create the encrypted source file from `nixcfg`:
 
 ```fish
 cd ~/Code/nixcfg
-agenix -e secrets/csb1-weg-portal-env.age
+agenix -e secrets/csb1-hausv-org-env.age
 ```
 
 Expected keys:
@@ -112,7 +112,7 @@ grid/base surcharge settings, meter readings, and aWATTar price readings to:
 The compose service bind-mounts that path from:
 
 ```text
-/var/lib/csb1-docker/weg-portal
+/var/lib/csb1-docker/hausv-org
 ```
 
 Invited users (Benutzer & Rechte -> "Person einladen") persist to `/data/invites.json`
@@ -220,7 +220,7 @@ openssl rand -base64 48 | tr '+/' '-_' | tr -d '=' | pbcopy
 ```
 
 After the secret exists, rebuild or switch csb1 so agenix materializes
-`/run/agenix/csb1-weg-portal-env`, then deploy the container:
+`/run/agenix/csb1-hausv-org-env`, then deploy the container:
 
 ```fish
 cd ~/Code/hausv-org
@@ -229,7 +229,7 @@ test -n "$version"; or set version (git describe --tags --match 'v[0-9]*' --abbr
 test -n "$version"; or set version 0.8.0
 set commit (git rev-parse --short HEAD)
 git diff --quiet; or set commit "$commit-dirty"
-git ls-files -co --exclude-standard -z | tar --null -T - -cf - | ssh -p 2222 mba@cs1.barta.cm "bash -lc 'set -euo pipefail; tmpdir=\$(mktemp -d /tmp/weg-portal-deploy.XXXXXX); trap \"rm -rf \\\"\$tmpdir\\\"\" EXIT; tar -xf - -C \"\$tmpdir\"; cd \"\$tmpdir\"; docker build --build-arg APP_VERSION=$version --build-arg GIT_COMMIT=$commit -t ghcr.io/markus-barta/weg-portal:latest .; cd /home/mba/Code/nixcfg/hosts/csb1/docker; docker compose up -d --no-deps weg-portal'"
+git ls-files -co --exclude-standard -z | tar --null -T - -cf - | ssh -p 2222 mba@cs1.barta.cm "bash -lc 'set -euo pipefail; tmpdir=\$(mktemp -d /tmp/hausv-org-deploy.XXXXXX); trap \"rm -rf \\\"\$tmpdir\\\"\" EXIT; tar -xf - -C \"\$tmpdir\"; cd \"\$tmpdir\"; docker build --build-arg APP_VERSION=$version --build-arg GIT_COMMIT=$commit -t ghcr.io/markus-barta/hausv-org:latest .; cd /home/mba/Code/nixcfg/hosts/csb1/docker; docker compose up -d --no-deps hausv-org'"
 ```
 
 The visible app version is `SEMVER (git-hash)`. Semver is sourced from
