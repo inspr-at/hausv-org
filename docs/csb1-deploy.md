@@ -223,11 +223,12 @@ After the secret exists, rebuild or switch csb1 so agenix materializes
 `/run/agenix/csb1-weg-portal-env`, then deploy the container:
 
 ```fish
-cd ~/Code/weg-portal
+cd ~/Code/hausv-org
 set version (string trim < VERSION)
 test -n "$version"; or set version (git describe --tags --match 'v[0-9]*' --abbrev=0 | string replace -r '^v' '')
-test -n "$version"; or set version 0.6.13
-set commit (git rev-parse --short HEAD)-dirty
+test -n "$version"; or set version 0.8.0
+set commit (git rev-parse --short HEAD)
+git diff --quiet; or set commit "$commit-dirty"
 git ls-files -co --exclude-standard -z | tar --null -T - -cf - | ssh -p 2222 mba@cs1.barta.cm "bash -lc 'set -euo pipefail; tmpdir=\$(mktemp -d /tmp/weg-portal-deploy.XXXXXX); trap \"rm -rf \\\"\$tmpdir\\\"\" EXIT; tar -xf - -C \"\$tmpdir\"; cd \"\$tmpdir\"; docker build --build-arg APP_VERSION=$version --build-arg GIT_COMMIT=$commit -t ghcr.io/markus-barta/weg-portal:latest .; cd /home/mba/Code/nixcfg/hosts/csb1/docker; docker compose up -d --no-deps weg-portal'"
 ```
 
