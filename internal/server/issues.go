@@ -12,25 +12,16 @@ import (
 	"time"
 )
 
-func (a *app) issues(w http.ResponseWriter, r *http.Request) {
-	a.renderIssuesPage(w, r, false)
+func (a *app) issues(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	a.renderIssuesPage(w, r, ac, false)
 }
 
-func (a *app) issueBoard(w http.ResponseWriter, r *http.Request) {
-	a.renderIssuesPage(w, r, true)
+func (a *app) issueBoard(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	a.renderIssuesPage(w, r, ac, true)
 }
 
-func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, boardOnly bool) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCtx, boardOnly bool) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	profile := a.profileForTenant(email, tenant.Slug)
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	issues := []issueView{}
@@ -133,19 +124,10 @@ func issueMessage(status string) (string, bool) {
 	}
 }
 
-func (a *app) createIssue(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) createIssue(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !canCreateResidentIssue(role) {
 		http.Error(w, "Dieser Zugang kann keine neuen Anliegen anlegen.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxIssueAttachmentFormBytes)
@@ -192,17 +174,8 @@ func (a *app) createIssue(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/anliegen?issue=created", http.StatusSeeOther)
 }
 
-func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
-		return
-	}
+func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	r.Body = http.MaxBytesReader(w, r.Body, maxIssueAttachmentFormBytes)
 	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type"))), "multipart/form-data") {
 		if err := r.ParseMultipartForm(maxAttachmentBytes); err != nil {
@@ -285,17 +258,8 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
 }
 
-func (a *app) deleteIssueComment(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
-		return
-	}
+func (a *app) deleteIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
@@ -329,17 +293,8 @@ func (a *app) deleteIssueComment(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
 }
 
-func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
-		return
-	}
+func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
