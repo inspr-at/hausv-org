@@ -895,7 +895,7 @@ func TestUserRowsDeriveStatusFromActivity(t *testing.T) {
 func TestRunHealthcheckAcceptsExpectedPayload(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"service":"weg-portal","status":"ok"}`))
+		_, _ = w.Write([]byte(`{"service":"hausv-org","status":"ok"}`))
 	}))
 	defer server.Close()
 

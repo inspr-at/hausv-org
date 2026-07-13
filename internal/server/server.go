@@ -855,7 +855,7 @@ func runHealthcheck(target string) error {
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 512)).Decode(&payload); err != nil {
 		return fmt.Errorf("invalid health response: %w", err)
 	}
-	if payload.Service != "weg-portal" || payload.Status != "ok" {
+	if payload.Service != "hausv-org" || payload.Status != "ok" {
 		return fmt.Errorf("unexpected health response service=%q status=%q", payload.Service, payload.Status)
 	}
 	return nil
@@ -1080,7 +1080,7 @@ func newApp() (*app, error) {
 
 func (a *app) health(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	_, _ = io.WriteString(w, `{"service":"weg-portal","status":"ok"}`)
+	_, _ = io.WriteString(w, `{"service":"hausv-org","status":"ok"}`)
 }
 
 func favicon(w http.ResponseWriter, _ *http.Request) {
