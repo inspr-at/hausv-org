@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/markus-barta/hausv-org/internal/auth"
 	"github.com/markus-barta/hausv-org/internal/version"
+	"github.com/markus-barta/hausv-org/internal/web"
 	"html/template"
 	"image"
 	"image/color"
@@ -49,128 +50,6 @@ func (m *recordingMailer) Configured() bool                        { return true
 func (m *recordingMailer) SendNotification(to string, subject string, body string) error {
 	m.notifications = append(m.notifications, sentNotification{To: to, Subject: subject, Body: body})
 	return nil
-}
-
-func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
-	wants := []string{
-		`{{define "designTokens"}}`,
-		`{{template "designTokens" .}}`,
-		`--font-sans:`,
-		`--space-6:24px`,
-		`--radius-sm:8px`,
-		`--shadow-panel:0 12px 30px rgba(32,37,31,.04)`,
-		`Shared components: panel, button, pill, quick-row, table-wrap, dialog, flash and empty-state.`,
-		`.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-6); box-shadow: var(--shadow-panel); }`,
-		`.empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm);`,
-		`.parking-access .access-table, .parking-access .access-table tbody, .parking-access .access-table tr, .parking-access .access-table td { display: block; width: 100%; min-width: 0; }`,
-	}
-	for _, want := range wants {
-		if !strings.Contains(pageTemplates, want) {
-			t.Fatalf("pageTemplates missing shared design-system marker %q", want)
-		}
-	}
-	if got := strings.Count(pageTemplates, "--ink:#20251f"); got != 1 {
-		t.Fatalf("color token block is duplicated %d times, want once", got)
-	}
-	if got := strings.Count(pageTemplates, `{{template "designTokens" .}}`); got != 3 {
-		t.Fatalf("design token partial is used %d times, want home, landing and app styles", got)
-	}
-}
-
-func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
-	wants := []string{
-		`:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible`,
-		`aria-haspopup="dialog" aria-controls="announcement-create"`,
-		`<dialog id="announcement-create" class="dialog" aria-labelledby="announcement-create-title">`,
-		`aria-haspopup="dialog" aria-controls="event-create"`,
-		`<dialog id="event-create" class="dialog" aria-labelledby="event-create-title">`,
-		`aria-describedby="role-help"`,
-		`<span id="role-help" class="popup" role="tooltip">`,
-		`aria-label="E-Mail-Adresse" autocomplete="email" required`,
-		`aria-label="Kommentar oder Rückfrage"`,
-		`aria-label="Abrechnung in 2 Schritten.`,
-		`aria-label="Abrechnungsassistent"`,
-		`aria-label="Abrechnungsschritte"`,
-		`aria-label="Zahlungsdetails"`,
-		`role="region" aria-label="Stundenwerte Parkplatznutzung"`,
-		`<caption class="sr-only">Stundenwerte Parkplatznutzung`,
-	}
-	for _, want := range wants {
-		if !strings.Contains(pageTemplates, want) {
-			t.Fatalf("pageTemplates missing accessibility convention %q", want)
-		}
-	}
-	for _, path := range []string{"assets/announcements.js", "assets/users.js"} {
-		body, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("read %s: %v", path, err)
-		}
-		text := string(body)
-		for _, want := range []string{"dialogTriggers", `aria-expanded`, "focusFirstDialogField"} {
-			if !strings.Contains(text, want) {
-				t.Fatalf("%s missing dialog focus convention %q", path, want)
-			}
-		}
-	}
-}
-
-func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
-	if !strings.Contains(pageTemplates, `<script src="/assets/app.js?v={{.AssetVersion}}" defer></script>`) {
-		t.Fatal("app shell must load the shared submit guard")
-	}
-	if strings.Contains(pageTemplates, `<a class="side-mark" href="/app">WEG</a>`) || strings.Contains(pageTemplates, `<span class="landing-mark">HV</span>`) || strings.Contains(pageTemplates, `<span class="mark">WEG</span>`) || strings.Contains(pageTemplates, `{{template "hausvMark" .}}`) || strings.Contains(pageTemplates, `class="logo-dot"`) {
-		t.Fatal("app shell should not use the old WEG/HV text or dot placeholder logo")
-	}
-	for _, want := range []string{
-		`<a class="side-mark" href="/app" aria-label="{{if .IsServiceProvider}}Anliegen{{else}}Hausüberblick{{end}}">`,
-		`{{template "hausvLandingMark" .}}`,
-		`{{define "hausvPlatformMark"}}`,
-		`{{template "tenantBrandMark" .}}`,
-		`side-code`,
-		`class="mark-word"`,
-		`hausv.org</text>`,
-		`rel="icon" type="image/svg+xml" href="/favicon.svg"`,
-		`data-dialog="release-history"`,
-		`Versionsverlauf`,
-		`v{{.DisplayVersion}}`,
-	} {
-		if !strings.Contains(pageTemplates, want) {
-			t.Fatalf("app shell missing logo/fav icon convention %q", want)
-		}
-	}
-	if strings.Contains(pageTemplates, `inset: 0 0 0 34%`) || !strings.Contains(pageTemplates, `.home-hero::before { content: ""; position: absolute; inset: 0;`) {
-		t.Fatal("home overview hero image should span the full header width")
-	}
-	body, err := os.ReadFile("assets/app.js")
-	if err != nil {
-		t.Fatalf("read submit guard: %v", err)
-	}
-	text := string(body)
-	for _, want := range []string{`dataset.submitting`, `Bitte warten`, `dataset.confirm`, `setTimeout`} {
-		if !strings.Contains(text, want) {
-			t.Fatalf("submit guard missing %q", want)
-		}
-	}
-	landingJS, err := os.ReadFile("assets/landing.js")
-	if err != nil {
-		t.Fatalf("read landing script: %v", err)
-	}
-	landingText := string(landingJS)
-	for _, want := range []string{`data-mail-local`, `mailto:`, `encodeURIComponent`} {
-		if !strings.Contains(landingText, want) {
-			t.Fatalf("landing contact script missing %q", want)
-		}
-	}
-	attachmentJS, err := os.ReadFile("assets/attachments.js")
-	if err != nil {
-		t.Fatalf("read attachment script: %v", err)
-	}
-	attachmentText := string(attachmentJS)
-	for _, want := range []string{`DataTransfer`, `attachment-picker-item`, `Datei entfernen`, `Wird beim Speichern hochgeladen`} {
-		if !strings.Contains(attachmentText, want) {
-			t.Fatalf("attachment picker script missing %q", want)
-		}
-	}
 }
 
 func TestFaviconUsesStrippedLogo(t *testing.T) {
@@ -4466,7 +4345,7 @@ func TestAnnouncementCreateRejectsCrossOriginAndPersistsSameOrigin(t *testing.T)
 
 func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	t.Helper()
-	tmpl, err := template.New("pages").Parse(pageTemplates)
+	tmpl, err := template.New("pages").Parse(web.PageTemplates)
 	if err != nil {
 		t.Fatalf("parse templates: %v", err)
 	}
