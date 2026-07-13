@@ -837,6 +837,89 @@ func (s *UnitStore) SetTenantUnits(tenantSlug string, units []Unit) error {
 	return s.saveLocked()
 }
 
+// UpsertUnit adds or replaces a single unit within ONE lock acquisition, so a
+// concurrent add/delete of a different unit is not clobbered by a whole-slice
+// overwrite (HAUSV-145). origID is the unit's previous ID ("" for a new unit).
+// It returns duplicate=true if the target ID collides with a different existing
+// unit — mirroring the handler's original check exactly.
+func (s *UnitStore) UpsertUnit(tenantSlug, origID string, item Unit) (duplicate bool, err error) {
+	if s == nil {
+		return false, nil
+	}
+	tenantSlug = textutil.Slug(tenantSlug)
+	if tenantSlug == "" {
+		return false, nil
+	}
+	item.TenantSlug = tenantSlug
+	wasCreate := origID == ""
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var mine, others []Unit
+	for _, u := range s.data.Units {
+		if textutil.Slug(u.TenantSlug) == tenantSlug {
+			mine = append(mine, u)
+		} else {
+			others = append(others, u)
+		}
+	}
+	// Duplicate iff an existing unit already has the target ID and we are either
+	// creating or renaming onto it (not editing that same unit in place).
+	for _, u := range mine {
+		if u.ID == item.ID && (wasCreate || origID != item.ID) {
+			return true, nil
+		}
+	}
+	if wasCreate {
+		origID = item.ID
+	}
+	replaced := false
+	for i := range mine {
+		if mine[i].ID == origID {
+			mine[i] = item
+			replaced = true
+			break
+		}
+	}
+	if !replaced {
+		mine = append(mine, item)
+	}
+	s.data.Units = append(others, NormalizeUnits(mine, tenantSlug)...)
+	SortUnits(s.data.Units)
+	return false, s.saveLocked()
+}
+
+// DeleteUnit removes one unit within one lock acquisition (HAUSV-145). Returns
+// removed=false if no unit had that ID.
+func (s *UnitStore) DeleteUnit(tenantSlug, id string) (removed bool, removedUnit Unit, err error) {
+	if s == nil {
+		return false, Unit{}, nil
+	}
+	tenantSlug = textutil.Slug(tenantSlug)
+	if tenantSlug == "" {
+		return false, Unit{}, nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	kept := make([]Unit, 0, len(s.data.Units))
+	for _, u := range s.data.Units {
+		if textutil.Slug(u.TenantSlug) == tenantSlug && u.ID == id {
+			removed = true
+			removedUnit = u
+			continue
+		}
+		kept = append(kept, u)
+	}
+	if !removed {
+		return false, Unit{}, nil
+	}
+	s.data.Units = kept
+	SortUnits(s.data.Units)
+	return true, removedUnit, s.saveLocked()
+}
+
 func (s *UnitStore) ListTenant(tenantSlug string) []Unit {
 	if s == nil {
 		return nil

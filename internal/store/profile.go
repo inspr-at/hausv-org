@@ -216,6 +216,26 @@ func (s *InviteStore) saveLocked() error {
 // Update replaces the invite keyed by oldEmail with updated. Returns false (no
 // error) when oldEmail is not a persisted invite. When the email changes it
 // must not collide with another invite (caller also checks the env directory).
+// Mutate applies fn to a stored invite under ONE lock acquisition, so a
+// per-field change (e.g. toggling one permission) can't be clobbered by a
+// concurrent whole-profile write from another admin (HAUSV-145). Returns the
+// updated profile and found=false if no invite matches.
+func (s *InviteStore) Mutate(email string, fn func(*UserProfile)) (UserProfile, bool, error) {
+	email = textutil.Email(email)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.data.Invites {
+		if textutil.Email(s.data.Invites[i].Email) == email {
+			fn(&s.data.Invites[i])
+			if err := s.saveLocked(); err != nil {
+				return UserProfile{}, false, err
+			}
+			return s.data.Invites[i], true, nil
+		}
+	}
+	return UserProfile{}, false, nil
+}
+
 func (s *InviteStore) Update(oldEmail string, updated UserProfile) (bool, error) {
 	oldEmail = textutil.Email(oldEmail)
 	updated.Email = textutil.Email(updated.Email)

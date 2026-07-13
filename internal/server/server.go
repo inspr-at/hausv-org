@@ -6629,30 +6629,16 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	origID := normalizeUnitID(r.FormValue("orig_id"))
-	units := a.unitStore.ListTenant(tenant.Slug)
-	replaced := false
-	for i := range units {
-		if normalizeUnitID(units[i].ID) == item.ID && (origID == "" || origID != item.ID) {
-			http.Redirect(w, r, "/app/settings/building?unit=duplicate", http.StatusSeeOther)
-			return
-		}
-	}
-	if origID == "" {
-		origID = item.ID
-	}
-	for i := range units {
-		if normalizeUnitID(units[i].ID) == origID {
-			units[i] = item
-			replaced = true
-			break
-		}
-	}
-	if !replaced {
-		units = append(units, item)
-	}
-	if err := a.unitStore.SetTenantUnits(tenant.Slug, units); err != nil {
+	// Add/replace under one lock so a concurrent unit add/delete isn't lost to a
+	// whole-slice overwrite (HAUSV-145).
+	duplicate, err := a.unitStore.UpsertUnit(tenant.Slug, origID, item)
+	if err != nil {
 		log.Printf("unit save failed for %s: %v", tenant.Slug, err)
 		http.Redirect(w, r, "/app/settings/building?unit=error", http.StatusSeeOther)
+		return
+	}
+	if duplicate {
+		http.Redirect(w, r, "/app/settings/building?unit=duplicate", http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{
@@ -6691,25 +6677,15 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/settings/building?unit=invalid", http.StatusSeeOther)
 		return
 	}
-	units := a.unitStore.ListTenant(tenant.Slug)
-	kept := units[:0]
-	removed := false
-	removedUnit := unit{}
-	for _, item := range units {
-		if normalizeUnitID(item.ID) == deleteID {
-			removed = true
-			removedUnit = item
-			continue
-		}
-		kept = append(kept, item)
+	// Remove under one lock (HAUSV-145).
+	removed, removedUnit, err := a.unitStore.DeleteUnit(tenant.Slug, deleteID)
+	if err != nil {
+		log.Printf("unit delete failed for %s: %v", tenant.Slug, err)
+		http.Redirect(w, r, "/app/settings/building?unit=error", http.StatusSeeOther)
+		return
 	}
 	if !removed {
 		http.Redirect(w, r, "/app/settings/building?unit=missing", http.StatusSeeOther)
-		return
-	}
-	if err := a.unitStore.SetTenantUnits(tenant.Slug, kept); err != nil {
-		log.Printf("unit delete failed for %s: %v", tenant.Slug, err)
-		http.Redirect(w, r, "/app/settings/building?unit=error", http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{
@@ -7274,15 +7250,19 @@ func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/settings/parking-access?parking_access=not_editable", http.StatusSeeOther)
 		return
 	}
-	updated := existing
-	updated.Permissions = setPermission(updated.Permissions, permissionParking, enabled)
-	if len(updated.Tenants) == 0 {
-		updated.Tenants = []string{tenant.Slug}
-	}
-	if len(updated.AuthMethods) == 0 {
-		updated.AuthMethods = defaultAuthMethods()
-	}
-	changed, err := a.inviteStore.Update(targetEmail, updated)
+	// Toggle only the parking bit under one lock, reading the CURRENT permissions
+	// so a concurrent change to a different permission is not clobbered
+	// (HAUSV-145). The role/tenant guards above are on fields another parking
+	// toggle wouldn't touch, so they stay on the pre-read snapshot.
+	updated, changed, err := a.inviteStore.Mutate(targetEmail, func(p *userProfile) {
+		p.Permissions = setPermission(p.Permissions, permissionParking, enabled)
+		if len(p.Tenants) == 0 {
+			p.Tenants = []string{tenant.Slug}
+		}
+		if len(p.AuthMethods) == 0 {
+			p.AuthMethods = defaultAuthMethods()
+		}
+	})
 	if err != nil {
 		log.Printf("parking access update failed for %s: %v", redactedEmail(targetEmail), err)
 		http.Redirect(w, r, "/app/settings/parking-access?parking_access=error", http.StatusSeeOther)
