@@ -1137,6 +1137,10 @@ func (a *app) marketingLanding(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
 	if !a.emailLoginAvailable() {
 		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
 		return
@@ -1373,6 +1377,10 @@ func (a *app) startSession(w http.ResponseWriter, email string, tenantSlug strin
 }
 
 func (a *app) logout(w http.ResponseWriter, r *http.Request) {
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
 	if c, err := r.Cookie("weg_session"); err == nil {
 		a.sessions.Delete(c.Value)
 	}
@@ -4869,6 +4877,10 @@ func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
 	if !hasCapability(role, capabilityManageParking) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
@@ -4932,6 +4944,10 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 	actorEmail, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	actor := a.profileForTenant(actorEmail, tenant.Slug)
@@ -5292,7 +5308,11 @@ func sameOriginPost(r *http.Request) bool {
 		parsed, err := url.Parse(referer)
 		return err == nil && normalizeHost(parsed.Host) == host
 	}
-	return true
+	// Fail closed (HAUSV-143): a POST with neither Origin nor Referer is not a
+	// normal same-origin browser form submit — modern browsers always send
+	// Origin on POST. SameSite=Lax already blocks the cross-site case, so this
+	// is defense in depth.
+	return false
 }
 
 func announcementFromForm(r *http.Request, tenantSlug string, author userProfile, now time.Time) (announcement, error) {
@@ -7401,6 +7421,10 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
 	if !hasCapability(role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
@@ -7499,6 +7523,10 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
 	if !hasCapability(role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
@@ -7512,6 +7540,13 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request) {
 	existing, isInvite := a.inviteStore.Get(orig)
 	if !isInvite {
 		// Only persisted invites are editable; env-config users are read-only.
+		a.redirectInvite(w, r, "not_editable")
+		return
+	}
+	// InviteStore.Get is keyed by email across ALL tenants. Without this guard a
+	// manager of tenant A could edit an invite belonging to tenant B and, via
+	// the rename path below, mint a tenant-B invite they control (HAUSV-135).
+	if !existing.HasTenant(tenant.Slug) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
@@ -7589,6 +7624,10 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
 	if !hasCapability(role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
@@ -7600,6 +7639,11 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request) {
 	deleteEmail := normalizeEmail(r.FormValue("email"))
 	existing, isInvite := a.inviteStore.Get(deleteEmail)
 	if !isInvite {
+		a.redirectInvite(w, r, "not_editable")
+		return
+	}
+	// Cross-tenant guard: Get is email-keyed across all tenants (HAUSV-135).
+	if !existing.HasTenant(tenant.Slug) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
