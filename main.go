@@ -2,30 +2,26 @@ package main
 
 import (
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/hmac"
-	"crypto/rand"
-	"crypto/sha256"
 	"embed"
 	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/markus-barta/hausv-org/internal/auth"
 	"github.com/markus-barta/hausv-org/internal/authz"
 	"github.com/markus-barta/hausv-org/internal/config"
 	"github.com/markus-barta/hausv-org/internal/homeassistant"
+	appmail "github.com/markus-barta/hausv-org/internal/mail"
 	"html/template"
 	_ "image/png"
 	"io"
 	"log"
 	"mime"
 	"mime/multipart"
-	"net"
 	"net/http"
 	"net/mail"
-	"net/smtp"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -43,6 +39,35 @@ import (
 	oidc "github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
+
+// ── extracted to auth ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+type (
+	loginToken     = auth.LoginToken
+	oidcFlow       = auth.OidcFlow
+	oidcFlowStore  = auth.OidcFlowStore
+	oidcLogin      = auth.OidcLogin
+	oidcUserClaims = auth.OidcUserClaims
+	session        = auth.Session
+	sessionStore   = auth.SessionStore
+	tokenStore     = auth.TokenStore
+)
+
+var newOIDCLogin = auth.NewOIDCLogin
+var newSessionStore = auth.NewSessionStore
+var pkceChallenge = auth.PkceChallenge
+var randomToken = auth.RandomToken
+var safeInternalRedirectPath = auth.SafeInternalRedirectPath
+
+// ── extracted to mail ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+type (
+	mailer             = appmail.Mailer
+	portalNotification = appmail.PortalNotification
+	smtpMailer         = appmail.SmtpMailer
+)
+
+var redactedEmail = appmail.RedactedEmail
 
 // ── extracted to config ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
@@ -503,77 +528,6 @@ type app struct {
 	parkingHistoryStart   time.Time
 }
 
-type tokenStore struct {
-	mu     sync.Mutex
-	secret []byte
-	items  map[string]loginToken
-}
-
-type loginToken struct {
-	email        string
-	tenantSlug   string
-	redirectPath string
-	expiresAt    time.Time
-	used         bool
-}
-
-type sessionStore struct {
-	mu      sync.Mutex
-	secret  []byte
-	revoked map[string]time.Time
-}
-
-type session struct {
-	Email      string `json:"email"`
-	TenantSlug string `json:"tenant_slug"`
-	AuthMethod string `json:"auth_method"`
-	ExpiresAt  int64  `json:"expires_at"`
-}
-
-type oidcLogin struct {
-	mu           sync.Mutex
-	providerName string
-	issuer       string
-	clientID     string
-	clientSecret string
-	redirectURL  string
-	provider     *oidc.Provider
-	verifier     *oidc.IDTokenVerifier
-}
-
-type oidcFlowStore struct {
-	mu    sync.Mutex
-	items map[string]oidcFlow
-}
-
-type oidcFlow struct {
-	tenantSlug   string
-	nonce        string
-	codeVerifier string
-	expiresAt    time.Time
-	used         bool
-}
-
-type oidcUserClaims struct {
-	Email         string `json:"email"`
-	EmailVerified *bool  `json:"email_verified"`
-}
-
-type mailer interface {
-	SendMagicLink(to string, link string) error
-	SendInvite(to string, loginURL string, address string) error
-	SendNotification(to string, subject string, body string) error
-	Configured() bool
-}
-
-type smtpMailer struct {
-	host string
-	port string
-	user string
-	pass string
-	from string
-}
-
 type parkingTelemetry struct {
 	Configured bool
 	Connected  bool
@@ -635,17 +589,6 @@ type notificationEventOption struct {
 	Label       string
 	Description string
 	Checked     bool
-}
-
-type portalNotification struct {
-	Event      string
-	Tenant     tenantConfig
-	Recipients []string
-	ActorEmail string
-	Subject    string
-	Lines      []string
-	ActionURL  string
-	ActionText string
 }
 
 type announcementView struct {
@@ -1322,13 +1265,13 @@ func newApp() (*app, error) {
 	}
 	localDevLogin := parseBool(env("LOCAL_DEV_LOGIN", "false")) && isLocalHost(parsed.Hostname())
 
-	mailTransport := smtpMailer{
-		host: env("SMTP_HOST", ""),
-		port: env("SMTP_PORT", "587"),
-		user: env("SMTP_USER", ""),
-		pass: env("SMTP_PASS", ""),
-		from: env("MAIL_FROM", "WEG Portal <noreply@example.invalid>"),
-	}
+	mailTransport := appmail.NewSMTP(
+		env("SMTP_HOST", ""),
+		env("SMTP_PORT", "587"),
+		env("SMTP_USER", ""),
+		env("SMTP_PASS", ""),
+		env("MAIL_FROM", "WEG Portal <noreply@example.invalid>"),
+	)
 	if err := mailTransport.Validate(); err != nil {
 		return nil, err
 	}
@@ -1461,24 +1404,21 @@ func newApp() (*app, error) {
 	}
 
 	return &app{
-		baseURL:       baseURL,
-		addr:          env("ADDR", ":8080"),
-		rootDomain:    rootDomain,
-		defaultTenant: defaultTenant,
-		tenants:       tenants,
-		sessionSecure: parsed.Scheme == "https",
-		allowed:       allowed,
-		admins:        admins,
-		profiles:      profiles,
-		localDevLogin: localDevLogin,
-		sessionTTL:    sessionTTL,
-		tokens: &tokenStore{
-			secret: secret,
-			items:  map[string]loginToken{},
-		},
+		baseURL:               baseURL,
+		addr:                  env("ADDR", ":8080"),
+		rootDomain:            rootDomain,
+		defaultTenant:         defaultTenant,
+		tenants:               tenants,
+		sessionSecure:         parsed.Scheme == "https",
+		allowed:               allowed,
+		admins:                admins,
+		profiles:              profiles,
+		localDevLogin:         localDevLogin,
+		sessionTTL:            sessionTTL,
+		tokens:                auth.NewTokenStore(secret),
 		sessions:              newSessionStore(secret),
 		oidc:                  oidcLogin,
-		oidcFlows:             &oidcFlowStore{items: map[string]oidcFlow{}},
+		oidcFlows:             auth.NewOIDCFlowStore(),
 		mailer:                mailTransport,
 		templates:             tmpl,
 		announcementStore:     announcements,
@@ -1657,11 +1597,7 @@ func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not start SSO login", http.StatusInternalServerError)
 		return
 	}
-	a.oidcFlows.Put(state, oidcFlow{
-		tenantSlug:   tenant.Slug,
-		nonce:        nonce,
-		codeVerifier: codeVerifier,
-	}, 10*time.Minute)
+	a.oidcFlows.Put(state, auth.NewOIDCFlow(tenant.Slug, nonce, codeVerifier), 10*time.Minute)
 
 	redirectURL := a.oidc.RedirectURL(a.publicBaseURL(r, tenant))
 	oauthConfig := a.oidc.OAuthConfig(redirectURL)
@@ -1694,7 +1630,7 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Diese SSO-Anmeldung ist abgelaufen. Bitte erneut anmelden.", http.StatusUnauthorized)
 		return
 	}
-	tenant, ok := a.tenantBySlug(flow.tenantSlug)
+	tenant, ok := a.tenantBySlug(flow.TenantSlug())
 	if !ok {
 		http.Error(w, "Unknown tenant", http.StatusUnauthorized)
 		return
@@ -1711,7 +1647,7 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	token, err := oauthConfig.Exchange(
 		ctx,
 		code,
-		oauth2.SetAuthURLParam("code_verifier", flow.codeVerifier),
+		oauth2.SetAuthURLParam("code_verifier", flow.CodeVerifier()),
 	)
 	if err != nil {
 		log.Printf("oidc token exchange failed: %v", err)
@@ -1724,13 +1660,13 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
 		return
 	}
-	idToken, err := a.oidc.verifier.Verify(ctx, rawIDToken)
+	idToken, err := a.oidc.Verifier().Verify(ctx, rawIDToken)
 	if err != nil {
 		log.Printf("oidc id_token verification failed: %v", err)
 		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
 		return
 	}
-	if idToken.Nonce != flow.nonce {
+	if idToken.Nonce != flow.Nonce() {
 		log.Printf("oidc nonce mismatch")
 		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
 		return
@@ -1743,7 +1679,7 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if claims.Email == "" || claims.EmailVerified == nil {
-		userInfo, err := a.oidc.provider.UserInfo(ctx, oauth2.StaticTokenSource(token))
+		userInfo, err := a.oidc.Provider().UserInfo(ctx, oauth2.StaticTokenSource(token))
 		if err != nil {
 			log.Printf("oidc userinfo failed: %v", err)
 		} else {
@@ -2170,12 +2106,10 @@ func (a *app) parseCalendarFeedToken(token string) (calendarFeedPayload, bool) {
 }
 
 func (a *app) signCalendarFeed(value string) ([]byte, error) {
-	if a == nil || a.sessions == nil || len(a.sessions.secret) == 0 {
+	if a == nil || a.sessions == nil {
 		return nil, fmt.Errorf("calendar feed signing secret unavailable")
 	}
-	mac := hmac.New(sha256.New, a.sessions.secret)
-	_, _ = mac.Write([]byte(value))
-	return mac.Sum(nil), nil
+	return a.sessions.Sign(value)
 }
 
 func (a *app) renderCalendarFeed(tenant tenantConfig, profile userProfile, role string, now time.Time) string {
@@ -5106,18 +5040,6 @@ func (a *app) notificationRecipients(event portalNotification) []string {
 		out = append(out, recipient)
 	}
 	return out
-}
-
-func (event portalNotification) Body() string {
-	lines := append([]string(nil), event.Lines...)
-	if event.ActionURL != "" {
-		actionText := strings.TrimSpace(event.ActionText)
-		if actionText == "" {
-			actionText = "Öffnen"
-		}
-		lines = append(lines, "", actionText+": "+event.ActionURL)
-	}
-	return strings.Join(lines, "\n")
 }
 
 func (a *app) issueManagerEmails(tenantSlug string) []string {
@@ -10856,418 +10778,6 @@ type userRow struct {
 	LastSeen           string
 }
 
-func (s *tokenStore) Put(token string, email string, tenantSlug string, ttl time.Duration) {
-	s.PutWithRedirect(token, email, tenantSlug, ttl, "")
-}
-
-func (s *tokenStore) PutWithRedirect(token string, email string, tenantSlug string, ttl time.Duration, redirectPath string) {
-	key := s.digest(token)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.items[key] = loginToken{email: email, tenantSlug: tenantSlug, redirectPath: safeInternalRedirectPath(redirectPath), expiresAt: time.Now().Add(ttl)}
-}
-
-func (s *tokenStore) Consume(token string) (string, string, string, bool) {
-	if token == "" {
-		return "", "", "", false
-	}
-	key := s.digest(token)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	item, ok := s.items[key]
-	if !ok || item.used || time.Now().After(item.expiresAt) {
-		delete(s.items, key)
-		return "", "", "", false
-	}
-	item.used = true
-	s.items[key] = item
-	return item.email, item.tenantSlug, item.redirectPath, true
-}
-
-func safeInternalRedirectPath(raw string) string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" || !strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") || strings.Contains(raw, "://") {
-		return ""
-	}
-	if raw != "/app" && !strings.HasPrefix(raw, "/app/") {
-		return ""
-	}
-	return raw
-}
-
-func (s *tokenStore) digest(token string) string {
-	mac := hmac.New(sha256.New, s.secret)
-	_, _ = mac.Write([]byte(token))
-	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-}
-
-func newSessionStore(secret []byte) *sessionStore {
-	sum := sha256.Sum256(append([]byte("weg-session-aead-v1."), secret...))
-	key := make([]byte, len(sum))
-	copy(key, sum[:])
-	return &sessionStore{
-		secret:  key,
-		revoked: map[string]time.Time{},
-	}
-}
-
-func (s *sessionStore) Put(email string, tenantSlug string, authMethod string, ttl time.Duration) (string, time.Time, error) {
-	expiresAt := time.Now().Add(ttl)
-	item := session{
-		Email:      normalizeEmail(email),
-		TenantSlug: normalizeSlug(tenantSlug),
-		AuthMethod: normalizeAuthMethod(authMethod),
-		ExpiresAt:  expiresAt.Unix(),
-	}
-	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" {
-		return "", time.Time{}, fmt.Errorf("invalid session")
-	}
-	payload, err := json.Marshal(item)
-	if err != nil {
-		return "", time.Time{}, err
-	}
-	block, err := aes.NewCipher(s.secret)
-	if err != nil {
-		return "", time.Time{}, err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", time.Time{}, err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", time.Time{}, err
-	}
-	ciphertext := gcm.Seal(nil, nonce, payload, []byte("weg-session-v1"))
-	token := "v1." + base64.RawURLEncoding.EncodeToString(nonce) + "." + base64.RawURLEncoding.EncodeToString(ciphertext)
-	return token, expiresAt, nil
-}
-
-func (s *sessionStore) Get(token string) (string, string, string, bool) {
-	item, ok := s.verify(token)
-	if !ok {
-		return "", "", "", false
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.cleanupLocked()
-	if _, revoked := s.revoked[s.revocationKey(token)]; revoked {
-		return "", "", "", false
-	}
-	return item.Email, item.TenantSlug, item.AuthMethod, true
-}
-
-func (s *sessionStore) Delete(token string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.cleanupLocked()
-	if item, ok := s.verify(token); ok {
-		s.revoked[s.revocationKey(token)] = time.Unix(item.ExpiresAt, 0)
-	}
-}
-
-func (s *sessionStore) verify(token string) (session, bool) {
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 || parts[0] != "v1" {
-		return session{}, false
-	}
-	nonce, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return session{}, false
-	}
-	ciphertext, err := base64.RawURLEncoding.DecodeString(parts[2])
-	if err != nil {
-		return session{}, false
-	}
-	block, err := aes.NewCipher(s.secret)
-	if err != nil {
-		return session{}, false
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil || len(nonce) != gcm.NonceSize() {
-		return session{}, false
-	}
-	payload, err := gcm.Open(nil, nonce, ciphertext, []byte("weg-session-v1"))
-	if err != nil {
-		return session{}, false
-	}
-	var item session
-	if err := json.Unmarshal(payload, &item); err != nil {
-		return session{}, false
-	}
-	item.Email = normalizeEmail(item.Email)
-	item.TenantSlug = normalizeSlug(item.TenantSlug)
-	item.AuthMethod = normalizeAuthMethod(item.AuthMethod)
-	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || item.ExpiresAt <= time.Now().Unix() {
-		return session{}, false
-	}
-	return item, true
-}
-
-func (s *sessionStore) revocationKey(token string) string {
-	sum := sha256.Sum256([]byte(token))
-	return base64.RawURLEncoding.EncodeToString(sum[:])
-}
-
-func (s *sessionStore) cleanupLocked() {
-	now := time.Now()
-	for key, expiresAt := range s.revoked {
-		if now.After(expiresAt) {
-			delete(s.revoked, key)
-		}
-	}
-}
-
-func newOIDCLogin(ctx context.Context, issuer string, clientID string, clientSecret string, redirectURL string, providerName string) (*oidcLogin, error) {
-	issuer = strings.TrimRight(strings.TrimSpace(issuer), "/")
-	clientID = strings.TrimSpace(clientID)
-	clientSecret = strings.TrimSpace(clientSecret)
-	redirectURL = strings.TrimSpace(redirectURL)
-	providerName = strings.TrimSpace(providerName)
-	if providerName == "" {
-		providerName = "Zitadel"
-	}
-	if issuer == "" && clientID == "" && clientSecret == "" && redirectURL == "" {
-		return &oidcLogin{providerName: providerName}, nil
-	}
-	if issuer == "" || clientID == "" {
-		return nil, fmt.Errorf("OIDC_ISSUER and OIDC_CLIENT_ID are required when OIDC is configured")
-	}
-	if redirectURL != "" {
-		parsed, err := url.Parse(redirectURL)
-		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-			return nil, fmt.Errorf("OIDC_REDIRECT_URL must be an absolute URL")
-		}
-	}
-	login := &oidcLogin{
-		providerName: providerName,
-		issuer:       issuer,
-		clientID:     clientID,
-		clientSecret: clientSecret,
-		redirectURL:  redirectURL,
-	}
-	if err := login.EnsureProvider(ctx); err != nil {
-		log.Printf("oidc discovery unavailable at startup, will retry on login: %v", err)
-	}
-	return login, nil
-}
-
-func (o *oidcLogin) Configured() bool {
-	return o != nil && o.issuer != "" && o.clientID != ""
-}
-
-func (o *oidcLogin) ProviderName() string {
-	if o == nil || o.providerName == "" {
-		return "SSO"
-	}
-	return o.providerName
-}
-
-func (o *oidcLogin) RedirectURL(baseURL string) string {
-	if o.redirectURL != "" {
-		return o.redirectURL
-	}
-	return strings.TrimRight(baseURL, "/") + "/auth/oidc/callback"
-}
-
-func (o *oidcLogin) OAuthConfig(redirectURL string) oauth2.Config {
-	return oauth2.Config{
-		ClientID:     o.clientID,
-		ClientSecret: o.clientSecret,
-		Endpoint:     o.provider.Endpoint(),
-		RedirectURL:  redirectURL,
-		Scopes:       []string{"openid", "email", "profile"},
-	}
-}
-
-func (o *oidcLogin) EnsureProvider(ctx context.Context) error {
-	if !o.Configured() {
-		return fmt.Errorf("OIDC is not configured")
-	}
-	o.mu.Lock()
-	defer o.mu.Unlock()
-	if o.provider != nil && o.verifier != nil {
-		return nil
-	}
-	provider, err := oidc.NewProvider(ctx, o.issuer)
-	if err != nil {
-		return fmt.Errorf("OIDC discovery failed")
-	}
-	o.provider = provider
-	o.verifier = provider.Verifier(&oidc.Config{ClientID: o.clientID})
-	return nil
-}
-
-func (s *oidcFlowStore) Put(state string, flow oidcFlow, ttl time.Duration) {
-	flow.expiresAt = time.Now().Add(ttl)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.cleanupLocked()
-	s.items[state] = flow
-}
-
-func (s *oidcFlowStore) Consume(state string) (oidcFlow, bool) {
-	if state == "" {
-		return oidcFlow{}, false
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.cleanupLocked()
-	flow, ok := s.items[state]
-	if !ok || flow.used || time.Now().After(flow.expiresAt) {
-		delete(s.items, state)
-		return oidcFlow{}, false
-	}
-	flow.used = true
-	delete(s.items, state)
-	return flow, true
-}
-
-func (s *oidcFlowStore) cleanupLocked() {
-	now := time.Now()
-	for state, flow := range s.items {
-		if now.After(flow.expiresAt) {
-			delete(s.items, state)
-		}
-	}
-}
-
-func pkceChallenge(verifier string) string {
-	sum := sha256.Sum256([]byte(verifier))
-	return base64.RawURLEncoding.EncodeToString(sum[:])
-}
-
-func (c *oidcUserClaims) Merge(other oidcUserClaims) {
-	if c.Email == "" {
-		c.Email = other.Email
-	}
-	if c.EmailVerified == nil {
-		c.EmailVerified = other.EmailVerified
-	}
-}
-
-func (m smtpMailer) Configured() bool {
-	return m.host != "" && m.port != "" && m.from != ""
-}
-
-func (m smtpMailer) Validate() error {
-	if !m.Configured() {
-		return nil
-	}
-	if _, err := mail.ParseAddress(m.from); err != nil {
-		return fmt.Errorf("invalid MAIL_FROM")
-	}
-	if (m.user == "") != (m.pass == "") {
-		return fmt.Errorf("SMTP_USER and SMTP_PASS must be set together")
-	}
-	if _, err := strconv.Atoi(m.port); err != nil {
-		return fmt.Errorf("SMTP_PORT must be numeric")
-	}
-	return nil
-}
-
-func (m smtpMailer) auth() smtp.Auth {
-	if m.user == "" && m.pass == "" {
-		return nil
-	}
-	return smtp.PlainAuth("", m.user, m.pass, m.host)
-}
-
-func (m smtpMailer) SendMagicLink(to string, link string) error {
-	if !m.Configured() {
-		return errors.New("smtp not configured")
-	}
-
-	addr := net.JoinHostPort(m.host, m.port)
-	fromAddr, err := mail.ParseAddress(m.from)
-	if err != nil {
-		return fmt.Errorf("invalid MAIL_FROM")
-	}
-
-	msg := strings.Join([]string{
-		"From: " + m.from,
-		"To: " + to,
-		"Subject: Ihr Zugang zum WEG Portal",
-		"MIME-Version: 1.0",
-		"Content-Type: text/plain; charset=UTF-8",
-		"",
-		"Hallo,",
-		"",
-		"hier ist Ihr Anmeldelink für das WEG Portal:",
-		link,
-		"",
-		"Der Link ist 15 Minuten gültig und kann nur einmal verwendet werden.",
-		"",
-		"Freundliche Grüße",
-		"WEG Portal",
-	}, "\r\n")
-
-	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
-}
-
-func (m smtpMailer) SendInvite(to string, loginURL string, address string) error {
-	if !m.Configured() {
-		return errors.New("smtp not configured")
-	}
-	addr := net.JoinHostPort(m.host, m.port)
-	fromAddr, err := mail.ParseAddress(m.from)
-	if err != nil {
-		return fmt.Errorf("invalid MAIL_FROM")
-	}
-	msg := strings.Join([]string{
-		"From: " + m.from,
-		"To: " + to,
-		"Subject: Einladung zum WEG Portal " + address,
-		"MIME-Version: 1.0",
-		"Content-Type: text/plain; charset=UTF-8",
-		"",
-		"Hallo,",
-		"",
-		"Sie wurden zum WEG Portal \"" + address + "\" eingeladen.",
-		"Melden Sie sich mit dieser E-Mail-Adresse an:",
-		loginURL,
-		"",
-		"Beim Anmelden erhalten Sie einen einmaligen Login-Link per E-Mail",
-		"oder nutzen Ihren SSO-Zugang.",
-		"",
-		"Freundliche Grüße",
-		"WEG Portal",
-	}, "\r\n")
-	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
-}
-
-func (m smtpMailer) SendNotification(to string, subject string, body string) error {
-	if !m.Configured() {
-		return errors.New("smtp not configured")
-	}
-	addr := net.JoinHostPort(m.host, m.port)
-	fromAddr, err := mail.ParseAddress(m.from)
-	if err != nil {
-		return fmt.Errorf("invalid MAIL_FROM")
-	}
-	subject = strings.TrimSpace(subject)
-	if subject == "" {
-		subject = "WEG Portal Benachrichtigung"
-	}
-	body = strings.TrimSpace(body)
-	if body == "" {
-		body = "Es gibt eine neue Aktualisierung im WEG Portal."
-	}
-	msg := strings.Join([]string{
-		"From: " + m.from,
-		"To: " + to,
-		"Subject: " + subject,
-		"MIME-Version: 1.0",
-		"Content-Type: text/plain; charset=UTF-8",
-		"",
-		body,
-		"",
-		"Freundliche Grüße",
-		"WEG Portal",
-	}, "\r\n")
-	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
-}
-
 func formatHAValue(state haState) string {
 	unit, _ := state.Attributes["unit_of_measurement"].(string)
 	value := strings.TrimSpace(state.State)
@@ -11578,28 +11088,6 @@ func permissionLabelList(permissions []string) []string {
 }
 
 func normalizeEmail(v string) string { return textutil.Email(v) }
-
-func randomToken(bytes int) (string, error) {
-	buf := make([]byte, bytes)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(buf), nil
-}
-
-func redactedEmail(email string) string {
-	parts := strings.Split(email, "@")
-	if len(parts) != 2 {
-		return "<redacted>"
-	}
-	name := parts[0]
-	if len(name) > 1 {
-		name = name[:1] + "***"
-	} else {
-		name = "***"
-	}
-	return name + "@" + parts[1]
-}
 
 const faviconSVG = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/markus-barta/hausv-org/internal/auth"
 	"github.com/markus-barta/hausv-org/internal/version"
 	"html/template"
 	"image"
@@ -48,37 +49,6 @@ func (m *recordingMailer) Configured() bool                        { return true
 func (m *recordingMailer) SendNotification(to string, subject string, body string) error {
 	m.notifications = append(m.notifications, sentNotification{To: to, Subject: subject, Body: body})
 	return nil
-}
-
-func TestSMTPMailerAllowsInternalRelayWithoutAuth(t *testing.T) {
-	m := smtpMailer{
-		host: "smtp",
-		port: "25",
-		from: "WEG Portal <noreply@hausv.org>",
-	}
-
-	if !m.Configured() {
-		t.Fatal("mailer should be configured with host, port, and from")
-	}
-	if err := m.Validate(); err != nil {
-		t.Fatalf("relay mailer should validate without auth: %v", err)
-	}
-	if auth := m.auth(); auth != nil {
-		t.Fatal("relay mailer without user/pass should not create smtp auth")
-	}
-}
-
-func TestSMTPMailerRequiresPairedCredentials(t *testing.T) {
-	m := smtpMailer{
-		host: "smtp",
-		port: "25",
-		user: "user",
-		from: "WEG Portal <noreply@hausv.org>",
-	}
-
-	if err := m.Validate(); err == nil {
-		t.Fatal("mailer should reject partial smtp credentials")
-	}
 }
 
 func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
@@ -1491,7 +1461,7 @@ func TestOIDCLoginDefersUnavailableDiscovery(t *testing.T) {
 	if !login.Configured() {
 		t.Fatal("OIDC should remain configured so discovery can be retried later")
 	}
-	if login.provider != nil || login.verifier != nil {
+	if login.Provider() != nil || login.Verifier() != nil {
 		t.Fatal("provider should not be initialized after canceled discovery")
 	}
 	if err := login.EnsureProvider(ctx); err == nil {
@@ -4595,7 +4565,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		allowed:               map[string]struct{}{},
 		admins:                map[string]struct{}{},
 		sessionTTL:            time.Hour,
-		tokens:                &tokenStore{secret: []byte(strings.Repeat("t", 32)), items: map[string]loginToken{}},
+		tokens:                auth.NewTokenStore([]byte(strings.Repeat("t", 32))),
 		sessions:              newSessionStore([]byte(strings.Repeat("s", 32))),
 		oidc:                  &oidcLogin{},
 		mailer:                smtpMailer{},
