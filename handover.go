@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/markus-barta/hausv-org/internal/pdf"
+	"github.com/markus-barta/hausv-org/internal/store"
 	"github.com/markus-barta/hausv-org/internal/version"
 	"log"
 	"mime"
@@ -21,11 +22,15 @@ import (
 	"time"
 )
 
+// The audit vocabulary lives in the store (it is what gets persisted and
+// validated); these alias back so handover.go reads unchanged.
 const (
-	auditActionHandoverCreate  = "handover.create"
-	auditActionHandoverConfirm = "handover.confirm"
-	auditActionHandoverFile    = "handover.file"
+	auditActionHandoverCreate  = store.AuditActionHandoverCreate
+	auditActionHandoverConfirm = store.AuditActionHandoverConfirm
+	auditActionHandoverFile    = store.AuditActionHandoverFile
+)
 
+const (
 	handoverStatusDraft     = "Entwurf"
 	handoverStatusPending   = "Wartet auf Bestätigung"
 	handoverStatusConfirmed = "Bestätigt"

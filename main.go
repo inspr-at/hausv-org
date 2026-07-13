@@ -45,6 +45,117 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// Vocabulary constants now owned by the store; aliased so call sites are unchanged.
+const (
+	auditActionBuildingUpdate          = store.AuditActionBuildingUpdate
+	auditActionContactDelete           = store.AuditActionContactDelete
+	auditActionContactSave             = store.AuditActionContactSave
+	auditActionDocumentDownload        = store.AuditActionDocumentDownload
+	auditActionDocumentReplace         = store.AuditActionDocumentReplace
+	auditActionDocumentUpload          = store.AuditActionDocumentUpload
+	auditActionHeroUpdate              = store.AuditActionHeroUpdate
+	auditActionInviteCreate            = store.AuditActionInviteCreate
+	auditActionInviteDelete            = store.AuditActionInviteDelete
+	auditActionInviteUpdate            = store.AuditActionInviteUpdate
+	auditActionIssueEstimate           = store.AuditActionIssueEstimate
+	auditActionIssueServiceAdd         = store.AuditActionIssueServiceAdd
+	auditActionIssueServiceDrop        = store.AuditActionIssueServiceDrop
+	auditActionIssueWorkflow           = store.AuditActionIssueWorkflow
+	auditActionLogin                   = store.AuditActionLogin
+	auditActionParkingMonth            = store.AuditActionParkingMonth
+	auditActionParkingReminder         = store.AuditActionParkingReminder
+	auditActionParkingSettings         = store.AuditActionParkingSettings
+	auditActionUnitDelete              = store.AuditActionUnitDelete
+	auditActionUnitPayment             = store.AuditActionUnitPayment
+	auditActionUnitSave                = store.AuditActionUnitSave
+	auditActionVoteCast                = store.AuditActionVoteCast
+	auditActionVoteClose               = store.AuditActionVoteClose
+	auditActionVoteCreate              = store.AuditActionVoteCreate
+	auditActionVoteOpen                = store.AuditActionVoteOpen
+	auditActionVoteReminder            = store.AuditActionVoteReminder
+	ballotStatusClosed                 = store.BallotStatusClosed
+	ballotStatusDraft                  = store.BallotStatusDraft
+	ballotStatusOpen                   = store.BallotStatusOpen
+	ballotTypeCircular                 = store.BallotTypeCircular
+	ballotTypeMeeting                  = store.BallotTypeMeeting
+	ballotWeightingPerHead             = store.BallotWeightingPerHead
+	ballotWeightingPerShare            = store.BallotWeightingPerShare
+	defaultBallotReminderBeforeMinutes = store.DefaultBallotReminderBeforeMinutes
+	maxBallotReminderBeforeMinutes     = store.MaxBallotReminderBeforeMinutes
+	unitBillableFullPPM                = store.UnitBillableFullPPM
+	unitTypeCommercial                 = store.UnitTypeCommercial
+	unitTypeOther                      = store.UnitTypeOther
+	unitTypeParking                    = store.UnitTypeParking
+	unitTypeResidential                = store.UnitTypeResidential
+	unitTypeStorage                    = store.UnitTypeStorage
+)
+
+// ── extracted to store ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+var defaultUnitBillableWeight = store.DefaultUnitBillableWeight
+
+// ── extracted to store ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+type (
+	announcement          = store.Announcement
+	announcementStore     = store.AnnouncementStore
+	announcementStoreData = store.AnnouncementStoreData
+	auditEvent            = store.AuditEvent
+	auditFilter           = store.AuditFilter
+	auditStore            = store.AuditStore
+	ballot                = store.Ballot
+	ballotVote            = store.BallotVote
+	eventStore            = store.EventStore
+	eventStoreData        = store.EventStoreData
+	houseEvent            = store.HouseEvent
+	unit                  = store.Unit
+	unitMembers           = store.UnitMembers
+	unitMembership        = store.UnitMembership
+	unitStore             = store.UnitStore
+	unitStoreData         = store.UnitStoreData
+	voteStore             = store.VoteStore
+	voteStoreData         = store.VoteStoreData
+)
+
+var auditDetailValues = store.AuditDetailValues
+var auditEventMatches = store.AuditEventMatches
+var ballotHasOption = store.BallotHasOption
+var billableUnitWeight = store.BillableUnitWeight
+var copyAuditEvent = store.CopyAuditEvent
+var copyBallot = store.CopyBallot
+var copyEvent = store.CopyEvent
+var copyUnit = store.CopyUnit
+var emailListContains = store.EmailListContains
+var eventRollsOffAt = store.EventRollsOffAt
+var newAnnouncementStore = store.NewAnnouncementStore
+var newAuditStore = store.NewAuditStore
+var newEventStore = store.NewEventStore
+var newUnitStore = store.NewUnitStore
+var newVoteStore = store.NewVoteStore
+var normalizeAnnouncementCategory = store.NormalizeAnnouncementCategory
+var normalizeAuditAction = store.NormalizeAuditAction
+var normalizeAuditEvent = store.NormalizeAuditEvent
+var normalizeBallot = store.NormalizeBallot
+var normalizeBallotOptions = store.NormalizeBallotOptions
+var normalizeBallotStatus = store.NormalizeBallotStatus
+var normalizeBallotType = store.NormalizeBallotType
+var normalizeBallotWeighting = store.NormalizeBallotWeighting
+var normalizeBallots = store.NormalizeBallots
+var normalizeEmailList = store.NormalizeEmailList
+var normalizeEventCategory = store.NormalizeEventCategory
+var normalizeHouseEvent = store.NormalizeHouseEvent
+var normalizeRole = store.NormalizeRole
+var normalizeUnitBillableWeight = store.NormalizeUnitBillableWeight
+var normalizeUnitType = store.NormalizeUnitType
+var normalizeUnits = store.NormalizeUnits
+var sanitizeAuditDetails = store.SanitizeAuditDetails
+var sortAnnouncements = store.SortAnnouncements
+var sortBallots = store.SortBallots
+var sortEvents = store.SortEvents
+var sortUnits = store.SortUnits
+var truncateAuditValue = store.TruncateAuditValue
+var unitLess = store.UnitLess
+
 const (
 	unitPaymentStatusOpen    = store.UnitPaymentStatusOpen
 	unitPaymentStatusPaid    = store.UnitPaymentStatusPaid
@@ -143,35 +254,6 @@ const (
 )
 
 const (
-	auditActionLogin            = "login"
-	auditActionInviteCreate     = "invite.create"
-	auditActionInviteUpdate     = "invite.update"
-	auditActionInviteDelete     = "invite.delete"
-	auditActionBuildingUpdate   = "building.update"
-	auditActionHeroUpdate       = "building.hero"
-	auditActionUnitSave         = "building.unit.save"
-	auditActionUnitDelete       = "building.unit.delete"
-	auditActionUnitPayment      = "building.unit.payment"
-	auditActionParkingSettings  = "parking.settings"
-	auditActionParkingMonth     = "parking.month"
-	auditActionParkingReminder  = "parking.reminder"
-	auditActionIssueWorkflow    = "issue.workflow"
-	auditActionIssueEstimate    = "issue.estimate"
-	auditActionIssueServiceAdd  = "issue.service.add"
-	auditActionIssueServiceDrop = "issue.service.drop"
-	auditActionContactSave      = "contact.save"
-	auditActionContactDelete    = "contact.delete"
-	auditActionDocumentUpload   = "document.upload"
-	auditActionDocumentDownload = "document.download"
-	auditActionDocumentReplace  = "document.replace"
-	auditActionVoteCreate       = "vote.create"
-	auditActionVoteOpen         = "vote.open"
-	auditActionVoteClose        = "vote.close"
-	auditActionVoteCast         = "vote.cast"
-	auditActionVoteReminder     = "vote.reminder"
-)
-
-const (
 	documentCategoryProtocol = "Protokoll"
 	documentCategoryBilling  = "Abrechnung"
 	documentCategoryRules    = "Hausordnung"
@@ -182,21 +264,6 @@ const (
 	documentVisibilityAllResidents = "all-residents"
 	documentVisibilityOwnersOnly   = "owners-only"
 	documentVisibilityManagerOnly  = "verwalter-only"
-)
-
-const (
-	ballotTypeMeeting  = "Versammlung"
-	ballotTypeCircular = "Umlaufbeschluss"
-
-	ballotWeightingPerShare = "per-share"
-	ballotWeightingPerHead  = "per-head"
-
-	ballotStatusDraft  = "Entwurf"
-	ballotStatusOpen   = "Offen"
-	ballotStatusClosed = "Geschlossen"
-
-	defaultBallotReminderBeforeMinutes = 24 * 60
-	maxBallotReminderBeforeMinutes     = 30 * 24 * 60
 )
 
 type capability string
@@ -398,26 +465,6 @@ type parkingEntityRef struct {
 	EntityID string
 }
 
-type announcementStore struct {
-	mu   sync.Mutex
-	path string
-	data announcementStoreData
-}
-
-type announcementStoreData struct {
-	Announcements []announcement `json:"announcements"`
-}
-
-type eventStore struct {
-	mu   sync.Mutex
-	path string
-	data eventStoreData
-}
-
-type eventStoreData struct {
-	Events []houseEvent `json:"events"`
-}
-
 type tenantOverrideStore struct {
 	mu   sync.Mutex
 	path string
@@ -473,21 +520,6 @@ type portalNotification struct {
 	ActionText string
 }
 
-type announcement struct {
-	ID          string     `json:"id"`
-	TenantSlug  string     `json:"tenant"`
-	Title       string     `json:"title"`
-	Body        string     `json:"body"`
-	Category    string     `json:"category"`
-	Pinned      bool       `json:"pinned"`
-	PublishedAt time.Time  `json:"published_at"`
-	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
-	AuthorEmail string     `json:"author_email"`
-	AuthorName  string     `json:"author_name"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
-}
-
 type announcementView struct {
 	ID                 string
 	Title              string
@@ -511,21 +543,6 @@ type announcementView struct {
 	HasAttachments     bool
 	EditDialogID       string
 	DeleteConfirmLabel string
-}
-
-type houseEvent struct {
-	ID          string     `json:"id"`
-	TenantSlug  string     `json:"tenant"`
-	Title       string     `json:"title"`
-	Body        string     `json:"body,omitempty"`
-	Category    string     `json:"category"`
-	Location    string     `json:"location,omitempty"`
-	StartsAt    time.Time  `json:"starts_at"`
-	EndsAt      *time.Time `json:"ends_at,omitempty"`
-	AuthorEmail string     `json:"author_email"`
-	AuthorName  string     `json:"author_name"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 type houseEventView struct {
@@ -767,42 +784,6 @@ type documentCategoryView struct {
 	EmptyMessage string
 }
 
-type voteStore struct {
-	mu   sync.Mutex
-	path string
-	data voteStoreData
-}
-
-type voteStoreData struct {
-	Ballots []ballot `json:"ballots"`
-}
-
-type ballot struct {
-	ID                    string                `json:"id"`
-	TenantSlug            string                `json:"tenant"`
-	Title                 string                `json:"title"`
-	Description           string                `json:"description,omitempty"`
-	Options               []string              `json:"options"`
-	Type                  string                `json:"type"`
-	Weighting             string                `json:"weighting"`
-	QuorumPPM             int                   `json:"quorum_ppm"`
-	OpensAt               time.Time             `json:"opens_at,omitempty"`
-	ClosesAt              time.Time             `json:"closes_at,omitempty"`
-	CreatedBy             string                `json:"created_by"`
-	CreatedAt             time.Time             `json:"created_at"`
-	UpdatedAt             time.Time             `json:"updated_at"`
-	Status                string                `json:"status"`
-	Votes                 map[string]ballotVote `json:"votes,omitempty"`
-	ReminderBeforeMinutes int                   `json:"reminder_before_minutes,omitempty"`
-	ReminderSentAt        map[string]time.Time  `json:"reminder_sent_at,omitempty"`
-}
-
-type ballotVote struct {
-	Option string    `json:"option"`
-	Weight int       `json:"weight"`
-	At     time.Time `json:"at"`
-}
-
 type ballotView struct {
 	ID                  string
 	Title               string
@@ -911,42 +892,6 @@ type issueBoardFilterView struct {
 	HasActive       bool
 }
 
-type unitStore struct {
-	mu   sync.Mutex
-	path string
-	data unitStoreData
-}
-
-type unitStoreData struct {
-	Units []unit `json:"units"`
-}
-
-type unit struct {
-	ID                    string   `json:"id"`
-	TenantSlug            string   `json:"tenant"`
-	Label                 string   `json:"label"`
-	UnitType              string   `json:"unit_type,omitempty"`
-	BillableWeightPPM     int      `json:"billable_weight_ppm,omitempty"`
-	MiteigentumsanteilPPM int      `json:"miteigentumsanteil"`
-	OwnerEmails           []string `json:"owner_emails,omitempty"`
-	RenterEmails          []string `json:"renter_emails,omitempty"`
-}
-
-const (
-	unitTypeResidential = "residential"
-	unitTypeCommercial  = "commercial"
-	unitTypeParking     = "parking"
-	unitTypeStorage     = "storage"
-	unitTypeOther       = "other"
-
-	unitBillableFullPPM = 1_000_000
-)
-
-type unitMembership struct {
-	Unit     unit
-	Relation string
-}
-
 type profileUnitView struct {
 	Label    string
 	Relation string
@@ -1031,25 +976,6 @@ type dashboardDigestItem struct {
 	Badge  string
 }
 
-type auditEvent struct {
-	At         time.Time         `json:"at"`
-	TenantSlug string            `json:"tenant"`
-	ActorEmail string            `json:"actor_email"`
-	ActorRole  string            `json:"actor_role,omitempty"`
-	Action     string            `json:"action"`
-	TargetType string            `json:"target_type,omitempty"`
-	TargetID   string            `json:"target_id,omitempty"`
-	Summary    string            `json:"summary"`
-	Details    map[string]string `json:"details,omitempty"`
-}
-
-type auditFilter struct {
-	TenantSlug string
-	Action     string
-	Query      string
-	Limit      int
-}
-
 type auditEventView struct {
 	At             string
 	AtDate         string
@@ -1088,13 +1014,6 @@ type auditStatsView struct {
 type auditFilterChipView struct {
 	Label string
 	Value string
-}
-
-type unitMembers struct {
-	Unit    unit
-	Owners  []string
-	Renters []string
-	Found   bool
 }
 
 type announcementFilterView struct {
@@ -6254,23 +6173,6 @@ func parseOptionalLocalDateTime(raw string, fallback time.Time) (time.Time, erro
 	return time.Time{}, fmt.Errorf("invalid datetime")
 }
 
-func normalizeEventCategory(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "versammlung", "eigentuemerversammlung", "eigentümerversammlung", "versammlung der eigentümer", "meeting":
-		return "Eigentümerversammlung"
-	case "reinigung", "cleaning":
-		return "Reinigung"
-	case "wartung", "maintenance":
-		return "Wartung"
-	case "ablesung", "ablesetermin", "reading":
-		return "Ablesung"
-	case "frist", "deadline":
-		return "Frist"
-	default:
-		return "Sonstiges"
-	}
-}
-
 func eventCategoryClass(raw string) string {
 	switch normalizeEventCategory(raw) {
 	case "Eigentümerversammlung":
@@ -6299,19 +6201,6 @@ func parseOptionalExpiry(raw string) (*time.Time, error) {
 	}
 	t = t.UTC()
 	return &t, nil
-}
-
-func normalizeAnnouncementCategory(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "dringend", "urgent":
-		return "Dringend"
-	case "termin", "date", "event":
-		return "Termin"
-	case "wartung", "maintenance":
-		return "Wartung"
-	default:
-		return "Info"
-	}
 }
 
 func selectedAnnouncementCategory(raw string) string {
@@ -6558,15 +6447,6 @@ func eventTimeRange(item houseEvent) string {
 		return formatLocalTime(startLocal) + " bis " + formatLocalTime(endLocal)
 	}
 	return formatLocalShortDateTime(startLocal) + " bis " + formatLocalShortDateTime(endLocal)
-}
-
-func eventRollsOffAt(item houseEvent) time.Time {
-	if item.EndsAt != nil {
-		return *item.EndsAt
-	}
-	startLocal := item.StartsAt.In(time.Local)
-	year, month, day := startLocal.Date()
-	return time.Date(year, month, day, 23, 59, 59, 0, time.Local).UTC()
 }
 
 func sameLocalDate(a time.Time, b time.Time) bool {
@@ -9794,57 +9674,6 @@ func (a *app) parkingBalance(tenantSlug string) parkingBalanceView {
 	return parkingBalanceSummary(calculateParkingMonths(data, time.Now(), time.Local))
 }
 
-func newAnnouncementStore(path string) (*announcementStore, error) {
-	store := &announcementStore{path: path, data: announcementStoreData{Announcements: []announcement{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read announcement data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid announcement data")
-	}
-	return store, nil
-}
-
-func newEventStore(path string) (*eventStore, error) {
-	store := &eventStore{path: path, data: eventStoreData{Events: []houseEvent{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read event data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid event data")
-	}
-	events := make([]houseEvent, 0, len(store.data.Events))
-	for _, item := range store.data.Events {
-		normalized, ok := normalizeHouseEvent(item)
-		if ok {
-			events = append(events, normalized)
-		}
-	}
-	store.data.Events = events
-	sortEvents(store.data.Events)
-	return store, nil
-}
-
 func newTenantOverrideStore(path string) (*tenantOverrideStore, error) {
 	store := &tenantOverrideStore{path: path, data: tenantOverrideStoreData{Tenants: map[string]tenantOverride{}}}
 	if path == "" {
@@ -11897,494 +11726,6 @@ func formatBytes(size int64) string {
 	}
 }
 
-func newVoteStore(path string) (*voteStore, error) {
-	store := &voteStore{path: path, data: voteStoreData{Ballots: []ballot{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read vote data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid vote data")
-	}
-	store.data.Ballots = normalizeBallots(store.data.Ballots)
-	return store, nil
-}
-
-func (s *voteStore) Create(item ballot) (ballot, error) {
-	if s == nil {
-		return ballot{}, fmt.Errorf("vote store unavailable")
-	}
-	now := time.Now().UTC()
-	id, err := randomToken(12)
-	if err != nil {
-		return ballot{}, err
-	}
-	item.ID = id
-	item.Status = ballotStatusDraft
-	item.CreatedAt = now
-	item.UpdatedAt = now
-	item.Votes = nil
-	item = normalizeBallot(item)
-	if item.TenantSlug == "" || item.Title == "" || len(item.Options) < 2 || item.Type == "" || item.Weighting == "" || item.CreatedBy == "" {
-		return ballot{}, fmt.Errorf("invalid ballot")
-	}
-	if !item.OpensAt.IsZero() && !item.ClosesAt.IsZero() && !item.ClosesAt.After(item.OpensAt) {
-		return ballot{}, fmt.Errorf("ballot close must be after open")
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.data.Ballots = append(s.data.Ballots, item)
-	sortBallots(s.data.Ballots)
-	if err := s.saveLocked(); err != nil {
-		return ballot{}, err
-	}
-	return copyBallot(item), nil
-}
-
-func (s *voteStore) Delete(tenantSlug string, id string) (bool, error) {
-	if s == nil {
-		return false, nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	if tenantSlug == "" || id == "" {
-		return false, nil
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, item := range s.data.Ballots {
-		if normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != id {
-			continue
-		}
-		s.data.Ballots = append(s.data.Ballots[:i], s.data.Ballots[i+1:]...)
-		if err := s.saveLocked(); err != nil {
-			return false, err
-		}
-		return true, nil
-	}
-	return false, nil
-}
-
-func (s *voteStore) Open(tenantSlug string, id string, at time.Time) (ballot, bool, error) {
-	return s.setStatus(tenantSlug, id, ballotStatusOpen, at)
-}
-
-func (s *voteStore) Close(tenantSlug string, id string, at time.Time) (ballot, bool, error) {
-	return s.setStatus(tenantSlug, id, ballotStatusClosed, at)
-}
-
-func (s *voteStore) CloseExpiredTenant(tenantSlug string, at time.Time) ([]ballot, error) {
-	if s == nil {
-		return nil, nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	if tenantSlug == "" {
-		return nil, fmt.Errorf("invalid tenant")
-	}
-	if at.IsZero() {
-		at = time.Now()
-	}
-	at = at.UTC()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	closed := []ballot{}
-	changed := false
-	for i, item := range s.data.Ballots {
-		item = normalizeBallot(item)
-		if normalizeSlug(item.TenantSlug) != tenantSlug || item.Status != ballotStatusOpen || item.ClosesAt.IsZero() || at.Before(item.ClosesAt) {
-			continue
-		}
-		item.Status = ballotStatusClosed
-		item.UpdatedAt = at
-		item = normalizeBallot(item)
-		s.data.Ballots[i] = item
-		closed = append(closed, copyBallot(item))
-		changed = true
-	}
-	if !changed {
-		return nil, nil
-	}
-	sortBallots(s.data.Ballots)
-	if err := s.saveLocked(); err != nil {
-		return nil, err
-	}
-	return closed, nil
-}
-
-func (s *voteStore) setStatus(tenantSlug string, id string, status string, at time.Time) (ballot, bool, error) {
-	if s == nil {
-		return ballot{}, false, nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	status = normalizeBallotStatus(status)
-	if tenantSlug == "" || id == "" || status == "" {
-		return ballot{}, false, fmt.Errorf("invalid ballot status")
-	}
-	if at.IsZero() {
-		at = time.Now()
-	}
-	at = at.UTC()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, item := range s.data.Ballots {
-		if normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != id {
-			continue
-		}
-		if item.Status == ballotStatusClosed && status == ballotStatusOpen {
-			return ballot{}, true, fmt.Errorf("closed ballot cannot reopen")
-		}
-		item.Status = status
-		if status == ballotStatusOpen && item.OpensAt.IsZero() {
-			item.OpensAt = at
-		}
-		if status == ballotStatusClosed && (item.ClosesAt.IsZero() || item.ClosesAt.After(at)) {
-			item.ClosesAt = at
-		}
-		item.UpdatedAt = at
-		item = normalizeBallot(item)
-		s.data.Ballots[i] = item
-		sortBallots(s.data.Ballots)
-		if err := s.saveLocked(); err != nil {
-			return ballot{}, true, err
-		}
-		return copyBallot(item), true, nil
-	}
-	return ballot{}, false, nil
-}
-
-func (s *voteStore) CastVote(tenantSlug string, id string, email string, option string, weight int, at time.Time) (ballot, bool, error) {
-	if s == nil {
-		return ballot{}, false, nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	email = normalizeEmail(email)
-	option = strings.TrimSpace(option)
-	if tenantSlug == "" || id == "" || email == "" || option == "" || weight <= 0 {
-		return ballot{}, false, fmt.Errorf("invalid vote")
-	}
-	if at.IsZero() {
-		at = time.Now()
-	}
-	at = at.UTC()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, item := range s.data.Ballots {
-		if normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != id {
-			continue
-		}
-		item = normalizeBallot(item)
-		if item.Status != ballotStatusOpen {
-			return ballot{}, true, fmt.Errorf("ballot is not open")
-		}
-		if !item.OpensAt.IsZero() && at.Before(item.OpensAt) {
-			return ballot{}, true, fmt.Errorf("ballot is not open yet")
-		}
-		if !item.ClosesAt.IsZero() && !at.Before(item.ClosesAt) {
-			item.Status = ballotStatusClosed
-			item.UpdatedAt = at
-			item = normalizeBallot(item)
-			s.data.Ballots[i] = item
-			sortBallots(s.data.Ballots)
-			if err := s.saveLocked(); err != nil {
-				return ballot{}, true, err
-			}
-			return ballot{}, true, fmt.Errorf("ballot is closed")
-		}
-		if !ballotHasOption(item, option) {
-			return ballot{}, true, fmt.Errorf("invalid vote option")
-		}
-		if item.Votes == nil {
-			item.Votes = map[string]ballotVote{}
-		}
-		item.Votes[email] = ballotVote{Option: option, Weight: weight, At: at}
-		item.UpdatedAt = at
-		item = normalizeBallot(item)
-		s.data.Ballots[i] = item
-		sortBallots(s.data.Ballots)
-		if err := s.saveLocked(); err != nil {
-			return ballot{}, true, err
-		}
-		return copyBallot(item), true, nil
-	}
-	return ballot{}, false, nil
-}
-
-func (s *voteStore) MarkReminderSent(tenantSlug string, id string, recipients []string, at time.Time) (ballot, bool, error) {
-	if s == nil {
-		return ballot{}, false, nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	recipients = normalizeEmailList(recipients)
-	if tenantSlug == "" || id == "" || len(recipients) == 0 {
-		return ballot{}, false, fmt.Errorf("invalid reminder")
-	}
-	if at.IsZero() {
-		at = time.Now()
-	}
-	at = at.UTC()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, item := range s.data.Ballots {
-		if normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != id {
-			continue
-		}
-		item = normalizeBallot(item)
-		if item.ReminderSentAt == nil {
-			item.ReminderSentAt = map[string]time.Time{}
-		}
-		for _, recipient := range recipients {
-			item.ReminderSentAt[recipient] = at
-		}
-		item.UpdatedAt = at
-		item = normalizeBallot(item)
-		s.data.Ballots[i] = item
-		sortBallots(s.data.Ballots)
-		if err := s.saveLocked(); err != nil {
-			return ballot{}, true, err
-		}
-		return copyBallot(item), true, nil
-	}
-	return ballot{}, false, nil
-}
-
-func (s *voteStore) ListTenant(tenantSlug string) []ballot {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []ballot{}
-	for _, item := range s.data.Ballots {
-		if normalizeSlug(item.TenantSlug) == tenantSlug {
-			out = append(out, copyBallot(item))
-		}
-	}
-	sortBallots(out)
-	return out
-}
-
-func (s *voteStore) Get(tenantSlug string, id string) (ballot, bool) {
-	if s == nil {
-		return ballot{}, false
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	if tenantSlug == "" || id == "" {
-		return ballot{}, false
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, item := range s.data.Ballots {
-		if normalizeSlug(item.TenantSlug) == tenantSlug && item.ID == id {
-			return copyBallot(normalizeBallot(item)), true
-		}
-	}
-	return ballot{}, false
-}
-
-func (s *voteStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "vote")
-}
-
-func normalizeBallots(items []ballot) []ballot {
-	out := make([]ballot, 0, len(items))
-	for _, item := range items {
-		item = normalizeBallot(item)
-		if item.ID == "" || item.TenantSlug == "" || item.Title == "" || len(item.Options) < 2 || item.Type == "" || item.Weighting == "" {
-			continue
-		}
-		out = append(out, item)
-	}
-	sortBallots(out)
-	return out
-}
-
-func normalizeBallot(item ballot) ballot {
-	item.ID = strings.TrimSpace(item.ID)
-	item.TenantSlug = normalizeSlug(item.TenantSlug)
-	item.Title = truncateAuditValue(strings.TrimSpace(item.Title), 160)
-	item.Description = truncateAuditValue(strings.TrimSpace(item.Description), 5000)
-	item.Options = normalizeBallotOptions(item.Options)
-	item.Type = normalizeBallotType(item.Type)
-	item.Weighting = normalizeBallotWeighting(item.Weighting)
-	item.Status = normalizeBallotStatus(item.Status)
-	item.CreatedBy = normalizeEmail(item.CreatedBy)
-	if item.QuorumPPM < 0 {
-		item.QuorumPPM = 0
-	}
-	if item.QuorumPPM > 1_000_000 {
-		item.QuorumPPM = 1_000_000
-	}
-	if !item.OpensAt.IsZero() {
-		item.OpensAt = item.OpensAt.UTC().Truncate(time.Second)
-	}
-	if !item.ClosesAt.IsZero() {
-		item.ClosesAt = item.ClosesAt.UTC().Truncate(time.Second)
-	}
-	if item.CreatedAt.IsZero() {
-		item.CreatedAt = time.Now()
-	}
-	item.CreatedAt = item.CreatedAt.UTC().Truncate(time.Second)
-	if item.UpdatedAt.IsZero() {
-		item.UpdatedAt = item.CreatedAt
-	}
-	item.UpdatedAt = item.UpdatedAt.UTC().Truncate(time.Second)
-	if item.ReminderBeforeMinutes <= 0 {
-		item.ReminderBeforeMinutes = defaultBallotReminderBeforeMinutes
-	}
-	if item.ReminderBeforeMinutes > maxBallotReminderBeforeMinutes {
-		item.ReminderBeforeMinutes = maxBallotReminderBeforeMinutes
-	}
-	if len(item.Votes) == 0 {
-		item.Votes = nil
-	} else {
-		votes := map[string]ballotVote{}
-		for email, vote := range item.Votes {
-			email = normalizeEmail(email)
-			vote.Option = strings.TrimSpace(vote.Option)
-			if email == "" || vote.Option == "" || vote.Weight <= 0 || !ballotHasOption(item, vote.Option) {
-				continue
-			}
-			if vote.At.IsZero() {
-				vote.At = item.UpdatedAt
-			}
-			vote.At = vote.At.UTC().Truncate(time.Second)
-			votes[email] = vote
-		}
-		item.Votes = votes
-		if len(item.Votes) == 0 {
-			item.Votes = nil
-		}
-	}
-	if len(item.ReminderSentAt) == 0 {
-		item.ReminderSentAt = nil
-	} else {
-		sent := map[string]time.Time{}
-		for email, at := range item.ReminderSentAt {
-			email = normalizeEmail(email)
-			if email == "" {
-				continue
-			}
-			if at.IsZero() {
-				at = item.UpdatedAt
-			}
-			sent[email] = at.UTC().Truncate(time.Second)
-		}
-		item.ReminderSentAt = sent
-		if len(item.ReminderSentAt) == 0 {
-			item.ReminderSentAt = nil
-		}
-	}
-	return item
-}
-
-func normalizeBallotOptions(raw []string) []string {
-	out := []string{}
-	seen := map[string]struct{}{}
-	for _, option := range raw {
-		option = truncateAuditValue(strings.TrimSpace(option), 120)
-		if option == "" {
-			continue
-		}
-		key := strings.ToLower(option)
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		out = append(out, option)
-		if len(out) >= 12 {
-			break
-		}
-	}
-	return out
-}
-
-func normalizeBallotType(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "versammlung", "meeting", "eigentuemerversammlung", "eigentümerversammlung":
-		return ballotTypeMeeting
-	case "", "umlauf", "umlaufbeschluss", "circular", "resolution":
-		return ballotTypeCircular
-	default:
-		return ""
-	}
-}
-
-func normalizeBallotWeighting(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "per-head", "head", "kopf", "pro-kopf":
-		return ballotWeightingPerHead
-	case "", "per-share", "share", "anteil", "miteigentumsanteil":
-		return ballotWeightingPerShare
-	default:
-		return ""
-	}
-}
-
-func normalizeBallotStatus(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "", "entwurf", "draft":
-		return ballotStatusDraft
-	case "offen", "open":
-		return ballotStatusOpen
-	case "geschlossen", "closed":
-		return ballotStatusClosed
-	default:
-		return ""
-	}
-}
-
-func ballotHasOption(item ballot, option string) bool {
-	option = strings.TrimSpace(option)
-	for _, existing := range item.Options {
-		if existing == option {
-			return true
-		}
-	}
-	return false
-}
-
-func copyBallot(item ballot) ballot {
-	item.Options = append([]string(nil), item.Options...)
-	if len(item.Votes) > 0 {
-		votes := map[string]ballotVote{}
-		for email, vote := range item.Votes {
-			votes[email] = vote
-		}
-		item.Votes = votes
-	}
-	if len(item.ReminderSentAt) > 0 {
-		sent := map[string]time.Time{}
-		for email, at := range item.ReminderSentAt {
-			sent[email] = at
-		}
-		item.ReminderSentAt = sent
-	}
-	return item
-}
-
-func sortBallots(items []ballot) {
-	sort.SliceStable(items, func(i, j int) bool {
-		if !items[i].UpdatedAt.Equal(items[j].UpdatedAt) {
-			return items[i].UpdatedAt.After(items[j].UpdatedAt)
-		}
-		return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
-	})
-}
-
 func ballotWeightingLabel(weighting string) string {
 	switch normalizeBallotWeighting(weighting) {
 	case ballotWeightingPerHead:
@@ -12394,473 +11735,6 @@ func ballotWeightingLabel(weighting string) string {
 	default:
 		return ""
 	}
-}
-
-func newUnitStore(path string) (*unitStore, error) {
-	store := &unitStore{path: path, data: unitStoreData{Units: []unit{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read unit data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid unit data")
-	}
-	store.data.Units = normalizeUnits(store.data.Units, "")
-	return store, nil
-}
-
-func (s *unitStore) SetTenantUnits(tenantSlug string, units []unit) error {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	if tenantSlug == "" {
-		return nil
-	}
-	normalized := normalizeUnits(units, tenantSlug)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	kept := s.data.Units[:0]
-	for _, existing := range s.data.Units {
-		if normalizeSlug(existing.TenantSlug) != tenantSlug {
-			kept = append(kept, existing)
-		}
-	}
-	s.data.Units = append(kept, normalized...)
-	sortUnits(s.data.Units)
-	return s.saveLocked()
-}
-
-func (s *unitStore) ListTenant(tenantSlug string) []unit {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []unit{}
-	for _, item := range s.data.Units {
-		if normalizeSlug(item.TenantSlug) == tenantSlug {
-			out = append(out, copyUnit(item))
-		}
-	}
-	sortUnits(out)
-	return out
-}
-
-func (s *unitStore) UnitCount(tenantSlug string) int {
-	return len(s.ListTenant(tenantSlug))
-}
-
-func (s *unitStore) BillableUnitWeight(tenantSlug string) int {
-	return billableUnitWeight(s.ListTenant(tenantSlug))
-}
-
-func billableUnitWeight(units []unit) int {
-	total := 0
-	for _, item := range units {
-		total += normalizeUnitBillableWeight(item.UnitType, item.BillableWeightPPM)
-	}
-	return total
-}
-
-func (s *unitStore) UnitsForEmail(tenantSlug string, email string) []unitMembership {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	email = normalizeEmail(email)
-	if tenantSlug == "" || email == "" {
-		return nil
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []unitMembership{}
-	for _, item := range s.data.Units {
-		if normalizeSlug(item.TenantSlug) != tenantSlug {
-			continue
-		}
-		relation := ""
-		if emailListContains(item.OwnerEmails, email) {
-			relation = roleOwner
-		} else if emailListContains(item.RenterEmails, email) {
-			relation = roleRenter
-		}
-		if relation != "" {
-			out = append(out, unitMembership{Unit: copyUnit(item), Relation: relation})
-		}
-	}
-	sort.Slice(out, func(i, j int) bool {
-		return unitLess(out[i].Unit, out[j].Unit)
-	})
-	return out
-}
-
-func (s *unitStore) MembersForUnit(tenantSlug string, unitID string) unitMembers {
-	if s == nil {
-		return unitMembers{}
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	unitID = normalizeUnitID(unitID)
-	if tenantSlug == "" || unitID == "" {
-		return unitMembers{}
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, item := range s.data.Units {
-		if normalizeSlug(item.TenantSlug) == tenantSlug && normalizeSlug(item.ID) == unitID {
-			item = copyUnit(item)
-			return unitMembers{Unit: item, Owners: append([]string(nil), item.OwnerEmails...), Renters: append([]string(nil), item.RenterEmails...), Found: true}
-		}
-	}
-	return unitMembers{}
-}
-
-func (s *unitStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "unit")
-}
-
-func (s *eventStore) Create(item houseEvent) (houseEvent, error) {
-	if s == nil {
-		return item, nil
-	}
-	now := time.Now().UTC()
-	item.ID = ""
-	item.CreatedAt = now
-	item.UpdatedAt = now
-	normalized, ok := normalizeHouseEvent(item)
-	if !ok {
-		return houseEvent{}, fmt.Errorf("invalid event")
-	}
-	id, err := randomToken(12)
-	if err != nil {
-		return houseEvent{}, err
-	}
-	normalized.ID = id
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.data.Events = append(s.data.Events, normalized)
-	sortEvents(s.data.Events)
-	if err := s.saveLocked(); err != nil {
-		return houseEvent{}, err
-	}
-	return normalized, nil
-}
-
-func (s *eventStore) Update(id string, updated houseEvent) (bool, error) {
-	if s == nil {
-		return false, nil
-	}
-	id = strings.TrimSpace(id)
-	if id == "" {
-		return false, nil
-	}
-	normalized, ok := normalizeHouseEvent(updated)
-	if !ok {
-		return false, fmt.Errorf("invalid event")
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, existing := range s.data.Events {
-		if existing.ID != id || normalizeSlug(existing.TenantSlug) != normalizeSlug(normalized.TenantSlug) {
-			continue
-		}
-		normalized.ID = existing.ID
-		normalized.CreatedAt = existing.CreatedAt
-		normalized.UpdatedAt = time.Now().UTC()
-		if normalized.AuthorEmail == "" {
-			normalized.AuthorEmail = existing.AuthorEmail
-		}
-		if normalized.AuthorName == "" {
-			normalized.AuthorName = existing.AuthorName
-		}
-		s.data.Events[i] = normalized
-		sortEvents(s.data.Events)
-		if err := s.saveLocked(); err != nil {
-			return false, err
-		}
-		return true, nil
-	}
-	return false, nil
-}
-
-func (s *eventStore) Delete(tenantSlug string, id string) (bool, error) {
-	if s == nil {
-		return false, nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	if tenantSlug == "" || id == "" {
-		return false, nil
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	kept := s.data.Events[:0]
-	removed := false
-	for _, item := range s.data.Events {
-		if item.ID == id && normalizeSlug(item.TenantSlug) == tenantSlug {
-			removed = true
-			continue
-		}
-		kept = append(kept, item)
-	}
-	if !removed {
-		return false, nil
-	}
-	s.data.Events = kept
-	if err := s.saveLocked(); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func (s *eventStore) ListTenant(tenantSlug string) []houseEvent {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []houseEvent{}
-	for _, item := range s.data.Events {
-		if normalizeSlug(item.TenantSlug) == tenantSlug {
-			out = append(out, copyEvent(item))
-		}
-	}
-	sortEvents(out)
-	return out
-}
-
-func (s *eventStore) Upcoming(tenantSlug string, now time.Time) []houseEvent {
-	tenantSlug = normalizeSlug(tenantSlug)
-	items := s.ListTenant(tenantSlug)
-	out := []houseEvent{}
-	for _, item := range items {
-		if eventRollsOffAt(item).After(now) {
-			out = append(out, item)
-		}
-	}
-	sortEvents(out)
-	return out
-}
-
-func (s *eventStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "event")
-}
-
-func normalizeHouseEvent(item houseEvent) (houseEvent, bool) {
-	item.ID = strings.TrimSpace(item.ID)
-	item.TenantSlug = normalizeSlug(item.TenantSlug)
-	item.Title = strings.TrimSpace(item.Title)
-	item.Body = strings.TrimSpace(item.Body)
-	item.Category = normalizeEventCategory(item.Category)
-	item.Location = strings.TrimSpace(item.Location)
-	item.AuthorEmail = normalizeEmail(item.AuthorEmail)
-	item.AuthorName = strings.TrimSpace(item.AuthorName)
-	item.StartsAt = item.StartsAt.UTC().Truncate(time.Second)
-	if item.EndsAt != nil {
-		endsAt := item.EndsAt.UTC().Truncate(time.Second)
-		if !endsAt.After(item.StartsAt) {
-			return houseEvent{}, false
-		}
-		item.EndsAt = &endsAt
-	}
-	if item.CreatedAt.IsZero() {
-		item.CreatedAt = time.Now().UTC()
-	} else {
-		item.CreatedAt = item.CreatedAt.UTC().Truncate(time.Second)
-	}
-	if item.UpdatedAt.IsZero() {
-		item.UpdatedAt = item.CreatedAt
-	} else {
-		item.UpdatedAt = item.UpdatedAt.UTC().Truncate(time.Second)
-	}
-	if item.TenantSlug == "" || item.Title == "" || item.StartsAt.IsZero() {
-		return houseEvent{}, false
-	}
-	return item, true
-}
-
-func copyEvent(item houseEvent) houseEvent {
-	if item.EndsAt != nil {
-		endsAt := *item.EndsAt
-		item.EndsAt = &endsAt
-	}
-	return item
-}
-
-func sortEvents(items []houseEvent) {
-	sort.SliceStable(items, func(i, j int) bool {
-		if !items[i].StartsAt.Equal(items[j].StartsAt) {
-			return items[i].StartsAt.Before(items[j].StartsAt)
-		}
-		if strings.ToLower(items[i].Title) != strings.ToLower(items[j].Title) {
-			return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
-		}
-		return items[i].ID < items[j].ID
-	})
-}
-
-func (s *announcementStore) Create(item announcement) (announcement, error) {
-	now := time.Now().UTC()
-	item.ID = ""
-	item.CreatedAt = now
-	item.UpdatedAt = now
-	if item.PublishedAt.IsZero() {
-		item.PublishedAt = now
-	}
-	if item.Category == "" {
-		item.Category = "Info"
-	}
-	id, err := randomToken(12)
-	if err != nil {
-		return announcement{}, err
-	}
-	item.ID = id
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.data.Announcements = append(s.data.Announcements, item)
-	if err := s.saveLocked(); err != nil {
-		return announcement{}, err
-	}
-	return item, nil
-}
-
-func (s *announcementStore) Update(id string, updated announcement) (bool, error) {
-	id = strings.TrimSpace(id)
-	if id == "" {
-		return false, nil
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, existing := range s.data.Announcements {
-		if existing.ID != id || normalizeSlug(existing.TenantSlug) != normalizeSlug(updated.TenantSlug) {
-			continue
-		}
-		updated.ID = existing.ID
-		updated.CreatedAt = existing.CreatedAt
-		updated.UpdatedAt = time.Now().UTC()
-		if updated.PublishedAt.IsZero() {
-			updated.PublishedAt = existing.PublishedAt
-		}
-		if updated.AuthorEmail == "" {
-			updated.AuthorEmail = existing.AuthorEmail
-		}
-		if updated.AuthorName == "" {
-			updated.AuthorName = existing.AuthorName
-		}
-		s.data.Announcements[i] = updated
-		if err := s.saveLocked(); err != nil {
-			return false, err
-		}
-		return true, nil
-	}
-	return false, nil
-}
-
-func (s *announcementStore) Delete(tenantSlug string, id string) (bool, error) {
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	if id == "" {
-		return false, nil
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	kept := s.data.Announcements[:0]
-	removed := false
-	for _, item := range s.data.Announcements {
-		if item.ID == id && normalizeSlug(item.TenantSlug) == tenantSlug {
-			removed = true
-			continue
-		}
-		kept = append(kept, item)
-	}
-	if !removed {
-		return false, nil
-	}
-	s.data.Announcements = kept
-	if err := s.saveLocked(); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func (s *announcementStore) Visible(tenantSlug string, now time.Time) []announcement {
-	tenantSlug = normalizeSlug(tenantSlug)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []announcement{}
-	for _, item := range s.data.Announcements {
-		if normalizeSlug(item.TenantSlug) != tenantSlug {
-			continue
-		}
-		if item.PublishedAt.After(now) {
-			continue
-		}
-		if item.ExpiresAt != nil && !item.ExpiresAt.After(now) {
-			continue
-		}
-		out = append(out, item)
-	}
-	sortAnnouncements(out)
-	return out
-}
-
-func (s *announcementStore) Archive(tenantSlug string, now time.Time) []announcement {
-	tenantSlug = normalizeSlug(tenantSlug)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []announcement{}
-	for _, item := range s.data.Announcements {
-		if normalizeSlug(item.TenantSlug) != tenantSlug {
-			continue
-		}
-		if item.PublishedAt.After(now) {
-			continue
-		}
-		out = append(out, item)
-	}
-	sortAnnouncements(out)
-	return out
-}
-
-func (s *announcementStore) ListTenant(tenantSlug string) []announcement {
-	tenantSlug = normalizeSlug(tenantSlug)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []announcement{}
-	for _, item := range s.data.Announcements {
-		if normalizeSlug(item.TenantSlug) == tenantSlug {
-			out = append(out, item)
-		}
-	}
-	sortAnnouncements(out)
-	return out
-}
-
-func (s *announcementStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "announcement")
-}
-
-func sortAnnouncements(items []announcement) {
-	sort.SliceStable(items, func(i, j int) bool {
-		if items[i].Pinned != items[j].Pinned {
-			return items[i].Pinned
-		}
-		if !items[i].PublishedAt.Equal(items[j].PublishedAt) {
-			return items[i].PublishedAt.After(items[j].PublishedAt)
-		}
-		return items[i].CreatedAt.After(items[j].CreatedAt)
-	})
 }
 
 func (a *app) parkingTelemetry(ctx context.Context, tenant tenantConfig) parkingTelemetry {
@@ -15322,247 +14196,7 @@ func (s *inviteStore) Delete(email string) (bool, error) {
 	return true, nil
 }
 
-type auditStore struct {
-	path    string
-	mu      sync.Mutex
-	entries []auditEvent
-}
-
-func newAuditStore(path string) (*auditStore, error) {
-	store := &auditStore{path: path, entries: []auditEvent{}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read audit data")
-	}
-	trimmed := strings.TrimSpace(string(raw))
-	if trimmed == "" {
-		return store, nil
-	}
-	if strings.HasPrefix(trimmed, "[") {
-		if err := json.Unmarshal([]byte(trimmed), &store.entries); err != nil {
-			return nil, fmt.Errorf("invalid audit data")
-		}
-		for i := range store.entries {
-			store.entries[i] = normalizeAuditEvent(store.entries[i])
-		}
-		return store, nil
-	}
-	for i, line := range strings.Split(trimmed, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		var event auditEvent
-		if err := json.Unmarshal([]byte(line), &event); err != nil {
-			return nil, fmt.Errorf("invalid audit data on line %d", i+1)
-		}
-		store.entries = append(store.entries, normalizeAuditEvent(event))
-	}
-	return store, nil
-}
-
-func (s *auditStore) Append(event auditEvent) error {
-	if s == nil {
-		return nil
-	}
-	event = normalizeAuditEvent(event)
-	if event.Action == "" {
-		return nil
-	}
-	raw, err := json.Marshal(event)
-	if err != nil {
-		return fmt.Errorf("could not encode audit event")
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.path != "" {
-		if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-			return fmt.Errorf("could not create audit data directory")
-		}
-		f, err := os.OpenFile(s.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
-		if err != nil {
-			return fmt.Errorf("could not open audit data")
-		}
-		if _, err := f.Write(append(raw, '\n')); err != nil {
-			_ = f.Close()
-			return fmt.Errorf("could not append audit data")
-		}
-		if err := f.Close(); err != nil {
-			return fmt.Errorf("could not close audit data")
-		}
-	}
-	s.entries = append(s.entries, copyAuditEvent(event))
-	return nil
-}
-
-func (s *auditStore) List(filter auditFilter) []auditEvent {
-	if s == nil {
-		return nil
-	}
-	filter.TenantSlug = normalizeSlug(filter.TenantSlug)
-	filter.Action = normalizeAuditAction(filter.Action)
-	filter.Query = strings.ToLower(strings.TrimSpace(filter.Query))
-	if filter.Limit <= 0 || filter.Limit > 500 {
-		filter.Limit = 200
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := make([]auditEvent, 0, min(filter.Limit, len(s.entries)))
-	for i := len(s.entries) - 1; i >= 0 && len(out) < filter.Limit; i-- {
-		event := s.entries[i]
-		if filter.TenantSlug != "" && normalizeSlug(event.TenantSlug) != filter.TenantSlug {
-			continue
-		}
-		if filter.Action != "" && normalizeAuditAction(event.Action) != filter.Action {
-			continue
-		}
-		if filter.Query != "" && !auditEventMatches(event, filter.Query) {
-			continue
-		}
-		out = append(out, copyAuditEvent(event))
-	}
-	return out
-}
-
-func normalizeAuditEvent(event auditEvent) auditEvent {
-	event.TenantSlug = normalizeSlug(event.TenantSlug)
-	event.ActorEmail = normalizeEmail(event.ActorEmail)
-	event.ActorRole = normalizeRole(event.ActorRole)
-	event.Action = normalizeAuditAction(event.Action)
-	event.TargetType = strings.TrimSpace(event.TargetType)
-	event.TargetID = strings.TrimSpace(event.TargetID)
-	event.Summary = truncateAuditValue(event.Summary, 220)
-	event.Details = sanitizeAuditDetails(event.Details)
-	if event.At.IsZero() {
-		event.At = time.Now()
-	}
-	event.At = event.At.UTC().Truncate(time.Second)
-	return event
-}
-
-func normalizeAuditAction(raw string) string {
-	raw = strings.ToLower(strings.TrimSpace(raw))
-	switch raw {
-	case auditActionLogin, auditActionInviteCreate, auditActionInviteUpdate, auditActionInviteDelete,
-		auditActionBuildingUpdate, auditActionHeroUpdate, auditActionUnitSave, auditActionUnitDelete,
-		auditActionUnitPayment,
-		auditActionDocumentUpload, auditActionDocumentDownload, auditActionDocumentReplace,
-		auditActionHandoverCreate, auditActionHandoverConfirm, auditActionHandoverFile,
-		auditActionVoteCreate, auditActionVoteOpen, auditActionVoteClose, auditActionVoteCast, auditActionVoteReminder,
-		auditActionParkingSettings, auditActionParkingMonth, auditActionParkingReminder, auditActionIssueWorkflow,
-		auditActionIssueEstimate, auditActionIssueServiceAdd, auditActionIssueServiceDrop,
-		auditActionContactSave, auditActionContactDelete:
-		return raw
-	default:
-		return ""
-	}
-}
-
-func sanitizeAuditDetails(details map[string]string) map[string]string {
-	if len(details) == 0 {
-		return nil
-	}
-	out := map[string]string{}
-	for key, value := range details {
-		key = strings.ToLower(strings.TrimSpace(key))
-		key = strings.ReplaceAll(key, " ", "_")
-		if key == "" || auditDetailKeySensitive(key) {
-			continue
-		}
-		value = truncateAuditValue(value, 180)
-		if value == "" {
-			continue
-		}
-		out[key] = value
-	}
-	if len(out) == 0 {
-		return nil
-	}
-	return out
-}
-
-func auditDetailKeySensitive(key string) bool {
-	key = strings.ToLower(key)
-	for _, marker := range []string{"secret", "token", "password", "passwd", "private_key", "client_secret"} {
-		if strings.Contains(key, marker) {
-			return true
-		}
-	}
-	return false
-}
-
-func truncateAuditValue(value string, limit int) string {
-	value = strings.TrimSpace(value)
-	if limit <= 0 {
-		return ""
-	}
-	runes := []rune(value)
-	if len(runes) <= limit {
-		return value
-	}
-	return string(runes[:limit-1]) + "…"
-}
-
 func truncateRunes(value string, limit int) string { return textutil.Truncate(value, limit) }
-
-func copyAuditEvent(event auditEvent) auditEvent {
-	if event.Details != nil {
-		details := make(map[string]string, len(event.Details))
-		for key, value := range event.Details {
-			details[key] = value
-		}
-		event.Details = details
-	}
-	return event
-}
-
-func auditEventMatches(event auditEvent, query string) bool {
-	haystack := strings.ToLower(strings.Join([]string{
-		event.ActorEmail,
-		event.ActorRole,
-		event.Action,
-		event.TargetType,
-		event.TargetID,
-		event.Summary,
-		strings.Join(auditDetailValues(event.Details), " "),
-	}, " "))
-	return strings.Contains(haystack, query)
-}
-
-func auditDetailValues(details map[string]string) []string {
-	values := make([]string, 0, len(details))
-	for key, value := range details {
-		values = append(values, key, value)
-	}
-	return values
-}
-
-func normalizeRole(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "admin", "administrator", "platform-admin", "platform_admin":
-		return roleAdmin
-	case "verwalter", "verwaltung", "hausverwaltung", "manager", "property-manager", "property_manager", "property manager":
-		return roleManager
-	case "eigentuemer", "eigentümer", "wohnungseigentuemer", "wohnungseigentümer", "owner", "homeowner", "property-owner", "property_owner":
-		return roleOwner
-	case "mieter", "tenant", "renter", "lessee":
-		return roleRenter
-	case "beirat", "board", "advisory-board", "advisory_board", "committee":
-		return roleBeirat
-	case "bewohner", "resident", "user":
-		return roleResident
-	case "dienstleister", "handwerker", "service-provider", "service_provider", "service provider", "contractor", "vendor", "external":
-		return roleServiceProvider
-	default:
-		return strings.TrimSpace(raw)
-	}
-}
 
 func normalizePermissions(raw []string) []string {
 	seen := map[string]struct{}{}
@@ -15700,98 +14334,7 @@ func normalizeTenants(raw []string, fallback string) []string {
 
 func normalizeSlug(raw string) string { return textutil.Slug(raw) }
 
-func normalizeUnitType(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "", "wohnung", "wohneinheit", "residential":
-		return unitTypeResidential
-	case "geschaeft", "geschäft", "geschaeftslokal", "geschäftslokal", "commercial", "business":
-		return unitTypeCommercial
-	case "stellplatz", "parkplatz", "parking":
-		return unitTypeParking
-	case "keller", "lager", "storage":
-		return unitTypeStorage
-	case "sonstiges", "other":
-		return unitTypeOther
-	default:
-		return ""
-	}
-}
-
-func defaultUnitBillableWeight(unitType string) int {
-	switch normalizeUnitType(unitType) {
-	case unitTypeResidential, unitTypeCommercial:
-		return unitBillableFullPPM
-	default:
-		return 0
-	}
-}
-
-func normalizeUnitBillableWeight(unitType string, weight int) int {
-	if weight < 0 {
-		return 0
-	}
-	if weight > 0 {
-		return weight
-	}
-	return defaultUnitBillableWeight(unitType)
-}
-
-func normalizeUnits(raw []unit, fallbackTenant string) []unit {
-	out := make([]unit, 0, len(raw))
-	seen := map[string]struct{}{}
-	for _, item := range raw {
-		item.TenantSlug = normalizeSlug(firstNonEmpty(item.TenantSlug, fallbackTenant))
-		item.ID = normalizeUnitID(item.ID)
-		item.Label = strings.TrimSpace(item.Label)
-		if item.ID == "" && item.Label != "" {
-			item.ID = normalizeUnitID(item.Label)
-		}
-		if item.Label == "" {
-			item.Label = item.ID
-		}
-		if item.TenantSlug == "" || item.ID == "" {
-			continue
-		}
-		if item.MiteigentumsanteilPPM < 0 {
-			item.MiteigentumsanteilPPM = 0
-		}
-		item.UnitType = normalizeUnitType(item.UnitType)
-		if item.UnitType == "" {
-			item.UnitType = unitTypeResidential
-		}
-		item.BillableWeightPPM = normalizeUnitBillableWeight(item.UnitType, item.BillableWeightPPM)
-		item.OwnerEmails = normalizeEmailList(item.OwnerEmails)
-		item.RenterEmails = normalizeEmailList(item.RenterEmails)
-		key := item.TenantSlug + "/" + item.ID
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		out = append(out, item)
-	}
-	sortUnits(out)
-	return out
-}
-
 func firstNonEmpty(values ...string) string { return textutil.FirstNonEmpty(values...) }
-
-func normalizeEmailList(raw []string) []string {
-	out := []string{}
-	seen := map[string]struct{}{}
-	for _, item := range raw {
-		email := normalizeEmail(item)
-		if email == "" {
-			continue
-		}
-		if _, ok := seen[email]; ok {
-			continue
-		}
-		seen[email] = struct{}{}
-		out = append(out, email)
-	}
-	sort.Strings(out)
-	return out
-}
 
 func uniqueEmails(raw []string) []string {
 	return normalizeEmailList(raw)
@@ -15807,38 +14350,6 @@ func excludeEmail(raw []string, excluded string) []string {
 		out = append(out, email)
 	}
 	return out
-}
-
-func emailListContains(list []string, email string) bool {
-	email = normalizeEmail(email)
-	for _, item := range list {
-		if normalizeEmail(item) == email {
-			return true
-		}
-	}
-	return false
-}
-
-func copyUnit(item unit) unit {
-	item.OwnerEmails = append([]string(nil), item.OwnerEmails...)
-	item.RenterEmails = append([]string(nil), item.RenterEmails...)
-	return item
-}
-
-func sortUnits(units []unit) {
-	sort.Slice(units, func(i, j int) bool {
-		return unitLess(units[i], units[j])
-	})
-}
-
-func unitLess(a unit, b unit) bool {
-	if a.TenantSlug != b.TenantSlug {
-		return a.TenantSlug < b.TenantSlug
-	}
-	if strings.ToLower(a.Label) != strings.ToLower(b.Label) {
-		return strings.ToLower(a.Label) < strings.ToLower(b.Label)
-	}
-	return a.ID < b.ID
 }
 
 func normalizeHost(raw string) string {
