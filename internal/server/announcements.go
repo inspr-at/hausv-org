@@ -9,17 +9,8 @@ import (
 	"time"
 )
 
-func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
@@ -77,19 +68,10 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !canManageAnnouncements(role) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
@@ -129,19 +111,10 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/announcements?announce=created", http.StatusSeeOther)
 }
 
-func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !canManageAnnouncements(role) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
@@ -172,7 +145,7 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	ok, err = a.announcementStore.Update(id, item)
+	ok, err := a.announcementStore.Update(id, item)
 	if err != nil {
 		for _, attachment := range uploaded {
 			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
@@ -191,19 +164,10 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/announcements?announce=updated", http.StatusSeeOther)
 }
 
-func (a *app) deleteAnnouncement(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	_, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) deleteAnnouncement(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, role := ac.tenant, ac.role
 	if !canManageAnnouncements(role) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {

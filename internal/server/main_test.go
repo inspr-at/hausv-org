@@ -3542,17 +3542,14 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 	if portal.Code != http.StatusSeeOther || portal.Header().Get("Location") != "/app/anliegen" {
 		t.Fatalf("service provider portal redirect = %d %q, want /app/anliegen", portal.Code, portal.Header().Get("Location"))
 	}
-	for name, tc := range map[string]struct {
-		path    string
-		handler http.HandlerFunc
-	}{
-		"announcements": {"/app/announcements", a.announcements},
-		"contacts":      {"/app/kontakte", a.contacts},
-		"documents":     {"/app/dokumente", a.documents},
-		"settings":      {"/app/settings", a.settingsHub},
-		"users":         {"/app/settings/users", a.userSettings},
+	for name, path := range map[string]string{
+		"announcements": "/app/announcements",
+		"contacts":      "/app/kontakte",
+		"documents":     "/app/dokumente",
+		"settings":      "/app/settings",
+		"users":         "/app/settings/users",
 	} {
-		rr := authedRequest(t, a, "service@example.com", tc.path)
+		rr := authedRequest(t, a, "service@example.com", path)
 		if rr.Code != http.StatusForbidden {
 			t.Fatalf("%s status = %d, want 403", name, rr.Code)
 		}
