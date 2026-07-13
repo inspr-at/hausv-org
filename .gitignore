@@ -1,4 +1,7 @@
 .DS_Store
+# Compiled binary. `go build` names it after the module (hausv-org); the
+# Dockerfile still emits weg-portal until the deploy rename lands.
+hausv-org
 weg-portal
 *.log
 *.env
