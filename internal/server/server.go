@@ -829,7 +829,9 @@ func (a *app) routes() *http.ServeMux {
 // handler is the fully wrapped HTTP handler, middleware included. This is
 // what main() serves and what the tests drive.
 func (a *app) handler() http.Handler {
-	return securityHeaders(a.routes())
+	// recoverAndLog is outermost so it captures panics and the final status from
+	// every inner layer, including securityHeaders (HAUSV-141).
+	return recoverAndLog(securityHeaders(a.routes()))
 }
 
 func runHealthcheck(target string) error {
