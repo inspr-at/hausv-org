@@ -16,17 +16,8 @@ import (
 	"time"
 )
 
-func (a *app) documents(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
@@ -69,19 +60,10 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityManageDocuments) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if a.documentStore == nil {
@@ -131,19 +113,10 @@ func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/dokumente?doc=uploaded", http.StatusSeeOther)
 }
 
-func (a *app) replaceDocument(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) replaceDocument(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityManageDocuments) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if a.documentStore == nil {
@@ -188,17 +161,8 @@ func (a *app) replaceDocument(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/dokumente?doc=replaced", http.StatusSeeOther)
 }
 
-func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if a.documentStore == nil {
 		http.NotFound(w, r)
 		return
@@ -248,17 +212,8 @@ func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, item.Filename, item.UploadedAt, file)
 }
 
-func (a *app) previewDocument(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) previewDocument(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if a.documentStore == nil {
 		http.NotFound(w, r)
 		return
@@ -298,17 +253,8 @@ func (a *app) previewDocument(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, item.Filename, item.UploadedAt, file)
 }
 
-func (a *app) serveLegacyIssuePhoto(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) serveLegacyIssuePhoto(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if a.issueStore == nil {
 		http.NotFound(w, r)
 		return
@@ -362,17 +308,8 @@ func (a *app) serveLegacyIssuePhoto(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, filename, issue.UpdatedAt, file)
 }
 
-func (a *app) serveAttachment(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) serveAttachment(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if a.attachmentStore == nil {
 		http.NotFound(w, r)
 		return
@@ -413,17 +350,8 @@ func (a *app) serveAttachment(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path)
 }
 
-func (a *app) deleteAttachment(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
-		return
-	}
+func (a *app) deleteAttachment(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if a.attachmentStore == nil {
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return

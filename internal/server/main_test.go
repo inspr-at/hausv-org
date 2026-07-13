@@ -4037,10 +4037,8 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 			t.Fatalf("unassigned service attachment %s status = %d, want 403", item.EntityType, unassigned.Code)
 		}
 		anonymousReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app/attachments/"+item.ID+"/thumb", nil)
-		anonymousReq.SetPathValue("id", item.ID)
-		anonymousReq.SetPathValue("variant", "thumb")
 		anonymous := httptest.NewRecorder()
-		a.serveAttachment(anonymous, anonymousReq)
+		a.handler().ServeHTTP(anonymous, anonymousReq)
 		if anonymous.Code != http.StatusSeeOther || anonymous.Header().Get("Location") != "/" {
 			t.Fatalf("anonymous attachment %s status = %d location=%q, want redirect to /", item.EntityType, anonymous.Code, anonymous.Header().Get("Location"))
 		}
