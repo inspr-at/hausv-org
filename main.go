@@ -1841,7 +1841,7 @@ func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		codeVerifier: codeVerifier,
 	}, 10*time.Minute)
 
-	redirectURL := a.oidc.RedirectURL(r, tenant, a.publicBaseURL(r, tenant))
+	redirectURL := a.oidc.RedirectURL(a.publicBaseURL(r, tenant))
 	oauthConfig := a.oidc.OAuthConfig(redirectURL)
 	authCodeURL := oauthConfig.AuthCodeURL(
 		state,
@@ -1885,7 +1885,7 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
-	oauthConfig := a.oidc.OAuthConfig(a.oidc.RedirectURL(r, tenant, a.publicBaseURL(r, tenant)))
+	oauthConfig := a.oidc.OAuthConfig(a.oidc.RedirectURL(a.publicBaseURL(r, tenant)))
 	token, err := oauthConfig.Exchange(
 		ctx,
 		code,
@@ -10119,21 +10119,21 @@ func (a *app) userRows(tenantSlug string) []userRow {
 		if !profile.HasTenant(tenantSlug) {
 			continue
 		}
-		rows = append(rows, profile.ForTenant(tenantSlug).UserRow())
+		rows = append(rows, userRowFrom(profile.ForTenant(tenantSlug)))
 		seen[email] = struct{}{}
 	}
 	for email := range a.admins {
 		if _, ok := seen[email]; ok {
 			continue
 		}
-		rows = append(rows, userProfile{Email: email, Role: roleAdmin, Status: "Aktiv", Tenants: []string{tenantSlug}}.UserRow())
+		rows = append(rows, userRowFrom(userProfile{Email: email, Role: roleAdmin, Status: "Aktiv", Tenants: []string{tenantSlug}}))
 		seen[email] = struct{}{}
 	}
 	for email := range a.allowed {
 		if _, ok := seen[email]; ok {
 			continue
 		}
-		rows = append(rows, userProfile{Email: email, Role: roleResident, Status: "Eingeladen", Tenants: []string{tenantSlug}}.UserRow())
+		rows = append(rows, userRowFrom(userProfile{Email: email, Role: roleResident, Status: "Eingeladen", Tenants: []string{tenantSlug}}))
 		seen[email] = struct{}{}
 	}
 	if a.inviteStore != nil {
@@ -10146,7 +10146,7 @@ func (a *app) userRows(tenantSlug string) []userRow {
 			if !profile.HasTenant(tenantSlug) {
 				continue
 			}
-			row := profile.ForTenant(tenantSlug).UserRow()
+			row := userRowFrom(profile.ForTenant(tenantSlug))
 			row.Editable = true
 			rows = append(rows, row)
 			seen[email] = struct{}{}
@@ -12398,6 +12398,79 @@ func (s *documentStore) FilePath(item documentRecord) (string, bool) {
 		return "", false
 	}
 	return filepath.Join(s.fileDir, tenantSlug, storedFilename), true
+}
+
+func (s *documentStore) CreateGenerated(item documentRecord, filename string, contentType string, data []byte, now time.Time) (documentRecord, error) {
+	if s == nil {
+		return documentRecord{}, fmt.Errorf("document store unavailable")
+	}
+	if len(data) == 0 || int64(len(data)) > maxDocumentBytes {
+		return documentRecord{}, fmt.Errorf("document file too large")
+	}
+	contentType = strings.TrimSpace(strings.Split(contentType, ";")[0])
+	ext, ok := documentExtension(contentType)
+	if !ok {
+		return documentRecord{}, fmt.Errorf("unsupported document type")
+	}
+	if now.IsZero() {
+		now = time.Now()
+	}
+	id, err := randomToken(12)
+	if err != nil {
+		return documentRecord{}, err
+	}
+	filename = sanitizeDocumentFilename(filename)
+	if filename == "dokument" {
+		filename = id + ext
+	}
+	storedFilename := id + ext
+	path, err := s.writeGeneratedDocumentFile(item.TenantSlug, storedFilename, data)
+	if err != nil {
+		return documentRecord{}, err
+	}
+	item.ID = id
+	item.SeriesID = id
+	item.Version = 1
+	item.Current = true
+	item.Filename = filename
+	item.StoredFilename = storedFilename
+	item.Size = int64(len(data))
+	item.ContentType = contentType
+	item.UploadedAt = now.UTC()
+	item = normalizeDocumentRecord(item)
+	if item.TenantSlug == "" || item.Title == "" || item.Category == "" || item.Visibility == "" || item.UploadedBy == "" {
+		_ = os.Remove(path)
+		return documentRecord{}, fmt.Errorf("invalid document metadata")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data.Documents = append(s.data.Documents, item)
+	sortDocuments(s.data.Documents)
+	if err := s.saveLocked(); err != nil {
+		_ = os.Remove(path)
+		return documentRecord{}, err
+	}
+	return copyDocument(item), nil
+}
+
+func (s *documentStore) writeGeneratedDocumentFile(tenantSlug string, storedFilename string, data []byte) (string, error) {
+	tenantSlug = normalizeSlug(tenantSlug)
+	storedFilename = filepath.Base(storedFilename)
+	if s == nil || s.fileDir == "" {
+		return "", fmt.Errorf("document file directory unavailable")
+	}
+	if tenantSlug == "" || storedFilename == "" || storedFilename == "." || storedFilename == string(filepath.Separator) {
+		return "", fmt.Errorf("invalid document storage target")
+	}
+	dir := filepath.Join(s.fileDir, tenantSlug)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", fmt.Errorf("could not create document directory")
+	}
+	path := filepath.Join(dir, storedFilename)
+	if err := writePrivateFile(path, data); err != nil {
+		return "", fmt.Errorf("could not write document file")
+	}
+	return path, nil
 }
 
 func (s *documentStore) saveLocked() error {
@@ -15139,7 +15212,7 @@ func (p userProfile) HasTenant(tenantSlug string) bool {
 	return false
 }
 
-func (p userProfile) UserRow() userRow {
+func userRowFrom(p userProfile) userRow {
 	if p.Role == "" {
 		p.Role = roleResident
 	}
@@ -15401,7 +15474,7 @@ func (o *oidcLogin) ProviderName() string {
 	return o.providerName
 }
 
-func (o *oidcLogin) RedirectURL(_ *http.Request, _ tenantConfig, baseURL string) string {
+func (o *oidcLogin) RedirectURL(baseURL string) string {
 	if o.redirectURL != "" {
 		return o.redirectURL
 	}

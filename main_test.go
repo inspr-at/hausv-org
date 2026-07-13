@@ -1376,7 +1376,7 @@ func TestParseUserProfilesNormalizesAuthMethods(t *testing.T) {
 	if profile.AllowsAuthMethod(authMethodEmail) {
 		t.Fatal("profile should not allow email login")
 	}
-	if got := profile.UserRow().AuthLabel; got != "Zitadel SSO" {
+	if got := userRowFrom(profile).AuthLabel; got != "Zitadel SSO" {
 		t.Fatalf("auth label = %q", got)
 	}
 }
