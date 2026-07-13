@@ -1308,28 +1308,10 @@ type parkingHourView struct {
 	ChartPercent        int
 }
 
-func main() {
-	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
-		target := "http://127.0.0.1:8080/healthz"
-		if len(os.Args) > 2 {
-			target = os.Args[2]
-		}
-		if err := runHealthcheck(target); err != nil {
-			log.Printf("healthcheck failed: %v", err)
-			os.Exit(1)
-		}
-		return
-	}
-
-	a, err := newApp()
-	if err != nil {
-		log.Fatal(err)
-	}
-	stopSampler := a.startParkingSampler()
-	defer stopSampler()
-	stopVoteReminders := a.startVoteReminderWorker()
-	defer stopVoteReminders()
-
+// routes builds the application's ServeMux. Extracted from main() so that
+// tests exercise the real route patterns instead of calling handler methods
+// directly — a test that fakes r.SetPathValue cannot catch a wrong pattern.
+func (a *app) routes() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("GET /assets/", http.FileServerFS(assets))
 	mux.HandleFunc("GET /favicon.svg", favicon)
@@ -1409,10 +1391,40 @@ func main() {
 	mux.HandleFunc("POST /app/settings/users/delete", a.deleteInvite)
 	mux.HandleFunc("GET /{tenant}", a.tenantPathRedirect)
 	mux.HandleFunc("GET /{tenant}/{rest...}", a.tenantPathRedirect)
+	return mux
+}
+
+// handler is the fully wrapped HTTP handler, middleware included. This is
+// what main() serves and what the tests drive.
+func (a *app) handler() http.Handler {
+	return securityHeaders(a.routes())
+}
+
+func main() {
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		target := "http://127.0.0.1:8080/healthz"
+		if len(os.Args) > 2 {
+			target = os.Args[2]
+		}
+		if err := runHealthcheck(target); err != nil {
+			log.Printf("healthcheck failed: %v", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	a, err := newApp()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stopSampler := a.startParkingSampler()
+	defer stopSampler()
+	stopVoteReminders := a.startVoteReminderWorker()
+	defer stopVoteReminders()
 
 	server := &http.Server{
 		Addr:              a.addr,
-		Handler:           securityHeaders(mux),
+		Handler:           a.handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
