@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/markus-barta/hausv-org/internal/integrations"
+	"github.com/markus-barta/hausv-org/internal/store"
 	"github.com/markus-barta/hausv-org/internal/textutil"
 	"github.com/markus-barta/hausv-org/internal/version"
 	"html/template"
@@ -43,6 +44,55 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/oauth2"
 )
+
+const (
+	unitPaymentStatusOpen    = store.UnitPaymentStatusOpen
+	unitPaymentStatusPaid    = store.UnitPaymentStatusPaid
+	unitPaymentStatusPartial = store.UnitPaymentStatusPartial
+	unitPaymentStatusOverdue = store.UnitPaymentStatusOverdue
+)
+
+// ── extracted to store ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+type (
+	activityRecord            = store.ActivityRecord
+	activityStore             = store.ActivityStore
+	announcementReadStore     = store.AnnouncementReadStore
+	announcementReadStoreData = store.AnnouncementReadStoreData
+	contactBookStore          = store.ContactBookStore
+	contactBookStoreData      = store.ContactBookStoreData
+	managedContact            = store.ManagedContact
+	notificationPrefStore     = store.NotificationPrefStore
+	notificationPrefStoreData = store.NotificationPrefStoreData
+	notificationPreferences   = store.NotificationPreferences
+	profileOverlay            = store.ProfileOverlay
+	profileOverlayStore       = store.ProfileOverlayStore
+	profileOverlayStoreData   = store.ProfileOverlayStoreData
+	unitPaymentStatus         = store.UnitPaymentStatus
+	unitPaymentStatusData     = store.UnitPaymentStatusData
+	unitPaymentStatusStore    = store.UnitPaymentStatusStore
+)
+
+var defaultNotificationPreferences = store.DefaultNotificationPreferences
+var managedContactDisplayName = store.ManagedContactDisplayName
+var mergeNotificationPreferences = store.MergeNotificationPreferences
+var newActivityStore = store.NewActivityStore
+var newAnnouncementReadStore = store.NewAnnouncementReadStore
+var newContactBookStore = store.NewContactBookStore
+var newNotificationPrefStore = store.NewNotificationPrefStore
+var newProfileOverlayStore = store.NewProfileOverlayStore
+var newUnitPaymentStatusStore = store.NewUnitPaymentStatusStore
+var normalizeContactKind = store.NormalizeContactKind
+var normalizeManagedContact = store.NormalizeManagedContact
+var normalizeNotificationEvent = store.NormalizeNotificationEvent
+var normalizeNotificationPreferences = store.NormalizeNotificationPreferences
+var normalizeProfileOverlay = store.NormalizeProfileOverlay
+var normalizeUnitID = store.NormalizeUnitID
+var normalizeUnitPaymentRecord = store.NormalizeUnitPaymentRecord
+var normalizeUnitPaymentStatus = store.NormalizeUnitPaymentStatus
+var saveJSONAtomic = store.SaveJSONAtomic
+var sortManagedContacts = store.SortManagedContacts
+var sortUnitPaymentStatuses = store.SortUnitPaymentStatuses
 
 //go:embed assets/*
 var assets embed.FS
@@ -132,13 +182,6 @@ const (
 	documentVisibilityAllResidents = "all-residents"
 	documentVisibilityOwnersOnly   = "owners-only"
 	documentVisibilityManagerOnly  = "verwalter-only"
-)
-
-const (
-	unitPaymentStatusOpen    = "offen"
-	unitPaymentStatusPaid    = "bezahlt"
-	unitPaymentStatusPartial = "teilbezahlt"
-	unitPaymentStatusOverdue = "ueberfaellig"
 )
 
 const (
@@ -365,16 +408,6 @@ type announcementStoreData struct {
 	Announcements []announcement `json:"announcements"`
 }
 
-type announcementReadStore struct {
-	mu   sync.Mutex
-	path string
-	data announcementReadStoreData
-}
-
-type announcementReadStoreData struct {
-	Seen map[string]map[string]time.Time `json:"seen"`
-}
-
 type eventStore struct {
 	mu   sync.Mutex
 	path string
@@ -383,35 +416,6 @@ type eventStore struct {
 
 type eventStoreData struct {
 	Events []houseEvent `json:"events"`
-}
-
-type notificationPrefStore struct {
-	mu   sync.Mutex
-	path string
-	data notificationPrefStoreData
-}
-
-type notificationPrefStoreData struct {
-	Users map[string]notificationPreferences `json:"users"`
-}
-
-type profileOverlayStore struct {
-	mu   sync.Mutex
-	path string
-	data profileOverlayStoreData
-}
-
-type profileOverlayStoreData struct {
-	Profiles map[string]profileOverlay `json:"profiles"`
-}
-
-type profileOverlay struct {
-	Title          string    `json:"title"`
-	FirstName      string    `json:"first_name"`
-	LastName       string    `json:"last_name"`
-	Phone          string    `json:"phone,omitempty"`
-	DirectoryOptIn bool      `json:"directory_opt_in,omitempty"`
-	UpdatedAt      time.Time `json:"updated_at,omitempty"`
 }
 
 type tenantOverrideStore struct {
@@ -450,11 +454,6 @@ const (
 	tenantBrandAddressPlate = "address-plaque"
 	tenantBrandParking      = "parking"
 )
-
-type notificationPreferences struct {
-	Email        map[string]bool `json:"email"`
-	Unsubscribed bool            `json:"unsubscribed,omitempty"`
-}
 
 type notificationEventOption struct {
 	Key         string
@@ -954,24 +953,6 @@ type profileUnitView struct {
 	Share    string
 }
 
-type unitPaymentStatusStore struct {
-	mu   sync.Mutex
-	path string
-	data unitPaymentStatusData
-}
-
-type unitPaymentStatusData struct {
-	Statuses []unitPaymentStatus `json:"statuses"`
-}
-
-type unitPaymentStatus struct {
-	TenantSlug string    `json:"tenant"`
-	UnitID     string    `json:"unit_id"`
-	Status     string    `json:"status"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	UpdatedBy  string    `json:"updated_by,omitempty"`
-}
-
 type unitPaymentStatusView struct {
 	UnitID        string
 	UnitLabel     string
@@ -1033,30 +1014,6 @@ type managedContactView struct {
 type contactOptionView struct {
 	Email string
 	Label string
-}
-
-type contactBookStore struct {
-	mu   sync.Mutex
-	path string
-	data contactBookStoreData
-}
-
-type contactBookStoreData struct {
-	Contacts []managedContact `json:"contacts"`
-}
-
-type managedContact struct {
-	ID         string    `json:"id"`
-	TenantSlug string    `json:"tenant"`
-	Kind       string    `json:"kind"`
-	Name       string    `json:"name,omitempty"`
-	Company    string    `json:"company,omitempty"`
-	Email      string    `json:"email,omitempty"`
-	Phone      string    `json:"phone,omitempty"`
-	Notes      string    `json:"notes,omitempty"`
-	Active     bool      `json:"active"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type emptyStateView struct {
@@ -1381,6 +1338,23 @@ func (a *app) routes() *http.ServeMux {
 // what main() serves and what the tests drive.
 func (a *app) handler() http.Handler {
 	return securityHeaders(a.routes())
+}
+
+// notificationEventCatalog pairs the store's event vocabulary with the German
+// labels shown in the UI. The keys belong to the store; the words belong here.
+func notificationEventCatalog() []notificationEventOption {
+	labels := map[string][2]string{
+		store.NotificationEventAnnouncement: {"Aushang", "Neue veröffentlichte Aushänge"},
+		store.NotificationEventIssue:        {"Anliegen", "Neue Anliegen, Kommentare und Statusänderungen"},
+		store.NotificationEventVote:         {"Abstimmungen", "Neue Abstimmungen und Erinnerungen"},
+		store.NotificationEventDocument:     {"Dokumente", "Neu bereitgestellte Dokumente"},
+		store.NotificationEventPayment:      {"Zahlungen", "Fällige oder überfällige Zahlungen"},
+	}
+	out := make([]notificationEventOption, 0, len(store.NotificationEvents))
+	for _, key := range store.NotificationEvents {
+		out = append(out, notificationEventOption{Key: key, Label: labels[key][0], Description: labels[key][1]})
+	}
+	return out
 }
 
 func main() {
@@ -4373,10 +4347,6 @@ func managedContactViewFrom(item managedContact) managedContactView {
 		EditDialogID:       "contact-edit-" + item.ID,
 		DeleteConfirmLabel: "Kontakt \"" + displayName + "\" deaktivieren?",
 	}
-}
-
-func managedContactDisplayName(item managedContact) string {
-	return firstNonEmpty(item.Name, item.Company, item.Email, item.Phone, "Kontakt")
 }
 
 func contactStatusLabel(active bool) string {
@@ -8514,35 +8484,6 @@ func unitBillableLabel(weight int) string {
 	return "zählt als " + formatBillableUnitWeight(weight) + " WE"
 }
 
-func normalizeUnitPaymentRecord(item unitPaymentStatus) (unitPaymentStatus, error) {
-	item.TenantSlug = normalizeSlug(item.TenantSlug)
-	item.UnitID = normalizeUnitID(item.UnitID)
-	item.Status = normalizeUnitPaymentStatus(item.Status)
-	item.UpdatedBy = normalizeEmail(item.UpdatedBy)
-	if !item.UpdatedAt.IsZero() {
-		item.UpdatedAt = item.UpdatedAt.UTC().Truncate(time.Second)
-	}
-	if item.TenantSlug == "" || item.UnitID == "" || item.Status == "" {
-		return unitPaymentStatus{}, fmt.Errorf("invalid unit payment status")
-	}
-	return item, nil
-}
-
-func normalizeUnitPaymentStatus(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "", unitPaymentStatusOpen, "open":
-		return unitPaymentStatusOpen
-	case unitPaymentStatusPaid, "paid":
-		return unitPaymentStatusPaid
-	case unitPaymentStatusPartial, "teilweise", "partial", "partial-paid":
-		return unitPaymentStatusPartial
-	case unitPaymentStatusOverdue, "überfällig", "overdue":
-		return unitPaymentStatusOverdue
-	default:
-		return ""
-	}
-}
-
 func unitPaymentStatusLabel(status string) string {
 	switch normalizeUnitPaymentStatus(status) {
 	case unitPaymentStatusPaid:
@@ -8597,15 +8538,6 @@ func unitPaymentStatusOptions(selected string) []selectOption {
 		options[i].Selected = options[i].Value == selected
 	}
 	return options
-}
-
-func sortUnitPaymentStatuses(items []unitPaymentStatus) {
-	sort.Slice(items, func(i, j int) bool {
-		if items[i].TenantSlug != items[j].TenantSlug {
-			return items[i].TenantSlug < items[j].TenantSlug
-		}
-		return items[i].UnitID < items[j].UnitID
-	})
 }
 
 func buildingSettingsMessage(status string) (string, bool) {
@@ -8869,16 +8801,6 @@ func notificationSettingsMessage(status string) (string, bool) {
 	}
 }
 
-func notificationEventCatalog() []notificationEventOption {
-	return []notificationEventOption{
-		{Key: notificationEventAnnouncement, Label: "Aushang", Description: "Neue veröffentlichte Aushänge"},
-		{Key: notificationEventIssue, Label: "Anliegen", Description: "Neue Anliegen, Kommentare und Statusänderungen"},
-		{Key: notificationEventVote, Label: "Abstimmungen", Description: "Neue Abstimmungen und Erinnerungen"},
-		{Key: notificationEventDocument, Label: "Dokumente", Description: "Neu bereitgestellte Dokumente"},
-		{Key: notificationEventPayment, Label: "Zahlungen", Description: "Fällige oder überfällige Zahlungen"},
-	}
-}
-
 func notificationEventOptions(prefs notificationPreferences) []notificationEventOption {
 	prefs = mergeNotificationPreferences(prefs)
 	out := notificationEventCatalog()
@@ -8905,49 +8827,6 @@ func notificationPreferencesFromForm(values url.Values) notificationPreferences 
 		prefs.Email[event.Key] = ok
 	}
 	return prefs
-}
-
-func defaultNotificationPreferences() notificationPreferences {
-	prefs := notificationPreferences{Email: map[string]bool{}}
-	for _, event := range notificationEventCatalog() {
-		prefs.Email[event.Key] = true
-	}
-	return prefs
-}
-
-func mergeNotificationPreferences(prefs notificationPreferences) notificationPreferences {
-	merged := defaultNotificationPreferences()
-	merged.Unsubscribed = prefs.Unsubscribed
-	for event, enabled := range prefs.Email {
-		event = normalizeNotificationEvent(event)
-		if event == "" {
-			continue
-		}
-		merged.Email[event] = enabled
-	}
-	return merged
-}
-
-func normalizeNotificationPreferences(prefs notificationPreferences) notificationPreferences {
-	normalized := notificationPreferences{
-		Email:        map[string]bool{},
-		Unsubscribed: prefs.Unsubscribed,
-	}
-	merged := mergeNotificationPreferences(prefs)
-	for _, event := range notificationEventCatalog() {
-		normalized.Email[event.Key] = merged.Email[event.Key]
-	}
-	return normalized
-}
-
-func normalizeNotificationEvent(raw string) string {
-	raw = strings.ToLower(strings.TrimSpace(raw))
-	for _, event := range notificationEventCatalog() {
-		if raw == event.Key {
-			return event.Key
-		}
-	}
-	return ""
 }
 
 func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request) {
@@ -9936,30 +9815,6 @@ func newAnnouncementStore(path string) (*announcementStore, error) {
 	return store, nil
 }
 
-func newAnnouncementReadStore(path string) (*announcementReadStore, error) {
-	store := &announcementReadStore{path: path, data: announcementReadStoreData{Seen: map[string]map[string]time.Time{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read announcement read data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid announcement read data")
-	}
-	if store.data.Seen == nil {
-		store.data.Seen = map[string]map[string]time.Time{}
-	}
-	return store, nil
-}
-
 func newEventStore(path string) (*eventStore, error) {
 	store := &eventStore{path: path, data: eventStoreData{Events: []houseEvent{}}}
 	if path == "" {
@@ -9988,159 +9843,6 @@ func newEventStore(path string) (*eventStore, error) {
 	store.data.Events = events
 	sortEvents(store.data.Events)
 	return store, nil
-}
-
-func (s *announcementReadStore) LastSeen(tenantSlug string, email string) time.Time {
-	if s == nil {
-		return time.Time{}
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	email = normalizeEmail(email)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if tenantSlug == "" || email == "" {
-		return time.Time{}
-	}
-	return s.data.Seen[tenantSlug][email]
-}
-
-func (s *announcementReadStore) MarkSeen(tenantSlug string, email string, seenAt time.Time) error {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	email = normalizeEmail(email)
-	if tenantSlug == "" || email == "" {
-		return nil
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.data.Seen == nil {
-		s.data.Seen = map[string]map[string]time.Time{}
-	}
-	if s.data.Seen[tenantSlug] == nil {
-		s.data.Seen[tenantSlug] = map[string]time.Time{}
-	}
-	s.data.Seen[tenantSlug][email] = seenAt.UTC()
-	return s.saveLocked()
-}
-
-func (s *announcementReadStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "announcement read")
-}
-
-func newNotificationPrefStore(path string) (*notificationPrefStore, error) {
-	store := &notificationPrefStore{path: path, data: notificationPrefStoreData{Users: map[string]notificationPreferences{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read notification preference data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid notification preference data")
-	}
-	if store.data.Users == nil {
-		store.data.Users = map[string]notificationPreferences{}
-	}
-	normalized := map[string]notificationPreferences{}
-	for email, prefs := range store.data.Users {
-		email = normalizeEmail(email)
-		if email == "" {
-			continue
-		}
-		normalized[email] = normalizeNotificationPreferences(prefs)
-	}
-	store.data.Users = normalized
-	return store, nil
-}
-
-func newProfileOverlayStore(path string) (*profileOverlayStore, error) {
-	store := &profileOverlayStore{path: path, data: profileOverlayStoreData{Profiles: map[string]profileOverlay{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read profile data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid profile data")
-	}
-	if store.data.Profiles == nil {
-		store.data.Profiles = map[string]profileOverlay{}
-	}
-	normalized := map[string]profileOverlay{}
-	for email, overlay := range store.data.Profiles {
-		email = normalizeEmail(email)
-		if email == "" {
-			continue
-		}
-		normalized[email] = normalizeProfileOverlay(overlay)
-	}
-	store.data.Profiles = normalized
-	return store, nil
-}
-
-func (s *profileOverlayStore) Get(email string) (profileOverlay, bool) {
-	if s == nil {
-		return profileOverlay{}, false
-	}
-	email = normalizeEmail(email)
-	if email == "" {
-		return profileOverlay{}, false
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	overlay, ok := s.data.Profiles[email]
-	return overlay, ok
-}
-
-func (s *profileOverlayStore) Set(email string, overlay profileOverlay) error {
-	if s == nil {
-		return nil
-	}
-	email = normalizeEmail(email)
-	if email == "" {
-		return fmt.Errorf("invalid profile email")
-	}
-	overlay = normalizeProfileOverlay(overlay)
-	overlay.UpdatedAt = time.Now().UTC()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.data.Profiles == nil {
-		s.data.Profiles = map[string]profileOverlay{}
-	}
-	s.data.Profiles[email] = overlay
-	return s.saveLocked()
-}
-
-func (s *profileOverlayStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "profile")
-}
-
-func normalizeProfileOverlay(overlay profileOverlay) profileOverlay {
-	overlay.Title = strings.TrimSpace(overlay.Title)
-	overlay.FirstName = strings.TrimSpace(overlay.FirstName)
-	overlay.LastName = strings.TrimSpace(overlay.LastName)
-	overlay.Phone = strings.TrimSpace(overlay.Phone)
-	if !overlay.UpdatedAt.IsZero() {
-		overlay.UpdatedAt = overlay.UpdatedAt.UTC()
-	}
-	return overlay
 }
 
 func newTenantOverrideStore(path string) (*tenantOverrideStore, error) {
@@ -10392,67 +10094,6 @@ func generatedTenantBrandAbbreviation(tenant tenantConfig) string {
 		return value
 	}
 	return "HAUS"
-}
-
-func (s *notificationPrefStore) Get(email string) notificationPreferences {
-	prefs := defaultNotificationPreferences()
-	if s == nil {
-		return prefs
-	}
-	email = normalizeEmail(email)
-	if email == "" {
-		return prefs
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if stored, ok := s.data.Users[email]; ok {
-		prefs = mergeNotificationPreferences(stored)
-	}
-	return prefs
-}
-
-func (s *notificationPrefStore) Set(email string, prefs notificationPreferences) error {
-	if s == nil {
-		return nil
-	}
-	email = normalizeEmail(email)
-	if email == "" {
-		return fmt.Errorf("invalid notification preference email")
-	}
-	prefs = normalizeNotificationPreferences(prefs)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.data.Users == nil {
-		s.data.Users = map[string]notificationPreferences{}
-	}
-	s.data.Users[email] = prefs
-	return s.saveLocked()
-}
-
-func (s *notificationPrefStore) EmailEnabled(email string, event string) bool {
-	event = normalizeNotificationEvent(event)
-	if event == "" {
-		return false
-	}
-	prefs := defaultNotificationPreferences()
-	if s != nil {
-		prefs = s.Get(email)
-	}
-	if prefs.Unsubscribed {
-		return false
-	}
-	if prefs.Email == nil {
-		return true
-	}
-	enabled, ok := prefs.Email[event]
-	if !ok {
-		return true
-	}
-	return enabled
-}
-
-func (s *notificationPrefStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "notification preference")
 }
 
 func newIssueStore(path string, attachmentDir string) (*issueStore, error) {
@@ -10992,228 +10633,6 @@ func newAttachmentStore(path string, fileDir string) (*attachmentStore, error) {
 	return store, nil
 }
 
-func newContactBookStore(path string) (*contactBookStore, error) {
-	store := &contactBookStore{path: path, data: contactBookStoreData{Contacts: []managedContact{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read contact data")
-	}
-	if len(raw) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid contact data")
-	}
-	return store, nil
-}
-
-func newUnitPaymentStatusStore(path string) (*unitPaymentStatusStore, error) {
-	store := &unitPaymentStatusStore{path: path, data: unitPaymentStatusData{Statuses: []unitPaymentStatus{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read unit payment status data")
-	}
-	if len(raw) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid unit payment status data")
-	}
-	return store, nil
-}
-
-func (s *unitPaymentStatusStore) Set(item unitPaymentStatus) (unitPaymentStatus, error) {
-	if s == nil {
-		return unitPaymentStatus{}, fmt.Errorf("unit payment status store not configured")
-	}
-	item, err := normalizeUnitPaymentRecord(item)
-	if err != nil {
-		return unitPaymentStatus{}, err
-	}
-	now := time.Now().UTC().Truncate(time.Second)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, existing := range s.data.Statuses {
-		if normalizeSlug(existing.TenantSlug) != item.TenantSlug || normalizeUnitID(existing.UnitID) != item.UnitID {
-			continue
-		}
-		item.UpdatedAt = now
-		s.data.Statuses[i] = item
-		sortUnitPaymentStatuses(s.data.Statuses)
-		if err := s.saveLocked(); err != nil {
-			return unitPaymentStatus{}, err
-		}
-		return item, nil
-	}
-	item.UpdatedAt = now
-	s.data.Statuses = append(s.data.Statuses, item)
-	sortUnitPaymentStatuses(s.data.Statuses)
-	if err := s.saveLocked(); err != nil {
-		return unitPaymentStatus{}, err
-	}
-	return item, nil
-}
-
-func (s *unitPaymentStatusStore) Get(tenantSlug string, unitID string) (unitPaymentStatus, bool) {
-	if s == nil {
-		return unitPaymentStatus{}, false
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	unitID = normalizeUnitID(unitID)
-	if tenantSlug == "" || unitID == "" {
-		return unitPaymentStatus{}, false
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, item := range s.data.Statuses {
-		normalized, err := normalizeUnitPaymentRecord(item)
-		if err != nil {
-			continue
-		}
-		if normalized.TenantSlug == tenantSlug && normalized.UnitID == unitID {
-			return normalized, true
-		}
-	}
-	return unitPaymentStatus{}, false
-}
-
-func (s *unitPaymentStatusStore) ListTenant(tenantSlug string) []unitPaymentStatus {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []unitPaymentStatus{}
-	for _, item := range s.data.Statuses {
-		normalized, err := normalizeUnitPaymentRecord(item)
-		if err != nil || normalized.TenantSlug != tenantSlug {
-			continue
-		}
-		out = append(out, normalized)
-	}
-	sortUnitPaymentStatuses(out)
-	return out
-}
-
-func (s *unitPaymentStatusStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "unit payment status")
-}
-
-func (s *contactBookStore) Upsert(item managedContact) (managedContact, bool, error) {
-	if s == nil {
-		return managedContact{}, false, fmt.Errorf("contact store not configured")
-	}
-	item, err := normalizeManagedContact(item)
-	if err != nil {
-		return managedContact{}, false, err
-	}
-	now := time.Now().UTC()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, existing := range s.data.Contacts {
-		if normalizeSlug(existing.TenantSlug) != item.TenantSlug || existing.ID != item.ID || item.ID == "" {
-			continue
-		}
-		item.CreatedAt = existing.CreatedAt
-		if item.CreatedAt.IsZero() {
-			item.CreatedAt = now
-		}
-		item.UpdatedAt = now
-		s.data.Contacts[i] = item
-		sortManagedContacts(s.data.Contacts)
-		if err := s.saveLocked(); err != nil {
-			return managedContact{}, false, err
-		}
-		return item, false, nil
-	}
-	if item.ID == "" {
-		id, err := randomToken(10)
-		if err != nil {
-			return managedContact{}, false, err
-		}
-		item.ID = id
-	}
-	item.CreatedAt = now
-	item.UpdatedAt = now
-	s.data.Contacts = append(s.data.Contacts, item)
-	sortManagedContacts(s.data.Contacts)
-	if err := s.saveLocked(); err != nil {
-		return managedContact{}, false, err
-	}
-	return item, true, nil
-}
-
-func (s *contactBookStore) Deactivate(tenantSlug string, id string, at time.Time) (managedContact, error) {
-	if s == nil {
-		return managedContact{}, fmt.Errorf("contact store not configured")
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	if tenantSlug == "" || id == "" {
-		return managedContact{}, fmt.Errorf("invalid contact")
-	}
-	if at.IsZero() {
-		at = time.Now().UTC()
-	} else {
-		at = at.UTC()
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, existing := range s.data.Contacts {
-		if normalizeSlug(existing.TenantSlug) != tenantSlug || existing.ID != id {
-			continue
-		}
-		existing.Active = false
-		existing.UpdatedAt = at
-		s.data.Contacts[i] = existing
-		sortManagedContacts(s.data.Contacts)
-		if err := s.saveLocked(); err != nil {
-			return managedContact{}, err
-		}
-		return existing, nil
-	}
-	return managedContact{}, nil
-}
-
-func (s *contactBookStore) ListTenant(tenantSlug string, includeInactive bool) []managedContact {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []managedContact{}
-	for _, item := range s.data.Contacts {
-		normalized, err := normalizeManagedContact(item)
-		if err != nil || normalized.TenantSlug != tenantSlug {
-			continue
-		}
-		if !includeInactive && !normalized.Active {
-			continue
-		}
-		out = append(out, normalized)
-	}
-	sortManagedContacts(out)
-	return out
-}
-
-func (s *contactBookStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "contact")
-}
-
 func managedContactFromForm(tenantSlug string, values url.Values) (managedContact, error) {
 	return normalizeManagedContact(managedContact{
 		ID:         strings.TrimSpace(values.Get("id")),
@@ -11228,59 +10647,6 @@ func managedContactFromForm(tenantSlug string, values url.Values) (managedContac
 	})
 }
 
-func normalizeManagedContact(item managedContact) (managedContact, error) {
-	item.TenantSlug = normalizeSlug(item.TenantSlug)
-	item.ID = strings.TrimSpace(item.ID)
-	item.Kind = normalizeContactKind(item.Kind)
-	item.Name = truncateRunes(strings.TrimSpace(item.Name), 120)
-	item.Company = truncateRunes(strings.TrimSpace(item.Company), 140)
-	item.Email = normalizeEmail(item.Email)
-	item.Phone = truncateRunes(strings.TrimSpace(item.Phone), 80)
-	item.Notes = truncateRunes(strings.TrimSpace(item.Notes), 300)
-	if item.TenantSlug == "" || item.Kind == "" {
-		return managedContact{}, fmt.Errorf("invalid contact")
-	}
-	if item.Name == "" && item.Company == "" {
-		return managedContact{}, fmt.Errorf("contact name required")
-	}
-	if item.Email == "" && item.Phone == "" {
-		return managedContact{}, fmt.Errorf("contact route required")
-	}
-	if item.Email != "" {
-		if _, err := mail.ParseAddress(item.Email); err != nil {
-			return managedContact{}, fmt.Errorf("invalid email")
-		}
-	}
-	if item.CreatedAt.IsZero() {
-		item.CreatedAt = time.Now().UTC()
-	} else {
-		item.CreatedAt = item.CreatedAt.UTC()
-	}
-	if item.UpdatedAt.IsZero() {
-		item.UpdatedAt = item.CreatedAt
-	} else {
-		item.UpdatedAt = item.UpdatedAt.UTC()
-	}
-	return item, nil
-}
-
-func normalizeContactKind(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "dienstleister", "handwerker", "service":
-		return "Dienstleister"
-	case "hausmeister", "caretaker":
-		return "Hausmeister"
-	case "notdienst", "emergency":
-		return "Notdienst"
-	case "verwaltung", "manager":
-		return "Verwaltung"
-	case "sonstiges", "other":
-		return "Sonstiges"
-	default:
-		return ""
-	}
-}
-
 func contactKindOptions(selected string) []selectOption {
 	selected = normalizeContactKind(selected)
 	kinds := []string{"Dienstleister", "Hausmeister", "Notdienst", "Verwaltung", "Sonstiges"}
@@ -11289,23 +10655,6 @@ func contactKindOptions(selected string) []selectOption {
 		options = append(options, selectOption{Value: kind, Label: kind, Selected: selected == kind})
 	}
 	return options
-}
-
-func sortManagedContacts(items []managedContact) {
-	sort.SliceStable(items, func(i, j int) bool {
-		if items[i].Active != items[j].Active {
-			return items[i].Active
-		}
-		if items[i].Kind != items[j].Kind {
-			return items[i].Kind < items[j].Kind
-		}
-		left := strings.ToLower(managedContactDisplayName(items[i]))
-		right := strings.ToLower(managedContactDisplayName(items[j]))
-		if left != right {
-			return left < right
-		}
-		return items[i].ID < items[j].ID
-	})
 }
 
 func (s *attachmentStore) CreateUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, uploads []uploadedFile, now time.Time) ([]attachmentRecord, error) {
@@ -13496,37 +12845,6 @@ func (s *announcementStore) ListTenant(tenantSlug string) []announcement {
 	}
 	sortAnnouncements(out)
 	return out
-}
-
-// saveJSONAtomic is the store layer's single persistence primitive: marshal,
-// write to a temp file, rename into place. The rename is what makes it atomic —
-// a crash mid-write leaves the previous file intact rather than a truncated one.
-//
-// An empty path means "in-memory only" and is a no-op. Every store constructor
-// accepts path == "" and the entire test suite relies on it.
-//
-// noun appears in the error messages ("could not encode <noun> data"), which is
-// why it is a parameter rather than derived: it keeps the 17 stores' existing
-// error strings byte-identical.
-func saveJSONAtomic(path string, v any, noun string) error {
-	if path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("could not create %s data directory", noun)
-	}
-	raw, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return fmt.Errorf("could not encode %s data", noun)
-	}
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return fmt.Errorf("could not write %s data", noun)
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		return fmt.Errorf("could not replace %s data", noun)
-	}
-	return nil
 }
 
 func (s *announcementStore) saveLocked() error {
@@ -16004,66 +15322,6 @@ func (s *inviteStore) Delete(email string) (bool, error) {
 	return true, nil
 }
 
-type activityStore struct {
-	path string
-	mu   sync.Mutex
-	data map[string]activityRecord
-}
-
-type activityRecord struct {
-	LastLogin  time.Time `json:"last_login"`
-	AuthMethod string    `json:"auth_method,omitempty"`
-}
-
-func newActivityStore(path string) (*activityStore, error) {
-	store := &activityStore{path: path, data: map[string]activityRecord{}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read activity data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid activity data")
-	}
-	if store.data == nil {
-		store.data = map[string]activityRecord{}
-	}
-	return store, nil
-}
-
-// Touch records a successful login. Best-effort: callers log failures but do
-// not block login on a persistence error.
-func (s *activityStore) Touch(email string, at time.Time, authMethod string) error {
-	email = normalizeEmail(email)
-	if email == "" {
-		return nil
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.data[email] = activityRecord{LastLogin: at.UTC(), AuthMethod: authMethod}
-	return s.saveLocked()
-}
-
-func (s *activityStore) Get(email string) (activityRecord, bool) {
-	email = normalizeEmail(email)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	rec, ok := s.data[email]
-	return rec, ok
-}
-
-func (s *activityStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "activity")
-}
-
 type auditStore struct {
 	path    string
 	mu      sync.Mutex
@@ -16251,17 +15509,7 @@ func truncateAuditValue(value string, limit int) string {
 	return string(runes[:limit-1]) + "…"
 }
 
-func truncateRunes(value string, limit int) string {
-	value = strings.TrimSpace(value)
-	if limit <= 0 {
-		return ""
-	}
-	runes := []rune(value)
-	if len(runes) <= limit {
-		return value
-	}
-	return string(runes[:limit])
-}
+func truncateRunes(value string, limit int) string { return textutil.Truncate(value, limit) }
 
 func copyAuditEvent(event auditEvent) auditEvent {
 	if event.Details != nil {
@@ -16451,13 +15699,6 @@ func normalizeTenants(raw []string, fallback string) []string {
 }
 
 func normalizeSlug(raw string) string { return textutil.Slug(raw) }
-
-func normalizeUnitID(raw string) string {
-	raw = normalizeSlug(raw)
-	raw = strings.Join(strings.Fields(raw), "-")
-	raw = strings.ReplaceAll(raw, "/", "-")
-	return raw
-}
 
 func normalizeUnitType(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
@@ -16660,9 +15901,7 @@ func permissionLabelList(permissions []string) []string {
 	return labels
 }
 
-func normalizeEmail(v string) string {
-	return strings.ToLower(strings.TrimSpace(v))
-}
+func normalizeEmail(v string) string { return textutil.Email(v) }
 
 func randomToken(bytes int) (string, error) {
 	buf := make([]byte, bytes)

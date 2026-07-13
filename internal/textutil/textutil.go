@@ -24,3 +24,21 @@ func FirstNonEmpty(values ...string) string {
 	}
 	return ""
 }
+
+// Email normalizes an address for comparison: lowercase, trimmed.
+func Email(v string) string {
+	return strings.ToLower(strings.TrimSpace(v))
+}
+
+// Truncate trims and cuts to a rune limit (not a byte limit).
+func Truncate(value string, limit int) string {
+	value = strings.TrimSpace(value)
+	if limit <= 0 {
+		return ""
+	}
+	runes := []rune(value)
+	if len(runes) <= limit {
+		return value
+	}
+	return string(runes[:limit])
+}
