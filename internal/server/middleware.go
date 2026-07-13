@@ -50,6 +50,68 @@ func recoverAndLog(next http.Handler) http.Handler {
 	})
 }
 
+// authCtx carries the authenticated identity for a request. It can be minted
+// ONLY by authenticate() below (via the page/action combinators), so a handler
+// that takes an authCtx is guaranteed to have passed the session + tenant-match
+// guard. This is the invariant HAUSV-135 violated when a copy-pasted
+// tenantSlug != tenant.Slug line was forgotten: with the check hoisted into the
+// wrapper, a handler can no longer be written without it.
+type authCtx struct {
+	email  string
+	role   string
+	tenant tenantConfig
+}
+
+// authedHandler is a handler that requires an authenticated request. Its authCtx
+// parameter is only obtainable from the combinators, so the type itself enforces
+// that the route went through the guard.
+type authedHandler func(http.ResponseWriter, *http.Request, authCtx)
+
+// authenticate runs the session + tenant-match guard that every /app handler
+// used to copy verbatim: resolve the request tenant, look up the session user,
+// and require the session's tenant to match. On failure it redirects to "/" (the
+// exact behaviour of the old inline guard) and reports false.
+func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, bool) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return authCtx{}, false
+	}
+	return authCtx{email: email, role: role, tenant: tenant}, true
+}
+
+// page wraps a GET handler with the authenticate guard. Capability and
+// service-provider checks stay in the handler body: they are heterogeneous
+// (different messages, per-entity logic) and are genuine authorization, not the
+// uniform session boilerplate this hoists out.
+func (a *app) page(h authedHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ac, ok := a.authenticate(w, r)
+		if !ok {
+			return
+		}
+		h(w, r, ac)
+	}
+}
+
+// action wraps a POST handler: the authenticate guard plus the same-origin
+// (CSRF) check that every mutating handler used to repeat. Capability checks
+// stay in the body for the same reason as page().
+func (a *app) action(h authedHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ac, ok := a.authenticate(w, r)
+		if !ok {
+			return
+		}
+		if !sameOriginPost(r) {
+			http.Error(w, "Bad request", http.StatusForbidden)
+			return
+		}
+		h(w, r, ac)
+	}
+}
+
 func newRequestID() string {
 	var b [8]byte
 	if _, err := rand.Read(b[:]); err != nil {
