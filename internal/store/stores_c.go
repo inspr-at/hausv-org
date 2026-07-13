@@ -1,5 +1,11 @@
 package store
 
+// NOTE ON net/http: this package imports net/http for exactly one thing —
+// http.DetectContentType, a pure byte-sniffing function with no transport
+// behaviour. That is deliberate and is NOT a layering violation: no handler,
+// no server, no request type crosses into the store. Uploads still arrive as
+// UploadedFile rather than *multipart.FileHeader.
+
 import (
 	"bytes"
 	"crypto/sha256"
