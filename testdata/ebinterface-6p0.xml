@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="http://www.ebinterface.at/schema/6p0/" Currency="EUR">
+  <InvoiceNumber>RE-2026-0006</InvoiceNumber>
+  <InvoiceDate>2026-07-09</InvoiceDate>
+  <Biller>
+    <Name>Hausservice Beispiel e.U.</Name>
+  </Biller>
+  <InvoiceRecipient>
+    <Address><Name>jhw22</Name></Address>
+  </InvoiceRecipient>
+  <Delivery>
+    <Period>
+      <FromDate>2026-07-02</FromDate>
+      <ToDate>2026-07-09</ToDate>
+    </Period>
+  </Delivery>
+  <PaymentMethod><DueDate>2026-07-23</DueDate></PaymentMethod>
+  <InvoiceTotals>
+    <TotalGrossAmount Currency="EUR">99.90</TotalGrossAmount>
+  </InvoiceTotals>
+</Invoice>

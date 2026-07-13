@@ -16,3 +16,8 @@ Local-only environment belongs in `.env.local`; it is intentionally ignored.
 
 csb1 deployment notes live in `docs/csb1-deploy.md`. Secrets stay in agenix and
 must not be committed.
+
+## Security Notes
+
+External service-provider access and attachment privacy are documented in
+`docs/service-provider-privacy.md`.

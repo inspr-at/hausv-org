@@ -1,4 +1,4 @@
-// Benutzer & Rechte: open the per-row edit dialog and confirm deletes.
+// Benutzer & Rechte: open the per-row edit dialog.
 // Served as a same-origin file so it satisfies the strict CSP (default-src 'self').
 var dialogTriggers = new WeakMap();
 
@@ -24,12 +24,6 @@ document.addEventListener("click", function (e) {
     openEditDialog(b);
   }
 });
-document.addEventListener("submit", function (e) {
-  if (e.target.closest(".users .dlg-delete") && !confirm("Diesen Zugang wirklich löschen?")) {
-    e.preventDefault();
-  }
-});
-
 function applyRolePreset(select) {
   var option = select.options[select.selectedIndex];
   if (!option) return;

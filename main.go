@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
@@ -14,8 +15,12 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"image"
+	"image/jpeg"
+	_ "image/png"
 	"io"
 	"log"
+	"math"
 	"mime"
 	"mime/multipart"
 	"net"
@@ -46,6 +51,7 @@ const (
 	roleRenter                    = "Mieter"
 	roleBeirat                    = "Beirat"
 	roleResident                  = "Bewohner"
+	roleServiceProvider           = "Dienstleister"
 	permissionParking             = "parking"
 	authMethodEmail               = "email"
 	authMethodOIDC                = "oidc"
@@ -69,13 +75,18 @@ const (
 )
 
 const (
-	defaultTenantHeroImageURL = "/assets/jhw22-hero.jpg"
-	maxIssuePhotoBytes        = 5 << 20
-	maxIssueFormBytes         = maxIssuePhotoBytes + (1 << 20)
-	maxTenantHeroBytes        = 5 << 20
-	maxTenantHeroFormBytes    = maxTenantHeroBytes + (1 << 20)
-	maxDocumentBytes          = 20 << 20
-	maxDocumentFormBytes      = maxDocumentBytes + (1 << 20)
+	defaultTenantHeroImageURL     = "/assets/jhw22-hero.jpg"
+	maxIssuePhotoBytes            = 5 << 20
+	maxIssueFormBytes             = maxIssuePhotoBytes + (1 << 20)
+	maxAttachmentBytes            = 10 << 20
+	maxIssueAttachmentCount       = 10
+	maxIssueAttachmentFormBytes   = maxAttachmentBytes*maxIssueAttachmentCount + (1 << 20)
+	attachmentPreviewMaxDimension = 1200
+	attachmentThumbMaxDimension   = 320
+	maxTenantHeroBytes            = 5 << 20
+	maxTenantHeroFormBytes        = maxTenantHeroBytes + (1 << 20)
+	maxDocumentBytes              = 20 << 20
+	maxDocumentFormBytes          = maxDocumentBytes + (1 << 20)
 )
 
 const (
@@ -87,10 +98,16 @@ const (
 	auditActionHeroUpdate       = "building.hero"
 	auditActionUnitSave         = "building.unit.save"
 	auditActionUnitDelete       = "building.unit.delete"
+	auditActionUnitPayment      = "building.unit.payment"
 	auditActionParkingSettings  = "parking.settings"
 	auditActionParkingMonth     = "parking.month"
 	auditActionParkingReminder  = "parking.reminder"
 	auditActionIssueWorkflow    = "issue.workflow"
+	auditActionIssueEstimate    = "issue.estimate"
+	auditActionIssueServiceAdd  = "issue.service.add"
+	auditActionIssueServiceDrop = "issue.service.drop"
+	auditActionContactSave      = "contact.save"
+	auditActionContactDelete    = "contact.delete"
 	auditActionDocumentUpload   = "document.upload"
 	auditActionDocumentDownload = "document.download"
 	auditActionDocumentReplace  = "document.replace"
@@ -112,6 +129,13 @@ const (
 	documentVisibilityAllResidents = "all-residents"
 	documentVisibilityOwnersOnly   = "owners-only"
 	documentVisibilityManagerOnly  = "verwalter-only"
+)
+
+const (
+	unitPaymentStatusOpen    = "offen"
+	unitPaymentStatusPaid    = "bezahlt"
+	unitPaymentStatusPartial = "teilbezahlt"
+	unitPaymentStatusOverdue = "ueberfaellig"
 )
 
 const (
@@ -146,8 +170,9 @@ const (
 )
 
 var (
-	appVersion = "0.1.0"
+	appVersion = "0.6.13"
 	gitCommit  = "dev"
+	assetNonce = strconv.FormatInt(time.Now().Unix(), 36)
 )
 
 type app struct {
@@ -178,9 +203,13 @@ type app struct {
 	inviteStore           *inviteStore
 	activityStore         *activityStore
 	unitStore             *unitStore
+	unitPaymentStore      *unitPaymentStatusStore
 	issueStore            *issueStore
+	attachmentStore       *attachmentStore
+	contactStore          *contactBookStore
 	auditStore            *auditStore
 	documentStore         *documentStore
+	handoverStore         *handoverStore
 	voteStore             *voteStore
 	voteReminderInterval  time.Duration
 	parkingStore          *parkingStore
@@ -195,10 +224,11 @@ type tokenStore struct {
 }
 
 type loginToken struct {
-	email      string
-	tenantSlug string
-	expiresAt  time.Time
-	used       bool
+	email        string
+	tenantSlug   string
+	redirectPath string
+	expiresAt    time.Time
+	used         bool
 }
 
 type sessionStore struct {
@@ -259,20 +289,22 @@ type smtpMailer struct {
 }
 
 type tenantConfig struct {
-	Slug           string              `json:"slug"`
-	Name           string              `json:"name"`
-	Address        string              `json:"address"`
-	ContactName    string              `json:"contact_name,omitempty"`
-	ContactEmail   string              `json:"contact_email,omitempty"`
-	ContactPhone   string              `json:"contact_phone,omitempty"`
-	EmergencyName  string              `json:"emergency_name,omitempty"`
-	EmergencyPhone string              `json:"emergency_phone,omitempty"`
-	CaretakerName  string              `json:"caretaker_name,omitempty"`
-	CaretakerEmail string              `json:"caretaker_email,omitempty"`
-	CaretakerPhone string              `json:"caretaker_phone,omitempty"`
-	HeroImageURL   string              `json:"hero_image_url,omitempty"`
-	Host           string              `json:"host"`
-	HA             homeAssistantConfig `json:"-"`
+	Slug              string              `json:"slug"`
+	Name              string              `json:"name"`
+	Address           string              `json:"address"`
+	BrandIcon         string              `json:"brand_icon,omitempty"`
+	BrandAbbreviation string              `json:"brand_abbreviation,omitempty"`
+	ContactName       string              `json:"contact_name,omitempty"`
+	ContactEmail      string              `json:"contact_email,omitempty"`
+	ContactPhone      string              `json:"contact_phone,omitempty"`
+	EmergencyName     string              `json:"emergency_name,omitempty"`
+	EmergencyPhone    string              `json:"emergency_phone,omitempty"`
+	CaretakerName     string              `json:"caretaker_name,omitempty"`
+	CaretakerEmail    string              `json:"caretaker_email,omitempty"`
+	CaretakerPhone    string              `json:"caretaker_phone,omitempty"`
+	HeroImageURL      string              `json:"hero_image_url,omitempty"`
+	Host              string              `json:"host"`
+	HA                homeAssistantConfig `json:"-"`
 }
 
 type homeAssistantConfig struct {
@@ -396,20 +428,31 @@ type tenantOverrideStoreData struct {
 }
 
 type tenantOverride struct {
-	MetaSet        bool      `json:"meta_set,omitempty"`
-	Name           string    `json:"name,omitempty"`
-	Address        string    `json:"address,omitempty"`
-	ContactName    string    `json:"contact_name,omitempty"`
-	ContactEmail   string    `json:"contact_email,omitempty"`
-	ContactPhone   string    `json:"contact_phone,omitempty"`
-	EmergencyName  string    `json:"emergency_name,omitempty"`
-	EmergencyPhone string    `json:"emergency_phone,omitempty"`
-	CaretakerName  string    `json:"caretaker_name,omitempty"`
-	CaretakerEmail string    `json:"caretaker_email,omitempty"`
-	CaretakerPhone string    `json:"caretaker_phone,omitempty"`
-	HeroImage      string    `json:"hero_image,omitempty"`
-	UpdatedAt      time.Time `json:"updated_at,omitempty"`
+	MetaSet           bool      `json:"meta_set,omitempty"`
+	Name              string    `json:"name,omitempty"`
+	Address           string    `json:"address,omitempty"`
+	BrandIcon         string    `json:"brand_icon,omitempty"`
+	BrandAbbreviation string    `json:"brand_abbreviation,omitempty"`
+	ContactName       string    `json:"contact_name,omitempty"`
+	ContactEmail      string    `json:"contact_email,omitempty"`
+	ContactPhone      string    `json:"contact_phone,omitempty"`
+	EmergencyName     string    `json:"emergency_name,omitempty"`
+	EmergencyPhone    string    `json:"emergency_phone,omitempty"`
+	CaretakerName     string    `json:"caretaker_name,omitempty"`
+	CaretakerEmail    string    `json:"caretaker_email,omitempty"`
+	CaretakerPhone    string    `json:"caretaker_phone,omitempty"`
+	HeroImage         string    `json:"hero_image,omitempty"`
+	UpdatedAt         time.Time `json:"updated_at,omitempty"`
 }
+
+const (
+	tenantBrandCommunity    = "community"
+	tenantBrandSingleHome   = "single-home"
+	tenantBrandMultiTenant  = "multi-tenant"
+	tenantBrandMixedUse     = "mixed-use"
+	tenantBrandAddressPlate = "address-plaque"
+	tenantBrandParking      = "parking"
+)
 
 type notificationPreferences struct {
 	Email        map[string]bool `json:"email"`
@@ -468,6 +511,8 @@ type announcementView struct {
 	Published          bool
 	Expired            bool
 	Unread             bool
+	Attachments        []attachmentView
+	HasAttachments     bool
 	EditDialogID       string
 	DeleteConfirmLabel string
 }
@@ -508,6 +553,8 @@ type houseEventView struct {
 	Status             string
 	Past               bool
 	Author             string
+	Attachments        []attachmentView
+	HasAttachments     bool
 	EditDialogID       string
 	DeleteConfirmLabel string
 }
@@ -524,25 +571,32 @@ type issueStoreData struct {
 }
 
 type residentIssue struct {
-	ID              string              `json:"id"`
-	TenantSlug      string              `json:"tenant"`
-	AuthorEmail     string              `json:"author_email"`
-	AuthorName      string              `json:"author_name"`
-	Category        string              `json:"category"`
-	Title           string              `json:"title"`
-	Body            string              `json:"body"`
-	LocationType    string              `json:"location_type"`
-	LocationDetail  string              `json:"location_detail"`
-	PhotoPaths      []string            `json:"photo_paths"`
-	Status          string              `json:"status"`
-	Priority        string              `json:"priority"`
-	AssigneeEmail   string              `json:"assignee_email,omitempty"`
-	StatusChangedAt time.Time           `json:"status_changed_at,omitempty"`
-	StatusChangedBy string              `json:"status_changed_by,omitempty"`
-	StatusHistory   []issueStatusChange `json:"status_history,omitempty"`
-	Comments        []issueComment      `json:"comments,omitempty"`
-	CreatedAt       time.Time           `json:"created_at"`
-	UpdatedAt       time.Time           `json:"updated_at"`
+	ID                  string              `json:"id"`
+	TenantSlug          string              `json:"tenant"`
+	AuthorEmail         string              `json:"author_email"`
+	AuthorName          string              `json:"author_name"`
+	Category            string              `json:"category"`
+	Title               string              `json:"title"`
+	Body                string              `json:"body"`
+	LocationType        string              `json:"location_type"`
+	LocationDetail      string              `json:"location_detail"`
+	PhotoPaths          []string            `json:"photo_paths"`
+	Status              string              `json:"status"`
+	Priority            string              `json:"priority"`
+	AssigneeEmail       string              `json:"assignee_email,omitempty"`
+	StatusChangedAt     time.Time           `json:"status_changed_at,omitempty"`
+	StatusChangedBy     string              `json:"status_changed_by,omitempty"`
+	StatusHistory       []issueStatusChange `json:"status_history,omitempty"`
+	ServiceProposal     string              `json:"service_proposal,omitempty"`
+	ServiceProposedBy   string              `json:"service_proposed_by,omitempty"`
+	ServiceProposedAt   time.Time           `json:"service_proposed_at,omitempty"`
+	EstimateAmountCents int64               `json:"estimate_amount_cents,omitempty"`
+	EstimateNote        string              `json:"estimate_note,omitempty"`
+	EstimateUpdatedBy   string              `json:"estimate_updated_by,omitempty"`
+	EstimateUpdatedAt   time.Time           `json:"estimate_updated_at,omitempty"`
+	Comments            []issueComment      `json:"comments,omitempty"`
+	CreatedAt           time.Time           `json:"created_at"`
+	UpdatedAt           time.Time           `json:"updated_at"`
 }
 
 type issueComment struct {
@@ -554,9 +608,14 @@ type issueComment struct {
 }
 
 type issueCommentView struct {
-	Author    string
-	Body      string
-	CreatedAt string
+	ID             string
+	Author         string
+	Body           string
+	CreatedAt      string
+	CanDelete      bool
+	DeleteURL      string
+	Attachments    []attachmentView
+	HasAttachments bool
 }
 
 type issueStatusChange struct {
@@ -568,12 +627,69 @@ type issueStatusChange struct {
 }
 
 type issueWorkflowUpdate struct {
-	Status        string
-	Priority      string
-	AssigneeEmail string
-	ActorEmail    string
-	ActorName     string
-	ChangedAt     time.Time
+	Status                string
+	Priority              string
+	AssigneeEmail         string
+	ServiceProposal       string
+	UpdateServiceProposal bool
+	EstimateAmountCents   int64
+	EstimateNote          string
+	UpdateEstimate        bool
+	ActorEmail            string
+	ActorName             string
+	ChangedAt             time.Time
+}
+
+type attachmentStore struct {
+	mu      sync.Mutex
+	path    string
+	fileDir string
+	data    attachmentStoreData
+}
+
+type attachmentStoreData struct {
+	Attachments []attachmentRecord `json:"attachments"`
+}
+
+type attachmentRecord struct {
+	ID                 string     `json:"id"`
+	TenantSlug         string     `json:"tenant"`
+	EntityType         string     `json:"entity_type"`
+	EntityID           string     `json:"entity_id"`
+	UploadedBy         string     `json:"uploaded_by"`
+	Filename           string     `json:"filename"`
+	StoredFilename     string     `json:"stored_filename"`
+	ContentType        string     `json:"content_type"`
+	Size               int64      `json:"size"`
+	PreviewFilename    string     `json:"preview_filename,omitempty"`
+	PreviewContentType string     `json:"preview_content_type,omitempty"`
+	PreviewSize        int64      `json:"preview_size,omitempty"`
+	ThumbFilename      string     `json:"thumb_filename,omitempty"`
+	ThumbContentType   string     `json:"thumb_content_type,omitempty"`
+	ThumbSize          int64      `json:"thumb_size,omitempty"`
+	CreatedAt          time.Time  `json:"created_at"`
+	DeletedAt          *time.Time `json:"deleted_at,omitempty"`
+}
+
+type attachmentView struct {
+	ID          string
+	Filename    string
+	Size        string
+	ContentType string
+	UploadedBy  string
+	CreatedAt   string
+	URL         string
+	PreviewURL  string
+	ThumbURL    string
+	IsImage     bool
+	IsPDF       bool
+	CanDelete   bool
+	DeleteURL   string
+}
+
+type attachmentGroup struct {
+	Attachments    []attachmentView
+	HasAttachments bool
 }
 
 type selectOption struct {
@@ -629,6 +745,10 @@ type documentView struct {
 	UploadedAt      string
 	UploadedDate    string
 	DownloadURL     string
+	PreviewURL      string
+	CanPreview      bool
+	IsImage         bool
+	IsPDF           bool
 	VersionLabel    string
 	ReplaceDialogID string
 	Versions        []documentVersionView
@@ -727,6 +847,8 @@ type ballotView struct {
 	HasWinner           bool
 	ProtocolURL         string
 	HasProtocol         bool
+	Attachments         []attachmentView
+	HasAttachments      bool
 	EditDialogID        string
 }
 
@@ -742,28 +864,42 @@ type ballotOptionView struct {
 }
 
 type issueView struct {
-	ID              string
-	Title           string
-	Body            string
-	Author          string
-	AuthorEmail     string
-	Category        string
-	Status          string
-	StatusClass     string
-	Priority        string
-	AssigneeEmail   string
-	HasAssignee     bool
-	Location        string
-	CreatedAt       string
-	CanComment      bool
-	CanClose        bool
-	CanReopen       bool
-	PhotoCount      int
-	HasPhotos       bool
-	Comments        []issueCommentView
-	HasComments     bool
-	StatusOptions   []selectOption
-	PriorityOptions []selectOption
+	ID                      string
+	Title                   string
+	Body                    string
+	Author                  string
+	AuthorEmail             string
+	Category                string
+	Status                  string
+	StatusClass             string
+	Priority                string
+	AssigneeEmail           string
+	HasAssignee             bool
+	Location                string
+	CreatedAt               string
+	CanComment              bool
+	CanClose                bool
+	CanReopen               bool
+	CanServiceUpdate        bool
+	ServiceProposal         string
+	HasServiceProposal      bool
+	CanEditEstimate         bool
+	EstimateAmount          string
+	EstimateAmountValue     string
+	EstimateNote            string
+	HasEstimate             bool
+	EstimateAttachments     []attachmentView
+	HasEstimateAttachments  bool
+	EstimateAttachmentGroup attachmentGroup
+	PhotoCount              int
+	HasPhotos               bool
+	Attachments             []attachmentView
+	HasAttachments          bool
+	Comments                []issueCommentView
+	HasComments             bool
+	StatusOptions           []selectOption
+	ServiceStatusOptions    []selectOption
+	PriorityOptions         []selectOption
 }
 
 type issueBoardFilterView struct {
@@ -793,10 +929,22 @@ type unit struct {
 	ID                    string   `json:"id"`
 	TenantSlug            string   `json:"tenant"`
 	Label                 string   `json:"label"`
+	UnitType              string   `json:"unit_type,omitempty"`
+	BillableWeightPPM     int      `json:"billable_weight_ppm,omitempty"`
 	MiteigentumsanteilPPM int      `json:"miteigentumsanteil"`
 	OwnerEmails           []string `json:"owner_emails,omitempty"`
 	RenterEmails          []string `json:"renter_emails,omitempty"`
 }
+
+const (
+	unitTypeResidential = "residential"
+	unitTypeCommercial  = "commercial"
+	unitTypeParking     = "parking"
+	unitTypeStorage     = "storage"
+	unitTypeOther       = "other"
+
+	unitBillableFullPPM = 1_000_000
+)
 
 type unitMembership struct {
 	Unit     unit
@@ -809,9 +957,46 @@ type profileUnitView struct {
 	Share    string
 }
 
+type unitPaymentStatusStore struct {
+	mu   sync.Mutex
+	path string
+	data unitPaymentStatusData
+}
+
+type unitPaymentStatusData struct {
+	Statuses []unitPaymentStatus `json:"statuses"`
+}
+
+type unitPaymentStatus struct {
+	TenantSlug string    `json:"tenant"`
+	UnitID     string    `json:"unit_id"`
+	Status     string    `json:"status"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	UpdatedBy  string    `json:"updated_by,omitempty"`
+}
+
+type unitPaymentStatusView struct {
+	UnitID        string
+	UnitLabel     string
+	UnitTypeLabel string
+	Relation      string
+	Status        string
+	StatusValue   string
+	StatusClass   string
+	Detail        string
+	UpdatedAt     string
+	UpdatedBy     string
+	HasUpdatedAt  bool
+	StatusOptions []selectOption
+}
+
 type buildingUnitView struct {
 	ID                 string
 	Label              string
+	UnitType           string
+	UnitTypeLabel      string
+	TypeOptions        []selectOption
+	BillableLabel      string
 	Share              string
 	ShareValue         string
 	OwnerEmails        string
@@ -829,12 +1014,74 @@ type contactCardView struct {
 	HasPhone    bool
 }
 
+type managedContactView struct {
+	ID                 string
+	Kind               string
+	KindOptions        []selectOption
+	Name               string
+	Company            string
+	DisplayName        string
+	Description        string
+	Email              string
+	Phone              string
+	Notes              string
+	Active             bool
+	StatusLabel        string
+	HasEmail           bool
+	HasPhone           bool
+	EditDialogID       string
+	DeleteConfirmLabel string
+}
+
+type contactOptionView struct {
+	Email string
+	Label string
+}
+
+type contactBookStore struct {
+	mu   sync.Mutex
+	path string
+	data contactBookStoreData
+}
+
+type contactBookStoreData struct {
+	Contacts []managedContact `json:"contacts"`
+}
+
+type managedContact struct {
+	ID         string    `json:"id"`
+	TenantSlug string    `json:"tenant"`
+	Kind       string    `json:"kind"`
+	Name       string    `json:"name,omitempty"`
+	Company    string    `json:"company,omitempty"`
+	Email      string    `json:"email,omitempty"`
+	Phone      string    `json:"phone,omitempty"`
+	Notes      string    `json:"notes,omitempty"`
+	Active     bool      `json:"active"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
 type emptyStateView struct {
 	Title       string
 	Message     string
 	ActionURL   string
 	ActionLabel string
 	HasAction   bool
+}
+
+type releaseNoteView struct {
+	Version  string
+	Date     string
+	Kind     string
+	Headline string
+	Intro    string
+	Items    []releaseNoteItemView
+}
+
+type releaseNoteItemView struct {
+	Label string
+	Text  string
 }
 
 type dashboardDigestItem struct {
@@ -864,20 +1111,42 @@ type auditFilter struct {
 }
 
 type auditEventView struct {
-	At         string
-	Action     string
-	ActionText string
-	Actor      string
-	ActorRole  string
-	Target     string
-	TargetType string
-	Summary    string
-	Details    []auditDetailView
-	HasDetails bool
+	At             string
+	AtDate         string
+	AtTime         string
+	AtISO          string
+	DateHeader     string
+	ShowDateHeader bool
+	Action         string
+	ActionText     string
+	ActionTone     string
+	ToneLabel      string
+	Actor          string
+	ActorRole      string
+	Target         string
+	TargetType     string
+	HasTarget      bool
+	Summary        string
+	Details        []auditDetailView
+	HasDetails     bool
 }
 
 type auditDetailView struct {
 	Key   string
+	Value string
+}
+
+type auditStatsView struct {
+	TotalEvents      int
+	ActorCount       int
+	TodayCount       int
+	FilterSummary    string
+	ActiveFilters    []auditFilterChipView
+	HasActiveFilters bool
+}
+
+type auditFilterChipView struct {
+	Label string
 	Value string
 }
 
@@ -1006,6 +1275,8 @@ type parkingMonthView struct {
 	Partial          bool
 	SampleCount      int
 	HourCount        int
+	Attachments      []attachmentView
+	HasAttachments   bool
 }
 
 type parkingMonthDetailView struct {
@@ -1061,6 +1332,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /assets/", http.FileServerFS(assets))
+	mux.HandleFunc("GET /favicon.svg", favicon)
+	mux.HandleFunc("GET /favicon.ico", favicon)
 	mux.HandleFunc("GET /tenant-hero/{tenant}", a.tenantHeroImage)
 	mux.HandleFunc("GET /healthz", a.health)
 	mux.HandleFunc("GET /", a.home)
@@ -1069,6 +1342,7 @@ func main() {
 	mux.HandleFunc("GET /auth/oidc/start", a.startOIDCLogin)
 	mux.HandleFunc("GET /auth/oidc/callback", a.finishOIDCLogin)
 	mux.HandleFunc("POST /auth/logout", a.logout)
+	mux.HandleFunc("GET /calendar/{token}", a.calendarFeed)
 	mux.HandleFunc("GET /app", a.portal)
 	mux.HandleFunc("GET /app/announcements", a.announcements)
 	mux.HandleFunc("POST /app/announcements", a.createAnnouncement)
@@ -1081,17 +1355,31 @@ func main() {
 	mux.HandleFunc("GET /app/dokumente", a.documents)
 	mux.HandleFunc("POST /app/dokumente", a.uploadDocument)
 	mux.HandleFunc("POST /app/dokumente/replace", a.replaceDocument)
+	mux.HandleFunc("GET /app/dokumente/{id}/preview", a.previewDocument)
 	mux.HandleFunc("GET /app/dokumente/{id}/download", a.downloadDocument)
+	mux.HandleFunc("GET /app/attachments/{id}", a.serveAttachment)
+	mux.HandleFunc("GET /app/attachments/{id}/{variant}", a.serveAttachment)
+	mux.HandleFunc("POST /app/attachments/delete", a.deleteAttachment)
 	mux.HandleFunc("GET /app/abstimmungen", a.ballots)
 	mux.HandleFunc("POST /app/abstimmungen", a.submitBallot)
 	mux.HandleFunc("POST /app/abstimmungen/open", a.openBallot)
 	mux.HandleFunc("POST /app/abstimmungen/close", a.closeBallot)
 	mux.HandleFunc("GET /app/abstimmungen/{id}/protokoll", a.ballotProtocol)
+	mux.HandleFunc("GET /app/uebergaben", a.handovers)
+	mux.HandleFunc("POST /app/uebergaben", a.createHandover)
+	mux.HandleFunc("POST /app/uebergaben/file", a.fileHandoverProtocol)
+	mux.HandleFunc("GET /app/uebergaben/{id}/protokoll", a.handoverProtocol)
+	mux.HandleFunc("GET /handover/{token}", a.handoverConfirmPage)
+	mux.HandleFunc("POST /handover/{token}", a.confirmHandover)
 	mux.HandleFunc("GET /app/kontakte", a.contacts)
+	mux.HandleFunc("POST /app/kontakte", a.upsertManagedContact)
+	mux.HandleFunc("POST /app/kontakte/delete", a.deactivateManagedContact)
 	mux.HandleFunc("GET /app/anliegen", a.issues)
 	mux.HandleFunc("GET /app/anliegen/board", a.issueBoard)
+	mux.HandleFunc("GET /app/anliegen/{id}/photos/{index}", a.serveLegacyIssuePhoto)
 	mux.HandleFunc("POST /app/anliegen", a.createIssue)
 	mux.HandleFunc("POST /app/anliegen/comment", a.addIssueComment)
+	mux.HandleFunc("POST /app/anliegen/comment/delete", a.deleteIssueComment)
 	mux.HandleFunc("POST /app/anliegen/workflow", a.updateIssueWorkflow)
 	mux.HandleFunc("GET /app/parking", a.parking)
 	mux.HandleFunc("GET /app/parking/settings", a.parkingSettings)
@@ -1105,8 +1393,10 @@ func main() {
 	mux.HandleFunc("GET /app/settings/building", a.buildingSettings)
 	mux.HandleFunc("POST /app/settings/building", a.updateBuildingSettings)
 	mux.HandleFunc("POST /app/settings/building/hero", a.updateBuildingHero)
+	mux.HandleFunc("POST /app/settings/building/hero/delete", a.deleteBuildingHero)
 	mux.HandleFunc("POST /app/settings/building/units", a.upsertBuildingUnit)
 	mux.HandleFunc("POST /app/settings/building/units/delete", a.deleteBuildingUnit)
+	mux.HandleFunc("POST /app/settings/building/payment-status", a.updateUnitPaymentStatus)
 	mux.HandleFunc("GET /app/settings/profile", a.profileSettings)
 	mux.HandleFunc("POST /app/settings/profile", a.updateProfileSettings)
 	mux.HandleFunc("GET /app/settings/notifications", a.notificationSettings)
@@ -1271,9 +1561,25 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	unitPaymentDataPath := env("UNIT_PAYMENT_STATUS_DATA_PATH", "tmp/unit_payment_status.json")
+	unitPayments, err := newUnitPaymentStatusStore(unitPaymentDataPath)
+	if err != nil {
+		return nil, err
+	}
 	issueDataPath := env("ISSUE_DATA_PATH", "tmp/issues.json")
 	defaultIssueAttachmentDir := filepath.Join(filepath.Dir(issueDataPath), "issue-attachments")
 	issues, err := newIssueStore(issueDataPath, env("ISSUE_ATTACHMENT_DIR", defaultIssueAttachmentDir))
+	if err != nil {
+		return nil, err
+	}
+	attachmentDataPath := env("ATTACHMENT_DATA_PATH", "tmp/attachments.json")
+	defaultAttachmentFileDir := filepath.Join(filepath.Dir(attachmentDataPath), "attachments")
+	attachments, err := newAttachmentStore(attachmentDataPath, env("ATTACHMENT_FILE_DIR", defaultAttachmentFileDir))
+	if err != nil {
+		return nil, err
+	}
+	contactDataPath := env("CONTACT_DATA_PATH", "tmp/contacts.json")
+	contacts, err := newContactBookStore(contactDataPath)
 	if err != nil {
 		return nil, err
 	}
@@ -1285,6 +1591,11 @@ func newApp() (*app, error) {
 	documentDataPath := env("DOC_DATA_PATH", "tmp/documents.json")
 	defaultDocumentFileDir := filepath.Join(filepath.Dir(documentDataPath), "documents")
 	documents, err := newDocumentStore(documentDataPath, env("DOC_FILE_DIR", defaultDocumentFileDir))
+	if err != nil {
+		return nil, err
+	}
+	handoverDataPath := env("HANDOVER_DATA_PATH", "tmp/handovers.json")
+	handovers, err := newHandoverStore(handoverDataPath)
 	if err != nil {
 		return nil, err
 	}
@@ -1346,9 +1657,13 @@ func newApp() (*app, error) {
 		inviteStore:           invites,
 		activityStore:         activity,
 		unitStore:             units,
+		unitPaymentStore:      unitPayments,
 		issueStore:            issues,
+		attachmentStore:       attachments,
+		contactStore:          contacts,
 		auditStore:            auditStore,
 		documentStore:         documents,
+		handoverStore:         handovers,
 		voteStore:             votes,
 		voteReminderInterval:  voteReminderInterval,
 		parkingStore:          parkingStore,
@@ -1362,25 +1677,35 @@ func (a *app) health(w http.ResponseWriter, _ *http.Request) {
 	_, _ = io.WriteString(w, `{"service":"weg-portal","status":"ok"}`)
 }
 
+func favicon(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "image/svg+xml; charset=utf-8")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	_, _ = io.WriteString(w, faviconSVG)
+}
+
 func (a *app) home(w http.ResponseWriter, r *http.Request) {
+	if a.isMarketingHost(r) {
+		a.marketingLanding(w, r)
+		return
+	}
 	tenant := a.tenantForRequest(r)
 	email, _, tenantSlug, ok := a.currentUser(r)
 	if ok && tenantSlug == tenant.Slug {
 		http.Redirect(w, r, "/app", http.StatusSeeOther)
 		return
 	}
-	unitCount := 0
+	unitWeight := 0
 	if a.unitStore != nil {
-		unitCount = a.unitStore.UnitCount(tenant.Slug)
+		unitWeight = a.unitStore.BillableUnitWeight(tenant.Slug)
 	}
 	titleName := firstNonEmpty(tenant.Name, "WEG Portal")
 	a.render(w, "home", map[string]any{
 		"Title":               titleName + " " + tenant.Address,
 		"Tenant":              tenant,
 		"Email":               email,
-		"UnitCount":           unitCount,
-		"UnitCountLabel":      unitCountLabel(unitCount),
-		"HasUnitCount":        unitCount > 0,
+		"UnitCount":           formatBillableUnitWeight(unitWeight),
+		"UnitCountLabel":      billableUnitCountLabel(unitWeight),
+		"HasUnitCount":        unitWeight > 0,
 		"Sent":                r.URL.Query().Get("sent") == "1",
 		"MailConfigured":      a.mailer.Configured(),
 		"DevLoginLink":        "",
@@ -1391,13 +1716,25 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (a *app) marketingLanding(w http.ResponseWriter, r *http.Request) {
+	a.render(w, "landing", map[string]any{
+		"Title":          "hausv.org - kostenlose Hausverwaltung",
+		"ContactLocal":   "hello",
+		"ContactDomain":  "hausv.org",
+		"ContactDisplay": "hello [at] hausv [dot] org",
+		"PrimaryAppURL":  "https://jhw22.hausv.org/",
+		"RequestedHost":  normalizeHost(r.Host),
+		"LandingHeroURL": "/assets/hausv-landing-hero.png",
+	})
+}
+
 func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	if !a.emailLoginAvailable() {
 		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
+	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -1447,7 +1784,7 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) verifyLogin(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	email, tenantSlug, ok := a.tokens.Consume(token)
+	email, tenantSlug, redirectPath, ok := a.tokens.Consume(token)
 	if !ok {
 		http.Error(w, "Dieser Anmeldelink ist abgelaufen oder wurde bereits verwendet.", http.StatusUnauthorized)
 		return
@@ -1457,7 +1794,7 @@ func (a *app) verifyLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not create session", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/app", http.StatusSeeOther)
+	http.Redirect(w, r, firstNonEmpty(redirectPath, "/app"), http.StatusSeeOther)
 }
 
 func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
@@ -1659,6 +1996,9 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	if denyServiceProviderArea(w, role) {
+		return
+	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := canManageAnnouncements(role)
@@ -1676,7 +2016,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
 		archive = a.announcementStore.Archive(tenant.Slug, now)
 		filtered = filterAnnouncements(archive, selectedCategory, searchQuery)
 		if canManage {
-			all = announcementViewsWithReadState(a.announcementStore.ListTenant(tenant.Slug), now, true, lastSeen)
+			all = a.announcementViewsWithReadState(tenant.Slug, a.announcementStore.ListTenant(tenant.Slug), now, true, lastSeen, email, role)
 		}
 	}
 	a.render(w, "announcements", map[string]any{
@@ -1690,7 +2030,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request) {
 		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
 		"CanManageAnnouncements": canManage,
 		"ActivePage":             "announcements",
-		"Announcements":          announcementViewsWithReadState(filtered, now, true, lastSeen),
+		"Announcements":          a.announcementViewsWithReadState(tenant.Slug, filtered, now, true, lastSeen, email, role),
 		"HasAnnouncements":       len(filtered) > 0,
 		"HasAnyAnnouncements":    len(archive) > 0,
 		"AnnouncementsEmpty":     emptyState("Keine Beiträge", "Für diese Suche oder Kategorie gibt es keinen Aushang."),
@@ -1728,7 +2068,7 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
+	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -1738,11 +2078,28 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 		return
 	}
+	attachmentHeaders, err := attachmentFormHeaders(r, maxIssueAttachmentCount, "attachments")
+	if err != nil {
+		http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
+		return
+	}
 	created, err := a.announcementStore.Create(item)
 	if err != nil {
 		log.Printf("announcement create failed for %s: %v", tenant.Slug, err)
 		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
 		return
+	}
+	if len(attachmentHeaders) > 0 {
+		if a.attachmentStore == nil {
+			_, _ = a.announcementStore.Delete(tenant.Slug, created.ID)
+			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
+			return
+		}
+		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "announcement", created.ID, email, attachmentHeaders, time.Now()); err != nil {
+			_, _ = a.announcementStore.Delete(tenant.Slug, created.ID)
+			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
+			return
+		}
 	}
 	a.notifyAnnouncementPublished(tenant, created, email)
 	http.Redirect(w, r, "/app/announcements?announce=created", http.StatusSeeOther)
@@ -1763,7 +2120,7 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
+	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -1774,13 +2131,36 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 		return
 	}
+	attachmentHeaders, err := attachmentFormHeaders(r, maxIssueAttachmentCount, "attachments")
+	if err != nil {
+		http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
+		return
+	}
+	var uploaded []attachmentRecord
+	if len(attachmentHeaders) > 0 {
+		if a.attachmentStore == nil {
+			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
+			return
+		}
+		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "announcement", id, email, attachmentHeaders, time.Now())
+		if err != nil {
+			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
+			return
+		}
+	}
 	ok, err = a.announcementStore.Update(id, item)
 	if err != nil {
+		for _, attachment := range uploaded {
+			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+		}
 		log.Printf("announcement update failed for %s: %v", tenant.Slug, err)
 		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
 		return
 	}
 	if !ok {
+		for _, attachment := range uploaded {
+			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+		}
 		http.Redirect(w, r, "/app/announcements?announce=missing", http.StatusSeeOther)
 		return
 	}
@@ -1802,7 +2182,7 @@ func (a *app) deleteAnnouncement(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
+	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -1830,6 +2210,9 @@ func (a *app) events(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	if denyServiceProviderArea(w, role) {
+		return
+	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := canManageEvents(role)
@@ -1841,6 +2224,10 @@ func (a *app) events(w http.ResponseWriter, r *http.Request) {
 		if canManage {
 			all = a.eventStore.ListTenant(tenant.Slug)
 		}
+	}
+	calendarFeedURL := ""
+	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
+		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
 	a.render(w, "events", map[string]any{
 		"Title":                  "Termine",
@@ -1854,15 +2241,204 @@ func (a *app) events(w http.ResponseWriter, r *http.Request) {
 		"CanManageAnnouncements": canManageAnnouncements(role),
 		"CanManageEvents":        canManage,
 		"ActivePage":             "events",
-		"Events":                 eventViews(upcoming, now),
+		"Events":                 a.eventViews(tenant.Slug, upcoming, now, email, role),
 		"HasEvents":              len(upcoming) > 0,
 		"EventsEmpty":            emptyState("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier."),
-		"AllEvents":              eventViews(all, now),
+		"CalendarFeedURL":        calendarFeedURL,
+		"HasCalendarFeedURL":     calendarFeedURL != "",
+		"AllEvents":              a.eventViews(tenant.Slug, all, now, email, role),
 		"HasAllEvents":           len(all) > 0,
 		"AllEventsEmpty":         emptyState("Noch kein Termin gespeichert", "Neue Termine erscheinen hier nach dem Speichern."),
 		"EventMsg":               eventMessage(r.URL.Query().Get("event")),
 		"NowInput":               formatLocalDateTimeInput(now),
 	})
+}
+
+type calendarFeedPayload struct {
+	Email      string `json:"email"`
+	TenantSlug string `json:"tenant"`
+	IssuedAt   int64  `json:"iat"`
+}
+
+func (a *app) calendarFeed(w http.ResponseWriter, r *http.Request) {
+	token := strings.TrimSpace(r.PathValue("token"))
+	token = strings.TrimSuffix(token, ".ics")
+	payload, ok := a.parseCalendarFeedToken(token)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	tenant, ok := a.tenantBySlug(payload.TenantSlug)
+	if !ok || !a.isAllowed(payload.Email, tenant.Slug) {
+		http.NotFound(w, r)
+		return
+	}
+	role := a.roleFor(payload.Email, tenant.Slug)
+	profile := a.profileForTenant(payload.Email, tenant.Slug)
+	body := a.renderCalendarFeed(tenant, profile, role, time.Now().UTC())
+	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
+	w.Header().Set("Cache-Control", "private, max-age=300")
+	w.Header().Set("Content-Disposition", `inline; filename="hausv-`+tenant.Slug+`.ics"`)
+	_, _ = io.WriteString(w, body)
+}
+
+func (a *app) calendarFeedToken(email string, tenantSlug string) (string, error) {
+	email = normalizeEmail(email)
+	tenantSlug = normalizeSlug(tenantSlug)
+	if email == "" || tenantSlug == "" {
+		return "", fmt.Errorf("calendar feed identity required")
+	}
+	payload := calendarFeedPayload{
+		Email:      email,
+		TenantSlug: tenantSlug,
+		IssuedAt:   time.Now().Unix(),
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+	encodedPayload := base64.RawURLEncoding.EncodeToString(raw)
+	signedPart := "v1." + encodedPayload
+	signature, err := a.signCalendarFeed(signedPart)
+	if err != nil {
+		return "", err
+	}
+	return signedPart + "." + base64.RawURLEncoding.EncodeToString(signature), nil
+}
+
+func (a *app) parseCalendarFeedToken(token string) (calendarFeedPayload, bool) {
+	parts := strings.Split(strings.TrimSpace(token), ".")
+	if len(parts) != 3 || parts[0] != "v1" {
+		return calendarFeedPayload{}, false
+	}
+	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return calendarFeedPayload{}, false
+	}
+	expected, err := a.signCalendarFeed(parts[0] + "." + parts[1])
+	if err != nil || !hmac.Equal(signature, expected) {
+		return calendarFeedPayload{}, false
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return calendarFeedPayload{}, false
+	}
+	var payload calendarFeedPayload
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return calendarFeedPayload{}, false
+	}
+	payload.Email = normalizeEmail(payload.Email)
+	payload.TenantSlug = normalizeSlug(payload.TenantSlug)
+	if payload.Email == "" || payload.TenantSlug == "" {
+		return calendarFeedPayload{}, false
+	}
+	return payload, true
+}
+
+func (a *app) signCalendarFeed(value string) ([]byte, error) {
+	if a == nil || a.sessions == nil || len(a.sessions.secret) == 0 {
+		return nil, fmt.Errorf("calendar feed signing secret unavailable")
+	}
+	mac := hmac.New(sha256.New, a.sessions.secret)
+	_, _ = mac.Write([]byte(value))
+	return mac.Sum(nil), nil
+}
+
+func (a *app) renderCalendarFeed(tenant tenantConfig, profile userProfile, role string, now time.Time) string {
+	email := normalizeEmail(profile.Email)
+	tenantSlug := normalizeSlug(tenant.Slug)
+	var b strings.Builder
+	calendarLine(&b, "BEGIN", "VCALENDAR")
+	calendarLine(&b, "VERSION", "2.0")
+	calendarLine(&b, "PRODID", "-//hausv.org//Portal//DE")
+	calendarLine(&b, "CALSCALE", "GREGORIAN")
+	calendarLine(&b, "METHOD", "PUBLISH")
+	calendarLine(&b, "X-WR-CALNAME", "hausv.org "+tenant.Name)
+	calendarLine(&b, "X-WR-CALDESC", "Termine und freigegebene Vorgänge für "+tenant.Address)
+	if canUseResidentAreas(role) && a != nil && a.eventStore != nil {
+		for _, item := range a.eventStore.Upcoming(tenantSlug, now) {
+			a.writeCalendarEvent(&b, tenant, item, now)
+		}
+	}
+	if a != nil && a.issueStore != nil {
+		for _, item := range a.issueStore.ListTenant(tenantSlug) {
+			if strings.TrimSpace(item.ServiceProposal) == "" || !a.canViewIssueForActor(tenantSlug, item, email, role) {
+				continue
+			}
+			writeCalendarIssueProposal(&b, tenant, item, now)
+		}
+	}
+	calendarLine(&b, "END", "VCALENDAR")
+	return b.String()
+}
+
+func (a *app) writeCalendarEvent(b *strings.Builder, tenant tenantConfig, item houseEvent, now time.Time) {
+	end := item.StartsAt.Add(time.Hour)
+	if item.EndsAt != nil && item.EndsAt.After(item.StartsAt) {
+		end = *item.EndsAt
+	}
+	calendarLine(b, "BEGIN", "VEVENT")
+	calendarLine(b, "UID", "event-"+item.ID+"@"+tenant.Slug+".hausv.org")
+	calendarLine(b, "DTSTAMP", calendarDateTime(now))
+	calendarLine(b, "DTSTART", calendarDateTime(item.StartsAt))
+	calendarLine(b, "DTEND", calendarDateTime(end))
+	calendarLine(b, "SUMMARY", item.Title)
+	if location := strings.TrimSpace(item.Location); location != "" {
+		calendarLine(b, "LOCATION", location)
+	}
+	description := strings.TrimSpace(item.Body)
+	if category := strings.TrimSpace(item.Category); category != "" {
+		if description != "" {
+			description += "\n\n"
+		}
+		description += "Kategorie: " + category
+	}
+	if description != "" {
+		calendarLine(b, "DESCRIPTION", description)
+	}
+	if category := strings.TrimSpace(item.Category); category != "" {
+		calendarLine(b, "CATEGORIES", category)
+	}
+	calendarLine(b, "END", "VEVENT")
+}
+
+func writeCalendarIssueProposal(b *strings.Builder, tenant tenantConfig, item residentIssue, now time.Time) {
+	calendarLine(b, "BEGIN", "VTODO")
+	calendarLine(b, "UID", "issue-proposal-"+item.ID+"@"+tenant.Slug+".hausv.org")
+	calendarLine(b, "DTSTAMP", calendarDateTime(now))
+	calendarLine(b, "SUMMARY", "Terminvorschlag: "+item.Title)
+	description := strings.TrimSpace(item.ServiceProposal)
+	if description != "" {
+		description += "\n\n"
+	}
+	description += "Anliegen: " + item.Title
+	if status := strings.TrimSpace(item.Status); status != "" {
+		description += "\nStatus: " + status
+	}
+	calendarLine(b, "DESCRIPTION", description)
+	calendarLine(b, "STATUS", "NEEDS-ACTION")
+	calendarLine(b, "END", "VTODO")
+}
+
+func calendarDateTime(t time.Time) string {
+	return t.UTC().Format("20060102T150405Z")
+}
+
+func calendarLine(b *strings.Builder, name string, value string) {
+	b.WriteString(name)
+	b.WriteByte(':')
+	b.WriteString(calendarEscapeText(value))
+	b.WriteString("\r\n")
+}
+
+func calendarEscapeText(value string) string {
+	value = strings.ReplaceAll(value, `\`, `\\`)
+	value = strings.ReplaceAll(value, ";", `\;`)
+	value = strings.ReplaceAll(value, ",", `\,`)
+	value = strings.ReplaceAll(value, "\r\n", "\n")
+	value = strings.ReplaceAll(value, "\r", "\n")
+	value = strings.ReplaceAll(value, "\n", `\n`)
+	return value
 }
 
 func (a *app) createEvent(w http.ResponseWriter, r *http.Request) {
@@ -1880,7 +2456,7 @@ func (a *app) createEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
+	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -1890,10 +2466,28 @@ func (a *app) createEvent(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
 		return
 	}
-	if _, err := a.eventStore.Create(item); err != nil {
+	attachmentHeaders, err := attachmentFormHeaders(r, maxIssueAttachmentCount, "attachments")
+	if err != nil {
+		http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
+		return
+	}
+	created, err := a.eventStore.Create(item)
+	if err != nil {
 		log.Printf("event create failed for %s: %v", tenant.Slug, err)
 		http.Redirect(w, r, "/app/events?event=error", http.StatusSeeOther)
 		return
+	}
+	if len(attachmentHeaders) > 0 {
+		if a.attachmentStore == nil {
+			_, _ = a.eventStore.Delete(tenant.Slug, created.ID)
+			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
+			return
+		}
+		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "event", created.ID, email, attachmentHeaders, time.Now()); err != nil {
+			_, _ = a.eventStore.Delete(tenant.Slug, created.ID)
+			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
+			return
+		}
 	}
 	http.Redirect(w, r, "/app/events?event=created", http.StatusSeeOther)
 }
@@ -1913,7 +2507,7 @@ func (a *app) editEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
+	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -1924,13 +2518,36 @@ func (a *app) editEvent(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
 		return
 	}
+	attachmentHeaders, err := attachmentFormHeaders(r, maxIssueAttachmentCount, "attachments")
+	if err != nil {
+		http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
+		return
+	}
+	var uploaded []attachmentRecord
+	if len(attachmentHeaders) > 0 {
+		if a.attachmentStore == nil {
+			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
+			return
+		}
+		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "event", id, email, attachmentHeaders, time.Now())
+		if err != nil {
+			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
+			return
+		}
+	}
 	ok, err = a.eventStore.Update(id, item)
 	if err != nil {
+		for _, attachment := range uploaded {
+			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+		}
 		log.Printf("event update failed for %s: %v", tenant.Slug, err)
 		http.Redirect(w, r, "/app/events?event=error", http.StatusSeeOther)
 		return
 	}
 	if !ok {
+		for _, attachment := range uploaded {
+			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+		}
 		http.Redirect(w, r, "/app/events?event=missing", http.StatusSeeOther)
 		return
 	}
@@ -1978,6 +2595,9 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request) {
 	}
 	if tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if denyServiceProviderArea(w, role) {
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
@@ -2198,6 +2818,248 @@ func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, item.Filename, item.UploadedAt, file)
 }
 
+func (a *app) previewDocument(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if a.documentStore == nil {
+		http.NotFound(w, r)
+		return
+	}
+	id := strings.TrimSpace(r.PathValue("id"))
+	item, found := a.documentStore.Get(tenant.Slug, id)
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+	if !a.canViewDocument(tenant.Slug, item, email, role) {
+		http.Error(w, "Dieses Dokument ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
+		return
+	}
+	if !documentCanPreview(item.ContentType) {
+		http.NotFound(w, r)
+		return
+	}
+	path, ok := a.documentStore.FilePath(item)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		log.Printf("document preview open failed for %s/%s: %v", tenant.Slug, item.ID, err)
+		http.NotFound(w, r)
+		return
+	}
+	defer file.Close()
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox")
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("inline", map[string]string{"filename": item.Filename}))
+	if item.ContentType != "" {
+		w.Header().Set("Content-Type", item.ContentType)
+	}
+	http.ServeContent(w, r, item.Filename, item.UploadedAt, file)
+}
+
+func (a *app) serveLegacyIssuePhoto(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if a.issueStore == nil {
+		http.NotFound(w, r)
+		return
+	}
+	id := strings.TrimSpace(r.PathValue("id"))
+	index, err := strconv.Atoi(strings.TrimSpace(r.PathValue("index")))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	issue, found := a.issueStore.Get(tenant.Slug, id)
+	if !found || !a.canViewIssueForActor(tenant.Slug, issue, email, role) {
+		http.NotFound(w, r)
+		return
+	}
+	path, filename, ok := a.legacyIssuePhotoPath(tenant.Slug, issue, index)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		log.Printf("legacy issue photo open failed for %s/%s/%d: %v", tenant.Slug, issue.ID, index, err)
+		http.NotFound(w, r)
+		return
+	}
+	defer file.Close()
+	contentType := mime.TypeByExtension(strings.ToLower(filepath.Ext(filename)))
+	if contentType == "" {
+		sniff := make([]byte, 512)
+		n, readErr := file.Read(sniff)
+		if readErr != nil && !errors.Is(readErr, io.EOF) {
+			http.NotFound(w, r)
+			return
+		}
+		contentType = http.DetectContentType(sniff[:n])
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			http.NotFound(w, r)
+			return
+		}
+	}
+	if !isImageContentType(contentType) {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox")
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("inline", map[string]string{"filename": filename}))
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "private, max-age=300")
+	http.ServeContent(w, r, filename, issue.UpdatedAt, file)
+}
+
+func (a *app) serveAttachment(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if a.attachmentStore == nil {
+		http.NotFound(w, r)
+		return
+	}
+	id := strings.TrimSpace(r.PathValue("id"))
+	variant := strings.ToLower(strings.TrimSpace(r.PathValue("variant")))
+	if variant != "" && variant != "preview" && variant != "thumb" && variant != "thumbnail" {
+		http.NotFound(w, r)
+		return
+	}
+	item, found := a.attachmentStore.Get(tenant.Slug, id)
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+	if !a.canViewAttachment(tenant.Slug, item, email, role) {
+		http.Error(w, "Dieser Anhang ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
+		return
+	}
+	path, contentType, _, ok := a.attachmentStore.FilePath(item, variant)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	if _, err := os.Stat(path); err != nil {
+		log.Printf("attachment file open failed for %s/%s/%s: %v", tenant.Slug, item.EntityType, item.ID, err)
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox")
+	if contentType != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
+	disposition := attachmentDisposition(contentType)
+	w.Header().Set("Content-Disposition", mime.FormatMediaType(disposition, map[string]string{"filename": item.Filename}))
+	w.Header().Set("Cache-Control", "private, max-age=300")
+	http.ServeFile(w, r, path)
+}
+
+func (a *app) deleteAttachment(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if a.attachmentStore == nil {
+		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimSpace(r.FormValue("id"))
+	item, found := a.attachmentStore.Get(tenant.Slug, id)
+	if !found {
+		http.Redirect(w, r, redirectAfterAttachmentChange(r, "/app/anliegen?issue=missing"), http.StatusSeeOther)
+		return
+	}
+	if !a.canDeleteAttachment(tenant.Slug, item, email, role) {
+		http.Error(w, "Dieser Anhang kann nur von Verwaltung oder Ersteller entfernt werden.", http.StatusForbidden)
+		return
+	}
+	if _, removed, err := a.attachmentStore.Delete(tenant.Slug, id, time.Now()); err != nil {
+		log.Printf("attachment delete failed for %s/%s: %v", tenant.Slug, id, err)
+		http.Redirect(w, r, redirectAfterAttachmentChange(r, "/app/anliegen?issue=error"), http.StatusSeeOther)
+		return
+	} else if !removed {
+		http.Redirect(w, r, redirectAfterAttachmentChange(r, "/app/anliegen?issue=missing"), http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, redirectAfterAttachmentChange(r, "/app/anliegen?issue=updated"), http.StatusSeeOther)
+}
+
+func attachmentDisposition(contentType string) string {
+	contentType = strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+	if isImageContentType(contentType) || contentType == "application/pdf" {
+		return "inline"
+	}
+	return "attachment"
+}
+
+func redirectAfterAttachmentChange(r *http.Request, fallback string) string {
+	if fallback == "" {
+		fallback = "/app"
+	}
+	for _, raw := range []string{r.FormValue("redirect"), r.Header.Get("Referer")} {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+		if strings.HasPrefix(raw, "/app/") || raw == "/app" {
+			return raw
+		}
+		parsed, err := url.Parse(raw)
+		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+			continue
+		}
+		if normalizeHost(parsed.Host) != normalizeHost(r.Host) {
+			continue
+		}
+		if parsed.Path == "/app" || strings.HasPrefix(parsed.Path, "/app/") {
+			if parsed.RawQuery != "" {
+				return parsed.Path + "?" + parsed.RawQuery
+			}
+			return parsed.Path
+		}
+	}
+	return fallback
+}
+
 func (a *app) createBallot(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	email, role, tenantSlug, ok := a.currentUser(r)
@@ -2226,11 +3088,28 @@ func (a *app) createBallot(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 		return
 	}
+	attachmentHeaders, err := attachmentFormHeaders(r, maxIssueAttachmentCount, "attachments")
+	if err != nil {
+		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
+		return
+	}
 	created, err := a.voteStore.Create(item)
 	if err != nil {
 		log.Printf("ballot create failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
 		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 		return
+	}
+	if len(attachmentHeaders) > 0 {
+		if a.attachmentStore == nil {
+			_, _ = a.voteStore.Delete(tenant.Slug, created.ID)
+			http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
+			return
+		}
+		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "ballot", created.ID, email, attachmentHeaders, time.Now()); err != nil {
+			_, _ = a.voteStore.Delete(tenant.Slug, created.ID)
+			http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
+			return
+		}
 	}
 	a.recordAudit(auditEvent{
 		TenantSlug: tenant.Slug,
@@ -2455,6 +3334,9 @@ func (a *app) canViewDocument(tenantSlug string, item documentRecord, email stri
 	if normalizeSlug(item.TenantSlug) != normalizeSlug(tenantSlug) {
 		return false
 	}
+	if isServiceProviderRole(role) {
+		return false
+	}
 	if hasCapability(role, capabilityManageDocuments) {
 		return true
 	}
@@ -2500,6 +3382,9 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request) {
 	}
 	if tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if denyServiceProviderArea(w, role) {
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
@@ -2549,7 +3434,7 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) submitBallot(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
+	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -2764,6 +3649,11 @@ func (a *app) ballotViewForActor(tenantSlug string, email string, role string, i
 	if includeResults || rawStatus == ballotStatusClosed {
 		view.HasResults = true
 	}
+	attachments := a.attachmentViewsForEntity(tenantSlug, "ballot", item.ID, email, role)
+	if len(attachments) > 0 {
+		view.Attachments = attachments
+		view.HasAttachments = true
+	}
 	for _, option := range item.Options {
 		result := tally.Options[option]
 		view.Options = append(view.Options, ballotOptionView{
@@ -2975,7 +3865,7 @@ func formatBallotWeight(weight int) string {
 	if weight == 1 {
 		return "1 Stimme"
 	}
-	return formatMiteigentumsanteil(weight)
+	return formatBallotShareWeight(weight)
 }
 
 func formatBallotResultWeight(weighting string, weight int) string {
@@ -2988,7 +3878,7 @@ func formatBallotResultWeight(weighting string, weight int) string {
 		}
 		return strconv.Itoa(weight) + " Stimmen"
 	}
-	return formatMiteigentumsanteil(weight)
+	return formatBallotShareWeight(weight)
 }
 
 func formatPPMPercent(ppm int) string {
@@ -2999,6 +3889,33 @@ func formatPPMPercent(ppm int) string {
 		ppm = 1_000_000
 	}
 	return formatDecimal(float64(ppm)/10_000, 1) + " %"
+}
+
+func formatBallotShareWeight(ppm int) string {
+	if ppm <= 0 {
+		return "0"
+	}
+	percent := formatBallotSharePercent(ppm)
+	if ppm < 1000 {
+		return strconv.Itoa(ppm) + " Anteile (" + percent + ")"
+	}
+	return percent + " Miteigentumsanteil"
+}
+
+func formatBallotSharePercent(ppm int) string {
+	if ppm < 0 {
+		ppm = 0
+	}
+	if ppm > 1_000_000 {
+		ppm = 1_000_000
+	}
+	decimals := 1
+	if ppm > 0 && ppm < 1000 {
+		decimals = 3
+	} else if ppm > 0 && ppm < 10000 {
+		decimals = 2
+	}
+	return formatDecimal(float64(ppm)/10_000, decimals) + " %"
 }
 
 func formatBallotReminder(minutes int) string {
@@ -3061,6 +3978,10 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	if isServiceProviderRole(role) {
+		http.Redirect(w, r, "/app/anliegen", http.StatusSeeOther)
+		return
+	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := canManageAnnouncements(role)
@@ -3074,7 +3995,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 	if a.announcementStore != nil {
 		visible := a.announcementStore.Visible(tenant.Slug, now)
 		unreadAnnouncements = unreadAnnouncementCount(visible, lastSeen, now)
-		announcements = announcementViewsWithReadState(visible, now, false, lastSeen)
+		announcements = a.announcementViewsWithReadState(tenant.Slug, visible, now, false, lastSeen, email, role)
 		if len(announcements) > 3 {
 			announcements = announcements[:3]
 		}
@@ -3084,7 +4005,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 	if a.eventStore != nil {
 		upcoming := a.eventStore.Upcoming(tenant.Slug, now)
 		eventCount = len(upcoming)
-		events = eventViews(upcoming, now)
+		events = a.eventViews(tenant.Slug, upcoming, now, email, role)
 		if len(events) > 4 {
 			events = events[:4]
 		}
@@ -3103,7 +4024,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	issuePreviews := issueViewsForActor(openIssues, role, email)
+	issuePreviews := a.issueViewsForActor(tenant.Slug, openIssues, role, email)
 	if len(issuePreviews) > 2 {
 		issuePreviews = issuePreviews[:2]
 	}
@@ -3117,6 +4038,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		}
 		documents = a.documentViewsForActor(tenant.Slug, email, role, visible)
 	}
+	unitPaymentStatuses := a.unitPaymentStatusViewsForEmail(tenant.Slug, email)
 	canSeeParking := isAdmin || profile.HasPermission(permissionParking)
 	parkingTitle := "Alles erledigt"
 	parkingDetail := "keine offenen Posten"
@@ -3159,12 +4081,14 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"IssueSummaryDetail":        pluralizeCount(len(openIssues), "offenes Anliegen", "offene Anliegen"),
 		"DashboardIssues":           issuePreviews,
 		"HasDashboardIssues":        len(issuePreviews) > 0,
-		"DashboardIssuesEmpty":      emptyStateAction("Alles erledigt", "Aktuell sind keine offenen Anliegen sichtbar.", issueURL, "Anliegen öffnen"),
+		"DashboardIssuesEmpty":      emptyState("Alles erledigt", "Aktuell sind keine offenen Anliegen sichtbar."),
 		"DashboardDocuments":        documents,
 		"HasDashboardDocuments":     len(documents) > 0,
 		"DocumentCount":             documentCount,
 		"DocumentSummaryDetail":     pluralizeCount(documentCount, "Dokument sichtbar", "Dokumente sichtbar"),
-		"DashboardDocumentsEmpty":   emptyStateAction("Noch keine Dokumente", "Sichtbare Unterlagen erscheinen hier nach Rolle und Berechtigung.", "/app/dokumente", "Dokumente öffnen"),
+		"DashboardDocumentsEmpty":   emptyState("Noch keine Dokumente", "Sichtbare Unterlagen erscheinen hier nach Rolle und Berechtigung."),
+		"UnitPaymentStatuses":       unitPaymentStatuses,
+		"HasUnitPaymentStatuses":    len(unitPaymentStatuses) > 0,
 		"ParkingStatusTitle":        parkingTitle,
 		"ParkingStatusValue":        parkingTitle,
 		"ParkingStatusDetail":       parkingDetail,
@@ -3172,10 +4096,10 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request) {
 		"ParkingStatusClass":        parkingPillClass,
 		"Announcements":             announcements,
 		"HasAnnouncements":          len(announcements) > 0,
-		"AnnouncementsEmpty":        emptyStateAction("Noch keine Beiträge", "Sobald die Verwaltung einen Aushang veröffentlicht, erscheint er hier.", "/app/announcements", "Archiv öffnen"),
+		"AnnouncementsEmpty":        emptyState("Noch keine Beiträge", "Sobald die Verwaltung einen Aushang veröffentlicht, erscheint er hier."),
 		"Events":                    events,
 		"HasEvents":                 len(events) > 0,
-		"EventsEmpty":               emptyStateAction("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier.", "/app/events", "Termine öffnen"),
+		"EventsEmpty":               emptyState("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier."),
 	})
 }
 
@@ -3242,12 +4166,18 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	if denyServiceProviderArea(w, role) {
+		return
+	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
+	canManageContacts := canManageContacts(role)
 	managerContacts := managerContactViews(tenant)
 	emergencyContacts := emergencyContactViews(tenant)
+	managedContacts := a.managedContactViews(tenant.Slug, canManageContacts)
 	boardContacts := a.boardContactViews(tenant.Slug)
 	residentContacts := a.residentDirectoryViews(tenant.Slug)
+	contactMsg, contactOK := contactMessage(r.URL.Query().Get("contact"))
 	a.render(w, "contacts", map[string]any{
 		"Title":                "Kontakte",
 		"Tenant":               tenant,
@@ -3257,13 +4187,20 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request) {
 		"Role":                 role,
 		"IsAdmin":              isAdmin,
 		"CanSeeParking":        isAdmin || profile.HasPermission(permissionParking),
+		"CanManageContacts":    canManageContacts,
 		"ActivePage":           "contacts",
+		"ContactMsg":           contactMsg,
+		"ContactOK":            contactOK,
 		"ManagerContacts":      managerContacts,
 		"HasManagerContacts":   len(managerContacts) > 0,
 		"ManagerEmpty":         emptyState("Kein Verwaltungskontakt", "Der Kontaktblock wird in den Gebäude-Einstellungen gepflegt."),
 		"EmergencyContacts":    emergencyContacts,
 		"HasEmergencyContacts": len(emergencyContacts) > 0,
 		"EmergencyEmpty":       emptyState("Kein Notdienst hinterlegt", "Notdienst und Hausmeister werden in den Gebäude-Einstellungen gepflegt."),
+		"ManagedContacts":      managedContacts,
+		"HasManagedContacts":   len(managedContacts) > 0,
+		"ManagedEmpty":         emptyState("Noch kein Adressbucheintrag", "Dienstleister, Hausmeister und Notdienste können hier zentral hinterlegt werden."),
+		"ContactKindOptions":   contactKindOptions(""),
 		"BoardContacts":        boardContacts,
 		"HasBoardContacts":     len(boardContacts) > 0,
 		"BoardEmpty":           emptyState("Kein Beirat hinterlegt", "Beiräte erscheinen hier, sobald sie in Benutzer & Rechte die Beirat-Rolle haben."),
@@ -3271,6 +4208,187 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request) {
 		"HasResidentContacts":  len(residentContacts) > 0,
 		"ResidentEmpty":        emptyState("Keine freigegebenen Kontakte", "Kontakte aus der Hausgemeinschaft erscheinen nur nach ausdrücklicher Freigabe im Profil."),
 	})
+}
+
+func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	actorEmail, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !canManageContacts(role) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	item, err := managedContactFromForm(tenant.Slug, r.Form)
+	if err != nil {
+		http.Redirect(w, r, "/app/kontakte?contact=invalid", http.StatusSeeOther)
+		return
+	}
+	saved, created, err := a.contactStore.Upsert(item)
+	if err != nil {
+		log.Printf("contact save failed for %s/%s: %v", tenant.Slug, redactedEmail(item.Email), err)
+		http.Redirect(w, r, "/app/kontakte?contact=error", http.StatusSeeOther)
+		return
+	}
+	action := "aktualisiert"
+	if created {
+		action = "angelegt"
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionContactSave,
+		TargetType: "contact",
+		TargetID:   saved.ID,
+		Summary:    "Adressbuch-Kontakt " + action,
+		Details: map[string]string{
+			"type":   saved.Kind,
+			"status": contactStatusLabel(saved.Active),
+		},
+	})
+	http.Redirect(w, r, "/app/kontakte?contact=saved", http.StatusSeeOther)
+}
+
+func (a *app) deactivateManagedContact(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	actorEmail, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !canManageContacts(role) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimSpace(r.FormValue("id"))
+	removed, err := a.contactStore.Deactivate(tenant.Slug, id, time.Now())
+	if err != nil {
+		http.Redirect(w, r, "/app/kontakte?contact=error", http.StatusSeeOther)
+		return
+	}
+	if removed.ID != "" {
+		a.recordAudit(auditEvent{
+			TenantSlug: tenant.Slug,
+			ActorEmail: actorEmail,
+			ActorRole:  role,
+			Action:     auditActionContactDelete,
+			TargetType: "contact",
+			TargetID:   removed.ID,
+			Summary:    "Adressbuch-Kontakt deaktiviert",
+			Details: map[string]string{
+				"type":   removed.Kind,
+				"status": contactStatusLabel(removed.Active),
+			},
+		})
+	}
+	http.Redirect(w, r, "/app/kontakte?contact=deleted", http.StatusSeeOther)
+}
+
+func canManageContacts(role string) bool {
+	return hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageBuilding) || hasCapability(role, capabilityManageIssues)
+}
+
+func contactMessage(status string) (string, bool) {
+	switch status {
+	case "saved":
+		return "Kontakt gespeichert.", true
+	case "deleted":
+		return "Kontakt deaktiviert.", true
+	case "invalid":
+		return "Bitte Art, Name/Firma und Kontaktdaten prüfen.", false
+	case "error":
+		return "Der Kontakt konnte nicht gespeichert werden.", false
+	default:
+		return "", false
+	}
+}
+
+func (a *app) managedContactViews(tenantSlug string, includeInactive bool) []managedContactView {
+	if a == nil || a.contactStore == nil {
+		return nil
+	}
+	items := a.contactStore.ListTenant(tenantSlug, includeInactive)
+	views := make([]managedContactView, 0, len(items))
+	for _, item := range items {
+		views = append(views, managedContactViewFrom(item))
+	}
+	return views
+}
+
+func (a *app) serviceContactOptions(tenantSlug string) []contactOptionView {
+	if a == nil || a.contactStore == nil {
+		return nil
+	}
+	items := a.contactStore.ListTenant(tenantSlug, false)
+	options := []contactOptionView{}
+	for _, item := range items {
+		email := normalizeEmail(item.Email)
+		if email == "" {
+			continue
+		}
+		label := managedContactDisplayName(item)
+		if item.Kind != "" {
+			label += " · " + item.Kind
+		}
+		options = append(options, contactOptionView{Email: email, Label: label})
+	}
+	return options
+}
+
+func managedContactViewFrom(item managedContact) managedContactView {
+	displayName := managedContactDisplayName(item)
+	description := strings.TrimSpace(item.Company)
+	if description == "" || strings.EqualFold(description, displayName) {
+		description = strings.TrimSpace(item.Notes)
+	}
+	return managedContactView{
+		ID:                 item.ID,
+		Kind:               item.Kind,
+		KindOptions:        contactKindOptions(item.Kind),
+		Name:               item.Name,
+		Company:            item.Company,
+		DisplayName:        displayName,
+		Description:        description,
+		Email:              item.Email,
+		Phone:              item.Phone,
+		Notes:              item.Notes,
+		Active:             item.Active,
+		StatusLabel:        contactStatusLabel(item.Active),
+		HasEmail:           normalizeEmail(item.Email) != "",
+		HasPhone:           strings.TrimSpace(item.Phone) != "",
+		EditDialogID:       "contact-edit-" + item.ID,
+		DeleteConfirmLabel: "Kontakt \"" + displayName + "\" deaktivieren?",
+	}
+}
+
+func managedContactDisplayName(item managedContact) string {
+	return firstNonEmpty(item.Name, item.Company, item.Email, item.Phone, "Kontakt")
+}
+
+func contactStatusLabel(active bool) string {
+	if active {
+		return "Aktiv"
+	}
+	return "Inaktiv"
 }
 
 func managerContactViews(tenant tenantConfig) []contactCardView {
@@ -3384,50 +4502,82 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, boardOnly
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	issues := []issueView{}
 	manageIssues := []issueView{}
+	manageIssuePreview := []issueView{}
 	canManageIssues := hasCapability(role, capabilityManageIssues)
-	canCreateIssue := !hasCapability(role, capabilityOversight) || canManageIssues
+	canCreateIssue := canCreateResidentIssue(role)
+	totalIssueCount := 0
+	openIssueCount := 0
+	urgentIssueCount := 0
 	if boardOnly && !canManageIssues {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
 	filters := issueBoardFiltersFromQuery(r.URL.Query())
 	if a.issueStore != nil {
+		allTenantIssues := a.issueStore.ListTenant(tenant.Slug)
+		totalIssueCount = len(allTenantIssues)
+		openIssueCount = issueOpenCount(allTenantIssues)
+		urgentIssueCount = issuePriorityCount(allTenantIssues, issuePriorityUrgent)
 		if !boardOnly {
 			if canManageIssues {
-				issues = issueViewsForActor(a.issueStore.ListAuthor(tenant.Slug, email), role, email)
+				issues = a.issueViewsForActor(tenant.Slug, a.issueStore.ListAuthor(tenant.Slug, email), role, email)
 			} else {
-				issues = issueViewsForActor(a.visibleIssuesForActor(tenant.Slug, email, role), role, email)
+				issues = a.issueViewsForActor(tenant.Slug, a.visibleIssuesForActor(tenant.Slug, email, role), role, email)
 			}
 		}
 		if canManageIssues {
-			manageIssues = issueViewsForActor(filterIssueBoard(a.issueStore.ListTenant(tenant.Slug), filters), role, email)
+			filteredIssues := filterIssueBoard(allTenantIssues, filters)
+			if boardOnly {
+				manageIssues = a.issueViewsForActor(tenant.Slug, filteredIssues, role, email)
+			}
+			previewIssues := filterIssueBoard(allTenantIssues, issueBoardFilterView{Sort: "updated"})
+			if len(previewIssues) > 3 {
+				previewIssues = previewIssues[:3]
+			}
+			manageIssuePreview = a.issueViewsForActor(tenant.Slug, previewIssues, role, email)
 		}
 	}
 	msg, msgOK := issueMessage(r.URL.Query().Get("issue"))
+	calendarFeedURL := ""
+	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
+		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
+	}
+	serviceContacts := a.serviceContactOptions(tenant.Slug)
 	a.render(w, "issues", map[string]any{
-		"Title":                  "Anliegen",
-		"Tenant":                 tenant,
-		"Email":                  email,
-		"DisplayName":            profile.DisplayName(),
-		"Initials":               profile.Initials(),
-		"Role":                   role,
-		"IsAdmin":                isAdmin,
-		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
-		"CanManageAnnouncements": canManageAnnouncements(role),
-		"CanManageIssues":        canManageIssues,
-		"CanCreateIssue":         canCreateIssue,
-		"ActivePage":             "issues",
-		"BoardOnly":              boardOnly,
-		"BoardAction":            issueBoardAction(boardOnly),
-		"BoardFilters":           issueBoardFilterOptions(filters),
-		"Issues":                 issues,
-		"HasIssues":              len(issues) > 0,
-		"IssuesEmpty":            emptyState("Noch kein Anliegen", "Nach dem Absenden erscheint das Anliegen hier mit Status und Rückfragen."),
-		"ManageIssues":           manageIssues,
-		"HasManageIssues":        len(manageIssues) > 0,
-		"ManageIssuesEmpty":      emptyState("Keine Anliegen im Haus", "Sobald ein Anliegen gemeldet wird, erscheint es hier für die Bearbeitung."),
-		"IssueMsg":               msg,
-		"IssueOK":                msgOK,
+		"Title":                      "Anliegen",
+		"Tenant":                     tenant,
+		"Email":                      email,
+		"DisplayName":                profile.DisplayName(),
+		"Initials":                   profile.Initials(),
+		"Role":                       role,
+		"IsAdmin":                    isAdmin,
+		"CanSeeParking":              isAdmin || profile.HasPermission(permissionParking),
+		"CanManageAnnouncements":     canManageAnnouncements(role),
+		"CanManageIssues":            canManageIssues,
+		"CanCreateIssue":             canCreateIssue,
+		"ActivePage":                 "issues",
+		"BoardOnly":                  boardOnly,
+		"BoardAction":                issueBoardAction(boardOnly),
+		"CalendarFeedURL":            calendarFeedURL,
+		"HasCalendarFeedURL":         calendarFeedURL != "",
+		"ServiceProviderContacts":    serviceContacts,
+		"HasServiceProviderContacts": len(serviceContacts) > 0,
+		"BoardFilters":               issueBoardFilterOptions(filters),
+		"Issues":                     issues,
+		"HasIssues":                  len(issues) > 0,
+		"IssueCount":                 len(issues),
+		"TotalIssueCount":            totalIssueCount,
+		"OpenIssueCount":             openIssueCount,
+		"UrgentIssueCount":           urgentIssueCount,
+		"IssuesEmpty":                emptyState("Noch kein Anliegen", "Nach dem Absenden erscheint das Anliegen hier mit Status und Rückfragen."),
+		"ManageIssues":               manageIssues,
+		"HasManageIssues":            len(manageIssues) > 0,
+		"ManageIssuePreview":         manageIssuePreview,
+		"HasManageIssuePreview":      len(manageIssuePreview) > 0,
+		"ManageIssuePreviewCount":    len(manageIssuePreview),
+		"ManageIssuesEmpty":          emptyState("Keine Anliegen im Haus", "Sobald ein Anliegen gemeldet wird, erscheint es hier für die Bearbeitung."),
+		"IssueMsg":                   msg,
+		"IssueOK":                    msgOK,
 	})
 }
 
@@ -3440,7 +4590,7 @@ func issueMessage(status string) (string, bool) {
 	case "invalid":
 		return "Bitte Kategorie, Ort, Titel und Beschreibung prüfen.", false
 	case "photo":
-		return "Das Foto konnte nicht übernommen werden. Erlaubt sind JPG, PNG oder WebP bis 5 MB.", false
+		return "Anhänge konnten nicht übernommen werden. Erlaubt sind Bilddateien oder PDF bis 10 MB, maximal 10 Dateien.", false
 	case "missing":
 		return "Dieses Anliegen wurde nicht gefunden.", false
 	case "error":
@@ -3452,38 +4602,54 @@ func issueMessage(status string) (string, bool) {
 
 func (a *app) createIssue(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
-	email, _, tenantSlug, ok := a.currentUser(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !canCreateResidentIssue(role) {
+		http.Error(w, "Dieser Zugang kann keine neuen Anliegen anlegen.", http.StatusForbidden)
 		return
 	}
 	if !sameOriginPost(r) {
 		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, maxIssueFormBytes)
-	if err := r.ParseMultipartForm(maxIssuePhotoBytes); err != nil {
+	r.Body = http.MaxBytesReader(w, r.Body, maxIssueAttachmentFormBytes)
+	if err := r.ParseMultipartForm(maxAttachmentBytes); err != nil {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
-	item, err := issueFromForm(r, tenant.Slug, profile, time.Now())
+	now := time.Now()
+	item, err := issueFromForm(r, tenant.Slug, profile, now)
 	if err != nil {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 		return
 	}
-	if a.issueStore != nil {
-		photo, hasPhoto := issuePhotoHeader(r)
-		if hasPhoto {
-			photoPath, err := a.issueStore.SavePhoto(tenant.Slug, item.ID, photo)
-			if err != nil {
-				http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
-				return
-			}
-			item.PhotoPaths = []string{photoPath}
+	attachmentHeaders, err := issueAttachmentHeaders(r)
+	if err != nil {
+		http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
+		return
+	}
+	var uploaded []attachmentRecord
+	if len(attachmentHeaders) > 0 {
+		if a.attachmentStore == nil {
+			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
+			return
 		}
+		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue", item.ID, email, attachmentHeaders, now)
+		if err != nil {
+			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
+			return
+		}
+	}
+	if a.issueStore != nil {
 		created, err := a.issueStore.Create(item)
 		if err != nil {
+			for _, attachment := range uploaded {
+				_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+			}
 			log.Printf("issue create failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
 			http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
 			return
@@ -3504,7 +4670,13 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
+	r.Body = http.MaxBytesReader(w, r.Body, maxIssueAttachmentFormBytes)
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type"))), "multipart/form-data") {
+		if err := r.ParseMultipartForm(maxAttachmentBytes); err != nil {
+			http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+			return
+		}
+	} else if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -3521,7 +4693,8 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	isOwner := normalizeEmail(existing.AuthorEmail) == normalizeEmail(email)
-	if readOnly || (!canManage && !isOwner) {
+	canServiceComment := isServiceProviderRole(role) && issueAssignedToActor(existing, email) && issueIsOpen(existing)
+	if readOnly || (!canManage && !isOwner && !canServiceComment) {
 		http.Error(w, "Dieser Kommentar ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -3530,23 +4703,96 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 		return
 	}
+	attachmentHeaders, err := issueAttachmentHeaders(r)
+	if err != nil {
+		http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
+		return
+	}
+	commentID, err := randomToken(10)
+	if err != nil {
+		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
+		return
+	}
+	var uploaded []attachmentRecord
+	if len(attachmentHeaders) > 0 {
+		if a.attachmentStore == nil {
+			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
+			return
+		}
+		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue-comment", commentID, email, attachmentHeaders, time.Now())
+		if err != nil {
+			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
+			return
+		}
+	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	updated, ok, err := a.issueStore.AddComment(tenant.Slug, id, issueComment{
+		ID:          commentID,
 		AuthorEmail: email,
 		AuthorName:  profile.DisplayName(),
 		Body:        body,
 		CreatedAt:   time.Now(),
 	})
 	if err != nil {
+		for _, attachment := range uploaded {
+			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+		}
 		log.Printf("issue comment failed for %s/%s: %v", tenant.Slug, id, err)
 		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
 		return
 	}
 	if !ok {
+		for _, attachment := range uploaded {
+			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+		}
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
 	}
 	a.notifyIssueUpdated(tenant, updated, email, "Neuer Kommentar zu Anliegen \""+updated.Title+"\"")
+	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
+}
+
+func (a *app) deleteIssueComment(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
+	if !ok || tenantSlug != tenant.Slug {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	commentID := strings.TrimSpace(r.FormValue("comment_id"))
+	issue, comment, found := a.issueCommentTarget(tenant.Slug, commentID)
+	if !found {
+		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
+		return
+	}
+	if !a.canDeleteIssueComment(tenant.Slug, issue, comment, email, role) {
+		http.Error(w, "Dieser Kommentar kann mit diesem Zugang nicht gelöscht werden.", http.StatusForbidden)
+		return
+	}
+	updated, deleted, err := a.issueStore.DeleteComment(tenant.Slug, issue.ID, comment.ID, time.Now())
+	if err != nil {
+		log.Printf("issue comment delete failed for %s/%s/%s: %v", tenant.Slug, issue.ID, comment.ID, err)
+		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
+		return
+	}
+	if !deleted {
+		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
+		return
+	}
+	if a.attachmentStore != nil {
+		for _, attachment := range a.attachmentStore.ListEntity(tenant.Slug, "issue-comment", comment.ID) {
+			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+		}
+	}
+	a.notifyIssueUpdated(tenant, updated, email, "Kommentar zu Anliegen \""+updated.Title+"\" gelöscht")
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
 }
 
@@ -3561,7 +4807,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
+	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -3586,10 +4832,45 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
 	}
 	priority := normalizeIssuePriority(r.FormValue("priority"))
 	assignee := normalizeEmail(r.FormValue("assignee_email"))
-	if !canManage {
-		if readOnly || !isOwner || r.FormValue("priority") != "" || r.FormValue("assignee_email") != "" || !canResidentTransition(existing.Status, status) {
-			http.Error(w, "Dieser Statuswechsel ist der Verwaltung vorbehalten.", http.StatusForbidden)
+	serviceProposal, serviceProposalProvided, err := issueServiceProposalFromForm(r.Form)
+	if err != nil {
+		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		return
+	}
+	estimateAmount, estimateNote, estimateProvided, err := issueEstimateFromForm(r.Form)
+	if err != nil {
+		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		return
+	}
+	estimateHeaders, err := attachmentFormHeaders(r, 1, "estimate_attachment")
+	if err != nil {
+		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		return
+	}
+	if len(estimateHeaders) > 0 {
+		estimateProvided = true
+		if a.attachmentStore == nil {
+			http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 			return
+		}
+	}
+	if !canManage {
+		canServiceAct := isServiceProviderRole(role) && issueAssignedToActor(existing, email) && issueIsOpen(existing)
+		if canServiceAct {
+			existingStatus := normalizeIssueStatus(existing.Status)
+			if existingStatus == "" {
+				existingStatus = issueStatusOpen
+			}
+			statusUnchanged := existingStatus == status
+			if readOnly || r.FormValue("priority") != "" || r.FormValue("assignee_email") != "" || (!statusUnchanged && !canServiceProviderTransition(existing.Status, status)) {
+				http.Error(w, "Dieser Statuswechsel ist der Verwaltung vorbehalten.", http.StatusForbidden)
+				return
+			}
+		} else {
+			if readOnly || !isOwner || r.FormValue("priority") != "" || r.FormValue("assignee_email") != "" || serviceProposalProvided || estimateProvided || !canResidentTransition(existing.Status, status) {
+				http.Error(w, "Dieser Statuswechsel ist der Verwaltung vorbehalten.", http.StatusForbidden)
+				return
+			}
 		}
 		priority = normalizeIssuePriority(existing.Priority)
 		assignee = normalizeEmail(existing.AssigneeEmail)
@@ -3599,15 +4880,32 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
+	var uploadedEstimates []attachmentRecord
+	if len(estimateHeaders) > 0 {
+		uploadedEstimates, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue-estimate", id, email, estimateHeaders, time.Now())
+		if err != nil {
+			log.Printf("issue estimate upload failed for %s/%s: %v", tenant.Slug, id, err)
+			http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+			return
+		}
+	}
 	updated, _, err := a.issueStore.UpdateWorkflow(tenant.Slug, id, issueWorkflowUpdate{
-		Status:        status,
-		Priority:      priority,
-		AssigneeEmail: assignee,
-		ActorEmail:    email,
-		ActorName:     profile.DisplayName(),
-		ChangedAt:     time.Now(),
+		Status:                status,
+		Priority:              priority,
+		AssigneeEmail:         assignee,
+		ServiceProposal:       serviceProposal,
+		UpdateServiceProposal: serviceProposalProvided,
+		EstimateAmountCents:   estimateAmount,
+		EstimateNote:          estimateNote,
+		UpdateEstimate:        estimateProvided,
+		ActorEmail:            email,
+		ActorName:             profile.DisplayName(),
+		ChangedAt:             time.Now(),
 	})
 	if err != nil {
+		for _, attachment := range uploadedEstimates {
+			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+		}
 		log.Printf("issue workflow update failed for %s/%s: %v", tenant.Slug, id, err)
 		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
 		return
@@ -3625,8 +4923,149 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request) {
 			"priority": normalizeIssuePriority(updated.Priority),
 		},
 	})
+	if estimateProvided {
+		details := map[string]string{
+			"has_file": strconv.FormatBool(len(uploadedEstimates) > 0),
+		}
+		if updated.EstimateAmountCents > 0 {
+			details["estimate_amount"] = formatIssueEstimateAmount(updated.EstimateAmountCents)
+		}
+		if len(uploadedEstimates) > 0 {
+			details["file_count"] = strconv.Itoa(len(uploadedEstimates))
+		}
+		a.recordAudit(auditEvent{
+			TenantSlug: tenant.Slug,
+			ActorEmail: email,
+			ActorRole:  role,
+			Action:     auditActionIssueEstimate,
+			TargetType: "issue",
+			TargetID:   updated.ID,
+			Summary:    "Kostenvoranschlag aktualisiert",
+			Details:    details,
+		})
+	}
+	a.handleIssueServiceAssignmentChange(r, tenant, existing, updated, email, role)
 	a.notifyIssueUpdated(tenant, updated, email, "Anliegen \""+updated.Title+"\" aktualisiert")
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
+}
+
+func (a *app) handleIssueServiceAssignmentChange(r *http.Request, tenant tenantConfig, before residentIssue, after residentIssue, actorEmail string, actorRole string) {
+	oldAssignee := normalizeEmail(before.AssigneeEmail)
+	newAssignee := normalizeEmail(after.AssigneeEmail)
+	if oldAssignee != "" && oldAssignee != newAssignee && a.isServiceProviderPrincipal(tenant.Slug, oldAssignee) {
+		a.recordAudit(auditEvent{
+			TenantSlug: tenant.Slug,
+			ActorEmail: actorEmail,
+			ActorRole:  actorRole,
+			Action:     auditActionIssueServiceDrop,
+			TargetType: "issue",
+			TargetID:   after.ID,
+			Summary:    "Dienstleister-Zugriff entzogen",
+			Details: map[string]string{
+				"service_email": oldAssignee,
+				"issue_title":   after.Title,
+			},
+		})
+	}
+	if newAssignee == "" || newAssignee == oldAssignee {
+		return
+	}
+	if !a.shouldInviteServiceProvider(tenant.Slug, newAssignee) {
+		return
+	}
+	createdInvite, err := a.ensureServiceProviderInvite(tenant.Slug, newAssignee)
+	if err != nil {
+		log.Printf("service provider invite persistence failed for %s/%s: %v", tenant.Slug, redactedEmail(newAssignee), err)
+		a.recordIssueServiceInviteAudit(tenant, after, actorEmail, actorRole, newAssignee, createdInvite, "nicht gespeichert")
+		return
+	}
+	mailStatus := "verschickt"
+	if err := a.sendServiceProviderMagicLink(r, tenant, after, newAssignee); err != nil {
+		log.Printf("service provider magic link failed for %s/%s: %v", tenant.Slug, redactedEmail(newAssignee), err)
+		mailStatus = "nicht zugestellt"
+	}
+	a.recordIssueServiceInviteAudit(tenant, after, actorEmail, actorRole, newAssignee, createdInvite, mailStatus)
+}
+
+func (a *app) recordIssueServiceInviteAudit(tenant tenantConfig, issue residentIssue, actorEmail string, actorRole string, serviceEmail string, createdInvite bool, mailStatus string) {
+	inviteStatus := "bestehend"
+	if createdInvite {
+		inviteStatus = "neu"
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  actorRole,
+		Action:     auditActionIssueServiceAdd,
+		TargetType: "issue",
+		TargetID:   issue.ID,
+		Summary:    "Dienstleister eingeladen",
+		Details: map[string]string{
+			"service_email": serviceEmail,
+			"issue_title":   issue.Title,
+			"invite":        inviteStatus,
+			"mail_status":   mailStatus,
+		},
+	})
+}
+
+func (a *app) shouldInviteServiceProvider(tenantSlug string, email string) bool {
+	if email == "" {
+		return false
+	}
+	if profile, ok := a.directoryProfile(email); ok && profile.HasTenant(tenantSlug) {
+		return isServiceProviderRole(profile.ForTenant(tenantSlug).Role)
+	}
+	return true
+}
+
+func (a *app) isServiceProviderPrincipal(tenantSlug string, email string) bool {
+	if profile, ok := a.directoryProfile(email); ok && profile.HasTenant(tenantSlug) {
+		return isServiceProviderRole(profile.ForTenant(tenantSlug).Role)
+	}
+	return false
+}
+
+func (a *app) ensureServiceProviderInvite(tenantSlug string, email string) (bool, error) {
+	if profile, ok := a.directoryProfile(email); ok && profile.HasTenant(tenantSlug) {
+		return false, nil
+	}
+	if a.inviteStore == nil {
+		return false, fmt.Errorf("invite store not configured")
+	}
+	profile := userProfile{
+		Email:       email,
+		Role:        roleServiceProvider,
+		Status:      "Eingeladen",
+		Tenants:     []string{tenantSlug},
+		AuthMethods: defaultAuthMethods(),
+	}
+	added, err := a.inviteStore.Add(profile)
+	if err != nil {
+		return false, err
+	}
+	if added {
+		return true, nil
+	}
+	existing, ok := a.inviteStore.Get(email)
+	if ok && existing.HasTenant(tenantSlug) && isServiceProviderRole(existing.ForTenant(tenantSlug).Role) {
+		return false, nil
+	}
+	return false, nil
+}
+
+func (a *app) sendServiceProviderMagicLink(r *http.Request, tenant tenantConfig, issue residentIssue, email string) error {
+	if a == nil || a.tokens == nil {
+		return fmt.Errorf("login tokens not configured")
+	}
+	token, err := randomToken(32)
+	if err != nil {
+		return err
+	}
+	redirectPath := "/app/anliegen#issue-" + url.PathEscape(issue.ID)
+	a.tokens.PutWithRedirect(token, email, tenant.Slug, 15*time.Minute, redirectPath)
+	link := a.publicBaseURL(r, tenant) + "/auth/verify?token=" + url.QueryEscape(token)
+	return a.mailer.SendMagicLink(email, link)
 }
 
 func (a *app) notifyIssueCreated(tenant tenantConfig, issue residentIssue) {
@@ -3637,6 +5076,8 @@ func (a *app) notifyIssueCreated(tenant tenantConfig, issue residentIssue) {
 		Recipients: recipients,
 		ActorEmail: issue.AuthorEmail,
 		Subject:    "Neues Anliegen: " + issue.Title,
+		ActionText: "Anliegen öffnen",
+		ActionURL:  tenant.PublicURL("/app/anliegen#issue-" + url.PathEscape(issue.ID)),
 		Lines: []string{
 			"Es wurde ein neues Anliegen für " + tenant.Address + " erfasst.",
 			"",
@@ -3656,6 +5097,8 @@ func (a *app) notifyIssueUpdated(tenant tenantConfig, issue residentIssue, actor
 		Recipients: recipients,
 		ActorEmail: actorEmail,
 		Subject:    subject,
+		ActionText: "Anliegen öffnen",
+		ActionURL:  tenant.PublicURL("/app/anliegen#issue-" + url.PathEscape(issue.ID)),
 		Lines: []string{
 			"Ein Anliegen für " + tenant.Address + " wurde aktualisiert.",
 			"",
@@ -3677,6 +5120,8 @@ func (a *app) notifyAnnouncementPublished(tenant tenantConfig, item announcement
 		Recipients: a.tenantNotificationEmails(tenant.Slug),
 		ActorEmail: actorEmail,
 		Subject:    "Neuer Aushang: " + item.Title,
+		ActionText: "Aushang öffnen",
+		ActionURL:  tenant.PublicURL("/app/announcements#announcement-" + url.PathEscape(item.ID)),
 		Lines: []string{
 			"Für " + tenant.Address + " wurde ein neuer Aushang veröffentlicht.",
 			"",
@@ -3735,7 +5180,7 @@ func (a *app) sendDueBallotReminders(now time.Time) int {
 				Recipients: recipients,
 				Subject:    "Erinnerung: Abstimmung " + item.Title,
 				ActionText: "Abstimmung öffnen",
-				ActionURL:  tenant.PublicURL("/app/abstimmungen"),
+				ActionURL:  tenant.PublicURL("/app/abstimmungen#ballot-" + url.PathEscape(item.ID)),
 				Lines: []string{
 					"Für " + tenant.Address + " läuft eine Abstimmung demnächst ab.",
 					"",
@@ -3874,7 +5319,7 @@ func (a *app) tenantNotificationEmails(tenantSlug string) []string {
 	tenantSlug = normalizeSlug(tenantSlug)
 	recipients := []string{}
 	for email, profile := range a.profiles {
-		if profile.HasTenant(tenantSlug) {
+		if profile.HasTenant(tenantSlug) && !isServiceProviderRole(profile.ForTenant(tenantSlug).Role) {
 			recipients = append(recipients, email)
 		}
 	}
@@ -3883,7 +5328,7 @@ func (a *app) tenantNotificationEmails(tenantSlug string) []string {
 	}
 	if a.inviteStore != nil {
 		for _, profile := range a.inviteStore.List() {
-			if profile.HasTenant(tenantSlug) {
+			if profile.HasTenant(tenantSlug) && !isServiceProviderRole(profile.ForTenant(tenantSlug).Role) {
 				recipients = append(recipients, profile.Email)
 			}
 		}
@@ -3902,6 +5347,9 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	if denyServiceProviderArea(w, role) {
+		return
+	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	if !hasCapability(role, capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
@@ -3910,6 +5358,8 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request) {
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	telemetry := a.parkingTelemetry(r.Context(), tenant)
 	parkingMsg, parkingOK := parkingMessage(r.URL.Query().Get("month"), r.URL.Query().Get("reminder"))
+	accounting := a.parkingAccounting(r.Context(), tenant)
+	accounting.Months = a.hydrateParkingMonths(tenant.Slug, email, role, accounting.Months)
 	a.render(w, "parking", map[string]any{
 		"Title":                    "Parkplatznutzung",
 		"Tenant":                   tenant,
@@ -3919,10 +5369,11 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request) {
 		"Role":                     role,
 		"IsAdmin":                  isAdmin,
 		"CanManageParkingPayments": hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking),
+		"CanMarkParkingPayment":    isAdmin || hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking) || profile.HasPermission(permissionParking),
 		"CanSeeParking":            true,
 		"ActivePage":               "parking",
 		"Telemetry":                telemetry,
-		"Accounting":               a.parkingAccounting(r.Context(), tenant),
+		"Accounting":               accounting,
 		"ParkingMsg":               parkingMsg,
 		"ParkingOK":                parkingOK,
 		"TodayInput":               time.Now().In(time.Local).Format("2006-01-02"),
@@ -3985,6 +5436,7 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	view := a.parkingMonthDetails(r.Context(), tenant, month)
+	view.Summary = a.hydrateParkingMonth(tenant.Slug, email, role, view.Summary)
 	if !view.HasHours && view.Summary.Month == "" {
 		http.NotFound(w, r)
 		return
@@ -4001,6 +5453,26 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request) {
 		"ActivePage":    "parking",
 		"Detail":        view,
 	})
+}
+
+func (a *app) hydrateParkingMonths(tenantSlug string, email string, role string, months []parkingMonthView) []parkingMonthView {
+	for i := range months {
+		months[i] = a.hydrateParkingMonth(tenantSlug, email, role, months[i])
+	}
+	return months
+}
+
+func (a *app) hydrateParkingMonth(tenantSlug string, email string, role string, month parkingMonthView) parkingMonthView {
+	if a == nil || a.attachmentStore == nil || month.Month == "" {
+		return month
+	}
+	attachments := a.attachmentViewsForEntity(tenantSlug, "parking", month.Month, email, role)
+	if len(attachments) == 0 {
+		return month
+	}
+	month.Attachments = attachments
+	month.HasAttachments = true
+	return month
 }
 
 func (a *app) parkingStatement(w http.ResponseWriter, r *http.Request) {
@@ -4259,11 +5731,14 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	if !hasCapability(role, capabilityManageParking) {
+	actor := a.profileForTenant(actorEmail, tenant.Slug)
+	canManagePayment := hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking) || hasCapability(role, capabilityPlatformAdmin)
+	canMarkPayment := canManagePayment || actor.HasPermission(permissionParking)
+	if !canMarkPayment {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
+	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -4277,7 +5752,32 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
 		return
 	}
+	if !payment.Paid && !canManagePayment {
+		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
+		return
+	}
+	attachmentHeaders, err := attachmentFormHeaders(r, maxIssueAttachmentCount, "attachments")
+	if err != nil {
+		http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
+		return
+	}
+	var uploaded []attachmentRecord
+	if len(attachmentHeaders) > 0 {
+		if a.attachmentStore == nil {
+			http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
+			return
+		}
+		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "parking", month, actorEmail, attachmentHeaders, time.Now())
+		if err != nil {
+			log.Printf("parking attachment upload failed for %s/%s/%s: %v", tenant.Slug, month, redactedEmail(actorEmail), err)
+			http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
+			return
+		}
+	}
 	if err := a.parkingStore.SetMonthPayment(tenant.Slug, month, payment); err != nil {
+		for _, attachment := range uploaded {
+			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+		}
 		log.Printf("parking month save failed for %s: %v", tenant.Slug, err)
 		http.Error(w, "Could not save parking month", http.StatusInternalServerError)
 		return
@@ -4375,6 +5875,10 @@ func (a *app) sendParkingPaymentReminders(tenant tenantConfig, actorEmail string
 			lines = append(lines, month.MonthLabel+": "+month.TotalCost)
 		}
 		lines = append(lines, "", "Offener Betrag: "+formatEUR(balance))
+		actionURL := tenant.PublicURL("/app/parking")
+		if len(recipientMonths) > 0 {
+			actionURL = tenant.PublicURL("/app/parking#parking-month-" + url.PathEscape(recipientMonths[0].Month))
+		}
 		sent := a.notify(portalNotification{
 			Event:      notificationEventPayment,
 			Tenant:     tenant,
@@ -4382,7 +5886,7 @@ func (a *app) sendParkingPaymentReminders(tenant tenantConfig, actorEmail string
 			ActorEmail: actorEmail,
 			Subject:    "Zahlungserinnerung Parkplatznutzung",
 			ActionText: "Parkplatzabrechnung öffnen",
-			ActionURL:  tenant.PublicURL("/app/parking"),
+			ActionURL:  actionURL,
 			Lines:      lines,
 		})
 		if len(sent) == 0 {
@@ -4547,6 +6051,26 @@ func hasCapability(role string, action capability) bool {
 	}
 }
 
+func isServiceProviderRole(role string) bool {
+	return normalizeRole(role) == roleServiceProvider
+}
+
+func canUseResidentAreas(role string) bool {
+	return !isServiceProviderRole(role)
+}
+
+func canCreateResidentIssue(role string) bool {
+	return canUseResidentAreas(role) && (!hasCapability(role, capabilityOversight) || hasCapability(role, capabilityManageIssues))
+}
+
+func denyServiceProviderArea(w http.ResponseWriter, role string) bool {
+	if !isServiceProviderRole(role) {
+		return false
+	}
+	http.Error(w, "Dieser Zugang ist nur für zugewiesene Anliegen freigeschaltet.", http.StatusForbidden)
+	return true
+}
+
 func roleCapabilityLabels(role string) []string {
 	role = normalizeRole(role)
 	switch role {
@@ -4562,6 +6086,8 @@ func roleCapabilityLabels(role string) []string {
 		return []string{"Übersicht", "Leserechte"}
 	case roleResident:
 		return []string{"Bewohnerbereich"}
+	case roleServiceProvider:
+		return []string{"Zugewiesene Anliegen"}
 	default:
 		if role == "" {
 			return []string{"Bewohnerbereich"}
@@ -4584,8 +6110,10 @@ func roleSortRank(role string) int {
 		return 4
 	case roleResident:
 		return 5
-	default:
+	case roleServiceProvider:
 		return 6
+	default:
+		return 7
 	}
 }
 
@@ -4603,6 +6131,8 @@ func roleClass(role string) string {
 		return "role-beirat"
 	case roleResident:
 		return "role-resident"
+	case roleServiceProvider:
+		return "role-service"
 	default:
 		return "role-resident"
 	}
@@ -4914,6 +6444,22 @@ func announcementViewsWithReadState(items []announcement, now time.Time, include
 	return views
 }
 
+func (a *app) announcementViewsWithReadState(tenantSlug string, items []announcement, now time.Time, includeStatus bool, lastSeen time.Time, actorEmail string, role string) []announcementView {
+	views := announcementViewsWithReadState(items, now, includeStatus, lastSeen)
+	if a == nil || a.attachmentStore == nil {
+		return views
+	}
+	for i := range views {
+		attachments := a.attachmentViewsForEntity(tenantSlug, "announcement", views[i].ID, actorEmail, role)
+		if len(attachments) == 0 {
+			continue
+		}
+		views[i].Attachments = attachments
+		views[i].HasAttachments = true
+	}
+	return views
+}
+
 func announcementViewFrom(item announcement, now time.Time, includeStatus bool, lastSeen time.Time) announcementView {
 	published := !item.PublishedAt.After(now)
 	expired := item.ExpiresAt != nil && !item.ExpiresAt.After(now)
@@ -4969,6 +6515,22 @@ func eventViews(items []houseEvent, now time.Time) []houseEventView {
 	views := make([]houseEventView, 0, len(items))
 	for _, item := range items {
 		views = append(views, eventViewFrom(item, now))
+	}
+	return views
+}
+
+func (a *app) eventViews(tenantSlug string, items []houseEvent, now time.Time, actorEmail string, role string) []houseEventView {
+	views := eventViews(items, now)
+	if a == nil || a.attachmentStore == nil {
+		return views
+	}
+	for i := range views {
+		attachments := a.attachmentViewsForEntity(tenantSlug, "event", views[i].ID, actorEmail, role)
+		if len(attachments) == 0 {
+			continue
+		}
+		views[i].Attachments = attachments
+		views[i].HasAttachments = true
 	}
 	return views
 }
@@ -5140,6 +6702,10 @@ func issueStatuses() []string {
 	return []string{issueStatusNew, issueStatusProgress, issueStatusDone, issueStatusRejected, issueStatusDuplicate}
 }
 
+func serviceProviderIssueStatuses() []string {
+	return []string{issueStatusProgress, issueStatusDone}
+}
+
 func normalizeIssuePriority(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "niedrig", "low":
@@ -5216,6 +6782,79 @@ func canResidentTransition(from string, to string) bool {
 	}
 }
 
+func canServiceProviderTransition(from string, to string) bool {
+	from = normalizeIssueStatus(from)
+	to = normalizeIssueStatus(to)
+	switch to {
+	case issueStatusProgress:
+		return from == issueStatusNew || from == issueStatusProgress
+	case issueStatusDone:
+		return from == issueStatusNew || from == issueStatusProgress
+	default:
+		return false
+	}
+}
+
+func issueServiceProposalFromForm(values url.Values) (string, bool, error) {
+	if _, ok := values["service_proposal"]; !ok {
+		return "", false, nil
+	}
+	proposal := strings.TrimSpace(values.Get("service_proposal"))
+	if len([]rune(proposal)) > 180 {
+		return "", true, fmt.Errorf("service proposal too long")
+	}
+	return proposal, true, nil
+}
+
+func issueEstimateFromForm(values url.Values) (int64, string, bool, error) {
+	if values == nil {
+		return 0, "", false, nil
+	}
+	_, amountProvided := values["estimate_amount"]
+	_, noteProvided := values["estimate_note"]
+	if !amountProvided && !noteProvided {
+		return 0, "", false, nil
+	}
+	amount, err := parseIssueEstimateAmountCents(values.Get("estimate_amount"))
+	if err != nil {
+		return 0, "", true, err
+	}
+	note := strings.TrimSpace(values.Get("estimate_note"))
+	if len([]rune(note)) > 240 {
+		return 0, "", true, fmt.Errorf("estimate note too long")
+	}
+	return amount, note, true, nil
+}
+
+func parseIssueEstimateAmountCents(raw string) (int64, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0, nil
+	}
+	raw = strings.ReplaceAll(raw, " ", "")
+	if strings.Count(raw, ",") == 1 && strings.Count(raw, ".") > 0 && strings.LastIndex(raw, ",") > strings.LastIndex(raw, ".") {
+		raw = strings.ReplaceAll(raw, ".", "")
+		raw = strings.ReplaceAll(raw, ",", ".")
+	} else if strings.Count(raw, ",") == 1 && strings.Count(raw, ".") == 0 {
+		raw = strings.ReplaceAll(raw, ",", ".")
+	}
+	return parseDecimalCents(raw)
+}
+
+func formatIssueEstimateAmount(cents int64) string {
+	if cents <= 0 {
+		return ""
+	}
+	return formatEUR(float64(cents) / 100)
+}
+
+func formatIssueEstimateInput(cents int64) string {
+	if cents <= 0 {
+		return ""
+	}
+	return formatDecimal(float64(cents)/100, 2)
+}
+
 func issuePhotoHeader(r *http.Request) (*multipart.FileHeader, bool) {
 	if r.MultipartForm == nil {
 		return nil, false
@@ -5228,6 +6867,44 @@ func issuePhotoHeader(r *http.Request) (*multipart.FileHeader, bool) {
 		return nil, false
 	}
 	return files[0], true
+}
+
+func issueAttachmentHeaders(r *http.Request) ([]*multipart.FileHeader, error) {
+	return attachmentFormHeaders(r, maxIssueAttachmentCount, "attachments", "photos", "photo")
+}
+
+func attachmentFormHeaders(r *http.Request, maxCount int, names ...string) ([]*multipart.FileHeader, error) {
+	if r.MultipartForm == nil {
+		return nil, nil
+	}
+	out := []*multipart.FileHeader{}
+	for _, name := range names {
+		for _, header := range r.MultipartForm.File[name] {
+			if header == nil || strings.TrimSpace(header.Filename) == "" || header.Size == 0 {
+				continue
+			}
+			out = append(out, header)
+			if maxCount > 0 && len(out) > maxCount {
+				return nil, fmt.Errorf("too many attachments")
+			}
+		}
+	}
+	return out, nil
+}
+
+func parseMaybeMultipartForm(w http.ResponseWriter, r *http.Request, maxBodyBytes int64, maxMemoryBytes int64) error {
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type"))), "multipart/form-data") {
+		if r.MultipartForm != nil {
+			return nil
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
+		return r.ParseMultipartForm(maxMemoryBytes)
+	}
+	if r.Form != nil {
+		return nil
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
+	return r.ParseForm()
 }
 
 func tenantHeroHeader(r *http.Request) (*multipart.FileHeader, bool) {
@@ -5417,6 +7094,17 @@ func issueOpenCount(items []residentIssue) int {
 	return count
 }
 
+func issuePriorityCount(items []residentIssue, priority string) int {
+	priority = normalizeIssuePriority(priority)
+	count := 0
+	for _, item := range items {
+		if normalizeIssuePriority(item.Priority) == priority {
+			count++
+		}
+	}
+	return count
+}
+
 func issueIsOpen(item residentIssue) bool {
 	switch normalizeIssueStatus(item.Status) {
 	case issueStatusDone, issueStatusRejected, issueStatusDuplicate:
@@ -5450,10 +7138,128 @@ func (a *app) canViewIssueForActor(tenantSlug string, item residentIssue, email 
 	if hasCapability(role, capabilityManageIssues) || hasCapability(role, capabilityOversight) {
 		return true
 	}
+	if isServiceProviderRole(role) {
+		return issueIsOpen(item) && issueAssignedToActor(item, email)
+	}
 	if normalizeEmail(item.AuthorEmail) == email {
 		return true
 	}
 	return normalizeIssueLocation(item.LocationType) == issueLocationCommon && a.actorCanSeeCommonIssues(tenantSlug, email, role)
+}
+
+func issueAssignedToActor(item residentIssue, email string) bool {
+	return normalizeEmail(item.AssigneeEmail) != "" && normalizeEmail(item.AssigneeEmail) == normalizeEmail(email)
+}
+
+func (a *app) canViewAttachment(tenantSlug string, item attachmentRecord, email string, role string) bool {
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug || normalizeEmail(email) == "" {
+		return false
+	}
+	entityType := normalizeAttachmentEntity(item.EntityType)
+	if isServiceProviderRole(role) && entityType != "issue" && entityType != "issue-comment" && entityType != "issue-estimate" {
+		return false
+	}
+	switch entityType {
+	case "issue", "issue-estimate":
+		if a.issueStore == nil {
+			return false
+		}
+		issue, found := a.issueStore.Get(tenantSlug, item.EntityID)
+		return found && a.canViewIssueForActor(tenantSlug, issue, email, role)
+	case "issue-comment":
+		issue, _, found := a.issueCommentTarget(tenantSlug, item.EntityID)
+		return found && a.canViewIssueForActor(tenantSlug, issue, email, role)
+	case "document":
+		if a.documentStore == nil {
+			return false
+		}
+		doc, found := a.documentStore.Get(tenantSlug, item.EntityID)
+		return found && a.canViewDocument(tenantSlug, doc, email, role)
+	case "announcement", "event", "building":
+		return true
+	case "ballot":
+		return hasCapability(role, capabilityManageVotes) || hasCapability(role, capabilityVote) || hasCapability(role, capabilityOversight)
+	case "handover":
+		return canManageHandovers(role)
+	case "parking":
+		return hasCapability(role, capabilityManageParking) || hasCapability(role, capabilityPlatformAdmin) || a.profileForTenant(email, tenantSlug).HasPermission(permissionParking)
+	default:
+		return false
+	}
+}
+
+func (a *app) canDeleteAttachment(tenantSlug string, item attachmentRecord, email string, role string) bool {
+	tenantSlug = normalizeSlug(tenantSlug)
+	email = normalizeEmail(email)
+	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug || email == "" {
+		return false
+	}
+	if hasCapability(role, capabilityPlatformAdmin) || normalizeEmail(item.UploadedBy) == email {
+		return true
+	}
+	switch normalizeAttachmentEntity(item.EntityType) {
+	case "issue", "issue-estimate":
+		if hasCapability(role, capabilityManageIssues) {
+			return true
+		}
+		if a.issueStore == nil {
+			return false
+		}
+		issue, found := a.issueStore.Get(tenantSlug, item.EntityID)
+		return found && normalizeEmail(issue.AuthorEmail) == email
+	case "issue-comment":
+		if hasCapability(role, capabilityManageIssues) {
+			return true
+		}
+		issue, comment, found := a.issueCommentTarget(tenantSlug, item.EntityID)
+		return found && (normalizeEmail(issue.AuthorEmail) == email || normalizeEmail(comment.AuthorEmail) == email)
+	case "document":
+		return hasCapability(role, capabilityManageDocuments)
+	case "announcement":
+		return canManageAnnouncements(role)
+	case "event":
+		return canManageEvents(role)
+	case "ballot":
+		return hasCapability(role, capabilityManageVotes)
+	case "handover":
+		return canManageHandovers(role)
+	case "parking":
+		return hasCapability(role, capabilityManageParking)
+	case "building":
+		return hasCapability(role, capabilityManageBuilding)
+	default:
+		return false
+	}
+}
+
+func (a *app) canDeleteIssueComment(tenantSlug string, issue residentIssue, comment issueComment, email string, role string) bool {
+	email = normalizeEmail(email)
+	if email == "" || !a.canViewIssueForActor(tenantSlug, issue, email, role) {
+		return false
+	}
+	if hasCapability(role, capabilityManageIssues) || hasCapability(role, capabilityPlatformAdmin) {
+		return true
+	}
+	return normalizeEmail(comment.AuthorEmail) == email
+}
+
+func (a *app) issueCommentTarget(tenantSlug string, commentID string) (residentIssue, issueComment, bool) {
+	if a == nil || a.issueStore == nil {
+		return residentIssue{}, issueComment{}, false
+	}
+	commentID = strings.TrimSpace(commentID)
+	if commentID == "" {
+		return residentIssue{}, issueComment{}, false
+	}
+	for _, issue := range a.issueStore.ListTenant(tenantSlug) {
+		for _, comment := range issue.Comments {
+			if comment.ID == commentID {
+				return issue, comment, true
+			}
+		}
+	}
+	return residentIssue{}, issueComment{}, false
 }
 
 func (a *app) actorCanSeeCommonIssues(tenantSlug string, email string, role string) bool {
@@ -5466,6 +7272,136 @@ func (a *app) actorCanSeeCommonIssues(tenantSlug string, email string, role stri
 		}
 	}
 	return false
+}
+
+func (a *app) issueViewsForActor(tenantSlug string, items []residentIssue, role string, actorEmail string) []issueView {
+	views := issueViewsForActor(items, role, actorEmail)
+	if a == nil {
+		return views
+	}
+	for i := range views {
+		attachments := a.legacyIssuePhotoViews(tenantSlug, items[i])
+		attachments = append(attachments, a.attachmentViewsForEntity(tenantSlug, "issue", views[i].ID, actorEmail, role)...)
+		photoCount := 0
+		for _, attachment := range attachments {
+			if attachment.IsImage {
+				photoCount++
+			}
+		}
+		if len(attachments) > 0 {
+			views[i].Attachments = attachments
+			views[i].HasAttachments = true
+		}
+		estimateAttachments := a.attachmentViewsForEntity(tenantSlug, "issue-estimate", views[i].ID, actorEmail, role)
+		if len(estimateAttachments) > 0 {
+			views[i].EstimateAttachments = estimateAttachments
+			views[i].HasEstimateAttachments = true
+			views[i].EstimateAttachmentGroup = attachmentGroup{Attachments: estimateAttachments, HasAttachments: true}
+			views[i].HasEstimate = true
+		}
+		views[i].PhotoCount = photoCount
+		views[i].HasPhotos = photoCount > 0
+		for j := range views[i].Comments {
+			comment, found := issueCommentByID(items[i].Comments, views[i].Comments[j].ID)
+			if found && a.canDeleteIssueComment(tenantSlug, items[i], comment, actorEmail, role) {
+				views[i].Comments[j].CanDelete = true
+				views[i].Comments[j].DeleteURL = "/app/anliegen/comment/delete"
+			}
+			commentAttachments := a.attachmentViewsForEntity(tenantSlug, "issue-comment", views[i].Comments[j].ID, actorEmail, role)
+			if len(commentAttachments) == 0 {
+				continue
+			}
+			views[i].Comments[j].Attachments = commentAttachments
+			views[i].Comments[j].HasAttachments = true
+			for _, attachment := range commentAttachments {
+				if attachment.IsImage {
+					views[i].PhotoCount++
+					views[i].HasPhotos = true
+				}
+			}
+		}
+	}
+	return views
+}
+
+func issueCommentByID(comments []issueComment, id string) (issueComment, bool) {
+	id = strings.TrimSpace(id)
+	for _, comment := range comments {
+		if comment.ID == id {
+			return comment, true
+		}
+	}
+	return issueComment{}, false
+}
+
+func (a *app) legacyIssuePhotoViews(tenantSlug string, item residentIssue) []attachmentView {
+	if a == nil || a.issueStore == nil || len(item.PhotoPaths) == 0 {
+		return nil
+	}
+	views := make([]attachmentView, 0, len(item.PhotoPaths))
+	for i := range item.PhotoPaths {
+		_, filename, ok := a.legacyIssuePhotoPath(tenantSlug, item, i)
+		if !ok {
+			continue
+		}
+		url := "/app/anliegen/" + url.PathEscape(item.ID) + "/photos/" + strconv.Itoa(i)
+		views = append(views, attachmentView{
+			ID:         "legacy-photo-" + strconv.Itoa(i),
+			Filename:   filename,
+			URL:        url,
+			PreviewURL: url,
+			ThumbURL:   url,
+			IsImage:    true,
+		})
+	}
+	return views
+}
+
+func (a *app) legacyIssuePhotoPath(tenantSlug string, item residentIssue, index int) (string, string, bool) {
+	if a == nil || a.issueStore == nil || a.issueStore.attachmentDir == "" || index < 0 || index >= len(item.PhotoPaths) {
+		return "", "", false
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug {
+		return "", "", false
+	}
+	filename := filepath.Base(strings.TrimSpace(item.PhotoPaths[index]))
+	if filename == "" || filename == "." || filename == string(filepath.Separator) {
+		return "", "", false
+	}
+	return filepath.Join(a.issueStore.attachmentDir, tenantSlug, filename), filename, true
+}
+
+func (a *app) attachmentViewsForEntity(tenantSlug string, entityType string, entityID string, actorEmail string, role string) []attachmentView {
+	if a == nil || a.attachmentStore == nil {
+		return nil
+	}
+	records := a.attachmentStore.ListEntity(tenantSlug, entityType, entityID)
+	views := make([]attachmentView, 0, len(records))
+	for _, record := range records {
+		views = append(views, attachmentViewFromRecord(record, a.canDeleteAttachment(tenantSlug, record, actorEmail, role)))
+	}
+	return views
+}
+
+func attachmentViewFromRecord(item attachmentRecord, canDelete bool) attachmentView {
+	escapedID := url.PathEscape(item.ID)
+	contentType := strings.ToLower(strings.TrimSpace(item.ContentType))
+	return attachmentView{
+		ID:          item.ID,
+		Filename:    item.Filename,
+		Size:        formatBytes(item.Size),
+		ContentType: contentType,
+		UploadedBy:  item.UploadedBy,
+		CreatedAt:   formatLocalDateTime(item.CreatedAt),
+		URL:         "/app/attachments/" + escapedID,
+		PreviewURL:  "/app/attachments/" + escapedID + "/preview",
+		ThumbURL:    "/app/attachments/" + escapedID + "/thumb",
+		IsImage:     isImageContentType(contentType),
+		IsPDF:       strings.Split(contentType, ";")[0] == "application/pdf",
+		CanDelete:   canDelete,
+		DeleteURL:   "/app/attachments/delete",
+	}
 }
 
 func issueViews(items []residentIssue) []issueView {
@@ -5494,29 +7430,40 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 			author = item.AuthorEmail
 		}
 		canResidentAct := !canManage && !readOnly && isOwner
+		canServiceAct := isServiceProviderRole(role) && issueAssignedToActor(item, actorEmail) && issueIsOpen(item)
+		hasEstimate := item.EstimateAmountCents > 0 || strings.TrimSpace(item.EstimateNote) != ""
 		views = append(views, issueView{
-			ID:              item.ID,
-			Title:           item.Title,
-			Body:            item.Body,
-			Author:          author,
-			AuthorEmail:     item.AuthorEmail,
-			Category:        item.Category,
-			Status:          status,
-			StatusClass:     issueStatusClass(status),
-			Priority:        priority,
-			AssigneeEmail:   item.AssigneeEmail,
-			HasAssignee:     item.AssigneeEmail != "",
-			Location:        issueLocationLabel(item.LocationType, item.LocationDetail),
-			CreatedAt:       formatLocalDateTime(item.CreatedAt),
-			CanComment:      canManage || canResidentAct,
-			CanClose:        canResidentAct && canResidentTransition(status, issueStatusDone),
-			CanReopen:       canResidentAct && canResidentTransition(status, issueStatusNew),
-			PhotoCount:      photoCount,
-			HasPhotos:       photoCount > 0,
-			Comments:        comments,
-			HasComments:     len(comments) > 0,
-			StatusOptions:   issueSelectOptions(issueStatuses(), status),
-			PriorityOptions: issueSelectOptions(issuePriorities(), priority),
+			ID:                   item.ID,
+			Title:                item.Title,
+			Body:                 item.Body,
+			Author:               author,
+			AuthorEmail:          item.AuthorEmail,
+			Category:             item.Category,
+			Status:               status,
+			StatusClass:          issueStatusClass(status),
+			Priority:             priority,
+			AssigneeEmail:        item.AssigneeEmail,
+			HasAssignee:          item.AssigneeEmail != "",
+			Location:             issueLocationLabel(item.LocationType, item.LocationDetail),
+			CreatedAt:            formatLocalDateTime(item.CreatedAt),
+			CanComment:           canManage || canResidentAct || canServiceAct,
+			CanClose:             canResidentAct && canResidentTransition(status, issueStatusDone),
+			CanReopen:            canResidentAct && canResidentTransition(status, issueStatusNew),
+			CanServiceUpdate:     canServiceAct,
+			ServiceProposal:      item.ServiceProposal,
+			HasServiceProposal:   strings.TrimSpace(item.ServiceProposal) != "",
+			CanEditEstimate:      canManage || canServiceAct,
+			EstimateAmount:       formatIssueEstimateAmount(item.EstimateAmountCents),
+			EstimateAmountValue:  formatIssueEstimateInput(item.EstimateAmountCents),
+			EstimateNote:         item.EstimateNote,
+			HasEstimate:          hasEstimate,
+			PhotoCount:           photoCount,
+			HasPhotos:            photoCount > 0,
+			Comments:             comments,
+			HasComments:          len(comments) > 0,
+			StatusOptions:        issueSelectOptions(issueStatuses(), status),
+			ServiceStatusOptions: issueSelectOptions(serviceProviderIssueStatuses(), status),
+			PriorityOptions:      issueSelectOptions(issuePriorities(), priority),
 		})
 	}
 	return views
@@ -5533,6 +7480,7 @@ func issueCommentViews(comments []issueComment) []issueCommentView {
 			author = comment.AuthorEmail
 		}
 		views = append(views, issueCommentView{
+			ID:        comment.ID,
 			Author:    author,
 			Body:      comment.Body,
 			CreatedAt: formatLocalDateTime(comment.CreatedAt),
@@ -5550,6 +7498,9 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request) {
 	}
 	if tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if denyServiceProviderArea(w, role) {
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
@@ -5575,24 +7526,37 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request) {
 	buildingMsg, buildingOK := buildingSettingsMessage(r.URL.Query().Get("building"))
 	heroMsg, heroOK := buildingHeroMessage(r.URL.Query().Get("hero"))
 	unitMsg, unitOK := buildingUnitMessage(r.URL.Query().Get("unit"))
+	paymentMsg, paymentOK := unitPaymentStatusMessage(r.URL.Query().Get("payment"))
+	units := a.unitStore.ListTenant(tenant.Slug)
+	billableWeight := billableUnitWeight(units)
 	a.render(w, "buildingSettings", map[string]any{
-		"Title":         "Gebäude",
-		"Tenant":        tenant,
-		"Email":         email,
-		"DisplayName":   profile.DisplayName(),
-		"Initials":      profile.Initials(),
-		"Role":          role,
-		"IsAdmin":       hasCapability(role, capabilityPlatformAdmin),
-		"CanSeeParking": hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
-		"ActivePage":    "settings",
-		"BuildingMsg":   buildingMsg,
-		"BuildingOK":    buildingOK,
-		"HeroMsg":       heroMsg,
-		"HeroOK":        heroOK,
-		"UnitMsg":       unitMsg,
-		"UnitOK":        unitOK,
-		"Units":         buildingUnitViews(a.unitStore.ListTenant(tenant.Slug)),
-		"UnitsEmpty":    emptyState("Noch keine Einheiten", "Angelegte Einheiten erscheinen hier mit Anteil und Kontaktlinks."),
+		"Title":            "Gebäude",
+		"Tenant":           tenant,
+		"Email":            email,
+		"DisplayName":      profile.DisplayName(),
+		"Initials":         profile.Initials(),
+		"Role":             role,
+		"IsAdmin":          hasCapability(role, capabilityPlatformAdmin),
+		"CanSeeParking":    hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
+		"ActivePage":       "settings",
+		"BuildingMsg":      buildingMsg,
+		"BuildingOK":       buildingOK,
+		"BrandIconOptions": tenantBrandIconOptions(tenant.BrandIcon),
+		"BrandIconLabel":   tenantBrandIconLabel(tenant.BrandIcon),
+		"HeroMsg":          heroMsg,
+		"HeroOK":           heroOK,
+		"HasCustomHero":    a.hasTenantHero(tenant.Slug),
+		"UnitMsg":          unitMsg,
+		"UnitOK":           unitOK,
+		"Units":            buildingUnitViews(units),
+		"UnitTotal":        len(units),
+		"BillableUnits":    formatBillableUnitWeight(billableWeight),
+		"BillableLabel":    billableUnitCountLabel(billableWeight),
+		"UnitsEmpty":       emptyState("Noch keine Einheiten", "Angelegte Einheiten erscheinen hier mit Anteil und Kontaktlinks."),
+		"PaymentMsg":       paymentMsg,
+		"PaymentOK":        paymentOK,
+		"PaymentRows":      a.unitPaymentStatusViewsForUnits(tenant.Slug, units),
+		"HasPaymentRows":   len(units) > 0,
 	})
 }
 
@@ -5623,6 +7587,8 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request) {
 			Limit:      200,
 		})
 	}
+	eventViews := auditEventViews(events)
+	stats := auditStats(events, action, query)
 	a.render(w, "auditLog", map[string]any{
 		"Title":         "Audit-Log",
 		"Tenant":        tenant,
@@ -5633,12 +7599,13 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request) {
 		"IsAdmin":       hasCapability(role, capabilityPlatformAdmin),
 		"CanSeeParking": hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
 		"ActivePage":    "audit",
-		"Events":        auditEventViews(events),
-		"HasEvents":     len(events) > 0,
+		"Events":        eventViews,
+		"HasEvents":     len(eventViews) > 0,
 		"EventsEmpty":   emptyState("Noch keine Audit-Einträge", "Sensible Aktionen erscheinen hier, sobald sie im Portal ausgeführt werden."),
 		"ActionOptions": auditActionOptions(action),
 		"ActionFilter":  action,
 		"SearchQuery":   query,
+		"AuditStats":    stats,
 	})
 }
 
@@ -5649,8 +7616,15 @@ func canViewAudit(role string) bool {
 
 func auditEventViews(events []auditEvent) []auditEventView {
 	views := make([]auditEventView, 0, len(events))
+	lastDate := ""
 	for _, event := range events {
-		views = append(views, auditEventViewFrom(event))
+		view := auditEventViewFrom(event)
+		if view.AtDate != lastDate {
+			view.ShowDateHeader = true
+			view.DateHeader = auditDateHeader(event.At)
+			lastDate = view.AtDate
+		}
+		views = append(views, view)
 	}
 	return views
 }
@@ -5665,18 +7639,74 @@ func auditEventViewFrom(event auditEvent) auditEventView {
 	for _, key := range keys {
 		details = append(details, auditDetailView{Key: auditDetailLabel(key), Value: event.Details[key]})
 	}
+	target := auditTargetLabel(event.TargetType, event.TargetID)
 	return auditEventView{
 		At:         formatLocalDateTime(event.At),
+		AtDate:     formatLocalDate(event.At),
+		AtTime:     formatLocalTime(event.At),
+		AtISO:      event.At.Format(time.RFC3339),
 		Action:     event.Action,
 		ActionText: auditActionLabel(event.Action),
+		ActionTone: auditActionTone(event.Action),
+		ToneLabel:  auditToneLabel(event.Action),
 		Actor:      event.ActorEmail,
 		ActorRole:  event.ActorRole,
-		Target:     auditTargetLabel(event.TargetType, event.TargetID),
+		Target:     target,
 		TargetType: auditTargetTypeLabel(event.TargetType),
+		HasTarget:  target != "",
 		Summary:    event.Summary,
 		Details:    details,
 		HasDetails: len(details) > 0,
 	}
+}
+
+func auditStats(events []auditEvent, action string, query string) auditStatsView {
+	stats := auditStatsView{
+		TotalEvents:   len(events),
+		FilterSummary: "Alle Aktionen",
+	}
+	actors := map[string]struct{}{}
+	now := time.Now().In(time.Local)
+	for _, event := range events {
+		actor := normalizeEmail(event.ActorEmail)
+		if actor != "" {
+			actors[actor] = struct{}{}
+		}
+		if sameLocalDate(event.At.In(time.Local), now) {
+			stats.TodayCount++
+		}
+	}
+	stats.ActorCount = len(actors)
+	chips := []auditFilterChipView{}
+	if action != "" {
+		chips = append(chips, auditFilterChipView{Label: "Aktion", Value: auditActionLabel(action)})
+	}
+	query = strings.TrimSpace(query)
+	if query != "" {
+		chips = append(chips, auditFilterChipView{Label: "Suche", Value: query})
+	}
+	if len(chips) > 0 {
+		parts := make([]string, 0, len(chips))
+		for _, chip := range chips {
+			parts = append(parts, chip.Label+": "+chip.Value)
+		}
+		stats.FilterSummary = strings.Join(parts, " · ")
+	}
+	stats.ActiveFilters = chips
+	stats.HasActiveFilters = len(chips) > 0
+	return stats
+}
+
+func auditDateHeader(t time.Time) string {
+	local := t.In(time.Local)
+	today := time.Now().In(time.Local)
+	if sameLocalDate(local, today) {
+		return "Heute"
+	}
+	if sameLocalDate(local, today.AddDate(0, 0, -1)) {
+		return "Gestern"
+	}
+	return formatLocalDate(t)
 }
 
 func auditActionOptions(selected string) []selectOption {
@@ -5690,9 +7720,13 @@ func auditActionOptions(selected string) []selectOption {
 		auditActionHeroUpdate,
 		auditActionUnitSave,
 		auditActionUnitDelete,
+		auditActionUnitPayment,
 		auditActionDocumentUpload,
 		auditActionDocumentDownload,
 		auditActionDocumentReplace,
+		auditActionHandoverCreate,
+		auditActionHandoverConfirm,
+		auditActionHandoverFile,
 		auditActionVoteCreate,
 		auditActionVoteOpen,
 		auditActionVoteClose,
@@ -5702,6 +7736,11 @@ func auditActionOptions(selected string) []selectOption {
 		auditActionParkingMonth,
 		auditActionParkingReminder,
 		auditActionIssueWorkflow,
+		auditActionIssueEstimate,
+		auditActionIssueServiceAdd,
+		auditActionIssueServiceDrop,
+		auditActionContactSave,
+		auditActionContactDelete,
 	} {
 		options = append(options, selectOption{Value: action, Label: auditActionLabel(action), Selected: selected == action})
 	}
@@ -5726,12 +7765,20 @@ func auditActionLabel(action string) string {
 		return "Einheit gespeichert"
 	case auditActionUnitDelete:
 		return "Einheit gelöscht"
+	case auditActionUnitPayment:
+		return "Zahlungsstatus geändert"
 	case auditActionDocumentUpload:
 		return "Dokument hochgeladen"
 	case auditActionDocumentDownload:
 		return "Dokument heruntergeladen"
 	case auditActionDocumentReplace:
 		return "Dokument ersetzt"
+	case auditActionHandoverCreate:
+		return "Übergabe angelegt"
+	case auditActionHandoverConfirm:
+		return "Übergabe bestätigt"
+	case auditActionHandoverFile:
+		return "Übergabe abgelegt"
 	case auditActionVoteCreate:
 		return "Abstimmung angelegt"
 	case auditActionVoteOpen:
@@ -5750,8 +7797,40 @@ func auditActionLabel(action string) string {
 		return "Zahlungserinnerung gesendet"
 	case auditActionIssueWorkflow:
 		return "Anliegen-Workflow geändert"
+	case auditActionIssueEstimate:
+		return "Kostenvoranschlag aktualisiert"
+	case auditActionIssueServiceAdd:
+		return "Dienstleister eingeladen"
+	case auditActionIssueServiceDrop:
+		return "Dienstleister-Zugriff entzogen"
+	case auditActionContactSave:
+		return "Kontakt gespeichert"
+	case auditActionContactDelete:
+		return "Kontakt deaktiviert"
 	default:
 		return action
+	}
+}
+
+func auditActionTone(action string) string {
+	switch normalizeAuditAction(action) {
+	case auditActionInviteCreate, auditActionUnitSave, auditActionDocumentUpload, auditActionHandoverCreate, auditActionHandoverConfirm, auditActionVoteCreate, auditActionVoteOpen, auditActionVoteCast, auditActionVoteReminder, auditActionParkingReminder, auditActionIssueServiceAdd, auditActionContactSave, auditActionLogin:
+		return "add"
+	case auditActionInviteDelete, auditActionUnitDelete, auditActionDocumentReplace, auditActionVoteClose, auditActionIssueServiceDrop, auditActionContactDelete:
+		return "danger"
+	default:
+		return "change"
+	}
+}
+
+func auditToneLabel(action string) string {
+	switch auditActionTone(action) {
+	case "add":
+		return "Hinzugefügt"
+	case "danger":
+		return "Kritisch"
+	default:
+		return "Geändert"
 	}
 }
 
@@ -5787,6 +7866,8 @@ func auditTargetTypeLabel(targetType string) string {
 		return "Dokument"
 	case "ballot":
 		return "Abstimmung"
+	case "handover":
+		return "Übergabe"
 	default:
 		return strings.TrimSpace(targetType)
 	}
@@ -5826,6 +7907,12 @@ func auditDetailLabel(key string) string {
 		return "Zahlungsart"
 	case "payment_reference":
 		return "Referenz"
+	case "estimate_amount":
+		return "Kostenschätzung"
+	case "file_count":
+		return "Dateien"
+	case "has_file":
+		return "Datei"
 	case "balance":
 		return "Offener Betrag"
 	case "status":
@@ -5870,6 +7957,8 @@ func auditDetailLabel(key string) string {
 		return "Empfänger"
 	case "deadline":
 		return "Frist"
+	case "document_id":
+		return "Dokument"
 	default:
 		return strings.ReplaceAll(key, "_", " ")
 	}
@@ -5918,7 +8007,9 @@ func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request) {
 		TargetID:   tenant.Slug,
 		Summary:    "Gebäudedaten geändert",
 		Details: map[string]string{
-			"changed_fields": "Stammdaten, Kontaktblock, Notdienst, Hausmeister",
+			"changed_fields":     "Stammdaten, Marke, Kontaktblock, Notdienst, Hausmeister",
+			"brand_icon":         tenantBrandIconLabel(override.BrandIcon),
+			"brand_abbreviation": override.BrandAbbreviation,
 		},
 	})
 	http.Redirect(w, r, "/app/settings/building?building=saved", http.StatusSeeOther)
@@ -5942,6 +8033,12 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/settings/building?hero=invalid", http.StatusSeeOther)
 		return
 	}
+	previous := ""
+	if a.tenantOverrides != nil {
+		if override, ok := a.tenantOverrides.Get(tenant.Slug); ok {
+			previous = override.HeroImage
+		}
+	}
 	filename, err := a.saveTenantHeroImage(tenant.Slug, header)
 	if err != nil {
 		log.Printf("tenant hero upload failed for %s: %v", tenant.Slug, err)
@@ -5950,9 +8047,15 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request) {
 	}
 	if a.tenantOverrides != nil {
 		if err := a.tenantOverrides.SetHeroImage(tenant.Slug, filename); err != nil {
+			_ = a.removeTenantHeroImage(filename)
 			log.Printf("tenant hero save failed for %s: %v", tenant.Slug, err)
 			http.Redirect(w, r, "/app/settings/building?hero=error", http.StatusSeeOther)
 			return
+		}
+	}
+	if previous != "" && previous != filename {
+		if err := a.removeTenantHeroImage(previous); err != nil {
+			log.Printf("tenant old hero cleanup failed for %s: %v", tenant.Slug, err)
 		}
 	}
 	a.recordAudit(auditEvent{
@@ -5965,6 +8068,46 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request) {
 		Summary:    "Hero-Bild geändert",
 	})
 	http.Redirect(w, r, "/app/settings/building?hero=saved", http.StatusSeeOther)
+}
+
+func (a *app) deleteBuildingHero(w http.ResponseWriter, r *http.Request) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
+	if !ok {
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	previous := ""
+	if a.tenantOverrides != nil {
+		var err error
+		previous, err = a.tenantOverrides.ClearHeroImage(tenant.Slug)
+		if err != nil {
+			log.Printf("tenant hero reset failed for %s: %v", tenant.Slug, err)
+			http.Redirect(w, r, "/app/settings/building?hero=error", http.StatusSeeOther)
+			return
+		}
+	}
+	if previous != "" {
+		if err := a.removeTenantHeroImage(previous); err != nil {
+			log.Printf("tenant hero remove failed for %s: %v", tenant.Slug, err)
+		}
+		a.recordAudit(auditEvent{
+			TenantSlug: tenant.Slug,
+			ActorEmail: actorEmail,
+			ActorRole:  role,
+			Action:     auditActionHeroUpdate,
+			TargetType: "hero",
+			TargetID:   tenant.Slug,
+			Summary:    "Hero-Bild entfernt",
+		})
+	}
+	http.Redirect(w, r, "/app/settings/building?hero=removed", http.StatusSeeOther)
 }
 
 func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request) {
@@ -6021,8 +8164,10 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request) {
 		TargetID:   item.ID,
 		Summary:    "Einheit gespeichert",
 		Details: map[string]string{
-			"unit_label": item.Label,
-			"share":      formatMiteigentumsanteil(item.MiteigentumsanteilPPM),
+			"unit_label":         item.Label,
+			"unit_type":          unitTypeLabel(item.UnitType),
+			"billable_weight":    unitBillableLabel(item.BillableWeightPPM),
+			"miteigentumsanteil": formatMiteigentumsanteil(item.MiteigentumsanteilPPM),
 		},
 	})
 	http.Redirect(w, r, "/app/settings/building?unit=saved", http.StatusSeeOther)
@@ -6076,11 +8221,64 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request) {
 		TargetID:   deleteID,
 		Summary:    "Einheit gelöscht",
 		Details: map[string]string{
-			"unit_label": removedUnit.Label,
-			"share":      formatMiteigentumsanteil(removedUnit.MiteigentumsanteilPPM),
+			"unit_label":         removedUnit.Label,
+			"unit_type":          unitTypeLabel(removedUnit.UnitType),
+			"billable_weight":    unitBillableLabel(removedUnit.BillableWeightPPM),
+			"miteigentumsanteil": formatMiteigentumsanteil(removedUnit.MiteigentumsanteilPPM),
 		},
 	})
 	http.Redirect(w, r, "/app/settings/building?unit=deleted", http.StatusSeeOther)
+}
+
+func (a *app) updateUnitPaymentStatus(w http.ResponseWriter, r *http.Request) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
+	if !ok {
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	unitID := normalizeUnitID(r.FormValue("unit_id"))
+	status := normalizeUnitPaymentStatus(r.FormValue("status"))
+	if unitID == "" || status == "" {
+		http.Redirect(w, r, "/app/settings/building?payment=invalid", http.StatusSeeOther)
+		return
+	}
+	members := a.unitStore.MembersForUnit(tenant.Slug, unitID)
+	if !members.Found {
+		http.Redirect(w, r, "/app/settings/building?payment=missing", http.StatusSeeOther)
+		return
+	}
+	record, err := a.unitPaymentStore.Set(unitPaymentStatus{
+		TenantSlug: tenant.Slug,
+		UnitID:     unitID,
+		Status:     status,
+		UpdatedBy:  actorEmail,
+	})
+	if err != nil {
+		log.Printf("unit payment status save failed for %s/%s: %v", tenant.Slug, unitID, err)
+		http.Redirect(w, r, "/app/settings/building?payment=error", http.StatusSeeOther)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: actorEmail,
+		ActorRole:  role,
+		Action:     auditActionUnitPayment,
+		TargetType: "unit",
+		TargetID:   unitID,
+		Summary:    "Zahlungsstatus geändert",
+		Details: map[string]string{
+			"unit_label": members.Unit.Label,
+			"status":     unitPaymentStatusLabel(record.Status),
+		},
+	})
+	http.Redirect(w, r, "/app/settings/building?payment=saved", http.StatusSeeOther)
 }
 
 func (a *app) buildingSettingsContext(w http.ResponseWriter, r *http.Request) (tenantConfig, string, string, userProfile, bool) {
@@ -6103,20 +8301,25 @@ func (a *app) buildingSettingsContext(w http.ResponseWriter, r *http.Request) (t
 
 func tenantOverrideFromForm(values url.Values) (tenantOverride, error) {
 	override := tenantOverride{
-		MetaSet:        true,
-		Name:           strings.TrimSpace(values.Get("name")),
-		Address:        strings.TrimSpace(values.Get("address")),
-		ContactName:    strings.TrimSpace(values.Get("contact_name")),
-		ContactEmail:   normalizeEmail(values.Get("contact_email")),
-		ContactPhone:   strings.TrimSpace(values.Get("contact_phone")),
-		EmergencyName:  strings.TrimSpace(values.Get("emergency_name")),
-		EmergencyPhone: strings.TrimSpace(values.Get("emergency_phone")),
-		CaretakerName:  strings.TrimSpace(values.Get("caretaker_name")),
-		CaretakerEmail: normalizeEmail(values.Get("caretaker_email")),
-		CaretakerPhone: strings.TrimSpace(values.Get("caretaker_phone")),
+		MetaSet:           true,
+		Name:              strings.TrimSpace(values.Get("name")),
+		Address:           strings.TrimSpace(values.Get("address")),
+		BrandIcon:         normalizeTenantBrandIcon(values.Get("brand_icon")),
+		BrandAbbreviation: normalizeTenantBrandAbbreviation(values.Get("brand_abbreviation")),
+		ContactName:       strings.TrimSpace(values.Get("contact_name")),
+		ContactEmail:      normalizeEmail(values.Get("contact_email")),
+		ContactPhone:      strings.TrimSpace(values.Get("contact_phone")),
+		EmergencyName:     strings.TrimSpace(values.Get("emergency_name")),
+		EmergencyPhone:    strings.TrimSpace(values.Get("emergency_phone")),
+		CaretakerName:     strings.TrimSpace(values.Get("caretaker_name")),
+		CaretakerEmail:    normalizeEmail(values.Get("caretaker_email")),
+		CaretakerPhone:    strings.TrimSpace(values.Get("caretaker_phone")),
 	}
 	if override.Name == "" || override.Address == "" {
 		return tenantOverride{}, fmt.Errorf("building name and address are required")
+	}
+	if override.BrandIcon == "" {
+		return tenantOverride{}, fmt.Errorf("invalid brand icon")
 	}
 	if len([]rune(override.Name)) > 160 || len([]rune(override.Address)) > 500 || len([]rune(override.ContactName)) > 160 || len([]rune(override.ContactPhone)) > 80 || len([]rune(override.EmergencyName)) > 160 || len([]rune(override.EmergencyPhone)) > 80 || len([]rune(override.CaretakerName)) > 160 || len([]rune(override.CaretakerPhone)) > 80 {
 		return tenantOverride{}, fmt.Errorf("building field too long")
@@ -6155,10 +8358,16 @@ func buildingUnitFromForm(tenantSlug string, values url.Values) (unit, error) {
 	if err != nil {
 		return unit{}, err
 	}
+	unitType := normalizeUnitType(values.Get("unit_type"))
+	if unitType == "" {
+		return unit{}, fmt.Errorf("invalid unit type")
+	}
 	return unit{
 		ID:                    id,
 		TenantSlug:            normalizeSlug(tenantSlug),
 		Label:                 label,
+		UnitType:              unitType,
+		BillableWeightPPM:     defaultUnitBillableWeight(unitType),
 		MiteigentumsanteilPPM: share,
 		OwnerEmails:           owners,
 		RenterEmails:          renters,
@@ -6189,6 +8398,10 @@ func buildingUnitViews(units []unit) []buildingUnitView {
 		views = append(views, buildingUnitView{
 			ID:                 item.ID,
 			Label:              item.Label,
+			UnitType:           item.UnitType,
+			UnitTypeLabel:      unitTypeLabel(item.UnitType),
+			TypeOptions:        unitTypeOptions(item.UnitType),
+			BillableLabel:      unitBillableLabel(item.BillableWeightPPM),
 			Share:              formatMiteigentumsanteil(item.MiteigentumsanteilPPM),
 			ShareValue:         strconv.Itoa(item.MiteigentumsanteilPPM),
 			OwnerEmails:        strings.Join(item.OwnerEmails, ", "),
@@ -6197,6 +8410,207 @@ func buildingUnitViews(units []unit) []buildingUnitView {
 		})
 	}
 	return views
+}
+
+func (a *app) unitPaymentStatusViewsForUnits(tenantSlug string, units []unit) []unitPaymentStatusView {
+	statuses := map[string]unitPaymentStatus{}
+	if a != nil && a.unitPaymentStore != nil {
+		for _, item := range a.unitPaymentStore.ListTenant(tenantSlug) {
+			statuses[item.UnitID] = item
+		}
+	}
+	views := make([]unitPaymentStatusView, 0, len(units))
+	for _, item := range units {
+		record, hasRecord := statuses[normalizeUnitID(item.ID)]
+		views = append(views, unitPaymentStatusViewFromUnit(item, "", record, hasRecord))
+	}
+	return views
+}
+
+func (a *app) unitPaymentStatusViewsForEmail(tenantSlug string, email string) []unitPaymentStatusView {
+	if a == nil || a.unitStore == nil || a.unitPaymentStore == nil {
+		return nil
+	}
+	memberships := a.unitStore.UnitsForEmail(tenantSlug, email)
+	views := make([]unitPaymentStatusView, 0, len(memberships))
+	for _, membership := range memberships {
+		record, hasRecord := a.unitPaymentStore.Get(tenantSlug, membership.Unit.ID)
+		if !hasRecord {
+			continue
+		}
+		views = append(views, unitPaymentStatusViewFromUnit(membership.Unit, membership.Relation, record, true))
+	}
+	return views
+}
+
+func unitPaymentStatusViewFromUnit(item unit, relation string, record unitPaymentStatus, hasRecord bool) unitPaymentStatusView {
+	status := unitPaymentStatusOpen
+	if hasRecord {
+		status = record.Status
+	}
+	view := unitPaymentStatusView{
+		UnitID:        item.ID,
+		UnitLabel:     item.Label,
+		UnitTypeLabel: unitTypeLabel(item.UnitType),
+		Relation:      unitPaymentRelationLabel(relation),
+		Status:        unitPaymentStatusLabel(status),
+		StatusValue:   normalizeUnitPaymentStatus(status),
+		StatusClass:   unitPaymentStatusClass(status),
+		Detail:        unitPaymentStatusDetail(status, hasRecord),
+		StatusOptions: unitPaymentStatusOptions(status),
+	}
+	if hasRecord && !record.UpdatedAt.IsZero() {
+		view.UpdatedAt = formatDateTimeIn(record.UpdatedAt, time.Local, deATShortDateTimeLayout)
+		view.HasUpdatedAt = true
+	}
+	if hasRecord {
+		view.UpdatedBy = record.UpdatedBy
+	}
+	return view
+}
+
+func unitPaymentRelationLabel(relation string) string {
+	switch normalizeRole(relation) {
+	case roleOwner:
+		return "Eigentümer"
+	case roleRenter:
+		return "Mieter"
+	default:
+		return strings.TrimSpace(relation)
+	}
+}
+
+func unitTypeOptions(selected string) []selectOption {
+	selected = normalizeUnitType(selected)
+	options := []selectOption{
+		{Value: unitTypeResidential, Label: "Wohnung"},
+		{Value: unitTypeCommercial, Label: "Geschäftslokal"},
+		{Value: unitTypeParking, Label: "Stellplatz"},
+		{Value: unitTypeStorage, Label: "Keller / Lager"},
+		{Value: unitTypeOther, Label: "Sonstiges"},
+	}
+	for i := range options {
+		options[i].Selected = options[i].Value == selected
+	}
+	return options
+}
+
+func unitTypeLabel(unitType string) string {
+	switch normalizeUnitType(unitType) {
+	case unitTypeResidential:
+		return "Wohnung"
+	case unitTypeCommercial:
+		return "Geschäftslokal"
+	case unitTypeParking:
+		return "Stellplatz"
+	case unitTypeStorage:
+		return "Keller / Lager"
+	case unitTypeOther:
+		return "Sonstiges"
+	default:
+		return "Einheit"
+	}
+}
+
+func unitBillableLabel(weight int) string {
+	if weight <= 0 {
+		return "zählt nicht als WE"
+	}
+	return "zählt als " + formatBillableUnitWeight(weight) + " WE"
+}
+
+func normalizeUnitPaymentRecord(item unitPaymentStatus) (unitPaymentStatus, error) {
+	item.TenantSlug = normalizeSlug(item.TenantSlug)
+	item.UnitID = normalizeUnitID(item.UnitID)
+	item.Status = normalizeUnitPaymentStatus(item.Status)
+	item.UpdatedBy = normalizeEmail(item.UpdatedBy)
+	if !item.UpdatedAt.IsZero() {
+		item.UpdatedAt = item.UpdatedAt.UTC().Truncate(time.Second)
+	}
+	if item.TenantSlug == "" || item.UnitID == "" || item.Status == "" {
+		return unitPaymentStatus{}, fmt.Errorf("invalid unit payment status")
+	}
+	return item, nil
+}
+
+func normalizeUnitPaymentStatus(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", unitPaymentStatusOpen, "open":
+		return unitPaymentStatusOpen
+	case unitPaymentStatusPaid, "paid":
+		return unitPaymentStatusPaid
+	case unitPaymentStatusPartial, "teilweise", "partial", "partial-paid":
+		return unitPaymentStatusPartial
+	case unitPaymentStatusOverdue, "überfällig", "overdue":
+		return unitPaymentStatusOverdue
+	default:
+		return ""
+	}
+}
+
+func unitPaymentStatusLabel(status string) string {
+	switch normalizeUnitPaymentStatus(status) {
+	case unitPaymentStatusPaid:
+		return "Bezahlt"
+	case unitPaymentStatusPartial:
+		return "Teilbezahlt"
+	case unitPaymentStatusOverdue:
+		return "Überfällig"
+	default:
+		return "Offen"
+	}
+}
+
+func unitPaymentStatusClass(status string) string {
+	switch normalizeUnitPaymentStatus(status) {
+	case unitPaymentStatusPaid:
+		return "ok"
+	case unitPaymentStatusPartial:
+		return "info"
+	case unitPaymentStatusOverdue:
+		return "dringend"
+	default:
+		return ""
+	}
+}
+
+func unitPaymentStatusDetail(status string, hasRecord bool) string {
+	if !hasRecord {
+		return "Noch nicht gesetzt."
+	}
+	switch normalizeUnitPaymentStatus(status) {
+	case unitPaymentStatusPaid:
+		return "Als bezahlt markiert."
+	case unitPaymentStatusPartial:
+		return "Teilzahlung vorgemerkt."
+	case unitPaymentStatusOverdue:
+		return "Bitte zeitnah prüfen."
+	default:
+		return "Offen vorgemerkt."
+	}
+}
+
+func unitPaymentStatusOptions(selected string) []selectOption {
+	selected = normalizeUnitPaymentStatus(selected)
+	options := []selectOption{
+		{Value: unitPaymentStatusOpen, Label: unitPaymentStatusLabel(unitPaymentStatusOpen)},
+		{Value: unitPaymentStatusPaid, Label: unitPaymentStatusLabel(unitPaymentStatusPaid)},
+		{Value: unitPaymentStatusPartial, Label: unitPaymentStatusLabel(unitPaymentStatusPartial)},
+		{Value: unitPaymentStatusOverdue, Label: unitPaymentStatusLabel(unitPaymentStatusOverdue)},
+	}
+	for i := range options {
+		options[i].Selected = options[i].Value == selected
+	}
+	return options
+}
+
+func sortUnitPaymentStatuses(items []unitPaymentStatus) {
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].TenantSlug != items[j].TenantSlug {
+			return items[i].TenantSlug < items[j].TenantSlug
+		}
+		return items[i].UnitID < items[j].UnitID
+	})
 }
 
 func buildingSettingsMessage(status string) (string, bool) {
@@ -6216,10 +8630,12 @@ func buildingHeroMessage(status string) (string, bool) {
 	switch status {
 	case "saved":
 		return "Hero-Bild gespeichert.", true
+	case "removed":
+		return "Hero-Bild entfernt. Das Standardbild ist wieder aktiv.", true
 	case "invalid":
 		return "Bitte ein JPG-, PNG- oder WebP-Bild bis 5 MB auswählen.", false
 	case "error":
-		return "Das Hero-Bild konnte nicht gespeichert werden.", false
+		return "Das Hero-Bild konnte nicht geändert werden.", false
 	default:
 		return "", false
 	}
@@ -6244,6 +8660,21 @@ func buildingUnitMessage(status string) (string, bool) {
 	}
 }
 
+func unitPaymentStatusMessage(status string) (string, bool) {
+	switch status {
+	case "saved":
+		return "Zahlungsstatus gespeichert.", true
+	case "invalid":
+		return "Bitte Einheit und Zahlungsstatus prüfen.", false
+	case "missing":
+		return "Diese Einheit wurde nicht gefunden.", false
+	case "error":
+		return "Der Zahlungsstatus konnte nicht gespeichert werden.", false
+	default:
+		return "", false
+	}
+}
+
 func (a *app) profileSettings(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	email, role, tenantSlug, ok := a.currentUser(r)
@@ -6253,6 +8684,9 @@ func (a *app) profileSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	if tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if denyServiceProviderArea(w, role) {
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
@@ -6282,9 +8716,12 @@ func (a *app) profileSettings(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
-	email, _, tenantSlug, ok := a.currentUser(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if denyServiceProviderArea(w, role) {
 		return
 	}
 	if !sameOriginPost(r) {
@@ -6371,6 +8808,9 @@ func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	if denyServiceProviderArea(w, role) {
+		return
+	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	prefs := defaultNotificationPreferences()
 	if a.notificationPrefs != nil {
@@ -6397,9 +8837,12 @@ func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) updateNotificationSettings(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
-	email, _, tenantSlug, ok := a.currentUser(r)
+	email, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if denyServiceProviderArea(w, role) {
 		return
 	}
 	if !sameOriginPost(r) {
@@ -6985,6 +9428,17 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	if _, ok := data["AppVersion"]; !ok {
 		data["AppVersion"] = buildLabel()
 	}
+	if _, ok := data["DisplayVersion"]; !ok {
+		data["DisplayVersion"] = displayVersion(appVersion)
+	}
+	if _, ok := data["AssetVersion"]; !ok {
+		data["AssetVersion"] = assetVersion()
+	}
+	if _, ok := data["ReleaseNotes"]; !ok {
+		notes := releaseNotes()
+		data["ReleaseNotes"] = notes
+		data["HasReleaseNotes"] = len(notes) > 0
+	}
 	enrichCapabilityData(data)
 	a.enrichUnreadAnnouncementData(data)
 	a.enrichIssueData(data)
@@ -7002,6 +9456,12 @@ func enrichCapabilityData(data map[string]any) {
 	if _, ok := data["IsAdmin"]; !ok {
 		data["IsAdmin"] = hasCapability(role, capabilityPlatformAdmin)
 	}
+	if _, ok := data["IsServiceProvider"]; !ok {
+		data["IsServiceProvider"] = isServiceProviderRole(role)
+	}
+	if _, ok := data["CanUseResidentAreas"]; !ok {
+		data["CanUseResidentAreas"] = canUseResidentAreas(role)
+	}
 	if _, ok := data["CanManageUsers"]; !ok {
 		data["CanManageUsers"] = hasCapability(role, capabilityManageUsers)
 	}
@@ -7013,6 +9473,9 @@ func enrichCapabilityData(data map[string]any) {
 	}
 	if _, ok := data["CanManageBuilding"]; !ok {
 		data["CanManageBuilding"] = hasCapability(role, capabilityManageBuilding)
+	}
+	if _, ok := data["CanManageHandovers"]; !ok {
+		data["CanManageHandovers"] = canManageHandovers(role)
 	}
 	if _, ok := data["CanViewAudit"]; !ok {
 		data["CanViewAudit"] = canViewAudit(role)
@@ -7072,13 +9535,279 @@ func (a *app) enrichIssueData(data map[string]any) {
 func buildLabel() string {
 	version := strings.TrimPrefix(strings.TrimSpace(appVersion), "v")
 	if version == "" {
-		version = "0.1.0"
+		version = "0.6.13"
 	}
 	commit := strings.TrimSpace(gitCommit)
 	if commit == "" {
 		commit = "dev"
 	}
 	return fmt.Sprintf("%s (%s)", version, commit)
+}
+
+func assetVersion() string {
+	version := strings.TrimPrefix(strings.TrimSpace(appVersion), "v")
+	if version == "" {
+		version = "0.6.13"
+	}
+	commit := strings.TrimSpace(gitCommit)
+	parts := []string{version}
+	if commit == "" || commit == "dev" {
+		commit = ""
+	}
+	if commit != "" {
+		parts = append(parts, commit)
+	}
+	if assetNonce != "" {
+		parts = append(parts, assetNonce)
+	}
+	return url.QueryEscape(strings.Join(parts, "-"))
+}
+
+func displayVersion(version string) string {
+	version = strings.TrimPrefix(strings.TrimSpace(version), "v")
+	if version == "" {
+		return "0.6.13"
+	}
+	var b strings.Builder
+	for _, r := range version {
+		if (r >= '0' && r <= '9') || r == '.' {
+			b.WriteRune(r)
+			continue
+		}
+		break
+	}
+	if b.Len() == 0 {
+		return version
+	}
+	return b.String()
+}
+
+func releaseNotes() []releaseNoteView {
+	return []releaseNoteView{
+		{
+			Version:  "0.6.13",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Formulare bleiben auf kleinen Bildschirmen handhabbar.",
+			Intro:    "Längere Dialoge führen jetzt klarer zum Speichern, ohne dass der Abschluss aus dem Blick rutscht.",
+			Items: []releaseNoteItemView{
+				{Label: "Dialoge", Text: "Formularinhalte scrollen innerhalb des Fensters; der wichtige Abschluss bleibt erreichbar."},
+				{Label: "Mobil", Text: "Auch umfangreiche Eingaben wie Abstimmungen behalten eine sichtbare Aktion."},
+			},
+		},
+		{
+			Version:  "0.6.12",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Die Seitenleiste bleibt aufgeräumt.",
+			Intro:    "Auch lange Namen und alle freigeschalteten Bereiche passen jetzt sauber in die Portalnavigation.",
+			Items: []releaseNoteItemView{
+				{Label: "Navigation", Text: "Menüpunkte behalten verlässlichen Platz und bleiben vollständig erreichbar."},
+				{Label: "Profilbereich", Text: "Version, Rolle und Abmeldung bleiben sichtbar, ohne den unteren Rand zu berühren."},
+			},
+		},
+		{
+			Version:  "0.6.11",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Der Audit-Log liest sich wie eine klare Historie.",
+			Intro:    "Sensible Aktionen erscheinen jetzt als ruhige Zeitlinie mit Überblick und Details bei Bedarf.",
+			Items: []releaseNoteItemView{
+				{Label: "Überblick", Text: "Ereignisse, beteiligte Personen und heutige Aktionen stehen kompakt am Anfang."},
+				{Label: "Historie", Text: "Einträge sind nach Tagen gruppiert; Details öffnen erst, wenn sie gebraucht werden."},
+			},
+		},
+		{
+			Version:  "0.6.10",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Anliegen sind klarer geführt.",
+			Intro:    "Melden, eigene Anliegen und Verwaltung sind jetzt deutlich getrennt, damit die Seite nicht mehr wie ein langer Formularstapel wirkt.",
+			Items: []releaseNoteItemView{
+				{Label: "Anliegen", Text: "Die Übersicht zeigt Statuskarten, einen kompakten Meldebereich und eine kurze Verwaltungsvorschau."},
+				{Label: "Triage", Text: "Das Board bleibt vollständig, zeigt Bearbeitung aber erst bei Bedarf pro Anliegen."},
+			},
+		},
+		{
+			Version:  "0.6.9",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Das Portal startet mobil schneller beim Inhalt.",
+			Intro:    "Die Navigation bleibt vollständig erreichbar, nimmt auf dem Handy aber nicht mehr den ersten Bildschirm ein.",
+			Items: []releaseNoteItemView{
+				{Label: "Mobil", Text: "Ein kompakter Kopfbereich zeigt Haus, Adresse und Menü, damit die eigentliche Aufgabe sofort sichtbar wird."},
+				{Label: "Navigation", Text: "Das Menü öffnet bei Bedarf die bekannten Bereiche, Benutzerinfo, Version und Abmeldung."},
+			},
+		},
+		{
+			Version:  "0.6.8",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Dokumente sind ruhiger und schneller erfassbar.",
+			Intro:    "Das Archiv zeigt Dateien kompakter, klarer und ohne harte Umbrüche in langen Dateinamen.",
+			Items: []releaseNoteItemView{
+				{Label: "Dokumente", Text: "Titel, Sichtbarkeit, Version und Dateiname stehen jetzt in einer aufgeräumten Zeile."},
+				{Label: "Mobil", Text: "Download, Vorschau und Ersetzen bleiben erreichbar, ohne den Inhalt zusammenzudrücken."},
+			},
+		},
+		{
+			Version:  "0.6.7",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Der Kostenblock bricht mobil sauber um.",
+			Intro:    "Die Preiszeile bleibt kompakt und benennt die Wohnungseinheit im erklärenden Text.",
+			Items: []releaseNoteItemView{
+				{Label: "Preise", Text: "1 € pro Monat bleibt als klare Zeile sichtbar, je Wohnungseinheit erklärt im Begleittext."},
+				{Label: "Mobil", Text: "Der Bereich vermeidet seitliches Scrollen auf kleinen Bildschirmen."},
+			},
+		},
+		{
+			Version:  "0.6.6",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Faire Kosten sind präziser formuliert.",
+			Intro:    "Die Startseite benennt die Preislogik kürzer und klarer, besonders auf kleinen Bildschirmen.",
+			Items: []releaseNoteItemView{
+				{Label: "Preise", Text: "Der Richtwert wurde kompakter auf die Wohnungseinheit bezogen."},
+				{Label: "Mobil", Text: "Der Kostenblock bricht ruhiger um und bleibt leichter scanbar."},
+			},
+		},
+		{
+			Version:  "0.6.5",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Benutzer & Rechte lesen sich mobil ruhiger.",
+			Intro:    "Zugänge, Rollen und Sonderrechte bleiben auf kleinen Bildschirmen klar gegliedert.",
+			Items: []releaseNoteItemView{
+				{Label: "Mobil", Text: "Rollenhinweise und Rechte erscheinen als lesbare Chips, ohne unschöne Worttrennungen."},
+				{Label: "Übersicht", Text: "Personenkarten haben mehr Luft, klare Abschnitte und stabile Aktionsflächen."},
+			},
+		},
+		{
+			Version:  "0.6.4",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Verwaltungslisten sitzen besser auf dem Handy.",
+			Intro:    "Aushänge und Termine lassen sich mobil ruhiger bearbeiten, ohne dass Aktionen aus der Karte rutschen.",
+			Items: []releaseNoteItemView{
+				{Label: "Mobil", Text: "Bearbeiten und Löschen bleiben in Aushang- und Terminlisten sichtbar im jeweiligen Eintrag."},
+				{Label: "Bedienung", Text: "Die Aktionsflächen haben mehr verlässlichen Platz und lassen sich besser treffen."},
+			},
+		},
+		{
+			Version:  "0.6.3",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Parkplatznutzung führt klarer in den Start.",
+			Intro:    "Wenn noch keine Monatswerte vorhanden sind, zeigt die Seite jetzt die nächsten sinnvollen Schritte statt einer leeren Fläche.",
+			Items: []releaseNoteItemView{
+				{Label: "Einstieg", Text: "Konfiguration, Zugriff und Monatswerte sind als ruhiger Ablauf sichtbar."},
+				{Label: "Rollen", Text: "Verwaltung und Bewohner sehen jeweils nur die passenden Aktionen."},
+				{Label: "Klarheit", Text: "Die Seite bleibt bewusst bei Transparenz und privater Stellplatznutzung, ohne Buchhaltung oder Mahnwesen zu versprechen."},
+			},
+		},
+		{
+			Version:  "0.6.2",
+			Date:     "9. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Audit-Log auf kleinen Bildschirmen klarer.",
+			Intro:    "Sensible Aktionen bleiben unterwegs besser lesbar und passen sauber in den verfügbaren Platz.",
+			Items: []releaseNoteItemView{
+				{Label: "Mobil", Text: "Filter und Audit-Einträge stapeln sich jetzt ohne seitliches Scrollen."},
+				{Label: "Lesbarkeit", Text: "Zeitpunkt, Aktion, Person, Ziel und Details wirken wie ruhige Karten statt wie eine gedrückte Tabelle."},
+			},
+		},
+		{
+			Version:  "0.6.1",
+			Date:     "8. Juli 2026",
+			Kind:     "Schnittstellen",
+			Headline: "BMD-Prüfung konkreter vorbereitet.",
+			Intro:    "Für die Abstimmung mit dem Steuerberater gibt es jetzt ein klares Rohdaten-Beispiel, ohne Buchhaltung ins Portal zu ziehen.",
+			Items: []releaseNoteItemView{
+				{Label: "BMD", Text: "Ein internes Kandidatenformat beschreibt Haus, Einheit, Zeitraum, Referenz, Betrag und Status als Rohdaten."},
+				{Label: "Prüfung", Text: "Golden File und Checkliste machen den nächsten BMD-NTCS-Testimport nachvollziehbar."},
+				{Label: "Grenzen", Text: "Konten- und Steuerfelder bleiben gesperrt, bis ein reales Mapping bestätigt ist."},
+			},
+		},
+		{
+			Version:  "0.6.0",
+			Date:     "8. Juli 2026",
+			Kind:     "Schnittstellen",
+			Headline: "E-Rechnungen besser vorbereitet.",
+			Intro:    "hausv.org kann ebInterface-Rechnungen als geschützte Unterlagen einordnen, ohne daraus Buchhaltung zu machen.",
+			Items: []releaseNoteItemView{
+				{Label: "ebInterface", Text: "Rechnungen in den Profilen 5.0 und 6.0 werden als Metadaten gelesen und als geschütztes XML-Dokument abgelegt."},
+				{Label: "Dokumente", Text: "XML-Dateien können im Dokumentenbereich sicher gespeichert werden."},
+				{Label: "Grenzen", Text: "Rechnungen bleiben Empfang und Ablage: keine Buchung, keine Steuerlogik und kein Zahlungsauftrag."},
+				{Label: "Qualität", Text: "Golden Files und Fehlerberichte sichern die unterstützten Profile ab."},
+			},
+		},
+		{
+			Version:  "0.5.0",
+			Date:     "8. Juli 2026",
+			Kind:     "Klarheit",
+			Headline: "Positionierung und Schnittstellen klarer.",
+			Intro:    "Die Startseite erklärt jetzt noch genauer, wofür hausv.org steht: Kommunikation, Transparenz und Anschlussfähigkeit ohne eigene Buchhaltung.",
+			Items: []releaseNoteItemView{
+				{Label: "Startseite", Text: "Funktionen, Pilotbausteine und Ausblick sind sauberer getrennt und leichter einzuordnen."},
+				{Label: "Faire Kosten", Text: "Die Preislogik spricht konsequent von Wohnungseinheiten und erklärt Zubehör wie Keller oder Stellplätze transparenter."},
+				{Label: "Österreich", Text: "camt.053 und camt.054 sind als Zahlungsstatusquellen eingeordnet; BMD/RZL und ebInterface bleiben Übergaben an bestehende Systeme."},
+				{Label: "Qualität", Text: "Schnittstellen erhalten klare Gates für Profile, Golden Files, Feldlimits und spätere XSD-Prüfung."},
+			},
+		},
+		{
+			Version:  "0.4.0",
+			Date:     "8. Juli 2026",
+			Kind:     "Neue Verwaltung",
+			Headline: "Übergaben sauber im Griff.",
+			Intro:    "Nutzerwechsel lassen sich jetzt strukturiert erfassen, bestätigen und sicher ablegen.",
+			Items: []releaseNoteItemView{
+				{Label: "Übergaben", Text: "Räume, Zähler, Schlüssel, Fotos und Notizen werden in einem klaren Protokoll gesammelt."},
+				{Label: "Bestätigung", Text: "Ausziehende und einziehende Personen können vorbereitete Protokolle per begrenztem Link bestätigen."},
+				{Label: "Dokumente", Text: "Protokolle lassen sich als PDF exportieren und direkt zur passenden Einheit ablegen."},
+				{Label: "Roadmap", Text: "Dienstleisterzugang, Bankdateien und Zahlungsaufträge sind für die österreichische Roadmap sauber abgegrenzt."},
+			},
+		},
+		{
+			Version:  "0.3.0",
+			Date:     "8. Juli 2026",
+			Kind:     "Verwaltung",
+			Headline: "Besser steuern, gezielter teilen.",
+			Intro:    "Dienstleister, Kontakte, Kalender und Zahlungsstatus sind klarer in den Hausalltag eingebunden.",
+			Items: []releaseNoteItemView{
+				{Label: "Dienstleister", Text: "Externe Helfer sehen nur zugewiesene Anliegen und können dort Rückfragen oder Terminvorschläge ergänzen."},
+				{Label: "Adressbuch", Text: "Hausmeister, Notdienste und wiederkehrende Firmen lassen sich pro Haus gepflegt hinterlegen."},
+				{Label: "Kalender", Text: "Termine und passende Dienstleister-Zeitfenster können als geschützter Kalenderfeed abonniert werden."},
+				{Label: "Zahlungsstatus", Text: "Einheiten können transparent als offen, bezahlt, teilbezahlt oder überfällig markiert werden."},
+			},
+		},
+		{
+			Version:  "0.2.0",
+			Date:     "8. Juli 2026",
+			Kind:     "Produktpflege",
+			Headline: "Mehr Ruhe, mehr Überblick.",
+			Intro:    "Die Oberfläche führt jetzt klarer durch Hausalltag, Anhänge und neue Informationen.",
+			Items: []releaseNoteItemView{
+				{Label: "Startseite", Text: "Vertrauen, Datenschutz und faire Kosten sind verständlicher getrennt und leichter zu erfassen."},
+				{Label: "Faire Nutzung", Text: "Kostenfreie Nutzung und spätere Richtpreise orientieren sich an Wohnungseinheiten statt an Hausadressen."},
+				{Label: "Anhänge", Text: "Ausgewählte Dateien zeigen Vorschau, Größe und Entfernen vor dem Speichern."},
+				{Label: "Verwaltung", Text: "Audit-Log, Rollenhilfe und Abstimmungen sind besser lesbar und geben mehr Rückmeldung."},
+				{Label: "Frische Updates", Text: "Neue Versionen laden ihre aktuellen Skripte zuverlässig nach dem Deployment."},
+			},
+		},
+		{
+			Version:  "0.1.0",
+			Date:     "7. Juli 2026",
+			Kind:     "Erster Pilot",
+			Headline: "Das Hausportal geht an den Start.",
+			Intro:    "Die ersten zentralen Wege für eine digitale Hausgemeinschaft sind verfügbar.",
+			Items: []releaseNoteItemView{
+				{Label: "Hausüberblick", Text: "Aushänge, Termine, Anliegen, Dokumente und Parkplatznutzung laufen in einem privaten Portal zusammen."},
+				{Label: "Rollen", Text: "Eigentümer, Mieter, Beirat und Verwaltung erhalten getrennte Sichtbarkeit."},
+				{Label: "Sicherheit", Text: "Zugang, Anhänge und sensible Inhalte bleiben auf geschützte App-Routen begrenzt."},
+			},
+		},
+	}
 }
 
 func emptyState(title string, message string) emptyStateView {
@@ -7152,6 +9881,18 @@ func (a *app) tenantForRequest(r *http.Request) tenantConfig {
 	return tenant
 }
 
+func (a *app) isMarketingHost(r *http.Request) bool {
+	if a == nil || r == nil {
+		return false
+	}
+	host := normalizeHost(r.Host)
+	root := normalizeHost(a.rootDomain)
+	if host == "" || root == "" {
+		return false
+	}
+	return host == root || host == "www."+root
+}
+
 func (a *app) tenantBySlug(slug string) (tenantConfig, bool) {
 	tenant, ok := a.tenants[normalizeSlug(slug)]
 	if !ok {
@@ -7164,11 +9905,22 @@ func (a *app) withTenantOverride(tenant tenantConfig) tenantConfig {
 	if strings.TrimSpace(tenant.HeroImageURL) == "" {
 		tenant.HeroImageURL = defaultTenantHeroImageURL
 	}
+	tenant.BrandIcon = normalizeTenantBrandIcon(tenant.BrandIcon)
+	if tenant.BrandIcon == "" {
+		tenant.BrandIcon = tenantBrandCommunity
+	}
+	tenant.BrandAbbreviation = normalizeTenantBrandAbbreviation(tenant.BrandAbbreviation)
 	if a.tenantOverrides == nil {
+		if tenant.BrandAbbreviation == "" {
+			tenant.BrandAbbreviation = generatedTenantBrandAbbreviation(tenant)
+		}
 		return tenant
 	}
 	override, ok := a.tenantOverrides.Get(tenant.Slug)
 	if !ok {
+		if tenant.BrandAbbreviation == "" {
+			tenant.BrandAbbreviation = generatedTenantBrandAbbreviation(tenant)
+		}
 		return tenant
 	}
 	if override.MetaSet {
@@ -7178,6 +9930,10 @@ func (a *app) withTenantOverride(tenant tenantConfig) tenantConfig {
 		if override.Address != "" {
 			tenant.Address = override.Address
 		}
+		if override.BrandIcon != "" {
+			tenant.BrandIcon = override.BrandIcon
+		}
+		tenant.BrandAbbreviation = firstNonEmpty(override.BrandAbbreviation, tenant.BrandAbbreviation)
 		tenant.ContactName = override.ContactName
 		tenant.ContactEmail = override.ContactEmail
 		tenant.ContactPhone = override.ContactPhone
@@ -7190,7 +9946,23 @@ func (a *app) withTenantOverride(tenant tenantConfig) tenantConfig {
 	if override.HeroImage != "" {
 		tenant.HeroImageURL = "/tenant-hero/" + tenant.Slug
 	}
+	tenant.BrandIcon = normalizeTenantBrandIcon(tenant.BrandIcon)
+	if tenant.BrandIcon == "" {
+		tenant.BrandIcon = tenantBrandCommunity
+	}
+	tenant.BrandAbbreviation = normalizeTenantBrandAbbreviation(tenant.BrandAbbreviation)
+	if tenant.BrandAbbreviation == "" {
+		tenant.BrandAbbreviation = generatedTenantBrandAbbreviation(tenant)
+	}
 	return tenant
+}
+
+func (a *app) hasTenantHero(tenantSlug string) bool {
+	if a == nil || a.tenantOverrides == nil {
+		return false
+	}
+	override, ok := a.tenantOverrides.Get(tenantSlug)
+	return ok && override.HeroImage != ""
 }
 
 func (a *app) publicBaseURL(r *http.Request, tenant tenantConfig) string {
@@ -7771,6 +10543,30 @@ func (s *tenantOverrideStore) SetHeroImage(tenantSlug string, filename string) e
 	return s.saveLocked()
 }
 
+func (s *tenantOverrideStore) ClearHeroImage(tenantSlug string) (string, error) {
+	if s == nil {
+		return "", nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" {
+		return "", fmt.Errorf("invalid tenant")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.Tenants == nil {
+		s.data.Tenants = map[string]tenantOverride{}
+	}
+	override := normalizeTenantOverride(s.data.Tenants[tenantSlug])
+	previous := override.HeroImage
+	if previous == "" {
+		return "", nil
+	}
+	override.HeroImage = ""
+	override.UpdatedAt = time.Now().UTC()
+	s.data.Tenants[tenantSlug] = override
+	return previous, s.saveLocked()
+}
+
 func (s *tenantOverrideStore) set(tenantSlug string, override tenantOverride) error {
 	if s == nil {
 		return nil
@@ -7814,6 +10610,8 @@ func (s *tenantOverrideStore) saveLocked() error {
 func normalizeTenantOverride(override tenantOverride) tenantOverride {
 	override.Name = strings.TrimSpace(override.Name)
 	override.Address = strings.TrimSpace(override.Address)
+	override.BrandIcon = normalizeTenantBrandIcon(override.BrandIcon)
+	override.BrandAbbreviation = normalizeTenantBrandAbbreviation(override.BrandAbbreviation)
 	override.ContactName = strings.TrimSpace(override.ContactName)
 	override.ContactEmail = normalizeEmail(override.ContactEmail)
 	override.ContactPhone = strings.TrimSpace(override.ContactPhone)
@@ -7830,6 +10628,92 @@ func normalizeTenantOverride(override tenantOverride) tenantOverride {
 		override.UpdatedAt = override.UpdatedAt.UTC()
 	}
 	return override
+}
+
+func normalizeTenantBrandIcon(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", tenantBrandCommunity, "weg":
+		return tenantBrandCommunity
+	case tenantBrandSingleHome, "single", "home", "house":
+		return tenantBrandSingleHome
+	case tenantBrandMultiTenant, "multi", "building", "apartment":
+		return tenantBrandMultiTenant
+	case tenantBrandMixedUse, "mixed", "business":
+		return tenantBrandMixedUse
+	case tenantBrandAddressPlate, "address", "plaque", "plate":
+		return tenantBrandAddressPlate
+	case tenantBrandParking, "garage":
+		return tenantBrandParking
+	default:
+		return ""
+	}
+}
+
+func tenantBrandIconLabel(icon string) string {
+	switch normalizeTenantBrandIcon(icon) {
+	case tenantBrandSingleHome:
+		return "Einfamilienhaus"
+	case tenantBrandMultiTenant:
+		return "Mehrparteienhaus"
+	case tenantBrandMixedUse:
+		return "Gemischt genutzt"
+	case tenantBrandAddressPlate:
+		return "Adressschild"
+	case tenantBrandParking:
+		return "Parkplatz / Ladeplatz"
+	default:
+		return "Hausgemeinschaft"
+	}
+}
+
+func tenantBrandIconOptions(selected string) []selectOption {
+	selected = normalizeTenantBrandIcon(selected)
+	options := []selectOption{
+		{Value: tenantBrandCommunity, Label: tenantBrandIconLabel(tenantBrandCommunity)},
+		{Value: tenantBrandMultiTenant, Label: tenantBrandIconLabel(tenantBrandMultiTenant)},
+		{Value: tenantBrandSingleHome, Label: tenantBrandIconLabel(tenantBrandSingleHome)},
+		{Value: tenantBrandMixedUse, Label: tenantBrandIconLabel(tenantBrandMixedUse)},
+		{Value: tenantBrandAddressPlate, Label: tenantBrandIconLabel(tenantBrandAddressPlate)},
+		{Value: tenantBrandParking, Label: tenantBrandIconLabel(tenantBrandParking)},
+	}
+	for i := range options {
+		options[i].Selected = options[i].Value == selected
+	}
+	return options
+}
+
+func normalizeTenantBrandAbbreviation(raw string) string {
+	raw = strings.ToUpper(strings.TrimSpace(raw))
+	if raw == "" {
+		return ""
+	}
+	var b strings.Builder
+	for _, r := range raw {
+		switch {
+		case r >= 'A' && r <= 'Z':
+			b.WriteRune(r)
+		case r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '-' || r == '.':
+			b.WriteRune(r)
+		case r == ' ' || r == '_' || r == '/':
+			b.WriteRune('-')
+		}
+		if b.Len() >= 12 {
+			break
+		}
+	}
+	return strings.Trim(b.String(), "-.")
+}
+
+func generatedTenantBrandAbbreviation(tenant tenantConfig) string {
+	if value := normalizeTenantBrandAbbreviation(tenant.Slug); value != "" {
+		return value
+	}
+	if value := normalizeTenantBrandAbbreviation(tenant.Host); value != "" {
+		return value
+	}
+	return "HAUS"
 }
 
 func (s *notificationPrefStore) Get(email string) notificationPreferences {
@@ -8081,6 +10965,26 @@ func (s *issueStore) UpdateWorkflow(tenantSlug string, id string, update issueWo
 		updated.Status = status
 		updated.Priority = priority
 		updated.AssigneeEmail = assignee
+		if update.UpdateServiceProposal {
+			updated.ServiceProposal = strings.TrimSpace(update.ServiceProposal)
+			updated.ServiceProposedBy = actorEmail
+			updated.ServiceProposedAt = changedAt
+			if updated.ServiceProposal == "" {
+				updated.ServiceProposedBy = ""
+				updated.ServiceProposedAt = time.Time{}
+			}
+		}
+		if update.UpdateEstimate {
+			updated.EstimateAmountCents = update.EstimateAmountCents
+			updated.EstimateNote = strings.TrimSpace(update.EstimateNote)
+			updated.EstimateUpdatedBy = actorEmail
+			updated.EstimateUpdatedAt = changedAt
+			if updated.EstimateAmountCents <= 0 && updated.EstimateNote == "" {
+				updated.EstimateAmountCents = 0
+				updated.EstimateUpdatedBy = ""
+				updated.EstimateUpdatedAt = time.Time{}
+			}
+		}
 		updated.UpdatedAt = changedAt
 		if oldStatus != status {
 			updated.StatusChangedAt = changedAt
@@ -8144,6 +11048,51 @@ func (s *issueStore) AddComment(tenantSlug string, id string, comment issueComme
 	return residentIssue{}, false, nil
 }
 
+func (s *issueStore) DeleteComment(tenantSlug string, id string, commentID string, at time.Time) (residentIssue, bool, error) {
+	if s == nil {
+		return residentIssue{}, false, nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	commentID = strings.TrimSpace(commentID)
+	if tenantSlug == "" || id == "" || commentID == "" {
+		return residentIssue{}, false, fmt.Errorf("invalid issue comment")
+	}
+	if at.IsZero() {
+		at = time.Now().UTC()
+	} else {
+		at = at.UTC()
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, existing := range s.data.Issues {
+		if normalizeSlug(existing.TenantSlug) != tenantSlug || existing.ID != id {
+			continue
+		}
+		updated := existing
+		comments := make([]issueComment, 0, len(updated.Comments))
+		deleted := false
+		for _, comment := range updated.Comments {
+			if comment.ID == commentID {
+				deleted = true
+				continue
+			}
+			comments = append(comments, comment)
+		}
+		if !deleted {
+			return residentIssue{}, false, nil
+		}
+		updated.Comments = comments
+		updated.UpdatedAt = at
+		s.data.Issues[i] = updated
+		if err := s.saveLocked(); err != nil {
+			return residentIssue{}, false, err
+		}
+		return copyIssue(updated), true, nil
+	}
+	return residentIssue{}, false, nil
+}
+
 func (a *app) saveTenantHeroImage(tenantSlug string, header *multipart.FileHeader) (string, error) {
 	if header == nil || header.Filename == "" || header.Size == 0 {
 		return "", fmt.Errorf("tenant hero image required")
@@ -8196,7 +11145,12 @@ func (a *app) saveTenantHeroImage(tenantSlug string, header *multipart.FileHeade
 		_ = os.Remove(tmpName)
 		return "", fmt.Errorf("tenant hero image too large")
 	}
-	filename := tenantSlug + "-hero" + ext
+	suffix, err := randomToken(8)
+	if err != nil {
+		_ = os.Remove(tmpName)
+		return "", fmt.Errorf("could not name tenant hero image")
+	}
+	filename := tenantSlug + "-hero-" + suffix + ext
 	dest := filepath.Join(a.tenantHeroDir, filename)
 	if err := os.Chmod(tmpName, 0o600); err != nil {
 		_ = os.Remove(tmpName)
@@ -8207,6 +11161,18 @@ func (a *app) saveTenantHeroImage(tenantSlug string, header *multipart.FileHeade
 		return "", fmt.Errorf("could not replace tenant hero image")
 	}
 	return filename, nil
+}
+
+func (a *app) removeTenantHeroImage(filename string) error {
+	filename = filepath.Base(strings.TrimSpace(filename))
+	if a == nil || a.tenantHeroDir == "" || filename == "" || filename == "." || filename == string(filepath.Separator) {
+		return nil
+	}
+	err := os.Remove(filepath.Join(a.tenantHeroDir, filename))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
 }
 
 func (s *issueStore) SavePhoto(tenantSlug string, issueID string, header *multipart.FileHeader) (string, error) {
@@ -8278,6 +11244,8 @@ func issuePhotoExtension(contentType string) (string, bool) {
 		return ".png", true
 	case "image/webp":
 		return ".webp", true
+	case "application/xml", "text/xml":
+		return ".xml", true
 	default:
 		return "", false
 	}
@@ -8318,6 +11286,808 @@ func sortIssues(items []residentIssue) {
 		}
 		return items[i].CreatedAt.After(items[j].CreatedAt)
 	})
+}
+
+func newAttachmentStore(path string, fileDir string) (*attachmentStore, error) {
+	if fileDir == "" && path != "" {
+		fileDir = filepath.Join(filepath.Dir(path), "attachments")
+	}
+	store := &attachmentStore{path: path, fileDir: fileDir, data: attachmentStoreData{Attachments: []attachmentRecord{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read attachment data")
+	}
+	if len(raw) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("could not decode attachment data")
+	}
+	return store, nil
+}
+
+func newContactBookStore(path string) (*contactBookStore, error) {
+	store := &contactBookStore{path: path, data: contactBookStoreData{Contacts: []managedContact{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read contact data")
+	}
+	if len(raw) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid contact data")
+	}
+	return store, nil
+}
+
+func newUnitPaymentStatusStore(path string) (*unitPaymentStatusStore, error) {
+	store := &unitPaymentStatusStore{path: path, data: unitPaymentStatusData{Statuses: []unitPaymentStatus{}}}
+	if path == "" {
+		return store, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return store, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read unit payment status data")
+	}
+	if len(raw) == 0 {
+		return store, nil
+	}
+	if err := json.Unmarshal(raw, &store.data); err != nil {
+		return nil, fmt.Errorf("invalid unit payment status data")
+	}
+	return store, nil
+}
+
+func (s *unitPaymentStatusStore) Set(item unitPaymentStatus) (unitPaymentStatus, error) {
+	if s == nil {
+		return unitPaymentStatus{}, fmt.Errorf("unit payment status store not configured")
+	}
+	item, err := normalizeUnitPaymentRecord(item)
+	if err != nil {
+		return unitPaymentStatus{}, err
+	}
+	now := time.Now().UTC().Truncate(time.Second)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, existing := range s.data.Statuses {
+		if normalizeSlug(existing.TenantSlug) != item.TenantSlug || normalizeUnitID(existing.UnitID) != item.UnitID {
+			continue
+		}
+		item.UpdatedAt = now
+		s.data.Statuses[i] = item
+		sortUnitPaymentStatuses(s.data.Statuses)
+		if err := s.saveLocked(); err != nil {
+			return unitPaymentStatus{}, err
+		}
+		return item, nil
+	}
+	item.UpdatedAt = now
+	s.data.Statuses = append(s.data.Statuses, item)
+	sortUnitPaymentStatuses(s.data.Statuses)
+	if err := s.saveLocked(); err != nil {
+		return unitPaymentStatus{}, err
+	}
+	return item, nil
+}
+
+func (s *unitPaymentStatusStore) Get(tenantSlug string, unitID string) (unitPaymentStatus, bool) {
+	if s == nil {
+		return unitPaymentStatus{}, false
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	unitID = normalizeUnitID(unitID)
+	if tenantSlug == "" || unitID == "" {
+		return unitPaymentStatus{}, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, item := range s.data.Statuses {
+		normalized, err := normalizeUnitPaymentRecord(item)
+		if err != nil {
+			continue
+		}
+		if normalized.TenantSlug == tenantSlug && normalized.UnitID == unitID {
+			return normalized, true
+		}
+	}
+	return unitPaymentStatus{}, false
+}
+
+func (s *unitPaymentStatusStore) ListTenant(tenantSlug string) []unitPaymentStatus {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []unitPaymentStatus{}
+	for _, item := range s.data.Statuses {
+		normalized, err := normalizeUnitPaymentRecord(item)
+		if err != nil || normalized.TenantSlug != tenantSlug {
+			continue
+		}
+		out = append(out, normalized)
+	}
+	sortUnitPaymentStatuses(out)
+	return out
+}
+
+func (s *unitPaymentStatusStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create unit payment status data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode unit payment status data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write unit payment status data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace unit payment status data")
+	}
+	return nil
+}
+
+func (s *contactBookStore) Upsert(item managedContact) (managedContact, bool, error) {
+	if s == nil {
+		return managedContact{}, false, fmt.Errorf("contact store not configured")
+	}
+	item, err := normalizeManagedContact(item)
+	if err != nil {
+		return managedContact{}, false, err
+	}
+	now := time.Now().UTC()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, existing := range s.data.Contacts {
+		if normalizeSlug(existing.TenantSlug) != item.TenantSlug || existing.ID != item.ID || item.ID == "" {
+			continue
+		}
+		item.CreatedAt = existing.CreatedAt
+		if item.CreatedAt.IsZero() {
+			item.CreatedAt = now
+		}
+		item.UpdatedAt = now
+		s.data.Contacts[i] = item
+		sortManagedContacts(s.data.Contacts)
+		if err := s.saveLocked(); err != nil {
+			return managedContact{}, false, err
+		}
+		return item, false, nil
+	}
+	if item.ID == "" {
+		id, err := randomToken(10)
+		if err != nil {
+			return managedContact{}, false, err
+		}
+		item.ID = id
+	}
+	item.CreatedAt = now
+	item.UpdatedAt = now
+	s.data.Contacts = append(s.data.Contacts, item)
+	sortManagedContacts(s.data.Contacts)
+	if err := s.saveLocked(); err != nil {
+		return managedContact{}, false, err
+	}
+	return item, true, nil
+}
+
+func (s *contactBookStore) Deactivate(tenantSlug string, id string, at time.Time) (managedContact, error) {
+	if s == nil {
+		return managedContact{}, fmt.Errorf("contact store not configured")
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	if tenantSlug == "" || id == "" {
+		return managedContact{}, fmt.Errorf("invalid contact")
+	}
+	if at.IsZero() {
+		at = time.Now().UTC()
+	} else {
+		at = at.UTC()
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, existing := range s.data.Contacts {
+		if normalizeSlug(existing.TenantSlug) != tenantSlug || existing.ID != id {
+			continue
+		}
+		existing.Active = false
+		existing.UpdatedAt = at
+		s.data.Contacts[i] = existing
+		sortManagedContacts(s.data.Contacts)
+		if err := s.saveLocked(); err != nil {
+			return managedContact{}, err
+		}
+		return existing, nil
+	}
+	return managedContact{}, nil
+}
+
+func (s *contactBookStore) ListTenant(tenantSlug string, includeInactive bool) []managedContact {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []managedContact{}
+	for _, item := range s.data.Contacts {
+		normalized, err := normalizeManagedContact(item)
+		if err != nil || normalized.TenantSlug != tenantSlug {
+			continue
+		}
+		if !includeInactive && !normalized.Active {
+			continue
+		}
+		out = append(out, normalized)
+	}
+	sortManagedContacts(out)
+	return out
+}
+
+func (s *contactBookStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create contact data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode contact data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write contact data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace contact data")
+	}
+	return nil
+}
+
+func managedContactFromForm(tenantSlug string, values url.Values) (managedContact, error) {
+	return normalizeManagedContact(managedContact{
+		ID:         strings.TrimSpace(values.Get("id")),
+		TenantSlug: tenantSlug,
+		Kind:       values.Get("kind"),
+		Name:       values.Get("name"),
+		Company:    values.Get("company"),
+		Email:      values.Get("email"),
+		Phone:      values.Get("phone"),
+		Notes:      values.Get("notes"),
+		Active:     values.Get("active") != "false",
+	})
+}
+
+func normalizeManagedContact(item managedContact) (managedContact, error) {
+	item.TenantSlug = normalizeSlug(item.TenantSlug)
+	item.ID = strings.TrimSpace(item.ID)
+	item.Kind = normalizeContactKind(item.Kind)
+	item.Name = truncateRunes(strings.TrimSpace(item.Name), 120)
+	item.Company = truncateRunes(strings.TrimSpace(item.Company), 140)
+	item.Email = normalizeEmail(item.Email)
+	item.Phone = truncateRunes(strings.TrimSpace(item.Phone), 80)
+	item.Notes = truncateRunes(strings.TrimSpace(item.Notes), 300)
+	if item.TenantSlug == "" || item.Kind == "" {
+		return managedContact{}, fmt.Errorf("invalid contact")
+	}
+	if item.Name == "" && item.Company == "" {
+		return managedContact{}, fmt.Errorf("contact name required")
+	}
+	if item.Email == "" && item.Phone == "" {
+		return managedContact{}, fmt.Errorf("contact route required")
+	}
+	if item.Email != "" {
+		if _, err := mail.ParseAddress(item.Email); err != nil {
+			return managedContact{}, fmt.Errorf("invalid email")
+		}
+	}
+	if item.CreatedAt.IsZero() {
+		item.CreatedAt = time.Now().UTC()
+	} else {
+		item.CreatedAt = item.CreatedAt.UTC()
+	}
+	if item.UpdatedAt.IsZero() {
+		item.UpdatedAt = item.CreatedAt
+	} else {
+		item.UpdatedAt = item.UpdatedAt.UTC()
+	}
+	return item, nil
+}
+
+func normalizeContactKind(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "dienstleister", "handwerker", "service":
+		return "Dienstleister"
+	case "hausmeister", "caretaker":
+		return "Hausmeister"
+	case "notdienst", "emergency":
+		return "Notdienst"
+	case "verwaltung", "manager":
+		return "Verwaltung"
+	case "sonstiges", "other":
+		return "Sonstiges"
+	default:
+		return ""
+	}
+}
+
+func contactKindOptions(selected string) []selectOption {
+	selected = normalizeContactKind(selected)
+	kinds := []string{"Dienstleister", "Hausmeister", "Notdienst", "Verwaltung", "Sonstiges"}
+	options := make([]selectOption, 0, len(kinds))
+	for _, kind := range kinds {
+		options = append(options, selectOption{Value: kind, Label: kind, Selected: selected == kind})
+	}
+	return options
+}
+
+func sortManagedContacts(items []managedContact) {
+	sort.SliceStable(items, func(i, j int) bool {
+		if items[i].Active != items[j].Active {
+			return items[i].Active
+		}
+		if items[i].Kind != items[j].Kind {
+			return items[i].Kind < items[j].Kind
+		}
+		left := strings.ToLower(managedContactDisplayName(items[i]))
+		right := strings.ToLower(managedContactDisplayName(items[j]))
+		if left != right {
+			return left < right
+		}
+		return items[i].ID < items[j].ID
+	})
+}
+
+func (s *attachmentStore) CreateUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, headers []*multipart.FileHeader, now time.Time) ([]attachmentRecord, error) {
+	if s == nil || len(headers) == 0 {
+		return nil, nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	entityType = normalizeAttachmentEntity(entityType)
+	entityID = strings.TrimSpace(entityID)
+	uploadedBy = normalizeEmail(uploadedBy)
+	if tenantSlug == "" || entityType == "" || entityID == "" || uploadedBy == "" {
+		return nil, fmt.Errorf("attachment target required")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	created := []attachmentRecord{}
+	for _, header := range headers {
+		if header == nil || strings.TrimSpace(header.Filename) == "" || header.Size == 0 {
+			continue
+		}
+		if header.Size > maxAttachmentBytes {
+			s.rollbackCreatedAttachmentsLocked(created)
+			return nil, fmt.Errorf("attachment too large")
+		}
+		id, err := randomToken(12)
+		if err != nil {
+			s.rollbackCreatedAttachmentsLocked(created)
+			return nil, err
+		}
+		fileSave, err := s.saveUploadedAttachmentFile(tenantSlug, id, header)
+		if err != nil {
+			s.rollbackCreatedAttachmentsLocked(created)
+			return nil, err
+		}
+		record := attachmentRecord{
+			ID:                 id,
+			TenantSlug:         tenantSlug,
+			EntityType:         entityType,
+			EntityID:           entityID,
+			UploadedBy:         uploadedBy,
+			Filename:           sanitizeDocumentFilename(header.Filename),
+			StoredFilename:     fileSave.StoredFilename,
+			ContentType:        fileSave.ContentType,
+			Size:               fileSave.Size,
+			PreviewFilename:    fileSave.PreviewFilename,
+			PreviewContentType: fileSave.PreviewContentType,
+			PreviewSize:        fileSave.PreviewSize,
+			ThumbFilename:      fileSave.ThumbFilename,
+			ThumbContentType:   fileSave.ThumbContentType,
+			ThumbSize:          fileSave.ThumbSize,
+			CreatedAt:          now.UTC(),
+		}
+		s.data.Attachments = append(s.data.Attachments, record)
+		created = append(created, record)
+	}
+	if len(created) == 0 {
+		return nil, nil
+	}
+	if err := s.saveLocked(); err != nil {
+		s.rollbackCreatedAttachmentsLocked(created)
+		return nil, err
+	}
+	return created, nil
+}
+
+type attachmentFileSave struct {
+	StoredFilename     string
+	ContentType        string
+	Size               int64
+	PreviewFilename    string
+	PreviewContentType string
+	PreviewSize        int64
+	ThumbFilename      string
+	ThumbContentType   string
+	ThumbSize          int64
+}
+
+func (s *attachmentStore) saveUploadedAttachmentFile(tenantSlug string, id string, header *multipart.FileHeader) (attachmentFileSave, error) {
+	if s.fileDir == "" {
+		return attachmentFileSave{}, fmt.Errorf("attachment file directory unavailable")
+	}
+	file, err := header.Open()
+	if err != nil {
+		return attachmentFileSave{}, fmt.Errorf("could not open attachment")
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(io.LimitReader(file, maxAttachmentBytes+1))
+	if err != nil {
+		return attachmentFileSave{}, fmt.Errorf("could not read attachment")
+	}
+	if int64(len(data)) > maxAttachmentBytes {
+		return attachmentFileSave{}, fmt.Errorf("attachment too large")
+	}
+	if len(data) == 0 {
+		return attachmentFileSave{}, fmt.Errorf("empty attachment")
+	}
+	contentType := detectAttachmentContentType(data, header)
+	if rejectActiveAttachmentContent(contentType) {
+		return attachmentFileSave{}, fmt.Errorf("unsafe attachment content")
+	}
+	ext, ok := attachmentExtension(contentType)
+	if !ok {
+		return attachmentFileSave{}, fmt.Errorf("unsupported attachment type")
+	}
+	dir := filepath.Join(s.fileDir, tenantSlug)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return attachmentFileSave{}, fmt.Errorf("could not create attachment directory")
+	}
+	storedFilename := id + ext
+	if err := writePrivateFile(filepath.Join(dir, storedFilename), data); err != nil {
+		return attachmentFileSave{}, fmt.Errorf("could not write attachment")
+	}
+	save := attachmentFileSave{
+		StoredFilename: storedFilename,
+		ContentType:    contentType,
+		Size:           int64(len(data)),
+	}
+	if isImageContentType(contentType) {
+		preview, previewSize, err := writeImageAttachmentVariant(dir, id, "-preview", data, attachmentPreviewMaxDimension)
+		if err == nil && preview != "" {
+			save.PreviewFilename = preview
+			save.PreviewContentType = "image/jpeg"
+			save.PreviewSize = previewSize
+		}
+		thumb, thumbSize, err := writeImageAttachmentVariant(dir, id, "-thumb", data, attachmentThumbMaxDimension)
+		if err == nil && thumb != "" {
+			save.ThumbFilename = thumb
+			save.ThumbContentType = "image/jpeg"
+			save.ThumbSize = thumbSize
+		}
+	}
+	return save, nil
+}
+
+func (s *attachmentStore) ListEntity(tenantSlug string, entityType string, entityID string) []attachmentRecord {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	entityType = normalizeAttachmentEntity(entityType)
+	entityID = strings.TrimSpace(entityID)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	items := []attachmentRecord{}
+	for _, item := range s.data.Attachments {
+		if item.DeletedAt != nil {
+			continue
+		}
+		if normalizeSlug(item.TenantSlug) == tenantSlug && normalizeAttachmentEntity(item.EntityType) == entityType && strings.TrimSpace(item.EntityID) == entityID {
+			items = append(items, item)
+		}
+	}
+	sort.SliceStable(items, func(i, j int) bool {
+		return items[i].CreatedAt.Before(items[j].CreatedAt)
+	})
+	return items
+}
+
+func (s *attachmentStore) Get(tenantSlug string, id string) (attachmentRecord, bool) {
+	if s == nil {
+		return attachmentRecord{}, false
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, item := range s.data.Attachments {
+		if item.DeletedAt == nil && normalizeSlug(item.TenantSlug) == tenantSlug && item.ID == id {
+			return item, true
+		}
+	}
+	return attachmentRecord{}, false
+}
+
+func (s *attachmentStore) Delete(tenantSlug string, id string, deletedAt time.Time) (attachmentRecord, bool, error) {
+	if s == nil {
+		return attachmentRecord{}, false, nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, item := range s.data.Attachments {
+		if item.DeletedAt != nil || normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != id {
+			continue
+		}
+		deleted := deletedAt.UTC()
+		s.data.Attachments[i].DeletedAt = &deleted
+		if err := s.saveLocked(); err != nil {
+			s.data.Attachments[i].DeletedAt = nil
+			return attachmentRecord{}, false, err
+		}
+		s.removeAttachmentRecordLocked(item)
+		return item, true, nil
+	}
+	return attachmentRecord{}, false, nil
+}
+
+func (s *attachmentStore) FilePath(item attachmentRecord, variant string) (string, string, int64, bool) {
+	if s == nil || s.fileDir == "" || item.StoredFilename == "" {
+		return "", "", 0, false
+	}
+	filename := item.StoredFilename
+	contentType := item.ContentType
+	size := item.Size
+	switch strings.ToLower(strings.TrimSpace(variant)) {
+	case "preview":
+		if item.PreviewFilename != "" {
+			filename = item.PreviewFilename
+			contentType = item.PreviewContentType
+			size = item.PreviewSize
+		}
+	case "thumb", "thumbnail":
+		if item.ThumbFilename != "" {
+			filename = item.ThumbFilename
+			contentType = item.ThumbContentType
+			size = item.ThumbSize
+		} else if item.PreviewFilename != "" {
+			filename = item.PreviewFilename
+			contentType = item.PreviewContentType
+			size = item.PreviewSize
+		}
+	}
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	path := filepath.Join(s.fileDir, normalizeSlug(item.TenantSlug), filename)
+	return path, contentType, size, true
+}
+
+func (s *attachmentStore) saveLocked() error {
+	if s.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return fmt.Errorf("could not create attachment data directory")
+	}
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not encode attachment data")
+	}
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return fmt.Errorf("could not write attachment data")
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("could not replace attachment data")
+	}
+	return nil
+}
+
+func (s *attachmentStore) rollbackCreatedAttachmentsLocked(items []attachmentRecord) {
+	if len(items) == 0 {
+		return
+	}
+	ids := map[string]struct{}{}
+	for _, item := range items {
+		ids[item.ID] = struct{}{}
+		s.removeAttachmentRecordLocked(item)
+	}
+	kept := s.data.Attachments[:0]
+	for _, item := range s.data.Attachments {
+		if _, ok := ids[item.ID]; ok {
+			continue
+		}
+		kept = append(kept, item)
+	}
+	s.data.Attachments = kept
+}
+
+func (s *attachmentStore) removeAttachmentRecordLocked(item attachmentRecord) {
+	for _, filename := range []string{item.StoredFilename, item.PreviewFilename, item.ThumbFilename} {
+		if filename == "" {
+			continue
+		}
+		_ = os.Remove(filepath.Join(s.fileDir, normalizeSlug(item.TenantSlug), filename))
+	}
+}
+
+func detectAttachmentContentType(data []byte, header *multipart.FileHeader) string {
+	limit := len(data)
+	if limit > 512 {
+		limit = 512
+	}
+	detected := http.DetectContentType(data[:limit])
+	declared := ""
+	if header != nil {
+		declared = strings.ToLower(strings.TrimSpace(header.Header.Get("Content-Type")))
+	}
+	if detected == "application/octet-stream" && declared != "" {
+		if _, ok := attachmentExtension(declared); ok {
+			return declared
+		}
+	}
+	return detected
+}
+
+func attachmentExtension(contentType string) (string, bool) {
+	switch strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0])) {
+	case "image/jpeg", "image/jpg":
+		return ".jpg", true
+	case "image/png":
+		return ".png", true
+	case "image/webp":
+		return ".webp", true
+	case "image/gif":
+		return ".gif", true
+	case "application/pdf":
+		return ".pdf", true
+	default:
+		return "", false
+	}
+}
+
+func normalizeAttachmentEntity(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "issue", "anliegen":
+		return "issue"
+	case "issue-estimate", "estimate", "kostenvoranschlag":
+		return "issue-estimate"
+	case "issue-comment", "comment", "anliegen-kommentar":
+		return "issue-comment"
+	case "announcement", "aushang":
+		return "announcement"
+	case "event", "termin":
+		return "event"
+	case "ballot", "vote", "abstimmung":
+		return "ballot"
+	case "handover", "uebergabe", "übergabe":
+		return "handover"
+	case "parking", "parkplatz":
+		return "parking"
+	case "document", "dokument":
+		return "document"
+	case "building", "tenant", "gebaeude", "gebäude":
+		return "building"
+	default:
+		return ""
+	}
+}
+
+func isImageContentType(contentType string) bool {
+	contentType = strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+	return strings.HasPrefix(contentType, "image/") && contentType != "image/svg+xml"
+}
+
+func rejectActiveAttachmentContent(contentType string) bool {
+	switch strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0])) {
+	case "text/html", "text/javascript", "application/javascript", "application/x-javascript", "image/svg+xml", "application/xhtml+xml", "application/xml", "text/xml":
+		return true
+	default:
+		return false
+	}
+}
+
+func writeImageAttachmentVariant(dir string, id string, suffix string, data []byte, maxDimension int) (string, int64, error) {
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return "", 0, err
+	}
+	resized := resizeImageNearest(img, maxDimension)
+	var out bytes.Buffer
+	if err := jpeg.Encode(&out, resized, &jpeg.Options{Quality: 82}); err != nil {
+		return "", 0, err
+	}
+	filename := id + suffix + ".jpg"
+	if err := writePrivateFile(filepath.Join(dir, filename), out.Bytes()); err != nil {
+		return "", 0, err
+	}
+	return filename, int64(out.Len()), nil
+}
+
+func resizeImageNearest(src image.Image, maxDimension int) image.Image {
+	bounds := src.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+	if width <= 0 || height <= 0 {
+		return src
+	}
+	if maxDimension <= 0 {
+		maxDimension = attachmentPreviewMaxDimension
+	}
+	scale := math.Min(float64(maxDimension)/float64(width), float64(maxDimension)/float64(height))
+	if scale > 1 {
+		scale = 1
+	}
+	dstWidth := int(math.Round(float64(width) * scale))
+	dstHeight := int(math.Round(float64(height) * scale))
+	if dstWidth < 1 {
+		dstWidth = 1
+	}
+	if dstHeight < 1 {
+		dstHeight = 1
+	}
+	dst := image.NewRGBA(image.Rect(0, 0, dstWidth, dstHeight))
+	for y := 0; y < dstHeight; y++ {
+		srcY := bounds.Min.Y + int(float64(y)*float64(height)/float64(dstHeight))
+		if srcY >= bounds.Max.Y {
+			srcY = bounds.Max.Y - 1
+		}
+		for x := 0; x < dstWidth; x++ {
+			srcX := bounds.Min.X + int(float64(x)*float64(width)/float64(dstWidth))
+			if srcX >= bounds.Max.X {
+				srcX = bounds.Max.X - 1
+			}
+			dst.Set(x, y, src.At(srcX, srcY))
+		}
+	}
+	return dst
+}
+
+func writePrivateFile(path string, data []byte) error {
+	out, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return err
+	}
+	_, writeErr := out.Write(data)
+	closeErr := out.Close()
+	if writeErr != nil || closeErr != nil {
+		_ = os.Remove(path)
+		if writeErr != nil {
+			return writeErr
+		}
+		return closeErr
+	}
+	return nil
 }
 
 func newDocumentStore(path string, fileDir string) (*documentStore, error) {
@@ -8711,6 +12481,8 @@ func documentExtension(contentType string) (string, bool) {
 		return ".png", true
 	case "image/webp":
 		return ".webp", true
+	case "application/xml", "text/xml":
+		return ".xml", true
 	default:
 		return "", false
 	}
@@ -8890,6 +12662,8 @@ func (a *app) documentViewsForActor(tenantSlug string, email string, role string
 }
 
 func documentViewFrom(item documentRecord) documentView {
+	contentType := strings.ToLower(strings.TrimSpace(item.ContentType))
+	canPreview := documentCanPreview(contentType)
 	return documentView{
 		ID:              item.ID,
 		Title:           item.Title,
@@ -8906,9 +12680,18 @@ func documentViewFrom(item documentRecord) documentView {
 		UploadedAt:      formatLocalDateTime(item.UploadedAt),
 		UploadedDate:    formatLocalDate(item.UploadedAt),
 		DownloadURL:     "/app/dokumente/" + url.PathEscape(item.ID) + "/download",
+		PreviewURL:      "/app/dokumente/" + url.PathEscape(item.ID) + "/preview",
+		CanPreview:      canPreview,
+		IsImage:         isImageContentType(contentType),
+		IsPDF:           strings.Split(contentType, ";")[0] == "application/pdf",
 		VersionLabel:    documentVersionLabel(item.Version),
 		ReplaceDialogID: "document-replace-" + item.ID,
 	}
+}
+
+func documentCanPreview(contentType string) bool {
+	contentType = strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+	return isImageContentType(contentType) || contentType == "application/pdf"
 }
 
 func documentFileKind(item documentRecord) string {
@@ -9110,6 +12893,30 @@ func (s *voteStore) Create(item ballot) (ballot, error) {
 		return ballot{}, err
 	}
 	return copyBallot(item), nil
+}
+
+func (s *voteStore) Delete(tenantSlug string, id string) (bool, error) {
+	if s == nil {
+		return false, nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	if tenantSlug == "" || id == "" {
+		return false, nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, item := range s.data.Ballots {
+		if normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != id {
+			continue
+		}
+		s.data.Ballots = append(s.data.Ballots[:i], s.data.Ballots[i+1:]...)
+		if err := s.saveLocked(); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, nil
 }
 
 func (s *voteStore) Open(tenantSlug string, id string, at time.Time) (ballot, bool, error) {
@@ -9614,6 +13421,18 @@ func (s *unitStore) ListTenant(tenantSlug string) []unit {
 
 func (s *unitStore) UnitCount(tenantSlug string) int {
 	return len(s.ListTenant(tenantSlug))
+}
+
+func (s *unitStore) BillableUnitWeight(tenantSlug string) int {
+	return billableUnitWeight(s.ListTenant(tenantSlug))
+}
+
+func billableUnitWeight(units []unit) int {
+	total := 0
+	for _, item := range units {
+		total += normalizeUnitBillableWeight(item.UnitType, item.BillableWeightPPM)
+	}
+	return total
 }
 
 func (s *unitStore) UnitsForEmail(tenantSlug string, email string) []unitMembership {
@@ -11364,15 +15183,19 @@ type userRow struct {
 }
 
 func (s *tokenStore) Put(token string, email string, tenantSlug string, ttl time.Duration) {
+	s.PutWithRedirect(token, email, tenantSlug, ttl, "")
+}
+
+func (s *tokenStore) PutWithRedirect(token string, email string, tenantSlug string, ttl time.Duration, redirectPath string) {
 	key := s.digest(token)
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.items[key] = loginToken{email: email, tenantSlug: tenantSlug, expiresAt: time.Now().Add(ttl)}
+	s.items[key] = loginToken{email: email, tenantSlug: tenantSlug, redirectPath: safeInternalRedirectPath(redirectPath), expiresAt: time.Now().Add(ttl)}
 }
 
-func (s *tokenStore) Consume(token string) (string, string, bool) {
+func (s *tokenStore) Consume(token string) (string, string, string, bool) {
 	if token == "" {
-		return "", "", false
+		return "", "", "", false
 	}
 	key := s.digest(token)
 	s.mu.Lock()
@@ -11380,11 +15203,22 @@ func (s *tokenStore) Consume(token string) (string, string, bool) {
 	item, ok := s.items[key]
 	if !ok || item.used || time.Now().After(item.expiresAt) {
 		delete(s.items, key)
-		return "", "", false
+		return "", "", "", false
 	}
 	item.used = true
 	s.items[key] = item
-	return item.email, item.tenantSlug, true
+	return item.email, item.tenantSlug, item.redirectPath, true
+}
+
+func safeInternalRedirectPath(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || !strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") || strings.Contains(raw, "://") {
+		return ""
+	}
+	if raw != "/app" && !strings.HasPrefix(raw, "/app/") {
+		return ""
+	}
+	return raw
 }
 
 func (s *tokenStore) digest(token string) string {
@@ -12117,6 +15951,24 @@ func unitCountLabel(count int) string {
 	return "Wohneinheiten"
 }
 
+func billableUnitCountLabel(weight int) string {
+	if weight == unitBillableFullPPM {
+		return "Wohneinheit"
+	}
+	return "Wohneinheiten"
+}
+
+func formatBillableUnitWeight(weight int) string {
+	if weight <= 0 {
+		return "0"
+	}
+	value := float64(weight) / float64(unitBillableFullPPM)
+	if weight%unitBillableFullPPM == 0 {
+		return formatDecimal(value, 0)
+	}
+	return strings.TrimRight(strings.TrimRight(formatDecimal(value, 2), "0"), ",")
+}
+
 func formatPeriodLabel(first time.Time, last time.Time, loc *time.Location) string {
 	if first.IsZero() || last.IsZero() {
 		return "Noch keine Messwerte"
@@ -12723,9 +16575,13 @@ func normalizeAuditAction(raw string) string {
 	switch raw {
 	case auditActionLogin, auditActionInviteCreate, auditActionInviteUpdate, auditActionInviteDelete,
 		auditActionBuildingUpdate, auditActionHeroUpdate, auditActionUnitSave, auditActionUnitDelete,
+		auditActionUnitPayment,
 		auditActionDocumentUpload, auditActionDocumentDownload, auditActionDocumentReplace,
+		auditActionHandoverCreate, auditActionHandoverConfirm, auditActionHandoverFile,
 		auditActionVoteCreate, auditActionVoteOpen, auditActionVoteClose, auditActionVoteCast, auditActionVoteReminder,
-		auditActionParkingSettings, auditActionParkingMonth, auditActionParkingReminder, auditActionIssueWorkflow:
+		auditActionParkingSettings, auditActionParkingMonth, auditActionParkingReminder, auditActionIssueWorkflow,
+		auditActionIssueEstimate, auditActionIssueServiceAdd, auditActionIssueServiceDrop,
+		auditActionContactSave, auditActionContactDelete:
 		return raw
 	default:
 		return ""
@@ -12777,6 +16633,18 @@ func truncateAuditValue(value string, limit int) string {
 	return string(runes[:limit-1]) + "…"
 }
 
+func truncateRunes(value string, limit int) string {
+	value = strings.TrimSpace(value)
+	if limit <= 0 {
+		return ""
+	}
+	runes := []rune(value)
+	if len(runes) <= limit {
+		return value
+	}
+	return string(runes[:limit])
+}
+
 func copyAuditEvent(event auditEvent) auditEvent {
 	if event.Details != nil {
 		details := make(map[string]string, len(event.Details))
@@ -12823,6 +16691,8 @@ func normalizeRole(raw string) string {
 		return roleBeirat
 	case "bewohner", "resident", "user":
 		return roleResident
+	case "dienstleister", "handwerker", "service-provider", "service_provider", "service provider", "contractor", "vendor", "external":
+		return roleServiceProvider
 	default:
 		return strings.TrimSpace(raw)
 	}
@@ -12975,6 +16845,42 @@ func normalizeUnitID(raw string) string {
 	return raw
 }
 
+func normalizeUnitType(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "wohnung", "wohneinheit", "residential":
+		return unitTypeResidential
+	case "geschaeft", "geschäft", "geschaeftslokal", "geschäftslokal", "commercial", "business":
+		return unitTypeCommercial
+	case "stellplatz", "parkplatz", "parking":
+		return unitTypeParking
+	case "keller", "lager", "storage":
+		return unitTypeStorage
+	case "sonstiges", "other":
+		return unitTypeOther
+	default:
+		return ""
+	}
+}
+
+func defaultUnitBillableWeight(unitType string) int {
+	switch normalizeUnitType(unitType) {
+	case unitTypeResidential, unitTypeCommercial:
+		return unitBillableFullPPM
+	default:
+		return 0
+	}
+}
+
+func normalizeUnitBillableWeight(unitType string, weight int) int {
+	if weight < 0 {
+		return 0
+	}
+	if weight > 0 {
+		return weight
+	}
+	return defaultUnitBillableWeight(unitType)
+}
+
 func normalizeUnits(raw []unit, fallbackTenant string) []unit {
 	out := make([]unit, 0, len(raw))
 	seen := map[string]struct{}{}
@@ -12994,6 +16900,11 @@ func normalizeUnits(raw []unit, fallbackTenant string) []unit {
 		if item.MiteigentumsanteilPPM < 0 {
 			item.MiteigentumsanteilPPM = 0
 		}
+		item.UnitType = normalizeUnitType(item.UnitType)
+		if item.UnitType == "" {
+			item.UnitType = unitTypeResidential
+		}
+		item.BillableWeightPPM = normalizeUnitBillableWeight(item.UnitType, item.BillableWeightPPM)
 		item.OwnerEmails = normalizeEmailList(item.OwnerEmails)
 		item.RenterEmails = normalizeEmailList(item.RenterEmails)
 		key := item.TenantSlug + "/" + item.ID
@@ -13193,6 +17104,21 @@ func redactedEmail(email string) string {
 	return name + "@" + parts[1]
 }
 
+const faviconSVG = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#172019"/>
+  <g fill="none" stroke="#e7c574" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 43h44"/>
+    <path d="M13 43V31l9-7 9 7v12"/>
+    <path d="M33 43V31l9-7 9 7v12"/>
+    <path d="M24 43V26l8-7 8 7v17"/>
+    <path d="M29 43v-8h6v8"/>
+    <path d="M18.5 35h4"/>
+    <path d="M41.5 35h4"/>
+    <path d="M29 29h6"/>
+  </g>
+</svg>`
+
 const pageTemplates = `
 {{define "designTokens"}}
       /* Design tokens: colors, spacing, radius, shadows and typography used by shared components. */
@@ -13209,6 +17135,83 @@ const pageTemplates = `
       --shadow-login:0 28px 70px rgba(0,0,0,.42);
       font-family: var(--font-sans);
 {{end}}
+{{define "hausvLandingMark"}}
+<svg class="hausv-mark hausv-mark-with-text" viewBox="0 0 72 56" aria-hidden="true" focusable="false">
+  <path class="mark-frame" d="M11 7h50c2.8 0 5 2.2 5 5v32c0 2.8-2.2 5-5 5H11c-2.8 0-5-2.2-5-5V12c0-2.8 2.2-5 5-5z"/>
+  <path d="M15 34h42"/>
+  <path d="M16 34v-8.5l7-5.5 7 5.5V34"/>
+  <path d="M42 34v-8.5l7-5.5 7 5.5V34"/>
+  <path d="M28 34V20.5L36 14l8 6.5V34"/>
+  <path d="M32.5 34v-7h7v7"/>
+  <path d="M19.5 28h3"/>
+  <path d="M49.5 28h3"/>
+  <path d="M32.5 23.5h7"/>
+  <text class="mark-word" x="36" y="44.2" text-anchor="middle">hausv.org</text>
+</svg>
+{{end}}
+{{define "hausvPlatformMark"}}
+<svg class="hausv-mark hausv-mark-platform" viewBox="0 0 64 48" aria-hidden="true" focusable="false">
+  <path class="mark-frame" d="M10 6h44c2.6 0 4.6 2 4.6 4.6v26.8c0 2.6-2 4.6-4.6 4.6H10c-2.6 0-4.6-2-4.6-4.6V10.6C5.4 8 7.4 6 10 6z"/>
+  <path d="M13 34h38"/>
+  <path d="M14.5 34v-9l7-5.5 7 5.5v9"/>
+  <path d="M35.5 34v-9l7-5.5 7 5.5v9"/>
+  <path d="M25 34V20.5L32 15l7 5.5V34"/>
+  <path d="M29 34v-7h6v7"/>
+  <path d="M18 28h3.5"/>
+  <path d="M42.5 28H46"/>
+  <path d="M29.5 23.5h5"/>
+</svg>
+{{end}}
+{{define "tenantBrandMark"}}
+{{if eq .Tenant.BrandIcon "single-home"}}
+<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false">
+  <path d="M12 35h40"/>
+  <path d="M16 35V22.5L32 11l16 11.5V35"/>
+  <path d="M26.5 35v-9h11v9"/>
+  <path d="M21.5 27.5h5M37.5 27.5h5"/>
+</svg>
+{{else if eq .Tenant.BrandIcon "multi-tenant"}}
+<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false">
+  <path d="M13 36h38"/>
+  <path d="M17 36V18h30v18"/>
+  <path d="M23 36v-7h6v7M35 36v-7h6v7"/>
+  <path d="M22 23h5M37 23h5M22 28h5M37 28h5"/>
+  <path d="M19 18l13-8 13 8"/>
+</svg>
+{{else if eq .Tenant.BrandIcon "mixed-use"}}
+<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false">
+  <path d="M14 36h36"/>
+  <path d="M18 36V17h28v19"/>
+  <path d="M18 24h28"/>
+  <path d="M22 36v-7h8v7M35 36v-7h7v7"/>
+  <path d="M22 21h5M36 21h5"/>
+  <path d="M16 17l16-7 16 7"/>
+</svg>
+{{else if eq .Tenant.BrandIcon "address-plaque"}}
+<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false">
+  <path d="M15 12h34a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z"/>
+  <path d="M20 21h24M20 28h18"/>
+  <path d="M46 28h.01"/>
+</svg>
+{{else if eq .Tenant.BrandIcon "parking"}}
+<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false">
+  <path d="M17 36h30"/>
+  <path d="M20 36l2.5-12h19L44 36"/>
+  <path d="M23 36v4M41 36v4"/>
+  <path d="M24 29h16"/>
+  <path d="M28 20h8a5 5 0 0 1 0 10h-8V16"/>
+</svg>
+{{else}}
+<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false">
+  <path d="M13 34h38"/>
+  <path d="M14.5 34v-9l7-5.5 7 5.5v9"/>
+  <path d="M35.5 34v-9l7-5.5 7 5.5v9"/>
+  <path d="M25 34V20.5L32 15l7 5.5V34"/>
+  <path d="M29 34v-7h6v7"/>
+  <path d="M18 28h3.5M42.5 28H46"/>
+</svg>
+{{end}}
+{{end}}
 {{define "home"}}
 <!doctype html>
 <html lang="de">
@@ -13216,6 +17219,8 @@ const pageTemplates = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13241,7 +17246,9 @@ const pageTemplates = `
     }
     header { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 28px clamp(20px,5vw,72px); color: #fff; }
     .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; }
-    .mark { min-width: 46px; height: 40px; border-radius: var(--radius-sm); background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.4); backdrop-filter: blur(6px); display: grid; place-items: center; padding: 0 9px; color: #fff; font-weight: 700; font-size: 13px; }
+    .mark { width: 58px; height: 46px; border-radius: var(--radius-sm); background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.4); backdrop-filter: blur(6px); display: grid; place-items: center; color: var(--gold-light); }
+    .mark .hausv-mark { width: 52px; height: 40px; display: block; stroke: currentColor; stroke-width: 2.15; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .mark .mark-word { fill: currentColor; stroke: none; font-family: var(--font-sans); font-size: 6.2px; font-weight: 900; letter-spacing: .02em; }
     .brand .name { font-family: var(--font-serif); font-weight: 600; font-size: 17px; }
     nav { display: flex; gap: 24px; color: rgba(255,255,255,.92); font-size: 14px; font-weight: 600; }
     nav a { color: inherit; text-decoration: none; padding-bottom: 4px; border-bottom: 1px solid rgba(231,197,116,.65); }
@@ -13285,7 +17292,7 @@ const pageTemplates = `
 <body>
   <section class="hero">
     <header>
-      <a class="brand" href="/" aria-label="WEG Portal Startseite"><span class="mark">WEG</span><span class="name">{{.Tenant.Name}}</span></a>
+      <a class="brand" href="/" aria-label="WEG Portal Startseite"><span class="mark">{{template "hausvLandingMark" .}}</span><span class="name">{{.Tenant.Name}}</span></a>
       <nav aria-label="Seitennavigation">
         <a href="#login">Anmelden</a>
       </nav>
@@ -13330,6 +17337,345 @@ const pageTemplates = `
 </html>
 {{end}}
 
+{{define "landing"}}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <meta name="description" content="Sicheres Kommunikations- und Transparenzportal für WEGs, Wohnungen und Mehrparteienhäuser. Aushänge, Termine, Dokumente, Anliegen, Abstimmungen und Schnittstellen ohne eigene Buchhaltung.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
+  <style>
+    :root {
+      color-scheme: light;
+{{template "designTokens" .}}
+      --sky:#6f9ab3; --mint:#dfeee5; --rose:#f0d7d0; --cream:#faf6ed;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--cream); font-family: var(--font-sans); }
+    a { color: inherit; }
+    :where(a, button):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
+    .landing-hero { position: relative; min-height: 86svh; display: grid; grid-template-rows: auto minmax(0,1fr); overflow: hidden; color: #fff; background: #162018; }
+    .landing-hero::before { content: ""; position: absolute; inset: 0; background: url('{{.LandingHeroURL}}') center 48% / cover no-repeat; transform: scale(1.01); }
+    .landing-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(12,18,13,.86) 0%, rgba(12,18,13,.74) 34%, rgba(12,18,13,.32) 66%, rgba(12,18,13,.12) 100%); }
+    .landing-nav, .landing-copy { position: relative; z-index: 1; width: min(1180px,100%); margin: 0 auto; padding-left: clamp(20px,4vw,42px); padding-right: clamp(20px,4vw,42px); }
+    .landing-nav { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding-top: 26px; padding-bottom: 20px; }
+    .landing-brand { display: inline-flex; align-items: center; text-decoration: none; color: #fff; font-weight: 800; }
+    .landing-mark { width: 74px; height: 54px; border-radius: 8px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.42); background: rgba(255,255,255,.14); backdrop-filter: blur(8px); color: var(--gold-light); }
+    .landing-mark .hausv-mark { width: 64px; height: 48px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .landing-mark .mark-word { fill: currentColor; stroke: none; font-family: var(--font-sans); font-size: 6.2px; font-weight: 900; letter-spacing: .02em; }
+    .landing-links { display: flex; align-items: center; gap: 20px; font-size: 14px; font-weight: 700; }
+    .landing-links a { text-decoration: none; color: rgba(255,255,255,.88); }
+    .landing-links a:hover { color: #fff; }
+    .landing-copy { align-self: end; padding-top: 48px; padding-bottom: clamp(54px,8vh,88px); }
+    .landing-eyebrow { margin-bottom: 18px; color: var(--gold-light); font-size: 12px; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
+    .landing-copy h1 { max-width: 850px; margin: 0; font-family: var(--font-serif); font-weight: 500; font-size: clamp(48px,7.4vw,86px); line-height: .98; text-wrap: balance; }
+    .landing-lead { max-width: 690px; margin: 24px 0 0; color: rgba(255,255,255,.9); font-size: clamp(18px,2vw,22px); line-height: 1.48; }
+    .landing-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+    .landing-button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; padding: 12px 18px; text-decoration: none; font-weight: 900; }
+    .landing-button.primary { background: #fff; color: var(--ink); }
+    .landing-button.secondary { border: 1px solid rgba(255,255,255,.48); color: #fff; background: rgba(255,255,255,.08); backdrop-filter: blur(8px); }
+    .landing-proof { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; max-width: 760px; }
+    .landing-proof span { border: 1px solid rgba(255,255,255,.28); border-radius: 999px; padding: 8px 12px; color: rgba(255,255,255,.86); background: rgba(255,255,255,.08); font-size: 13px; font-weight: 800; }
+    .section { padding: clamp(48px,8vw,86px) clamp(20px,4vw,42px); }
+    .section-inner { position: relative; z-index: 1; width: min(1180px,100%); margin: 0 auto; }
+    .section h2 { margin: 0; font-family: var(--font-serif); font-size: clamp(34px,4.6vw,56px); line-height: 1.02; font-weight: 500; max-width: 820px; }
+    .section-kicker { color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 14px; }
+    .section-lead { max-width: 760px; margin-top: 18px; color: var(--muted); font-size: 18px; line-height: 1.55; }
+    .feature-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; margin-top: 34px; }
+    .feature { border: 1px solid var(--line); border-radius: 8px; padding: 18px; background: var(--panel); display: grid; gap: 14px; align-content: start; box-shadow: 0 12px 26px rgba(32,37,31,.035); }
+    .feature-icon { width: 48px; height: 48px; border-radius: 8px; display: grid; place-items: center; background: rgba(200,153,63,.12); color: var(--gold-ink); }
+    .feature-icon svg { width: 25px; height: 25px; display: block; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .feature strong { display: block; font-family: var(--font-serif); font-size: 23px; line-height: 1.15; }
+    .feature p { margin: 10px 0 0; color: var(--muted); line-height: 1.5; }
+    .positioning-strip { margin-top: 30px; display: grid; grid-template-columns: 68px minmax(0,1fr) auto; gap: 18px; align-items: center; border: 1px solid rgba(47,107,74,.2); border-radius: 10px; background: rgba(47,107,74,.06); padding: 20px 22px; }
+    .positioning-mark { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: rgba(47,107,74,.12); color: var(--leaf); }
+    .positioning-mark svg { width: 26px; height: 26px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .positioning-strip strong { display: block; font-family: var(--font-serif); font-size: clamp(24px,2.4vw,32px); line-height: 1.08; }
+    .positioning-strip p { margin: 6px 0 0; color: var(--muted); line-height: 1.5; }
+    .positioning-tag { justify-self: end; border: 1px solid rgba(200,153,63,.28); border-radius: 999px; padding: 8px 12px; background: rgba(200,153,63,.12); color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+    .roadmap-section { background: #fffefb; }
+    .roadmap-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin-top: 30px; }
+    .roadmap-card { min-height: 216px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 20px; display: grid; grid-template-rows: auto auto 1fr; gap: 12px; box-shadow: 0 16px 34px rgba(32,37,31,.035); }
+    .roadmap-card .feature-icon { background: rgba(47,107,74,.09); color: var(--leaf); }
+    .roadmap-card strong { display: block; font-family: var(--font-serif); font-size: 25px; line-height: 1.12; }
+    .roadmap-card p { margin: 0; color: var(--muted); line-height: 1.5; }
+    .roadmap-card small { align-self: end; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .band { background: #fffefb; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .visual-section { position: relative; overflow: hidden; }
+    .visual-section::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-repeat: no-repeat; background-size: cover; background-position: center; filter: saturate(.86); }
+    .features-section::before { background-image: url('/assets/landing-features.jpg'); opacity: .12; }
+    .features-section .feature { background: rgba(255,254,251,.92); backdrop-filter: blur(2px); }
+    .roles-section { background: #f7f3ea; }
+    .roles-section::before { background-image: linear-gradient(90deg, rgba(247,243,234,.96) 0%, rgba(247,243,234,.86) 52%, rgba(247,243,234,.76) 100%), url('/assets/landing-roles.jpg'); opacity: 1; background-position: center; }
+    .roles-section .section-inner { display: grid; gap: 28px; }
+    .use-grid { counter-reset: role-card; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; margin-top: 4px; }
+    .use { counter-increment: role-card; min-height: 258px; padding: 22px; border: 1px solid rgba(231,224,210,.92); border-radius: 8px; background: rgba(255,254,251,.9); backdrop-filter: blur(3px); box-shadow: 0 18px 44px rgba(32,37,31,.045); display: grid; grid-template-columns: minmax(0,1fr) 42px; grid-template-rows: 42px minmax(74px,auto) minmax(0,1fr); gap: 16px 18px; align-items: start; }
+    .use::before { content: "0" counter(role-card); grid-column: 2; grid-row: 1; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: rgba(200,153,63,.12); color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .04em; }
+    .use span { grid-column: 1; grid-row: 1; align-self: center; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+    .use strong { grid-column: 1 / -1; grid-row: 2; align-self: start; max-width: 260px; font-family: var(--font-serif); font-size: clamp(25px,2.2vw,31px); line-height: 1.12; }
+    .use p { grid-column: 1 / -1; grid-row: 3; align-self: start; max-width: 280px; color: var(--muted); line-height: 1.45; }
+    .trust-section { background: #fffefb; }
+    .trust-layout { display: grid; grid-template-columns: minmax(300px,.78fr) minmax(560px,1.22fr); gap: clamp(32px,5vw,72px); align-items: start; }
+    .trust-copy { display: grid; gap: 24px; align-content: start; }
+    .trust-copy h2 { max-width: 560px; font-size: clamp(42px,5vw,66px); }
+    .trust-copy .section-lead { margin-top: 0; max-width: 520px; }
+    .trust-summary { display: grid; border-top: 1px solid var(--line); }
+    .trust-line { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+    .trust-number { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: rgba(200,153,63,.11); color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .08em; }
+    .trust-line strong { display: block; font-size: 17px; line-height: 1.25; }
+    .trust-line p { margin: 5px 0 0; color: var(--muted); line-height: 1.48; }
+    .trust-board { border: 1px solid rgba(47,107,74,.22); border-radius: 10px; background: var(--panel); box-shadow: 0 22px 54px rgba(32,37,31,.055); overflow: hidden; }
+    .trust-board-head { display: grid; grid-template-columns: 72px minmax(0,1fr); gap: 18px; align-items: center; padding: 26px; border-bottom: 1px solid var(--line); background: rgba(47,107,74,.045); }
+    .trust-seal { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; background: rgba(47,107,74,.11); color: var(--leaf); }
+    .trust-seal svg, .trust-proof svg, .cost-note svg { width: 28px; height: 28px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .trust-board-head strong { display: block; font-family: var(--font-serif); font-size: clamp(28px,3vw,40px); line-height: 1.05; }
+    .trust-board-head p { margin: 8px 0 0; max-width: 520px; color: var(--muted); line-height: 1.45; }
+    .trust-proof-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); padding: 6px 26px 10px; }
+    .trust-proof { min-height: 138px; display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 14px; align-content: start; border-bottom: 1px solid var(--line); padding: 20px 0; }
+    .trust-proof:nth-child(odd) { padding-right: 24px; border-right: 1px solid var(--line); }
+    .trust-proof:nth-child(even) { padding-left: 24px; }
+    .trust-proof:nth-last-child(-n+2) { border-bottom: 0; }
+    .trust-proof svg { width: 23px; height: 23px; margin-top: 1px; color: var(--leaf); }
+    .trust-proof strong { display: block; font-size: 16px; line-height: 1.25; }
+    .trust-proof p { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .cost-section { background: #f7f3ea; }
+    .cost-layout { display: grid; grid-template-columns: minmax(300px,.72fr) minmax(560px,1.28fr); gap: clamp(30px,5vw,68px); align-items: start; }
+    .cost-copy h2 { max-width: 520px; font-size: clamp(40px,4.7vw,62px); }
+    .cost-copy .section-lead { max-width: 500px; }
+    .cost-panel { border: 1px solid rgba(138,123,63,.26); border-radius: 10px; background: var(--panel); box-shadow: 0 22px 54px rgba(32,37,31,.055); padding: 8px 28px; }
+    .cost-row { display: grid; grid-template-columns: 118px minmax(0,1fr); gap: 22px; align-items: center; border-bottom: 1px solid var(--line); padding: 24px 0; }
+    .cost-row:last-child { border-bottom: 0; }
+    .cost-value { min-height: 82px; display: grid; place-items: center; border: 1px solid rgba(47,107,74,.15); border-radius: 10px; background: #fffaf0; color: var(--leaf); font-family: var(--font-serif); font-size: 36px; font-weight: 700; line-height: 1; text-align: center; }
+    .cost-row:nth-child(2) .cost-value { color: var(--gold-ink); border-color: rgba(200,153,63,.22); }
+    .cost-row:nth-child(3) .cost-value { color: #8b5a52; border-color: rgba(139,90,82,.15); background: #fff6f2; font-size: 25px; }
+    .cost-row strong { display: block; font-family: var(--font-serif); font-size: clamp(25px,2.5vw,36px); line-height: 1.05; }
+    .cost-row p { margin: 8px 0 0; color: var(--muted); line-height: 1.48; }
+    .cost-note { display: grid; grid-template-columns: 32px minmax(0,1fr); gap: 13px; align-items: start; border: 1px solid rgba(200,153,63,.28); border-radius: 10px; background: rgba(255,254,251,.76); margin-top: 16px; padding: 17px 18px; color: var(--muted); line-height: 1.5; }
+    .cost-note svg { width: 25px; height: 25px; color: var(--gold-ink); }
+    .cost-note strong { display: block; color: var(--ink); }
+    .imprint-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin-top: 28px; }
+    .imprint-card { border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: var(--panel); }
+    .imprint-card strong { display: block; font-size: 15px; }
+    .imprint-card p { margin: 7px 0 0; color: var(--muted); line-height: 1.5; }
+    .final-cta { position: relative; overflow: hidden; background: #172019; color: #fff; }
+    .final-cta::before { content: ""; position: absolute; inset: 0; background: url('/assets/landing-closing.jpg') center center / cover no-repeat; opacity: .32; pointer-events: none; }
+    .final-cta::after { content: ""; position: absolute; inset: 0; background: rgba(23,32,25,.72); pointer-events: none; }
+    .final-cta .section-inner { position: relative; z-index: 1; }
+    .final-cta .section-lead { color: rgba(255,255,255,.78); }
+    .final-cta .landing-actions { margin-top: 28px; }
+    .final-cta .landing-button.secondary { color: #fff; }
+    footer { padding: 24px clamp(20px,4vw,42px); color: #6b6f63; background: #fffefb; border-top: 1px solid var(--line); }
+    footer div { width: min(1180px,100%); margin: 0 auto; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+    @media (max-width: 900px) {
+      .landing-links { display: none; }
+      .landing-hero { min-height: 88svh; }
+      .landing-hero::after { background: linear-gradient(180deg, rgba(12,18,13,.78) 0%, rgba(12,18,13,.5) 46%, rgba(12,18,13,.88) 100%); }
+      .landing-copy { padding-top: 64px; }
+      .feature-grid, .use-grid, .trust-layout, .cost-layout, .imprint-grid, .roadmap-grid, .positioning-strip { grid-template-columns: 1fr; }
+      .positioning-tag { justify-self: start; }
+      .trust-proof-grid { grid-template-columns: 1fr; }
+      .trust-proof:nth-child(odd), .trust-proof:nth-child(even) { padding-left: 0; padding-right: 0; border-right: 0; }
+      .trust-proof:nth-last-child(2) { border-bottom: 1px solid var(--line); }
+      .cost-row { grid-template-columns: 92px minmax(0,1fr); gap: 16px; }
+      .cost-value { min-height: 70px; font-size: 29px; }
+      .cost-row strong { font-size: clamp(24px,7vw,30px); line-height: 1.08; }
+      .cost-row p { font-size: 16px; line-height: 1.45; }
+      .use { min-height: 0; grid-template-rows: 42px auto auto; }
+      .use strong, .use p { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <section class="landing-hero">
+    <header class="landing-nav">
+      <a class="landing-brand" href="/" aria-label="hausv.org"><span class="landing-mark">{{template "hausvLandingMark" .}}</span></a>
+      <nav class="landing-links" aria-label="Navigation">
+        <a href="#funktionen">Funktionen</a>
+        <a href="#ausblick">Ausblick</a>
+        <a href="#sicherheit">Sicherheit</a>
+        <a href="#preise">Preise</a>
+        <a href="#impressum">Impressum</a>
+        <a href="#kontakt" class="js-mail-link" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a>
+      </nav>
+    </header>
+    <div class="landing-copy">
+      <div class="landing-eyebrow">Hausverwaltung von und für Mehrparteien</div>
+      <h1>Ein Portal für alle, die ein Haus gemeinsam verwalten.</h1>
+      <p class="landing-lead">Kommunikation, Transparenz und Self-Service für WEGs, Wohnungen und Mehrparteienhäuser. Klar für Eigentümer, Mieter, Beiräte und kleine Verwaltungen.</p>
+      <div class="landing-actions">
+        <a class="landing-button primary js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org anfragen" data-mail-reveal="false">Kostenlos starten</a>
+        <a class="landing-button secondary" href="#funktionen">Funktionen ansehen</a>
+      </div>
+      <div class="landing-proof" aria-label="Kurzversprechen">
+        <span>Bis 10 Wohnungseinheiten kostenlos</span>
+        <span>DSGVO-ready</span>
+        <span>Kommunikation statt Buchhaltung</span>
+        <span>KI nur mit Opt-in</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="funktionen" class="section band visual-section features-section">
+    <div class="section-inner">
+      <div class="section-kicker">Betrieb statt Bauchgefühl</div>
+      <h2>Alles für den Alltag einer Hausgemeinschaft.</h2>
+      <p class="section-lead">Ein ruhiger Arbeitsbereich für wiederkehrende Abläufe: informieren, entscheiden, dokumentieren, nachverfolgen. Finanzdaten bleiben Status und Nachweis, nicht Buchhaltung.</p>
+      <div class="feature-grid">
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5"/><path d="M6 10.5V20h12v-9.5"/><path d="M9 20v-5h6v5"/></svg></span><div><strong>Hausüberblick</strong><p>Offene Punkte, Termine, Dokumente, Zahlungsstatus und nächste Schritte direkt auf der Startseite.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 3z"/><path d="M8 9h8M8 13h6"/></svg></span><div><strong>Aushang & Termine</strong><p>Mitteilungen, Wartungen, Fristen und Versammlungen mit Anhängen und Archiv.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H10z"/><path d="M8.5 8.5h7"/></svg></span><div><strong>Anliegen</strong><p>Meldungen mit Fotos, Kommentaren, Zuständigkeit und nachvollziehbarem Status.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><div><strong>Dokumente</strong><p>Protokolle, Abrechnungen und Unterlagen sicher abgelegt und passend freigegeben.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 18V9M12 18V5M18 18v-6"/><path d="M4 18h16"/></svg></span><div><strong>Abstimmungen</strong><p>Beschlüsse vorbereiten, transparent abstimmen und Ergebnisse dokumentieren.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M8 19h1M15 19h1"/></svg></span><div><strong>Parkplätze</strong><p>Stellplätze, Ladeverbrauch, Zahlungserinnerungen und CSV-Export im Blick.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M3 21a5 5 0 0 1 10 0"/><path d="M16 12h5M18.5 9.5v5"/></svg></span><div><strong>Rollen & Rechte</strong><p>Eigentümer, Mieter, Beirat und Verwaltung sehen nur, was für sie gedacht ist.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span><div><strong>Benachrichtigungen</strong><p>Mails führen direkt zum betroffenen Aushang, Anliegen, Dokument oder Zahlungspunkt.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M4.6 6.6l2.1 2.1M17.3 17.3l2.1 2.1M3 12h3M18 12h3M4.6 17.4l2.1-2.1M17.3 6.7l2.1-2.1"/><path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/></svg></span><div><strong>KI-Assistenz</strong><p>Zusammenfassen und Formulieren auf Wunsch, nur tenantweise und mit Opt-in.</p></div></div>
+      </div>
+      <div class="positioning-strip" aria-label="Produktgrenze">
+        <span class="positioning-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/><path d="M18 15l2 2 3-4"/></svg></span>
+        <div><strong>Kommunikation statt Buchhaltung.</strong><p>hausv.org ist der Kommunikations- und Transparenz-Layer. Wir zeigen Status, Dokumente und Nachweise, integrieren mit bestehenden Systemen und vermeiden bewusst Buchführung, Nebenkostenabrechnung, Steuerlogik und Mahnwesen.</p></div>
+        <span class="positioning-tag">Transparenz statt Buchung</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="ausblick" class="section roadmap-section">
+    <div class="section-inner">
+      <div class="section-kicker">Roadmap</div>
+      <h2>Ausblick ohne Nebel.</h2>
+      <p class="section-lead">Einige Bausteine laufen bereits im Pilot, andere sind bewusst als nächste Schritte markiert. Die Linie bleibt gleich: besser koordinieren, sauber dokumentieren, offen integrieren. Keine eigene Buchhaltung.</p>
+      <div class="roadmap-grid" aria-label="Geplante Produktbausteine">
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M3 20a5 5 0 0 1 10 0"/><path d="M16 7h5M16 12h5M16 17h5"/></svg></span><strong>Dienstleister einbinden</strong><p>Handwerker sehen nur zugewiesene Anliegen, können Status, Fotos, Rückfragen und Termine ergänzen.</p><small>Pilot verfügbar</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h5M8 16h4"/><path d="m15 16 2 2 3-4"/></svg></span><strong>Übergaben dokumentieren</strong><p>Mobile Protokolle für Räume, Zählerstände, Schlüssel, Mängel, Fotos und Bestätigung.</p><small>Pilot verfügbar</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><path d="M17 15l3 3 3-5"/></svg></span><strong>Zahlungsstatus zeigen</strong><p>Offen, bezahlt oder überfällig als geschützte Statusinformation pro Einheit, ohne Sollstellung oder Mahnwesen.</p><small>Pilot verfügbar</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><strong>AT-Schnittstellen</strong><p>camt.053 und camt.054 lesen Zahlungsstatus. BMD/RZL und ebInterface bleiben Übergaben an bestehende Systeme.</p><small>Österreich-first</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M8 12h8M8 16h5"/></svg></span><strong>Kalender abonnieren</strong><p>Termine, Versammlungen und Dienstleister-Zeitfenster als geschützter ICS-Feed.</p><small>Pilot verfügbar</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a4.5 4.5 0 0 1 9 0"/><path d="M16 11a2.5 2.5 0 1 0 0-5"/><path d="M16.5 15a4 4 0 0 1 4 4"/></svg></span><strong>Kontakte pro Verwaltung</strong><p>Hausmeister, Notdienste und wiederkehrende Dienstleister zentral pflegen und gezielt verwenden.</p><small>Pilot verfügbar</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section visual-section roles-section">
+    <div class="section-inner">
+      <div class="section-kicker">Für alle Rollen</div>
+      <h2>Ein Portal, mehrere Perspektiven.</h2>
+      <div class="use-grid">
+        <div class="use"><span>Eigentümer</span><strong>Entscheiden und prüfen</strong><p>Beschlüsse, Dokumente, Hausstatus und relevante Abrechnungen bleiben auffindbar.</p></div>
+        <div class="use"><span>Mieter</span><strong>Melden ohne Umwege</strong><p>Anliegen erfassen, Aushänge lesen und informiert bleiben.</p></div>
+        <div class="use"><span>Verwalter</span><strong>Steuern und dokumentieren</strong><p>Rollen, Status, Benachrichtigungen und Audit-Spuren für den Alltag.</p></div>
+        <div class="use"><span>Beirat</span><strong>Mitsehen und begleiten</strong><p>Überblick dort, wo er hilft, ohne Rechte zu vermischen.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sicherheit" class="section band trust-section">
+    <div class="section-inner trust-layout">
+      <div class="trust-copy">
+        <div>
+          <div class="section-kicker">Sicherheit & Datenschutz</div>
+          <h2>Vertrauen zuerst.</h2>
+        </div>
+        <p class="section-lead">Einfach genug für die Hausgemeinschaft. Strukturiert genug für Verwaltung, Datenschutz und saubere Abläufe.</p>
+        <div class="trust-summary" aria-label="Sicherheitsprinzipien">
+          <div class="trust-line"><span class="trust-number">01</span><div><strong>Getrennte Häuser</strong><p>Eigene Domain, eigene Rollen, eigene Sichtbarkeit.</p></div></div>
+          <div class="trust-line"><span class="trust-number">02</span><div><strong>Geschützte Dateiwege</strong><p>Anhänge und Dokumente laufen über App-Routen.</p></div></div>
+          <div class="trust-line"><span class="trust-number">03</span><div><strong>Datensparsam</strong><p>Nur Profile, Rechte und Protokolle, die der Betrieb wirklich braucht.</p></div></div>
+          <div class="trust-line"><span class="trust-number">04</span><div><strong>KI nur mit Opt-in</strong><p>Keine automatische Auswertung, Aktivierung pro Haus.</p></div></div>
+        </div>
+      </div>
+      <aside class="trust-board" aria-label="Sicherheitsversprechen">
+        <div class="trust-board-head">
+          <span class="trust-seal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.7 2.9 8.4 7 10 4.1-1.6 7-5.3 7-10V6z"/><path d="m8.8 12.2 2.1 2.1 4.3-4.6"/></svg></span>
+          <div><strong>Bleibt privat.</strong><p>Ein Portal pro Hausgemeinschaft, klare Rollen und geschützte Wege für sensible Inhalte.</p></div>
+        </div>
+        <div class="trust-proof-grid">
+          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Keine öffentlichen Datei-Links</strong><p>Downloads laufen über geschützte App-Routen.</p></div></div>
+          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Keine KI ohne Zustimmung</strong><p>Funktionen werden bewusst pro Haus aktiviert.</p></div></div>
+          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Keine Weitergabe persönlicher Daten</strong><p>Daten bleiben im vorgesehenen Haus-Kontext.</p></div></div>
+          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Rollen und Rechte pro Haus</strong><p>Eigentümer, Mieter, Beirat und Verwaltung sauber getrennt.</p></div></div>
+          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Audit-Spuren für wichtige Aktionen</strong><p>Änderungen bleiben nachvollziehbar.</p></div></div>
+          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>DSGVO-ready</strong><p>Klare Zuständigkeiten, Einwilligungen und sparsame Profile sind vorgesehen.</p></div></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="preise" class="section cost-section">
+    <div class="section-inner cost-layout">
+      <div class="cost-copy">
+        <div class="section-kicker">Fair geregelt</div>
+        <h2>Kosten fair.</h2>
+      <p class="section-lead">hausv.org soll kleinen Hausgemeinschaften helfen und für größere Verwaltungen trotzdem planbar bleiben: nach Einheit, nicht nach Bauchgefühl.</p>
+      </div>
+      <div>
+        <div class="cost-panel" aria-label="Faire Nutzung und Preise">
+          <div class="cost-row">
+            <span class="cost-value">10</span>
+            <div><strong>Kostenlos</strong><p>Bis 10 Wohnungseinheiten. Für kleine Hausgemeinschaften, private Betreuung und den fairen Einstieg.</p></div>
+          </div>
+          <div class="cost-row">
+            <span class="cost-value">1€</span>
+            <div><strong>1 € pro Monat</strong><p>Je Wohnungseinheit als Richtwert für größere Verwaltungen. Wohnungen und vergleichbare Nutzungseinheiten zählen; Zubehör wie Keller oder Stellplätze nicht automatisch.</p></div>
+          </div>
+          <div class="cost-row">
+            <span class="cost-value">frei</span>
+            <div><strong>Spenden</strong><p>Optional. Hilft bei Betrieb, Backups, Sicherheit und Weiterentwicklung.</p></div>
+          </div>
+        </div>
+        <div class="cost-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><path d="M6 7h12"/><path d="M7 7l-4 7h8z"/><path d="M17 7l-4 7h8z"/></svg>
+          <div><strong>Fair bleibt fair.</strong> Klare Einheitspreise, keine versteckten Grundgebühren, kein Verkaufsdruck.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="impressum" class="section">
+    <div class="section-inner">
+      <div class="section-kicker">Impressum</div>
+      <h2>Impressum & Kontakt</h2>
+      <p class="section-lead">Die folgenden Felder sind bewusst als Platzhalter angelegt und werden vor dem produktiven Start mit den konkreten Betreiberangaben ergänzt.</p>
+      <div class="imprint-grid">
+        <div class="imprint-card"><strong>Medieninhaber / Betreiber</strong><p>[Name oder Firma, Rechtsform]</p></div>
+        <div class="imprint-card"><strong>Sitz / Anschrift</strong><p>[Straße und Hausnummer, PLZ Ort, Land]</p></div>
+        <div class="imprint-card"><strong>Kontakt</strong><p><a id="kontakt" class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a></p></div>
+        <div class="imprint-card"><strong>Unternehmensgegenstand</strong><p>[Software-/IT-Dienstleistungen, digitale Hausverwaltungsplattform]</p></div>
+        <div class="imprint-card"><strong>Firmenbuch / UID</strong><p>[Firmenbuchnummer, Firmenbuchgericht, UID-Nummer]</p></div>
+        <div class="imprint-card"><strong>Gewerbebehörde / Kammer</strong><p>[Bezirkshauptmannschaft/Magistrat], Mitglied der WKO [Bundesland]</p></div>
+        <div class="imprint-card"><strong>Anwendbare Vorschriften</strong><p>[Gewerbeordnung, abrufbar unter ris.bka.gv.at]</p></div>
+        <div class="imprint-card"><strong>Blattlinie</strong><p>Informationen über hausv.org und digitale Selbstverwaltung für Mehrparteienhäuser.</p></div>
+      </div>
+      <p class="mini">Platzhalter auf Basis der WKO-Impressum-Orientierung final mit den echten Betreiberangaben ausfüllen.</p>
+    </div>
+  </section>
+
+  <section class="section final-cta">
+    <div class="section-inner">
+      <div class="section-kicker">Starten</div>
+      <h2>Aus einer Hausgemeinschaft heraus gebaut, für echte Hausgemeinschaften.</h2>
+      <p class="section-lead">Entstanden aus dem eigenen Verwaltungsalltag: zu viel Papier, zu viele Tools, zu wenig Überblick. Deshalb ein Portal, das WEGs und Mehrparteienhäuser wirklich nutzen können.</p>
+      <div class="landing-actions">
+        <a class="landing-button primary js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org Pilotzugang" data-mail-reveal="false">Kontakt aufnehmen</a>
+        <a class="landing-button secondary" href="{{.PrimaryAppURL}}">Beispielportal öffnen</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div><span>hausv.org · sicher, fair und DSGVO-ready</span><span><a href="#impressum">Impressum</a> · <a class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a> · {{.AppVersion}}</span></div>
+  </footer>
+</body>
+</html>
+{{end}}
+
 {{define "appStyles"}}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13346,13 +17692,19 @@ const pageTemplates = `
     /* Accessibility convention: all keyboard-reachable controls keep a visible focus ring. */
     :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
     .app-shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0,1fr); background: var(--paper); }
-    .sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 24px; padding: 22px 16px 18px; color: rgba(255,255,255,.86); background: radial-gradient(circle at 20% 0%, rgba(255,255,255,.08), transparent 28%), var(--nav); border-right: 1px solid rgba(255,255,255,.08); }
-    .side-brand { display: grid; grid-template-columns: 50px 1fr; gap: 14px; align-items: center; padding: 0 8px 12px; }
-    .side-mark { width: 48px; height: 48px; border-radius: var(--radius-sm); display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 13px; border: 1px solid rgba(255,255,255,.43); background: rgba(255,255,255,.08); }
-    .side-title { display: block; font-family: var(--font-serif); font-size: 18px; font-weight: 600; line-height: 1.1; color: #fff; text-decoration: none; }
-    .side-sub { display: block; margin-top: 5px; font-size: 14px; color: rgba(255,255,255,.72); }
-    .side-nav { display: grid; gap: 7px; }
-    .nav-item { position: relative; min-height: 46px; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-xs); color: rgba(255,255,255,.78); text-decoration: none; font-size: 15px; font-weight: 600; }
+    .sidebar { position: sticky; top: 0; height: 100vh; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 22px 16px 18px; color: rgba(255,255,255,.86); background: radial-gradient(circle at 20% 0%, rgba(255,255,255,.08), transparent 28%), var(--nav); border-right: 1px solid rgba(255,255,255,.08); }
+    .side-brand { flex: 0 0 auto; display: grid; grid-template-columns: 50px 1fr; gap: 14px; align-items: center; padding: 0 8px 12px; }
+    .side-mark { width: 48px; height: 48px; border-radius: var(--radius-sm); display: grid; place-items: center; color: var(--gold-light); border: 1px solid rgba(255,255,255,.34); background: rgba(255,255,255,.07); text-decoration: none; }
+	    .side-mark:hover { border-color: rgba(231,197,116,.72); background: rgba(255,255,255,.1); color: #f0d58c; }
+	    .side-mark svg { width: 38px; height: 34px; display: block; stroke: currentColor; stroke-width: 2.3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+	    .side-title { display: block; font-family: var(--font-serif); font-size: 18px; font-weight: 600; line-height: 1.1; color: #fff; text-decoration: none; }
+	    .side-sub { display: block; margin-top: 5px; font-size: 14px; color: rgba(255,255,255,.72); }
+	    .side-code { display: inline-flex; align-items: center; width: max-content; max-width: 100%; margin-top: 7px; border: 1px solid rgba(231,197,116,.28); border-radius: var(--radius-pill); padding: 2px 8px; color: var(--gold-light); background: rgba(231,197,116,.08); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .side-nav { flex: 1 1 auto; min-height: 0; display: grid; align-content: start; gap: 5px; overflow-y: auto; overflow-x: hidden; padding-right: 3px; }
+    .side-nav::-webkit-scrollbar { width: 7px; }
+    .side-nav::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: rgba(255,255,255,.16); }
+    .nav-toggle, .mobile-menu-toggle { display: none; }
+    .nav-item { position: relative; min-height: 44px; display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: var(--radius-xs); color: rgba(255,255,255,.78); text-decoration: none; font-size: 15px; font-weight: 600; }
     .nav-item:hover { color: #fff; background: rgba(255,255,255,.06); }
     .nav-item.active { color: #fff; background: rgba(255,255,255,.08); }
     .nav-item.active::before { content: ""; position: absolute; left: -16px; top: 0; bottom: 0; width: 4px; background: var(--gold); }
@@ -13362,11 +17714,13 @@ const pageTemplates = `
     .nav-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .nav-label { min-width: 0; }
     .nav-badge { margin-left: auto; min-width: 25px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); padding: 0 7px; background: var(--gold); color: #172019; font-size: 11px; font-weight: 900; line-height: 1; }
-    .side-foot { margin-top: auto; border-top: 1px solid rgba(255,255,255,.16); padding: 18px 8px 0; display: grid; gap: 14px; }
+    .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 16px 8px 0; display: grid; gap: 12px; }
     .side-user { display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: center; }
     .avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: #fff; font-weight: 800; border: 1px solid rgba(255,255,255,.25); }
-    .side-user strong { display: block; color: #fff; font-size: 14px; }
+    .side-user strong { display: -webkit-box; max-height: 2.5em; color: #fff; font-size: 14px; line-height: 1.22; overflow: hidden; overflow-wrap: anywhere; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .side-user span, .side-version { color: rgba(255,255,255,.64); font-size: 13px; }
+    .version-button { justify-self: start; width: auto; min-height: 30px; border: 1px solid rgba(255,255,255,.16); border-radius: var(--radius-pill); padding: 4px 10px; background: rgba(255,255,255,.05); color: rgba(255,255,255,.72); font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+    .version-button:hover { border-color: rgba(231,197,116,.48); color: #fff; background: rgba(255,255,255,.09); }
     .logout-form { margin: 0; }
     .logout-button { width: 100%; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); color: rgba(255,255,255,.92); background: transparent; font-weight: 700; cursor: pointer; }
     .logout-button:hover { border-color: var(--gold); color: #fff; }
@@ -13391,45 +17745,51 @@ const pageTemplates = `
     .panel.compact { padding: 18px; }
     .button, button.action { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius-xs); color: var(--ink); padding: 8px 13px; font-weight: 700; line-height: 1.15; text-decoration: none; cursor: pointer; white-space: nowrap; }
     .button:hover, button.action:hover { border-color: var(--gold); }
+    button:disabled, input[type=submit]:disabled, .button[aria-disabled="true"] { cursor: progress; opacity: .62; }
+    form[aria-busy="true"] button[type=submit] { pointer-events: none; }
     .button.primary, button.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
     .button.small, button.small { min-height: 31px; padding: 6px 10px; font-size: 12px; }
     .button.ghost { background: transparent; }
+    .issue-card, .entry, .event-card, .document-row, .vote-card, tr[id^="parking-month-"] { scroll-margin-top: 82px; }
     .home-hero { position: relative; min-height: 178px; display: flex; align-items: center; overflow: hidden; border-bottom: 1px solid var(--line); background: #f7f3ea; padding: 38px clamp(28px,4vw,72px) 36px; }
-    .home-hero::before { content: ""; position: absolute; inset: 0 0 0 34%; background: url('{{.Tenant.HeroImageURL}}') center 47% / cover no-repeat; }
-    .home-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(247,243,234,.98) 0%, rgba(247,243,234,.94) 34%, rgba(247,243,234,.58) 63%, rgba(247,243,234,.2) 100%); }
+    .home-hero::before { content: ""; position: absolute; inset: 0; background: url('{{.Tenant.HeroImageURL}}') center 47% / cover no-repeat; }
+    .home-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(247,243,234,.98) 0%, rgba(247,243,234,.93) 32%, rgba(247,243,234,.58) 55%, rgba(247,243,234,.18) 100%); }
     .home-hero-copy { position: relative; z-index: 1; width: min(720px,100%); }
     .home-hero h1 { font-size: clamp(44px,5.2vw,58px); }
     .home-hero p { margin-top: 15px; color: var(--muted); font-size: 16px; line-height: 1.5; }
     .home-page { padding-top: 24px; }
-    .home-grid { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(360px,.95fr); gap: 22px; align-items: start; }
+    .home-page .panel { padding: 24px 26px; }
+    .home-grid { display: grid; grid-template-columns: minmax(0,1.08fr) minmax(360px,.92fr); gap: 22px 24px; align-items: start; }
     .home-stack { display: grid; gap: 22px; min-width: 0; }
-    .home-grid .section-head { margin-bottom: 18px; }
+    .home-grid .section-head { align-items: center; margin-bottom: 18px; }
     .home-grid .section-head .kicker { margin-bottom: 0; }
     .section-link { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; }
     .section-link::after { content: "›"; color: var(--gold-ink); font-size: 21px; line-height: 1; }
     .section-link:hover { color: var(--gold-ink); }
-    .home-status-panel { grid-column: 1 / -1; padding: 22px; }
+    .home-status-panel { grid-column: 1 / -1; padding: 24px 26px 26px; }
     .home-status-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
     .home-status-head .kicker { margin-bottom: 0; }
-    .home-status-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: 28px; align-items: center; }
-    .status-card { min-width: 0; display: grid; grid-template-columns: 56px minmax(0,1fr); gap: 14px; align-items: center; color: inherit; text-decoration: none; }
+    .home-status-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 20px 32px; align-items: center; }
+    .status-card { min-width: 0; display: grid; grid-template-columns: 64px minmax(0,1fr); gap: 14px; align-items: center; color: inherit; text-decoration: none; }
     .status-card:hover strong { color: var(--gold-ink); }
-    .status-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: rgba(200,153,63,.14); color: var(--gold-ink); }
-    .status-icon svg { width: 25px; height: 25px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .status-icon { width: 64px; height: 64px; border-radius: 50%; display: inline-grid; place-items: center; line-height: 0; background: rgba(200,153,63,.14); color: var(--gold-ink); }
+    .status-icon svg { display: block; width: 24px; height: 24px; margin: 0; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
     .status-card.status-announcements .status-icon { background: rgba(47,107,74,.12); color: var(--leaf); }
     .status-card.status-events .status-icon { background: rgba(200,153,63,.15); color: var(--gold-ink); }
     .status-card.status-issues .status-icon { background: rgba(158,42,43,.1); color: #9e2a2b; }
     .status-card.status-parking .status-icon { background: rgba(76,103,138,.12); color: #365475; }
-    .status-card strong { display: block; font-family: var(--font-serif); font-size: 22px; line-height: 1.03; }
-    .status-card span { display: block; min-width: 0; color: var(--muted); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
+    .status-card strong { display: block; font-family: var(--font-serif); font-size: 24px; line-height: 1.02; }
+    .status-card > span:not(.status-icon) { display: block; min-width: 0; color: var(--muted); font-size: 13.5px; line-height: 1.35; overflow-wrap: anywhere; }
+    .status-card > span:not(.status-icon) > span { display: block; }
     .status-card .status-label { color: var(--soft); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
     .home-list { display: grid; gap: 10px; }
-    .home-list-row { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; background: var(--panel-soft); color: inherit; text-decoration: none; }
+    .home-list-row { display: grid; grid-template-columns: 52px minmax(0,1fr) auto; gap: 14px; align-items: center; min-height: 74px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: var(--panel-soft); color: inherit; text-decoration: none; }
     .home-list-row:hover { border-color: var(--gold); }
-    .home-list-row svg { width: 21px; height: 21px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .home-list-icon { width: 42px; height: 42px; border-radius: var(--radius-sm); display: grid; place-items: center; background: rgba(200,153,63,.12); color: var(--gold-ink); }
-    .home-list-row strong { display: block; font-size: 15px; overflow-wrap: anywhere; }
-    .home-list-row span { display: block; margin-top: 3px; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
+    .home-list-row svg { display: block; width: 22px; height: 22px; margin: 0; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+    .home-list-icon { width: 52px; height: 52px; border-radius: var(--radius-sm); display: inline-grid; place-items: center; line-height: 0; background: rgba(200,153,63,.12); color: var(--gold-ink); }
+    .home-list-row strong { display: block; font-size: 15.5px; overflow-wrap: anywhere; }
+    .home-list-row > span:not(.home-list-icon):not(.pill) { display: block; min-width: 0; color: var(--muted); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
+    .home-list-row > span:not(.home-list-icon):not(.pill) > span { display: block; margin-top: 3px; }
     .home-card-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; }
     .home-card-actions .section-link { min-height: 34px; padding: 0 2px; }
     .home-events-list, .document-dashboard-list { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fffefb; }
@@ -13449,10 +17809,10 @@ const pageTemplates = `
     .document-file-title strong { min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
     .document-dashboard-row > span:not(.document-file-title):not(.document-download) { color: var(--muted); white-space: nowrap; }
     .document-download { color: var(--gold-ink); display: grid; place-items: center; }
-    .parking-summary { display: grid; grid-template-columns: 60px minmax(0,1fr) auto; gap: 15px; align-items: center; border: 1px solid #d9e1ea; border-radius: var(--radius-sm); padding: 16px; background: linear-gradient(90deg, rgba(76,103,138,.11), rgba(251,248,240,.94)); }
-    .parking-summary .status-icon { width: 54px; height: 54px; background: rgba(76,103,138,.12); color: #365475; }
-    .parking-summary strong { display: block; font-family: var(--font-serif); font-size: 21px; line-height: 1.15; }
-    .parking-summary p { margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .parking-summary { display: grid; grid-template-columns: 64px minmax(0,1fr) auto; gap: 16px; align-items: center; border: 1px solid #d9e1ea; border-radius: var(--radius-sm); padding: 18px 20px; background: linear-gradient(90deg, rgba(76,103,138,.08), rgba(255,254,251,.96)); }
+    .parking-summary .status-icon { width: 58px; height: 58px; background: rgba(76,103,138,.12); color: #365475; }
+    .parking-summary strong { display: block; font-family: var(--font-serif); font-size: 24px; line-height: 1.08; }
+    .parking-summary p { margin-top: 5px; color: var(--muted); font-size: 13.5px; line-height: 1.4; }
     .parking-check { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; justify-self: end; background: rgba(47,107,74,.12); color: var(--leaf); border: 1px solid rgba(47,107,74,.16); }
     .parking-check svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .parking-summary .pill, .home-list-row .pill { justify-self: end; }
@@ -13464,10 +17824,50 @@ const pageTemplates = `
     .entry p, .entry-body { margin-top: 8px; color: #5c5f54; line-height: 1.6; }
     .entry-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; color: var(--soft); font-size: 12.5px; }
     .entry-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .entry-actions form { margin: 0; }
     .archive-tools { display: grid; gap: 12px; margin: -4px 0 20px; }
     .filter-form { display: grid; grid-template-columns: minmax(220px,1fr) auto; gap: 10px; align-items: end; }
-    .filter-form.audit-filter { grid-template-columns: minmax(180px,.55fr) minmax(240px,1fr) auto; margin-bottom: 16px; }
+    .filter-form.audit-filter { grid-template-columns: minmax(180px,.55fr) minmax(240px,1fr) auto auto; }
     .filter-form label { margin: 0; }
+    .audit-panel { display: grid; gap: 16px; }
+    .audit-summary-grid { margin: 0; }
+    .audit-summary-grid .metric-card { background: #fffdf8; }
+    .audit-filter-panel { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
+    .audit-filter-panel > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; align-items: baseline; padding: 13px 16px; color: var(--muted); }
+    .audit-filter-panel > summary::-webkit-details-marker { display: none; }
+    .audit-filter-panel > summary::after { content: "›"; justify-self: end; color: var(--gold-ink); font-size: 22px; line-height: 1; transition: transform .18s ease; }
+    .audit-filter-panel[open] > summary::after { transform: rotate(90deg); }
+    .audit-filter-panel > summary span { color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+    .audit-filter-panel > summary strong { min-width: 0; color: var(--ink); overflow-wrap: anywhere; }
+    .audit-filter-panel .audit-filter { padding: 0 16px 14px; }
+    .audit-active-filters { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 16px 14px; }
+    .audit-timeline { display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); overflow: hidden; }
+    .audit-day { margin: 0; padding: 14px 18px 10px; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; background: rgba(251,248,240,.82); border-bottom: 1px solid var(--line); }
+    .audit-row { display: grid; grid-template-columns: 82px 18px minmax(0,1fr); gap: 14px; align-items: start; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+    .audit-row:last-child { border-bottom: 0; }
+    .audit-marker { width: 12px; height: 12px; border-radius: 50%; margin-top: 7px; background: var(--gold); box-shadow: 0 0 0 5px rgba(200,153,63,.14); }
+    .audit-row.audit-add .audit-marker { background: var(--leaf); box-shadow: 0 0 0 5px rgba(47,107,74,.12); }
+    .audit-row.audit-danger .audit-marker { background: #9e2a2b; box-shadow: 0 0 0 5px rgba(158,42,43,.11); }
+    .audit-time { display: grid; gap: 3px; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
+    .audit-time strong { font-family: var(--font-serif); font-size: 20px; line-height: 1.05; }
+    .audit-time span { color: var(--soft); font-size: 11.5px; font-weight: 800; }
+    .audit-main { min-width: 0; display: grid; gap: 10px; }
+    .audit-row-head { display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; align-items: start; }
+    .audit-action { display: grid; gap: 7px; min-width: 0; }
+    .audit-action strong { min-width: 0; font-size: 16px; line-height: 1.35; overflow-wrap: anywhere; }
+    .audit-pill { justify-self: start; gap: 7px; }
+    .audit-pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .audit-pill.audit-add { background: rgba(47,107,74,.12); color: var(--leaf); }
+    .audit-pill.audit-danger { background: rgba(158,42,43,.11); color: #9e2a2b; }
+    .audit-pill.audit-change { background: rgba(200,153,63,.16); color: #8a6a1f; }
+	.audit-meta { display: flex; gap: 10px 18px; flex-wrap: wrap; color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .audit-meta span { min-width: 0; overflow-wrap: anywhere; }
+    .audit-meta strong { color: var(--gold-ink); font-size: 10.5px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .audit-meta em { color: var(--soft); font-style: normal; }
+    .audit-details { min-width: 0; border-top: 1px dashed var(--line); padding-top: 9px; }
+    .audit-details summary { cursor: pointer; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .audit-details .chips { gap: 7px; margin-top: 8px; }
+    .audit-details .chip { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
     .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
     .filter-tab { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 6px 12px; color: var(--muted); background: var(--panel); text-decoration: none; font-size: 13px; font-weight: 800; }
     .filter-tab.active, .filter-tab:hover { border-color: var(--gold); color: var(--ink); background: rgba(200,153,63,.14); }
@@ -13477,6 +17877,7 @@ const pageTemplates = `
     button.quick-row:hover { color: var(--gold-ink); }
     .quick-row:last-child { border-bottom: 0; }
     .quick-row > div { min-width: 0; }
+    .quick-row .entry-actions { justify-self: end; }
     .quick-row svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; color: var(--ink); }
     .quick-row h3 { font-size: 18px; }
     .quick-row p { margin-top: 3px; color: var(--soft); font-size: 13.5px; line-height: 1.35; overflow-wrap: anywhere; }
@@ -13523,6 +17924,34 @@ const pageTemplates = `
     .chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--panel-soft); color: #6f6a5c; border-radius: var(--radius-sm); padding: 4px 10px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
     .chip strong { color: var(--gold-ink); }
+    .issue-dashboard { display: grid; gap: 18px; }
+    .issue-stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 12px; }
+    .issue-stat { min-height: 92px; display: grid; gap: 7px; align-content: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: var(--panel); box-shadow: var(--shadow-panel); text-decoration: none; color: inherit; }
+    .issue-stat:hover { border-color: var(--gold); }
+    .issue-stat span { color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .issue-stat strong { font-family: var(--font-serif); font-size: 30px; line-height: .95; }
+    .issue-stat p { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .issue-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+    .issue-tab { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 8px 13px; background: var(--panel); color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 850; }
+    .issue-tab.active, .issue-tab:hover { border-color: rgba(200,153,63,.45); background: rgba(200,153,63,.12); color: var(--ink); }
+    .issue-create-panel { padding: 0; overflow: hidden; }
+    .issue-create-panel > summary { min-height: 76px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 18px 20px; cursor: pointer; list-style: none; }
+    .issue-create-panel > summary::-webkit-details-marker { display: none; }
+    .issue-create-panel > summary h2 { font-size: 24px; }
+    .issue-create-panel > summary p { margin-top: 4px; color: var(--muted); font-size: 14px; line-height: 1.4; }
+    .issue-create-panel > summary::after { content: "Öffnen"; min-height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--ink); border-radius: var(--radius-xs); padding: 7px 11px; background: var(--ink); color: #fff; font-size: 13px; font-weight: 850; }
+    .issue-create-panel[open] > summary { border-bottom: 1px solid var(--line); }
+    .issue-create-panel[open] > summary::after { content: "Schließen"; border-color: var(--line); background: transparent; color: var(--ink); }
+    .issue-create-body { padding: 18px 20px 20px; }
+    .issue-management-preview { display: grid; gap: 16px; }
+    .issue-preview-list { display: grid; gap: 9px; }
+    .issue-preview-card { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 13px; background: var(--panel-soft); color: inherit; text-decoration: none; }
+    .issue-preview-card:hover { border-color: var(--gold); }
+    .issue-preview-card strong { display: block; min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+    .issue-preview-card > span:first-child > span { display: block; margin-top: 4px; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+    .issue-preview-card .chips { justify-self: end; margin-top: 0; justify-content: flex-end; }
+    .issue-preview-card .pill { margin-top: 0; }
+    .issue-management-actions { display: flex; flex-wrap: wrap; gap: 10px; }
     .issue-layout { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(280px,.8fr); gap: 22px; align-items: start; }
     .issue-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
     .issue-form label { display: grid; gap: 7px; color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
@@ -13533,6 +17962,24 @@ const pageTemplates = `
     .file-control { position: relative; min-height: 44px; display: flex; align-items: center; gap: 10px; border: 1px solid #e2dac9; border-radius: var(--radius-sm); padding: 10px 12px; background: #fffefb; color: var(--ink); overflow: hidden; }
     .file-control input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
     .file-control span { pointer-events: none; font-size: 13px; font-weight: 800; letter-spacing: 0; text-transform: none; }
+    .file-control.is-filled { border-color: rgba(47,107,74,.34); background: rgba(47,107,74,.06); }
+    .file-control.is-dragover { border-color: var(--gold); background: rgba(200,153,63,.1); }
+    .attachment-picker { display: none; grid-column: 1 / -1; gap: 8px; margin-top: 8px; }
+    .attachment-picker.has-files { display: grid; }
+    .attachment-picker-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; font-weight: 800; }
+    .attachment-picker-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(210px,1fr)); gap: 8px; }
+    .attachment-picker-item { display: grid; grid-template-columns: 52px minmax(0,1fr) 30px; gap: 10px; align-items: center; min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px; background: var(--panel-soft); }
+    .attachment-picker-thumb { width: 52px; height: 44px; display: grid; place-items: center; border-radius: var(--radius-xs); background: rgba(200,153,63,.14); color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .05em; overflow: hidden; }
+    .attachment-picker-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .attachment-picker-copy { min-width: 0; display: grid; gap: 3px; }
+    .attachment-picker-name { min-width: 0; color: var(--ink); font-size: 13px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+    .attachment-picker-meta { color: var(--soft); font-size: 11.5px; font-weight: 700; }
+    .attachment-picker-remove { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(32,37,31,.16); border-radius: var(--radius-xs); background: var(--panel); color: var(--ink); font: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
+    .attachment-picker-remove:hover { border-color: #9e2a2b; color: #9e2a2b; }
+    .attachment-picker-progress { display: none; height: 5px; border-radius: var(--radius-pill); background: #ece5d6; overflow: hidden; }
+    .attachment-picker-progress span { display: block; width: 40%; height: 100%; border-radius: inherit; background: var(--gold); animation: upload-progress 1.1s ease-in-out infinite; }
+    .attachment-picker.is-uploading .attachment-picker-progress { display: block; }
+    @keyframes upload-progress { 0% { transform: translateX(-120%); } 100% { transform: translateX(260%); } }
     .issue-form .hint { margin-top: 2px; color: var(--soft); font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; }
     .issue-form button { grid-column: 1 / -1; min-height: 46px; border: 1px solid var(--ink); border-radius: var(--radius-sm); background: var(--ink); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
     .issue-form button:hover { background: #2c3329; }
@@ -13541,14 +17988,29 @@ const pageTemplates = `
     .issue-flash.warn { background: rgba(200,153,63,.14); color: #93701d; border-color: rgba(200,153,63,.3); }
     .issue-list { display: grid; gap: 10px; }
     .issue-card { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px; background: #fffefb; display: grid; gap: 10px; }
-    .issue-card h3 { font-size: 18px; }
-    .issue-meta { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; color: var(--soft); font-size: 12.5px; font-weight: 700; }
-    .issue-location { color: var(--muted); font-size: 13px; line-height: 1.35; }
-    .issue-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
-    .issue-actions form { margin: 0; }
-    .issue-actions label { display: grid; gap: 5px; min-width: 150px; color: var(--gold-ink); font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-    .issue-actions label.assignee { flex: 1 1 240px; }
-    .issue-actions input, .issue-actions select { width: 100%; border: 1px solid #e2dac9; border-radius: var(--radius-xs); min-height: 38px; padding: 8px 10px; color: var(--ink); background: #fffefb; font: inherit; font-size: 13px; }
+	.issue-card h3 { font-size: 18px; }
+	.issue-meta { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; color: var(--soft); font-size: 12.5px; font-weight: 700; }
+	.issue-location { color: var(--muted); font-size: 13px; line-height: 1.35; }
+	.issue-proposal { border: 1px solid rgba(47,107,74,.18); border-radius: var(--radius-xs); padding: 9px 11px; background: rgba(47,107,74,.08); color: var(--leaf); font-size: 13px; line-height: 1.4; }
+	.issue-proposal strong { color: var(--ink); }
+	.issue-card-tools { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
+	.issue-card-tools > summary { min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; color: var(--ink); cursor: pointer; list-style: none; font-size: 13px; font-weight: 850; }
+	.issue-card-tools > summary::-webkit-details-marker { display: none; }
+	.issue-card-tools > summary::after { content: "Öffnen"; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 5px 8px; background: var(--panel); color: var(--muted); font-size: 12px; font-weight: 850; }
+	.issue-card-tools[open] > summary { border-bottom: 1px solid var(--line); }
+	.issue-card-tools[open] > summary::after { content: "Schließen"; }
+	.issue-card-tools-body { display: grid; gap: 10px; padding: 11px; }
+	.issue-estimate { display: grid; gap: 8px; border: 1px solid rgba(200,153,63,.28); border-radius: var(--radius-sm); padding: 11px; background: rgba(200,153,63,.08); }
+	.issue-estimate-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+	.issue-estimate-head strong { font-family: var(--font-serif); font-size: 18px; }
+	.issue-estimate .mini { margin: 0; }
+	.issue-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+	.issue-actions form { margin: 0; }
+	.issue-actions label { display: grid; gap: 5px; min-width: 150px; color: var(--gold-ink); font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+	.issue-actions label.assignee { flex: 1 1 240px; }
+	.issue-actions label.proposal { flex: 1 1 260px; }
+	.issue-actions label.note { flex: 1 1 280px; }
+	.issue-actions input, .issue-actions select { width: 100%; border: 1px solid #e2dac9; border-radius: var(--radius-xs); min-height: 38px; padding: 8px 10px; color: var(--ink); background: #fffefb; font: inherit; font-size: 13px; }
     .issue-actions button { min-height: 38px; border: 1px solid var(--ink); border-radius: var(--radius-xs); padding: 8px 12px; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
     .issue-actions .ghost { background: transparent; color: var(--ink); border-color: var(--line); }
     .issue-board-filter { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); gap: 10px; margin-bottom: 14px; align-items: end; }
@@ -13560,20 +18022,62 @@ const pageTemplates = `
     .issue-board-filter button, .issue-board-filter a { min-height: 38px; border: 1px solid var(--ink); border-radius: var(--radius-xs); padding: 8px 12px; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
     .issue-board-filter a { background: transparent; color: var(--ink); border-color: var(--line); }
     .comment-thread { display: grid; gap: 8px; border-top: 1px dashed var(--line); padding-top: 10px; }
-    .comment { display: grid; gap: 3px; border-left: 3px solid rgba(200,153,63,.35); padding-left: 9px; color: var(--ink); }
+    .comment { display: grid; gap: 5px; border-left: 3px solid rgba(200,153,63,.35); padding-left: 9px; color: var(--ink); }
+    .comment-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .comment-meta { color: var(--soft); font-size: 12px; font-weight: 800; }
+    .comment-delete { margin: 0; }
+    .comment-delete button { min-height: 28px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 4px 8px; background: transparent; color: var(--soft); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+    .comment-delete button:hover { border-color: #9e2a2b; color: #9e2a2b; }
     .comment-form { display: grid; gap: 8px; }
     .comment-form textarea { min-height: 84px; }
     .comment-form button { justify-self: start; min-height: 38px; border: 1px solid var(--ink); border-radius: var(--radius-xs); padding: 8px 12px; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
-    .dialog { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 0; width: min(680px, calc(100vw - 28px)); color: var(--ink); background: var(--panel); box-shadow: var(--shadow-dialog); }
+    .comment-form .file-control { max-width: 420px; min-height: 38px; padding: 8px 10px; }
+    .attachment-strip { display: grid; grid-template-columns: repeat(auto-fill,minmax(112px,1fr)); gap: 8px; }
+    .attachment-item { position: relative; min-width: 0; }
+    .attachment-open { width: 100%; min-height: 100%; display: grid; grid-template-rows: auto minmax(34px,auto); gap: 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 7px; background: var(--panel-soft); color: var(--ink); text-decoration: none; font: inherit; text-align: left; cursor: pointer; }
+    .attachment-open:hover { border-color: var(--gold); }
+    .attachment-open img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-xs); background: #ede5d6; }
+    .attachment-file-icon { width: 100%; aspect-ratio: 4 / 3; display: grid; place-items: center; border-radius: var(--radius-xs); background: rgba(200,153,63,.14); color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .08em; }
+    .attachment-name { min-width: 0; color: var(--muted); font-size: 12px; font-weight: 700; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+    .attachment-delete { position: absolute; top: 5px; right: 5px; margin: 0; }
+    .attachment-delete button { width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid rgba(32,37,31,.18); border-radius: var(--radius-xs); background: rgba(255,254,251,.94); color: var(--ink); font-size: 18px; line-height: 1; cursor: pointer; }
+    .attachment-delete button:hover { border-color: #9e2a2b; color: #9e2a2b; }
+    .attachment-lightbox { position: fixed; inset: 0; z-index: 200; display: none; grid-template-columns: 56px minmax(0,1fr) 56px; grid-template-rows: 56px minmax(0,1fr) auto; align-items: center; gap: 12px; padding: 16px; background: rgba(23,32,25,.88); color: #fff; }
+    .attachment-lightbox.open { display: grid; }
+    .attachment-lightbox figure { grid-column: 2; grid-row: 2; display: grid; place-items: center; gap: 10px; min-width: 0; min-height: 0; margin: 0; }
+    .attachment-lightbox img { max-width: 100%; max-height: calc(100vh - 150px); object-fit: contain; border-radius: var(--radius-sm); box-shadow: 0 24px 70px rgba(0,0,0,.38); background: #111; }
+    .attachment-lightbox figcaption { color: rgba(255,255,255,.82); font-size: 13px; text-align: center; overflow-wrap: anywhere; }
+    .lightbox-close, .lightbox-prev, .lightbox-next { border: 1px solid rgba(255,255,255,.28); border-radius: var(--radius-xs); background: rgba(255,255,255,.08); color: #fff; font: inherit; font-weight: 900; cursor: pointer; }
+    .lightbox-close { grid-column: 3; grid-row: 1; justify-self: end; width: 42px; height: 42px; font-size: 24px; }
+    .lightbox-prev, .lightbox-next { width: 46px; height: 70px; font-size: 28px; }
+    .lightbox-prev { grid-column: 1; grid-row: 2; }
+    .lightbox-next { grid-column: 3; grid-row: 2; }
+    .dialog { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 0; width: min(680px, calc(100vw - 28px)); max-height: min(860px, calc(100dvh - 28px)); overflow: hidden; color: var(--ink); background: var(--panel); box-shadow: var(--shadow-dialog); }
     .dialog::backdrop { background: rgba(23,32,25,.42); }
-    .dialog form { margin: 0; }
+    .dialog form { margin: 0; display: grid; grid-template-rows: auto minmax(0,1fr); max-height: inherit; }
     .dialog-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
     .dialog-head h2 { font-size: 25px; }
     .dialog-close { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; }
-    .dialog-body { display: grid; gap: 14px; padding: 20px 22px 22px; }
+    .dialog-body { display: grid; gap: 14px; padding: 20px 22px 22px; overflow: auto; overscroll-behavior: contain; }
+    .dialog-body > button:last-child { position: sticky; bottom: -1px; z-index: 2; box-shadow: 0 -12px 0 12px var(--panel), 0 -10px 18px rgba(255,254,251,.92); }
     .dialog-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
     .dialog-grid .full { grid-column: 1 / -1; }
+    .release-dialog { width: min(920px, calc(100vw - 28px)); }
+    .release-history { display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 20px; max-height: min(72vh, 720px); }
+    .release-rail { display: grid; align-content: start; gap: 8px; border-right: 1px solid var(--line); padding-right: 16px; overflow: auto; }
+    .release-rail a { display: grid; gap: 3px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--ink); background: var(--panel-soft); text-decoration: none; }
+    .release-rail a:first-child { border-color: rgba(200,153,63,.55); background: rgba(200,153,63,.1); }
+    .release-rail strong { font-size: 14px; }
+    .release-rail span { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .release-body { min-width: 0; overflow: auto; padding-right: 4px; }
+    .release-entry { display: grid; gap: 14px; padding-bottom: 24px; }
+    .release-entry + .release-entry { border-top: 1px solid var(--line); padding-top: 24px; }
+    .release-entry h3 { font-size: clamp(24px,3vw,34px); }
+    .release-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; font-weight: 800; }
+    .release-items { display: grid; gap: 10px; }
+    .release-item { display: grid; grid-template-columns: 110px minmax(0,1fr); gap: 12px; border-top: 1px solid var(--line); padding-top: 11px; line-height: 1.45; }
+    .release-item strong { color: var(--gold-ink); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+    .release-item span { color: var(--muted); }
     textarea { width: 100%; border: 1px solid #e2dac9; border-radius: var(--radius-xs); min-height: 150px; padding: 10px 12px; color: var(--ink); background: #fffefb; resize: vertical; font: inherit; line-height: 1.45; }
     select { width: 100%; border: 1px solid #e2dac9; border-radius: var(--radius-xs); min-height: 42px; padding: 9px 12px; color: var(--ink); background: #fffefb; font: inherit; }
     .check-row { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; color: var(--ink); font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; }
@@ -13585,13 +18089,97 @@ const pageTemplates = `
     code, .mini { color: var(--soft); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
     .accounting { display: grid; gap: 16px; }
     .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-    .month-strip { display: grid; grid-template-columns: repeat(7,minmax(120px,1fr)); gap: 10px; }
-    .month-card { display: grid; gap: 10px; color: inherit; text-decoration: none; }
-    .month-card:hover { border-color: var(--gold); }
-    .month-card strong { font-family: var(--font-serif); font-size: 16px; }
+    .parking-page-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: start; }
+    .parking-primary-actions { display: flex; align-items: flex-start; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    .parking-more { position: relative; }
+    .parking-more summary { list-style: none; }
+    .parking-more summary::-webkit-details-marker { display: none; }
+    .parking-more-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; width: min(270px,calc(100vw - 48px)); display: grid; gap: 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 10px; box-shadow: var(--shadow-dialog); }
+    .parking-more-menu .button, .parking-more-menu form, .parking-more-menu button { width: 100%; }
+    .parking-guide { display: grid; grid-template-columns: minmax(210px,.65fr) minmax(0,1fr) auto; gap: 24px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 22px 24px; box-shadow: var(--shadow-panel); }
+    .parking-guide h2 { font-size: 22px; }
+    .parking-guide p { margin-top: 4px; }
+    .parking-guide-status { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+    .parking-empty { display: grid; grid-template-columns: 220px minmax(0,1fr) auto; gap: 24px 30px; align-items: center; }
+    .parking-empty-art { width: min(220px,100%); aspect-ratio: 1.25; justify-self: center; color: var(--gold); opacity: .92; }
+    .parking-empty-art svg { width: 100%; height: 100%; display: block; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .parking-empty-art .soft-fill { fill: rgba(200,153,63,.11); stroke: none; }
+    .parking-empty-copy { display: grid; gap: 8px; min-width: 0; }
+    .parking-empty-copy h2 { font-size: clamp(28px,3.4vw,40px); }
+    .parking-empty-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; align-self: center; }
+    .parking-empty-steps { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0; border-top: 1px solid var(--line); padding-top: 20px; }
+    .parking-empty-step { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 13px; align-items: start; min-width: 0; padding: 0 22px; border-left: 1px solid var(--line); }
+    .parking-empty-step:first-child { border-left: 0; padding-left: 0; }
+    .parking-empty-step:last-child { padding-right: 0; }
+    .parking-empty-step-number { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: rgba(200,153,63,.13); color: var(--gold-ink); font-weight: 900; }
+    .parking-empty-step strong { display: block; font-family: var(--font-serif); font-size: 18px; line-height: 1.15; }
+    .parking-empty-step p { margin-top: 5px; color: var(--muted); font-size: 13px; line-height: 1.42; }
+    .parking-empty-note { grid-column: 1 / -1; display: grid; grid-template-columns: 40px minmax(0,1fr) auto; gap: 14px; align-items: center; border: 1px solid rgba(47,107,74,.18); border-radius: var(--radius-sm); background: rgba(47,107,74,.06); padding: 13px 15px; color: var(--muted); }
+    .parking-empty-note-icon { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: rgba(47,107,74,.11); color: var(--leaf); }
+    .parking-empty-note-icon svg { width: 19px; height: 19px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .parking-empty-note strong { display: block; color: var(--ink); }
     .bar { height: 9px; border-radius: var(--radius-pill); background: #ece5d6; overflow: hidden; }
     .bar span { display: block; height: 100%; min-width: 2px; border-radius: inherit; background: var(--gold); }
     .amount { font-weight: 800; font-variant-numeric: tabular-nums; }
+    .parking-workspace { display: grid; grid-template-columns: minmax(340px,.42fr) minmax(0,.58fr); gap: 18px; align-items: start; }
+    .parking-assistant { display: grid; gap: 18px; align-content: start; }
+    .parking-stepper { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0; align-items: center; }
+    .parking-step { position: relative; display: grid; grid-template-columns: 44px minmax(0,1fr); align-items: center; gap: 12px; color: var(--soft); font-size: 13px; font-weight: 800; text-align: left; }
+    .parking-step strong, .parking-step small { display: block; }
+    .parking-step small { margin-top: 2px; color: var(--soft); font-size: 12px; font-weight: 500; line-height: 1.35; }
+    .parking-step::before { content: ""; position: absolute; top: 22px; left: 54px; right: 14px; height: 1px; background: var(--line); transform: translateX(100%); }
+    .parking-step:last-child::before { display: none; }
+    .parking-step-number { position: relative; z-index: 1; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); background: var(--panel-soft); color: var(--ink); font-weight: 900; }
+    .parking-step.active { color: var(--gold-ink); }
+    .parking-step.active .parking-step-number { border-color: var(--gold); background: var(--gold); color: #fff; }
+    .parking-queue-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .parking-queue-head h2 { font-size: 22px; }
+    .parking-month-queue { display: grid; gap: 10px; }
+    .parking-month-row { min-height: 68px; display: grid; grid-template-columns: 44px minmax(0,1fr) auto auto auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 11px 12px; color: inherit; text-decoration: none; }
+    .parking-month-row:hover { border-color: var(--gold); background: #fffefb; }
+    .parking-month-row strong { display: block; overflow-wrap: anywhere; }
+    .parking-month-row .mini { display: block; margin-top: 3px; }
+    .parking-month-icon { width: 44px; height: 44px; border-radius: var(--radius-xs); display: grid; place-items: center; background: rgba(200,153,63,.11); color: var(--gold-ink); }
+    .parking-month-icon svg { width: 21px; height: 21px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .parking-queue-action { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel); padding: 6px 12px; font-size: 12px; font-weight: 900; white-space: nowrap; }
+    .parking-utility { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 15px 16px; }
+    .parking-utility summary { cursor: pointer; color: var(--ink); font-family: var(--font-serif); font-size: 18px; font-weight: 700; }
+    .parking-utility-body { display: grid; gap: 12px; margin-top: 12px; }
+    .parking-utility .metric-grid { grid-template-columns: 1fr; gap: 8px; }
+    .parking-utility .metric-card { padding: 12px; }
+    .parking-utility .metric-value { font-size: 18px; }
+    .parking-detail-stack { position: sticky; top: 82px; display: grid; gap: 10px; align-self: start; }
+    .parking-month-detail { display: none; gap: 18px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-panel); scroll-margin-top: 82px; overflow: hidden; }
+    .parking-month-detail:first-child { display: grid; }
+    .parking-month-detail:target { display: grid; }
+    .parking-detail-stack:has(.parking-month-detail:target) .parking-month-detail:first-child:not(:target) { display: none; }
+    .parking-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 22px 22px 0; }
+    .parking-detail-head strong { display: block; margin-top: 4px; font-family: var(--font-serif); font-size: 31px; line-height: 1; }
+    .parking-tabs { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 22px; }
+    .parking-tabs a, .parking-tabs span { min-height: 31px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); padding: 6px 10px; color: var(--ink); text-decoration: none; font-size: 12px; font-weight: 800; }
+    .parking-tabs span:first-child { border-color: var(--gold); color: var(--gold-ink); background: rgba(200,153,63,.1); }
+    .parking-tabs a:hover { border-color: var(--gold); color: var(--gold-ink); }
+    .parking-breakdown { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin: 0; padding: 0 22px; }
+    .parking-breakdown div { border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel); padding: 10px; }
+    .parking-breakdown dt { color: var(--soft); font-size: 11px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .parking-breakdown dd { margin: 5px 0 0; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .parking-detail-actions { display: block; border-top: 1px solid var(--line); padding: 0 22px 4px; }
+    .parking-payment-box, .parking-receipts { padding: 18px; display: grid; gap: 12px; align-content: start; }
+    .parking-payment-box { grid-template-columns: 58px minmax(0,1fr) auto; align-items: center; border: 1px solid rgba(200,153,63,.55); border-radius: var(--radius-sm); background: linear-gradient(135deg, rgba(200,153,63,.11), rgba(255,254,251,.92)); }
+    .parking-payment-box h3 { font-size: 20px; }
+    .parking-payment-icon { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: rgba(47,107,74,.12); color: var(--leaf); }
+    .parking-payment-icon svg { width: 25px; height: 25px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .parking-payment-copy { min-width: 0; }
+    .parking-payment-form { display: grid; gap: 10px; margin: 0; justify-items: end; }
+    .parking-payment-form .button { min-width: 190px; }
+    .payment-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; align-items: end; }
+    .payment-fields .full { grid-column: 1 / -1; }
+    .payment-fields label { color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .payment-fields input { margin-top: 5px; }
+    .parking-dropzone { min-height: 112px; display: grid; place-items: center; border: 1px dashed #d8ccb8; border-radius: var(--radius-sm); background: var(--panel-soft); color: var(--muted); text-align: center; padding: 16px; }
+    .parking-dropzone strong { display: block; color: var(--ink); }
+    .parking-detail-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); padding: 12px 22px; color: var(--soft); font-size: 12px; }
+    .parking-receipts .attachment-strip { grid-template-columns: repeat(auto-fill,minmax(96px,1fr)); }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
     .table-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); }
     .table-wrap:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
@@ -13615,19 +18203,24 @@ const pageTemplates = `
     .filter-form.document-filter button { width: auto; margin-top: 0; min-height: 42px; }
     .document-section { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 10px; }
     .document-section:first-child { border-top: 0; padding-top: 0; }
-    .document-section h3 { font-size: 18px; }
+    .document-section h3 { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 18px; }
+    .document-section h3 .section-count { font-family: var(--font-sans); font-size: 11px; font-weight: 900; color: var(--gold-ink); background: rgba(200,153,63,.12); border: 1px solid rgba(200,153,63,.24); border-radius: var(--radius-pill); padding: 3px 8px; white-space: nowrap; }
+    .document-section-empty { padding-top: 10px; gap: 6px; }
+    .document-section-empty h3 { color: var(--muted); font-size: 15px; }
     .document-list { display: grid; gap: 8px; }
-    .document-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); background: #fffefb; padding: 12px 14px; }
-    .document-row strong { display: block; font-size: 15px; }
-    .document-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; color: var(--muted); font-size: 12.5px; }
-    .document-file { color: var(--soft); overflow-wrap: anywhere; }
-    .document-side { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-    .document-versions { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 10px; }
+    .document-row { display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 8px 12px; align-items: start; border: 1px solid var(--line); border-radius: var(--radius-xs); background: #fffefb; padding: 10px 12px; }
+    .document-row::before { content: ""; width: 34px; height: 40px; border: 1px solid rgba(200,153,63,.28); border-radius: 8px; background: linear-gradient(135deg, rgba(200,153,63,.18), rgba(200,153,63,.18) 34%, transparent 35%), rgba(200,153,63,.08); box-shadow: inset 0 -10px 0 rgba(255,254,251,.48); }
+    .document-row strong { display: block; font-size: 15px; line-height: 1.25; overflow-wrap: anywhere; }
+    .document-meta { margin-top: 5px; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px 7px; align-items: center; color: var(--muted); font-size: 12.5px; }
+    .document-file { min-width: 0; max-width: min(260px,100%); color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .document-side { grid-column: 2; display: flex; align-items: center; justify-content: flex-start; gap: 7px; flex-wrap: wrap; }
+    .document-versions { grid-column: 2 / -1; border-top: 1px solid var(--line); padding-top: 10px; }
     .document-versions summary { cursor: pointer; font-weight: 800; color: var(--gold-ink); }
     .version-list { margin-top: 8px; display: grid; gap: 7px; }
     .version-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 12.5px; }
     .vote-list { display: grid; gap: 12px; }
     .vote-card { border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fffefb; padding: 16px; display: grid; gap: 13px; }
+    .vote-card form { display: grid; gap: 14px; }
     .vote-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
     .vote-card-head > .pill { justify-self: end; }
     .vote-card h3 { font-size: 20px; overflow-wrap: anywhere; }
@@ -13635,7 +18228,7 @@ const pageTemplates = `
     .vote-options { display: grid; gap: 8px; }
     .vote-option { min-height: 42px; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); padding: 10px 12px; color: var(--ink); font-size: 14px; font-weight: 700; }
     .vote-option input { width: auto; min-height: 0; }
-    .vote-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .vote-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 4px; padding-top: 13px; border-top: 1px solid var(--line); }
     .vote-result { display: grid; gap: 6px; }
     .vote-result-row { display: grid; grid-template-columns: minmax(110px,.45fr) minmax(120px,1fr) auto; gap: 10px; align-items: center; color: var(--muted); font-size: 13px; }
     .vote-result-row strong { color: var(--ink); overflow-wrap: anywhere; }
@@ -13646,12 +18239,42 @@ const pageTemplates = `
     .vote-manage-row:last-child { border-bottom: 0; }
     .vote-manage-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .vote-manage-actions form { margin: 0; }
+    .handover-page { display: grid; gap: 18px; }
+    .handover-list { display: grid; gap: 14px; }
+    .handover-card { gap: 16px; }
+    .handover-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: start; }
+    .handover-head h2 { margin-top: 6px; font-size: clamp(24px,3vw,34px); overflow-wrap: anywhere; }
+    .handover-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--soft); font-size: 12.5px; font-weight: 800; }
+    .handover-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .handover-actions form { margin: 0; }
+    .handover-detail-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+    .handover-detail { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 13px; min-width: 0; }
+    .handover-detail h3 { font-size: 16px; }
+    .handover-detail ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 9px; }
+    .handover-detail li { display: grid; gap: 3px; color: var(--muted); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
+    .handover-detail li strong { color: var(--ink); font-size: 14px; }
+    .handover-detail li em { color: #9b5f54; font-style: normal; }
+    .handover-detail p { margin-top: 9px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .handover-note { border-left: 3px solid var(--gold); padding: 4px 0 4px 13px; color: var(--muted); }
+    .handover-note strong { color: var(--ink); }
+    .handover-note p { margin-top: 4px; line-height: 1.45; overflow-wrap: anywhere; }
+    .handover-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding-top: 4px; color: var(--soft); font-size: 12px; }
+    .handover-dialog textarea { min-height: 94px; }
+    .handover-confirm-body { min-height: 100vh; background: radial-gradient(circle at top left, rgba(47,107,74,.12), transparent 34%), var(--paper); }
+    .handover-confirm-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .handover-confirm-card { width: min(760px, 100%); }
+    .handover-confirm-card h1 { font-size: clamp(34px,6vw,56px); }
+    .handover-confirm-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 12px 0; }
+    .handover-confirm-summary div { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 12px; }
+    .handover-confirm-summary span { display: block; color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .handover-confirm-summary strong { display: block; margin-top: 5px; overflow-wrap: anywhere; }
+    .handover-confirm-form { display: grid; gap: 12px; margin-top: 14px; }
     .empty { border: 1px solid var(--line); background: var(--panel-soft); color: #5c5f54; border-radius: var(--radius-sm); padding: 14px; line-height: 1.5; }
-    .empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 18px; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 14px; align-items: center; color: var(--ink); }
-    .empty-state-icon { width: 42px; height: 42px; border-radius: var(--radius-sm); display: grid; place-items: center; background: rgba(200,153,63,.16); color: var(--gold-ink); }
-    .empty-state-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .empty-state h3 { font-size: 19px; }
-    .empty-state p { margin-top: 4px; color: var(--muted); line-height: 1.45; font-size: 14px; }
+    .empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 16px 18px; display: grid; grid-template-columns: 52px minmax(0,1fr) auto; gap: 16px; align-items: center; color: var(--ink); }
+    .empty-state-icon { width: 52px; height: 52px; border-radius: var(--radius-sm); display: inline-grid; place-items: center; line-height: 0; background: rgba(200,153,63,.16); color: var(--gold-ink); }
+    .empty-state-icon svg { display: block; width: 22px; height: 22px; margin: 0; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+    .empty-state h3 { font-size: 18px; }
+    .empty-state p { margin-top: 4px; color: var(--muted); line-height: 1.42; font-size: 13.5px; }
     .settings-card { max-width: 620px; display: grid; gap: 16px; }
     .form-grid { display: grid; gap: 12px; }
     label { display: grid; gap: 7px; color: var(--gold-ink); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
@@ -13669,36 +18292,121 @@ const pageTemplates = `
       .side-foot { margin-top: 4px; grid-template-columns: 1fr auto; align-items: center; }
       .logout-form { justify-self: end; min-width: 160px; }
       .home-grid, .metric-grid, .issue-layout { grid-template-columns: 1fr; }
+      .handover-detail-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .handover-head { grid-template-columns: 1fr; }
+      .handover-actions { justify-content: flex-start; }
+      .parking-page-head, .parking-guide, .parking-workspace, .parking-detail-actions, .parking-payment-box { grid-template-columns: 1fr; }
+      .parking-primary-actions { justify-content: flex-start; }
+      .parking-guide-status { justify-content: flex-start; }
+      .parking-empty { grid-template-columns: minmax(0,1fr); align-items: start; }
+      .parking-empty-art { width: min(260px,72vw); justify-self: start; }
+      .parking-empty-actions { justify-content: flex-start; }
+      .parking-empty-steps { grid-template-columns: 1fr; gap: 14px; }
+      .parking-empty-step, .parking-empty-step:first-child, .parking-empty-step:last-child { padding: 0; border-left: 0; }
+      .parking-empty-note { grid-template-columns: 40px minmax(0,1fr); }
+      .parking-empty-note .button { grid-column: 1 / -1; justify-self: start; }
+      .parking-detail-stack { position: static; }
       .digest-panel .quick-list { grid-template-columns: 1fr; }
-      .month-strip { grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); }
+      .parking-payment-form { justify-items: stretch; }
     }
-    @media (max-width: 680px) {
-      .side-brand, .side-user { grid-template-columns: auto 1fr; }
-      .side-foot { grid-template-columns: 1fr; }
-      .logout-form { justify-self: stretch; }
+	    @media (max-width: 680px) {
+	      .app-shell { display: block; }
+	      .sidebar { position: sticky; top: 0; z-index: 50; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; height: auto; padding: 10px 14px; box-shadow: 0 10px 28px rgba(23,32,25,.18); }
+	      .side-brand { grid-template-columns: 42px minmax(0,1fr); gap: 10px; align-items: center; padding: 0; min-width: 0; }
+	      .side-mark { width: 42px; height: 42px; }
+	      .side-mark svg { width: 34px; height: 30px; }
+	      .side-title { font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	      .side-sub { margin-top: 3px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	      .side-code { margin-top: 4px; padding: 1px 7px; font-size: 9.5px; }
+	      .nav-toggle { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none; }
+	      .mobile-menu-toggle { min-height: 38px; align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); padding: 8px 10px; color: rgba(255,255,255,.92); background: rgba(255,255,255,.07); font-size: 12px; font-weight: 850; letter-spacing: .01em; cursor: pointer; }
+	      .mobile-menu-toggle::before { content: ""; width: 14px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; box-shadow: 0 4px 0 currentColor inset; }
+	      .nav-toggle:focus-visible + .mobile-menu-toggle { outline: 3px solid var(--gold); outline-offset: 3px; }
+	      .nav-toggle:checked + .mobile-menu-toggle { border-color: rgba(231,197,116,.62); color: #fff; background: rgba(231,197,116,.13); }
+	      .side-nav, .side-foot { grid-column: 1 / -1; display: none; }
+	      .nav-toggle:checked ~ .side-nav, .nav-toggle:checked ~ .side-foot { display: grid; }
+	      .side-nav { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.14); }
+	      .nav-item { min-height: 40px; padding: 8px 9px; gap: 8px; font-size: 12.5px; }
+	      .nav-item.active::before { left: -14px; width: 3px; }
+	      .nav-icon { width: 18px; height: 18px; }
+	      .nav-icon svg { width: 17px; height: 17px; }
+	      .nav-badge { min-width: 20px; height: 18px; padding: 0 6px; font-size: 10px; }
+	      .side-foot { margin-top: 2px; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 9px 10px; padding: 10px 0 0; }
+	      .side-user { grid-template-columns: 34px minmax(0,1fr); gap: 9px; min-width: 0; }
+	      .avatar { width: 34px; height: 34px; font-size: 12px; }
+	      .side-user strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	      .side-user span { font-size: 12px; }
+	      .side-version { justify-self: end; }
+	      .logout-form { grid-column: 1 / -1; justify-self: stretch; min-width: 0; }
+	      .logout-button { min-height: 38px; }
       .content-top { height: auto; min-height: 58px; flex-direction: column; align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
       .home-hero { min-height: 224px; align-items: flex-end; padding: 96px 18px 30px; }
       .home-hero::before { inset: 0; background-position: center top; }
       .home-hero::after { background: linear-gradient(180deg, rgba(247,243,234,.28) 0%, rgba(247,243,234,.86) 50%, rgba(247,243,234,.98) 100%); }
       .home-hero h1 { font-size: clamp(40px,12vw,52px); }
       .home-hero p { font-size: 15px; }
-      .page { padding-left: 18px; padding-right: 18px; }
-      h1 { font-size: clamp(36px,12vw,48px); }
+	      .page, .page.wide { width: 100vw; max-width: 100vw; padding-left: 18px; padding-right: 18px; overflow-x: clip; }
+	      .page > *, .panel, .audit-timeline, .filter-form.audit-filter { min-width: 0; max-width: 100%; }
+	      h1 { font-size: clamp(34px,10.5vw,42px); }
 	      .metric-grid { grid-template-columns: 1fr; }
-	      .issue-form { grid-template-columns: 1fr; }
-	      .issue-board-filter { grid-template-columns: 1fr; }
-	      .issue-board-filter label, .issue-board-filter label.assignee, .issue-board-filter label.sort, .issue-board-filter .board-filter-actions { grid-column: 1 / -1; }
+	      .payment-fields, .parking-breakdown { grid-template-columns: 1fr; }
+	      .handover-detail-grid, .handover-confirm-summary { grid-template-columns: 1fr; }
+	      .parking-page-head, .parking-page-head > *, .parking-primary-actions, .parking-page .panel { min-width: 0; max-width: 100%; }
+	      .parking-primary-actions { width: 100%; display: grid; grid-template-columns: 1fr; justify-content: stretch; }
+	      .parking-primary-actions .button, .parking-primary-actions form, .parking-primary-actions form button { width: 100%; }
+	      .parking-more { width: 100%; }
+	      .parking-more-menu { left: 0; right: auto; width: min(270px, 100%); }
+	      .parking-month-row { grid-template-columns: 40px minmax(0,1fr) auto; }
+	      .parking-month-row .amount { grid-column: 2; }
+	      .parking-month-row .pill, .parking-month-row .parking-queue-action { justify-self: start; }
+      .parking-stepper { grid-template-columns: 1fr; }
+      .parking-step { justify-items: start; grid-template-columns: 32px minmax(0,1fr); text-align: left; }
+      .parking-step-number { width: 32px; height: 32px; }
+      .parking-step::before { display: none; }
+      .issue-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .issue-create-panel > summary { grid-template-columns: 1fr; }
+      .issue-create-panel > summary::after { justify-self: start; }
+      .issue-preview-card { grid-template-columns: 1fr; }
+      .issue-preview-card .chips { justify-self: start; justify-content: flex-start; }
+      .issue-form { grid-template-columns: 1fr; }
+      .issue-board-filter { grid-template-columns: 1fr; }
+      .issue-board-filter label, .issue-board-filter label.assignee, .issue-board-filter label.sort, .issue-board-filter .board-filter-actions { grid-column: 1 / -1; }
 	      .quick-row { grid-template-columns: 28px minmax(0,1fr); }
-	      .document-row { grid-template-columns: 1fr; }
-	      .document-side { justify-content: flex-start; }
+	      .quick-row .entry-actions { grid-column: 2; justify-self: stretch; justify-content: flex-start; margin-top: 5px; }
+	      .quick-row .entry-actions .button, .quick-row .entry-actions form { flex: 1 1 112px; min-width: 0; }
+	      .quick-row .entry-actions form .button { width: 100%; }
+	      .filter-form.audit-filter { grid-template-columns: 1fr; align-items: stretch; }
+      .filter-form.audit-filter button, .filter-form.audit-filter .button { width: 100%; min-height: 42px; }
+      .audit-filter-panel > summary { grid-template-columns: 1fr auto; align-items: center; }
+      .audit-filter-panel > summary strong { grid-column: 1 / -1; font-size: 13px; }
+      .audit-timeline { width: 100%; }
+      .audit-day { padding: 12px 14px 9px; }
+      .audit-row { grid-template-columns: 56px 14px minmax(0,1fr); gap: 10px; padding: 14px; }
+      .audit-time { text-align: left; }
+      .audit-time strong { font-size: 16px; }
+      .audit-time span { font-size: 10.5px; overflow-wrap: anywhere; }
+      .audit-marker { width: 10px; height: 10px; margin-top: 5px; box-shadow: 0 0 0 4px rgba(200,153,63,.13); }
+      .audit-row-head { gap: 8px; }
+      .audit-action strong { font-size: 15px; }
+      .audit-meta { gap: 7px; }
+	      .document-row { grid-template-columns: 34px minmax(0,1fr); gap: 8px 10px; padding: 12px; }
+	      .document-row::before { width: 32px; height: 38px; }
+	      .document-row > div:first-of-type { min-width: 0; }
+	      .document-side { gap: 6px; margin-top: 4px; }
+	      .document-side .pill { order: -1; }
+	      .document-file { max-width: 100%; }
+	      .document-versions { grid-column: 2; }
 	      .vote-card-head, .vote-actions, .vote-manage-row { display: grid; grid-template-columns: 1fr; }
 	      .vote-card-head > .pill { justify-self: start; }
 	      .vote-result-row { grid-template-columns: 1fr; }
 	      .vote-manage-actions { justify-content: flex-start; }
-      .quick-row .pill { grid-column: 2; justify-self: start; }
+	      .quick-row .pill { grid-column: 2; justify-self: start; }
 	      .filter-form { grid-template-columns: 1fr; }
 	      .filter-form.document-filter { grid-template-columns: 1fr; }
       .dialog-grid { grid-template-columns: 1fr; }
+      .release-history { grid-template-columns: 1fr; max-height: 76vh; }
+      .release-rail { grid-template-columns: repeat(auto-fit,minmax(132px,1fr)); border-right: 0; border-bottom: 1px solid var(--line); padding-right: 0; padding-bottom: 12px; }
+      .release-item { grid-template-columns: 1fr; gap: 4px; }
       .empty-state { grid-template-columns: 1fr; }
       .home-status-head { display: grid; gap: 12px; }
       .home-status-grid { grid-template-columns: 1fr; }
@@ -13719,34 +18427,74 @@ const pageTemplates = `
 {{define "sidebar"}}
   <aside class="sidebar" aria-label="Portalnavigation">
     <div class="side-brand">
-      <a class="side-mark" href="/app">WEG</a>
+	      <a class="side-mark" href="/app" aria-label="{{if .IsServiceProvider}}Anliegen{{else}}Hausüberblick{{end}}">
+        {{template "tenantBrandMark" .}}
+      </a>
       <div>
         <a class="side-title" href="/app">{{.Tenant.Name}}</a>
         <span class="side-sub">{{.Tenant.Address}}</span>
+        {{if .Tenant.BrandAbbreviation}}<span class="side-code">{{.Tenant.BrandAbbreviation}}</span>{{end}}
       </div>
-    </div>
-    <nav class="side-nav">
-      <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="nav-label">Hausüberblick</span></a>
-      <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
-      <a class="nav-item {{if eq .ActivePage "events"}}active{{end}}" href="/app/events"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></span><span class="nav-label">Termine</span></a>
-      <a class="nav-item {{if eq .ActivePage "contacts"}}active{{end}}" href="/app/kontakte"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg></span><span class="nav-label">Kontakte</span></a>
-      {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
-      <a class="nav-item {{if eq .ActivePage "documents"}}active{{end}}" href="/app/dokumente"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</a>
-      <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="/app/anliegen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
-      <a class="nav-item {{if eq .ActivePage "abstimmungen"}}active{{end}}" href="/app/abstimmungen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</a>
-      {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
-      {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Audit-Log</a>{{end}}
-      <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>
-    </nav>
+	    </div>
+	    <input class="nav-toggle" id="portal-nav-toggle" type="checkbox" aria-label="Navigation anzeigen">
+	    <label class="mobile-menu-toggle" for="portal-nav-toggle">Menü</label>
+	    <nav class="side-nav">
+	      {{if .CanUseResidentAreas}}
+	      <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="nav-label">Hausüberblick</span></a>
+	      <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
+	      <a class="nav-item {{if eq .ActivePage "events"}}active{{end}}" href="/app/events"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></span><span class="nav-label">Termine</span></a>
+	      <a class="nav-item {{if eq .ActivePage "contacts"}}active{{end}}" href="/app/kontakte"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg></span><span class="nav-label">Kontakte</span></a>
+	      {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
+	      <a class="nav-item {{if eq .ActivePage "documents"}}active{{end}}" href="/app/dokumente"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</a>
+	      {{if .CanManageHandovers}}<a class="nav-item {{if eq .ActivePage "handovers"}}active{{end}}" href="/app/uebergaben"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg></span>Übergaben</a>{{end}}
+	      {{end}}
+	      <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="/app/anliegen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
+	      {{if .CanUseResidentAreas}}
+	      <a class="nav-item {{if eq .ActivePage "abstimmungen"}}active{{end}}" href="/app/abstimmungen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</a>
+	      {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
+	      {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Audit-Log</a>{{end}}
+	      <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>
+	      {{end}}
+	    </nav>
     <div class="side-foot">
       <div class="side-user">
         <span class="avatar">{{.Initials}}</span>
         <div><strong>{{.DisplayName}}</strong><span>{{.Role}}</span></div>
       </div>
-      <span class="side-version">{{.AppVersion}}</span>
+      <button class="side-version version-button" type="button" data-dialog="release-history" aria-haspopup="dialog" aria-controls="release-history">v{{.DisplayVersion}}</button>
       <form class="logout-form" method="post" action="/auth/logout"><button class="logout-button" type="submit">Abmelden</button></form>
     </div>
   </aside>
+{{end}}
+
+{{define "releaseHistoryDialog"}}
+  {{if .HasReleaseNotes}}
+  <dialog id="release-history" class="dialog release-dialog" aria-labelledby="release-history-title">
+    <div class="dialog-head">
+      <h2 id="release-history-title">Versionsverlauf</h2>
+      <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+    </div>
+    <div class="dialog-body">
+      <div class="release-history">
+        <nav class="release-rail" aria-label="Versionen">
+          {{range .ReleaseNotes}}<a href="#release-{{.Version}}"><strong>v{{.Version}}</strong><span>{{.Date}}</span></a>{{end}}
+        </nav>
+        <div class="release-body">
+          {{range .ReleaseNotes}}
+          <section class="release-entry" id="release-{{.Version}}">
+            <div class="release-meta"><span class="pill">{{.Kind}}</span><span>{{.Date}}</span></div>
+            <h3>{{.Headline}}</h3>
+            <p class="muted">{{.Intro}}</p>
+            <div class="release-items">
+              {{range .Items}}<div class="release-item"><strong>{{.Label}}</strong><span>{{.Text}}</span></div>{{end}}
+            </div>
+          </section>
+          {{end}}
+        </div>
+      </div>
+    </div>
+  </dialog>
+  {{end}}
 {{end}}
 
 {{define "appOpen"}}
@@ -13756,15 +18504,19 @@ const pageTemplates = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.svg">
   {{template "appStyles" .}}
 </head>
 <body>
   <div class="app-shell">
     {{template "sidebar" .}}
+    {{template "releaseHistoryDialog" .}}
 {{end}}
 
 {{define "appClose"}}
   </div>
+  <script src="/assets/app.js?v={{.AssetVersion}}" defer></script>
 </body>
 </html>
 {{end}}
@@ -13867,11 +18619,11 @@ const pageTemplates = `
               {{end}}
             </section>
 
-            <section class="panel">
-              <div class="section-head">
-                <div class="kicker">Dokumente</div>
-                <a class="section-link" href="/app/dokumente">Dokumente öffnen</a>
-              </div>
+	            <section class="panel">
+	              <div class="section-head">
+	                <div class="kicker">Dokumente</div>
+	                <a class="section-link" href="/app/dokumente">Dokumente öffnen</a>
+	              </div>
               {{if .HasDashboardDocuments}}
                 <div class="document-dashboard-list">
                   {{range .DashboardDocuments}}
@@ -13884,15 +18636,14 @@ const pageTemplates = `
                     </a>
                   {{end}}
                 </div>
-                <div class="home-card-actions"><a class="section-link" href="/app/dokumente">Alle Dokumente anzeigen</a></div>
               {{else}}
-                {{template "emptyState" .DashboardDocumentsEmpty}}
-              {{end}}
-            </section>
-          </div>
+	                {{template "emptyState" .DashboardDocumentsEmpty}}
+	              {{end}}
+	            </section>
+	          </div>
 
-          <div class="home-stack">
-            <section class="panel">
+	          <div class="home-stack">
+	            <section class="panel">
               <div class="section-head">
                 <div class="kicker">Nächste Termine</div>
                 <a class="section-link" href="/app/events">Termine öffnen</a>
@@ -13910,14 +18661,30 @@ const pageTemplates = `
                     </a>
                   {{end}}
                 </div>
-                <div class="home-card-actions"><a class="section-link" href="/app/events">Alle Termine anzeigen</a></div>
               {{else}}
-                {{template "emptyState" .EventsEmpty}}
-              {{end}}
-            </section>
+	                {{template "emptyState" .EventsEmpty}}
+	              {{end}}
+	            </section>
 
-            {{if .CanSeeParking}}
-              <section class="panel">
+	            {{if .HasUnitPaymentStatuses}}
+	              <section class="panel">
+	                <div class="section-head">
+	                  <div class="kicker">Zahlungsstatus</div>
+	                </div>
+	                <div class="home-list">
+	                  {{range .UnitPaymentStatuses}}
+	                    <div class="home-list-row">
+	                      <span class="home-list-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"/><path d="M7 10h3"/><path d="M14 14h3"/></svg></span>
+	                      <span><strong>{{.UnitLabel}}</strong><span>{{.UnitTypeLabel}}{{if .Relation}} · {{.Relation}}{{end}}{{if .HasUpdatedAt}} · {{.UpdatedAt}}{{end}}</span></span>
+	                      <span class="pill {{.StatusClass}}">{{.Status}}</span>
+	                    </div>
+	                  {{end}}
+	                </div>
+	              </section>
+	            {{end}}
+
+	            {{if .CanSeeParking}}
+	              <section class="panel">
                 <div class="section-head">
                   <div class="kicker">Parkplatznutzung</div>
                   <a class="section-link" href="/app/parking">Parkplatz öffnen</a>
@@ -13956,8 +18723,21 @@ const pageTemplates = `
       .contacts .contact-lines { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); font-size: 13.5px; font-weight: 700; }
       .contacts .contact-lines a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(200,153,63,.5); }
       .contacts .contact-lines a:hover { color: var(--gold-ink); }
-      .contacts .directory-panel { grid-column: 1 / -1; }
-      @media (max-width: 900px) { .contacts .contact-grid { grid-template-columns: 1fr; } .contacts .directory-panel { grid-column: 1; } }
+      .contacts .directory-panel, .contacts .managed-panel { grid-column: 1 / -1; }
+      .contacts .contact-form { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 10px; align-items: end; }
+      .contacts .contact-form .f-kind { grid-column: span 3; }
+      .contacts .contact-form .f-name, .contacts .contact-form .f-company { grid-column: span 4; }
+      .contacts .contact-form .f-email, .contacts .contact-form .f-phone { grid-column: span 4; }
+      .contacts .contact-form .f-notes { grid-column: span 8; }
+      .contacts .contact-form .f-actions { grid-column: span 4; }
+      .contacts .contact-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+      .contacts .contact-card.inactive { opacity: .68; }
+      .contacts .contact-card.inactive .pill { background: #f1ede3; color: #777166; }
+      .contacts .dialog .contact-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .contacts .dialog .contact-form > * { grid-column: auto; }
+      .contacts .dialog .contact-form .f-notes, .contacts .dialog .contact-form .f-actions { grid-column: 1 / -1; }
+      @media (max-width: 900px) { .contacts .contact-grid { grid-template-columns: 1fr; } .contacts .directory-panel, .contacts .managed-panel { grid-column: 1; } }
+      @media (max-width: 720px) { .contacts .contact-form, .contacts .dialog .contact-form { grid-template-columns: 1fr; } .contacts .contact-form > *, .contacts .dialog .contact-form > * { grid-column: 1 / -1 !important; } .contacts .contact-actions { justify-content: flex-start; } }
     </style>
     <main class="app-main contacts">
       <div class="content-top">
@@ -13968,7 +18748,70 @@ const pageTemplates = `
           <h1>Kontakte</h1>
           <p class="lede">Verwaltung, Notdienst, Hausmeister, Beirat und freigegebene Kontakte für {{.Tenant.Address}}.</p>
         </div>
+        {{if .ContactMsg}}<p class="flash {{if .ContactOK}}ok{{end}}">{{.ContactMsg}}</p>{{end}}
         <div class="contact-grid">
+          <section class="panel contact-section managed-panel">
+            <div class="section-head">
+              <div>
+                <div class="kicker">Adressbuch</div>
+                <h2>Dienstleister &amp; wichtige Kontakte</h2>
+                <p class="muted">Wiederkehrende Kontakte pro Hausverwaltung. Dienstleister mit E-Mail können im Anliegen direkt ausgewählt werden.</p>
+              </div>
+            </div>
+            {{if .CanManageContacts}}
+              <form class="contact-form" method="post" action="/app/kontakte">
+                <input type="hidden" name="active" value="true">
+                <label class="f-kind">Art<select name="kind" required>{{range .ContactKindOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+                <label class="f-name">Name<input name="name" maxlength="120" placeholder="Ansprechperson"></label>
+                <label class="f-company">Firma<input name="company" maxlength="140" placeholder="Firma oder Organisation"></label>
+                <label class="f-email">E-Mail<input type="email" name="email" placeholder="kontakt@example.com"></label>
+                <label class="f-phone">Telefon<input name="phone" maxlength="80" placeholder="+43 ..."></label>
+                <label class="f-notes">Notiz<input name="notes" maxlength="300" placeholder="z. B. Lift, Elektrik, 24h"></label>
+                <div class="f-actions"><button class="button primary" type="submit">Kontakt speichern</button></div>
+              </form>
+            {{end}}
+            {{if .HasManagedContacts}}
+              <div class="contact-list">
+                {{range .ManagedContacts}}
+                  <article class="contact-card {{if not .Active}}inactive{{end}}">
+                    <div class="contact-head"><strong>{{.DisplayName}}</strong><span class="pill">{{.Kind}}</span></div>
+                    {{if .Description}}<p class="muted">{{.Description}}</p>{{end}}
+                    <div class="contact-lines">{{if .HasEmail}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}{{if .HasPhone}}<a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}<span>{{.StatusLabel}}</span></div>
+                    {{if $.CanManageContacts}}
+                      <div class="contact-actions">
+                        <button class="button small" type="button" data-dialog="{{.EditDialogID}}" aria-haspopup="dialog" aria-controls="{{.EditDialogID}}">Bearbeiten</button>
+                        {{if .Active}}<form method="post" action="/app/kontakte/delete" data-confirm="{{.DeleteConfirmLabel}}"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Deaktivieren</button></form>{{end}}
+                      </div>
+                      <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
+                        <form method="post" action="/app/kontakte">
+                          <input type="hidden" name="id" value="{{.ID}}">
+                          <input type="hidden" name="active" value="{{if .Active}}true{{else}}false{{end}}">
+                          <div class="dialog-head">
+                            <h2 id="{{.EditDialogID}}-title">Kontakt bearbeiten</h2>
+                            <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+                          </div>
+                          <div class="dialog-body">
+                            <div class="contact-form">
+                              <label>Art<select name="kind" required>{{range .KindOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+                              <label>Name<input name="name" value="{{.Name}}" maxlength="120"></label>
+                              <label>Firma<input name="company" value="{{.Company}}" maxlength="140"></label>
+                              <label>E-Mail<input type="email" name="email" value="{{.Email}}"></label>
+                              <label>Telefon<input name="phone" value="{{.Phone}}" maxlength="80"></label>
+                              <label class="f-notes">Notiz<input name="notes" value="{{.Notes}}" maxlength="300"></label>
+                              <div class="f-actions"><button class="button primary" type="submit">Speichern</button></div>
+                            </div>
+                          </div>
+                        </form>
+                      </dialog>
+                    {{end}}
+                  </article>
+                {{end}}
+              </div>
+            {{else}}
+              {{template "emptyState" .ManagedEmpty}}
+            {{end}}
+          </section>
+
           <section class="panel contact-section">
             <div>
               <div class="kicker">Verwaltung</div>
@@ -14054,61 +18897,155 @@ const pageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
+{{define "attachmentStrip"}}
+  {{if .HasAttachments}}
+    <div class="attachment-strip" aria-label="Anhänge">
+      {{range .Attachments}}
+        <div class="attachment-item">
+          {{if .IsImage}}
+            <button class="attachment-open" type="button" data-lightbox-src="{{.PreviewURL}}" data-lightbox-full="{{.URL}}" data-lightbox-caption="{{.Filename}}">
+              <img src="{{.ThumbURL}}" alt="{{.Filename}}" loading="lazy" decoding="async">
+              <span class="attachment-name">{{.Filename}}</span>
+            </button>
+          {{else}}
+            <a class="attachment-open" href="{{.URL}}" target="_blank" rel="noopener">
+              <span class="attachment-file-icon">{{if .IsPDF}}PDF{{else}}Datei{{end}}</span>
+              <span class="attachment-name">{{.Filename}}</span>
+            </a>
+          {{end}}
+          {{if .CanDelete}}
+            <form class="attachment-delete" method="post" action="{{.DeleteURL}}" data-confirm="Diesen Anhang entfernen?">
+              <input type="hidden" name="id" value="{{.ID}}">
+              <button type="submit" aria-label="Anhang entfernen">&times;</button>
+            </form>
+          {{end}}
+        </div>
+      {{end}}
+    </div>
+  {{end}}
+{{end}}
+
+{{define "issueEstimate"}}
+  {{if or .HasEstimate .HasEstimateAttachments}}
+    <div class="issue-estimate">
+      <div class="issue-estimate-head">
+        <strong>Kostenvoranschlag</strong>
+        {{if .EstimateAmount}}<span class="pill">{{.EstimateAmount}}</span>{{end}}
+      </div>
+      {{if .EstimateNote}}<p>{{.EstimateNote}}</p>{{end}}
+      {{template "attachmentStrip" .EstimateAttachmentGroup}}
+      <p class="mini">Orientierung für die Bearbeitung, keine Rechnung und kein Zahlungsstatus.</p>
+    </div>
+  {{end}}
+  {{if .CanEditEstimate}}
+    <form class="issue-actions" method="post" action="/app/anliegen/workflow" enctype="multipart/form-data">
+      <input type="hidden" name="id" value="{{.ID}}">
+      <input type="hidden" name="status" value="{{.Status}}">
+      {{if not .CanServiceUpdate}}<input type="hidden" name="priority" value="{{.Priority}}"><input type="hidden" name="assignee_email" value="{{.AssigneeEmail}}">{{end}}
+      <label>Kostenschätzung
+        <input type="text" name="estimate_amount" value="{{.EstimateAmountValue}}" inputmode="decimal" placeholder="z. B. 240,00">
+      </label>
+      <label class="note">Notiz
+        <input type="text" name="estimate_note" value="{{.EstimateNote}}" maxlength="240" placeholder="Kurz einordnen, kein Rechnungsstatus">
+      </label>
+      <label class="comment-upload">
+        <span class="file-control"><input type="file" name="estimate_attachment" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"><span>Kostenvoranschlag anhängen</span></span>
+      </label>
+      <button type="submit">Kostenvoranschlag speichern</button>
+    </form>
+  {{end}}
+{{end}}
+
+{{define "issueComment"}}
+  <div class="comment" id="comment-{{.ID}}">
+    <div class="comment-head">
+      <span class="comment-meta">{{.Author}} · {{.CreatedAt}}</span>
+      {{if .CanDelete}}
+        <form class="comment-delete" method="post" action="{{.DeleteURL}}" data-confirm="Diesen Kommentar löschen?">
+          <input type="hidden" name="comment_id" value="{{.ID}}">
+          <button type="submit">Löschen</button>
+        </form>
+      {{end}}
+    </div>
+    <p>{{.Body}}</p>
+    {{template "attachmentStrip" .}}
+  </div>
+{{end}}
+
 {{define "issues"}}
 {{template "appOpen" .}}
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><span>/</span><span>Anliegen</span></span>
-        {{if .CanManageIssues}}<div class="page-actions">{{if .BoardOnly}}<a class="button" href="/app/anliegen">Zurück zu Anliegen</a>{{else}}<a class="button" href="/app/anliegen/board">Triage-Board</a>{{end}}</div>{{end}}
+        {{if or .HasCalendarFeedURL .CanManageIssues}}<div class="page-actions">
+          {{if .HasCalendarFeedURL}}<a class="button" href="{{.CalendarFeedURL}}"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h8M8 17h5"/></svg>Kalender abonnieren</a>{{end}}
+          {{if .CanManageIssues}}{{if .BoardOnly}}<a class="button" href="/app/anliegen">Zurück zu Anliegen</a>{{else}}<a class="button" href="/app/anliegen/board">Triage-Board</a>{{end}}{{end}}
+        </div>{{end}}
       </div>
       <section class="page">
         <div>
           <h1>Anliegen</h1>
           <p class="lede">Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.</p>
         </div>
-        {{if not .BoardOnly}}<div class="issue-layout">
+        {{if .HasServiceProviderContacts}}<datalist id="service-provider-contacts">{{range .ServiceProviderContacts}}<option value="{{.Email}}">{{.Label}}</option>{{end}}</datalist>{{end}}
+        {{if not .BoardOnly}}
+        <div class="issue-dashboard">
+          <div class="issue-stats" aria-label="Anliegen-Überblick">
+            <a class="issue-stat" href="#issue-new"><span>Melden</span><strong>+</strong><p>Neues Anliegen mit Fotos oder PDF erfassen.</p></a>
+            <a class="issue-stat" href="#issue-own"><span>Meine Anliegen</span><strong>{{.IssueCount}}</strong><p>Status und Rückfragen auf einen Blick.</p></a>
+            {{if .CanManageIssues}}<a class="issue-stat" href="/app/anliegen/board"><span>Verwalten</span><strong>{{.OpenIssueCount}}</strong><p>{{.TotalIssueCount}} gesamt, {{.UrgentIssueCount}} dringend.</p></a>{{end}}
+          </div>
+          <nav class="issue-tabs" aria-label="Anliegen-Bereiche">
+            <a class="issue-tab active" href="#issue-new">Anliegen melden</a>
+            <a class="issue-tab" href="#issue-own">Meine Anliegen</a>
+            {{if .CanManageIssues}}<a class="issue-tab" href="/app/anliegen/board">Verwalten</a>{{end}}
+          </nav>
           {{if .CanCreateIssue}}
-          <section class="panel">
-            <div class="section-head">
+          <details class="panel issue-create-panel" id="issue-new"{{if .IssueMsg}} open{{end}}>
+            <summary>
               <div>
-                <div class="kicker">Neues Anliegen</div>
-                <p class="muted">Bitte so konkret wie möglich beschreiben. Ein Foto ist optional.</p>
+                <div class="kicker">Melden</div>
+                <h2>Anliegen melden</h2>
+                <p>Kurzer Titel, Ort und Beschreibung reichen für den ersten Schritt.</p>
               </div>
+            </summary>
+            <div class="issue-create-body">
+              {{if .IssueMsg}}<p class="issue-flash{{if .IssueOK}} ok{{else}} warn{{end}}">{{.IssueMsg}}</p>{{end}}
+              <form class="issue-form" method="post" action="/app/anliegen" enctype="multipart/form-data">
+                <label>Kategorie
+                  <select name="category" required>
+                    <option value="Reparatur">Reparatur</option>
+                    <option value="Frage">Frage</option>
+                    <option value="Vorschlag">Vorschlag</option>
+                    <option value="Sonstiges">Sonstiges</option>
+                  </select>
+                </label>
+                <label>Ort
+                  <select name="location_type" required>
+                    <option value="common">Gemeinschaftsbereich</option>
+                    <option value="own-unit">Eigene Einheit</option>
+                  </select>
+                </label>
+                <label class="full">Titel
+                  <input type="text" name="title" maxlength="140" required placeholder="Kurz zusammenfassen">
+                </label>
+                <label class="full">Beschreibung
+                  <textarea name="body" maxlength="4000" required placeholder="Was ist passiert? Seit wann? Gibt es eine Dringlichkeit?"></textarea>
+                </label>
+                <label class="full">Details zum Ort
+                  <input type="text" name="location_detail" maxlength="160" placeholder="z. B. Stiegenhaus, Garage, Top 3">
+                </label>
+                <label class="full">Anhänge
+                  <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span>
+                  <span class="hint">Optional, Bilddateien oder PDF bis 10 MB je Datei.</span>
+                </label>
+                <button type="submit">Anliegen senden</button>
+              </form>
             </div>
-            {{if .IssueMsg}}<p class="issue-flash{{if .IssueOK}} ok{{else}} warn{{end}}">{{.IssueMsg}}</p>{{end}}
-            <form class="issue-form" method="post" action="/app/anliegen" enctype="multipart/form-data">
-              <label>Kategorie
-                <select name="category" required>
-                  <option value="Reparatur">Reparatur</option>
-                  <option value="Frage">Frage</option>
-                  <option value="Vorschlag">Vorschlag</option>
-                  <option value="Sonstiges">Sonstiges</option>
-                </select>
-              </label>
-              <label>Ort
-                <select name="location_type" required>
-                  <option value="common">Gemeinschaftsbereich</option>
-                  <option value="own-unit">Eigene Einheit</option>
-                </select>
-              </label>
-              <label class="full">Titel
-                <input type="text" name="title" maxlength="140" required placeholder="Kurz zusammenfassen">
-              </label>
-              <label class="full">Beschreibung
-                <textarea name="body" maxlength="4000" required placeholder="Was ist passiert? Seit wann? Gibt es eine Dringlichkeit?"></textarea>
-              </label>
-              <label class="full">Details zum Ort
-                <input type="text" name="location_detail" maxlength="160" placeholder="z. B. Stiegenhaus, Garage, Top 3">
-              </label>
-              <label class="full">Foto
-                <span class="file-control"><input type="file" name="photo" accept="image/jpeg,image/png,image/webp"><span>Foto auswählen</span></span>
-                <span class="hint">Optional, JPG/PNG/WebP bis 5 MB.</span>
-              </label>
-              <button type="submit">Anliegen senden</button>
-            </form>
-          </section>
+          </details>
           {{end}}
-          <aside class="panel">
+          <section class="panel" id="issue-own">
             <div class="section-head">
               <div>
                 <div class="kicker">{{if and .CanManageIssues (not .BoardOnly)}}Meine eigenen Anliegen{{else if eq .Role "Beirat"}}Anliegen im Haus{{else}}Meine letzten Anliegen{{end}}</div>
@@ -14118,7 +19055,7 @@ const pageTemplates = `
             {{if .HasIssues}}
               <div class="issue-list">
                 {{range .Issues}}
-                  <article class="issue-card">
+                  <article class="issue-card" id="issue-{{.ID}}">
                     <div class="issue-meta">
                       <span class="pill {{.StatusClass}}">{{.Status}}</span>
                       <span class="pill">{{.Category}}</span>
@@ -14126,20 +19063,40 @@ const pageTemplates = `
                       <span>{{.CreatedAt}}</span>
                     </div>
 	                    <h3>{{.Title}}</h3>
-	                    <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
+		                    <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
+	                    {{if .HasServiceProposal}}<p class="issue-proposal"><strong>Terminvorschlag:</strong> {{.ServiceProposal}}</p>{{end}}
+	                    {{template "issueEstimate" .}}
+                    {{template "attachmentStrip" .}}
                     <div class="comment-thread">
                       {{if .HasComments}}
-                        {{range .Comments}}<div class="comment"><span class="comment-meta">{{.Author}} · {{.CreatedAt}}</span><p>{{.Body}}</p></div>{{end}}
+                        {{range .Comments}}{{template "issueComment" .}}{{end}}
                       {{else}}
                         <p class="empty">Noch keine Kommentare.</p>
                       {{end}}
                     </div>
-	                    {{if .CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment">
+	                    {{if .CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment" enctype="multipart/form-data">
 	                      <input type="hidden" name="id" value="{{.ID}}">
 	                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Ergänzung schreiben" aria-label="Kommentar oder Ergänzung"></textarea>
-	                      <button type="submit">Kommentar senden</button>
-	                    </form>{{end}}
-                    {{if or .CanClose .CanReopen}}
+                      <label class="comment-upload">
+                        <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Anhang hinzufügen</span></span>
+                      </label>
+		                      <button type="submit">Kommentar senden</button>
+		                    </form>{{end}}
+	                    {{if .CanServiceUpdate}}
+	                      <form class="issue-actions" method="post" action="/app/anliegen/workflow">
+	                        <input type="hidden" name="id" value="{{.ID}}">
+	                        <label>Status
+	                          <select name="status">
+	                            {{range .ServiceStatusOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+	                          </select>
+	                        </label>
+	                        <label class="proposal">Terminvorschlag
+	                          <input type="text" name="service_proposal" value="{{.ServiceProposal}}" maxlength="180" placeholder="z. B. Di 9-11 Uhr">
+	                        </label>
+	                        <button type="submit">Status senden</button>
+	                      </form>
+	                    {{end}}
+	                    {{if or .CanClose .CanReopen}}
                       <div class="issue-actions">
                         {{if .CanClose}}<form method="post" action="/app/anliegen/workflow"><input type="hidden" name="id" value="{{.ID}}"><input type="hidden" name="status" value="Erledigt"><button class="ghost" type="submit">Erledigt melden</button></form>{{end}}
                         {{if .CanReopen}}<form method="post" action="/app/anliegen/workflow"><input type="hidden" name="id" value="{{.ID}}"><input type="hidden" name="status" value="Neu"><button class="ghost" type="submit">Wieder öffnen</button></form>{{end}}
@@ -14151,10 +19108,38 @@ const pageTemplates = `
             {{else}}
               {{template "emptyState" .IssuesEmpty}}
             {{end}}
-          </aside>
+          </section>
+          {{if .CanManageIssues}}
+          <section class="panel issue-management-preview" id="issue-manage">
+            <div class="section-head">
+              <div>
+                <div class="kicker">Verwalten</div>
+                <h2>Anliegen verwalten</h2>
+                <p class="muted">Offene Punkte priorisieren, Zuständigkeit setzen und Rückfragen bündeln.</p>
+              </div>
+              <span class="pill">{{.OpenIssueCount}} offen</span>
+            </div>
+            {{if .HasManageIssuePreview}}
+              <div class="issue-preview-list">
+                {{range .ManageIssuePreview}}
+                  <a class="issue-preview-card" href="/app/anliegen/board#issue-{{.ID}}">
+                    <span><strong>{{.Title}}</strong><span>{{.Category}} · {{.Location}}{{if .HasAssignee}} · {{.AssigneeEmail}}{{end}}</span></span>
+                    <span class="chips"><span class="pill {{.StatusClass}}">{{.Status}}</span><span class="pill">{{.Priority}}</span></span>
+                  </a>
+                {{end}}
+              </div>
+            {{else}}
+              {{template "emptyState" .ManageIssuesEmpty}}
+            {{end}}
+            <div class="issue-management-actions">
+              <a class="button primary" href="/app/anliegen/board">Triage-Board öffnen</a>
+              {{if .HasCalendarFeedURL}}<a class="button" href="{{.CalendarFeedURL}}">Kalender abonnieren</a>{{end}}
+            </div>
+          </section>
+          {{end}}
         </div>{{end}}
-        {{if .CanManageIssues}}
-          <section class="panel">
+        {{if and .CanManageIssues .BoardOnly}}
+          <section class="panel" id="issue-manage">
             <div class="section-head">
               <div>
                 <div class="kicker">Anliegen verwalten</div>
@@ -14178,7 +19163,7 @@ const pageTemplates = `
                 </select>
               </label>
               <label class="assignee">Zuständig
-                <input type="email" name="assignee" value="{{.BoardFilters.Assignee}}" placeholder="name@example.com">
+                <input type="email" name="assignee" value="{{.BoardFilters.Assignee}}" placeholder="name@example.com"{{if .HasServiceProviderContacts}} list="service-provider-contacts"{{end}}>
               </label>
               <label class="sort">Sortierung
                 <select name="sort">
@@ -14193,7 +19178,7 @@ const pageTemplates = `
             {{if .HasManageIssues}}
               <div class="issue-list">
                 {{range .ManageIssues}}
-                  <article class="issue-card">
+                  <article class="issue-card" id="issue-{{.ID}}">
                     <div class="issue-meta">
                       <span class="pill {{.StatusClass}}">{{.Status}}</span>
 	                      <span class="pill">{{.Category}}</span>
@@ -14201,37 +19186,49 @@ const pageTemplates = `
 	                      <span>{{.Author}}</span>
 	                      <span>{{.CreatedAt}}</span>
 	                    </div>
-                    <h3>{{.Title}}</h3>
-                    <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
-                    <div class="comment-thread">
-                      {{if .HasComments}}
-                        {{range .Comments}}<div class="comment"><span class="comment-meta">{{.Author}} · {{.CreatedAt}}</span><p>{{.Body}}</p></div>{{end}}
-                      {{else}}
-                        <p class="empty">Noch keine Kommentare.</p>
-                      {{end}}
-                    </div>
-	                    {{if .CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment">
-	                      <input type="hidden" name="id" value="{{.ID}}">
-	                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Rückfrage schreiben" aria-label="Kommentar oder Rückfrage"></textarea>
-	                      <button type="submit">Kommentar senden</button>
-	                    </form>{{end}}
-                    <form class="issue-actions" method="post" action="/app/anliegen/workflow">
-                      <input type="hidden" name="id" value="{{.ID}}">
-                      <label>Status
-                        <select name="status">
-                          {{range .StatusOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-                        </select>
-                      </label>
-                      <label>Priorität
-                        <select name="priority">
-                          {{range .PriorityOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-                        </select>
-                      </label>
-                      <label class="assignee">Zuständig
-                        <input type="email" name="assignee_email" value="{{.AssigneeEmail}}" placeholder="name@example.com">
-                      </label>
-                      <button type="submit">Aktualisieren</button>
-                    </form>
+	                    <h3>{{.Title}}</h3>
+	                    <p class="issue-location">{{.Location}}{{if .HasAssignee}} · Zuständig: {{.AssigneeEmail}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{end}}</p>
+	                    {{if .HasServiceProposal}}<p class="issue-proposal"><strong>Terminvorschlag:</strong> {{.ServiceProposal}}</p>{{end}}
+	                    {{template "attachmentStrip" .}}
+                    <details class="issue-card-tools">
+                      <summary>Kommentar &amp; Status</summary>
+                      <div class="issue-card-tools-body">
+                        {{template "issueEstimate" .}}
+                        <div class="comment-thread">
+                          {{if .HasComments}}
+                            {{range .Comments}}{{template "issueComment" .}}{{end}}
+                          {{else}}
+                            <p class="empty">Noch keine Kommentare.</p>
+                          {{end}}
+                        </div>
+                        {{if .CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment" enctype="multipart/form-data">
+                          <input type="hidden" name="id" value="{{.ID}}">
+                          <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Rückfrage schreiben" aria-label="Kommentar oder Rückfrage"></textarea>
+                          <label class="comment-upload">
+                            <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Anhang hinzufügen</span></span>
+                          </label>
+                          <button type="submit">Kommentar senden</button>
+                        </form>{{end}}
+                        <form class="issue-actions" method="post" action="/app/anliegen/workflow">
+                          <input type="hidden" name="id" value="{{.ID}}">
+                          <label>Status
+                            <select name="status">
+                              {{range .StatusOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                            </select>
+                          </label>
+                          <label>Priorität
+                            <select name="priority">
+                              {{range .PriorityOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                            </select>
+                          </label>
+                          <label class="assignee">Zuständig
+                            <input type="email" name="assignee_email" value="{{.AssigneeEmail}}" placeholder="name@example.com"{{if $.HasServiceProviderContacts}} list="service-provider-contacts"{{end}}>
+                            <span class="hint">Neue E-Mail lädt als Dienstleister ein. Leeren entzieht den Zugriff.</span>
+                          </label>
+                          <button type="submit">Aktualisieren</button>
+                        </form>
+                      </div>
+                    </details>
                   </article>
                 {{end}}
               </div>
@@ -14247,7 +19244,8 @@ const pageTemplates = `
 
 {{define "announcements"}}
 {{template "appOpen" .}}
-    <script src="/assets/announcements.js" defer></script>
+    <script src="/assets/announcements.js?v={{.AssetVersion}}" defer></script>
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><span>/</span><span>Aushang</span></span>
@@ -14278,7 +19276,7 @@ const pageTemplates = `
             {{if .HasAnnouncements}}
               <div class="entries">
                 {{range .Announcements}}
-                  <article class="entry">
+                  <article class="entry" id="announcement-{{.ID}}">
                     <div class="entry-head">
                       <div>
                         <h3>{{.Title}}</h3>
@@ -14293,6 +19291,7 @@ const pageTemplates = `
                       </div>
                     </div>
                     <div class="entry-body">{{.BodyHTML}}</div>
+                    {{template "attachmentStrip" .}}
                   </article>
                 {{end}}
               </div>
@@ -14328,7 +19327,7 @@ const pageTemplates = `
                       </span>
                     </div>
                     <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
-                      <form method="post" action="/app/announcements/edit">
+                      <form method="post" action="/app/announcements/edit" enctype="multipart/form-data">
                         <input type="hidden" name="id" value="{{.ID}}">
                         <div class="dialog-head">
                           <h2 id="{{.EditDialogID}}-title">Aushang bearbeiten</h2>
@@ -14347,6 +19346,7 @@ const pageTemplates = `
                             <label for="expires-{{.ID}}">Ablauf optional<input id="expires-{{.ID}}" type="datetime-local" name="expires_at" value="{{.ExpiresAtInput}}"></label>
                             <label class="check-row"><input type="checkbox" name="pinned" value="true"{{if .PinnedChecked}} checked{{end}}> oben fixieren</label>
                             <label class="full" for="body-{{.ID}}">Text<textarea id="body-{{.ID}}" name="body" required>{{.Body}}</textarea></label>
+                            <label class="full" for="attachments-{{.ID}}">Anhänge ergänzen<span class="file-control"><input id="attachments-{{.ID}}" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label>
                           </div>
                           <button class="button primary" type="submit">Speichern</button>
                         </div>
@@ -14366,7 +19366,7 @@ const pageTemplates = `
 
       {{if .CanManageAnnouncements}}
       <dialog id="announcement-create" class="dialog" aria-labelledby="announcement-create-title">
-        <form method="post" action="/app/announcements">
+        <form method="post" action="/app/announcements" enctype="multipart/form-data">
           <div class="dialog-head">
             <h2 id="announcement-create-title">Neu verfassen</h2>
             <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
@@ -14384,6 +19384,7 @@ const pageTemplates = `
               <label for="announcement-expires">Ablauf optional<input id="announcement-expires" type="datetime-local" name="expires_at"></label>
               <label class="check-row"><input type="checkbox" name="pinned" value="true"> oben fixieren</label>
               <label class="full" for="announcement-body">Text<textarea id="announcement-body" name="body" required></textarea></label>
+              <label class="full" for="announcement-attachments">Anhänge<span class="file-control"><input id="announcement-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label>
             </div>
             <button class="button primary" type="submit">Veröffentlichen</button>
           </div>
@@ -14396,11 +19397,15 @@ const pageTemplates = `
 
 {{define "events"}}
 {{template "appOpen" .}}
-    <script src="/assets/announcements.js" defer></script>
+    <script src="/assets/announcements.js?v={{.AssetVersion}}" defer></script>
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg><span>/</span><span>Termine</span></span>
-        {{if .CanManageEvents}}<div class="page-actions"><button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Termin anlegen</button></div>{{end}}
+        {{if or .HasCalendarFeedURL .CanManageEvents}}<div class="page-actions">
+          {{if .HasCalendarFeedURL}}<a class="button" href="{{.CalendarFeedURL}}"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h8M8 17h5"/></svg>Kalender abonnieren</a>{{end}}
+          {{if .CanManageEvents}}<button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Termin anlegen</button>{{end}}
+        </div>{{end}}
       </div>
       <section class="page">
         <div>
@@ -14417,7 +19422,7 @@ const pageTemplates = `
             {{if .HasEvents}}
               <div class="agenda-list">
                 {{range .Events}}
-                  <article class="event-card">
+                  <article class="event-card" id="event-{{.ID}}">
                     <span class="date-badge"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
                     <div class="event-info">
                       <h3>{{.Title}}</h3>
@@ -14429,6 +19434,7 @@ const pageTemplates = `
                         {{if .Status}}<span class="pill">{{.Status}}</span>{{end}}
                       </div>
                       {{if .HasBody}}<div class="entry-body">{{.BodyHTML}}</div>{{end}}
+                      {{template "attachmentStrip" .}}
                     </div>
                   </article>
                 {{end}}
@@ -14461,7 +19467,7 @@ const pageTemplates = `
                       </span>
                     </div>
                     <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
-                      <form method="post" action="/app/events/edit">
+                      <form method="post" action="/app/events/edit" enctype="multipart/form-data">
                         <input type="hidden" name="id" value="{{.ID}}">
                         <div class="dialog-head">
                           <h2 id="{{.EditDialogID}}-title">Termin bearbeiten</h2>
@@ -14482,6 +19488,7 @@ const pageTemplates = `
                             <label for="event-end-{{.ID}}">Ende optional<input id="event-end-{{.ID}}" type="datetime-local" name="ends_at" value="{{.EndsAtInput}}"></label>
                             <label class="full" for="event-location-{{.ID}}">Ort<input id="event-location-{{.ID}}" name="location" value="{{.Location}}" maxlength="160"></label>
                             <label class="full" for="event-body-{{.ID}}">Details<textarea id="event-body-{{.ID}}" name="body">{{.Body}}</textarea></label>
+                            <label class="full" for="event-attachments-{{.ID}}">Anhänge ergänzen<span class="file-control"><input id="event-attachments-{{.ID}}" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label>
                           </div>
                           <button class="button primary" type="submit">Speichern</button>
                         </div>
@@ -14501,7 +19508,7 @@ const pageTemplates = `
 
       {{if .CanManageEvents}}
       <dialog id="event-create" class="dialog" aria-labelledby="event-create-title">
-        <form method="post" action="/app/events">
+        <form method="post" action="/app/events" enctype="multipart/form-data">
           <div class="dialog-head">
             <h2 id="event-create-title">Termin anlegen</h2>
             <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
@@ -14521,6 +19528,7 @@ const pageTemplates = `
               <label for="event-end">Ende optional<input id="event-end" type="datetime-local" name="ends_at"></label>
               <label class="full" for="event-location">Ort<input id="event-location" name="location" maxlength="160"></label>
               <label class="full" for="event-body">Details<textarea id="event-body" name="body"></textarea></label>
+              <label class="full" for="event-attachments">Anhänge<span class="file-control"><input id="event-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label>
             </div>
             <button class="button primary" type="submit">Speichern</button>
           </div>
@@ -14533,7 +19541,8 @@ const pageTemplates = `
 
 {{define "documents"}}
 {{template "appOpen" .}}
-    <script src="/assets/announcements.js" defer></script>
+    <script src="/assets/announcements.js?v={{.AssetVersion}}" defer></script>
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><span>/</span><span>Dokumente</span></span>
@@ -14560,12 +19569,12 @@ const pageTemplates = `
             </form>
             <div class="document-sections">
               {{range .DocumentSections}}
-                <section class="document-section">
-                  <h3>{{.Category}}</h3>
+                <section class="document-section{{if not .HasDocuments}} document-section-empty{{end}}">
+                  <h3>{{.Category}}{{if .HasDocuments}}<span class="section-count">{{len .Documents}}</span>{{end}}</h3>
                   {{if .HasDocuments}}
                     <div class="document-list">
                       {{range .Documents}}
-                        <article class="document-row">
+                        <article class="document-row" id="document-{{.ID}}">
                           <div>
                             <strong>{{.Title}}</strong>
                             <div class="document-meta">
@@ -14579,6 +19588,7 @@ const pageTemplates = `
                           </div>
                           <div class="document-side">
                             <span class="pill">{{.Category}}</span>
+                            {{if .CanPreview}}{{if .IsImage}}<button class="button small" type="button" data-lightbox-src="{{.PreviewURL}}" data-lightbox-caption="{{.Filename}}">Vorschau</button>{{else}}<a class="button small" href="{{.PreviewURL}}" target="_blank" rel="noopener">Vorschau</a>{{end}}{{end}}
                             <a class="button small" href="{{.DownloadURL}}">Herunterladen</a>
                             {{if $.CanManageDocuments}}<button class="button small" type="button" data-dialog="{{.ReplaceDialogID}}" aria-haspopup="dialog" aria-controls="{{.ReplaceDialogID}}">Ersetzen</button>{{end}}
                           </div>
@@ -14765,7 +19775,8 @@ const pageTemplates = `
 
 {{define "ballots"}}
 {{template "appOpen" .}}
-    <script src="/assets/announcements.js" defer></script>
+    <script src="/assets/announcements.js?v={{.AssetVersion}}" defer></script>
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg><span>/</span><span>Abstimmungen</span></span>
@@ -14786,7 +19797,7 @@ const pageTemplates = `
             {{if .HasBallots}}
               <div class="vote-list">
                 {{range .Ballots}}
-                  <article class="vote-card">
+                  <article class="vote-card" id="ballot-{{.ID}}">
                     <div class="vote-card-head">
                       <div>
                         <h3>{{.Title}}</h3>
@@ -14803,6 +19814,7 @@ const pageTemplates = `
                       {{if .HasVote}}<span class="pill ok">Stimme gespeichert</span>{{end}}
                     </div>
                     {{if .HasDescription}}<p class="muted">{{.Description}}</p>{{end}}
+                    {{template "attachmentStrip" .}}
                     {{if .CanVote}}
                       <form method="post" action="/app/abstimmungen">
                         <input type="hidden" name="ballot_id" value="{{.ID}}">
@@ -14866,6 +19878,7 @@ const pageTemplates = `
                       <div>
                         <strong>{{.Title}}</strong>
                         <div class="vote-meta"><span class="pill {{.StatusClass}}">{{.Status}}</span><span>{{.Type}}</span><span>{{.Weighting}}</span>{{if .HasClosesAt}}<span>Erinnerung {{.ReminderLabel}}</span>{{end}}<span>{{.UpdatedAt}}</span></div>
+                        {{template "attachmentStrip" .}}
                       </div>
                       <div class="vote-manage-actions">
                         {{if .CanOpen}}<form method="post" action="/app/abstimmungen/open"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Öffnen</button></form>{{end}}
@@ -14889,7 +19902,7 @@ const pageTemplates = `
 
       {{if .CanManageVotes}}
       <dialog id="ballot-create" class="dialog" aria-labelledby="ballot-create-title">
-        <form method="post" action="/app/abstimmungen">
+        <form method="post" action="/app/abstimmungen" enctype="multipart/form-data">
           <div class="dialog-head">
             <h2 id="ballot-create-title">Abstimmung anlegen</h2>
             <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
@@ -14911,6 +19924,7 @@ const pageTemplates = `
               <label for="ballot-reminder">Erinnerung vor Frist (h)<input id="ballot-reminder" name="reminder_before_hours" inputmode="decimal" value="24"></label>
               <label class="full" for="ballot-options">Optionen<textarea id="ballot-options" name="options_text" required placeholder="Ja&#10;Nein&#10;Enthaltung"></textarea></label>
               <label class="full" for="ballot-description">Beschreibung<textarea id="ballot-description" name="description"></textarea></label>
+              <label class="full" for="ballot-attachments">Anhänge<span class="file-control"><input id="ballot-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label>
             </div>
             <button class="button primary" type="submit">Anlegen</button>
           </div>
@@ -14921,130 +19935,347 @@ const pageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
+{{define "handovers"}}
+{{template "appOpen" .}}
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg><span>/</span><span>Übergaben</span></span>
+        <div class="page-actions">
+          <button class="button primary" type="button" data-dialog="handover-create" aria-haspopup="dialog" aria-controls="handover-create">Übergabe anlegen</button>
+        </div>
+      </div>
+      <section class="page wide handover-page">
+        <div>
+          <h1>Übergaben</h1>
+          <p class="lede">Nutzerwechsel vor Ort erfassen, Fotos sichern, bestätigen lassen und als Protokoll im Dokumentenbereich ablegen.</p>
+        </div>
+        {{if .HandoverMsg}}<div class="flash {{if .HandoverOK}}ok{{end}}">{{.HandoverMsg}}</div>{{end}}
+        {{if .HasHandovers}}
+          <div class="handover-list">
+            {{range .Handovers}}
+              <article class="panel handover-card" id="handover-{{.ID}}">
+                <div class="handover-head">
+                  <div>
+                    <div class="handover-meta"><span class="pill {{.StatusClass}}">{{.Status}}</span><span>{{.Type}}</span>{{if .HasUnit}}<span>{{.UnitLabel}}</span>{{end}}{{if .HasScheduledAt}}<span>{{.ScheduledAt}}</span>{{end}}</div>
+                    <h2>{{.Title}}</h2>
+                    <p class="muted">Ausziehend: {{.Outgoing}} · Einziehend: {{.Incoming}}</p>
+                  </div>
+                  <div class="handover-actions">
+                    <a class="button small" href="{{.ProtocolURL}}">PDF exportieren</a>
+                    {{if .HasFiledDocument}}
+                      <a class="button small" href="{{.FiledDocumentURL}}">Dokument öffnen</a>
+                    {{else if $.CanManageDocuments}}
+                      <form method="post" action="{{.FileURL}}">
+                        <input type="hidden" name="id" value="{{.ID}}">
+                        <button class="button small" type="submit">Im Dokumentenbereich ablegen</button>
+                      </form>
+                    {{end}}
+                  </div>
+                </div>
+                <div class="handover-detail-grid">
+                  <section class="handover-detail">
+                    <h3>Räume</h3>
+                    {{if .HasRooms}}<ul>{{range .Rooms}}<li><strong>{{.Name}}</strong>{{if .Condition}}<span>{{.Condition}}</span>{{end}}{{if .Defects}}<em>{{.Defects}}</em>{{end}}</li>{{end}}</ul>{{else}}<p>Keine Räume erfasst.</p>{{end}}
+                  </section>
+                  <section class="handover-detail">
+                    <h3>Zähler</h3>
+                    {{if .HasMeters}}<ul>{{range .Meters}}<li><strong>{{.Label}}</strong><span>{{.Value}}{{if .Unit}} {{.Unit}}{{end}}</span></li>{{end}}</ul>{{else}}<p>Keine Zählerstände erfasst.</p>{{end}}
+                  </section>
+                  <section class="handover-detail">
+                    <h3>Schlüssel</h3>
+                    {{if .HasKeys}}<ul>{{range .Keys}}<li><strong>{{.Label}}</strong><span>{{.Count}} Stk.</span></li>{{end}}</ul>{{else}}<p>Keine Schlüssel erfasst.</p>{{end}}
+                  </section>
+                  <section class="handover-detail">
+                    <h3>Bestätigung</h3>
+                    {{if .HasConfirmations}}<ul>{{range .Confirmations}}<li><strong>{{.Role}}</strong><span>{{if .Name}}{{.Name}}{{else}}{{.Email}}{{end}}</span><span class="pill {{.StatusClass}}">{{.Status}}</span></li>{{end}}</ul>{{else}}<p>Keine externen Bestätigungen vorgesehen.</p>{{end}}
+                  </section>
+                </div>
+                {{if .HasNotes}}<div class="handover-note"><strong>Notiz</strong><p>{{.Notes}}</p></div>{{end}}
+                {{template "attachmentStrip" .AttachmentGroup}}
+                <div class="handover-foot"><span>Angelegt {{.CreatedAt}}</span><span>Aktualisiert {{.UpdatedAt}}</span></div>
+              </article>
+            {{end}}
+          </div>
+        {{else}}
+          {{template "emptyState" .HandoversEmpty}}
+        {{end}}
+      </section>
+
+      <dialog id="handover-create" class="dialog handover-dialog" aria-labelledby="handover-create-title">
+        <form method="post" action="/app/uebergaben" enctype="multipart/form-data">
+          <div class="dialog-head">
+            <h2 id="handover-create-title">Übergabe anlegen</h2>
+            <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+          </div>
+          <div class="dialog-body">
+            <div class="dialog-grid">
+              <label class="full" for="handover-title">Titel<input id="handover-title" name="title" required maxlength="160" placeholder="Übergabe Top 11"></label>
+              <label for="handover-unit">Einheit<select id="handover-unit" name="unit_id" required>{{range .UnitOptions}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+              <label for="handover-type">Typ<select id="handover-type" name="handover_type"><option>Nutzerwechsel</option><option>Einzug</option><option>Auszug</option></select></label>
+              <label for="handover-time">Termin<input id="handover-time" type="datetime-local" name="scheduled_at" value="{{.NowInput}}"></label>
+              <label for="handover-out-name">Ausziehend Name<input id="handover-out-name" name="outgoing_name" autocomplete="name"></label>
+              <label for="handover-out-email">Ausziehend E-Mail<input id="handover-out-email" type="email" name="outgoing_email" autocomplete="email"></label>
+              <label for="handover-in-name">Einziehend Name<input id="handover-in-name" name="incoming_name" autocomplete="name"></label>
+              <label for="handover-in-email">Einziehend E-Mail<input id="handover-in-email" type="email" name="incoming_email" autocomplete="email"></label>
+              <label class="full" for="handover-rooms">Räume<textarea id="handover-rooms" name="rooms_text" required placeholder="Wohnzimmer | gut | keine Mängel&#10;Bad | sauber | Silikonfuge prüfen"></textarea></label>
+              <label class="full" for="handover-meters">Zählerstände<textarea id="handover-meters" name="meters_text" placeholder="Strom | 12345,6 | kWh&#10;Wasser kalt | 81,2 | m³"></textarea></label>
+              <label class="full" for="handover-keys">Schlüssel<textarea id="handover-keys" name="keys_text" placeholder="Wohnungsschlüssel | 3&#10;Postkasten | 1"></textarea></label>
+              <label class="full" for="handover-notes">Notiz<textarea id="handover-notes" name="notes" placeholder="Zusätzliche Vereinbarungen oder offene Punkte"></textarea></label>
+              <label class="full" for="handover-attachments">Fotos &amp; Anhänge<span class="file-control"><input id="handover-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label>
+            </div>
+            <button class="button primary" type="submit">Übergabe speichern</button>
+          </div>
+        </form>
+      </dialog>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "handoverConfirm"}}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  {{template "appStyles" .}}
+</head>
+<body class="handover-confirm-body">
+  <main class="handover-confirm-page">
+    <section class="panel handover-confirm-card">
+      <div class="kicker">Übergabe bestätigen</div>
+      <h1>{{.Handover.Title}}</h1>
+      <p class="lede">{{.Tenant.Address}} · {{.Handover.UnitLabel}}</p>
+      {{if .Msg}}<div class="flash {{if .MsgOK}}ok{{end}}">{{.Msg}}</div>{{end}}
+      <div class="handover-confirm-summary">
+        <div><span>Rolle</span><strong>{{.Confirmation.Role}}</strong></div>
+        <div><span>Status</span><strong>{{.Confirmation.Status}}</strong></div>
+        {{if .Handover.HasScheduledAt}}<div><span>Termin</span><strong>{{.Handover.ScheduledAt}}</strong></div>{{end}}
+      </div>
+      {{if .Confirmation.HasConfirmed}}
+        <p class="empty">Diese Übergabe wurde bereits bestätigt.</p>
+      {{else}}
+        <form method="post" action="/handover/{{.Token}}" class="handover-confirm-form">
+          <input type="hidden" name="confirm" value="yes">
+          <label>Name für die Bestätigung<input name="name" value="{{.Confirmation.Name}}" autocomplete="name"></label>
+          <label>Notiz optional<textarea name="note" placeholder="Falls etwas ergänzt werden soll"></textarea></label>
+          <button class="button primary" type="submit">Protokoll bestätigen</button>
+        </form>
+      {{end}}
+    </section>
+  </main>
+</body>
+</html>
+{{end}}
+
 {{define "parking"}}
 {{template "appOpen" .}}
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><span>Parkplatznutzung</span></span>
-        <div class="page-actions">
-          <a class="button" href="/app/parking"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 4v6h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 20v-6h-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10a7 7 0 0 1 12-3M19 14a7 7 0 0 1-12 3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Aktualisieren</a>
-          <a class="button" href="/app/parking/export/{{.StatementYear}}">CSV exportieren</a>
-          {{if .CanManageParkingPayments}}<form method="post" action="/app/parking/reminders"><button class="button" type="submit">Erinnerungen senden</button></form>{{end}}
-          {{if .IsAdmin}}<a class="button" href="/app/parking/settings"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>Abrechnung konfigurieren</a>{{end}}
-        </div>
+        <div class="page-actions"></div>
       </div>
-      <section class="page wide">
-        <div>
-          <h1>Parkplatznutzung</h1>
-          <p class="lede">Private Lade- und Stellplatzabrechnung für die persönlich abgestimmte Nutzung.</p>
-          <p class="muted subtle-note">Sichtbar nur für berechtigte Personen und gedacht für die private Abstimmung der Stellplatz- und Lade-Nutzung.</p>
+      <section class="page wide parking-page">
+        <div class="parking-page-head">
+          <div>
+            <h1>Parkplatznutzung</h1>
+            <p class="lede">Private Lade- und Stellplatzabrechnung für die persönlich abgestimmte Nutzung.</p>
+            <p class="muted subtle-note">Sichtbar nur für berechtigte Personen. Die Seite führt Schritt für Schritt durch offene Monate.</p>
+          </div>
+          <div class="parking-primary-actions">
+            {{if .Accounting.HasMonths}}{{with index .Accounting.Months 0}}<a class="button primary" href="#parking-detail-{{.Month}}">Nächsten offenen Monat prüfen</a>{{end}}{{end}}
+            <details class="parking-more">
+              <summary class="button">Mehr</summary>
+              <div class="parking-more-menu">
+                <a class="button" href="/app/parking"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 4v6h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 20v-6h-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10a7 7 0 0 1 12-3M19 14a7 7 0 0 1-12 3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Aktualisieren</a>
+                <a class="button" href="/app/parking/export/{{.StatementYear}}">CSV exportieren</a>
+                {{if .CanManageParkingPayments}}<form method="post" action="/app/parking/reminders"><button class="button" type="submit">Erinnerungen senden</button></form>{{end}}
+                {{if .IsAdmin}}<a class="button" href="/app/parking/settings"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>Abrechnung konfigurieren</a>{{end}}
+              </div>
+            </details>
+          </div>
         </div>
 
-        <section class="panel status-strip">
-          <div class="rule">
-            <p>Nutzung nur nach persönlicher Absprache. Die Monatswerte berechnen sich aus Zählerdifferenz, aWATTar-Preis, Netzgebühr und Basisgebühr.</p>
-            {{if .Telemetry.Configured}}<span class="pill ok">Home Assistant aktiv</span>{{end}}
-          </div>
-          {{if .Telemetry.Connected}}
-            <div class="metric-grid">
-              {{range .Telemetry.Metrics}}
-                <div class="metric-card">
-                  <span class="metric-label">{{.Label}}</span>
-                  <strong class="metric-value">{{.Value}}</strong>
-                  <code>{{.Detail}}</code>
-                </div>
-              {{end}}
-            </div>
-          {{else}}
-            <p class="empty">{{.Telemetry.Message}}</p>
-          {{end}}
-        </section>
+        {{if .ParkingMsg}}<p class="flash {{if .ParkingOK}}ok{{end}}">{{.ParkingMsg}}</p>{{end}}
 
-        <section class="panel accounting">
-          {{if .ParkingMsg}}<p class="flash {{if .ParkingOK}}ok{{end}}">{{.ParkingMsg}}</p>{{end}}
-          <div class="section-head">
+        {{if .Accounting.HasMonths}}
+          <section class="parking-guide" aria-label="Abrechnung in 2 Schritten. Offen {{.Accounting.Outstanding}}. Überfällig {{.Accounting.Overdue}}.">
             <div>
-              <h2>Monatsabrechnung</h2>
-              <p class="muted">{{.Accounting.Message}}</p>
+              <h2>Abrechnung in 2 Schritten</h2>
+              <p class="muted">Monat prüfen und Zahlung markieren.</p>
             </div>
-            {{if .Accounting.HasOutstanding}}
-              <div class="row-actions">
-                <span class="pill">Offen {{.Accounting.Outstanding}}</span>
-                {{if .Accounting.HasOverdue}}<span class="pill dringend">Überfällig {{.Accounting.Overdue}}</span>{{end}}
+            <div class="parking-stepper" aria-label="Abrechnungsschritte">
+              <div class="parking-step active">
+                <span class="parking-step-number">1</span>
+                <span><strong>Monat prüfen</strong><small>Verbrauch und Betrag kontrollieren</small></span>
               </div>
-            {{end}}
-          </div>
-          {{if .Accounting.HasMonths}}
-            <div class="month-strip">
-              {{range .Accounting.Months}}
-                <a class="month-card" href="{{.DetailPath}}">
-                  <strong>{{.MonthLabel}}</strong>
-                  <div class="bar"><span style="width: {{.ChartPercent}}%;"></span></div>
-                  <span class="amount">{{.TotalCost}}</span>
-                </a>
-              {{end}}
+              <div class="parking-step">
+                <span class="parking-step-number">2</span>
+                <span><strong>Zahlung markieren</strong><small>Zahlung bestätigen und abschließen</small></span>
+              </div>
             </div>
-            <div class="table-wrap" tabindex="0" role="region" aria-label="Monatsabrechnung Parkplatznutzung">
-              <table>
-                <caption class="sr-only">Monatsabrechnung Parkplatznutzung mit Verbrauch, Preisen, Kosten, Zahlungsstatus und Aktionen.</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Monat</th>
-                    <th scope="col" class="num">Verbrauch</th>
-                    <th scope="col" class="num">Ø aWATTar</th>
-                    <th scope="col" class="num">Ø effektiv</th>
-                    <th scope="col" class="num">Strom</th>
-                    <th scope="col" class="num">Netzgeb.</th>
-                    <th scope="col" class="num">Basis</th>
-                    <th scope="col" class="num">Summe</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div class="parking-guide-status">
+              {{if .Accounting.HasOutstanding}}<span class="pill">{{.Accounting.Outstanding}} offen</span>{{end}}
+              {{if .Accounting.HasOverdue}}<span class="pill dringend">{{.Accounting.Overdue}} überfällig</span>{{end}}
+              {{if .Telemetry.Configured}}<span class="pill ok">Home Assistant aktiv</span>{{end}}
+            </div>
+          </section>
+
+          <div class="parking-workspace">
+            <section class="panel parking-assistant" aria-label="Abrechnungsassistent">
+              <div class="parking-queue-head">
+                <div>
+                  <h2>Monate in Bearbeitung</h2>
+                  <p class="muted">Offene und überfällige Monate auf einen Blick.</p>
+                </div>
+                {{if .Accounting.HasOutstanding}}<span class="pill">{{.Accounting.Outstanding}} offen</span>{{end}}
+              </div>
+              <div>
+                <div class="parking-month-queue">
                   {{range .Accounting.Months}}
-                    <tr>
-                      <th scope="row" class="month-cell"><a href="{{.DetailPath}}"><strong>{{.MonthLabel}}</strong></a>{{if .Partial}}<span>Teilmonat</span>{{end}}<span>{{.HourCount}} Stunden</span></th>
-                      <td class="num">{{.KWh}}</td>
-                      <td class="num">{{.AverageAwattar}}</td>
-                      <td class="num">{{.EffectivePrice}}</td>
-                      <td class="num">{{.EnergyCost}}</td>
-                      <td class="num">{{.GridCost}}</td>
-                      <td class="num">{{.BaseFee}}</td>
-                      <td class="num amount">{{.TotalCost}}</td>
-                      <td class="status-cell"><span class="pill {{if .Paid}}ok{{else if .Overdue}}dringend{{end}}">{{.PaidLabel}}</span>{{if .PaymentDetails}}<span class="mini">{{.PaymentDetails}}</span>{{else if .Overdue}}<span class="mini">Überfällig</span>{{end}}</td>
-                      <td>
-                        <div class="row-actions">
-                          <a class="button small" href="{{.DetailPath}}">Details</a>
-                          {{if $.CanManageParkingPayments}}
-                            {{if .Paid}}
-                            <form method="post" action="/app/parking/month">
-                              <input type="hidden" name="month" value="{{.Month}}">
-                              <input type="hidden" name="paid" value="false">
-                              <button class="button small" type="submit">{{.ToggleLabel}}</button>
-                            </form>
-                            {{else}}
-                            <form class="payment-form" method="post" action="/app/parking/month">
-                              <input type="hidden" name="month" value="{{.Month}}">
-                              <input type="hidden" name="paid" value="true">
-                              <input type="date" name="paid_at" value="{{$.TodayInput}}" aria-label="Bezahlt am">
-                              <input type="text" name="payment_method" maxlength="120" placeholder="Zahlungsart" aria-label="Zahlungsart">
-                              <input type="text" name="payment_reference" maxlength="120" placeholder="Referenz" aria-label="Referenz">
-                              <button class="button small" type="submit">{{.ToggleLabel}}</button>
-                            </form>
-                            {{end}}
-                          {{end}}
-                        </div>
-                      </td>
-                    </tr>
+                    <a class="parking-month-row" id="parking-month-{{.Month}}" href="#parking-detail-{{.Month}}">
+                      <span class="parking-month-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M5 6h14v14H5z"/><path d="M5 10h14"/></svg></span>
+                      <span><strong>{{.MonthLabel}}</strong><span class="mini">{{if .Partial}}Teilmonat · {{end}}{{.HourCount}} Stunden</span></span>
+                      <span class="amount">{{.TotalCost}}</span>
+                      <span class="pill {{if .Paid}}ok{{else if .Overdue}}dringend{{end}}">{{.PaidLabel}}</span>
+                      <span class="parking-queue-action">{{if .Paid}}Ansehen{{else}}Prüfen{{end}}</span>
+                    </a>
                   {{end}}
-                </tbody>
-              </table>
+                </div>
+              </div>
+              <details class="parking-utility">
+                <summary>Messwerte und Berechnungsgrundlage</summary>
+                <div class="parking-utility-body">
+                  <p class="muted">{{.Accounting.Message}}</p>
+                  {{if .Telemetry.Connected}}
+                    <div class="metric-grid">
+                      {{range .Telemetry.Metrics}}
+                        <div class="metric-card">
+                          <span class="metric-label">{{.Label}}</span>
+                          <strong class="metric-value">{{.Value}}</strong>
+                          <code>{{.Detail}}</code>
+                        </div>
+                      {{end}}
+                    </div>
+                  {{else}}
+                    <p class="empty">{{.Telemetry.Message}}</p>
+                  {{end}}
+                </div>
+              </details>
+            </section>
+
+            <aside class="parking-detail-stack" aria-label="Zahlungsdetails">
+              {{range .Accounting.Months}}
+                <section class="parking-month-detail" id="parking-detail-{{.Month}}">
+                  <div class="parking-detail-head">
+                    <div>
+                      <span class="metric-label">Ausgewählter Monat</span>
+                      <h2>{{.MonthLabel}}</h2>
+                      <strong>{{.TotalCost}}</strong>
+                      {{if .Paid}}<p class="muted">Zahlung ist markiert.</p>{{else if .Overdue}}<p class="muted">Überfällig. Bitte Zahlung prüfen.</p>{{else if .Outstanding}}<p class="muted">Noch nicht als bezahlt markiert.</p>{{else}}<p class="muted">Keine offene Zahlung für diesen Monat.</p>{{end}}
+                    </div>
+                    <span class="pill {{if .Paid}}ok{{else if .Overdue}}dringend{{end}}">{{.PaidLabel}}</span>
+                  </div>
+                  <dl class="parking-breakdown">
+                    <div><dt>Verbrauch</dt><dd>{{.KWh}}</dd></div>
+                    <div><dt>Ø aWATTar</dt><dd>{{.AverageAwattar}}</dd></div>
+                    <div><dt>Ø effektiv</dt><dd>{{.EffectivePrice}}</dd></div>
+                    <div><dt>Strom</dt><dd>{{.EnergyCost}}</dd></div>
+                    <div><dt>Netzgebühr</dt><dd>{{.GridCost}}</dd></div>
+                    <div><dt>Basis</dt><dd>{{.BaseFee}}</dd></div>
+                  </dl>
+                  <div class="parking-tabs" aria-label="Ansichten für {{.MonthLabel}}">
+                    <span>Übersicht</span>
+                    <a href="{{.DetailPath}}">Stundenwerte</a>
+                  </div>
+                  <div class="parking-detail-actions">
+                    <div class="parking-payment-box">
+                      <span class="parking-payment-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+                      <div class="parking-payment-copy">
+                        <h3>Zahlung markieren</h3>
+                      {{if .Paid}}
+                        <p class="muted">Dieser Monat ist als bezahlt markiert.</p>
+                      {{else if $.CanMarkParkingPayment}}
+                        <p class="muted">{{if $.CanManageParkingPayments}}Wenn der Betrag eingegangen ist, markieren Sie diesen Monat als erhalten.{{else}}Markieren Sie diesen Monat, wenn Sie die Zahlung erledigt haben.{{end}}</p>
+                      {{else}}
+                        <p class="muted">Zahlungen können nur von berechtigten Personen markiert werden.</p>
+                      {{end}}
+                      </div>
+                      {{if .Paid}}
+                        <span class="pill ok">Erledigt</span>
+                      {{else if $.CanMarkParkingPayment}}
+                        <form class="parking-payment-form" method="post" action="/app/parking/month">
+                          <input type="hidden" name="month" value="{{.Month}}">
+                          <input type="hidden" name="paid" value="true">
+                          <button class="button primary" type="submit">{{if $.CanManageParkingPayments}}Bezahlung erhalten{{else}}Als bezahlt markieren{{end}}</button>
+                        </form>
+                      {{end}}
+                    </div>
+                  </div>
+                  <div class="parking-detail-foot">
+                    <span>Historie wird ab 01.01.2026 aus Home Assistant nachgezogen.</span>
+                    <span>Letzter Messpunkt: {{if $.Accounting.LastSampleLabel}}{{$.Accounting.LastSampleLabel}}{{else}}-{{end}}</span>
+                  </div>
+                </section>
+              {{end}}
+            </aside>
+          </div>
+        {{else}}
+          <section class="panel parking-empty" aria-label="Parkplatznutzung einrichten">
+            <div class="parking-empty-art" aria-hidden="true">
+              <svg viewBox="0 0 240 190">
+                <circle class="soft-fill" cx="118" cy="94" r="74"/>
+                <path d="M55 146h138"/>
+                <path d="M64 126h30"/>
+                <path d="M146 126h35"/>
+                <path d="M91 126h14l13-30h46l16 30h13"/>
+                <path d="M118 96h24M146 96h18"/>
+                <circle cx="113" cy="132" r="11"/>
+                <circle cx="171" cy="132" r="11"/>
+                <path d="M91 126v-16M194 126v-12"/>
+                <path d="M70 146V68"/>
+                <path d="M52 68h36v38H52z"/>
+                <path d="M63 98V76h10.5a7 7 0 0 1 0 14H63"/>
+                <path d="M102 64h42l20 18"/>
+                <path d="M117 64v31"/>
+                <path d="M159 82h25v24"/>
+                <path d="M36 129c-10 0-18-7-18-17 0-8 6-15 14-16 3-10 12-17 23-17 12 0 22 8 25 19"/>
+              </svg>
             </div>
-          {{else}}
-            <p class="empty">Noch keine Monatswerte. Sobald zwei Zählerstände und mindestens ein aWATTar-Preis vorliegen, erscheint hier die erste Abrechnung.</p>
-          {{end}}
-        </section>
+            <div class="parking-empty-copy">
+              <div class="kicker">Bereit für die erste Abrechnung</div>
+              <h2>Noch keine Monatswerte</h2>
+              <p class="muted">Sobald zwei Zählerstände und mindestens ein aWATTar-Preis vorliegen, berechnet das Portal den ersten Monat automatisch. Bis dahin bleiben Konfiguration und Zugriff im Vordergrund.</p>
+            </div>
+            <div class="parking-empty-actions">
+              {{if .IsAdmin}}<a class="button primary" href="/app/parking/settings"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>Abrechnung konfigurieren</a>{{end}}
+              {{if .CanManageParkingPayments}}<a class="button" href="/app/settings/parking-access"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 20a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M17 8v8M13 12h8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Zugriff verwalten</a>{{end}}
+              {{if and (not .IsAdmin) (not .CanManageParkingPayments)}}<a class="button" href="/app">Hausüberblick öffnen</a>{{end}}
+            </div>
+            <div class="parking-empty-steps">
+              <div class="parking-empty-step">
+                <span class="parking-empty-step-number">1</span>
+                <div><strong>Abrechnung konfigurieren</strong><p>Tarif, Netzgebühr und Basiswerte einmal sauber festlegen.</p></div>
+              </div>
+              <div class="parking-empty-step">
+                <span class="parking-empty-step-number">2</span>
+                <div><strong>Monatswerte prüfen</strong><p>Neue Zähler- und Preisdaten werden automatisch zu Monatswerten.</p></div>
+              </div>
+              <div class="parking-empty-step">
+                <span class="parking-empty-step-number">3</span>
+                <div><strong>Zahlung markieren</strong><p>Offene Monate werden nach Prüfung als erledigt markiert.</p></div>
+              </div>
+            </div>
+            <div class="parking-empty-note">
+              <span class="parking-empty-note-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg></span>
+              <span><strong>Transparenz statt Buchhaltung.</strong> Keine Sollstellung, kein Mahnwesen und keine Zahlungsaufträge. Hier geht es nur um nachvollziehbare private Stellplatznutzung.</span>
+              {{if .IsAdmin}}<a class="button" href="/app/parking/settings">Zeitraum konfigurieren</a>{{end}}
+            </div>
+          </section>
+        {{end}}
       </section>
     </main>
 {{template "appClose" .}}
@@ -15052,6 +20283,7 @@ const pageTemplates = `
 
 {{define "parkingMonth"}}
 {{template "appOpen" .}}
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/parking">Parkplatznutzung</a><span>/</span><span>{{.Detail.MonthLabel}}</span></span>
@@ -15077,6 +20309,7 @@ const pageTemplates = `
               <div class="metric-card"><span class="metric-label">Basis</span><strong class="metric-value">{{.Detail.Summary.BaseFee}}</strong></div>
               <div class="metric-card"><span class="metric-label">Summe</span><strong class="metric-value">{{.Detail.Summary.TotalCost}}</strong></div>
             </div>
+            {{template "attachmentStrip" .Detail.Summary}}
           {{end}}
         </section>
         <section class="panel accounting">
@@ -15158,7 +20391,7 @@ const pageTemplates = `
           </section>
           <section class="panel">
             <div class="kicker">Verwaltung</div>
-            {{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .IsAdmin}}
+            {{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .IsAdmin}}
               <div class="quick-list">
                 {{if .CanManageBuilding}}<a class="quick-row" href="/app/settings/building">
                   <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/><path d="M8 10h.01M16 10h.01"/></svg>
@@ -15181,6 +20414,13 @@ const pageTemplates = `
                 <a class="quick-row" href="/app/dokumente">
                   <svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg>
                   <div><h3>Dokumente</h3><p>Unterlagen hochladen, kategorisieren und Sichtbarkeit setzen.</p></div>
+                  <span class="quick-arrow">›</span>
+                </a>
+                {{end}}
+                {{if .CanManageHandovers}}
+                <a class="quick-row" href="/app/uebergaben">
+                  <svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg>
+                  <div><h3>Übergaben</h3><p>Nutzerwechsel mit Räumen, Zählern, Schlüsseln, Fotos und Bestätigung dokumentieren.</p></div>
                   <span class="quick-arrow">›</span>
                 </a>
                 {{end}}
@@ -15219,48 +20459,56 @@ const pageTemplates = `
           <h1>Audit-Log</h1>
           <p class="lede">Sensible Aktionen im Portal, begrenzt auf {{.Tenant.Address}}.</p>
         </div>
-        <section class="panel accounting">
-          <form class="filter-form audit-filter" method="get" action="/app/audit">
-            <label for="audit-action">Aktion
-              <select id="audit-action" name="action">
-                {{range .ActionOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-              </select>
-            </label>
-            <label for="audit-search">Suche
-              <input id="audit-search" type="search" name="q" value="{{.SearchQuery}}" placeholder="Person, Ziel oder Aktion">
-            </label>
-            <button class="button" type="submit">Filtern</button>
-          </form>
+        <section class="panel audit-panel">
+          <div class="metric-grid audit-summary-grid" aria-label="Audit-Überblick">
+            <div class="metric-card"><span class="metric-label">Ereignisse</span><strong class="metric-value">{{.AuditStats.TotalEvents}}</strong><span class="mini">aktuelle Auswahl</span></div>
+            <div class="metric-card"><span class="metric-label">Personen</span><strong class="metric-value">{{.AuditStats.ActorCount}}</strong><span class="mini">sichtbare Akteure</span></div>
+            <div class="metric-card"><span class="metric-label">Heute</span><strong class="metric-value">{{.AuditStats.TodayCount}}</strong><span class="mini">Aktionen im Portal</span></div>
+          </div>
+          <details class="audit-filter-panel"{{if .AuditStats.HasActiveFilters}} open{{end}}>
+            <summary><span>Filter</span><strong>{{.AuditStats.FilterSummary}}</strong></summary>
+            <form class="filter-form audit-filter" method="get" action="/app/audit">
+              <label for="audit-action">Aktion
+                <select id="audit-action" name="action">
+                  {{range .ActionOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                </select>
+              </label>
+              <label for="audit-search">Suche
+                <input id="audit-search" type="search" name="q" value="{{.SearchQuery}}" placeholder="Person, Ziel oder Aktion">
+              </label>
+              <button class="button" type="submit">Filtern</button>
+              {{if .AuditStats.HasActiveFilters}}<a class="button ghost" href="/app/audit">Zurücksetzen</a>{{end}}
+            </form>
+            {{if .AuditStats.HasActiveFilters}}
+              <div class="audit-active-filters" aria-label="Aktive Filter">
+                {{range .AuditStats.ActiveFilters}}<span class="chip"><strong>{{.Label}}:</strong> {{.Value}}</span>{{end}}
+              </div>
+            {{end}}
+          </details>
           {{if .HasEvents}}
-            <div class="table-wrap">
-              <table aria-label="Audit-Log">
-                <thead>
-                  <tr>
-                    <th>Zeitpunkt</th>
-                    <th>Aktion</th>
-                    <th>Wer</th>
-                    <th>Ziel</th>
-                    <th>Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {{range .Events}}
-                    <tr>
-                      <td class="month-cell"><strong>{{.At}}</strong></td>
-                      <td><span class="pill">{{.ActionText}}</span><span class="mini">{{.Summary}}</span></td>
-                      <td><strong>{{.Actor}}</strong>{{if .ActorRole}}<span class="mini">{{.ActorRole}}</span>{{end}}</td>
-                      <td>{{if .Target}}<strong>{{.Target}}</strong>{{else}}<span class="mini">-</span>{{end}}</td>
-                      <td>
-                        {{if .HasDetails}}
-                          <div class="chips">{{range .Details}}<span class="chip"><strong>{{.Key}}:</strong> {{.Value}}</span>{{end}}</div>
-                        {{else}}
-                          <span class="mini">Keine weiteren Details</span>
-                        {{end}}
-                      </td>
-                    </tr>
-                  {{end}}
-                </tbody>
-              </table>
+            <div class="audit-timeline" aria-label="Audit-Log">
+              {{range .Events}}
+                {{if .ShowDateHeader}}<h2 class="audit-day">{{.DateHeader}}</h2>{{end}}
+                <article class="audit-row audit-{{.ActionTone}}">
+                  <time class="audit-time" datetime="{{.AtISO}}"><strong>{{.AtTime}}</strong><span>{{.AtDate}}</span></time>
+                  <span class="audit-marker" aria-label="{{.ToneLabel}}"></span>
+					<div class="audit-main">
+						<div class="audit-row-head">
+							<div class="audit-action"><span class="pill audit-pill audit-{{.ActionTone}}">{{.ActionText}}</span><strong>{{.Summary}}</strong></div>
+						</div>
+                    <div class="audit-meta">
+                      <span><strong>Wer</strong> {{.Actor}}{{if .ActorRole}} <em>{{.ActorRole}}</em>{{end}}</span>
+                      <span><strong>Ziel</strong> {{if .HasTarget}}{{.Target}}{{else}}-{{end}}</span>
+                    </div>
+                    {{if .HasDetails}}
+                      <details class="audit-details">
+                        <summary>Details</summary>
+                        <div class="chips">{{range .Details}}<span class="chip"><strong>{{.Key}}:</strong> {{.Value}}</span>{{end}}</div>
+                      </details>
+                    {{end}}
+                  </div>
+                </article>
+              {{end}}
             </div>
           {{else}}
             {{template "emptyState" .EventsEmpty}}
@@ -15276,31 +20524,56 @@ const pageTemplates = `
     <style>
       .building .building-grid { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(320px,.85fr); gap: 22px; align-items: start; }
       .building .settings-card { max-width: none; }
-      .building .meta-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
-      .building .meta-form .full, .building .unit-form .full { grid-column: 1 / -1; }
-      .building .meta-form .f-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
-      .building textarea { min-height: 92px; }
+	      .building .meta-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+	      .building .meta-form .full, .building .unit-form .full { grid-column: 1 / -1; }
+	      .building .meta-form .f-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+	      .building .brand-preview { grid-column: 1 / -1; display: grid; grid-template-columns: 58px minmax(0,1fr); gap: 13px; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--panel-soft); }
+	      .building .brand-preview-mark { width: 52px; height: 52px; border-radius: 8px; display: grid; place-items: center; color: var(--gold-ink); background: #fffefb; border: 1px solid var(--line); }
+	      .building .brand-preview-mark svg { width: 39px; height: 34px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+	      .building .brand-preview strong { display: block; font-family: var(--font-serif); font-size: 18px; }
+	      .building .brand-preview span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+	      .building textarea { min-height: 92px; }
       .building .hero-preview { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-soft); }
       .building .hero-form { display: grid; gap: 12px; }
-      .building .unit-panel { display: grid; gap: 18px; }
-      .building .unit-add, .building .unit-editor { border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: var(--panel-soft); }
-      .building .unit-list { display: grid; gap: 12px; }
-      .building .unit-form { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 10px; align-items: end; }
-      .building .unit-form .f-label { grid-column: span 4; }
-      .building .unit-form .f-share { grid-column: span 3; }
-      .building .unit-form .f-owners, .building .unit-form .f-renters { grid-column: span 6; }
-      .building .unit-form .f-actions { grid-column: span 5; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
-      .building .unit-delete { display: inline; margin: 0; }
-      .building .unit-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-      .building .unit-summary strong { font-family: Spectral, serif; font-size: 20px; }
-      @media (max-width: 960px) { .building .building-grid { grid-template-columns: 1fr; } }
-      @media (max-width: 760px) {
-        .building .meta-form, .building .unit-form { grid-template-columns: 1fr; }
-        .building .unit-form .f-label, .building .unit-form .f-share, .building .unit-form .f-owners, .building .unit-form .f-renters, .building .unit-form .f-actions { grid-column: 1 / -1; }
-        .building .meta-form .f-actions, .building .unit-form .f-actions { justify-content: stretch; }
-        .building .unit-form .f-actions .button { flex: 1 1 auto; }
-      }
+      .building .hero-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .building .hero-actions .button { flex: 1 1 auto; }
+      .building .hero-delete { margin: 0; }
+	      .building .unit-panel { display: grid; gap: 18px; }
+	      .building .unit-add, .building .unit-editor { border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: var(--panel-soft); }
+	      .building .unit-list { display: grid; gap: 12px; }
+	      .building .unit-metrics { display: flex; gap: 8px; flex-wrap: wrap; }
+	      .building .unit-metric { display: inline-flex; gap: 7px; align-items: baseline; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: var(--panel); color: #6f6a5c; font-size: 13px; font-weight: 700; }
+	      .building .unit-metric strong { color: var(--ink); font-size: 16px; }
+	      .building .unit-form { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 10px; align-items: end; }
+	      .building .unit-form .f-label { grid-column: span 4; }
+	      .building .unit-form .f-type { grid-column: span 3; }
+	      .building .unit-form .f-share { grid-column: span 3; }
+	      .building .unit-form .f-owners, .building .unit-form .f-renters { grid-column: span 6; }
+	      .building .unit-form .f-actions { grid-column: span 2; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+		      .building .unit-delete { display: inline; margin: 0; }
+		      .building .unit-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+		      .building .unit-summary strong { font-family: Spectral, serif; font-size: 20px; }
+		      .building .unit-summary .pill.soft { background: var(--panel); color: #6f6a5c; }
+		      .building .payment-status-panel { display: grid; gap: 14px; }
+		      .building .payment-status-list { display: grid; gap: 10px; }
+		      .building .payment-status-row { display: grid; grid-template-columns: minmax(180px,1fr) auto minmax(180px,240px) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 13px 14px; background: var(--panel-soft); }
+		      .building .payment-status-unit { display: grid; gap: 3px; min-width: 0; }
+		      .building .payment-status-unit strong { font-family: Spectral, serif; font-size: 19px; line-height: 1.12; overflow-wrap: anywhere; }
+		      .building .payment-status-unit span, .building .payment-status-meta { color: var(--muted); font-size: 12.5px; font-weight: 700; line-height: 1.35; }
+			      .building .payment-status-form { display: grid; grid-template-columns: minmax(130px,1fr) auto; gap: 8px; align-items: end; }
+			      .building .payment-status-form .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+			      .building .payment-status-form select { min-height: 42px; }
+		      @media (max-width: 960px) { .building .building-grid { grid-template-columns: 1fr; } }
+		      @media (max-width: 760px) {
+		        .building .meta-form, .building .unit-form { grid-template-columns: 1fr; }
+		        .building .unit-form .f-label, .building .unit-form .f-type, .building .unit-form .f-share, .building .unit-form .f-owners, .building .unit-form .f-renters, .building .unit-form .f-actions { grid-column: 1 / -1; }
+	        .building .meta-form .f-actions, .building .unit-form .f-actions { justify-content: stretch; }
+	        .building .unit-form .f-actions .button { flex: 1 1 auto; }
+	        .building .payment-status-row { grid-template-columns: 1fr; align-items: stretch; }
+	        .building .payment-status-form { grid-template-columns: 1fr; gap: 10px; }
+	      }
     </style>
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main building">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Gebäude</span></span>
@@ -15322,12 +20595,24 @@ const pageTemplates = `
               <label class="full" for="building-name">Name
                 <input id="building-name" type="text" name="name" value="{{.Tenant.Name}}" maxlength="160" required>
               </label>
-              <label class="full" for="building-address">Adresse
-                <textarea id="building-address" name="address" maxlength="500" required>{{.Tenant.Address}}</textarea>
-              </label>
-              <label for="contact-name">Verwalter Kontakt
-                <input id="contact-name" type="text" name="contact_name" value="{{.Tenant.ContactName}}" maxlength="160" placeholder="Name oder Firma">
-              </label>
+	              <label class="full" for="building-address">Adresse
+	                <textarea id="building-address" name="address" maxlength="500" required>{{.Tenant.Address}}</textarea>
+	              </label>
+	              <div class="brand-preview">
+	                <span class="brand-preview-mark">{{template "tenantBrandMark" .}}</span>
+	                <div><strong>{{.BrandIconLabel}}</strong><span>{{.Tenant.BrandAbbreviation}} erscheint als kurze Kennung in der Seitenleiste.</span></div>
+	              </div>
+	              <label for="brand-icon">Portal-Symbol
+	                <select id="brand-icon" name="brand_icon">
+	                  {{range .BrandIconOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+	                </select>
+	              </label>
+	              <label for="brand-abbreviation">Kurzkennung
+	                <input id="brand-abbreviation" type="text" name="brand_abbreviation" value="{{.Tenant.BrandAbbreviation}}" maxlength="12" placeholder="JHW22">
+	              </label>
+	              <label for="contact-name">Verwalter Kontakt
+	                <input id="contact-name" type="text" name="contact_name" value="{{.Tenant.ContactName}}" maxlength="160" placeholder="Name oder Firma">
+	              </label>
               <label for="contact-email">Kontakt-E-Mail
                 <input id="contact-email" type="email" name="contact_email" value="{{.Tenant.ContactEmail}}" maxlength="160" autocomplete="email">
               </label>
@@ -15364,29 +20649,49 @@ const pageTemplates = `
               <label for="hero-image">Bilddatei
                 <span class="file-control"><input id="hero-image" type="file" name="hero_image" accept="image/jpeg,image/png,image/webp" required><span>Bild auswählen</span></span>
               </label>
-              <button class="button primary" type="submit">Hero-Bild speichern</button>
+              <div class="hero-actions">
+                <button class="button primary" type="submit">Hero-Bild speichern</button>
+              </div>
               <span class="mini">JPG, PNG oder WebP bis 5 MB.</span>
             </form>
+            {{if .HasCustomHero}}
+              <form class="hero-delete" method="post" action="/app/settings/building/hero/delete" data-confirm="Hero-Bild entfernen und Standardbild verwenden?">
+                <button class="button ghost" type="submit">Standardbild verwenden</button>
+              </form>
+            {{end}}
           </aside>
         </div>
 
         <section class="panel unit-panel">
-          <div class="section-head">
-            <div>
-              <h2>Einheiten</h2>
-              <p class="muted">Wohneinheiten, Miteigentumsanteile und Eigentümer/Mieter-Links je Tenant.</p>
-            </div>
-          </div>
-          {{if .UnitMsg}}<p class="flash {{if .UnitOK}}ok{{end}}">{{.UnitMsg}}</p>{{end}}
-          <div class="unit-add">
-            <div class="unit-summary"><strong>Neue Einheit</strong><span class="pill">Anlegen</span></div>
-            <form class="unit-form" method="post" action="/app/settings/building/units">
-              <label class="f-label">Einheit
-                <input type="text" name="label" maxlength="120" required placeholder="Top 1">
-              </label>
-              <label class="f-share">Miteigentumsanteil
-                <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="0" inputmode="numeric">
-              </label>
+	          <div class="section-head">
+	            <div>
+	              <h2>Einheiten</h2>
+	              <p class="muted">Wohnungen, Geschäftslokale und zugehörige Objekte. Nur abrechenbare Wohnungseinheiten zählen für Fair Use.</p>
+	            </div>
+	            <div class="unit-metrics" aria-label="Einheiten Übersicht">
+	              <span class="unit-metric"><strong>{{.UnitTotal}}</strong> Einträge</span>
+	              <span class="unit-metric"><strong>{{.BillableUnits}}</strong> {{.BillableLabel}} fair-use relevant</span>
+	            </div>
+	          </div>
+	          {{if .UnitMsg}}<p class="flash {{if .UnitOK}}ok{{end}}">{{.UnitMsg}}</p>{{end}}
+	          <div class="unit-add">
+	            <div class="unit-summary"><strong>Neue Einheit</strong><span class="pill">Anlegen</span></div>
+	            <form class="unit-form" method="post" action="/app/settings/building/units">
+	              <label class="f-label">Einheit
+	                <input type="text" name="label" maxlength="120" required placeholder="Top 1">
+	              </label>
+	              <label class="f-type">Typ
+	                <select name="unit_type">
+	                  <option value="residential" selected>Wohnung</option>
+	                  <option value="commercial">Geschäftslokal</option>
+	                  <option value="parking">Stellplatz</option>
+	                  <option value="storage">Keller / Lager</option>
+	                  <option value="other">Sonstiges</option>
+	                </select>
+	              </label>
+	              <label class="f-share">Miteigentumsanteil
+	                <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="0" inputmode="numeric">
+	              </label>
               <label class="f-owners">Eigentümer E-Mails
                 <input type="text" name="owner_emails" placeholder="name@example.com, zweite@example.com">
               </label>
@@ -15398,18 +20703,23 @@ const pageTemplates = `
           </div>
           {{if .Units}}
             <div class="unit-list">
-              {{range .Units}}
-                <article class="unit-editor">
-                  <div class="unit-summary"><strong>{{.Label}}</strong><span class="pill">{{.Share}}</span></div>
-                  <form class="unit-form" method="post" action="/app/settings/building/units">
-                    <input type="hidden" name="orig_id" value="{{.ID}}">
-                    <input type="hidden" name="id" value="{{.ID}}">
-                    <label class="f-label">Einheit
-                      <input type="text" name="label" value="{{.Label}}" maxlength="120" required>
-                    </label>
-                    <label class="f-share">Miteigentumsanteil
-                      <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="{{.ShareValue}}" inputmode="numeric">
-                    </label>
+	              {{range .Units}}
+	                <article class="unit-editor">
+	                  <div class="unit-summary"><strong>{{.Label}}</strong><span class="pill">{{.UnitTypeLabel}}</span><span class="pill soft">{{.BillableLabel}}</span><span class="pill soft">{{.Share}}</span></div>
+	                  <form class="unit-form" method="post" action="/app/settings/building/units">
+	                    <input type="hidden" name="orig_id" value="{{.ID}}">
+	                    <input type="hidden" name="id" value="{{.ID}}">
+	                    <label class="f-label">Einheit
+	                      <input type="text" name="label" value="{{.Label}}" maxlength="120" required>
+	                    </label>
+	                    <label class="f-type">Typ
+	                      <select name="unit_type">
+	                        {{range .TypeOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+	                      </select>
+	                    </label>
+	                    <label class="f-share">Miteigentumsanteil
+	                      <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="{{.ShareValue}}" inputmode="numeric">
+	                    </label>
                     <label class="f-owners">Eigentümer E-Mails
                       <input type="text" name="owner_emails" value="{{.OwnerEmails}}">
                     </label>
@@ -15427,12 +20737,44 @@ const pageTemplates = `
                 </article>
               {{end}}
             </div>
-          {{else}}
-            {{template "emptyState" .UnitsEmpty}}
-          {{end}}
-        </section>
-      </section>
-    </main>
+	          {{else}}
+	            {{template "emptyState" .UnitsEmpty}}
+	          {{end}}
+	        </section>
+
+	        <section class="panel payment-status-panel">
+	          <div class="section-head">
+	            <div>
+	              <h2>Zahlungsstatus</h2>
+	              <p class="muted">Manuelle Transparenz pro Einheit. Keine Sollstellung, keine Buchung, kein Mahnwesen.</p>
+	            </div>
+	          </div>
+	          {{if .PaymentMsg}}<p class="flash {{if .PaymentOK}}ok{{end}}">{{.PaymentMsg}}</p>{{end}}
+	          {{if .HasPaymentRows}}
+	            <div class="payment-status-list">
+	              {{range .PaymentRows}}
+	                <article class="payment-status-row">
+	                  <div class="payment-status-unit">
+	                    <strong>{{.UnitLabel}}</strong>
+	                    <span>{{.UnitTypeLabel}}</span>
+	                  </div>
+	                  <span class="pill {{.StatusClass}}">{{.Status}}</span>
+	                  <form class="payment-status-form" method="post" action="/app/settings/building/payment-status">
+	                    <input type="hidden" name="unit_id" value="{{.UnitID}}">
+	                    <label class="sr-only" for="payment-status-{{.UnitID}}">Status für {{.UnitLabel}}</label>
+	                    <select id="payment-status-{{.UnitID}}" name="status">{{range .StatusOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select>
+	                    <button class="button small" type="submit">Status speichern</button>
+	                  </form>
+	                  <span class="payment-status-meta">{{if .HasUpdatedAt}}{{.UpdatedAt}}{{else}}{{.Detail}}{{end}}</span>
+	                </article>
+	              {{end}}
+	            </div>
+	          {{else}}
+	            {{template "emptyState" .UnitsEmpty}}
+	          {{end}}
+	        </section>
+	      </section>
+	    </main>
 {{template "appClose" .}}
 {{end}}
 
@@ -15741,6 +21083,7 @@ const pageTemplates = `
       .users .pill.role-renter { background: rgba(76,103,138,.11); color: #365475; border-color: rgba(76,103,138,.22); }
       .users .pill.role-resident { background: rgba(47,107,74,.11); color: var(--leaf); border-color: rgba(47,107,74,.2); }
       .users .pill.role-beirat { background: rgba(32,37,31,.06); color: #4b4f45; border-color: rgba(32,37,31,.12); }
+      .users .pill.role-service { background: rgba(150,40,40,.08); color: #8c3434; border-color: rgba(150,40,40,.2); }
       .users .pill.status-active { background: rgba(47,107,74,.12); color: var(--leaf); }
       .users .pill.status-pending { background: rgba(200,153,63,.14); color: #93701d; }
       .users .last-seen { display: block; color: var(--soft); font-size: 11.5px; margin-top: 5px; white-space: nowrap; }
@@ -15750,17 +21093,16 @@ const pageTemplates = `
       .users .info-btn { width: 17px; height: 17px; border-radius: 50%; border: 1px solid var(--gold-ink); background: transparent; color: var(--gold-ink); display: grid; place-items: center; padding: 0; cursor: help; }
       .users .info-btn:hover, .users .info-btn:focus-visible { background: var(--gold-ink); color: #fff; outline: none; }
       .users .info-btn:focus-visible { box-shadow: 0 0 0 2px rgba(200,153,63,.4); }
-      .users .popup { position: absolute; top: calc(100% + 11px); left: -12px; width: min(480px, 88vw); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 46px rgba(32,37,31,.17), 0 3px 9px rgba(32,37,31,.05); padding: 16px 19px 18px; z-index: 8; opacity: 0; visibility: hidden; transform: translateY(-6px); transition: opacity .16s ease, transform .16s ease; text-transform: none; letter-spacing: normal; }
-      .users .popup::before { content: ""; position: absolute; top: -6px; left: 19px; width: 12px; height: 12px; background: var(--panel); border-left: 1px solid var(--line); border-top: 1px solid var(--line); border-radius: 3px 0 0 0; transform: rotate(45deg); }
+      .users .popup { position: absolute; top: calc(100% + 11px); left: -72px; width: min(820px, calc(100vw - 48px)); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 46px rgba(32,37,31,.17), 0 3px 9px rgba(32,37,31,.05); padding: 18px 22px 20px; z-index: 8; opacity: 0; visibility: hidden; transform: translateY(-6px); transition: opacity .16s ease, transform .16s ease; text-transform: none; letter-spacing: normal; }
+      .users .popup::before { content: ""; position: absolute; top: -6px; left: 82px; width: 12px; height: 12px; background: var(--panel); border-left: 1px solid var(--line); border-top: 1px solid var(--line); border-radius: 3px 0 0 0; transform: rotate(45deg); }
       .users .popup::after { content: ""; position: absolute; top: -15px; left: 0; right: 0; height: 15px; }
       .users .info:hover .popup, .users .info:focus-within .popup { opacity: 1; visibility: visible; transform: translateY(0); }
-      .users .popup-title { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 15px; color: var(--ink); padding-bottom: 11px; border-bottom: 1px solid var(--line); }
-      .users .popup-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); column-gap: 26px; }
-      .users .popup .permission { display: block; padding: 12px 0; }
-      .users .popup-grid .permission:nth-child(1), .users .popup-grid .permission:nth-child(2) { padding-top: 14px; }
-      .users .popup-grid .permission:nth-child(n+3) { border-top: 1px solid var(--line); }
-      .users .popup .permission strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 13.5px; color: var(--ink); margin-bottom: 3px; }
-      .users .popup .permission .muted { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); line-height: 1.5; overflow-wrap: break-word; }
+      .users .popup-title { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 18px; color: var(--ink); padding-bottom: 13px; border-bottom: 1px solid var(--line); }
+      .users .popup-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0 24px; }
+      .users .popup .permission { display: block; min-width: 0; padding: 14px 0; border-top: 1px solid var(--line); }
+      .users .popup-grid .permission:nth-child(-n+3) { border-top: 0; }
+      .users .popup .permission strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 15px; color: var(--ink); margin-bottom: 4px; line-height: 1.2; }
+      .users .popup .permission .muted { display: block; max-width: 100%; font-size: 13px; font-weight: 400; color: var(--muted); line-height: 1.42; white-space: normal; overflow-wrap: anywhere; }
       .users .rdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 9px; vertical-align: middle; }
       .users .rdot.admin { background: var(--gold); }
       .users .rdot.manager { background: var(--ink); }
@@ -15768,6 +21110,7 @@ const pageTemplates = `
       .users .rdot.renter { background: #365475; }
       .users .rdot.resident { background: var(--leaf); }
       .users .rdot.beirat { background: #8a8d80; }
+      .users .rdot.service { background: #8c3434; }
       .users .rdot.right { background: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold); }
       .users .col-actions { width: 44px; }
       .users td.col-actions { text-align: right; }
@@ -15789,22 +21132,39 @@ const pageTemplates = `
       .users .dlg-delete { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
       .users .dlg-delete span { color: var(--muted); font-size: 12.5px; }
       .users .dlg-delete .danger { border: 1px solid rgba(150,40,40,.32); background: rgba(150,40,40,.07); color: #9a2b2b; border-radius: 10px; min-height: 40px; padding: 8px 15px; font: inherit; font-weight: 700; cursor: pointer; }
-      .users .dlg-delete .danger:hover { background: rgba(150,40,40,.14); }
-      @media (max-width: 760px) {
-        .users .table-wrap { overflow: visible; }
-        .users table, .users thead, .users tbody, .users tr, .users td { display: block; width: 100%; }
-        .users thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-        .users tbody tr { border: 1px solid var(--line); border-radius: 11px; padding: 14px; margin-bottom: 12px; background: var(--panel); }
-        .users tbody tr:hover { background: var(--panel); }
-        .users tbody td { border: 0; padding: 0; }
-        .users tbody td.col-person { margin-bottom: 12px; }
-        .users tbody td[data-label]:not(.col-person) { display: grid; grid-template-columns: 96px 1fr; align-items: start; gap: 10px; padding: 7px 0; border-top: 1px dashed var(--line); }
-        .users tbody td[data-label]:not(.col-person)::before { content: attr(data-label); color: var(--gold-ink); font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding-top: 5px; }
-        .users .invite-form > * { grid-column: 1 / -1 !important; }
-      }
-      @media (max-width: 560px) { .users .popup-grid { grid-template-columns: 1fr; } .users .popup-grid .permission:nth-child(n+2) { border-top: 1px solid var(--line); padding-top: 12px; } }
+	      .users .dlg-delete .danger:hover { background: rgba(150,40,40,.14); }
+	      @media (max-width: 760px) {
+	        .users, .users .panel, .users .stack, .users .disclosure, .users .disclosure-body, .users .invite-form, .users .table-wrap { min-width: 0; max-width: 100%; }
+	        .users .panel { padding: 18px; }
+	        .users .panel-head { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: 10px; }
+	        .users .disclosure > summary { display: grid; grid-template-columns: 22px minmax(0,1fr); align-items: center; gap: 10px; }
+	        .users .summary-sub { grid-column: 2; margin-left: 0; }
+	        .users .invite-form { grid-template-columns: 1fr; }
+	        .users .table-wrap { overflow: visible; border: 0; background: transparent; }
+	        .users table { min-width: 0; }
+	        .users table, .users thead, .users tbody, .users tr, .users td { display: block; width: 100%; }
+	        .users thead, .users thead tr, .users thead th { display: none; }
+	        .users tbody tr { position: relative; border: 1px solid var(--line); border-radius: 11px; padding: 16px; margin-bottom: 12px; background: var(--panel); box-shadow: 0 8px 20px rgba(32,37,31,.04); }
+	        .users tbody tr:hover { background: var(--panel); }
+	        .users tbody td { border: 0; padding: 0; }
+	        .users .person { min-width: 0; padding-right: 42px; align-items: flex-start; }
+	        .users tbody td.col-person { margin-bottom: 12px; }
+	        .users tbody td[data-label]:not(.col-person):not(.col-actions) { display: block; padding: 10px 0 0; margin-top: 10px; border-top: 1px dashed var(--line); white-space: normal; }
+	        .users tbody td[data-label]:not(.col-person):not(.col-actions)::before { content: attr(data-label); display: block; color: var(--gold-ink); font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 7px; }
+	        .users .chips, .users .role-caps { min-width: 0; width: 100%; }
+	        .users .chips { gap: 7px; }
+	        .users .role-caps { margin-top: 8px; gap: 6px; }
+	        .users .chip, .users .role-cap { white-space: nowrap; overflow-wrap: normal; word-break: normal; max-width: 100%; }
+	        .users .role-cap { min-height: 25px; padding: 3px 9px; }
+	        .users .last-seen { white-space: normal; }
+	        .users td.col-actions { position: absolute; top: 12px; right: 12px; width: auto; text-align: right; }
+	        .users td.col-actions::before { display: none; }
+	        .users .row-edit { border-color: var(--line); background: var(--panel-soft); color: var(--gold-ink); }
+	        .users .invite-form > * { grid-column: 1 / -1 !important; }
+	      }
+      @media (max-width: 760px) { .users .popup { left: -96px; width: min(620px, calc(100vw - 32px)); } .users .popup-grid { grid-template-columns: 1fr; } .users .popup-grid .permission { border-top: 1px solid var(--line); } .users .popup-grid .permission:first-child { border-top: 0; } }
     </style>
-    <script src="/assets/users.js" defer></script>
+    <script src="/assets/users.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main">
       <div class="content-top"><span class="crumb"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg>Benutzer &amp; Rechte</span></div>
       <section class="page users">
@@ -15836,9 +21196,10 @@ const pageTemplates = `
               <option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions="">Mieter</option>
               <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions="">Eigentümer</option>
               <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions="">Beirat</option>
-              <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions="">Verwalter</option>
-              {{if .IsAdmin}}<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking">Admin</option>{{end}}
-              <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions="">Bewohner</option>
+	              <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions="">Verwalter</option>
+	              {{if .IsAdmin}}<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking">Admin</option>{{end}}
+	              <option value="Dienstleister" data-preset-label="Nur zugewiesene Anliegen" data-preset-permissions="">Dienstleister</option>
+	              <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions="">Bewohner</option>
             </select>
             <fieldset class="permission-fieldset f-permissions">
               <legend>Sonderrechte</legend>
@@ -15869,9 +21230,10 @@ const pageTemplates = `
                         <span class="permission"><strong><span class="rdot admin"></span>Admin</strong><span class="muted">Zugänge verwalten, Rollen setzen und Portalbereiche vorbereiten.</span></span>
                         <span class="permission"><strong><span class="rdot manager"></span>Verwalter</strong><span class="muted">Tenant-Verwaltung ohne Plattform- oder Parkplatzkonfiguration.</span></span>
                         <span class="permission"><strong><span class="rdot owner"></span>Eigentümer</strong><span class="muted">Bewohnerbereich plus Eigentümer-Dokumente und Abstimmungen.</span></span>
-                        <span class="permission"><strong><span class="rdot renter"></span>Mieter</strong><span class="muted">Bewohnerbereich ohne Eigentümer-Abstimmungen.</span></span>
-                        <span class="permission"><strong><span class="rdot beirat"></span>Beirat</strong><span class="muted">Bewohnerbereich plus lesende Übersicht.</span></span>
-                        <span class="permission"><strong><span class="rdot right"></span>Parkplatznutzung</strong><span class="muted">Separates Sonderrecht für den privaten Parkplatzbereich.</span></span>
+	                        <span class="permission"><strong><span class="rdot renter"></span>Mieter</strong><span class="muted">Bewohnerbereich ohne Eigentümer-Abstimmungen.</span></span>
+	                        <span class="permission"><strong><span class="rdot beirat"></span>Beirat</strong><span class="muted">Bewohnerbereich plus lesende Übersicht.</span></span>
+	                        <span class="permission"><strong><span class="rdot service"></span>Dienstleister</strong><span class="muted">Nur zugewiesene Anliegen und deren Anhänge.</span></span>
+	                        <span class="permission"><strong><span class="rdot right"></span>Parkplatznutzung</strong><span class="muted">Separates Sonderrecht für den privaten Parkplatzbereich.</span></span>
                       </span>
                     </span>
                   </span>
@@ -15917,9 +21279,10 @@ const pageTemplates = `
                       <option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions=""{{if eq .Role "Mieter"}} selected{{end}}>Mieter</option>
                       <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions=""{{if eq .Role "Eigentümer"}} selected{{end}}>Eigentümer</option>
                       <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions=""{{if eq .Role "Beirat"}} selected{{end}}>Beirat</option>
-                      <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions=""{{if eq .Role "Verwalter"}} selected{{end}}>Verwalter</option>
-                      {{if $.IsAdmin}}<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking"{{if eq .Role "Admin"}} selected{{end}}>Admin</option>{{end}}
-                      <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions=""{{if eq .Role "Bewohner"}} selected{{end}}>Bewohner</option>
+	                      <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions=""{{if eq .Role "Verwalter"}} selected{{end}}>Verwalter</option>
+	                      {{if $.IsAdmin}}<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking"{{if eq .Role "Admin"}} selected{{end}}>Admin</option>{{end}}
+	                      <option value="Dienstleister" data-preset-label="Nur zugewiesene Anliegen" data-preset-permissions=""{{if eq .Role "Dienstleister"}} selected{{end}}>Dienstleister</option>
+	                      <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions=""{{if eq .Role "Bewohner"}} selected{{end}}>Bewohner</option>
                     </select>
                     <fieldset class="permission-fieldset f-permissions">
                       <legend>Sonderrechte</legend>
@@ -15932,7 +21295,7 @@ const pageTemplates = `
                   </form>
                   <div class="dlg-delete">
                     <span>Dauerhaft entfernen</span>
-                    <form method="post" action="/app/settings/users/delete">
+                    <form method="post" action="/app/settings/users/delete" data-confirm="Diesen Zugang wirklich löschen?">
                       <input type="hidden" name="email" value="{{.Email}}">
                       <button type="submit" class="danger">Löschen</button>
                     </form>

@@ -1,4 +1,4 @@
-// Aushang/Termine dialogs and destructive-action confirmation.
+// Aushang/Termine dialogs.
 // Served same-origin to satisfy the strict CSP.
 var dialogTriggers = new WeakMap();
 
@@ -28,13 +28,6 @@ document.addEventListener("click", function (e) {
   if (closeButton) {
     var openDialog = closeButton.closest("dialog");
     if (openDialog) openDialog.close();
-  }
-});
-
-document.addEventListener("submit", function (e) {
-  var form = e.target.closest("form[data-confirm]");
-  if (form && !confirm(form.dataset.confirm)) {
-    e.preventDefault();
   }
 });
 

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.08">
+  <BkToCstmrStmt>
+    <Stmt>
+      <Id>JHW22</Id>
+      <Acct>
+        <Ownr><Nm>jhw22</Nm></Ownr>
+      </Acct>
+      <Ntry>
+        <NtryRef>AT-2019-0001</NtryRef>
+        <Amt Ccy="EUR">0.42</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <BookgDt><DtTm>2026-07-08T10:15:00Z</DtTm></BookgDt>
+        <ValDt><Dt>2026-07-08</Dt></ValDt>
+        <NtryDtls>
+          <TxDtls>
+            <Refs>
+              <EndToEndId>NOTPROVIDED</EndToEndId>
+              <TxId>TX-2019-0001</TxId>
+            </Refs>
+            <RltdPties>
+              <Dbtr><Nm>Max Muster</Nm></Dbtr>
+              <DbtrAcct><Id><IBAN>AT483200000012345864</IBAN></Id></DbtrAcct>
+            </RltdPties>
+            <RmtInf><Ustrd>Danke, Referenz: HV-JHW22-202607-DEF456.</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

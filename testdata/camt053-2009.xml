@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+  <BkToCstmrStmt>
+    <Stmt>
+      <Id>JHW22</Id>
+      <Acct>
+        <Ownr><Nm>jhw22</Nm></Ownr>
+      </Acct>
+      <Ntry>
+        <NtryRef>AT-2009-0001</NtryRef>
+        <Amt Ccy="EUR">133.04</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <BookgDt><Dt>2026-07-08</Dt></BookgDt>
+        <ValDt><Dt>2026-07-08</Dt></ValDt>
+        <NtryDtls>
+          <TxDtls>
+            <Refs>
+              <EndToEndId>HV-JHW22-202606-ABC123</EndToEndId>
+              <TxId>TX-2009-0001</TxId>
+            </Refs>
+            <RltdPties>
+              <Dbtr><Nm>Joerg Bewohner</Nm></Dbtr>
+              <DbtrAcct><Id><IBAN>AT611904300234573201</IBAN></Id></DbtrAcct>
+            </RltdPties>
+            <RmtInf><Ustrd>Parkplatz Juni HV-JHW22-202606-ABC123</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

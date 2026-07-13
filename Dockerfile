@@ -1,6 +1,6 @@
 FROM golang:1.24-alpine AS build
 WORKDIR /src
-ARG APP_VERSION=0.1.0
+ARG APP_VERSION=0.6.13
 ARG GIT_COMMIT=dev
 COPY go.mod ./
 RUN go mod download

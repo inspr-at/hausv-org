@@ -138,6 +138,11 @@ Termine/Kalender entries persist to `/data/events.json` via `EVENT_DATA_PATH`.
 The dashboard agenda renders upcoming entries; past entries roll off the
 resident view while staying editable for the Verwaltung.
 
+Das Adressbuch persistiert pro Tenant in `/data/contacts.json` via
+`CONTACT_DATA_PATH`. Es enthält Dienstleister, Hausmeister, Notdienste und andere
+wiederkehrende Kontakte; deaktivierte Einträge bleiben für die Verwaltung sichtbar,
+werden aber Bewohnern und Auswahlhilfen nicht angeboten.
+
 Dokumente metadata persists to `/data/documents.json` via `DOC_DATA_PATH`; uploaded
 files are stored under `/data/documents/` via `DOC_FILE_DIR`. The document store
 uses private generated filenames, content-type/size validation, `0600` file modes,
@@ -145,10 +150,22 @@ and does not serve files from `/assets`. Downloads go through the authenticated
 `/app/dokumente/{id}/download` route, which enforces per-document visibility and
 records successful downloads in the audit log.
 
+Shared app attachments persist metadata to `/data/attachments.json` via
+`ATTACHMENT_DATA_PATH`; generated files and previews are stored below
+`/data/attachments` via `ATTACHMENT_FILE_DIR`. This covers Aushänge, Termine,
+Abstimmungen, Kommentare and other non-document attachment strips that should
+survive container replacement.
+
 Abstimmungen persist to `/data/votes.json` via `VOTE_DATA_PATH`. Ballots store
 options, type, weighting, quorum, open/close timestamps and per-owner votes. The
 store uses the same mutexed atomic JSON pattern and `0600` file mode; vote weights
 come from the Wohneinheiten ownership links for Miteigentumsanteil voting.
+
+Übergabeprotokolle persist to `/data/handovers.json` via `HANDOVER_DATA_PATH`.
+Fotos und andere Anhänge nutzen den gemeinsamen `ATTACHMENT_DATA_PATH` /
+`ATTACHMENT_FILE_DIR`-Store; abgelegte Protokoll-PDFs werden als private
+Dokumente im bestehenden `DOC_DATA_PATH` / `DOC_FILE_DIR`-Store gespeichert.
+Bestätigungslinks speichern nur Token-Hashes im JSON-Store, keine Klartext-Tokens.
 
 Notification preferences persist to `/data/notification_prefs.json` via
 `NOTIFICATION_PREF_DATA_PATH`. Missing preferences default to enabled delivery;
@@ -163,17 +180,26 @@ authoritative for authorization.
 Gebäude-/Tenant-Einstellungen persist to `/data/tenant_overrides.json` via
 `TENANT_DATA_PATH`; uploaded tenant hero images are stored below
 `/data/tenant-heroes` via `TENANT_HERO_DIR`. Overrides are layered over
-`WEG_TENANTS_JSON` defaults and carry display/contact/emergency/hero fields
-only, never roles, permissions, auth methods or secret-bearing configuration.
+`WEG_TENANTS_JSON` defaults and carry display/contact/emergency/hero fields plus
+the curated sidebar brand icon and short abbreviation. They never carry roles,
+permissions, auth methods or secret-bearing configuration.
 The `/app/kontakte` page reads these fields plus Beirat role assignments;
 resident directory entries appear only after the user explicitly opts in from
 their profile.
 
 Wohneinheiten and ownership/renter links persist to `/data/units.json` via
-`UNIT_DATA_PATH`. Each unit stores tenant, id, label, Miteigentumsanteil and
-owner/renter email links; the file uses the same mutexed atomic JSON-store pattern
-and `0600` file mode. The public landing only shows a Wohneinheiten count when
-that count comes from this store.
+`UNIT_DATA_PATH`. Each unit stores tenant, id, label, type, billable weight,
+Miteigentumsanteil and owner/renter email links; the file uses the same mutexed
+atomic JSON-store pattern and `0600` file mode. Missing legacy unit types are
+normalized as billable Wohnungen. Stellplätze, Keller/Lager and sonstige
+Einheiten can be tracked without counting toward fair-use Wohnungseinheiten.
+
+Manueller Zahlungsstatus pro Einheit persists to
+`/data/unit_payment_status.json` via `UNIT_PAYMENT_STATUS_DATA_PATH`. The status
+is only a transparency marker (`offen`, `bezahlt`, `teilbezahlt`,
+`ueberfaellig`) and does not create receivables, bookings, reminders or
+accounting records. Residents only see explicit status records for units linked
+to their own email address.
 
 Anliegen submitted by residents persist to `/data/issues.json` via
 `ISSUE_DATA_PATH`. Optional uploaded photos are validated as JPG/PNG/WebP up to
@@ -198,14 +224,16 @@ After the secret exists, rebuild or switch csb1 so agenix materializes
 
 ```fish
 cd ~/Code/weg-portal
-set version (git describe --tags --match 'v[0-9]*' --abbrev=0 | string replace -r '^v' '')
-test -n "$version"; or set version 0.1.0
-set commit (git rev-parse --short HEAD)
-git archive --format=tar HEAD | ssh -p 2222 mba@cs1.barta.cm "bash -lc 'set -euo pipefail; tmpdir=\$(mktemp -d /tmp/weg-portal-deploy.XXXXXX); tar -xf - -C \"\$tmpdir\"; cd \"\$tmpdir\"; docker build --build-arg APP_VERSION=$version --build-arg GIT_COMMIT=$commit -t ghcr.io/markus-barta/weg-portal:latest .; cd /home/mba/Code/nixcfg/hosts/csb1/docker; docker compose up -d --no-deps weg-portal'"
+set version (string trim < VERSION)
+test -n "$version"; or set version (git describe --tags --match 'v[0-9]*' --abbrev=0 | string replace -r '^v' '')
+test -n "$version"; or set version 0.6.13
+set commit (git rev-parse --short HEAD)-dirty
+git ls-files -co --exclude-standard -z | tar --null -T - -cf - | ssh -p 2222 mba@cs1.barta.cm "bash -lc 'set -euo pipefail; tmpdir=\$(mktemp -d /tmp/weg-portal-deploy.XXXXXX); trap \"rm -rf \\\"\$tmpdir\\\"\" EXIT; tar -xf - -C \"\$tmpdir\"; cd \"\$tmpdir\"; docker build --build-arg APP_VERSION=$version --build-arg GIT_COMMIT=$commit -t ghcr.io/markus-barta/weg-portal:latest .; cd /home/mba/Code/nixcfg/hosts/csb1/docker; docker compose up -d --no-deps weg-portal'"
 ```
 
-The visible app version is `SEMVER (git-hash)`. Semver is sourced from the latest
-Git tag matching `v*`; the rollout starts at `v0.1.0`.
+The visible app version is `SEMVER (git-hash)`. Semver is sourced from
+`VERSION`; bump it before every production deployment and keep
+`docs/CHANGELOG.md` in German, newest entry first.
 
 Smoke checks:
 

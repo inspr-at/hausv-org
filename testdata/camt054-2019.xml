@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.054.001.08">
+  <BkToCstmrDbtCdtNtfctn>
+    <Ntfctn>
+      <Id>JHW22-NOTIF-202607</Id>
+      <Acct>
+        <Ownr><Nm>jhw22</Nm></Ownr>
+      </Acct>
+      <Ntry>
+        <NtryRef>adv-202607-1</NtryRef>
+        <Amt Ccy="EUR">133.04</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <BookgDt><Dt>2026-07-08</Dt></BookgDt>
+        <ValDt><Dt>2026-07-08</Dt></ValDt>
+        <NtryDtls>
+          <TxDtls>
+            <Refs>
+              <EndToEndId>HV-JHW22-202607-GHI789</EndToEndId>
+              <TxId>bank-tx-2</TxId>
+            </Refs>
+            <RltdPties>
+              <Dbtr><Nm>Max Muster</Nm></Dbtr>
+              <DbtrAcct><Id><IBAN>AT000000000000000000</IBAN></Id></DbtrAcct>
+            </RltdPties>
+            <RmtInf>
+              <Ustrd>Hausgeld Juli HV-JHW22-202607-GHI789</Ustrd>
+            </RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+    </Ntfctn>
+  </BkToCstmrDbtCdtNtfctn>
+</Document>
