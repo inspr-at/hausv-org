@@ -42,6 +42,26 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// ── extracted to store ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+var defaultAuthMethods = store.DefaultAuthMethods
+
+// ── extracted to store ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+type (
+	inviteStore      = store.InviteStore
+	inviteStoreData  = store.InviteStoreData
+	tenantMembership = store.TenantMembership
+	userProfile      = store.UserProfile
+)
+
+var initialLetter = store.InitialLetter
+var newInviteStore = store.NewInviteStore
+var normalizeAuthMethod = store.NormalizeAuthMethod
+var normalizeAuthMethods = store.NormalizeAuthMethods
+var normalizePermissions = store.NormalizePermissions
+var normalizeTenants = store.NormalizeTenants
+
 // Limits and document vocabulary now owned by the store; aliased for call sites.
 const (
 	defaultTenantHeroImageURL      = store.DefaultTenantHeroImageURL
@@ -10946,132 +10966,6 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 	return view
 }
 
-type userProfile struct {
-	Email             string                      `json:"email"`
-	Title             string                      `json:"title"`
-	FirstName         string                      `json:"first_name"`
-	LastName          string                      `json:"last_name"`
-	Phone             string                      `json:"phone"`
-	DirectoryOptIn    bool                        `json:"directory_opt_in,omitempty"`
-	Role              string                      `json:"role"`
-	Status            string                      `json:"status"`
-	Tenants           []string                    `json:"tenants"`
-	Permissions       []string                    `json:"permissions"`
-	TenantMemberships map[string]tenantMembership `json:"tenant_memberships,omitempty"`
-	AuthMethods       []string                    `json:"auth_methods"`
-}
-
-type tenantMembership struct {
-	Role        string   `json:"role,omitempty"`
-	Permissions []string `json:"permissions,omitempty"`
-}
-
-func (p userProfile) DisplayName() string {
-	parts := []string{}
-	for _, part := range []string{p.Title, p.FirstName, p.LastName} {
-		part = strings.TrimSpace(part)
-		if part != "" {
-			parts = append(parts, part)
-		}
-	}
-	if len(parts) > 0 {
-		return strings.Join(parts, " ")
-	}
-	return p.Email
-}
-
-// Initials returns up to two uppercase letters for the avatar badge, derived
-// from first+last name, falling back to the first glyph of the display name.
-func (p userProfile) Initials() string {
-	first := initialLetter(p.FirstName)
-	last := initialLetter(p.LastName)
-	if first == "" && last == "" {
-		return strings.ToUpper(initialLetter(p.DisplayName()))
-	}
-	return strings.ToUpper(first + last)
-}
-
-func initialLetter(s string) string {
-	for _, r := range strings.TrimSpace(s) {
-		return string(r)
-	}
-	return ""
-}
-
-func (p userProfile) HasPermission(permission string) bool {
-	permission = strings.ToLower(strings.TrimSpace(permission))
-	for _, item := range p.Permissions {
-		if strings.ToLower(strings.TrimSpace(item)) == permission {
-			return true
-		}
-	}
-	return false
-}
-
-func (p userProfile) ForTenant(tenantSlug string) userProfile {
-	tenantSlug = normalizeSlug(tenantSlug)
-	out := p
-	out.Email = normalizeEmail(out.Email)
-	out.Role = normalizeRole(out.Role)
-	out.Tenants = normalizeTenants(out.Tenants, "")
-	out.Permissions = normalizePermissions(out.Permissions)
-	out.AuthMethods = append([]string(nil), out.AuthMethods...)
-	if membership, ok := p.membershipForTenant(tenantSlug); ok {
-		out.Tenants = normalizeTenants(append(out.Tenants, tenantSlug), "")
-		if role := normalizeRole(membership.Role); role != "" {
-			out.Role = role
-		}
-		if membership.Permissions != nil {
-			out.Permissions = normalizePermissions(membership.Permissions)
-		}
-	}
-	return out
-}
-
-func (p userProfile) membershipForTenant(tenantSlug string) (tenantMembership, bool) {
-	tenantSlug = normalizeSlug(tenantSlug)
-	if tenantSlug == "" {
-		return tenantMembership{}, false
-	}
-	for rawSlug, membership := range p.TenantMemberships {
-		if normalizeSlug(rawSlug) == tenantSlug {
-			return membership, true
-		}
-	}
-	return tenantMembership{}, false
-}
-
-func (p userProfile) AllowsAuthMethod(method string) bool {
-	method = normalizeAuthMethod(method)
-	if method == "" {
-		return false
-	}
-	methods := p.AuthMethods
-	if len(methods) == 0 {
-		methods = defaultAuthMethods()
-	}
-	for _, item := range methods {
-		if normalizeAuthMethod(item) == method {
-			return true
-		}
-	}
-	return false
-}
-
-func (p userProfile) HasTenant(tenantSlug string) bool {
-	tenantSlug = normalizeSlug(tenantSlug)
-	for _, item := range p.Tenants {
-		if normalizeSlug(item) == tenantSlug {
-			return true
-		}
-	}
-	_, ok := p.membershipForTenant(tenantSlug)
-	if ok {
-		return true
-	}
-	return false
-}
-
 func userRowFrom(p userProfile) userRow {
 	if p.Role == "" {
 		p.Role = roleResident
@@ -12170,152 +12064,7 @@ func parseUserProfiles(raw string, allowed map[string]struct{}, admins map[strin
 	return out, nil
 }
 
-type inviteStore struct {
-	path string
-	mu   sync.Mutex
-	data inviteStoreData
-}
-
-type inviteStoreData struct {
-	Invites []userProfile `json:"invites"`
-}
-
-func newInviteStore(path string) (*inviteStore, error) {
-	store := &inviteStore{path: path, data: inviteStoreData{Invites: []userProfile{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read invite data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid invite data")
-	}
-	return store, nil
-}
-
-func (s *inviteStore) Get(email string) (userProfile, bool) {
-	email = normalizeEmail(email)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, profile := range s.data.Invites {
-		if normalizeEmail(profile.Email) == email {
-			return profile, true
-		}
-	}
-	return userProfile{}, false
-}
-
-func (s *inviteStore) List() []userProfile {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return append([]userProfile(nil), s.data.Invites...)
-}
-
-// Add persists a new invite. Returns false (no error) when the email is already
-// invited. Callers must ensure the email is not already in the env directory.
-func (s *inviteStore) Add(profile userProfile) (bool, error) {
-	profile.Email = normalizeEmail(profile.Email)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, existing := range s.data.Invites {
-		if normalizeEmail(existing.Email) == profile.Email {
-			return false, nil
-		}
-	}
-	s.data.Invites = append(s.data.Invites, profile)
-	if err := s.saveLocked(); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func (s *inviteStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "invite")
-}
-
-// Update replaces the invite keyed by oldEmail with updated. Returns false (no
-// error) when oldEmail is not a persisted invite. When the email changes it
-// must not collide with another invite (caller also checks the env directory).
-func (s *inviteStore) Update(oldEmail string, updated userProfile) (bool, error) {
-	oldEmail = normalizeEmail(oldEmail)
-	updated.Email = normalizeEmail(updated.Email)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	idx := -1
-	for i, existing := range s.data.Invites {
-		if normalizeEmail(existing.Email) == oldEmail {
-			idx = i
-			break
-		}
-	}
-	if idx < 0 {
-		return false, nil
-	}
-	if updated.Email != oldEmail {
-		for i, existing := range s.data.Invites {
-			if i != idx && normalizeEmail(existing.Email) == updated.Email {
-				return false, fmt.Errorf("email already invited")
-			}
-		}
-	}
-	s.data.Invites[idx] = updated
-	if err := s.saveLocked(); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-// Delete removes the invite for email. Returns whether one was removed.
-func (s *inviteStore) Delete(email string) (bool, error) {
-	email = normalizeEmail(email)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	kept := s.data.Invites[:0]
-	removed := false
-	for _, existing := range s.data.Invites {
-		if normalizeEmail(existing.Email) == email {
-			removed = true
-			continue
-		}
-		kept = append(kept, existing)
-	}
-	if !removed {
-		return false, nil
-	}
-	s.data.Invites = kept
-	if err := s.saveLocked(); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
 func truncateRunes(value string, limit int) string { return textutil.Truncate(value, limit) }
-
-func normalizePermissions(raw []string) []string {
-	seen := map[string]struct{}{}
-	out := []string{}
-	for _, item := range raw {
-		item = strings.ToLower(strings.TrimSpace(item))
-		if item == "" {
-			continue
-		}
-		if _, ok := seen[item]; ok {
-			continue
-		}
-		seen[item] = struct{}{}
-		out = append(out, item)
-	}
-	sort.Strings(out)
-	return out
-}
 
 func normalizeTenantMemberships(raw map[string]tenantMembership) map[string]tenantMembership {
 	if len(raw) == 0 {
@@ -12350,45 +12099,6 @@ func tenantMembershipSlugs(memberships map[string]tenantMembership) []string {
 	return slugs
 }
 
-func defaultAuthMethods() []string {
-	return []string{authMethodEmail, authMethodOIDC}
-}
-
-func normalizeAuthMethods(raw []string) ([]string, error) {
-	if len(raw) == 0 {
-		return defaultAuthMethods(), nil
-	}
-	seen := map[string]struct{}{}
-	out := []string{}
-	for _, item := range raw {
-		method := normalizeAuthMethod(item)
-		if method == "" {
-			return nil, fmt.Errorf("invalid auth method %q", item)
-		}
-		if _, ok := seen[method]; ok {
-			continue
-		}
-		seen[method] = struct{}{}
-		out = append(out, method)
-	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("at least one auth method is required")
-	}
-	sort.Strings(out)
-	return out, nil
-}
-
-func normalizeAuthMethod(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case authMethodEmail, "mail", "magic", "magic-link", "magic_link":
-		return authMethodEmail
-	case authMethodOIDC, "sso", "zitadel", "citatel":
-		return authMethodOIDC
-	default:
-		return ""
-	}
-}
-
 func authMethodsLabel(methods []string) string {
 	return strings.Join(authMethodsLabelList(methods), ", ")
 }
@@ -12410,27 +12120,6 @@ func authMethodsLabelList(methods []string) []string {
 		}
 	}
 	return labels
-}
-
-func normalizeTenants(raw []string, fallback string) []string {
-	seen := map[string]struct{}{}
-	out := []string{}
-	for _, item := range raw {
-		item = normalizeSlug(item)
-		if item == "" {
-			continue
-		}
-		if _, ok := seen[item]; ok {
-			continue
-		}
-		seen[item] = struct{}{}
-		out = append(out, item)
-	}
-	if len(out) == 0 && fallback != "" {
-		out = append(out, normalizeSlug(fallback))
-	}
-	sort.Strings(out)
-	return out
 }
 
 func normalizeSlug(raw string) string { return textutil.Slug(raw) }
