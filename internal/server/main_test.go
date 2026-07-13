@@ -386,12 +386,11 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	}
 
 	for _, persona := range []struct {
-		email   string
-		want    string
-		handler http.HandlerFunc
+		email string
+		want  string
 	}{
-		{"renter@example.com", "Nur Eigentümer können abstimmen.", a.submitBallot},
-		{"beirat@example.com", "Beirat: lesende Übersicht.", a.submitBallot},
+		{"renter@example.com", "Nur Eigentümer können abstimmen."},
+		{"beirat@example.com", "Beirat: lesende Übersicht."},
 	} {
 		page := authedRequest(t, a, persona.email, "/app/abstimmungen")
 		if page.Code != http.StatusOK {

@@ -15,19 +15,10 @@ import (
 	"github.com/markus-barta/hausv-org/internal/version"
 )
 
-func (a *app) createBallot(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) createBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityManageVotes) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if a.voteStore == nil {
@@ -85,27 +76,18 @@ func (a *app) createBallot(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/abstimmungen?vote=created", http.StatusSeeOther)
 }
 
-func (a *app) openBallot(w http.ResponseWriter, r *http.Request) {
-	a.updateBallotStatus(w, r, ballotStatusOpen)
+func (a *app) openBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	a.updateBallotStatus(w, r, ac, ballotStatusOpen)
 }
 
-func (a *app) closeBallot(w http.ResponseWriter, r *http.Request) {
-	a.updateBallotStatus(w, r, ballotStatusClosed)
+func (a *app) closeBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	a.updateBallotStatus(w, r, ac, ballotStatusClosed)
 }
 
-func (a *app) updateBallotStatus(w http.ResponseWriter, r *http.Request, status string) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) updateBallotStatus(w http.ResponseWriter, r *http.Request, ac authCtx, status string) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityManageVotes) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if a.voteStore == nil {
@@ -217,17 +199,8 @@ func ballotOptionsFromForm(r *http.Request) []string {
 	return out
 }
 
-func (a *app) ballots(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
@@ -277,29 +250,20 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *app) submitBallot(w http.ResponseWriter, r *http.Request) {
+func (a *app) submitBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 	if strings.TrimSpace(firstNonEmpty(r.FormValue("ballot_id"), r.FormValue("id"))) != "" || strings.TrimSpace(r.FormValue("option")) != "" {
-		a.castVote(w, r)
+		a.castVote(w, r, ac)
 		return
 	}
-	a.createBallot(w, r)
+	a.createBallot(w, r, ac)
 }
 
-func (a *app) castVote(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
-		return
-	}
+func (a *app) castVote(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityVote) {
 		http.Error(w, "Dieser Zugang ist für Abstimmungen lesend.", http.StatusForbidden)
 		return
@@ -339,13 +303,8 @@ func (a *app) castVote(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/abstimmungen?vote=cast", http.StatusSeeOther)
 }
 
-func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityVote) && !hasCapability(role, capabilityOversight) && !hasCapability(role, capabilityManageVotes) {
 		http.Error(w, "Dieses Protokoll ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
 		return
