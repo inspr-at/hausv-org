@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.8.0] - 2026-07-13
+
+### Verbessert
+
+- **Sicherheit und Datenschutz gestärkt.** Zugriffsgrenzen zwischen Häusern werden strenger geprüft; Formulare sind zusätzlich gegen missbräuchliche Fremdaufrufe abgesichert.
+- **Zuverlässiger gegen Stromausfälle und Abstürze.** Gespeicherte Daten werden sicher auf die Festplatte geschrieben, und ein beschädigtes Protokoll kann den Start nicht mehr blockieren.
+- **Stabiler im Betrieb.** Unerwartete Fehler führen nicht mehr zum Abbruch, und die Anwendung fährt bei Aktualisierungen sauber herunter.
+
 ## [0.7.0] - 2026-07-13
 
 ### Verbessert
