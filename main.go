@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/markus-barta/hausv-org/internal/authz"
+	"github.com/markus-barta/hausv-org/internal/homeassistant"
 	"html/template"
 	_ "image/png"
 	"io"
@@ -39,8 +40,32 @@ import (
 	"github.com/markus-barta/hausv-org/internal/version"
 
 	oidc "github.com/coreos/go-oidc/v3/oidc"
-	"github.com/gorilla/websocket"
 	"golang.org/x/oauth2"
+)
+
+// ── extracted to homeassistant ──────────────────────────────────────────────
+type homeAssistantConfig = homeassistant.Config
+
+// newHomeAssistantConfig keeps env parsing in main (the composition root); the
+// package itself takes explicit values.
+func newHomeAssistantConfig() homeAssistantConfig {
+	return homeassistant.NewConfig(
+		env("HA_BASE_URL", ""),
+		os.Getenv("HA_TOKEN"),
+		env("PARKING_METER_ENERGY_ENTITY", "sensor.kws_306wf_energy_meter_energy"),
+		env("PARKING_POWER_ENTITY", "sensor.kws360_power"),
+		env("PARKING_PRICE_ENTITY", "sensor.epex_spot_data_total_price"),
+	)
+}
+
+type haState = homeassistant.EntityState
+type haStatistic = homeassistant.Statistic
+type haHistoryState = homeassistant.HistoryState
+
+var (
+	samplesFromStatistics = homeassistant.SamplesFromStatistics
+	samplesFromHistory    = homeassistant.SamplesFromHistory
+	parseHAFloat          = homeassistant.ParseFloat
 )
 
 // Capabilities now owned by authz; aliased so call sites read unchanged.
@@ -541,38 +566,6 @@ type tenantConfig struct {
 	HeroImageURL      string              `json:"hero_image_url,omitempty"`
 	Host              string              `json:"host"`
 	HA                homeAssistantConfig `json:"-"`
-}
-
-type homeAssistantConfig struct {
-	baseURL           string
-	token             string
-	meterEnergyEntity string
-	powerEntity       string
-	priceEntity       string
-}
-
-type haState struct {
-	EntityID   string         `json:"entity_id"`
-	State      string         `json:"state"`
-	Attributes map[string]any `json:"attributes"`
-}
-
-type haHistoryState struct {
-	EntityID    string         `json:"entity_id"`
-	State       string         `json:"state"`
-	LastChanged time.Time      `json:"last_changed"`
-	LastUpdated time.Time      `json:"last_updated"`
-	Attributes  map[string]any `json:"attributes"`
-}
-
-type haStatistic struct {
-	Start json.RawMessage `json:"start"`
-	End   json.RawMessage `json:"end"`
-	State *float64        `json:"state"`
-	Sum   *float64        `json:"sum"`
-	Mean  *float64        `json:"mean"`
-	Min   *float64        `json:"min"`
-	Max   *float64        `json:"max"`
 }
 
 type parkingTelemetry struct {
@@ -5391,7 +5384,7 @@ type parkingStatementView struct {
 func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, user userProfile, year int) parkingStatementView {
 	seedCtx, cancel := context.WithTimeout(ctx, 12*time.Second)
 	defer cancel()
-	if err := a.seedParkingHistory(seedCtx, tenant, a.parkingHistoryStart, time.Now()); err != nil && tenant.HA.baseURL != "" && tenant.HA.token != "" {
+	if err := a.seedParkingHistory(seedCtx, tenant, a.parkingHistoryStart, time.Now()); err != nil && tenant.HA.Configured() {
 		log.Printf("parking history seed failed for %s: %v", tenant.Slug, err)
 	}
 	data := a.parkingStore.TenantData(tenant.Slug)
@@ -10187,18 +10180,18 @@ func ballotWeightingLabel(weighting string) string {
 func (a *app) parkingTelemetry(ctx context.Context, tenant tenantConfig) parkingTelemetry {
 	ha := tenant.HA
 	telemetry := parkingTelemetry{
-		Configured: ha.baseURL != "",
+		Configured: ha.BaseURL() != "",
 		Entities: []parkingEntityRef{
-			{Label: "Zählerstand", EntityID: ha.meterEnergyEntity},
-			{Label: "Leistung", EntityID: ha.powerEntity},
-			{Label: "aWATTar Preis", EntityID: ha.priceEntity},
+			{Label: "Zählerstand", EntityID: ha.MeterEnergyEntity()},
+			{Label: "Leistung", EntityID: ha.PowerEntity()},
+			{Label: "aWATTar Preis", EntityID: ha.PriceEntity()},
 		},
 	}
-	if ha.baseURL == "" {
+	if ha.BaseURL() == "" {
 		telemetry.Message = "Home Assistant ist lokal noch nicht konfiguriert."
 		return telemetry
 	}
-	if ha.token == "" {
+	if ha.Token() == "" {
 		telemetry.Message = "Home Assistant ist vorbereitet, aber lokal fehlt noch ein HA_TOKEN."
 		return telemetry
 	}
@@ -10214,9 +10207,9 @@ func (a *app) parkingTelemetry(ctx context.Context, tenant tenantConfig) parking
 		label  string
 		entity string
 	}{
-		{label: "Zählerstand", entity: ha.meterEnergyEntity},
-		{label: "Aktuelle Leistung", entity: ha.powerEntity},
-		{label: "aWATTar Gesamtpreis", entity: ha.priceEntity},
+		{label: "Zählerstand", entity: ha.MeterEnergyEntity()},
+		{label: "Aktuelle Leistung", entity: ha.PowerEntity()},
+		{label: "aWATTar Gesamtpreis", entity: ha.PriceEntity()},
 	}
 	for _, item := range states {
 		state, err := ha.State(ctx, item.entity)
@@ -10230,13 +10223,13 @@ func (a *app) parkingTelemetry(ctx context.Context, tenant tenantConfig) parking
 			Detail: item.entity,
 		})
 		switch item.entity {
-		case ha.meterEnergyEntity:
-			if value, err := parseHAFloat(state.State); err == nil {
+		case ha.MeterEnergyEntity():
+			if value, err := homeassistant.ParseFloat(state.State); err == nil {
 				liveEnergy = value
 				hasLiveEnergy = true
 			}
-		case ha.priceEntity:
-			if value, err := parseHAFloat(state.State); err == nil {
+		case ha.PriceEntity():
+			if value, err := homeassistant.ParseFloat(state.State); err == nil {
 				livePrice = value
 				hasLivePrice = true
 			}
@@ -10259,7 +10252,7 @@ func (a *app) parkingTelemetry(ctx context.Context, tenant tenantConfig) parking
 func (a *app) parkingAccounting(ctx context.Context, tenant tenantConfig) parkingAccountingView {
 	seedCtx, cancel := context.WithTimeout(ctx, 12*time.Second)
 	defer cancel()
-	if err := a.seedParkingHistory(seedCtx, tenant, a.parkingHistoryStart, time.Now()); err != nil && tenant.HA.baseURL != "" && tenant.HA.token != "" {
+	if err := a.seedParkingHistory(seedCtx, tenant, a.parkingHistoryStart, time.Now()); err != nil && tenant.HA.Configured() {
 		log.Printf("parking history seed failed for %s: %v", tenant.Slug, err)
 	}
 
@@ -10301,7 +10294,7 @@ func (a *app) parkingAccounting(ctx context.Context, tenant tenantConfig) parkin
 func (a *app) parkingMonthDetails(ctx context.Context, tenant tenantConfig, month string) parkingMonthDetailView {
 	seedCtx, cancel := context.WithTimeout(ctx, 12*time.Second)
 	defer cancel()
-	if err := a.seedParkingHistory(seedCtx, tenant, a.parkingHistoryStart, time.Now()); err != nil && tenant.HA.baseURL != "" && tenant.HA.token != "" {
+	if err := a.seedParkingHistory(seedCtx, tenant, a.parkingHistoryStart, time.Now()); err != nil && tenant.HA.Configured() {
 		log.Printf("parking history seed failed for %s: %v", tenant.Slug, err)
 	}
 
@@ -10319,7 +10312,7 @@ func (a *app) parkingMonthDetails(ctx context.Context, tenant tenantConfig, mont
 
 func (a *app) seedParkingHistory(ctx context.Context, tenant tenantConfig, start time.Time, end time.Time) error {
 	ha := tenant.HA
-	if ha.baseURL == "" || ha.token == "" || ha.meterEnergyEntity == "" || ha.priceEntity == "" {
+	if ha.BaseURL() == "" || ha.Token() == "" || ha.MeterEnergyEntity() == "" || ha.PriceEntity() == "" {
 		return nil
 	}
 	energySamples, priceSamples, err := ha.Statistics(ctx, start, end)
@@ -10330,7 +10323,7 @@ func (a *app) seedParkingHistory(ctx context.Context, tenant tenantConfig, start
 	if restStart.Before(start) {
 		restStart = start
 	}
-	history, err := ha.History(ctx, restStart, end, []string{ha.meterEnergyEntity, ha.priceEntity})
+	history, err := ha.History(ctx, restStart, end, []string{ha.MeterEnergyEntity(), ha.PriceEntity()})
 	if err != nil {
 		if len(energySamples) == 0 && len(priceSamples) == 0 {
 			return err
@@ -10338,8 +10331,8 @@ func (a *app) seedParkingHistory(ctx context.Context, tenant tenantConfig, start
 		log.Printf("parking REST history fallback failed for %s: %v", tenant.Slug, err)
 		return a.parkingStore.AppendReadings(tenant.Slug, energySamples, priceSamples)
 	}
-	energySamples = append(energySamples, samplesFromHistory(history[ha.meterEnergyEntity])...)
-	priceSamples = append(priceSamples, samplesFromHistory(history[ha.priceEntity])...)
+	energySamples = append(energySamples, homeassistant.SamplesFromHistory(history[ha.MeterEnergyEntity()])...)
+	priceSamples = append(priceSamples, homeassistant.SamplesFromHistory(history[ha.PriceEntity()])...)
 	if len(energySamples) == 0 && len(priceSamples) == 0 {
 		return nil
 	}
@@ -10354,7 +10347,7 @@ func (a *app) startParkingSampler() func() {
 	}
 	configuredTenants := 0
 	for _, tenant := range a.tenants {
-		if tenant.HA.baseURL != "" && tenant.HA.token != "" {
+		if tenant.HA.Configured() {
 			configuredTenants++
 		}
 	}
@@ -10386,7 +10379,7 @@ func (a *app) backfillParkingTenants(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	for _, tenant := range a.tenants {
-		if tenant.HA.baseURL == "" || tenant.HA.token == "" {
+		if tenant.HA.BaseURL() == "" || tenant.HA.Token() == "" {
 			continue
 		}
 		if err := a.seedParkingHistory(ctx, tenant, a.parkingHistoryStart, time.Now()); err != nil {
@@ -10399,7 +10392,7 @@ func (a *app) backfillParkingTenants(ctx context.Context) {
 
 func (a *app) sampleParkingTenants(ctx context.Context) {
 	for _, tenant := range a.tenants {
-		if tenant.HA.baseURL == "" || tenant.HA.token == "" {
+		if tenant.HA.BaseURL() == "" || tenant.HA.Token() == "" {
 			continue
 		}
 		if err := a.sampleParkingTenant(ctx, tenant); err != nil {
@@ -10413,19 +10406,19 @@ func (a *app) sampleParkingTenants(ctx context.Context) {
 func (a *app) sampleParkingTenant(ctx context.Context, tenant tenantConfig) error {
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
-	energy, err := tenant.HA.State(ctx, tenant.HA.meterEnergyEntity)
+	energy, err := tenant.HA.State(ctx, tenant.HA.MeterEnergyEntity())
 	if err != nil {
 		return err
 	}
-	price, err := tenant.HA.State(ctx, tenant.HA.priceEntity)
+	price, err := tenant.HA.State(ctx, tenant.HA.PriceEntity())
 	if err != nil {
 		return err
 	}
-	energyValue, err := parseHAFloat(energy.State)
+	energyValue, err := homeassistant.ParseFloat(energy.State)
 	if err != nil {
 		return err
 	}
-	priceValue, err := parseHAFloat(price.State)
+	priceValue, err := homeassistant.ParseFloat(price.State)
 	if err != nil {
 		return err
 	}
@@ -10488,94 +10481,6 @@ func formatParkingTariffDate(raw string) string {
 		return raw
 	}
 	return formatLocalDate(t)
-}
-
-func samplesFromHistory(history []haHistoryState) []parkingNumericSample {
-	out := make([]parkingNumericSample, 0, len(history))
-	for _, item := range history {
-		value, err := parseHAFloat(item.State)
-		if err != nil {
-			continue
-		}
-		at := item.timestamp()
-		if at.IsZero() {
-			continue
-		}
-		out = append(out, parkingNumericSample{At: at.UTC(), Value: value})
-	}
-	sort.Slice(out, func(i, j int) bool {
-		return out[i].At.Before(out[j].At)
-	})
-	return out
-}
-
-func samplesFromStatistics(stats []haStatistic, fields ...string) []parkingNumericSample {
-	out := make([]parkingNumericSample, 0, len(stats))
-	for _, stat := range stats {
-		at, err := parseStatisticTime(stat.Start)
-		if err != nil || at.IsZero() {
-			continue
-		}
-		value, ok := statisticValue(stat, fields...)
-		if !ok {
-			continue
-		}
-		out = append(out, parkingNumericSample{At: at.UTC(), Value: value})
-	}
-	sort.Slice(out, func(i, j int) bool {
-		return out[i].At.Before(out[j].At)
-	})
-	return out
-}
-
-func statisticValue(stat haStatistic, fields ...string) (float64, bool) {
-	for _, field := range fields {
-		switch field {
-		case "state":
-			if stat.State != nil {
-				return *stat.State, true
-			}
-		case "sum":
-			if stat.Sum != nil {
-				return *stat.Sum, true
-			}
-		case "mean":
-			if stat.Mean != nil {
-				return *stat.Mean, true
-			}
-		case "min":
-			if stat.Min != nil {
-				return *stat.Min, true
-			}
-		case "max":
-			if stat.Max != nil {
-				return *stat.Max, true
-			}
-		}
-	}
-	return 0, false
-}
-
-func parseStatisticTime(raw json.RawMessage) (time.Time, error) {
-	raw = json.RawMessage(strings.TrimSpace(string(raw)))
-	if len(raw) == 0 || string(raw) == "null" {
-		return time.Time{}, errors.New("missing statistic time")
-	}
-	if raw[0] == '"' {
-		var value string
-		if err := json.Unmarshal(raw, &value); err != nil {
-			return time.Time{}, err
-		}
-		return time.Parse(time.RFC3339, value)
-	}
-	var value float64
-	if err := json.Unmarshal(raw, &value); err != nil {
-		return time.Time{}, err
-	}
-	if value > 100000000000 {
-		return time.UnixMilli(int64(value)), nil
-	}
-	return time.Unix(int64(value), 0), nil
 }
 
 func priceAt(samples []parkingNumericSample, at time.Time) (float64, bool) {
@@ -11370,198 +11275,13 @@ func (m smtpMailer) SendNotification(to string, subject string, body string) err
 	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
 }
 
-func newHomeAssistantConfig() homeAssistantConfig {
-	return homeAssistantConfig{
-		baseURL:           strings.TrimRight(env("HA_BASE_URL", ""), "/"),
-		token:             strings.TrimSpace(os.Getenv("HA_TOKEN")),
-		meterEnergyEntity: env("PARKING_METER_ENERGY_ENTITY", "sensor.kws_306wf_energy_meter_energy"),
-		powerEntity:       env("PARKING_POWER_ENTITY", "sensor.kws360_power"),
-		priceEntity:       env("PARKING_PRICE_ENTITY", "sensor.epex_spot_data_total_price"),
-	}
-}
-
-func (c homeAssistantConfig) State(ctx context.Context, entityID string) (haState, error) {
-	if c.baseURL == "" || c.token == "" || entityID == "" {
-		return haState{}, errors.New("home assistant not configured")
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/states/"+url.PathEscape(entityID), nil)
-	if err != nil {
-		return haState{}, errors.New("could not build home assistant request")
-	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return haState{}, errors.New("home assistant request failed")
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return haState{}, fmt.Errorf("home assistant returned %d", resp.StatusCode)
-	}
-
-	var state haState
-	dec := json.NewDecoder(io.LimitReader(resp.Body, 1<<20))
-	if err := dec.Decode(&state); err != nil {
-		return haState{}, errors.New("home assistant returned invalid json")
-	}
-	return state, nil
-}
-
-func (c homeAssistantConfig) History(ctx context.Context, start time.Time, end time.Time, entityIDs []string) (map[string][]haHistoryState, error) {
-	if c.baseURL == "" || c.token == "" || len(entityIDs) == 0 {
-		return nil, errors.New("home assistant not configured")
-	}
-	endpoint := c.baseURL + "/api/history/period/" + url.PathEscape(start.UTC().Format(time.RFC3339))
-	q := url.Values{}
-	q.Set("end_time", end.UTC().Format(time.RFC3339))
-	q.Set("filter_entity_id", strings.Join(entityIDs, ","))
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"?"+q.Encode(), nil)
-	if err != nil {
-		return nil, errors.New("could not build home assistant history request")
-	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, errors.New("home assistant history request failed")
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("home assistant history returned %d", resp.StatusCode)
-	}
-
-	var groups [][]haHistoryState
-	dec := json.NewDecoder(io.LimitReader(resp.Body, 8<<20))
-	if err := dec.Decode(&groups); err != nil {
-		return nil, errors.New("home assistant history returned invalid json")
-	}
-	out := map[string][]haHistoryState{}
-	for _, group := range groups {
-		for _, item := range group {
-			if item.EntityID == "" {
-				continue
-			}
-			out[item.EntityID] = append(out[item.EntityID], item)
-		}
-	}
-	for entityID := range out {
-		sort.Slice(out[entityID], func(i, j int) bool {
-			return out[entityID][i].timestamp().Before(out[entityID][j].timestamp())
-		})
-	}
-	return out, nil
-}
-
-func (c homeAssistantConfig) Statistics(ctx context.Context, start time.Time, end time.Time) ([]parkingNumericSample, []parkingNumericSample, error) {
-	if c.baseURL == "" || c.token == "" || c.meterEnergyEntity == "" || c.priceEntity == "" {
-		return nil, nil, errors.New("home assistant not configured")
-	}
-	wsURL, err := c.websocketURL()
-	if err != nil {
-		return nil, nil, err
-	}
-	conn, _, err := websocket.DefaultDialer.DialContext(ctx, wsURL, nil)
-	if err != nil {
-		return nil, nil, errors.New("home assistant websocket connection failed")
-	}
-	defer conn.Close()
-	if deadline, ok := ctx.Deadline(); ok {
-		_ = conn.SetReadDeadline(deadline)
-		_ = conn.SetWriteDeadline(deadline)
-	}
-
-	var authMessage struct {
-		Type string `json:"type"`
-	}
-	if err := conn.ReadJSON(&authMessage); err != nil {
-		return nil, nil, errors.New("home assistant websocket auth start failed")
-	}
-	if authMessage.Type == "auth_required" {
-		if err := conn.WriteJSON(map[string]string{
-			"type":         "auth",
-			"access_token": c.token,
-		}); err != nil {
-			return nil, nil, errors.New("home assistant websocket auth failed")
-		}
-		if err := conn.ReadJSON(&authMessage); err != nil {
-			return nil, nil, errors.New("home assistant websocket auth response failed")
-		}
-	}
-	if authMessage.Type != "auth_ok" {
-		return nil, nil, errors.New("home assistant websocket auth rejected")
-	}
-
-	const requestID = 1
-	if err := conn.WriteJSON(map[string]any{
-		"id":            requestID,
-		"type":          "recorder/statistics_during_period",
-		"start_time":    start.UTC().Format(time.RFC3339),
-		"end_time":      end.UTC().Format(time.RFC3339),
-		"statistic_ids": []string{c.meterEnergyEntity, c.priceEntity},
-		"period":        "hour",
-		"types":         []string{"state", "sum", "mean"},
-	}); err != nil {
-		return nil, nil, errors.New("home assistant websocket statistics request failed")
-	}
-
-	for {
-		var response struct {
-			ID      int                      `json:"id"`
-			Type    string                   `json:"type"`
-			Success bool                     `json:"success"`
-			Error   map[string]any           `json:"error"`
-			Result  map[string][]haStatistic `json:"result"`
-		}
-		if err := conn.ReadJSON(&response); err != nil {
-			return nil, nil, errors.New("home assistant websocket statistics response failed")
-		}
-		if response.ID != requestID {
-			continue
-		}
-		if response.Type != "result" || !response.Success {
-			return nil, nil, errors.New("home assistant websocket statistics rejected")
-		}
-		energySamples := samplesFromStatistics(response.Result[c.meterEnergyEntity], "state", "sum")
-		priceSamples := samplesFromStatistics(response.Result[c.priceEntity], "state", "mean")
-		return energySamples, priceSamples, nil
-	}
-}
-
-func (c homeAssistantConfig) websocketURL() (string, error) {
-	parsed, err := url.Parse(c.baseURL)
-	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-		return "", errors.New("invalid home assistant base url")
-	}
-	switch parsed.Scheme {
-	case "http":
-		parsed.Scheme = "ws"
-	case "https":
-		parsed.Scheme = "wss"
-	default:
-		return "", errors.New("unsupported home assistant websocket scheme")
-	}
-	parsed.Path = "/api/websocket"
-	parsed.RawQuery = ""
-	parsed.Fragment = ""
-	return parsed.String(), nil
-}
-
-func (s haHistoryState) timestamp() time.Time {
-	if !s.LastChanged.IsZero() {
-		return s.LastChanged
-	}
-	return s.LastUpdated
-}
-
 func formatHAValue(state haState) string {
 	unit, _ := state.Attributes["unit_of_measurement"].(string)
 	value := strings.TrimSpace(state.State)
 	if value == "" {
 		value = "unbekannt"
 	}
-	if number, err := parseHAFloat(value); err == nil {
+	if number, err := homeassistant.ParseFloat(value); err == nil {
 		switch unit {
 		case "kWh":
 			return formatDecimal(number, 2) + " kWh"
@@ -11581,14 +11301,6 @@ func formatHAValue(state haState) string {
 		return value
 	}
 	return value + " " + unit
-}
-
-func parseHAFloat(raw string) (float64, error) {
-	value := strings.TrimSpace(strings.ReplaceAll(raw, ",", "."))
-	if value == "" || strings.EqualFold(value, "unknown") || strings.EqualFold(value, "unavailable") {
-		return 0, errors.New("state is not numeric")
-	}
-	return strconv.ParseFloat(value, 64)
 }
 
 func parseDecimal(raw string) (float64, error) {
@@ -11916,7 +11628,7 @@ func parseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 			if tenant.Host == "" && rootDomain != "" {
 				tenant.Host = tenant.Slug + "." + rootDomain
 			}
-			if tenant.HA.baseURL == "" && tenant.Slug == normalizeSlug(defaultTenant) {
+			if tenant.HA.BaseURL() == "" && tenant.Slug == normalizeSlug(defaultTenant) {
 				tenant.HA = defaultHA
 			}
 			out[tenant.Slug] = tenant
