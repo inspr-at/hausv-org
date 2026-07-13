@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.9.0] - 2026-07-13
+
+### Verbessert
+
+- **Zugriffsschutz zentral abgesichert.** Anmeldung und Hauszuordnung werden jetzt an einer einzigen, zentralen Stelle geprüft, statt in jeder Seite einzeln. Dadurch kann keine neue Seite versehentlich ohne diese Prüfung ausgeliefert werden. Für Nutzer bleibt alles unverändert — die Absicherung wird nur strukturell zuverlässiger.
+- **Formularschutz vereinheitlicht.** Alle absendenden Aktionen werden nun einheitlich gegen missbräuchliche Fremdaufrufe abgesichert.
+
 ## [0.8.0] - 2026-07-13
 
 ### Verbessert
