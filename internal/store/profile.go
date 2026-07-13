@@ -346,3 +346,36 @@ func NormalizeTenants(raw []string, fallback string) []string {
 func DefaultAuthMethods() []string {
 	return []string{AuthMethodEmail, AuthMethodOIDC}
 }
+
+func NormalizeTenantMemberships(raw map[string]TenantMembership) map[string]TenantMembership {
+	if len(raw) == 0 {
+		return nil
+	}
+	out := map[string]TenantMembership{}
+	for slug, membership := range raw {
+		slug = textutil.Slug(slug)
+		if slug == "" {
+			continue
+		}
+		membership.Role = NormalizeRole(membership.Role)
+		if membership.Permissions != nil {
+			membership.Permissions = NormalizePermissions(membership.Permissions)
+		}
+		out[slug] = membership
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func TenantMembershipSlugs(memberships map[string]TenantMembership) []string {
+	slugs := []string{}
+	for slug := range memberships {
+		slug = textutil.Slug(slug)
+		if slug != "" {
+			slugs = append(slugs, slug)
+		}
+	}
+	return slugs
+}
