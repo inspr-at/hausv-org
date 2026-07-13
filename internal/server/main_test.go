@@ -2066,10 +2066,9 @@ func TestNavigationActionsStayScopedToRelevantPages(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		path string
-		fn   http.HandlerFunc
 	}{
-		{name: "building", path: "/app/settings/building", fn: a.buildingSettings},
-		{name: "profile", path: "/app/settings/profile", fn: a.profileSettings},
+		{name: "building", path: "/app/settings/building"},
+		{name: "profile", path: "/app/settings/profile"},
 	} {
 		rr := authedRequest(t, a, "admin@example.com", tc.path)
 		if rr.Code != http.StatusOK {

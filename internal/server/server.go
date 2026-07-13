@@ -754,7 +754,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /auth/oidc/callback", a.finishOIDCLogin)
 	mux.HandleFunc("POST /auth/logout", a.logout)
 	mux.HandleFunc("GET /calendar/{token}", a.calendarFeed)
-	mux.HandleFunc("GET /app", a.portal)
+	mux.HandleFunc("GET /app", a.page(a.portal))
 	mux.HandleFunc("GET /app/announcements", a.page(a.announcements))
 	mux.HandleFunc("POST /app/announcements", a.action(a.createAnnouncement))
 	mux.HandleFunc("POST /app/announcements/edit", a.action(a.editAnnouncement))
@@ -799,25 +799,25 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/parking/settings", a.action(a.updateParkingSettings))
 	mux.HandleFunc("POST /app/parking/month", a.action(a.updateParkingMonth))
 	mux.HandleFunc("POST /app/parking/reminders", a.action(a.sendParkingReminders))
-	mux.HandleFunc("GET /app/audit", a.auditLog)
-	mux.HandleFunc("GET /app/settings", a.settingsHub)
-	mux.HandleFunc("GET /app/settings/building", a.buildingSettings)
-	mux.HandleFunc("POST /app/settings/building", a.updateBuildingSettings)
-	mux.HandleFunc("POST /app/settings/building/hero", a.updateBuildingHero)
-	mux.HandleFunc("POST /app/settings/building/hero/delete", a.deleteBuildingHero)
-	mux.HandleFunc("POST /app/settings/building/units", a.upsertBuildingUnit)
-	mux.HandleFunc("POST /app/settings/building/units/delete", a.deleteBuildingUnit)
-	mux.HandleFunc("POST /app/settings/building/payment-status", a.updateUnitPaymentStatus)
-	mux.HandleFunc("GET /app/settings/profile", a.profileSettings)
-	mux.HandleFunc("POST /app/settings/profile", a.updateProfileSettings)
-	mux.HandleFunc("GET /app/settings/notifications", a.notificationSettings)
-	mux.HandleFunc("POST /app/settings/notifications", a.updateNotificationSettings)
-	mux.HandleFunc("GET /app/settings/parking-access", a.parkingAccessSettings)
-	mux.HandleFunc("POST /app/settings/parking-access", a.updateParkingAccess)
-	mux.HandleFunc("GET /app/settings/users", a.userSettings)
-	mux.HandleFunc("POST /app/settings/users", a.createInvite)
-	mux.HandleFunc("POST /app/settings/users/edit", a.editInvite)
-	mux.HandleFunc("POST /app/settings/users/delete", a.deleteInvite)
+	mux.HandleFunc("GET /app/audit", a.page(a.auditLog))
+	mux.HandleFunc("GET /app/settings", a.page(a.settingsHub))
+	mux.HandleFunc("GET /app/settings/building", a.page(a.buildingSettings))
+	mux.HandleFunc("POST /app/settings/building", a.action(a.updateBuildingSettings))
+	mux.HandleFunc("POST /app/settings/building/hero", a.action(a.updateBuildingHero))
+	mux.HandleFunc("POST /app/settings/building/hero/delete", a.action(a.deleteBuildingHero))
+	mux.HandleFunc("POST /app/settings/building/units", a.action(a.upsertBuildingUnit))
+	mux.HandleFunc("POST /app/settings/building/units/delete", a.action(a.deleteBuildingUnit))
+	mux.HandleFunc("POST /app/settings/building/payment-status", a.action(a.updateUnitPaymentStatus))
+	mux.HandleFunc("GET /app/settings/profile", a.page(a.profileSettings))
+	mux.HandleFunc("POST /app/settings/profile", a.action(a.updateProfileSettings))
+	mux.HandleFunc("GET /app/settings/notifications", a.page(a.notificationSettings))
+	mux.HandleFunc("POST /app/settings/notifications", a.action(a.updateNotificationSettings))
+	mux.HandleFunc("GET /app/settings/parking-access", a.page(a.parkingAccessSettings))
+	mux.HandleFunc("POST /app/settings/parking-access", a.action(a.updateParkingAccess))
+	mux.HandleFunc("GET /app/settings/users", a.page(a.userSettings))
+	mux.HandleFunc("POST /app/settings/users", a.action(a.createInvite))
+	mux.HandleFunc("POST /app/settings/users/edit", a.action(a.editInvite))
+	mux.HandleFunc("POST /app/settings/users/delete", a.action(a.deleteInvite))
 	mux.HandleFunc("GET /{tenant}", a.tenantPathRedirect)
 	mux.HandleFunc("GET /{tenant}/{rest...}", a.tenantPathRedirect)
 	return mux
@@ -1364,17 +1364,8 @@ func parseBallotReminderBeforeMinutes(rawMinutes string, rawHours string) (int, 
 	return minutes, nil
 }
 
-func (a *app) portal(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if isServiceProviderRole(role) {
 		http.Redirect(w, r, "/app/anliegen", http.StatusSeeOther)
 		return
@@ -2253,17 +2244,8 @@ func (a *app) legacyIssuePhotoPath(tenantSlug string, item residentIssue, index 
 	return filepath.Join(a.issueStore.AttachmentDir(), tenantSlug, filename), filename, true
 }
 
-func (a *app) settingsHub(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
@@ -2282,8 +2264,8 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request) {
-	tenant, email, role, profile, ok := a.buildingSettingsContext(w, r)
+func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role, profile, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
 		return
 	}
@@ -2324,17 +2306,8 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *app) auditLog(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !canViewAudit(role) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
@@ -2446,13 +2419,9 @@ func (a *app) recordAudit(event auditEvent) {
 	}
 }
 
-func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request) {
-	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
+func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -2488,13 +2457,9 @@ func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/settings/building?building=saved", http.StatusSeeOther)
 }
 
-func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request) {
-	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
+func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseMultipartForm(maxTenantHeroFormBytes); err != nil {
@@ -2543,13 +2508,9 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/settings/building?hero=saved", http.StatusSeeOther)
 }
 
-func (a *app) deleteBuildingHero(w http.ResponseWriter, r *http.Request) {
-	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
+func (a *app) deleteBuildingHero(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -2583,13 +2544,9 @@ func (a *app) deleteBuildingHero(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/settings/building?hero=removed", http.StatusSeeOther)
 }
 
-func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request) {
-	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
+func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -2632,13 +2589,9 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/settings/building?unit=saved", http.StatusSeeOther)
 }
 
-func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request) {
-	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
+func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -2679,13 +2632,9 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/settings/building?unit=deleted", http.StatusSeeOther)
 }
 
-func (a *app) updateUnitPaymentStatus(w http.ResponseWriter, r *http.Request) {
-	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, r)
+func (a *app) updateUnitPaymentStatus(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -2730,22 +2679,12 @@ func (a *app) updateUnitPaymentStatus(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/settings/building?payment=saved", http.StatusSeeOther)
 }
 
-func (a *app) buildingSettingsContext(w http.ResponseWriter, r *http.Request) (tenantConfig, string, string, userProfile, bool) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return tenantConfig{}, "", "", userProfile{}, false
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return tenantConfig{}, "", "", userProfile{}, false
-	}
-	if !hasCapability(role, capabilityManageBuilding) {
+func (a *app) buildingSettingsContext(w http.ResponseWriter, ac authCtx) (tenantConfig, string, string, userProfile, bool) {
+	if !hasCapability(ac.role, capabilityManageBuilding) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return tenantConfig{}, "", "", userProfile{}, false
 	}
-	return tenant, email, role, a.profileForTenant(email, tenant.Slug), true
+	return ac.tenant, ac.email, ac.role, a.profileForTenant(ac.email, ac.tenant.Slug), true
 }
 
 func tenantOverrideFromForm(values url.Values) (tenantOverride, error) {
@@ -2954,17 +2893,8 @@ func unitPaymentStatusMessage(status string) (string, bool) {
 	}
 }
 
-func (a *app) profileSettings(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) profileSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
@@ -2993,18 +2923,9 @@ func (a *app) profileSettings(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	email, role := ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -3069,17 +2990,8 @@ func profileUnitViews(units []unitMembership) []profileUnitView {
 	return views
 }
 
-func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
@@ -3107,18 +3019,9 @@ func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *app) updateNotificationSettings(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) updateNotificationSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	email, role := ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -3165,17 +3068,8 @@ func notificationPreferencesFromForm(values url.Values) notificationPreferences 
 	return prefs
 }
 
-func (a *app) userSettings(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) userSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
@@ -3249,17 +3143,8 @@ func auditChangedUserFields(before userProfile, after userProfile) []string {
 	return changed
 }
 
-func (a *app) createInvite(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	actorEmail, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
-		return
-	}
+func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
@@ -3351,17 +3236,8 @@ func (a *app) redirectInvite(w http.ResponseWriter, r *http.Request, status stri
 	http.Redirect(w, r, "/app/settings/users?invite="+url.QueryEscape(status), http.StatusSeeOther)
 }
 
-func (a *app) editInvite(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	actorEmail, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
-		return
-	}
+func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return
@@ -3452,17 +3328,8 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request) {
 	a.redirectInvite(w, r, "updated")
 }
 
-func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	actorEmail, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
-		return
-	}
+func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
 	if !hasCapability(role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
 		return

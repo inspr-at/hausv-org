@@ -537,8 +537,8 @@ func parkingSettingsMessage(status string) (string, bool) {
 	}
 }
 
-func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request) {
-	tenant, email, role, profile, ok := a.parkingAccessContext(w, r)
+func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role, profile, ok := a.parkingAccessContext(w, ac)
 	if !ok {
 		return
 	}
@@ -563,13 +563,9 @@ func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request) {
-	tenant, actorEmail, role, _, ok := a.parkingAccessContext(w, r)
+func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.parkingAccessContext(w, ac)
 	if !ok {
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -638,22 +634,12 @@ func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/settings/parking-access?parking_access="+status, http.StatusSeeOther)
 }
 
-func (a *app) parkingAccessContext(w http.ResponseWriter, r *http.Request) (tenantConfig, string, string, userProfile, bool) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return tenantConfig{}, "", "", userProfile{}, false
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return tenantConfig{}, "", "", userProfile{}, false
-	}
-	if !hasCapability(role, capabilityManageUsers) {
+func (a *app) parkingAccessContext(w http.ResponseWriter, ac authCtx) (tenantConfig, string, string, userProfile, bool) {
+	if !hasCapability(ac.role, capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return tenantConfig{}, "", "", userProfile{}, false
 	}
-	return tenant, email, role, a.profileForTenant(email, tenant.Slug), true
+	return ac.tenant, ac.email, ac.role, a.profileForTenant(ac.email, ac.tenant.Slug), true
 }
 
 func parkingAccessMessage(status string) (string, bool) {
