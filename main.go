@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
@@ -14,17 +13,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/markus-barta/hausv-org/internal/integrations"
-	"github.com/markus-barta/hausv-org/internal/store"
-	"github.com/markus-barta/hausv-org/internal/textutil"
-	"github.com/markus-barta/hausv-org/internal/version"
 	"html/template"
-	"image"
-	"image/jpeg"
 	_ "image/png"
 	"io"
 	"log"
-	"math"
 	"mime"
 	"mime/multipart"
 	"net"
@@ -40,10 +32,136 @@ import (
 	"sync"
 	"time"
 
+	"github.com/markus-barta/hausv-org/internal/integrations"
+	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/markus-barta/hausv-org/internal/version"
+
 	oidc "github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gorilla/websocket"
 	"golang.org/x/oauth2"
 )
+
+// Limits and document vocabulary now owned by the store; aliased for call sites.
+const (
+	defaultTenantHeroImageURL      = store.DefaultTenantHeroImageURL
+	maxIssuePhotoBytes             = store.MaxIssuePhotoBytes
+	maxIssueFormBytes              = store.MaxIssueFormBytes
+	maxAttachmentBytes             = store.MaxAttachmentBytes
+	maxIssueAttachmentCount        = store.MaxIssueAttachmentCount
+	maxIssueAttachmentFormBytes    = store.MaxIssueAttachmentFormBytes
+	attachmentPreviewMaxDimension  = store.AttachmentPreviewMaxDimension
+	attachmentThumbMaxDimension    = store.AttachmentThumbMaxDimension
+	maxTenantHeroBytes             = store.MaxTenantHeroBytes
+	maxTenantHeroFormBytes         = store.MaxTenantHeroFormBytes
+	maxDocumentBytes               = store.MaxDocumentBytes
+	maxDocumentFormBytes           = store.MaxDocumentFormBytes
+	documentCategoryProtocol       = store.DocumentCategoryProtocol
+	documentCategoryBilling        = store.DocumentCategoryBilling
+	documentCategoryRules          = store.DocumentCategoryRules
+	documentCategoryContract       = store.DocumentCategoryContract
+	documentCategoryPlan           = store.DocumentCategoryPlan
+	documentCategoryOther          = store.DocumentCategoryOther
+	documentVisibilityAllResidents = store.DocumentVisibilityAllResidents
+	documentVisibilityOwnersOnly   = store.DocumentVisibilityOwnersOnly
+	documentVisibilityManagerOnly  = store.DocumentVisibilityManagerOnly
+)
+
+// ── extracted to store ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+var cleanParkingPaymentField = store.CleanParkingPaymentField
+var handoverTokenHash = store.HandoverTokenHash
+var subtleConstantStringCompare = store.SubtleConstantStringCompare
+
+// ── extracted to store ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+var defaultParkingTenantData = store.DefaultParkingTenantData
+var normalizeNumericSamples = store.NormalizeNumericSamples
+
+// ── extracted to store ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+var copyMonthStates = store.CopyMonthStates
+var uniqueEmails = store.UniqueEmails
+
+// ── extracted to store ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+type (
+	attachmentFileSave    = store.AttachmentFileSave
+	attachmentRecord      = store.AttachmentRecord
+	attachmentStore       = store.AttachmentStore
+	attachmentStoreData   = store.AttachmentStoreData
+	documentFileSave      = store.DocumentFileSave
+	documentRecord        = store.DocumentRecord
+	documentStore         = store.DocumentStore
+	documentStoreData     = store.DocumentStoreData
+	handoverConfirmation  = store.HandoverConfirmation
+	handoverKey           = store.HandoverKey
+	handoverMeter         = store.HandoverMeter
+	handoverRecord        = store.HandoverRecord
+	handoverRoom          = store.HandoverRoom
+	handoverStore         = store.HandoverStore
+	handoverStoreData     = store.HandoverStoreData
+	handoverTokenDelivery = store.HandoverTokenDelivery
+	issueComment          = store.IssueComment
+	issueStatusChange     = store.IssueStatusChange
+	issueStore            = store.IssueStore
+	issueStoreData        = store.IssueStoreData
+	issueWorkflowUpdate   = store.IssueWorkflowUpdate
+	parkingMonthState     = store.ParkingMonthState
+	parkingNumericSample  = store.ParkingNumericSample
+	parkingSettings       = store.ParkingSettings
+	parkingStore          = store.ParkingStore
+	parkingStoreData      = store.ParkingStoreData
+	parkingStoredSample   = store.ParkingStoredSample
+	parkingTariff         = store.ParkingTariff
+	parkingTenantData     = store.ParkingTenantData
+	residentIssue         = store.ResidentIssue
+	uploadedFile          = store.UploadedFile
+)
+
+var attachmentExtension = store.AttachmentExtension
+var copyDocument = store.CopyDocument
+var copyHandover = store.CopyHandover
+var copyIssue = store.CopyIssue
+var detectAttachmentContentType = store.DetectAttachmentContentType
+var documentExtension = store.DocumentExtension
+var isImageContentType = store.IsImageContentType
+var issuePhotoExtension = store.IssuePhotoExtension
+var newAttachmentStore = store.NewAttachmentStore
+var newDocumentStore = store.NewDocumentStore
+var newHandoverStore = store.NewHandoverStore
+var newIssueStore = store.NewIssueStore
+var newParkingStore = store.NewParkingStore
+var normalizeAttachmentEntity = store.NormalizeAttachmentEntity
+var normalizeDocumentCategory = store.NormalizeDocumentCategory
+var normalizeDocumentRecord = store.NormalizeDocumentRecord
+var normalizeDocumentVisibility = store.NormalizeDocumentVisibility
+var normalizeDocuments = store.NormalizeDocuments
+var normalizeHandover = store.NormalizeHandover
+var normalizeHandoverConfirmations = store.NormalizeHandoverConfirmations
+var normalizeHandoverKeys = store.NormalizeHandoverKeys
+var normalizeHandoverMeters = store.NormalizeHandoverMeters
+var normalizeHandoverRooms = store.NormalizeHandoverRooms
+var normalizeHandoverType = store.NormalizeHandoverType
+var normalizeHandovers = store.NormalizeHandovers
+var normalizeIssueCategory = store.NormalizeIssueCategory
+var normalizeIssueLocation = store.NormalizeIssueLocation
+var normalizeIssuePriority = store.NormalizeIssuePriority
+var normalizeIssueStatus = store.NormalizeIssueStatus
+var normalizeParkingMonthState = store.NormalizeParkingMonthState
+var normalizeParkingMonthStates = store.NormalizeParkingMonthStates
+var normalizeParkingMonths = store.NormalizeParkingMonths
+var normalizeParkingSettings = store.NormalizeParkingSettings
+var normalizeParkingTariff = store.NormalizeParkingTariff
+var normalizeParkingTariffDate = store.NormalizeParkingTariffDate
+var rejectActiveAttachmentContent = store.RejectActiveAttachmentContent
+var resizeImageNearest = store.ResizeImageNearest
+var sanitizeDocumentFilename = store.SanitizeDocumentFilename
+var sortDocuments = store.SortDocuments
+var sortHandovers = store.SortHandovers
+var sortIssues = store.SortIssues
+var writeImageAttachmentVariant = store.WriteImageAttachmentVariant
+var writePrivateFile = store.WritePrivateFile
 
 // Vocabulary constants now owned by the store; aliased so call sites are unchanged.
 const (
@@ -209,61 +327,33 @@ var sortUnitPaymentStatuses = store.SortUnitPaymentStatuses
 var assets embed.FS
 
 const (
-	roleAdmin                     = "Admin"
-	roleManager                   = "Verwalter"
-	roleOwner                     = "Eigentümer"
-	roleRenter                    = "Mieter"
-	roleBeirat                    = "Beirat"
-	roleResident                  = "Bewohner"
-	roleServiceProvider           = "Dienstleister"
-	permissionParking             = "parking"
-	authMethodEmail               = "email"
-	authMethodOIDC                = "oidc"
-	issueStatusNew                = "Neu"
-	issueStatusProgress           = "In Bearbeitung"
-	issueStatusDone               = "Erledigt"
-	issueStatusRejected           = "Abgelehnt"
-	issueStatusDuplicate          = "Duplikat"
-	issueStatusOpen               = issueStatusNew
-	issuePriorityLow              = "Niedrig"
-	issuePriorityNorm             = "Mittel"
-	issuePriorityHigh             = "Hoch"
-	issuePriorityUrgent           = "Dringend"
-	issueLocationUnit             = "own-unit"
-	issueLocationCommon           = "common"
-	notificationEventAnnouncement = "announcement"
-	notificationEventIssue        = "issue"
-	notificationEventVote         = "vote"
-	notificationEventDocument     = "document"
-	notificationEventPayment      = "payment"
-)
-
-const (
-	defaultTenantHeroImageURL     = "/assets/jhw22-hero.jpg"
-	maxIssuePhotoBytes            = 5 << 20
-	maxIssueFormBytes             = maxIssuePhotoBytes + (1 << 20)
-	maxAttachmentBytes            = 10 << 20
-	maxIssueAttachmentCount       = 10
-	maxIssueAttachmentFormBytes   = maxAttachmentBytes*maxIssueAttachmentCount + (1 << 20)
-	attachmentPreviewMaxDimension = 1200
-	attachmentThumbMaxDimension   = 320
-	maxTenantHeroBytes            = 5 << 20
-	maxTenantHeroFormBytes        = maxTenantHeroBytes + (1 << 20)
-	maxDocumentBytes              = 20 << 20
-	maxDocumentFormBytes          = maxDocumentBytes + (1 << 20)
-)
-
-const (
-	documentCategoryProtocol = "Protokoll"
-	documentCategoryBilling  = "Abrechnung"
-	documentCategoryRules    = "Hausordnung"
-	documentCategoryContract = "Vertrag"
-	documentCategoryPlan     = "Plan"
-	documentCategoryOther    = "Sonstiges"
-
-	documentVisibilityAllResidents = "all-residents"
-	documentVisibilityOwnersOnly   = "owners-only"
-	documentVisibilityManagerOnly  = "verwalter-only"
+	roleAdmin                     = store.RoleAdmin
+	roleManager                   = store.RoleManager
+	roleOwner                     = store.RoleOwner
+	roleRenter                    = store.RoleRenter
+	roleBeirat                    = store.RoleBeirat
+	roleResident                  = store.RoleResident
+	roleServiceProvider           = store.RoleServiceProvider
+	permissionParking             = store.PermissionParking
+	authMethodEmail               = store.AuthMethodEmail
+	authMethodOIDC                = store.AuthMethodOIDC
+	issueStatusNew                = store.IssueStatusNew
+	issueStatusProgress           = store.IssueStatusProgress
+	issueStatusDone               = store.IssueStatusDone
+	issueStatusRejected           = store.IssueStatusRejected
+	issueStatusDuplicate          = store.IssueStatusDuplicate
+	issueStatusOpen               = store.IssueStatusOpen
+	issuePriorityLow              = store.IssuePriorityLow
+	issuePriorityNorm             = store.IssuePriorityNorm
+	issuePriorityHigh             = store.IssuePriorityHigh
+	issuePriorityUrgent           = store.IssuePriorityUrgent
+	issueLocationUnit             = store.IssueLocationUnit
+	issueLocationCommon           = store.IssueLocationCommon
+	notificationEventAnnouncement = store.NotificationEventAnnouncement
+	notificationEventIssue        = store.NotificationEventIssue
+	notificationEventVote         = store.NotificationEventVote
+	notificationEventDocument     = store.NotificationEventDocument
+	notificationEventPayment      = store.NotificationEventPayment
 )
 
 type capability string
@@ -572,54 +662,6 @@ type houseEventView struct {
 	DeleteConfirmLabel string
 }
 
-type issueStore struct {
-	mu            sync.Mutex
-	path          string
-	attachmentDir string
-	data          issueStoreData
-}
-
-type issueStoreData struct {
-	Issues []residentIssue `json:"issues"`
-}
-
-type residentIssue struct {
-	ID                  string              `json:"id"`
-	TenantSlug          string              `json:"tenant"`
-	AuthorEmail         string              `json:"author_email"`
-	AuthorName          string              `json:"author_name"`
-	Category            string              `json:"category"`
-	Title               string              `json:"title"`
-	Body                string              `json:"body"`
-	LocationType        string              `json:"location_type"`
-	LocationDetail      string              `json:"location_detail"`
-	PhotoPaths          []string            `json:"photo_paths"`
-	Status              string              `json:"status"`
-	Priority            string              `json:"priority"`
-	AssigneeEmail       string              `json:"assignee_email,omitempty"`
-	StatusChangedAt     time.Time           `json:"status_changed_at,omitempty"`
-	StatusChangedBy     string              `json:"status_changed_by,omitempty"`
-	StatusHistory       []issueStatusChange `json:"status_history,omitempty"`
-	ServiceProposal     string              `json:"service_proposal,omitempty"`
-	ServiceProposedBy   string              `json:"service_proposed_by,omitempty"`
-	ServiceProposedAt   time.Time           `json:"service_proposed_at,omitempty"`
-	EstimateAmountCents int64               `json:"estimate_amount_cents,omitempty"`
-	EstimateNote        string              `json:"estimate_note,omitempty"`
-	EstimateUpdatedBy   string              `json:"estimate_updated_by,omitempty"`
-	EstimateUpdatedAt   time.Time           `json:"estimate_updated_at,omitempty"`
-	Comments            []issueComment      `json:"comments,omitempty"`
-	CreatedAt           time.Time           `json:"created_at"`
-	UpdatedAt           time.Time           `json:"updated_at"`
-}
-
-type issueComment struct {
-	ID          string    `json:"id"`
-	AuthorEmail string    `json:"author_email"`
-	AuthorName  string    `json:"author_name"`
-	Body        string    `json:"body"`
-	CreatedAt   time.Time `json:"created_at"`
-}
-
 type issueCommentView struct {
 	ID             string
 	Author         string
@@ -629,59 +671,6 @@ type issueCommentView struct {
 	DeleteURL      string
 	Attachments    []attachmentView
 	HasAttachments bool
-}
-
-type issueStatusChange struct {
-	From       string    `json:"from"`
-	To         string    `json:"to"`
-	ActorEmail string    `json:"actor_email"`
-	ActorName  string    `json:"actor_name"`
-	ChangedAt  time.Time `json:"changed_at"`
-}
-
-type issueWorkflowUpdate struct {
-	Status                string
-	Priority              string
-	AssigneeEmail         string
-	ServiceProposal       string
-	UpdateServiceProposal bool
-	EstimateAmountCents   int64
-	EstimateNote          string
-	UpdateEstimate        bool
-	ActorEmail            string
-	ActorName             string
-	ChangedAt             time.Time
-}
-
-type attachmentStore struct {
-	mu      sync.Mutex
-	path    string
-	fileDir string
-	data    attachmentStoreData
-}
-
-type attachmentStoreData struct {
-	Attachments []attachmentRecord `json:"attachments"`
-}
-
-type attachmentRecord struct {
-	ID                 string     `json:"id"`
-	TenantSlug         string     `json:"tenant"`
-	EntityType         string     `json:"entity_type"`
-	EntityID           string     `json:"entity_id"`
-	UploadedBy         string     `json:"uploaded_by"`
-	Filename           string     `json:"filename"`
-	StoredFilename     string     `json:"stored_filename"`
-	ContentType        string     `json:"content_type"`
-	Size               int64      `json:"size"`
-	PreviewFilename    string     `json:"preview_filename,omitempty"`
-	PreviewContentType string     `json:"preview_content_type,omitempty"`
-	PreviewSize        int64      `json:"preview_size,omitempty"`
-	ThumbFilename      string     `json:"thumb_filename,omitempty"`
-	ThumbContentType   string     `json:"thumb_content_type,omitempty"`
-	ThumbSize          int64      `json:"thumb_size,omitempty"`
-	CreatedAt          time.Time  `json:"created_at"`
-	DeletedAt          *time.Time `json:"deleted_at,omitempty"`
 }
 
 type attachmentView struct {
@@ -709,37 +698,6 @@ type selectOption struct {
 	Value    string
 	Label    string
 	Selected bool
-}
-
-type documentStore struct {
-	mu      sync.Mutex
-	path    string
-	fileDir string
-	data    documentStoreData
-}
-
-type documentStoreData struct {
-	Documents []documentRecord `json:"documents"`
-}
-
-type documentRecord struct {
-	ID             string    `json:"id"`
-	SeriesID       string    `json:"series_id,omitempty"`
-	Version        int       `json:"version"`
-	Current        bool      `json:"current"`
-	SupersedesID   string    `json:"supersedes_id,omitempty"`
-	ReplacedByID   string    `json:"replaced_by_id,omitempty"`
-	TenantSlug     string    `json:"tenant"`
-	Title          string    `json:"title"`
-	Category       string    `json:"category"`
-	Visibility     string    `json:"visibility"`
-	UnitID         string    `json:"unit_id,omitempty"`
-	Filename       string    `json:"filename"`
-	StoredFilename string    `json:"stored_filename"`
-	Size           int64     `json:"size"`
-	ContentType    string    `json:"content_type"`
-	UploadedBy     string    `json:"uploaded_by"`
-	UploadedAt     time.Time `json:"uploaded_at"`
 }
 
 type documentView struct {
@@ -1020,56 +978,6 @@ type announcementFilterView struct {
 	Label  string
 	URL    string
 	Active bool
-}
-
-type parkingStore struct {
-	mu   sync.Mutex
-	path string
-	data parkingStoreData
-}
-
-type parkingStoreData struct {
-	Tenants map[string]parkingTenantData `json:"tenants"`
-}
-
-type parkingTenantData struct {
-	Settings      parkingSettings              `json:"settings"`
-	Months        map[string]parkingMonthState `json:"months"`
-	EnergySamples []parkingNumericSample       `json:"energy_samples"`
-	PriceSamples  []parkingNumericSample       `json:"price_samples"`
-	Samples       []parkingStoredSample        `json:"samples,omitempty"`
-}
-
-type parkingSettings struct {
-	GridFeeEURPerKWh float64         `json:"grid_fee_eur_per_kwh"`
-	BaseFeeEUR       float64         `json:"base_fee_eur,omitempty"`
-	Tariffs          []parkingTariff `json:"tariffs,omitempty"`
-}
-
-type parkingTariff struct {
-	EffectiveFrom    string  `json:"effective_from"`
-	GridFeeEURPerKWh float64 `json:"grid_fee_eur_per_kwh"`
-	BaseFeeEUR       float64 `json:"base_fee_eur,omitempty"`
-}
-
-type parkingMonthState struct {
-	Paid             bool                 `json:"paid"`
-	PaidAt           time.Time            `json:"paid_at,omitempty"`
-	PaidBy           string               `json:"paid_by,omitempty"`
-	PaymentMethod    string               `json:"payment_method,omitempty"`
-	PaymentReference string               `json:"payment_reference,omitempty"`
-	ReminderSentAt   map[string]time.Time `json:"reminder_sent_at,omitempty"`
-}
-
-type parkingStoredSample struct {
-	At             time.Time `json:"at"`
-	EnergyKWh      float64   `json:"energy_kwh"`
-	PriceEURPerKWh float64   `json:"price_eur_per_kwh"`
-}
-
-type parkingNumericSample struct {
-	At    time.Time `json:"at"`
-	Value float64   `json:"value"`
 }
 
 type parkingAccountingView struct {
@@ -5856,11 +5764,6 @@ func parseParkingPaidAt(raw string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("invalid paid date")
 }
 
-func cleanParkingPaymentField(raw string) string {
-	raw = strings.Join(strings.Fields(strings.TrimSpace(raw)), " ")
-	return truncateAuditValue(raw, 120)
-}
-
 func parkingMessage(monthStatus string, reminderStatus string) (string, bool) {
 	switch reminderStatus {
 	case "sent":
@@ -6511,59 +6414,12 @@ func issueFromForm(r *http.Request, tenantSlug string, author userProfile, now t
 	}, nil
 }
 
-func normalizeIssueCategory(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "reparatur", "repair", "mangel", "mängel", "schaden":
-		return "Reparatur"
-	case "frage", "question":
-		return "Frage"
-	case "vorschlag", "idee", "suggestion":
-		return "Vorschlag"
-	case "sonstiges", "sonstige", "other":
-		return "Sonstiges"
-	default:
-		return ""
-	}
-}
-
-func normalizeIssueStatus(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "neu", "offen", "new", "open":
-		return issueStatusNew
-	case "in bearbeitung", "bearbeitung", "in-arbeit", "progress", "in_progress":
-		return issueStatusProgress
-	case "erledigt", "geschlossen", "done", "closed":
-		return issueStatusDone
-	case "abgelehnt", "rejected":
-		return issueStatusRejected
-	case "duplikat", "duplicate":
-		return issueStatusDuplicate
-	default:
-		return ""
-	}
-}
-
 func issueStatuses() []string {
 	return []string{issueStatusNew, issueStatusProgress, issueStatusDone, issueStatusRejected, issueStatusDuplicate}
 }
 
 func serviceProviderIssueStatuses() []string {
 	return []string{issueStatusProgress, issueStatusDone}
-}
-
-func normalizeIssuePriority(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "niedrig", "low":
-		return issuePriorityLow
-	case "", "normal", "mittel", "medium":
-		return issuePriorityNorm
-	case "hoch", "high":
-		return issuePriorityHigh
-	case "dringend", "urgent":
-		return issuePriorityUrgent
-	default:
-		return ""
-	}
 }
 
 func issuePriorities() []string {
@@ -6576,17 +6432,6 @@ func issueSelectOptions(values []string, selected string) []selectOption {
 		options = append(options, selectOption{Value: value, Label: value, Selected: value == selected})
 	}
 	return options
-}
-
-func normalizeIssueLocation(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case issueLocationUnit, "eigene einheit", "wohnung", "unit":
-		return issueLocationUnit
-	case issueLocationCommon, "gemeinschaft", "allgemeinbereich":
-		return issueLocationCommon
-	default:
-		return ""
-	}
 }
 
 func issueLocationLabel(locationType string, detail string) string {
@@ -7203,7 +7048,7 @@ func (a *app) legacyIssuePhotoViews(tenantSlug string, item residentIssue) []att
 }
 
 func (a *app) legacyIssuePhotoPath(tenantSlug string, item residentIssue, index int) (string, string, bool) {
-	if a == nil || a.issueStore == nil || a.issueStore.attachmentDir == "" || index < 0 || index >= len(item.PhotoPaths) {
+	if a == nil || a.issueStore == nil || a.issueStore.AttachmentDir() == "" || index < 0 || index >= len(item.PhotoPaths) {
 		return "", "", false
 	}
 	tenantSlug = normalizeSlug(tenantSlug)
@@ -7214,7 +7059,7 @@ func (a *app) legacyIssuePhotoPath(tenantSlug string, item residentIssue, index 
 	if filename == "" || filename == "." || filename == string(filepath.Separator) {
 		return "", "", false
 	}
-	return filepath.Join(a.issueStore.attachmentDir, tenantSlug, filename), filename, true
+	return filepath.Join(a.issueStore.AttachmentDir(), tenantSlug, filename), filename, true
 }
 
 func (a *app) attachmentViewsForEntity(tenantSlug string, entityType string, entityID string, actorEmail string, role string) []attachmentView {
@@ -9925,305 +9770,6 @@ func generatedTenantBrandAbbreviation(tenant tenantConfig) string {
 	return "HAUS"
 }
 
-func newIssueStore(path string, attachmentDir string) (*issueStore, error) {
-	if attachmentDir == "" && path != "" {
-		attachmentDir = filepath.Join(filepath.Dir(path), "issue-attachments")
-	}
-	store := &issueStore{path: path, attachmentDir: attachmentDir, data: issueStoreData{Issues: []residentIssue{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read issue data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid issue data")
-	}
-	if store.data.Issues == nil {
-		store.data.Issues = []residentIssue{}
-	}
-	return store, nil
-}
-
-func (s *issueStore) Create(item residentIssue) (residentIssue, error) {
-	if s == nil {
-		return item, nil
-	}
-	now := time.Now().UTC()
-	if item.ID == "" {
-		id, err := randomToken(12)
-		if err != nil {
-			return residentIssue{}, err
-		}
-		item.ID = id
-	}
-	item.TenantSlug = normalizeSlug(item.TenantSlug)
-	item.AuthorEmail = normalizeEmail(item.AuthorEmail)
-	item.Category = normalizeIssueCategory(item.Category)
-	item.LocationType = normalizeIssueLocation(item.LocationType)
-	item.Title = strings.TrimSpace(item.Title)
-	item.Body = strings.TrimSpace(item.Body)
-	item.LocationDetail = strings.TrimSpace(item.LocationDetail)
-	if item.TenantSlug == "" || item.AuthorEmail == "" || item.Category == "" || item.LocationType == "" || item.Title == "" || item.Body == "" {
-		return residentIssue{}, fmt.Errorf("invalid issue")
-	}
-	item.Status = normalizeIssueStatus(item.Status)
-	if item.Status == "" {
-		item.Status = issueStatusOpen
-	}
-	item.Priority = normalizeIssuePriority(item.Priority)
-	if item.Priority == "" {
-		item.Priority = issuePriorityNorm
-	}
-	if item.CreatedAt.IsZero() {
-		item.CreatedAt = now
-	} else {
-		item.CreatedAt = item.CreatedAt.UTC()
-	}
-	if item.UpdatedAt.IsZero() {
-		item.UpdatedAt = item.CreatedAt
-	} else {
-		item.UpdatedAt = item.UpdatedAt.UTC()
-	}
-	if item.StatusChangedAt.IsZero() {
-		item.StatusChangedAt = item.CreatedAt
-	} else {
-		item.StatusChangedAt = item.StatusChangedAt.UTC()
-	}
-	if item.StatusChangedBy == "" {
-		item.StatusChangedBy = item.AuthorEmail
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.data.Issues = append(s.data.Issues, item)
-	if err := s.saveLocked(); err != nil {
-		return residentIssue{}, err
-	}
-	return item, nil
-}
-
-func (s *issueStore) ListTenant(tenantSlug string) []residentIssue {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []residentIssue{}
-	for _, item := range s.data.Issues {
-		if normalizeSlug(item.TenantSlug) == tenantSlug {
-			out = append(out, copyIssue(item))
-		}
-	}
-	sortIssues(out)
-	return out
-}
-
-func (s *issueStore) ListAuthor(tenantSlug string, email string) []residentIssue {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	email = normalizeEmail(email)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []residentIssue{}
-	for _, item := range s.data.Issues {
-		if normalizeSlug(item.TenantSlug) == tenantSlug && normalizeEmail(item.AuthorEmail) == email {
-			out = append(out, copyIssue(item))
-		}
-	}
-	sortIssues(out)
-	return out
-}
-
-func (s *issueStore) Get(tenantSlug string, id string) (residentIssue, bool) {
-	if s == nil {
-		return residentIssue{}, false
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	if tenantSlug == "" || id == "" {
-		return residentIssue{}, false
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, item := range s.data.Issues {
-		if normalizeSlug(item.TenantSlug) == tenantSlug && item.ID == id {
-			return copyIssue(item), true
-		}
-	}
-	return residentIssue{}, false
-}
-
-func (s *issueStore) UpdateWorkflow(tenantSlug string, id string, update issueWorkflowUpdate) (residentIssue, bool, error) {
-	if s == nil {
-		return residentIssue{}, false, nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	status := normalizeIssueStatus(update.Status)
-	priority := normalizeIssuePriority(update.Priority)
-	if tenantSlug == "" || id == "" || status == "" || priority == "" {
-		return residentIssue{}, false, fmt.Errorf("invalid issue workflow update")
-	}
-	if update.ChangedAt.IsZero() {
-		update.ChangedAt = time.Now()
-	}
-	changedAt := update.ChangedAt.UTC()
-	actorEmail := normalizeEmail(update.ActorEmail)
-	actorName := strings.TrimSpace(update.ActorName)
-	assignee := normalizeEmail(update.AssigneeEmail)
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, existing := range s.data.Issues {
-		if normalizeSlug(existing.TenantSlug) != tenantSlug || existing.ID != id {
-			continue
-		}
-		updated := existing
-		oldStatus := normalizeIssueStatus(updated.Status)
-		if oldStatus == "" {
-			oldStatus = issueStatusOpen
-		}
-		updated.Status = status
-		updated.Priority = priority
-		updated.AssigneeEmail = assignee
-		if update.UpdateServiceProposal {
-			updated.ServiceProposal = strings.TrimSpace(update.ServiceProposal)
-			updated.ServiceProposedBy = actorEmail
-			updated.ServiceProposedAt = changedAt
-			if updated.ServiceProposal == "" {
-				updated.ServiceProposedBy = ""
-				updated.ServiceProposedAt = time.Time{}
-			}
-		}
-		if update.UpdateEstimate {
-			updated.EstimateAmountCents = update.EstimateAmountCents
-			updated.EstimateNote = strings.TrimSpace(update.EstimateNote)
-			updated.EstimateUpdatedBy = actorEmail
-			updated.EstimateUpdatedAt = changedAt
-			if updated.EstimateAmountCents <= 0 && updated.EstimateNote == "" {
-				updated.EstimateAmountCents = 0
-				updated.EstimateUpdatedBy = ""
-				updated.EstimateUpdatedAt = time.Time{}
-			}
-		}
-		updated.UpdatedAt = changedAt
-		if oldStatus != status {
-			updated.StatusChangedAt = changedAt
-			updated.StatusChangedBy = actorEmail
-			updated.StatusHistory = append(updated.StatusHistory, issueStatusChange{
-				From:       oldStatus,
-				To:         status,
-				ActorEmail: actorEmail,
-				ActorName:  actorName,
-				ChangedAt:  changedAt,
-			})
-		}
-		s.data.Issues[i] = updated
-		if err := s.saveLocked(); err != nil {
-			return residentIssue{}, false, err
-		}
-		return copyIssue(updated), true, nil
-	}
-	return residentIssue{}, false, nil
-}
-
-func (s *issueStore) AddComment(tenantSlug string, id string, comment issueComment) (residentIssue, bool, error) {
-	if s == nil {
-		return residentIssue{}, false, nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	comment.Body = strings.TrimSpace(comment.Body)
-	comment.AuthorEmail = normalizeEmail(comment.AuthorEmail)
-	comment.AuthorName = strings.TrimSpace(comment.AuthorName)
-	if tenantSlug == "" || id == "" || comment.Body == "" || len([]rune(comment.Body)) > 3000 || comment.AuthorEmail == "" {
-		return residentIssue{}, false, fmt.Errorf("invalid issue comment")
-	}
-	if comment.ID == "" {
-		commentID, err := randomToken(10)
-		if err != nil {
-			return residentIssue{}, false, err
-		}
-		comment.ID = commentID
-	}
-	if comment.CreatedAt.IsZero() {
-		comment.CreatedAt = time.Now().UTC()
-	} else {
-		comment.CreatedAt = comment.CreatedAt.UTC()
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, existing := range s.data.Issues {
-		if normalizeSlug(existing.TenantSlug) != tenantSlug || existing.ID != id {
-			continue
-		}
-		updated := existing
-		updated.Comments = append(updated.Comments, comment)
-		updated.UpdatedAt = comment.CreatedAt
-		s.data.Issues[i] = updated
-		if err := s.saveLocked(); err != nil {
-			return residentIssue{}, false, err
-		}
-		return copyIssue(updated), true, nil
-	}
-	return residentIssue{}, false, nil
-}
-
-func (s *issueStore) DeleteComment(tenantSlug string, id string, commentID string, at time.Time) (residentIssue, bool, error) {
-	if s == nil {
-		return residentIssue{}, false, nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	commentID = strings.TrimSpace(commentID)
-	if tenantSlug == "" || id == "" || commentID == "" {
-		return residentIssue{}, false, fmt.Errorf("invalid issue comment")
-	}
-	if at.IsZero() {
-		at = time.Now().UTC()
-	} else {
-		at = at.UTC()
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, existing := range s.data.Issues {
-		if normalizeSlug(existing.TenantSlug) != tenantSlug || existing.ID != id {
-			continue
-		}
-		updated := existing
-		comments := make([]issueComment, 0, len(updated.Comments))
-		deleted := false
-		for _, comment := range updated.Comments {
-			if comment.ID == commentID {
-				deleted = true
-				continue
-			}
-			comments = append(comments, comment)
-		}
-		if !deleted {
-			return residentIssue{}, false, nil
-		}
-		updated.Comments = comments
-		updated.UpdatedAt = at
-		s.data.Issues[i] = updated
-		if err := s.saveLocked(); err != nil {
-			return residentIssue{}, false, err
-		}
-		return copyIssue(updated), true, nil
-	}
-	return residentIssue{}, false, nil
-}
-
 func (a *app) saveTenantHeroImage(tenantSlug string, header *multipart.FileHeader) (string, error) {
 	if header == nil || header.Filename == "" || header.Size == 0 {
 		return "", fmt.Errorf("tenant hero image required")
@@ -10306,23 +9852,6 @@ func (a *app) removeTenantHeroImage(filename string) error {
 	return err
 }
 
-// uploadedFile is what the store layer needs from an upload: a name, a size,
-// and a way to read the bytes. Deliberately NOT *multipart.FileHeader — that
-// drags mime/multipart (the HTTP transport) into the store layer and blocks
-// extracting it as a package.
-//
-// Open returns a ReadSeekCloser because the stores sniff the first 512 bytes
-// for content-type detection and then rewind; a plain io.ReadCloser would
-// silently break that.
-type uploadedFile struct {
-	Filename string
-	Size     int64
-	// DeclaredType is the client-supplied Content-Type from the multipart part.
-	// It is only a hint — the stores still sniff the bytes.
-	DeclaredType string
-	Open         func() (io.ReadSeekCloser, error)
-}
-
 // uploadedFileFromHeader adapts an HTTP multipart upload at the handler
 // boundary — the only place the two representations meet.
 func uploadedFileFromHeader(h *multipart.FileHeader) uploadedFile {
@@ -10340,126 +9869,6 @@ func uploadedFilesFromHeaders(hs []*multipart.FileHeader) []uploadedFile {
 		out = append(out, uploadedFileFromHeader(h))
 	}
 	return out
-}
-
-func (s *issueStore) SavePhoto(tenantSlug string, issueID string, upload uploadedFile) (string, error) {
-	if s == nil || upload.Open == nil || upload.Filename == "" || upload.Size == 0 {
-		return "", nil
-	}
-	if s.attachmentDir == "" {
-		return "", fmt.Errorf("issue attachment directory unavailable")
-	}
-	if upload.Size > maxIssuePhotoBytes {
-		return "", fmt.Errorf("issue photo too large")
-	}
-	file, err := upload.Open()
-	if err != nil {
-		return "", fmt.Errorf("could not open issue photo")
-	}
-	defer file.Close()
-
-	sniff := make([]byte, 512)
-	n, readErr := file.Read(sniff)
-	if readErr != nil && !errors.Is(readErr, io.EOF) {
-		return "", fmt.Errorf("could not read issue photo")
-	}
-	contentType := http.DetectContentType(sniff[:n])
-	ext, ok := issuePhotoExtension(contentType)
-	if !ok {
-		return "", fmt.Errorf("unsupported issue photo type")
-	}
-	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		return "", fmt.Errorf("could not rewind issue photo")
-	}
-
-	tenantSlug = normalizeSlug(tenantSlug)
-	if tenantSlug == "" {
-		tenantSlug = "tenant"
-	}
-	issueID = normalizeSlug(issueID)
-	if issueID == "" {
-		return "", fmt.Errorf("issue id required")
-	}
-	dir := filepath.Join(s.attachmentDir, tenantSlug)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", fmt.Errorf("could not create issue attachment directory")
-	}
-	filename := issueID + "-photo" + ext
-	dest := filepath.Join(dir, filename)
-	out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
-	if err != nil {
-		return "", fmt.Errorf("could not create issue attachment")
-	}
-	written, copyErr := io.Copy(out, io.LimitReader(file, maxIssuePhotoBytes+1))
-	closeErr := out.Close()
-	if copyErr != nil || closeErr != nil {
-		_ = os.Remove(dest)
-		return "", fmt.Errorf("could not write issue attachment")
-	}
-	if written > maxIssuePhotoBytes {
-		_ = os.Remove(dest)
-		return "", fmt.Errorf("issue photo too large")
-	}
-	return filepath.ToSlash(filepath.Join(filepath.Base(s.attachmentDir), tenantSlug, filename)), nil
-}
-
-func issuePhotoExtension(contentType string) (string, bool) {
-	switch contentType {
-	case "image/jpeg":
-		return ".jpg", true
-	case "image/png":
-		return ".png", true
-	case "image/webp":
-		return ".webp", true
-	case "application/xml", "text/xml":
-		return ".xml", true
-	default:
-		return "", false
-	}
-}
-
-func (s *issueStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "issue")
-}
-
-func copyIssue(item residentIssue) residentIssue {
-	item.PhotoPaths = append([]string(nil), item.PhotoPaths...)
-	item.StatusHistory = append([]issueStatusChange(nil), item.StatusHistory...)
-	item.Comments = append([]issueComment(nil), item.Comments...)
-	return item
-}
-
-func sortIssues(items []residentIssue) {
-	sort.SliceStable(items, func(i, j int) bool {
-		if !items[i].UpdatedAt.Equal(items[j].UpdatedAt) {
-			return items[i].UpdatedAt.After(items[j].UpdatedAt)
-		}
-		return items[i].CreatedAt.After(items[j].CreatedAt)
-	})
-}
-
-func newAttachmentStore(path string, fileDir string) (*attachmentStore, error) {
-	if fileDir == "" && path != "" {
-		fileDir = filepath.Join(filepath.Dir(path), "attachments")
-	}
-	store := &attachmentStore{path: path, fileDir: fileDir, data: attachmentStoreData{Attachments: []attachmentRecord{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read attachment data")
-	}
-	if len(raw) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("could not decode attachment data")
-	}
-	return store, nil
 }
 
 func managedContactFromForm(tenantSlug string, values url.Values) (managedContact, error) {
@@ -10486,788 +9895,6 @@ func contactKindOptions(selected string) []selectOption {
 	return options
 }
 
-func (s *attachmentStore) CreateUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, uploads []uploadedFile, now time.Time) ([]attachmentRecord, error) {
-	if s == nil || len(uploads) == 0 {
-		return nil, nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	entityType = normalizeAttachmentEntity(entityType)
-	entityID = strings.TrimSpace(entityID)
-	uploadedBy = normalizeEmail(uploadedBy)
-	if tenantSlug == "" || entityType == "" || entityID == "" || uploadedBy == "" {
-		return nil, fmt.Errorf("attachment target required")
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	created := []attachmentRecord{}
-	for _, upload := range uploads {
-		if upload.Open == nil || strings.TrimSpace(upload.Filename) == "" || upload.Size == 0 {
-			continue
-		}
-		if upload.Size > maxAttachmentBytes {
-			s.rollbackCreatedAttachmentsLocked(created)
-			return nil, fmt.Errorf("attachment too large")
-		}
-		id, err := randomToken(12)
-		if err != nil {
-			s.rollbackCreatedAttachmentsLocked(created)
-			return nil, err
-		}
-		fileSave, err := s.saveUploadedAttachmentFile(tenantSlug, id, upload)
-		if err != nil {
-			s.rollbackCreatedAttachmentsLocked(created)
-			return nil, err
-		}
-		record := attachmentRecord{
-			ID:                 id,
-			TenantSlug:         tenantSlug,
-			EntityType:         entityType,
-			EntityID:           entityID,
-			UploadedBy:         uploadedBy,
-			Filename:           sanitizeDocumentFilename(upload.Filename),
-			StoredFilename:     fileSave.StoredFilename,
-			ContentType:        fileSave.ContentType,
-			Size:               fileSave.Size,
-			PreviewFilename:    fileSave.PreviewFilename,
-			PreviewContentType: fileSave.PreviewContentType,
-			PreviewSize:        fileSave.PreviewSize,
-			ThumbFilename:      fileSave.ThumbFilename,
-			ThumbContentType:   fileSave.ThumbContentType,
-			ThumbSize:          fileSave.ThumbSize,
-			CreatedAt:          now.UTC(),
-		}
-		s.data.Attachments = append(s.data.Attachments, record)
-		created = append(created, record)
-	}
-	if len(created) == 0 {
-		return nil, nil
-	}
-	if err := s.saveLocked(); err != nil {
-		s.rollbackCreatedAttachmentsLocked(created)
-		return nil, err
-	}
-	return created, nil
-}
-
-type attachmentFileSave struct {
-	StoredFilename     string
-	ContentType        string
-	Size               int64
-	PreviewFilename    string
-	PreviewContentType string
-	PreviewSize        int64
-	ThumbFilename      string
-	ThumbContentType   string
-	ThumbSize          int64
-}
-
-func (s *attachmentStore) saveUploadedAttachmentFile(tenantSlug string, id string, upload uploadedFile) (attachmentFileSave, error) {
-	if s.fileDir == "" {
-		return attachmentFileSave{}, fmt.Errorf("attachment file directory unavailable")
-	}
-	file, err := upload.Open()
-	if err != nil {
-		return attachmentFileSave{}, fmt.Errorf("could not open attachment")
-	}
-	defer file.Close()
-
-	data, err := io.ReadAll(io.LimitReader(file, maxAttachmentBytes+1))
-	if err != nil {
-		return attachmentFileSave{}, fmt.Errorf("could not read attachment")
-	}
-	if int64(len(data)) > maxAttachmentBytes {
-		return attachmentFileSave{}, fmt.Errorf("attachment too large")
-	}
-	if len(data) == 0 {
-		return attachmentFileSave{}, fmt.Errorf("empty attachment")
-	}
-	contentType := detectAttachmentContentType(data, upload)
-	if rejectActiveAttachmentContent(contentType) {
-		return attachmentFileSave{}, fmt.Errorf("unsafe attachment content")
-	}
-	ext, ok := attachmentExtension(contentType)
-	if !ok {
-		return attachmentFileSave{}, fmt.Errorf("unsupported attachment type")
-	}
-	dir := filepath.Join(s.fileDir, tenantSlug)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return attachmentFileSave{}, fmt.Errorf("could not create attachment directory")
-	}
-	storedFilename := id + ext
-	if err := writePrivateFile(filepath.Join(dir, storedFilename), data); err != nil {
-		return attachmentFileSave{}, fmt.Errorf("could not write attachment")
-	}
-	save := attachmentFileSave{
-		StoredFilename: storedFilename,
-		ContentType:    contentType,
-		Size:           int64(len(data)),
-	}
-	if isImageContentType(contentType) {
-		preview, previewSize, err := writeImageAttachmentVariant(dir, id, "-preview", data, attachmentPreviewMaxDimension)
-		if err == nil && preview != "" {
-			save.PreviewFilename = preview
-			save.PreviewContentType = "image/jpeg"
-			save.PreviewSize = previewSize
-		}
-		thumb, thumbSize, err := writeImageAttachmentVariant(dir, id, "-thumb", data, attachmentThumbMaxDimension)
-		if err == nil && thumb != "" {
-			save.ThumbFilename = thumb
-			save.ThumbContentType = "image/jpeg"
-			save.ThumbSize = thumbSize
-		}
-	}
-	return save, nil
-}
-
-func (s *attachmentStore) ListEntity(tenantSlug string, entityType string, entityID string) []attachmentRecord {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	entityType = normalizeAttachmentEntity(entityType)
-	entityID = strings.TrimSpace(entityID)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	items := []attachmentRecord{}
-	for _, item := range s.data.Attachments {
-		if item.DeletedAt != nil {
-			continue
-		}
-		if normalizeSlug(item.TenantSlug) == tenantSlug && normalizeAttachmentEntity(item.EntityType) == entityType && strings.TrimSpace(item.EntityID) == entityID {
-			items = append(items, item)
-		}
-	}
-	sort.SliceStable(items, func(i, j int) bool {
-		return items[i].CreatedAt.Before(items[j].CreatedAt)
-	})
-	return items
-}
-
-func (s *attachmentStore) Get(tenantSlug string, id string) (attachmentRecord, bool) {
-	if s == nil {
-		return attachmentRecord{}, false
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, item := range s.data.Attachments {
-		if item.DeletedAt == nil && normalizeSlug(item.TenantSlug) == tenantSlug && item.ID == id {
-			return item, true
-		}
-	}
-	return attachmentRecord{}, false
-}
-
-func (s *attachmentStore) Delete(tenantSlug string, id string, deletedAt time.Time) (attachmentRecord, bool, error) {
-	if s == nil {
-		return attachmentRecord{}, false, nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, item := range s.data.Attachments {
-		if item.DeletedAt != nil || normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != id {
-			continue
-		}
-		deleted := deletedAt.UTC()
-		s.data.Attachments[i].DeletedAt = &deleted
-		if err := s.saveLocked(); err != nil {
-			s.data.Attachments[i].DeletedAt = nil
-			return attachmentRecord{}, false, err
-		}
-		s.removeAttachmentRecordLocked(item)
-		return item, true, nil
-	}
-	return attachmentRecord{}, false, nil
-}
-
-func (s *attachmentStore) FilePath(item attachmentRecord, variant string) (string, string, int64, bool) {
-	if s == nil || s.fileDir == "" || item.StoredFilename == "" {
-		return "", "", 0, false
-	}
-	filename := item.StoredFilename
-	contentType := item.ContentType
-	size := item.Size
-	switch strings.ToLower(strings.TrimSpace(variant)) {
-	case "preview":
-		if item.PreviewFilename != "" {
-			filename = item.PreviewFilename
-			contentType = item.PreviewContentType
-			size = item.PreviewSize
-		}
-	case "thumb", "thumbnail":
-		if item.ThumbFilename != "" {
-			filename = item.ThumbFilename
-			contentType = item.ThumbContentType
-			size = item.ThumbSize
-		} else if item.PreviewFilename != "" {
-			filename = item.PreviewFilename
-			contentType = item.PreviewContentType
-			size = item.PreviewSize
-		}
-	}
-	if contentType == "" {
-		contentType = "application/octet-stream"
-	}
-	path := filepath.Join(s.fileDir, normalizeSlug(item.TenantSlug), filename)
-	return path, contentType, size, true
-}
-
-func (s *attachmentStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "attachment")
-}
-
-func (s *attachmentStore) rollbackCreatedAttachmentsLocked(items []attachmentRecord) {
-	if len(items) == 0 {
-		return
-	}
-	ids := map[string]struct{}{}
-	for _, item := range items {
-		ids[item.ID] = struct{}{}
-		s.removeAttachmentRecordLocked(item)
-	}
-	kept := s.data.Attachments[:0]
-	for _, item := range s.data.Attachments {
-		if _, ok := ids[item.ID]; ok {
-			continue
-		}
-		kept = append(kept, item)
-	}
-	s.data.Attachments = kept
-}
-
-func (s *attachmentStore) removeAttachmentRecordLocked(item attachmentRecord) {
-	for _, filename := range []string{item.StoredFilename, item.PreviewFilename, item.ThumbFilename} {
-		if filename == "" {
-			continue
-		}
-		_ = os.Remove(filepath.Join(s.fileDir, normalizeSlug(item.TenantSlug), filename))
-	}
-}
-
-func detectAttachmentContentType(data []byte, upload uploadedFile) string {
-	limit := len(data)
-	if limit > 512 {
-		limit = 512
-	}
-	detected := http.DetectContentType(data[:limit])
-	declared := ""
-	if upload.DeclaredType != "" {
-		declared = strings.ToLower(strings.TrimSpace(upload.DeclaredType))
-	}
-	if detected == "application/octet-stream" && declared != "" {
-		if _, ok := attachmentExtension(declared); ok {
-			return declared
-		}
-	}
-	return detected
-}
-
-func attachmentExtension(contentType string) (string, bool) {
-	switch strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0])) {
-	case "image/jpeg", "image/jpg":
-		return ".jpg", true
-	case "image/png":
-		return ".png", true
-	case "image/webp":
-		return ".webp", true
-	case "image/gif":
-		return ".gif", true
-	case "application/pdf":
-		return ".pdf", true
-	default:
-		return "", false
-	}
-}
-
-func normalizeAttachmentEntity(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "issue", "anliegen":
-		return "issue"
-	case "issue-estimate", "estimate", "kostenvoranschlag":
-		return "issue-estimate"
-	case "issue-comment", "comment", "anliegen-kommentar":
-		return "issue-comment"
-	case "announcement", "aushang":
-		return "announcement"
-	case "event", "termin":
-		return "event"
-	case "ballot", "vote", "abstimmung":
-		return "ballot"
-	case "handover", "uebergabe", "übergabe":
-		return "handover"
-	case "parking", "parkplatz":
-		return "parking"
-	case "document", "dokument":
-		return "document"
-	case "building", "tenant", "gebaeude", "gebäude":
-		return "building"
-	default:
-		return ""
-	}
-}
-
-func isImageContentType(contentType string) bool {
-	contentType = strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
-	return strings.HasPrefix(contentType, "image/") && contentType != "image/svg+xml"
-}
-
-func rejectActiveAttachmentContent(contentType string) bool {
-	switch strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0])) {
-	case "text/html", "text/javascript", "application/javascript", "application/x-javascript", "image/svg+xml", "application/xhtml+xml", "application/xml", "text/xml":
-		return true
-	default:
-		return false
-	}
-}
-
-func writeImageAttachmentVariant(dir string, id string, suffix string, data []byte, maxDimension int) (string, int64, error) {
-	img, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return "", 0, err
-	}
-	resized := resizeImageNearest(img, maxDimension)
-	var out bytes.Buffer
-	if err := jpeg.Encode(&out, resized, &jpeg.Options{Quality: 82}); err != nil {
-		return "", 0, err
-	}
-	filename := id + suffix + ".jpg"
-	if err := writePrivateFile(filepath.Join(dir, filename), out.Bytes()); err != nil {
-		return "", 0, err
-	}
-	return filename, int64(out.Len()), nil
-}
-
-func resizeImageNearest(src image.Image, maxDimension int) image.Image {
-	bounds := src.Bounds()
-	width := bounds.Dx()
-	height := bounds.Dy()
-	if width <= 0 || height <= 0 {
-		return src
-	}
-	if maxDimension <= 0 {
-		maxDimension = attachmentPreviewMaxDimension
-	}
-	scale := math.Min(float64(maxDimension)/float64(width), float64(maxDimension)/float64(height))
-	if scale > 1 {
-		scale = 1
-	}
-	dstWidth := int(math.Round(float64(width) * scale))
-	dstHeight := int(math.Round(float64(height) * scale))
-	if dstWidth < 1 {
-		dstWidth = 1
-	}
-	if dstHeight < 1 {
-		dstHeight = 1
-	}
-	dst := image.NewRGBA(image.Rect(0, 0, dstWidth, dstHeight))
-	for y := 0; y < dstHeight; y++ {
-		srcY := bounds.Min.Y + int(float64(y)*float64(height)/float64(dstHeight))
-		if srcY >= bounds.Max.Y {
-			srcY = bounds.Max.Y - 1
-		}
-		for x := 0; x < dstWidth; x++ {
-			srcX := bounds.Min.X + int(float64(x)*float64(width)/float64(dstWidth))
-			if srcX >= bounds.Max.X {
-				srcX = bounds.Max.X - 1
-			}
-			dst.Set(x, y, src.At(srcX, srcY))
-		}
-	}
-	return dst
-}
-
-func writePrivateFile(path string, data []byte) error {
-	out, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
-	if err != nil {
-		return err
-	}
-	_, writeErr := out.Write(data)
-	closeErr := out.Close()
-	if writeErr != nil || closeErr != nil {
-		_ = os.Remove(path)
-		if writeErr != nil {
-			return writeErr
-		}
-		return closeErr
-	}
-	return nil
-}
-
-func newDocumentStore(path string, fileDir string) (*documentStore, error) {
-	if fileDir == "" && path != "" {
-		fileDir = filepath.Join(filepath.Dir(path), "documents")
-	}
-	store := &documentStore{path: path, fileDir: fileDir, data: documentStoreData{Documents: []documentRecord{}}}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read document data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid document data")
-	}
-	store.data.Documents = normalizeDocuments(store.data.Documents)
-	return store, nil
-}
-
-func (s *documentStore) Create(item documentRecord, upload uploadedFile, now time.Time) (documentRecord, error) {
-	if s == nil {
-		return documentRecord{}, fmt.Errorf("document store unavailable")
-	}
-	if now.IsZero() {
-		now = time.Now()
-	}
-	item.UploadedAt = now.UTC()
-	fileSave, err := s.saveUploadedDocumentFile(item.TenantSlug, upload)
-	if err != nil {
-		return documentRecord{}, err
-	}
-	item.ID = fileSave.ID
-	item.SeriesID = fileSave.ID
-	item.Version = 1
-	item.Current = true
-	item.Filename = fileSave.Filename
-	item.StoredFilename = fileSave.StoredFilename
-	item.Size = fileSave.Size
-	item.ContentType = fileSave.ContentType
-	item = normalizeDocumentRecord(item)
-	if item.TenantSlug == "" || item.Title == "" || item.Category == "" || item.Visibility == "" || item.UploadedBy == "" {
-		_ = os.Remove(fileSave.Path)
-		return documentRecord{}, fmt.Errorf("invalid document metadata")
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.data.Documents = append(s.data.Documents, item)
-	sortDocuments(s.data.Documents)
-	if err := s.saveLocked(); err != nil {
-		_ = os.Remove(fileSave.Path)
-		return documentRecord{}, err
-	}
-	return copyDocument(item), nil
-}
-
-type documentFileSave struct {
-	ID             string
-	Filename       string
-	StoredFilename string
-	ContentType    string
-	Size           int64
-	Path           string
-}
-
-func (s *documentStore) saveUploadedDocumentFile(tenantSlug string, upload uploadedFile) (documentFileSave, error) {
-	if upload.Open == nil || upload.Filename == "" || upload.Size <= 0 {
-		return documentFileSave{}, fmt.Errorf("document file required")
-	}
-	if s.fileDir == "" {
-		return documentFileSave{}, fmt.Errorf("document file directory unavailable")
-	}
-	if upload.Size > maxDocumentBytes {
-		return documentFileSave{}, fmt.Errorf("document file too large")
-	}
-	file, err := upload.Open()
-	if err != nil {
-		return documentFileSave{}, fmt.Errorf("could not open document")
-	}
-	defer file.Close()
-	sniff := make([]byte, 512)
-	n, readErr := file.Read(sniff)
-	if readErr != nil && !errors.Is(readErr, io.EOF) {
-		return documentFileSave{}, fmt.Errorf("could not read document")
-	}
-	if n == 0 {
-		return documentFileSave{}, fmt.Errorf("document file required")
-	}
-	contentType := http.DetectContentType(sniff[:n])
-	ext, ok := documentExtension(contentType)
-	if !ok {
-		return documentFileSave{}, fmt.Errorf("unsupported document type")
-	}
-	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		return documentFileSave{}, fmt.Errorf("could not rewind document")
-	}
-	id, err := randomToken(12)
-	if err != nil {
-		return documentFileSave{}, err
-	}
-	storedFilename := id + ext
-	storedPath, written, err := s.writeDocumentFile(tenantSlug, storedFilename, file)
-	if err != nil {
-		return documentFileSave{}, err
-	}
-	return documentFileSave{
-		ID:             id,
-		Filename:       sanitizeDocumentFilename(upload.Filename),
-		StoredFilename: storedFilename,
-		ContentType:    contentType,
-		Size:           written,
-		Path:           storedPath,
-	}, nil
-}
-
-func (s *documentStore) Replace(tenantSlug string, id string, uploadedBy string, upload uploadedFile, now time.Time) (documentRecord, documentRecord, error) {
-	if s == nil {
-		return documentRecord{}, documentRecord{}, fmt.Errorf("document store unavailable")
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	uploadedBy = normalizeEmail(uploadedBy)
-	if tenantSlug == "" || id == "" || uploadedBy == "" {
-		return documentRecord{}, documentRecord{}, fmt.Errorf("invalid document replacement")
-	}
-	existing, found := s.Get(tenantSlug, id)
-	if !found || !existing.Current {
-		return documentRecord{}, documentRecord{}, fmt.Errorf("document not found")
-	}
-	if now.IsZero() {
-		now = time.Now()
-	}
-	fileSave, err := s.saveUploadedDocumentFile(tenantSlug, upload)
-	if err != nil {
-		return documentRecord{}, documentRecord{}, err
-	}
-	replacement := existing
-	replacement.ID = fileSave.ID
-	replacement.Version = existing.Version + 1
-	replacement.Current = true
-	replacement.SupersedesID = existing.ID
-	replacement.ReplacedByID = ""
-	replacement.Filename = fileSave.Filename
-	replacement.StoredFilename = fileSave.StoredFilename
-	replacement.Size = fileSave.Size
-	replacement.ContentType = fileSave.ContentType
-	replacement.UploadedBy = uploadedBy
-	replacement.UploadedAt = now.UTC()
-	replacement = normalizeDocumentRecord(replacement)
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, item := range s.data.Documents {
-		if normalizeSlug(item.TenantSlug) != tenantSlug || item.ID != existing.ID || !item.Current {
-			continue
-		}
-		item.Current = false
-		item.ReplacedByID = replacement.ID
-		replaced := normalizeDocumentRecord(item)
-		s.data.Documents[i] = replaced
-		s.data.Documents = append(s.data.Documents, replacement)
-		sortDocuments(s.data.Documents)
-		if err := s.saveLocked(); err != nil {
-			_ = os.Remove(fileSave.Path)
-			return documentRecord{}, documentRecord{}, err
-		}
-		return copyDocument(replacement), copyDocument(replaced), nil
-	}
-	_ = os.Remove(fileSave.Path)
-	return documentRecord{}, documentRecord{}, fmt.Errorf("document not current")
-}
-
-func (s *documentStore) writeDocumentFile(tenantSlug string, storedFilename string, file io.Reader) (string, int64, error) {
-	tenantSlug = normalizeSlug(tenantSlug)
-	storedFilename = filepath.Base(storedFilename)
-	if tenantSlug == "" || storedFilename == "" || storedFilename == "." || storedFilename == string(filepath.Separator) {
-		return "", 0, fmt.Errorf("invalid document storage target")
-	}
-	dir := filepath.Join(s.fileDir, tenantSlug)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return "", 0, fmt.Errorf("could not create document directory")
-	}
-	tmp, err := os.CreateTemp(dir, storedFilename+".*.tmp")
-	if err != nil {
-		return "", 0, fmt.Errorf("could not create document file")
-	}
-	tmpName := tmp.Name()
-	written, copyErr := io.Copy(tmp, io.LimitReader(file, maxDocumentBytes+1))
-	chmodErr := tmp.Chmod(0o600)
-	closeErr := tmp.Close()
-	if copyErr != nil || chmodErr != nil || closeErr != nil {
-		_ = os.Remove(tmpName)
-		return "", 0, fmt.Errorf("could not write document file")
-	}
-	if written <= 0 || written > maxDocumentBytes {
-		_ = os.Remove(tmpName)
-		return "", 0, fmt.Errorf("document file too large")
-	}
-	dest := filepath.Join(dir, storedFilename)
-	if err := os.Rename(tmpName, dest); err != nil {
-		_ = os.Remove(tmpName)
-		return "", 0, fmt.Errorf("could not store document file")
-	}
-	return dest, written, nil
-}
-
-func (s *documentStore) ListTenant(tenantSlug string) []documentRecord {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []documentRecord{}
-	for _, item := range s.data.Documents {
-		if normalizeSlug(item.TenantSlug) == tenantSlug {
-			out = append(out, copyDocument(item))
-		}
-	}
-	sortDocuments(out)
-	return out
-}
-
-func (s *documentStore) ListCurrentTenant(tenantSlug string) []documentRecord {
-	all := s.ListTenant(tenantSlug)
-	out := []documentRecord{}
-	for _, item := range all {
-		if item.Current {
-			out = append(out, item)
-		}
-	}
-	sortDocuments(out)
-	return out
-}
-
-func (s *documentStore) Versions(tenantSlug string, seriesID string) []documentRecord {
-	if s == nil {
-		return nil
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	seriesID = strings.TrimSpace(seriesID)
-	if tenantSlug == "" || seriesID == "" {
-		return nil
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := []documentRecord{}
-	for _, item := range s.data.Documents {
-		if normalizeSlug(item.TenantSlug) == tenantSlug && item.SeriesID == seriesID {
-			out = append(out, copyDocument(item))
-		}
-	}
-	sort.SliceStable(out, func(i, j int) bool {
-		if out[i].Version != out[j].Version {
-			return out[i].Version > out[j].Version
-		}
-		return out[i].UploadedAt.After(out[j].UploadedAt)
-	})
-	return out
-}
-
-func (s *documentStore) Get(tenantSlug string, id string) (documentRecord, bool) {
-	if s == nil {
-		return documentRecord{}, false
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	id = strings.TrimSpace(id)
-	if tenantSlug == "" || id == "" {
-		return documentRecord{}, false
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, item := range s.data.Documents {
-		if normalizeSlug(item.TenantSlug) == tenantSlug && item.ID == id {
-			return copyDocument(item), true
-		}
-	}
-	return documentRecord{}, false
-}
-
-func (s *documentStore) FilePath(item documentRecord) (string, bool) {
-	if s == nil || s.fileDir == "" {
-		return "", false
-	}
-	tenantSlug := normalizeSlug(item.TenantSlug)
-	storedFilename := filepath.Base(item.StoredFilename)
-	if tenantSlug == "" || storedFilename == "" || storedFilename == "." || storedFilename == string(filepath.Separator) {
-		return "", false
-	}
-	return filepath.Join(s.fileDir, tenantSlug, storedFilename), true
-}
-
-func (s *documentStore) CreateGenerated(item documentRecord, filename string, contentType string, data []byte, now time.Time) (documentRecord, error) {
-	if s == nil {
-		return documentRecord{}, fmt.Errorf("document store unavailable")
-	}
-	if len(data) == 0 || int64(len(data)) > maxDocumentBytes {
-		return documentRecord{}, fmt.Errorf("document file too large")
-	}
-	contentType = strings.TrimSpace(strings.Split(contentType, ";")[0])
-	ext, ok := documentExtension(contentType)
-	if !ok {
-		return documentRecord{}, fmt.Errorf("unsupported document type")
-	}
-	if now.IsZero() {
-		now = time.Now()
-	}
-	id, err := randomToken(12)
-	if err != nil {
-		return documentRecord{}, err
-	}
-	filename = sanitizeDocumentFilename(filename)
-	if filename == "dokument" {
-		filename = id + ext
-	}
-	storedFilename := id + ext
-	path, err := s.writeGeneratedDocumentFile(item.TenantSlug, storedFilename, data)
-	if err != nil {
-		return documentRecord{}, err
-	}
-	item.ID = id
-	item.SeriesID = id
-	item.Version = 1
-	item.Current = true
-	item.Filename = filename
-	item.StoredFilename = storedFilename
-	item.Size = int64(len(data))
-	item.ContentType = contentType
-	item.UploadedAt = now.UTC()
-	item = normalizeDocumentRecord(item)
-	if item.TenantSlug == "" || item.Title == "" || item.Category == "" || item.Visibility == "" || item.UploadedBy == "" {
-		_ = os.Remove(path)
-		return documentRecord{}, fmt.Errorf("invalid document metadata")
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.data.Documents = append(s.data.Documents, item)
-	sortDocuments(s.data.Documents)
-	if err := s.saveLocked(); err != nil {
-		_ = os.Remove(path)
-		return documentRecord{}, err
-	}
-	return copyDocument(item), nil
-}
-
-func (s *documentStore) writeGeneratedDocumentFile(tenantSlug string, storedFilename string, data []byte) (string, error) {
-	tenantSlug = normalizeSlug(tenantSlug)
-	storedFilename = filepath.Base(storedFilename)
-	if s == nil || s.fileDir == "" {
-		return "", fmt.Errorf("document file directory unavailable")
-	}
-	if tenantSlug == "" || storedFilename == "" || storedFilename == "." || storedFilename == string(filepath.Separator) {
-		return "", fmt.Errorf("invalid document storage target")
-	}
-	dir := filepath.Join(s.fileDir, tenantSlug)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return "", fmt.Errorf("could not create document directory")
-	}
-	path := filepath.Join(dir, storedFilename)
-	if err := writePrivateFile(path, data); err != nil {
-		return "", fmt.Errorf("could not write document file")
-	}
-	return path, nil
-}
-
 func storeEBInterfaceInvoiceDocument(store *documentStore, invoice integrations.Invoice, uploadedBy string, data []byte, now time.Time) (documentRecord, error) {
 	if store == nil {
 		return documentRecord{}, fmt.Errorf("document store unavailable")
@@ -11287,130 +9914,6 @@ func storeEBInterfaceInvoiceDocument(store *documentStore, invoice integrations.
 		Visibility: documentVisibilityManagerOnly,
 		UploadedBy: uploadedBy,
 	}, "ebinterface-"+filenameToken+".xml", "application/xml", data, now)
-}
-
-func (s *documentStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "document")
-}
-
-func normalizeDocuments(items []documentRecord) []documentRecord {
-	out := make([]documentRecord, 0, len(items))
-	for _, item := range items {
-		item = normalizeDocumentRecord(item)
-		if item.ID == "" || item.TenantSlug == "" || item.Title == "" || item.StoredFilename == "" {
-			continue
-		}
-		out = append(out, item)
-	}
-	sortDocuments(out)
-	return out
-}
-
-func normalizeDocumentRecord(item documentRecord) documentRecord {
-	item.ID = strings.TrimSpace(item.ID)
-	item.SeriesID = strings.TrimSpace(item.SeriesID)
-	if item.SeriesID == "" && item.ID != "" {
-		item.SeriesID = item.ID
-	}
-	if item.Version <= 0 {
-		item.Version = 1
-	}
-	item.SupersedesID = strings.TrimSpace(item.SupersedesID)
-	item.ReplacedByID = strings.TrimSpace(item.ReplacedByID)
-	if !item.Current && item.ReplacedByID == "" {
-		item.Current = true
-	}
-	item.TenantSlug = normalizeSlug(item.TenantSlug)
-	item.Title = truncateAuditValue(strings.TrimSpace(item.Title), 160)
-	item.Category = normalizeDocumentCategory(item.Category)
-	item.Visibility = normalizeDocumentVisibility(item.Visibility)
-	item.UnitID = normalizeUnitID(item.UnitID)
-	item.Filename = sanitizeDocumentFilename(item.Filename)
-	item.StoredFilename = filepath.Base(strings.TrimSpace(item.StoredFilename))
-	item.ContentType = strings.TrimSpace(item.ContentType)
-	item.UploadedBy = normalizeEmail(item.UploadedBy)
-	if item.Size < 0 {
-		item.Size = 0
-	}
-	if item.UploadedAt.IsZero() {
-		item.UploadedAt = time.Now()
-	}
-	item.UploadedAt = item.UploadedAt.UTC()
-	return item
-}
-
-func copyDocument(item documentRecord) documentRecord {
-	return item
-}
-
-func sortDocuments(items []documentRecord) {
-	sort.SliceStable(items, func(i, j int) bool {
-		if !items[i].UploadedAt.Equal(items[j].UploadedAt) {
-			return items[i].UploadedAt.After(items[j].UploadedAt)
-		}
-		if items[i].Category != items[j].Category {
-			return items[i].Category < items[j].Category
-		}
-		return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
-	})
-}
-
-func documentExtension(contentType string) (string, bool) {
-	switch contentType {
-	case "application/pdf":
-		return ".pdf", true
-	case "image/jpeg":
-		return ".jpg", true
-	case "image/png":
-		return ".png", true
-	case "image/webp":
-		return ".webp", true
-	case "application/xml", "text/xml":
-		return ".xml", true
-	default:
-		return "", false
-	}
-}
-
-func sanitizeDocumentFilename(raw string) string {
-	name := filepath.Base(strings.TrimSpace(raw))
-	if name == "." || name == string(filepath.Separator) {
-		name = ""
-	}
-	name = strings.Map(func(r rune) rune {
-		if r < 32 || r == 127 || r == '/' || r == '\\' {
-			return -1
-		}
-		return r
-	}, name)
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return "dokument"
-	}
-	if len([]rune(name)) > 120 {
-		runes := []rune(name)
-		name = string(runes[:120])
-	}
-	return name
-}
-
-func normalizeDocumentCategory(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case strings.ToLower(documentCategoryProtocol):
-		return documentCategoryProtocol
-	case strings.ToLower(documentCategoryBilling):
-		return documentCategoryBilling
-	case strings.ToLower(documentCategoryRules):
-		return documentCategoryRules
-	case strings.ToLower(documentCategoryContract):
-		return documentCategoryContract
-	case strings.ToLower(documentCategoryPlan), "pläne", "plaene":
-		return documentCategoryPlan
-	case "", strings.ToLower(documentCategoryOther):
-		return documentCategoryOther
-	default:
-		return ""
-	}
 }
 
 func documentCategories() []string {
@@ -11461,19 +9964,6 @@ func documentUnitAuditLabel(unitID string) string {
 		return ""
 	}
 	return unitID
-}
-
-func normalizeDocumentVisibility(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case documentVisibilityAllResidents, "all", "alle", "alle-bewohner":
-		return documentVisibilityAllResidents
-	case documentVisibilityOwnersOnly, "owner", "owners", "eigentuemer", "eigentümer":
-		return documentVisibilityOwnersOnly
-	case documentVisibilityManagerOnly, "manager", "verwalter", "verwaltung":
-		return documentVisibilityManagerOnly
-	default:
-		return ""
-	}
 }
 
 func documentVisibilityOptions(selected string) []selectOption {
@@ -11989,303 +10479,6 @@ func (a *app) sampleParkingTenant(ctx context.Context, tenant tenantConfig) erro
 	}})
 }
 
-func newParkingStore(path string) (*parkingStore, error) {
-	store := &parkingStore{
-		path: path,
-		data: parkingStoreData{Tenants: map[string]parkingTenantData{}},
-	}
-	if path == "" {
-		return store, nil
-	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return store, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read parking data")
-	}
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return store, nil
-	}
-	if err := json.Unmarshal(raw, &store.data); err != nil {
-		return nil, fmt.Errorf("invalid parking data")
-	}
-	if store.data.Tenants == nil {
-		store.data.Tenants = map[string]parkingTenantData{}
-	}
-	for slug, data := range store.data.Tenants {
-		data.Settings = normalizeParkingSettings(data.Settings)
-		data.Months = normalizeParkingMonthStates(data.Months)
-		store.data.Tenants[normalizeSlug(slug)] = data
-	}
-	return store, nil
-}
-
-func (s *parkingStore) TenantData(tenantSlug string) parkingTenantData {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	data := s.tenantLocked(tenantSlug)
-	data.Settings = normalizeParkingSettings(data.Settings)
-	data.Months = copyMonthStates(data.Months)
-	data.EnergySamples = append([]parkingNumericSample(nil), data.EnergySamples...)
-	data.PriceSamples = append([]parkingNumericSample(nil), data.PriceSamples...)
-	data.Samples = append([]parkingStoredSample(nil), data.Samples...)
-	return data
-}
-
-func (s *parkingStore) SetGridFee(tenantSlug string, gridFee float64) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	data := s.tenantLocked(tenantSlug)
-	data.Settings = normalizeParkingSettings(data.Settings)
-	if len(data.Settings.Tariffs) > 0 {
-		data.Settings.Tariffs[len(data.Settings.Tariffs)-1].GridFeeEURPerKWh = gridFee
-	}
-	data.Settings.GridFeeEURPerKWh = gridFee
-	data.Settings = normalizeParkingSettings(data.Settings)
-	s.data.Tenants[normalizeSlug(tenantSlug)] = data
-	return s.saveLocked()
-}
-
-func (s *parkingStore) UpsertTariff(tenantSlug string, tariff parkingTariff) error {
-	tariff = normalizeParkingTariff(tariff)
-	if tariff.EffectiveFrom == "" {
-		return fmt.Errorf("invalid tariff")
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	data := s.tenantLocked(tenantSlug)
-	replaced := false
-	for i, existing := range data.Settings.Tariffs {
-		if existing.EffectiveFrom == tariff.EffectiveFrom {
-			data.Settings.Tariffs[i] = tariff
-			replaced = true
-			break
-		}
-	}
-	if !replaced {
-		data.Settings.Tariffs = append(data.Settings.Tariffs, tariff)
-	}
-	data.Settings.GridFeeEURPerKWh = tariff.GridFeeEURPerKWh
-	data.Settings.BaseFeeEUR = tariff.BaseFeeEUR
-	data.Settings = normalizeParkingSettings(data.Settings)
-	s.data.Tenants[normalizeSlug(tenantSlug)] = data
-	return s.saveLocked()
-}
-
-func (s *parkingStore) SetMonthPaid(tenantSlug string, month string, paid bool) error {
-	return s.SetMonthPayment(tenantSlug, month, parkingMonthState{Paid: paid})
-}
-
-func (s *parkingStore) SetMonthPayment(tenantSlug string, month string, state parkingMonthState) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	data := s.tenantLocked(tenantSlug)
-	if data.Months == nil {
-		data.Months = map[string]parkingMonthState{}
-	}
-	data.Months[month] = normalizeParkingMonthState(state)
-	s.data.Tenants[normalizeSlug(tenantSlug)] = data
-	return s.saveLocked()
-}
-
-func (s *parkingStore) MarkPaymentReminderSent(tenantSlug string, months []string, recipients []string, at time.Time) error {
-	tenantSlug = normalizeSlug(tenantSlug)
-	months = normalizeParkingMonths(months)
-	recipients = uniqueEmails(recipients)
-	if tenantSlug == "" || len(months) == 0 || len(recipients) == 0 {
-		return nil
-	}
-	if at.IsZero() {
-		at = time.Now()
-	}
-	at = at.UTC()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	data := s.tenantLocked(tenantSlug)
-	if data.Months == nil {
-		data.Months = map[string]parkingMonthState{}
-	}
-	for _, month := range months {
-		state := normalizeParkingMonthState(data.Months[month])
-		if state.Paid {
-			continue
-		}
-		if state.ReminderSentAt == nil {
-			state.ReminderSentAt = map[string]time.Time{}
-		}
-		for _, recipient := range recipients {
-			state.ReminderSentAt[recipient] = at
-		}
-		data.Months[month] = normalizeParkingMonthState(state)
-	}
-	s.data.Tenants[normalizeSlug(tenantSlug)] = data
-	return s.saveLocked()
-}
-
-func (s *parkingStore) AppendSamples(tenantSlug string, samples []parkingStoredSample) error {
-	if len(samples) == 0 {
-		return nil
-	}
-	energy := make([]parkingNumericSample, 0, len(samples))
-	prices := make([]parkingNumericSample, 0, len(samples))
-	for _, sample := range samples {
-		energy = append(energy, parkingNumericSample{At: sample.At, Value: sample.EnergyKWh})
-		prices = append(prices, parkingNumericSample{At: sample.At, Value: sample.PriceEURPerKWh})
-	}
-	return s.AppendReadings(tenantSlug, energy, prices)
-}
-
-func (s *parkingStore) AppendReadings(tenantSlug string, energySamples []parkingNumericSample, priceSamples []parkingNumericSample) error {
-	if len(energySamples) == 0 && len(priceSamples) == 0 {
-		return nil
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	data := s.tenantLocked(tenantSlug)
-	for _, sample := range energySamples {
-		if sample.At.IsZero() || sample.Value < 0 || sample.Value > 1000000 {
-			continue
-		}
-		data.EnergySamples = append(data.EnergySamples, parkingNumericSample{
-			At:    sample.At.UTC(),
-			Value: sample.Value,
-		})
-	}
-	for _, sample := range priceSamples {
-		if sample.At.IsZero() || sample.Value < -5 || sample.Value > 5 {
-			continue
-		}
-		data.PriceSamples = append(data.PriceSamples, parkingNumericSample{
-			At:    sample.At.UTC(),
-			Value: sample.Value,
-		})
-	}
-	keepAfter := time.Now().AddDate(-1, -1, 0)
-	data.EnergySamples = normalizeNumericSamples(data.EnergySamples, keepAfter)
-	data.PriceSamples = normalizeNumericSamples(data.PriceSamples, keepAfter)
-	data.Samples = nil
-	s.data.Tenants[normalizeSlug(tenantSlug)] = data
-	return s.saveLocked()
-}
-
-func (s *parkingStore) tenantLocked(tenantSlug string) parkingTenantData {
-	tenantSlug = normalizeSlug(tenantSlug)
-	if tenantSlug == "" {
-		tenantSlug = "default"
-	}
-	if s.data.Tenants == nil {
-		s.data.Tenants = map[string]parkingTenantData{}
-	}
-	data, ok := s.data.Tenants[tenantSlug]
-	if !ok {
-		data = defaultParkingTenantData()
-	}
-	data.Settings = normalizeParkingSettings(data.Settings)
-	if data.Months == nil {
-		data.Months = map[string]parkingMonthState{}
-	}
-	data.Months = normalizeParkingMonthStates(data.Months)
-	if len(data.Samples) > 0 {
-		for _, sample := range data.Samples {
-			data.EnergySamples = append(data.EnergySamples, parkingNumericSample{At: sample.At, Value: sample.EnergyKWh})
-			data.PriceSamples = append(data.PriceSamples, parkingNumericSample{At: sample.At, Value: sample.PriceEURPerKWh})
-		}
-		data.Samples = nil
-	}
-	keepAfter := time.Now().AddDate(-1, -1, 0)
-	data.EnergySamples = normalizeNumericSamples(data.EnergySamples, keepAfter)
-	data.PriceSamples = normalizeNumericSamples(data.PriceSamples, keepAfter)
-	s.data.Tenants[tenantSlug] = data
-	return data
-}
-
-func (s *parkingStore) saveLocked() error {
-	return saveJSONAtomic(s.path, s.data, "parking")
-}
-
-func defaultParkingTenantData() parkingTenantData {
-	return parkingTenantData{
-		Settings: normalizeParkingSettings(parkingSettings{GridFeeEURPerKWh: 0.10}),
-		Months:   map[string]parkingMonthState{},
-	}
-}
-
-func normalizeParkingSettings(settings parkingSettings) parkingSettings {
-	if settings.GridFeeEURPerKWh < 0 {
-		settings.GridFeeEURPerKWh = 0
-	}
-	if settings.GridFeeEURPerKWh > 5 {
-		settings.GridFeeEURPerKWh = 5
-	}
-	if settings.BaseFeeEUR < 0 {
-		settings.BaseFeeEUR = 0
-	}
-	if settings.BaseFeeEUR > 5000 {
-		settings.BaseFeeEUR = 5000
-	}
-	tariffs := make([]parkingTariff, 0, len(settings.Tariffs)+1)
-	seen := map[string]int{}
-	for _, tariff := range settings.Tariffs {
-		tariff = normalizeParkingTariff(tariff)
-		if tariff.EffectiveFrom == "" {
-			continue
-		}
-		if idx, ok := seen[tariff.EffectiveFrom]; ok {
-			tariffs[idx] = tariff
-			continue
-		}
-		seen[tariff.EffectiveFrom] = len(tariffs)
-		tariffs = append(tariffs, tariff)
-	}
-	if len(tariffs) == 0 {
-		tariffs = append(tariffs, parkingTariff{
-			EffectiveFrom:    "2000-01-01",
-			GridFeeEURPerKWh: settings.GridFeeEURPerKWh,
-			BaseFeeEUR:       settings.BaseFeeEUR,
-		})
-	}
-	sort.Slice(tariffs, func(i, j int) bool {
-		return tariffs[i].EffectiveFrom < tariffs[j].EffectiveFrom
-	})
-	settings.Tariffs = tariffs
-	current := tariffs[len(tariffs)-1]
-	settings.GridFeeEURPerKWh = current.GridFeeEURPerKWh
-	settings.BaseFeeEUR = current.BaseFeeEUR
-	return settings
-}
-
-func normalizeParkingTariff(tariff parkingTariff) parkingTariff {
-	tariff.EffectiveFrom = normalizeParkingTariffDate(tariff.EffectiveFrom)
-	if tariff.GridFeeEURPerKWh < 0 {
-		tariff.GridFeeEURPerKWh = 0
-	}
-	if tariff.GridFeeEURPerKWh > 5 {
-		tariff.GridFeeEURPerKWh = 5
-	}
-	if tariff.BaseFeeEUR < 0 {
-		tariff.BaseFeeEUR = 0
-	}
-	if tariff.BaseFeeEUR > 5000 {
-		tariff.BaseFeeEUR = 5000
-	}
-	return tariff
-}
-
-func normalizeParkingTariffDate(raw string) string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return ""
-	}
-	if t, err := time.Parse("2006-01-02", raw); err == nil {
-		return t.Format("2006-01-02")
-	}
-	if t, err := time.Parse("2006-01", raw); err == nil {
-		return t.Format("2006-01-02")
-	}
-	return ""
-}
-
 func parkingTariffAt(settings parkingSettings, at time.Time, loc *time.Location) parkingTariff {
 	settings = normalizeParkingSettings(settings)
 	if loc == nil {
@@ -12338,98 +10531,6 @@ func formatParkingTariffDate(raw string) string {
 		return raw
 	}
 	return formatLocalDate(t)
-}
-
-func copyMonthStates(in map[string]parkingMonthState) map[string]parkingMonthState {
-	out := map[string]parkingMonthState{}
-	for month, state := range in {
-		out[month] = normalizeParkingMonthState(state)
-	}
-	return out
-}
-
-func normalizeParkingMonthStates(in map[string]parkingMonthState) map[string]parkingMonthState {
-	out := map[string]parkingMonthState{}
-	for month, state := range in {
-		if _, err := time.Parse("2006-01", month); err != nil {
-			continue
-		}
-		out[month] = normalizeParkingMonthState(state)
-	}
-	return out
-}
-
-func normalizeParkingMonthState(state parkingMonthState) parkingMonthState {
-	if !state.Paid {
-		state.PaidAt = time.Time{}
-		state.PaidBy = ""
-		state.PaymentMethod = ""
-		state.PaymentReference = ""
-	}
-	if !state.PaidAt.IsZero() {
-		state.PaidAt = state.PaidAt.UTC()
-	}
-	state.PaidBy = normalizeEmail(state.PaidBy)
-	state.PaymentMethod = cleanParkingPaymentField(state.PaymentMethod)
-	state.PaymentReference = cleanParkingPaymentField(state.PaymentReference)
-	if len(state.ReminderSentAt) == 0 {
-		state.ReminderSentAt = nil
-		return state
-	}
-	sent := map[string]time.Time{}
-	for email, at := range state.ReminderSentAt {
-		email = normalizeEmail(email)
-		if email == "" || at.IsZero() {
-			continue
-		}
-		sent[email] = at.UTC()
-	}
-	if len(sent) == 0 {
-		state.ReminderSentAt = nil
-	} else {
-		state.ReminderSentAt = sent
-	}
-	return state
-}
-
-func normalizeParkingMonths(months []string) []string {
-	out := []string{}
-	seen := map[string]struct{}{}
-	for _, month := range months {
-		month = strings.TrimSpace(month)
-		if _, err := time.Parse("2006-01", month); err != nil {
-			continue
-		}
-		if _, ok := seen[month]; ok {
-			continue
-		}
-		seen[month] = struct{}{}
-		out = append(out, month)
-	}
-	sort.Strings(out)
-	return out
-}
-
-func normalizeNumericSamples(samples []parkingNumericSample, keepAfter time.Time) []parkingNumericSample {
-	out := make([]parkingNumericSample, 0, len(samples))
-	for _, sample := range samples {
-		if sample.At.IsZero() || sample.At.Before(keepAfter) {
-			continue
-		}
-		out = append(out, parkingNumericSample{At: sample.At.UTC().Truncate(time.Second), Value: sample.Value})
-	}
-	sort.Slice(out, func(i, j int) bool {
-		return out[i].At.Before(out[j].At)
-	})
-	deduped := out[:0]
-	for _, sample := range out {
-		if len(deduped) > 0 && deduped[len(deduped)-1].At.Equal(sample.At) {
-			deduped[len(deduped)-1] = sample
-			continue
-		}
-		deduped = append(deduped, sample)
-	}
-	return deduped
 }
 
 func samplesFromHistory(history []haHistoryState) []parkingNumericSample {
@@ -14335,10 +12436,6 @@ func normalizeTenants(raw []string, fallback string) []string {
 func normalizeSlug(raw string) string { return textutil.Slug(raw) }
 
 func firstNonEmpty(values ...string) string { return textutil.FirstNonEmpty(values...) }
-
-func uniqueEmails(raw []string) []string {
-	return normalizeEmailList(raw)
-}
 
 func excludeEmail(raw []string, excluded string) []string {
 	excluded = normalizeEmail(excluded)

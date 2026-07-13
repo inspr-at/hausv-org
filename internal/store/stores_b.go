@@ -14,20 +14,6 @@ import (
 	"github.com/markus-barta/hausv-org/internal/textutil"
 )
 
-// The unit store derives an owner/renter relation from the unit's email lists.
-// These mirror main's role vocabulary, whose const block is mixed with
-// permissions and auth methods and so cannot move wholesale yet. Unify when
-// config is extracted — the VALUES must stay identical.
-const (
-	roleAdmin           = "Admin"
-	roleManager         = "Verwalter"
-	roleOwner           = "Eigentümer"
-	roleRenter          = "Mieter"
-	roleBeirat          = "Beirat"
-	roleResident        = "Bewohner"
-	roleServiceProvider = "Dienstleister"
-)
-
 // Handover audit actions. They live here with the rest of the audit vocabulary;
 // handover.go aliases them.
 const (
@@ -901,9 +887,9 @@ func (s *UnitStore) UnitsForEmail(tenantSlug string, email string) []UnitMembers
 		}
 		relation := ""
 		if EmailListContains(item.OwnerEmails, email) {
-			relation = roleOwner
+			relation = RoleOwner
 		} else if EmailListContains(item.RenterEmails, email) {
-			relation = roleRenter
+			relation = RoleRenter
 		}
 		if relation != "" {
 			out = append(out, UnitMembership{Unit: CopyUnit(item), Relation: relation})
@@ -1485,19 +1471,19 @@ func AuditDetailValues(details map[string]string) []string {
 func NormalizeRole(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "admin", "administrator", "platform-admin", "platform_admin":
-		return roleAdmin
+		return RoleAdmin
 	case "verwalter", "verwaltung", "hausverwaltung", "manager", "property-manager", "property_manager", "property manager":
-		return roleManager
+		return RoleManager
 	case "eigentuemer", "eigentümer", "wohnungseigentuemer", "wohnungseigentümer", "owner", "homeowner", "property-owner", "property_owner":
-		return roleOwner
+		return RoleOwner
 	case "mieter", "tenant", "renter", "lessee":
-		return roleRenter
+		return RoleRenter
 	case "beirat", "board", "advisory-board", "advisory_board", "committee":
-		return roleBeirat
+		return RoleBeirat
 	case "bewohner", "resident", "user":
-		return roleResident
+		return RoleResident
 	case "dienstleister", "handwerker", "service-provider", "service_provider", "service provider", "contractor", "vendor", "external":
-		return roleServiceProvider
+		return RoleServiceProvider
 	default:
 		return strings.TrimSpace(raw)
 	}
