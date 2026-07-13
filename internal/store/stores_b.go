@@ -1435,7 +1435,52 @@ func (s *AuditStore) Append(event AuditEvent) error {
 		}
 	}
 	s.entries = append(s.entries, CopyAuditEvent(event))
+	if s.path != "" && len(s.entries) > auditRotateThreshold {
+		if err := s.rotateLocked(); err != nil {
+			// The event is already durably appended; a rotation failure must not
+			// fail the write. Growth continues until the next successful rotate.
+			log.Printf("audit: rotation failed: %v", err)
+		}
+	}
 	return nil
+}
+
+// auditRotateThreshold / auditRotateKeep bound the live audit file and the
+// in-memory slice (HAUSV-146). List only ever scans the recent tail, so keeping
+// far fewer than the full history in memory is lossless for queries. Vars, not
+// consts, so a test can force rotation without writing 20k events.
+var (
+	auditRotateThreshold = 20000
+	auditRotateKeep      = 5000
+)
+
+// rotateLocked archives the current live file and rewrites it with only the
+// recent tail. Nothing is deleted: the full history is preserved in a
+// timestamped archive next to the live file (prune old archives out of band).
+// Must be called with s.mu held.
+func (s *AuditStore) rotateLocked() error {
+	archive := fmt.Sprintf("%s.%d", s.path, time.Now().UnixNano())
+	if err := os.Rename(s.path, archive); err != nil {
+		return err
+	}
+	if len(s.entries) > auditRotateKeep {
+		s.entries = append([]AuditEvent(nil), s.entries[len(s.entries)-auditRotateKeep:]...)
+	}
+	f, err := os.OpenFile(s.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	for _, e := range s.entries {
+		raw, err := json.Marshal(e)
+		if err != nil {
+			return err
+		}
+		if _, err := f.Write(append(raw, '\n')); err != nil {
+			return err
+		}
+	}
+	return f.Sync()
 }
 
 func (s *AuditStore) List(filter AuditFilter) []AuditEvent {
