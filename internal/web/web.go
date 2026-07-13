@@ -1987,7 +1987,7 @@ const PageTemplates = `
                     </div>
 	                    {{if .CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment" enctype="multipart/form-data">
 	                      <input type="hidden" name="id" value="{{.ID}}">
-	                      <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Ergänzung schreiben" aria-label="Kommentar oder Ergänzung"></textarea>
+	                      <textarea name="body" maxlength="3000" placeholder="Kommentar oder Ergänzung schreiben" aria-label="Kommentar oder Ergänzung"></textarea>
                       <label class="comment-upload">
                         <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Anhang hinzufügen</span></span>
                       </label>
@@ -2114,7 +2114,7 @@ const PageTemplates = `
                         </div>
                         {{if .CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment" enctype="multipart/form-data">
                           <input type="hidden" name="id" value="{{.ID}}">
-                          <textarea name="body" maxlength="3000" required placeholder="Kommentar oder Rückfrage schreiben" aria-label="Kommentar oder Rückfrage"></textarea>
+                          <textarea name="body" maxlength="3000" placeholder="Kommentar oder Rückfrage schreiben" aria-label="Kommentar oder Rückfrage"></textarea>
                           <label class="comment-upload">
                             <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Anhang hinzufügen</span></span>
                           </label>

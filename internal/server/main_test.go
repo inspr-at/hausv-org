@@ -3788,6 +3788,42 @@ func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
 	}
 }
 
+// HAUSV-128: a comment may carry a photo with no text (before/after
+// documentation), but a truly-empty submit is still rejected.
+func TestIssueCommentAllowsPhotoOnlyButRejectsEmpty(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	issue, err := a.issueStore.Create(residentIssue{
+		TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident",
+		Category: "Reparatur", Title: "Foto-only", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
+		AssigneeEmail: "service@example.com",
+	})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	photoOnly := authedMultipartFilesRequest(t, a, "service@example.com", "/app/anliegen/comment", map[string]string{
+		"id": issue.ID,
+	}, []multipartTestFile{{Field: "attachments", Filename: "foto.png", Body: minimalPNG()}})
+	if photoOnly.Code != http.StatusSeeOther || photoOnly.Header().Get("Location") != "/app/anliegen?issue=updated" {
+		t.Fatalf("photo-only comment = %d loc=%q, want redirect to updated", photoOnly.Code, photoOnly.Header().Get("Location"))
+	}
+	updated, ok := a.issueStore.Get("jhw22", issue.ID)
+	if !ok || len(updated.Comments) != 1 || updated.Comments[0].Body != "" {
+		t.Fatalf("photo-only comment not saved with empty body: %+v", updated.Comments)
+	}
+	if atts := a.attachmentStore.ListEntity("jhw22", "issue-comment", updated.Comments[0].ID); len(atts) != 1 {
+		t.Fatalf("photo-only attachment = %+v, want one", atts)
+	}
+
+	empty := authedFormRequest(t, a, "service@example.com", "/app/anliegen/comment", url.Values{"id": {issue.ID}})
+	if empty.Code != http.StatusSeeOther || empty.Header().Get("Location") != "/app/anliegen?issue=invalid" {
+		t.Fatalf("empty comment = %d loc=%q, want redirect to invalid", empty.Code, empty.Header().Get("Location"))
+	}
+	if again, _ := a.issueStore.Get("jhw22", issue.ID); len(again.Comments) != 1 {
+		t.Fatalf("empty comment must not be saved: now %d comments", len(again.Comments))
+	}
+}
+
 func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}

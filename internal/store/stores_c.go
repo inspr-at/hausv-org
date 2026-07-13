@@ -517,7 +517,9 @@ func (s *IssueStore) AddComment(tenantSlug string, id string, comment IssueComme
 	comment.Body = strings.TrimSpace(comment.Body)
 	comment.AuthorEmail = textutil.Email(comment.AuthorEmail)
 	comment.AuthorName = strings.TrimSpace(comment.AuthorName)
-	if tenantSlug == "" || id == "" || comment.Body == "" || len([]rune(comment.Body)) > 3000 || comment.AuthorEmail == "" {
+	// Body may be empty for a photo-only comment (HAUSV-128); the handler enforces
+	// that a comment carries either text or at least one attachment.
+	if tenantSlug == "" || id == "" || len([]rune(comment.Body)) > 3000 || comment.AuthorEmail == "" {
 		return ResidentIssue{}, false, fmt.Errorf("invalid issue comment")
 	}
 	if comment.ID == "" {

@@ -205,13 +205,19 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 		return
 	}
 	body := strings.TrimSpace(r.FormValue("body"))
-	if body == "" || len([]rune(body)) > 3000 {
+	if len([]rune(body)) > 3000 {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 		return
 	}
 	attachmentHeaders, err := issueAttachmentHeaders(r)
 	if err != nil {
 		http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
+		return
+	}
+	// A comment must carry either text or at least one photo (HAUSV-128:
+	// standalone photo upload). Reject only the truly-empty submit.
+	if body == "" && len(attachmentHeaders) == 0 {
+		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 		return
 	}
 	commentID, err := randomToken(10)
