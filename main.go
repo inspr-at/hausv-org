@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/markus-barta/hausv-org/internal/authz"
 	"html/template"
 	_ "image/png"
 	"io"
@@ -41,6 +42,40 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/oauth2"
 )
+
+// Capabilities now owned by authz; aliased so call sites read unchanged.
+const (
+	capabilityPlatformAdmin       = authz.CapabilityPlatformAdmin
+	capabilityManageUsers         = authz.CapabilityManageUsers
+	capabilityManageParking       = authz.CapabilityManageParking
+	capabilityManageAnnouncements = authz.CapabilityManageAnnouncements
+	capabilityManageDocuments     = authz.CapabilityManageDocuments
+	capabilityManageIssues        = authz.CapabilityManageIssues
+	capabilityManageVotes         = authz.CapabilityManageVotes
+	capabilityManageBuilding      = authz.CapabilityManageBuilding
+	capabilityOwnerDocuments      = authz.CapabilityOwnerDocuments
+	capabilityVote                = authz.CapabilityVote
+	capabilityOversight           = authz.CapabilityOversight
+)
+
+// ── extracted to authz ──────────────────────────────────────────────
+// Aliases so the move needs zero call-site changes. Delete as callers migrate.
+type (
+	capability = authz.Capability
+)
+
+var canAssignUserRole = authz.CanAssignUserRole
+var canCreateResidentIssue = authz.CanCreateResidentIssue
+var canManageAnnouncements = authz.CanManageAnnouncements
+var canManageContacts = authz.CanManageContacts
+var canManageEvents = authz.CanManageEvents
+var canManageHandovers = authz.CanManageHandovers
+var canResidentTransition = authz.CanResidentTransition
+var canServiceProviderTransition = authz.CanServiceProviderTransition
+var canUseResidentAreas = authz.CanUseResidentAreas
+var canViewAudit = authz.CanViewAudit
+var hasCapability = authz.HasCapability
+var isServiceProviderRole = authz.IsServiceProviderRole
 
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
@@ -374,22 +409,6 @@ const (
 	notificationEventVote         = store.NotificationEventVote
 	notificationEventDocument     = store.NotificationEventDocument
 	notificationEventPayment      = store.NotificationEventPayment
-)
-
-type capability string
-
-const (
-	capabilityPlatformAdmin       capability = "platform-admin"
-	capabilityManageUsers         capability = "manage-users"
-	capabilityManageParking       capability = "manage-parking"
-	capabilityManageAnnouncements capability = "manage-announcements"
-	capabilityManageDocuments     capability = "manage-documents"
-	capabilityManageIssues        capability = "manage-issues"
-	capabilityManageVotes         capability = "manage-votes"
-	capabilityManageBuilding      capability = "manage-building"
-	capabilityOwnerDocuments      capability = "owner-documents"
-	capabilityVote                capability = "vote"
-	capabilityOversight           capability = "oversight"
 )
 
 type app struct {
@@ -4119,10 +4138,6 @@ func (a *app) deactivateManagedContact(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app/kontakte?contact=deleted", http.StatusSeeOther)
 }
 
-func canManageContacts(role string) bool {
-	return hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageBuilding) || hasCapability(role, capabilityManageIssues)
-}
-
 func contactMessage(status string) (string, bool) {
 	switch status {
 	case "saved":
@@ -5831,45 +5846,6 @@ func announcementMessage(status string) string {
 	}
 }
 
-func canManageAnnouncements(role string) bool {
-	return hasCapability(role, capabilityManageAnnouncements)
-}
-
-func canManageEvents(role string) bool {
-	return hasCapability(role, capabilityManageAnnouncements)
-}
-
-func hasCapability(role string, action capability) bool {
-	role = normalizeRole(role)
-	if role == roleAdmin {
-		return true
-	}
-	switch action {
-	case capabilityPlatformAdmin, capabilityManageParking:
-		return false
-	case capabilityManageUsers, capabilityManageAnnouncements, capabilityManageDocuments, capabilityManageIssues, capabilityManageVotes, capabilityManageBuilding:
-		return role == roleManager
-	case capabilityOwnerDocuments, capabilityVote:
-		return role == roleOwner
-	case capabilityOversight:
-		return role == roleBeirat || role == roleManager
-	default:
-		return false
-	}
-}
-
-func isServiceProviderRole(role string) bool {
-	return normalizeRole(role) == roleServiceProvider
-}
-
-func canUseResidentAreas(role string) bool {
-	return !isServiceProviderRole(role)
-}
-
-func canCreateResidentIssue(role string) bool {
-	return canUseResidentAreas(role) && (!hasCapability(role, capabilityOversight) || hasCapability(role, capabilityManageIssues))
-}
-
 func denyServiceProviderArea(w http.ResponseWriter, role string) bool {
 	if !isServiceProviderRole(role) {
 		return false
@@ -6476,32 +6452,6 @@ func issueStatusClass(status string) string {
 		return "status-closed"
 	default:
 		return "status-open"
-	}
-}
-
-func canResidentTransition(from string, to string) bool {
-	from = normalizeIssueStatus(from)
-	to = normalizeIssueStatus(to)
-	switch to {
-	case issueStatusDone:
-		return from == issueStatusNew || from == issueStatusProgress
-	case issueStatusNew:
-		return from == issueStatusDone || from == issueStatusRejected || from == issueStatusDuplicate
-	default:
-		return false
-	}
-}
-
-func canServiceProviderTransition(from string, to string) bool {
-	from = normalizeIssueStatus(from)
-	to = normalizeIssueStatus(to)
-	switch to {
-	case issueStatusProgress:
-		return from == issueStatusNew || from == issueStatusProgress
-	case issueStatusDone:
-		return from == issueStatusNew || from == issueStatusProgress
-	default:
-		return false
 	}
 }
 
@@ -7317,11 +7267,6 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request) {
 		"SearchQuery":   query,
 		"AuditStats":    stats,
 	})
-}
-
-func canViewAudit(role string) bool {
-	role = normalizeRole(role)
-	return role == roleAdmin || role == roleManager
 }
 
 func auditEventViews(events []auditEvent) []auditEventView {
@@ -8769,14 +8714,6 @@ func inviteMessage(status string) (string, bool) {
 	default:
 		return "", false
 	}
-}
-
-func canAssignUserRole(actorRole string, targetRole string) bool {
-	targetRole = normalizeRole(targetRole)
-	if targetRole == roleAdmin {
-		return hasCapability(actorRole, capabilityPlatformAdmin)
-	}
-	return hasCapability(actorRole, capabilityManageUsers)
 }
 
 func auditChangedUserFields(before userProfile, after userProfile) []string {

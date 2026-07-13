@@ -75,9 +75,7 @@ type handoverConfirmationView struct {
 	HasConfirmed bool
 }
 
-func canManageHandovers(role string) bool {
-	return hasCapability(role, capabilityManageDocuments) || hasCapability(role, capabilityManageBuilding) || hasCapability(role, capabilityManageUsers)
-}
+
 
 func handoverUnitOptions(units []unit, selected string) []selectOption {
 	selected = normalizeUnitID(selected)
