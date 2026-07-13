@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/markus-barta/hausv-org/internal/version"
 	"html/template"
 	"image"
 	"image/color"
@@ -1066,23 +1067,23 @@ func TestRunHealthcheckRejectsWrongPayload(t *testing.T) {
 }
 
 func TestBuildLabelUsesSemverAndCommit(t *testing.T) {
-	origVersion := appVersion
-	origCommit := gitCommit
+	origVersion := version.Version
+	origCommit := version.Commit
 	t.Cleanup(func() {
-		appVersion = origVersion
-		gitCommit = origCommit
+		version.Version = origVersion
+		version.Commit = origCommit
 	})
 
-	appVersion = "v0.1.0"
-	gitCommit = "abc1234"
+	version.Version = "v0.1.0"
+	version.Commit = "abc1234"
 
-	if got := buildLabel(); got != "0.1.0 (abc1234)" {
+	if got := version.BuildLabel(); got != "0.1.0 (abc1234)" {
 		t.Fatalf("build label = %q, want semver and commit", got)
 	}
 }
 
 func TestReleaseNotesMentionWohnungseinheitenPricing(t *testing.T) {
-	notes := releaseNotes()
+	notes := version.Notes()
 	if len(notes) == 0 {
 		t.Fatal("releaseNotes empty")
 	}

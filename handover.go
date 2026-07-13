@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/markus-barta/hausv-org/internal/version"
 	"log"
 	"mime"
 	"net/http"
@@ -804,7 +805,7 @@ func (a *app) handoverConfirmPage(w http.ResponseWriter, r *http.Request) {
 		"Token":        token,
 		"Msg":          msg,
 		"MsgOK":        okMsg,
-		"AppVersion":   buildLabel(),
+		"AppVersion":   version.BuildLabel(),
 	}); err != nil {
 		log.Printf("render handoverConfirm failed: %v", err)
 	}
