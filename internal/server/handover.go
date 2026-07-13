@@ -89,17 +89,8 @@ func handoverUnitOptions(units []unit, selected string) []selectOption {
 	return options
 }
 
-func (a *app) handovers(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !canManageHandovers(role) {
 		http.Error(w, "Übergabeprotokolle sind der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
@@ -150,19 +141,10 @@ func handoverMessage(status string) (string, bool) {
 	}
 }
 
-func (a *app) createHandover(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) createHandover(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !canManageHandovers(role) {
 		http.Error(w, "Übergabeprotokolle sind der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if a.handoverStore == nil {
@@ -479,13 +461,8 @@ func (a *app) confirmHandover(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/handover/"+url.PathEscape(token)+"?handover=confirmed", http.StatusSeeOther)
 }
 
-func (a *app) handoverProtocol(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) handoverProtocol(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !canManageHandovers(role) {
 		http.Error(w, "Dieses Protokoll ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
@@ -518,19 +495,10 @@ func (a *app) handoverProtocol(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(pdf)
 }
 
-func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request) {
-	tenant := a.tenantForRequest(r)
-	email, role, tenantSlug, ok := a.currentUser(r)
-	if !ok || tenantSlug != tenant.Slug {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !canManageHandovers(role) || !hasCapability(role, capabilityManageDocuments) {
 		http.Error(w, "Ablage im Dokumentenbereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
-	if !sameOriginPost(r) {
-		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
