@@ -184,6 +184,10 @@ const (
 	UnitTypeOther       = "other"
 
 	UnitBillableFullPPM = 1_000_000
+
+	// FairUseFreeUnits is the number of billable Wohneinheiten included free. It
+	// is an informational fair-use marker (HAUSV-125), not an enforced limit.
+	FairUseFreeUnits = 25
 )
 
 type UnitMembership struct {

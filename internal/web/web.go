@@ -3587,8 +3587,9 @@ const PageTemplates = `
 	            </div>
 	            <div class="unit-metrics" aria-label="Einheiten Übersicht">
 	              <span class="unit-metric"><strong>{{.UnitTotal}}</strong> Einträge</span>
-	              <span class="unit-metric"><strong>{{.BillableUnits}}</strong> {{.BillableLabel}} fair-use relevant</span>
+	              <span class="unit-metric"><strong>{{.BillableUnits}}</strong> von {{.FairUseFreeUnits}} {{.BillableLabel}} (Fair Use)</span>
 	            </div>
+	            {{if .FairUseExceeded}}<p class="muted">Über dem kostenlosen Rahmen von {{.FairUseFreeUnits}} Wohneinheiten — Richtwert 1 € pro Einheit und Monat.</p>{{end}}
 	          </div>
 	          {{if .UnitMsg}}<p class="flash {{if .UnitOK}}ok{{end}}">{{.UnitMsg}}</p>{{end}}
 	          <div class="unit-add">

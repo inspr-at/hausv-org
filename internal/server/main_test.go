@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"image"
 	"image/color"
@@ -3903,6 +3904,46 @@ func TestServiceProviderScheduledRequiresDateAndEmitsEvent(t *testing.T) {
 	writeCalendarIssueProposal(&b, tenantConfig{Slug: "jhw22"}, updated, time.Now())
 	if ics := b.String(); !strings.Contains(ics, "BEGIN:VEVENT") || !strings.Contains(ics, "DTSTART:") {
 		t.Fatalf("structured appointment must emit a dated VEVENT:\n%s", ics)
+	}
+}
+
+// HAUSV-125: the fair-use free-unit rule is a visible soft guardrail on the
+// building-settings page (informational, not enforced), and a Stellplatz does
+// not count toward the billable total.
+func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	mkUnits := func(n int) []unit {
+		out := make([]unit, 0, n)
+		for i := 0; i < n; i++ {
+			out = append(out, unit{ID: fmt.Sprintf("u%03d", i), TenantSlug: "jhw22", Label: fmt.Sprintf("Top %d", i), UnitType: unitTypeResidential})
+		}
+		return out
+	}
+
+	if err := a.unitStore.SetTenantUnits("jhw22", mkUnits(25)); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+	page := authedRequest(t, a, "admin@example.com", "/app/settings/building").Body.String()
+	if !strings.Contains(page, "von 25") {
+		t.Fatalf("building settings should show 'von 25':\n%s", page)
+	}
+	if strings.Contains(page, "Über dem kostenlosen Rahmen") {
+		t.Fatal("25 billable units must not trigger the over-limit hint")
+	}
+
+	withParking := append(mkUnits(25), unit{ID: "p1", TenantSlug: "jhw22", Label: "Stellplatz", UnitType: unitTypeParking})
+	if err := a.unitStore.SetTenantUnits("jhw22", withParking); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+	if page = authedRequest(t, a, "admin@example.com", "/app/settings/building").Body.String(); strings.Contains(page, "Über dem kostenlosen Rahmen") {
+		t.Fatal("a Stellplatz must not push the billable count over the fair-use limit")
+	}
+
+	if err := a.unitStore.SetTenantUnits("jhw22", mkUnits(26)); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+	if page = authedRequest(t, a, "admin@example.com", "/app/settings/building").Body.String(); !strings.Contains(page, "Über dem kostenlosen Rahmen") {
+		t.Fatalf("26 billable units should trigger the over-limit hint:\n%s", page)
 	}
 }
 

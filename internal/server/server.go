@@ -489,6 +489,7 @@ const (
 	defaultBallotReminderBeforeMinutes = store.DefaultBallotReminderBeforeMinutes
 	maxBallotReminderBeforeMinutes     = store.MaxBallotReminderBeforeMinutes
 	unitBillableFullPPM                = store.UnitBillableFullPPM
+	fairUseFreeUnits                   = store.FairUseFreeUnits
 	unitTypeCommercial                 = store.UnitTypeCommercial
 	unitTypeOther                      = store.UnitTypeOther
 	unitTypeParking                    = store.UnitTypeParking
@@ -2320,6 +2321,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 	paymentMsg, paymentOK := unitPaymentStatusMessage(r.URL.Query().Get("payment"))
 	units := a.unitStore.ListTenant(tenant.Slug)
 	billableWeight := billableUnitWeight(units)
+	fairUseExceeded := billableWeight > fairUseFreeUnits*unitBillableFullPPM
 	a.render(w, "buildingSettings", map[string]any{
 		"Title":            "Gebäude",
 		"Tenant":           tenant,
@@ -2343,6 +2345,8 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"UnitTotal":        len(units),
 		"BillableUnits":    formatBillableUnitWeight(billableWeight),
 		"BillableLabel":    billableUnitCountLabel(billableWeight),
+		"FairUseFreeUnits": fairUseFreeUnits,
+		"FairUseExceeded":  fairUseExceeded,
 		"UnitsEmpty":       emptyState("Noch keine Einheiten", "Angelegte Einheiten erscheinen hier mit Anteil und Kontaktlinks."),
 		"PaymentMsg":       paymentMsg,
 		"PaymentOK":        paymentOK,
