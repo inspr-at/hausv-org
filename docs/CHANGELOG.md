@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.10.0] - 2026-07-14
+
+### Verbessert
+
+- **Handwerker-Koordination startklar.** Zugewiesene Dienstleister können Anliegen jetzt in klaren Schritten bearbeiten (angenommen, Termin vereinbart, in Arbeit, erledigt), Fotos auch ohne Text anhängen und einen echten Termin mit Datum und Uhrzeit vorschlagen – er erscheint direkt im Kalender-Abo.
+- **Mehr Nachvollziehbarkeit.** Alle Aktionen externer Dienstleister – inklusive Fotos und Rückfragen – sind jetzt lückenlos im Aktivitätsprotokoll der Verwaltung sichtbar.
+
 ## [0.9.0] - 2026-07-13
 
 ### Verbessert
