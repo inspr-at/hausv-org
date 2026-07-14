@@ -426,7 +426,7 @@ const PageTemplates = `
         <a class="landing-button secondary" href="#funktionen">Funktionen ansehen</a>
       </div>
       <div class="landing-proof" aria-label="Kurzversprechen">
-        <span>Bis 10 Wohnungseinheiten kostenlos</span>
+        <span>Bis 25 Wohneinheiten kostenlos</span>
         <span>DSGVO-ready</span>
         <span>Kommunikation statt Buchhaltung</span>
         <span>KI nur mit Opt-in</span>
@@ -529,12 +529,12 @@ const PageTemplates = `
       <div>
         <div class="cost-panel" aria-label="Faire Nutzung und Preise">
           <div class="cost-row">
-            <span class="cost-value">10</span>
-            <div><strong>Kostenlos</strong><p>Bis 10 Wohnungseinheiten. Für kleine Hausgemeinschaften, private Betreuung und den fairen Einstieg.</p></div>
+            <span class="cost-value">25</span>
+            <div><strong>Kostenlos</strong><p>Bis 25 Wohneinheiten. Für kleine Hausgemeinschaften, private Betreuung und den fairen Einstieg.</p></div>
           </div>
           <div class="cost-row">
             <span class="cost-value">1€</span>
-            <div><strong>1 € pro Monat</strong><p>Je Wohnungseinheit als Richtwert für größere Verwaltungen. Wohnungen und vergleichbare Nutzungseinheiten zählen; Zubehör wie Keller oder Stellplätze nicht automatisch.</p></div>
+            <div><strong>1 € pro Monat</strong><p>Je Wohneinheit als Richtwert für größere Verwaltungen. Wohnungen und vergleichbare Nutzungseinheiten zählen; Zubehör wie Keller oder Stellplätze nicht automatisch.</p></div>
           </div>
           <div class="cost-row">
             <span class="cost-value">frei</span>
@@ -3583,7 +3583,7 @@ const PageTemplates = `
 	          <div class="section-head">
 	            <div>
 	              <h2>Einheiten</h2>
-	              <p class="muted">Wohnungen, Geschäftslokale und zugehörige Objekte. Nur abrechenbare Wohnungseinheiten zählen für Fair Use.</p>
+	              <p class="muted">Wohnungen, Geschäftslokale und zugehörige Objekte. Nur abrechenbare Wohneinheiten zählen für Fair Use.</p>
 	            </div>
 	            <div class="unit-metrics" aria-label="Einheiten Übersicht">
 	              <span class="unit-metric"><strong>{{.UnitTotal}}</strong> Einträge</span>

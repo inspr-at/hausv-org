@@ -161,9 +161,9 @@ func Notes() []Note {
 			Date:     "9. Juli 2026",
 			Kind:     "Produktpflege",
 			Headline: "Der Kostenblock bricht mobil sauber um.",
-			Intro:    "Die Preiszeile bleibt kompakt und benennt die Wohnungseinheit im erklärenden Text.",
+			Intro:    "Die Preiszeile bleibt kompakt und benennt die Wohneinheit im erklärenden Text.",
 			Items: []NoteItem{
-				{Label: "Preise", Text: "1 € pro Monat bleibt als klare Zeile sichtbar, je Wohnungseinheit erklärt im Begleittext."},
+				{Label: "Preise", Text: "1 € pro Monat bleibt als klare Zeile sichtbar, je Wohneinheit erklärt im Begleittext."},
 				{Label: "Mobil", Text: "Der Bereich vermeidet seitliches Scrollen auf kleinen Bildschirmen."},
 			},
 		},
@@ -174,7 +174,7 @@ func Notes() []Note {
 			Headline: "Faire Kosten sind präziser formuliert.",
 			Intro:    "Die Startseite benennt die Preislogik kürzer und klarer, besonders auf kleinen Bildschirmen.",
 			Items: []NoteItem{
-				{Label: "Preise", Text: "Der Richtwert wurde kompakter auf die Wohnungseinheit bezogen."},
+				{Label: "Preise", Text: "Der Richtwert wurde kompakter auf die Wohneinheit bezogen."},
 				{Label: "Mobil", Text: "Der Kostenblock bricht ruhiger um und bleibt leichter scanbar."},
 			},
 		},
@@ -256,7 +256,7 @@ func Notes() []Note {
 			Intro:    "Die Startseite erklärt jetzt noch genauer, wofür hausv.org steht: Kommunikation, Transparenz und Anschlussfähigkeit ohne eigene Buchhaltung.",
 			Items: []NoteItem{
 				{Label: "Startseite", Text: "Funktionen, Pilotbausteine und Ausblick sind sauberer getrennt und leichter einzuordnen."},
-				{Label: "Faire Kosten", Text: "Die Preislogik spricht konsequent von Wohnungseinheiten und erklärt Zubehör wie Keller oder Stellplätze transparenter."},
+				{Label: "Faire Kosten", Text: "Die Preislogik spricht konsequent von Wohneinheiten und erklärt Zubehör wie Keller oder Stellplätze transparenter."},
 				{Label: "Österreich", Text: "camt.053 und camt.054 sind als Zahlungsstatusquellen eingeordnet; BMD/RZL und ebInterface bleiben Übergaben an bestehende Systeme."},
 				{Label: "Qualität", Text: "Schnittstellen erhalten klare Gates für Profile, Golden Files, Feldlimits und spätere XSD-Prüfung."},
 			},
@@ -295,7 +295,7 @@ func Notes() []Note {
 			Intro:    "Die Oberfläche führt jetzt klarer durch Hausalltag, Anhänge und neue Informationen.",
 			Items: []NoteItem{
 				{Label: "Startseite", Text: "Vertrauen, Datenschutz und faire Kosten sind verständlicher getrennt und leichter zu erfassen."},
-				{Label: "Faire Nutzung", Text: "Kostenfreie Nutzung und spätere Richtpreise orientieren sich an Wohnungseinheiten statt an Hausadressen."},
+				{Label: "Faire Nutzung", Text: "Kostenfreie Nutzung und spätere Richtpreise orientieren sich an Wohneinheiten statt an Hausadressen."},
 				{Label: "Anhänge", Text: "Ausgewählte Dateien zeigen Vorschau, Größe und Entfernen vor dem Speichern."},
 				{Label: "Verwaltung", Text: "Audit-Log, Rollenhilfe und Abstimmungen sind besser lesbar und geben mehr Rückmeldung."},
 				{Label: "Frische Updates", Text: "Neue Versionen laden ihre aktuellen Skripte zuverlässig nach dem Deployment."},

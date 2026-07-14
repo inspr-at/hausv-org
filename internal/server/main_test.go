@@ -932,7 +932,7 @@ func TestBuildLabelUsesSemverAndCommit(t *testing.T) {
 	}
 }
 
-func TestReleaseNotesMentionWohnungseinheitenPricing(t *testing.T) {
+func TestReleaseNotesMentionWohneinheitenPricing(t *testing.T) {
 	notes := version.Notes()
 	if len(notes) == 0 {
 		t.Fatal("releaseNotes empty")
@@ -944,8 +944,8 @@ func TestReleaseNotesMentionWohnungseinheitenPricing(t *testing.T) {
 			joined += item.Label + " " + item.Text + " "
 		}
 	}
-	if !strings.Contains(joined, "Wohnungseinheiten") {
-		t.Fatal("release notes should mention Wohnungseinheiten pricing")
+	if !strings.Contains(joined, "Wohneinheiten") {
+		t.Fatal("release notes should mention Wohneinheiten pricing")
 	}
 	if strings.Contains(joined, "1 € pro Haus") || strings.Contains(joined, "pro Hausadresse") {
 		t.Fatalf("release notes contain old house-based pricing wording: %s", joined)
@@ -1117,9 +1117,9 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Ein Portal für alle, die ein Haus gemeinsam verwalten.",
 		"Mehrparteien",
 		"hello [at] hausv [dot] org",
-		"Bis 10 Wohnungseinheiten kostenlos",
+		"Bis 25 Wohneinheiten kostenlos",
 		"1 € pro Monat",
-		"Je Wohnungseinheit als Richtwert",
+		"Je Wohneinheit als Richtwert",
 		"Impressum",
 		"DSGVO-ready",
 		"KI nur mit Opt-in",
@@ -1147,7 +1147,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Kostenlos",
 		"Sicherheit & Datenschutz",
 		"Kosten fair.",
-		"Je Wohnungseinheit als Richtwert",
+		"Je Wohneinheit als Richtwert",
 		"Zubehör wie Keller oder Stellplätze",
 		"Spenden",
 		"Fair bleibt fair.",

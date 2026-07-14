@@ -77,14 +77,14 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 
 ### Verbessert
 
-- **Der Kostenblock passt besser auf kleine Bildschirme.** Die Preiszeile bleibt kurz, die Wohnungseinheit steht klar im erklärenden Text.
+- **Der Kostenblock passt besser auf kleine Bildschirme.** Die Preiszeile bleibt kurz, die Wohneinheit steht klar im erklärenden Text.
 - **Kein seitliches Scrollen im Preisbereich.** Die Startseite bleibt auf dem Handy sauber im sichtbaren Bereich.
 
 ## [0.6.6] - 2026-07-09
 
 ### Verbessert
 
-- **Faire Kosten sind klarer formuliert.** Der Richtwert bezieht sich kompakter auf Wohnungseinheiten.
+- **Faire Kosten sind klarer formuliert.** Der Richtwert bezieht sich kompakter auf Wohneinheiten.
 - **Der Kostenblock liest sich mobil ruhiger.** Überschriften und Zeilen brechen sauberer um.
 
 ## [0.6.5] - 2026-07-09
@@ -145,7 +145,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 
 ### Verbessert
 
-- **Faire Kosten genauer erklärt.** Die Preislogik spricht konsequent von Wohnungseinheiten; Zubehör wie Keller oder Stellplätze wird nicht automatisch als volle Einheit behandelt.
+- **Faire Kosten genauer erklärt.** Die Preislogik spricht konsequent von Wohneinheiten; Zubehör wie Keller oder Stellplätze wird nicht automatisch als volle Einheit behandelt.
 - **Österreich-First verständlicher.** BMD/RZL, camt und ebInterface sind als Anschluss an bestehende Systeme eingeordnet, nicht als eigene Buchhaltung.
 - **Mehr Qualität bei Schnittstellen.** Golden Files, Profilprüfungen, Feldlimits und XSD-Gates sind als verbindliche Leitplanken dokumentiert.
 
@@ -182,7 +182,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 ### Neu
 
 - **Mehr Ruhe auf der Startseite.** Vertrauen, Datenschutz und faire Kosten sind klarer getrennt und leichter zu erfassen.
-- **Faire Nutzung nach Wohnungseinheiten.** Kostenloser Einstieg und spätere Richtpreise orientieren sich an Wohnungseinheiten statt an Hausadressen.
+- **Faire Nutzung nach Wohneinheiten.** Kostenloser Einstieg und spätere Richtpreise orientieren sich an Wohneinheiten statt an Hausadressen.
 - **Versionsverlauf im Portal.** Die Versionsnummer in der Seitenleiste zeigt, was sich für die Hausgemeinschaft verbessert hat.
 - **Bessere Rückmeldung bei Anhängen.** Ausgewählte Dateien zeigen Vorschau, Größe und Entfernen vor dem Speichern.
 

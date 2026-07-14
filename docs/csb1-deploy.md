@@ -192,7 +192,7 @@ Wohneinheiten and ownership/renter links persist to `/data/units.json` via
 Miteigentumsanteil and owner/renter email links; the file uses the same mutexed
 atomic JSON-store pattern and `0600` file mode. Missing legacy unit types are
 normalized as billable Wohnungen. Stellplätze, Keller/Lager and sonstige
-Einheiten can be tracked without counting toward fair-use Wohnungseinheiten.
+Einheiten can be tracked without counting toward fair-use Wohneinheiten.
 
 Manueller Zahlungsstatus pro Einheit persists to
 `/data/unit_payment_status.json` via `UNIT_PAYMENT_STATUS_DATA_PATH`. The status
