@@ -33,7 +33,7 @@ const PERSONAS = [
 const ROUTES = [
   ['portal', '/app'],
   ['announcements', '/app/announcements'],
-  ['events', '/app/termine'],
+  ['events', '/app/events'],
   ['issues', '/app/anliegen'],
   ['documents', '/app/dokumente'],
   ['ballots', '/app/abstimmungen'],

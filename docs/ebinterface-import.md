@@ -1,8 +1,13 @@
 # ebInterface-Import
 
-Der ebInterface-Adapter liest Dienstleister-Rechnungen als strukturierte
-Metadaten und legt die Original-XML als geschuetztes Dokument ab. Das ist ein
-Empfangs- und Weitergabeweg, keine Buchhaltung.
+Status: Parser und geschuetzte Ablage sind intern implementiert und getestet,
+aber noch nicht an eine produktive Upload-UI angeschlossen. Die externe
+Profil-/Praxispruefung aus `docs/interface-qa.md` bleibt das Freigabe-Gate.
+
+Der ebInterface-Adapter kann Dienstleister-Rechnungen als strukturierte
+Metadaten lesen und die Original-XML ueber den internen Speicherhelfer als
+geschuetztes Dokument ablegen. Das ist ein Empfangs- und Weitergabeweg, keine
+Buchhaltung.
 
 ## Unterstuetzte Profile
 
@@ -23,9 +28,10 @@ separates Folgeprofil. 4.x und 3.x werden nicht akzeptiert.
 
 ## Ablage
 
-Die XML-Datei wird im Dokumentenbereich als `Abrechnung` mit
-`verwalter-only`-Sichtbarkeit gespeichert. Damit bleibt sie ueber geschuetzte
-App-Routen erreichbar und wird nicht als oeffentlicher Datei-Link geteilt.
+Der interne Speicherhelfer legt die XML-Datei im Dokumentenbereich als
+`Abrechnung` mit `verwalter-only`-Sichtbarkeit ab. Damit bleibt sie ueber
+geschuetzte App-Routen erreichbar und wird nicht als oeffentlicher Datei-Link
+geteilt. Ein produktiver Importweg ruft diesen Helfer derzeit noch nicht auf.
 
 ## Grenzen
 

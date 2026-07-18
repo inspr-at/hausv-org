@@ -1,7 +1,12 @@
 # camt-Abgleich und Zahlungsstatus
 
-Der camt.053-Adapter liefert `canonicalPayment`-Datensätze. Die Zuordnung zum
-Portal passiert erst danach über bekannte Zahlungsreferenzen pro Einheit.
+Status: Parser, Abgleich und Statusübernahme sind intern implementiert und
+getestet, aber noch nicht an eine produktive Bankdatei-Upload-UI angeschlossen.
+Die externen Profil-/Bankdatei-Gates aus `docs/interface-qa.md` bleiben offen.
+
+Der camt.053-Adapter liefert intern `canonicalPayment`-Datensätze. Die
+Zuordnung zum Portal passiert erst danach über bekannte Zahlungsreferenzen pro
+Einheit.
 
 ## Ablauf
 

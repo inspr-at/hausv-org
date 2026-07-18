@@ -354,6 +354,13 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	}
 	priority := normalizeIssuePriority(r.FormValue("priority"))
 	assignee := normalizeEmail(r.FormValue("assignee_email"))
+	if r.FormValue("remove_assignee") == "1" {
+		assignee = ""
+	}
+	if canManage && !a.serviceAccessEnabled && assignee != normalizeEmail(existing.AssigneeEmail) && a.shouldInviteServiceProvider(tenant.Slug, assignee) {
+		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
+		return
+	}
 	proposal, serviceProposalProvided, err := issueServiceProposalFromForm(r.Form)
 	if err != nil {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)

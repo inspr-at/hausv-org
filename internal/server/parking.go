@@ -587,7 +587,12 @@ func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request, ac aut
 		http.Redirect(w, r, "/app/settings/parking-access?parking_access=invalid", http.StatusSeeOther)
 		return
 	}
-	if normalizeRole(existing.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
+	effectiveProfile := existing.ForTenant(tenant.Slug)
+	if !a.serviceAccessEnabled && isServiceProviderRole(effectiveProfile.Role) {
+		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
+		return
+	}
+	if normalizeRole(effectiveProfile.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
 		http.Redirect(w, r, "/app/settings/parking-access?parking_access=not_editable", http.StatusSeeOther)
 		return
 	}

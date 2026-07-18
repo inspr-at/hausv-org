@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"net/mail"
@@ -79,6 +80,10 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
 		return
 	}
+	if a.serviceProviderAccessClosedFor(tenant.Slug, email) {
+		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
+		return
+	}
 	if !a.isAllowed(email, tenant.Slug) || !a.isAuthMethodAllowed(email, tenant.Slug, authMethodEmail) {
 		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
 		return
@@ -125,7 +130,10 @@ func (a *app) verifyLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.startSession(w, email, tenantSlug, authMethodEmail); err != nil {
+	if err := a.startSession(w, email, tenantSlug, authMethodEmail); errors.Is(err, errServiceProviderAccessClosed) {
+		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
+		return
+	} else if err != nil {
 		http.Error(w, "Could not create session", http.StatusInternalServerError)
 		return
 	}
@@ -255,6 +263,10 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
 		return
 	}
+	if a.serviceProviderAccessClosedFor(tenant.Slug, email) {
+		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
+		return
+	}
 	if !a.isAllowed(email, tenant.Slug) || !a.isAuthMethodAllowed(email, tenant.Slug, authMethodOIDC) {
 		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
 		return
@@ -267,6 +279,9 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) startSession(w http.ResponseWriter, email string, tenantSlug string, authMethod string) error {
+	if a.serviceProviderAccessClosedFor(tenantSlug, email) {
+		return errServiceProviderAccessClosed
+	}
 	token, expiresAt, err := a.sessions.Put(email, tenantSlug, authMethod, a.sessionTTL)
 	if err != nil {
 		return err

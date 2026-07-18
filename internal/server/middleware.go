@@ -72,6 +72,10 @@ type authedHandler func(http.ResponseWriter, *http.Request, authCtx)
 // and require the session's tenant to match. On failure it redirects to "/" (the
 // exact behaviour of the old inline guard) and reports false.
 func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, bool) {
+	if a.closedServiceProviderSession(r) {
+		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
+		return authCtx{}, false
+	}
 	tenant := a.tenantForRequest(r)
 	email, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
@@ -79,6 +83,18 @@ func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, boo
 		return authCtx{}, false
 	}
 	return authCtx{email: email, role: role, tenant: tenant}, true
+}
+
+func (a *app) closedServiceProviderSession(r *http.Request) bool {
+	if a == nil || a.serviceAccessEnabled || a.sessions == nil {
+		return false
+	}
+	cookie, err := r.Cookie("weg_session")
+	if err != nil {
+		return false
+	}
+	email, tenantSlug, _, ok := a.sessions.Get(cookie.Value)
+	return ok && a.serviceProviderAccessClosedFor(tenantSlug, email)
 }
 
 // page wraps a GET handler with the authenticate guard. Capability and

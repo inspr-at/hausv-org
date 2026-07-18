@@ -4,22 +4,34 @@ hausv.org bleibt Kommunikations- und Transparenzsystem. Schnittstellen dürfen
 Daten strukturieren, prüfen, importieren oder exportieren. Sie dürfen keine
 Buchhaltung, Steuerlogik, Mahnlogik oder Zahlungsaufträge erzeugen.
 
-## Dienstleister-Zugang: Magic-Link vor Vollkonto
+## Dienstleister-Zugang: Tenant-Rolle mit Magic-Link
 
-Entscheidung: Dienstleister bekommen in v1 keinen breiten Portal-Account. Der
-bevorzugte Zugang ist ein auf ein konkretes Anliegen begrenzter Magic-Link.
+**Freigabestatus:** technisch umgesetzt, aber nicht für den realen Betrieb
+freigegeben. Vor echten Einladungen muss HAUSV-86 die externe fachkundige
+Datenschutz- und Rechtsprüfung samt Aufbewahrungs- und Informationsregeln
+dokumentiert abschließen; HAUSV-128 bleibt bis dahin in QA.
+
+Entscheidung: Dienstleister erhalten in v1 ein eingeladenes, tenant-begrenztes
+Profil mit der Rolle `Dienstleister`. Ein kurzlebiger Magic-Link meldet dieses
+Profil an und führt direkt zum zugewiesenen Anliegen. Die Berechtigung entsteht
+nicht durch den Link selbst, sondern durch Tenant-Mitgliedschaft und aktuelle
+Anliegen-Zuordnung.
 
 Leitplanken:
 
-- Link gilt nur für Tenant und Anliegen
-- Dienstleister sehen keine Aushänge, Dokumente, Abstimmungen, Einheiten oder
-  andere Anliegen
-- Verwaltung kann den Zugriff entziehen
-- wiederkehrende Firmen bleiben als Kontakt im Adressbuch, nicht als globaler
-  Nutzer mit dauerhaftem Rollenmix
+- der Magic-Link gilt nur für den Tenant, läuft nach 15 Minuten ab und enthält
+  einen Deeplink zum Anlass der Einladung
+- Dienstleister sehen nur offene Anliegen im Tenant, die ihrer E-Mail-Adresse
+  aktuell zugewiesen sind; mehrere parallele Zuweisungen sind möglich
+- Aushänge, Bewohner-Dokumente, Abstimmungen, Einheiten und nicht zugewiesene
+  Anliegen bleiben unsichtbar
+- Verwaltung kann eine Zuweisung entziehen; erledigte oder entzogene Anliegen
+  sind danach nicht mehr zugänglich
+- die Firma im Adressbuch und das eingeladene Rollenprofil bleiben getrennte
+  Konzepte; es gibt keine globale Dienstleisterrolle über Häuser hinweg
 
-Ein vollständiges Konto wird erst sinnvoll, wenn reale Dienstleister mehrere
-Häuser regelmäßig betreuen und ein sauberer Vertrags-/Rollenrahmen definiert ist.
+Eine weitere Tenant-Mitgliedschaft für dieselbe Identität braucht immer eine
+eigene, ausdrückliche Zuordnung und den passenden Vertrags-/Rollenrahmen.
 
 ## BMD zuerst
 
@@ -36,15 +48,15 @@ Geplante Rohdaten:
 Interner Kandidat:
 
 - Profil `raw-v0` als Semikolon-CSV fuer die Steuerberater-Pruefung
-- Golden File `testdata/bmd-raw-v0.csv`
+- Golden File `internal/integrations/testdata/bmd-raw-v0.csv`
 - Pruefpaket `docs/bmd-rawdata-verification.md`
 - Konten- und Steuerfelder werden vor externer BMD-NTCS-Bestaetigung abgelehnt
 
-Abnahme-Gate vor Umsetzung:
+Abnahme-Gate vor produktiver Freigabe:
 
 - Feldmapping mit einem realen Steuerberater prüfen
 - Kontenbedarf und Importziel in BMD NTCS festhalten
-- Golden File erstellen
+- vorhandenes Golden File mit dem bestaetigten Mapping aktualisieren
 - Testimport in BMD NTCS dokumentieren
 
 Ohne dieses Gate wird kein BMD-Export als produktive Funktion freigeschaltet.
@@ -115,7 +127,11 @@ Entscheidungsvorlage:
 Entscheidung: camt.053 ist der primäre Importweg für Zahlungsstatus und
 Bankbewegungen. camt.054 wird als Zahlungsavis-/Detailabgleich unterstützt,
 wenn eine Bank Detailavise getrennt vom Kontoauszug liefert; fachlich bleibt es
-derselbe geschützte Statusabgleich. MT940 bleibt ein bewertbarer Legacy-Fallback,
+derselbe geschützte Statusabgleich. `camt.054.001.08` ist derzeit nur mit dem
+Repository-Golden-File getestet; die produktive Freigabe braucht weiterhin die
+unten genannten Bankprofil-Nachweise. Für `.02` wird lediglich der Namespace
+akzeptiert; ohne eigene Fixture und eigenes Golden File bleibt das Profil
+unverifiziert. MT940 bleibt ein bewertbarer Legacy-Fallback,
 wird aber erst gebaut, wenn ein echter Kunde nur MT940 liefern kann und
 Testdateien freigibt.
 

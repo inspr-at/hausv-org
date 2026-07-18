@@ -3,6 +3,25 @@
 hausv.org behandelt externe Dienstleister als eng begrenzte Rolle. Der Zugang ist
 für konkrete Anliegen gedacht, nicht als allgemeiner Bewohner- oder Verwaltungszugang.
 
+## Freigabestatus
+
+Stand 18. Juli 2026 hat noch keine externe fachkundige Person die konkrete
+Datenschutz- und Rechtsgestaltung geprüft oder freigegeben. Ein formell
+bestellter Datenschutzbeauftragter ist dafür nicht vorausgesetzt; ob eine solche
+Rolle überhaupt erforderlich ist, wurde ebenfalls noch nicht beurteilt.
+
+Bis die Prüfung in HAUSV-86 dokumentiert abgeschlossen ist, darf der
+Dienstleister-Zugang im Betrieb nicht aktiviert oder für echte Einladungen
+verwendet werden. HAUSV-86 ist das fachliche Freigabe-Ticket und blockiert
+HAUSV-128, bis die Prüfung und die Betreiberentscheidung dokumentiert sind.
+
+Die Anwendung erzwingt diesen Zustand standardmäßig: Ohne die ausdrückliche
+Server-Einstellung `SERVICE_PROVIDER_ACCESS_ENABLED=true` werden neue
+Dienstleister-Zuordnungen, -Kontakte und -Zugänge vor dem Speichern abgelehnt.
+Dabei entstehen weder Profil noch Einladung, E-Mail oder Sitzung. Bereits
+vorhandene Dienstleister-Sitzungen und Anmeldeversuche werden ebenfalls
+abgewiesen. Die Einstellung bleibt bis zur dokumentierten Freigabe auf `false`.
+
 ## Sichtbare Daten
 
 Ein Dienstleister sieht nur offene Anliegen, bei denen seine E-Mail-Adresse als
@@ -50,3 +69,12 @@ gilt daher:
 Das Produkt unterstützt diese Linie technisch über Least-Privilege-Rollen,
 geschützte Dateiwege, Audit-Ereignisse für Einladung/Entzug und testsichere
 Sperren für nicht zugewiesene oder geschlossene Anliegen.
+
+## Fachliche Referenzen
+
+- [Österreichische Datenschutzbehörde: Pflichten von Verantwortlichen](https://dsb.gv.at/rechte-pflichten/ihre-pflichten-als-verantwortlicher)
+  und [Voraussetzungen für Datenschutzbeauftragte](https://dsb.gv.at/rechte-pflichten/datenschutzbeauftragter)
+- [EU-Datenschutz-Grundverordnung](https://eur-lex.europa.eu/eli/reg/2016/679/oj),
+  insbesondere Rollen, Transparenz, Datenminimierung und Speicherbegrenzung
+- [Europäischer Datenschutzausschuss: Leitlinien zu Verantwortlichen und
+  Auftragsverarbeitern](https://www.edpb.europa.eu/documents/guideline/guidelines-072020-on-the-concepts-of-controller-and-processor-in-the-gdpr_en)

@@ -9,8 +9,12 @@ Avise eine saubere hausv.org-Zahlungsreferenz enthalten.
 
 - camt.054 wird als Zahlungsstatusquelle bewertet und technisch an dasselbe
   `canonicalPayment`-Modell angebunden wie camt.053.
-- Unterstützte Profile: `camt.054.001.02` und `camt.054.001.08`.
-- Der erste Golden-File-Test deckt `camt.054.001.08` ab.
+- `camt.054.001.08` ist mit der synthetischen Repository-Fixture und einem
+  Golden-File-Test abgedeckt, aber noch nicht produktiv freigegeben.
+- Für `camt.054.001.02` wird der Namespace akzeptiert. Ohne eigene Fixture und
+  eigenes Golden File bleibt das Profil darüber hinaus unverifiziert.
+- Die produktive Freigabe eines Profils folgt erst nach den unten genannten
+  Bankdatei-, Profil- und Datenschutz-Nachweisen.
 - Der Adapter liest nur eingehende `CRDT`-Einträge. Ausgehende oder unklare
   Einträge werden als Datensatzfehler gemeldet.
 

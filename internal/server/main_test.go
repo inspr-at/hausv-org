@@ -40,6 +40,7 @@ type sentMagicLink struct {
 
 type recordingMailer struct {
 	magicLinks    []sentMagicLink
+	invites       []string
 	notifications []sentNotification
 }
 
@@ -47,8 +48,11 @@ func (m *recordingMailer) SendMagicLink(to string, link string) error {
 	m.magicLinks = append(m.magicLinks, sentMagicLink{To: to, Link: link})
 	return nil
 }
-func (m *recordingMailer) SendInvite(string, string, string) error { return nil }
-func (m *recordingMailer) Configured() bool                        { return true }
+func (m *recordingMailer) SendInvite(to string, _ string, _ string) error {
+	m.invites = append(m.invites, to)
+	return nil
+}
+func (m *recordingMailer) Configured() bool { return true }
 func (m *recordingMailer) SendNotification(to string, subject string, body string) error {
 	m.notifications = append(m.notifications, sentNotification{To: to, Subject: subject, Body: body})
 	return nil
@@ -930,12 +934,25 @@ func TestBuildLabelUsesSemverAndCommit(t *testing.T) {
 	if got := version.BuildLabel(); got != "0.1.0 (abc1234)" {
 		t.Fatalf("build label = %q, want semver and commit", got)
 	}
+
+	version.Version = ""
+	version.Commit = ""
+	if got := version.BuildLabel(); got != "dev (dev)" {
+		t.Fatalf("empty build identity should stay visibly non-production, got %q", got)
+	}
 }
 
 func TestReleaseNotesMentionWohneinheitenPricing(t *testing.T) {
 	notes := version.Notes()
 	if len(notes) == 0 {
 		t.Fatal("releaseNotes empty")
+	}
+	versionFile, err := os.ReadFile("../../VERSION")
+	if err != nil {
+		t.Fatalf("read VERSION: %v", err)
+	}
+	if want := strings.TrimSpace(string(versionFile)); notes[0].Version != want {
+		t.Fatalf("newest release note = %q, want VERSION %q", notes[0].Version, want)
 	}
 	joined := ""
 	for _, note := range notes {
@@ -946,6 +963,9 @@ func TestReleaseNotesMentionWohneinheitenPricing(t *testing.T) {
 	}
 	if !strings.Contains(joined, "Wohneinheiten") {
 		t.Fatal("release notes should mention Wohneinheiten pricing")
+	}
+	if !strings.Contains(joined, "25 Wohneinheiten") {
+		t.Fatal("release notes should mention the current 25-unit Fair-Use threshold")
 	}
 	if strings.Contains(joined, "1 € pro Haus") || strings.Contains(joined, "pro Hausadresse") {
 		t.Fatalf("release notes contain old house-based pricing wording: %s", joined)
@@ -1121,7 +1141,8 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"1 € pro Monat",
 		"Je Wohneinheit als Richtwert",
 		"Impressum",
-		"DSGVO-ready",
+		"Datenschutz mitgedacht",
+		"Datenschutzprüfung offen",
 		"KI nur mit Opt-in",
 		"Keine eigene Buchhaltung",
 		"Kommunikation statt Buchhaltung",
@@ -1153,7 +1174,8 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Fair bleibt fair.",
 		"Bleibt privat.",
 		"Keine öffentlichen Datei-Links",
-		"Keine Weitergabe persönlicher Daten",
+		"Keine unkontrollierte Weitergabe",
+		"Rechtsgrundlagen",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
@@ -2011,6 +2033,81 @@ func TestParkingAccessPageGrantsAndRevokesInvitePermission(t *testing.T) {
 	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionInviteUpdate, Query: "parker", Limit: 10})
 	if len(events) != 2 || events[0].Summary != "Parkplatz-Zugriff geändert" {
 		t.Fatalf("parking access audit events = %+v", events)
+	}
+}
+
+func TestClosedServiceProviderParkingAccessIsReadOnlyForEffectiveTenantRole(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	if _, err := a.inviteStore.Add(userProfile{
+		Email:       "service@example.com",
+		FirstName:   "Multi",
+		LastName:    "Service",
+		Role:        roleResident,
+		Tenants:     []string{"jhw22", "haus-b"},
+		AuthMethods: defaultAuthMethods(),
+		TenantMemberships: map[string]tenantMembership{
+			"jhw22":  {Role: roleServiceProvider},
+			"haus-b": {Role: roleResident},
+		},
+	}); err != nil {
+		t.Fatalf("Add service invite: %v", err)
+	}
+
+	page := authedRequest(t, a, "manager@example.com", "/app/settings/parking-access")
+	if page.Code != http.StatusOK {
+		t.Fatalf("parking access status = %d, want 200", page.Code)
+	}
+	body := page.Body.String()
+	if !strings.Contains(body, "service@example.com") || !strings.Contains(body, "Schreibgeschützt") {
+		t.Fatalf("closed service provider should render read-only:\n%s", body)
+	}
+	if strings.Contains(body, `<input type="hidden" name="email" value="service@example.com">`) {
+		t.Fatalf("closed service provider still has a parking mutation form:\n%s", body)
+	}
+
+	update := authedFormRequest(t, a, "manager@example.com", "/app/settings/parking-access", url.Values{
+		"email":   {"service@example.com"},
+		"parking": {"1"},
+	})
+	if update.Code != http.StatusForbidden || !strings.Contains(update.Body.String(), "Datenschutzprüfung offen") {
+		t.Fatalf("closed service parking update = %d %q, want clear 403", update.Code, update.Body.String())
+	}
+	edit := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/edit", url.Values{
+		"orig_email": {"service@example.com"},
+		"email":      {"service@example.com"},
+		"first_name": {"Changed"},
+		"role":       {roleResident},
+	})
+	if edit.Code != http.StatusForbidden || !strings.Contains(edit.Body.String(), "Datenschutzprüfung offen") {
+		t.Fatalf("closed effective service edit = %d %q, want clear 403", edit.Code, edit.Body.String())
+	}
+	deleteResponse := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/delete", url.Values{
+		"email": {"service@example.com"},
+	})
+	if deleteResponse.Code != http.StatusForbidden || !strings.Contains(deleteResponse.Body.String(), "Datenschutzprüfung offen") {
+		t.Fatalf("closed effective service delete = %d %q, want clear 403", deleteResponse.Code, deleteResponse.Body.String())
+	}
+	profile, ok := a.inviteStore.Get("service@example.com")
+	if !ok || profile.FirstName != "Multi" || profile.HasPermission(permissionParking) || profile.ForTenant("jhw22").HasPermission(permissionParking) {
+		t.Fatalf("rejected service mutations changed profile: %+v ok=%v", profile, ok)
+	}
+	if profile.ForTenant("haus-b").Role != roleResident {
+		t.Fatalf("unrelated tenant membership changed: %+v", profile.ForTenant("haus-b"))
+	}
+	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Query: "service@example.com", Limit: 10}); len(events) != 0 {
+		t.Fatalf("rejected service mutations created audit events: %+v", events)
+	}
+
+	users := authedRequest(t, a, "manager@example.com", "/app/settings/users")
+	if users.Code != http.StatusOK {
+		t.Fatalf("users status = %d, want 200", users.Code)
+	}
+	usersBody := users.Body.String()
+	if !strings.Contains(usersBody, "service@example.com") || !strings.Contains(usersBody, "Schreibgeschützt") {
+		t.Fatalf("closed service provider should render read-only in user settings:\n%s", usersBody)
+	}
+	if strings.Contains(usersBody, `data-edit="service@example.com"`) || strings.Contains(usersBody, `<input type="hidden" name="email" value="service@example.com">`) {
+		t.Fatalf("closed multi-tenant service provider still has an edit or global delete control:\n%s", usersBody)
 	}
 }
 
@@ -3461,6 +3558,7 @@ func TestIssueVisibilityByPersona(t *testing.T) {
 
 func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.serviceAccessEnabled = true
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
 
 	assigned, err := a.issueStore.Create(residentIssue{
@@ -3555,8 +3653,183 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 	}
 }
 
-func TestManagerCanInviteServiceProviderAndRevokeIssueAccess(t *testing.T) {
+func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	if a.serviceAccessEnabled {
+		t.Fatal("service-provider access must default to closed")
+	}
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	mailer := &recordingMailer{}
+	a.mailer = mailer
+
+	issue, err := a.issueStore.Create(residentIssue{
+		TenantSlug:   "jhw22",
+		AuthorEmail:  "resident@example.com",
+		AuthorName:   "Resident",
+		Category:     "Reparatur",
+		Title:        "Fenster undicht",
+		Body:         "Bitte prüfen.",
+		LocationType: issueLocationCommon,
+		Status:       issueStatusOpen,
+		Priority:     issuePriorityNorm,
+	})
+	if err != nil {
+		t.Fatalf("Create issue: %v", err)
+	}
+	assign := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/workflow", url.Values{
+		"id":             {issue.ID},
+		"status":         {issueStatusProgress},
+		"priority":       {issuePriorityHigh},
+		"assignee_email": {"external@example.com"},
+	})
+	if assign.Code != http.StatusForbidden || !strings.Contains(assign.Body.String(), "Datenschutzprüfung offen") {
+		t.Fatalf("closed assignment = %d %q, want clear 403", assign.Code, assign.Body.String())
+	}
+	unchanged, ok := a.issueStore.Get("jhw22", issue.ID)
+	if !ok || unchanged.Status != issueStatusOpen || unchanged.Priority != issuePriorityNorm || unchanged.AssigneeEmail != "" || len(unchanged.StatusHistory) != 0 {
+		t.Fatalf("rejected assignment changed issue: %+v ok=%v", unchanged, ok)
+	}
+	if _, ok := a.inviteStore.Get("external@example.com"); ok {
+		t.Fatal("rejected assignment created a service-provider profile")
+	}
+	if len(mailer.magicLinks) != 0 || len(mailer.invites) != 0 || len(mailer.notifications) != 0 || assign.Header().Get("Set-Cookie") != "" {
+		t.Fatalf("rejected assignment caused side effects: magic=%+v invites=%+v notifications=%+v cookie=%q", mailer.magicLinks, mailer.invites, mailer.notifications, assign.Header().Get("Set-Cookie"))
+	}
+	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Limit: 20}); len(events) != 0 {
+		t.Fatalf("rejected assignment created audit events: %+v", events)
+	}
+
+	createContact := authedFormRequest(t, a, "manager@example.com", "/app/kontakte", url.Values{
+		"kind": {"Dienstleister"}, "name": {"Extern GmbH"}, "email": {"contact@example.com"}, "active": {"true"},
+	})
+	if createContact.Code != http.StatusForbidden || len(a.contactStore.ListTenant("jhw22", true)) != 0 {
+		t.Fatalf("closed contact create = %d contacts=%+v", createContact.Code, a.contactStore.ListTenant("jhw22", true))
+	}
+	existingContact, _, err := a.contactStore.Upsert(managedContact{TenantSlug: "jhw22", Kind: roleServiceProvider, Name: "Alt GmbH", Email: "old-contact@example.com", Active: true})
+	if err != nil {
+		t.Fatalf("seed service contact: %v", err)
+	}
+	editContact := authedFormRequest(t, a, "manager@example.com", "/app/kontakte", url.Values{
+		"id": {existingContact.ID}, "kind": {"Hausmeister"}, "name": {"Neu GmbH"}, "email": {"new-contact@example.com"}, "active": {"true"},
+	})
+	contacts := a.contactStore.ListTenant("jhw22", true)
+	if editContact.Code != http.StatusForbidden || len(contacts) != 1 || contacts[0].Name != "Alt GmbH" || contacts[0].Email != "old-contact@example.com" {
+		t.Fatalf("closed contact edit = %d contacts=%+v", editContact.Code, contacts)
+	}
+
+	createInvite := authedFormRequest(t, a, "manager@example.com", "/app/settings/users", url.Values{
+		"email": {"invite@example.com"}, "role": {"Handwerker"},
+	})
+	if createInvite.Code != http.StatusForbidden {
+		t.Fatalf("closed service invite create status = %d, want 403", createInvite.Code)
+	}
+	if _, ok := a.inviteStore.Get("invite@example.com"); ok || len(mailer.invites) != 0 {
+		t.Fatalf("closed service invite persisted or mailed: ok=%v mail=%+v", ok, mailer.invites)
+	}
+	if _, err := a.inviteStore.Add(userProfile{Email: "existing-service@example.com", FirstName: "Alt", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+		t.Fatalf("seed service invite: %v", err)
+	}
+	editInvite := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/edit", url.Values{
+		"orig_email": {"existing-service@example.com"}, "email": {"existing-service@example.com"}, "first_name": {"Neu"}, "role": {roleResident},
+	})
+	persisted, ok := a.inviteStore.Get("existing-service@example.com")
+	if editInvite.Code != http.StatusForbidden || !ok || persisted.FirstName != "Alt" || !isServiceProviderRole(persisted.Role) {
+		t.Fatalf("closed service invite edit = %d profile=%+v ok=%v", editInvite.Code, persisted, ok)
+	}
+	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Limit: 20}); len(events) != 0 {
+		t.Fatalf("rejected contact/invite writes created audit events: %+v", events)
+	}
+
+	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board").Body.String()
+	if !strings.Contains(board, "placeholder=\"Datenschutzprüfung offen\" disabled") || strings.Contains(board, "datalist id=\"service-provider-contacts\"") {
+		t.Fatalf("closed issue UI did not disable service assignment:\n%s", board)
+	}
+	contactPage := authedRequest(t, a, "manager@example.com", "/app/kontakte").Body.String()
+	if !strings.Contains(contactPage, "Datenschutzprüfung offen") || strings.Contains(contactPage, "<option value=\"Dienstleister\"") {
+		t.Fatalf("closed contact UI still offers service-provider creation:\n%s", contactPage)
+	}
+	usersPage := authedRequest(t, a, "manager@example.com", "/app/settings/users").Body.String()
+	if !strings.Contains(usersPage, "Dienstleister-Zugänge können noch nicht") || strings.Contains(usersPage, "<option value=\"Dienstleister\"") {
+		t.Fatalf("closed user UI still offers service-provider roles:\n%s", usersPage)
+	}
+}
+
+func TestServiceProviderAccessConfigRequiresExplicitOptIn(t *testing.T) {
+	t.Setenv("SERVICE_PROVIDER_ACCESS_ENABLED", "")
+	if serviceProviderAccessEnabled() {
+		t.Fatal("empty SERVICE_PROVIDER_ACCESS_ENABLED must stay closed")
+	}
+	t.Setenv("SERVICE_PROVIDER_ACCESS_ENABLED", "true")
+	if !serviceProviderAccessEnabled() {
+		t.Fatal("explicit SERVICE_PROVIDER_ACCESS_ENABLED=true should open the tested flow")
+	}
+}
+
+func TestClosedServiceProviderAuthenticationAndNotificationsAreRejected(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	mailer := &recordingMailer{}
+	a.mailer = mailer
+
+	loginValues := url.Values{"email": {"service@example.com"}}
+	loginReq := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/auth/request", strings.NewReader(loginValues.Encode()))
+	loginReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	loginReq.Header.Set("Origin", "http://jhw22.hausv.org")
+	login := httptest.NewRecorder()
+	a.handler().ServeHTTP(login, loginReq)
+	if login.Code != http.StatusForbidden || !strings.Contains(login.Body.String(), "Datenschutzprüfung offen") || len(mailer.magicLinks) != 0 {
+		t.Fatalf("closed login request = %d %q magic=%+v", login.Code, login.Body.String(), mailer.magicLinks)
+	}
+
+	a.tokens.Put("existing-magic-token", "service@example.com", "jhw22", 15*time.Minute)
+	verify := httptest.NewRecorder()
+	verifyReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/auth/verify?token=existing-magic-token", nil)
+	a.verifyLogin(verify, verifyReq)
+	if verify.Code != http.StatusForbidden || !strings.Contains(verify.Body.String(), "Datenschutzprüfung offen") || verify.Header().Get("Set-Cookie") != "" {
+		t.Fatalf("closed magic-link verification = %d %q cookie=%q", verify.Code, verify.Body.String(), verify.Header().Get("Set-Cookie"))
+	}
+
+	sessionToken, _, err := a.sessions.Put("service@example.com", "jhw22", authMethodEmail, time.Hour)
+	if err != nil {
+		t.Fatalf("seed existing session: %v", err)
+	}
+	sessionReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app/anliegen", nil)
+	sessionReq.AddCookie(&http.Cookie{Name: "weg_session", Value: sessionToken})
+	session := httptest.NewRecorder()
+	a.handler().ServeHTTP(session, sessionReq)
+	if session.Code != http.StatusForbidden || !strings.Contains(session.Body.String(), "Datenschutzprüfung offen") {
+		t.Fatalf("closed existing session = %d %q", session.Code, session.Body.String())
+	}
+
+	a.notify(portalNotification{
+		Event:      notificationEventIssue,
+		Tenant:     a.tenants["jhw22"],
+		Recipients: []string{"service@example.com", "resident@example.com"},
+		Subject:    "Test",
+	})
+	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "resident@example.com" {
+		t.Fatalf("closed provider received notification: %+v", mailer.notifications)
+	}
+	a.notifyIssueUpdated(a.tenants["jhw22"], residentIssue{
+		AuthorEmail:   "resident@example.com",
+		AssigneeEmail: "unknown-external@example.com",
+		Title:         "Bestehende Zuordnung",
+		Status:        issueStatusOpen,
+		Priority:      issuePriorityNorm,
+	}, "manager@example.com", "Test")
+	for _, sent := range mailer.notifications {
+		if sent.To != "resident@example.com" {
+			t.Fatalf("closed unknown provider received notification: %+v", mailer.notifications)
+		}
+	}
+	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionLogin, Limit: 20}); len(events) != 0 {
+		t.Fatalf("rejected authentication created login audit events: %+v", events)
+	}
+}
+
+func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.serviceAccessEnabled = true
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
 	mailer := &recordingMailer{}
 	a.mailer = mailer
@@ -3654,6 +3927,7 @@ func TestManagerCanInviteServiceProviderAndRevokeIssueAccess(t *testing.T) {
 
 func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.serviceAccessEnabled = true
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
 
 	issue, err := a.issueStore.Create(residentIssue{
@@ -3741,6 +4015,7 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 // Before this, comment/photo uploads left no trace.
 func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.serviceAccessEnabled = true
 
 	issue, err := a.issueStore.Create(residentIssue{
 		TenantSlug:    "jhw22",
@@ -3793,6 +4068,7 @@ func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
 // documentation), but a truly-empty submit is still rejected.
 func TestIssueCommentAllowsPhotoOnlyButRejectsEmpty(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.serviceAccessEnabled = true
 	issue, err := a.issueStore.Create(residentIssue{
 		TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident",
 		Category: "Reparatur", Title: "Foto-only", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
@@ -3829,6 +4105,7 @@ func TestIssueCommentAllowsPhotoOnlyButRejectsEmpty(t *testing.T) {
 // (Angenommen) and keeps access; reopening to Neu is blocked.
 func TestServiceProviderCanAcceptButNotReopen(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.serviceAccessEnabled = true
 	issue, err := a.issueStore.Create(residentIssue{
 		TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident",
 		Category: "Reparatur", Title: "Annehmen", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
@@ -3866,6 +4143,7 @@ func TestServiceProviderCanAcceptButNotReopen(t *testing.T) {
 // appointment renders as a real dated VEVENT (not the old dateless VTODO).
 func TestServiceProviderScheduledRequiresDateAndEmitsEvent(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.serviceAccessEnabled = true
 	issue, err := a.issueStore.Create(residentIssue{
 		TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident",
 		Category: "Reparatur", Title: "Termin", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
@@ -3949,6 +4227,7 @@ func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
 
 func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.serviceAccessEnabled = true
 	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["service@example.com"] = userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["other-service@example.com"] = userProfile{Email: "other-service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
@@ -4060,6 +4339,7 @@ func calendarFeedRequest(t *testing.T, a *app, token string) *httptest.ResponseR
 
 func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.serviceAccessEnabled = true
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
 	a.tenants["other"] = tenantConfig{Slug: "other", Name: "Other Portal", Address: "Andere Gasse 1", Host: "other.hausv.org"}
 
@@ -4200,6 +4480,7 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 
 func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.serviceAccessEnabled = true
 	a.profiles["other-service@example.com"] = userProfile{Email: "other-service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
 
@@ -4270,6 +4551,7 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 
 func TestIssueEstimateMetadataAndAttachmentUseProtectedRoutes(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.serviceAccessEnabled = true
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
 
 	issue, err := a.issueStore.Create(residentIssue{

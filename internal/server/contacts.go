@@ -21,6 +21,10 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	managedContacts := a.managedContactViews(tenant.Slug, canManageContacts)
 	boardContacts := a.boardContactViews(tenant.Slug)
 	residentContacts := a.residentDirectoryViews(tenant.Slug)
+	managedEmptyMessage := "Dienstleister, Hausmeister und Notdienste können hier zentral hinterlegt werden."
+	if !a.serviceAccessEnabled {
+		managedEmptyMessage = "Hausmeister, Notdienste und weitere wichtige Kontakte können hier zentral hinterlegt werden."
+	}
 	contactMsg, contactOK := contactMessage(r.URL.Query().Get("contact"))
 	a.render(w, "contacts", map[string]any{
 		"Title":                "Kontakte",
@@ -43,8 +47,8 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"EmergencyEmpty":       emptyState("Kein Notdienst hinterlegt", "Notdienst und Hausmeister werden in den Gebäude-Einstellungen gepflegt."),
 		"ManagedContacts":      managedContacts,
 		"HasManagedContacts":   len(managedContacts) > 0,
-		"ManagedEmpty":         emptyState("Noch kein Adressbucheintrag", "Dienstleister, Hausmeister und Notdienste können hier zentral hinterlegt werden."),
-		"ContactKindOptions":   contactKindOptions(""),
+		"ManagedEmpty":         emptyState("Noch kein Adressbucheintrag", managedEmptyMessage),
+		"ContactKindOptions":   contactKindOptionsForServiceProviderAccess("", a.serviceAccessEnabled),
 		"BoardContacts":        boardContacts,
 		"HasBoardContacts":     len(boardContacts) > 0,
 		"BoardEmpty":           emptyState("Kein Beirat hinterlegt", "Beiräte erscheinen hier, sobald sie in Benutzer & Rechte die Beirat-Rolle haben."),
@@ -67,6 +71,10 @@ func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac au
 	item, err := managedContactFromForm(tenant.Slug, r.Form)
 	if err != nil {
 		http.Redirect(w, r, "/app/kontakte?contact=invalid", http.StatusSeeOther)
+		return
+	}
+	if !a.serviceAccessEnabled && (normalizeContactKind(item.Kind) == roleServiceProvider || a.isExistingServiceProviderContact(tenant.Slug, item.ID)) {
+		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
 		return
 	}
 	saved, created, err := a.contactStore.Upsert(item)
@@ -93,6 +101,18 @@ func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac au
 		},
 	})
 	http.Redirect(w, r, "/app/kontakte?contact=saved", http.StatusSeeOther)
+}
+
+func (a *app) isExistingServiceProviderContact(tenantSlug string, id string) bool {
+	if a == nil || a.contactStore == nil || strings.TrimSpace(id) == "" {
+		return false
+	}
+	for _, item := range a.contactStore.ListTenant(tenantSlug, true) {
+		if item.ID == id {
+			return normalizeContactKind(item.Kind) == roleServiceProvider
+		}
+	}
+	return false
 }
 
 func (a *app) deactivateManagedContact(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -151,13 +171,15 @@ func (a *app) managedContactViews(tenantSlug string, includeInactive bool) []man
 	items := a.contactStore.ListTenant(tenantSlug, includeInactive)
 	views := make([]managedContactView, 0, len(items))
 	for _, item := range items {
-		views = append(views, managedContactViewFrom(item))
+		itemView := managedContactViewFrom(item)
+		itemView.KindOptions = contactKindOptionsForServiceProviderAccess(item.Kind, a.serviceAccessEnabled)
+		views = append(views, itemView)
 	}
 	return views
 }
 
 func (a *app) serviceContactOptions(tenantSlug string) []contactOptionView {
-	if a == nil || a.contactStore == nil {
+	if a == nil || !a.serviceAccessEnabled || a.contactStore == nil {
 		return nil
 	}
 	items := a.contactStore.ListTenant(tenantSlug, false)
@@ -174,6 +196,20 @@ func (a *app) serviceContactOptions(tenantSlug string) []contactOptionView {
 		options = append(options, contactOptionView{Email: email, Label: label})
 	}
 	return options
+}
+
+func contactKindOptionsForServiceProviderAccess(selected string, enabled bool) []selectOption {
+	options := contactKindOptions(selected)
+	if enabled {
+		return options
+	}
+	filtered := make([]selectOption, 0, len(options))
+	for _, option := range options {
+		if normalizeContactKind(option.Value) != roleServiceProvider {
+			filtered = append(filtered, option)
+		}
+	}
+	return filtered
 }
 
 func (a *app) boardContactViews(tenantSlug string) []contactCardView {

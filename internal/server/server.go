@@ -257,7 +257,7 @@ type homeAssistantConfig = homeassistant.Config
 func newHomeAssistantConfig() homeAssistantConfig {
 	return homeassistant.NewConfig(
 		env("HA_BASE_URL", ""),
-		os.Getenv("HA_TOKEN"),
+		env("HA_TOKEN", ""),
 		env("PARKING_METER_ENERGY_ENTITY", "sensor.kws_306wf_energy_meter_energy"),
 		env("PARKING_POWER_ENTITY", "sensor.kws360_power"),
 		env("PARKING_PRICE_ENTITY", "sensor.epex_spot_data_total_price"),
@@ -644,6 +644,10 @@ const (
 	notificationEventPayment      = store.NotificationEventPayment
 )
 
+const serviceProviderAccessClosedMessage = "Datenschutzprüfung offen: Dienstleister-Zugänge sind noch nicht freigeschaltet."
+
+var errServiceProviderAccessClosed = errors.New("service provider access is disabled")
+
 type app struct {
 	baseURL               string
 	addr                  string
@@ -655,6 +659,7 @@ type app struct {
 	admins                map[string]struct{}
 	profiles              map[string]userProfile
 	localDevLogin         bool
+	serviceAccessEnabled  bool
 	sessionTTL            time.Duration
 	tokens                *tokenStore
 	sessions              *sessionStore
@@ -917,7 +922,7 @@ func newApp() (*app, error) {
 		oidcCtx,
 		env("OIDC_ISSUER", ""),
 		env("OIDC_CLIENT_ID", ""),
-		strings.TrimSpace(os.Getenv("OIDC_CLIENT_SECRET")),
+		env("OIDC_CLIENT_SECRET", ""),
 		env("OIDC_REDIRECT_URL", ""),
 		env("OIDC_PROVIDER_NAME", "Zitadel"),
 	)
@@ -1051,6 +1056,7 @@ func newApp() (*app, error) {
 		admins:                admins,
 		profiles:              profiles,
 		localDevLogin:         localDevLogin,
+		serviceAccessEnabled:  serviceProviderAccessEnabled(),
 		sessionTTL:            sessionTTL,
 		tokens:                auth.NewTokenStore(secret),
 		sessions:              newSessionStore(secret),
@@ -1081,6 +1087,12 @@ func newApp() (*app, error) {
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
 	}, nil
+}
+
+// serviceProviderAccessEnabled is the single runtime launch gate for external
+// Dienstleister. Missing, empty and unrecognized values stay closed.
+func serviceProviderAccessEnabled() bool {
+	return parseBool(env("SERVICE_PROVIDER_ACCESS_ENABLED", "false"))
 }
 
 func (a *app) health(w http.ResponseWriter, _ *http.Request) {
@@ -1620,6 +1632,9 @@ func residentDirectoryRole(role string) bool {
 func (a *app) handleIssueServiceAssignmentChange(r *http.Request, tenant tenantConfig, before residentIssue, after residentIssue, actorEmail string, actorRole string) {
 	oldAssignee := normalizeEmail(before.AssigneeEmail)
 	newAssignee := normalizeEmail(after.AssigneeEmail)
+	if !a.serviceAccessEnabled && newAssignee != oldAssignee && a.shouldInviteServiceProvider(tenant.Slug, newAssignee) {
+		return
+	}
 	if oldAssignee != "" && oldAssignee != newAssignee && a.isServiceProviderPrincipal(tenant.Slug, oldAssignee) {
 		a.recordAudit(auditEvent{
 			TenantSlug: tenant.Slug,
@@ -1694,7 +1709,14 @@ func (a *app) isServiceProviderPrincipal(tenantSlug string, email string) bool {
 	return false
 }
 
+func (a *app) serviceProviderAccessClosedFor(tenantSlug string, email string) bool {
+	return a != nil && !a.serviceAccessEnabled && a.isServiceProviderPrincipal(tenantSlug, email)
+}
+
 func (a *app) ensureServiceProviderInvite(tenantSlug string, email string) (bool, error) {
+	if a == nil || !a.serviceAccessEnabled {
+		return false, errServiceProviderAccessClosed
+	}
 	if profile, ok := a.directoryProfile(email); ok && profile.HasTenant(tenantSlug) {
 		return false, nil
 	}
@@ -1723,6 +1745,9 @@ func (a *app) ensureServiceProviderInvite(tenantSlug string, email string) (bool
 }
 
 func (a *app) sendServiceProviderMagicLink(r *http.Request, tenant tenantConfig, issue residentIssue, email string) error {
+	if a == nil || !a.serviceAccessEnabled {
+		return errServiceProviderAccessClosed
+	}
 	if a == nil || a.tokens == nil {
 		return fmt.Errorf("login tokens not configured")
 	}
@@ -1758,7 +1783,10 @@ func (a *app) notifyIssueCreated(tenant tenantConfig, issue residentIssue) {
 }
 
 func (a *app) notifyIssueUpdated(tenant tenantConfig, issue residentIssue, actorEmail string, subject string) {
-	recipients := []string{issue.AuthorEmail, issue.AssigneeEmail}
+	recipients := []string{issue.AuthorEmail}
+	if a.serviceAccessEnabled || !a.shouldInviteServiceProvider(tenant.Slug, normalizeEmail(issue.AssigneeEmail)) {
+		recipients = append(recipients, issue.AssigneeEmail)
+	}
 	a.notify(portalNotification{
 		Event:      notificationEventIssue,
 		Tenant:     tenant,
@@ -1829,6 +1857,9 @@ func (a *app) notificationRecipients(event portalNotification) []string {
 	out := []string{}
 	for _, recipient := range excludeEmail(uniqueEmails(event.Recipients), event.ActorEmail) {
 		if recipient == "" {
+			continue
+		}
+		if a.serviceProviderAccessClosedFor(event.Tenant.Slug, recipient) {
 			continue
 		}
 		if a.notificationPrefs != nil && !a.notificationPrefs.EmailEnabled(recipient, event.Event) {
@@ -3217,6 +3248,10 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if inviteRole == "" {
 		inviteRole = roleResident
 	}
+	if !a.serviceAccessEnabled && isServiceProviderRole(inviteRole) {
+		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
+		return
+	}
 	if !canAssignUserRole(role, inviteRole) {
 		a.redirectInvite(w, r, "forbidden_role")
 		return
@@ -3310,7 +3345,8 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
-	if normalizeRole(existing.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
+	effectiveProfile := existing.ForTenant(tenant.Slug)
+	if normalizeRole(effectiveProfile.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
@@ -3330,6 +3366,10 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	newRole := normalizeRole(r.FormValue("role"))
 	if newRole == "" {
 		newRole = roleResident
+	}
+	if !a.serviceAccessEnabled && (isServiceProviderRole(effectiveProfile.Role) || isServiceProviderRole(newRole)) {
+		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
+		return
 	}
 	if !canAssignUserRole(role, newRole) {
 		a.redirectInvite(w, r, "forbidden_role")
@@ -3398,7 +3438,12 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
-	if normalizeRole(existing.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
+	effectiveProfile := existing.ForTenant(tenant.Slug)
+	if !a.serviceAccessEnabled && isServiceProviderRole(effectiveProfile.Role) {
+		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
+		return
+	}
+	if normalizeRole(effectiveProfile.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
@@ -3442,6 +3487,9 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	}
 	if _, ok := data["AssetVersion"]; !ok {
 		data["AssetVersion"] = version.AssetVersion()
+	}
+	if _, ok := data["ServiceProviderAccessEnabled"]; !ok {
+		data["ServiceProviderAccessEnabled"] = a.serviceAccessEnabled
 	}
 	if _, ok := data["ReleaseNotes"]; !ok {
 		notes := version.Notes()
@@ -3733,6 +3781,9 @@ func (a *app) withProfileOverlay(profile userProfile) userProfile {
 
 func (a *app) isAllowed(email string, tenantSlug string) bool {
 	if profile, ok := a.directoryProfile(email); ok && profile.HasTenant(tenantSlug) {
+		if !a.serviceAccessEnabled && isServiceProviderRole(profile.ForTenant(tenantSlug).Role) {
+			return false
+		}
 		return true
 	}
 	if _, ok := a.admins[email]; ok {

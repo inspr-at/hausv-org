@@ -22,7 +22,7 @@ deshalb eine Rohdaten-/Beleguebergabe:
 
 Datei: UTF-8 CSV mit Semikolon als Trennzeichen.
 
-Golden File: `testdata/bmd-raw-v0.csv`
+Golden File: `internal/integrations/testdata/bmd-raw-v0.csv`
 
 | Feld | Bedeutung | Pflicht |
 | --- | --- | --- |

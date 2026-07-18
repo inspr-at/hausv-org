@@ -19,12 +19,12 @@ Feldgrenzen geprueft sind.
 
 ## Aktueller Stand
 
-| Adapter | Profilstand | Golden Files | Entscheidung |
-| --- | --- | --- | --- |
-| camt.053 | `camt.053.001.02`, `camt.053.001.08` | 2009 und 2019 | Primaerer Zahlungsstatus-Import |
-| camt.054 | `camt.054.001.02`, `camt.054.001.08` | 2019 | Optionaler Detail-/Aviskanal |
-| BMD/RZL | BMD `raw-v0` Kandidat, RZL spaeter | BMD Golden File vorhanden, externe NTCS-Pruefung offen | Keine fertigen Buchungssaetze |
-| ebInterface | 6.0 priorisiert, 5.0 Fallback | 5.0 und 6.0 | Empfang und Ablage, nicht buchen |
+| Adapter | Profilstand | Golden Files | Verfügbarkeit | Entscheidung |
+| --- | --- | --- | --- | --- |
+| camt.053 | `camt.053.001.02`, `camt.053.001.08` | synthetische 2009- und 2019-Fixtures | intern implementiert/getestet; keine produktive Upload-UI | Primaerer Zahlungsstatus-Import nach externem Bankprofil-Gate |
+| camt.054 | `.08` mit synthetischer Repository-Fixture getestet; für `.02` nur Namespace akzeptiert | synthetisches 2019-Golden-File für `.08`; keines für `.02` | intern implementiert/getestet; keine produktive Upload-UI | Reales/anonymisiertes Bankprofil und Profilnachweis fehlen |
+| BMD/RZL | BMD `raw-v0` Kandidat, RZL spaeter | BMD Golden File vorhanden, externe NTCS-Pruefung offen | interner Exportkandidat | Keine fertigen Buchungssaetze |
+| ebInterface | 6.0 priorisiert, 5.0 Fallback | synthetische 5.0- und 6.0-Fixtures | Parser/Ablage intern implementiert/getestet; keine produktive Upload-UI | Empfang und Ablage nach externem Profil-Gate, nicht buchen |
 
 ## XSD-Gate
 
@@ -46,5 +46,5 @@ als produktiv markiert.
 
 Fuer BMD gibt es ein internes Pruefpaket in
 `docs/bmd-rawdata-verification.md` und ein Golden File
-`testdata/bmd-raw-v0.csv`. Der Kandidat prueft nur Rohdatenfelder und lehnt
+`internal/integrations/testdata/bmd-raw-v0.csv`. Der Kandidat prueft nur Rohdatenfelder und lehnt
 Konten-/Steuerkennzeichen ab, bis ein reales BMD-NTCS-Mapping bestaetigt ist.

@@ -17,7 +17,7 @@ import (
 var (
 	// Version is the semver of the build. Overridden via:
 	//   -X github.com/markus-barta/hausv-org/internal/version.Version=1.2.3
-	Version = "0.6.13"
+	Version = "dev"
 	// Commit is the short git SHA. Overridden the same way.
 	Commit = "dev"
 	nonce  = strconv.FormatInt(time.Now().Unix(), 36)
@@ -41,7 +41,7 @@ type NoteItem struct {
 func BuildLabel() string {
 	version := strings.TrimPrefix(strings.TrimSpace(Version), "v")
 	if version == "" {
-		version = "0.6.13"
+		version = "dev"
 	}
 	commit := strings.TrimSpace(Commit)
 	if commit == "" {
@@ -53,7 +53,7 @@ func BuildLabel() string {
 func AssetVersion() string {
 	version := strings.TrimPrefix(strings.TrimSpace(Version), "v")
 	if version == "" {
-		version = "0.6.13"
+		version = "dev"
 	}
 	commit := strings.TrimSpace(Commit)
 	parts := []string{version}
@@ -72,7 +72,7 @@ func AssetVersion() string {
 func DisplayVersion(version string) string {
 	version = strings.TrimPrefix(strings.TrimSpace(version), "v")
 	if version == "" {
-		return "0.6.13"
+		return "dev"
 	}
 	var b strings.Builder
 	for _, r := range version {
@@ -90,6 +90,67 @@ func DisplayVersion(version string) string {
 
 func Notes() []Note {
 	return []Note{
+		{
+			Version:  "0.11.0",
+			Date:     "18. Juli 2026",
+			Kind:     "Faire Nutzung",
+			Headline: "Mehr Spielraum für kleine Hausgemeinschaften.",
+			Intro:    "Der kostenfreie Rahmen und die Zählweise für Wohneinheiten sind jetzt klar und nachvollziehbar beschrieben.",
+			Items: []NoteItem{
+				{Label: "Fair Use", Text: "Bis zu 25 Wohneinheiten können den kostenfreien Rahmen nutzen."},
+				{Label: "Zählweise", Text: "Wohnungen und vergleichbare Nutzungseinheiten zählen vollständig; Zubehör wie Keller und Stellplätze nicht automatisch."},
+				{Label: "Übersicht", Text: "Dokumente nutzen auf der Startseite die volle Breite; längere Texte brechen in Karten ruhiger um."},
+				{Label: "Datenschutz", Text: "Die Dienstleister-Koordination wird bis zur externen Prüfung als technisch vorbereitet statt als freigegebener Pilot ausgewiesen."},
+				{Label: "Sicherheit", Text: "Die Anwendung wird mit Go 1.26.5 und den aktuellen TLS-Sicherheitskorrekturen gebaut."},
+			},
+		},
+		{
+			Version:  "0.10.0",
+			Date:     "14. Juli 2026",
+			Kind:     "Dienstleister",
+			Headline: "Handwerker-Koordination technisch vorbereitet.",
+			Intro:    "Der eingeschränkte Arbeitsablauf ist umgesetzt; echte Einladungen bleiben aus, bis eine externe fachkundige Person die Datenschutz- und Rechtsfragen geprüft und die Freigabe dokumentiert hat.",
+			Items: []NoteItem{
+				{Label: "Ablauf", Text: "Annehmen, Termin vereinbaren, bearbeiten und erledigen folgen einem nachvollziehbaren Statusweg."},
+				{Label: "Fotos", Text: "Fotos lassen sich auch ohne zusätzlichen Text direkt am Anliegen ergänzen."},
+				{Label: "Nachvollziehbarkeit", Text: "Aktionen externer Dienstleister erscheinen vollständig im Aktivitätsprotokoll der Verwaltung."},
+				{Label: "Freigabe", Text: "Vor der Aktivierung bleiben Rechts-, Datenschutz- und Aufbewahrungsfragen zu bestätigen."},
+			},
+		},
+		{
+			Version:  "0.9.0",
+			Date:     "13. Juli 2026",
+			Kind:     "Sicherheit",
+			Headline: "Zugriffsschutz zentral abgesichert.",
+			Intro:    "Anmeldung, Hauszuordnung und Formularschutz werden jetzt an einer gemeinsamen Stelle zuverlässig geprüft.",
+			Items: []NoteItem{
+				{Label: "Zugriff", Text: "Neue geschützte Seiten übernehmen automatisch dieselben Anmelde- und Hausprüfungen."},
+				{Label: "Formulare", Text: "Absendeaktionen sind einheitlich gegen missbräuchliche Fremdaufrufe abgesichert."},
+			},
+		},
+		{
+			Version:  "0.8.0",
+			Date:     "13. Juli 2026",
+			Kind:     "Stabilität",
+			Headline: "Sicherheit und Datenhaltbarkeit gestärkt.",
+			Intro:    "Hausgrenzen, gespeicherte Daten und der Betrieb reagieren robuster auf Fehler und unerwartete Unterbrechungen.",
+			Items: []NoteItem{
+				{Label: "Datenschutz", Text: "Zugriffe zwischen Häusern werden strenger geprüft und Formulare zusätzlich geschützt."},
+				{Label: "Daten", Text: "Gespeicherte Änderungen werden zuverlässiger auf die Festplatte geschrieben."},
+				{Label: "Betrieb", Text: "Unerwartete Fehler führen nicht mehr zum Abbruch; Aktualisierungen fahren sauber herunter."},
+			},
+		},
+		{
+			Version:  "0.7.0",
+			Date:     "13. Juli 2026",
+			Kind:     "Fundament",
+			Headline: "Fundament für sichere Weiterentwicklung gelegt.",
+			Intro:    "Die Anwendung ist intern klarer gegliedert und lässt sich dadurch gezielter prüfen und erweitern.",
+			Items: []NoteItem{
+				{Label: "Bausteine", Text: "Funktionen sind in klar getrennte technische Bereiche gegliedert."},
+				{Label: "Qualität", Text: "Automatische und visuelle Vergleiche helfen, unbeabsichtigte Änderungen früh zu erkennen."},
+			},
+		},
 		{
 			Version:  "0.6.13",
 			Date:     "9. Juli 2026",

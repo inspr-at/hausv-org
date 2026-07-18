@@ -2,11 +2,22 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.11.0] - 2026-07-18
+
+### Verbessert
+
+- **Mehr Spielraum für kleine Hausgemeinschaften.** Der kostenfreie Fair-Use-Rahmen umfasst jetzt bis zu 25 Wohneinheiten.
+- **Wohneinheiten fairer gezählt.** Wohnungen und vergleichbare Nutzungseinheiten zählen vollständig; Zubehör wie Keller und Stellplätze wird nicht automatisch wie eine Wohnung berechnet.
+- **Dokumente schneller überblickt.** Die Dokumentenübersicht nutzt auf der Startseite die volle Breite; längere Texte brechen in Karten ruhiger um.
+- **Freigabestatus klar benannt.** Die Dienstleister-Koordination wird bis zur externen Datenschutzprüfung als technisch vorbereitet statt als freigegebener Pilot ausgewiesen.
+- **Dienstleister standardmäßig gesperrt.** Zuordnungen, Einladungen und Anmeldungen externer Dienstleister bleiben bis zur dokumentierten Datenschutzfreigabe technisch geschlossen.
+- **Aktuelle Sicherheitsbasis.** Die Anwendung wird mit Go 1.26.5 und den aktuellen TLS-Sicherheitskorrekturen gebaut.
+
 ## [0.10.0] - 2026-07-14
 
 ### Verbessert
 
-- **Handwerker-Koordination startklar.** Zugewiesene Dienstleister können Anliegen jetzt in klaren Schritten bearbeiten (angenommen, Termin vereinbart, in Arbeit, erledigt), Fotos auch ohne Text anhängen und einen echten Termin mit Datum und Uhrzeit vorschlagen – er erscheint direkt im Kalender-Abo.
+- **Handwerker-Koordination technisch vorbereitet.** Zugewiesene Dienstleister können Anliegen in klaren Schritten bearbeiten (angenommen, Termin vereinbart, in Arbeit, erledigt), Fotos auch ohne Text anhängen und einen echten Termin mit Datum und Uhrzeit vorschlagen. Echte Einladungen bleiben aus, bis eine externe fachkundige Person die Datenschutz- und Rechtsfragen geprüft und die Freigabe dokumentiert hat.
 - **Mehr Nachvollziehbarkeit.** Alle Aktionen externer Dienstleister – inklusive Fotos und Rückfragen – sind jetzt lückenlos im Aktivitätsprotokoll der Verwaltung sichtbar.
 
 ## [0.9.0] - 2026-07-13
@@ -29,7 +40,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 ### Verbessert
 
 - **Fundament für schnellere Weiterentwicklung gelegt.** Die Anwendung ist intern klar in Bausteine gegliedert; neue Funktionen lassen sich dadurch zügiger und sicherer ergänzen.
-- **Qualitätssicherung ausgebaut.** Jede Seite wird nun automatisch mit dem Vorzustand verglichen, damit Änderungen keine ungewollten Nebenwirkungen haben.
+- **Qualitätssicherung ausgebaut.** Vergleichswerkzeuge und visuelle Prüfungen helfen, unbeabsichtigte Änderungen früh zu erkennen.
 
 ## [0.6.13] - 2026-07-09
 
@@ -127,8 +138,8 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 
 ### Neu
 
-- **E-Rechnungen vorbereitet.** ebInterface-Dateien in den Profilen 5.0 und 6.0 können als Metadaten gelesen werden.
-- **XML sicher ablegen.** E-Rechnungen werden als geschützte Dokumente gespeichert und bleiben über App-Routen erreichbar.
+- **E-Rechnungen intern vorbereitet.** ebInterface-Dateien in den Profilen 5.0 und 6.0 können im internen, getesteten Importbaustein als Metadaten gelesen werden.
+- **Geschützte Ablage vorbereitet.** Der interne Speicherbaustein legt E-Rechnungen geschützt ab; eine produktive Upload-Oberfläche folgt erst nach der externen Formatprüfung.
 
 ### Verbessert
 
@@ -195,6 +206,6 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 
 ### Neu
 
-- **Erster Pilot für hausv.org.** Aushänge, Termine, Dokumente, Anliegen, Abstimmungen und Parkplatznutzung laufen in einem privaten Portal zusammen.
-- **Rollen pro Hausgemeinschaft.** Eigentümer, Mieter, Beirat und Verwaltung erhalten getrennte Sichtbarkeit.
-- **Geschützte Dateiwege.** Anhänge und Dokumente laufen über App-Routen statt über öffentliche Datei-Links.
+- **Erster Pilot für hausv.org.** Ein geschützter Portalrahmen, der Hausüberblick und die Parkplatznutzung für Janischhofweg 22 gehen an den Start.
+- **Basisrollen eingerichtet.** Verwaltung und Bewohner erhalten getrennte Zugänge; weitere Rollen werden für den schrittweisen Ausbau vorbereitet.
+- **Ausbau transparent vorbereitet.** Aushänge, Termine, Dokumente, Anliegen und Abstimmungen sind zunächst als nächste Portalbereiche sichtbar und folgen in späteren Releases.

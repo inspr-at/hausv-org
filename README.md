@@ -1,13 +1,18 @@
-# WEG Portal
+# hausv.org
 
-Private multi-tenant house portal for WEG communication, access control, and the
-Janischhofweg 22 parking usage area.
+Private multi-tenant portal for communication, transparency, and self-service in
+WEGs and other multi-unit buildings. The Janischhofweg 22 tenant is the first
+production deployment and includes the parking-usage area.
+
+hausv.org deliberately complements existing accounting and property-management
+systems. It does not implement bookkeeping, tax logic, dunning, or payment
+orders.
 
 ## Local Development
 
 ```fish
 go test ./...
-go run .
+go run ./cmd/hausv-org
 ```
 
 Local-only environment belongs in `.env.local`; it is intentionally ignored.

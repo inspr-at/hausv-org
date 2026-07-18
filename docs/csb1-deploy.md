@@ -28,7 +28,13 @@ OIDC_ISSUER=https://auth.inspr.at
 OIDC_CLIENT_ID=<zitadel-web-app-client-id>
 OIDC_PROVIDER_NAME=Zitadel
 SESSION_TTL=720h
+SERVICE_PROVIDER_ACCESS_ENABLED=false
 ```
+
+`SERVICE_PROVIDER_ACCESS_ENABLED` ist die technische Freigabesperre für externe
+Dienstleister. Sie bleibt `false`, bis die Datenschutzprüfung und
+Betreiberentscheidung in HAUSV-86 dokumentiert abgeschlossen sind. Erst danach
+darf sie bewusst auf `true` gesetzt werden.
 
 For Zitadel Web apps using PKCE, `OIDC_CLIENT_SECRET` is not needed. Only set
 `OIDC_CLIENT_SECRET` if Zitadel creates a confidential client that explicitly
@@ -76,7 +82,7 @@ Example user snippet:
 
 ```json
 {
-  "email": "joerg.lehner@gmx.at",
+  "email": "person@example.invalid",
   "title": "Dr.",
   "first_name": "Jörg",
   "last_name": "Lehner",
@@ -202,9 +208,11 @@ accounting records. Residents only see explicit status records for units linked
 to their own email address.
 
 Anliegen submitted by residents persist to `/data/issues.json` via
-`ISSUE_DATA_PATH`. Optional uploaded photos are validated as JPG/PNG/WebP up to
-5 MB and written under `/data/issue-attachments/` via `ISSUE_ATTACHMENT_DIR`;
-the JSON file and attachment files use mode `0600`.
+`ISSUE_DATA_PATH`. New issue and comment uploads use the shared attachment
+metadata/file stores at `/data/attachments.json` and `/data/attachments`.
+JPG/PNG/WebP files are limited to 5 MB and stored with mode `0600`.
+`/data/issue-attachments/` via `ISSUE_ATTACHMENT_DIR` remains read-only
+compatibility for photos created before the shared attachment migration.
 
 Historical accounting backfill uses Home Assistant recorder statistics from
 `PARKING_HISTORY_START` onward. For the 2026 rollout this is set in compose as:
@@ -225,10 +233,14 @@ After the secret exists, rebuild or switch csb1 so agenix materializes
 ```fish
 cd ~/Code/hausv-org
 set version (string trim < VERSION)
-test -n "$version"; or set version (git describe --tags --match 'v[0-9]*' --abbrev=0 | string replace -r '^v' '')
-test -n "$version"; or set version 0.8.0
+test -n "$version"; or begin; echo "VERSION must not be empty" >&2; exit 1; end
 set commit (git rev-parse --short HEAD)
-git diff --quiet; or set commit "$commit-dirty"
+set dirty 0
+git diff --quiet; or set dirty 1
+git diff --cached --quiet; or set dirty 1
+set untracked (git ls-files --others --exclude-standard)
+test (count $untracked) -eq 0; or set dirty 1
+test "$dirty" -eq 0; or set commit "$commit-dirty"
 git ls-files -co --exclude-standard -z | tar --null -T - -cf - | ssh -p 2222 mba@cs1.barta.cm "bash -lc 'set -euo pipefail; tmpdir=\$(mktemp -d /tmp/hausv-org-deploy.XXXXXX); trap \"rm -rf \\\"\$tmpdir\\\"\" EXIT; tar -xf - -C \"\$tmpdir\"; cd \"\$tmpdir\"; docker build --build-arg APP_VERSION=$version --build-arg GIT_COMMIT=$commit -t ghcr.io/markus-barta/hausv-org:latest .; cd /home/mba/Code/nixcfg/hosts/csb1/docker; docker compose up -d --no-deps hausv-org'"
 ```
 

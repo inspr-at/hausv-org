@@ -427,7 +427,7 @@ const PageTemplates = `
       </div>
       <div class="landing-proof" aria-label="Kurzversprechen">
         <span>Bis 25 Wohneinheiten kostenlos</span>
-        <span>DSGVO-ready</span>
+        <span>Datenschutz mitgedacht</span>
         <span>Kommunikation statt Buchhaltung</span>
         <span>KI nur mit Opt-in</span>
       </div>
@@ -464,7 +464,7 @@ const PageTemplates = `
       <h2>Ausblick ohne Nebel.</h2>
       <p class="section-lead">Einige Bausteine laufen bereits im Pilot, andere sind bewusst als nächste Schritte markiert. Die Linie bleibt gleich: besser koordinieren, sauber dokumentieren, offen integrieren. Keine eigene Buchhaltung.</p>
       <div class="roadmap-grid" aria-label="Geplante Produktbausteine">
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M3 20a5 5 0 0 1 10 0"/><path d="M16 7h5M16 12h5M16 17h5"/></svg></span><strong>Dienstleister einbinden</strong><p>Handwerker sehen nur zugewiesene Anliegen, können Status, Fotos, Rückfragen und Termine ergänzen.</p><small>Pilot verfügbar</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M3 20a5 5 0 0 1 10 0"/><path d="M16 7h5M16 12h5M16 17h5"/></svg></span><strong>Dienstleister einbinden</strong><p>Handwerker sehen nur zugewiesene Anliegen, können Status, Fotos, Rückfragen und Termine ergänzen.</p><small>Datenschutzprüfung offen</small></div>
         <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h5M8 16h4"/><path d="m15 16 2 2 3-4"/></svg></span><strong>Übergaben dokumentieren</strong><p>Mobile Protokolle für Räume, Zählerstände, Schlüssel, Mängel, Fotos und Bestätigung.</p><small>Pilot verfügbar</small></div>
         <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><path d="M17 15l3 3 3-5"/></svg></span><strong>Zahlungsstatus zeigen</strong><p>Offen, bezahlt oder überfällig als geschützte Statusinformation pro Einheit, ohne Sollstellung oder Mahnwesen.</p><small>Pilot verfügbar</small></div>
         <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><strong>AT-Schnittstellen</strong><p>camt.053 und camt.054 lesen Zahlungsstatus. BMD/RZL und ebInterface bleiben Übergaben an bestehende Systeme.</p><small>Österreich-first</small></div>
@@ -510,10 +510,10 @@ const PageTemplates = `
         <div class="trust-proof-grid">
           <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Keine öffentlichen Datei-Links</strong><p>Downloads laufen über geschützte App-Routen.</p></div></div>
           <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Keine KI ohne Zustimmung</strong><p>Funktionen werden bewusst pro Haus aktiviert.</p></div></div>
-          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Keine Weitergabe persönlicher Daten</strong><p>Daten bleiben im vorgesehenen Haus-Kontext.</p></div></div>
+          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Keine unkontrollierte Weitergabe</strong><p>Daten bleiben im vorgesehenen Haus-Kontext und werden nur gezielt zugänglich gemacht.</p></div></div>
           <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Rollen und Rechte pro Haus</strong><p>Eigentümer, Mieter, Beirat und Verwaltung sauber getrennt.</p></div></div>
           <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Audit-Spuren für wichtige Aktionen</strong><p>Änderungen bleiben nachvollziehbar.</p></div></div>
-          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>DSGVO-ready</strong><p>Klare Zuständigkeiten, Einwilligungen und sparsame Profile sind vorgesehen.</p></div></div>
+          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Datenschutz mitgedacht</strong><p>Zuständigkeiten, Rechtsgrundlagen und sparsame Profile werden vor der Freigabe geklärt.</p></div></div>
         </div>
       </aside>
     </div>
@@ -581,7 +581,7 @@ const PageTemplates = `
   </section>
 
   <footer>
-    <div><span>hausv.org · sicher, fair und DSGVO-ready</span><span><a href="#impressum">Impressum</a> · <a class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a> · {{.AppVersion}}</span></div>
+    <div><span>hausv.org · sicher, fair und datensparsam</span><span><a href="#impressum">Impressum</a> · <a class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a> · {{.AppVersion}}</span></div>
   </footer>
 </body>
 </html>
@@ -678,6 +678,7 @@ const PageTemplates = `
     .section-link::after { content: "›"; color: var(--gold-ink); font-size: 21px; line-height: 1; }
     .section-link:hover { color: var(--gold-ink); }
     .home-status-panel { grid-column: 1 / -1; padding: 24px 26px 26px; }
+    .home-full { grid-column: 1 / -1; }
     .home-status-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
     .home-status-head .kicker { margin-bottom: 0; }
     .home-status-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 20px 32px; align-items: center; }
@@ -732,7 +733,7 @@ const PageTemplates = `
     .entry-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
     .entry h3 a { color: inherit; text-decoration: none; }
     .entry h3 a:hover { color: var(--gold-ink); }
-    .entry p, .entry-body { margin-top: 8px; color: #5c5f54; line-height: 1.6; }
+    .entry p, .entry-body { margin-top: 8px; color: #5c5f54; line-height: 1.6; text-wrap: pretty; }
     .entry-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; color: var(--soft); font-size: 12.5px; }
     .entry-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .entry-actions form { margin: 0; }
@@ -922,6 +923,9 @@ const PageTemplates = `
 	.issue-actions label.proposal { flex: 1 1 260px; }
 	.issue-actions label.note { flex: 1 1 280px; }
 	.issue-actions input, .issue-actions select { width: 100%; border: 1px solid #e2dac9; border-radius: var(--radius-xs); min-height: 38px; padding: 8px 10px; color: var(--ink); background: #fffefb; font: inherit; font-size: 13px; }
+	.issue-actions .hint { color: var(--soft); font-size: 11.5px; font-weight: 600; letter-spacing: 0; line-height: 1.35; text-transform: none; }
+	.issue-actions .assignee-removal { display: flex; align-items: center; gap: 7px; color: var(--ink); }
+	.issue-actions .assignee-removal input[type=checkbox] { width: auto; min-height: 0; padding: 0; }
     .issue-actions button { min-height: 38px; border: 1px solid var(--ink); border-radius: var(--radius-xs); padding: 8px 12px; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
     .issue-actions .ghost { background: transparent; color: var(--ink); border-color: var(--line); }
     .issue-board-filter { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); gap: 10px; margin-bottom: 14px; align-items: end; }
@@ -1185,7 +1189,7 @@ const PageTemplates = `
     .empty-state-icon { width: 52px; height: 52px; border-radius: var(--radius-sm); display: inline-grid; place-items: center; line-height: 0; background: rgba(200,153,63,.16); color: var(--gold-ink); }
     .empty-state-icon svg { display: block; width: 22px; height: 22px; margin: 0; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
     .empty-state h3 { font-size: 18px; }
-    .empty-state p { margin-top: 4px; color: var(--muted); line-height: 1.42; font-size: 13.5px; }
+    .empty-state p { margin-top: 4px; color: var(--muted); line-height: 1.42; font-size: 13.5px; text-wrap: pretty; }
     .settings-card { max-width: 620px; display: grid; gap: 16px; }
     .form-grid { display: grid; gap: 12px; }
     label { display: grid; gap: 7px; color: var(--gold-ink); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
@@ -1529,28 +1533,6 @@ const PageTemplates = `
                 {{template "emptyState" .DashboardIssuesEmpty}}
               {{end}}
             </section>
-
-	            <section class="panel">
-	              <div class="section-head">
-	                <div class="kicker">Dokumente</div>
-	                <a class="section-link" href="/app/dokumente">Dokumente öffnen</a>
-	              </div>
-              {{if .HasDashboardDocuments}}
-                <div class="document-dashboard-list">
-                  {{range .DashboardDocuments}}
-                    <a class="document-dashboard-row" href="{{.DownloadURL}}">
-                      <span class="document-file-title"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><strong>{{.Title}}</strong></span>
-                      <span>{{.FileKind}}</span>
-                      <span>{{.Size}}</span>
-                      <span>{{.UploadedDate}}</span>
-                      <span class="document-download"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></span>
-                    </a>
-                  {{end}}
-                </div>
-              {{else}}
-	                {{template "emptyState" .DashboardDocumentsEmpty}}
-	              {{end}}
-	            </section>
 	          </div>
 
 	          <div class="home-stack">
@@ -1616,6 +1598,28 @@ const PageTemplates = `
               </section>
             {{end}}
           </div>
+
+          <section class="panel home-full">
+	              <div class="section-head">
+	                <div class="kicker">Dokumente</div>
+	                <a class="section-link" href="/app/dokumente">Dokumente öffnen</a>
+	              </div>
+              {{if .HasDashboardDocuments}}
+                <div class="document-dashboard-list">
+                  {{range .DashboardDocuments}}
+                    <a class="document-dashboard-row" href="{{.DownloadURL}}">
+                      <span class="document-file-title"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><strong>{{.Title}}</strong></span>
+                      <span>{{.FileKind}}</span>
+                      <span>{{.Size}}</span>
+                      <span>{{.UploadedDate}}</span>
+                      <span class="document-download"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></span>
+                    </a>
+                  {{end}}
+                </div>
+              {{else}}
+	                {{template "emptyState" .DashboardDocumentsEmpty}}
+	              {{end}}
+	            </section>
         </div>
       </section>
     </main>
@@ -1665,8 +1669,8 @@ const PageTemplates = `
             <div class="section-head">
               <div>
                 <div class="kicker">Adressbuch</div>
-                <h2>Dienstleister &amp; wichtige Kontakte</h2>
-                <p class="muted">Wiederkehrende Kontakte pro Hausverwaltung. Dienstleister mit E-Mail können im Anliegen direkt ausgewählt werden.</p>
+	                <h2>{{if .ServiceProviderAccessEnabled}}Dienstleister &amp; wichtige Kontakte{{else}}Wichtige Kontakte{{end}}</h2>
+	                <p class="muted">{{if .ServiceProviderAccessEnabled}}Wiederkehrende Kontakte pro Hausverwaltung. Dienstleister mit E-Mail können im Anliegen direkt ausgewählt werden.{{else}}Hausmeister, Notdienste und weitere wiederkehrende Kontakte. Datenschutzprüfung offen: Dienstleister bleiben gesperrt.{{end}}</p>
               </div>
             </div>
             {{if .CanManageContacts}}
@@ -1690,10 +1694,11 @@ const PageTemplates = `
                     <div class="contact-lines">{{if .HasEmail}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}{{if .HasPhone}}<a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}<span>{{.StatusLabel}}</span></div>
                     {{if $.CanManageContacts}}
                       <div class="contact-actions">
-                        <button class="button small" type="button" data-dialog="{{.EditDialogID}}" aria-haspopup="dialog" aria-controls="{{.EditDialogID}}">Bearbeiten</button>
-                        {{if .Active}}<form method="post" action="/app/kontakte/delete" data-confirm="{{.DeleteConfirmLabel}}"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Deaktivieren</button></form>{{end}}
-                      </div>
-                      <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
+	                        {{if or $.ServiceProviderAccessEnabled (ne .Kind "Dienstleister")}}<button class="button small" type="button" data-dialog="{{.EditDialogID}}" aria-haspopup="dialog" aria-controls="{{.EditDialogID}}">Bearbeiten</button>{{end}}
+	                        {{if .Active}}<form method="post" action="/app/kontakte/delete" data-confirm="{{.DeleteConfirmLabel}}"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Deaktivieren</button></form>{{end}}
+	                      </div>
+	                      {{if or $.ServiceProviderAccessEnabled (ne .Kind "Dienstleister")}}
+	                      <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
                         <form method="post" action="/app/kontakte">
                           <input type="hidden" name="id" value="{{.ID}}">
                           <input type="hidden" name="active" value="{{if .Active}}true{{else}}false{{end}}">
@@ -1712,9 +1717,10 @@ const PageTemplates = `
                               <div class="f-actions"><button class="button primary" type="submit">Speichern</button></div>
                             </div>
                           </div>
-                        </form>
-                      </dialog>
-                    {{end}}
+	                        </form>
+	                      </dialog>
+	                      {{end}}
+	                    {{end}}
                   </article>
                 {{end}}
               </div>
@@ -2138,10 +2144,17 @@ const PageTemplates = `
                               {{range .PriorityOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
                             </select>
                           </label>
-                          <label class="assignee">Zuständig
-                            <input type="email" name="assignee_email" value="{{.AssigneeEmail}}" placeholder="name@example.com"{{if $.HasServiceProviderContacts}} list="service-provider-contacts"{{end}}>
-                            <span class="hint">Neue E-Mail lädt als Dienstleister ein. Leeren entzieht den Zugriff.</span>
-                          </label>
+	                          <label class="assignee">Zuständig
+	                            {{if $.ServiceProviderAccessEnabled}}
+	                              <input type="email" name="assignee_email" value="{{.AssigneeEmail}}" placeholder="name@example.com"{{if $.HasServiceProviderContacts}} list="service-provider-contacts"{{end}}>
+	                              <span class="hint">Neue E-Mail lädt als Dienstleister ein. Leeren entzieht den Zugriff.</span>
+	                            {{else}}
+	                              <input type="email" value="{{.AssigneeEmail}}" placeholder="Datenschutzprüfung offen" disabled>
+	                              <input type="hidden" name="assignee_email" value="{{.AssigneeEmail}}">
+	                              <span class="hint">Datenschutzprüfung offen: Neue Dienstleister können nicht zugeordnet werden.</span>
+	                              {{if .HasAssignee}}<span class="hint assignee-removal"><input type="checkbox" name="remove_assignee" value="1"> Bestehende Zuordnung entfernen</span>{{end}}
+	                            {{end}}
+	                          </label>
                           <button type="submit">Aktualisieren</button>
                         </form>
                       </div>
@@ -3870,7 +3883,7 @@ const PageTemplates = `
                   <td data-label="Aktion">
                     <div class="actions">
                       {{if .ParkingChecked}}<a class="button small" href="/app/parking/export/{{$.StatementYear}}?user={{.Email}}">CSV</a>{{end}}
-                      {{if and .Editable (or $.IsAdmin (ne .Role "Admin"))}}
+                      {{if and .Editable (or $.ServiceProviderAccessEnabled (ne .Role "Dienstleister")) (or $.IsAdmin (ne .Role "Admin"))}}
                         <form method="post" action="/app/settings/parking-access">
                           <input type="hidden" name="email" value="{{.Email}}">
                           <input type="hidden" name="parking" value="{{if .ParkingChecked}}0{{else}}1{{end}}">
@@ -4086,10 +4099,11 @@ const PageTemplates = `
     <main class="app-main">
       <div class="content-top"><span class="crumb"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg>Benutzer &amp; Rechte</span></div>
       <section class="page users">
-        <div>
-          <h1>Benutzer &amp; Rechte</h1>
-          <p class="lede">Lokale Verwaltung der eingeladenen E-Mail-Adressen und ihrer Rollen.</p>
-        </div>
+	        <div>
+	          <h1>Benutzer &amp; Rechte</h1>
+	          <p class="lede">Lokale Verwaltung der eingeladenen E-Mail-Adressen und ihrer Rollen.</p>
+	          {{if not .ServiceProviderAccessEnabled}}<p class="invite-flash warn">Datenschutzprüfung offen: Dienstleister-Zugänge können noch nicht angelegt oder geändert werden.</p>{{end}}
+	        </div>
     <section class="panel stack">
       <div class="panel-head">
         <span class="kicker">Zugänge</span>
@@ -4116,7 +4130,7 @@ const PageTemplates = `
               <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions="">Beirat</option>
 	              <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions="">Verwalter</option>
 	              {{if .IsAdmin}}<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking">Admin</option>{{end}}
-	              <option value="Dienstleister" data-preset-label="Nur zugewiesene Anliegen" data-preset-permissions="">Dienstleister</option>
+	              {{if .ServiceProviderAccessEnabled}}<option value="Dienstleister" data-preset-label="Nur zugewiesene Anliegen" data-preset-permissions="">Dienstleister</option>{{end}}
 	              <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions="">Bewohner</option>
             </select>
             <fieldset class="permission-fieldset f-permissions">
@@ -4150,7 +4164,7 @@ const PageTemplates = `
                         <span class="permission"><strong><span class="rdot owner"></span>Eigentümer</strong><span class="muted">Bewohnerbereich plus Eigentümer-Dokumente und Abstimmungen.</span></span>
 	                        <span class="permission"><strong><span class="rdot renter"></span>Mieter</strong><span class="muted">Bewohnerbereich ohne Eigentümer-Abstimmungen.</span></span>
 	                        <span class="permission"><strong><span class="rdot beirat"></span>Beirat</strong><span class="muted">Bewohnerbereich plus lesende Übersicht.</span></span>
-	                        <span class="permission"><strong><span class="rdot service"></span>Dienstleister</strong><span class="muted">Nur zugewiesene Anliegen und deren Anhänge.</span></span>
+	                        {{if $.ServiceProviderAccessEnabled}}<span class="permission"><strong><span class="rdot service"></span>Dienstleister</strong><span class="muted">Nur zugewiesene Anliegen und deren Anhänge.</span></span>{{end}}
 	                        <span class="permission"><strong><span class="rdot right"></span>Parkplatznutzung</strong><span class="muted">Separates Sonderrecht für den privaten Parkplatzbereich.</span></span>
                       </span>
                     </span>
@@ -4180,9 +4194,12 @@ const PageTemplates = `
               <td data-label="Rechte"><div class="chips">{{range .PermissionList}}<span class="chip{{if eq . "Standard"}} plain{{end}}">{{.}}</span>{{end}}</div></td>
               <td data-label="Anmeldung"><div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div></td>
               <td class="col-status" data-label="Status"><span class="pill {{if eq .Status "Aktiv"}}status-active{{else}}status-pending{{end}}"><span class="dot"></span>{{.Status}}</span>{{if .LastSeen}}<span class="last-seen">{{.LastSeen}}</span>{{end}}</td>
-              <td class="col-actions" data-label="">
-                {{if .Editable}}
-                <button type="button" class="row-edit" data-edit="{{.Email}}" aria-label="Bearbeiten" aria-haspopup="dialog" aria-controls="edit-{{.Email}}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.83-2.83L5 17.2z"/><path d="M13.5 6.5 17 10"/></svg></button>
+	              <td class="col-actions" data-label="">
+	                {{if .Editable}}
+	                {{if and (not $.ServiceProviderAccessEnabled) (eq .Role "Dienstleister")}}
+	                <span class="mini">Schreibgeschützt</span>
+	                {{else}}
+	                <button type="button" class="row-edit" data-edit="{{.Email}}" aria-label="Bearbeiten" aria-haspopup="dialog" aria-controls="edit-{{.Email}}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.83-2.83L5 17.2z"/><path d="M13.5 6.5 17 10"/></svg></button>
                 <dialog id="edit-{{.Email}}" class="edit-dialog" aria-labelledby="edit-title-{{.Email}}">
                   <div class="dlg-x"><form method="dialog"><button aria-label="Schließen">&times;</button></form></div>
                   <h2 id="edit-title-{{.Email}}">Zugang bearbeiten</h2>
@@ -4199,7 +4216,7 @@ const PageTemplates = `
                       <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions=""{{if eq .Role "Beirat"}} selected{{end}}>Beirat</option>
 	                      <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions=""{{if eq .Role "Verwalter"}} selected{{end}}>Verwalter</option>
 	                      {{if $.IsAdmin}}<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking"{{if eq .Role "Admin"}} selected{{end}}>Admin</option>{{end}}
-	                      <option value="Dienstleister" data-preset-label="Nur zugewiesene Anliegen" data-preset-permissions=""{{if eq .Role "Dienstleister"}} selected{{end}}>Dienstleister</option>
+	                      {{if $.ServiceProviderAccessEnabled}}<option value="Dienstleister" data-preset-label="Nur zugewiesene Anliegen" data-preset-permissions=""{{if eq .Role "Dienstleister"}} selected{{end}}>Dienstleister</option>{{end}}
 	                      <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions=""{{if eq .Role "Bewohner"}} selected{{end}}>Bewohner</option>
                     </select>
                     <fieldset class="permission-fieldset f-permissions">
@@ -4218,8 +4235,9 @@ const PageTemplates = `
                       <button type="submit" class="danger">Löschen</button>
                     </form>
                   </div>
-                </dialog>
-                {{end}}
+	                </dialog>
+	                {{end}}
+	                {{end}}
               </td>
             </tr>
             {{end}}
