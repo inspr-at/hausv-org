@@ -781,7 +781,7 @@ func (a *app) notifyChargingError(tenant tenantConfig, detail string) {
 }
 
 // notifyCharging fans out through the existing notification stack (email
-// prefs apply); the Telegram transport hooks in here once it exists.
+// prefs apply) and, in parallel, to the recipients' linked Telegram chats.
 func (a *app) notifyCharging(tenant tenantConfig, recipients []string, subject string, lines []string) {
 	a.notify(portalNotification{
 		Event:      notificationEventCharging,
@@ -790,6 +790,7 @@ func (a *app) notifyCharging(tenant tenantConfig, recipients []string, subject s
 		Subject:    subject,
 		Lines:      lines,
 	})
+	a.telegramChargingBroadcast(recipients, subject, lines)
 }
 
 func (a *app) chargingSurplusRateNow(tenant tenantConfig) float64 {

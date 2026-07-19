@@ -34,6 +34,7 @@ import (
 
 	"github.com/markus-barta/hausv-org/internal/integrations"
 	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/markus-barta/hausv-org/internal/telegram"
 	"github.com/markus-barta/hausv-org/internal/textutil"
 	"github.com/markus-barta/hausv-org/internal/version"
 )
@@ -706,6 +707,13 @@ type app struct {
 	chargingShadow         map[string]chargingControllerState
 	chargingShadowPlug     map[string]bool
 	chargingEvents         *chargingEventRing
+
+	telegram                  telegramAPI
+	telegramStore             *telegramStore
+	telegramPollTimeout       time.Duration
+	chargingTelegramMu        sync.Mutex
+	chargingTelegramTimes     []time.Time
+	chargingTelegramThrottled bool
 }
 
 type parkingTelemetry struct {
@@ -1077,6 +1085,14 @@ func newApp() (*app, error) {
 	if err != nil || chargingHAFailLimit < 1 {
 		return nil, fmt.Errorf("invalid CHARGING_HA_FAIL_LIMIT")
 	}
+	telegramPollTimeout, err := parseDuration(env("TELEGRAM_POLL_TIMEOUT", "50s"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid TELEGRAM_POLL_TIMEOUT")
+	}
+	telegramStore, err := newTelegramStore(env("TELEGRAM_DATA_PATH", "tmp/telegram.json"))
+	if err != nil {
+		return nil, err
+	}
 
 	return &app{
 		baseURL:               baseURL,
@@ -1128,6 +1144,10 @@ func newApp() (*app, error) {
 		chargingShadow:         map[string]chargingControllerState{},
 		chargingShadowPlug:     map[string]bool{},
 		chargingEvents:         &chargingEventRing{},
+
+		telegram:            telegram.New(env("TELEGRAM_API_BASE_URL", ""), env("TELEGRAM_BOT_TOKEN", "")),
+		telegramStore:       telegramStore,
+		telegramPollTimeout: telegramPollTimeout,
 	}, nil
 }
 
