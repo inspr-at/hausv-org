@@ -2,6 +2,15 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.12.0] - 2026-07-19
+
+### Neu
+
+- **PV-Überschussladen für Parkplatz 20.** Die Plattform steuert das Laden jetzt selbst nach Sonnenstrom: Ist der Hausakku voll und wird eingespeist, startet die Ladung automatisch — Überschuss-Strom wird zum Fixpreis von 0,10 €/kWh abgerechnet, normales Laden weiterhin nach aWATTar-Preis plus Netzgebühr. Der Start erfolgt im Beobachtungsbetrieb.
+- **Live-Ansicht auf der Parkplatzseite.** Eine neue „Jetzt“-Karte zeigt Ladequelle, Hausakku, Einspeisung und die Aufteilung Überschuss/Normal für heute und den laufenden Monat — inklusive Ein/Aus-Schalter.
+- **Telegram-Bot.** Statusabfrage und Ein/Aus-Befehle laufen über einen eigenen Bot; Benachrichtigungen kommen nur noch bei echten Änderungen (Start/Ende einer Ladung), mit eingebauter Schutzbremse gegen Nachrichtenfluten.
+- **Abrechnung mit Überschuss-Ausweis.** Monatsübersicht, Stundenwerte und CSV-Export weisen Überschuss- und Normalanteile getrennt aus; bestehende Monate bleiben unverändert.
+
 ## [0.11.0] - 2026-07-18
 
 ### Verbessert
