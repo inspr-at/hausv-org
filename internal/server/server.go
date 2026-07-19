@@ -261,6 +261,10 @@ func newHomeAssistantConfig() homeAssistantConfig {
 		env("PARKING_METER_ENERGY_ENTITY", "sensor.kws_306wf_energy_meter_energy"),
 		env("PARKING_POWER_ENTITY", "sensor.kws360_power"),
 		env("PARKING_PRICE_ENTITY", "sensor.epex_spot_data_total_price"),
+	).WithChargingEntities(
+		env("CHARGING_PLUG_SWITCH_ENTITY", "switch.kws_306wf_energy_meter"),
+		env("CHARGING_BATTERY_SOC_ENTITY", "sensor.sonnenbatterie_260365_state_charge_user"),
+		env("CHARGING_GRID_FEEDIN_ENTITY", "sensor.sonnenbatterie_260365_state_grid_output"),
 	)
 }
 
