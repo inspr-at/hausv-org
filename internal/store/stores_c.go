@@ -279,6 +279,7 @@ type ChargingControllerState struct {
 	BelowStopSince  time.Time `json:"below_stop_since,omitempty"`
 	PendingConfirm  string    `json:"pending_confirm,omitempty"` // "on" | "off"
 	PendingSince    time.Time `json:"pending_since,omitempty"`
+	PendingRetries  int       `json:"pending_retries,omitempty"`
 	LastError       string    `json:"last_error,omitempty"`
 	LastErrorAt     time.Time `json:"last_error_at,omitempty"`
 	ErrorNotifiedAt time.Time `json:"error_notified_at,omitempty"`
@@ -2176,6 +2177,7 @@ func NormalizeChargingControllerState(state ChargingControllerState) ChargingCon
 	if state.PendingConfirm != "on" && state.PendingConfirm != "off" {
 		state.PendingConfirm = ""
 		state.PendingSince = time.Time{}
+		state.PendingRetries = 0
 	}
 	return state
 }

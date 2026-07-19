@@ -1820,6 +1820,7 @@ func NotificationEventCatalog() []NotificationEventOption {
 		store.NotificationEventVote:         {"Abstimmungen", "Neue Abstimmungen und Erinnerungen"},
 		store.NotificationEventDocument:     {"Dokumente", "Neu bereitgestellte Dokumente"},
 		store.NotificationEventPayment:      {"Zahlungen", "Fällige oder überfällige Zahlungen"},
+		store.NotificationEventCharging:     {"Laden", "Start und Ende von Ladevorgängen am Parkplatz"},
 	}
 	out := make([]NotificationEventOption, 0, len(store.NotificationEvents))
 	for _, key := range store.NotificationEvents {

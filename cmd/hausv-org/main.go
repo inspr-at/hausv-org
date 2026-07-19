@@ -45,6 +45,8 @@ func main() {
 	defer stopSampler()
 	stopVoteReminders := app.StartVoteReminderWorker()
 	defer stopVoteReminders()
+	stopCharging := app.StartChargingController()
+	defer stopCharging()
 
 	srv := &http.Server{
 		Addr:              app.Addr(),

@@ -696,6 +696,16 @@ type app struct {
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
+
+	chargingTickInterval   time.Duration
+	chargingStaleAfter     time.Duration
+	chargingConfirmTimeout time.Duration
+	chargingHAFailLimit    int
+	chargingMu             sync.Mutex
+	chargingHAFails        map[string]int
+	chargingShadow         map[string]chargingControllerState
+	chargingShadowPlug     map[string]bool
+	chargingEvents         *chargingEventRing
 }
 
 type parkingTelemetry struct {
@@ -1051,6 +1061,22 @@ func newApp() (*app, error) {
 	if err != nil || sessionTTL <= 0 {
 		return nil, fmt.Errorf("invalid SESSION_TTL")
 	}
+	chargingTickInterval, err := parseDuration(env("CHARGING_TICK_INTERVAL", "30s"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid CHARGING_TICK_INTERVAL")
+	}
+	chargingStaleAfter, err := parseDuration(env("CHARGING_STALE_AFTER", "10m"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid CHARGING_STALE_AFTER")
+	}
+	chargingConfirmTimeout, err := parseDuration(env("CHARGING_CONFIRM_TIMEOUT", "2m"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid CHARGING_CONFIRM_TIMEOUT")
+	}
+	chargingHAFailLimit, err := strconv.Atoi(env("CHARGING_HA_FAIL_LIMIT", "5"))
+	if err != nil || chargingHAFailLimit < 1 {
+		return nil, fmt.Errorf("invalid CHARGING_HA_FAIL_LIMIT")
+	}
 
 	return &app{
 		baseURL:               baseURL,
@@ -1093,6 +1119,15 @@ func newApp() (*app, error) {
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
+
+		chargingTickInterval:   chargingTickInterval,
+		chargingStaleAfter:     chargingStaleAfter,
+		chargingConfirmTimeout: chargingConfirmTimeout,
+		chargingHAFailLimit:    chargingHAFailLimit,
+		chargingHAFails:        map[string]int{},
+		chargingShadow:         map[string]chargingControllerState{},
+		chargingShadowPlug:     map[string]bool{},
+		chargingEvents:         &chargingEventRing{},
 	}, nil
 }
 

@@ -36,6 +36,9 @@ const (
 	AuditActionParkingSettings    = "parking.settings"
 	AuditActionParkingMonth       = "parking.month"
 	AuditActionParkingReminder    = "parking.reminder"
+	AuditActionChargingSettings   = "charging.settings"
+	AuditActionChargingManual     = "charging.manual"
+	AuditActionChargingSession    = "charging.session"
 	AuditActionIssueWorkflow      = "issue.workflow"
 	AuditActionIssueEstimate      = "issue.estimate"
 	AuditActionIssueServiceAdd    = "issue.service.add"
@@ -1543,7 +1546,8 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionDocumentUpload, AuditActionDocumentDownload, AuditActionDocumentReplace,
 		AuditActionHandoverCreate, AuditActionHandoverConfirm, AuditActionHandoverFile,
 		AuditActionVoteCreate, AuditActionVoteOpen, AuditActionVoteClose, AuditActionVoteCast, AuditActionVoteReminder,
-		AuditActionParkingSettings, AuditActionParkingMonth, AuditActionParkingReminder, AuditActionIssueWorkflow,
+		AuditActionParkingSettings, AuditActionParkingMonth, AuditActionParkingReminder,
+		AuditActionChargingSettings, AuditActionChargingManual, AuditActionChargingSession, AuditActionIssueWorkflow,
 		AuditActionIssueEstimate, AuditActionIssueServiceAdd, AuditActionIssueServiceDrop,
 		AuditActionIssueComment, AuditActionIssueCommentDelete,
 		AuditActionContactSave, AuditActionContactDelete:
