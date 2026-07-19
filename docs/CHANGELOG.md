@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.12.2] - 2026-07-19
+
+### Verbessert
+
+- **Zahlungen klarer erfasst.** Der Zahlungsbereich im Monatsdetail ist jetzt sauber abgesetzt und kann optional Datum, Zahlungsart und Referenz festhalten — auch nachträglich für bereits markierte Monate. Bewohner sehen weiterhin nur den Bezahlt-Status.
+
 ## [0.12.1] - 2026-07-19
 
 ### Verbessert

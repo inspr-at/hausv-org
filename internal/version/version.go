@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.12.2",
+			Date:     "19. Juli 2026",
+			Kind:     "Zahlungen",
+			Headline: "Zahlungen klarer erfasst.",
+			Intro:    "Der Zahlungsbereich im Monatsdetail ist sauber abgesetzt und hält optional Datum, Zahlungsart und Referenz fest.",
+			Items: []NoteItem{
+				{Label: "Referenz", Text: "Zahlungsdetails lassen sich auch nachträglich zu bereits markierten Monaten ergänzen."},
+				{Label: "Rollen", Text: "Bewohner sehen weiterhin nur den Bezahlt-Status — Buchhaltungsdetails bleiben der Verwaltung vorbehalten."},
+			},
+		},
+		{
 			Version:  "0.12.1",
 			Date:     "19. Juli 2026",
 			Kind:     "Oberfläche",

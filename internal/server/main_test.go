@@ -5216,7 +5216,7 @@ func TestParkingEmptyStateGuidesSetupWithoutPaymentControls(t *testing.T) {
 			t.Fatalf("admin empty parking page missing %q:\n%s", want, adminBody)
 		}
 	}
-	for _, hidden := range []string{`class="parking-workspace"`, `class="parking-month-queue"`, `class="parking-payment-form"`, "Zahlungsart", "Belege ablegen"} {
+	for _, hidden := range []string{`class="parking-workspace"`, `class="parking-month-queue"`, `class="pay-form"`, "Zahlungsart", "Belege ablegen"} {
 		if strings.Contains(adminBody, hidden) {
 			t.Fatalf("admin empty parking page should not render %q:\n%s", hidden, adminBody)
 		}
@@ -5258,12 +5258,16 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 	}
 	adminParking := authedRequest(t, a, "admin@example.com", "/app/parking")
 	adminBody := adminParking.Body.String()
-	for _, want := range []string{"parking-workspace", "Abrechnung in 2 Schritten", "parking-month-queue", "Nächsten offenen Monat prüfen", "Zahlungsdetails", "parking-detail-2026-06", "parking-payment-form", "Bezahlung erhalten"} {
+	// PP20 payment redesign (2026-07-19): the mark-paid form regained OPTIONAL
+	// date/method/reference fields, collapsed behind "Details (optional)" — the
+	// dense always-visible payment UI from before the workspace redesign stays
+	// banned (tables, attachment drop zone).
+	for _, want := range []string{"parking-workspace", "Abrechnung in 2 Schritten", "parking-month-queue", "Nächsten offenen Monat prüfen", "Zahlungsdetails", "parking-detail-2026-06", "pay-form", "Bezahlung erhalten", "Details (optional)", `name="payment_reference"`} {
 		if !strings.Contains(adminBody, want) {
 			t.Fatalf("parking overview redesign missing %q:\n%s", want, adminBody)
 		}
 	}
-	for _, old := range []string{`parking-month-table`, `<table>`, `month-strip`, `name="payment_method"`, `name="payment_reference"`, `name="attachments"`, "Belege ablegen", "Zahlungsart"} {
+	for _, old := range []string{`parking-month-table`, `<table>`, `month-strip`, `name="attachments"`, "Belege ablegen"} {
 		if strings.Contains(adminBody, old) {
 			t.Fatalf("parking overview should not render old dense/payment UI %q:\n%s", old, adminBody)
 		}

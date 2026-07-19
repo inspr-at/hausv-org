@@ -1078,15 +1078,35 @@ const PageTemplates = `
     .parking-breakdown div { border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel); padding: 10px; }
     .parking-breakdown dt { color: var(--soft); font-size: 11px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
     .parking-breakdown dd { margin: 5px 0 0; font-weight: 800; font-variant-numeric: tabular-nums; }
-    .parking-detail-actions { display: block; border-top: 1px solid var(--line); padding: 0 22px 4px; }
-    .parking-payment-box, .parking-receipts { padding: 18px; display: grid; gap: 12px; align-content: start; }
-    .parking-payment-box { grid-template-columns: 58px minmax(0,1fr) auto; align-items: center; border: 1px solid rgba(200,153,63,.55); border-radius: var(--radius-sm); background: linear-gradient(135deg, rgba(200,153,63,.11), rgba(255,254,251,.92)); }
-    .parking-payment-box h3 { font-size: 20px; }
-    .parking-payment-icon { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: rgba(47,107,74,.12); color: var(--leaf); }
-    .parking-payment-icon svg { width: 25px; height: 25px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .parking-payment-copy { min-width: 0; }
-    .parking-payment-form { display: grid; gap: 10px; margin: 0; justify-items: end; }
-    .parking-payment-form .button { min-width: 190px; }
+    .parking-detail-actions { display: block; border-top: 1px solid var(--line); padding: 4px 22px 8px; }
+    .parking-receipts { padding: 18px; display: grid; gap: 12px; align-content: start; }
+    .pay-sec { display: grid; gap: 13px; padding: 16px 0 10px; }
+    .pay-head { display: flex; align-items: baseline; gap: 12px; }
+    .pay-head h3 { margin: 0; font-family: var(--font-serif); font-size: 21px; }
+    .pay-state { font-size: 11.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--gold-ink); }
+    .pay-state.paid { color: var(--leaf); }
+    .pay-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .pay-row .muted { margin: 0; max-width: 40ch; }
+    .pay-row .button, .pay-actions .button { width: auto; margin: 0; padding: 11px 22px; }
+    .pay-settled { display: flex; align-items: center; gap: 13px; flex-wrap: wrap; border: 1px solid rgba(47,107,74,.25); border-radius: var(--radius-sm); background: rgba(47,107,74,.07); padding: 13px 15px; }
+    .pay-check { flex: 0 0 auto; width: 34px; height: 34px; color: var(--leaf); }
+    .pay-check svg { width: 100%; height: 100%; }
+    .pay-settled-meta { display: grid; gap: 2px; min-width: 0; }
+    .pay-settled-meta strong { color: var(--ink); font-size: 14.5px; }
+    .pay-settled-meta span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+    .pay-unmark { margin-left: auto; }
+    .button.pay-ghost { width: auto; margin: 0; padding: 8px 14px; font-size: 13px; background: transparent; color: var(--leaf); border: 1px solid rgba(47,107,74,.4); }
+    .button.pay-ghost:hover { background: rgba(47,107,74,.08); }
+    .pay-details { border-top: 1px solid var(--line); padding-top: 11px; }
+    .pay-details > summary { list-style: none; cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--gold-ink); user-select: none; display: inline-flex; align-items: center; gap: 7px; }
+    .pay-details > summary::-webkit-details-marker { display: none; }
+    .pay-details > summary::after { content: "▾"; font-size: 11px; transition: transform .15s ease; }
+    .pay-details[open] > summary::after { transform: rotate(180deg); }
+    .pay-details[open] > summary { margin-bottom: 11px; }
+    .pay-fields { display: grid; grid-template-columns: 150px 170px minmax(0,1fr); gap: 11px; }
+    .pay-fields label { font-size: 11px; }
+    .pay-fields input { min-height: 40px; }
+    .pay-actions { display: flex; justify-content: flex-end; margin-top: 11px; }
     .payment-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; align-items: end; }
     .payment-fields .full { grid-column: 1 / -1; }
     .payment-fields label { color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
@@ -1210,7 +1230,8 @@ const PageTemplates = `
       .handover-detail-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .handover-head { grid-template-columns: 1fr; }
       .handover-actions { justify-content: flex-start; }
-      .parking-page-head, .parking-guide, .parking-workspace, .parking-detail-actions, .parking-payment-box { grid-template-columns: 1fr; }
+      .parking-page-head, .parking-guide, .parking-workspace, .parking-detail-actions { grid-template-columns: 1fr; }
+      .pay-fields { grid-template-columns: 1fr; }
       .parking-primary-actions { justify-content: flex-start; }
       .parking-guide-status { justify-content: flex-start; }
       .parking-empty { grid-template-columns: minmax(0,1fr); align-items: start; }
@@ -1222,7 +1243,6 @@ const PageTemplates = `
       .parking-empty-note .button { grid-column: 1 / -1; justify-self: start; }
       .parking-detail-stack { position: static; }
       .digest-panel .quick-list { grid-template-columns: 1fr; }
-      .parking-payment-form { justify-items: stretch; }
     }
 	    @media (max-width: 680px) {
 	      .app-shell { display: block; }
@@ -3128,26 +3148,65 @@ const PageTemplates = `
                     <a href="{{.DetailPath}}">Stundenwerte</a>
                   </div>
                   <div class="parking-detail-actions">
-                    <div class="parking-payment-box">
-                      <span class="parking-payment-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
-                      <div class="parking-payment-copy">
-                        <h3>Zahlung markieren</h3>
-                      {{if .Paid}}
-                        <p class="muted">Dieser Monat ist als bezahlt markiert.</p>
-                      {{else if $.CanMarkParkingPayment}}
-                        <p class="muted">{{if $.CanManageParkingPayments}}Wenn der Betrag eingegangen ist, markieren Sie diesen Monat als erhalten.{{else}}Markieren Sie diesen Monat, wenn Sie die Zahlung erledigt haben.{{end}}</p>
-                      {{else}}
-                        <p class="muted">Zahlungen können nur von berechtigten Personen markiert werden.</p>
-                      {{end}}
+                    <div class="pay-sec">
+                      <div class="pay-head">
+                        <h3>Zahlung</h3>
+                        {{if .Paid}}<span class="pay-state paid">Bezahlt</span>{{else}}<span class="pay-state">Offen</span>{{end}}
                       </div>
                       {{if .Paid}}
-                        <span class="pill ok">Erledigt</span>
+                        <div class="pay-settled">
+                          <span class="pay-check" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 12.5l2.6 2.6L16.5 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                          <div class="pay-settled-meta">
+                            {{if $.CanManageParkingPayments}}
+                              <strong>Bezahlt{{if .PaidAtLabel}} am {{.PaidAtLabel}}{{end}}{{if .PaymentMethod}} · {{.PaymentMethod}}{{end}}</strong>
+                              {{if .PaymentReference}}<span>Referenz: {{.PaymentReference}}</span>{{end}}
+                            {{else}}
+                              <strong>Bezahlt{{if .PaidAtLabel}} am {{.PaidAtLabel}}{{end}}</strong>
+                              <span>Zahlung ist markiert.</span>
+                            {{end}}
+                          </div>
+                          {{if $.CanManageParkingPayments}}
+                            <form class="pay-unmark" method="post" action="/app/parking/month">
+                              <input type="hidden" name="month" value="{{.Month}}">
+                              <input type="hidden" name="paid" value="false">
+                              <button class="button pay-ghost" type="submit">Als offen markieren</button>
+                            </form>
+                          {{end}}
+                        </div>
+                        {{if $.CanManageParkingPayments}}
+                          <details class="pay-details">
+                            <summary>Details bearbeiten</summary>
+                            <form class="pay-form" method="post" action="/app/parking/month">
+                              <input type="hidden" name="month" value="{{.Month}}">
+                              <input type="hidden" name="paid" value="true">
+                              <div class="pay-fields">
+                                <label>Datum<input type="date" name="paid_at" value="{{.PaidAtInput}}" autocomplete="off"></label>
+                                <label>Zahlungsart<input type="text" name="payment_method" value="{{.PaymentMethod}}" placeholder="Überweisung" autocomplete="off"></label>
+                                <label class="pay-ref">Referenz<input type="text" name="payment_reference" value="{{.PaymentReference}}" placeholder="z. B. Telegram-Abrechnung 05.03.2026" autocomplete="off"></label>
+                              </div>
+                              <div class="pay-actions"><button class="button primary" type="submit">Details speichern</button></div>
+                            </form>
+                          </details>
+                        {{end}}
                       {{else if $.CanMarkParkingPayment}}
-                        <form class="parking-payment-form" method="post" action="/app/parking/month">
+                        <form class="pay-form" method="post" action="/app/parking/month">
                           <input type="hidden" name="month" value="{{.Month}}">
                           <input type="hidden" name="paid" value="true">
-                          <button class="button primary" type="submit">{{if $.CanManageParkingPayments}}Bezahlung erhalten{{else}}Als bezahlt markieren{{end}}</button>
+                          <div class="pay-row">
+                            <p class="muted">{{if $.CanManageParkingPayments}}Wenn der Betrag eingegangen ist, als erhalten markieren.{{else}}Markieren Sie diesen Monat, wenn Sie die Zahlung erledigt haben.{{end}}</p>
+                            <button class="button primary" type="submit">{{if $.CanManageParkingPayments}}Bezahlung erhalten{{else}}Als bezahlt markieren{{end}}</button>
+                          </div>
+                          <details class="pay-details">
+                            <summary>Details (optional)</summary>
+                            <div class="pay-fields">
+                              <label>Datum<input type="date" name="paid_at" value="{{.PaidAtInput}}" autocomplete="off"></label>
+                              <label>Zahlungsart<input type="text" name="payment_method" value="{{.PaymentMethod}}" placeholder="Überweisung" autocomplete="off"></label>
+                              <label class="pay-ref">Referenz<input type="text" name="payment_reference" value="{{.PaymentReference}}" placeholder="z. B. Telegram-Abrechnung 05.03.2026" autocomplete="off"></label>
+                            </div>
+                          </details>
                         </form>
+                      {{else}}
+                        <p class="muted">Zahlungen können nur von berechtigten Personen markiert werden.</p>
                       {{end}}
                     </div>
                   </div>
