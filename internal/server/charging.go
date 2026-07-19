@@ -376,6 +376,7 @@ func (a *app) tickChargingTenant(ctx context.Context, tenant tenantConfig) {
 		a.noteChargingReadFailure(tenant, data.Charging, in.Now)
 		return
 	}
+	a.chargingLastPoll[tenant.Slug] = in.Now
 	a.noteChargingReadRecovery(tenant, data.Charging, in.Now)
 
 	if cfg.ShadowMode {

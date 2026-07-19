@@ -28,8 +28,12 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	telemetry := a.parkingTelemetry(r.Context(), tenant)
 	parkingMsg, parkingOK := parkingMessage(r.URL.Query().Get("month"), r.URL.Query().Get("reminder"))
+	if parkingMsg == "" {
+		parkingMsg, parkingOK = chargingFlashMessage(r.URL.Query())
+	}
 	accounting := a.parkingAccounting(r.Context(), tenant)
 	accounting.Months = a.hydrateParkingMonths(tenant.Slug, email, role, accounting.Months)
+	live := a.chargingLiveView(r.Context(), tenant, isAdmin, true)
 	a.render(w, "parking", map[string]any{
 		"Title":                    "Parkplatznutzung",
 		"Tenant":                   tenant,
@@ -46,9 +50,29 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"Accounting":               accounting,
 		"ParkingMsg":               parkingMsg,
 		"ParkingOK":                parkingOK,
+		"Live":                     live,
 		"TodayInput":               time.Now().In(time.Local).Format("2006-01-02"),
 		"StatementYear":            time.Now().In(time.Local).Year(),
 	})
+}
+
+// chargingFlashMessage surfaces the redirect outcome of a charging action.
+// The action result text travels in the query so the flash matches what the
+// Telegram reply would have said.
+func chargingFlashMessage(query url.Values) (string, bool) {
+	status := query.Get("charging")
+	if status == "" {
+		return "", false
+	}
+	message := strings.TrimSpace(query.Get("chargingmsg"))
+	if message == "" {
+		if status == "ok" {
+			message = "Erledigt."
+		} else {
+			message = "Aktion fehlgeschlagen."
+		}
+	}
+	return message, status == "ok"
 }
 
 func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -59,6 +83,7 @@ func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 		return
 	}
 	settingsMsg, settingsOK := parkingSettingsMessage(r.URL.Query().Get("settings"))
+	chargingMsg, chargingOK := chargingSettingsMessage(r.URL.Query().Get("charging"))
 	a.render(w, "parkingSettings", map[string]any{
 		"Title":         "Parkplatz-Abrechnung",
 		"Tenant":        tenant,
@@ -72,6 +97,9 @@ func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 		"Accounting":    a.parkingAccounting(r.Context(), tenant),
 		"SettingsMsg":   settingsMsg,
 		"SettingsOK":    settingsOK,
+		"ChargingMsg":   chargingMsg,
+		"ChargingOK":    chargingOK,
+		"Charging":      a.chargingAdminView(tenant, r.URL.Query()),
 	})
 }
 

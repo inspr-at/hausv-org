@@ -115,6 +115,7 @@ func newChargingTestApp(t *testing.T, ha *fakeHA) (*app, tenantConfig, *recordin
 		chargingShadow:         map[string]chargingControllerState{},
 		chargingShadowPlug:     map[string]bool{},
 		chargingEvents:         &chargingEventRing{},
+		chargingLastPoll:       map[string]time.Time{},
 	}
 	if err := parkingStore.SetChargingControl("jhw22", chargingControlSettings{Enabled: true}); err != nil {
 		t.Fatal(err)

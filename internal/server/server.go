@@ -707,6 +707,7 @@ type app struct {
 	chargingShadow         map[string]chargingControllerState
 	chargingShadowPlug     map[string]bool
 	chargingEvents         *chargingEventRing
+	chargingLastPoll       map[string]time.Time
 
 	telegram                  telegramAPI
 	telegramStore             *telegramStore
@@ -834,6 +835,13 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/parking/settings", a.action(a.updateParkingSettings))
 	mux.HandleFunc("POST /app/parking/month", a.action(a.updateParkingMonth))
 	mux.HandleFunc("POST /app/parking/reminders", a.action(a.sendParkingReminders))
+	mux.HandleFunc("GET /app/parking/charging/status", a.page(a.chargingStatus))
+	mux.HandleFunc("POST /app/parking/charging/on", a.action(a.chargingOnAction))
+	mux.HandleFunc("POST /app/parking/charging/off", a.action(a.chargingOffAction))
+	mux.HandleFunc("POST /app/parking/charging/auto", a.action(a.chargingAutoAction))
+	mux.HandleFunc("POST /app/parking/charging/settings", a.action(a.updateChargingSettings))
+	mux.HandleFunc("POST /app/parking/charging/telegram/link", a.action(a.createTelegramLinkCode))
+	mux.HandleFunc("POST /app/parking/charging/telegram/unlink", a.action(a.unlinkTelegramChat))
 	mux.HandleFunc("GET /app/audit", a.page(a.auditLog))
 	mux.HandleFunc("GET /app/settings", a.page(a.settingsHub))
 	mux.HandleFunc("GET /app/settings/building", a.page(a.buildingSettings))
@@ -1144,6 +1152,7 @@ func newApp() (*app, error) {
 		chargingShadow:         map[string]chargingControllerState{},
 		chargingShadowPlug:     map[string]bool{},
 		chargingEvents:         &chargingEventRing{},
+		chargingLastPoll:       map[string]time.Time{},
 
 		telegram:            telegram.New(env("TELEGRAM_API_BASE_URL", ""), env("TELEGRAM_BOT_TOKEN", "")),
 		telegramStore:       telegramStore,
@@ -4723,6 +4732,8 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 		})
 	}
 	view.HasHours = len(view.Hours) > 0
+	view.Sessions = chargingSessionViews(data, 0, month)
+	view.HasSessions = len(view.Sessions) > 0
 	return view
 }
 
