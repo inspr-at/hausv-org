@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.12.1",
+			Date:     "19. Juli 2026",
+			Kind:     "Oberfläche",
+			Headline: "Aufgeräumte Parkplatz-Einstellungen.",
+			Intro:    "Tarif, Laderegelung, Regler-Status und Telegram sind jetzt kompakt und klar gruppiert.",
+			Items: []NoteItem{
+				{Label: "Formulare", Text: "Eingabefelder zeigen ihre Einheit direkt im Feld; zusammengehörige Werte stehen nebeneinander."},
+				{Label: "Schalter", Text: "Regler und Testbetrieb sind als klare Auswahlkarten bedienbar."},
+			},
+		},
+		{
 			Version:  "0.12.0",
 			Date:     "19. Juli 2026",
 			Kind:     "Laden",

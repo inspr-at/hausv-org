@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.12.1] - 2026-07-19
+
+### Verbessert
+
+- **Aufgeräumte Einstellungsseite.** Die Parkplatz-Einstellungen sind jetzt kompakt gruppiert: Eingabefelder mit Einheiten direkt im Feld, klare Schalter für Regler und Testbetrieb, übersichtlicher Regler-Status und Telegram-Bereich.
+
 ## [0.12.0] - 2026-07-19
 
 ### Neu

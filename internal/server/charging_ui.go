@@ -259,14 +259,14 @@ func (a *app) chargingAdminView(tenant tenantConfig, query url.Values) parkingCh
 	out := parkingChargingAdminView{
 		Enabled:          cfg.Enabled,
 		ShadowMode:       cfg.ShadowMode,
-		StartSocValue:    strconv.FormatFloat(cfg.StartSocPercent, 'f', -1, 64),
-		StopSocValue:     strconv.FormatFloat(cfg.StopSocPercent, 'f', -1, 64),
-		StartFeedInValue: strconv.FormatFloat(cfg.StartFeedInW, 'f', -1, 64),
-		StopFeedInValue:  strconv.FormatFloat(cfg.StopFeedInW, 'f', -1, 64),
+		StartSocValue:    strings.ReplaceAll(strconv.FormatFloat(cfg.StartSocPercent, 'f', -1, 64), ".", ","),
+		StopSocValue:     strings.ReplaceAll(strconv.FormatFloat(cfg.StopSocPercent, 'f', -1, 64), ".", ","),
+		StartFeedInValue: strconv.FormatFloat(cfg.StartFeedInW, 'f', 0, 64),
+		StopFeedInValue:  strconv.FormatFloat(cfg.StopFeedInW, 'f', 0, 64),
 		StopDelayValue:   strconv.Itoa(cfg.StopDelayMinutes),
 		MinOnValue:       strconv.Itoa(cfg.MinOnMinutes),
 		MinOffValue:      strconv.Itoa(cfg.MinOffMinutes),
-		SurplusRateValue: strconv.FormatFloat(surplusRate(tariff), 'f', 2, 64),
+		SurplusRateValue: formatInputFloat(surplusRate(tariff)),
 		State:            a.chargingAdminStrip(tenant, data.Charging, cfg),
 	}
 	for _, event := range a.chargingEvents.list(tenant.Slug, 50) {

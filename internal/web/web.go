@@ -4029,33 +4029,97 @@ const PageTemplates = `
 
 {{define "parkingSettings"}}
 {{template "appOpen" .}}
+    <style>
+      .pk-set { display: grid; gap: 24px; max-width: 760px; }
+      .pk-set .panel { display: grid; gap: 16px; }
+      .pk-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+      .pk-head h2 { margin: 0; }
+      .pk-head .muted { margin: 5px 0 0; max-width: 52ch; }
+      .pk-form { display: grid; gap: 14px; }
+      .pk-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
+      .pk-fields.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .pk-group { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 14px 14px 16px; display: grid; gap: 11px; }
+      .pk-group-head { display: flex; align-items: baseline; gap: 10px; }
+      .pk-group-head h3 { margin: 0; font-family: var(--font-serif); font-size: 15.5px; }
+      .pk-group-head span { color: var(--muted); font-size: 12.5px; }
+      .pk-unit { position: relative; }
+      .pk-unit input { padding-right: 88px; text-align: right; font-variant-numeric: tabular-nums; }
+      .pk-unit .unit { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--soft); pointer-events: none; }
+      .pk-toggles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      label.pk-toggle { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 4px 11px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 12px 14px; cursor: pointer; text-transform: none; letter-spacing: 0; transition: border-color .15s ease, background .15s ease; }
+      label.pk-toggle:hover { border-color: rgba(200,153,63,.45); }
+      label.pk-toggle:has(input:checked) { border-color: rgba(200,153,63,.6); background: rgba(200,153,63,.08); }
+      .pk-toggle input { width: 17px; height: 17px; min-height: 0; margin: 2px 0 0; accent-color: var(--gold); grid-row: 1 / span 2; }
+      .pk-toggle strong { color: var(--ink); font-size: 14px; font-weight: 700; }
+      .pk-toggle small { grid-column: 2; color: var(--muted); font-size: 12.5px; font-weight: 500; line-height: 1.4; }
+      .pk-actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap; }
+      .pk-actions .mini { margin-right: auto; }
+      .pk-set .button { width: auto; margin: 0; padding: 11px 24px; }
+      .pk-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+      .pk-strip .mini { display: inline-flex; align-items: center; min-height: 26px; padding: 2px 11px; border: 1px solid var(--line); border-radius: var(--radius-pill); background: var(--panel-soft); color: var(--muted); font-weight: 600; }
+      .pk-events { display: grid; gap: 6px; max-height: 360px; overflow-y: auto; }
+      .pk-event { display: grid; grid-template-columns: 96px auto minmax(0, 1fr); gap: 10px; align-items: baseline; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); padding: 7px 11px; font-size: 13px; }
+      .pk-event time { color: var(--soft); font-variant-numeric: tabular-nums; font-size: 12px; }
+      .pk-event .pill { min-height: 22px; padding: 1px 9px; font-size: 11.5px; }
+      .pk-inline { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end; }
+      .pk-set select { width: 100%; border: 1px solid #e2dac9; border-radius: var(--radius-xs); min-height: 42px; padding: 9px 12px; font: inherit; color: var(--ink); background: #fffefb; }
+      .pk-code { border: 1px dashed rgba(200,153,63,.55); border-radius: var(--radius-sm); background: rgba(200,153,63,.07); padding: 14px 16px; display: grid; gap: 6px; text-align: center; justify-items: center; }
+      .pk-code code { font-size: 22px; font-weight: 800; letter-spacing: .14em; color: var(--gold-ink); }
+      .pk-code .mini { color: var(--muted); }
+      .pk-chats { display: grid; gap: 8px; }
+      .pk-chat { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 10px 13px; }
+      .pk-chat .pk-avatar { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; font-weight: 700; font-family: var(--font-serif); color: #fff; background: var(--gold); border: 1px solid rgba(138,123,63,.5); }
+      .pk-chat-meta { min-width: 0; }
+      .pk-chat-meta strong { display: block; font-size: 14px; }
+      .pk-chat-meta span { color: var(--muted); font-size: 12.5px; }
+      .pk-chat form { margin-left: auto; }
+      .pk-chat .button { padding: 8px 14px; font-size: 13px; }
+      @media (max-width: 620px) {
+        .pk-fields, .pk-fields.cols-3, .pk-toggles { grid-template-columns: 1fr; }
+        .pk-inline { grid-template-columns: 1fr; }
+        .pk-actions { justify-content: stretch; }
+        .pk-set .button { width: 100%; }
+        .pk-actions .mini { margin-right: 0; }
+      }
+    </style>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz-Abrechnung</span></span>
         <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a><a class="button" href="/app/parking">Zur Parkplatznutzung</a></div>
       </div>
-      <section class="page">
+      <section class="page pk-set">
         <div>
           <h1>Parkplatz-Abrechnung</h1>
-          <p class="lede">Abrechnungswerte für die private Parkplatznutzung.</p>
+          <p class="lede">Tarif, Laderegelung und Benachrichtigungen für Parkplatz 20.</p>
         </div>
+
         <section class="panel settings-card">
-          <div>
-            <h2>Tarif</h2>
-            <p class="muted">Netzgebühr je kWh und optionale monatliche Basisgebühr werden nach Gültigkeitsdatum auf die Abrechnung angewendet.</p>
+          <div class="pk-head">
+            <div>
+              <h2>Tarif</h2>
+              <p class="muted">Preise gelten ab dem Gültigkeitsdatum; ältere Monate behalten ihren Tarif.</p>
+            </div>
           </div>
           {{if .SettingsMsg}}<p class="flash {{if .SettingsOK}}ok{{end}}">{{.SettingsMsg}}</p>{{end}}
-          <form class="form-grid" method="post" action="/app/parking/settings">
-            <label for="effective_from">Gültig ab</label>
-            <input id="effective_from" type="date" name="effective_from" value="{{.Accounting.EffectiveFrom}}" autocomplete="off">
-            <label for="grid_fee_eur_per_kwh">Netzgebühr je kWh</label>
-            <input id="grid_fee_eur_per_kwh" type="text" inputmode="decimal" name="grid_fee_eur_per_kwh" value="{{.Accounting.GridFeeValue}}" autocomplete="off">
-            <label for="base_fee_eur">Basisgebühr je Monat</label>
-            <input id="base_fee_eur" type="text" inputmode="decimal" name="base_fee_eur" value="{{.Accounting.BaseFeeValue}}" autocomplete="off">
-            <label for="surplus_rate_eur_per_kwh">Überschusstarif je kWh</label>
-            <input id="surplus_rate_eur_per_kwh" type="text" inputmode="decimal" name="surplus_rate_eur_per_kwh" value="{{.Charging.SurplusRateValue}}" autocomplete="off">
-            <button class="button primary" type="submit">Speichern</button>
-            {{if .Accounting.LastSampleLabel}}<span class="mini">Letzter Zählerwert: {{.Accounting.LastSampleLabel}}</span>{{end}}
+          <form class="pk-form" method="post" action="/app/parking/settings">
+            <div class="pk-fields">
+              <label for="effective_from">Gültig ab
+                <input id="effective_from" type="date" name="effective_from" value="{{.Accounting.EffectiveFrom}}" autocomplete="off">
+              </label>
+              <label for="grid_fee_eur_per_kwh">Netzgebühr
+                <span class="pk-unit"><input id="grid_fee_eur_per_kwh" type="text" inputmode="decimal" name="grid_fee_eur_per_kwh" value="{{.Accounting.GridFeeValue}}" autocomplete="off"><span class="unit">€/kWh</span></span>
+              </label>
+              <label for="base_fee_eur">Basisgebühr
+                <span class="pk-unit"><input id="base_fee_eur" type="text" inputmode="decimal" name="base_fee_eur" value="{{.Accounting.BaseFeeValue}}" autocomplete="off"><span class="unit">€/Monat</span></span>
+              </label>
+              <label for="surplus_rate_eur_per_kwh">Überschusstarif
+                <span class="pk-unit"><input id="surplus_rate_eur_per_kwh" type="text" inputmode="decimal" name="surplus_rate_eur_per_kwh" value="{{.Charging.SurplusRateValue}}" autocomplete="off"><span class="unit">€/kWh</span></span>
+              </label>
+            </div>
+            <div class="pk-actions">
+              {{if .Accounting.LastSampleLabel}}<span class="mini">Letzter Zählerwert: {{.Accounting.LastSampleLabel}}</span>{{end}}
+              <button class="button primary" type="submit">Tarif speichern</button>
+            </div>
           </form>
           {{if .Accounting.HasTariffs}}
             <div class="legend" aria-label="Tarifhistorie">
@@ -4067,79 +4131,124 @@ const PageTemplates = `
         </section>
 
         <section class="panel settings-card" id="laderegelung">
-          <div>
-            <h2>Laderegelung (PV-Überschuss)</h2>
-            <p class="muted">Automatisches Überschussladen für Parkplatz 20. Im Testbetrieb entscheidet und protokolliert der Regler, schaltet aber nicht.</p>
+          <div class="pk-head">
+            <div>
+              <h2>Laderegelung</h2>
+              <p class="muted">Automatisches PV-Überschussladen. Im Testbetrieb entscheidet und protokolliert der Regler, schaltet aber nicht.</p>
+            </div>
           </div>
           {{if .ChargingMsg}}<p class="flash {{if .ChargingOK}}ok{{end}}">{{.ChargingMsg}}</p>{{end}}
-          <form class="form-grid" method="post" action="/app/parking/charging/settings">
-            <label for="controller_enabled"><input id="controller_enabled" type="checkbox" name="controller_enabled" value="1" {{if .Charging.Enabled}}checked{{end}}> Regler aktiv</label>
-            <label for="shadow_mode"><input id="shadow_mode" type="checkbox" name="shadow_mode" value="1" {{if or .Charging.ShadowMode (not .Charging.Enabled)}}checked{{end}}> Testbetrieb (Shadow)</label>
-            <label for="start_soc_percent">Start ab Akkustand (%)</label>
-            <input id="start_soc_percent" type="text" inputmode="decimal" name="start_soc_percent" value="{{.Charging.StartSocValue}}" autocomplete="off">
-            <label for="stop_soc_percent">Stopp unter Akkustand (%)</label>
-            <input id="stop_soc_percent" type="text" inputmode="decimal" name="stop_soc_percent" value="{{.Charging.StopSocValue}}" autocomplete="off">
-            <label for="start_feed_in_w">Start ab Einspeisung (W)</label>
-            <input id="start_feed_in_w" type="text" inputmode="decimal" name="start_feed_in_w" value="{{.Charging.StartFeedInValue}}" autocomplete="off">
-            <label for="stop_feed_in_w">Stopp unter Einspeisung (W)</label>
-            <input id="stop_feed_in_w" type="text" inputmode="decimal" name="stop_feed_in_w" value="{{.Charging.StopFeedInValue}}" autocomplete="off">
-            <label for="stop_delay_minutes">Stopp erst nach (Min.)</label>
-            <input id="stop_delay_minutes" type="text" inputmode="numeric" name="stop_delay_minutes" value="{{.Charging.StopDelayValue}}" autocomplete="off">
-            <label for="min_on_minutes">Mindest-Einschaltdauer (Min.)</label>
-            <input id="min_on_minutes" type="text" inputmode="numeric" name="min_on_minutes" value="{{.Charging.MinOnValue}}" autocomplete="off">
-            <label for="min_off_minutes">Mindest-Pausendauer (Min.)</label>
-            <input id="min_off_minutes" type="text" inputmode="numeric" name="min_off_minutes" value="{{.Charging.MinOffValue}}" autocomplete="off">
-            <button class="button primary" type="submit">Speichern</button>
+          <form class="pk-form" method="post" action="/app/parking/charging/settings">
+            <div class="pk-toggles">
+              <label class="pk-toggle" for="controller_enabled">
+                <input id="controller_enabled" type="checkbox" name="controller_enabled" value="1" {{if .Charging.Enabled}}checked{{end}}>
+                <strong>Regler aktiv</strong>
+                <small>Überwacht Akku und Einspeisung und startet Ladevorgänge.</small>
+              </label>
+              <label class="pk-toggle" for="shadow_mode">
+                <input id="shadow_mode" type="checkbox" name="shadow_mode" value="1" {{if or .Charging.ShadowMode (not .Charging.Enabled)}}checked{{end}}>
+                <strong>Testbetrieb</strong>
+                <small>Nur beobachten und protokollieren — die Steckdose bleibt unberührt.</small>
+              </label>
+            </div>
+            <div class="pk-group">
+              <div class="pk-group-head"><h3>Starten</h3><span>beide Bedingungen müssen erfüllt sein</span></div>
+              <div class="pk-fields">
+                <label for="start_soc_percent">Akkustand mindestens
+                  <span class="pk-unit"><input id="start_soc_percent" type="text" inputmode="decimal" name="start_soc_percent" value="{{.Charging.StartSocValue}}" autocomplete="off"><span class="unit">%</span></span>
+                </label>
+                <label for="start_feed_in_w">Einspeisung mindestens
+                  <span class="pk-unit"><input id="start_feed_in_w" type="text" inputmode="numeric" name="start_feed_in_w" value="{{.Charging.StartFeedInValue}}" autocomplete="off"><span class="unit">W</span></span>
+                </label>
+              </div>
+            </div>
+            <div class="pk-group">
+              <div class="pk-group-head"><h3>Stoppen</h3><span>sobald eine Bedingung zutrifft</span></div>
+              <div class="pk-fields cols-3">
+                <label for="stop_soc_percent">Akkustand unter
+                  <span class="pk-unit"><input id="stop_soc_percent" type="text" inputmode="decimal" name="stop_soc_percent" value="{{.Charging.StopSocValue}}" autocomplete="off"><span class="unit">%</span></span>
+                </label>
+                <label for="stop_feed_in_w">Einspeisung unter
+                  <span class="pk-unit"><input id="stop_feed_in_w" type="text" inputmode="numeric" name="stop_feed_in_w" value="{{.Charging.StopFeedInValue}}" autocomplete="off"><span class="unit">W</span></span>
+                </label>
+                <label for="stop_delay_minutes">… und zwar durchgehend für
+                  <span class="pk-unit"><input id="stop_delay_minutes" type="text" inputmode="numeric" name="stop_delay_minutes" value="{{.Charging.StopDelayValue}}" autocomplete="off"><span class="unit">Min.</span></span>
+                </label>
+              </div>
+            </div>
+            <div class="pk-group">
+              <div class="pk-group-head"><h3>Schaltschutz</h3><span>schont Relais und Ladeelektronik</span></div>
+              <div class="pk-fields">
+                <label for="min_on_minutes">Mindest-Einschaltdauer
+                  <span class="pk-unit"><input id="min_on_minutes" type="text" inputmode="numeric" name="min_on_minutes" value="{{.Charging.MinOnValue}}" autocomplete="off"><span class="unit">Min.</span></span>
+                </label>
+                <label for="min_off_minutes">Mindest-Pausendauer
+                  <span class="pk-unit"><input id="min_off_minutes" type="text" inputmode="numeric" name="min_off_minutes" value="{{.Charging.MinOffValue}}" autocomplete="off"><span class="unit">Min.</span></span>
+                </label>
+              </div>
+            </div>
+            <div class="pk-actions">
+              <button class="button primary" type="submit">Laderegelung speichern</button>
+            </div>
           </form>
         </section>
 
         <section class="panel settings-card">
-          <div>
-            <h2>Regler-Status</h2>
-            <p class="muted">Aktueller Zustand und die letzten Entscheidungen des Ladereglers.</p>
-          </div>
-          <div class="rule">
+          <div class="pk-head">
+            <div>
+              <h2>Regler-Status</h2>
+              <p class="muted">Aktueller Zustand und die letzten Entscheidungen.</p>
+            </div>
             <span class="pill">{{.Charging.State.PhaseLabel}}</span>
+          </div>
+          <div class="pk-strip">
             {{if .Charging.State.SinceLabel}}<span class="mini">seit {{.Charging.State.SinceLabel}}</span>{{end}}
             {{if .Charging.State.PollLabel}}<span class="mini">HA-Poll {{.Charging.State.PollLabel}}</span>{{end}}
             {{if .Charging.State.ShadowPill}}<span class="pill">Testbetrieb</span>{{end}}
             {{if .Charging.State.ErrorDetail}}<span class="pill dringend">{{.Charging.State.ErrorDetail}}</span>{{end}}
           </div>
           {{if .Charging.HasEvents}}
-            <div class="legend" aria-label="Ereignisprotokoll">
+            <div class="pk-events" aria-label="Ereignisprotokoll">
               {{range .Charging.Events}}
-                <div><strong>{{.AtLabel}}</strong><span><span class="pill {{.KindClass}}">{{.KindLabel}}</span> {{.Detail}}</span></div>
+                <div class="pk-event"><time>{{.AtLabel}}</time><span class="pill {{.KindClass}}">{{.KindLabel}}</span><span>{{.Detail}}</span></div>
               {{end}}
             </div>
           {{else}}
-            <p class="empty">Noch keine Ereignisse seit dem letzten Neustart.</p>
+            <p class="empty">Noch keine Ereignisse seit dem letzten Neustart — sobald der Regler entscheidet, erscheint hier jede Aktion.</p>
           {{end}}
         </section>
 
         <section class="panel settings-card" id="telegram">
-          <div>
-            <h2>Telegram-Bot</h2>
-            <p class="muted">Benachrichtigungen und Befehle laufen über den eigenen Bot. Chats werden per Einmal-Code verknüpft; Chat-Kennungen bleiben auf dem Server.</p>
-          </div>
-          <div class="rule">
-            {{if .Charging.Telegram.Configured}}<span class="pill ok">Token konfiguriert</span>{{else}}<span class="pill dringend">Kein Token — Bot inaktiv</span>{{end}}
+          <div class="pk-head">
+            <div>
+              <h2>Telegram-Bot</h2>
+              <p class="muted">Benachrichtigungen und Befehle laufen über den eigenen Bot. Chats werden per Einmal-Code verknüpft; Chat-Kennungen bleiben auf dem Server.</p>
+            </div>
+            {{if .Charging.Telegram.Configured}}<span class="pill ok">Verbunden</span>{{else}}<span class="pill dringend">Kein Token</span>{{end}}
           </div>
           {{if .Charging.Telegram.PendingCode}}
-            <p class="flash ok">Code für {{.Charging.Telegram.CodeEmail}}: <strong><code>{{.Charging.Telegram.PendingCode}}</code></strong> — per Telegram an den Bot senden: <code>/start {{.Charging.Telegram.PendingCode}}</code> (24 h gültig)</p>
+            <div class="pk-code">
+              <span class="mini">Code für {{.Charging.Telegram.CodeEmail}} — 24 h gültig, einmal verwendbar:</span>
+              <code>/start {{.Charging.Telegram.PendingCode}}</code>
+              <span class="mini">Diese Zeile per Telegram an den Bot senden.</span>
+            </div>
           {{end}}
-          <form class="form-grid" method="post" action="/app/parking/charging/telegram/link">
-            <label for="tg_email">Verknüpfungscode für</label>
-            <select id="tg_email" name="email">
-              {{range .Charging.Telegram.LinkOptions}}<option value="{{.Email}}">{{.Label}} ({{.Email}})</option>{{end}}
-            </select>
+          <form class="pk-inline" method="post" action="/app/parking/charging/telegram/link">
+            <label for="tg_email">Verknüpfungscode für
+              <select id="tg_email" name="email">
+                {{range .Charging.Telegram.LinkOptions}}<option value="{{.Email}}">{{.Label}} ({{.Email}})</option>{{end}}
+              </select>
+            </label>
             <button class="button" type="submit">Code erzeugen</button>
           </form>
           {{if .Charging.Telegram.HasChats}}
-            <div class="legend" aria-label="Verknüpfte Chats">
+            <div class="pk-chats" aria-label="Verknüpfte Chats">
               {{range .Charging.Telegram.Chats}}
-                <div><strong>{{.DisplayName}}</strong><span>{{.Email}} · seit {{.LinkedAt}}
-                  <form method="post" action="/app/parking/charging/telegram/unlink" style="display:inline"><input type="hidden" name="chat_id" value="{{.ChatID}}"><button class="button" type="submit">Trennen</button></form>
-                </span></div>
+                <div class="pk-chat">
+                  <span class="pk-avatar">{{printf "%.1s" .DisplayName}}</span>
+                  <span class="pk-chat-meta"><strong>{{.DisplayName}}</strong><span>{{.Email}} · verknüpft seit {{.LinkedAt}}</span></span>
+                  <form method="post" action="/app/parking/charging/telegram/unlink"><input type="hidden" name="chat_id" value="{{.ChatID}}"><button class="button" type="submit">Trennen</button></form>
+                </div>
               {{end}}
             </div>
           {{else}}
