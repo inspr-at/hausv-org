@@ -456,11 +456,18 @@ type ParkingMonthView struct {
 	GridCostValue    float64
 	BaseFeeValue     float64
 	TotalCostValue   float64
+	SurplusKWhValue  float64
+	SurplusCostValue float64
+	NormalKWhValue   float64
 	KWh              string
 	EnergyCost       string
 	GridCost         string
 	BaseFee          string
 	TotalCost        string
+	SurplusKWh       string
+	SurplusCost      string
+	NormalKWh        string
+	HasSurplus       bool
 	AverageAwattar   string
 	EffectivePrice   string
 	AveragePrice     string
@@ -501,6 +508,9 @@ type ParkingHourView struct {
 	AtTitle             string
 	KWh                 string
 	KWhTitle            string
+	SurplusKWh          string
+	SurplusKWhTitle     string
+	HasSurplus          bool
 	AverageAwattar      string
 	AverageAwattarTitle string
 	EnergyCost          string
@@ -680,6 +690,10 @@ type ParkingStatementView struct {
 	GridCost     string
 	BaseFee      string
 	TotalCost    string
+	SurplusKWh   string
+	SurplusCost  string
+	NormalKWh    string
+	HasSurplus   bool
 }
 
 func ParkingStatementTariffLabel(settings store.ParkingSettings) string {

@@ -397,6 +397,7 @@ type (
 	issueStore            = store.IssueStore
 	issueStoreData        = store.IssueStoreData
 	issueWorkflowUpdate   = store.IssueWorkflowUpdate
+	chargingSession       = store.ChargingSession
 	parkingMonthState     = store.ParkingMonthState
 	parkingNumericSample  = store.ParkingNumericSample
 	parkingSettings       = store.ParkingSettings
@@ -444,6 +445,8 @@ var normalizeParkingMonths = store.NormalizeParkingMonths
 var normalizeParkingSettings = store.NormalizeParkingSettings
 var normalizeParkingTariff = store.NormalizeParkingTariff
 var normalizeParkingTariffDate = store.NormalizeParkingTariffDate
+var normalizeChargingSessions = store.NormalizeChargingSessions
+var surplusRate = store.SurplusRate
 var rejectActiveAttachmentContent = store.RejectActiveAttachmentContent
 var resizeImageNearest = store.ResizeImageNearest
 var sanitizeDocumentFilename = store.SanitizeDocumentFilename
@@ -1908,7 +1911,7 @@ func writeParkingStatementCSV(w io.Writer, statement parkingStatementView) error
 		{"Erstellt", statement.GeneratedAt},
 		{"Tarif", statement.GridFeeLabel},
 		{},
-		{"Monat", "Zeitraum", "kWh", "aWATTar Ø", "Effektivpreis", "Strom", "Netzgeb.", "Basis", "Summe", "Status"},
+		{"Monat", "Zeitraum", "kWh gesamt", "kWh Überschuss", "kWh Normal", "aWATTar Ø", "Effektivpreis", "Strom (Normal)", "Überschuss", "Netzgeb.", "Basis", "Summe", "Status"},
 	}
 	for _, row := range rows {
 		if err := writer.Write(row); err != nil {
@@ -1916,11 +1919,11 @@ func writeParkingStatementCSV(w io.Writer, statement parkingStatementView) error
 		}
 	}
 	for _, month := range statement.Months {
-		if err := writer.Write([]string{month.MonthLabel, month.PeriodLabel, month.KWh, month.AverageAwattar, month.EffectivePrice, month.EnergyCost, month.GridCost, month.BaseFee, month.TotalCost, month.PaidLabel}); err != nil {
+		if err := writer.Write([]string{month.MonthLabel, month.PeriodLabel, month.KWh, month.SurplusKWh, month.NormalKWh, month.AverageAwattar, month.EffectivePrice, month.EnergyCost, month.SurplusCost, month.GridCost, month.BaseFee, month.TotalCost, month.PaidLabel}); err != nil {
 			return err
 		}
 	}
-	if err := writer.Write([]string{"Gesamt", "", statement.TotalKWh, "", "", statement.EnergyCost, statement.GridCost, statement.BaseFee, statement.TotalCost, ""}); err != nil {
+	if err := writer.Write([]string{"Gesamt", "", statement.TotalKWh, statement.SurplusKWh, statement.NormalKWh, "", "", statement.EnergyCost, statement.SurplusCost, statement.GridCost, statement.BaseFee, statement.TotalCost, ""}); err != nil {
 		return err
 	}
 	writer.Flush()
@@ -4299,18 +4302,60 @@ func priceAt(samples []parkingNumericSample, at time.Time) (float64, bool) {
 }
 
 type parkingHourUsage struct {
-	At         time.Time
-	KWh        float64
-	PriceEUR   float64
-	EnergyCost float64
-	GridCost   float64
+	At          time.Time
+	KWh         float64
+	PriceEUR    float64
+	EnergyCost  float64
+	GridCost    float64
+	SurplusKWh  float64
+	SurplusCost float64
 }
 
 func calculateParkingHourlyUsage(energySamples []parkingNumericSample, priceSamples []parkingNumericSample, gridFeeEURPerKWh float64, now time.Time) []parkingHourUsage {
-	return calculateParkingHourlyUsageWithSettings(energySamples, priceSamples, parkingSettings{GridFeeEURPerKWh: gridFeeEURPerKWh}, now, time.Local)
+	return calculateParkingHourlyUsageWithSettings(energySamples, priceSamples, nil, parkingSettings{GridFeeEURPerKWh: gridFeeEURPerKWh}, now, time.Local)
 }
 
-func calculateParkingHourlyUsageWithSettings(energySamples []parkingNumericSample, priceSamples []parkingNumericSample, settings parkingSettings, now time.Time, loc *time.Location) []parkingHourUsage {
+// surplusOverlapFraction returns which fraction of [from, to) lies inside a
+// surplus charging session. Sessions must be surplus-mode only; an open
+// session (zero End) counts up to `now`. The controller writes a meter sample
+// at every session boundary, so for controller-created intervals this is
+// exactly 0 or 1 — the proportional path only smooths foreign intervals
+// (e.g. a boundary snapshot that failed while HA was down).
+func surplusOverlapFraction(sessions []chargingSession, from, to, now time.Time) float64 {
+	total := to.Sub(from).Seconds()
+	if total <= 0 || len(sessions) == 0 {
+		return 0
+	}
+	overlap := 0.0
+	for _, session := range sessions {
+		start := session.Start
+		end := session.End
+		if end.IsZero() {
+			end = now
+		}
+		if !start.Before(to) || !end.After(from) {
+			continue
+		}
+		if start.Before(from) {
+			start = from
+		}
+		if end.After(to) {
+			end = to
+		}
+		if seconds := end.Sub(start).Seconds(); seconds > 0 {
+			overlap += seconds
+		}
+	}
+	if overlap <= 0 {
+		return 0
+	}
+	if frac := overlap / total; frac < 1 {
+		return frac
+	}
+	return 1
+}
+
+func calculateParkingHourlyUsageWithSettings(energySamples []parkingNumericSample, priceSamples []parkingNumericSample, sessions []chargingSession, settings parkingSettings, now time.Time, loc *time.Location) []parkingHourUsage {
 	if loc == nil {
 		loc = time.Local
 	}
@@ -4318,6 +4363,12 @@ func calculateParkingHourlyUsageWithSettings(energySamples []parkingNumericSampl
 	keepAfter := now.AddDate(-1, -1, 0)
 	energySamples = normalizeNumericSamples(append([]parkingNumericSample(nil), energySamples...), keepAfter)
 	priceSamples = normalizeNumericSamples(append([]parkingNumericSample(nil), priceSamples...), keepAfter)
+	surplusSessions := make([]chargingSession, 0, len(sessions))
+	for _, session := range normalizeChargingSessions(append([]chargingSession(nil), sessions...), keepAfter) {
+		if session.Mode == store.ChargingModeSurplus {
+			surplusSessions = append(surplusSessions, session)
+		}
+	}
 	if len(energySamples) < 2 || len(priceSamples) == 0 {
 		return nil
 	}
@@ -4354,13 +4405,17 @@ func calculateParkingHourlyUsageWithSettings(energySamples []parkingNumericSampl
 				continue
 			}
 			tariff := parkingTariffAt(settings, cursor, loc)
+			surplusKWh := kWh * surplusOverlapFraction(surplusSessions, cursor, segmentEnd, now)
+			normalKWh := kWh - surplusKWh
 			hour := cursor.Truncate(time.Hour)
 			out = append(out, parkingHourUsage{
-				At:         hour,
-				KWh:        kWh,
-				PriceEUR:   price,
-				EnergyCost: price * kWh,
-				GridCost:   tariff.GridFeeEURPerKWh * kWh,
+				At:          hour,
+				KWh:         kWh,
+				PriceEUR:    price,
+				EnergyCost:  price * normalKWh,
+				GridCost:    tariff.GridFeeEURPerKWh * normalKWh,
+				SurplusKWh:  surplusKWh,
+				SurplusCost: surplusRate(tariff) * surplusKWh,
 			})
 			cursor = segmentEnd
 		}
@@ -4377,6 +4432,8 @@ func calculateParkingHourlyUsageWithSettings(energySamples []parkingNumericSampl
 			merged[len(merged)-1].KWh += item.KWh
 			merged[len(merged)-1].EnergyCost += item.EnergyCost
 			merged[len(merged)-1].GridCost += item.GridCost
+			merged[len(merged)-1].SurplusKWh += item.SurplusKWh
+			merged[len(merged)-1].SurplusCost += item.SurplusCost
 			continue
 		}
 		merged = append(merged, item)
@@ -4393,18 +4450,20 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 	}
 	data.Settings = normalizeParkingSettings(data.Settings)
 	data.Months = normalizeParkingMonthStates(data.Months)
-	hours := calculateParkingHourlyUsageWithSettings(data.EnergySamples, data.PriceSamples, data.Settings, now, loc)
+	hours := calculateParkingHourlyUsageWithSettings(data.EnergySamples, data.PriceSamples, data.ChargingSessions, data.Settings, now, loc)
 	if len(hours) == 0 {
 		return nil
 	}
 	type aggregate struct {
-		month      string
-		kWh        float64
-		energyCost float64
-		gridCost   float64
-		first      time.Time
-		last       time.Time
-		hourCount  int
+		month       string
+		kWh         float64
+		energyCost  float64
+		gridCost    float64
+		surplusKWh  float64
+		surplusCost float64
+		first       time.Time
+		last        time.Time
+		hourCount   int
 	}
 	aggregates := map[string]*aggregate{}
 	for _, hour := range hours {
@@ -4424,6 +4483,8 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 		agg.kWh += hour.KWh
 		agg.energyCost += hour.EnergyCost
 		agg.gridCost += hour.GridCost
+		agg.surplusKWh += hour.SurplusKWh
+		agg.surplusCost += hour.SurplusCost
 		agg.hourCount++
 	}
 	for month := range data.Months {
@@ -4443,7 +4504,7 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 	for month, agg := range aggregates {
 		months = append(months, month)
 		tariff := parkingTariffForMonth(data.Settings, month, loc)
-		total := agg.energyCost + agg.gridCost + tariff.BaseFeeEUR
+		total := agg.energyCost + agg.gridCost + agg.surplusCost + tariff.BaseFeeEUR
 		if total > maxTotal {
 			maxTotal = total
 		}
@@ -4455,11 +4516,14 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 		agg := aggregates[month]
 		tariff := parkingTariffForMonth(data.Settings, month, loc)
 		gridCost := agg.gridCost
-		total := agg.energyCost + gridCost + tariff.BaseFeeEUR
+		total := agg.energyCost + gridCost + agg.surplusCost + tariff.BaseFeeEUR
+		normalKWh := agg.kWh - agg.surplusKWh
 		averageAwattar := 0.0
 		effectivePrice := 0.0
+		if normalKWh > 0 {
+			averageAwattar = agg.energyCost / normalKWh
+		}
 		if agg.kWh > 0 {
-			averageAwattar = agg.energyCost / agg.kWh
 			effectivePrice = total / agg.kWh
 		}
 		chartPercent := 0
@@ -4490,11 +4554,18 @@ func calculateParkingMonths(data parkingTenantData, now time.Time, loc *time.Loc
 			GridCostValue:    gridCost,
 			BaseFeeValue:     tariff.BaseFeeEUR,
 			TotalCostValue:   total,
+			SurplusKWhValue:  agg.surplusKWh,
+			SurplusCostValue: agg.surplusCost,
+			NormalKWhValue:   normalKWh,
 			KWh:              formatKWh(agg.kWh),
 			EnergyCost:       formatEUR(agg.energyCost),
 			GridCost:         formatEUR(gridCost),
 			BaseFee:          formatEUR(tariff.BaseFeeEUR),
 			TotalCost:        formatEUR(total),
+			SurplusKWh:       formatKWh(agg.surplusKWh),
+			SurplusCost:      formatEUR(agg.surplusCost),
+			NormalKWh:        formatKWh(normalKWh),
+			HasSurplus:       agg.surplusKWh > 0,
 			AverageAwattar:   formatEURPerKWh(averageAwattar),
 			EffectivePrice:   formatEURPerKWh(effectivePrice),
 			AveragePrice:     formatEURPerKWh(effectivePrice),
@@ -4534,7 +4605,7 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 		}
 	}
 	data.Settings = normalizeParkingSettings(data.Settings)
-	hours := calculateParkingHourlyUsageWithSettings(data.EnergySamples, data.PriceSamples, data.Settings, now, loc)
+	hours := calculateParkingHourlyUsageWithSettings(data.EnergySamples, data.PriceSamples, data.ChargingSessions, data.Settings, now, loc)
 	if len(hours) == 0 {
 		return view
 	}
@@ -4545,7 +4616,7 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 			continue
 		}
 		monthHours = append(monthHours, hour)
-		total := hour.EnergyCost + hour.GridCost
+		total := hour.EnergyCost + hour.GridCost + hour.SurplusCost
 		if total > maxTotal {
 			maxTotal = total
 		}
@@ -4558,10 +4629,11 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 	})
 	view.Hours = make([]parkingHourView, 0, len(monthHours))
 	for _, hour := range monthHours {
-		total := hour.EnergyCost + hour.GridCost
+		total := hour.EnergyCost + hour.GridCost + hour.SurplusCost
+		normalKWh := hour.KWh - hour.SurplusKWh
 		averageAwattar := 0.0
-		if hour.KWh > 0 {
-			averageAwattar = hour.EnergyCost / hour.KWh
+		if normalKWh > 0 {
+			averageAwattar = hour.EnergyCost / normalKWh
 		}
 		tariff := parkingTariffAt(data.Settings, hour.At, loc)
 		chartPercent := 0
@@ -4571,19 +4643,26 @@ func calculateParkingMonthDetails(data parkingTenantData, month string, now time
 				chartPercent = 2
 			}
 		}
+		totalTitle := "Summe: " + formatPreciseEUR(total) + " = Strom " + formatPreciseEUR(hour.EnergyCost) + " + Netzgebühr " + formatPreciseEUR(hour.GridCost)
+		if hour.SurplusKWh > 0 {
+			totalTitle += " + Überschuss " + formatPreciseEUR(hour.SurplusCost)
+		}
 		view.Hours = append(view.Hours, parkingHourView{
 			AtLabel:             formatDateTimeIn(hour.At, loc, deATShortDateTimeLayout),
 			AtTitle:             formatDateTimeIn(hour.At, loc, deATDateTimeLayout) + " bis " + formatDateTimeIn(hour.At.Add(time.Hour), loc, deATTimeLayout),
 			KWh:                 formatKWh(hour.KWh),
 			KWhTitle:            "Verbrauch: " + formatPreciseKWh(hour.KWh),
+			SurplusKWh:          formatKWh(hour.SurplusKWh),
+			SurplusKWhTitle:     "PV-Überschuss: " + formatPreciseKWh(hour.SurplusKWh) + " × " + formatPreciseEURPerKWh(surplusRate(tariff)) + " = " + formatPreciseEUR(hour.SurplusCost),
+			HasSurplus:          hour.SurplusKWh > 0,
 			AverageAwattar:      formatEURPerKWh(averageAwattar),
 			AverageAwattarTitle: "aWATTar Preis dieser Stunde: " + formatPreciseEURPerKWh(averageAwattar),
 			EnergyCost:          formatEUR(hour.EnergyCost),
-			EnergyCostTitle:     "Stromkosten: " + formatPreciseEUR(hour.EnergyCost) + " = " + formatPreciseKWh(hour.KWh) + " × " + formatPreciseEURPerKWh(averageAwattar),
+			EnergyCostTitle:     "Stromkosten: " + formatPreciseEUR(hour.EnergyCost) + " = " + formatPreciseKWh(normalKWh) + " × " + formatPreciseEURPerKWh(averageAwattar),
 			GridCost:            formatEUR(hour.GridCost),
-			GridCostTitle:       "Netzgebühr: " + formatPreciseEUR(hour.GridCost) + " = " + formatPreciseKWh(hour.KWh) + " × " + formatPreciseEURPerKWh(tariff.GridFeeEURPerKWh),
+			GridCostTitle:       "Netzgebühr: " + formatPreciseEUR(hour.GridCost) + " = " + formatPreciseKWh(normalKWh) + " × " + formatPreciseEURPerKWh(tariff.GridFeeEURPerKWh),
 			TotalCost:           formatEUR(total),
-			TotalCostTitle:      "Summe: " + formatPreciseEUR(total) + " = Strom " + formatPreciseEUR(hour.EnergyCost) + " + Netzgebühr " + formatPreciseEUR(hour.GridCost),
+			TotalCostTitle:      totalTitle,
 			WeightTitle:         "Relative Höhe der Stundensumme. 100% entspricht der teuersten Stunde dieses Monats.",
 			ChartPercent:        chartPercent,
 		})

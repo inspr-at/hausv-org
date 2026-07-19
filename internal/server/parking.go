@@ -202,6 +202,9 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 	gridCost := 0.0
 	baseFee := 0.0
 	totalCost := 0.0
+	surplusKWh := 0.0
+	surplusCost := 0.0
+	normalKWh := 0.0
 	for _, month := range calculateParkingMonths(data, time.Now(), time.Local) {
 		if !strings.HasPrefix(month.Month, strconv.Itoa(year)+"-") {
 			continue
@@ -212,6 +215,9 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 		gridCost += month.GridCostValue
 		baseFee += month.BaseFeeValue
 		totalCost += month.TotalCostValue
+		surplusKWh += month.SurplusKWhValue
+		surplusCost += month.SurplusCostValue
+		normalKWh += month.NormalKWhValue
 	}
 	return parkingStatementView{
 		Tenant:       tenant,
@@ -226,6 +232,10 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 		GridCost:     formatEUR(gridCost),
 		BaseFee:      formatEUR(baseFee),
 		TotalCost:    formatEUR(totalCost),
+		SurplusKWh:   formatKWh(surplusKWh),
+		SurplusCost:  formatEUR(surplusCost),
+		NormalKWh:    formatKWh(normalKWh),
+		HasSurplus:   surplusKWh > 0,
 	}
 }
 
@@ -282,10 +292,18 @@ func parkingTariffFromForm(values url.Values) (parkingTariff, error) {
 			return parkingTariff{}, fmt.Errorf("invalid base fee")
 		}
 	}
+	surplus := 0.0
+	if strings.TrimSpace(values.Get("surplus_rate_eur_per_kwh")) != "" {
+		surplus, err = parseDecimal(values.Get("surplus_rate_eur_per_kwh"))
+		if err != nil || surplus < 0 || surplus > 5 {
+			return parkingTariff{}, fmt.Errorf("invalid surplus rate")
+		}
+	}
 	return normalizeParkingTariff(parkingTariff{
-		EffectiveFrom:    effectiveFrom,
-		GridFeeEURPerKWh: gridFee,
-		BaseFeeEUR:       baseFee,
+		EffectiveFrom:        effectiveFrom,
+		GridFeeEURPerKWh:     gridFee,
+		BaseFeeEUR:           baseFee,
+		SurplusRateEURPerKWh: surplus,
 	}), nil
 }
 
