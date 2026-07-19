@@ -95,10 +95,10 @@ func Notes() []Note {
 			Date:     "19. Juli 2026",
 			Kind:     "Zahlungen",
 			Headline: "Zahlungen klarer erfasst.",
-			Intro:    "Der Zahlungsbereich im Monatsdetail ist sauber abgesetzt und hält optional Datum, Zahlungsart und Referenz fest.",
+			Intro:    "Der Zahlungsbereich im Monatsdetail ist sauber abgesetzt und hält optional Datum, Art und Referenz der Zahlung fest.",
 			Items: []NoteItem{
-				{Label: "Referenz", Text: "Zahlungsdetails lassen sich auch nachträglich zu bereits markierten Monaten ergänzen."},
-				{Label: "Rollen", Text: "Bewohner sehen weiterhin nur den Bezahlt-Status — Buchhaltungsdetails bleiben der Verwaltung vorbehalten."},
+				{Label: "Referenz", Text: "Details einer Zahlung lassen sich auch nachträglich zu markierten Monaten ergänzen."},
+				{Label: "Rollen", Text: "Bewohner sehen weiterhin nur den Status der Zahlung — Details bleiben der Verwaltung vorbehalten."},
 			},
 		},
 		{
