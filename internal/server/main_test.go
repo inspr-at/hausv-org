@@ -1236,13 +1236,13 @@ func TestSignedSessionRoundTripSurvivesNewStore(t *testing.T) {
 }
 
 func TestParseUserProfilesNormalizesAuthMethods(t *testing.T) {
-	raw := `[{"email":"joerg.lehner@gmx.at","first_name":"Jörg","last_name":"Lehner","tenants":["jhw22"],"auth_methods":["zitadel"]}]`
+	raw := `[{"email":"joerg.lehner@gmx.net","first_name":"Jörg","last_name":"Lehner","tenants":["jhw22"],"auth_methods":["zitadel"]}]`
 
 	profiles, err := parseUserProfiles(raw, map[string]struct{}{}, map[string]struct{}{}, "jhw22")
 	if err != nil {
 		t.Fatalf("parse profiles: %v", err)
 	}
-	profile := profiles["joerg.lehner@gmx.at"]
+	profile := profiles["joerg.lehner@gmx.net"]
 	if !profile.AllowsAuthMethod(authMethodOIDC) {
 		t.Fatal("profile should allow OIDC")
 	}
