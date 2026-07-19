@@ -29,7 +29,14 @@ OIDC_CLIENT_ID=<zitadel-web-app-client-id>
 OIDC_PROVIDER_NAME=Zitadel
 SESSION_TTL=720h
 SERVICE_PROVIDER_ACCESS_ENABLED=false
+TELEGRAM_BOT_TOKEN=<botfather-token-for-the-hausv-bot>
 ```
+
+`TELEGRAM_BOT_TOKEN` aktiviert den hausv-eigenen Telegram-Bot (Ladesteuerung
+Parkplatz 20: Befehle + Benachrichtigungen). Ohne den Schlüssel bleibt der Bot
+vollständig deaktiviert; die Ladesteuerung selbst läuft unabhängig davon.
+Nicht-geheime Ladeparameter (`CHARGING_*`-Entities, Intervalle,
+`TELEGRAM_DATA_PATH`) stehen im Compose-File in nixcfg, nicht in der env.
 
 `SERVICE_PROVIDER_ACCESS_ENABLED` ist die technische Freigabesperre für externe
 Dienstleister. Sie bleibt `false`, bis die Datenschutzprüfung und

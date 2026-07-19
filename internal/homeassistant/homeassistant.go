@@ -28,12 +28,17 @@ type Config struct {
 	meterEnergyEntity string
 	powerEntity       string
 	priceEntity       string
+	plugSwitchEntity  string
+	batterySocEntity  string
+	gridFeedInEntity  string
 }
 
 type EntityState struct {
-	EntityID   string         `json:"entity_id"`
-	State      string         `json:"state"`
-	Attributes map[string]any `json:"attributes"`
+	EntityID    string         `json:"entity_id"`
+	State       string         `json:"state"`
+	Attributes  map[string]any `json:"attributes"`
+	LastChanged time.Time      `json:"last_changed"`
+	LastUpdated time.Time      `json:"last_updated"`
 }
 
 type HistoryState struct {
@@ -153,6 +158,52 @@ func NewConfig(baseURL, token, meterEnergyEntity, powerEntity, priceEntity strin
 		powerEntity:       powerEntity,
 		priceEntity:       priceEntity,
 	}
+}
+
+// WithChargingEntities returns a copy that also knows the charging-control
+// entities. Kept out of NewConfig so existing call sites stay untouched.
+func (c Config) WithChargingEntities(plugSwitch, batterySoc, gridFeedIn string) Config {
+	c.plugSwitchEntity = strings.TrimSpace(plugSwitch)
+	c.batterySocEntity = strings.TrimSpace(batterySoc)
+	c.gridFeedInEntity = strings.TrimSpace(gridFeedIn)
+	return c
+}
+
+// CallService posts a service call for one entity, e.g. switch/turn_on.
+// The response body is ignored on success: Home Assistant returns the list of
+// changed states, but the controller confirms by reading the entity back.
+func (c Config) CallService(ctx context.Context, domain, service, entityID string) error {
+	if c.baseURL == "" || c.token == "" || domain == "" || service == "" || entityID == "" {
+		return errors.New("home assistant not configured")
+	}
+	body := strings.NewReader(`{"entity_id":` + strconv.Quote(entityID) + `}`)
+	endpoint := c.baseURL + "/api/services/" + url.PathEscape(domain) + "/" + url.PathEscape(service)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, body)
+	if err != nil {
+		return errors.New("could not build home assistant service request")
+	}
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.New("home assistant service request failed")
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<20))
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("home assistant returned %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// SetSwitch turns the configured plug switch (or any switch entity) on or off.
+func (c Config) SetSwitch(ctx context.Context, entityID string, on bool) error {
+	service := "turn_off"
+	if on {
+		service = "turn_on"
+	}
+	return c.CallService(ctx, "switch", service, entityID)
 }
 
 func (c Config) State(ctx context.Context, entityID string) (EntityState, error) {
@@ -351,3 +402,12 @@ func (c Config) Token() string             { return c.token }
 func (c Config) MeterEnergyEntity() string { return c.meterEnergyEntity }
 func (c Config) PowerEntity() string       { return c.powerEntity }
 func (c Config) PriceEntity() string       { return c.priceEntity }
+func (c Config) PlugSwitchEntity() string  { return c.plugSwitchEntity }
+func (c Config) BatterySocEntity() string  { return c.batterySocEntity }
+func (c Config) GridFeedInEntity() string  { return c.gridFeedInEntity }
+
+// ChargingConfigured reports whether the charging controller has everything it
+// needs: a reachable instance plus all three control entities.
+func (c Config) ChargingConfigured() bool {
+	return c.Configured() && c.plugSwitchEntity != "" && c.batterySocEntity != "" && c.gridFeedInEntity != ""
+}

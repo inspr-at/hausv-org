@@ -203,23 +203,99 @@ type ParkingStoreData struct {
 }
 
 type ParkingTenantData struct {
-	Settings      ParkingSettings              `json:"settings"`
-	Months        map[string]ParkingMonthState `json:"months"`
-	EnergySamples []ParkingNumericSample       `json:"energy_samples"`
-	PriceSamples  []ParkingNumericSample       `json:"price_samples"`
-	Samples       []ParkingStoredSample        `json:"samples,omitempty"`
+	Settings         ParkingSettings              `json:"settings"`
+	Months           map[string]ParkingMonthState `json:"months"`
+	EnergySamples    []ParkingNumericSample       `json:"energy_samples"`
+	PriceSamples     []ParkingNumericSample       `json:"price_samples"`
+	Samples          []ParkingStoredSample        `json:"samples,omitempty"`
+	ChargingSessions []ChargingSession            `json:"charging_sessions,omitempty"`
+	Charging         ChargingControllerState      `json:"charging,omitempty"`
 }
 
 type ParkingSettings struct {
-	GridFeeEURPerKWh float64         `json:"grid_fee_eur_per_kwh"`
-	BaseFeeEUR       float64         `json:"base_fee_eur,omitempty"`
-	Tariffs          []ParkingTariff `json:"tariffs,omitempty"`
+	GridFeeEURPerKWh float64                 `json:"grid_fee_eur_per_kwh"`
+	BaseFeeEUR       float64                 `json:"base_fee_eur,omitempty"`
+	Tariffs          []ParkingTariff         `json:"tariffs,omitempty"`
+	Charging         ChargingControlSettings `json:"charging"`
 }
 
 type ParkingTariff struct {
-	EffectiveFrom    string  `json:"effective_from"`
-	GridFeeEURPerKWh float64 `json:"grid_fee_eur_per_kwh"`
-	BaseFeeEUR       float64 `json:"base_fee_eur,omitempty"`
+	EffectiveFrom        string  `json:"effective_from"`
+	GridFeeEURPerKWh     float64 `json:"grid_fee_eur_per_kwh"`
+	BaseFeeEUR           float64 `json:"base_fee_eur,omitempty"`
+	SurplusRateEURPerKWh float64 `json:"surplus_rate_eur_per_kwh,omitempty"`
+}
+
+// DefaultSurplusRateEURPerKWh applies when a tariff row predates the surplus
+// feature (stored value 0): the agreed flat rate for PV-surplus charging.
+const DefaultSurplusRateEURPerKWh = 0.10
+
+// SurplusRate resolves the effective flat €/kWh rate for surplus charging.
+func SurplusRate(tariff ParkingTariff) float64 {
+	if tariff.SurplusRateEURPerKWh > 0 {
+		return tariff.SurplusRateEURPerKWh
+	}
+	return DefaultSurplusRateEURPerKWh
+}
+
+// Charging vocabulary. The store owns the strings so server and view code
+// never invent variants.
+const (
+	ChargingModeSurplus = "surplus"
+	ChargingModeManual  = "manual"
+
+	ChargingPhaseIdle      = "idle"
+	ChargingPhaseSurplus   = "surplus"
+	ChargingPhaseManualOn  = "manual_on"
+	ChargingPhaseManualOff = "manual_off"
+
+	ChargingTriggerAuto     = "auto"
+	ChargingTriggerTelegram = "telegram"
+	ChargingTriggerWeb      = "web"
+)
+
+// ChargingSession is one continuous plug-on interval. StartKWh/EndKWh are
+// cumulative-meter snapshots, so EndKWh−StartKWh is the exact session energy.
+type ChargingSession struct {
+	ID            string    `json:"id"`
+	Start         time.Time `json:"start"`
+	End           time.Time `json:"end,omitempty"` // zero while the session is open
+	StartKWh      float64   `json:"start_kwh"`
+	EndKWh        float64   `json:"end_kwh,omitempty"`
+	Mode          string    `json:"mode"`
+	TriggerSource string    `json:"trigger_source"`
+	StartedBy     string    `json:"started_by,omitempty"`
+	EndedBy       string    `json:"ended_by,omitempty"`
+	EndReason     string    `json:"end_reason,omitempty"`
+}
+
+// ChargingControllerState is the persisted half of the control state machine;
+// timers live here as absolute timestamps so a restart cannot replay or lose
+// pending transitions.
+type ChargingControllerState struct {
+	Phase           string    `json:"phase,omitempty"`
+	ActiveSessionID string    `json:"active_session_id,omitempty"`
+	LastSwitchAt    time.Time `json:"last_switch_at,omitempty"`
+	BelowStopSince  time.Time `json:"below_stop_since,omitempty"`
+	PendingConfirm  string    `json:"pending_confirm,omitempty"` // "on" | "off"
+	PendingSince    time.Time `json:"pending_since,omitempty"`
+	PendingRetries  int       `json:"pending_retries,omitempty"`
+	LastError       string    `json:"last_error,omitempty"`
+	LastErrorAt     time.Time `json:"last_error_at,omitempty"`
+	ErrorNotifiedAt time.Time `json:"error_notified_at,omitempty"`
+}
+
+type ChargingControlSettings struct {
+	Enabled          bool    `json:"enabled"`
+	ShadowMode       bool    `json:"shadow_mode"`
+	StartSocPercent  float64 `json:"start_soc_percent"`
+	StopSocPercent   float64 `json:"stop_soc_percent"`
+	StartFeedInW     float64 `json:"start_feed_in_w"`
+	StopFeedInW      float64 `json:"stop_feed_in_w"`
+	StopDelayMinutes int     `json:"stop_delay_minutes"`
+	MinOnMinutes     int     `json:"min_on_minutes"`
+	MinOffMinutes    int     `json:"min_off_minutes"`
+	DailySummary     bool    `json:"daily_summary,omitempty"`
 }
 
 type ParkingMonthState struct {
@@ -1721,6 +1797,7 @@ func (s *ParkingStore) TenantData(tenantSlug string) ParkingTenantData {
 	data.EnergySamples = append([]ParkingNumericSample(nil), data.EnergySamples...)
 	data.PriceSamples = append([]ParkingNumericSample(nil), data.PriceSamples...)
 	data.Samples = append([]ParkingStoredSample(nil), data.Samples...)
+	data.ChargingSessions = append([]ChargingSession(nil), data.ChargingSessions...)
 	return data
 }
 
@@ -1887,12 +1964,105 @@ func (s *ParkingStore) tenantLocked(tenantSlug string) ParkingTenantData {
 	keepAfter := time.Now().AddDate(-1, -1, 0)
 	data.EnergySamples = NormalizeNumericSamples(data.EnergySamples, keepAfter)
 	data.PriceSamples = NormalizeNumericSamples(data.PriceSamples, keepAfter)
+	data.ChargingSessions = NormalizeChargingSessions(data.ChargingSessions, keepAfter)
+	data.Charging = NormalizeChargingControllerState(data.Charging)
 	s.data.Tenants[tenantSlug] = data
 	return data
 }
 
 func (s *ParkingStore) saveLocked() error {
 	return SaveJSONAtomic(s.path, s.data, "parking")
+}
+
+// StartChargingSession opens a session and persists the accompanying
+// controller state in the same atomic save.
+func (s *ParkingStore) StartChargingSession(tenantSlug string, session ChargingSession, state ChargingControllerState) (ChargingSession, error) {
+	if session.Start.IsZero() {
+		return ChargingSession{}, fmt.Errorf("invalid charging session")
+	}
+	id, err := randomToken(12)
+	if err != nil {
+		return ChargingSession{}, fmt.Errorf("could not create charging session")
+	}
+	session.ID = id
+	session.Start = session.Start.UTC()
+	session.End = time.Time{}
+	session.EndKWh = 0
+	session.EndedBy = ""
+	session.EndReason = ""
+	if session.Mode != ChargingModeSurplus && session.Mode != ChargingModeManual {
+		session.Mode = ChargingModeManual
+	}
+	state.ActiveSessionID = session.ID
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data := s.tenantLocked(tenantSlug)
+	data.ChargingSessions = append(data.ChargingSessions, session)
+	data.Charging = NormalizeChargingControllerState(state)
+	s.data.Tenants[textutil.Slug(tenantSlug)] = data
+	if err := s.saveLocked(); err != nil {
+		return ChargingSession{}, err
+	}
+	return session, nil
+}
+
+// EndChargingSession closes an open session. Returns the closed session and
+// whether it was found open.
+func (s *ParkingStore) EndChargingSession(tenantSlug, sessionID string, end time.Time, endKWh float64, endedBy, endReason string, state ChargingControllerState) (ChargingSession, bool, error) {
+	if sessionID == "" || end.IsZero() {
+		return ChargingSession{}, false, fmt.Errorf("invalid charging session end")
+	}
+	state.ActiveSessionID = ""
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data := s.tenantLocked(tenantSlug)
+	closed := ChargingSession{}
+	found := false
+	for i, session := range data.ChargingSessions {
+		if session.ID != sessionID || !session.End.IsZero() {
+			continue
+		}
+		session.End = end.UTC()
+		if session.End.Before(session.Start) {
+			session.End = session.Start
+		}
+		session.EndKWh = endKWh
+		if session.EndKWh < session.StartKWh {
+			// A cumulative meter cannot go backwards; distrust the reading.
+			session.EndKWh = session.StartKWh
+		}
+		session.EndedBy = endedBy
+		session.EndReason = endReason
+		data.ChargingSessions[i] = session
+		closed = session
+		found = true
+		break
+	}
+	data.Charging = NormalizeChargingControllerState(state)
+	s.data.Tenants[textutil.Slug(tenantSlug)] = data
+	if err := s.saveLocked(); err != nil {
+		return ChargingSession{}, false, err
+	}
+	return closed, found, nil
+}
+
+func (s *ParkingStore) SetChargingState(tenantSlug string, state ChargingControllerState) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data := s.tenantLocked(tenantSlug)
+	data.Charging = NormalizeChargingControllerState(state)
+	s.data.Tenants[textutil.Slug(tenantSlug)] = data
+	return s.saveLocked()
+}
+
+func (s *ParkingStore) SetChargingControl(tenantSlug string, settings ChargingControlSettings) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data := s.tenantLocked(tenantSlug)
+	data.Settings.Charging = NormalizeChargingControlSettings(settings)
+	data.Settings = NormalizeParkingSettings(data.Settings)
+	s.data.Tenants[textutil.Slug(tenantSlug)] = data
+	return s.saveLocked()
 }
 
 func NormalizeParkingSettings(settings ParkingSettings) ParkingSettings {
@@ -1936,6 +2106,7 @@ func NormalizeParkingSettings(settings ParkingSettings) ParkingSettings {
 	current := tariffs[len(tariffs)-1]
 	settings.GridFeeEURPerKWh = current.GridFeeEURPerKWh
 	settings.BaseFeeEUR = current.BaseFeeEUR
+	settings.Charging = NormalizeChargingControlSettings(settings.Charging)
 	return settings
 }
 
@@ -1953,7 +2124,92 @@ func NormalizeParkingTariff(tariff ParkingTariff) ParkingTariff {
 	if tariff.BaseFeeEUR > 5000 {
 		tariff.BaseFeeEUR = 5000
 	}
+	if tariff.SurplusRateEURPerKWh < 0 {
+		tariff.SurplusRateEURPerKWh = 0
+	}
+	if tariff.SurplusRateEURPerKWh > 5 {
+		tariff.SurplusRateEURPerKWh = 5
+	}
 	return tariff
+}
+
+// NormalizeChargingControlSettings fills defaults for zero values (the stored
+// zero value means "never configured", not "zero watts") and keeps the
+// hysteresis pair ordered. Cross-field form validation lives in the handler;
+// this is the last-line safety net.
+func NormalizeChargingControlSettings(settings ChargingControlSettings) ChargingControlSettings {
+	if settings.StartSocPercent <= 0 || settings.StartSocPercent > 100 {
+		settings.StartSocPercent = 99
+	}
+	if settings.StopSocPercent <= 0 || settings.StopSocPercent > 100 {
+		settings.StopSocPercent = 95
+	}
+	if settings.StopSocPercent > settings.StartSocPercent {
+		settings.StopSocPercent = settings.StartSocPercent
+	}
+	if settings.StartFeedInW <= 0 {
+		settings.StartFeedInW = 3300
+	}
+	if settings.StopFeedInW <= 0 {
+		settings.StopFeedInW = 1500
+	}
+	if settings.StopFeedInW > settings.StartFeedInW {
+		settings.StopFeedInW = settings.StartFeedInW
+	}
+	if settings.StopDelayMinutes <= 0 || settings.StopDelayMinutes > 120 {
+		settings.StopDelayMinutes = 10
+	}
+	if settings.MinOnMinutes <= 0 || settings.MinOnMinutes > 120 {
+		settings.MinOnMinutes = 10
+	}
+	if settings.MinOffMinutes <= 0 || settings.MinOffMinutes > 120 {
+		settings.MinOffMinutes = 5
+	}
+	return settings
+}
+
+func NormalizeChargingControllerState(state ChargingControllerState) ChargingControllerState {
+	switch state.Phase {
+	case ChargingPhaseIdle, ChargingPhaseSurplus, ChargingPhaseManualOn, ChargingPhaseManualOff:
+	default:
+		state.Phase = ChargingPhaseIdle
+	}
+	if state.PendingConfirm != "on" && state.PendingConfirm != "off" {
+		state.PendingConfirm = ""
+		state.PendingSince = time.Time{}
+		state.PendingRetries = 0
+	}
+	return state
+}
+
+// NormalizeChargingSessions sorts by start, drops malformed rows and trims
+// closed sessions older than keepAfter. Open sessions are never trimmed — an
+// open session is live controller state, not history.
+func NormalizeChargingSessions(sessions []ChargingSession, keepAfter time.Time) []ChargingSession {
+	out := make([]ChargingSession, 0, len(sessions))
+	for _, session := range sessions {
+		if session.ID == "" || session.Start.IsZero() {
+			continue
+		}
+		session.Start = session.Start.UTC()
+		if !session.End.IsZero() {
+			session.End = session.End.UTC()
+			if session.End.Before(session.Start) {
+				continue
+			}
+			if session.End.Before(keepAfter) {
+				continue
+			}
+		}
+		if session.Mode != ChargingModeSurplus && session.Mode != ChargingModeManual {
+			session.Mode = ChargingModeManual
+		}
+		out = append(out, session)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Start.Before(out[j].Start)
+	})
+	return out
 }
 
 func NormalizeParkingTariffDate(raw string) string {

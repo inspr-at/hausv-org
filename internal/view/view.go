@@ -456,11 +456,18 @@ type ParkingMonthView struct {
 	GridCostValue    float64
 	BaseFeeValue     float64
 	TotalCostValue   float64
+	SurplusKWhValue  float64
+	SurplusCostValue float64
+	NormalKWhValue   float64
 	KWh              string
 	EnergyCost       string
 	GridCost         string
 	BaseFee          string
 	TotalCost        string
+	SurplusKWh       string
+	SurplusCost      string
+	NormalKWh        string
+	HasSurplus       bool
 	AverageAwattar   string
 	EffectivePrice   string
 	AveragePrice     string
@@ -494,6 +501,122 @@ type ParkingMonthDetailView struct {
 	Summary         ParkingMonthView
 	Hours           []ParkingHourView
 	HasHours        bool
+	Sessions        []ChargingSessionView
+	HasSessions     bool
+}
+
+// ParkingLiveView is the "Jetzt" card on /app/parking: current charging
+// source, battery context and the surplus/normal split for today and the
+// running month.
+type ParkingLiveView struct {
+	Available       bool
+	Enabled         bool
+	ShadowMode      bool
+	StaleData       bool
+	Mode            string // surplus | manual | off | idle
+	ModeLabel       string
+	ModeClass       string
+	ModeDetail      string
+	RateLabel       string
+	PlugOn          bool
+	PowerLabel      string
+	FeedInLabel     string
+	BatterySOCLabel string
+	BatteryClass    string // full | partial | low
+	BatteryHint     string
+	SessionSince    string
+	SessionKWh      string
+	SessionCost     string
+	HasSession      bool
+	TodaySplit      ParkingSplitView
+	MonthSplit      ParkingSplitView
+	CanToggle       bool
+	ToggleOn        bool
+	AutoPaused      bool
+	Sessions        []ChargingSessionView
+	HasSessions     bool
+	Admin           ParkingChargingAdminStrip
+}
+
+// ParkingSplitView is one two-tone surplus/normal bar.
+type ParkingSplitView struct {
+	Label       string
+	SurplusKWh  string
+	NormalKWh   string
+	SurplusCost string
+	NormalCost  string
+	SurplusPct  int
+	HasAny      bool
+}
+
+type ChargingSessionView struct {
+	StartLabel    string
+	DurationLabel string
+	KWh           string
+	ModeLabel     string
+	ModeClass     string
+	Cost          string
+	Active        bool
+}
+
+// ParkingChargingAdminStrip is the inline diagnostics row admins see on the
+// live card.
+type ParkingChargingAdminStrip struct {
+	Show        bool
+	PhaseLabel  string
+	SinceLabel  string
+	LastReason  string
+	PollLabel   string
+	StalePill   bool
+	ShadowPill  bool
+	ErrorDetail string
+}
+
+// ParkingChargingAdminView backs the settings-page panels.
+type ParkingChargingAdminView struct {
+	Enabled          bool
+	ShadowMode       bool
+	StartSocValue    string
+	StopSocValue     string
+	StartFeedInValue string
+	StopFeedInValue  string
+	StopDelayValue   string
+	MinOnValue       string
+	MinOffValue      string
+	SurplusRateValue string
+	State            ParkingChargingAdminStrip
+	Events           []ChargingEventView
+	HasEvents        bool
+	Telegram         TelegramStatusView
+}
+
+type ChargingEventView struct {
+	AtLabel   string
+	KindLabel string
+	KindClass string
+	Detail    string
+	Shadow    bool
+}
+
+type TelegramStatusView struct {
+	Configured  bool
+	Chats       []TelegramChatView
+	HasChats    bool
+	PendingCode string
+	CodeEmail   string
+	LinkOptions []TelegramLinkOption
+}
+
+type TelegramChatView struct {
+	ChatID      int64
+	DisplayName string
+	Email       string
+	LinkedAt    string
+}
+
+type TelegramLinkOption struct {
+	Email string
+	Label string
 }
 
 type ParkingHourView struct {
@@ -501,6 +624,9 @@ type ParkingHourView struct {
 	AtTitle             string
 	KWh                 string
 	KWhTitle            string
+	SurplusKWh          string
+	SurplusKWhTitle     string
+	HasSurplus          bool
 	AverageAwattar      string
 	AverageAwattarTitle string
 	EnergyCost          string
@@ -680,6 +806,10 @@ type ParkingStatementView struct {
 	GridCost     string
 	BaseFee      string
 	TotalCost    string
+	SurplusKWh   string
+	SurplusCost  string
+	NormalKWh    string
+	HasSurplus   bool
 }
 
 func ParkingStatementTariffLabel(settings store.ParkingSettings) string {
@@ -1806,6 +1936,7 @@ func NotificationEventCatalog() []NotificationEventOption {
 		store.NotificationEventVote:         {"Abstimmungen", "Neue Abstimmungen und Erinnerungen"},
 		store.NotificationEventDocument:     {"Dokumente", "Neu bereitgestellte Dokumente"},
 		store.NotificationEventPayment:      {"Zahlungen", "Fällige oder überfällige Zahlungen"},
+		store.NotificationEventCharging:     {"Laden", "Start und Ende von Ladevorgängen am Parkplatz"},
 	}
 	out := make([]NotificationEventOption, 0, len(store.NotificationEvents))
 	for _, key := range store.NotificationEvents {

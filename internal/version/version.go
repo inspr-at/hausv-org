@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.12.0",
+			Date:     "19. Juli 2026",
+			Kind:     "Laden",
+			Headline: "PV-Überschussladen für Parkplatz 20.",
+			Intro:    "Die Plattform steuert das Laden jetzt selbst nach Sonnenstrom und rechnet Überschuss-Strom zum Fixpreis ab. Der Start erfolgt im Beobachtungsbetrieb.",
+			Items: []NoteItem{
+				{Label: "Automatik", Text: "Ist der Hausakku voll und wird eingespeist, startet die Ladung automatisch; Überschuss-Strom kostet fix 0,10 € je kWh."},
+				{Label: "Live-Ansicht", Text: "Die neue „Jetzt“-Karte zeigt Ladequelle, Hausakku, Einspeisung und die Aufteilung Überschuss/Normal — mit Ein/Aus-Schalter."},
+				{Label: "Telegram", Text: "Status und Ein/Aus laufen über einen eigenen Bot; Benachrichtigungen kommen nur bei echten Änderungen."},
+				{Label: "Abrechnung", Text: "Monate, Stundenwerte und CSV-Export weisen Überschuss- und Normalanteile getrennt aus; bestehende Monate bleiben unverändert."},
+			},
+		},
+		{
 			Version:  "0.11.0",
 			Date:     "18. Juli 2026",
 			Kind:     "Faire Nutzung",

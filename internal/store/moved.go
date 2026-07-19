@@ -163,6 +163,7 @@ const (
 	NotificationEventVote         = "vote"
 	NotificationEventDocument     = "document"
 	NotificationEventPayment      = "payment"
+	NotificationEventCharging     = "charging"
 )
 
 // NotificationEvents lists the valid event keys in display order.
@@ -172,6 +173,7 @@ var NotificationEvents = []string{
 	NotificationEventVote,
 	NotificationEventDocument,
 	NotificationEventPayment,
+	NotificationEventCharging,
 }
 
 func DefaultNotificationPreferences() NotificationPreferences {

@@ -28,8 +28,12 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	telemetry := a.parkingTelemetry(r.Context(), tenant)
 	parkingMsg, parkingOK := parkingMessage(r.URL.Query().Get("month"), r.URL.Query().Get("reminder"))
+	if parkingMsg == "" {
+		parkingMsg, parkingOK = chargingFlashMessage(r.URL.Query())
+	}
 	accounting := a.parkingAccounting(r.Context(), tenant)
 	accounting.Months = a.hydrateParkingMonths(tenant.Slug, email, role, accounting.Months)
+	live := a.chargingLiveView(r.Context(), tenant, isAdmin, true)
 	a.render(w, "parking", map[string]any{
 		"Title":                    "Parkplatznutzung",
 		"Tenant":                   tenant,
@@ -46,9 +50,29 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"Accounting":               accounting,
 		"ParkingMsg":               parkingMsg,
 		"ParkingOK":                parkingOK,
+		"Live":                     live,
 		"TodayInput":               time.Now().In(time.Local).Format("2006-01-02"),
 		"StatementYear":            time.Now().In(time.Local).Year(),
 	})
+}
+
+// chargingFlashMessage surfaces the redirect outcome of a charging action.
+// The action result text travels in the query so the flash matches what the
+// Telegram reply would have said.
+func chargingFlashMessage(query url.Values) (string, bool) {
+	status := query.Get("charging")
+	if status == "" {
+		return "", false
+	}
+	message := strings.TrimSpace(query.Get("chargingmsg"))
+	if message == "" {
+		if status == "ok" {
+			message = "Erledigt."
+		} else {
+			message = "Aktion fehlgeschlagen."
+		}
+	}
+	return message, status == "ok"
 }
 
 func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -59,6 +83,7 @@ func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 		return
 	}
 	settingsMsg, settingsOK := parkingSettingsMessage(r.URL.Query().Get("settings"))
+	chargingMsg, chargingOK := chargingSettingsMessage(r.URL.Query().Get("charging"))
 	a.render(w, "parkingSettings", map[string]any{
 		"Title":         "Parkplatz-Abrechnung",
 		"Tenant":        tenant,
@@ -72,6 +97,9 @@ func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 		"Accounting":    a.parkingAccounting(r.Context(), tenant),
 		"SettingsMsg":   settingsMsg,
 		"SettingsOK":    settingsOK,
+		"ChargingMsg":   chargingMsg,
+		"ChargingOK":    chargingOK,
+		"Charging":      a.chargingAdminView(tenant, r.URL.Query()),
 	})
 }
 
@@ -202,6 +230,9 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 	gridCost := 0.0
 	baseFee := 0.0
 	totalCost := 0.0
+	surplusKWh := 0.0
+	surplusCost := 0.0
+	normalKWh := 0.0
 	for _, month := range calculateParkingMonths(data, time.Now(), time.Local) {
 		if !strings.HasPrefix(month.Month, strconv.Itoa(year)+"-") {
 			continue
@@ -212,6 +243,9 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 		gridCost += month.GridCostValue
 		baseFee += month.BaseFeeValue
 		totalCost += month.TotalCostValue
+		surplusKWh += month.SurplusKWhValue
+		surplusCost += month.SurplusCostValue
+		normalKWh += month.NormalKWhValue
 	}
 	return parkingStatementView{
 		Tenant:       tenant,
@@ -226,6 +260,10 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 		GridCost:     formatEUR(gridCost),
 		BaseFee:      formatEUR(baseFee),
 		TotalCost:    formatEUR(totalCost),
+		SurplusKWh:   formatKWh(surplusKWh),
+		SurplusCost:  formatEUR(surplusCost),
+		NormalKWh:    formatKWh(normalKWh),
+		HasSurplus:   surplusKWh > 0,
 	}
 }
 
@@ -282,10 +320,18 @@ func parkingTariffFromForm(values url.Values) (parkingTariff, error) {
 			return parkingTariff{}, fmt.Errorf("invalid base fee")
 		}
 	}
+	surplus := 0.0
+	if strings.TrimSpace(values.Get("surplus_rate_eur_per_kwh")) != "" {
+		surplus, err = parseDecimal(values.Get("surplus_rate_eur_per_kwh"))
+		if err != nil || surplus < 0 || surplus > 5 {
+			return parkingTariff{}, fmt.Errorf("invalid surplus rate")
+		}
+	}
 	return normalizeParkingTariff(parkingTariff{
-		EffectiveFrom:    effectiveFrom,
-		GridFeeEURPerKWh: gridFee,
-		BaseFeeEUR:       baseFee,
+		EffectiveFrom:        effectiveFrom,
+		GridFeeEURPerKWh:     gridFee,
+		BaseFeeEUR:           baseFee,
+		SurplusRateEURPerKWh: surplus,
 	}), nil
 }
 

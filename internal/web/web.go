@@ -3031,6 +3031,8 @@ const PageTemplates = `
 
         {{if .ParkingMsg}}<p class="flash {{if .ParkingOK}}ok{{end}}">{{.ParkingMsg}}</p>{{end}}
 
+        {{template "parkingLiveCard" .}}
+
         {{if .Accounting.HasMonths}}
           <section class="parking-guide" aria-label="Abrechnung in 2 Schritten. Offen {{.Accounting.Outstanding}}. Überfällig {{.Accounting.Overdue}}.">
             <div>
@@ -3111,6 +3113,10 @@ const PageTemplates = `
                   </div>
                   <dl class="parking-breakdown">
                     <div><dt>Verbrauch</dt><dd>{{.KWh}}</dd></div>
+                    {{if .HasSurplus}}
+                      <div><dt>☀️ Überschuss</dt><dd>{{.SurplusKWh}} · {{.SurplusCost}}</dd></div>
+                      <div><dt>Normal</dt><dd>{{.NormalKWh}}</dd></div>
+                    {{end}}
                     <div><dt>Ø aWATTar</dt><dd>{{.AverageAwattar}}</dd></div>
                     <div><dt>Ø effektiv</dt><dd>{{.EffectivePrice}}</dd></div>
                     <div><dt>Strom</dt><dd>{{.EnergyCost}}</dd></div>
@@ -3211,6 +3217,108 @@ const PageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
+{{define "parkingLiveCard"}}
+{{with .Live}}{{if .Available}}
+  <style>
+    .parking-live { display: grid; gap: 14px; }
+    .parking-live-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .parking-live .pill.live-surplus { background: rgba(200,153,63,.16); color: #8a6a1f; border: 1px solid rgba(200,153,63,.32); }
+    .parking-live .pill.live-manual { background: rgba(76,103,138,.12); color: #365475; border: 1px solid rgba(76,103,138,.24); }
+    .parking-live .pill.live-idle { background: var(--panel-soft); color: var(--muted); border: 1px solid var(--line); }
+    .parking-live .live-rate { font-weight: 700; }
+    .parking-live .battery-full { color: var(--leaf); font-weight: 600; }
+    .parking-live .battery-partial { color: #93701d; font-weight: 600; }
+    .parking-live .battery-low { color: #a04545; font-weight: 600; }
+    .parking-live .bar.split { position: relative; }
+    .parking-live .bar.split .surplus { position: absolute; inset: 0 auto 0 0; background: var(--gold); border-radius: inherit; }
+    .parking-live .split-row { display: grid; gap: 4px; }
+    .parking-live .split-row .mini { display: flex; flex-wrap: wrap; gap: 10px; }
+    .parking-live-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .parking-session-list { display: grid; gap: 6px; }
+    .parking-session-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-soft); font-size: 13.5px; }
+    .parking-session-row .pill.mode-surplus { background: rgba(200,153,63,.16); color: #8a6a1f; border: 1px solid rgba(200,153,63,.32); }
+    .parking-session-row .pill.mode-normal { background: rgba(76,103,138,.12); color: #365475; border: 1px solid rgba(76,103,138,.24); }
+    .parking-session-row .amount { margin-left: auto; font-weight: 700; }
+  </style>
+  <section class="panel parking-live" id="parking-live" aria-label="Aktueller Ladezustand Parkplatz 20">
+    <div class="parking-live-head">
+      <span class="pill {{.ModeClass}}">{{if eq .Mode "surplus"}}☀️ {{else if eq .Mode "manual"}}⚡ {{end}}{{.ModeLabel}}</span>
+      {{if .RateLabel}}<span class="live-rate">{{.RateLabel}}</span>{{end}}
+      {{if .SessionSince}}<span class="mini">seit {{.SessionSince}}{{if .SessionKWh}} · {{.SessionKWh}}{{if .SessionCost}} · ≈ {{.SessionCost}}{{end}}{{end}}</span>{{end}}
+      {{if .ShadowMode}}<span class="pill">Testbetrieb</span>{{end}}
+      {{if .StaleData}}<span class="pill dringend">Daten veraltet</span>{{end}}
+    </div>
+    <p class="muted">{{.ModeDetail}}</p>
+    <div class="metric-grid">
+      {{if .PowerLabel}}<div class="metric-card"><span class="metric-label">Leistung</span><strong class="metric-value">{{.PowerLabel}}</strong></div>{{end}}
+      {{if .BatterySOCLabel}}<div class="metric-card"><span class="metric-label">Hausakku</span><strong class="metric-value">{{.BatterySOCLabel}}</strong><span class="battery-{{.BatteryClass}}">{{.BatteryHint}}</span></div>{{end}}
+      {{if .FeedInLabel}}<div class="metric-card"><span class="metric-label">Einspeisung</span><strong class="metric-value">{{.FeedInLabel}}</strong></div>{{end}}
+    </div>
+    {{if or .TodaySplit.HasAny .MonthSplit.HasAny}}
+      <div class="split-row">
+        {{if .TodaySplit.HasAny}}
+          <div>
+            <span class="metric-label">{{.TodaySplit.Label}}</span>
+            <div class="bar split"><span class="surplus" style="width: {{.TodaySplit.SurplusPct}}%;"></span></div>
+            <div class="mini"><span>☀️ {{.TodaySplit.SurplusKWh}} · {{.TodaySplit.SurplusCost}}</span><span>⚡ {{.TodaySplit.NormalKWh}} · {{.TodaySplit.NormalCost}}</span></div>
+          </div>
+        {{end}}
+        {{if .MonthSplit.HasAny}}
+          <div>
+            <span class="metric-label">{{.MonthSplit.Label}}</span>
+            <div class="bar split"><span class="surplus" style="width: {{.MonthSplit.SurplusPct}}%;"></span></div>
+            <div class="mini"><span>☀️ {{.MonthSplit.SurplusKWh}} · {{.MonthSplit.SurplusCost}}</span><span>⚡ {{.MonthSplit.NormalKWh}} · {{.MonthSplit.NormalCost}}</span></div>
+          </div>
+        {{end}}
+      </div>
+    {{end}}
+    {{if .CanToggle}}
+      <div class="parking-live-actions">
+        {{if .ToggleOn}}
+          <form method="post" action="/app/parking/charging/off"><button class="button" type="submit">Ladung ausschalten</button></form>
+        {{else}}
+          <form method="post" action="/app/parking/charging/on"><button class="button primary" type="submit">Jetzt laden (Normaltarif)</button></form>
+        {{end}}
+        {{if .AutoPaused}}
+          <form method="post" action="/app/parking/charging/auto"><button class="button" type="submit">Automatik aktivieren</button></form>
+        {{end}}
+      </div>
+    {{end}}
+    {{if .Admin.Show}}
+      <div class="rule">
+        <span class="pill">Regler: {{.Admin.PhaseLabel}}</span>
+        {{if .Admin.SinceLabel}}<span class="mini">seit {{.Admin.SinceLabel}}</span>{{end}}
+        {{if .Admin.PollLabel}}<span class="mini{{if .Admin.StalePill}} pill dringend{{end}}">HA-Poll {{.Admin.PollLabel}}</span>{{end}}
+        {{if .Admin.LastReason}}<span class="mini">{{.Admin.LastReason}}</span>{{end}}
+        {{if .Admin.ErrorDetail}}<span class="pill dringend">{{.Admin.ErrorDetail}}</span>{{end}}
+        <a class="button" href="/app/parking/settings#laderegelung">Laderegelung</a>
+      </div>
+    {{end}}
+    {{if .HasSessions}}
+      <details>
+        <summary>Letzte Ladevorgänge</summary>
+        {{template "parkingSessionList" .Sessions}}
+      </details>
+    {{end}}
+  </section>
+{{end}}{{end}}
+{{end}}
+
+{{define "parkingSessionList"}}
+  <div class="parking-session-list">
+    {{range .}}
+      <div class="parking-session-row">
+        <span>{{.StartLabel}}</span>
+        <span class="mini">{{.DurationLabel}}</span>
+        {{if .KWh}}<span>{{.KWh}}</span>{{end}}
+        <span class="pill {{.ModeClass}}">{{if eq .ModeClass "mode-surplus"}}☀️ {{end}}{{.ModeLabel}}</span>
+        {{if .Active}}<span class="pill ok">läuft</span>{{end}}
+        {{if .Cost}}<span class="amount">{{.Cost}}</span>{{end}}
+      </div>
+    {{end}}
+  </div>
+{{end}}
+
 {{define "parkingMonth"}}
 {{template "appOpen" .}}
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
@@ -3232,6 +3340,10 @@ const PageTemplates = `
           {{if .Detail.Summary.Month}}
             <div class="metric-grid">
               <div class="metric-card"><span class="metric-label">Verbrauch</span><strong class="metric-value">{{.Detail.Summary.KWh}}</strong></div>
+              {{if .Detail.Summary.HasSurplus}}
+                <div class="metric-card"><span class="metric-label">☀️ Überschuss</span><strong class="metric-value">{{.Detail.Summary.SurplusKWh}}</strong><span class="mini">{{.Detail.Summary.SurplusCost}}</span></div>
+                <div class="metric-card"><span class="metric-label">Normal</span><strong class="metric-value">{{.Detail.Summary.NormalKWh}}</strong></div>
+              {{end}}
               <div class="metric-card"><span class="metric-label">Ø aWATTar</span><strong class="metric-value">{{.Detail.Summary.AverageAwattar}}</strong></div>
               <div class="metric-card"><span class="metric-label">Ø effektiv</span><strong class="metric-value">{{.Detail.Summary.EffectivePrice}}</strong></div>
               <div class="metric-card"><span class="metric-label">Strom</span><strong class="metric-value">{{.Detail.Summary.EnergyCost}}</strong></div>
@@ -3261,6 +3373,7 @@ const PageTemplates = `
                   <tr>
                     <th scope="col" title="Beginn der Abrechnungsstunde; jede Zeile umfasst diese Stunde.">Stunde</th>
                     <th scope="col" class="num" title="Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.">Verbrauch</th>
+                    <th scope="col" class="num" title="Anteil der Stunde, der als PV-Überschuss zum Fixpreis abgerechnet wird.">☀️ Überschuss</th>
                     <th scope="col" class="num" title="Stündlicher aWATTar-Arbeitspreis ohne Netzgebühr.">Ø aWATTar</th>
                     <th scope="col" class="num" title="Verbrauch × aWATTar-Preis.">Strom</th>
                     <th scope="col" class="num" title="Verbrauch × in dieser Stunde gültige Netzgebühr.">Netzgeb.</th>
@@ -3273,6 +3386,7 @@ const PageTemplates = `
                     <tr>
                       <th scope="row" title="{{.AtTitle}}">{{.AtLabel}}</th>
                       <td class="num" title="{{.KWhTitle}}">{{.KWh}}</td>
+                      <td class="num" title="{{.SurplusKWhTitle}}">{{if .HasSurplus}}{{.SurplusKWh}}{{else}}—{{end}}</td>
                       <td class="num" title="{{.AverageAwattarTitle}}">{{.AverageAwattar}}</td>
                       <td class="num" title="{{.EnergyCostTitle}}">{{.EnergyCost}}</td>
                       <td class="num" title="{{.GridCostTitle}}">{{.GridCost}}</td>
@@ -3287,6 +3401,12 @@ const PageTemplates = `
             <p class="empty">Für diesen Monat sind noch keine Stundenwerte gespeichert.</p>
           {{end}}
         </section>
+        {{if .Detail.HasSessions}}
+          <section class="panel">
+            <h2>Ladevorgänge</h2>
+            {{template "parkingSessionList" .Detail.Sessions}}
+          </section>
+        {{end}}
       </section>
     </main>
 {{template "appClose" .}}
@@ -3932,6 +4052,8 @@ const PageTemplates = `
             <input id="grid_fee_eur_per_kwh" type="text" inputmode="decimal" name="grid_fee_eur_per_kwh" value="{{.Accounting.GridFeeValue}}" autocomplete="off">
             <label for="base_fee_eur">Basisgebühr je Monat</label>
             <input id="base_fee_eur" type="text" inputmode="decimal" name="base_fee_eur" value="{{.Accounting.BaseFeeValue}}" autocomplete="off">
+            <label for="surplus_rate_eur_per_kwh">Überschusstarif je kWh</label>
+            <input id="surplus_rate_eur_per_kwh" type="text" inputmode="decimal" name="surplus_rate_eur_per_kwh" value="{{.Charging.SurplusRateValue}}" autocomplete="off">
             <button class="button primary" type="submit">Speichern</button>
             {{if .Accounting.LastSampleLabel}}<span class="mini">Letzter Zählerwert: {{.Accounting.LastSampleLabel}}</span>{{end}}
           </form>
@@ -3941,6 +4063,87 @@ const PageTemplates = `
                 <div><strong>{{.EffectiveFrom}}</strong><span>{{.GridFee}} · Basis {{.BaseFee}}</span></div>
               {{end}}
             </div>
+          {{end}}
+        </section>
+
+        <section class="panel settings-card" id="laderegelung">
+          <div>
+            <h2>Laderegelung (PV-Überschuss)</h2>
+            <p class="muted">Automatisches Überschussladen für Parkplatz 20. Im Testbetrieb entscheidet und protokolliert der Regler, schaltet aber nicht.</p>
+          </div>
+          {{if .ChargingMsg}}<p class="flash {{if .ChargingOK}}ok{{end}}">{{.ChargingMsg}}</p>{{end}}
+          <form class="form-grid" method="post" action="/app/parking/charging/settings">
+            <label for="controller_enabled"><input id="controller_enabled" type="checkbox" name="controller_enabled" value="1" {{if .Charging.Enabled}}checked{{end}}> Regler aktiv</label>
+            <label for="shadow_mode"><input id="shadow_mode" type="checkbox" name="shadow_mode" value="1" {{if or .Charging.ShadowMode (not .Charging.Enabled)}}checked{{end}}> Testbetrieb (Shadow)</label>
+            <label for="start_soc_percent">Start ab Akkustand (%)</label>
+            <input id="start_soc_percent" type="text" inputmode="decimal" name="start_soc_percent" value="{{.Charging.StartSocValue}}" autocomplete="off">
+            <label for="stop_soc_percent">Stopp unter Akkustand (%)</label>
+            <input id="stop_soc_percent" type="text" inputmode="decimal" name="stop_soc_percent" value="{{.Charging.StopSocValue}}" autocomplete="off">
+            <label for="start_feed_in_w">Start ab Einspeisung (W)</label>
+            <input id="start_feed_in_w" type="text" inputmode="decimal" name="start_feed_in_w" value="{{.Charging.StartFeedInValue}}" autocomplete="off">
+            <label for="stop_feed_in_w">Stopp unter Einspeisung (W)</label>
+            <input id="stop_feed_in_w" type="text" inputmode="decimal" name="stop_feed_in_w" value="{{.Charging.StopFeedInValue}}" autocomplete="off">
+            <label for="stop_delay_minutes">Stopp erst nach (Min.)</label>
+            <input id="stop_delay_minutes" type="text" inputmode="numeric" name="stop_delay_minutes" value="{{.Charging.StopDelayValue}}" autocomplete="off">
+            <label for="min_on_minutes">Mindest-Einschaltdauer (Min.)</label>
+            <input id="min_on_minutes" type="text" inputmode="numeric" name="min_on_minutes" value="{{.Charging.MinOnValue}}" autocomplete="off">
+            <label for="min_off_minutes">Mindest-Pausendauer (Min.)</label>
+            <input id="min_off_minutes" type="text" inputmode="numeric" name="min_off_minutes" value="{{.Charging.MinOffValue}}" autocomplete="off">
+            <button class="button primary" type="submit">Speichern</button>
+          </form>
+        </section>
+
+        <section class="panel settings-card">
+          <div>
+            <h2>Regler-Status</h2>
+            <p class="muted">Aktueller Zustand und die letzten Entscheidungen des Ladereglers.</p>
+          </div>
+          <div class="rule">
+            <span class="pill">{{.Charging.State.PhaseLabel}}</span>
+            {{if .Charging.State.SinceLabel}}<span class="mini">seit {{.Charging.State.SinceLabel}}</span>{{end}}
+            {{if .Charging.State.PollLabel}}<span class="mini">HA-Poll {{.Charging.State.PollLabel}}</span>{{end}}
+            {{if .Charging.State.ShadowPill}}<span class="pill">Testbetrieb</span>{{end}}
+            {{if .Charging.State.ErrorDetail}}<span class="pill dringend">{{.Charging.State.ErrorDetail}}</span>{{end}}
+          </div>
+          {{if .Charging.HasEvents}}
+            <div class="legend" aria-label="Ereignisprotokoll">
+              {{range .Charging.Events}}
+                <div><strong>{{.AtLabel}}</strong><span><span class="pill {{.KindClass}}">{{.KindLabel}}</span> {{.Detail}}</span></div>
+              {{end}}
+            </div>
+          {{else}}
+            <p class="empty">Noch keine Ereignisse seit dem letzten Neustart.</p>
+          {{end}}
+        </section>
+
+        <section class="panel settings-card" id="telegram">
+          <div>
+            <h2>Telegram-Bot</h2>
+            <p class="muted">Benachrichtigungen und Befehle laufen über den eigenen Bot. Chats werden per Einmal-Code verknüpft; Chat-Kennungen bleiben auf dem Server.</p>
+          </div>
+          <div class="rule">
+            {{if .Charging.Telegram.Configured}}<span class="pill ok">Token konfiguriert</span>{{else}}<span class="pill dringend">Kein Token — Bot inaktiv</span>{{end}}
+          </div>
+          {{if .Charging.Telegram.PendingCode}}
+            <p class="flash ok">Code für {{.Charging.Telegram.CodeEmail}}: <strong><code>{{.Charging.Telegram.PendingCode}}</code></strong> — per Telegram an den Bot senden: <code>/start {{.Charging.Telegram.PendingCode}}</code> (24 h gültig)</p>
+          {{end}}
+          <form class="form-grid" method="post" action="/app/parking/charging/telegram/link">
+            <label for="tg_email">Verknüpfungscode für</label>
+            <select id="tg_email" name="email">
+              {{range .Charging.Telegram.LinkOptions}}<option value="{{.Email}}">{{.Label}} ({{.Email}})</option>{{end}}
+            </select>
+            <button class="button" type="submit">Code erzeugen</button>
+          </form>
+          {{if .Charging.Telegram.HasChats}}
+            <div class="legend" aria-label="Verknüpfte Chats">
+              {{range .Charging.Telegram.Chats}}
+                <div><strong>{{.DisplayName}}</strong><span>{{.Email}} · seit {{.LinkedAt}}
+                  <form method="post" action="/app/parking/charging/telegram/unlink" style="display:inline"><input type="hidden" name="chat_id" value="{{.ChatID}}"><button class="button" type="submit">Trennen</button></form>
+                </span></div>
+              {{end}}
+            </div>
+          {{else}}
+            <p class="empty">Noch keine Chats verknüpft.</p>
           {{end}}
         </section>
       </section>
