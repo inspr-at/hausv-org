@@ -63,9 +63,10 @@ func (s *SQLActivityStore) Get(email string) (ActivityRecord, bool) {
 	return ActivityRecord{LastLogin: t.UTC(), AuthMethod: authMethod}, true
 }
 
-// ImportActivity copies every record from a JSON ActivityStore into the SQLite
-// store, idempotently (upsert). This is the per-store leg of the eventual
-// JSON→SQLite data migration (HAUSV-170); it is safe to run repeatedly.
+// ImportActivity copies records from a JSON ActivityStore into SQLite,
+// importing each email only if it is not already present (ON CONFLICT DO
+// NOTHING). This makes it safe to run on every boot: a login written to SQLite
+// after the swap is never clobbered by the older JSON snapshot (HAUSV-170).
 func (s *SQLActivityStore) ImportActivity(src *ActivityStore) error {
 	if src == nil {
 		return nil
@@ -76,8 +77,16 @@ func (s *SQLActivityStore) ImportActivity(src *ActivityStore) error {
 		snapshot[email] = rec
 	}
 	src.mu.Unlock()
-	for email, rec := range snapshot {
-		if err := s.Touch(email, rec.LastLogin, rec.AuthMethod); err != nil {
+	for rawEmail, rec := range snapshot {
+		email := textutil.Email(rawEmail)
+		if email == "" {
+			continue
+		}
+		if _, err := s.db.Exec(
+			`INSERT INTO login_activity(email, last_login, auth_method) VALUES(?, ?, ?)
+			 ON CONFLICT(email) DO NOTHING`,
+			email, rec.LastLogin.UTC().Format(time.RFC3339Nano), rec.AuthMethod,
+		); err != nil {
 			return err
 		}
 	}
