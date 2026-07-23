@@ -91,15 +91,12 @@ func migrate(sqlDB *sql.DB) error {
 		if err != nil {
 			return fmt.Errorf("db: begin migration %s: %w", name, err)
 		}
-		for _, stmt := range strings.Split(string(raw), ";") {
-			stmt = strings.TrimSpace(stmt)
-			if stmt == "" {
-				continue
-			}
-			if _, err := tx.Exec(stmt); err != nil {
-				tx.Rollback()
-				return fmt.Errorf("db: migration %s failed: %w", name, err)
-			}
+		// Execute the whole file in one Exec: modernc.org/sqlite runs every
+		// statement, and SQLite itself handles comments (including ";" inside a
+		// comment) — naive ";"-splitting would break on those.
+		if _, err := tx.Exec(string(raw)); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("db: migration %s failed: %w", name, err)
 		}
 		if _, err := tx.Exec("INSERT INTO schema_migrations(version) VALUES(?)", name); err != nil {
 			tx.Rollback()

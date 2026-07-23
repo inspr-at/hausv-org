@@ -71,6 +71,30 @@ func TestOpenIsIdempotent(t *testing.T) {
 	}
 }
 
+func TestMultiStatementExecRunsEveryStatement(t *testing.T) {
+	// The migration runner execs each file as one string; modernc.org/sqlite must
+	// run EVERY statement, else a multi-statement migration would silently skip
+	// its later statements. This also covers a ";" inside a comment.
+	database, err := Open(filepath.Join(t.TempDir(), "multi.db"))
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer database.Close()
+	if _, err := database.Exec(
+		"-- a comment; with a semicolon\nCREATE TABLE t1(x INTEGER);\nCREATE TABLE t2(y INTEGER);",
+	); err != nil {
+		t.Fatalf("multi-statement exec: %v", err)
+	}
+	for _, tbl := range []string{"t1", "t2"} {
+		var n int
+		if err := database.QueryRow(
+			"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?", tbl,
+		).Scan(&n); err != nil || n != 1 {
+			t.Fatalf("table %s missing after multi-statement exec (n=%d err=%v)", tbl, n, err)
+		}
+	}
+}
+
 func TestOpenRequiresPath(t *testing.T) {
 	if _, err := Open("   "); err == nil {
 		t.Fatal("empty path must error")

@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.15.4",
+			Date:     "23. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Benachrichtigungs-Einstellungen auf die neue Datenspeicherung umgestellt.",
+			Intro:    "Die E-Mail-Benachrichtigungs-Einstellungen laufen jetzt ebenfalls über die eingebettete Datenbank — mit Rückfallebene und ohne Änderung für Nutzer.",
+			Items: []NoteItem{
+				{Label: "Unverändert", Text: "Bestehende Einstellungen wurden verlustfrei übernommen."},
+			},
+		},
+		{
 			Version:  "0.15.3",
 			Date:     "23. Juli 2026",
 			Kind:     "Wartung",

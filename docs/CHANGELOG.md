@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.4] - 2026-07-23
+
+### Verbessert
+
+- **Benachrichtigungs-Einstellungen auf die neue Datenspeicherung umgestellt.** Die E-Mail-Benachrichtigungs-Präferenzen laufen jetzt über die eingebettete Datenbank; bestehende Einstellungen wurden verlustfrei übernommen, mit Rückfallebene. Für Nutzer ändert sich nichts.
+
 ## [0.15.3] - 2026-07-23
 
 ### Verbessert

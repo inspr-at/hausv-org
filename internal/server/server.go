@@ -587,6 +587,7 @@ type (
 	activityStore             = store.ActivityStore
 	activityStorage           = store.ActivityStorage
 	profileOverlayStorage     = store.ProfileOverlayStorage
+	notificationPrefStorage   = store.NotificationPrefStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -609,6 +610,7 @@ var mergeNotificationPreferences = store.MergeNotificationPreferences
 var newActivityStore = store.NewActivityStore
 var newSQLActivityStore = store.NewSQLActivityStore
 var newSQLProfileOverlayStore = store.NewSQLProfileOverlayStore
+var newSQLNotificationPrefStore = store.NewSQLNotificationPrefStore
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
 var newContactBookStore = store.NewContactBookStore
 var newNotificationPrefStore = store.NewNotificationPrefStore
@@ -685,7 +687,7 @@ type app struct {
 	announcementStore     *announcementStore
 	announcementReadStore *announcementReadStore
 	eventStore            *eventStore
-	notificationPrefs     *notificationPrefStore
+	notificationPrefs     notificationPrefStorage
 	profileOverlays       profileOverlayStorage
 	tenantOverrides       *tenantOverrideStore
 	tenantHeroDir         string
@@ -1133,6 +1135,7 @@ func newApp() (*app, error) {
 	// unavailable. Low-stakes stores lead the migration (HAUSV-168/170).
 	var activityBackend activityStorage = activity
 	var profileBackend profileOverlayStorage = profileOverlays
+	var notificationBackend notificationPrefStorage = notificationPrefs
 	if database != nil {
 		sqlActivity := newSQLActivityStore(database)
 		if err := sqlActivity.ImportActivity(activity); err != nil {
@@ -1145,6 +1148,12 @@ func newApp() (*app, error) {
 			log.Printf("profile-overlay import to sqlite failed, keeping json: %v", err)
 		} else {
 			profileBackend = sqlProfile
+		}
+		sqlNotification := newSQLNotificationPrefStore(database)
+		if err := sqlNotification.ImportPrefs(notificationPrefs); err != nil {
+			log.Printf("notification-pref import to sqlite failed, keeping json: %v", err)
+		} else {
+			notificationBackend = sqlNotification
 		}
 	}
 
@@ -1171,7 +1180,7 @@ func newApp() (*app, error) {
 		announcementStore:     announcements,
 		announcementReadStore: announcementReads,
 		eventStore:            events,
-		notificationPrefs:     notificationPrefs,
+		notificationPrefs:     notificationBackend,
 		profileOverlays:       profileBackend,
 		tenantOverrides:       tenantOverrides,
 		tenantHeroDir:         tenantHeroDir,
