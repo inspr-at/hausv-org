@@ -828,7 +828,7 @@ func NewAttachmentStore(path string, fileDir string) (*AttachmentStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not read attachment data")
 	}
-	if len(raw) == 0 {
+	if len(strings.TrimSpace(string(raw))) == 0 {
 		return store, nil
 	}
 	if err := json.Unmarshal(raw, &store.data); err != nil {

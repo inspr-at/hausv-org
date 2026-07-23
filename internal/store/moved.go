@@ -469,7 +469,7 @@ func NewContactBookStore(path string) (*ContactBookStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not read contact data")
 	}
-	if len(raw) == 0 {
+	if len(strings.TrimSpace(string(raw))) == 0 {
 		return store, nil
 	}
 	if err := json.Unmarshal(raw, &store.data); err != nil {
@@ -490,7 +490,7 @@ func NewUnitPaymentStatusStore(path string) (*UnitPaymentStatusStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not read unit payment status data")
 	}
-	if len(raw) == 0 {
+	if len(strings.TrimSpace(string(raw))) == 0 {
 		return store, nil
 	}
 	if err := json.Unmarshal(raw, &store.data); err != nil {
