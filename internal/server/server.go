@@ -585,6 +585,8 @@ const (
 type (
 	activityRecord            = store.ActivityRecord
 	activityStore             = store.ActivityStore
+	activityStorage           = store.ActivityStorage
+	profileOverlayStorage     = store.ProfileOverlayStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -605,6 +607,8 @@ var defaultNotificationPreferences = store.DefaultNotificationPreferences
 var managedContactDisplayName = store.ManagedContactDisplayName
 var mergeNotificationPreferences = store.MergeNotificationPreferences
 var newActivityStore = store.NewActivityStore
+var newSQLActivityStore = store.NewSQLActivityStore
+var newSQLProfileOverlayStore = store.NewSQLProfileOverlayStore
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
 var newContactBookStore = store.NewContactBookStore
 var newNotificationPrefStore = store.NewNotificationPrefStore
@@ -682,11 +686,11 @@ type app struct {
 	announcementReadStore *announcementReadStore
 	eventStore            *eventStore
 	notificationPrefs     *notificationPrefStore
-	profileOverlays       *profileOverlayStore
+	profileOverlays       profileOverlayStorage
 	tenantOverrides       *tenantOverrideStore
 	tenantHeroDir         string
 	inviteStore           *inviteStore
-	activityStore         *activityStore
+	activityStore         activityStorage
 	unitStore             *unitStore
 	unitPaymentStore      *unitPaymentStatusStore
 	issueStore            *issueStore
@@ -1106,18 +1110,42 @@ func newApp() (*app, error) {
 		return nil, err
 	}
 
-	// SQLite lives beside the JSON stores in the bind-mount. It runs its
-	// migrations on boot; no store reads from it yet — this is the foundation the
-	// JSON stores migrate onto (HAUSV-166/167). In production DB_PATH points at
-	// the /data bind-mount; the tmp default keeps local dev self-contained.
+	// SQLite lives beside the JSON stores in the same data dir. The path is
+	// derived from the JSON stores' committed data dir (PARKING_DATA_PATH) so no
+	// new env/compose entry is needed — in prod that's /data/hausv.db, locally
+	// tmp/hausv.db. DB_PATH overrides if ever set. It runs its migrations on boot.
 	//
-	// Non-fatal ON PURPOSE while unused: a failure here (e.g. a not-yet-writable
-	// path before compose sets DB_PATH into /data) must not brick boot. This
-	// becomes fatal the moment a store reads from SQLite (HAUSV-170).
-	database, err := db.Open(env("DB_PATH", "tmp/hausv.db"))
+	// Non-fatal ON PURPOSE: if SQLite can't open, each migrated store falls back
+	// to its JSON backend below, so boot can never brick on a DB problem
+	// (HAUSV-170).
+	dbPath := env("DB_PATH", "")
+	if dbPath == "" {
+		dbPath = filepath.Join(filepath.Dir(parkingDataPath), "hausv.db")
+	}
+	database, err := db.Open(dbPath)
 	if err != nil {
-		log.Printf("sqlite unavailable, continuing without it (no store depends on it yet): %v", err)
+		log.Printf("sqlite unavailable, using json stores: %v", err)
 		database = nil
+	}
+
+	// Migrated stores prefer SQLite, importing existing JSON data once
+	// (clobber-safe), and fall back to their JSON backend if SQLite is
+	// unavailable. Low-stakes stores lead the migration (HAUSV-168/170).
+	var activityBackend activityStorage = activity
+	var profileBackend profileOverlayStorage = profileOverlays
+	if database != nil {
+		sqlActivity := newSQLActivityStore(database)
+		if err := sqlActivity.ImportActivity(activity); err != nil {
+			log.Printf("activity import to sqlite failed, keeping json: %v", err)
+		} else {
+			activityBackend = sqlActivity
+		}
+		sqlProfile := newSQLProfileOverlayStore(database)
+		if err := sqlProfile.ImportOverlays(profileOverlays); err != nil {
+			log.Printf("profile-overlay import to sqlite failed, keeping json: %v", err)
+		} else {
+			profileBackend = sqlProfile
+		}
 	}
 
 	return &app{
@@ -1144,11 +1172,11 @@ func newApp() (*app, error) {
 		announcementReadStore: announcementReads,
 		eventStore:            events,
 		notificationPrefs:     notificationPrefs,
-		profileOverlays:       profileOverlays,
+		profileOverlays:       profileBackend,
 		tenantOverrides:       tenantOverrides,
 		tenantHeroDir:         tenantHeroDir,
 		inviteStore:           invites,
-		activityStore:         activity,
+		activityStore:         activityBackend,
 		unitStore:             units,
 		unitPaymentStore:      unitPayments,
 		issueStore:            issues,

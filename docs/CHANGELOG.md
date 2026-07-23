@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.3] - 2026-07-23
+
+### Verbessert
+
+- **Erste Bereiche auf die neue Datenspeicherung umgestellt.** Anmelde-Verlauf und Selbstverwaltungs-Profilangaben laufen jetzt über die eingebettete Datenbank statt über JSON-Dateien; bestehende Angaben wurden verlustfrei übernommen, mit automatischer Rückfallebene auf die bisherige Speicherung. Für Nutzer ändert sich nichts.
+
 ## [0.15.2] - 2026-07-23
 
 ### Verbessert

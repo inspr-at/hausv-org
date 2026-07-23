@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.15.3",
+			Date:     "23. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Erste Bereiche auf die neue Datenspeicherung umgestellt.",
+			Intro:    "Anmelde-Verlauf und Profilangaben laufen jetzt über die neue, transaktionssichere Datenhaltung — mit automatischer Rückfallebene, falls nötig.",
+			Items: []NoteItem{
+				{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts; bestehende Angaben wurden übernommen."},
+			},
+		},
+		{
 			Version:  "0.15.2",
 			Date:     "23. Juli 2026",
 			Kind:     "Wartung",
