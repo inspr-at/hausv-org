@@ -105,4 +105,12 @@
       event.preventDefault();
     }
   });
+
+  // Print / save-as-PDF trigger (CSP-safe: no inline handler).
+  document.addEventListener("click", function (event) {
+    var trigger = event.target.closest("[data-print]");
+    if (!trigger) return;
+    event.preventDefault();
+    window.print();
+  });
 })();

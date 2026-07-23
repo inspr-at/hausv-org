@@ -831,6 +831,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /app/parking", a.page(a.parking))
 	mux.HandleFunc("GET /app/parking/settings", a.page(a.parkingSettings))
 	mux.HandleFunc("GET /app/parking/month/{month}", a.page(a.parkingMonth))
+	mux.HandleFunc("GET /app/parking/month/{month}/export", a.page(a.parkingMonthExport))
 	mux.HandleFunc("GET /app/parking/export/{year}", a.page(a.parkingStatement))
 	mux.HandleFunc("POST /app/parking/settings", a.action(a.updateParkingSettings))
 	mux.HandleFunc("POST /app/parking/month", a.action(a.updateParkingMonth))
@@ -1989,6 +1990,60 @@ func writeParkingStatementCSV(w io.Writer, statement parkingStatementView) error
 	}
 	if err := writer.Write([]string{"Gesamt", "", statement.TotalKWh, statement.SurplusKWh, statement.NormalKWh, "", "", statement.EnergyCost, statement.SurplusCost, statement.GridCost, statement.BaseFee, statement.TotalCost, ""}); err != nil {
 		return err
+	}
+	writer.Flush()
+	return writer.Error()
+}
+
+// writeParkingMonthCSV renders one month's settlement: the monthly summary plus
+// the hour-by-hour detail that mirrors the on-screen month view, so an exported
+// total always matches what the page shows (HAUSV-164).
+func writeParkingMonthCSV(w io.Writer, tenant tenantConfig, view parkingMonthDetailView) error {
+	writer := csv.NewWriter(w)
+	writer.Comma = ';'
+	s := view.Summary
+	status := "offen"
+	if s.Paid {
+		status = "bezahlt"
+		if s.PaidAtLabel != "" {
+			status += " am " + s.PaidAtLabel
+		}
+		if s.PaidBy != "" {
+			status += " von " + s.PaidBy
+		}
+	}
+	rows := [][]string{
+		{"WEG Portal Parkplatzabrechnung – Monat"},
+		{"Gebäude", tenant.Name},
+		{"Adresse", tenant.Address},
+		{"Monat", view.MonthLabel},
+		{"Tarif", view.GridFeeLabel},
+		{"Erstellt", formatLocalDateTime(time.Now())},
+		{"Status", status},
+	}
+	if s.Partial {
+		rows = append(rows, []string{"Hinweis", "Messdaten unvollständig – die Abdeckung beginnt nicht am Monatsanfang; die Summe kann Lücken enthalten."})
+	}
+	rows = append(rows,
+		[]string{},
+		[]string{"Monatssumme", "kWh gesamt", "kWh Überschuss", "kWh Normal", "Strom", "Überschuss", "Netzgeb.", "Basis", "Summe"},
+		[]string{"", s.KWh, s.SurplusKWh, s.NormalKWh, s.EnergyCost, s.SurplusCost, s.GridCost, s.BaseFee, s.TotalCost},
+		[]string{},
+		[]string{"Stunde", "kWh", "Überschuss-kWh", "aWATTar Ø", "Strom", "Netzgeb.", "Summe"},
+	)
+	for _, row := range rows {
+		if err := writer.Write(row); err != nil {
+			return err
+		}
+	}
+	for _, h := range view.Hours {
+		surplus := "—"
+		if h.HasSurplus {
+			surplus = h.SurplusKWh
+		}
+		if err := writer.Write([]string{h.AtLabel, h.KWh, surplus, h.AverageAwattar, h.EnergyCost, h.GridCost, h.TotalCost}); err != nil {
+			return err
+		}
 	}
 	writer.Flush()
 	return writer.Error()

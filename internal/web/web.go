@@ -3381,19 +3381,31 @@ const PageTemplates = `
 {{define "parkingMonth"}}
 {{template "appOpen" .}}
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
+    <style>
+      @media print {
+        .sidebar, .content-top .page-actions, .legend, [data-print], .attachment-strip, .release-dialog { display: none !important; }
+        .app-shell, .app-main { display: block !important; margin: 0 !important; padding: 0 !important; }
+        .panel { box-shadow: none !important; border-color: #ccc !important; break-inside: avoid; }
+        body, .app-shell { background: #fff !important; }
+        a[href] { color: inherit !important; text-decoration: none !important; }
+        @page { margin: 1.4cm; }
+      }
+    </style>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/parking">Parkplatznutzung</a><span>/</span><span>{{.Detail.MonthLabel}}</span></span>
-        <div class="page-actions"><a class="button" href="{{.Detail.BackPath}}">Monate</a></div>
+        <div class="page-actions"><a class="button" href="{{.Detail.BackPath}}">Monate</a>{{if .Detail.Summary.Month}}<a class="button" href="/app/parking/month/{{.Detail.Month}}/export">CSV exportieren</a><button class="button" type="button" data-print>Drucken / PDF</button>{{end}}</div>
       </div>
       <section class="page wide">
         <div>
           <h1>{{.Detail.MonthLabel}}</h1>
           <p class="lede">{{.Detail.Message}}</p>
         </div>
+        {{if .Detail.Summary.Partial}}<div class="notice warn">Messdaten unvollständig: Die Abdeckung beginnt nicht am Monatsanfang. Die Summe kann Lücken enthalten und sollte vor dem Teilen geprüft werden.</div>{{end}}
         <section class="panel status-strip">
           <div class="rule">
             <span class="pill">Netzgebühr {{.Detail.GridFeeLabel}}</span>
+            {{if .Detail.Summary.Paid}}<span class="pill">Bezahlt{{if .Detail.Summary.PaidAtLabel}} · {{.Detail.Summary.PaidAtLabel}}{{end}}{{if .Detail.Summary.PaidBy}} · {{.Detail.Summary.PaidBy}}{{end}}</span>{{end}}
             {{if .Detail.LastSampleLabel}}<span class="mini">Letzter Zählerwert: {{.Detail.LastSampleLabel}}</span>{{end}}
           </div>
           {{if .Detail.Summary.Month}}

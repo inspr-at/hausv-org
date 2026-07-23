@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.0] - 2026-07-23
+
+### Neu
+
+- **Parkplatz-Monat exportieren und drucken.** Jeder Monat der Parkplatzabrechnung lässt sich jetzt als CSV mit Stundendetails herunterladen und über eine aufgeräumte Druckansicht als PDF speichern oder privat teilen. Die exportierten Summen entsprechen exakt der Bildschirmansicht; unvollständige Monate werden vorher deutlich markiert.
+
 ## [0.14.0] - 2026-07-23
 
 ### Neu

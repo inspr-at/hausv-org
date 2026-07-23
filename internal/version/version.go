@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.15.0",
+			Date:     "23. Juli 2026",
+			Kind:     "Parkplatz",
+			Headline: "Monatsabrechnung exportieren und drucken.",
+			Intro:    "Jeder Parkplatzmonat lässt sich als CSV mit Stundendetails exportieren und über eine aufgeräumte Ansicht drucken oder als PDF speichern.",
+			Items: []NoteItem{
+				{Label: "CSV", Text: "Export mit Stundenwerten (Verbrauch, Preis, Kosten); die Summen entsprechen genau der Bildschirmansicht."},
+				{Label: "Druck", Text: "Eine aufgeräumte Druckansicht eignet sich zum privaten Teilen oder als PDF."},
+				{Label: "Datenqualität", Text: "Fehlen für einen Monat Messpunkte, wird vor dem Export deutlich darauf hingewiesen."},
+			},
+		},
+		{
 			Version:  "0.14.0",
 			Date:     "23. Juli 2026",
 			Kind:     "Verwaltung",

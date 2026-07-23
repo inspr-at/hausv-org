@@ -181,6 +181,31 @@ func (a *app) parkingStatement(w http.ResponseWriter, r *http.Request, ac authCt
 	}
 }
 
+func (a *app) parkingMonthExport(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
+	profile := a.profileForTenant(email, tenant.Slug)
+	if !hasCapability(role, capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
+		http.NotFound(w, r)
+		return
+	}
+	month := strings.TrimSpace(r.PathValue("month"))
+	if _, err := time.Parse("2006-01", month); err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	view := a.parkingMonthDetails(r.Context(), tenant, month)
+	if !view.HasHours && view.Summary.Month == "" {
+		http.NotFound(w, r)
+		return
+	}
+	filename := "parkplatzabrechnung-" + month + ".csv"
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
+	if err := writeParkingMonthCSV(w, tenant, view); err != nil {
+		log.Printf("parking month export failed for %s/%s: %v", tenant.Slug, month, err)
+	}
+}
+
 func parkingStatementYear(raw string) (int, bool) {
 	year, err := strconv.Atoi(strings.TrimSpace(raw))
 	if err != nil || year < 2000 || year > 2100 {
