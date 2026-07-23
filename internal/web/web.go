@@ -4511,6 +4511,13 @@ const PageTemplates = `
                 <label class="permission-check"><input type="checkbox" name="permissions" value="parking" data-permission="parking"><strong>Parkplatznutzung</strong><span>Privater Bereich für Stellplatz- und Ladeabrechnung.</span></label>
               </div>
             </fieldset>
+            <fieldset class="permission-fieldset f-permissions">
+              <legend>Anmeldung</legend>
+              <div class="permission-grid">
+                <label class="permission-check"><input type="checkbox" name="auth_methods" value="email" checked><strong>E-Mail-Link</strong><span>Anmeldung per Magic-Link an die E-Mail-Adresse.</span></label>
+                <label class="permission-check"><input type="checkbox" name="auth_methods" value="oidc" checked><strong>Zitadel SSO</strong><span>Anmeldung über den Single-Sign-On-Anbieter (Zitadel).</span></label>
+              </div>
+            </fieldset>
             <button class="f-submit" type="submit">Einladung senden</button>
           </form>
         </div>
@@ -4566,7 +4573,7 @@ const PageTemplates = `
               <td data-label="Anmeldung"><div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div></td>
               <td class="col-status" data-label="Status"><span class="pill {{if eq .Status "Aktiv"}}status-active{{else}}status-pending{{end}}"><span class="dot"></span>{{.Status}}</span>{{if .LastSeen}}<span class="last-seen">{{.LastSeen}}</span>{{end}}</td>
 	              <td class="col-actions" data-label="">
-	                {{if .Editable}}
+	                {{if or .Editable (and .IsConfig (not .Protected))}}
 	                {{if and (not $.ServiceProviderAccessEnabled) (eq .Role "Dienstleister")}}
 	                <span class="mini">Schreibgeschützt</span>
 	                {{else}}
@@ -4574,13 +4581,13 @@ const PageTemplates = `
                 <dialog id="edit-{{.Email}}" class="edit-dialog" aria-labelledby="edit-title-{{.Email}}">
                   <div class="dlg-x"><form method="dialog"><button aria-label="Schließen">&times;</button></form></div>
                   <h2 id="edit-title-{{.Email}}">Zugang bearbeiten</h2>
-                  <p class="dlg-sub">{{.Email}}</p>
+                  <p class="dlg-sub">{{.Email}}{{if .IsConfig}} (aus Konfiguration){{end}}</p>
                   <form method="post" action="/app/settings/users/edit" class="dlg-form">
                     <input type="hidden" name="orig_email" value="{{.Email}}">
                     <input class="f-titel" type="text" name="title" value="{{.Title}}" placeholder="Titel" aria-label="Titel">
                     <input class="f-vorname" type="text" name="first_name" value="{{.FirstName}}" placeholder="Vorname" aria-label="Vorname">
                     <input class="f-nachname" type="text" name="last_name" value="{{.LastName}}" placeholder="Nachname" aria-label="Nachname">
-                    <input class="f-email" type="email" name="email" value="{{.Email}}" aria-label="E-Mail-Adresse" autocomplete="email" required>
+                    <input class="f-email" type="email" name="email" value="{{.Email}}" aria-label="E-Mail-Adresse" autocomplete="email"{{if .IsConfig}} readonly{{else}} required{{end}}>
                     <select class="f-role" name="role" aria-label="Rolle">
                       <option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions=""{{if eq .Role "Mieter"}} selected{{end}}>Mieter</option>
                       <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions=""{{if eq .Role "Eigentümer"}} selected{{end}}>Eigentümer</option>
@@ -4597,15 +4604,22 @@ const PageTemplates = `
                         <label class="permission-check"><input type="checkbox" name="permissions" value="parking" data-permission="parking"{{if .ParkingChecked}} checked{{end}}><strong>Parkplatznutzung</strong><span>Privater Bereich für Stellplatz- und Ladeabrechnung.</span></label>
                       </div>
                     </fieldset>
+                    <fieldset class="permission-fieldset f-permissions">
+                      <legend>Anmeldung</legend>
+                      <div class="permission-grid">
+                        <label class="permission-check"><input type="checkbox" name="auth_methods" value="email"{{if .EmailAuthChecked}} checked{{end}}><strong>E-Mail-Link</strong><span>Anmeldung per Magic-Link an die E-Mail-Adresse.</span></label>
+                        <label class="permission-check"><input type="checkbox" name="auth_methods" value="oidc"{{if .OIDCAuthChecked}} checked{{end}}><strong>Zitadel SSO</strong><span>Anmeldung über den Single-Sign-On-Anbieter (Zitadel).</span></label>
+                      </div>
+                    </fieldset>
                     <button type="submit">Speichern</button>
                   </form>
-                  <div class="dlg-delete">
+                  {{if not .IsConfig}}<div class="dlg-delete">
                     <span>Dauerhaft entfernen</span>
                     <form method="post" action="/app/settings/users/delete" data-confirm="Diesen Zugang wirklich löschen?">
                       <input type="hidden" name="email" value="{{.Email}}">
                       <button type="submit" class="danger">Löschen</button>
                     </form>
-                  </div>
+                  </div>{{end}}
 	                </dialog>
 	                {{end}}
 	                {{end}}

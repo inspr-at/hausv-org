@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.13.0] - 2026-07-23
+
+### Neu
+
+- **Benutzer & Rechte vollständig in der App verwalten.** Personen, die bisher fest in der Konfiguration hinterlegt waren, lassen sich jetzt direkt im Portal bearbeiten — Rolle, Sonderrechte und Anmeldeweg ändern sich sofort, ganz ohne neue Auslieferung.
+- **Anmeldeweg pro Person wählbar.** Für jeden Zugang kann festgelegt werden, ob die Anmeldung per E-Mail-Link, über Zitadel-SSO oder auf beiden Wegen möglich ist.
+
+### Verbessert
+
+- **Schutz vor Aussperren.** Die letzte Administrator-Rolle kann nicht entzogen und man kann sich nicht selbst die Administratorrechte entziehen. Der in der Konfiguration hinterlegte Notfall-Admin bleibt als Rückfallebene jederzeit erhalten.
+
 ## [0.12.2] - 2026-07-19
 
 ### Verbessert

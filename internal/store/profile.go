@@ -29,6 +29,12 @@ type UserProfile struct {
 	Permissions       []string                    `json:"permissions"`
 	TenantMemberships map[string]TenantMembership `json:"tenant_memberships,omitempty"`
 	AuthMethods       []string                    `json:"auth_methods"`
+	// Adopted marks a store record as an admin-sanctioned override of a
+	// config-sourced (env) user. Only records with this flag are allowed to win
+	// over the env directory in directoryProfile; a plain or legacy store record
+	// must never escalate an env user (HAUSV-135 anti-escalation, HAUSV-163
+	// adopt-on-edit).
+	Adopted bool `json:"adopted,omitempty"`
 }
 
 type TenantMembership struct {

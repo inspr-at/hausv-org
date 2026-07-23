@@ -1719,7 +1719,11 @@ type UserRow struct {
 	HasOutstanding     bool
 	AuthLabel          string
 	AuthList           []string
+	EmailAuthChecked   bool
+	OIDCAuthChecked    bool
 	Editable           bool
+	IsConfig           bool
+	Protected          bool
 	LastSeen           string
 }
 

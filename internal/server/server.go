@@ -3262,8 +3262,16 @@ func inviteMessage(status string) (string, bool) {
 		return "Änderungen gespeichert.", true
 	case "deleted":
 		return "Zugang gelöscht.", true
+	case "reverted":
+		return "Zugang auf die Konfiguration zurückgesetzt.", true
 	case "not_editable":
-		return "Dieser Eintrag kommt aus der Konfiguration und kann hier nicht geändert werden.", false
+		return "Dieser Eintrag kann hier nicht geändert werden.", false
+	case "protected":
+		return "Notfall-Admins (ADMIN_EMAILS) sind geschützt und können hier nicht geändert werden.", false
+	case "last_admin":
+		return "Die letzte Administrator-Rolle kann nicht entfernt werden.", false
+	case "self_lockout":
+		return "Sie können sich nicht selbst die Administrator-Rolle entziehen.", false
 	case "forbidden_role":
 		return "Nur Plattform-Admins können die Admin-Rolle vergeben.", false
 	default:
@@ -3287,6 +3295,11 @@ func auditChangedUserFields(before userProfile, after userProfile) []string {
 	}
 	if strings.Join(normalizePermissions(before.Permissions), ",") != strings.Join(normalizePermissions(after.Permissions), ",") {
 		changed = append(changed, "Rechte")
+	}
+	beforeAuth, _ := normalizeAuthMethods(before.AuthMethods)
+	afterAuth, _ := normalizeAuthMethods(after.AuthMethods)
+	if strings.Join(beforeAuth, ",") != strings.Join(afterAuth, ",") {
+		changed = append(changed, "Anmeldung")
 	}
 	if len(changed) == 0 {
 		changed = append(changed, "Metadaten")
@@ -3336,7 +3349,7 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		Status:      "Eingeladen",
 		Tenants:     []string{tenant.Slug},
 		Permissions: parsePermissionForm(r.Form),
-		AuthMethods: defaultAuthMethods(),
+		AuthMethods: parseAuthMethodForm(r.Form),
 	}
 
 	added, err := a.inviteStore.Add(profile)
@@ -3404,33 +3417,57 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 	orig := normalizeEmail(r.FormValue("orig_email"))
 	existing, isInvite := a.inviteStore.Get(orig)
-	if !isInvite {
-		// Only persisted invites are editable; env-config users are read-only.
+	envProfile, isEnv := a.profiles[orig]
+	if !isInvite && !isEnv {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
-	// InviteStore.Get is keyed by email across ALL tenants. Without this guard a
-	// manager of tenant A could edit an invite belonging to tenant B and, via
-	// the rename path below, mint a tenant-B invite they control (HAUSV-135).
-	if !existing.HasTenant(tenant.Slug) {
-		a.redirectInvite(w, r, "not_editable")
+	// Break-glass ADMIN_EMAILS admins are read-only here: they are the recovery
+	// anchor and must never be editable or lockable-out from the app (HAUSV-163).
+	if _, isBreakGlass := a.admins[orig]; isBreakGlass {
+		a.redirectInvite(w, r, "protected")
 		return
 	}
-	effectiveProfile := existing.ForTenant(tenant.Slug)
+
+	// Resolve the current effective profile for this tenant, preferring an
+	// existing app override, otherwise the env directory record. InviteStore.Get
+	// is keyed by email across ALL tenants, so the HasTenant guard stops a manager
+	// of tenant A from editing (or, via rename, minting) a tenant-B record
+	// (HAUSV-135).
+	var effectiveProfile userProfile
+	if isInvite {
+		if !existing.HasTenant(tenant.Slug) {
+			a.redirectInvite(w, r, "not_editable")
+			return
+		}
+		effectiveProfile = existing.ForTenant(tenant.Slug)
+	} else {
+		env := a.withProfileOverlay(envProfile)
+		if !env.HasTenant(tenant.Slug) {
+			a.redirectInvite(w, r, "not_editable")
+			return
+		}
+		effectiveProfile = env.ForTenant(tenant.Slug)
+	}
 	if normalizeRole(effectiveProfile.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
 
-	newEmail := normalizeEmail(r.FormValue("email"))
-	if _, err := mail.ParseAddress(newEmail); err != nil {
-		a.redirectInvite(w, r, "invalid_email")
-		return
-	}
-	if newEmail != orig {
-		if _, inEnv := a.profiles[newEmail]; inEnv {
-			a.redirectInvite(w, r, "exists")
+	// Config-sourced users keep their configured email as a fixed identity; only
+	// pure app invites may be renamed.
+	newEmail := orig
+	if !isEnv {
+		newEmail = normalizeEmail(r.FormValue("email"))
+		if _, err := mail.ParseAddress(newEmail); err != nil {
+			a.redirectInvite(w, r, "invalid_email")
 			return
+		}
+		if newEmail != orig {
+			if _, inEnv := a.profiles[newEmail]; inEnv {
+				a.redirectInvite(w, r, "exists")
+				return
+			}
 		}
 	}
 
@@ -3446,28 +3483,73 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		a.redirectInvite(w, r, "forbidden_role")
 		return
 	}
+
+	// Last-admin / self-lockout guard: refuse to strip the final Admin role, or to
+	// let an admin demote themselves out of the portal (HAUSV-163).
+	if normalizeRole(effectiveProfile.Role) == roleAdmin && newRole != roleAdmin {
+		if orig == normalizeEmail(actorEmail) {
+			a.redirectInvite(w, r, "self_lockout")
+			return
+		}
+		remaining := a.adminEmails(tenant.Slug)
+		delete(remaining, orig)
+		if len(remaining) == 0 {
+			a.redirectInvite(w, r, "last_admin")
+			return
+		}
+	}
+
+	// Seed the persisted record: an existing override keeps its stored fields; a
+	// freshly adopted config user is seeded from its env record so tenants and
+	// memberships survive (HAUSV-163 adopt-on-edit).
 	updated := existing
+	if !isInvite {
+		updated = envProfile
+	}
 	updated.Email = newEmail
 	updated.Title = strings.TrimSpace(r.FormValue("title"))
 	updated.FirstName = strings.TrimSpace(r.FormValue("first_name"))
 	updated.LastName = strings.TrimSpace(r.FormValue("last_name"))
 	updated.Role = newRole
 	updated.Permissions = parsePermissionForm(r.Form)
+	updated.AuthMethods = parseAuthMethodForm(r.Form)
 	if len(updated.Tenants) == 0 {
 		updated.Tenants = []string{tenant.Slug}
 	}
-	if len(updated.AuthMethods) == 0 {
-		updated.AuthMethods = defaultAuthMethods()
+	if isEnv {
+		// Mark the override so it wins over the env record in directoryProfile.
+		updated.Adopted = true
 	}
 
-	changed, err := a.inviteStore.Update(orig, updated)
-	if err != nil {
-		a.redirectInvite(w, r, "exists")
-		return
+	if isInvite {
+		changed, err := a.inviteStore.Update(orig, updated)
+		if err != nil {
+			a.redirectInvite(w, r, "exists")
+			return
+		}
+		if !changed {
+			a.redirectInvite(w, r, "not_editable")
+			return
+		}
+	} else {
+		added, err := a.inviteStore.Add(updated)
+		if err != nil {
+			log.Printf("adopt persistence failed for %s: %v", redactedEmail(orig), err)
+			a.redirectInvite(w, r, "error")
+			return
+		}
+		if !added {
+			// Raced with a concurrent adopt; apply as an update instead.
+			if _, err := a.inviteStore.Update(orig, updated); err != nil {
+				a.redirectInvite(w, r, "error")
+				return
+			}
+		}
 	}
-	if !changed {
-		a.redirectInvite(w, r, "not_editable")
-		return
+
+	source := "App"
+	if !isInvite {
+		source = "Konfiguration (übernommen)"
 	}
 	a.recordAudit(auditEvent{
 		TenantSlug: tenant.Slug,
@@ -3476,13 +3558,16 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		Action:     auditActionInviteUpdate,
 		TargetType: "user",
 		TargetID:   updated.Email,
-		Summary:    "Einladung geändert",
+		Summary:    "Zugang geändert",
 		Details: map[string]string{
-			"changed_fields":   strings.Join(auditChangedUserFields(existing, updated), ", "),
-			"role_from":        normalizeRole(existing.Role),
+			"source":           source,
+			"changed_fields":   strings.Join(auditChangedUserFields(effectiveProfile, updated), ", "),
+			"role_from":        normalizeRole(effectiveProfile.Role),
 			"role_to":          normalizeRole(updated.Role),
-			"permissions_from": strings.Join(permissionLabelList(existing.Permissions), ", "),
+			"permissions_from": strings.Join(permissionLabelList(effectiveProfile.Permissions), ", "),
 			"permissions_to":   strings.Join(permissionLabelList(updated.Permissions), ", "),
+			"auth_from":        strings.Join(authMethodsLabelList(effectiveProfile.AuthMethods), ", "),
+			"auth_to":          strings.Join(authMethodsLabelList(updated.AuthMethods), ", "),
 		},
 	})
 	a.redirectInvite(w, r, "updated")
@@ -3518,6 +3603,27 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
+	// Break-glass admins are never deletable from the app (HAUSV-163). They are
+	// not adopted into the store, so this is defence-in-depth over the isInvite
+	// check above.
+	if _, isBreakGlass := a.admins[deleteEmail]; isBreakGlass {
+		a.redirectInvite(w, r, "protected")
+		return
+	}
+	// Last-admin / self-lockout guard: never remove the final Admin, and never let
+	// an admin delete their own admin access (HAUSV-163).
+	if normalizeRole(effectiveProfile.Role) == roleAdmin {
+		if deleteEmail == normalizeEmail(actorEmail) {
+			a.redirectInvite(w, r, "self_lockout")
+			return
+		}
+		remaining := a.adminEmails(tenant.Slug)
+		delete(remaining, deleteEmail)
+		if len(remaining) == 0 {
+			a.redirectInvite(w, r, "last_admin")
+			return
+		}
+	}
 	removed, err := a.inviteStore.Delete(deleteEmail)
 	if err != nil {
 		a.redirectInvite(w, r, "error")
@@ -3527,6 +3633,14 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
+	// Deleting an override on a config-sourced user reverts it to the env record
+	// rather than removing the person entirely.
+	status := "deleted"
+	summary := "Einladung gelöscht"
+	if _, isEnv := a.profiles[deleteEmail]; isEnv {
+		status = "reverted"
+		summary = "Auf Konfiguration zurückgesetzt"
+	}
 	a.recordAudit(auditEvent{
 		TenantSlug: tenant.Slug,
 		ActorEmail: actorEmail,
@@ -3534,13 +3648,13 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		Action:     auditActionInviteDelete,
 		TargetType: "user",
 		TargetID:   deleteEmail,
-		Summary:    "Einladung gelöscht",
+		Summary:    summary,
 		Details: map[string]string{
 			"role_from":        normalizeRole(existing.Role),
 			"permissions_from": strings.Join(permissionLabelList(existing.Permissions), ", "),
 		},
 	})
-	a.redirectInvite(w, r, "deleted")
+	a.redirectInvite(w, r, status)
 }
 
 // render prepares page data and writes the template. The data preparation
@@ -3823,13 +3937,26 @@ func (a *app) currentUser(r *http.Request) (string, string, string, bool) {
 // or escalate an env-defined user, so existing logins are unaffected.
 func (a *app) directoryProfile(email string) (userProfile, bool) {
 	email = normalizeEmail(email)
-	if profile, ok := a.profiles[email]; ok {
-		return a.withProfileOverlay(profile), true
-	}
+	var invite userProfile
+	hasInvite := false
 	if a.inviteStore != nil {
-		if profile, ok := a.inviteStore.Get(email); ok {
-			return a.withProfileOverlay(profile), true
+		invite, hasInvite = a.inviteStore.Get(email)
+	}
+	envProfile, hasEnv := a.profiles[email]
+	switch {
+	case hasInvite && hasEnv:
+		// Both a store record and an env record exist. The store record wins only
+		// when it is an admin-sanctioned adoption (HAUSV-163 adopt-on-edit);
+		// otherwise the env directory stays authoritative so a plain or legacy
+		// store record can never escalate an env user (HAUSV-135).
+		if invite.Adopted {
+			return a.withProfileOverlay(invite), true
 		}
+		return a.withProfileOverlay(envProfile), true
+	case hasInvite:
+		return a.withProfileOverlay(invite), true
+	case hasEnv:
+		return a.withProfileOverlay(envProfile), true
 	}
 	return userProfile{}, false
 }
@@ -3851,13 +3978,17 @@ func (a *app) withProfileOverlay(profile userProfile) userProfile {
 }
 
 func (a *app) isAllowed(email string, tenantSlug string) bool {
+	email = normalizeEmail(email)
+	// Break-glass: an ADMIN_EMAILS bootstrap admin can always sign in, even if an
+	// app-managed override would otherwise deny it. This is the documented
+	// recovery path — env config stays authoritative for login (HAUSV-163).
+	if _, ok := a.admins[email]; ok {
+		return true
+	}
 	if profile, ok := a.directoryProfile(email); ok && profile.HasTenant(tenantSlug) {
 		if !a.serviceAccessEnabled && isServiceProviderRole(profile.ForTenant(tenantSlug).Role) {
 			return false
 		}
-		return true
-	}
-	if _, ok := a.admins[email]; ok {
 		return true
 	}
 	_, ok := a.allowed[email]
@@ -3919,28 +4050,8 @@ func (a *app) profileForTenant(email string, tenantSlug string) userProfile {
 func (a *app) userRows(tenantSlug string) []userRow {
 	seen := map[string]struct{}{}
 	rows := make([]userRow, 0, len(a.profiles)+len(a.admins)+len(a.allowed))
-	for email, profile := range a.profiles {
-		profile = a.withProfileOverlay(profile)
-		if !profile.HasTenant(tenantSlug) {
-			continue
-		}
-		rows = append(rows, userRowFrom(profile.ForTenant(tenantSlug)))
-		seen[email] = struct{}{}
-	}
-	for email := range a.admins {
-		if _, ok := seen[email]; ok {
-			continue
-		}
-		rows = append(rows, userRowFrom(userProfile{Email: email, Role: roleAdmin, Status: "Aktiv", Tenants: []string{tenantSlug}}))
-		seen[email] = struct{}{}
-	}
-	for email := range a.allowed {
-		if _, ok := seen[email]; ok {
-			continue
-		}
-		rows = append(rows, userRowFrom(userProfile{Email: email, Role: roleResident, Status: "Eingeladen", Tenants: []string{tenantSlug}}))
-		seen[email] = struct{}{}
-	}
+	// App-managed (invite store) rows come first so an adopted config user shows
+	// its editable override rather than the read-only env row (HAUSV-163).
 	if a.inviteStore != nil {
 		for _, profile := range a.inviteStore.List() {
 			profile = a.withProfileOverlay(profile)
@@ -3951,11 +4062,61 @@ func (a *app) userRows(tenantSlug string) []userRow {
 			if !profile.HasTenant(tenantSlug) {
 				continue
 			}
+			if _, isEnv := a.profiles[email]; isEnv && !profile.Adopted {
+				// A non-adopted store record never shadows an env user; the env
+				// loop renders the authoritative row instead (HAUSV-135).
+				continue
+			}
 			row := userRowFrom(profile.ForTenant(tenantSlug))
 			row.Editable = true
+			if _, isEnv := a.profiles[email]; isEnv {
+				// Adopted config user: an app override layered over the env record.
+				row.IsConfig = true
+			}
 			rows = append(rows, row)
 			seen[email] = struct{}{}
 		}
+	}
+	for email, profile := range a.profiles {
+		if _, ok := seen[email]; ok {
+			continue
+		}
+		profile = a.withProfileOverlay(profile)
+		if !profile.HasTenant(tenantSlug) {
+			continue
+		}
+		row := userRowFrom(profile.ForTenant(tenantSlug))
+		// Config-sourced rows stay Editable=false so pages that only mutate the
+		// invite store (e.g. parking access) keep them read-only. The Benutzer &
+		// Rechte page opens the edit dialog for non-protected config users via
+		// adopt-on-edit (HAUSV-163).
+		row.IsConfig = true
+		if _, isBreakGlass := a.admins[email]; isBreakGlass {
+			// ADMIN_EMAILS bootstrap admins are the break-glass anchor and must
+			// never be lockable-out from the app.
+			row.Protected = true
+		}
+		rows = append(rows, row)
+		seen[email] = struct{}{}
+	}
+	for email := range a.admins {
+		if _, ok := seen[email]; ok {
+			continue
+		}
+		row := userRowFrom(userProfile{Email: email, Role: roleAdmin, Status: "Aktiv", Tenants: []string{tenantSlug}})
+		row.IsConfig = true
+		row.Protected = true
+		rows = append(rows, row)
+		seen[email] = struct{}{}
+	}
+	for email := range a.allowed {
+		if _, ok := seen[email]; ok {
+			continue
+		}
+		row := userRowFrom(userProfile{Email: email, Role: roleResident, Status: "Eingeladen", Tenants: []string{tenantSlug}})
+		row.IsConfig = true
+		rows = append(rows, row)
+		seen[email] = struct{}{}
 	}
 	if a.activityStore != nil {
 		for i := range rows {
@@ -4764,6 +4925,8 @@ func userRowFrom(p userProfile) userRow {
 		ParkingChecked:   p.HasPermission(permissionParking),
 		AuthLabel:        authMethodsLabel(p.AuthMethods),
 		AuthList:         authMethodsLabelList(p.AuthMethods),
+		EmailAuthChecked: p.AllowsAuthMethod(authMethodEmail),
+		OIDCAuthChecked:  p.AllowsAuthMethod(authMethodOIDC),
 	}
 }
 
@@ -4856,6 +5019,31 @@ func parsePermissionForm(values url.Values) []string {
 		}
 	}
 	return out
+}
+
+// parseAuthMethodForm reads the login-method checkboxes. An empty selection
+// falls back to both methods rather than persisting zero methods, so a save can
+// never leave a user with no way to sign in (HAUSV-163).
+func parseAuthMethodForm(values url.Values) []string {
+	methods, err := normalizeAuthMethods(values["auth_methods"])
+	if err != nil {
+		return defaultAuthMethods()
+	}
+	return methods
+}
+
+// adminEmails returns the set of emails that currently resolve to the Admin role
+// for the tenant, across env config and app-managed overrides. It backs the
+// last-admin / self-lockout guard so the portal can never be left adminless
+// (HAUSV-163).
+func (a *app) adminEmails(tenantSlug string) map[string]struct{} {
+	admins := map[string]struct{}{}
+	for _, row := range a.userRows(tenantSlug) {
+		if normalizeRole(row.Role) == roleAdmin {
+			admins[normalizeEmail(row.Email)] = struct{}{}
+		}
+	}
+	return admins
 }
 
 func setPermission(raw []string, permission string, enabled bool) []string {
