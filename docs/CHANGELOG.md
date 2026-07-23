@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.6] - 2026-07-23
+
+### Verbessert
+
+- **Weitere Bereiche auf die neue Datenspeicherung umgestellt.** Adressbuch/Kontakte und der Gelesen-Status von Aushängen laufen jetzt über die eingebettete Datenbank; bestehende Daten wurden verlustfrei übernommen, mit Rückfallebene. Für Nutzer ändert sich nichts.
+
 ## [0.15.5] - 2026-07-23
 
 ### Verbessert

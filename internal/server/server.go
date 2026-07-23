@@ -590,6 +590,7 @@ type (
 	notificationPrefStorage   = store.NotificationPrefStorage
 	unitPaymentStatusStorage  = store.UnitPaymentStatusStorage
 	contactBookStorage        = store.ContactBookStorage
+	announcementReadStorage   = store.AnnouncementReadStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -615,6 +616,7 @@ var newSQLProfileOverlayStore = store.NewSQLProfileOverlayStore
 var newSQLNotificationPrefStore = store.NewSQLNotificationPrefStore
 var newSQLUnitPaymentStatusStore = store.NewSQLUnitPaymentStatusStore
 var newSQLContactBookStore = store.NewSQLContactBookStore
+var newSQLAnnouncementReadStore = store.NewSQLAnnouncementReadStore
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
 var newContactBookStore = store.NewContactBookStore
 var newNotificationPrefStore = store.NewNotificationPrefStore
@@ -689,7 +691,7 @@ type app struct {
 	templates             *template.Template
 	db                    *sql.DB
 	announcementStore     *announcementStore
-	announcementReadStore *announcementReadStore
+	announcementReadStore announcementReadStorage
 	eventStore            *eventStore
 	notificationPrefs     notificationPrefStorage
 	profileOverlays       profileOverlayStorage
@@ -1142,6 +1144,7 @@ func newApp() (*app, error) {
 	var notificationBackend notificationPrefStorage = notificationPrefs
 	var unitPaymentBackend unitPaymentStatusStorage = unitPayments
 	var contactBackend contactBookStorage = contacts
+	var annReadBackend announcementReadStorage = announcementReads
 	if database != nil {
 		sqlActivity := newSQLActivityStore(database)
 		if err := sqlActivity.ImportActivity(activity); err != nil {
@@ -1173,6 +1176,12 @@ func newApp() (*app, error) {
 		} else {
 			contactBackend = sqlContacts
 		}
+		sqlAnnRead := newSQLAnnouncementReadStore(database)
+		if err := sqlAnnRead.ImportReads(announcementReads); err != nil {
+			log.Printf("announcement-read import to sqlite failed, keeping json: %v", err)
+		} else {
+			annReadBackend = sqlAnnRead
+		}
 	}
 
 	return &app{
@@ -1196,7 +1205,7 @@ func newApp() (*app, error) {
 		templates:             tmpl,
 		db:                    database,
 		announcementStore:     announcements,
-		announcementReadStore: announcementReads,
+		announcementReadStore: annReadBackend,
 		eventStore:            events,
 		notificationPrefs:     notificationBackend,
 		profileOverlays:       profileBackend,

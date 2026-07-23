@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.15.6",
+			Date:     "23. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Weitere Bereiche auf die neue Datenspeicherung umgestellt.",
+			Intro:    "Adressbuch/Kontakte und der Gelesen-Status von Aushängen laufen jetzt über die eingebettete Datenbank — verlustfrei übernommen, mit Rückfallebene.",
+			Items: []NoteItem{
+				{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."},
+			},
+		},
+		{
 			Version:  "0.15.5",
 			Date:     "23. Juli 2026",
 			Kind:     "Wartung",
