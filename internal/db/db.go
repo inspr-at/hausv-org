@@ -64,9 +64,14 @@ func migrate(sqlDB *sql.DB) error {
 	}
 	names := make([]string, 0, len(entries))
 	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".sql") {
-			names = append(names, e.Name())
+		name := e.Name()
+		// Skip dotfiles: macOS tar (bsdtar) injects AppleDouble "._name" sidecars
+		// into the build context, which go:embed would otherwise pick up as junk
+		// migrations. Belt to COPYFILE_DISABLE=1's suspenders on the deploy side.
+		if e.IsDir() || strings.HasPrefix(name, ".") || !strings.HasSuffix(name, ".sql") {
+			continue
 		}
+		names = append(names, name)
 	}
 	sort.Strings(names)
 
