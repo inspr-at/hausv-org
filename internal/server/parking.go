@@ -78,10 +78,6 @@ func chargingFlashMessage(query url.Values) (string, bool) {
 func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
 	profile := a.profileForTenant(email, tenant.Slug)
-	if !hasCapability(role, capabilityManageParking) {
-		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
-		return
-	}
 	settingsMsg, settingsOK := parkingSettingsMessage(r.URL.Query().Get("settings"))
 	chargingMsg, chargingOK := chargingSettingsMessage(r.URL.Query().Get("charging"))
 	a.render(w, "parkingSettings", map[string]any{
@@ -294,10 +290,6 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 
 func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageParking) {
-		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
-		return
-	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return

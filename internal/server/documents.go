@@ -62,10 +62,6 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageDocuments) {
-		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
 	if a.documentStore == nil {
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
 		return
@@ -115,10 +111,6 @@ func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request, ac authCtx)
 
 func (a *app) replaceDocument(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageDocuments) {
-		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
-		return
-	}
 	if a.documentStore == nil {
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
 		return

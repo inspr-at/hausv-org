@@ -800,8 +800,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/events/edit", a.action(a.editEvent))
 	mux.HandleFunc("POST /app/events/delete", a.action(a.deleteEvent))
 	mux.HandleFunc("GET /app/dokumente", a.page(a.documents))
-	mux.HandleFunc("POST /app/dokumente", a.action(a.uploadDocument))
-	mux.HandleFunc("POST /app/dokumente/replace", a.action(a.replaceDocument))
+	mux.HandleFunc("POST /app/dokumente", a.authedAction(capabilityManageDocuments, a.uploadDocument))
+	mux.HandleFunc("POST /app/dokumente/replace", a.authedAction(capabilityManageDocuments, a.replaceDocument))
 	mux.HandleFunc("GET /app/dokumente/{id}/preview", a.page(a.previewDocument))
 	mux.HandleFunc("GET /app/dokumente/{id}/download", a.page(a.downloadDocument))
 	mux.HandleFunc("GET /app/attachments/{id}", a.page(a.serveAttachment))
@@ -829,20 +829,20 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/anliegen/comment/delete", a.action(a.deleteIssueComment))
 	mux.HandleFunc("POST /app/anliegen/workflow", a.action(a.updateIssueWorkflow))
 	mux.HandleFunc("GET /app/parking", a.page(a.parking))
-	mux.HandleFunc("GET /app/parking/settings", a.page(a.parkingSettings))
+	mux.HandleFunc("GET /app/parking/settings", a.authed(capabilityManageParking, a.parkingSettings))
 	mux.HandleFunc("GET /app/parking/month/{month}", a.page(a.parkingMonth))
 	mux.HandleFunc("GET /app/parking/month/{month}/export", a.page(a.parkingMonthExport))
 	mux.HandleFunc("GET /app/parking/export/{year}", a.page(a.parkingStatement))
-	mux.HandleFunc("POST /app/parking/settings", a.action(a.updateParkingSettings))
+	mux.HandleFunc("POST /app/parking/settings", a.authedAction(capabilityManageParking, a.updateParkingSettings))
 	mux.HandleFunc("POST /app/parking/month", a.action(a.updateParkingMonth))
 	mux.HandleFunc("POST /app/parking/reminders", a.action(a.sendParkingReminders))
 	mux.HandleFunc("GET /app/parking/charging/status", a.page(a.chargingStatus))
 	mux.HandleFunc("POST /app/parking/charging/on", a.action(a.chargingOnAction))
 	mux.HandleFunc("POST /app/parking/charging/off", a.action(a.chargingOffAction))
 	mux.HandleFunc("POST /app/parking/charging/auto", a.action(a.chargingAutoAction))
-	mux.HandleFunc("POST /app/parking/charging/settings", a.action(a.updateChargingSettings))
-	mux.HandleFunc("POST /app/parking/charging/telegram/link", a.action(a.createTelegramLinkCode))
-	mux.HandleFunc("POST /app/parking/charging/telegram/unlink", a.action(a.unlinkTelegramChat))
+	mux.HandleFunc("POST /app/parking/charging/settings", a.authedAction(capabilityManageParking, a.updateChargingSettings))
+	mux.HandleFunc("POST /app/parking/charging/telegram/link", a.authedAction(capabilityManageParking, a.createTelegramLinkCode))
+	mux.HandleFunc("POST /app/parking/charging/telegram/unlink", a.authedAction(capabilityManageParking, a.unlinkTelegramChat))
 	mux.HandleFunc("GET /app/audit", a.page(a.auditLog))
 	mux.HandleFunc("GET /app/settings", a.page(a.settingsHub))
 	mux.HandleFunc("GET /app/settings/building", a.page(a.buildingSettings))
@@ -858,10 +858,10 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/notifications", a.action(a.updateNotificationSettings))
 	mux.HandleFunc("GET /app/settings/parking-access", a.page(a.parkingAccessSettings))
 	mux.HandleFunc("POST /app/settings/parking-access", a.action(a.updateParkingAccess))
-	mux.HandleFunc("GET /app/settings/users", a.page(a.userSettings))
-	mux.HandleFunc("POST /app/settings/users", a.action(a.createInvite))
-	mux.HandleFunc("POST /app/settings/users/edit", a.action(a.editInvite))
-	mux.HandleFunc("POST /app/settings/users/delete", a.action(a.deleteInvite))
+	mux.HandleFunc("GET /app/settings/users", a.authed(capabilityManageUsers, a.userSettings))
+	mux.HandleFunc("POST /app/settings/users", a.authedAction(capabilityManageUsers, a.createInvite))
+	mux.HandleFunc("POST /app/settings/users/edit", a.authedAction(capabilityManageUsers, a.editInvite))
+	mux.HandleFunc("POST /app/settings/users/delete", a.authedAction(capabilityManageUsers, a.deleteInvite))
 	mux.HandleFunc("GET /{tenant}", a.tenantPathRedirect)
 	mux.HandleFunc("GET /{tenant}/{rest...}", a.tenantPathRedirect)
 	return mux
@@ -3276,10 +3276,6 @@ func notificationPreferencesFromForm(values url.Values) notificationPreferences 
 
 func (a *app) userSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageUsers) {
-		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
-		return
-	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	users := a.userRows(tenant.Slug)
 	inviteMsg, inviteOK := inviteMessage(r.URL.Query().Get("invite"))
@@ -3367,10 +3363,6 @@ func auditChangedUserFields(before userProfile, after userProfile) []string {
 
 func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageUsers) {
-		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
-		return
-	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
@@ -3464,10 +3456,6 @@ func (a *app) redirectInvite(w http.ResponseWriter, r *http.Request, status stri
 
 func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageUsers) {
-		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
-		return
-	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
@@ -3640,10 +3628,6 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageUsers) {
-		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
-		return
-	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return

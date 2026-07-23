@@ -430,10 +430,6 @@ func (a *app) chargingAutoAction(w http.ResponseWriter, r *http.Request, ac auth
 
 func (a *app) updateChargingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageParking) {
-		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
-		return
-	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
@@ -510,10 +506,6 @@ func chargingControlFromForm(values url.Values) (chargingControlSettings, error)
 
 func (a *app) createTelegramLinkCode(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageParking) {
-		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
-		return
-	}
 	if a.telegramStore == nil {
 		http.Redirect(w, r, "/app/parking/settings?charging=tgerror", http.StatusSeeOther)
 		return
@@ -542,10 +534,6 @@ func (a *app) createTelegramLinkCode(w http.ResponseWriter, r *http.Request, ac 
 
 func (a *app) unlinkTelegramChat(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageParking) {
-		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
-		return
-	}
 	if a.telegramStore == nil {
 		http.Redirect(w, r, "/app/parking/settings?charging=tgerror", http.StatusSeeOther)
 		return

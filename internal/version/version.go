@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.15.1",
+			Date:     "23. Juli 2026",
+			Kind:     "Sicherheit",
+			Headline: "Zugriffsprüfungen zentral abgesichert.",
+			Intro:    "Die Rechteprüfung für geschützte Verwaltungsbereiche läuft jetzt an einer zentralen Stelle statt in jeder Seite einzeln.",
+			Items: []NoteItem{
+				{Label: "Robustheit", Text: "Neue geschützte Seiten erben die Rechteprüfung automatisch; sie kann nicht mehr versehentlich ausgelassen werden."},
+				{Label: "Abgesichert", Text: "Eine Rechte-Matrix im Test weist unberechtigte Zugriffe nachweislich ab."},
+			},
+		},
+		{
 			Version:  "0.15.0",
 			Date:     "23. Juli 2026",
 			Kind:     "Parkplatz",

@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.1] - 2026-07-23
+
+### Verbessert
+
+- **Zugriffsprüfungen zentral abgesichert.** Die Rechteprüfung für geschützte Verwaltungsbereiche (Benutzerverwaltung, Parkplatz- und Ladeeinstellungen, Dokument-Uploads) läuft jetzt an einer zentralen Stelle statt in jeder Seite einzeln. Das verhindert, dass eine neue Seite die Prüfung versehentlich auslässt; eine Rechte-Matrix im Test sichert es ab.
+
 ## [0.15.0] - 2026-07-23
 
 ### Neu

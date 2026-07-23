@@ -128,6 +128,43 @@ func (a *app) action(h authedHandler) http.HandlerFunc {
 	}
 }
 
+// authed wraps a GET handler with the authenticate guard AND a single required
+// capability, for routes whose only authorization is one uniform capability
+// check. Heterogeneous checks — "uploader or admin", permission-based access, or
+// a dispatcher that needs different capabilities per branch (see submitBallot) —
+// stay in the handler body on purpose (HAUSV-138).
+func (a *app) authed(cap capability, h authedHandler) http.HandlerFunc {
+	return a.page(func(w http.ResponseWriter, r *http.Request, ac authCtx) {
+		if !hasCapability(ac.role, cap) {
+			http.Error(w, capabilityForbiddenMessage(cap), http.StatusForbidden)
+			return
+		}
+		h(w, r, ac)
+	})
+}
+
+// authedAction is authed for POST: the authenticate guard, then the same-origin
+// (CSRF) check, then the capability check — the exact order the hoisted handlers
+// applied inline.
+func (a *app) authedAction(cap capability, h authedHandler) http.HandlerFunc {
+	return a.action(func(w http.ResponseWriter, r *http.Request, ac authCtx) {
+		if !hasCapability(ac.role, cap) {
+			http.Error(w, capabilityForbiddenMessage(cap), http.StatusForbidden)
+			return
+		}
+		h(w, r, ac)
+	})
+}
+
+// capabilityForbiddenMessage centralises the 403 text so the wrapper and any
+// remaining in-handler capability check read identically.
+func capabilityForbiddenMessage(cap capability) string {
+	if cap == capabilityManageDocuments {
+		return "Dieser Bereich ist der Verwaltung vorbehalten."
+	}
+	return "Dieser Bereich ist Admins vorbehalten."
+}
+
 func newRequestID() string {
 	var b [8]byte
 	if _, err := rand.Read(b[:]); err != nil {
