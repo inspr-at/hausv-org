@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.15.2",
+			Date:     "23. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Grundlage für robustere Datenspeicherung.",
+			Intro:    "Im Hintergrund entsteht eine transaktionssichere Datenhaltung; die Umstellung erfolgt schrittweise und für Nutzer unbemerkt.",
+			Items: []NoteItem{
+				{Label: "Unverändert", Text: "Bestehende Daten und Abläufe bleiben gleich; die Umstellung passiert im Hintergrund."},
+			},
+		},
+		{
 			Version:  "0.15.1",
 			Date:     "23. Juli 2026",
 			Kind:     "Sicherheit",

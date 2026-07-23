@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/hmac"
+	"database/sql"
 	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
@@ -27,6 +28,7 @@ import (
 	"github.com/markus-barta/hausv-org/internal/auth"
 	"github.com/markus-barta/hausv-org/internal/authz"
 	"github.com/markus-barta/hausv-org/internal/config"
+	"github.com/markus-barta/hausv-org/internal/db"
 	"github.com/markus-barta/hausv-org/internal/homeassistant"
 	appmail "github.com/markus-barta/hausv-org/internal/mail"
 	"github.com/markus-barta/hausv-org/internal/view"
@@ -675,6 +677,7 @@ type app struct {
 	oidcFlows             *oidcFlowStore
 	mailer                mailer
 	templates             *template.Template
+	db                    *sql.DB
 	announcementStore     *announcementStore
 	announcementReadStore *announcementReadStore
 	eventStore            *eventStore
@@ -1103,6 +1106,20 @@ func newApp() (*app, error) {
 		return nil, err
 	}
 
+	// SQLite lives beside the JSON stores in the bind-mount. It runs its
+	// migrations on boot; no store reads from it yet — this is the foundation the
+	// JSON stores migrate onto (HAUSV-166/167). In production DB_PATH points at
+	// the /data bind-mount; the tmp default keeps local dev self-contained.
+	//
+	// Non-fatal ON PURPOSE while unused: a failure here (e.g. a not-yet-writable
+	// path before compose sets DB_PATH into /data) must not brick boot. This
+	// becomes fatal the moment a store reads from SQLite (HAUSV-170).
+	database, err := db.Open(env("DB_PATH", "tmp/hausv.db"))
+	if err != nil {
+		log.Printf("sqlite unavailable, continuing without it (no store depends on it yet): %v", err)
+		database = nil
+	}
+
 	return &app{
 		baseURL:               baseURL,
 		addr:                  env("ADDR", ":8080"),
@@ -1122,6 +1139,7 @@ func newApp() (*app, error) {
 		oidcFlows:             auth.NewOIDCFlowStore(),
 		mailer:                mailTransport,
 		templates:             tmpl,
+		db:                    database,
 		announcementStore:     announcements,
 		announcementReadStore: announcementReads,
 		eventStore:            events,
@@ -5144,6 +5162,15 @@ func (a *app) Handler() http.Handler { return a.handler() }
 
 // Addr is the listen address.
 func (a *app) Addr() string { return a.addr }
+
+// Close releases process-lifetime resources. Currently the SQLite handle; the
+// JSON stores hold no OS handles between writes.
+func (a *app) Close() error {
+	if a.db != nil {
+		return a.db.Close()
+	}
+	return nil
+}
 
 // RunHealthcheck is the container health probe.
 func RunHealthcheck(target string) error { return runHealthcheck(target) }

@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.2] - 2026-07-23
+
+### Verbessert
+
+- **Grundlage für robustere Datenspeicherung.** Im Hintergrund wurde die Basis für eine transaktionssichere Datenhaltung (eingebettete Datenbank) gelegt. Für Nutzer ändert sich nichts; bestehende Daten und Abläufe bleiben unverändert.
+
 ## [0.15.1] - 2026-07-23
 
 ### Verbessert
