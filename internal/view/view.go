@@ -1724,6 +1724,7 @@ type UserRow struct {
 	Editable           bool
 	IsConfig           bool
 	Protected          bool
+	Deactivated        bool
 	LastSeen           string
 }
 

@@ -35,6 +35,10 @@ type UserProfile struct {
 	// must never escalate an env user (HAUSV-135 anti-escalation, HAUSV-163
 	// adopt-on-edit).
 	Adopted bool `json:"adopted,omitempty"`
+	// Deactivated suspends a user without deleting their record: they can no
+	// longer sign in via any method. Break-glass ADMIN_EMAILS admins are exempt
+	// (they always retain login) (HAUSV-163).
+	Deactivated bool `json:"deactivated,omitempty"`
 }
 
 type TenantMembership struct {

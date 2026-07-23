@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.14.0] - 2026-07-23
+
+### Neu
+
+- **Zugänge deaktivieren statt löschen.** Ein Zugang kann jetzt vorübergehend gesperrt werden, ohne ihn zu entfernen: Die Anmeldung ist blockiert, der Eintrag samt Rechten und Verlauf bleibt erhalten und lässt sich jederzeit wieder aktivieren. Der Notfall-Admin bleibt geschützt, und niemand kann sich selbst aussperren.
+
 ## [0.13.0] - 2026-07-23
 
 ### Neu

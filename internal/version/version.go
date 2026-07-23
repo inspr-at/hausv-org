@@ -91,6 +91,29 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.14.0",
+			Date:     "23. Juli 2026",
+			Kind:     "Verwaltung",
+			Headline: "Zugänge vorübergehend sperren.",
+			Intro:    "Ein Zugang lässt sich jetzt deaktivieren, ohne ihn zu löschen — die Anmeldung ist gesperrt, der Eintrag bleibt erhalten.",
+			Items: []NoteItem{
+				{Label: "Reversibel", Text: "Deaktivierte Zugänge lassen sich jederzeit wieder aktivieren; Rechte und Verlauf bleiben erhalten."},
+				{Label: "Sicherheit", Text: "Man kann sich nicht selbst sperren, und der Notfall-Admin bleibt jederzeit anmeldefähig."},
+			},
+		},
+		{
+			Version:  "0.13.0",
+			Date:     "23. Juli 2026",
+			Kind:     "Verwaltung",
+			Headline: "Benutzer & Rechte direkt in der App.",
+			Intro:    "Zugänge, die bisher fest in der Konfiguration hinterlegt waren, lassen sich jetzt im Portal bearbeiten — ohne neue Auslieferung.",
+			Items: []NoteItem{
+				{Label: "Bearbeiten", Text: "Rolle, Sonderrechte und Anmeldeweg eines Zugangs wirken sofort."},
+				{Label: "Anmeldung", Text: "Pro Person wählbar: Anmeldung per E-Mail-Link, über Zitadel-SSO oder auf beiden Wegen."},
+				{Label: "Sicherheit", Text: "Die letzte Administrator-Rolle bleibt geschützt; ein Aussperren der eigenen Verwaltung ist ausgeschlossen."},
+			},
+		},
+		{
 			Version:  "0.12.2",
 			Date:     "19. Juli 2026",
 			Kind:     "Zahlungen",

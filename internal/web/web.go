@@ -4388,6 +4388,7 @@ const PageTemplates = `
       .users .pill.role-service { background: rgba(150,40,40,.08); color: #8c3434; border-color: rgba(150,40,40,.2); }
       .users .pill.status-active { background: rgba(47,107,74,.12); color: var(--leaf); }
       .users .pill.status-pending { background: rgba(200,153,63,.14); color: #93701d; }
+      .users .pill.status-off { background: rgba(150,40,40,.10); color: #8c3434; }
       .users .last-seen { display: block; color: var(--soft); font-size: 11.5px; margin-top: 5px; white-space: nowrap; }
       .users th.col-role, .users td.col-role, .users th.col-status, .users td.col-status { white-space: nowrap; }
       .users .th-label { display: inline-flex; align-items: center; gap: 6px; }
@@ -4571,7 +4572,7 @@ const PageTemplates = `
               <td class="col-role" data-label="Rolle"><span class="pill {{.RoleClass}}"><span class="dot"></span>{{.Role}}</span><div class="role-caps">{{range .RoleCapabilities}}<span class="role-cap">{{.}}</span>{{end}}</div></td>
               <td data-label="Rechte"><div class="chips">{{range .PermissionList}}<span class="chip{{if eq . "Standard"}} plain{{end}}">{{.}}</span>{{end}}</div></td>
               <td data-label="Anmeldung"><div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div></td>
-              <td class="col-status" data-label="Status"><span class="pill {{if eq .Status "Aktiv"}}status-active{{else}}status-pending{{end}}"><span class="dot"></span>{{.Status}}</span>{{if .LastSeen}}<span class="last-seen">{{.LastSeen}}</span>{{end}}</td>
+              <td class="col-status" data-label="Status"><span class="pill {{if eq .Status "Aktiv"}}status-active{{else if eq .Status "Deaktiviert"}}status-off{{else}}status-pending{{end}}"><span class="dot"></span>{{.Status}}</span>{{if .LastSeen}}<span class="last-seen">{{.LastSeen}}</span>{{end}}</td>
 	              <td class="col-actions" data-label="">
 	                {{if or .Editable (and .IsConfig (not .Protected))}}
 	                {{if and (not $.ServiceProviderAccessEnabled) (eq .Role "Dienstleister")}}
@@ -4609,6 +4610,12 @@ const PageTemplates = `
                       <div class="permission-grid">
                         <label class="permission-check"><input type="checkbox" name="auth_methods" value="email"{{if .EmailAuthChecked}} checked{{end}}><strong>E-Mail-Link</strong><span>Anmeldung per Magic-Link an die E-Mail-Adresse.</span></label>
                         <label class="permission-check"><input type="checkbox" name="auth_methods" value="oidc"{{if .OIDCAuthChecked}} checked{{end}}><strong>Zitadel SSO</strong><span>Anmeldung über den Single-Sign-On-Anbieter (Zitadel).</span></label>
+                      </div>
+                    </fieldset>
+                    <fieldset class="permission-fieldset f-permissions">
+                      <legend>Status</legend>
+                      <div class="permission-grid">
+                        <label class="permission-check"><input type="checkbox" name="deactivated" value="1"{{if .Deactivated}} checked{{end}}><strong>Zugang deaktiviert</strong><span>Anmeldung gesperrt. Der Eintrag bleibt erhalten und kann wieder aktiviert werden.</span></label>
                       </div>
                     </fieldset>
                     <button type="submit">Speichern</button>

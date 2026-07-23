@@ -3301,6 +3301,9 @@ func auditChangedUserFields(before userProfile, after userProfile) []string {
 	if strings.Join(beforeAuth, ",") != strings.Join(afterAuth, ",") {
 		changed = append(changed, "Anmeldung")
 	}
+	if before.Deactivated != after.Deactivated {
+		changed = append(changed, "Aktivierung")
+	}
 	if len(changed) == 0 {
 		changed = append(changed, "Metadaten")
 	}
@@ -3484,13 +3487,19 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 
-	// Last-admin / self-lockout guard: refuse to strip the final Admin role, or to
-	// let an admin demote themselves out of the portal (HAUSV-163).
-	if normalizeRole(effectiveProfile.Role) == roleAdmin && newRole != roleAdmin {
-		if orig == normalizeEmail(actorEmail) {
-			a.redirectInvite(w, r, "self_lockout")
-			return
-		}
+	newDeactivated := r.FormValue("deactivated") != ""
+	wasAdmin := normalizeRole(effectiveProfile.Role) == roleAdmin
+	self := orig == normalizeEmail(actorEmail)
+
+	// Self-lockout: an admin cannot demote themselves, and nobody can deactivate
+	// their own account mid-session (HAUSV-163).
+	if self && ((wasAdmin && newRole != roleAdmin) || (newDeactivated && !effectiveProfile.Deactivated)) {
+		a.redirectInvite(w, r, "self_lockout")
+		return
+	}
+	// Last-admin guard: never let the final active admin lose admin access, whether
+	// by demotion or deactivation.
+	if wasAdmin && (newRole != roleAdmin || newDeactivated) {
 		remaining := a.adminEmails(tenant.Slug)
 		delete(remaining, orig)
 		if len(remaining) == 0 {
@@ -3513,6 +3522,7 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	updated.Role = newRole
 	updated.Permissions = parsePermissionForm(r.Form)
 	updated.AuthMethods = parseAuthMethodForm(r.Form)
+	updated.Deactivated = newDeactivated
 	if len(updated.Tenants) == 0 {
 		updated.Tenants = []string{tenant.Slug}
 	}
@@ -3986,6 +3996,9 @@ func (a *app) isAllowed(email string, tenantSlug string) bool {
 		return true
 	}
 	if profile, ok := a.directoryProfile(email); ok && profile.HasTenant(tenantSlug) {
+		if profile.Deactivated {
+			return false
+		}
 		if !a.serviceAccessEnabled && isServiceProviderRole(profile.ForTenant(tenantSlug).Role) {
 			return false
 		}
@@ -4003,6 +4016,13 @@ func (a *app) isAuthMethodAllowed(email string, tenantSlug string, authMethod st
 	profile, ok := a.directoryProfile(email)
 	if !ok || !profile.HasTenant(tenantSlug) {
 		return false
+	}
+	if profile.Deactivated {
+		// Break-glass ADMIN_EMAILS admins can never be deactivated in-app, but
+		// exempt them here too so a manual/legacy override can't strand recovery.
+		if _, isBreakGlass := a.admins[normalizeEmail(email)]; !isBreakGlass {
+			return false
+		}
 	}
 	return profile.AllowsAuthMethod(authMethod)
 }
@@ -4129,6 +4149,12 @@ func (a *app) userRows(tenantSlug string) []userRow {
 			} else if rows[i].Status == "Eingeladen" {
 				rows[i].LastSeen = "noch nie angemeldet"
 			}
+		}
+	}
+	// Deactivation wins over the activity-derived status.
+	for i := range rows {
+		if rows[i].Deactivated {
+			rows[i].Status = "Deaktiviert"
 		}
 	}
 	sort.Slice(rows, func(i, j int) bool {
@@ -4927,6 +4953,7 @@ func userRowFrom(p userProfile) userRow {
 		AuthList:         authMethodsLabelList(p.AuthMethods),
 		EmailAuthChecked: p.AllowsAuthMethod(authMethodEmail),
 		OIDCAuthChecked:  p.AllowsAuthMethod(authMethodOIDC),
+		Deactivated:      p.Deactivated,
 	}
 }
 
@@ -5039,6 +5066,9 @@ func parseAuthMethodForm(values url.Values) []string {
 func (a *app) adminEmails(tenantSlug string) map[string]struct{} {
 	admins := map[string]struct{}{}
 	for _, row := range a.userRows(tenantSlug) {
+		if row.Deactivated {
+			continue
+		}
 		if normalizeRole(row.Role) == roleAdmin {
 			admins[normalizeEmail(row.Email)] = struct{}{}
 		}
