@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.5] - 2026-07-23
+
+### Verbessert
+
+- **Zahlungsstatus auf die neue Datenspeicherung umgestellt.** Der manuelle Zahlungsstatus je Einheit läuft jetzt über die eingebettete Datenbank; bestehende Angaben wurden verlustfrei übernommen, mit Rückfallebene. Für Nutzer ändert sich nichts.
+
 ## [0.15.4] - 2026-07-23
 
 ### Verbessert

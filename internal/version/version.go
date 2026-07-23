@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.15.5",
+			Date:     "23. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Zahlungsstatus auf die neue Datenspeicherung umgestellt.",
+			Intro:    "Der manuelle Zahlungsstatus je Einheit läuft jetzt über die eingebettete Datenbank — verlustfrei übernommen, mit Rückfallebene.",
+			Items: []NoteItem{
+				{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."},
+			},
+		},
+		{
 			Version:  "0.15.4",
 			Date:     "23. Juli 2026",
 			Kind:     "Wartung",
