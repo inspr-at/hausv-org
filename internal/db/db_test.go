@@ -25,13 +25,14 @@ func TestOpenRunsBaselineMigration(t *testing.T) {
 		t.Fatalf("value = %q, want baseline", got)
 	}
 
-	// The migration is recorded exactly once.
-	var count int
-	if err := database.QueryRow("SELECT COUNT(*) FROM schema_migrations").Scan(&count); err != nil {
-		t.Fatalf("count migrations: %v", err)
+	// The baseline migration is recorded exactly once (robust to later
+	// migrations being added over time).
+	var baseline int
+	if err := database.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE version = '0001_baseline.sql'").Scan(&baseline); err != nil {
+		t.Fatalf("count baseline: %v", err)
 	}
-	if count != 1 {
-		t.Fatalf("recorded migrations = %d, want 1", count)
+	if baseline != 1 {
+		t.Fatalf("baseline recorded %d times, want 1", baseline)
 	}
 }
 
@@ -55,12 +56,14 @@ func TestOpenIsIdempotent(t *testing.T) {
 	}
 	defer second.Close()
 
-	var migrations int
-	if err := second.QueryRow("SELECT COUNT(*) FROM schema_migrations").Scan(&migrations); err != nil {
-		t.Fatalf("count migrations: %v", err)
+	// Reopening must not duplicate any migration row (idempotent), regardless of
+	// how many migrations exist.
+	var maxPerVersion int
+	if err := second.QueryRow("SELECT COALESCE(MAX(c), 0) FROM (SELECT COUNT(*) c FROM schema_migrations GROUP BY version)").Scan(&maxPerVersion); err != nil {
+		t.Fatalf("duplicate check: %v", err)
 	}
-	if migrations != 1 {
-		t.Fatalf("migrations after reopen = %d, want 1 (idempotent)", migrations)
+	if maxPerVersion != 1 {
+		t.Fatalf("a migration was applied more than once after reopen (max %d)", maxPerVersion)
 	}
 	var value string
 	if err := second.QueryRow("SELECT value FROM app_meta WHERE key = 'k'").Scan(&value); err != nil || value != "v" {
