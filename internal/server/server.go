@@ -591,6 +591,7 @@ type (
 	unitPaymentStatusStorage  = store.UnitPaymentStatusStorage
 	contactBookStorage        = store.ContactBookStorage
 	announcementReadStorage   = store.AnnouncementReadStorage
+	announcementStorage       = store.AnnouncementStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -617,6 +618,7 @@ var newSQLNotificationPrefStore = store.NewSQLNotificationPrefStore
 var newSQLUnitPaymentStatusStore = store.NewSQLUnitPaymentStatusStore
 var newSQLContactBookStore = store.NewSQLContactBookStore
 var newSQLAnnouncementReadStore = store.NewSQLAnnouncementReadStore
+var newSQLAnnouncementStore = store.NewSQLAnnouncementStore
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
 var newContactBookStore = store.NewContactBookStore
 var newNotificationPrefStore = store.NewNotificationPrefStore
@@ -690,7 +692,7 @@ type app struct {
 	mailer                mailer
 	templates             *template.Template
 	db                    *sql.DB
-	announcementStore     *announcementStore
+	announcementStore     announcementStorage
 	announcementReadStore announcementReadStorage
 	eventStore            *eventStore
 	notificationPrefs     notificationPrefStorage
@@ -1145,6 +1147,7 @@ func newApp() (*app, error) {
 	var unitPaymentBackend unitPaymentStatusStorage = unitPayments
 	var contactBackend contactBookStorage = contacts
 	var annReadBackend announcementReadStorage = announcementReads
+	var annBackend announcementStorage = announcements
 	if database != nil {
 		sqlActivity := newSQLActivityStore(database)
 		if err := sqlActivity.ImportActivity(activity); err != nil {
@@ -1182,6 +1185,12 @@ func newApp() (*app, error) {
 		} else {
 			annReadBackend = sqlAnnRead
 		}
+		sqlAnn := newSQLAnnouncementStore(database)
+		if err := sqlAnn.ImportAnnouncements(announcements); err != nil {
+			log.Printf("announcement import to sqlite failed, keeping json: %v", err)
+		} else {
+			annBackend = sqlAnn
+		}
 	}
 
 	return &app{
@@ -1204,7 +1213,7 @@ func newApp() (*app, error) {
 		mailer:                mailTransport,
 		templates:             tmpl,
 		db:                    database,
-		announcementStore:     announcements,
+		announcementStore:     annBackend,
 		announcementReadStore: annReadBackend,
 		eventStore:            events,
 		notificationPrefs:     notificationBackend,

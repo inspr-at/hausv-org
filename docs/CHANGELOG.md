@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.7] - 2026-07-23
+
+### Verbessert
+
+- **Aushänge auf die neue Datenspeicherung umgestellt.** Aushänge und Hausjournal laufen jetzt über die eingebettete Datenbank; bestehende Einträge wurden verlustfrei übernommen, mit Rückfallebene. Für Nutzer ändert sich nichts.
+
 ## [0.15.6] - 2026-07-23
 
 ### Verbessert
