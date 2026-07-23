@@ -589,6 +589,7 @@ type (
 	profileOverlayStorage     = store.ProfileOverlayStorage
 	notificationPrefStorage   = store.NotificationPrefStorage
 	unitPaymentStatusStorage  = store.UnitPaymentStatusStorage
+	contactBookStorage        = store.ContactBookStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -613,6 +614,7 @@ var newSQLActivityStore = store.NewSQLActivityStore
 var newSQLProfileOverlayStore = store.NewSQLProfileOverlayStore
 var newSQLNotificationPrefStore = store.NewSQLNotificationPrefStore
 var newSQLUnitPaymentStatusStore = store.NewSQLUnitPaymentStatusStore
+var newSQLContactBookStore = store.NewSQLContactBookStore
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
 var newContactBookStore = store.NewContactBookStore
 var newNotificationPrefStore = store.NewNotificationPrefStore
@@ -699,7 +701,7 @@ type app struct {
 	unitPaymentStore      unitPaymentStatusStorage
 	issueStore            *issueStore
 	attachmentStore       *attachmentStore
-	contactStore          *contactBookStore
+	contactStore          contactBookStorage
 	auditStore            *auditStore
 	documentStore         *documentStore
 	handoverStore         *handoverStore
@@ -1139,6 +1141,7 @@ func newApp() (*app, error) {
 	var profileBackend profileOverlayStorage = profileOverlays
 	var notificationBackend notificationPrefStorage = notificationPrefs
 	var unitPaymentBackend unitPaymentStatusStorage = unitPayments
+	var contactBackend contactBookStorage = contacts
 	if database != nil {
 		sqlActivity := newSQLActivityStore(database)
 		if err := sqlActivity.ImportActivity(activity); err != nil {
@@ -1163,6 +1166,12 @@ func newApp() (*app, error) {
 			log.Printf("unit-payment-status import to sqlite failed, keeping json: %v", err)
 		} else {
 			unitPaymentBackend = sqlUnitPayment
+		}
+		sqlContacts := newSQLContactBookStore(database)
+		if err := sqlContacts.ImportContacts(contacts); err != nil {
+			log.Printf("contact import to sqlite failed, keeping json: %v", err)
+		} else {
+			contactBackend = sqlContacts
 		}
 	}
 
@@ -1199,7 +1208,7 @@ func newApp() (*app, error) {
 		unitPaymentStore:      unitPaymentBackend,
 		issueStore:            issues,
 		attachmentStore:       attachments,
-		contactStore:          contacts,
+		contactStore:          contactBackend,
 		auditStore:            auditStore,
 		documentStore:         documents,
 		handoverStore:         handovers,
