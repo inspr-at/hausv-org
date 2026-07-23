@@ -91,12 +91,20 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.15.8",
+			Date:     "23. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Termine auf die neue Datenspeicherung umgestellt.",
+			Intro:    "Termine und Kalender laufen jetzt über die eingebettete Datenbank — verlustfrei übernommen, mit Rückfallebene.",
+			Items: []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
+		},
+		{
 			Version:  "0.15.7",
 			Date:     "23. Juli 2026",
 			Kind:     "Wartung",
 			Headline: "Aushänge auf die neue Datenspeicherung umgestellt.",
 			Intro:    "Aushänge und Hausjournal laufen jetzt über die eingebettete Datenbank — verlustfrei übernommen, mit Rückfallebene.",
-			Items: []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
+			Items:    []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
 		},
 		{
 			Version:  "0.15.6",

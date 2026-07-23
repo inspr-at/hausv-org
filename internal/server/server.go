@@ -592,6 +592,7 @@ type (
 	contactBookStorage        = store.ContactBookStorage
 	announcementReadStorage   = store.AnnouncementReadStorage
 	announcementStorage       = store.AnnouncementStorage
+	eventStorage              = store.EventStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -619,6 +620,7 @@ var newSQLUnitPaymentStatusStore = store.NewSQLUnitPaymentStatusStore
 var newSQLContactBookStore = store.NewSQLContactBookStore
 var newSQLAnnouncementReadStore = store.NewSQLAnnouncementReadStore
 var newSQLAnnouncementStore = store.NewSQLAnnouncementStore
+var newSQLEventStore = store.NewSQLEventStore
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
 var newContactBookStore = store.NewContactBookStore
 var newNotificationPrefStore = store.NewNotificationPrefStore
@@ -694,7 +696,7 @@ type app struct {
 	db                    *sql.DB
 	announcementStore     announcementStorage
 	announcementReadStore announcementReadStorage
-	eventStore            *eventStore
+	eventStore            eventStorage
 	notificationPrefs     notificationPrefStorage
 	profileOverlays       profileOverlayStorage
 	tenantOverrides       *tenantOverrideStore
@@ -1148,6 +1150,7 @@ func newApp() (*app, error) {
 	var contactBackend contactBookStorage = contacts
 	var annReadBackend announcementReadStorage = announcementReads
 	var annBackend announcementStorage = announcements
+	var eventBackend eventStorage = events
 	if database != nil {
 		sqlActivity := newSQLActivityStore(database)
 		if err := sqlActivity.ImportActivity(activity); err != nil {
@@ -1191,6 +1194,12 @@ func newApp() (*app, error) {
 		} else {
 			annBackend = sqlAnn
 		}
+		sqlEvent := newSQLEventStore(database)
+		if err := sqlEvent.ImportEvents(events); err != nil {
+			log.Printf("event import to sqlite failed, keeping json: %v", err)
+		} else {
+			eventBackend = sqlEvent
+		}
 	}
 
 	return &app{
@@ -1215,7 +1224,7 @@ func newApp() (*app, error) {
 		db:                    database,
 		announcementStore:     annBackend,
 		announcementReadStore: annReadBackend,
-		eventStore:            events,
+		eventStore:            eventBackend,
 		notificationPrefs:     notificationBackend,
 		profileOverlays:       profileBackend,
 		tenantOverrides:       tenantOverrides,
