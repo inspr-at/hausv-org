@@ -269,3 +269,63 @@ func (s *SQLAttachmentStore) ImportAttachments(src *AttachmentStore) error {
 	}
 	return nil
 }
+
+// AttachmentTombstoneRetention is how long a soft-deleted attachment record is
+// kept after its files are gone. The record itself carries no content — the
+// files are hard-deleted at delete time — so it exists only to make the row's
+// former presence explainable. The audit log is the durable record of the
+// deletion, so purging the tombstone loses nothing (HAUSV-146).
+//
+// Generous on purpose: at WEG scale this bounds an already tiny table rather
+// than reclaiming meaningful space.
+const AttachmentTombstoneRetention = 365 * 24 * time.Hour
+
+// PurgeDeletedBefore removes soft-deleted attachment records whose deletion is
+// older than cutoff, so the table cannot grow without bound (HAUSV-146).
+// Live attachments are never touched.
+func (s *SQLAttachmentStore) PurgeDeletedBefore(cutoff time.Time) (int, error) {
+	if s == nil {
+		return 0, nil
+	}
+	rows, err := s.db.Query(`SELECT tenant_slug, id, data FROM attachments`)
+	if err != nil {
+		return 0, err
+	}
+	type key struct{ tenant, id string }
+	stale := []key{}
+	for rows.Next() {
+		var k key
+		var data string
+		if err := rows.Scan(&k.tenant, &k.id, &data); err != nil {
+			continue
+		}
+		var item AttachmentRecord
+		if err := json.Unmarshal([]byte(data), &item); err != nil {
+			continue
+		}
+		// Only tombstones, and only ones older than the cutoff.
+		if item.DeletedAt == nil || !item.DeletedAt.Before(cutoff) {
+			continue
+		}
+		stale = append(stale, k)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	for _, k := range stale {
+		if _, err := tx.Exec(`DELETE FROM attachments WHERE tenant_slug=? AND id=?`, k.tenant, k.id); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(stale), nil
+}

@@ -33,6 +33,14 @@ var (
 
 // SQLDocumentStore keeps each document's metadata as a JSON document keyed by
 // (tenant, id); the file itself stays on disk. Table from migration 0011.
+//
+// Retention (HAUSV-146): superseded versions and their files are kept
+// DELIBERATELY and indefinitely. The version history is the feature — a WEG must
+// be able to show which Hausordnung was in force when — so there is no pruning
+// policy here on purpose. Growth is bounded in practice by how often a document
+// is actually replaced, which at WEG scale is a handful of times per document
+// per decade. If that ever changes, prune by SeriesID keeping the current
+// version plus the N most recent, rather than by age.
 type SQLDocumentStore struct {
 	db      *sql.DB
 	fileDir string

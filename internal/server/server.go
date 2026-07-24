@@ -1231,6 +1231,15 @@ func newApp() (*app, error) {
 	var issueBackend issueStorage = sqlIssues
 	var inviteBackend profileStorage = identity
 
+	// Bound the one table that would otherwise grow monotonically: soft-deleted
+	// attachment records whose files are long gone (HAUSV-146). The audit log is
+	// the durable record of a deletion, so dropping the tombstone loses nothing.
+	if n, err := sqlAttachment.PurgeDeletedBefore(time.Now().Add(-store.AttachmentTombstoneRetention)); err != nil {
+		log.Printf("attachment tombstone purge failed: %v", err)
+	} else if n > 0 {
+		log.Printf("purged %d expired attachment tombstone(s)", n)
+	}
+
 	// One-off: move legacy issue photos (ResidentIssue.PhotoPaths, written by the
 	// long-removed SavePhoto) into the attachment store (HAUSV-175). Idempotent —
 	// clearing the field is what marks an issue done — so it becomes a no-op once

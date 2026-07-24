@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.17.7] - 2026-07-24
+
+### Verbessert
+
+- **Datenbestand bleibt dauerhaft überschaubar.** Von gelöschten Anhängen blieb bisher dauerhaft ein leerer Verweis zurück. Diese Reste werden ein Jahr nach der Löschung endgültig entfernt — die Löschung selbst bleibt im Protokoll nachvollziehbar. Bestehende Anhänge und der Versionsverlauf von Dokumenten bleiben unverändert erhalten.
+
 ## [0.17.6] - 2026-07-24
 
 ### Verbessert

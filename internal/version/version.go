@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.17.7",
+			Date:     "24. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Datenbestand bleibt dauerhaft überschaubar.",
+			Intro:    "Reste gelöschter Anhänge werden nach einem Jahr endgültig aufgeräumt.",
+			Items:    []NoteItem{{Label: "Unverändert", Text: "Bestehende Anhänge und der Versionsverlauf von Dokumenten bleiben erhalten."}},
+		},
+		{
 			Version:  "0.17.6",
 			Date:     "24. Juli 2026",
 			Kind:     "Wartung",
