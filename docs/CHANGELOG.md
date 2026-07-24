@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.9] - 2026-07-24
+
+### Verbessert
+
+- **Wohnungsübergaben auf die neue Datenspeicherung umgestellt.** Übergabeprotokolle (Ein-/Auszug, Bestätigungen, abgelegte PDFs) laufen jetzt über die eingebettete Datenbank; bestehende Protokolle wurden verlustfrei übernommen, mit Rückfallebene. Für Nutzer ändert sich nichts.
+
 ## [0.15.8] - 2026-07-23
 
 ### Verbessert

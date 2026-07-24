@@ -593,6 +593,7 @@ type (
 	announcementReadStorage   = store.AnnouncementReadStorage
 	announcementStorage       = store.AnnouncementStorage
 	eventStorage              = store.EventStorage
+	handoverStorage           = store.HandoverStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -621,6 +622,7 @@ var newSQLContactBookStore = store.NewSQLContactBookStore
 var newSQLAnnouncementReadStore = store.NewSQLAnnouncementReadStore
 var newSQLAnnouncementStore = store.NewSQLAnnouncementStore
 var newSQLEventStore = store.NewSQLEventStore
+var newSQLHandoverStore = store.NewSQLHandoverStore
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
 var newContactBookStore = store.NewContactBookStore
 var newNotificationPrefStore = store.NewNotificationPrefStore
@@ -710,7 +712,7 @@ type app struct {
 	contactStore          contactBookStorage
 	auditStore            *auditStore
 	documentStore         *documentStore
-	handoverStore         *handoverStore
+	handoverStore         handoverStorage
 	voteStore             *voteStore
 	voteReminderInterval  time.Duration
 	parkingStore          *parkingStore
@@ -1151,6 +1153,7 @@ func newApp() (*app, error) {
 	var annReadBackend announcementReadStorage = announcementReads
 	var annBackend announcementStorage = announcements
 	var eventBackend eventStorage = events
+	var handoverBackend handoverStorage = handovers
 	if database != nil {
 		sqlActivity := newSQLActivityStore(database)
 		if err := sqlActivity.ImportActivity(activity); err != nil {
@@ -1200,6 +1203,12 @@ func newApp() (*app, error) {
 		} else {
 			eventBackend = sqlEvent
 		}
+		sqlHandover := newSQLHandoverStore(database)
+		if err := sqlHandover.ImportHandovers(handovers); err != nil {
+			log.Printf("handover import to sqlite failed, keeping json: %v", err)
+		} else {
+			handoverBackend = sqlHandover
+		}
 	}
 
 	return &app{
@@ -1238,7 +1247,7 @@ func newApp() (*app, error) {
 		contactStore:          contactBackend,
 		auditStore:            auditStore,
 		documentStore:         documents,
-		handoverStore:         handovers,
+		handoverStore:         handoverBackend,
 		voteStore:             votes,
 		voteReminderInterval:  voteReminderInterval,
 		parkingStore:          parkingStore,

@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.15.9",
+			Date:     "24. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Wohnungsübergaben auf die neue Datenspeicherung umgestellt.",
+			Intro:    "Übergabeprotokolle (Ein-/Auszug) laufen jetzt über die eingebettete Datenbank — verlustfrei übernommen, mit Rückfallebene.",
+			Items: []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
+		},
+		{
 			Version:  "0.15.8",
 			Date:     "23. Juli 2026",
 			Kind:     "Wartung",
