@@ -50,9 +50,9 @@ if test (count (git status --porcelain)) -gt 0
     exit 1
 end
 
-set -l version (string trim (cat VERSION))
+set -l app_version (string trim (cat VERSION))
 set -l commit (git rev-parse --short HEAD)
-test -n "$version"; or begin
+test -n "$app_version"; or begin
     echo "refusing to deploy: VERSION is empty" >&2
     exit 1
 end
@@ -61,17 +61,17 @@ end
 set -l page (curl -sf --max-time 10 $live_url | string collect)
 set -l live (string match -rg '([0-9]+\.[0-9]+\.[0-9]+) \([0-9a-f]{7}\)' -- $page | head -1)
 if test -n "$live"
-    echo "live now: $live — deploying: $version ($commit)"
-    if test "$live" = "$version" -a $allow_same -eq 0
-        echo "refusing to deploy: VERSION $version is already live; bump VERSION first (or pass --allow-same-version)" >&2
+    echo "live now: $live — deploying: $app_version ($commit)"
+    if test "$live" = "$app_version" -a $allow_same -eq 0
+        echo "refusing to deploy: VERSION $app_version is already live; bump VERSION first (or pass --allow-same-version)" >&2
         exit 1
     end
 else
-    echo "could not read the live version (continuing) — deploying: $version ($commit)"
+    echo "could not read the live version (continuing) — deploying: $app_version ($commit)"
 end
 
 if test $dry_run -eq 1
-    echo "[dry-run] would deploy $version ($commit) to $ssh_host:$ssh_port -> $image"
+    echo "[dry-run] would deploy $app_version ($commit) to $ssh_host:$ssh_port -> $image"
     exit 0
 end
 
@@ -85,7 +85,7 @@ end
 echo "building and deploying…"
 git archive --format=tar HEAD | ssh -p $ssh_port $ssh_host "
     rm -rf $build_dir && mkdir -p $build_dir && cd $build_dir && tar -x \
-    && docker build --build-arg APP_VERSION=$version --build-arg GIT_COMMIT=$commit -t $image . \
+    && docker build --build-arg APP_VERSION=$app_version --build-arg GIT_COMMIT=$commit -t $image . \
     && cd $compose_dir && docker compose up -d --no-deps $service \
     && rm -rf $build_dir"
 or begin
@@ -101,10 +101,10 @@ ssh -p $ssh_port $ssh_host "docker logs $service --since 2m 2>&1 | grep -iE 'sql
 
 set -l after (curl -sf --max-time 15 $live_url | string collect)
 set -l deployed (string match -rg '([0-9]+\.[0-9]+\.[0-9]+ \([0-9a-f]{7}\))' -- $after | head -1)
-if test "$deployed" = "$version ($commit)"
+if test "$deployed" = "$app_version ($commit)"
     echo "live version: $deployed ✓"
 else
-    echo "WARNING: live version reads '$deployed', expected '$version ($commit)'" >&2
+    echo "WARNING: live version reads '$deployed', expected '$app_version ($commit)'" >&2
 end
 
 echo ""
