@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -105,11 +106,29 @@ func (s *SQLIdentityStore) Add(profile UserProfile) (bool, error) {
 	return true, nil
 }
 
-// writeProfile upserts the person and reconciles their memberships to exactly
-// the houses named by the profile. Used by the whole-profile paths (Add/Update/
-// Mutate); the house-scoped paths never call it.
+// writeProfile upserts the person and reconciles their memberships in ONE
+// transaction: an invitation creates person AND membership atomically, so a
+// failure can never leave a person stranded without the house they were invited
+// to (HAUSV-172). Used by the whole-profile paths (Add/Update/Mutate); the
+// house-scoped paths never call it.
 func (s *SQLIdentityStore) writeProfile(profile UserProfile, at time.Time) error {
-	person, err := s.UpsertPerson(Person{
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := s.writeProfileTx(tx, profile, at); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *SQLIdentityStore) writeProfileTx(tx *sql.Tx, profile UserProfile, at time.Time) error {
+	if at.IsZero() {
+		at = time.Now()
+	}
+	at = at.UTC()
+	person, err := s.upsertPersonTx(tx, Person{
 		Email:       profile.Email,
 		Title:       profile.Title,
 		FirstName:   profile.FirstName,
@@ -129,7 +148,7 @@ func (s *SQLIdentityStore) writeProfile(profile UserProfile, at time.Time) error
 		if m, ok := profile.TenantMemberships[tenant]; ok {
 			directoryOptIn = m.DirectoryOptIn
 		}
-		if _, err := s.SetMembership(HouseMembership{
+		if _, err := s.setMembershipTx(tx, HouseMembership{
 			PersonID:       person.ID,
 			TenantSlug:     tenant,
 			Role:           resolved.Role,
@@ -140,9 +159,18 @@ func (s *SQLIdentityStore) writeProfile(profile UserProfile, at time.Time) error
 			return err
 		}
 	}
-	for _, existing := range s.MembershipsForPerson(person.ID) {
+	// Detach houses the profile no longer names — inside the same transaction, so
+	// a partial reconcile cannot survive.
+	stale, err := membershipsForPersonTx(tx, person.ID)
+	if err != nil {
+		return err
+	}
+	for _, existing := range stale {
 		if _, keep := wanted[existing.TenantSlug]; !keep {
-			if _, err := s.RemoveMembership(person.ID, existing.TenantSlug); err != nil {
+			if _, err := tx.Exec(
+				`DELETE FROM house_memberships WHERE person_id=? AND tenant_slug=?`,
+				person.ID, existing.TenantSlug,
+			); err != nil {
 				return err
 			}
 		}
@@ -167,11 +195,24 @@ func (s *SQLIdentityStore) Update(oldEmail string, updated UserProfile) (bool, e
 		if other, exists := s.PersonByEmail(newEmail); exists && other.ID != person.ID {
 			return false, fmt.Errorf("email already invited")
 		}
-		if _, err := s.ChangePersonEmail(person.ID, newEmail, time.Now()); err != nil {
+	}
+	// Rename and re-reconcile in ONE transaction (HAUSV-172).
+	tx, err := s.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	now := time.Now().UTC()
+	if newEmail != oldEmail {
+		if _, err := tx.Exec(`UPDATE persons SET email=?, updated_at=? WHERE id=?`,
+			newEmail, identityTime(now), person.ID); err != nil {
 			return false, err
 		}
 	}
-	if err := s.writeProfile(updated, time.Now()); err != nil {
+	if err := s.writeProfileTx(tx, updated, now); err != nil {
+		return false, err
+	}
+	if err := tx.Commit(); err != nil {
 		return false, err
 	}
 	return true, nil

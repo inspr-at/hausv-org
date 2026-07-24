@@ -172,23 +172,39 @@ func (s *SQLIdentityStore) UpsertPerson(p Person, at time.Time) (Person, error) 
 	if s == nil {
 		return Person{}, fmt.Errorf("identity store unavailable")
 	}
-	p.Email = textutil.Email(p.Email)
-	if p.Email == "" {
-		return Person{}, fmt.Errorf("person requires an email")
-	}
 	if at.IsZero() {
 		at = time.Now()
 	}
 	at = at.UTC()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return Person{}, err
 	}
 	defer tx.Rollback()
+	saved, err := s.upsertPersonTx(tx, p, at)
+	if err != nil {
+		return Person{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return Person{}, err
+	}
+	// Re-read so the returned value is byte-for-byte what a later read gives;
+	// otherwise an empty slice here and a nil there compare unequal.
+	if fresh, ok := s.PersonByID(saved.ID); ok {
+		return fresh, nil
+	}
+	return saved, nil
+}
 
+// upsertPersonTx is the transaction-scoped core, so a caller can compose it with
+// other writes into ONE atomic operation (HAUSV-172).
+func (s *SQLIdentityStore) upsertPersonTx(tx *sql.Tx, p Person, at time.Time) (Person, error) {
+	p.Email = textutil.Email(p.Email)
+	if p.Email == "" {
+		return Person{}, fmt.Errorf("person requires an email")
+	}
 	var existingID, createdAt string
-	err = tx.QueryRow(`SELECT id, created_at FROM persons WHERE email=?`, p.Email).Scan(&existingID, &createdAt)
+	err := tx.QueryRow(`SELECT id, created_at FROM persons WHERE email=?`, p.Email).Scan(&existingID, &createdAt)
 	switch {
 	case err == nil:
 		p.ID = existingID
@@ -219,14 +235,6 @@ func (s *SQLIdentityStore) UpsertPerson(p Person, at time.Time) (Person, error) 
 		identityTime(p.CreatedAt), identityTime(p.UpdatedAt),
 	); err != nil {
 		return Person{}, err
-	}
-	if err := tx.Commit(); err != nil {
-		return Person{}, err
-	}
-	// Re-read so the returned value is byte-for-byte what a later read gives;
-	// otherwise an empty slice here and a nil there compare unequal.
-	if fresh, ok := s.PersonByID(p.ID); ok {
-		return fresh, nil
 	}
 	return p, nil
 }
@@ -296,21 +304,36 @@ func (s *SQLIdentityStore) SetMembership(m HouseMembership, at time.Time) (House
 	if s == nil {
 		return HouseMembership{}, fmt.Errorf("identity store unavailable")
 	}
-	m.PersonID = strings.TrimSpace(m.PersonID)
-	m.TenantSlug = textutil.Slug(m.TenantSlug)
-	if m.PersonID == "" || m.TenantSlug == "" {
-		return HouseMembership{}, fmt.Errorf("membership requires a person and a house")
-	}
 	if at.IsZero() {
 		at = time.Now()
 	}
 	at = at.UTC()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return HouseMembership{}, err
 	}
 	defer tx.Rollback()
+	saved, err := s.setMembershipTx(tx, m, at)
+	if err != nil {
+		return HouseMembership{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return HouseMembership{}, err
+	}
+	// Re-read for the same reason as UpsertPerson.
+	if fresh, ok := s.Membership(saved.PersonID, saved.TenantSlug); ok {
+		return fresh, nil
+	}
+	return saved, nil
+}
+
+// setMembershipTx is the transaction-scoped core (HAUSV-172).
+func (s *SQLIdentityStore) setMembershipTx(tx *sql.Tx, m HouseMembership, at time.Time) (HouseMembership, error) {
+	m.PersonID = strings.TrimSpace(m.PersonID)
+	m.TenantSlug = textutil.Slug(m.TenantSlug)
+	if m.PersonID == "" || m.TenantSlug == "" {
+		return HouseMembership{}, fmt.Errorf("membership requires a person and a house")
+	}
 	var personExists int
 	if err := tx.QueryRow(`SELECT 1 FROM persons WHERE id=?`, m.PersonID).Scan(&personExists); err != nil {
 		return HouseMembership{}, fmt.Errorf("person not found")
@@ -337,13 +360,6 @@ func (s *SQLIdentityStore) SetMembership(m HouseMembership, at time.Time) (House
 		strings.TrimSpace(m.Status), directoryOptIn, identityTime(m.CreatedAt), identityTime(m.UpdatedAt),
 	); err != nil {
 		return HouseMembership{}, err
-	}
-	if err := tx.Commit(); err != nil {
-		return HouseMembership{}, err
-	}
-	// Re-read for the same reason as UpsertPerson.
-	if fresh, ok := s.Membership(m.PersonID, m.TenantSlug); ok {
-		return fresh, nil
 	}
 	m.Role = NormalizeRole(m.Role)
 	m.Permissions = NormalizePermissions(m.Permissions)
@@ -553,4 +569,24 @@ func tenantsOfProfile(profile UserProfile) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// membershipsForPersonTx lists memberships inside a transaction, so a reconcile
+// sees its own uncommitted writes (HAUSV-172).
+func membershipsForPersonTx(tx *sql.Tx, personID string) ([]HouseMembership, error) {
+	rows, err := tx.Query(`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=? ORDER BY tenant_slug`,
+		strings.TrimSpace(personID))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []HouseMembership{}
+	for rows.Next() {
+		m, err := scanMembership(rows.Scan)
+		if err != nil {
+			continue
+		}
+		out = append(out, m)
+	}
+	return out, rows.Err()
 }

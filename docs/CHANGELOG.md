@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.17.3] - 2026-07-24
+
+### Verbessert
+
+- **Einladungen werden vollständig oder gar nicht gespeichert.** Beim Einladen einer Person entstehen der Personeneintrag und die Zugehörigkeit zum Haus jetzt gemeinsam in einem einzigen Vorgang. Bricht etwas dazwischen ab, bleibt kein halb angelegter Zugang ohne Haus zurück. Dasselbe gilt beim Bearbeiten, inklusive einer Änderung der E-Mail-Adresse.
+
 ## [0.17.2] - 2026-07-24
 
 ### Verbessert

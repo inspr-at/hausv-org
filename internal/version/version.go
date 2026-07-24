@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.17.3",
+			Date:     "24. Juli 2026",
+			Kind:     "Zuverlässigkeit",
+			Headline: "Einladungen werden vollständig oder gar nicht gespeichert.",
+			Intro:    "Beim Einladen entstehen Person und Haus-Zugehörigkeit jetzt gemeinsam in einem Vorgang.",
+			Items:    []NoteItem{{Label: "Keine Reste", Text: "Bricht der Vorgang ab, bleibt kein halb angelegter Zugang zurück."}},
+		},
+		{
 			Version:  "0.17.2",
 			Date:     "24. Juli 2026",
 			Kind:     "Wartung",
