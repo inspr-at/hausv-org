@@ -597,6 +597,7 @@ type (
 	documentStorage           = store.DocumentStorage
 	protocolFiler             = store.ProtocolFiler
 	attachmentStorage         = store.AttachmentStorage
+	telegramStorage           = store.TelegramStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -628,6 +629,7 @@ var newSQLEventStore = store.NewSQLEventStore
 var newSQLHandoverStore = store.NewSQLHandoverStore
 var newSQLDocumentStore = store.NewSQLDocumentStore
 var newSQLAttachmentStore = store.NewSQLAttachmentStore
+var newSQLTelegramStore = store.NewSQLTelegramStore
 var newSQLProtocolFiler = store.NewSQLProtocolFiler
 var newSequentialProtocolFiler = store.NewSequentialProtocolFiler
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
@@ -739,7 +741,7 @@ type app struct {
 	chargingLastPoll       map[string]time.Time
 
 	telegram                  telegramAPI
-	telegramStore             *telegramStore
+	telegramStore             telegramStorage
 	telegramPollTimeout       time.Duration
 	chargingTelegramMu        sync.Mutex
 	chargingTelegramTimes     []time.Time
@@ -1166,6 +1168,7 @@ func newApp() (*app, error) {
 	var handoverBackend handoverStorage = handovers
 	var documentBackend documentStorage = documents
 	var attachmentBackend attachmentStorage = attachments
+	var telegramBackend telegramStorage = telegramStore
 	// Kept concrete: the atomic protocol filer needs both SQL stores and only
 	// works when they share one database (HAUSV-148).
 	var sqlDocumentStore *store.SQLDocumentStore
@@ -1241,6 +1244,12 @@ func newApp() (*app, error) {
 		} else {
 			attachmentBackend = sqlAttachment
 		}
+		sqlTelegram := newSQLTelegramStore(database)
+		if err := sqlTelegram.ImportTelegram(telegramStore); err != nil {
+			log.Printf("telegram import to sqlite failed, keeping json: %v", err)
+		} else {
+			telegramBackend = sqlTelegram
+		}
 	}
 
 	// Filing a handover protocol writes a document AND the link on the handover.
@@ -1308,7 +1317,7 @@ func newApp() (*app, error) {
 		chargingLastPoll:       map[string]time.Time{},
 
 		telegram:            telegram.New(env("TELEGRAM_API_BASE_URL", ""), env("TELEGRAM_BOT_TOKEN", "")),
-		telegramStore:       telegramStore,
+		telegramStore:       telegramBackend,
 		telegramPollTimeout: telegramPollTimeout,
 	}, nil
 }
