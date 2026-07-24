@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.17.2] - 2026-07-24
+
+### Verbessert
+
+- **Umstellung der Datenspeicherung abgeschlossen.** Die Anwendung arbeitet jetzt ausschließlich mit der eingebetteten Datenbank. Der bisherige Ausweichweg auf die alten JSON-Dateien entfällt: Ein Datenbankproblem führt jetzt zu einem klaren Startfehler statt zu einem stillen Weiterlaufen mit veralteten Daten. Die bisherigen Dateien bleiben unverändert als Sicherung liegen. Für Nutzer ändert sich nichts.
+
 ## [0.17.1] - 2026-07-24
 
 ### Verbessert

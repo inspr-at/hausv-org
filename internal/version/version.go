@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.17.2",
+			Date:     "24. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Umstellung der Datenspeicherung abgeschlossen.",
+			Intro:    "Die Anwendung arbeitet jetzt ausschließlich mit der eingebetteten Datenbank; die alte Dateispeicherung wird nicht mehr als Ausweichweg genutzt.",
+			Items:    []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts. Die bisherigen Dateien bleiben als Sicherung erhalten."}},
+		},
+		{
 			Version:  "0.17.1",
 			Date:     "24. Juli 2026",
 			Kind:     "Verbessert",

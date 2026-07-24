@@ -1154,159 +1154,94 @@ func newApp() (*app, error) {
 	// new env/compose entry is needed — in prod that's /data/hausv.db, locally
 	// tmp/hausv.db. DB_PATH overrides if ever set. It runs its migrations on boot.
 	//
-	// Non-fatal ON PURPOSE: if SQLite can't open, each migrated store falls back
-	// to its JSON backend below, so boot can never brick on a DB problem
-	// (HAUSV-170).
+	// SQLite is REQUIRED (HAUSV-173). The JSON fallback is gone on purpose: a
+	// database problem must fail the boot loudly instead of silently serving a
+	// stale second copy of the data. The JSON files stay on disk as frozen
+	// pre-cutover backups, and rolling back is one image tag away.
 	dbPath := env("DB_PATH", "")
 	if dbPath == "" {
 		dbPath = filepath.Join(filepath.Dir(parkingDataPath), "hausv.db")
 	}
 	database, err := db.Open(dbPath)
 	if err != nil {
-		log.Printf("sqlite unavailable, using json stores: %v", err)
-		database = nil
+		return nil, fmt.Errorf("open sqlite at %s: %w", dbPath, err)
 	}
 
-	// Migrated stores prefer SQLite, importing existing JSON data once
-	// (clobber-safe), and fall back to their JSON backend if SQLite is
-	// unavailable. Low-stakes stores lead the migration (HAUSV-168/170).
-	var activityBackend activityStorage = activity
-	var profileBackend profileOverlayStorage = profileOverlays
-	var notificationBackend notificationPrefStorage = notificationPrefs
-	var unitPaymentBackend unitPaymentStatusStorage = unitPayments
-	var contactBackend contactBookStorage = contacts
-	var annReadBackend announcementReadStorage = announcementReads
-	var annBackend announcementStorage = announcements
-	var eventBackend eventStorage = events
-	var handoverBackend handoverStorage = handovers
-	var documentBackend documentStorage = documents
-	var attachmentBackend attachmentStorage = attachments
-	var telegramBackend telegramStorage = telegramStore
-	var unitBackend unitStorage = units
-	var voteBackend voteStorage = votes
-	var issueBackend issueStorage = issues
-	var identity *store.SQLIdentityStore
-	var inviteBackend profileStorage = invites
-	// Kept concrete: the atomic protocol filer needs both SQL stores and only
-	// works when they share one database (HAUSV-148).
-	var sqlDocumentStore *store.SQLDocumentStore
-	var sqlHandoverStore *store.SQLHandoverStore
-	if database != nil {
-		sqlActivity := newSQLActivityStore(database)
-		if err := sqlActivity.ImportActivity(activity); err != nil {
-			log.Printf("activity import to sqlite failed, keeping json: %v", err)
-		} else {
-			activityBackend = sqlActivity
-		}
-		sqlProfile := newSQLProfileOverlayStore(database)
-		if err := sqlProfile.ImportOverlays(profileOverlays); err != nil {
-			log.Printf("profile-overlay import to sqlite failed, keeping json: %v", err)
-		} else {
-			profileBackend = sqlProfile
-		}
-		sqlNotification := newSQLNotificationPrefStore(database)
-		if err := sqlNotification.ImportPrefs(notificationPrefs); err != nil {
-			log.Printf("notification-pref import to sqlite failed, keeping json: %v", err)
-		} else {
-			notificationBackend = sqlNotification
-		}
-		sqlUnitPayment := newSQLUnitPaymentStatusStore(database)
-		if err := sqlUnitPayment.ImportStatuses(unitPayments); err != nil {
-			log.Printf("unit-payment-status import to sqlite failed, keeping json: %v", err)
-		} else {
-			unitPaymentBackend = sqlUnitPayment
-		}
-		sqlContacts := newSQLContactBookStore(database)
-		if err := sqlContacts.ImportContacts(contacts); err != nil {
-			log.Printf("contact import to sqlite failed, keeping json: %v", err)
-		} else {
-			contactBackend = sqlContacts
-		}
-		sqlAnnRead := newSQLAnnouncementReadStore(database)
-		if err := sqlAnnRead.ImportReads(announcementReads); err != nil {
-			log.Printf("announcement-read import to sqlite failed, keeping json: %v", err)
-		} else {
-			annReadBackend = sqlAnnRead
-		}
-		sqlAnn := newSQLAnnouncementStore(database)
-		if err := sqlAnn.ImportAnnouncements(announcements); err != nil {
-			log.Printf("announcement import to sqlite failed, keeping json: %v", err)
-		} else {
-			annBackend = sqlAnn
-		}
-		sqlEvent := newSQLEventStore(database)
-		if err := sqlEvent.ImportEvents(events); err != nil {
-			log.Printf("event import to sqlite failed, keeping json: %v", err)
-		} else {
-			eventBackend = sqlEvent
-		}
-		sqlHandover := newSQLHandoverStore(database)
-		if err := sqlHandover.ImportHandovers(handovers); err != nil {
-			log.Printf("handover import to sqlite failed, keeping json: %v", err)
-		} else {
-			handoverBackend = sqlHandover
-			sqlHandoverStore = sqlHandover
-		}
-		// Metadata only: the files themselves stay on disk in documentFileDir.
-		sqlDocument := newSQLDocumentStore(database, documentFileDir)
-		if err := sqlDocument.ImportDocuments(documents); err != nil {
-			log.Printf("document import to sqlite failed, keeping json: %v", err)
-		} else {
-			documentBackend = sqlDocument
-			sqlDocumentStore = sqlDocument
-		}
-		// Metadata only: files and image variants stay in attachmentFileDir.
-		sqlAttachment := newSQLAttachmentStore(database, attachmentFileDir)
-		if err := sqlAttachment.ImportAttachments(attachments); err != nil {
-			log.Printf("attachment import to sqlite failed, keeping json: %v", err)
-		} else {
-			attachmentBackend = sqlAttachment
-		}
-		sqlTelegram := newSQLTelegramStore(database)
-		if err := sqlTelegram.ImportTelegram(telegramStore); err != nil {
-			log.Printf("telegram import to sqlite failed, keeping json: %v", err)
-		} else {
-			telegramBackend = sqlTelegram
-		}
-		sqlUnits := newSQLUnitStore(database)
-		if err := sqlUnits.ImportUnits(units); err != nil {
-			log.Printf("unit import to sqlite failed, keeping json: %v", err)
-		} else {
-			unitBackend = sqlUnits
-		}
-		sqlVotes := newSQLVoteStore(database)
-		if err := sqlVotes.ImportBallots(votes); err != nil {
-			log.Printf("vote import to sqlite failed, keeping json: %v", err)
-		} else {
-			voteBackend = sqlVotes
-		}
-		// Legacy issue photo files stay on disk in issueAttachmentDir (HAUSV-175).
-		sqlIssues := newSQLIssueStore(database, issueAttachmentDir)
-		if err := sqlIssues.ImportIssues(issues); err != nil {
-			log.Printf("issue import to sqlite failed, keeping json: %v", err)
-		} else {
-			issueBackend = sqlIssues
-		}
-		// HAUSV-169 phase 3: migrate the email-keyed profiles into the person/house
-		// N:N tables and serve from them. Falls back to the JSON store if the
-		// import fails, so a migration problem can never lock anyone out.
-		identity = newSQLIdentityStore(database)
-		if err := identity.ImportProfiles(invites, time.Now()); err != nil {
-			log.Printf("identity import to sqlite failed, keeping json profiles: %v", err)
-		} else {
-			inviteBackend = identity
+	// Every migrated store is served from SQLite. Imports stay in place because
+	// they are idempotent and clobber-safe: on an already-migrated database they
+	// are a no-op, and they are what migrates a fresh environment. A failing
+	// import aborts the boot rather than quietly starting on an empty store.
+	sqlActivity := newSQLActivityStore(database)
+	sqlProfileOverlay := newSQLProfileOverlayStore(database)
+	sqlNotification := newSQLNotificationPrefStore(database)
+	sqlUnitPayment := newSQLUnitPaymentStatusStore(database)
+	sqlContacts := newSQLContactBookStore(database)
+	sqlAnnRead := newSQLAnnouncementReadStore(database)
+	sqlAnn := newSQLAnnouncementStore(database)
+	sqlEvent := newSQLEventStore(database)
+	sqlHandover := newSQLHandoverStore(database)
+	sqlDocument := newSQLDocumentStore(database, documentFileDir)
+	sqlAttachment := newSQLAttachmentStore(database, attachmentFileDir)
+	sqlTelegram := newSQLTelegramStore(database)
+	sqlUnits := newSQLUnitStore(database)
+	sqlVotes := newSQLVoteStore(database)
+	sqlIssues := newSQLIssueStore(database, issueAttachmentDir)
+	identity := newSQLIdentityStore(database)
+
+	for _, step := range []struct {
+		name    string
+		import_ func() error
+	}{
+		{"activity", func() error { return sqlActivity.ImportActivity(activity) }},
+		{"profile-overlay", func() error { return sqlProfileOverlay.ImportOverlays(profileOverlays) }},
+		{"notification-pref", func() error { return sqlNotification.ImportPrefs(notificationPrefs) }},
+		{"unit-payment-status", func() error { return sqlUnitPayment.ImportStatuses(unitPayments) }},
+		{"contact", func() error { return sqlContacts.ImportContacts(contacts) }},
+		{"announcement-read", func() error { return sqlAnnRead.ImportReads(announcementReads) }},
+		{"announcement", func() error { return sqlAnn.ImportAnnouncements(announcements) }},
+		{"event", func() error { return sqlEvent.ImportEvents(events) }},
+		{"handover", func() error { return sqlHandover.ImportHandovers(handovers) }},
+		{"document", func() error { return sqlDocument.ImportDocuments(documents) }},
+		{"attachment", func() error { return sqlAttachment.ImportAttachments(attachments) }},
+		{"telegram", func() error { return sqlTelegram.ImportTelegram(telegramStore) }},
+		{"unit", func() error { return sqlUnits.ImportUnits(units) }},
+		{"vote", func() error { return sqlVotes.ImportBallots(votes) }},
+		{"issue", func() error { return sqlIssues.ImportIssues(issues) }},
+		{"identity", func() error { return identity.ImportProfiles(invites, time.Now()) }},
+	} {
+		if err := step.import_(); err != nil {
+			return nil, fmt.Errorf("%s import to sqlite: %w", step.name, err)
 		}
 	}
 
-	// Filing a handover protocol writes a document AND the link on the handover.
-	// With both stores in one database that happens in a single transaction;
-	// otherwise fall back to the sequential (idempotent, non-atomic) path.
-	var filer protocolFiler = newSequentialProtocolFiler(documentBackend, handoverBackend)
-	if atomic := newSQLProtocolFiler(sqlDocumentStore, sqlHandoverStore); atomic != nil {
-		filer = atomic
-	} else {
-		log.Printf("handover filing is not atomic: document/handover stores are not sharing sqlite")
+	var activityBackend activityStorage = sqlActivity
+	var profileBackend profileOverlayStorage = sqlProfileOverlay
+	var notificationBackend notificationPrefStorage = sqlNotification
+	var unitPaymentBackend unitPaymentStatusStorage = sqlUnitPayment
+	var contactBackend contactBookStorage = sqlContacts
+	var annReadBackend announcementReadStorage = sqlAnnRead
+	var annBackend announcementStorage = sqlAnn
+	var eventBackend eventStorage = sqlEvent
+	var handoverBackend handoverStorage = sqlHandover
+	var documentBackend documentStorage = sqlDocument
+	var attachmentBackend attachmentStorage = sqlAttachment
+	var telegramBackend telegramStorage = sqlTelegram
+	var unitBackend unitStorage = sqlUnits
+	var voteBackend voteStorage = sqlVotes
+	var issueBackend issueStorage = sqlIssues
+	var inviteBackend profileStorage = identity
+
+	// Filing a handover protocol writes a document AND the link on the handover
+	// in one transaction (HAUSV-148). Both stores now always share the database,
+	// so the atomic filer is always available; the guard stays as an assertion.
+	// Check the concrete pointer, NOT the interface: a nil *SQLProtocolFiler
+	// wrapped in an interface is itself non-nil, so an interface nil-check here
+	// would never fire.
+	sqlFiler := newSQLProtocolFiler(sqlDocument, sqlHandover)
+	if sqlFiler == nil {
+		return nil, fmt.Errorf("handover filing would not be atomic: document/handover stores are not sharing sqlite")
 	}
+	var filer protocolFiler = sqlFiler
 
 	return &app{
 		baseURL:               baseURL,
