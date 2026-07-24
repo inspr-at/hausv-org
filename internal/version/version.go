@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.16.0",
+			Date:     "24. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Umstellung auf die neue Datenspeicherung abgeschlossen.",
+			Intro:    "Anliegen, Abstimmungen, Wohneinheiten und der Telegram-Bot nutzen jetzt ebenfalls die eingebettete Datenbank. Damit ist die schrittweise Umstellung abgeschlossen.",
+			Items: []NoteItem{
+				{Label: "Unverändert", Text: "Bestehende Daten wurden verlustfrei übernommen; für Nutzer ändert sich nichts."},
+				{Label: "Robuster", Text: "Zusammengehörige Änderungen werden jetzt gemeinsam gespeichert."},
+			},
+		},
+		{
 			Version:  "0.15.12",
 			Date:     "24. Juli 2026",
 			Kind:     "Wartung",

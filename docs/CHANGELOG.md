@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.16.0] - 2026-07-24
+
+### Verbessert
+
+- **Umstellung auf die neue Datenspeicherung abgeschlossen.** Anliegen (inkl. Kommentare und Statusverlauf), Abstimmungen (inkl. abgegebener Stimmen), Wohneinheiten und der Telegram-Bot laufen jetzt ebenfalls über die eingebettete Datenbank. Bestehende Daten wurden verlustfrei übernommen, mit Rückfallebene. Damit ist die schrittweise Umstellung abgeschlossen; zusammengehörige Änderungen werden gemeinsam gespeichert. Für Nutzer ändert sich nichts.
+
 ## [0.15.12] - 2026-07-24
 
 ### Verbessert

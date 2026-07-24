@@ -600,6 +600,7 @@ type (
 	telegramStorage           = store.TelegramStorage
 	unitStorage               = store.UnitStorage
 	voteStorage               = store.VoteStorage
+	issueStorage              = store.IssueStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -634,6 +635,7 @@ var newSQLAttachmentStore = store.NewSQLAttachmentStore
 var newSQLTelegramStore = store.NewSQLTelegramStore
 var newSQLUnitStore = store.NewSQLUnitStore
 var newSQLVoteStore = store.NewSQLVoteStore
+var newSQLIssueStore = store.NewSQLIssueStore
 var newSQLProtocolFiler = store.NewSQLProtocolFiler
 var newSequentialProtocolFiler = store.NewSequentialProtocolFiler
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
@@ -720,7 +722,7 @@ type app struct {
 	activityStore         activityStorage
 	unitStore             unitStorage
 	unitPaymentStore      unitPaymentStatusStorage
-	issueStore            *issueStore
+	issueStore            issueStorage
 	attachmentStore       attachmentStorage
 	contactStore          contactBookStorage
 	auditStore            *auditStore
@@ -1056,7 +1058,8 @@ func newApp() (*app, error) {
 	}
 	issueDataPath := env("ISSUE_DATA_PATH", "tmp/issues.json")
 	defaultIssueAttachmentDir := filepath.Join(filepath.Dir(issueDataPath), "issue-attachments")
-	issues, err := newIssueStore(issueDataPath, env("ISSUE_ATTACHMENT_DIR", defaultIssueAttachmentDir))
+	issueAttachmentDir := env("ISSUE_ATTACHMENT_DIR", defaultIssueAttachmentDir)
+	issues, err := newIssueStore(issueDataPath, issueAttachmentDir)
 	if err != nil {
 		return nil, err
 	}
@@ -1175,6 +1178,7 @@ func newApp() (*app, error) {
 	var telegramBackend telegramStorage = telegramStore
 	var unitBackend unitStorage = units
 	var voteBackend voteStorage = votes
+	var issueBackend issueStorage = issues
 	// Kept concrete: the atomic protocol filer needs both SQL stores and only
 	// works when they share one database (HAUSV-148).
 	var sqlDocumentStore *store.SQLDocumentStore
@@ -1268,6 +1272,13 @@ func newApp() (*app, error) {
 		} else {
 			voteBackend = sqlVotes
 		}
+		// Legacy issue photo files stay on disk in issueAttachmentDir (HAUSV-175).
+		sqlIssues := newSQLIssueStore(database, issueAttachmentDir)
+		if err := sqlIssues.ImportIssues(issues); err != nil {
+			log.Printf("issue import to sqlite failed, keeping json: %v", err)
+		} else {
+			issueBackend = sqlIssues
+		}
 	}
 
 	// Filing a handover protocol writes a document AND the link on the handover.
@@ -1311,7 +1322,7 @@ func newApp() (*app, error) {
 		activityStore:         activityBackend,
 		unitStore:             unitBackend,
 		unitPaymentStore:      unitPaymentBackend,
-		issueStore:            issues,
+		issueStore:            issueBackend,
 		attachmentStore:       attachmentBackend,
 		contactStore:          contactBackend,
 		auditStore:            auditStore,
