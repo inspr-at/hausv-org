@@ -3338,7 +3338,7 @@ func (a *app) profileSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 }
 
 func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	email, role := ac.email, ac.role
+	email, role, tenant := ac.email, ac.role, ac.tenant
 	if denyServiceProviderArea(w, role) {
 		return
 	}
@@ -3356,6 +3356,15 @@ func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request, ac a
 			log.Printf("profile save failed for %s: %v", redactedEmail(email), err)
 			http.Redirect(w, r, "/app/settings/profile?profile=error", http.StatusSeeOther)
 			return
+		}
+	}
+	// The contact directory is rendered PER HOUSE, so the visibility choice is
+	// recorded on this house's membership. Until someone saves it here it stays
+	// unset and keeps inheriting the person-wide value, which is why existing
+	// users see no change (HAUSV-178).
+	if a.inviteStore != nil {
+		if _, err := a.inviteStore.SetTenantDirectoryOptIn(email, tenant.Slug, overlay.DirectoryOptIn); err != nil {
+			log.Printf("directory visibility save failed for %s: %v", redactedEmail(email), err)
 		}
 	}
 	http.Redirect(w, r, "/app/settings/profile?profile=saved", http.StatusSeeOther)

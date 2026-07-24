@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.17.1",
+			Date:     "24. Juli 2026",
+			Kind:     "Verbessert",
+			Headline: "Verzeichnis-Sichtbarkeit je Haus, klarere Zugangsbearbeitung.",
+			Intro:    "Die Anzeige im Kontakte-Verzeichnis lässt sich künftig je Haus festlegen, und die Zugangsbearbeitung zeigt nur noch, was hier auch änderbar ist.",
+			Items: []NoteItem{
+				{Label: "Je Haus", Text: "Wer zu mehreren Häusern gehört, entscheidet die Sichtbarkeit pro Haus. Ohne eigene Wahl bleibt alles wie bisher."},
+				{Label: "Klarer", Text: "Name und E-Mail sind in der Hausverwaltung nur noch lesbar, mit Hinweis auf die zentrale Pflege."},
+			},
+		},
+		{
 			Version:  "0.17.0",
 			Date:     "24. Juli 2026",
 			Kind:     "Sicherheit",

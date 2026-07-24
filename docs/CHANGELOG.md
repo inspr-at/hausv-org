@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.17.1] - 2026-07-24
+
+### Verbessert
+
+- **Sichtbarkeit im Kontakte-Verzeichnis gilt je Haus.** Das Kontakte-Verzeichnis wird pro Haus angezeigt, deshalb wird die Einstellung „Im Kontakte-Verzeichnis anzeigen" jetzt auch pro Haus gespeichert. Wer zu mehreren Häusern gehört, kann in einem Haus sichtbar und in einem anderen verborgen sein. Solange die Einstellung nicht bewusst im Haus gesetzt wird, gilt unverändert die bisherige persönliche Wahl — für bestehende Nutzer ändert sich nichts.
+- **Zugangsbearbeitung zeigt nur noch Änderbares.** Name, Titel und E-Mail gehören zur Person und gelten für alle Häuser; in der Hausverwaltung werden sie jetzt nur noch lesend angezeigt, mit einem Hinweis auf die zentrale Pflege. Bisher ließen sich die Felder ausfüllen, ohne dass die Änderung gespeichert wurde.
+
 ## [0.17.0] - 2026-07-24
 
 ### Verbessert

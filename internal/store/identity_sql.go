@@ -36,8 +36,11 @@ type HouseMembership struct {
 	Role        string
 	Permissions []string
 	Status      string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	// DirectoryOptIn overrides person-wide directory visibility for this house;
+	// nil means inherit (HAUSV-178).
+	DirectoryOptIn *bool
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 // HouseMember pairs a person with their membership in one specific house — what
@@ -271,8 +274,13 @@ func (s *SQLIdentityStore) ChangePersonEmail(personID string, newEmail string, a
 func scanMembership(scan func(dest ...any) error) (HouseMembership, error) {
 	var m HouseMembership
 	var permissions, createdAt, updatedAt string
-	if err := scan(&m.PersonID, &m.TenantSlug, &m.Role, &permissions, &m.Status, &createdAt, &updatedAt); err != nil {
+	var directoryOptIn *int64
+	if err := scan(&m.PersonID, &m.TenantSlug, &m.Role, &permissions, &m.Status, &directoryOptIn, &createdAt, &updatedAt); err != nil {
 		return HouseMembership{}, err
+	}
+	if directoryOptIn != nil {
+		v := *directoryOptIn != 0
+		m.DirectoryOptIn = &v
 	}
 	m.Permissions = decodeStringList(permissions)
 	m.CreatedAt = parseIdentityTime(createdAt)
@@ -280,7 +288,7 @@ func scanMembership(scan func(dest ...any) error) (HouseMembership, error) {
 	return m, nil
 }
 
-const membershipColumns = `person_id, tenant_slug, role, permissions, status, created_at, updated_at`
+const membershipColumns = `person_id, tenant_slug, role, permissions, status, directory_opt_in, created_at, updated_at`
 
 // SetMembership creates or updates exactly ONE person<->house relation. Other
 // houses' memberships are not read, not rewritten and not touched.
@@ -316,13 +324,17 @@ func (s *SQLIdentityStore) SetMembership(m HouseMembership, at time.Time) (House
 		m.CreatedAt = at
 	}
 	m.UpdatedAt = at
+	var directoryOptIn any
+	if m.DirectoryOptIn != nil {
+		directoryOptIn = boolToInt(*m.DirectoryOptIn)
+	}
 	if _, err := tx.Exec(
-		`INSERT INTO house_memberships(`+membershipColumns+`) VALUES(?, ?, ?, ?, ?, ?, ?)
+		`INSERT INTO house_memberships(`+membershipColumns+`) VALUES(?, ?, ?, ?, ?, ?, ?, ?)
 		 ON CONFLICT(person_id, tenant_slug) DO UPDATE SET
 		   role=excluded.role, permissions=excluded.permissions, status=excluded.status,
-		   updated_at=excluded.updated_at`,
+		   directory_opt_in=excluded.directory_opt_in, updated_at=excluded.updated_at`,
 		m.PersonID, m.TenantSlug, NormalizeRole(m.Role), encodeStringList(NormalizePermissions(m.Permissions)),
-		strings.TrimSpace(m.Status), identityTime(m.CreatedAt), identityTime(m.UpdatedAt),
+		strings.TrimSpace(m.Status), directoryOptIn, identityTime(m.CreatedAt), identityTime(m.UpdatedAt),
 	); err != nil {
 		return HouseMembership{}, err
 	}
@@ -387,7 +399,7 @@ func (s *SQLIdentityStore) ListHouseMembers(tenantSlug string) []HouseMember {
 		`SELECT p.id, p.email, p.title, p.first_name, p.last_name, p.auth_methods,
 		        p.deactivated, p.adopted, p.created_at, p.updated_at,
 		        m.person_id, m.tenant_slug, m.role, m.permissions, m.status,
-		        m.created_at, m.updated_at
+		        m.directory_opt_in, m.created_at, m.updated_at
 		   FROM house_memberships m JOIN persons p ON p.id = m.person_id
 		  WHERE m.tenant_slug=? ORDER BY p.email`, tenantSlug)
 	if err != nil {
@@ -400,9 +412,10 @@ func (s *SQLIdentityStore) ListHouseMembers(tenantSlug string) []HouseMember {
 		var m HouseMembership
 		var authMethods, pCreated, pUpdated, permissions, mCreated, mUpdated string
 		var deactivated, adopted int
+		var mDirectory *int64
 		if err := rows.Scan(
 			&p.ID, &p.Email, &p.Title, &p.FirstName, &p.LastName, &authMethods, &deactivated, &adopted, &pCreated, &pUpdated,
-			&m.PersonID, &m.TenantSlug, &m.Role, &permissions, &m.Status, &mCreated, &mUpdated,
+			&m.PersonID, &m.TenantSlug, &m.Role, &permissions, &m.Status, &mDirectory, &mCreated, &mUpdated,
 		); err != nil {
 			continue
 		}
@@ -411,6 +424,10 @@ func (s *SQLIdentityStore) ListHouseMembers(tenantSlug string) []HouseMember {
 		p.Adopted = adopted != 0
 		p.CreatedAt, p.UpdatedAt = parseIdentityTime(pCreated), parseIdentityTime(pUpdated)
 		m.Permissions = decodeStringList(permissions)
+		if mDirectory != nil {
+			v := *mDirectory != 0
+			m.DirectoryOptIn = &v
+		}
 		m.CreatedAt, m.UpdatedAt = parseIdentityTime(mCreated), parseIdentityTime(mUpdated)
 		out = append(out, HouseMember{Person: p, Membership: m})
 	}

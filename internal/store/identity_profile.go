@@ -22,6 +22,10 @@ type ProfileStorage interface {
 	Mutate(email string, fn func(*UserProfile)) (UserProfile, bool, error)
 	SetTenantMembership(email string, tenantSlug string, role string, permissions []string) (UserProfile, bool, error)
 	RemoveTenant(email string, tenantSlug string) (removedProfile bool, found bool, err error)
+	// SetTenantDirectoryOptIn sets contact-directory visibility for ONE house.
+	// The directory is rendered per house, so the switch belongs there
+	// (HAUSV-178).
+	SetTenantDirectoryOptIn(email string, tenantSlug string, optIn bool) (bool, error)
 }
 
 var (
@@ -50,7 +54,7 @@ func (s *SQLIdentityStore) profileFromPerson(p Person) UserProfile {
 	profile.TenantMemberships = map[string]TenantMembership{}
 	for _, m := range memberships {
 		profile.Tenants = append(profile.Tenants, m.TenantSlug)
-		profile.TenantMemberships[m.TenantSlug] = TenantMembership{Role: m.Role, Permissions: m.Permissions}
+		profile.TenantMemberships[m.TenantSlug] = TenantMembership{Role: m.Role, Permissions: m.Permissions, DirectoryOptIn: m.DirectoryOptIn}
 	}
 	// Top-level role/permissions/status act as the default for houses without an
 	// explicit entry; the first membership supplies them.
@@ -121,12 +125,17 @@ func (s *SQLIdentityStore) writeProfile(profile UserProfile, at time.Time) error
 	for _, tenant := range tenantsOfProfile(profile) {
 		wanted[tenant] = struct{}{}
 		resolved := profile.ForTenant(tenant)
+		var directoryOptIn *bool
+		if m, ok := profile.TenantMemberships[tenant]; ok {
+			directoryOptIn = m.DirectoryOptIn
+		}
 		if _, err := s.SetMembership(HouseMembership{
-			PersonID:    person.ID,
-			TenantSlug:  tenant,
-			Role:        resolved.Role,
-			Permissions: resolved.Permissions,
-			Status:      profile.Status,
+			PersonID:       person.ID,
+			TenantSlug:     tenant,
+			Role:           resolved.Role,
+			Permissions:    resolved.Permissions,
+			Status:         profile.Status,
+			DirectoryOptIn: directoryOptIn,
 		}, at); err != nil {
 			return err
 		}
@@ -214,15 +223,18 @@ func (s *SQLIdentityStore) SetTenantMembership(email string, tenantSlug string, 
 		return UserProfile{}, false, nil
 	}
 	status := ""
+	var directoryOptIn *bool
 	if existing, had := s.Membership(person.ID, tenantSlug); had {
 		status = existing.Status
+		directoryOptIn = existing.DirectoryOptIn
 	}
 	if _, err := s.SetMembership(HouseMembership{
-		PersonID:    person.ID,
-		TenantSlug:  tenantSlug,
-		Role:        role,
-		Permissions: permissions,
-		Status:      status,
+		PersonID:       person.ID,
+		TenantSlug:     tenantSlug,
+		Role:           role,
+		Permissions:    permissions,
+		Status:         status,
+		DirectoryOptIn: directoryOptIn,
 	}, time.Now()); err != nil {
 		return UserProfile{}, false, err
 	}
@@ -252,4 +264,27 @@ func (s *SQLIdentityStore) RemoveTenant(email string, tenantSlug string) (bool, 
 		return removed, true, err
 	}
 	return false, true, nil
+}
+
+func (s *SQLIdentityStore) SetTenantDirectoryOptIn(email string, tenantSlug string, optIn bool) (bool, error) {
+	if s == nil {
+		return false, nil
+	}
+	tenantSlug = textutil.Slug(tenantSlug)
+	if textutil.Email(email) == "" || tenantSlug == "" {
+		return false, fmt.Errorf("invalid directory target")
+	}
+	person, ok := s.PersonByEmail(email)
+	if !ok {
+		return false, nil
+	}
+	existing, had := s.Membership(person.ID, tenantSlug)
+	if !had {
+		return false, nil
+	}
+	existing.DirectoryOptIn = &optIn
+	if _, err := s.SetMembership(existing, time.Now()); err != nil {
+		return false, err
+	}
+	return true, nil
 }

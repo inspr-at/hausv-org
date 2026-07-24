@@ -4597,10 +4597,11 @@ const PageTemplates = `
                   <p class="dlg-sub">{{.Email}}{{if .IsConfig}} (aus Konfiguration){{end}}</p>
                   <form method="post" action="/app/settings/users/edit" class="dlg-form">
                     <input type="hidden" name="orig_email" value="{{.Email}}">
-                    <input class="f-titel" type="text" name="title" value="{{.Title}}" placeholder="Titel" aria-label="Titel">
-                    <input class="f-vorname" type="text" name="first_name" value="{{.FirstName}}" placeholder="Vorname" aria-label="Vorname">
-                    <input class="f-nachname" type="text" name="last_name" value="{{.LastName}}" placeholder="Nachname" aria-label="Nachname">
-                    <input class="f-email" type="email" name="email" value="{{.Email}}" aria-label="E-Mail-Adresse" autocomplete="email"{{if .IsConfig}} readonly{{else}} required{{end}}>
+                    <input class="f-titel" type="text" name="title" value="{{.Title}}" placeholder="Titel" aria-label="Titel"{{if not $.IsAdmin}} readonly{{end}}>
+                    <input class="f-vorname" type="text" name="first_name" value="{{.FirstName}}" placeholder="Vorname" aria-label="Vorname"{{if not $.IsAdmin}} readonly{{end}}>
+                    <input class="f-nachname" type="text" name="last_name" value="{{.LastName}}" placeholder="Nachname" aria-label="Nachname"{{if not $.IsAdmin}} readonly{{end}}>
+                    <input class="f-email" type="email" name="email" value="{{.Email}}" aria-label="E-Mail-Adresse" autocomplete="email"{{if or .IsConfig (not $.IsAdmin)}} readonly{{else}} required{{end}}>
+                    {{if not $.IsAdmin}}<p class="dlg-hint">Name und E-Mail gehören zur Person und gelten für alle Häuser. Sie werden zentral von der Plattform-Administration gepflegt. Rolle und Rechte unten gelten nur für dieses Haus.</p>{{end}}
                     <select class="f-role" name="role" aria-label="Rolle">
                       <option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions=""{{if eq .Role "Mieter"}} selected{{end}}>Mieter</option>
                       <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions=""{{if eq .Role "Eigentümer"}} selected{{end}}>Eigentümer</option>

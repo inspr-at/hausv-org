@@ -44,6 +44,10 @@ type UserProfile struct {
 type TenantMembership struct {
 	Role        string   `json:"role,omitempty"`
 	Permissions []string `json:"permissions,omitempty"`
+	// DirectoryOptIn overrides the person-wide directory visibility for THIS
+	// house. nil means inherit, so a person who never set it per house keeps
+	// behaving exactly as before (HAUSV-178).
+	DirectoryOptIn *bool `json:"directory_opt_in,omitempty"`
 }
 
 func (p UserProfile) DisplayName() string {
@@ -103,6 +107,9 @@ func (p UserProfile) ForTenant(tenantSlug string) UserProfile {
 		}
 		if membership.Permissions != nil {
 			out.Permissions = NormalizePermissions(membership.Permissions)
+		}
+		if membership.DirectoryOptIn != nil {
+			out.DirectoryOptIn = *membership.DirectoryOptIn
 		}
 	}
 	return out
@@ -438,9 +445,16 @@ func (s *InviteStore) SetTenantMembership(email string, tenantSlug string, role 
 				delete(p.TenantMemberships, existing)
 			}
 		}
+		// Preserve this house's directory visibility: a role/permission edit
+		// must not silently reset it (HAUSV-178).
+		var directoryOptIn *bool
+		if existing, ok := p.TenantMemberships[tenantSlug]; ok {
+			directoryOptIn = existing.DirectoryOptIn
+		}
 		p.TenantMemberships[tenantSlug] = TenantMembership{
-			Role:        NormalizeRole(role),
-			Permissions: NormalizePermissions(permissions),
+			Role:           NormalizeRole(role),
+			Permissions:    NormalizePermissions(permissions),
+			DirectoryOptIn: directoryOptIn,
 		}
 		p.Tenants = NormalizeTenants(append(p.Tenants, tenantSlug), "")
 		syncProfileDefaults(p)
@@ -536,4 +550,22 @@ func (s *InviteStore) RemoveTenant(email string, tenantSlug string) (removedProf
 		return false, true, nil
 	}
 	return false, false, nil
+}
+
+// SetTenantDirectoryOptIn sets contact-directory visibility for ONE house
+// (HAUSV-178).
+func (s *InviteStore) SetTenantDirectoryOptIn(email string, tenantSlug string, optIn bool) (bool, error) {
+	email = textutil.Email(email)
+	tenantSlug = textutil.Slug(tenantSlug)
+	if email == "" || tenantSlug == "" {
+		return false, fmt.Errorf("invalid directory target")
+	}
+	_, found, err := s.Mutate(email, func(p *UserProfile) {
+		materializeMemberships(p)
+		membership := p.TenantMemberships[tenantSlug]
+		value := optIn
+		membership.DirectoryOptIn = &value
+		p.TenantMemberships[tenantSlug] = membership
+	})
+	return found, err
 }

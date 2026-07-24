@@ -1,0 +1,11 @@
+-- Verzeichnis-Sichtbarkeit je Haus-Mitgliedschaft (HAUSV-178).
+--
+-- "Im Kontakte-Verzeichnis anzeigen" war bisher einmal pro Person gespeichert,
+-- obwohl das Verzeichnis pro Haus gerendert wird. Mit mehreren Häusern hätte
+-- ein einziger Schalter die Person in ALLEN Verzeichnissen sichtbar gemacht.
+--
+-- NULL bedeutet ausdrücklich "erben": solange niemand die Einstellung im Haus
+-- ändert, gilt weiterhin der personenweite Wert aus dem Profil-Overlay. Damit
+-- ändert sich für bestehende Nutzer nichts und es ist keine Datenmigration
+-- nötig.
+ALTER TABLE house_memberships ADD COLUMN directory_opt_in INTEGER;

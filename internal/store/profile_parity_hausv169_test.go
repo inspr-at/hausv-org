@@ -323,3 +323,56 @@ func TestHouseScopedRemovalOnLegacyShapeParity(t *testing.T) {
 		})
 	}
 }
+
+// HAUSV-178: the contact directory is rendered per house, so visibility is a
+// per-membership choice. Unset means inherit, so nothing changes for people who
+// never touched it.
+func TestDirectoryVisibilityIsPerHouseParity(t *testing.T) {
+	for name, build := range profileBackends() {
+		t.Run(name, func(t *testing.T) {
+			s := build(t)
+			if _, err := s.Add(twoHouseProfile()); err != nil {
+				t.Fatalf("add: %v", err)
+			}
+
+			// Unset: both houses inherit whatever the person-wide value is.
+			got, _ := s.Get("anna@example.com")
+			for _, house := range []string{"jhw22", "haus-b"} {
+				resolved := got
+				resolved.DirectoryOptIn = true // person-wide value, as the overlay supplies it
+				if !resolved.ForTenant(house).DirectoryOptIn {
+					t.Fatalf("%s should inherit the person-wide value while unset", house)
+				}
+			}
+
+			// Opt out in jhw22 only.
+			if found, err := s.SetTenantDirectoryOptIn("anna@example.com", "jhw22", false); err != nil || !found {
+				t.Fatalf("set: found=%v err=%v", found, err)
+			}
+			got, _ = s.Get("anna@example.com")
+			withPersonWideOptIn := got
+			withPersonWideOptIn.DirectoryOptIn = true
+			if withPersonWideOptIn.ForTenant("jhw22").DirectoryOptIn {
+				t.Fatal("jhw22 should now be hidden despite the person-wide opt-in")
+			}
+			if !withPersonWideOptIn.ForTenant("haus-b").DirectoryOptIn {
+				t.Fatal("haus-b must still inherit the person-wide opt-in")
+			}
+
+			// A later role edit must not reset the visibility choice.
+			if _, ok, err := s.SetTenantMembership("anna@example.com", "jhw22", RoleManager, nil); err != nil || !ok {
+				t.Fatalf("role edit: ok=%v err=%v", ok, err)
+			}
+			got, _ = s.Get("anna@example.com")
+			afterEdit := got
+			afterEdit.DirectoryOptIn = true
+			if afterEdit.ForTenant("jhw22").DirectoryOptIn {
+				t.Fatal("a role edit silently reset the house's directory visibility")
+			}
+
+			if found, err := s.SetTenantDirectoryOptIn("nobody@example.com", "jhw22", true); err != nil || found {
+				t.Fatalf("unknown person: found=%v err=%v", found, err)
+			}
+		})
+	}
+}
