@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.15.10",
+			Date:     "24. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Dokumente auf die neue Datenspeicherung umgestellt.",
+			Intro:    "Die Dokumentenverwaltung nutzt jetzt die eingebettete Datenbank; Dateien liegen unverändert im Dateispeicher.",
+			Items: []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
+		},
+		{
 			Version:  "0.15.9",
 			Date:     "24. Juli 2026",
 			Kind:     "Wartung",

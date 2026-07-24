@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.10] - 2026-07-24
+
+### Verbessert
+
+- **Dokumente auf die neue Datenspeicherung umgestellt.** Die Dokumentenverwaltung (inkl. Versionsverlauf beim Ersetzen) läuft jetzt über die eingebettete Datenbank; die Dateien selbst liegen unverändert im Dateispeicher. Bestehende Dokumente wurden verlustfrei übernommen, mit Rückfallebene. Für Nutzer ändert sich nichts.
+
 ## [0.15.9] - 2026-07-24
 
 ### Verbessert

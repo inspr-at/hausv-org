@@ -594,6 +594,7 @@ type (
 	announcementStorage       = store.AnnouncementStorage
 	eventStorage              = store.EventStorage
 	handoverStorage           = store.HandoverStorage
+	documentStorage           = store.DocumentStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -623,6 +624,7 @@ var newSQLAnnouncementReadStore = store.NewSQLAnnouncementReadStore
 var newSQLAnnouncementStore = store.NewSQLAnnouncementStore
 var newSQLEventStore = store.NewSQLEventStore
 var newSQLHandoverStore = store.NewSQLHandoverStore
+var newSQLDocumentStore = store.NewSQLDocumentStore
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
 var newContactBookStore = store.NewContactBookStore
 var newNotificationPrefStore = store.NewNotificationPrefStore
@@ -711,7 +713,7 @@ type app struct {
 	attachmentStore       *attachmentStore
 	contactStore          contactBookStorage
 	auditStore            *auditStore
-	documentStore         *documentStore
+	documentStore         documentStorage
 	handoverStore         handoverStorage
 	voteStore             *voteStore
 	voteReminderInterval  time.Duration
@@ -1064,7 +1066,8 @@ func newApp() (*app, error) {
 	}
 	documentDataPath := env("DOC_DATA_PATH", "tmp/documents.json")
 	defaultDocumentFileDir := filepath.Join(filepath.Dir(documentDataPath), "documents")
-	documents, err := newDocumentStore(documentDataPath, env("DOC_FILE_DIR", defaultDocumentFileDir))
+	documentFileDir := env("DOC_FILE_DIR", defaultDocumentFileDir)
+	documents, err := newDocumentStore(documentDataPath, documentFileDir)
 	if err != nil {
 		return nil, err
 	}
@@ -1154,6 +1157,7 @@ func newApp() (*app, error) {
 	var annBackend announcementStorage = announcements
 	var eventBackend eventStorage = events
 	var handoverBackend handoverStorage = handovers
+	var documentBackend documentStorage = documents
 	if database != nil {
 		sqlActivity := newSQLActivityStore(database)
 		if err := sqlActivity.ImportActivity(activity); err != nil {
@@ -1209,6 +1213,13 @@ func newApp() (*app, error) {
 		} else {
 			handoverBackend = sqlHandover
 		}
+		// Metadata only: the files themselves stay on disk in documentFileDir.
+		sqlDocument := newSQLDocumentStore(database, documentFileDir)
+		if err := sqlDocument.ImportDocuments(documents); err != nil {
+			log.Printf("document import to sqlite failed, keeping json: %v", err)
+		} else {
+			documentBackend = sqlDocument
+		}
 	}
 
 	return &app{
@@ -1246,7 +1257,7 @@ func newApp() (*app, error) {
 		attachmentStore:       attachments,
 		contactStore:          contactBackend,
 		auditStore:            auditStore,
-		documentStore:         documents,
+		documentStore:         documentBackend,
 		handoverStore:         handoverBackend,
 		voteStore:             votes,
 		voteReminderInterval:  voteReminderInterval,

@@ -1281,7 +1281,7 @@ func (s *DocumentStore) Create(item DocumentRecord, upload UploadedFile, now tim
 		now = time.Now()
 	}
 	item.UploadedAt = now.UTC()
-	fileSave, err := s.saveUploadedDocumentFile(item.TenantSlug, upload)
+	fileSave, err := saveUploadedDocumentFileIn(s.fileDir, item.TenantSlug, upload)
 	if err != nil {
 		return DocumentRecord{}, err
 	}
@@ -1319,11 +1319,13 @@ type DocumentFileSave struct {
 	Path           string
 }
 
-func (s *DocumentStore) saveUploadedDocumentFile(tenantSlug string, upload UploadedFile) (DocumentFileSave, error) {
+// saveUploadedDocumentFileIn validates and stores an uploaded document, shared
+// by both document-store backends (HAUSV-168).
+func saveUploadedDocumentFileIn(fileDir string, tenantSlug string, upload UploadedFile) (DocumentFileSave, error) {
 	if upload.Open == nil || upload.Filename == "" || upload.Size <= 0 {
 		return DocumentFileSave{}, fmt.Errorf("document file required")
 	}
-	if s.fileDir == "" {
+	if fileDir == "" {
 		return DocumentFileSave{}, fmt.Errorf("document file directory unavailable")
 	}
 	if upload.Size > MaxDocumentBytes {
@@ -1355,7 +1357,7 @@ func (s *DocumentStore) saveUploadedDocumentFile(tenantSlug string, upload Uploa
 		return DocumentFileSave{}, err
 	}
 	storedFilename := id + ext
-	storedPath, written, err := s.writeDocumentFile(tenantSlug, storedFilename, file)
+	storedPath, written, err := writeDocumentFileIn(fileDir, tenantSlug, storedFilename, file)
 	if err != nil {
 		return DocumentFileSave{}, err
 	}
@@ -1386,7 +1388,7 @@ func (s *DocumentStore) Replace(tenantSlug string, id string, uploadedBy string,
 	if now.IsZero() {
 		now = time.Now()
 	}
-	fileSave, err := s.saveUploadedDocumentFile(tenantSlug, upload)
+	fileSave, err := saveUploadedDocumentFileIn(s.fileDir, tenantSlug, upload)
 	if err != nil {
 		return DocumentRecord{}, DocumentRecord{}, err
 	}
@@ -1426,13 +1428,17 @@ func (s *DocumentStore) Replace(tenantSlug string, id string, uploadedBy string,
 	return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document not current")
 }
 
-func (s *DocumentStore) writeDocumentFile(tenantSlug string, storedFilename string, file io.Reader) (string, int64, error) {
+// writeDocumentFileIn stores document bytes at fileDir/<tenant>/<storedFilename>.
+// Standalone so the JSON and SQLite document stores share identical file
+// behaviour: file bytes always live on disk, only metadata moves to the
+// database (HAUSV-168).
+func writeDocumentFileIn(fileDir string, tenantSlug string, storedFilename string, file io.Reader) (string, int64, error) {
 	tenantSlug = textutil.Slug(tenantSlug)
 	storedFilename = filepath.Base(storedFilename)
 	if tenantSlug == "" || storedFilename == "" || storedFilename == "." || storedFilename == string(filepath.Separator) {
 		return "", 0, fmt.Errorf("invalid document storage target")
 	}
-	dir := filepath.Join(s.fileDir, tenantSlug)
+	dir := filepath.Join(fileDir, tenantSlug)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", 0, fmt.Errorf("could not create document directory")
 	}
@@ -1534,8 +1540,10 @@ func (s *DocumentStore) Get(tenantSlug string, id string) (DocumentRecord, bool)
 	return DocumentRecord{}, false
 }
 
-func (s *DocumentStore) FilePath(item DocumentRecord) (string, bool) {
-	if s == nil || s.fileDir == "" {
+// documentFilePathIn resolves the on-disk path of a stored document, shared by
+// both document-store backends (HAUSV-168).
+func documentFilePathIn(fileDir string, item DocumentRecord) (string, bool) {
+	if fileDir == "" {
 		return "", false
 	}
 	tenantSlug := textutil.Slug(item.TenantSlug)
@@ -1543,7 +1551,14 @@ func (s *DocumentStore) FilePath(item DocumentRecord) (string, bool) {
 	if tenantSlug == "" || storedFilename == "" || storedFilename == "." || storedFilename == string(filepath.Separator) {
 		return "", false
 	}
-	return filepath.Join(s.fileDir, tenantSlug, storedFilename), true
+	return filepath.Join(fileDir, tenantSlug, storedFilename), true
+}
+
+func (s *DocumentStore) FilePath(item DocumentRecord) (string, bool) {
+	if s == nil {
+		return "", false
+	}
+	return documentFilePathIn(s.fileDir, item)
 }
 
 func (s *DocumentStore) CreateGenerated(item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
@@ -1570,7 +1585,7 @@ func (s *DocumentStore) CreateGenerated(item DocumentRecord, filename string, co
 		filename = id + ext
 	}
 	storedFilename := id + ext
-	path, err := s.writeGeneratedDocumentFile(item.TenantSlug, storedFilename, data)
+	path, err := writeGeneratedDocumentFileIn(s.fileDir, item.TenantSlug, storedFilename, data)
 	if err != nil {
 		return DocumentRecord{}, err
 	}
@@ -1599,16 +1614,18 @@ func (s *DocumentStore) CreateGenerated(item DocumentRecord, filename string, co
 	return CopyDocument(item), nil
 }
 
-func (s *DocumentStore) writeGeneratedDocumentFile(tenantSlug string, storedFilename string, data []byte) (string, error) {
+// writeGeneratedDocumentFileIn stores server-generated document bytes (e.g. the
+// handover PDF), shared by both document-store backends (HAUSV-168).
+func writeGeneratedDocumentFileIn(fileDir string, tenantSlug string, storedFilename string, data []byte) (string, error) {
 	tenantSlug = textutil.Slug(tenantSlug)
 	storedFilename = filepath.Base(storedFilename)
-	if s == nil || s.fileDir == "" {
+	if fileDir == "" {
 		return "", fmt.Errorf("document file directory unavailable")
 	}
 	if tenantSlug == "" || storedFilename == "" || storedFilename == "." || storedFilename == string(filepath.Separator) {
 		return "", fmt.Errorf("invalid document storage target")
 	}
-	dir := filepath.Join(s.fileDir, tenantSlug)
+	dir := filepath.Join(fileDir, tenantSlug)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", fmt.Errorf("could not create document directory")
 	}
