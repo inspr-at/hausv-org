@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.16.1",
+			Date:     "24. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Vorbereitung: Personen und Häuser sauber getrennt.",
+			Intro:    "Im Hintergrund entsteht ein Datenmodell, in dem eine Person zu mehreren Häusern gehören kann, ohne dass sich die Häuser gegenseitig beeinflussen.",
+			Items: []NoteItem{{Label: "Unverändert", Text: "Anmeldung, Rollen und Rechte funktionieren unverändert; es wird noch nichts daraus gelesen."}},
+		},
+		{
 			Version:  "0.16.0",
 			Date:     "24. Juli 2026",
 			Kind:     "Wartung",

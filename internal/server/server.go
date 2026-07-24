@@ -636,6 +636,7 @@ var newSQLTelegramStore = store.NewSQLTelegramStore
 var newSQLUnitStore = store.NewSQLUnitStore
 var newSQLVoteStore = store.NewSQLVoteStore
 var newSQLIssueStore = store.NewSQLIssueStore
+var newSQLIdentityStore = store.NewSQLIdentityStore
 var newSQLProtocolFiler = store.NewSQLProtocolFiler
 var newSequentialProtocolFiler = store.NewSequentialProtocolFiler
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
@@ -719,6 +720,10 @@ type app struct {
 	tenantOverrides       *tenantOverrideStore
 	tenantHeroDir         string
 	inviteStore           *inviteStore
+	// identityStore holds the person/house N:N model (HAUSV-169). Phase 2
+	// populates it; nothing reads from it yet — profiles still resolve through
+	// inviteStore, so login behaviour is unchanged.
+	identityStore *store.SQLIdentityStore
 	activityStore         activityStorage
 	unitStore             unitStorage
 	unitPaymentStore      unitPaymentStatusStorage
@@ -1179,6 +1184,7 @@ func newApp() (*app, error) {
 	var unitBackend unitStorage = units
 	var voteBackend voteStorage = votes
 	var issueBackend issueStorage = issues
+	var identity *store.SQLIdentityStore
 	// Kept concrete: the atomic protocol filer needs both SQL stores and only
 	// works when they share one database (HAUSV-148).
 	var sqlDocumentStore *store.SQLDocumentStore
@@ -1279,6 +1285,13 @@ func newApp() (*app, error) {
 		} else {
 			issueBackend = sqlIssues
 		}
+		// HAUSV-169 phase 2: mirror the email-keyed profiles into the person/house
+		// N:N tables so the migrated identity data can be verified in production.
+		// Nothing reads from it yet — inviteStore stays authoritative for login.
+		identity = newSQLIdentityStore(database)
+		if err := identity.ImportProfiles(invites, time.Now()); err != nil {
+			log.Printf("identity mirror to sqlite failed (not serving from it yet): %v", err)
+		}
 	}
 
 	// Filing a handover protocol writes a document AND the link on the handover.
@@ -1319,6 +1332,7 @@ func newApp() (*app, error) {
 		tenantOverrides:       tenantOverrides,
 		tenantHeroDir:         tenantHeroDir,
 		inviteStore:           invites,
+		identityStore:         identity,
 		activityStore:         activityBackend,
 		unitStore:             unitBackend,
 		unitPaymentStore:      unitPaymentBackend,

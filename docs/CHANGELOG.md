@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.16.1] - 2026-07-24
+
+### Verbessert
+
+- **Vorbereitung für mehrere Häuser je Person.** Im Hintergrund entsteht ein Datenmodell, in dem Person und Haus getrennte Objekte sind: Eine Person kann zu mehreren Häusern gehören, und eine Hausverwaltung bearbeitet ausschließlich die Zugehörigkeit ihres eigenen Hauses. Für Nutzer ändert sich nichts — Anmeldung, Rollen und Rechte laufen unverändert über die bisherigen Daten.
+
 ## [0.16.0] - 2026-07-24
 
 ### Verbessert
