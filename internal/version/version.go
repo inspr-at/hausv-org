@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.15.11",
+			Date:     "24. Juli 2026",
+			Kind:     "Zuverlässigkeit",
+			Headline: "Übergabeprotokolle werden zuverlässig abgelegt.",
+			Intro:    "Das Ablegen eines Übergabeprotokolls im Dokumentenbereich passiert jetzt in einem Zug: Dokument und Verknüpfung werden gemeinsam gespeichert.",
+			Items: []NoteItem{
+				{Label: "Keine Doppel", Text: "Ein wiederholtes Ablegen erzeugt kein zweites Protokoll mehr."},
+				{Label: "Keine Reste", Text: "Bricht der Vorgang ab, bleibt keine verwaiste Datei zurück."},
+			},
+		},
+		{
 			Version:  "0.15.10",
 			Date:     "24. Juli 2026",
 			Kind:     "Wartung",

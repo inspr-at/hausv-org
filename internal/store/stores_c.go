@@ -1561,33 +1561,36 @@ func (s *DocumentStore) FilePath(item DocumentRecord) (string, bool) {
 	return documentFilePathIn(s.fileDir, item)
 }
 
-func (s *DocumentStore) CreateGenerated(item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
-	if s == nil {
-		return DocumentRecord{}, fmt.Errorf("document store unavailable")
-	}
+// prepareGeneratedDocument validates the input, writes the file to disk and
+// builds the finished record — everything EXCEPT persisting the metadata. Split
+// out so a caller can persist it inside its own transaction (HAUSV-148), and so
+// both document-store backends share identical preparation. On a metadata
+// error the freshly written file is removed again; on success the caller owns
+// the returned path and must remove it if its own persistence fails.
+func prepareGeneratedDocument(fileDir string, item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, string, error) {
 	if len(data) == 0 || int64(len(data)) > MaxDocumentBytes {
-		return DocumentRecord{}, fmt.Errorf("document file too large")
+		return DocumentRecord{}, "", fmt.Errorf("document file too large")
 	}
 	contentType = strings.TrimSpace(strings.Split(contentType, ";")[0])
 	ext, ok := DocumentExtension(contentType)
 	if !ok {
-		return DocumentRecord{}, fmt.Errorf("unsupported document type")
+		return DocumentRecord{}, "", fmt.Errorf("unsupported document type")
 	}
 	if now.IsZero() {
 		now = time.Now()
 	}
 	id, err := randomToken(12)
 	if err != nil {
-		return DocumentRecord{}, err
+		return DocumentRecord{}, "", err
 	}
 	filename = SanitizeDocumentFilename(filename)
 	if filename == "dokument" {
 		filename = id + ext
 	}
 	storedFilename := id + ext
-	path, err := writeGeneratedDocumentFileIn(s.fileDir, item.TenantSlug, storedFilename, data)
+	path, err := writeGeneratedDocumentFileIn(fileDir, item.TenantSlug, storedFilename, data)
 	if err != nil {
-		return DocumentRecord{}, err
+		return DocumentRecord{}, "", err
 	}
 	item.ID = id
 	item.SeriesID = id
@@ -1601,7 +1604,18 @@ func (s *DocumentStore) CreateGenerated(item DocumentRecord, filename string, co
 	item = NormalizeDocumentRecord(item)
 	if item.TenantSlug == "" || item.Title == "" || item.Category == "" || item.Visibility == "" || item.UploadedBy == "" {
 		_ = os.Remove(path)
-		return DocumentRecord{}, fmt.Errorf("invalid document metadata")
+		return DocumentRecord{}, "", fmt.Errorf("invalid document metadata")
+	}
+	return item, path, nil
+}
+
+func (s *DocumentStore) CreateGenerated(item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
+	if s == nil {
+		return DocumentRecord{}, fmt.Errorf("document store unavailable")
+	}
+	item, path, err := prepareGeneratedDocument(s.fileDir, item, filename, contentType, data, now)
+	if err != nil {
+		return DocumentRecord{}, err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

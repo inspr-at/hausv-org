@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.11] - 2026-07-24
+
+### Verbessert
+
+- **Übergabeprotokolle werden zuverlässig abgelegt.** Beim Ablegen eines Übergabeprotokolls im Dokumentenbereich werden das Dokument und die Verknüpfung am Übergabe-Eintrag jetzt gemeinsam in einem Vorgang gespeichert. Ein wiederholtes Ablegen (Doppelklick, Neuladen) erzeugt damit kein zweites Protokoll mehr, und ein abgebrochener Vorgang hinterlässt keine verwaiste Datei.
+
 ## [0.15.10] - 2026-07-24
 
 ### Verbessert

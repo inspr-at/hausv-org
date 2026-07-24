@@ -107,43 +107,9 @@ func (s *SQLDocumentStore) CreateGenerated(item DocumentRecord, filename string,
 	if s == nil {
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
-	if len(data) == 0 || int64(len(data)) > MaxDocumentBytes {
-		return DocumentRecord{}, fmt.Errorf("document file too large")
-	}
-	contentType = strings.TrimSpace(strings.Split(contentType, ";")[0])
-	ext, ok := DocumentExtension(contentType)
-	if !ok {
-		return DocumentRecord{}, fmt.Errorf("unsupported document type")
-	}
-	if now.IsZero() {
-		now = time.Now()
-	}
-	id, err := randomToken(12)
+	item, path, err := prepareGeneratedDocument(s.fileDir, item, filename, contentType, data, now)
 	if err != nil {
 		return DocumentRecord{}, err
-	}
-	filename = SanitizeDocumentFilename(filename)
-	if filename == "dokument" {
-		filename = id + ext
-	}
-	storedFilename := id + ext
-	path, err := writeGeneratedDocumentFileIn(s.fileDir, item.TenantSlug, storedFilename, data)
-	if err != nil {
-		return DocumentRecord{}, err
-	}
-	item.ID = id
-	item.SeriesID = id
-	item.Version = 1
-	item.Current = true
-	item.Filename = filename
-	item.StoredFilename = storedFilename
-	item.Size = int64(len(data))
-	item.ContentType = contentType
-	item.UploadedAt = now.UTC()
-	item = NormalizeDocumentRecord(item)
-	if item.TenantSlug == "" || item.Title == "" || item.Category == "" || item.Visibility == "" || item.UploadedBy == "" {
-		_ = os.Remove(path)
-		return DocumentRecord{}, fmt.Errorf("invalid document metadata")
 	}
 	return s.insertOne(item, path)
 }

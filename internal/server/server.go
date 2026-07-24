@@ -595,6 +595,7 @@ type (
 	eventStorage              = store.EventStorage
 	handoverStorage           = store.HandoverStorage
 	documentStorage           = store.DocumentStorage
+	protocolFiler             = store.ProtocolFiler
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -625,6 +626,8 @@ var newSQLAnnouncementStore = store.NewSQLAnnouncementStore
 var newSQLEventStore = store.NewSQLEventStore
 var newSQLHandoverStore = store.NewSQLHandoverStore
 var newSQLDocumentStore = store.NewSQLDocumentStore
+var newSQLProtocolFiler = store.NewSQLProtocolFiler
+var newSequentialProtocolFiler = store.NewSequentialProtocolFiler
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
 var newContactBookStore = store.NewContactBookStore
 var newNotificationPrefStore = store.NewNotificationPrefStore
@@ -715,6 +718,7 @@ type app struct {
 	auditStore            *auditStore
 	documentStore         documentStorage
 	handoverStore         handoverStorage
+	protocolFiler         protocolFiler
 	voteStore             *voteStore
 	voteReminderInterval  time.Duration
 	parkingStore          *parkingStore
@@ -1158,6 +1162,10 @@ func newApp() (*app, error) {
 	var eventBackend eventStorage = events
 	var handoverBackend handoverStorage = handovers
 	var documentBackend documentStorage = documents
+	// Kept concrete: the atomic protocol filer needs both SQL stores and only
+	// works when they share one database (HAUSV-148).
+	var sqlDocumentStore *store.SQLDocumentStore
+	var sqlHandoverStore *store.SQLHandoverStore
 	if database != nil {
 		sqlActivity := newSQLActivityStore(database)
 		if err := sqlActivity.ImportActivity(activity); err != nil {
@@ -1212,6 +1220,7 @@ func newApp() (*app, error) {
 			log.Printf("handover import to sqlite failed, keeping json: %v", err)
 		} else {
 			handoverBackend = sqlHandover
+			sqlHandoverStore = sqlHandover
 		}
 		// Metadata only: the files themselves stay on disk in documentFileDir.
 		sqlDocument := newSQLDocumentStore(database, documentFileDir)
@@ -1219,7 +1228,18 @@ func newApp() (*app, error) {
 			log.Printf("document import to sqlite failed, keeping json: %v", err)
 		} else {
 			documentBackend = sqlDocument
+			sqlDocumentStore = sqlDocument
 		}
+	}
+
+	// Filing a handover protocol writes a document AND the link on the handover.
+	// With both stores in one database that happens in a single transaction;
+	// otherwise fall back to the sequential (idempotent, non-atomic) path.
+	var filer protocolFiler = newSequentialProtocolFiler(documentBackend, handoverBackend)
+	if atomic := newSQLProtocolFiler(sqlDocumentStore, sqlHandoverStore); atomic != nil {
+		filer = atomic
+	} else {
+		log.Printf("handover filing is not atomic: document/handover stores are not sharing sqlite")
 	}
 
 	return &app{
@@ -1259,6 +1279,7 @@ func newApp() (*app, error) {
 		auditStore:            auditStore,
 		documentStore:         documentBackend,
 		handoverStore:         handoverBackend,
+		protocolFiler:         filer,
 		voteStore:             votes,
 		voteReminderInterval:  voteReminderInterval,
 		parkingStore:          parkingStore,

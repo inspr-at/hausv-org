@@ -495,6 +495,17 @@ func (a *app) handoverProtocol(w http.ResponseWriter, r *http.Request, ac authCt
 	_, _ = w.Write(pdf)
 }
 
+// filerOrFallback returns the wired protocol filer, or derives a sequential one
+// from the current stores. newApp always wires it, but an app assembled
+// directly (as tests do) may not — filing must still work there, just without
+// the shared transaction.
+func (a *app) filerOrFallback() protocolFiler {
+	if a.protocolFiler != nil {
+		return a.protocolFiler
+	}
+	return newSequentialProtocolFiler(a.documentStore, a.handoverStore)
+}
+
 func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
 	if !canManageHandovers(role) || !hasCapability(role, capabilityManageDocuments) {
@@ -522,23 +533,29 @@ func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request, ac au
 		attachments = a.attachmentStore.ListEntity(tenant.Slug, "handover", item.ID)
 	}
 	pdf := handoverPDF(tenant, item, attachments, time.Now())
-	created, err := a.documentStore.CreateGenerated(documentRecord{
-		TenantSlug: tenant.Slug,
-		Title:      "Übergabeprotokoll " + item.Title,
-		Category:   documentCategoryProtocol,
-		Visibility: documentVisibilityOwnersOnly,
-		UnitID:     item.UnitID,
-		UploadedBy: email,
-	}, "uebergabe-"+item.ID+"-protokoll.pdf", "application/pdf", pdf, time.Now())
+	// One call: the document and the link on the handover are written together,
+	// so a crash can no longer orphan a protocol whose retry duplicates it. The
+	// filer re-checks "already filed" inside its transaction, which is the
+	// authoritative guard; the early return above only avoids the wasted PDF.
+	created, _, alreadyFiled, err := a.filerOrFallback().FileHandoverProtocol(
+		tenant.Slug, item.ID,
+		documentRecord{
+			TenantSlug: tenant.Slug,
+			Title:      "Übergabeprotokoll " + item.Title,
+			Category:   documentCategoryProtocol,
+			Visibility: documentVisibilityOwnersOnly,
+			UnitID:     item.UnitID,
+			UploadedBy: email,
+		},
+		"uebergabe-"+item.ID+"-protokoll.pdf", "application/pdf", pdf, time.Now(),
+	)
 	if err != nil {
 		logHandoverError("file", tenant.Slug, item.ID, err)
 		http.Redirect(w, r, "/app/uebergaben?handover=error", http.StatusSeeOther)
 		return
 	}
-	_, _, err = a.handoverStore.SetFiledDocument(tenant.Slug, item.ID, created.ID, time.Now())
-	if err != nil {
-		logHandoverError("file-state", tenant.Slug, item.ID, err)
-		http.Redirect(w, r, "/app/uebergaben?handover=error", http.StatusSeeOther)
+	if alreadyFiled {
+		http.Redirect(w, r, "/app/uebergaben?handover=filed#handover-"+url.PathEscape(item.ID), http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{
