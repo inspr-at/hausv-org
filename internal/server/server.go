@@ -599,6 +599,7 @@ type (
 	attachmentStorage         = store.AttachmentStorage
 	telegramStorage           = store.TelegramStorage
 	unitStorage               = store.UnitStorage
+	voteStorage               = store.VoteStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -632,6 +633,7 @@ var newSQLDocumentStore = store.NewSQLDocumentStore
 var newSQLAttachmentStore = store.NewSQLAttachmentStore
 var newSQLTelegramStore = store.NewSQLTelegramStore
 var newSQLUnitStore = store.NewSQLUnitStore
+var newSQLVoteStore = store.NewSQLVoteStore
 var newSQLProtocolFiler = store.NewSQLProtocolFiler
 var newSequentialProtocolFiler = store.NewSequentialProtocolFiler
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
@@ -725,7 +727,7 @@ type app struct {
 	documentStore         documentStorage
 	handoverStore         handoverStorage
 	protocolFiler         protocolFiler
-	voteStore             *voteStore
+	voteStore             voteStorage
 	voteReminderInterval  time.Duration
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
@@ -1172,6 +1174,7 @@ func newApp() (*app, error) {
 	var attachmentBackend attachmentStorage = attachments
 	var telegramBackend telegramStorage = telegramStore
 	var unitBackend unitStorage = units
+	var voteBackend voteStorage = votes
 	// Kept concrete: the atomic protocol filer needs both SQL stores and only
 	// works when they share one database (HAUSV-148).
 	var sqlDocumentStore *store.SQLDocumentStore
@@ -1259,6 +1262,12 @@ func newApp() (*app, error) {
 		} else {
 			unitBackend = sqlUnits
 		}
+		sqlVotes := newSQLVoteStore(database)
+		if err := sqlVotes.ImportBallots(votes); err != nil {
+			log.Printf("vote import to sqlite failed, keeping json: %v", err)
+		} else {
+			voteBackend = sqlVotes
+		}
 	}
 
 	// Filing a handover protocol writes a document AND the link on the handover.
@@ -1309,7 +1318,7 @@ func newApp() (*app, error) {
 		documentStore:         documentBackend,
 		handoverStore:         handoverBackend,
 		protocolFiler:         filer,
-		voteStore:             votes,
+		voteStore:             voteBackend,
 		voteReminderInterval:  voteReminderInterval,
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
