@@ -99,12 +99,21 @@ ssh -p $ssh_port $ssh_host "docker ps --filter name=$service --format 'status: {
 # Boot problems show up here: a store falling back to JSON, or a failed import.
 ssh -p $ssh_port $ssh_host "docker logs $service --since 2m 2>&1 | grep -iE 'sqlite unavailable|import to sqlite failed|not atomic|panic|fatal' | head -5"
 
-set -l after (curl -sf --max-time 15 $live_url | string collect)
-set -l deployed (string match -rg '([0-9]+\.[0-9]+\.[0-9]+ \([0-9a-f]{7}\))' -- $after | head -1)
+# The container needs a moment to pass its healthcheck and start serving; without
+# waiting, this reads an empty page and reports a false failure.
+set -l deployed ""
+for attempt in (seq 15)
+    set -l after (curl -sf --max-time 10 $live_url | string collect)
+    set deployed (string match -rg '([0-9]+\.[0-9]+\.[0-9]+ \([0-9a-f]{7}\))' -- $after | head -1)
+    if test "$deployed" = "$app_version ($commit)"
+        break
+    end
+    sleep 2
+end
 if test "$deployed" = "$app_version ($commit)"
     echo "live version: $deployed ✓"
 else
-    echo "WARNING: live version reads '$deployed', expected '$app_version ($commit)'" >&2
+    echo "WARNING: live version reads '$deployed', expected '$app_version ($commit)' after 30s" >&2
 end
 
 echo ""
