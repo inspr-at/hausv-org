@@ -598,6 +598,7 @@ type (
 	protocolFiler             = store.ProtocolFiler
 	attachmentStorage         = store.AttachmentStorage
 	telegramStorage           = store.TelegramStorage
+	unitStorage               = store.UnitStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -630,6 +631,7 @@ var newSQLHandoverStore = store.NewSQLHandoverStore
 var newSQLDocumentStore = store.NewSQLDocumentStore
 var newSQLAttachmentStore = store.NewSQLAttachmentStore
 var newSQLTelegramStore = store.NewSQLTelegramStore
+var newSQLUnitStore = store.NewSQLUnitStore
 var newSQLProtocolFiler = store.NewSQLProtocolFiler
 var newSequentialProtocolFiler = store.NewSequentialProtocolFiler
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
@@ -714,7 +716,7 @@ type app struct {
 	tenantHeroDir         string
 	inviteStore           *inviteStore
 	activityStore         activityStorage
-	unitStore             *unitStore
+	unitStore             unitStorage
 	unitPaymentStore      unitPaymentStatusStorage
 	issueStore            *issueStore
 	attachmentStore       attachmentStorage
@@ -1169,6 +1171,7 @@ func newApp() (*app, error) {
 	var documentBackend documentStorage = documents
 	var attachmentBackend attachmentStorage = attachments
 	var telegramBackend telegramStorage = telegramStore
+	var unitBackend unitStorage = units
 	// Kept concrete: the atomic protocol filer needs both SQL stores and only
 	// works when they share one database (HAUSV-148).
 	var sqlDocumentStore *store.SQLDocumentStore
@@ -1250,6 +1253,12 @@ func newApp() (*app, error) {
 		} else {
 			telegramBackend = sqlTelegram
 		}
+		sqlUnits := newSQLUnitStore(database)
+		if err := sqlUnits.ImportUnits(units); err != nil {
+			log.Printf("unit import to sqlite failed, keeping json: %v", err)
+		} else {
+			unitBackend = sqlUnits
+		}
 	}
 
 	// Filing a handover protocol writes a document AND the link on the handover.
@@ -1291,7 +1300,7 @@ func newApp() (*app, error) {
 		tenantHeroDir:         tenantHeroDir,
 		inviteStore:           invites,
 		activityStore:         activityBackend,
-		unitStore:             units,
+		unitStore:             unitBackend,
 		unitPaymentStore:      unitPaymentBackend,
 		issueStore:            issues,
 		attachmentStore:       attachmentBackend,
