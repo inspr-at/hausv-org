@@ -19,6 +19,8 @@
 - Use patch bumps for small fixes, minor bumps for product-facing improvements, and major bumps for breaking or strategically large changes.
 - Keep `docs/CHANGELOG.md` in German, newest entry first, with customer-facing release language. Prefer positive wording such as "Stabilität verbessert" over raw bug wording.
 - Build and deploy with `VERSION` as `APP_VERSION`; do not deploy a changed product with an unchanged visible version.
+- Deploy with `scripts/deploy.fish` (`--dry-run` to check first). It ships `HEAD` via `git archive`, builds the image on the host with `VERSION`/commit baked in, recreates the compose service, verifies the live version, and prints a rollback command. It refuses to run on a dirty tree or when `VERSION` is already live.
+- Deployment is manual: CI builds the image to prove the Dockerfile works but never pushes it.
 
 ## Secrets
 
