@@ -601,6 +601,7 @@ type (
 	unitStorage               = store.UnitStorage
 	voteStorage               = store.VoteStorage
 	issueStorage              = store.IssueStorage
+	profileStorage            = store.ProfileStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -719,11 +720,11 @@ type app struct {
 	profileOverlays       profileOverlayStorage
 	tenantOverrides       *tenantOverrideStore
 	tenantHeroDir         string
-	inviteStore           *inviteStore
-	// identityStore holds the person/house N:N model (HAUSV-169). Phase 2
-	// populates it; nothing reads from it yet — profiles still resolve through
-	// inviteStore, so login behaviour is unchanged.
-	identityStore *store.SQLIdentityStore
+	// inviteStore serves app-managed user records. Backed by the person/house
+	// N:N model when SQLite is available, otherwise by the JSON store
+	// (HAUSV-169).
+	inviteStore           profileStorage
+	identityStore         *store.SQLIdentityStore
 	activityStore         activityStorage
 	unitStore             unitStorage
 	unitPaymentStore      unitPaymentStatusStorage
@@ -1185,6 +1186,7 @@ func newApp() (*app, error) {
 	var voteBackend voteStorage = votes
 	var issueBackend issueStorage = issues
 	var identity *store.SQLIdentityStore
+	var inviteBackend profileStorage = invites
 	// Kept concrete: the atomic protocol filer needs both SQL stores and only
 	// works when they share one database (HAUSV-148).
 	var sqlDocumentStore *store.SQLDocumentStore
@@ -1285,12 +1287,14 @@ func newApp() (*app, error) {
 		} else {
 			issueBackend = sqlIssues
 		}
-		// HAUSV-169 phase 2: mirror the email-keyed profiles into the person/house
-		// N:N tables so the migrated identity data can be verified in production.
-		// Nothing reads from it yet — inviteStore stays authoritative for login.
+		// HAUSV-169 phase 3: migrate the email-keyed profiles into the person/house
+		// N:N tables and serve from them. Falls back to the JSON store if the
+		// import fails, so a migration problem can never lock anyone out.
 		identity = newSQLIdentityStore(database)
 		if err := identity.ImportProfiles(invites, time.Now()); err != nil {
-			log.Printf("identity mirror to sqlite failed (not serving from it yet): %v", err)
+			log.Printf("identity import to sqlite failed, keeping json profiles: %v", err)
+		} else {
+			inviteBackend = identity
 		}
 	}
 
@@ -1331,7 +1335,7 @@ func newApp() (*app, error) {
 		profileOverlays:       profileBackend,
 		tenantOverrides:       tenantOverrides,
 		tenantHeroDir:         tenantHeroDir,
-		inviteStore:           invites,
+		inviteStore:           inviteBackend,
 		identityStore:         identity,
 		activityStore:         activityBackend,
 		unitStore:             unitBackend,
@@ -3704,10 +3708,15 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 
+	// Global identity (email, title, name) belongs to the PERSON, not to a house.
+	// A house admin manages only their own membership; changing identity is a
+	// separate, explicitly authorized platform-admin workflow (HAUSV-169 AC8).
+	canEditIdentity := hasCapability(role, capabilityPlatformAdmin)
+
 	// Config-sourced users keep their configured email as a fixed identity; only
 	// pure app invites may be renamed.
 	newEmail := orig
-	if !isEnv {
+	if !isEnv && canEditIdentity {
 		newEmail = normalizeEmail(r.FormValue("email"))
 		if _, err := mail.ParseAddress(newEmail); err != nil {
 			a.redirectInvite(w, r, "invalid_email")
@@ -3763,9 +3772,11 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		updated = envProfile
 	}
 	updated.Email = newEmail
-	updated.Title = strings.TrimSpace(r.FormValue("title"))
-	updated.FirstName = strings.TrimSpace(r.FormValue("first_name"))
-	updated.LastName = strings.TrimSpace(r.FormValue("last_name"))
+	if canEditIdentity {
+		updated.Title = strings.TrimSpace(r.FormValue("title"))
+		updated.FirstName = strings.TrimSpace(r.FormValue("first_name"))
+		updated.LastName = strings.TrimSpace(r.FormValue("last_name"))
+	}
 	updated.Role = newRole
 	updated.Permissions = parsePermissionForm(r.Form)
 	updated.AuthMethods = parseAuthMethodForm(r.Form)
@@ -3779,16 +3790,52 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 
 	if isInvite {
-		changed, err := a.inviteStore.Update(orig, updated)
-		if err != nil {
-			a.redirectInvite(w, r, "exists")
+		// Role and permissions are HOUSE-scoped: they land on this tenant's
+		// membership only. Writing the whole profile here is what let a manager of
+		// house A change someone's role in house B (HAUSV-135).
+		if _, found, err := a.inviteStore.SetTenantMembership(orig, tenant.Slug, newRole, updated.Permissions); err != nil {
+			log.Printf("membership update failed for %s: %v", redactedEmail(orig), err)
+			a.redirectInvite(w, r, "error")
 			return
-		}
-		if !changed {
+		} else if !found {
 			a.redirectInvite(w, r, "not_editable")
 			return
 		}
+		// Login-level fields stay global; identity fields move only for a
+		// platform admin.
+		if _, _, err := a.inviteStore.Mutate(orig, func(p *userProfile) {
+			p.AuthMethods = updated.AuthMethods
+			p.Deactivated = updated.Deactivated
+			if canEditIdentity {
+				p.Title = updated.Title
+				p.FirstName = updated.FirstName
+				p.LastName = updated.LastName
+			}
+		}); err != nil {
+			a.redirectInvite(w, r, "error")
+			return
+		}
+		// A rename is a global identity change, hence platform-admin only.
+		if canEditIdentity && newEmail != orig {
+			renamed, ok := a.inviteStore.Get(orig)
+			if !ok {
+				a.redirectInvite(w, r, "not_editable")
+				return
+			}
+			renamed.Email = newEmail
+			if _, err := a.inviteStore.Update(orig, renamed); err != nil {
+				a.redirectInvite(w, r, "exists")
+				return
+			}
+		}
 	} else {
+		// Adopting a config user: the new role applies to THIS house only, so it
+		// goes in as a membership while other configured houses keep theirs.
+		if updated.TenantMemberships == nil {
+			updated.TenantMemberships = map[string]tenantMembership{}
+		}
+		updated.TenantMemberships[tenant.Slug] = tenantMembership{Role: newRole, Permissions: updated.Permissions}
+		updated.Role = normalizeRole(envProfile.Role)
 		added, err := a.inviteStore.Add(updated)
 		if err != nil {
 			log.Printf("adopt persistence failed for %s: %v", redactedEmail(orig), err)
@@ -3796,8 +3843,8 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			return
 		}
 		if !added {
-			// Raced with a concurrent adopt; apply as an update instead.
-			if _, err := a.inviteStore.Update(orig, updated); err != nil {
+			// Raced with a concurrent adopt; apply the house-scoped change instead.
+			if _, _, err := a.inviteStore.SetTenantMembership(orig, tenant.Slug, newRole, updated.Permissions); err != nil {
 				a.redirectInvite(w, r, "error")
 				return
 			}
@@ -3877,15 +3924,19 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			return
 		}
 	}
-	removed, err := a.inviteStore.Delete(deleteEmail)
+	// House-scoped removal: detach this person from THIS house. The person and
+	// any other house they belong to survive; the record only disappears once no
+	// house is left, which keeps single-house behaviour identical (HAUSV-135).
+	removedProfile, found, err := a.inviteStore.RemoveTenant(deleteEmail, tenant.Slug)
 	if err != nil {
 		a.redirectInvite(w, r, "error")
 		return
 	}
-	if !removed {
+	if !found {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
+	_ = removedProfile
 	// Deleting an override on a config-sourced user reverts it to the env record
 	// rather than removing the person entirely.
 	status := "deleted"

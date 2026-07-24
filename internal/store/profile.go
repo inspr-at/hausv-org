@@ -409,3 +409,131 @@ func TenantMembershipSlugs(memberships map[string]TenantMembership) []string {
 	}
 	return slugs
 }
+
+// SetTenantMembership writes role and permissions for ONE house only, leaving
+// the global identity and every other house's membership untouched. This is the
+// operation a house admin is entitled to perform (HAUSV-135/169).
+//
+// The old path wrote the whole profile, so the top-level Role leaked into every
+// house that had no explicit membership entry — a manager of house A could
+// silently change someone's role in house B.
+func (s *InviteStore) SetTenantMembership(email string, tenantSlug string, role string, permissions []string) (UserProfile, bool, error) {
+	email = textutil.Email(email)
+	tenantSlug = textutil.Slug(tenantSlug)
+	if email == "" || tenantSlug == "" {
+		return UserProfile{}, false, fmt.Errorf("invalid membership target")
+	}
+	return s.Mutate(email, func(p *UserProfile) {
+		if p.TenantMemberships == nil {
+			p.TenantMemberships = map[string]TenantMembership{}
+		}
+		// Pin every OTHER house to its current effective values first. Without
+		// this the top-level role stays load-bearing for houses that have no
+		// explicit entry, so changing it here would silently change the person's
+		// role there too — the exact leak this method exists to prevent.
+		materializeMemberships(p)
+		// Normalize the key so a differently-cased slug cannot create a duplicate.
+		for existing := range p.TenantMemberships {
+			if textutil.Slug(existing) == tenantSlug && existing != tenantSlug {
+				delete(p.TenantMemberships, existing)
+			}
+		}
+		p.TenantMemberships[tenantSlug] = TenantMembership{
+			Role:        NormalizeRole(role),
+			Permissions: NormalizePermissions(permissions),
+		}
+		p.Tenants = NormalizeTenants(append(p.Tenants, tenantSlug), "")
+		syncProfileDefaults(p)
+	})
+}
+
+// materializeMemberships gives every house the person belongs to an explicit
+// membership, resolved from what is effective right now. Afterwards the flat
+// top-level fields are only a default for houses that do not exist yet, and can
+// never leak into an existing one.
+func materializeMemberships(p *UserProfile) {
+	if p.TenantMemberships == nil {
+		p.TenantMemberships = map[string]TenantMembership{}
+	}
+	for _, tenant := range p.Tenants {
+		slug := textutil.Slug(tenant)
+		if slug == "" {
+			continue
+		}
+		if _, ok := p.TenantMemberships[slug]; ok {
+			continue
+		}
+		effective := p.ForTenant(slug)
+		p.TenantMemberships[slug] = TenantMembership{
+			Role:        NormalizeRole(effective.Role),
+			Permissions: NormalizePermissions(effective.Permissions),
+		}
+	}
+}
+
+// syncProfileDefaults keeps the top-level Role/Permissions in step with the
+// alphabetically first membership, mirroring how the SQLite model derives them
+// from person+memberships. Without this the flat fields go stale after a
+// house-scoped edit: ForTenant would still resolve correctly, but any code
+// reading the raw profile would see a permission that was just revoked.
+func syncProfileDefaults(p *UserProfile) {
+	if len(p.TenantMemberships) == 0 {
+		return
+	}
+	slugs := make([]string, 0, len(p.TenantMemberships))
+	for slug := range p.TenantMemberships {
+		slugs = append(slugs, slug)
+	}
+	sort.Strings(slugs)
+	first := p.TenantMemberships[slugs[0]]
+	p.Role = NormalizeRole(first.Role)
+	p.Permissions = NormalizePermissions(first.Permissions)
+}
+
+// RemoveTenant detaches a person from ONE house. The profile itself only
+// disappears once no house is left, which keeps single-house behaviour
+// identical to the previous whole-profile delete (HAUSV-135/169).
+func (s *InviteStore) RemoveTenant(email string, tenantSlug string) (removedProfile bool, found bool, err error) {
+	email = textutil.Email(email)
+	tenantSlug = textutil.Slug(tenantSlug)
+	if email == "" || tenantSlug == "" {
+		return false, false, fmt.Errorf("invalid membership target")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.data.Invites {
+		if textutil.Email(s.data.Invites[i].Email) != email {
+			continue
+		}
+		profile := s.data.Invites[i]
+		// Same reason as in SetTenantMembership: pin the remaining houses before
+		// changing anything, so none of them depends on the flat defaults.
+		materializeMemberships(&profile)
+		kept := []string{}
+		for _, tenant := range profile.Tenants {
+			if textutil.Slug(tenant) != tenantSlug {
+				kept = append(kept, tenant)
+			}
+		}
+		for key := range profile.TenantMemberships {
+			if textutil.Slug(key) == tenantSlug {
+				delete(profile.TenantMemberships, key)
+			}
+		}
+		profile.Tenants = NormalizeTenants(kept, "")
+		if len(profile.Tenants) == 0 && len(profile.TenantMemberships) == 0 {
+			s.data.Invites = append(s.data.Invites[:i], s.data.Invites[i+1:]...)
+			if err := s.saveLocked(); err != nil {
+				return false, true, err
+			}
+			return true, true, nil
+		}
+		syncProfileDefaults(&profile)
+		s.data.Invites[i] = profile
+		if err := s.saveLocked(); err != nil {
+			return false, true, err
+		}
+		return false, true, nil
+	}
+	return false, false, nil
+}

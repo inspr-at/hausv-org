@@ -13,7 +13,7 @@ func sampleDocumentRecord() DocumentRecord {
 	return DocumentRecord{
 		TenantSlug: "jhw22",
 		Title:      "Hausordnung",
-		Category:   "",   // -> Sonstiges
+		Category:   "",    // -> Sonstiges
 		Visibility: "all", // -> alle Bewohner
 		UploadedBy: "admin@example.com",
 	}

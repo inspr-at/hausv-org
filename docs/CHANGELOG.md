@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.17.0] - 2026-07-24
+
+### Verbessert
+
+- **Personen und Häuser sind jetzt sauber getrennt.** Eine Person kann zu mehreren Häusern gehören, und eine Hausverwaltung verwaltet ausschließlich die Zugehörigkeit zum eigenen Haus: Rolle und Rechte gelten je Haus, eine Änderung wirkt nicht mehr in anderen Häusern. „Entfernen" löst nur die Zugehörigkeit zum eigenen Haus und löscht nicht die Person. E-Mail, Titel und Name gehören zur globalen Identität und werden nur von der Plattform-Administration geändert. Bestehende Zugänge wurden verlustfrei übernommen; bei einem einzelnen Haus ändert sich nichts.
+
 ## [0.16.1] - 2026-07-24
 
 ### Verbessert

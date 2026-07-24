@@ -91,12 +91,24 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.17.0",
+			Date:     "24. Juli 2026",
+			Kind:     "Sicherheit",
+			Headline: "Personen und Häuser sauber getrennt.",
+			Intro:    "Eine Person kann zu mehreren Häusern gehören. Eine Hausverwaltung verwaltet ab sofort ausschließlich die Zugehörigkeit zum eigenen Haus.",
+			Items: []NoteItem{
+				{Label: "Getrennt", Text: "Rolle und Rechte gelten je Haus; eine Änderung wirkt nicht mehr in anderen Häusern."},
+				{Label: "Entfernen", Text: "Entfernen löst nur die Zugehörigkeit zum eigenen Haus, nicht die Person."},
+				{Label: "Identität", Text: "E-Mail, Titel und Name ändert nur die Plattform-Administration."},
+			},
+		},
+		{
 			Version:  "0.16.1",
 			Date:     "24. Juli 2026",
 			Kind:     "Wartung",
 			Headline: "Vorbereitung: Personen und Häuser sauber getrennt.",
 			Intro:    "Im Hintergrund entsteht ein Datenmodell, in dem eine Person zu mehreren Häusern gehören kann, ohne dass sich die Häuser gegenseitig beeinflussen.",
-			Items: []NoteItem{{Label: "Unverändert", Text: "Anmeldung, Rollen und Rechte funktionieren unverändert; es wird noch nichts daraus gelesen."}},
+			Items:    []NoteItem{{Label: "Unverändert", Text: "Anmeldung, Rollen und Rechte funktionieren unverändert; es wird noch nichts daraus gelesen."}},
 		},
 		{
 			Version:  "0.16.0",
@@ -115,7 +127,7 @@ func Notes() []Note {
 			Kind:     "Wartung",
 			Headline: "Anhänge auf die neue Datenspeicherung umgestellt.",
 			Intro:    "Anhänge (Fotos und Dateien an Anliegen, Aushängen und Übergaben) nutzen jetzt die eingebettete Datenbank; die Dateien liegen unverändert im Dateispeicher.",
-			Items: []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
+			Items:    []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
 		},
 		{
 			Version:  "0.15.11",
@@ -134,7 +146,7 @@ func Notes() []Note {
 			Kind:     "Wartung",
 			Headline: "Dokumente auf die neue Datenspeicherung umgestellt.",
 			Intro:    "Die Dokumentenverwaltung nutzt jetzt die eingebettete Datenbank; Dateien liegen unverändert im Dateispeicher.",
-			Items: []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
+			Items:    []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
 		},
 		{
 			Version:  "0.15.9",
@@ -142,7 +154,7 @@ func Notes() []Note {
 			Kind:     "Wartung",
 			Headline: "Wohnungsübergaben auf die neue Datenspeicherung umgestellt.",
 			Intro:    "Übergabeprotokolle (Ein-/Auszug) laufen jetzt über die eingebettete Datenbank — verlustfrei übernommen, mit Rückfallebene.",
-			Items: []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
+			Items:    []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
 		},
 		{
 			Version:  "0.15.8",
@@ -150,7 +162,7 @@ func Notes() []Note {
 			Kind:     "Wartung",
 			Headline: "Termine auf die neue Datenspeicherung umgestellt.",
 			Intro:    "Termine und Kalender laufen jetzt über die eingebettete Datenbank — verlustfrei übernommen, mit Rückfallebene.",
-			Items: []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
+			Items:    []NoteItem{{Label: "Unverändert", Text: "Für Nutzer ändert sich nichts."}},
 		},
 		{
 			Version:  "0.15.7",
