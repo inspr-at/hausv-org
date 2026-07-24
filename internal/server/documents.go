@@ -1,17 +1,13 @@
 package server
 
 import (
-	"errors"
 	"fmt"
-	"io"
 	"log"
 	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -243,61 +239,6 @@ func (a *app) previewDocument(w http.ResponseWriter, r *http.Request, ac authCtx
 		w.Header().Set("Content-Type", item.ContentType)
 	}
 	http.ServeContent(w, r, item.Filename, item.UploadedAt, file)
-}
-
-func (a *app) serveLegacyIssuePhoto(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
-	if a.issueStore == nil {
-		http.NotFound(w, r)
-		return
-	}
-	id := strings.TrimSpace(r.PathValue("id"))
-	index, err := strconv.Atoi(strings.TrimSpace(r.PathValue("index")))
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-	issue, found := a.issueStore.Get(tenant.Slug, id)
-	if !found || !a.canViewIssueForActor(tenant.Slug, issue, email, role) {
-		http.NotFound(w, r)
-		return
-	}
-	path, filename, ok := a.legacyIssuePhotoPath(tenant.Slug, issue, index)
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
-	file, err := os.Open(path)
-	if err != nil {
-		log.Printf("legacy issue photo open failed for %s/%s/%d: %v", tenant.Slug, issue.ID, index, err)
-		http.NotFound(w, r)
-		return
-	}
-	defer file.Close()
-	contentType := mime.TypeByExtension(strings.ToLower(filepath.Ext(filename)))
-	if contentType == "" {
-		sniff := make([]byte, 512)
-		n, readErr := file.Read(sniff)
-		if readErr != nil && !errors.Is(readErr, io.EOF) {
-			http.NotFound(w, r)
-			return
-		}
-		contentType = http.DetectContentType(sniff[:n])
-		if _, err := file.Seek(0, io.SeekStart); err != nil {
-			http.NotFound(w, r)
-			return
-		}
-	}
-	if !isImageContentType(contentType) {
-		http.NotFound(w, r)
-		return
-	}
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox")
-	w.Header().Set("Content-Disposition", mime.FormatMediaType("inline", map[string]string{"filename": filename}))
-	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Cache-Control", "private, max-age=300")
-	http.ServeContent(w, r, filename, issue.UpdatedAt, file)
 }
 
 func (a *app) serveAttachment(w http.ResponseWriter, r *http.Request, ac authCtx) {

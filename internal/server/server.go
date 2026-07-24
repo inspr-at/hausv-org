@@ -638,6 +638,7 @@ var newSQLUnitStore = store.NewSQLUnitStore
 var newSQLVoteStore = store.NewSQLVoteStore
 var newSQLIssueStore = store.NewSQLIssueStore
 var newSQLIdentityStore = store.NewSQLIdentityStore
+var migrateLegacyIssuePhotos = store.MigrateLegacyIssuePhotos
 var newSQLProtocolFiler = store.NewSQLProtocolFiler
 var newSequentialProtocolFiler = store.NewSequentialProtocolFiler
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
@@ -866,7 +867,6 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/kontakte/delete", a.action(a.deactivateManagedContact))
 	mux.HandleFunc("GET /app/anliegen", a.page(a.issues))
 	mux.HandleFunc("GET /app/anliegen/board", a.page(a.issueBoard))
-	mux.HandleFunc("GET /app/anliegen/{id}/photos/{index}", a.page(a.serveLegacyIssuePhoto))
 	mux.HandleFunc("POST /app/anliegen", a.action(a.createIssue))
 	mux.HandleFunc("POST /app/anliegen/comment", a.action(a.addIssueComment))
 	mux.HandleFunc("POST /app/anliegen/comment/delete", a.action(a.deleteIssueComment))
@@ -1241,7 +1241,7 @@ func newApp() (*app, error) {
 	for _, t := range tenants {
 		tenantSlugs = append(tenantSlugs, t.Slug)
 	}
-	if n, err := store.MigrateLegacyIssuePhotos(issueBackend, attachmentBackend, issueAttachmentDir, tenantSlugs, time.Now()); err != nil {
+	if n, err := migrateLegacyIssuePhotos(issueBackend, attachmentBackend, issueAttachmentDir, tenantSlugs, time.Now()); err != nil {
 		log.Printf("legacy issue photo migration incomplete (legacy path still serves them): %v", err)
 	} else if n > 0 {
 		log.Printf("migrated %d legacy issue photo(s) into the attachment store", n)
@@ -2566,44 +2566,6 @@ func (a *app) actorCanSeeCommonIssues(tenantSlug string, email string, role stri
 		}
 	}
 	return false
-}
-
-func (a *app) legacyIssuePhotoViews(tenantSlug string, item residentIssue) []attachmentView {
-	if a == nil || a.issueStore == nil || len(item.PhotoPaths) == 0 {
-		return nil
-	}
-	views := make([]attachmentView, 0, len(item.PhotoPaths))
-	for i := range item.PhotoPaths {
-		_, filename, ok := a.legacyIssuePhotoPath(tenantSlug, item, i)
-		if !ok {
-			continue
-		}
-		url := "/app/anliegen/" + url.PathEscape(item.ID) + "/photos/" + strconv.Itoa(i)
-		views = append(views, attachmentView{
-			ID:         "legacy-photo-" + strconv.Itoa(i),
-			Filename:   filename,
-			URL:        url,
-			PreviewURL: url,
-			ThumbURL:   url,
-			IsImage:    true,
-		})
-	}
-	return views
-}
-
-func (a *app) legacyIssuePhotoPath(tenantSlug string, item residentIssue, index int) (string, string, bool) {
-	if a == nil || a.issueStore == nil || a.issueStore.AttachmentDir() == "" || index < 0 || index >= len(item.PhotoPaths) {
-		return "", "", false
-	}
-	tenantSlug = normalizeSlug(tenantSlug)
-	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug {
-		return "", "", false
-	}
-	filename := filepath.Base(strings.TrimSpace(item.PhotoPaths[index]))
-	if filename == "" || filename == "." || filename == string(filepath.Separator) {
-		return "", "", false
-	}
-	return filepath.Join(a.issueStore.AttachmentDir(), tenantSlug, filename), filename, true
 }
 
 func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {

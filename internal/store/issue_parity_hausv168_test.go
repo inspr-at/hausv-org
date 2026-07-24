@@ -47,10 +47,6 @@ func TestIssueStorageParity(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			s := build(t)
 
-			if s.AttachmentDir() == "" {
-				t.Fatal("attachment dir must be reported")
-			}
-
 			// Missing body is rejected.
 			bad := sampleIssue()
 			bad.Body = ""

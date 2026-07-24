@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.17.6] - 2026-07-24
+
+### Verbessert
+
+- **Alte Foto-Sonderbehandlung bei Anliegen entfernt.** Nachdem die älteren Fotos in die reguläre Anhang-Verwaltung übernommen sind, entfällt der frühere Sonderweg für ihre Anzeige. Fotos an Anliegen laufen jetzt einheitlich über die Anhang-Verwaltung und bleiben unverändert sichtbar.
+
 ## [0.17.5] - 2026-07-24
 
 ### Verbessert

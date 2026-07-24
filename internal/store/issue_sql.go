@@ -21,7 +21,6 @@ type IssueStorage interface {
 	UpdateWorkflow(tenantSlug string, id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error)
 	AddComment(tenantSlug string, id string, comment IssueComment) (ResidentIssue, bool, error)
 	DeleteComment(tenantSlug string, id string, commentID string, at time.Time) (ResidentIssue, bool, error)
-	AttachmentDir() string
 	// ClearPhotoPaths drops the legacy photo list after those photos have been
 	// moved into the attachment store (HAUSV-175).
 	ClearPhotoPaths(tenantSlug string, id string) (bool, error)
@@ -41,13 +40,6 @@ type SQLIssueStore struct {
 
 func NewSQLIssueStore(db *sql.DB, attachmentDir string) *SQLIssueStore {
 	return &SQLIssueStore{db: db, attachmentDir: attachmentDir}
-}
-
-func (s *SQLIssueStore) AttachmentDir() string {
-	if s == nil {
-		return ""
-	}
-	return s.attachmentDir
 }
 
 func (s *SQLIssueStore) writeTx(tx *sql.Tx, item ResidentIssue) error {

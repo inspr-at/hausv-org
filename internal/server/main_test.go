@@ -3120,22 +3120,33 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	}
 }
 
-func TestLegacyIssuePhotoRendersPreviewAndLightbox(t *testing.T) {
+// HAUSV-175: a photo that predates the attachment store must still be visible
+// on its issue AFTER the migration moves it. This replaces the old test for the
+// legacy render path, which is gone along with that path — what matters to a
+// user is unchanged: the photo is still there.
+func TestMigratedLegacyIssuePhotoStillRendersOnTheIssue(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	attachmentDir := filepath.Join(t.TempDir(), "issue-attachments")
-	store, err := newIssueStore(filepath.Join(t.TempDir(), "issues.json"), attachmentDir)
+	dir := t.TempDir()
+	legacyDir := filepath.Join(dir, "issue-attachments")
+	issues, err := newIssueStore(filepath.Join(dir, "issues.json"), legacyDir)
 	if err != nil {
 		t.Fatalf("newIssueStore: %v", err)
 	}
-	a.issueStore = store
-	if err := os.MkdirAll(filepath.Join(attachmentDir, "jhw22"), 0o755); err != nil {
+	a.issueStore = issues
+	attachments, err := newAttachmentStore(filepath.Join(dir, "attachments.json"), filepath.Join(dir, "files"))
+	if err != nil {
+		t.Fatalf("newAttachmentStore: %v", err)
+	}
+	a.attachmentStore = attachments
+
+	if err := os.MkdirAll(filepath.Join(legacyDir, "jhw22"), 0o755); err != nil {
 		t.Fatalf("mkdir legacy photo dir: %v", err)
 	}
 	legacyFilename := "legacy-1-photo.png"
-	if err := os.WriteFile(filepath.Join(attachmentDir, "jhw22", legacyFilename), minimalPNG(), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(legacyDir, "jhw22", legacyFilename), minimalPNG(), 0o600); err != nil {
 		t.Fatalf("write legacy photo: %v", err)
 	}
-	_, err = store.Create(residentIssue{
+	if _, err := issues.Create(residentIssue{
 		ID:           "legacy-1",
 		TenantSlug:   "jhw22",
 		AuthorEmail:  "resident@example.com",
@@ -3145,27 +3156,28 @@ func TestLegacyIssuePhotoRendersPreviewAndLightbox(t *testing.T) {
 		LocationType: issueLocationCommon,
 		Status:       issueStatusNew,
 		Priority:     issuePriorityNorm,
-		PhotoPaths:   []string{filepath.ToSlash(filepath.Join(filepath.Base(attachmentDir), "jhw22", legacyFilename))},
-	})
-	if err != nil {
+		PhotoPaths:   []string{filepath.ToSlash(filepath.Join(filepath.Base(legacyDir), "jhw22", legacyFilename))},
+	}); err != nil {
 		t.Fatalf("create legacy issue: %v", err)
 	}
+
+	n, err := migrateLegacyIssuePhotos(issues, attachments, legacyDir, []string{"jhw22"}, time.Now())
+	if err != nil || n != 1 {
+		t.Fatalf("migrate: n=%d err=%v", n, err)
+	}
+
 	page := authedRequest(t, a, "resident@example.com", "/app/anliegen")
 	body := page.Body.String()
-	for _, want := range []string{"Altes Foto", "1 Foto", legacyFilename, `data-lightbox-src="/app/anliegen/legacy-1/photos/0"`, `<img src="/app/anliegen/legacy-1/photos/0"`} {
+	for _, want := range []string{"Altes Foto", "1 Foto", legacyFilename, "data-lightbox-src="} {
 		if !strings.Contains(body, want) {
-			t.Fatalf("legacy issue page should contain %q:\n%s", want, body)
+			t.Fatalf("the migrated photo should still render, missing %q:\n%s", want, body)
 		}
 	}
-	photo := authedRequest(t, a, "resident@example.com", "/app/anliegen/legacy-1/photos/0")
-	if photo.Code != http.StatusOK {
-		t.Fatalf("legacy photo status = %d, want 200", photo.Code)
-	}
-	if ct := photo.Header().Get("Content-Type"); !strings.HasPrefix(ct, "image/png") {
-		t.Fatalf("legacy photo content type = %q", ct)
+	// And the legacy route is gone.
+	if gone := authedRequest(t, a, "resident@example.com", "/app/anliegen/legacy-1/photos/0"); gone.Code == http.StatusOK {
+		t.Fatal("the legacy photo route should no longer exist")
 	}
 }
-
 func TestResidentCanSubmitIssueWithMultipleAttachments(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 

@@ -2708,15 +2708,6 @@ func SubtleConstantStringCompare(a string, b string) bool {
 // AttachmentDir exposes the issue store's photo directory. main used to reach
 // into the unexported field directly (legacy issue photos are served from disk);
 // crossing a package boundary needs a real accessor.
-func (s *IssueStore) AttachmentDir() string {
-	if s == nil {
-		return ""
-	}
-	return s.attachmentDir
-}
-
-// ClearPhotoPaths drops the legacy photo_paths list once those photos have been
-// moved into the attachment store (HAUSV-175).
 func (s *IssueStore) ClearPhotoPaths(tenantSlug string, id string) (bool, error) {
 	if s == nil {
 		return false, nil

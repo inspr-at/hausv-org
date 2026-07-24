@@ -779,8 +779,7 @@ func (a *app) issueViewsForActor(tenantSlug string, items []residentIssue, role 
 		return views
 	}
 	for i := range views {
-		attachments := a.legacyIssuePhotoViews(tenantSlug, items[i])
-		attachments = append(attachments, a.attachmentViewsForEntity(tenantSlug, "issue", views[i].ID, actorEmail, role)...)
+		attachments := a.attachmentViewsForEntity(tenantSlug, "issue", views[i].ID, actorEmail, role)
 		photoCount := 0
 		for _, attachment := range attachments {
 			if attachment.IsImage {
@@ -843,7 +842,7 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 	canManage := hasCapability(role, capabilityManageIssues)
 	readOnly := hasCapability(role, capabilityOversight) && !canManage
 	for _, item := range items {
-		photoCount := len(item.PhotoPaths)
+		photoCount := 0
 		comments := issueCommentViews(item.Comments)
 		status := normalizeIssueStatus(item.Status)
 		if status == "" {

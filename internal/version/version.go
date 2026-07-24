@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.17.6",
+			Date:     "24. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Alte Foto-Sonderbehandlung bei Anliegen entfernt.",
+			Intro:    "Nachdem alle älteren Fotos übernommen sind, entfällt der frühere Sonderweg; Fotos laufen einheitlich über die Anhang-Verwaltung.",
+			Items:    []NoteItem{{Label: "Unverändert", Text: "Alle Fotos bleiben an ihrem Anliegen sichtbar."}},
+		},
+		{
 			Version:  "0.17.5",
 			Date:     "24. Juli 2026",
 			Kind:     "Wartung",
