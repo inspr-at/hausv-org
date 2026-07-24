@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.17.5] - 2026-07-24
+
+### Verbessert
+
+- **Ältere Anliegen-Fotos in die reguläre Anhang-Verwaltung übernommen.** Fotos, die vor der Umstellung auf die allgemeine Anhang-Verwaltung hochgeladen wurden, lagen noch in einer eigenen Ablage. Sie wurden verlustfrei übernommen und bleiben an ihrem Anliegen unverändert sichtbar.
+
 ## [0.17.4] - 2026-07-24
 
 ### Verbessert

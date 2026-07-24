@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.17.5",
+			Date:     "24. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Ältere Anliegen-Fotos in die reguläre Anhang-Verwaltung übernommen.",
+			Intro:    "Fotos aus der Anfangszeit lagen noch in einer eigenen Ablage und wurden verlustfrei in die normale Anhang-Verwaltung übernommen.",
+			Items:    []NoteItem{{Label: "Unverändert", Text: "Die Fotos bleiben an ihrem Anliegen sichtbar."}},
+		},
+		{
 			Version:  "0.17.4",
 			Date:     "24. Juli 2026",
 			Kind:     "Wartung",

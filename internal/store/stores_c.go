@@ -2714,3 +2714,31 @@ func (s *IssueStore) AttachmentDir() string {
 	}
 	return s.attachmentDir
 }
+
+// ClearPhotoPaths drops the legacy photo_paths list once those photos have been
+// moved into the attachment store (HAUSV-175).
+func (s *IssueStore) ClearPhotoPaths(tenantSlug string, id string) (bool, error) {
+	if s == nil {
+		return false, nil
+	}
+	tenantSlug = textutil.Slug(tenantSlug)
+	id = strings.TrimSpace(id)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, existing := range s.data.Issues {
+		if textutil.Slug(existing.TenantSlug) != tenantSlug || existing.ID != id {
+			continue
+		}
+		if len(existing.PhotoPaths) == 0 {
+			return false, nil
+		}
+		updated := existing
+		updated.PhotoPaths = nil
+		s.data.Issues[i] = updated
+		if err := s.saveLocked(); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, nil
+}

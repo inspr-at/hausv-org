@@ -1231,6 +1231,22 @@ func newApp() (*app, error) {
 	var issueBackend issueStorage = sqlIssues
 	var inviteBackend profileStorage = identity
 
+	// One-off: move legacy issue photos (ResidentIssue.PhotoPaths, written by the
+	// long-removed SavePhoto) into the attachment store (HAUSV-175). Idempotent —
+	// clearing the field is what marks an issue done — so it becomes a no-op once
+	// it has run. Deliberately NON-fatal: the legacy read path is still in place,
+	// so a failure here degrades to "photo still served the old way" rather than
+	// blocking boot.
+	tenantSlugs := make([]string, 0, len(tenants))
+	for _, t := range tenants {
+		tenantSlugs = append(tenantSlugs, t.Slug)
+	}
+	if n, err := store.MigrateLegacyIssuePhotos(issueBackend, attachmentBackend, issueAttachmentDir, tenantSlugs, time.Now()); err != nil {
+		log.Printf("legacy issue photo migration incomplete (legacy path still serves them): %v", err)
+	} else if n > 0 {
+		log.Printf("migrated %d legacy issue photo(s) into the attachment store", n)
+	}
+
 	// Filing a handover protocol writes a document AND the link on the handover
 	// in one transaction (HAUSV-148). Both stores now always share the database,
 	// so the atomic filer is always available; the guard stays as an assertion.

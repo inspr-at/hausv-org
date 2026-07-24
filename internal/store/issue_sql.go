@@ -22,6 +22,9 @@ type IssueStorage interface {
 	AddComment(tenantSlug string, id string, comment IssueComment) (ResidentIssue, bool, error)
 	DeleteComment(tenantSlug string, id string, commentID string, at time.Time) (ResidentIssue, bool, error)
 	AttachmentDir() string
+	// ClearPhotoPaths drops the legacy photo list after those photos have been
+	// moved into the attachment store (HAUSV-175).
+	ClearPhotoPaths(tenantSlug string, id string) (bool, error)
 }
 
 var (
@@ -410,4 +413,29 @@ func (s *SQLIssueStore) ImportIssues(src *IssueStore) error {
 		}
 	}
 	return nil
+}
+
+func (s *SQLIssueStore) ClearPhotoPaths(tenantSlug string, id string) (bool, error) {
+	if s == nil {
+		return false, nil
+	}
+	tenantSlug = textutil.Slug(tenantSlug)
+	id = strings.TrimSpace(id)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	existing, found := loadIssueTx(tx, tenantSlug, id)
+	if !found || len(existing.PhotoPaths) == 0 {
+		return false, nil
+	}
+	existing.PhotoPaths = nil
+	if err := s.writeTx(tx, existing); err != nil {
+		return false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return true, nil
 }
