@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.15.12] - 2026-07-24
+
+### Verbessert
+
+- **Anhänge auf die neue Datenspeicherung umgestellt.** Anhänge (Fotos und Dateien an Anliegen, Aushängen und Übergaben) laufen jetzt über die eingebettete Datenbank; die Dateien und ihre Vorschaubilder liegen unverändert im Dateispeicher. Ein fehlgeschlagener Mehrfach-Upload hinterlässt weiterhin garantiert keine halben Datensätze oder verwaisten Dateien. Für Nutzer ändert sich nichts.
+
 ## [0.15.11] - 2026-07-24
 
 ### Verbessert

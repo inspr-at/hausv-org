@@ -596,6 +596,7 @@ type (
 	handoverStorage           = store.HandoverStorage
 	documentStorage           = store.DocumentStorage
 	protocolFiler             = store.ProtocolFiler
+	attachmentStorage         = store.AttachmentStorage
 	announcementReadStore     = store.AnnouncementReadStore
 	announcementReadStoreData = store.AnnouncementReadStoreData
 	contactBookStore          = store.ContactBookStore
@@ -626,6 +627,7 @@ var newSQLAnnouncementStore = store.NewSQLAnnouncementStore
 var newSQLEventStore = store.NewSQLEventStore
 var newSQLHandoverStore = store.NewSQLHandoverStore
 var newSQLDocumentStore = store.NewSQLDocumentStore
+var newSQLAttachmentStore = store.NewSQLAttachmentStore
 var newSQLProtocolFiler = store.NewSQLProtocolFiler
 var newSequentialProtocolFiler = store.NewSequentialProtocolFiler
 var newAnnouncementReadStore = store.NewAnnouncementReadStore
@@ -713,7 +715,7 @@ type app struct {
 	unitStore             *unitStore
 	unitPaymentStore      unitPaymentStatusStorage
 	issueStore            *issueStore
-	attachmentStore       *attachmentStore
+	attachmentStore       attachmentStorage
 	contactStore          contactBookStorage
 	auditStore            *auditStore
 	documentStore         documentStorage
@@ -1054,7 +1056,8 @@ func newApp() (*app, error) {
 	}
 	attachmentDataPath := env("ATTACHMENT_DATA_PATH", "tmp/attachments.json")
 	defaultAttachmentFileDir := filepath.Join(filepath.Dir(attachmentDataPath), "attachments")
-	attachments, err := newAttachmentStore(attachmentDataPath, env("ATTACHMENT_FILE_DIR", defaultAttachmentFileDir))
+	attachmentFileDir := env("ATTACHMENT_FILE_DIR", defaultAttachmentFileDir)
+	attachments, err := newAttachmentStore(attachmentDataPath, attachmentFileDir)
 	if err != nil {
 		return nil, err
 	}
@@ -1162,6 +1165,7 @@ func newApp() (*app, error) {
 	var eventBackend eventStorage = events
 	var handoverBackend handoverStorage = handovers
 	var documentBackend documentStorage = documents
+	var attachmentBackend attachmentStorage = attachments
 	// Kept concrete: the atomic protocol filer needs both SQL stores and only
 	// works when they share one database (HAUSV-148).
 	var sqlDocumentStore *store.SQLDocumentStore
@@ -1230,6 +1234,13 @@ func newApp() (*app, error) {
 			documentBackend = sqlDocument
 			sqlDocumentStore = sqlDocument
 		}
+		// Metadata only: files and image variants stay in attachmentFileDir.
+		sqlAttachment := newSQLAttachmentStore(database, attachmentFileDir)
+		if err := sqlAttachment.ImportAttachments(attachments); err != nil {
+			log.Printf("attachment import to sqlite failed, keeping json: %v", err)
+		} else {
+			attachmentBackend = sqlAttachment
+		}
 	}
 
 	// Filing a handover protocol writes a document AND the link on the handover.
@@ -1274,7 +1285,7 @@ func newApp() (*app, error) {
 		unitStore:             units,
 		unitPaymentStore:      unitPaymentBackend,
 		issueStore:            issues,
-		attachmentStore:       attachments,
+		attachmentStore:       attachmentBackend,
 		contactStore:          contactBackend,
 		auditStore:            auditStore,
 		documentStore:         documentBackend,

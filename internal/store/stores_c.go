@@ -865,7 +865,7 @@ func (s *AttachmentStore) CreateUploaded(tenantSlug string, entityType string, e
 			s.rollbackCreatedAttachmentsLocked(created)
 			return nil, err
 		}
-		fileSave, err := s.saveUploadedAttachmentFile(tenantSlug, id, upload)
+		fileSave, err := saveUploadedAttachmentFileIn(s.fileDir, tenantSlug, id, upload)
 		if err != nil {
 			s.rollbackCreatedAttachmentsLocked(created)
 			return nil, err
@@ -913,8 +913,11 @@ type AttachmentFileSave struct {
 	ThumbSize          int64
 }
 
-func (s *AttachmentStore) saveUploadedAttachmentFile(tenantSlug string, id string, upload UploadedFile) (AttachmentFileSave, error) {
-	if s.fileDir == "" {
+// saveUploadedAttachmentFileIn stores an attachment (plus image variants) under
+// fileDir/<tenant>/. Standalone so the JSON and SQLite attachment stores share
+// identical file behaviour (HAUSV-168).
+func saveUploadedAttachmentFileIn(fileDir string, tenantSlug string, id string, upload UploadedFile) (AttachmentFileSave, error) {
+	if fileDir == "" {
 		return AttachmentFileSave{}, fmt.Errorf("attachment file directory unavailable")
 	}
 	file, err := upload.Open()
@@ -941,7 +944,7 @@ func (s *AttachmentStore) saveUploadedAttachmentFile(tenantSlug string, id strin
 	if !ok {
 		return AttachmentFileSave{}, fmt.Errorf("unsupported attachment type")
 	}
-	dir := filepath.Join(s.fileDir, tenantSlug)
+	dir := filepath.Join(fileDir, tenantSlug)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return AttachmentFileSave{}, fmt.Errorf("could not create attachment directory")
 	}
@@ -1035,8 +1038,10 @@ func (s *AttachmentStore) Delete(tenantSlug string, id string, deletedAt time.Ti
 	return AttachmentRecord{}, false, nil
 }
 
-func (s *AttachmentStore) FilePath(item AttachmentRecord, variant string) (string, string, int64, bool) {
-	if s == nil || s.fileDir == "" || item.StoredFilename == "" {
+// attachmentFilePathIn resolves the on-disk path of an attachment variant,
+// shared by both attachment-store backends (HAUSV-168).
+func attachmentFilePathIn(fileDir string, item AttachmentRecord, variant string) (string, string, int64, bool) {
+	if fileDir == "" || item.StoredFilename == "" {
 		return "", "", 0, false
 	}
 	filename := item.StoredFilename
@@ -1063,8 +1068,15 @@ func (s *AttachmentStore) FilePath(item AttachmentRecord, variant string) (strin
 	if contentType == "" {
 		contentType = "application/octet-stream"
 	}
-	path := filepath.Join(s.fileDir, textutil.Slug(item.TenantSlug), filename)
+	path := filepath.Join(fileDir, textutil.Slug(item.TenantSlug), filename)
 	return path, contentType, size, true
+}
+
+func (s *AttachmentStore) FilePath(item AttachmentRecord, variant string) (string, string, int64, bool) {
+	if s == nil {
+		return "", "", 0, false
+	}
+	return attachmentFilePathIn(s.fileDir, item, variant)
 }
 
 func (s *AttachmentStore) saveLocked() error {
@@ -1090,13 +1102,19 @@ func (s *AttachmentStore) rollbackCreatedAttachmentsLocked(items []AttachmentRec
 	s.data.Attachments = kept
 }
 
-func (s *AttachmentStore) removeAttachmentRecordLocked(item AttachmentRecord) {
+// removeAttachmentFilesIn deletes an attachment's file and its image variants,
+// shared by both attachment-store backends (HAUSV-168).
+func removeAttachmentFilesIn(fileDir string, item AttachmentRecord) {
 	for _, filename := range []string{item.StoredFilename, item.PreviewFilename, item.ThumbFilename} {
 		if filename == "" {
 			continue
 		}
-		_ = os.Remove(filepath.Join(s.fileDir, textutil.Slug(item.TenantSlug), filename))
+		_ = os.Remove(filepath.Join(fileDir, textutil.Slug(item.TenantSlug), filename))
 	}
+}
+
+func (s *AttachmentStore) removeAttachmentRecordLocked(item AttachmentRecord) {
+	removeAttachmentFilesIn(s.fileDir, item)
 }
 
 func DetectAttachmentContentType(data []byte, upload UploadedFile) string {
