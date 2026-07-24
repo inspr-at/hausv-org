@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.17.4] - 2026-07-24
+
+### Verbessert
+
+- **Aufräumarbeiten im Hintergrund.** Der nicht mehr genutzte Code-Pfad für den früheren Foto-Upload an Anliegen wurde entfernt; Anhänge laufen längst über die reguläre Anhang-Verwaltung. Bereits vorhandene Fotos bleiben unverändert abrufbar.
+
 ## [0.17.3] - 2026-07-24
 
 ### Verbessert

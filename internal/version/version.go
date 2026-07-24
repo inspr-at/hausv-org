@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.17.4",
+			Date:     "24. Juli 2026",
+			Kind:     "Wartung",
+			Headline: "Aufräumarbeiten im Hintergrund.",
+			Intro:    "Nicht mehr genutzter Code für den alten Foto-Upload an Anliegen wurde entfernt.",
+			Items:    []NoteItem{{Label: "Unverändert", Text: "Bestehende Fotos bleiben unverändert abrufbar."}},
+		},
+		{
 			Version:  "0.17.3",
 			Date:     "24. Juli 2026",
 			Kind:     "Zuverlässigkeit",
