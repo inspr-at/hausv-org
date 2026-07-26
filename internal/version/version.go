@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.22.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Nachvollziehbarkeit",
+			Headline: "Das Audit-Log zeigt jeder Rolle genau ihre freigegebene Historie.",
+			Intro:    "Bewohner und Dienstleister können eigene Aktionen und aktuell zugängliche Vorgänge nachvollziehen, ohne interne Verwaltungsdetails zu sehen.",
+			Items: []NoteItem{
+				{Label: "Datensparsam", Text: "Personenbezogene Verwaltungsangaben, Dateinamen, Zahlungsreferenzen, Beträge und Bankdaten bleiben außerhalb der persönlichen Ansicht."},
+				{Label: "Vollständiger", Text: "Anhangzugriffe, Löschungen und verarbeitete Zahlungsimporte ergänzen die nachvollziehbare Historie."},
+			},
+		},
+		{
 			Version:  "0.21.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Übergaben",

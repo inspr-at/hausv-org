@@ -53,6 +53,9 @@ const (
 	AuditActionDocumentUpload     = "document.upload"
 	AuditActionDocumentDownload   = "document.download"
 	AuditActionDocumentReplace    = "document.replace"
+	AuditActionAttachmentView     = "attachment.view"
+	AuditActionAttachmentDelete   = "attachment.delete"
+	AuditActionIntegrationImport  = "integration.import"
 	AuditActionVoteCreate         = "vote.create"
 	AuditActionVoteOpen           = "vote.open"
 	AuditActionVoteClose          = "vote.close"
@@ -1609,6 +1612,7 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionBuildingUpdate, AuditActionHeroUpdate, AuditActionUnitSave, AuditActionUnitDelete,
 		AuditActionUnitPayment,
 		AuditActionDocumentUpload, AuditActionDocumentDownload, AuditActionDocumentReplace,
+		AuditActionAttachmentView, AuditActionAttachmentDelete, AuditActionIntegrationImport,
 		AuditActionHandoverCreate, AuditActionHandoverConfirm, AuditActionHandoverFile,
 		AuditActionVoteCreate, AuditActionVoteOpen, AuditActionVoteClose, AuditActionVoteCast, AuditActionVoteReminder,
 		AuditActionParkingSettings, AuditActionParkingMonth, AuditActionParkingReminder,

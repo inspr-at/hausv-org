@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.22.0] - 2026-07-26
+
+### Neu
+
+- **Persönlich freigegebene Vorgänge sind nachvollziehbar.** Bewohner und Dienstleister sehen im Audit-Log die eigenen Aktionen sowie aktuell freigegebene Anliegen und Einheiten. Personenbezogene Verwaltungsdetails bleiben dabei ausgeblendet.
+
+### Verbessert
+
+- **Anhänge und Zahlungsimporte hinterlassen eine verständliche Spur.** Aufrufe und Löschungen von Anhängen sowie verarbeitete Integrationsimporte werden protokolliert, ohne Dateinamen, Zahlungsreferenzen, Beträge oder Bankdaten in das Audit-Log zu übernehmen.
+- **Audit-Einträge sind leichter einzuordnen.** Neue Aktionen und Ziele tragen verständliche Bezeichnungen und unterscheiden Hinzufügen, Ändern und Entfernen weiterhin sichtbar.
+
 ## [0.21.0] - 2026-07-26
 
 ### Verbessert

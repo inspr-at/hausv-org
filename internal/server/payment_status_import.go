@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/markus-barta/hausv-org/internal/integrations"
@@ -105,6 +106,23 @@ func (a *app) applyImportedPaymentsToUnitStatuses(payments []integrations.Paymen
 				"unit_label": row.UnitLabel,
 				"status":     unitPaymentStatusLabel(record.Status),
 				"source":     string(integrations.FormatCAMT053),
+			},
+		})
+	}
+	if tenantSlug := candidatesTenant(candidates); tenantSlug != "" {
+		a.recordAudit(auditEvent{
+			TenantSlug: tenantSlug,
+			ActorEmail: actorEmail,
+			ActorRole:  actorRole,
+			Action:     auditActionIntegrationImport,
+			TargetType: "integration",
+			TargetID:   string(integrations.FormatCAMT053),
+			Summary:    "Zahlungsstatus-Import verarbeitet",
+			Details: map[string]string{
+				"format":   string(integrations.FormatCAMT053),
+				"assigned": strconv.Itoa(report.Assigned),
+				"unclear":  strconv.Itoa(report.Unclear),
+				"rejected": strconv.Itoa(report.Rejected),
 			},
 		})
 	}
@@ -215,4 +233,19 @@ func candidateTenant(candidates []unitPaymentReferenceCandidate, reference strin
 		}
 	}
 	return ""
+}
+
+func candidatesTenant(candidates []unitPaymentReferenceCandidate) string {
+	tenantSlug := ""
+	for _, candidate := range candidates {
+		candidateTenantSlug := normalizeSlug(candidate.TenantSlug)
+		if candidateTenantSlug == "" {
+			continue
+		}
+		if tenantSlug != "" && candidateTenantSlug != tenantSlug {
+			return ""
+		}
+		tenantSlug = candidateTenantSlug
+	}
+	return tenantSlug
 }

@@ -104,3 +104,24 @@ func TestServiceProviderTransitionFullChain(t *testing.T) {
 		}
 	}
 }
+
+func TestAuditVisibilitySeparatesAccessFromFullTenantHistory(t *testing.T) {
+	for _, role := range []string{
+		store.RoleAdmin, store.RoleManager, store.RoleOwner, store.RoleRenter,
+		store.RoleBeirat, store.RoleResident, store.RoleServiceProvider,
+	} {
+		if !CanViewAudit(role) {
+			t.Errorf("CanViewAudit(%q) = false, want true", role)
+		}
+	}
+	for _, role := range []string{store.RoleAdmin, store.RoleManager} {
+		if !CanViewFullAudit(role) {
+			t.Errorf("CanViewFullAudit(%q) = false, want true", role)
+		}
+	}
+	for _, role := range []string{store.RoleOwner, store.RoleRenter, store.RoleBeirat, store.RoleResident, store.RoleServiceProvider, "", "unknown"} {
+		if CanViewFullAudit(role) {
+			t.Errorf("CanViewFullAudit(%q) = true, want false", role)
+		}
+	}
+}

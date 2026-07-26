@@ -1095,6 +1095,9 @@ func AuditActionOptions(selected string) []SelectOption {
 		store.AuditActionDocumentUpload,
 		store.AuditActionDocumentDownload,
 		store.AuditActionDocumentReplace,
+		store.AuditActionAttachmentView,
+		store.AuditActionAttachmentDelete,
+		store.AuditActionIntegrationImport,
 		store.AuditActionHandoverCreate,
 		store.AuditActionHandoverConfirm,
 		store.AuditActionHandoverFile,
@@ -1149,6 +1152,12 @@ func AuditActionLabel(action string) string {
 		return "Dokument heruntergeladen"
 	case store.AuditActionDocumentReplace:
 		return "Dokument ersetzt"
+	case store.AuditActionAttachmentView:
+		return "Anhang angesehen"
+	case store.AuditActionAttachmentDelete:
+		return "Anhang entfernt"
+	case store.AuditActionIntegrationImport:
+		return "Integration importiert"
 	case store.AuditActionHandoverCreate:
 		return "Übergabe angelegt"
 	case store.AuditActionHandoverConfirm:
@@ -1202,7 +1211,7 @@ func AuditActionTone(action string) string {
 	switch store.NormalizeAuditAction(action) {
 	case store.AuditActionInviteCreate, store.AuditActionUnitSave, store.AuditActionDocumentUpload, store.AuditActionHandoverCreate, store.AuditActionHandoverConfirm, store.AuditActionVoteCreate, store.AuditActionVoteOpen, store.AuditActionVoteCast, store.AuditActionVoteReminder, store.AuditActionParkingReminder, store.AuditActionIssueServiceAdd, store.AuditActionEventCreate, store.AuditActionContactSave, store.AuditActionLogin:
 		return "add"
-	case store.AuditActionInviteDelete, store.AuditActionUnitDelete, store.AuditActionDocumentReplace, store.AuditActionVoteClose, store.AuditActionIssueServiceDrop, store.AuditActionEventDelete, store.AuditActionContactDelete:
+	case store.AuditActionInviteDelete, store.AuditActionUnitDelete, store.AuditActionDocumentReplace, store.AuditActionAttachmentDelete, store.AuditActionVoteClose, store.AuditActionIssueServiceDrop, store.AuditActionEventDelete, store.AuditActionContactDelete:
 		return "danger"
 	default:
 		return "change"
@@ -1242,7 +1251,7 @@ func AuditTargetTypeLabel(targetType string) string {
 		return "Gebäude"
 	case "hero":
 		return "Hero-Bild"
-	case "store.Unit":
+	case "store.Unit", "unit":
 		return "Einheit"
 	case "parking":
 		return "Parkplatz"
@@ -1250,8 +1259,12 @@ func AuditTargetTypeLabel(targetType string) string {
 		return "Anliegen"
 	case "document":
 		return "Dokument"
-	case "store.Ballot":
+	case "store.Ballot", "ballot":
 		return "Abstimmung"
+	case "attachment":
+		return "Anhang"
+	case "integration":
+		return "Integration"
 	case "handover":
 		return "Übergabe"
 	case "event":
@@ -1347,6 +1360,22 @@ func AuditDetailLabel(key string) string {
 		return "Frist"
 	case "document_id":
 		return "Dokument"
+	case "entity_type":
+		return "Bereich"
+	case "entity_id":
+		return "Vorgang"
+	case "access":
+		return "Zugriff"
+	case "source":
+		return "Quelle"
+	case "format":
+		return "Format"
+	case "assigned":
+		return "Zugeordnet"
+	case "unclear":
+		return "Unklar"
+	case "rejected":
+		return "Abgelehnt"
 	default:
 		return strings.ReplaceAll(key, "_", " ")
 	}

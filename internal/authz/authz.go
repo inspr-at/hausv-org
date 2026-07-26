@@ -117,6 +117,15 @@ func CanServiceProviderTransition(from string, to string) bool {
 }
 
 func CanViewAudit(role string) bool {
+	switch store.NormalizeRole(role) {
+	case store.RoleAdmin, store.RoleManager, store.RoleOwner, store.RoleRenter, store.RoleBeirat, store.RoleResident, store.RoleServiceProvider:
+		return true
+	default:
+		return false
+	}
+}
+
+func CanViewFullAudit(role string) bool {
 	role = store.NormalizeRole(role)
 	return role == store.RoleAdmin || role == store.RoleManager
 }

@@ -270,6 +270,27 @@ func (a *app) serveAttachment(w http.ResponseWriter, r *http.Request, ac authCtx
 	disposition := attachmentDisposition(contentType)
 	w.Header().Set("Content-Disposition", mime.FormatMediaType(disposition, map[string]string{"filename": item.Filename}))
 	w.Header().Set("Cache-Control", "private, max-age=300")
+	if (variant == "" || variant == "preview") && strings.TrimSpace(r.Header.Get("Range")) == "" {
+		access := "Datei"
+		if variant == "preview" {
+			access = "Vorschau"
+		}
+		a.recordAudit(auditEvent{
+			TenantSlug: tenant.Slug,
+			ActorEmail: email,
+			ActorRole:  role,
+			Action:     auditActionAttachmentView,
+			TargetType: "attachment",
+			TargetID:   item.ID,
+			Summary:    "Anhang angezeigt",
+			Details: map[string]string{
+				"entity_type":  normalizeAttachmentEntity(item.EntityType),
+				"entity_id":    item.EntityID,
+				"access":       access,
+				"content_type": contentType,
+			},
+		})
+	}
 	http.ServeFile(w, r, path)
 }
 
@@ -301,6 +322,19 @@ func (a *app) deleteAttachment(w http.ResponseWriter, r *http.Request, ac authCt
 		http.Redirect(w, r, redirectAfterAttachmentChange(r, "/app/anliegen?issue=missing"), http.StatusSeeOther)
 		return
 	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug,
+		ActorEmail: email,
+		ActorRole:  role,
+		Action:     auditActionAttachmentDelete,
+		TargetType: "attachment",
+		TargetID:   item.ID,
+		Summary:    "Anhang entfernt",
+		Details: map[string]string{
+			"entity_type": normalizeAttachmentEntity(item.EntityType),
+			"entity_id":   item.EntityID,
+		},
+	})
 	http.Redirect(w, r, redirectAfterAttachmentChange(r, "/app/anliegen?issue=updated"), http.StatusSeeOther)
 }
 

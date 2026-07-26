@@ -2351,8 +2351,15 @@ func TestAuditLogRecordsInviteAndGatesAccess(t *testing.T) {
 		t.Fatalf("manager audit page status/body = %d\n%s", body.Code, body.Body.String())
 	}
 	resident := authedRequest(t, a, "resident@example.com", "/app/audit")
-	if resident.Code != http.StatusForbidden {
-		t.Fatalf("resident audit status = %d, want 403", resident.Code)
+	if resident.Code != http.StatusOK {
+		t.Fatalf("resident audit status = %d, want 200", resident.Code)
+	}
+	residentBody := resident.Body.String()
+	if strings.Contains(residentBody, "new.resident@example.com") || strings.Contains(residentBody, "manager@example.com") {
+		t.Fatalf("resident audit leaks unrelated management event:\n%s", residentBody)
+	}
+	if !strings.Contains(residentBody, "ohne interne oder personenbezogene Verwaltungsdetails") {
+		t.Fatalf("resident audit scope explanation missing:\n%s", residentBody)
 	}
 }
 
@@ -3329,6 +3336,17 @@ func TestIssueAttachmentCreatorCanDelete(t *testing.T) {
 	if !ok {
 		t.Fatal("attachment file path missing")
 	}
+	thumb := authedRequest(t, a, "resident@example.com", "/app/attachments/"+attachments[0].ID+"/thumb")
+	if thumb.Code != http.StatusOK {
+		t.Fatalf("thumb status = %d", thumb.Code)
+	}
+	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionAttachmentView}); len(events) != 0 {
+		t.Fatalf("thumbnail request must not create audit noise: %+v", events)
+	}
+	view := authedRequest(t, a, "resident@example.com", "/app/attachments/"+attachments[0].ID)
+	if view.Code != http.StatusOK {
+		t.Fatalf("attachment view status = %d", view.Code)
+	}
 	delete := authedFormRequest(t, a, "resident@example.com", "/app/attachments/delete", url.Values{"id": {attachments[0].ID}})
 	if delete.Code != http.StatusSeeOther {
 		t.Fatalf("delete status = %d", delete.Code)
@@ -3338,6 +3356,19 @@ func TestIssueAttachmentCreatorCanDelete(t *testing.T) {
 	}
 	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("deleted attachment file stat err = %v, want not exist", err)
+	}
+	viewEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionAttachmentView})
+	deleteEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionAttachmentDelete})
+	if len(viewEvents) != 1 || len(deleteEvents) != 1 {
+		t.Fatalf("attachment audit events view=%+v delete=%+v", viewEvents, deleteEvents)
+	}
+	for _, event := range append(viewEvents, deleteEvents...) {
+		if event.TargetID != attachments[0].ID || event.Details["entity_id"] != issues[0].ID || event.Details["entity_type"] != "issue" {
+			t.Fatalf("attachment audit target = %+v", event)
+		}
+		if strings.Contains(strings.Join(auditDetailValues(event.Details), " "), "tuer.png") {
+			t.Fatalf("attachment audit must not retain filename: %+v", event)
+		}
 	}
 }
 

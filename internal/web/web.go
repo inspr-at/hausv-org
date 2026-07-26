@@ -3670,12 +3670,12 @@ const PageTemplates = `
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>/</span><span>Audit-Log</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>
+        {{if .CanUseResidentAreas}}<div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>{{end}}
       </div>
       <section class="page wide">
         <div>
           <h1>Audit-Log</h1>
-          <p class="lede">Sensible Aktionen im Portal, begrenzt auf {{.Tenant.Address}}.</p>
+          <p class="lede">{{.AuditLede}}</p>
         </div>
         <section class="panel audit-panel">
           <div class="metric-grid audit-summary-grid" aria-label="Audit-Überblick">

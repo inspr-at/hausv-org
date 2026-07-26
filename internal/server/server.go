@@ -311,6 +311,7 @@ var canResidentTransition = authz.CanResidentTransition
 var canServiceProviderTransition = authz.CanServiceProviderTransition
 var canUseResidentAreas = authz.CanUseResidentAreas
 var canViewAudit = authz.CanViewAudit
+var canViewFullAudit = authz.CanViewFullAudit
 var hasCapability = authz.HasCapability
 var isServiceProviderRole = authz.IsServiceProviderRole
 
@@ -466,6 +467,9 @@ const (
 	auditActionDocumentDownload        = store.AuditActionDocumentDownload
 	auditActionDocumentReplace         = store.AuditActionDocumentReplace
 	auditActionDocumentUpload          = store.AuditActionDocumentUpload
+	auditActionAttachmentView          = store.AuditActionAttachmentView
+	auditActionAttachmentDelete        = store.AuditActionAttachmentDelete
+	auditActionIntegrationImport       = store.AuditActionIntegrationImport
 	auditActionHeroUpdate              = store.AuditActionHeroUpdate
 	auditActionInviteCreate            = store.AuditActionInviteCreate
 	auditActionInviteDelete            = store.AuditActionInviteDelete
@@ -2661,7 +2665,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, role := ac.tenant, ac.role
 	if !canViewAudit(role) {
-		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		http.Error(w, "Dieser Bereich ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
 		return
 	}
 	action := normalizeAuditAction(r.URL.Query().Get("action"))
@@ -2670,13 +2674,20 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if a.auditStore != nil {
 		events = a.auditStore.List(auditFilter{
 			TenantSlug: tenant.Slug,
-			Action:     action,
-			Query:      query,
-			Limit:      200,
+			Limit:      500,
 		})
 	}
+	fullAudit := canViewFullAudit(role)
+	if !fullAudit {
+		events = a.scopedAuditEvents(ac, events)
+	}
+	events = filterAuditEvents(events, action, query)
 	eventViews := auditEventViews(events)
 	stats := auditStats(events, action, query)
+	auditLede := "Sensible Aktionen im Portal, begrenzt auf " + tenant.Address + "."
+	if !fullAudit {
+		auditLede = "Ihre Aktionen sowie freigegebene Vorgänge – ohne interne oder personenbezogene Verwaltungsdetails."
+	}
 	a.render(w, "auditLog", a.withBase(ac, map[string]any{
 		"Title":         "Audit-Log",
 		"ActivePage":    "audit",
@@ -2687,6 +2698,7 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"ActionFilter":  action,
 		"SearchQuery":   query,
 		"AuditStats":    stats,
+		"AuditLede":     auditLede,
 	}))
 }
 

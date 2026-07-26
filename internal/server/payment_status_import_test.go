@@ -72,4 +72,18 @@ func TestApplyImportedPaymentsToUnitStatusesReportsAndAppliesOnlyClearMatches(t 
 	if len(events) != 2 {
 		t.Fatalf("unit payment import audit events = %+v", events)
 	}
+	importEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIntegrationImport, Limit: 10})
+	if len(importEvents) != 1 {
+		t.Fatalf("integration import audit events = %+v", importEvents)
+	}
+	importEvent := importEvents[0]
+	if importEvent.Details["assigned"] != "2" || importEvent.Details["unclear"] != "1" || importEvent.Details["rejected"] != "2" {
+		t.Fatalf("integration import counts = %+v", importEvent)
+	}
+	haystack := strings.Join(append([]string{importEvent.TargetID, importEvent.Summary}, auditDetailValues(importEvent.Details)...), " ")
+	for _, forbidden := range []string{"p-1", candidates[0].Reference, "10000", "6000"} {
+		if strings.Contains(haystack, forbidden) {
+			t.Fatalf("integration audit leaks payment data %q: %+v", forbidden, importEvent)
+		}
+	}
 }
