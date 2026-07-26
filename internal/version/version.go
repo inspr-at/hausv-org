@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.23.1",
+			Date:     "26. Juli 2026",
+			Kind:     "Datenschutz",
+			Headline: "Verantwortliche Stelle, Haus und technische Empfänger sind eindeutig beschrieben.",
+			Intro:    "Die Datenschutzinformation trennt die Anschrift des Hausbetriebs von der Adresse des betroffenen Hauses und nennt die tatsächliche Betriebs- und Sicherungsinfrastruktur.",
+			Items: []NoteItem{
+				{Label: "Klare Kontakte", Text: "Hausverwaltung, betroffenes Haus und technischer Betrieb erscheinen als getrennte Angaben."},
+				{Label: "Vollständiger Datenfluss", Text: "Netcup, Cloudflare, Hetzner, das selbst betriebene Zitadel und Resend sind ihrem tatsächlichen Zweck entsprechend erklärt."},
+			},
+		},
+		{
 			Version:  "0.23.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Transparenz",

@@ -12,7 +12,7 @@ Zeit keine externe Prüfstelle verfügbar ist, dokumentiert der Betreiber die
 Prüfung selbst anhand primärer EU- und österreichischer Quellen. Das ist keine
 Rechtsberatung und kein Zertifikat.
 
-Stand: 26.07.2026, Anwendungsversion 0.18.0.
+Stand: 26.07.2026, Anwendungsversion 0.23.1.
 
 ---
 
@@ -148,11 +148,14 @@ Speicherort.
 | Empfänger | Wofür | Übermittelte Daten |
 |---|---|---|
 | **Resend** (`smtp.resend.com`, Absender `noreply@notify.hausv.org`) | Versand von Einladungen, Anmeldelinks und Benachrichtigungen; Kontodaten und Versand-Metadaten werden laut Anbieter unabhängig von der Versandregion in den USA gespeichert, reguläre E-Mail-Inhalte 30 Tage | Empfänger-E-Mail-Adresse, Betreff und Inhalt der Nachricht (kann Anliegen-Titel enthalten); DPA, EU-Standardvertragsklauseln und Unterauftragnehmerliste werden bei der Betreiberprüfung kontrolliert |
-| **Zitadel** (`https://auth.inspr.at`) | Anmeldung per Single Sign-on, sofern für den Zugang aktiviert | Identitätsdaten im Rahmen des OIDC-Ablaufs |
+| **Netcup** (`csb1`, Wien) | VPS-Hosting der Anwendung und des selbst betriebenen Zitadel | sämtliche Fachdaten, Dateien, Identitäts-, Audit-, Verbindungs- und Betriebsdaten |
+| **Cloudflare** | DNS, Reverse Proxy, DDoS- und Webschutz vor `jhw22.hausv.org` | technisch notwendige Verbindungsdaten und vermittelter, TLS-geschützter Webverkehr |
+| **Hetzner Storage Box** | verschlüsselte Restic-Sicherung der HAUSV-Dienstablage | vor Übertragung verschlüsselte Sicherung von Fachdaten, Dateien, Audit und Konfiguration ohne Schlüsselmaterial |
+| **Zitadel** (`https://auth.inspr.at`, selbst betrieben auf `csb1`) | Anmeldung per Single Sign-on, sofern für den Zugang aktiviert | Identitätsdaten im Rahmen des OIDC-Ablaufs; kein weiterer externer Betreiber neben dem Netcup-Hosting |
 | **Home Assistant** (`100.64.0.7`, internes Netz) | Parkplatz-/Ladesteuerung | **kein Dienstleister-Bezug**; hier werden keine Dienstleisterdaten übermittelt |
 
-Weitere Übermittlungen an Dritte finden nicht statt. Die Anwendung bindet keine
-externen Skripte, Schriftarten oder Analysedienste ein.
+Weitere anwendungsseitige Übermittlungen an Dritte finden nicht statt. Die
+Anwendung bindet keine externen Skripte, Schriftarten oder Analysedienste ein.
 
 ## 5. Technische Datenminimierung (Ist-Zustand)
 
@@ -176,9 +179,10 @@ Die Selbstprüfung vom 26.07.2026 hält fest:
 2. Vertragserfüllung und vorvertragliche Schritte, gesetzliche Pflichten sowie
    dokumentierte berechtigte Interessen sind die vorgesehenen Grundlagen nach
    Art. 6 DSGVO. Ein pauschales Einwilligungsmodell wird nicht verwendet.
-3. Resend wird nur auf Basis des aktuellen DPA samt
-   EU-Standardvertragsklauseln eingesetzt. Zitadel wird als
-   Authentifizierungsanbieter dokumentiert. Änderungen an Empfängern oder
+3. Die vorgesehenen Auftragsverarbeiter, Unterauftragsverarbeiter,
+   Drittlandtransfers und TOMs sind im
+   [`JHW22-Art.-28-/TOM-Freigabepaket`](jhw22-art28-tom-approval.md)
+   dokumentiert. Zitadel ist selbst betrieben. Änderungen an Empfängern oder
    Speicherorten schließen das Gate bis zur erneuten Prüfung.
 4. Die öffentliche Seite `/datenschutz` informiert über Zwecke, Empfänger,
    Fristen, Rechte und Kontakte; ausgehende Anmelde- und Einladungs-E-Mails

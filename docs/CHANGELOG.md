@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.23.1] - 2026-07-26
+
+### Verbessert
+
+- **Verantwortliche Stelle und Hausanschrift sind eindeutig getrennt.** Die Datenschutzseite zeigt die Anschrift des verantwortlichen Hausbetriebs als eigene Angabe und kennzeichnet die Portaladresse separat als betroffenes Haus.
+- **Die tatsächliche Infrastruktur ist vollständig erklärt.** Netcup-Hosting, Cloudflare-Webschutz, selbst betriebenes Zitadel, verschlüsselte Hetzner-Sicherungen und der Resend-Drittlandtransfer sind transparent dokumentiert.
+- **Die Dienstleister-Freigabe ist konkret vorbereitet.** Ein hausbezogenes Art.-28-/TOM-Paket beschreibt Verarbeitung, Schutzmaßnahmen, Unterauftragsverarbeiter, Löschung und den weiterhin geschlossenen Freigabeweg.
+
 ## [0.23.0] - 2026-07-26
 
 ### Verbessert

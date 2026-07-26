@@ -1717,6 +1717,7 @@ func TestContactsPageShowsBuildingBoardAndOptInDirectory(t *testing.T) {
 		"name":            {"WEG Portal"},
 		"address":         {"Janischhofweg 22"},
 		"contact_name":    {"Hausverwaltung Nord"},
+		"contact_address": {"Verwaltergasse 10, 8010 Graz"},
 		"contact_email":   {"office@example.com"},
 		"contact_phone":   {"+43 1 999"},
 		"emergency_name":  {"Notdienst 24"},
@@ -1785,6 +1786,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		"brand_icon":         {"mixed-use"},
 		"brand_abbreviation": {"sun/eck"},
 		"contact_name":       {"Hausverwaltung Nord"},
+		"contact_address":    {"Verwaltergasse 10, 8010 Graz"},
 		"contact_email":      {"office@example.com"},
 		"contact_phone":      {"+43 1 999"},
 		"emergency_name":     {"Notdienst 24"},
@@ -1797,7 +1799,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatalf("building meta save status = %d", saveMeta.Code)
 	}
 	tenant, _ := a.tenantBySlug("jhw22")
-	if tenant.Name != "WEG Sonneneck" || tenant.Address != "Neue Gasse 7" || tenant.BrandIcon != tenantBrandMixedUse || tenant.BrandAbbreviation != "SUN-ECK" || tenant.ContactName != "Hausverwaltung Nord" || tenant.ContactEmail != "office@example.com" || tenant.ContactPhone != "+43 1 999" || tenant.EmergencyName != "Notdienst 24" || tenant.EmergencyPhone != "144" || tenant.CaretakerName != "Hausmeister Max" || tenant.CaretakerEmail != "hausmeister@example.com" || tenant.CaretakerPhone != "+43 1 888" {
+	if tenant.Name != "WEG Sonneneck" || tenant.Address != "Neue Gasse 7" || tenant.BrandIcon != tenantBrandMixedUse || tenant.BrandAbbreviation != "SUN-ECK" || tenant.ContactName != "Hausverwaltung Nord" || tenant.ContactAddress != "Verwaltergasse 10, 8010 Graz" || tenant.ContactEmail != "office@example.com" || tenant.ContactPhone != "+43 1 999" || tenant.EmergencyName != "Notdienst 24" || tenant.EmergencyPhone != "144" || tenant.CaretakerName != "Hausmeister Max" || tenant.CaretakerEmail != "hausmeister@example.com" || tenant.CaretakerPhone != "+43 1 888" {
 		t.Fatalf("tenant after meta save = %+v", tenant)
 	}
 	homeReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
@@ -3903,6 +3905,7 @@ func TestPublicPrivacyNoticeMatchesActualDependencies(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	tenant := a.tenants["jhw22"]
 	tenant.ContactName = "Alwog Allgemeine Wohnbaugesellschaft mbH"
+	tenant.ContactAddress = "Naglergasse 10, 8010 Graz"
 	tenant.ContactEmail = "haus@example.com"
 	a.tenants["jhw22"] = tenant
 
@@ -3916,12 +3919,16 @@ func TestPublicPrivacyNoticeMatchesActualDependencies(t *testing.T) {
 		"Betreiber-Selbstprüfung",
 		"Dienstleister-Zugang: geschlossen",
 		"Alwog Allgemeine Wohnbaugesellschaft mbH",
+		"Naglergasse 10, 8010 Graz",
+		"Betroffenes Haus",
 		"haus@example.com",
 		"Ing. Markus Barta",
 		"Janischhofweg 22/11, 8043 Graz, Österreich",
 		"hello@hausv.org",
 		"Resend",
-		"in die USA übertragen",
+		"Cloudflare",
+		"Hetzner",
+		"auch in den USA verarbeitet",
 		"Audit-Archive: höchstens drei Jahre",
 		"Österreichische Datenschutzbehörde",
 		"§ 5 ECG",

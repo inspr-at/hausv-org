@@ -807,6 +807,7 @@ type tenantOverride struct {
 	BrandIcon         string    `json:"brand_icon,omitempty"`
 	BrandAbbreviation string    `json:"brand_abbreviation,omitempty"`
 	ContactName       string    `json:"contact_name,omitempty"`
+	ContactAddress    string    `json:"contact_address,omitempty"`
 	ContactEmail      string    `json:"contact_email,omitempty"`
 	ContactPhone      string    `json:"contact_phone,omitempty"`
 	EmergencyName     string    `json:"emergency_name,omitempty"`
@@ -3051,6 +3052,7 @@ func tenantOverrideFromForm(values url.Values) (tenantOverride, error) {
 		BrandIcon:         normalizeTenantBrandIcon(values.Get("brand_icon")),
 		BrandAbbreviation: normalizeTenantBrandAbbreviation(values.Get("brand_abbreviation")),
 		ContactName:       strings.TrimSpace(values.Get("contact_name")),
+		ContactAddress:    strings.TrimSpace(values.Get("contact_address")),
 		ContactEmail:      normalizeEmail(values.Get("contact_email")),
 		ContactPhone:      strings.TrimSpace(values.Get("contact_phone")),
 		EmergencyName:     strings.TrimSpace(values.Get("emergency_name")),
@@ -3065,7 +3067,7 @@ func tenantOverrideFromForm(values url.Values) (tenantOverride, error) {
 	if override.BrandIcon == "" {
 		return tenantOverride{}, fmt.Errorf("invalid brand icon")
 	}
-	if len([]rune(override.Name)) > 160 || len([]rune(override.Address)) > 500 || len([]rune(override.ContactName)) > 160 || len([]rune(override.ContactPhone)) > 80 || len([]rune(override.EmergencyName)) > 160 || len([]rune(override.EmergencyPhone)) > 80 || len([]rune(override.CaretakerName)) > 160 || len([]rune(override.CaretakerPhone)) > 80 {
+	if len([]rune(override.Name)) > 160 || len([]rune(override.Address)) > 500 || len([]rune(override.ContactName)) > 160 || len([]rune(override.ContactAddress)) > 500 || len([]rune(override.ContactPhone)) > 80 || len([]rune(override.EmergencyName)) > 160 || len([]rune(override.EmergencyPhone)) > 80 || len([]rune(override.CaretakerName)) > 160 || len([]rune(override.CaretakerPhone)) > 80 {
 		return tenantOverride{}, fmt.Errorf("building field too long")
 	}
 	if rawEmail := strings.TrimSpace(values.Get("contact_email")); rawEmail != "" {
@@ -4131,6 +4133,7 @@ func (a *app) withTenantOverride(tenant tenantConfig) tenantConfig {
 		}
 		tenant.BrandAbbreviation = firstNonEmpty(override.BrandAbbreviation, tenant.BrandAbbreviation)
 		tenant.ContactName = override.ContactName
+		tenant.ContactAddress = override.ContactAddress
 		tenant.ContactEmail = override.ContactEmail
 		tenant.ContactPhone = override.ContactPhone
 		tenant.EmergencyName = override.EmergencyName
@@ -4562,6 +4565,7 @@ func normalizeTenantOverride(override tenantOverride) tenantOverride {
 	override.BrandIcon = normalizeTenantBrandIcon(override.BrandIcon)
 	override.BrandAbbreviation = normalizeTenantBrandAbbreviation(override.BrandAbbreviation)
 	override.ContactName = strings.TrimSpace(override.ContactName)
+	override.ContactAddress = strings.TrimSpace(override.ContactAddress)
 	override.ContactEmail = normalizeEmail(override.ContactEmail)
 	override.ContactPhone = strings.TrimSpace(override.ContactPhone)
 	override.EmergencyName = strings.TrimSpace(override.EmergencyName)

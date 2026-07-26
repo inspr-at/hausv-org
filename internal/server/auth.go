@@ -69,6 +69,7 @@ func (a *app) privacyNotice(w http.ResponseWriter, r *http.Request) {
 		"Title":                         "Datenschutz · hausv.org",
 		"Tenant":                        tenant,
 		"HouseContactName":              firstNonEmpty(tenant.ContactName, tenant.Name, "Hausverwaltung"),
+		"HouseContactAddress":           tenant.ContactAddress,
 		"HouseContactEmail":             contactEmail,
 		"HouseContactPhone":             tenant.ContactPhone,
 		"TechnicalOperatorName":         platformOperatorName,

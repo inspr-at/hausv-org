@@ -30,6 +30,7 @@ type TenantConfig struct {
 	BrandIcon         string               `json:"brand_icon,omitempty"`
 	BrandAbbreviation string               `json:"brand_abbreviation,omitempty"`
 	ContactName       string               `json:"contact_name,omitempty"`
+	ContactAddress    string               `json:"contact_address,omitempty"`
 	ContactEmail      string               `json:"contact_email,omitempty"`
 	ContactPhone      string               `json:"contact_phone,omitempty"`
 	EmergencyName     string               `json:"emergency_name,omitempty"`
@@ -174,6 +175,7 @@ func ParseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 				tenant.Address = tenant.Slug
 			}
 			tenant.ContactName = strings.TrimSpace(tenant.ContactName)
+			tenant.ContactAddress = strings.TrimSpace(tenant.ContactAddress)
 			tenant.ContactEmail = textutil.Email(tenant.ContactEmail)
 			tenant.ContactPhone = strings.TrimSpace(tenant.ContactPhone)
 			tenant.EmergencyName = strings.TrimSpace(tenant.EmergencyName)

@@ -636,7 +636,8 @@ const PageTemplates = `
     <h2>Wer ist Ansprechpartner?</h2>
     <p>Über Zwecke und Inhalte des Hausbetriebs entscheidet die jeweilige Eigentümergemeinschaft beziehungsweise die beauftragte Hausverwaltung. hausv.org stellt den technischen, weisungsgebundenen Portalbetrieb bereit.</p>
     <dl>
-      <dt>Hausbetrieb</dt><dd>{{.HouseContactName}}, {{.Tenant.Address}}</dd>
+      <dt>Verantwortlicher Hausbetrieb</dt><dd>{{.HouseContactName}}{{if .HouseContactAddress}}, {{.HouseContactAddress}}{{end}}</dd>
+      <dt>Betroffenes Haus</dt><dd>{{.Tenant.Address}}</dd>
       <dt>Kontakt</dt><dd><a href="mailto:{{.HouseContactEmail}}">{{.HouseContactEmail}}</a>{{if .HouseContactPhone}} · {{.HouseContactPhone}}{{end}}</dd>
       <dt>Technischer Betrieb</dt><dd>{{.TechnicalOperatorName}}, {{.TechnicalOperatorAddress}} · <a href="mailto:{{.TechnicalContactEmail}}">{{.TechnicalContactEmail}}</a></dd>
     </dl>
@@ -652,9 +653,10 @@ const PageTemplates = `
 
     <h2>Empfänger und Speicherorte</h2>
     <ul>
-      <li>Die Fachdaten liegen auf dem Server <code>csb1</code> in Wien und sind je Haus und Rolle getrennt.</li>
-      <li>Resend versendet Transaktionsmails. E-Mail-Adresse, Betreff und Inhalt werden dabei in die USA übertragen. Resend stellt eine Vereinbarung zur Auftragsverarbeitung einschließlich Standardvertragsklauseln bereit und hält Maildaten regulär 30 Tage vor.</li>
-      <li>Zitadel unter <code>auth.inspr.at</code> verarbeitet die für SSO benötigte Identität, sofern dieser Anmeldeweg verwendet wird.</li>
+      <li>Die Fachdaten und das selbst betriebene Zitadel für SSO liegen auf dem Netcup-Server <code>csb1</code> in Wien und sind je Haus und Rolle getrennt.</li>
+      <li>Cloudflare schützt und vermittelt den öffentlichen Webzugriff. Dabei fallen technisch notwendige Verbindungsdaten an.</li>
+      <li>Verschlüsselte Sicherungen werden in einem Hetzner Storage Box Konto innerhalb der EU gespeichert.</li>
+      <li>Resend versendet Transaktionsmails über die Region Irland. E-Mail-Adresse, Betreff und Inhalt sowie Kontodaten, Metadaten, Logs und API-Aufzeichnungen werden dabei auch in den USA verarbeitet. Resend stellt eine Vereinbarung zur Auftragsverarbeitung einschließlich Standardvertragsklauseln bereit und hält reguläre E-Mail-Inhalte 30 Tage vor.</li>
       <li>Es gibt keine Werbung, keine Analyse-Skripte und keine extern geladenen Web-Schriften.</li>
     </ul>
 
@@ -3831,6 +3833,9 @@ const PageTemplates = `
 	              <label for="contact-name">Verwalter Kontakt
 	                <input id="contact-name" type="text" name="contact_name" value="{{.Tenant.ContactName}}" maxlength="160" placeholder="Name oder Firma">
 	              </label>
+              <label class="full" for="contact-address">Anschrift des verantwortlichen Hausbetriebs
+                <textarea id="contact-address" name="contact_address" maxlength="500" placeholder="Straße, PLZ Ort">{{.Tenant.ContactAddress}}</textarea>
+              </label>
               <label for="contact-email">Kontakt-E-Mail
                 <input id="contact-email" type="email" name="contact_email" value="{{.Tenant.ContactEmail}}" maxlength="160" autocomplete="email">
               </label>

@@ -60,6 +60,14 @@ API key only in agenix as `SMTP_PASS`. The production sender is:
 WEG Portal <noreply@notify.hausv.org>
 ```
 
+The service-provider access gate must stay closed until the controller has
+approved the concrete Art. 28/TOM package in
+[`jhw22-art28-tom-approval.md`](jhw22-art28-tom-approval.md). After approval,
+record its date and assessment revision in PPM, then set both
+`SERVICE_PROVIDER_ACCESS_ENABLED=true` and the exact matching
+`SERVICE_PROVIDER_ASSESSMENT_VERSION`. A single value, an outdated revision, or
+missing approval remains a No-Go.
+
 ## Zitadel SSO
 
 Create a Web/OIDC application in Zitadel for the portal.
