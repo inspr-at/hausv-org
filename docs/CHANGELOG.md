@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.25.0] - 2026-07-26
+
+### Verbessert
+
+- **Termine zeigen zuerst, was als Nächstes ansteht.** Datum, Uhrzeit, Ort und Kategorie sind auf einen Blick erfassbar; vergangene Termine und weitere Details bleiben erreichbar, ohne die Übersicht zu überladen.
+- **Termine lassen sich schneller veröffentlichen.** Der Verwaltungsdialog fragt zuerst nur die wichtigsten Angaben ab und führt nach dem Speichern direkt zum neuen oder geänderten Termin.
+- **Der eigene Kalender bleibt automatisch aktuell.** Das Kalender-Abo ist sowohl bei den Terminen als auch in den Einstellungen leicht auffindbar.
+- **Die Anliegen-Triage wirkt ruhiger und eindeutiger.** Zusammengehörige Filter, stärkere Kartenhierarchie, klare Statusführung und eine gut erkennbare Hauptaktion erleichtern die tägliche Bearbeitung.
+- **Handy und Desktop nutzen den Platz besser.** Lange Termintitel bleiben lesbar, Verwaltungsaktionen drängen sich Bewohnern nicht auf und alle geprüften Ansichten funktionieren ohne seitliches Scrollen.
+
 ## [0.24.0] - 2026-07-26
 
 ### Verbessert

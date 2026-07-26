@@ -81,6 +81,7 @@ type HouseEventView struct {
 	HasLocation        bool
 	StartsAt           string
 	StartsAtInput      string
+	DateLabel          string
 	EndsAt             string
 	EndsAtInput        string
 	HasEndsAt          bool
@@ -89,6 +90,8 @@ type HouseEventView struct {
 	TimeRange          string
 	Status             string
 	Past               bool
+	IsNext             bool
+	CanManage          bool
 	Author             string
 	Attachments        []AttachmentView
 	HasAttachments     bool
@@ -946,6 +949,7 @@ func EventViewFrom(item store.HouseEvent, now time.Time) HouseEventView {
 		HasLocation:        location != "",
 		StartsAt:           FormatLocalDateTime(startLocal),
 		StartsAtInput:      FormatLocalDateTimeInput(startLocal),
+		DateLabel:          startLocal.Format("02.01.2006"),
 		EndsAt:             endsAt,
 		EndsAtInput:        endsAtInput,
 		HasEndsAt:          item.EndsAt != nil,

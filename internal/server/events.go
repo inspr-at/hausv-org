@@ -16,31 +16,39 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	canManage := canManageEvents(role)
 	now := time.Now()
 	upcoming := []houseEvent{}
-	all := []houseEvent{}
+	past := []houseEvent{}
 	if a.eventStore != nil {
 		upcoming = a.eventStore.Upcoming(tenant.Slug, now)
-		if canManage {
-			all = a.eventStore.ListTenant(tenant.Slug)
+		all := a.eventStore.ListTenant(tenant.Slug)
+		for i := len(all) - 1; i >= 0; i-- {
+			if !eventRollsOffAt(all[i]).After(now) {
+				past = append(past, all[i])
+			}
 		}
 	}
 	calendarFeedURL := ""
 	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
+	msg, msgOK := eventMessage(r.URL.Query().Get("event"))
+	upcomingViews := a.eventViews(tenant.Slug, upcoming, now, email, role)
+	if len(upcomingViews) > 0 {
+		upcomingViews[0].IsNext = true
+	}
 	a.render(w, "events", a.withBase(ac, map[string]any{
 		"Title":                  "Termine",
 		"CanManageAnnouncements": canManageAnnouncements(role),
 		"CanManageEvents":        canManage,
 		"ActivePage":             "events",
-		"Events":                 a.eventViews(tenant.Slug, upcoming, now, email, role),
+		"Events":                 upcomingViews,
 		"HasEvents":              len(upcoming) > 0,
 		"EventsEmpty":            emptyState("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier."),
 		"CalendarFeedURL":        calendarFeedURL,
 		"HasCalendarFeedURL":     calendarFeedURL != "",
-		"AllEvents":              a.eventViews(tenant.Slug, all, now, email, role),
-		"HasAllEvents":           len(all) > 0,
-		"AllEventsEmpty":         emptyState("Noch kein Termin gespeichert", "Neue Termine erscheinen hier nach dem Speichern."),
-		"EventMsg":               eventMessage(r.URL.Query().Get("event")),
+		"PastEvents":             a.eventViews(tenant.Slug, past, now, email, role),
+		"HasPastEvents":          len(past) > 0,
+		"EventMsg":               msg,
+		"EventOK":                msgOK,
 		"NowInput":               formatLocalDateTimeInput(now),
 	}))
 }
@@ -85,7 +93,7 @@ func (a *app) createEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		}
 	}
 	a.recordEventAudit(ac, auditActionEventCreate, created.ID, created.Category, len(attachmentHeaders))
-	http.Redirect(w, r, "/app/events?event=created", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/events?event=created#event-"+url.PathEscape(created.ID), http.StatusSeeOther)
 }
 
 func (a *app) editEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -139,7 +147,7 @@ func (a *app) editEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	a.recordEventAudit(ac, auditActionEventUpdate, id, item.Category, len(uploaded))
-	http.Redirect(w, r, "/app/events?event=updated", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/events?event=updated#event-"+url.PathEscape(id), http.StatusSeeOther)
 }
 
 func (a *app) deleteEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -196,22 +204,22 @@ func (a *app) recordEventAudit(ac authCtx, action string, targetID string, categ
 	})
 }
 
-func eventMessage(status string) string {
+func eventMessage(status string) (string, bool) {
 	switch status {
 	case "created":
-		return "Termin gespeichert."
+		return "Termin gespeichert.", true
 	case "updated":
-		return "Termin aktualisiert."
+		return "Termin aktualisiert.", true
 	case "deleted":
-		return "Termin gelöscht."
+		return "Termin gelöscht.", true
 	case "invalid":
-		return "Bitte Titel und Datum prüfen."
+		return "Bitte Titel und Datum prüfen.", false
 	case "missing":
-		return "Dieser Termin wurde nicht gefunden."
+		return "Dieser Termin wurde nicht gefunden.", false
 	case "error":
-		return "Der Termin konnte nicht gespeichert werden."
+		return "Der Termin konnte nicht gespeichert werden.", false
 	default:
-		return ""
+		return "", false
 	}
 }
 
@@ -262,10 +270,11 @@ func eventViews(items []houseEvent, now time.Time) []houseEventView {
 
 func (a *app) eventViews(tenantSlug string, items []houseEvent, now time.Time, actorEmail string, role string) []houseEventView {
 	views := eventViews(items, now)
-	if a == nil || a.attachmentStore == nil {
-		return views
-	}
 	for i := range views {
+		views[i].CanManage = canManageEvents(role)
+		if a == nil || a.attachmentStore == nil {
+			continue
+		}
 		attachments := a.attachmentViewsForEntity(tenantSlug, "event", views[i].ID, actorEmail, role)
 		if len(attachments) == 0 {
 			continue

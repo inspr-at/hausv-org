@@ -1711,8 +1711,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		upcoming := a.eventStore.Upcoming(tenant.Slug, now)
 		eventCount = len(upcoming)
 		events = a.eventViews(tenant.Slug, upcoming, now, email, role)
-		if len(events) > 2 {
-			events = events[:2]
+		if len(events) > 1 {
+			events = events[:1]
 		}
 	}
 	issueURL := "/app/anliegen"
@@ -2639,13 +2639,19 @@ func (a *app) actorCanSeeCommonIssues(tenantSlug string, email string, role stri
 }
 
 func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	role := ac.role
+	tenant, email, role := ac.tenant, ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
+	calendarFeedURL := ""
+	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
+		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
+	}
 	a.render(w, "settingsHub", a.withBase(ac, map[string]any{
-		"Title":      "Einstellungen",
-		"ActivePage": "settings",
+		"Title":              "Einstellungen",
+		"ActivePage":         "settings",
+		"CalendarFeedURL":    calendarFeedURL,
+		"HasCalendarFeedURL": calendarFeedURL != "",
 	}))
 }
 

@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.25.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Termine & Triage",
+			Headline: "Termine und offene Anliegen lassen sich schneller erfassen und bearbeiten.",
+			Intro:    "Die Oberfläche zeigt zuerst den nächsten sinnvollen Schritt und hält zusätzliche Angaben kompakt im Hintergrund bereit.",
+			Items: []NoteItem{
+				{Label: "Termine", Text: "Der nächste Termin steht im Mittelpunkt; Vergangenheit, Kalender-Abo und weitere Details bleiben bei Bedarf erreichbar."},
+				{Label: "Schneller veröffentlichen", Text: "Der Termindialog startet mit den wesentlichen Angaben und führt nach dem Speichern direkt zum Ergebnis."},
+				{Label: "Ruhige Triage", Text: "Filter, Status, nächster Schritt und Hauptaktion bilden im Anliegen-Board eine klarere visuelle Einheit."},
+			},
+		},
+		{
 			Version:  "0.24.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Portal-Alltag",

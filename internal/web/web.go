@@ -925,17 +925,39 @@ const PageTemplates = `
     .digest-panel .quick-list { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
     .digest-panel .quick-row { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px; background: var(--panel-soft); }
     .digest-panel .quick-row:last-child { border-bottom: 1px solid var(--line); }
-    .agenda-list { display: grid; gap: 10px; margin-bottom: 22px; }
-    .event-card { display: grid; grid-template-columns: 58px minmax(0,1fr); gap: 13px; align-items: start; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-3); color: inherit; background: var(--panel-soft); text-decoration: none; }
-    .event-card:hover { border-color: var(--gold); }
-    .event-card.past { opacity: .68; }
+    .events-page { width: min(1080px,100%); }
+    .events-panel { display: grid; gap: 18px; }
+    .agenda-list { display: grid; gap: 11px; }
+    .event-card { display: grid; grid-template-columns: 62px minmax(0,1fr); gap: 15px; align-items: start; border: 1px solid var(--line); border-radius: 14px; padding: 16px; color: inherit; background: #fffefb; text-decoration: none; }
+    .event-card.is-next { border-color: rgba(200,153,63,.52); box-shadow: 0 12px 30px rgba(38,34,25,.06); }
+    .event-card.past { opacity: .72; background: var(--panel-soft); }
     .date-badge { min-height: 58px; display: grid; place-items: center; align-content: center; gap: 2px; border-radius: var(--radius-sm); background: var(--ink); color: #fff; font-weight: 800; text-align: center; }
     .date-badge strong { font-family: var(--font-serif); font-size: 24px; line-height: .95; }
     .date-badge span { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
-    .event-info { min-width: 0; display: grid; gap: 7px; }
-    .event-info h3 { font-size: 18px; overflow-wrap: anywhere; }
+    .event-info { min-width: 0; display: grid; gap: 9px; }
+    .event-info h3 { font-size: 20px; overflow-wrap: anywhere; }
     .event-info p { color: var(--muted); line-height: 1.45; font-size: 13.5px; }
+    .event-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .event-next-label { display: block; margin-bottom: 3px; color: var(--gold-ink); font-size: 10.5px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
     .event-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; color: var(--soft); font-size: 12.5px; font-weight: 700; }
+    .event-meta strong { color: var(--ink); font-size: 13px; }
+    .event-details { border-top: 1px dashed var(--line); padding-top: 8px; }
+    .event-details > summary { cursor: pointer; list-style: none; color: var(--gold-ink); font-size: 12.5px; font-weight: 850; }
+    .event-details > summary::-webkit-details-marker { display: none; }
+    .event-details > summary::after { content: "›"; float: right; font-size: 18px; line-height: .8; }
+    .event-details[open] > summary::after { transform: rotate(90deg); }
+    .event-details-body { display: grid; gap: 10px; padding-top: 10px; }
+    .event-actions { display: flex; flex-wrap: wrap; gap: 7px; padding-top: 2px; }
+    .event-actions form { margin: 0; }
+    .calendar-subscription, .event-history { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
+    .calendar-subscription > summary, .event-history > summary { cursor: pointer; list-style: none; padding: 12px 14px; color: var(--ink); font-size: 13.5px; font-weight: 850; }
+    .calendar-subscription > summary::-webkit-details-marker, .event-history > summary::-webkit-details-marker { display: none; }
+    .calendar-subscription > summary::after, .event-history > summary::after { content: "›"; float: right; color: var(--gold-ink); font-size: 20px; line-height: .8; }
+    .calendar-subscription[open] > summary, .event-history[open] > summary { border-bottom: 1px solid var(--line); }
+    .calendar-subscription[open] > summary::after, .event-history[open] > summary::after { transform: rotate(90deg); }
+    .calendar-subscription-body { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 14px 14px; }
+    .calendar-subscription-body p { max-width: 680px; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+    .event-history > .agenda-list { padding: 12px; }
     .status-strip { display: grid; gap: 14px; }
     .rule { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; color: var(--ink); line-height: 1.5; }
     .rule p { flex: 1 1 640px; min-width: 0; }
@@ -1085,16 +1107,41 @@ const PageTemplates = `
     .issue-board-filter .board-filter-actions { grid-column: span 2; display: flex; gap: 8px; align-items: center; }
     .issue-board-filter button, .issue-board-filter a { min-height: 38px; border: 1px solid var(--ink); border-radius: var(--radius-xs); padding: 8px 12px; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
     .issue-board-filter a { background: transparent; color: var(--ink); border-color: var(--line); }
-    .issue-board-summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .issue-board-tools { margin-bottom: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
-    .issue-board-tools > summary { min-height: 46px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; cursor: pointer; list-style: none; padding: 11px 14px; }
+    .issue-board-page { width: min(1160px,100%); }
+    .issue-board-panel { display: grid; gap: 18px; border: 0; padding: 0; background: transparent; box-shadow: none; }
+    .issue-board-toolbar { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: stretch; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); box-shadow: 0 10px 30px rgba(38,34,25,.045); overflow: hidden; }
+    .issue-board-summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 14px 16px; border-right: 1px solid var(--line); }
+    .issue-board-summary .pill { min-height: 32px; padding-inline: 12px; }
+    .issue-board-tools { min-width: 0; margin: 0; border: 0; background: transparent; overflow: visible; }
+    .issue-board-tools > summary { min-height: 64px; display: grid; grid-template-columns: 32px auto minmax(0,1fr) auto; gap: 12px; align-items: center; cursor: pointer; list-style: none; padding: 10px 16px; }
     .issue-board-tools > summary::-webkit-details-marker { display: none; }
     .issue-board-tools > summary strong { font-size: 13.5px; }
-    .issue-board-tools > summary span { color: var(--muted); font-size: 12.5px; }
+    .issue-board-tools > summary > span:not(.issue-filter-icon) { justify-self: end; color: var(--muted); font-size: 12.5px; }
+    .issue-filter-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: rgba(47,107,74,.09); color: var(--leaf); }
+    .issue-filter-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .issue-board-tools > summary::after { content: "Filter öffnen"; color: var(--gold-ink); font-size: 12px; font-weight: 850; }
     .issue-board-tools[open] > summary { border-bottom: 1px solid var(--line); }
     .issue-board-tools[open] > summary::after { content: "Filter schließen"; }
     .issue-board-tools .issue-board-filter { margin: 0; padding: 14px; }
+    .issue-board-tools[open] { grid-column: 1 / -1; }
+    .issue-work-card { position: relative; gap: 14px; border-color: rgba(32,37,31,.13); border-radius: 14px; padding: 22px 22px 20px 28px; background: var(--panel); box-shadow: 0 14px 38px rgba(38,34,25,.07); overflow: hidden; }
+    .issue-work-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; background: var(--gold); }
+    .issue-work-card.status-progress::before, .issue-work-card.status-done::before, .issue-work-card.status-closed::before { background: var(--leaf); }
+    .issue-work-card .issue-card-head { align-items: center; }
+    .issue-work-card h3 { font-size: 22px; line-height: 1.15; }
+    .issue-work-card .issue-location { margin-top: 5px; font-size: 13.5px; }
+    .issue-work-card .issue-next-step { position: relative; border-left: 0; border-radius: var(--radius-xs); padding: 12px 14px 12px 44px; background: rgba(200,153,63,.085); }
+    .issue-work-card .issue-next-step::before { content: "✓"; position: absolute; left: 13px; top: 50%; width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid rgba(200,153,63,.32); border-radius: 50%; background: var(--panel); color: var(--gold-ink); font-size: 12px; transform: translateY(-50%); }
+    .issue-card-foot { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: center; border-top: 1px dashed var(--line); padding-top: 14px; }
+    .issue-card-foot .issue-description-preview p { color: var(--muted); font-size: 14px; }
+    .issue-card-foot .issue-card-tools { min-width: 0; border: 0; background: transparent; overflow: visible; }
+    .issue-card-foot .issue-card-tools > summary { width: max-content; min-height: 44px; margin-left: auto; border-radius: var(--radius-xs); padding: 10px 15px; background: var(--ink); color: #fff; font-size: 13.5px; }
+    .issue-card-foot .issue-card-tools > summary::after { content: "→"; border: 0; padding: 0 0 0 13px; background: transparent; color: #fff; font-size: 18px; }
+    .issue-card-foot .issue-card-tools[open] { grid-column: 1 / -1; width: 100%; }
+    .issue-card-foot .issue-card-tools[open] > summary { margin-bottom: 10px; background: var(--panel-soft); color: var(--ink); }
+    .issue-card-foot .issue-card-tools[open] > summary::after { content: "Schließen"; padding-left: 13px; color: var(--muted); font-size: 12px; }
+    .issue-card-foot .issue-card-tools[open] > summary { border-bottom: 0; }
+    .issue-card-foot .issue-card-tools-body { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); }
     .issue-subtools { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); overflow: hidden; }
     .issue-subtools > summary { cursor: pointer; list-style: none; padding: 10px 11px; color: var(--ink); font-size: 12.5px; font-weight: 850; }
     .issue-subtools > summary::-webkit-details-marker { display: none; }
@@ -1500,9 +1547,24 @@ const PageTemplates = `
       .issue-form { grid-template-columns: 1fr; }
       .issue-board-filter { grid-template-columns: 1fr; }
       .issue-board-filter label, .issue-board-filter label.assignee, .issue-board-filter label.sort, .issue-board-filter .board-filter-actions { grid-column: 1 / -1; }
-      .issue-board-tools > summary { grid-template-columns: 1fr; gap: 4px; }
-      .issue-board-tools > summary::after { justify-self: start; }
-	      .quick-row { grid-template-columns: 28px minmax(0,1fr); }
+      .issue-board-toolbar { grid-template-columns: 1fr; }
+      .issue-board-summary { border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 14px; }
+      .issue-board-tools > summary { grid-template-columns: 32px minmax(0,1fr) auto; gap: 9px; }
+      .issue-board-tools > summary > span:not(.issue-filter-icon) { grid-column: 2 / -1; justify-self: start; }
+      .issue-board-tools > summary::after { grid-column: 3; grid-row: 1; justify-self: end; }
+      .issue-work-card { padding: 18px 17px 17px 23px; }
+      .issue-card-foot { grid-template-columns: 1fr; gap: 12px; }
+      .issue-card-foot .issue-card-tools > summary { width: 100%; margin-left: 0; justify-content: center; }
+      .event-card { grid-template-columns: 1fr; gap: 11px; padding: 13px; }
+      .date-badge { width: 54px; min-height: 54px; }
+      .event-card-head { display: grid; grid-template-columns: 1fr; gap: 7px; }
+      .event-card-head > .pill { justify-self: start; }
+      .event-info h3 { font-size: 18px; }
+      .event-actions .button, .event-actions form { flex: 1 1 100px; }
+      .event-actions form .button { width: 100%; }
+      .calendar-subscription-body { display: grid; grid-template-columns: 1fr; }
+      .calendar-subscription-body .button { width: 100%; }
+      .quick-row { grid-template-columns: 28px minmax(0,1fr); }
 	      .quick-row .entry-actions { grid-column: 2; justify-self: stretch; justify-content: flex-start; margin-top: 5px; }
 	      .quick-row .entry-actions .button, .quick-row .entry-actions form { flex: 1 1 112px; min-width: 0; }
 	      .quick-row .entry-actions form .button { width: 100%; }
@@ -1747,7 +1809,7 @@ const PageTemplates = `
             {{if .HasEvents}}
             <section class="panel">
               <div class="section-head">
-                <div class="kicker">Nächste Termine</div>
+                <div class="kicker">Nächster Termin</div>
                 <a class="section-link" href="/app/events">Alle Termine</a>
               </div>
               <div class="home-events-list">
@@ -1756,7 +1818,7 @@ const PageTemplates = `
                     <span class="home-date"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
                     <span class="home-event-copy">
                       <strong>{{.Title}}</strong>
-                      <span>{{.StartsAt}}{{if .HasLocation}} · {{.Location}}{{end}}</span>
+                      <span>{{.StartsAt}}{{if .HasLocation}} · {{.Location}}{{end}}{{if .Status}} · {{.Status}}{{end}}</span>
                     </span>
                     <span class="quick-arrow">›</span>
                   </a>
@@ -2099,7 +2161,7 @@ const PageTemplates = `
           {{if .CanManageIssues}}{{if .BoardOnly}}<a class="button" href="/app/anliegen">Zurück zu Anliegen</a>{{else}}<a class="button" href="/app/anliegen/board">Triage-Board</a>{{end}}{{end}}
         </div>{{end}}
       </div>
-      <section class="page">
+      <section class="page{{if .BoardOnly}} issue-board-page{{end}}">
         <div>
           <h1>{{if .BoardOnly}}Anliegen bearbeiten{{else}}Anliegen{{end}}</h1>
           <p class="lede">{{if .BoardOnly}}Offene Meldungen priorisieren und in den nächsten Schritt bringen.{{else}}Mängel, Fragen und Vorschläge direkt an die Verwaltung melden.{{end}}</p>
@@ -2224,50 +2286,54 @@ const PageTemplates = `
           {{end}}
         </div>{{end}}
         {{if and .CanManageIssues .BoardOnly}}
-          <section class="panel" id="issue-manage">
-            <div class="section-head">
+          <section class="panel issue-board-panel" id="issue-manage">
+            <div class="issue-board-toolbar">
               <div class="issue-board-summary" aria-label="Anliegen-Überblick">
                 <span class="pill">{{.OpenIssueCount}} offen</span>
                 {{if .UrgentIssueCount}}<span class="pill dringend">{{.UrgentIssueCount}} dringend</span>{{end}}
                 <span class="pill">{{.TotalIssueCount}} gesamt</span>
               </div>
+              <details class="issue-board-tools"{{if .BoardFilters.HasActive}} open{{end}}>
+                <summary>
+                  <span class="issue-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M8 4v6M16 14v6"/></svg></span>
+                  <strong>Filter &amp; Sortierung</strong>
+                  <span>{{if .BoardFilters.HasActive}}Aktive Auswahl{{else}}Alle Anliegen · zuletzt aktualisiert{{end}}</span>
+                </summary>
+                <form class="issue-board-filter" method="get" action="{{.BoardAction}}">
+                  <label>Status
+                    <select name="status">
+                      {{range .BoardFilters.StatusOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                    </select>
+                  </label>
+                  <label>Priorität
+                    <select name="priority">
+                      {{range .BoardFilters.PriorityOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                    </select>
+                  </label>
+                  <label>Kategorie
+                    <select name="category">
+                      {{range .BoardFilters.CategoryOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                    </select>
+                  </label>
+                  <label class="assignee">Zuständig
+                    <input type="email" name="assignee" value="{{.BoardFilters.Assignee}}" placeholder="name@example.com"{{if .HasServiceProviderContacts}} list="service-provider-contacts"{{end}}>
+                  </label>
+                  <label class="sort">Sortierung
+                    <select name="sort">
+                      {{range .BoardFilters.SortOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                    </select>
+                  </label>
+                  <div class="board-filter-actions">
+                    <button type="submit">Anwenden</button>
+                    {{if .BoardFilters.HasActive}}<a href="{{.BoardAction}}">Zurücksetzen</a>{{end}}
+                  </div>
+                </form>
+              </details>
             </div>
-            <details class="issue-board-tools"{{if .BoardFilters.HasActive}} open{{end}}>
-              <summary><strong>Filter &amp; Sortierung</strong><span>{{if .BoardFilters.HasActive}}Aktive Auswahl{{else}}Alle Anliegen · zuletzt aktualisiert{{end}}</span></summary>
-              <form class="issue-board-filter" method="get" action="{{.BoardAction}}">
-                <label>Status
-                  <select name="status">
-                    {{range .BoardFilters.StatusOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-                  </select>
-                </label>
-                <label>Priorität
-                  <select name="priority">
-                    {{range .BoardFilters.PriorityOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-                  </select>
-                </label>
-                <label>Kategorie
-                  <select name="category">
-                    {{range .BoardFilters.CategoryOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-                  </select>
-                </label>
-                <label class="assignee">Zuständig
-                  <input type="email" name="assignee" value="{{.BoardFilters.Assignee}}" placeholder="name@example.com"{{if .HasServiceProviderContacts}} list="service-provider-contacts"{{end}}>
-                </label>
-                <label class="sort">Sortierung
-                  <select name="sort">
-                    {{range .BoardFilters.SortOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-                  </select>
-                </label>
-                <div class="board-filter-actions">
-                  <button type="submit">Anwenden</button>
-                  {{if .BoardFilters.HasActive}}<a href="{{.BoardAction}}">Zurücksetzen</a>{{end}}
-                </div>
-              </form>
-            </details>
             {{if .HasManageIssues}}
               <div class="issue-list">
                 {{range .ManageIssues}}
-                  <article class="issue-card" id="issue-{{.ID}}">
+                  <article class="issue-card issue-work-card {{.StatusClass}}" id="issue-{{.ID}}">
                     <div class="issue-card-head">
                       <div>
                         <h3>{{.Title}}</h3>
@@ -2281,12 +2347,13 @@ const PageTemplates = `
                     </div>
                     <div class="issue-progress" aria-label="Bearbeitungsfortschritt"><span class="issue-progress-fill {{.StatusClass}}"></span></div>
                     <p class="issue-next-step">{{.NextStep}}</p>
-                    <div class="issue-description issue-description-preview"><p>{{.Body}}</p></div>
                     {{if .HasServiceAppointment}}<p class="issue-proposal"><strong>Termin:</strong> {{.ServiceAppointment}}</p>{{end}}
                     {{if .HasServiceProposal}}<p class="issue-proposal"><strong>Hinweis:</strong> {{.ServiceProposal}}</p>{{end}}
-                    <details class="issue-card-tools">
-                      <summary>Bearbeitung öffnen</summary>
-                      <div class="issue-card-tools-body">
+                    <div class="issue-card-foot">
+                      <div class="issue-description issue-description-preview"><p>{{.Body}}</p></div>
+                      <details class="issue-card-tools">
+                        <summary>Bearbeitung öffnen</summary>
+                        <div class="issue-card-tools-body">
                         <form class="issue-actions" method="post" action="/app/anliegen/workflow">
                           <input type="hidden" name="id" value="{{.ID}}">
                           <label>Status
@@ -2332,8 +2399,9 @@ const PageTemplates = `
                           <summary>Kosten &amp; Kostenvoranschlag{{if .HasEstimate}} · vorhanden{{end}}</summary>
                           <div class="issue-subtools-body">{{template "issueEstimate" .}}</div>
                         </details>
-                      </div>
-                    </details>
+                        </div>
+                      </details>
+                    </div>
                   </article>
                 {{end}}
               </div>
@@ -2488,6 +2556,82 @@ const PageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
+{{define "eventEditDialog"}}
+  <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
+    <form method="post" action="/app/events/edit" enctype="multipart/form-data">
+      <input type="hidden" name="id" value="{{.ID}}">
+      <div class="dialog-head">
+        <h2 id="{{.EditDialogID}}-title">Termin bearbeiten</h2>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+      </div>
+      <div class="dialog-body">
+        <div class="dialog-grid event-dialog-grid">
+          <label class="full" for="event-title-{{.ID}}">Titel<input id="event-title-{{.ID}}" name="title" value="{{.Title}}" required maxlength="140"></label>
+          <label for="event-category-{{.ID}}">Kategorie<select id="event-category-{{.ID}}" name="category">
+            <option value="Eigentümerversammlung"{{if eq .Category "Eigentümerversammlung"}} selected{{end}}>Eigentümerversammlung</option>
+            <option value="Reinigung"{{if eq .Category "Reinigung"}} selected{{end}}>Reinigung</option>
+            <option value="Wartung"{{if eq .Category "Wartung"}} selected{{end}}>Wartung</option>
+            <option value="Ablesung"{{if eq .Category "Ablesung"}} selected{{end}}>Ablesung</option>
+            <option value="Frist"{{if eq .Category "Frist"}} selected{{end}}>Frist</option>
+            <option value="Sonstiges"{{if eq .Category "Sonstiges"}} selected{{end}}>Sonstiges</option>
+          </select></label>
+          <label for="event-start-{{.ID}}">Beginn<input id="event-start-{{.ID}}" type="datetime-local" name="starts_at" value="{{.StartsAtInput}}" required></label>
+          <label class="full" for="event-location-{{.ID}}">Ort<input id="event-location-{{.ID}}" name="location" value="{{.Location}}" maxlength="160" placeholder="Optional"></label>
+          <details class="dialog-optional full">
+            <summary>Ende, Details oder Anhang</summary>
+            <div class="dialog-optional-grid">
+              <label class="full" for="event-end-{{.ID}}">Ende optional<input id="event-end-{{.ID}}" type="datetime-local" name="ends_at" value="{{.EndsAtInput}}"></label>
+              <label class="full" for="event-body-{{.ID}}">Details<textarea id="event-body-{{.ID}}" name="body">{{.Body}}</textarea></label>
+              <label class="full" for="event-attachments-{{.ID}}">Anhänge ergänzen<span class="file-control"><input id="event-attachments-{{.ID}}" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Fotos oder PDF auswählen</span></span></label>
+            </div>
+          </details>
+        </div>
+        <button class="button primary" type="submit">Änderungen speichern</button>
+      </div>
+    </form>
+  </dialog>
+{{end}}
+
+{{define "eventCard"}}
+  <article class="event-card{{if .IsNext}} is-next{{end}}{{if .Past}} past{{end}}" id="event-{{.ID}}">
+    <span class="date-badge"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
+    <div class="event-info">
+      <div class="event-card-head">
+        <div>
+          {{if .IsNext}}<span class="event-next-label">Als Nächstes</span>{{end}}
+          <h3>{{.Title}}</h3>
+        </div>
+        {{if .Status}}<span class="pill {{if .Past}}muted{{else}}ok{{end}}">{{.Status}}</span>{{end}}
+      </div>
+      <div class="event-meta">
+        <span class="pill {{.CategoryClass}}">{{.Category}}</span>
+        <strong>{{.DateLabel}}</strong>
+        <span>{{.TimeRange}}</span>
+        {{if .HasLocation}}<span>{{.Location}}</span>{{end}}
+      </div>
+      {{if or .HasBody .HasAttachments}}
+        <details class="event-details">
+          <summary>Details{{if .HasAttachments}} &amp; Anhänge{{end}}</summary>
+          <div class="event-details-body">
+            {{if .HasBody}}<div class="entry-body">{{.BodyHTML}}</div>{{end}}
+            {{template "attachmentStrip" .}}
+          </div>
+        </details>
+      {{end}}
+      {{if .CanManage}}
+        <div class="event-actions">
+          <button class="button small" type="button" data-dialog="{{.EditDialogID}}" aria-haspopup="dialog" aria-controls="{{.EditDialogID}}">Bearbeiten</button>
+          <form method="post" action="/app/events/delete" data-confirm="{{.DeleteConfirmLabel}}">
+            <input type="hidden" name="id" value="{{.ID}}">
+            <button class="button small" type="submit">Löschen</button>
+          </form>
+        </div>
+      {{end}}
+    </div>
+  </article>
+  {{if .CanManage}}{{template "eventEditDialog" .}}{{end}}
+{{end}}
+
 {{define "events"}}
 {{template "appOpen" .}}
     <script src="/assets/announcements.js?v={{.AssetVersion}}" defer></script>
@@ -2495,120 +2639,61 @@ const PageTemplates = `
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg><span>/</span><span>Termine</span></span>
-        {{if or .HasCalendarFeedURL .CanManageEvents}}<div class="page-actions">
-          {{if .HasCalendarFeedURL}}<a class="button" href="{{.CalendarFeedURL}}"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h8M8 17h5"/></svg>Kalender abonnieren</a>{{end}}
-          {{if .CanManageEvents}}<button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Termin anlegen</button>{{end}}
-        </div>{{end}}
+        {{if .CanManageEvents}}<div class="page-actions"><button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Termin erstellen</button></div>{{end}}
       </div>
-      <section class="page">
+      <section class="page events-page">
         <div>
           <h1>Termine</h1>
-          <p class="lede">Versammlungen, Wartungen, Fristen und gemeinsame Ereignisse im Haus.</p>
+          <p class="lede">Was als Nächstes im Haus ansteht – mit Zeitpunkt, Ort und allen nötigen Details.</p>
         </div>
-        {{if .EventMsg}}<p class="flash ok">{{.EventMsg}}</p>{{end}}
-        <div class="home-grid">
-          <section class="panel">
-            <div class="section-head">
+        {{if .EventMsg}}<p class="flash {{if .EventOK}}ok{{end}}">{{.EventMsg}}</p>{{end}}
+        <section class="panel events-panel">
+          <div class="section-head">
+            <div>
               <div class="kicker">Kommende Termine</div>
-              {{if .HasEvents}}<span class="pill">{{len .Events}} geplant</span>{{end}}
+              <p class="muted">{{if .HasEvents}}Der nächste Termin steht zuerst.{{else}}Sobald etwas geplant ist, erscheint es hier.{{end}}</p>
             </div>
-            {{if .HasEvents}}
-              <div class="agenda-list">
-                {{range .Events}}
-                  <article class="event-card" id="event-{{.ID}}">
-                    <span class="date-badge"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
-                    <div class="event-info">
-                      <h3>{{.Title}}</h3>
-                      <div class="event-meta">
-                        <span class="pill {{.CategoryClass}}">{{.Category}}</span>
-                        <span>{{.StartsAt}}</span>
-                        <span>{{.TimeRange}}</span>
-                        {{if .HasLocation}}<span>{{.Location}}</span>{{end}}
-                        {{if .Status}}<span class="pill">{{.Status}}</span>{{end}}
-                      </div>
-                      {{if .HasBody}}<div class="entry-body">{{.BodyHTML}}</div>{{end}}
-                      {{template "attachmentStrip" .}}
-                    </div>
-                  </article>
-                {{end}}
-              </div>
-            {{else}}
-              {{template "emptyState" .EventsEmpty}}
-            {{end}}
-          </section>
+            {{if .HasEvents}}<span class="pill">{{len .Events}} geplant</span>{{end}}
+          </div>
+          {{if .HasEvents}}
+            <div class="agenda-list">
+              {{range .Events}}{{template "eventCard" .}}{{end}}
+            </div>
+          {{else}}
+            {{template "emptyState" .EventsEmpty}}
+          {{end}}
 
-          <section class="panel">
-            <div class="kicker">Termine verwalten</div>
-            {{if .CanManageEvents}}
-              <div class="quick-list">
-                <button class="quick-row" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create">
-                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                  <div><h3>Termin anlegen</h3><p>Kategorie, Zeitpunkt, Ort und Details speichern.</p></div>
-                  <span class="quick-arrow">›</span>
-                </button>
-                {{if .HasAllEvents}}
-                  {{range .AllEvents}}
-                    <div class="quick-row">
-                      <svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>
-                      <div><h3>{{.Title}}</h3><p>{{.Category}} · {{.StartsAt}}{{if .Past}} · vergangen{{end}}</p></div>
-                      <span class="entry-actions">
-                        <button class="button small" type="button" data-dialog="{{.EditDialogID}}" aria-haspopup="dialog" aria-controls="{{.EditDialogID}}">Bearbeiten</button>
-                        <form method="post" action="/app/events/delete" data-confirm="{{.DeleteConfirmLabel}}">
-                          <input type="hidden" name="id" value="{{.ID}}">
-                          <button class="button small" type="submit">Löschen</button>
-                        </form>
-                      </span>
-                    </div>
-                    <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
-                      <form method="post" action="/app/events/edit" enctype="multipart/form-data">
-                        <input type="hidden" name="id" value="{{.ID}}">
-                        <div class="dialog-head">
-                          <h2 id="{{.EditDialogID}}-title">Termin bearbeiten</h2>
-                          <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
-                        </div>
-                        <div class="dialog-body">
-                          <div class="dialog-grid">
-                            <label class="full" for="event-title-{{.ID}}">Titel<input id="event-title-{{.ID}}" name="title" value="{{.Title}}" required maxlength="140"></label>
-                            <label for="event-category-{{.ID}}">Kategorie<select id="event-category-{{.ID}}" name="category">
-                              <option value="Eigentümerversammlung"{{if eq .Category "Eigentümerversammlung"}} selected{{end}}>Eigentümerversammlung</option>
-                              <option value="Reinigung"{{if eq .Category "Reinigung"}} selected{{end}}>Reinigung</option>
-                              <option value="Wartung"{{if eq .Category "Wartung"}} selected{{end}}>Wartung</option>
-                              <option value="Ablesung"{{if eq .Category "Ablesung"}} selected{{end}}>Ablesung</option>
-                              <option value="Frist"{{if eq .Category "Frist"}} selected{{end}}>Frist</option>
-                              <option value="Sonstiges"{{if eq .Category "Sonstiges"}} selected{{end}}>Sonstiges</option>
-                            </select></label>
-                            <label for="event-start-{{.ID}}">Beginn<input id="event-start-{{.ID}}" type="datetime-local" name="starts_at" value="{{.StartsAtInput}}" required></label>
-                            <label for="event-end-{{.ID}}">Ende optional<input id="event-end-{{.ID}}" type="datetime-local" name="ends_at" value="{{.EndsAtInput}}"></label>
-                            <label class="full" for="event-location-{{.ID}}">Ort<input id="event-location-{{.ID}}" name="location" value="{{.Location}}" maxlength="160"></label>
-                            <label class="full" for="event-body-{{.ID}}">Details<textarea id="event-body-{{.ID}}" name="body">{{.Body}}</textarea></label>
-                            <label class="full" for="event-attachments-{{.ID}}">Anhänge ergänzen<span class="file-control"><input id="event-attachments-{{.ID}}" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label>
-                          </div>
-                          <button class="button primary" type="submit">Speichern</button>
-                        </div>
-                      </form>
-                    </dialog>
-                  {{end}}
-            {{else}}
-                  {{template "emptyState" .AllEventsEmpty}}
-            {{end}}
+          {{if .HasCalendarFeedURL}}
+            <details class="calendar-subscription">
+              <summary>Termine automatisch im eigenen Kalender anzeigen</summary>
+              <div class="calendar-subscription-body">
+                <p>Einmal abonnieren – neue und geänderte Haustermine erscheinen danach automatisch im Kalender.</p>
+                <a class="button" href="{{.CalendarFeedURL}}">Kalender abonnieren</a>
               </div>
-            {{else}}
-              <p class="empty">Anlegen und Bearbeiten ist der Verwaltung vorbehalten.</p>
-            {{end}}
-          </section>
-        </div>
+            </details>
+          {{end}}
+
+          {{if .HasPastEvents}}
+            <details class="event-history">
+              <summary>Vergangene Termine · {{len .PastEvents}}</summary>
+              <div class="agenda-list">
+                {{range .PastEvents}}{{template "eventCard" .}}{{end}}
+              </div>
+            </details>
+          {{end}}
+        </section>
       </section>
 
       {{if .CanManageEvents}}
       <dialog id="event-create" class="dialog" aria-labelledby="event-create-title">
         <form method="post" action="/app/events" enctype="multipart/form-data">
           <div class="dialog-head">
-            <h2 id="event-create-title">Termin anlegen</h2>
+            <h2 id="event-create-title">Termin erstellen</h2>
             <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
           </div>
           <div class="dialog-body">
-            <div class="dialog-grid">
-              <label class="full" for="event-title">Titel<input id="event-title" name="title" required maxlength="140"></label>
+            <div class="dialog-grid event-dialog-grid">
+              <label class="full" for="event-title">Titel<input id="event-title" name="title" required maxlength="140" placeholder="Was findet statt?"></label>
               <label for="event-category">Kategorie<select id="event-category" name="category">
                 <option value="Eigentümerversammlung">Eigentümerversammlung</option>
                 <option value="Reinigung">Reinigung</option>
@@ -2618,12 +2703,17 @@ const PageTemplates = `
                 <option value="Sonstiges">Sonstiges</option>
               </select></label>
               <label for="event-start">Beginn<input id="event-start" type="datetime-local" name="starts_at" value="{{.NowInput}}" required></label>
-              <label for="event-end">Ende optional<input id="event-end" type="datetime-local" name="ends_at"></label>
-              <label class="full" for="event-location">Ort<input id="event-location" name="location" maxlength="160"></label>
-              <label class="full" for="event-body">Details<textarea id="event-body" name="body"></textarea></label>
-              <label class="full" for="event-attachments">Anhänge<span class="file-control"><input id="event-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label>
+              <label class="full" for="event-location">Ort<input id="event-location" name="location" maxlength="160" placeholder="Optional"></label>
+              <details class="dialog-optional full">
+                <summary>Ende, Details oder Anhang</summary>
+                <div class="dialog-optional-grid">
+                  <label class="full" for="event-end">Ende optional<input id="event-end" type="datetime-local" name="ends_at"></label>
+                  <label class="full" for="event-body">Details<textarea id="event-body" name="body" placeholder="Was müssen Bewohner wissen?"></textarea></label>
+                  <label class="full" for="event-attachments">Anhänge<span class="file-control"><input id="event-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Fotos oder PDF auswählen</span></span></label>
+                </div>
+              </details>
             </div>
-            <button class="button primary" type="submit">Speichern</button>
+            <button class="button primary" type="submit">Termin veröffentlichen</button>
           </div>
         </form>
       </dialog>
@@ -3654,6 +3744,11 @@ const PageTemplates = `
                 <div><h3>Benachrichtigungen</h3><p>E-Mail-Ereignisse pro Bereich steuern.</p></div>
                 <span class="quick-arrow">›</span>
               </a>
+              {{if .HasCalendarFeedURL}}<a class="quick-row" href="{{.CalendarFeedURL}}">
+                <svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h8M8 17h5"/></svg>
+                <div><h3>Kalender-Abo</h3><p>Haustermine automatisch im eigenen Kalender anzeigen.</p></div>
+                <span class="quick-arrow">›</span>
+              </a>{{end}}
             </div>
           </section>
           <section class="panel">

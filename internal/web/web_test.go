@@ -80,6 +80,14 @@ func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
 			t.Fatalf("announcement flow missing progressive-disclosure marker %q", want)
 		}
 	}
+	if got := strings.Count(PageTemplates, `data-dialog="event-create"`); got != 1 {
+		t.Fatalf("event create should have one entry point, got %d", got)
+	}
+	for _, want := range []string{`class="calendar-subscription"`, `class="event-history"`, `Termin veröffentlichen`, `Ende, Details oder Anhang`} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("event flow missing progressive-disclosure marker %q", want)
+		}
+	}
 }
 
 func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {

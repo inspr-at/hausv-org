@@ -1532,7 +1532,7 @@ func TestSettingsHubVisibleToResidentWithoutAdminSections(t *testing.T) {
 		t.Fatalf("settings hub status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/app/settings"`, "Profil", "Benachrichtigungen"} {
+	for _, want := range []string{`href="/app/settings"`, "Profil", "Benachrichtigungen", "Kalender-Abo", "/calendar/"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("settings hub should contain %q", want)
 		}
@@ -3006,13 +3006,16 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	if len(events) != 1 || events[0].Title != "Liftwartung" || events[0].Category != "Wartung" {
 		t.Fatalf("stored events = %+v", events)
 	}
+	if loc := create.Header().Get("Location"); loc != "/app/events?event=created#event-"+events[0].ID {
+		t.Fatalf("create event redirect = %q", loc)
+	}
 
 	page := authedRequest(t, a, "resident@example.com", "/app/events")
 	if page.Code != http.StatusOK {
 		t.Fatalf("resident events status = %d", page.Code)
 	}
 	body := page.Body.String()
-	for _, want := range []string{"Liftwartung", "Stiegenhaus", "Lift außer Betrieb.", `href="/app/events"`} {
+	for _, want := range []string{"Liftwartung", "Stiegenhaus", "Lift außer Betrieb.", "Als Nächstes", "Kalender abonnieren", "Details", `href="/app/events"`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("events page should contain %q", want)
 		}
@@ -3042,6 +3045,9 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	if len(events) != 1 || events[0].Title != "Hofreinigung" || events[0].Category != "Reinigung" || events[0].Location != "Hof" {
 		t.Fatalf("edited events = %+v", events)
 	}
+	if loc := edit.Header().Get("Location"); loc != "/app/events?event=updated#event-"+events[0].ID {
+		t.Fatalf("edit event redirect = %q", loc)
+	}
 
 	deleteResp := authedFormRequest(t, a, "manager@example.com", "/app/events/delete", url.Values{"id": {events[0].ID}})
 	if deleteResp.Code != http.StatusSeeOther {
@@ -3053,6 +3059,34 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	empty := authedRequest(t, a, "resident@example.com", "/app/events")
 	if !strings.Contains(empty.Body.String(), "Noch keine kommenden Termine") {
 		t.Fatalf("empty events page should show empty state:\n%s", empty.Body.String())
+	}
+}
+
+func TestEventsPageKeepsPastEventsProgressiveAndDashboardShowsNearestOnly(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	now := time.Now()
+	pastEnd := now.Add(-47 * time.Hour)
+	items := []houseEvent{
+		{TenantSlug: "jhw22", Title: "Vergangene Begehung", Category: "Sonstiges", StartsAt: now.Add(-48 * time.Hour), EndsAt: &pastEnd},
+		{TenantSlug: "jhw22", Title: "Nächste Ablesung", Category: "Ablesung", StartsAt: now.Add(24 * time.Hour)},
+		{TenantSlug: "jhw22", Title: "Spätere Wartung", Category: "Wartung", StartsAt: now.Add(72 * time.Hour)},
+	}
+	for _, item := range items {
+		if _, err := a.eventStore.Create(item); err != nil {
+			t.Fatalf("create event: %v", err)
+		}
+	}
+
+	page := authedRequest(t, a, "resident@example.com", "/app/events").Body.String()
+	for _, want := range []string{"Nächste Ablesung", "Spätere Wartung", "Vergangene Termine · 1", "Vergangene Begehung", `class="event-history"`} {
+		if !strings.Contains(page, want) {
+			t.Fatalf("events page should contain %q", want)
+		}
+	}
+
+	dashboard := authedRequest(t, a, "resident@example.com", "/app").Body.String()
+	if !strings.Contains(dashboard, "Nächste Ablesung") || strings.Contains(dashboard, "Spätere Wartung") {
+		t.Fatalf("dashboard should preview only the nearest event:\n%s", dashboard)
 	}
 }
 
