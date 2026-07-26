@@ -308,11 +308,17 @@ const PageTemplates = `
     .positioning-tag { justify-self: end; border: 1px solid rgba(200,153,63,.28); border-radius: 999px; padding: 8px 12px; background: rgba(200,153,63,.12); color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
     .roadmap-section { background: #fffefb; }
     .roadmap-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin-top: 30px; }
-    .roadmap-card { min-height: 216px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 20px; display: grid; grid-template-rows: auto auto 1fr; gap: 12px; box-shadow: 0 16px 34px rgba(32,37,31,.035); }
+    .roadmap-card { min-height: 216px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 20px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; box-shadow: 0 16px 34px rgba(32,37,31,.035); }
     .roadmap-card .feature-icon { background: rgba(47,107,74,.09); color: var(--leaf); }
     .roadmap-card strong { display: block; font-family: var(--font-serif); font-size: 25px; line-height: 1.12; }
     .roadmap-card p { margin: 0; color: var(--muted); line-height: 1.5; }
-    .roadmap-card small { align-self: end; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .roadmap-status { width: max-content; max-width: 100%; align-self: end; border: 1px solid var(--line); border-radius: 999px; padding: 6px 9px; font-size: 11px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+    .roadmap-status.status-available { border-color: rgba(47,107,74,.22); background: rgba(47,107,74,.08); color: var(--leaf); }
+    .roadmap-status.status-in-progress { border-color: rgba(200,153,63,.28); background: rgba(200,153,63,.1); color: var(--gold-ink); }
+    .roadmap-status.status-planned { background: #f5f2ea; color: var(--muted); }
+    @media (min-width: 901px) {
+      .roadmap-card:last-child:nth-child(3n+1) { grid-column: 2; }
+    }
     .band { background: #fffefb; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
     .visual-section { position: relative; overflow: hidden; }
     .visual-section::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-repeat: no-repeat; background-size: cover; background-position: center; filter: saturate(.86); }
@@ -385,6 +391,7 @@ const PageTemplates = `
       .landing-hero::after { background: linear-gradient(180deg, rgba(12,18,13,.78) 0%, rgba(12,18,13,.5) 46%, rgba(12,18,13,.88) 100%); }
       .landing-copy { padding-top: 64px; }
       .feature-grid, .use-grid, .trust-layout, .cost-layout, .imprint-grid, .roadmap-grid, .positioning-strip { grid-template-columns: 1fr; }
+      .roadmap-card:last-child { grid-column: auto; }
       .positioning-tag { justify-self: start; }
       .trust-proof-grid { grid-template-columns: 1fr; }
       .trust-proof:nth-child(odd), .trust-proof:nth-child(even) { padding-left: 0; padding-right: 0; border-right: 0; }
@@ -446,7 +453,7 @@ const PageTemplates = `
       </div>
       <div class="positioning-strip" aria-label="Produktgrenze">
         <span class="positioning-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/><path d="M18 15l2 2 3-4"/></svg></span>
-        <div><strong>Kommunikation statt Buchhaltung.</strong><p>hausv.org ist der Kommunikations- und Transparenz-Layer. Wir zeigen Status, Dokumente und Nachweise, integrieren mit bestehenden Systemen und vermeiden bewusst Buchführung, Nebenkostenabrechnung, Steuerlogik und Mahnwesen.</p></div>
+        <div><strong>Kommunikation statt Buchhaltung.</strong><p>hausv.org ist der Kommunikations- und Transparenz-Layer. Wir zeigen Status, Dokumente und Nachweise und binden bestehende Systeme an. Keine eigene Buchhaltung, keine Nebenkostenabrechnung, kein Mahnwesen, kein Dienstleister-Marktplatz und keine Zahlungsaufträge in der ersten Produktstufe.</p></div>
         <span class="positioning-tag">Transparenz statt Buchung</span>
       </div>
     </div>
@@ -456,14 +463,15 @@ const PageTemplates = `
     <div class="section-inner">
       <div class="section-kicker">Roadmap</div>
       <h2>Ausblick ohne Nebel.</h2>
-      <p class="section-lead">Einige Bausteine laufen bereits im Pilot, andere sind bewusst als nächste Schritte markiert. Die Linie bleibt gleich: besser koordinieren, sauber dokumentieren, offen integrieren. Keine eigene Buchhaltung.</p>
-      <div class="roadmap-grid" aria-label="Geplante Produktbausteine">
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M3 20a5 5 0 0 1 10 0"/><path d="M16 7h5M16 12h5M16 17h5"/></svg></span><strong>Dienstleister einbinden</strong><p>Handwerker sehen nur zugewiesene Anliegen, können Status, Fotos, Rückfragen und Termine ergänzen.</p><small>Betreiberfreigabe vorbereitet</small></div>
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h5M8 16h4"/><path d="m15 16 2 2 3-4"/></svg></span><strong>Übergaben dokumentieren</strong><p>Mobile Protokolle für Räume, Zählerstände, Schlüssel, Mängel, Fotos und Bestätigung.</p><small>Pilot verfügbar</small></div>
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><path d="M17 15l3 3 3-5"/></svg></span><strong>Zahlungsstatus zeigen</strong><p>Offen, bezahlt oder überfällig als geschützte Statusinformation pro Einheit, ohne Sollstellung oder Mahnwesen.</p><small>Pilot verfügbar</small></div>
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><strong>AT-Schnittstellen</strong><p>camt.053 und camt.054 lesen Zahlungsstatus. BMD/RZL und ebInterface bleiben Übergaben an bestehende Systeme.</p><small>Österreich-first</small></div>
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M8 12h8M8 16h5"/></svg></span><strong>Kalender abonnieren</strong><p>Termine, Versammlungen und Dienstleister-Zeitfenster als geschützter ICS-Feed.</p><small>Pilot verfügbar</small></div>
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a4.5 4.5 0 0 1 9 0"/><path d="M16 11a2.5 2.5 0 1 0 0-5"/><path d="M16.5 15a4 4 0 0 1 4 4"/></svg></span><strong>Kontakte pro Verwaltung</strong><p>Hausmeister, Notdienste und wiederkehrende Dienstleister zentral pflegen und gezielt verwenden.</p><small>Pilot verfügbar</small></div>
+      <p class="section-lead">Jeder Baustein ist klar markiert: verfügbar im Pilot, in Arbeit oder geplant. Verfügbar heißt im Pilot nutzbar – nicht automatisch für jede Rolle freigeschaltet.</p>
+      <div class="roadmap-grid" aria-label="Produkt-Roadmap nach Status">
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M3 20a5 5 0 0 1 10 0"/><path d="M16 7h5M16 12h5M16 17h5"/></svg></span><strong>Dienstleister einbinden</strong><p>Handwerker sehen nur zugewiesene Anliegen und können dort Status, Fotos, Rückfragen und Termine ergänzen.</p><small class="roadmap-status status-in-progress" data-status="in-progress">In Arbeit · Freigabe offen</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h5M8 16h4"/><path d="m15 16 2 2 3-4"/></svg></span><strong>Übergaben dokumentieren</strong><p>Räume, Zählerstände, Schlüssel, Mängel, Fotos und Bestätigung direkt vor Ort festhalten.</p><small class="roadmap-status status-available" data-status="available">Verfügbar · Pilot</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><path d="M17 15l3 3 3-5"/></svg></span><strong>Zahlungsstatus zeigen</strong><p>Offen, bezahlt oder überfällig als geschützte Information pro Einheit sehen – ohne Sollstellung.</p><small class="roadmap-status status-available" data-status="available">Verfügbar · Pilot</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><strong>Bestehende Systeme anbinden</strong><p>Zahlungsstatus aus österreichischen Bankdaten übernehmen und Unterlagen an vorhandene Fachsysteme übergeben.</p><small class="roadmap-status status-in-progress" data-status="in-progress">In Arbeit · Schrittweise</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M8 12h8M8 16h5"/></svg></span><strong>Kalender abonnieren</strong><p>Termine, Versammlungen und Dienstleister-Zeitfenster direkt im eigenen Kalender abonnieren.</p><small class="roadmap-status status-available" data-status="available">Verfügbar · Pilot</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a4.5 4.5 0 0 1 9 0"/><path d="M16 11a2.5 2.5 0 1 0 0-5"/><path d="M16.5 15a4 4 0 0 1 4 4"/></svg></span><strong>Kontakte wiederverwenden</strong><p>Hausmeister, Notdienste und wiederkehrende Dienstleister pro Verwaltung pflegen und in Anliegen auswählen.</p><small class="roadmap-status status-available" data-status="available">Verfügbar · Pilot</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="m15 17 2 2 3-4"/></svg></span><strong>Änderungen nachvollziehen</strong><p>Wichtige Aktionen mit Akteur, Zeitpunkt und Änderungstyp in einer verständlichen Historie prüfen.</p><small class="roadmap-status status-available" data-status="available">Verfügbar · Pilot</small></div>
       </div>
     </div>
   </section>

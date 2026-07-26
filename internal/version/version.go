@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.20.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Produkt-Ausblick",
+			Headline: "Der Ausblick zeigt Status, Nutzen und Grenzen auf einen Blick.",
+			Intro:    "Sieben zentrale Vorhaben sind jetzt eindeutig als verfügbar oder in Arbeit gekennzeichnet.",
+			Items: []NoteItem{
+				{Label: "Klarer Nutzen", Text: "Jeder Eintrag beschreibt kurz, welchen Alltagsschritt das Portal erleichtert."},
+				{Label: "Klare Grenzen", Text: "Die Startseite nennt auch Aufgaben, die das Portal in der ersten Produktstufe bewusst nicht übernimmt."},
+			},
+		},
+		{
 			Version:  "0.19.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Nachvollziehbarkeit",

@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.20.0] - 2026-07-26
+
+### Verbessert
+
+- **Der Produkt-Ausblick zeigt einen ehrlichen Status.** Sieben zentrale Vorhaben sind jetzt klar als verfügbar oder in Arbeit gekennzeichnet und erklären jeweils den konkreten Nutzen. Zusätzlich macht die Startseite sichtbar, welche Aufgaben das Portal in der ersten Produktstufe bewusst nicht übernimmt.
+
 ## [0.19.0] - 2026-07-26
 
 ### Verbessert

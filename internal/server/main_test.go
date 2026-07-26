@@ -1142,24 +1142,25 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Je Wohneinheit als Richtwert",
 		"Impressum",
 		"Datenschutz mitgedacht",
-		"Betreiberfreigabe vorbereitet",
+		"In Arbeit · Freigabe offen",
 		"KI nur mit Opt-in",
 		"Keine eigene Buchhaltung",
+		"kein Mahnwesen",
+		"kein Dienstleister-Marktplatz",
+		"keine Zahlungsaufträge",
 		"Kommunikation statt Buchhaltung",
 		"Kommunikations- und Transparenz-Layer",
 		"Transparenz statt Buchung",
 		"Ausblick ohne Nebel.",
-		"Pilot verfügbar",
+		"Verfügbar · Pilot",
+		"In Arbeit · Schrittweise",
 		"Dienstleister einbinden",
 		"Übergaben dokumentieren",
 		"Zahlungsstatus zeigen",
-		"AT-Schnittstellen",
+		"Bestehende Systeme anbinden",
 		"Kalender abonnieren",
-		"Kontakte pro Verwaltung",
-		"camt.053",
-		"camt.054",
-		"BMD/RZL",
-		"ebInterface",
+		"Kontakte wiederverwenden",
+		"Änderungen nachvollziehen",
 		`/assets/landing.js`,
 		"/assets/hausv-landing-hero.png",
 		"/assets/landing-features.jpg",
@@ -1181,10 +1182,39 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
 		}
 	}
-	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "KI-first", `mailto:hallo`, `mailto:hello`} {
+	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "ebInterface"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
+	}
+	roadmapStatuses := map[string]string{
+		"Dienstleister einbinden":     "in-progress",
+		"Übergaben dokumentieren":     "available",
+		"Zahlungsstatus zeigen":       "available",
+		"Bestehende Systeme anbinden": "in-progress",
+		"Kalender abonnieren":         "available",
+		"Kontakte wiederverwenden":    "available",
+		"Änderungen nachvollziehen":   "available",
+	}
+	for title, status := range roadmapStatuses {
+		start := strings.Index(body, "<strong>"+title+"</strong>")
+		if start < 0 {
+			t.Fatalf("roadmap line %q missing", title)
+		}
+		end := strings.Index(body[start:], "</div>")
+		if end < 0 {
+			t.Fatalf("roadmap line %q has no card boundary", title)
+		}
+		card := body[start : start+end]
+		if !strings.Contains(card, `data-status="`+status+`"`) {
+			t.Fatalf("roadmap line %q missing status %q: %s", title, status, card)
+		}
+	}
+	if got := strings.Count(body, `data-status="available"`); got != 5 {
+		t.Fatalf("available roadmap statuses = %d, want 5", got)
+	}
+	if got := strings.Count(body, `data-status="in-progress"`); got != 2 {
+		t.Fatalf("in-progress roadmap statuses = %d, want 2", got)
 	}
 	if strings.Contains(body, `action="/auth/request"`) {
 		t.Fatal("root-domain landing should not render the tenant login form")
