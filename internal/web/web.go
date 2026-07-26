@@ -1973,33 +1973,162 @@ const PageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
+{{define "contactRouteActions"}}
+  <div class="route-actions">
+    {{if .HasPhone}}<a class="contact-route" href="tel:{{.Phone}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h3l1.5 4-2 1.5a14 14 0 0 0 5 5l1.5-2L20 14v3c0 1.1-.9 2-2 2C10.8 19 5 13.2 5 6c0-1.1.9-2 2-2Z"/></svg><span>Anrufen</span></a>{{end}}
+    {{if .HasEmail}}<a class="contact-route" href="mailto:{{.Email}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg><span>E-Mail</span></a>{{end}}
+  </div>
+{{end}}
+
+{{define "managedContactPublic"}}
+  <article class="contact-row">
+    <div class="contact-row-copy">
+      <span class="contact-row-title"><strong>{{.DisplayName}}</strong><span class="pill">{{.Kind}}</span></span>
+      {{if .Description}}<span class="contact-description">{{.Description}}</span>{{end}}
+      <span class="contact-meta">{{if .HasPhone}}<span>{{.Phone}}</span>{{end}}{{if .HasEmail}}<span>{{.Email}}</span>{{end}}</span>
+    </div>
+    {{template "contactRouteActions" .}}
+  </article>
+{{end}}
+
+{{define "directoryContact"}}
+  <article class="contact-row">
+    <div class="contact-row-copy">
+      <span class="contact-row-title"><strong>{{.Name}}</strong><span class="pill">{{.Role}}</span></span>
+      {{if .Description}}<span class="contact-description">{{.Description}}</span>{{end}}
+      <span class="contact-meta">{{if .HasPhone}}<span>{{.Phone}}</span>{{end}}{{if .HasEmail}}<span>{{.Email}}</span>{{end}}</span>
+    </div>
+    {{template "contactRouteActions" .}}
+  </article>
+{{end}}
+
+{{define "managedContactAdmin"}}
+  <article class="contact-row {{if not .Active}}inactive{{end}}">
+    <div class="contact-row-copy">
+      <span class="contact-row-title"><strong>{{.DisplayName}}</strong><span class="pill">{{.Kind}}</span>{{if not .Active}}<span class="pill quiet">Inaktiv</span>{{end}}</span>
+      {{if .Description}}<span class="contact-description">{{.Description}}</span>{{end}}
+      <span class="contact-meta">{{if .HasPhone}}<span>{{.Phone}}</span>{{end}}{{if .HasEmail}}<span>{{.Email}}</span>{{end}}</span>
+    </div>
+    <div class="contact-row-actions">
+      {{if .Active}}{{template "contactRouteActions" .}}{{end}}
+      {{if .CanEdit}}
+        <button class="button small" type="button" data-dialog="{{.EditDialogID}}" aria-haspopup="dialog" aria-controls="{{.EditDialogID}}">Bearbeiten</button>
+      {{else if .Active}}
+        <form method="post" action="/app/kontakte/delete" data-confirm="{{.DeleteConfirmLabel}}"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Deaktivieren</button></form>
+      {{end}}
+    </div>
+    {{if .CanEdit}}
+      <dialog id="{{.EditDialogID}}" class="dialog contact-edit-dialog" aria-labelledby="{{.EditDialogID}}-title">
+        <div class="dialog-head">
+          <div><div class="kicker">Adressbuch</div><h2 id="{{.EditDialogID}}-title">{{.DisplayName}}</h2></div>
+          <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+        </div>
+        <div class="dialog-body">
+          <form method="post" action="/app/kontakte">
+            <input type="hidden" name="id" value="{{.ID}}">
+            <input type="hidden" name="active" value="{{if .Active}}true{{else}}false{{end}}">
+            <div class="contact-form">
+              <label>Art<select name="kind" required>{{range .KindOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+              <label>Name<input name="name" value="{{.Name}}" maxlength="120"></label>
+              <label>Firma / Organisation<input name="company" value="{{.Company}}" maxlength="140"></label>
+              <label>Telefon<input name="phone" value="{{.Phone}}" maxlength="80"></label>
+              <label>E-Mail<input type="email" name="email" value="{{.Email}}"></label>
+              <label class="f-wide">Notiz<input name="notes" value="{{.Notes}}" maxlength="300"></label>
+              <div class="f-actions"><button class="button primary" type="submit">Änderungen speichern</button></div>
+            </div>
+          </form>
+          {{if .Active}}
+            <div class="contact-danger">
+              <div><strong>Kontakt deaktivieren</strong><p>Der Eintrag verschwindet für Bewohner, bleibt aber erhalten.</p></div>
+              <form method="post" action="/app/kontakte/delete" data-confirm="{{.DeleteConfirmLabel}}"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Deaktivieren</button></form>
+            </div>
+          {{else}}
+            <form class="contact-reactivate" method="post" action="/app/kontakte">
+              <input type="hidden" name="id" value="{{.ID}}"><input type="hidden" name="kind" value="{{.Kind}}"><input type="hidden" name="name" value="{{.Name}}"><input type="hidden" name="company" value="{{.Company}}"><input type="hidden" name="email" value="{{.Email}}"><input type="hidden" name="phone" value="{{.Phone}}"><input type="hidden" name="notes" value="{{.Notes}}"><input type="hidden" name="active" value="true">
+              <p>Dieser Kontakt ist derzeit nur für die Verwaltung sichtbar.</p><button class="button primary" type="submit">Wieder aktivieren</button>
+            </form>
+          {{end}}
+        </div>
+      </dialog>
+    {{end}}
+  </article>
+{{end}}
+
 {{define "contacts"}}
 {{template "appOpen" .}}
     <style>
-      .contacts .contact-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px; align-items: start; }
-      .contacts .contact-section { display: grid; gap: 14px; }
-      .contacts .contact-list { display: grid; gap: 10px; }
-      .contacts .contact-card { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--panel-soft); display: grid; gap: 10px; }
-      .contacts .contact-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-      .contacts .contact-head strong { font-family: var(--font-serif); font-size: 20px; line-height: 1.12; overflow-wrap: anywhere; }
-      .contacts .contact-lines { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); font-size: 13.5px; font-weight: 700; }
-      .contacts .contact-lines a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(200,153,63,.5); }
-      .contacts .contact-lines a:hover { color: var(--gold-ink); }
-      .contacts .directory-panel, .contacts .managed-panel { grid-column: 1 / -1; }
-      .contacts .contact-form { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 10px; align-items: end; }
-      .contacts .contact-form .f-kind { grid-column: span 3; }
-      .contacts .contact-form .f-name, .contacts .contact-form .f-company { grid-column: span 4; }
-      .contacts .contact-form .f-email, .contacts .contact-form .f-phone { grid-column: span 4; }
-      .contacts .contact-form .f-notes { grid-column: span 8; }
-      .contacts .contact-form .f-actions { grid-column: span 4; }
-      .contacts .contact-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
-      .contacts .contact-card.inactive { opacity: .68; }
-      .contacts .contact-card.inactive .pill { background: #f1ede3; color: #777166; }
-      .contacts .dialog .contact-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
-      .contacts .dialog .contact-form > * { grid-column: auto; }
-      .contacts .dialog .contact-form .f-notes, .contacts .dialog .contact-form .f-actions { grid-column: 1 / -1; }
-      @media (max-width: 900px) { .contacts .contact-grid { grid-template-columns: 1fr; } .contacts .directory-panel, .contacts .managed-panel { grid-column: 1; } }
-      @media (max-width: 720px) { .contacts .contact-form, .contacts .dialog .contact-form { grid-template-columns: 1fr; } .contacts .contact-form > *, .contacts .dialog .contact-form > * { grid-column: 1 / -1 !important; } .contacts .contact-actions { justify-content: flex-start; } }
+      .contacts .contacts-stack { display: grid; gap: 18px; }
+      .contacts .contact-section { display: grid; gap: 16px; }
+      .contacts .contact-section .section-head { align-items: flex-end; }
+      .contacts .section-copy { max-width: 720px; }
+      .contacts .section-copy h2 { margin-bottom: 4px; }
+      .contacts .section-copy p { margin: 0; }
+      .contacts .quick-panel { border-top: 3px solid var(--gold); }
+      .contacts .quick-list { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+      .contacts .quick-card { border: 1px solid var(--line); border-radius: 10px; padding: 16px; background: var(--panel-soft); display: grid; gap: 12px; align-content: start; }
+      .contacts .quick-card.urgent { border-color: rgba(172,72,42,.4); background: #fff9f5; }
+      .contacts .quick-label { display: flex; justify-content: space-between; gap: 8px; align-items: center; color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+      .contacts .quick-card.urgent .quick-label { color: #a4422b; }
+      .contacts .quick-card h3 { margin: 0; font-family: var(--font-serif); font-size: 22px; line-height: 1.08; overflow-wrap: anywhere; }
+      .contacts .quick-card p { margin: 0; color: var(--muted); font-size: 14px; }
+      .contacts .contact-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+      .contacts .route-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+      .contacts .contact-route { min-height: 42px; padding: 0 13px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; font-weight: 850; font-size: 13.5px; }
+      .contacts .contact-route:hover { border-color: var(--gold); color: var(--gold-ink); }
+      .contacts .contact-route svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+      .contacts .contact-admin-link { font-size: 13px; }
+      .contacts .contact-add { border: 1px solid var(--line); border-radius: 10px; background: var(--panel-soft); }
+      .contacts .contact-add > summary { min-height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; color: var(--ink); font-weight: 900; list-style: none; }
+      .contacts .contact-add > summary::-webkit-details-marker { display: none; }
+      .contacts .contact-add > summary::after { content: "+"; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: white; display: grid; place-items: center; font-size: 18px; line-height: 1; }
+      .contacts .contact-add[open] > summary::after { content: "−"; }
+      .contacts .contact-add-body { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
+      .contacts .contact-add-hint { margin: 12px 0; color: var(--muted); font-size: 13.5px; }
+      .contacts .contact-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; align-items: end; }
+      .contacts .contact-form .f-wide, .contacts .contact-form .f-actions { grid-column: 1 / -1; }
+      .contacts .contact-form .f-actions { display: flex; justify-content: flex-end; }
+      .contacts .contact-list { display: grid; gap: 8px; }
+      .contacts .contact-row { border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px; background: var(--panel-soft); display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; }
+      .contacts .contact-row-copy { min-width: 0; display: grid; gap: 4px; }
+      .contacts .contact-row-title { min-width: 0; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+      .contacts .contact-row-title strong { font-family: var(--font-serif); font-size: 19px; line-height: 1.1; overflow-wrap: anywhere; }
+      .contacts .contact-description { color: var(--muted); font-size: 13.5px; }
+      .contacts .contact-row-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+      .contacts .contact-row.inactive { opacity: .72; }
+      .contacts .pill.quiet { background: #ece8de; color: var(--muted); }
+      .contacts .inactive-contacts { border-top: 1px solid var(--line); padding-top: 12px; }
+      .contacts .inactive-contacts > summary { cursor: pointer; color: var(--muted); font-size: 13.5px; font-weight: 800; }
+      .contacts .inactive-contacts .contact-list { margin-top: 10px; }
+      .contacts .contact-empty-line { margin: 0; padding: 14px; border-radius: 8px; background: var(--panel-soft); color: var(--muted); }
+      .contacts .directory-panel { background: rgba(255,255,255,.72); }
+      .contacts .directory-note { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+      .contacts .directory-note svg { width: 17px; height: 17px; fill: none; stroke: var(--gold-ink); stroke-width: 1.8; }
+      .contacts .contact-edit-dialog .dialog-head { align-items: flex-start; }
+      .contacts .contact-edit-dialog .dialog-head h2 { margin: 2px 0 0; }
+      .contacts .contact-danger, .contacts .contact-reactivate { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(158,70,48,.3); display: flex; gap: 14px; align-items: center; justify-content: space-between; }
+      .contacts .contact-danger p, .contacts .contact-reactivate p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+      @media (max-width: 1040px) { .contacts .quick-list { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+      @media (max-width: 720px) {
+        .contacts .contacts-stack { gap: 12px; }
+        .contacts .contact-section { gap: 12px; }
+        .contacts .quick-list { grid-template-columns: 1fr; gap: 8px; }
+        .contacts .quick-card { padding: 14px; gap: 9px; }
+        .contacts .quick-card h3 { font-size: 20px; }
+        .contacts .quick-card p { display: none; }
+        .contacts .quick-card .contact-meta { font-size: 12.5px; }
+        .contacts .route-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; }
+        .contacts .contact-route { min-height: 44px; }
+        .contacts .contact-form { grid-template-columns: 1fr; }
+        .contacts .contact-form > *, .contacts .contact-form .f-wide, .contacts .contact-form .f-actions { grid-column: 1; }
+        .contacts .contact-form .f-actions .button { width: 100%; }
+        .contacts .contact-row { grid-template-columns: 1fr; padding: 12px; gap: 10px; }
+        .contacts .contact-row-actions { display: grid; grid-template-columns: 1fr; justify-content: stretch; }
+        .contacts .contact-row-actions > .button, .contacts .contact-row-actions > form, .contacts .contact-row-actions > form .button { width: 100%; }
+        .contacts .contact-row-actions .route-actions { flex: 1; }
+        .contacts .contact-danger, .contacts .contact-reactivate { align-items: stretch; flex-direction: column; }
+        .contacts .contact-danger .button, .contacts .contact-reactivate .button { width: 100%; }
+        .contacts .section-head { align-items: flex-start; }
+      }
     </style>
     <main class="app-main contacts">
       <div class="content-top">
@@ -2008,153 +2137,121 @@ const PageTemplates = `
       <section class="page wide">
         <div>
           <h1>Kontakte</h1>
-          <p class="lede">Verwaltung, Notdienst, Hausmeister, Beirat und freigegebene Kontakte für {{.Tenant.Address}}.</p>
+          <p class="lede">Schnell die richtige Ansprechperson für {{.Tenant.Address}} erreichen.</p>
         </div>
         {{if .ContactMsg}}<p class="flash {{if .ContactOK}}ok{{end}}">{{.ContactMsg}}</p>{{end}}
-        <div class="contact-grid">
-          <section class="panel contact-section managed-panel">
-            <div class="section-head">
-              <div>
-                <div class="kicker">Adressbuch</div>
-	                <h2>{{if .ServiceProviderAccessEnabled}}Dienstleister &amp; wichtige Kontakte{{else}}Wichtige Kontakte{{end}}</h2>
-	                <p class="muted">{{if .ServiceProviderAccessEnabled}}Wiederkehrende Kontakte pro Hausverwaltung. Dienstleister mit E-Mail können im Anliegen direkt ausgewählt werden.{{else}}Hausmeister, Notdienste und weitere wiederkehrende Kontakte. Betreiberfreigabe offen: Dienstleister bleiben gesperrt.{{end}}</p>
+        <div class="contacts-stack">
+          {{if .HasQuickContacts}}
+            <section class="panel contact-section quick-panel" aria-labelledby="quick-contacts-title">
+              <div class="section-head">
+                <div class="section-copy"><div class="kicker">Schnell erreichen</div><h2 id="quick-contacts-title">Hilfe &amp; Haus-Ansprechpersonen</h2></div>
+                {{if .CanManageContacts}}<a class="section-link contact-admin-link" href="/app/settings/building#building-contact">Hauskontakte pflegen</a>{{end}}
               </div>
-            </div>
-            {{if .CanManageContacts}}
-              <form class="contact-form" method="post" action="/app/kontakte">
-                <input type="hidden" name="active" value="true">
-                <label class="f-kind">Art<select name="kind" required>{{range .ContactKindOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
-                <label class="f-name">Name<input name="name" maxlength="120" placeholder="Ansprechperson"></label>
-                <label class="f-company">Firma<input name="company" maxlength="140" placeholder="Firma oder Organisation"></label>
-                <label class="f-email">E-Mail<input type="email" name="email" placeholder="kontakt@example.com"></label>
-                <label class="f-phone">Telefon<input name="phone" maxlength="80" placeholder="+43 ..."></label>
-                <label class="f-notes">Notiz<input name="notes" maxlength="300" placeholder="z. B. Lift, Elektrik, 24h"></label>
-                <div class="f-actions"><button class="button primary" type="submit">Kontakt speichern</button></div>
-              </form>
-            {{end}}
-            {{if .HasManagedContacts}}
-              <div class="contact-list">
-                {{range .ManagedContacts}}
-                  <article class="contact-card {{if not .Active}}inactive{{end}}">
-                    <div class="contact-head"><strong>{{.DisplayName}}</strong><span class="pill">{{.Kind}}</span></div>
-                    {{if .Description}}<p class="muted">{{.Description}}</p>{{end}}
-                    <div class="contact-lines">{{if .HasEmail}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}{{if .HasPhone}}<a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}<span>{{.StatusLabel}}</span></div>
-                    {{if $.CanManageContacts}}
-                      <div class="contact-actions">
-	                        {{if or $.ServiceProviderAccessEnabled (ne .Kind "Dienstleister")}}<button class="button small" type="button" data-dialog="{{.EditDialogID}}" aria-haspopup="dialog" aria-controls="{{.EditDialogID}}">Bearbeiten</button>{{end}}
-	                        {{if .Active}}<form method="post" action="/app/kontakte/delete" data-confirm="{{.DeleteConfirmLabel}}"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Deaktivieren</button></form>{{end}}
-	                      </div>
-	                      {{if or $.ServiceProviderAccessEnabled (ne .Kind "Dienstleister")}}
-	                      <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
-                        <form method="post" action="/app/kontakte">
-                          <input type="hidden" name="id" value="{{.ID}}">
-                          <input type="hidden" name="active" value="{{if .Active}}true{{else}}false{{end}}">
-                          <div class="dialog-head">
-                            <h2 id="{{.EditDialogID}}-title">Kontakt bearbeiten</h2>
-                            <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
-                          </div>
-                          <div class="dialog-body">
-                            <div class="contact-form">
-                              <label>Art<select name="kind" required>{{range .KindOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
-                              <label>Name<input name="name" value="{{.Name}}" maxlength="120"></label>
-                              <label>Firma<input name="company" value="{{.Company}}" maxlength="140"></label>
-                              <label>E-Mail<input type="email" name="email" value="{{.Email}}"></label>
-                              <label>Telefon<input name="phone" value="{{.Phone}}" maxlength="80"></label>
-                              <label class="f-notes">Notiz<input name="notes" value="{{.Notes}}" maxlength="300"></label>
-                              <div class="f-actions"><button class="button primary" type="submit">Speichern</button></div>
-                            </div>
-                          </div>
-	                        </form>
-	                      </dialog>
-	                      {{end}}
-	                    {{end}}
-                  </article>
-                {{end}}
-              </div>
-            {{else}}
-              {{template "emptyState" .ManagedEmpty}}
-            {{end}}
-          </section>
-
-          <section class="panel contact-section">
-            <div>
-              <div class="kicker">Verwaltung</div>
-              <h2>Hausverwaltung</h2>
-            </div>
-            {{if .HasManagerContacts}}
-              <div class="contact-list">
-                {{range .ManagerContacts}}
-                  <article class="contact-card">
-                    <div class="contact-head"><strong>{{.Name}}</strong><span class="pill">{{.Role}}</span></div>
-                    <p class="muted">{{.Description}}</p>
-                    <div class="contact-lines">{{if .HasEmail}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}{{if .HasPhone}}<a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}</div>
-                  </article>
-                {{end}}
-              </div>
-            {{else}}
-              {{template "emptyState" .ManagerEmpty}}
-            {{end}}
-          </section>
-
-          <section class="panel contact-section">
-            <div>
-              <div class="kicker">Notfall</div>
-              <h2>Notdienst &amp; Hausmeister</h2>
-            </div>
-            {{if .HasEmergencyContacts}}
-              <div class="contact-list">
+              <div class="quick-list">
                 {{range .EmergencyContacts}}
-                  <article class="contact-card">
-                    <div class="contact-head"><strong>{{.Name}}</strong><span class="pill">{{.Role}}</span></div>
-                    <p class="muted">{{.Description}}</p>
-                    <div class="contact-lines">{{if .HasEmail}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}{{if .HasPhone}}<a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}</div>
+                  {{if eq .Role "Notdienst"}}
+                    <article class="quick-card urgent">
+                      <div class="quick-label"><span>{{.Role}}</span><span>Dringend</span></div>
+                      <h3>{{.Name}}</h3>
+                      {{if .Description}}<p>{{.Description}}</p>{{end}}
+                      <div class="contact-meta">{{if .HasPhone}}<span>{{.Phone}}</span>{{end}}{{if .HasEmail}}<span>{{.Email}}</span>{{end}}</div>
+                      {{template "contactRouteActions" .}}
+                    </article>
+                  {{end}}
+                {{end}}
+                {{range .ManagerContacts}}
+                  <article class="quick-card">
+                    <div class="quick-label"><span>Hausverwaltung</span></div>
+                    <h3>{{.Name}}</h3>
+                    {{if .Description}}<p>{{.Description}}</p>{{end}}
+                    <div class="contact-meta">{{if .HasPhone}}<span>{{.Phone}}</span>{{end}}{{if .HasEmail}}<span>{{.Email}}</span>{{end}}</div>
+                    {{template "contactRouteActions" .}}
                   </article>
                 {{end}}
-              </div>
-            {{else}}
-              {{template "emptyState" .EmergencyEmpty}}
-            {{end}}
-          </section>
-
-          <section class="panel contact-section">
-            <div>
-              <div class="kicker">Beirat</div>
-              <h2>Beirat</h2>
-            </div>
-            {{if .HasBoardContacts}}
-              <div class="contact-list">
+                {{range .EmergencyContacts}}
+                  {{if ne .Role "Notdienst"}}
+                    <article class="quick-card">
+                      <div class="quick-label"><span>{{.Role}}</span></div>
+                      <h3>{{.Name}}</h3>
+                      {{if .Description}}<p>{{.Description}}</p>{{end}}
+                      <div class="contact-meta">{{if .HasPhone}}<span>{{.Phone}}</span>{{end}}{{if .HasEmail}}<span>{{.Email}}</span>{{end}}</div>
+                      {{template "contactRouteActions" .}}
+                    </article>
+                  {{end}}
+                {{end}}
                 {{range .BoardContacts}}
-                  <article class="contact-card">
-                    <div class="contact-head"><strong>{{.Name}}</strong><span class="pill">{{.Role}}</span></div>
-                    <p class="muted">{{.Description}}</p>
-                    <div class="contact-lines">{{if .HasEmail}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}{{if .HasPhone}}<a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}</div>
+                  <article class="quick-card">
+                    <div class="quick-label"><span>Beirat</span></div>
+                    <h3>{{.Name}}</h3>
+                    {{if .Description}}<p>{{.Description}}</p>{{end}}
+                    <div class="contact-meta">{{if .HasPhone}}<span>{{.Phone}}</span>{{end}}{{if .HasEmail}}<span>{{.Email}}</span>{{end}}</div>
+                    {{template "contactRouteActions" .}}
                   </article>
                 {{end}}
               </div>
-            {{else}}
-              {{template "emptyState" .BoardEmpty}}
-            {{end}}
-          </section>
+            </section>
+          {{end}}
 
-          <section class="panel contact-section directory-panel">
-            <div>
-              <div class="kicker">Hausgemeinschaft</div>
-              <h2>Freigegebene Kontakte</h2>
-            </div>
-            {{if .HasResidentContacts}}
-              <div class="contact-list">
-                {{range .ResidentContacts}}
-                  <article class="contact-card">
-                    <div class="contact-head"><strong>{{.Name}}</strong><span class="pill">{{.Role}}</span></div>
-                    <p class="muted">{{.Description}}</p>
-                    <div class="contact-lines">{{if .HasEmail}}<a href="mailto:{{.Email}}">{{.Email}}</a>{{end}}{{if .HasPhone}}<a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}</div>
-                  </article>
-                {{end}}
+          {{if or .CanManageContacts .HasManagedContacts}}
+            <section class="panel contact-section managed-panel" id="contact-book" aria-labelledby="managed-contacts-title">
+              <div class="section-head">
+                <div class="section-copy">
+                  <div class="kicker">Adressbuch</div>
+                  <h2 id="managed-contacts-title">Weitere wichtige Kontakte</h2>
+                  <p class="muted">Firmen, Dienste und wiederkehrende Ansprechpartner für das Haus.</p>
+                </div>
               </div>
-            {{else}}
-              {{template "emptyState" .ResidentEmpty}}
-            {{end}}
-          </section>
+              {{if .CanManageContacts}}
+                <details class="contact-add" id="contact-add" {{if .ContactFormOpen}}open{{end}}>
+                  <summary>Kontakt hinzufügen</summary>
+                  <div class="contact-add-body">
+                    <p class="contact-add-hint">Name oder Firma und mindestens Telefon oder E-Mail angeben. {{if not .ServiceProviderAccessEnabled}}Betreiberfreigabe offen: Dienstleister bleiben gesperrt.{{end}}</p>
+                    <form class="contact-form" method="post" action="/app/kontakte">
+                      <input type="hidden" name="active" value="true">
+                      <label>Art<select name="kind" required>{{range .ContactKindOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+                      <label>Name<input name="name" maxlength="120" placeholder="Ansprechperson"></label>
+                      <label>Firma / Organisation<input name="company" maxlength="140" placeholder="z. B. Elektro Süd"></label>
+                      <label>Telefon<input name="phone" maxlength="80" placeholder="+43 ..."></label>
+                      <label>E-Mail<input type="email" name="email" placeholder="kontakt@example.com"></label>
+                      <label class="f-wide">Notiz<input name="notes" maxlength="300" placeholder="z. B. Lift, Elektrik oder Erreichbarkeit"></label>
+                      <div class="f-actions"><button class="button primary" type="submit">Kontakt anlegen</button></div>
+                    </form>
+                  </div>
+                </details>
+              {{end}}
+              {{if .HasManagedContacts}}
+                <div class="contact-list">
+                  {{range .ManagedContacts}}{{if $.CanManageContacts}}{{template "managedContactAdmin" .}}{{else}}{{template "managedContactPublic" .}}{{end}}{{end}}
+                </div>
+              {{else if .CanManageContacts}}
+                <p class="contact-empty-line">Noch keine weiteren Kontakte. Bei Bedarf über „Kontakt hinzufügen“ anlegen.</p>
+              {{end}}
+              {{if and .CanManageContacts .HasInactiveContacts}}
+                <details class="inactive-contacts">
+                  <summary>Inaktive Kontakte ({{len .InactiveContacts}})</summary>
+                  <div class="contact-list">{{range .InactiveContacts}}{{template "managedContactAdmin" .}}{{end}}</div>
+                </details>
+              {{end}}
+            </section>
+          {{end}}
+
+          {{if .HasResidentContacts}}
+            <section class="panel contact-section directory-panel" aria-labelledby="resident-directory-title">
+              <div class="section-head">
+                <div class="section-copy">
+                  <div class="kicker">Freiwilliges Verzeichnis</div>
+                  <h2 id="resident-directory-title">Hausgemeinschaft</h2>
+                  <p class="muted">Nur Bewohner, die ihren Kontakt im Profil ausdrücklich für dieses Haus freigegeben haben.</p>
+                </div>
+                <span class="directory-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 2.8 8.1 7 10 4.2-1.9 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-5"/></svg>Freiwillig freigegeben</span>
+              </div>
+              <div class="contact-list">{{range .ResidentContacts}}{{template "directoryContact" .}}{{end}}</div>
+            </section>
+          {{end}}
+
+          {{if and (not .HasAnyContacts) (not .CanManageContacts)}}
+            <section class="panel contact-section">{{template "emptyState" .ManagedEmpty}}</section>
+          {{end}}
         </div>
       </section>
     </main>
@@ -4084,7 +4181,7 @@ const PageTemplates = `
           <p class="lede">Stammdaten, Kontaktblock, Titelbild und Einheiten für {{.Tenant.Address}}.</p>
         </div>
         <div class="building-grid">
-          <section class="panel settings-card">
+          <section class="panel settings-card" id="building-contact">
             <div>
               <h2>Stammdaten</h2>
               <p class="muted">Diese Angaben überschreiben die Umgebungswerte für diesen Tenant.</p>

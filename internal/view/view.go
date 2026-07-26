@@ -354,6 +354,7 @@ type ManagedContactView struct {
 	Phone              string
 	Notes              string
 	Active             bool
+	CanEdit            bool
 	StatusLabel        string
 	HasEmail           bool
 	HasPhone           bool

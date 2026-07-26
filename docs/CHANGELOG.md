@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.29.0] - 2026-07-26
+
+### Verbessert
+
+- **Dringende und offizielle Kontakte stehen zuerst.** Notdienst, Hausverwaltung und Hausmeister sind ohne Umwege erreichbar; der Beirat folgt als weitere Haus-Ansprechperson.
+- **Anrufen und E-Mail sind echte Hauptaktionen.** Große, gut antippbare Schaltflächen ersetzen kleine Kontaktlinks und funktionieren auf Handy und Desktop.
+- **Das Adressbuch bleibt im Alltag ruhig.** Neue Kontakte werden über eine klare Aktion ergänzt, während inaktive Einträge in einem eigenen Bereich liegen.
+- **Bearbeiten und Deaktivieren sind sicher getrennt.** Kontaktdaten stehen im Bearbeitungsdialog zusammen; Deaktivieren erklärt seine Wirkung und lässt sich rückgängig machen.
+- **Offizielle Stellen und Hausgemeinschaft sind klar getrennt.** Das Bewohnerverzeichnis erklärt seine freiwillige Freigabe und vermischt sich nicht mit Notdienst oder Verwaltung.
+- **Leere Kontaktseiten geben einen gemeinsamen hilfreichen Hinweis.** Mehrere leere Bereiche werden nicht mehr wiederholt.
+
 ## [0.28.0] - 2026-07-26
 
 ### Verbessert

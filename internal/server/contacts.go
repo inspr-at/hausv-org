@@ -16,13 +16,24 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	managerContacts := managerContactViews(tenant)
 	emergencyContacts := emergencyContactViews(tenant)
 	managedContacts := a.managedContactViews(tenant.Slug, canManageContacts)
+	activeManagedContacts, inactiveManagedContacts := splitManagedContactViews(managedContacts)
 	boardContacts := a.boardContactViews(tenant.Slug)
 	residentContacts := a.residentDirectoryViews(tenant.Slug)
+	managedEmptyTitle := "Noch kein Adressbucheintrag"
 	managedEmptyMessage := "Dienstleister, Hausmeister und Notdienste können hier zentral hinterlegt werden."
 	if !a.serviceAccessEnabled {
 		managedEmptyMessage = "Hausmeister, Notdienste und weitere wichtige Kontakte können hier zentral hinterlegt werden."
 	}
+	if !canManageContacts {
+		managedEmptyTitle = "Noch keine Kontakte hinterlegt"
+		managedEmptyMessage = "Die Hausverwaltung hat für dieses Haus noch keine allgemeinen Kontakte hinterlegt."
+	}
 	contactMsg, contactOK := contactMessage(r.URL.Query().Get("contact"))
+	hasQuickContacts := len(managerContacts)+len(emergencyContacts)+len(boardContacts) > 0
+	hasAnyContacts := hasQuickContacts || len(activeManagedContacts)+len(residentContacts) > 0
+	if canManageContacts && len(inactiveManagedContacts) > 0 {
+		hasAnyContacts = true
+	}
 	a.render(w, "contacts", a.withBase(ac, map[string]any{
 		"Title":                "Kontakte",
 		"CanManageContacts":    canManageContacts,
@@ -35,9 +46,11 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"EmergencyContacts":    emergencyContacts,
 		"HasEmergencyContacts": len(emergencyContacts) > 0,
 		"EmergencyEmpty":       emptyState("Kein Notdienst hinterlegt", "Notdienst und Hausmeister werden in den Gebäude-Einstellungen gepflegt."),
-		"ManagedContacts":      managedContacts,
-		"HasManagedContacts":   len(managedContacts) > 0,
-		"ManagedEmpty":         emptyState("Noch kein Adressbucheintrag", managedEmptyMessage),
+		"ManagedContacts":      activeManagedContacts,
+		"HasManagedContacts":   len(activeManagedContacts) > 0,
+		"InactiveContacts":     inactiveManagedContacts,
+		"HasInactiveContacts":  len(inactiveManagedContacts) > 0,
+		"ManagedEmpty":         emptyState(managedEmptyTitle, managedEmptyMessage),
 		"ContactKindOptions":   contactKindOptionsForServiceProviderAccess("", a.serviceAccessEnabled),
 		"BoardContacts":        boardContacts,
 		"HasBoardContacts":     len(boardContacts) > 0,
@@ -45,6 +58,9 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"ResidentContacts":     residentContacts,
 		"HasResidentContacts":  len(residentContacts) > 0,
 		"ResidentEmpty":        emptyState("Keine freigegebenen Kontakte", "Kontakte aus der Hausgemeinschaft erscheinen nur nach ausdrücklicher Freigabe im Profil."),
+		"HasQuickContacts":     hasQuickContacts,
+		"HasAnyContacts":       hasAnyContacts,
+		"ContactFormOpen":      r.URL.Query().Get("contact") == "invalid" || r.URL.Query().Get("contact") == "error",
 	}))
 }
 
@@ -60,7 +76,7 @@ func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac au
 	}
 	item, err := managedContactFromForm(tenant.Slug, r.Form)
 	if err != nil {
-		http.Redirect(w, r, "/app/kontakte?contact=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/kontakte?contact=invalid#contact-add", http.StatusSeeOther)
 		return
 	}
 	if !a.serviceAccessEnabled && (normalizeContactKind(item.Kind) == roleServiceProvider || a.isExistingServiceProviderContact(tenant.Slug, item.ID)) {
@@ -70,7 +86,7 @@ func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac au
 	saved, created, err := a.contactStore.Upsert(item)
 	if err != nil {
 		logError("contact save failed", err, "tenant", tenant.Slug, "contact", redactedEmail(item.Email))
-		http.Redirect(w, r, "/app/kontakte?contact=error", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/kontakte?contact=error#contact-book", http.StatusSeeOther)
 		return
 	}
 	action := "aktualisiert"
@@ -90,7 +106,7 @@ func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac au
 			"status": contactStatusLabel(saved.Active),
 		},
 	})
-	http.Redirect(w, r, "/app/kontakte?contact=saved", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/kontakte?contact=saved#contact-book", http.StatusSeeOther)
 }
 
 func (a *app) isExistingServiceProviderContact(tenantSlug string, id string) bool {
@@ -118,7 +134,7 @@ func (a *app) deactivateManagedContact(w http.ResponseWriter, r *http.Request, a
 	id := strings.TrimSpace(r.FormValue("id"))
 	removed, err := a.contactStore.Deactivate(tenant.Slug, id, time.Now())
 	if err != nil {
-		http.Redirect(w, r, "/app/kontakte?contact=error", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/kontakte?contact=error#contact-book", http.StatusSeeOther)
 		return
 	}
 	if removed.ID != "" {
@@ -136,7 +152,7 @@ func (a *app) deactivateManagedContact(w http.ResponseWriter, r *http.Request, a
 			},
 		})
 	}
-	http.Redirect(w, r, "/app/kontakte?contact=deleted", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/kontakte?contact=deleted#contact-book", http.StatusSeeOther)
 }
 
 func contactMessage(status string) (string, bool) {
@@ -163,9 +179,23 @@ func (a *app) managedContactViews(tenantSlug string, includeInactive bool) []man
 	for _, item := range items {
 		itemView := managedContactViewFrom(item)
 		itemView.KindOptions = contactKindOptionsForServiceProviderAccess(item.Kind, a.serviceAccessEnabled)
+		itemView.CanEdit = a.serviceAccessEnabled || normalizeContactKind(item.Kind) != roleServiceProvider
 		views = append(views, itemView)
 	}
 	return views
+}
+
+func splitManagedContactViews(items []managedContactView) ([]managedContactView, []managedContactView) {
+	active := make([]managedContactView, 0, len(items))
+	inactive := make([]managedContactView, 0)
+	for _, item := range items {
+		if item.Active {
+			active = append(active, item)
+		} else {
+			inactive = append(inactive, item)
+		}
+	}
+	return active, inactive
 }
 
 func (a *app) serviceContactOptions(tenantSlug string) []contactOptionView {

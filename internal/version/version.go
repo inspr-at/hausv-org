@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.29.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Kontakte",
+			Headline: "Die richtige Ansprechperson ist schneller gefunden und direkt erreichbar.",
+			Intro:    "Notdienst und Hausverwaltung stehen zuerst; weitere Hauskontakte, Adressbuch und freiwilliges Bewohnerverzeichnis bleiben klar getrennt.",
+			Items: []NoteItem{
+				{Label: "Direkt erreichen", Text: "Anrufen und E-Mail sind als gut antippbare Hauptaktionen an jedem freigegebenen Kontakt verfügbar."},
+				{Label: "Ruhig verwalten", Text: "Neue und inaktive Adressbucheinträge sind progressiv offengelegt, ohne die Kontaktübersicht zu überladen."},
+				{Label: "Klar einordnen", Text: "Offizielle Haus-Ansprechpersonen und freiwillig freigegebene Bewohnerkontakte erscheinen in getrennten Bereichen."},
+			},
+		},
+		{
 			Version:  "0.28.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Zugänge",
