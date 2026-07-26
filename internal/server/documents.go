@@ -320,6 +320,13 @@ func (a *app) deleteAttachment(w http.ResponseWriter, r *http.Request, ac authCt
 		http.Error(w, "Dieser Anhang kann nur von Verwaltung oder Ersteller entfernt werden.", http.StatusForbidden)
 		return
 	}
+	if normalizeAttachmentEntity(item.EntityType) == "handover" && a.handoverStore != nil {
+		handover, found := a.handoverStore.Get(tenant.Slug, item.EntityID)
+		if !found || !handoverCanChangeFiles(handover) {
+			http.Error(w, "Bestätigte oder abgelegte Protokolle sind unveränderlich.", http.StatusConflict)
+			return
+		}
+	}
 	if _, removed, err := a.attachmentStore.Delete(tenant.Slug, id, time.Now()); err != nil {
 		logError("attachment delete failed", err, "tenant", tenant.Slug, "attachment_id", id)
 		http.Redirect(w, r, redirectAfterAttachmentChange(r, "/app/anliegen?issue=error"), http.StatusSeeOther)

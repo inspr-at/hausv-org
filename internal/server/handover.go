@@ -31,37 +31,56 @@ const (
 )
 
 type handoverView struct {
-	ID               string
-	Title            string
-	Type             string
-	UnitLabel        string
-	HasUnit          bool
-	ScheduledAt      string
-	HasScheduledAt   bool
-	Status           string
-	StatusClass      string
-	Outgoing         string
-	Incoming         string
-	Rooms            []handoverRoom
-	HasRooms         bool
-	Meters           []handoverMeter
-	HasMeters        bool
-	Keys             []handoverKey
-	HasKeys          bool
-	Notes            string
-	HasNotes         bool
-	Confirmations    []handoverConfirmationView
-	HasConfirmations bool
-	Attachments      []attachmentView
-	HasAttachments   bool
-	AttachmentGroup  attachmentGroup
-	ProtocolURL      string
-	FileURL          string
-	FiledDocumentID  string
-	HasFiledDocument bool
-	FiledDocumentURL string
-	CreatedAt        string
-	UpdatedAt        string
+	ID                 string
+	Title              string
+	Type               string
+	UnitLabel          string
+	HasUnit            bool
+	ScheduledAt        string
+	HasScheduledAt     bool
+	Status             string
+	StatusClass        string
+	NextStep           string
+	NextStepDetail     string
+	ConfirmedCount     int
+	ConfirmationCount  int
+	IsPending          bool
+	IsReady            bool
+	IsFiled            bool
+	CanFile            bool
+	CanChangeFiles     bool
+	CanManageDocuments bool
+	Outgoing           string
+	Incoming           string
+	Rooms              []handoverRoom
+	HasRooms           bool
+	Meters             []handoverMeter
+	HasMeters          bool
+	Keys               []handoverKey
+	HasKeys            bool
+	Notes              string
+	HasNotes           bool
+	Confirmations      []handoverConfirmationView
+	HasConfirmations   bool
+	Attachments        []attachmentView
+	HasAttachments     bool
+	AttachmentGroup    attachmentGroup
+	ProtocolURL        string
+	FileURL            string
+	FiledDocumentID    string
+	HasFiledDocument   bool
+	FiledDocumentURL   string
+	CreatedAt          string
+	UpdatedAt          string
+}
+
+type handoverSectionView struct {
+	Title       string
+	Description string
+	Count       int
+	Items       []handoverView
+	HasItems    bool
+	Open        bool
 }
 
 type handoverConfirmationView struct {
@@ -99,11 +118,17 @@ func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		items = a.handoverStore.ListTenant(tenant.Slug)
 	}
 	msg, okMsg := handoverMessage(r.URL.Query().Get("handover"))
+	views := a.handoverViewsForActor(tenant.Slug, email, role, items)
+	sections := handoverSections(views)
 	a.render(w, "handovers", a.withBase(ac, map[string]any{
 		"Title":              "Übergaben",
 		"CanManageHandovers": true,
 		"ActivePage":         "handovers",
-		"Handovers":          a.handoverViewsForActor(tenant.Slug, email, role, items),
+		"Handovers":          views,
+		"HandoverSections":   sections,
+		"HandoverOpenCount":  sections[0].Count,
+		"HandoverReadyCount": sections[1].Count,
+		"HandoverFiledCount": sections[2].Count,
 		"HasHandovers":       len(items) > 0,
 		"HandoversEmpty":     emptyState("Noch keine Übergaben", "Neue Nutzerwechsel werden hier mit Räumen, Zählern, Schlüsseln, Fotos und Bestätigung dokumentiert."),
 		"HandoverMsg":        msg,
@@ -121,6 +146,12 @@ func handoverMessage(status string) (string, bool) {
 		return "Bestätigung gespeichert.", true
 	case "filed":
 		return "Protokoll im Dokumentenbereich abgelegt.", true
+	case "attachments":
+		return "Fotos und Dateien ergänzt.", true
+	case "locked":
+		return "Das Protokoll ist nach der ersten Bestätigung unveränderlich.", false
+	case "pending":
+		return "Vor der Ablage fehlen noch Bestätigungen.", false
 	case "invalid":
 		return "Bitte Titel, Einheit und mindestens einen Protokollpunkt prüfen.", false
 	case "missing":
@@ -130,6 +161,43 @@ func handoverMessage(status string) (string, bool) {
 	default:
 		return "", false
 	}
+}
+
+func (a *app) addHandoverAttachments(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, email, role := ac.tenant, ac.email, ac.role
+	if !canManageHandovers(role) {
+		http.Error(w, "Übergabeprotokolle sind der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
+		http.Redirect(w, r, "/app/uebergaben?handover=invalid", http.StatusSeeOther)
+		return
+	}
+	id := strings.TrimSpace(r.FormValue("id"))
+	item, found := a.handoverStore.Get(tenant.Slug, id)
+	if !found {
+		http.Redirect(w, r, "/app/uebergaben?handover=missing", http.StatusSeeOther)
+		return
+	}
+	if !handoverCanChangeFiles(item) {
+		http.Redirect(w, r, "/app/uebergaben?handover=locked#handover-"+url.PathEscape(id), http.StatusSeeOther)
+		return
+	}
+	headers, err := attachmentFormHeaders(r, maxIssueAttachmentCount, "attachments")
+	if err != nil || len(headers) == 0 || a.attachmentStore == nil {
+		http.Redirect(w, r, "/app/uebergaben?handover=invalid#handover-"+url.PathEscape(id), http.StatusSeeOther)
+		return
+	}
+	if len(a.attachmentStore.ListEntity(tenant.Slug, "handover", id))+len(headers) > maxIssueAttachmentCount {
+		http.Redirect(w, r, "/app/uebergaben?handover=invalid#handover-"+url.PathEscape(id), http.StatusSeeOther)
+		return
+	}
+	if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "handover", id, email, uploadedFilesFromHeaders(headers), time.Now()); err != nil {
+		logHandoverError("attachments", tenant.Slug, id, err)
+		http.Redirect(w, r, "/app/uebergaben?handover=error#handover-"+url.PathEscape(id), http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/app/uebergaben?handover=attachments#handover-"+url.PathEscape(id), http.StatusSeeOther)
 }
 
 func (a *app) createHandover(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -519,6 +587,10 @@ func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request, ac au
 		http.Redirect(w, r, "/app/uebergaben?handover=filed#handover-"+url.PathEscape(item.ID), http.StatusSeeOther)
 		return
 	}
+	if handoverStatus(item) == handoverStatusPending {
+		http.Redirect(w, r, "/app/uebergaben?handover=pending#handover-"+url.PathEscape(item.ID), http.StatusSeeOther)
+		return
+	}
 	attachments := []attachmentRecord{}
 	if a.attachmentStore != nil {
 		attachments = a.attachmentStore.ListEntity(tenant.Slug, "handover", item.ID)
@@ -574,6 +646,26 @@ func (a *app) handoverViewsForActor(tenantSlug string, email string, role string
 	return views
 }
 
+func handoverSections(views []handoverView) []handoverSectionView {
+	sections := []handoverSectionView{
+		{Title: "Jetzt offen", Description: "Diese Übergaben warten noch auf Bestätigung.", Open: true},
+		{Title: "Bereit zur Ablage", Description: "Vollständig geprüft und bereit für den Dokumentenbereich.", Open: true},
+		{Title: "Abgeschlossen", Description: "Fertig abgelegte Protokolle."},
+	}
+	for _, view := range views {
+		index := 0
+		if view.IsFiled {
+			index = 2
+		} else if view.IsReady {
+			index = 1
+		}
+		sections[index].Items = append(sections[index].Items, view)
+		sections[index].Count++
+		sections[index].HasItems = true
+	}
+	return sections
+}
+
 func (a *app) handoverViewForActor(tenantSlug string, email string, role string, item handoverRecord) handoverView {
 	item = normalizeHandover(item)
 	unitLabel := item.UnitID
@@ -585,41 +677,72 @@ func (a *app) handoverViewForActor(tenantSlug string, email string, role string,
 	attachments := a.attachmentViewsForEntity(tenantSlug, "handover", item.ID, email, role)
 	for idx := range attachments {
 		attachments[idx].DeleteRedirect = "/app/uebergaben#handover-" + url.PathEscape(item.ID)
+		if !handoverCanChangeFiles(item) {
+			attachments[idx].CanDelete = false
+		}
 	}
 	confirmations := make([]handoverConfirmationView, 0, len(item.Confirmations))
 	for _, confirmation := range item.Confirmations {
 		confirmations = append(confirmations, handoverConfirmationViewFrom(confirmation))
 	}
 	status := handoverStatus(item)
+	confirmedCount := 0
+	for _, confirmation := range item.Confirmations {
+		if !confirmation.ConfirmedAt.IsZero() {
+			confirmedCount++
+		}
+	}
+	nextStep := "Protokoll vervollständigen"
+	nextStepDetail := "Inhalte und Dateien prüfen"
+	if status == handoverStatusPending {
+		nextStep = "Auf Bestätigung warten"
+		nextStepDetail = fmt.Sprintf("%d von %d bestätigt", confirmedCount, len(item.Confirmations))
+	} else if status == handoverStatusConfirmed || status == handoverStatusDraft {
+		nextStep = "Protokoll endgültig ablegen"
+		nextStepDetail = "Bestätigungen vollständig"
+	} else if status == handoverStatusFiled {
+		nextStep = "Übergabe abgeschlossen"
+		nextStepDetail = "Protokoll im Dokumentenbereich"
+	}
 	view := handoverView{
-		ID:               item.ID,
-		Title:            item.Title,
-		Type:             item.HandoverType,
-		UnitLabel:        unitLabel,
-		HasUnit:          unitLabel != "",
-		Status:           status,
-		StatusClass:      handoverStatusClass(status),
-		Outgoing:         handoverPartyLabel(item.OutgoingName, item.OutgoingEmail),
-		Incoming:         handoverPartyLabel(item.IncomingName, item.IncomingEmail),
-		Rooms:            item.Rooms,
-		HasRooms:         len(item.Rooms) > 0,
-		Meters:           item.Meters,
-		HasMeters:        len(item.Meters) > 0,
-		Keys:             item.Keys,
-		HasKeys:          len(item.Keys) > 0,
-		Notes:            item.Notes,
-		HasNotes:         item.Notes != "",
-		Confirmations:    confirmations,
-		HasConfirmations: len(confirmations) > 0,
-		Attachments:      attachments,
-		HasAttachments:   len(attachments) > 0,
-		AttachmentGroup:  attachmentGroup{Attachments: attachments, HasAttachments: len(attachments) > 0},
-		ProtocolURL:      "/app/uebergaben/" + url.PathEscape(item.ID) + "/protokoll",
-		FileURL:          "/app/uebergaben/file",
-		FiledDocumentID:  item.FiledDocumentID,
-		HasFiledDocument: item.FiledDocumentID != "",
-		CreatedAt:        formatLocalDateTime(item.CreatedAt),
-		UpdatedAt:        formatLocalDateTime(item.UpdatedAt),
+		ID:                 item.ID,
+		Title:              item.Title,
+		Type:               item.HandoverType,
+		UnitLabel:          unitLabel,
+		HasUnit:            unitLabel != "",
+		Status:             status,
+		StatusClass:        handoverStatusClass(status),
+		NextStep:           nextStep,
+		NextStepDetail:     nextStepDetail,
+		ConfirmedCount:     confirmedCount,
+		ConfirmationCount:  len(item.Confirmations),
+		IsPending:          status == handoverStatusPending,
+		IsReady:            status == handoverStatusConfirmed || status == handoverStatusDraft,
+		IsFiled:            status == handoverStatusFiled,
+		CanFile:            status == handoverStatusConfirmed || status == handoverStatusDraft,
+		CanChangeFiles:     handoverCanChangeFiles(item),
+		CanManageDocuments: hasCapability(role, capabilityManageDocuments),
+		Outgoing:           handoverPartyLabel(item.OutgoingName, item.OutgoingEmail),
+		Incoming:           handoverPartyLabel(item.IncomingName, item.IncomingEmail),
+		Rooms:              item.Rooms,
+		HasRooms:           len(item.Rooms) > 0,
+		Meters:             item.Meters,
+		HasMeters:          len(item.Meters) > 0,
+		Keys:               item.Keys,
+		HasKeys:            len(item.Keys) > 0,
+		Notes:              item.Notes,
+		HasNotes:           item.Notes != "",
+		Confirmations:      confirmations,
+		HasConfirmations:   len(confirmations) > 0,
+		Attachments:        attachments,
+		HasAttachments:     len(attachments) > 0,
+		AttachmentGroup:    attachmentGroup{Attachments: attachments, HasAttachments: len(attachments) > 0},
+		ProtocolURL:        "/app/uebergaben/" + url.PathEscape(item.ID) + "/protokoll",
+		FileURL:            "/app/uebergaben/file",
+		FiledDocumentID:    item.FiledDocumentID,
+		HasFiledDocument:   item.FiledDocumentID != "",
+		CreatedAt:          formatLocalDateTime(item.CreatedAt),
+		UpdatedAt:          formatLocalDateTime(item.UpdatedAt),
 	}
 	if item.FiledDocumentID != "" {
 		view.FiledDocumentURL = "/app/dokumente/" + url.PathEscape(item.FiledDocumentID) + "/download"
@@ -629,6 +752,18 @@ func (a *app) handoverViewForActor(tenantSlug string, email string, role string,
 		view.HasScheduledAt = true
 	}
 	return view
+}
+
+func handoverCanChangeFiles(item handoverRecord) bool {
+	if item.FiledDocumentID != "" {
+		return false
+	}
+	for _, confirmation := range item.Confirmations {
+		if !confirmation.ConfirmedAt.IsZero() {
+			return false
+		}
+	}
+	return true
 }
 
 func handoverUnitLabel(units []unit, unitID string) string {

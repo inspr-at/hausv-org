@@ -870,6 +870,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /app/abstimmungen/{id}/protokoll", a.page(a.ballotProtocol))
 	mux.HandleFunc("GET /app/uebergaben", a.page(a.handovers))
 	mux.HandleFunc("POST /app/uebergaben", a.action(a.createHandover))
+	mux.HandleFunc("POST /app/uebergaben/attachments", a.action(a.addHandoverAttachments))
 	mux.HandleFunc("POST /app/uebergaben/file", a.action(a.fileHandoverProtocol))
 	mux.HandleFunc("GET /app/uebergaben/{id}/protokoll", a.page(a.handoverProtocol))
 	mux.HandleFunc("GET /handover/{token}", a.handoverConfirmPage)

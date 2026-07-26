@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.31.0] - 2026-07-26
+
+### Verbessert
+
+- **Übergaben zeigen sofort den nächsten Schritt.** Offene Vorgänge, ablagebereite Protokolle und abgeschlossene Übergaben sind getrennt; vollständige Details bleiben bei Bedarf erreichbar.
+- **Die Erfassung beginnt mit dem Wesentlichen.** Einheit, Anlass, Termin und Zustand stehen zuerst, während Personen, Zähler, Schlüssel, Notizen und Fotos gezielt ergänzt werden können.
+- **Bestätigende Personen sehen den tatsächlichen Inhalt.** Räume, Zählerstände, Schlüssel, Notizen und vorhandene Dateien sind vor der ausdrücklichen, protokollierten Bestätigung übersichtlich prüfbar.
+- **Bestätigte Protokolle bleiben verlässlich.** Ab der ersten Bestätigung können Fotos und Dateien nicht mehr verändert werden; die endgültige Ablage wird erst nach allen vorgesehenen Bestätigungen angeboten.
+- **Mobile Übergaben sind deutlich kompakter.** Status, Fortschritt und Hauptaktion bleiben gut antippbar, ohne dass vollständige Protokolle die Übersicht überladen.
+
 ## [0.30.0] - 2026-07-26
 
 ### Verbessert

@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.31.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Übergaben",
+			Headline: "Übergaben führen klar vom Erfassen bis zur sicheren Ablage.",
+			Intro:    "Arbeitskörbe und kompakte Karten zeigen den nächsten Schritt; bestätigende Personen prüfen den tatsächlichen Protokollinhalt vor ihrer ausdrücklichen Bestätigung.",
+			Items: []NoteItem{
+				{Label: "Arbeit überblicken", Text: "Offene, ablagebereite und abgeschlossene Übergaben sind klar getrennt."},
+				{Label: "Inhalt prüfen", Text: "Räume, Zählerstände, Schlüssel, Notizen und Dateien bleiben vor der Bestätigung übersichtlich nachvollziehbar."},
+				{Label: "Stand schützen", Text: "Ab der ersten Bestätigung sind Dateien unveränderlich; die Ablage folgt erst nach allen vorgesehenen Bestätigungen."},
+			},
+		},
+		{
 			Version:  "0.30.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Gebäude",

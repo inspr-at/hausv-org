@@ -35,7 +35,7 @@ func TestEveryAppRouteRefusesUnauthenticated(t *testing.T) {
 		{"GET", "/app/abstimmungen"}, {"POST", "/app/abstimmungen"},
 		{"POST", "/app/abstimmungen/open"}, {"POST", "/app/abstimmungen/close"},
 		{"GET", "/app/abstimmungen/x/protokoll"},
-		{"GET", "/app/uebergaben"}, {"POST", "/app/uebergaben"}, {"POST", "/app/uebergaben/file"},
+		{"GET", "/app/uebergaben"}, {"POST", "/app/uebergaben"}, {"POST", "/app/uebergaben/attachments"}, {"POST", "/app/uebergaben/file"},
 		{"GET", "/app/uebergaben/x/protokoll"},
 		{"GET", "/app/kontakte"}, {"POST", "/app/kontakte"}, {"POST", "/app/kontakte/delete"},
 		{"GET", "/app/anliegen"}, {"GET", "/app/anliegen/board"},

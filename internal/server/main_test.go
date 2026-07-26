@@ -1080,6 +1080,23 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	if len(tokens) != 2 {
 		t.Fatalf("handover confirmation tokens = %q, want two", tokens)
 	}
+	addedFiles := authedMultipartFileRequest(t, a, "manager@example.com", "/app/uebergaben/attachments", map[string]string{
+		"id": item.ID,
+	}, "attachments", "nachtrag.png", minimalPNG())
+	if addedFiles.Code != http.StatusSeeOther || !strings.Contains(addedFiles.Header().Get("Location"), "handover=attachments") {
+		t.Fatalf("handover add files = %d %q", addedFiles.Code, addedFiles.Header().Get("Location"))
+	}
+	addedAttachments := a.attachmentStore.ListEntity("jhw22", "handover", item.ID)
+	if len(addedAttachments) != 1 {
+		t.Fatalf("handover attachments after add = %+v, want one", addedAttachments)
+	}
+	prematureFile := authedFormRequest(t, a, "manager@example.com", "/app/uebergaben/file", url.Values{"id": {item.ID}})
+	if prematureFile.Code != http.StatusSeeOther || !strings.Contains(prematureFile.Header().Get("Location"), "handover=pending") {
+		t.Fatalf("pending handover file = %d %q", prematureFile.Code, prematureFile.Header().Get("Location"))
+	}
+	if docs := a.documentStore.ListTenant("jhw22"); len(docs) != 0 {
+		t.Fatalf("pending handover created documents: %+v", docs)
+	}
 	for idx, token := range tokens {
 		form := url.Values{
 			"confirm": {"yes"},
@@ -1092,6 +1109,17 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		a.handler().ServeHTTP(confirmed, confirm)
 		if confirmed.Code != http.StatusSeeOther {
 			t.Fatalf("handover confirmation %d status = %d, want redirect", idx, confirmed.Code)
+		}
+		if idx == 0 {
+			lockedDelete := authedFormRequest(t, a, "manager@example.com", "/app/attachments/delete", url.Values{
+				"id": {addedAttachments[0].ID},
+			})
+			if lockedDelete.Code != http.StatusConflict {
+				t.Fatalf("confirmed handover attachment delete = %d, want conflict", lockedDelete.Code)
+			}
+			if got := a.attachmentStore.ListEntity("jhw22", "handover", item.ID); len(got) != 1 {
+				t.Fatalf("confirmed handover attachments = %+v, want immutable file", got)
+			}
 		}
 	}
 	afterConfirm, found := a.handoverStore.Get("jhw22", item.ID)
@@ -1156,7 +1184,10 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 	a.handoverConfirmPage(getRR, get)
 	if getRR.Code != http.StatusOK ||
 		!strings.Contains(getRR.Body.String(), "Übergabe Top 1") ||
-		!strings.Contains(getRR.Body.String(), "keine Kautions-, Schaden- oder sonstige Abrechnung") {
+		!strings.Contains(getRR.Body.String(), "keine Kautions-, Schaden- oder sonstige Abrechnung") ||
+		!strings.Contains(getRR.Body.String(), "Wohnzimmer") ||
+		!strings.Contains(getRR.Body.String(), `type="checkbox" name="confirm" value="yes" required`) ||
+		!strings.Contains(getRR.Body.String(), "Verbindlich bestätigen") {
 		t.Fatalf("confirm page status/body = %d/%s", getRR.Code, getRR.Body.String())
 	}
 
