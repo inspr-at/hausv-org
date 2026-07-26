@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -78,7 +77,7 @@ func (a *app) createEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	created, err := a.eventStore.Create(item)
 	if err != nil {
-		log.Printf("event create failed for %s: %v", tenant.Slug, err)
+		logError("event create failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/events?event=error", http.StatusSeeOther)
 		return
 	}
@@ -136,7 +135,7 @@ func (a *app) editEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		for _, attachment := range uploaded {
 			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
 		}
-		log.Printf("event update failed for %s: %v", tenant.Slug, err)
+		logError("event update failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/events?event=error", http.StatusSeeOther)
 		return
 	}
@@ -162,7 +161,7 @@ func (a *app) deleteEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	removed, err := a.eventStore.Delete(tenant.Slug, strings.TrimSpace(r.FormValue("id")))
 	if err != nil {
-		log.Printf("event delete failed for %s: %v", tenant.Slug, err)
+		logError("event delete failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/events?event=error", http.StatusSeeOther)
 		return
 	}

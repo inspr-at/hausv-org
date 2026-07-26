@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"mime"
 	"net/http"
 	"net/mail"
@@ -379,7 +378,7 @@ func (a *app) notifyHandoverParticipants(r *http.Request, tenant tenantConfig, i
 			"Dieser Link ist nur für dieses Protokoll bestimmt.",
 		}, "\n")
 		if err := a.mailer.SendNotification(delivery.Email, subject, body); err != nil {
-			log.Printf("handover notification failed for %s/%s: %v", tenant.Slug, redactedEmail(delivery.Email), err)
+			logError("handover notification failed", err, "tenant", tenant.Slug, "recipient", redactedEmail(delivery.Email))
 		}
 	}
 }
@@ -413,7 +412,7 @@ func (a *app) handoverConfirmPage(w http.ResponseWriter, r *http.Request) {
 		"MsgOK":        okMsg,
 		"AppVersion":   version.BuildLabel(),
 	}); err != nil {
-		log.Printf("render handoverConfirm failed: %v", err)
+		logError("handover confirmation render failed", err)
 	}
 }
 
@@ -781,5 +780,5 @@ func nonEmptyParts(parts ...string) []string {
 }
 
 func logHandoverError(action string, tenantSlug string, id string, err error) {
-	log.Printf("handover %s failed for %s/%s: %v", action, tenantSlug, id, err)
+	logError("handover action failed", err, "action", action, "tenant", tenantSlug, "handover_id", id)
 }

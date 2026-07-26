@@ -8,7 +8,6 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -24,13 +23,21 @@ func main() {
 	// default logger (HAUSV-141).
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, nil)))
 
+	if len(os.Args) > 1 && os.Args[1] == "charging-mode" {
+		if err := runChargingMode(os.Args[2:]); err != nil {
+			slog.Error("charging mode update failed", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
 		target := "http://127.0.0.1:8080/healthz"
 		if len(os.Args) > 2 {
 			target = os.Args[2]
 		}
 		if err := server.RunHealthcheck(target); err != nil {
-			log.Printf("healthcheck failed: %v", err)
+			slog.Error("healthcheck failed", "error", err)
 			os.Exit(1)
 		}
 		return
@@ -38,7 +45,8 @@ func main() {
 
 	app, err := server.New()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("application initialization failed", "error", err)
+		os.Exit(1)
 	}
 	defer app.Close()
 
@@ -66,7 +74,8 @@ func main() {
 	go func() {
 		slog.Info("listening", "addr", app.Addr())
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
+			slog.Error("HTTP server failed", "error", err)
+			os.Exit(1)
 		}
 	}()
 

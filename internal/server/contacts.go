@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -79,7 +78,7 @@ func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac au
 	}
 	saved, created, err := a.contactStore.Upsert(item)
 	if err != nil {
-		log.Printf("contact save failed for %s/%s: %v", tenant.Slug, redactedEmail(item.Email), err)
+		logError("contact save failed", err, "tenant", tenant.Slug, "contact", redactedEmail(item.Email))
 		http.Redirect(w, r, "/app/kontakte?contact=error", http.StatusSeeOther)
 		return
 	}

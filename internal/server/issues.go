@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -167,7 +166,7 @@ func (a *app) createIssue(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			for _, attachment := range uploaded {
 				_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
 			}
-			log.Printf("issue create failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
+			logError("issue create failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 			http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
 			return
 		}
@@ -251,7 +250,7 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 		for _, attachment := range uploaded {
 			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
 		}
-		log.Printf("issue comment failed for %s/%s: %v", tenant.Slug, id, err)
+		logError("issue comment failed", err, "tenant", tenant.Slug, "issue_id", id)
 		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
 		return
 	}
@@ -298,7 +297,7 @@ func (a *app) deleteIssueComment(w http.ResponseWriter, r *http.Request, ac auth
 	}
 	updated, deleted, err := a.issueStore.DeleteComment(tenant.Slug, issue.ID, comment.ID, time.Now())
 	if err != nil {
-		log.Printf("issue comment delete failed for %s/%s/%s: %v", tenant.Slug, issue.ID, comment.ID, err)
+		logError("issue comment delete failed", err, "tenant", tenant.Slug, "issue_id", issue.ID, "comment_id", comment.ID)
 		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
 		return
 	}
@@ -423,7 +422,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	if len(estimateHeaders) > 0 {
 		uploadedEstimates, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue-estimate", id, email, uploadedFilesFromHeaders(estimateHeaders), time.Now())
 		if err != nil {
-			log.Printf("issue estimate upload failed for %s/%s: %v", tenant.Slug, id, err)
+			logError("issue estimate upload failed", err, "tenant", tenant.Slug, "issue_id", id)
 			http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 			return
 		}
@@ -447,7 +446,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		for _, attachment := range uploadedEstimates {
 			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
 		}
-		log.Printf("issue workflow update failed for %s/%s: %v", tenant.Slug, id, err)
+		logError("issue workflow update failed", err, "tenant", tenant.Slug, "issue_id", id)
 		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
 		return
 	}

@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -81,7 +80,7 @@ func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request, ac authCtx)
 		UploadedBy: email,
 	}, uploadedFileFromHeader(header), time.Now())
 	if err != nil {
-		log.Printf("document upload failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
+		logError("document upload failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
 		return
 	}
@@ -123,7 +122,7 @@ func (a *app) replaceDocument(w http.ResponseWriter, r *http.Request, ac authCtx
 	}
 	replacement, replaced, err := a.documentStore.Replace(tenant.Slug, strings.TrimSpace(r.FormValue("id")), email, uploadedFileFromHeader(header), time.Now())
 	if err != nil {
-		log.Printf("document replace failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
+		logError("document replace failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
 		return
 	}
@@ -172,7 +171,7 @@ func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request, ac authCt
 	}
 	file, err := os.Open(path)
 	if err != nil {
-		log.Printf("document file open failed for %s/%s: %v", tenant.Slug, item.ID, err)
+		logError("document file open failed", err, "tenant", tenant.Slug, "document_id", item.ID)
 		http.NotFound(w, r)
 		return
 	}
@@ -227,7 +226,7 @@ func (a *app) previewDocument(w http.ResponseWriter, r *http.Request, ac authCtx
 	}
 	file, err := os.Open(path)
 	if err != nil {
-		log.Printf("document preview open failed for %s/%s: %v", tenant.Slug, item.ID, err)
+		logError("document preview open failed", err, "tenant", tenant.Slug, "document_id", item.ID)
 		http.NotFound(w, r)
 		return
 	}
@@ -268,7 +267,7 @@ func (a *app) serveAttachment(w http.ResponseWriter, r *http.Request, ac authCtx
 		return
 	}
 	if _, err := os.Stat(path); err != nil {
-		log.Printf("attachment file open failed for %s/%s/%s: %v", tenant.Slug, item.EntityType, item.ID, err)
+		logError("attachment file open failed", err, "tenant", tenant.Slug, "entity_type", item.EntityType, "attachment_id", item.ID)
 		http.NotFound(w, r)
 		return
 	}
@@ -304,7 +303,7 @@ func (a *app) deleteAttachment(w http.ResponseWriter, r *http.Request, ac authCt
 		return
 	}
 	if _, removed, err := a.attachmentStore.Delete(tenant.Slug, id, time.Now()); err != nil {
-		log.Printf("attachment delete failed for %s/%s: %v", tenant.Slug, id, err)
+		logError("attachment delete failed", err, "tenant", tenant.Slug, "attachment_id", id)
 		http.Redirect(w, r, redirectAfterAttachmentChange(r, "/app/anliegen?issue=error"), http.StatusSeeOther)
 		return
 	} else if !removed {

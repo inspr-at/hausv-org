@@ -15,7 +15,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 	"strings"
 	"sync"
@@ -275,7 +275,7 @@ func NewOIDCLogin(ctx context.Context, issuer string, clientID string, clientSec
 		redirectURL:  redirectURL,
 	}
 	if err := login.EnsureProvider(ctx); err != nil {
-		log.Printf("oidc discovery unavailable at startup, will retry on login: %v", err)
+		slog.Warn("OIDC discovery unavailable at startup", "retry", "on_login", "error", err)
 	}
 	return login, nil
 }

@@ -18,7 +18,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -271,7 +270,7 @@ func (a *app) StartChargingController() func() { return a.startChargingControlle
 
 func (a *app) startChargingController() func() {
 	if a.chargingTickInterval <= 0 {
-		log.Printf("charging controller disabled")
+		logInfo("charging controller disabled", "reason", "interval_disabled")
 		return func() {}
 	}
 	configured := 0
@@ -281,10 +280,10 @@ func (a *app) startChargingController() func() {
 		}
 	}
 	if configured == 0 {
-		log.Printf("charging controller disabled: no tenant with charging entities")
+		logInfo("charging controller disabled", "reason", "no_configured_tenants")
 		return func() {}
 	}
-	log.Printf("charging controller enabled for %d tenant(s), tick %s", configured, a.chargingTickInterval)
+	logInfo("charging controller enabled", "tenants", configured, "tick_interval", a.chargingTickInterval)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -323,12 +322,12 @@ func (a *app) recoverChargingTenants(ctx context.Context) {
 		plug, err := tenant.HA.State(cctx, tenant.HA.PlugSwitchEntity())
 		cancel()
 		if err != nil {
-			log.Printf("charging recovery deferred for %s: %v", tenant.Slug, err)
+			logError("charging recovery deferred", err, "tenant", tenant.Slug)
 			a.chargingMu.Unlock()
 			continue
 		}
 		if strings.EqualFold(plug.State, "on") {
-			log.Printf("charging recovery: resuming open session %s for %s", state.ActiveSessionID, tenant.Slug)
+			logInfo("charging recovery resumed open session", "tenant", tenant.Slug, "session_id", state.ActiveSessionID)
 			a.chargingMu.Unlock()
 			continue
 		}
@@ -346,9 +345,9 @@ func (a *app) recoverChargingTenants(ctx context.Context) {
 		state.PendingSince = time.Time{}
 		state.PendingRetries = 0
 		if _, _, err := a.parkingStore.EndChargingSession(tenant.Slug, state.ActiveSessionID, end, endKWh, "system", "restart", state); err != nil {
-			log.Printf("charging recovery close failed for %s: %v", tenant.Slug, err)
+			logError("charging recovery close failed", err, "tenant", tenant.Slug, "session_id", state.ActiveSessionID)
 		} else {
-			log.Printf("charging recovery: closed session %s for %s (plug off after restart)", state.ActiveSessionID, tenant.Slug)
+			logInfo("charging recovery closed session after restart", "tenant", tenant.Slug, "session_id", state.ActiveSessionID)
 		}
 		a.chargingMu.Unlock()
 	}
@@ -412,7 +411,7 @@ func (a *app) tickChargingShadow(tenant tenantConfig, in chargingInputs, cfg cha
 		event.Shadow = true
 		event.Detail = "[Test] " + event.Detail
 		a.chargingEvents.add(event)
-		log.Printf("charging shadow %s: %s — %s", tenant.Slug, event.Kind, event.Detail)
+		logInfo("charging shadow event", "tenant", tenant.Slug, "event_kind", event.Kind, "detail", event.Detail)
 	}
 	if action.SwitchPlug != "" {
 		event := chargingEvent{
@@ -423,7 +422,7 @@ func (a *app) tickChargingShadow(tenant tenantConfig, in chargingInputs, cfg cha
 			Shadow: true,
 		}
 		a.chargingEvents.add(event)
-		log.Printf("charging shadow %s: %s", tenant.Slug, event.Detail)
+		logInfo("charging shadow switch decision", "tenant", tenant.Slug, "detail", event.Detail)
 	}
 }
 
@@ -434,7 +433,7 @@ func (a *app) applyChargingAction(ctx context.Context, tenant tenantConfig, prev
 	case action.EndSession && prev.ActiveSessionID != "":
 		closed, found, err := a.parkingStore.EndChargingSession(slug, prev.ActiveSessionID, in.Now, in.MeterKWh, action.EndedBy, action.EndReason, next)
 		if err != nil {
-			log.Printf("charging session end failed for %s: %v", slug, err)
+			logError("charging session end failed", err, "tenant", slug, "session_id", prev.ActiveSessionID)
 			return
 		}
 		statePersisted = true
@@ -454,7 +453,7 @@ func (a *app) applyChargingAction(ctx context.Context, tenant tenantConfig, prev
 			StartedBy:     "system",
 		}, next)
 		if err != nil {
-			log.Printf("charging session start failed for %s: %v", slug, err)
+			logError("charging session start failed", err, "tenant", slug)
 			return
 		}
 		statePersisted = true
@@ -464,7 +463,7 @@ func (a *app) applyChargingAction(ctx context.Context, tenant tenantConfig, prev
 	}
 	if !statePersisted && next != prev {
 		if err := a.parkingStore.SetChargingState(slug, next); err != nil {
-			log.Printf("charging state save failed for %s: %v", slug, err)
+			logError("charging state save failed", err, "tenant", slug)
 		}
 	}
 	if action.SwitchPlug != "" {
@@ -473,7 +472,7 @@ func (a *app) applyChargingAction(ctx context.Context, tenant tenantConfig, prev
 		if err := tenant.HA.SetSwitch(cctx, tenant.HA.PlugSwitchEntity(), on); err != nil {
 			// The pending-confirm loop notices the missing read-back and
 			// retries / gives up on its own.
-			log.Printf("charging switch %s failed for %s: %v", action.SwitchPlug, slug, err)
+			logError("charging switch failed", err, "tenant", slug, "switch_action", action.SwitchPlug)
 		}
 		cancel()
 	}
@@ -481,7 +480,7 @@ func (a *app) applyChargingAction(ctx context.Context, tenant tenantConfig, prev
 		event.At = in.Now
 		event.Tenant = slug
 		a.chargingEvents.add(event)
-		log.Printf("charging %s: %s — %s", slug, event.Kind, event.Detail)
+		logInfo("charging event", "tenant", slug, "event_kind", event.Kind, "detail", event.Detail)
 		if event.Kind == "confirm-failed" {
 			a.notifyChargingError(tenant, event.Detail)
 		}
@@ -492,7 +491,7 @@ func (a *app) applyChargingAction(ctx context.Context, tenant tenantConfig, prev
 // boundary so billing intervals align exactly with session edges.
 func (a *app) appendChargingBoundarySample(slug string, in chargingInputs) {
 	if err := a.parkingStore.AppendReadings(slug, []parkingNumericSample{{At: in.Now, Value: in.MeterKWh}}, nil); err != nil {
-		log.Printf("charging boundary sample failed for %s: %v", slug, err)
+		logError("charging boundary sample failed", err, "tenant", slug)
 	}
 }
 
@@ -567,7 +566,7 @@ func (a *app) noteChargingReadFailure(tenant tenantConfig, state chargingControl
 	state.LastErrorAt = now
 	state.ErrorNotifiedAt = now
 	if err := a.parkingStore.SetChargingState(tenant.Slug, state); err != nil {
-		log.Printf("charging error state save failed for %s: %v", tenant.Slug, err)
+		logError("charging error state save failed", err, "tenant", tenant.Slug)
 	}
 	a.chargingEvents.add(chargingEvent{At: now, Tenant: tenant.Slug, Kind: "ha-unreachable", Detail: "Home Assistant liefert keine verwertbaren Daten"})
 	a.notifyChargingError(tenant, "Home Assistant ist nicht erreichbar oder liefert veraltete Werte. Die Ladesteuerung pausiert, bis wieder Daten kommen.")
@@ -585,7 +584,7 @@ func (a *app) noteChargingReadRecovery(tenant tenantConfig, state chargingContro
 	state.LastError = ""
 	state.ErrorNotifiedAt = time.Time{}
 	if err := a.parkingStore.SetChargingState(tenant.Slug, state); err != nil {
-		log.Printf("charging recovery state save failed for %s: %v", tenant.Slug, err)
+		logError("charging recovery state save failed", err, "tenant", tenant.Slug)
 	}
 	a.chargingEvents.add(chargingEvent{At: now, Tenant: tenant.Slug, Kind: "ha-recovered", Detail: "Home Assistant wieder erreichbar"})
 	a.notifyChargingError(tenant, "Home Assistant ist wieder erreichbar — die Ladesteuerung läuft normal weiter.")
@@ -637,7 +636,7 @@ func (a *app) requestManualCharging(ctx context.Context, tenant tenantConfig, on
 			TriggerSource: source,
 			StartedBy:     actorEmail,
 		}, state); err != nil {
-			log.Printf("manual charging start failed for %s: %v", tenant.Slug, err)
+			logError("manual charging start failed", err, "tenant", tenant.Slug, "actor", redactedEmail(actorEmail), "source", source)
 			return chargingCommandResult{Message: "Speichern fehlgeschlagen. Bitte erneut versuchen."}
 		}
 		a.appendChargingBoundarySample(tenant.Slug, in)
@@ -660,7 +659,7 @@ func (a *app) requestManualCharging(ctx context.Context, tenant tenantConfig, on
 	if state.ActiveSessionID != "" {
 		closed, found, err := a.parkingStore.EndChargingSession(tenant.Slug, state.ActiveSessionID, in.Now, in.MeterKWh, actorEmail, "manual", nextState)
 		if err != nil {
-			log.Printf("manual charging end failed for %s: %v", tenant.Slug, err)
+			logError("manual charging end failed", err, "tenant", tenant.Slug, "actor", redactedEmail(actorEmail), "source", source)
 			return chargingCommandResult{Message: "Speichern fehlgeschlagen. Bitte erneut versuchen."}
 		}
 		a.appendChargingBoundarySample(tenant.Slug, in)
@@ -668,7 +667,7 @@ func (a *app) requestManualCharging(ctx context.Context, tenant tenantConfig, on
 			a.notifyChargingSessionEnd(tenant, closed, "manual")
 		}
 	} else if err := a.parkingStore.SetChargingState(tenant.Slug, nextState); err != nil {
-		log.Printf("manual charging state save failed for %s: %v", tenant.Slug, err)
+		logError("manual charging state save failed", err, "tenant", tenant.Slug, "actor", redactedEmail(actorEmail), "source", source)
 		return chargingCommandResult{Message: "Speichern fehlgeschlagen. Bitte erneut versuchen."}
 	}
 	a.switchChargingPlug(ctx, tenant, false)
@@ -685,7 +684,7 @@ func (a *app) requestAutomaticCharging(ctx context.Context, tenant tenantConfig,
 	case chargingPhaseManualOff:
 		state.Phase = chargingPhaseIdle
 		if err := a.parkingStore.SetChargingState(tenant.Slug, state); err != nil {
-			log.Printf("charging auto-resume failed for %s: %v", tenant.Slug, err)
+			logError("charging auto-resume failed", err, "tenant", tenant.Slug, "actor", redactedEmail(actorEmail), "source", source)
 			return chargingCommandResult{Message: "Speichern fehlgeschlagen. Bitte erneut versuchen."}
 		}
 		a.recordChargingManualAudit(tenant, actorEmail, source, "Automatik aktiviert")
@@ -703,7 +702,7 @@ func (a *app) requestAutomaticCharging(ctx context.Context, tenant tenantConfig,
 		nextState.LastSwitchAt = in.Now
 		if state.ActiveSessionID != "" {
 			if _, _, err := a.parkingStore.EndChargingSession(tenant.Slug, state.ActiveSessionID, in.Now, in.MeterKWh, actorEmail, "auto-resume", nextState); err != nil {
-				log.Printf("charging auto-resume end failed for %s: %v", tenant.Slug, err)
+				logError("charging auto-resume end failed", err, "tenant", tenant.Slug, "actor", redactedEmail(actorEmail), "source", source)
 				return chargingCommandResult{Message: "Speichern fehlgeschlagen. Bitte erneut versuchen."}
 			}
 			a.appendChargingBoundarySample(tenant.Slug, in)
@@ -722,7 +721,7 @@ func (a *app) switchChargingPlug(ctx context.Context, tenant tenantConfig, on bo
 	cctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
 	if err := tenant.HA.SetSwitch(cctx, tenant.HA.PlugSwitchEntity(), on); err != nil {
-		log.Printf("charging manual switch failed for %s: %v", tenant.Slug, err)
+		logError("charging manual switch failed", err, "tenant", tenant.Slug, "switch_on", on)
 	}
 }
 

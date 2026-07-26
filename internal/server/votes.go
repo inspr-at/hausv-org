@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"mime"
 	"net/http"
 	"net/url"
@@ -41,7 +40,7 @@ func (a *app) createBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	created, err := a.voteStore.Create(item)
 	if err != nil {
-		log.Printf("ballot create failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
+		logError("ballot create failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 		return
 	}
@@ -122,7 +121,7 @@ func (a *app) updateBallotStatus(w http.ResponseWriter, r *http.Request, ac auth
 		err = fmt.Errorf("invalid ballot status")
 	}
 	if err != nil {
-		log.Printf("ballot status update failed for %s/%s: %v", tenant.Slug, id, err)
+		logError("ballot status update failed", err, "tenant", tenant.Slug, "ballot_id", id)
 		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 		return
 	}
@@ -212,7 +211,7 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	all := []ballot{}
 	if a.voteStore != nil {
 		if _, err := a.voteStore.CloseExpiredTenant(tenant.Slug, now); err != nil {
-			log.Printf("ballot auto-close failed for %s: %v", tenant.Slug, err)
+			logError("ballot auto-close failed", err, "tenant", tenant.Slug)
 		}
 		all = a.voteStore.ListTenant(tenant.Slug)
 	}
@@ -280,7 +279,7 @@ func (a *app) castVote(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	if err != nil {
-		log.Printf("ballot vote failed for %s/%s/%s: %v", tenant.Slug, id, redactedEmail(email), err)
+		logError("ballot vote failed", err, "tenant", tenant.Slug, "ballot_id", id, "actor", redactedEmail(email))
 		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 		return
 	}
@@ -315,7 +314,7 @@ func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx)
 	}
 	now := time.Now()
 	if _, err := a.voteStore.CloseExpiredTenant(tenant.Slug, now); err != nil {
-		log.Printf("ballot auto-close failed for %s: %v", tenant.Slug, err)
+		logError("ballot auto-close failed", err, "tenant", tenant.Slug)
 	}
 	id := strings.TrimSpace(r.PathValue("id"))
 	item, found := a.voteStore.Get(tenant.Slug, id)
@@ -337,7 +336,7 @@ func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx)
 		"GeneratedAt": formatLocalDateTime(now),
 		"AppVersion":  version.BuildLabel(),
 	}); err != nil {
-		log.Printf("render ballotProtocol failed: %v", err)
+		logError("ballot protocol render failed", err)
 	}
 }
 
@@ -667,7 +666,7 @@ func (a *app) sendDueBallotReminders(now time.Time) int {
 	sentTotal := 0
 	for _, tenant := range a.tenants {
 		if _, err := a.voteStore.CloseExpiredTenant(tenant.Slug, now); err != nil {
-			log.Printf("ballot auto-close failed for %s: %v", tenant.Slug, err)
+			logError("ballot auto-close failed", err, "tenant", tenant.Slug)
 		}
 		for _, item := range a.voteStore.ListTenant(tenant.Slug) {
 			if !ballotReminderDue(item, now) {
@@ -696,7 +695,7 @@ func (a *app) sendDueBallotReminders(now time.Time) int {
 				continue
 			}
 			if _, _, err := a.voteStore.MarkReminderSent(tenant.Slug, item.ID, sent, now); err != nil {
-				log.Printf("ballot reminder mark failed for %s/%s: %v", tenant.Slug, item.ID, err)
+				logError("ballot reminder mark failed", err, "tenant", tenant.Slug, "ballot_id", item.ID)
 				continue
 			}
 			a.recordAudit(auditEvent{

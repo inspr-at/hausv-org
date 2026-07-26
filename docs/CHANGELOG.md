@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.18.1] - 2026-07-26
+
+### Verbessert
+
+- **Betriebsmeldungen sind schneller auswertbar.** Hintergrundvorgänge protokollieren Bereich, Haus und betroffene Objekte jetzt als klar getrennte Felder. Störungen lassen sich dadurch gezielter finden, ohne personenbezogene Angaben im Klartext zu protokollieren.
+- **Automatische Prüfungen laufen wieder unabhängig vom GitHub-Minutenkontingent.** Tests, Sicherheitsprüfung und Container-Bau nutzen nun die bereits etablierte Blacksmith-Infrastruktur.
+
 ## [0.18.0] - 2026-07-26
 
 ### Neu

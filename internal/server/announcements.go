@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -63,7 +62,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	})
 	if a.announcementReadStore != nil {
 		if err := a.announcementReadStore.MarkSeen(tenant.Slug, email, now); err != nil {
-			log.Printf("announcement read mark failed for %s/%s: %v", tenant.Slug, redactedEmail(email), err)
+			logError("announcement read mark failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 		}
 	}
 }
@@ -91,7 +90,7 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request, ac auth
 	}
 	created, err := a.announcementStore.Create(item)
 	if err != nil {
-		log.Printf("announcement create failed for %s: %v", tenant.Slug, err)
+		logError("announcement create failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
 		return
 	}
@@ -150,7 +149,7 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request, ac authCt
 		for _, attachment := range uploaded {
 			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
 		}
-		log.Printf("announcement update failed for %s: %v", tenant.Slug, err)
+		logError("announcement update failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
 		return
 	}
@@ -176,7 +175,7 @@ func (a *app) deleteAnnouncement(w http.ResponseWriter, r *http.Request, ac auth
 	}
 	removed, err := a.announcementStore.Delete(tenant.Slug, strings.TrimSpace(r.FormValue("id")))
 	if err != nil {
-		log.Printf("announcement delete failed for %s: %v", tenant.Slug, err)
+		logError("announcement delete failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
 		return
 	}

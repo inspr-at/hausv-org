@@ -9,7 +9,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -34,14 +33,14 @@ func (a *app) StartTelegramBot() func() { return a.startTelegramBot() }
 
 func (a *app) startTelegramBot() func() {
 	if a.telegram == nil || !a.telegram.Configured() {
-		log.Printf("telegram bot disabled")
+		logInfo("Telegram bot disabled", "reason", "not_configured")
 		return func() {}
 	}
 	if a.telegramStore == nil {
-		log.Printf("telegram bot disabled: no store")
+		logWarn("Telegram bot disabled", "reason", "store_unavailable")
 		return func() {}
 	}
-	log.Printf("telegram bot enabled, poll timeout %s", a.telegramPollTimeout)
+	logInfo("Telegram bot enabled", "poll_timeout", a.telegramPollTimeout)
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		backoff := 5 * time.Second
@@ -54,7 +53,7 @@ func (a *app) startTelegramBot() func() {
 				if ctx.Err() != nil {
 					return
 				}
-				log.Printf("telegram poll failed: %v", err)
+				logError("Telegram poll failed", err)
 				select {
 				case <-ctx.Done():
 					return
@@ -69,7 +68,7 @@ func (a *app) startTelegramBot() func() {
 			for _, update := range updates {
 				a.handleTelegramUpdate(ctx, update)
 				if err := a.telegramStore.SetOffset(update.UpdateID + 1); err != nil {
-					log.Printf("telegram offset save failed: %v", err)
+					logError("Telegram offset save failed", err, "update_id", update.UpdateID)
 				}
 			}
 		}
@@ -93,7 +92,7 @@ func (a *app) handleTelegramUpdate(ctx context.Context, update telegram.Update) 
 	sctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	if err := a.telegram.SendMessage(sctx, chatID, reply); err != nil {
-		log.Printf("telegram reply failed: %v", err)
+		logError("Telegram reply failed", err)
 	}
 }
 
@@ -123,7 +122,7 @@ func (a *app) handleTelegramCommand(ctx context.Context, chatID int64, senderNam
 		if err != nil {
 			return "Dieser Code ist unbekannt oder abgelaufen. Bitte im Portal einen neuen erzeugen."
 		}
-		log.Printf("telegram chat linked to %s", redactedEmail(consumed.Email))
+		logInfo("Telegram chat linked", "actor", redactedEmail(consumed.Email))
 		return "Verknüpft! Du bekommst jetzt Lade-Benachrichtigungen.\n\n" + telegramHelpText()
 	}
 
@@ -305,7 +304,7 @@ func (a *app) telegramChargingBroadcast(recipients []string, subject string, lin
 			seen[chatID] = true
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			if err := a.telegram.SendMessage(ctx, chatID, text); err != nil {
-				log.Printf("telegram notification failed for %s: %v", redactedEmail(email), err)
+				logError("Telegram notification failed", err, "recipient", redactedEmail(email))
 			}
 			cancel()
 		}
@@ -330,7 +329,7 @@ func (a *app) chargingTelegramAllowed(now time.Time) bool {
 	if len(a.chargingTelegramTimes) >= chargingTelegramWindowLimit {
 		if !a.chargingTelegramThrottled {
 			a.chargingTelegramThrottled = true
-			log.Printf("telegram charging notifications throttled (>%d/h)", chargingTelegramWindowLimit)
+			logWarn("Telegram charging notifications throttled", "hourly_limit", chargingTelegramWindowLimit)
 			go a.telegramThrottleNotice()
 		}
 		return false

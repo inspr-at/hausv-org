@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -1364,7 +1364,7 @@ func NewAuditStore(path string) (*AuditStore, error) {
 		return store, nil
 	}
 	if err := store.pruneArchivesLocked(time.Now()); err != nil {
-		log.Printf("audit: archive retention cleanup failed: %v", err)
+		slog.Error("audit archive retention cleanup failed", "error", err)
 	}
 	raw, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -1400,7 +1400,7 @@ func NewAuditStore(path string) (*AuditStore, error) {
 			// bad line in the middle, which signals real corruption, not a torn
 			// append.
 			if i == len(lines)-1 {
-				log.Printf("audit: dropping unparseable trailing line %d (likely a torn append): %v", i+1, err)
+				slog.Warn("dropping unparseable trailing audit line", "line", i+1, "likely_cause", "torn_append", "error", err)
 				break
 			}
 			return nil, fmt.Errorf("invalid audit data on line %d", i+1)
@@ -1451,7 +1451,7 @@ func (s *AuditStore) Append(event AuditEvent) error {
 		if err := s.rotateLocked(); err != nil {
 			// The event is already durably appended; a rotation failure must not
 			// fail the write. Growth continues until the next successful rotate.
-			log.Printf("audit: rotation failed: %v", err)
+			slog.Error("audit rotation failed", "error", err)
 		}
 	}
 	return nil

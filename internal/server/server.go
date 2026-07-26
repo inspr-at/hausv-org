@@ -12,7 +12,6 @@ import (
 	"html/template"
 	_ "image/png"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"net/mail"
@@ -1240,9 +1239,9 @@ func newApp() (*app, error) {
 	// attachment records whose files are long gone (HAUSV-146). The audit log is
 	// the durable record of a deletion, so dropping the tombstone loses nothing.
 	if n, err := sqlAttachment.PurgeDeletedBefore(time.Now().Add(-store.AttachmentTombstoneRetention)); err != nil {
-		log.Printf("attachment tombstone purge failed: %v", err)
+		logError("attachment tombstone purge failed", err)
 	} else if n > 0 {
-		log.Printf("purged %d expired attachment tombstone(s)", n)
+		logInfo("expired attachment tombstones purged", "count", n)
 	}
 
 	// One-off: move legacy issue photos (ResidentIssue.PhotoPaths, written by the
@@ -1256,9 +1255,9 @@ func newApp() (*app, error) {
 		tenantSlugs = append(tenantSlugs, t.Slug)
 	}
 	if n, err := migrateLegacyIssuePhotos(issueBackend, attachmentBackend, issueAttachmentDir, tenantSlugs, time.Now()); err != nil {
-		log.Printf("legacy issue photo migration incomplete (legacy path still serves them): %v", err)
+		logError("legacy issue photo migration incomplete", err, "fallback", "legacy_path")
 	} else if n > 0 {
-		log.Printf("migrated %d legacy issue photo(s) into the attachment store", n)
+		logInfo("legacy issue photos migrated", "count", n)
 	}
 
 	// Filing a handover protocol writes a document AND the link on the handover
@@ -1932,13 +1931,13 @@ func (a *app) handleIssueServiceAssignmentChange(r *http.Request, tenant tenantC
 	}
 	createdInvite, err := a.ensureServiceProviderInvite(tenant.Slug, newAssignee)
 	if err != nil {
-		log.Printf("service provider invite persistence failed for %s/%s: %v", tenant.Slug, redactedEmail(newAssignee), err)
+		logError("service provider invite persistence failed", err, "tenant", tenant.Slug, "recipient", redactedEmail(newAssignee))
 		a.recordIssueServiceInviteAudit(tenant, after, actorEmail, actorRole, newAssignee, createdInvite, "nicht gespeichert")
 		return
 	}
 	mailStatus := "verschickt"
 	if err := a.sendServiceProviderMagicLink(r, tenant, after, newAssignee); err != nil {
-		log.Printf("service provider magic link failed for %s/%s: %v", tenant.Slug, redactedEmail(newAssignee), err)
+		logError("service provider magic link failed", err, "tenant", tenant.Slug, "recipient", redactedEmail(newAssignee))
 		mailStatus = "nicht zugestellt"
 	}
 	a.recordIssueServiceInviteAudit(tenant, after, actorEmail, actorRole, newAssignee, createdInvite, mailStatus)
@@ -2115,7 +2114,7 @@ func (a *app) notify(event portalNotification) []string {
 	sent := []string{}
 	for _, recipient := range a.notificationRecipients(event) {
 		if err := a.mailer.SendNotification(recipient, event.Subject, body); err != nil {
-			log.Printf("notification delivery failed for %s: %v", redactedEmail(recipient), err)
+			logError("notification delivery failed", err, "recipient", redactedEmail(recipient))
 			continue
 		}
 		sent = append(sent, recipient)
@@ -2785,7 +2784,7 @@ func (a *app) recordAudit(event auditEvent) {
 		return
 	}
 	if err := a.auditStore.Append(event); err != nil {
-		log.Printf("audit record failed for %s: %v", event.Action, err)
+		logError("audit record failed", err, "action", event.Action, "tenant", event.TenantSlug)
 	}
 }
 
@@ -2805,7 +2804,7 @@ func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request, ac 
 	}
 	if a.tenantOverrides != nil {
 		if err := a.tenantOverrides.SetMeta(tenant.Slug, override); err != nil {
-			log.Printf("building settings save failed for %s: %v", tenant.Slug, err)
+			logError("building settings save failed", err, "tenant", tenant.Slug)
 			http.Redirect(w, r, "/app/settings/building?building=error", http.StatusSeeOther)
 			return
 		}
@@ -2849,21 +2848,21 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 	}
 	filename, err := a.saveTenantHeroImage(tenant.Slug, header)
 	if err != nil {
-		log.Printf("tenant hero upload failed for %s: %v", tenant.Slug, err)
+		logError("tenant hero upload failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/settings/building?hero=invalid", http.StatusSeeOther)
 		return
 	}
 	if a.tenantOverrides != nil {
 		if err := a.tenantOverrides.SetHeroImage(tenant.Slug, filename); err != nil {
 			_ = a.removeTenantHeroImage(filename)
-			log.Printf("tenant hero save failed for %s: %v", tenant.Slug, err)
+			logError("tenant hero save failed", err, "tenant", tenant.Slug)
 			http.Redirect(w, r, "/app/settings/building?hero=error", http.StatusSeeOther)
 			return
 		}
 	}
 	if previous != "" && previous != filename {
 		if err := a.removeTenantHeroImage(previous); err != nil {
-			log.Printf("tenant old hero cleanup failed for %s: %v", tenant.Slug, err)
+			logError("tenant old hero cleanup failed", err, "tenant", tenant.Slug)
 		}
 	}
 	a.recordAudit(auditEvent{
@@ -2892,14 +2891,14 @@ func (a *app) deleteBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 		var err error
 		previous, err = a.tenantOverrides.ClearHeroImage(tenant.Slug)
 		if err != nil {
-			log.Printf("tenant hero reset failed for %s: %v", tenant.Slug, err)
+			logError("tenant hero reset failed", err, "tenant", tenant.Slug)
 			http.Redirect(w, r, "/app/settings/building?hero=error", http.StatusSeeOther)
 			return
 		}
 	}
 	if previous != "" {
 		if err := a.removeTenantHeroImage(previous); err != nil {
-			log.Printf("tenant hero remove failed for %s: %v", tenant.Slug, err)
+			logError("tenant hero remove failed", err, "tenant", tenant.Slug)
 		}
 		a.recordAudit(auditEvent{
 			TenantSlug: tenant.Slug,
@@ -2933,7 +2932,7 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 	// whole-slice overwrite (HAUSV-145).
 	duplicate, err := a.unitStore.UpsertUnit(tenant.Slug, origID, item)
 	if err != nil {
-		log.Printf("unit save failed for %s: %v", tenant.Slug, err)
+		logError("unit save failed", err, "tenant", tenant.Slug, "unit_id", item.ID)
 		http.Redirect(w, r, "/app/settings/building?unit=error", http.StatusSeeOther)
 		return
 	}
@@ -2976,7 +2975,7 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 	// Remove under one lock (HAUSV-145).
 	removed, removedUnit, err := a.unitStore.DeleteUnit(tenant.Slug, deleteID)
 	if err != nil {
-		log.Printf("unit delete failed for %s: %v", tenant.Slug, err)
+		logError("unit delete failed", err, "tenant", tenant.Slug, "unit_id", deleteID)
 		http.Redirect(w, r, "/app/settings/building?unit=error", http.StatusSeeOther)
 		return
 	}
@@ -3029,7 +3028,7 @@ func (a *app) updateUnitPaymentStatus(w http.ResponseWriter, r *http.Request, ac
 		UpdatedBy:  actorEmail,
 	})
 	if err != nil {
-		log.Printf("unit payment status save failed for %s/%s: %v", tenant.Slug, unitID, err)
+		logError("unit payment status save failed", err, "tenant", tenant.Slug, "unit_id", unitID)
 		http.Redirect(w, r, "/app/settings/building?payment=error", http.StatusSeeOther)
 		return
 	}
@@ -3309,7 +3308,7 @@ func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request, ac a
 	}
 	if a.profileOverlays != nil {
 		if err := a.profileOverlays.Set(email, overlay); err != nil {
-			log.Printf("profile save failed for %s: %v", redactedEmail(email), err)
+			logError("profile save failed", err, "actor", redactedEmail(email))
 			http.Redirect(w, r, "/app/settings/profile?profile=error", http.StatusSeeOther)
 			return
 		}
@@ -3320,7 +3319,7 @@ func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request, ac a
 	// users see no change (HAUSV-178).
 	if a.inviteStore != nil {
 		if _, err := a.inviteStore.SetTenantDirectoryOptIn(email, tenant.Slug, overlay.DirectoryOptIn); err != nil {
-			log.Printf("directory visibility save failed for %s: %v", redactedEmail(email), err)
+			logError("directory visibility save failed", err, "actor", redactedEmail(email), "tenant", tenant.Slug)
 		}
 	}
 	http.Redirect(w, r, "/app/settings/profile?profile=saved", http.StatusSeeOther)
@@ -3409,7 +3408,7 @@ func (a *app) updateNotificationSettings(w http.ResponseWriter, r *http.Request,
 	}
 	if a.notificationPrefs != nil {
 		if err := a.notificationPrefs.Set(email, notificationPreferencesFromForm(r.Form)); err != nil {
-			log.Printf("notification preference save failed for %s: %v", redactedEmail(email), err)
+			logError("notification preference save failed", err, "actor", redactedEmail(email))
 			http.Redirect(w, r, "/app/settings/notifications?notify=error", http.StatusSeeOther)
 			return
 		}
@@ -3577,7 +3576,7 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 	added, err := a.inviteStore.Add(profile)
 	if err != nil {
-		log.Printf("invite persistence failed for %s: %v", redactedEmail(inviteEmail), err)
+		logError("invite persistence failed", err, "recipient", redactedEmail(inviteEmail), "tenant", tenant.Slug)
 		a.redirectInvite(w, r, "error")
 		return
 	}
@@ -3588,7 +3587,7 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 	loginURL := a.publicBaseURL(r, tenant) + "/"
 	if err := a.mailer.SendInvite(inviteEmail, loginURL, tenant.Address); err != nil {
-		log.Printf("invite email delivery failed for %s: %v", redactedEmail(inviteEmail), err)
+		logError("invite email delivery failed", err, "recipient", redactedEmail(inviteEmail), "tenant", tenant.Slug)
 		a.recordAudit(auditEvent{
 			TenantSlug: tenant.Slug,
 			ActorEmail: actorEmail,
@@ -3759,7 +3758,7 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		// membership only. Writing the whole profile here is what let a manager of
 		// house A change someone's role in house B (HAUSV-135).
 		if _, found, err := a.inviteStore.SetTenantMembership(orig, tenant.Slug, newRole, updated.Permissions); err != nil {
-			log.Printf("membership update failed for %s: %v", redactedEmail(orig), err)
+			logError("membership update failed", err, "actor", redactedEmail(orig), "tenant", tenant.Slug)
 			a.redirectInvite(w, r, "error")
 			return
 		} else if !found {
@@ -3803,7 +3802,7 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		updated.Role = normalizeRole(envProfile.Role)
 		added, err := a.inviteStore.Add(updated)
 		if err != nil {
-			log.Printf("adopt persistence failed for %s: %v", redactedEmail(orig), err)
+			logError("adopt persistence failed", err, "actor", redactedEmail(orig), "tenant", tenant.Slug)
 			a.redirectInvite(w, r, "error")
 			return
 		}
@@ -3964,7 +3963,7 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 func (a *app) executeTemplate(w http.ResponseWriter, name string, data map[string]any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := a.templates.ExecuteTemplate(w, name, data); err != nil {
-		log.Printf("render %s failed: %v", name, err)
+		logError("template render failed", err, "template", name)
 	}
 }
 

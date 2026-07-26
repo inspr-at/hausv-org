@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"mime"
 	"net/http"
 	"net/url"
@@ -173,7 +172,7 @@ func (a *app) parkingStatement(w http.ResponseWriter, r *http.Request, ac authCt
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
 	if err := writeParkingStatementCSV(w, statement); err != nil {
-		log.Printf("parking statement export failed for %s/%d: %v", tenant.Slug, year, err)
+		logError("parking statement export failed", err, "tenant", tenant.Slug, "year", year)
 	}
 }
 
@@ -198,7 +197,7 @@ func (a *app) parkingMonthExport(w http.ResponseWriter, r *http.Request, ac auth
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
 	if err := writeParkingMonthCSV(w, tenant, view); err != nil {
-		log.Printf("parking month export failed for %s/%s: %v", tenant.Slug, month, err)
+		logError("parking month export failed", err, "tenant", tenant.Slug, "month", month)
 	}
 }
 
@@ -242,7 +241,7 @@ func (a *app) buildParkingStatement(ctx context.Context, tenant tenantConfig, us
 	seedCtx, cancel := context.WithTimeout(ctx, 12*time.Second)
 	defer cancel()
 	if err := a.seedParkingHistory(seedCtx, tenant, a.parkingHistoryStart, time.Now()); err != nil && tenant.HA.Configured() {
-		log.Printf("parking history seed failed for %s: %v", tenant.Slug, err)
+		logError("parking history seed failed", err, "tenant", tenant.Slug)
 	}
 	data := a.parkingStore.TenantData(tenant.Slug)
 	months := []parkingMonthView{}
@@ -300,7 +299,7 @@ func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request, ac a
 		return
 	}
 	if err := a.parkingStore.UpsertTariff(tenant.Slug, tariff); err != nil {
-		log.Printf("parking settings save failed for %s: %v", tenant.Slug, err)
+		logError("parking settings save failed", err, "tenant", tenant.Slug)
 		http.Error(w, "Could not save parking settings", http.StatusInternalServerError)
 		return
 	}
@@ -392,7 +391,7 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac auth
 		}
 		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "parking", month, actorEmail, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
 		if err != nil {
-			log.Printf("parking attachment upload failed for %s/%s/%s: %v", tenant.Slug, month, redactedEmail(actorEmail), err)
+			logError("parking attachment upload failed", err, "tenant", tenant.Slug, "month", month, "actor", redactedEmail(actorEmail))
 			http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
 			return
 		}
@@ -401,7 +400,7 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac auth
 		for _, attachment := range uploaded {
 			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
 		}
-		log.Printf("parking month save failed for %s: %v", tenant.Slug, err)
+		logError("parking month save failed", err, "tenant", tenant.Slug)
 		http.Error(w, "Could not save parking month", http.StatusInternalServerError)
 		return
 	}
@@ -507,7 +506,7 @@ func (a *app) sendParkingPaymentReminders(tenant tenantConfig, actorEmail string
 			continue
 		}
 		if err := a.parkingStore.MarkPaymentReminderSent(tenant.Slug, monthIDs, sent, now); err != nil {
-			log.Printf("parking reminder mark failed for %s/%s: %v", tenant.Slug, redactedEmail(row.Email), err)
+			logError("parking reminder mark failed", err, "tenant", tenant.Slug, "recipient", redactedEmail(row.Email))
 			continue
 		}
 		a.recordAudit(auditEvent{
@@ -673,7 +672,7 @@ func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request, ac aut
 		}
 	})
 	if err != nil {
-		log.Printf("parking access update failed for %s: %v", redactedEmail(targetEmail), err)
+		logError("parking access update failed", err, "actor", redactedEmail(targetEmail))
 		http.Redirect(w, r, "/app/settings/parking-access?parking_access=error", http.StatusSeeOther)
 		return
 	}
@@ -816,7 +815,7 @@ func (a *app) parkingTelemetry(ctx context.Context, tenant tenantConfig) parking
 			EnergyKWh:      liveEnergy,
 			PriceEURPerKWh: livePrice,
 		}}); err != nil {
-			log.Printf("parking live sample save failed for %s: %v", tenant.Slug, err)
+			logError("parking live sample save failed", err, "tenant", tenant.Slug)
 		}
 	}
 	telemetry.Connected = true
@@ -828,7 +827,7 @@ func (a *app) parkingAccounting(ctx context.Context, tenant tenantConfig) parkin
 	seedCtx, cancel := context.WithTimeout(ctx, 12*time.Second)
 	defer cancel()
 	if err := a.seedParkingHistory(seedCtx, tenant, a.parkingHistoryStart, time.Now()); err != nil && tenant.HA.Configured() {
-		log.Printf("parking history seed failed for %s: %v", tenant.Slug, err)
+		logError("parking history seed failed", err, "tenant", tenant.Slug)
 	}
 
 	data := a.parkingStore.TenantData(tenant.Slug)
@@ -870,7 +869,7 @@ func (a *app) parkingMonthDetails(ctx context.Context, tenant tenantConfig, mont
 	seedCtx, cancel := context.WithTimeout(ctx, 12*time.Second)
 	defer cancel()
 	if err := a.seedParkingHistory(seedCtx, tenant, a.parkingHistoryStart, time.Now()); err != nil && tenant.HA.Configured() {
-		log.Printf("parking history seed failed for %s: %v", tenant.Slug, err)
+		logError("parking history seed failed", err, "tenant", tenant.Slug)
 	}
 
 	data := a.parkingStore.TenantData(tenant.Slug)
@@ -892,7 +891,7 @@ func (a *app) seedParkingHistory(ctx context.Context, tenant tenantConfig, start
 	}
 	energySamples, priceSamples, err := ha.Statistics(ctx, start, end)
 	if err != nil {
-		log.Printf("parking statistics backfill failed for %s: %v", tenant.Slug, err)
+		logError("parking statistics backfill failed", err, "tenant", tenant.Slug)
 	}
 	restStart := end.Add(-35 * 24 * time.Hour)
 	if restStart.Before(start) {
@@ -903,7 +902,7 @@ func (a *app) seedParkingHistory(ctx context.Context, tenant tenantConfig, start
 		if len(energySamples) == 0 && len(priceSamples) == 0 {
 			return err
 		}
-		log.Printf("parking REST history fallback failed for %s: %v", tenant.Slug, err)
+		logError("parking REST history fallback failed", err, "tenant", tenant.Slug)
 		return a.parkingStore.AppendReadings(tenant.Slug, energySamples, priceSamples)
 	}
 	energySamples = append(energySamples, homeassistant.SamplesFromHistory(history[ha.MeterEnergyEntity()])...)
@@ -911,13 +910,13 @@ func (a *app) seedParkingHistory(ctx context.Context, tenant tenantConfig, start
 	if len(energySamples) == 0 && len(priceSamples) == 0 {
 		return nil
 	}
-	log.Printf("parking history seed found %d energy sample(s) and %d price sample(s) for %s", len(energySamples), len(priceSamples), tenant.Slug)
+	logInfo("parking history seed found samples", "tenant", tenant.Slug, "energy_samples", len(energySamples), "price_samples", len(priceSamples))
 	return a.parkingStore.AppendReadings(tenant.Slug, energySamples, priceSamples)
 }
 
 func (a *app) startParkingSampler() func() {
 	if a.parkingSampleInterval <= 0 {
-		log.Printf("parking sampler disabled")
+		logInfo("parking sampler disabled", "reason", "interval_disabled")
 		return func() {}
 	}
 	configuredTenants := 0
@@ -927,10 +926,10 @@ func (a *app) startParkingSampler() func() {
 		}
 	}
 	if configuredTenants == 0 {
-		log.Printf("parking sampler disabled: no configured Home Assistant tenants")
+		logInfo("parking sampler disabled", "reason", "no_configured_home_assistant_tenants")
 		return func() {}
 	}
-	log.Printf("parking sampler enabled for %d tenant(s), interval %s", configuredTenants, a.parkingSampleInterval)
+	logInfo("parking sampler enabled", "tenants", configuredTenants, "interval", a.parkingSampleInterval)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -958,10 +957,10 @@ func (a *app) backfillParkingTenants(ctx context.Context) {
 			continue
 		}
 		if err := a.seedParkingHistory(ctx, tenant, a.parkingHistoryStart, time.Now()); err != nil {
-			log.Printf("parking startup history seed failed for %s: %v", tenant.Slug, err)
+			logError("parking startup history seed failed", err, "tenant", tenant.Slug)
 			continue
 		}
-		log.Printf("parking startup history seed completed for %s", tenant.Slug)
+		logInfo("parking startup history seed completed", "tenant", tenant.Slug)
 	}
 }
 
@@ -971,10 +970,10 @@ func (a *app) sampleParkingTenants(ctx context.Context) {
 			continue
 		}
 		if err := a.sampleParkingTenant(ctx, tenant); err != nil {
-			log.Printf("parking sample failed for %s: %v", tenant.Slug, err)
+			logError("parking sample failed", err, "tenant", tenant.Slug)
 			continue
 		}
-		log.Printf("parking sample saved for %s", tenant.Slug)
+		logInfo("parking sample saved", "tenant", tenant.Slug)
 	}
 }
 

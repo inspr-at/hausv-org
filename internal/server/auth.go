@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -130,7 +129,7 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.mailer.SendMagicLink(email, link); err != nil {
-		log.Printf("magic link delivery failed for %s: %v", redactedEmail(email), err)
+		logError("magic link delivery failed", err, "recipient", redactedEmail(email))
 		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
 		return
 	}
@@ -163,7 +162,7 @@ func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	tenant := a.tenantForRequest(r)
 	if err := a.oidc.EnsureProvider(r.Context()); err != nil {
-		log.Printf("oidc discovery failed during login start: %v", err)
+		logError("OIDC discovery failed during login start", err)
 		http.Error(w, "SSO ist gerade nicht erreichbar. Bitte später erneut versuchen oder den E-Mail-Link verwenden.", http.StatusServiceUnavailable)
 		return
 	}
@@ -201,12 +200,12 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := a.oidc.EnsureProvider(r.Context()); err != nil {
-		log.Printf("oidc discovery failed during login callback: %v", err)
+		logError("OIDC discovery failed during login callback", err)
 		http.Error(w, "SSO ist gerade nicht erreichbar. Bitte später erneut versuchen.", http.StatusServiceUnavailable)
 		return
 	}
 	if errText := strings.TrimSpace(r.URL.Query().Get("error")); errText != "" {
-		log.Printf("oidc login failed: %s", errText)
+		logWarn("OIDC login rejected", "provider_error", errText)
 		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
 		return
 	}
@@ -235,38 +234,38 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		oauth2.SetAuthURLParam("code_verifier", flow.CodeVerifier()),
 	)
 	if err != nil {
-		log.Printf("oidc token exchange failed: %v", err)
+		logError("OIDC token exchange failed", err)
 		http.Error(w, "SSO-Anmeldung konnte nicht abgeschlossen werden.", http.StatusUnauthorized)
 		return
 	}
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok || rawIDToken == "" {
-		log.Printf("oidc token exchange returned no id_token")
+		logWarn("OIDC token exchange returned no ID token")
 		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
 		return
 	}
 	idToken, err := a.oidc.Verifier().Verify(ctx, rawIDToken)
 	if err != nil {
-		log.Printf("oidc id_token verification failed: %v", err)
+		logError("OIDC ID token verification failed", err)
 		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
 		return
 	}
 	if idToken.Nonce != flow.Nonce() {
-		log.Printf("oidc nonce mismatch")
+		logWarn("OIDC nonce mismatch")
 		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
 		return
 	}
 
 	claims := oidcUserClaims{}
 	if err := idToken.Claims(&claims); err != nil {
-		log.Printf("oidc claims decode failed: %v", err)
+		logError("OIDC claims decode failed", err)
 		http.Error(w, "SSO-Anmeldung konnte nicht gelesen werden.", http.StatusUnauthorized)
 		return
 	}
 	if claims.Email == "" || claims.EmailVerified == nil {
 		userInfo, err := a.oidc.Provider().UserInfo(ctx, oauth2.StaticTokenSource(token))
 		if err != nil {
-			log.Printf("oidc userinfo failed: %v", err)
+			logError("OIDC userinfo failed", err)
 		} else {
 			var extra oidcUserClaims
 			if err := userInfo.Claims(&extra); err == nil {
@@ -313,7 +312,7 @@ func (a *app) startSession(w http.ResponseWriter, email string, tenantSlug strin
 	})
 	if a.activityStore != nil {
 		if err := a.activityStore.Touch(email, time.Now(), authMethod); err != nil {
-			log.Printf("activity record failed for %s: %v", redactedEmail(email), err)
+			logError("activity record failed", err, "actor", redactedEmail(email))
 		}
 	}
 	a.recordAudit(auditEvent{

@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.18.1",
+			Date:     "26. Juli 2026",
+			Kind:     "Betrieb",
+			Headline: "Betriebsmeldungen lassen sich gezielter auswerten.",
+			Intro:    "Hintergrundvorgänge protokollieren Bereich, Haus und betroffene Objekte jetzt als getrennte Felder.",
+			Items: []NoteItem{
+				{Label: "Datensparsam", Text: "Personenbezüge bleiben in Betriebsmeldungen gekürzt statt im Klartext."},
+				{Label: "Stabilität", Text: "Automatische Tests und Sicherheitsprüfungen laufen über die etablierte Blacksmith-Infrastruktur."},
+			},
+		},
+		{
 			Version:  "0.18.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Datenschutz & Betrieb",

@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"net/url"
 	"sort"
@@ -389,7 +388,7 @@ func (a *app) chargingStatus(w http.ResponseWriter, r *http.Request, ac authCtx)
 		return
 	}
 	if err := a.templates.ExecuteTemplate(w, "parkingLiveCard", map[string]any{"Live": live}); err != nil {
-		log.Printf("charging status render failed: %v", err)
+		logError("charging status render failed", err)
 	}
 }
 
@@ -440,7 +439,7 @@ func (a *app) updateChargingSettings(w http.ResponseWriter, r *http.Request, ac 
 		return
 	}
 	if err := a.parkingStore.SetChargingControl(tenant.Slug, cfg); err != nil {
-		log.Printf("charging settings save failed for %s: %v", tenant.Slug, err)
+		logError("charging settings save failed", err, "tenant", tenant.Slug)
 		http.Error(w, "Could not save charging settings", http.StatusInternalServerError)
 		return
 	}
