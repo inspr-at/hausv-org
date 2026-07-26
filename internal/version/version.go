@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.21.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Übergaben",
+			Headline: "Übergabeprotokolle lassen sich am Handy störungsfrei erfassen.",
+			Intro:    "Fotos können vor dem Speichern geprüft werden, ohne dass die Speichern-Schaltfläche den Foto-Bereich verdeckt.",
+			Items: []NoteItem{
+				{Label: "Fotos", Text: "Anhänge lassen sich vor und nach dem Speichern entfernen; danach führt die Seite direkt zum Protokoll zurück."},
+				{Label: "Klare Aufgabe", Text: "Übergabe, Bestätigung und PDF grenzen Zustandsdokumentation verständlich von Kaution, Schadenabrechnung und Buchhaltung ab."},
+			},
+		},
+		{
 			Version:  "0.20.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Produkt-Ausblick",

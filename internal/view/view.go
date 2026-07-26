@@ -108,19 +108,20 @@ type IssueCommentView struct {
 }
 
 type AttachmentView struct {
-	ID          string
-	Filename    string
-	Size        string
-	ContentType string
-	UploadedBy  string
-	CreatedAt   string
-	URL         string
-	PreviewURL  string
-	ThumbURL    string
-	IsImage     bool
-	IsPDF       bool
-	CanDelete   bool
-	DeleteURL   string
+	ID             string
+	Filename       string
+	Size           string
+	ContentType    string
+	UploadedBy     string
+	CreatedAt      string
+	URL            string
+	PreviewURL     string
+	ThumbURL       string
+	IsImage        bool
+	IsPDF          bool
+	CanDelete      bool
+	DeleteURL      string
+	DeleteRedirect string
 }
 
 type AttachmentGroup struct {

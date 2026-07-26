@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.21.0] - 2026-07-26
+
+### Verbessert
+
+- **Übergaben lassen sich am Handy verlässlich abschließen.** Ausgewählte Fotos werden vor dem Speichern sichtbar, können vor und nach dem Speichern entfernt werden und der Speichern-Knopf verdeckt den Foto-Bereich auf kleinen Bildschirmen nicht mehr.
+- **Der Zweck des Übergabeprotokolls ist klar abgegrenzt.** Erfassung, Bestätigung und PDF weisen verständlich darauf hin, dass der Zustand dokumentiert wird, ohne Kautionen, Schäden oder Buchhaltung abzurechnen.
+
 ## [0.20.0] - 2026-07-26
 
 ### Verbessert

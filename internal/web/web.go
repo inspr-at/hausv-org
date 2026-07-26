@@ -1282,6 +1282,7 @@ const PageTemplates = `
     .handover-note { border-left: 3px solid var(--gold); padding: 4px 0 4px 13px; color: var(--muted); }
     .handover-note strong { color: var(--ink); }
     .handover-note p { margin-top: 4px; line-height: 1.45; overflow-wrap: anywhere; }
+    .handover-scope { border-left: 3px solid rgba(47,107,74,.35); padding: 9px 12px; background: rgba(47,107,74,.06); color: var(--muted); font-size: 13px; line-height: 1.45; }
     .handover-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding-top: 4px; color: var(--soft); font-size: 12px; }
     .handover-dialog textarea { min-height: 94px; }
     .handover-confirm-body { min-height: 100vh; background: radial-gradient(circle at top left, rgba(47,107,74,.12), transparent 34%), var(--paper); }
@@ -1375,6 +1376,7 @@ const PageTemplates = `
 	      .metric-grid { grid-template-columns: 1fr; }
 	      .payment-fields, .parking-breakdown { grid-template-columns: 1fr; }
 	      .handover-detail-grid, .handover-confirm-summary { grid-template-columns: 1fr; }
+	      .handover-dialog .dialog-body > button:last-child { position: static; box-shadow: none; margin-top: 2px; }
 	      .parking-page-head, .parking-page-head > *, .parking-primary-actions, .parking-page .panel { min-width: 0; max-width: 100%; }
 	      .parking-primary-actions { width: 100%; display: grid; grid-template-columns: 1fr; justify-content: stretch; }
 	      .parking-primary-actions .button, .parking-primary-actions form, .parking-primary-actions form button { width: 100%; }
@@ -1942,6 +1944,7 @@ const PageTemplates = `
           {{if .CanDelete}}
             <form class="attachment-delete" method="post" action="{{.DeleteURL}}" data-confirm="Diesen Anhang entfernen?">
               <input type="hidden" name="id" value="{{.ID}}">
+              {{if .DeleteRedirect}}<input type="hidden" name="redirect" value="{{.DeleteRedirect}}">{{end}}
               <button type="submit" aria-label="Anhang entfernen">&times;</button>
             </form>
           {{end}}
@@ -2990,6 +2993,7 @@ const PageTemplates = `
         <div>
           <h1>Übergaben</h1>
           <p class="lede">Nutzerwechsel vor Ort erfassen, Fotos sichern, bestätigen lassen und als Protokoll im Dokumentenbereich ablegen.</p>
+          <p class="handover-scope">Das Protokoll dokumentiert den Zustand. Kaution, Schadenabrechnung und Buchhaltung bleiben bewusst außerhalb.</p>
         </div>
         {{if .HandoverMsg}}<div class="flash {{if .HandoverOK}}ok{{end}}">{{.HandoverMsg}}</div>{{end}}
         {{if .HasHandovers}}
@@ -3050,6 +3054,7 @@ const PageTemplates = `
             <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
           </div>
           <div class="dialog-body">
+            <p class="handover-scope">Dokumentation ja: Räume, Zähler, Schlüssel, Mängel und Fotos. Keine Kautions-, Schaden- oder sonstige Abrechnung.</p>
             <div class="dialog-grid">
               <label class="full" for="handover-title">Titel<input id="handover-title" name="title" required maxlength="160" placeholder="Übergabe Top 11"></label>
               <label for="handover-unit">Einheit<select id="handover-unit" name="unit_id" required>{{range .UnitOptions}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>{{end}}</select></label>
@@ -3089,6 +3094,7 @@ const PageTemplates = `
       <div class="kicker">Übergabe bestätigen</div>
       <h1>{{.Handover.Title}}</h1>
       <p class="lede">{{.Tenant.Address}} · {{.Handover.UnitLabel}}</p>
+      <p class="handover-scope">Die Bestätigung hält das vorliegende Protokoll fest. Sie ist keine Kautions-, Schaden- oder sonstige Abrechnung.</p>
       {{if .Msg}}<div class="flash {{if .MsgOK}}ok{{end}}">{{.Msg}}</div>{{end}}
       <div class="handover-confirm-summary">
         <div><span>Rolle</span><strong>{{.Confirmation.Role}}</strong></div>

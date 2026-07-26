@@ -583,6 +583,9 @@ func (a *app) handoverViewForActor(tenantSlug string, email string, role string,
 		}
 	}
 	attachments := a.attachmentViewsForEntity(tenantSlug, "handover", item.ID, email, role)
+	for idx := range attachments {
+		attachments[idx].DeleteRedirect = "/app/uebergaben#handover-" + url.PathEscape(item.ID)
+	}
 	confirmations := make([]handoverConfirmationView, 0, len(item.Confirmations))
 	for _, confirmation := range item.Confirmations {
 		confirmations = append(confirmations, handoverConfirmationViewFrom(confirmation))
@@ -712,6 +715,7 @@ func handoverPDF(tenant tenantConfig, item handoverRecord, attachments []attachm
 		"Status: " + handoverStatus(item),
 		"Erstellt: " + formatLocalDateTime(item.CreatedAt),
 		"Generiert: " + formatLocalDateTime(generatedAt),
+		"Hinweis: Zustandsdokumentation; keine Kautions-, Schaden- oder sonstige Abrechnung.",
 		"",
 		"Raeume / Zustand / Maengel",
 	}

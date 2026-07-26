@@ -1023,9 +1023,70 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		t.Fatalf("handover attachments = %+v", attachments)
 	}
 	page := authedRequest(t, a, "manager@example.com", "/app/uebergaben")
-	for _, want := range []string{"Übergabe Top 11", "bad.png", "data-lightbox-src", "PDF exportieren"} {
+	for _, want := range []string{
+		"Übergabe Top 11",
+		"bad.png",
+		"data-lightbox-src",
+		"PDF exportieren",
+		"Kaution, Schadenabrechnung und Buchhaltung bleiben bewusst außerhalb",
+		`name="redirect" value="/app/uebergaben#handover-` + item.ID + `"`,
+	} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("handover page missing %q:\n%s", want, page.Body.String())
+		}
+	}
+
+	attachmentPath, _, _, ok := a.attachmentStore.FilePath(attachments[0], "")
+	if !ok {
+		t.Fatal("handover attachment file path missing")
+	}
+	deleted := authedFormRequest(t, a, "manager@example.com", "/app/attachments/delete", url.Values{
+		"id":       {attachments[0].ID},
+		"redirect": {"/app/uebergaben#handover-" + item.ID},
+	})
+	if deleted.Code != http.StatusSeeOther || deleted.Header().Get("Location") != "/app/uebergaben#handover-"+item.ID {
+		t.Fatalf("handover attachment delete = %d %q", deleted.Code, deleted.Header().Get("Location"))
+	}
+	if got := a.attachmentStore.ListEntity("jhw22", "handover", item.ID); len(got) != 0 {
+		t.Fatalf("handover attachments after delete = %+v, want none", got)
+	}
+	if _, err := os.Stat(attachmentPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("deleted handover attachment stat err = %v, want not exist", err)
+	}
+
+	tokens := []string{}
+	for _, notification := range mailer.notifications {
+		for _, line := range strings.Split(notification.Body, "\n") {
+			parsed, err := url.Parse(strings.TrimSpace(line))
+			if err == nil && strings.HasPrefix(parsed.Path, "/handover/") {
+				tokens = append(tokens, strings.TrimPrefix(parsed.Path, "/handover/"))
+			}
+		}
+	}
+	if len(tokens) != 2 {
+		t.Fatalf("handover confirmation tokens = %q, want two", tokens)
+	}
+	for idx, token := range tokens {
+		form := url.Values{
+			"confirm": {"yes"},
+			"name":    {"Bestätigende Person " + strconv.Itoa(idx+1)},
+		}
+		confirm := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/handover/"+token, strings.NewReader(form.Encode()))
+		confirm.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		confirm.Header.Set("Origin", "http://jhw22.hausv.org")
+		confirmed := httptest.NewRecorder()
+		a.handler().ServeHTTP(confirmed, confirm)
+		if confirmed.Code != http.StatusSeeOther {
+			t.Fatalf("handover confirmation %d status = %d, want redirect", idx, confirmed.Code)
+		}
+	}
+	afterConfirm, found := a.handoverStore.Get("jhw22", item.ID)
+	if !found || handoverStatus(afterConfirm) != handoverStatusConfirmed {
+		t.Fatalf("handover after both confirmations = found %v item %+v", found, afterConfirm)
+	}
+	for _, confirmation := range afterConfirm.Confirmations {
+		if confirmation.ConfirmedAt.IsZero() {
+			t.Fatalf("handover confirmation remains open: %+v", afterConfirm.Confirmations)
 		}
 	}
 
@@ -1079,7 +1140,9 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 	get.SetPathValue("token", token)
 	getRR := httptest.NewRecorder()
 	a.handoverConfirmPage(getRR, get)
-	if getRR.Code != http.StatusOK || !strings.Contains(getRR.Body.String(), "Übergabe Top 1") {
+	if getRR.Code != http.StatusOK ||
+		!strings.Contains(getRR.Body.String(), "Übergabe Top 1") ||
+		!strings.Contains(getRR.Body.String(), "keine Kautions-, Schaden- oder sonstige Abrechnung") {
 		t.Fatalf("confirm page status/body = %d/%s", getRR.Code, getRR.Body.String())
 	}
 
@@ -3823,6 +3886,9 @@ func TestPublicPrivacyNoticeMatchesActualDependencies(t *testing.T) {
 	csp := rr.Header().Get("Content-Security-Policy")
 	if strings.Contains(csp, "googleapis.com") || strings.Contains(csp, "gstatic.com") {
 		t.Fatalf("CSP still permits external font hosts: %q", csp)
+	}
+	if !strings.Contains(csp, "img-src 'self' blob:") {
+		t.Fatalf("CSP blocks local selected-image previews: %q", csp)
 	}
 }
 
