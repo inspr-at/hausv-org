@@ -49,26 +49,32 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) marketingLanding(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "landing", map[string]any{
-		"Title":          "hausv.org - kostenlose Hausverwaltung",
-		"ContactLocal":   "hello",
-		"ContactDomain":  "hausv.org",
-		"ContactDisplay": "hello [at] hausv [dot] org",
-		"PrimaryAppURL":  "https://jhw22.hausv.org/",
-		"RequestedHost":  normalizeHost(r.Host),
-		"LandingHeroURL": "/assets/hausv-landing-hero.png",
+		"Title":           "hausv.org - privater Hausverwaltungs-Pilot",
+		"ContactLocal":    "hello",
+		"ContactDomain":   "hausv.org",
+		"ContactDisplay":  "hello [at] hausv [dot] org",
+		"PrimaryAppURL":   "https://jhw22.hausv.org/",
+		"RequestedHost":   normalizeHost(r.Host),
+		"LandingHeroURL":  "/assets/hausv-landing-hero.png",
+		"OperatorName":    platformOperatorName,
+		"OperatorAddress": platformOperatorAddress,
+		"LegalReviewDate": legalReviewDate,
 	})
 }
 
 func (a *app) privacyNotice(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
-	contactEmail := firstNonEmpty(tenant.ContactEmail, "hello@hausv.org")
+	contactEmail := firstNonEmpty(tenant.ContactEmail, platformContactEmail)
 	a.render(w, "privacy", map[string]any{
 		"Title":                         "Datenschutz · hausv.org",
 		"Tenant":                        tenant,
 		"HouseContactName":              firstNonEmpty(tenant.ContactName, tenant.Name, "Hausverwaltung"),
 		"HouseContactEmail":             contactEmail,
 		"HouseContactPhone":             tenant.ContactPhone,
-		"TechnicalContactEmail":         "hello@hausv.org",
+		"TechnicalOperatorName":         platformOperatorName,
+		"TechnicalOperatorAddress":      platformOperatorAddress,
+		"TechnicalContactEmail":         platformContactEmail,
+		"LegalReviewDate":               legalReviewDate,
 		"ServiceProviderEnabled":        a.serviceAccessEnabled,
 		"ServiceProviderAssessment":     serviceProviderAssessmentVersion,
 		"ServiceProviderRetentionYears": 3,

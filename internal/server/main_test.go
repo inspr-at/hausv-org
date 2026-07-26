@@ -1200,10 +1200,20 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Ein Portal für alle, die ein Haus gemeinsam verwalten.",
 		"Mehrparteien",
 		"hello [at] hausv [dot] org",
-		"Bis 25 Wohneinheiten kostenlos",
-		"1 € pro Monat",
-		"Je Wohneinheit als Richtwert",
+		"Privater Pilot · Zugang nach Abstimmung",
+		"1 € pro Monat als Zukunftsrichtwert",
+		"Unverbindliche Orientierung je Wohneinheit",
 		"Impressum",
+		"Ing. Markus Barta",
+		"Janischhofweg 22/11, 8043 Graz, Österreich",
+		"natürliche Person",
+		"kein Unternehmen",
+		"Nicht anwendbar",
+		"kein öffentlicher Online-Vertragsabschluss",
+		"Betreiber-Selbstprüfung vom 26. Juli 2026",
+		"§ 5 ECG",
+		"§ 24 MedienG",
+		"Keine externe Zertifizierung",
 		"Datenschutz mitgedacht",
 		"In Arbeit · Freigabe offen",
 		"KI nur mit Opt-in",
@@ -1229,10 +1239,9 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"/assets/landing-features.jpg",
 		"/assets/landing-roles.jpg",
 		"/assets/landing-closing.jpg",
-		"Kostenlos",
+		"Im Pilot kostenlos",
 		"Sicherheit & Datenschutz",
 		"Kosten fair.",
-		"Je Wohneinheit als Richtwert",
 		"Zubehör wie Keller oder Stellplätze",
 		"Spenden",
 		"Fair bleibt fair.",
@@ -1245,7 +1254,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
 		}
 	}
-	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "ebInterface"} {
+	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "ebInterface", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
@@ -3892,6 +3901,10 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 
 func TestPublicPrivacyNoticeMatchesActualDependencies(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	tenant := a.tenants["jhw22"]
+	tenant.ContactName = "Alwog Allgemeine Wohnbaugesellschaft mbH"
+	tenant.ContactEmail = "haus@example.com"
+	a.tenants["jhw22"] = tenant
 
 	rr := httptest.NewRecorder()
 	a.handler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/datenschutz", nil))
@@ -3902,10 +3915,18 @@ func TestPublicPrivacyNoticeMatchesActualDependencies(t *testing.T) {
 	for _, want := range []string{
 		"Betreiber-Selbstprüfung",
 		"Dienstleister-Zugang: geschlossen",
+		"Alwog Allgemeine Wohnbaugesellschaft mbH",
+		"haus@example.com",
+		"Ing. Markus Barta",
+		"Janischhofweg 22/11, 8043 Graz, Österreich",
+		"hello@hausv.org",
 		"Resend",
 		"in die USA übertragen",
 		"Audit-Archive: höchstens drei Jahre",
 		"Österreichische Datenschutzbehörde",
+		"§ 5 ECG",
+		"§ 24 MedienG",
+		"keine externe Zertifizierung",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("privacy page missing %q:\n%s", want, body)

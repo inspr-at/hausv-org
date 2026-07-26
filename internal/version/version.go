@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.23.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Transparenz",
+			Headline: "Betreiber, Hauskontakt und privater Pilot sind klar eingeordnet.",
+			Intro:    "Impressum und Datenschutzinformation nennen die verantwortlichen Kontakte vollständig und grenzen den persönlich abgestimmten Pilot von einem öffentlichen Vertragsangebot ab.",
+			Items: []NoteItem{
+				{Label: "Nachvollziehbar", Text: "Betreiberangaben, Prüftermin und österreichische Primärquellen sind direkt erreichbar."},
+				{Label: "Ehrlicher Pilot", Text: "Kostenwerte bleiben eine unverbindliche Zukunftsorientierung; ein öffentlicher Online-Vertragsabschluss findet derzeit nicht statt."},
+			},
+		},
+		{
 			Version:  "0.22.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Nachvollziehbarkeit",

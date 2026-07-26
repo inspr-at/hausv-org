@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.23.0] - 2026-07-26
+
+### Verbessert
+
+- **Betreiber und Kontakt sind vollständig nachvollziehbar.** Impressum und Datenschutzinformation nennen den persönlichen Betreiber, seine ladungsfähige Anschrift und den dauerhaften technischen Kontakt; die verantwortliche Stelle des jeweiligen Hauses bleibt davon klar getrennt.
+- **Der private Pilot ist eindeutig vom öffentlichen Angebot abgegrenzt.** Zugang, Kostenorientierung und Vertragsstatus erklären verständlich, dass derzeit kein öffentlicher Online-Vertragsabschluss und keine automatische Vertragsannahme stattfinden.
+- **Die rechtliche Selbstprüfung ist transparent belegt.** Datum und österreichische Primärquellen sind direkt verlinkt; die Seiten stellen klar, dass keine externe Zertifizierung behauptet wird.
+
 ## [0.22.0] - 2026-07-26
 
 ### Neu

@@ -423,11 +423,11 @@ const PageTemplates = `
       <h1>Ein Portal für alle, die ein Haus gemeinsam verwalten.</h1>
       <p class="landing-lead">Kommunikation, Transparenz und Self-Service für WEGs, Wohnungen und Mehrparteienhäuser. Klar für Eigentümer, Mieter, Beiräte und kleine Verwaltungen.</p>
       <div class="landing-actions">
-        <a class="landing-button primary js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org anfragen" data-mail-reveal="false">Kostenlos starten</a>
+        <a class="landing-button primary js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org Pilot anfragen" data-mail-reveal="false">Privaten Pilot anfragen</a>
         <a class="landing-button secondary" href="#funktionen">Funktionen ansehen</a>
       </div>
       <div class="landing-proof" aria-label="Kurzversprechen">
-        <span>Bis 25 Wohneinheiten kostenlos</span>
+        <span>Privater Pilot · Zugang nach Abstimmung</span>
         <span>Datenschutz mitgedacht</span>
         <span>Kommunikation statt Buchhaltung</span>
         <span>KI nur mit Opt-in</span>
@@ -526,17 +526,17 @@ const PageTemplates = `
       <div class="cost-copy">
         <div class="section-kicker">Fair geregelt</div>
         <h2>Kosten fair.</h2>
-      <p class="section-lead">hausv.org soll kleinen Hausgemeinschaften helfen und für größere Verwaltungen trotzdem planbar bleiben: nach Einheit, nicht nach Bauchgefühl.</p>
+      <p class="section-lead">Der aktuelle Betrieb ist ein persönlich abgestimmter, privater Pilot. Die folgenden Werte zeigen die beabsichtigte faire Richtung und sind noch kein öffentliches Vertragsangebot.</p>
       </div>
       <div>
         <div class="cost-panel" aria-label="Faire Nutzung und Preise">
           <div class="cost-row">
             <span class="cost-value">25</span>
-            <div><strong>Kostenlos</strong><p>Bis 25 Wohneinheiten. Für kleine Hausgemeinschaften, private Betreuung und den fairen Einstieg.</p></div>
+            <div><strong>Im Pilot kostenlos</strong><p>Bis 25 Wohneinheiten im aktuellen privaten Pilot. Zugang und Umfang werden persönlich abgestimmt.</p></div>
           </div>
           <div class="cost-row">
             <span class="cost-value">1€</span>
-            <div><strong>1 € pro Monat</strong><p>Je Wohneinheit als Richtwert für größere Verwaltungen. Wohnungen und vergleichbare Nutzungseinheiten zählen; Zubehör wie Keller oder Stellplätze nicht automatisch.</p></div>
+            <div><strong>1 € pro Monat als Zukunftsrichtwert</strong><p>Unverbindliche Orientierung je Wohneinheit für eine mögliche spätere öffentliche Leistung. Wohnungen und vergleichbare Nutzungseinheiten zählen; Zubehör wie Keller oder Stellplätze nicht automatisch.</p></div>
           </div>
           <div class="cost-row">
             <span class="cost-value">frei</span>
@@ -545,7 +545,7 @@ const PageTemplates = `
         </div>
         <div class="cost-note">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><path d="M6 7h12"/><path d="M7 7l-4 7h8z"/><path d="M17 7l-4 7h8z"/></svg>
-          <div><strong>Fair bleibt fair.</strong> Klare Einheitspreise, keine versteckten Grundgebühren, kein Verkaufsdruck.</div>
+          <div><strong>Fair bleibt fair.</strong> Derzeit kein öffentlicher Online-Vertragsabschluss und keine automatische Vertragsannahme. Vor einem geschäftlichen Angebot werden Betreiber-, Steuer- und Vertragsangaben neu geprüft.</div>
         </div>
       </div>
     </div>
@@ -555,18 +555,18 @@ const PageTemplates = `
     <div class="section-inner">
       <div class="section-kicker">Impressum</div>
       <h2>Impressum & Kontakt</h2>
-      <p class="section-lead">Die folgenden Felder sind bewusst als Platzhalter angelegt und werden vor dem produktiven Start mit den konkreten Betreiberangaben ergänzt.</p>
+      <p class="section-lead">Verantwortlich für den persönlichen, nicht gewerblichen Pilotbetrieb von hausv.org.</p>
       <div class="imprint-grid">
-        <div class="imprint-card"><strong>Medieninhaber / Betreiber</strong><p>[Name oder Firma, Rechtsform]</p></div>
-        <div class="imprint-card"><strong>Sitz / Anschrift</strong><p>[Straße und Hausnummer, PLZ Ort, Land]</p></div>
+        <div class="imprint-card"><strong>Medieninhaber / Betreiber</strong><p>{{.OperatorName}} · natürliche Person</p></div>
+        <div class="imprint-card"><strong>Ladungsfähige Anschrift</strong><p>{{.OperatorAddress}}</p></div>
         <div class="imprint-card"><strong>Kontakt</strong><p><a id="kontakt" class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a></p></div>
-        <div class="imprint-card"><strong>Unternehmensgegenstand</strong><p>[Software-/IT-Dienstleistungen, digitale Hausverwaltungsplattform]</p></div>
-        <div class="imprint-card"><strong>Firmenbuch / UID</strong><p>[Firmenbuchnummer, Firmenbuchgericht, UID-Nummer]</p></div>
-        <div class="imprint-card"><strong>Gewerbebehörde / Kammer</strong><p>[Bezirkshauptmannschaft/Magistrat], Mitglied der WKO [Bundesland]</p></div>
-        <div class="imprint-card"><strong>Anwendbare Vorschriften</strong><p>[Gewerbeordnung, abrufbar unter ris.bka.gv.at]</p></div>
+        <div class="imprint-card"><strong>Zweck des Angebots</strong><p>Information und technischer Pilot einer digitalen Kommunikations- und Transparenzplattform für Hausgemeinschaften.</p></div>
+        <div class="imprint-card"><strong>Firmenbuch / UID</strong><p>Nicht anwendbar: privates Projekt einer natürlichen Person, kein Unternehmen und derzeit kein öffentliches Vertragsangebot.</p></div>
+        <div class="imprint-card"><strong>Gewerbebehörde / Kammer</strong><p>Nicht anwendbar: der aktuelle persönliche Pilot wird nicht gewerblich angeboten.</p></div>
+        <div class="imprint-card"><strong>Rechtlicher Rahmen</strong><p>Österreichisches Medien-, E-Commerce- und Datenschutzrecht, soweit auf den konkreten Betrieb anwendbar.</p></div>
         <div class="imprint-card"><strong>Blattlinie</strong><p>Informationen über hausv.org und digitale Selbstverwaltung für Mehrparteienhäuser.</p></div>
       </div>
-      <p class="mini">Platzhalter auf Basis der WKO-Impressum-Orientierung final mit den echten Betreiberangaben ausfüllen.</p>
+      <p class="mini">Betreiber-Selbstprüfung vom {{.LegalReviewDate}} anhand von <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a>, <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a> und der <a href="https://www.dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>. Keine externe Zertifizierung oder Rechtsberatung.</p>
     </div>
   </section>
 
@@ -638,7 +638,7 @@ const PageTemplates = `
     <dl>
       <dt>Hausbetrieb</dt><dd>{{.HouseContactName}}, {{.Tenant.Address}}</dd>
       <dt>Kontakt</dt><dd><a href="mailto:{{.HouseContactEmail}}">{{.HouseContactEmail}}</a>{{if .HouseContactPhone}} · {{.HouseContactPhone}}{{end}}</dd>
-      <dt>Technischer Betrieb</dt><dd><a href="mailto:{{.TechnicalContactEmail}}">{{.TechnicalContactEmail}}</a></dd>
+      <dt>Technischer Betrieb</dt><dd>{{.TechnicalOperatorName}}, {{.TechnicalOperatorAddress}} · <a href="mailto:{{.TechnicalContactEmail}}">{{.TechnicalContactEmail}}</a></dd>
     </dl>
 
     <h2>Welche Daten und wofür?</h2>
@@ -672,7 +672,7 @@ const PageTemplates = `
     <p>Betroffene Personen können Information, Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit oder Widerspruch verlangen. Anfragen gehen an den oben genannten Hauskontakt; technisch notwendige Unterstützung leistet hausv.org. Beschwerden können an die Österreichische Datenschutzbehörde gerichtet werden.</p>
 
     <h2>Stand und Überprüfung</h2>
-    <p>Stand: 26. Juli 2026. Die Selbstprüfung wird mindestens jährlich sowie bei neuen Empfängern, Datenarten, Rechtsgrundlagen, Speicherorten oder wesentlichen Produktänderungen erneut durchgeführt. Wenn sich ein hohes, nicht ausreichend gemindertes Risiko zeigt, bleibt die Funktion geschlossen und die Datenschutzbehörde wird nach Art. 36 DSGVO konsultiert.</p>
+    <p>Stand: {{.LegalReviewDate}}. Die Selbstprüfung stützt sich auf die DSGVO, die Informationen und Entscheidungen der <a href="https://www.dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>, <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a> und <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a>. Sie ist eine interne Betreiberbewertung, keine externe Zertifizierung oder Rechtsberatung. Sie wird mindestens jährlich sowie bei neuen Empfängern, Datenarten, Rechtsgrundlagen, Speicherorten oder wesentlichen Produktänderungen erneut durchgeführt. Wenn sich ein hohes, nicht ausreichend gemindertes Risiko zeigt, bleibt die Funktion geschlossen und die Datenschutzbehörde wird nach Art. 36 DSGVO konsultiert.</p>
   </main>
   <footer>hausv.org · Datenschutzinformation für den Pilotbetrieb</footer>
 </body>
