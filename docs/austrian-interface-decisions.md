@@ -6,10 +6,14 @@ Buchhaltung, Steuerlogik, Mahnlogik oder Zahlungsaufträge erzeugen.
 
 ## Dienstleister-Zugang: Tenant-Rolle mit Magic-Link
 
-**Freigabestatus:** technisch umgesetzt, aber nicht für den realen Betrieb
-freigegeben. Vor echten Einladungen muss HAUSV-86 die externe fachkundige
-Datenschutz- und Rechtsprüfung samt Aufbewahrungs- und Informationsregeln
-dokumentiert abschließen; HAUSV-128 bleibt bis dahin in QA.
+**Freigabestatus:** technisch umgesetzt, aber standardmäßig nicht für den realen
+Betrieb freigegeben. Da auf absehbare Zeit keine externe Prüfstelle verfügbar
+ist, dokumentiert HAUSV-86 eine versionierte Betreiber-Selbstprüfung anhand
+primärer EU- und österreichischer Quellen. Vor echten Einladungen müssen deren
+Rollen-, Vertrags-, Aufbewahrungs- und Informationsregeln bewusst bestätigt
+werden; das Produkt verlangt dafür neben dem Feature-Flag die exakte
+Prüfungsrevision. HAUSV-128 bleibt bis zur dokumentierten Betreiberaktivierung
+in QA. Die Selbstprüfung ist kein Zertifikat und keine Rechtsberatung.
 
 Entscheidung: Dienstleister erhalten in v1 ein eingeladenes, tenant-begrenztes
 Profil mit der Rolle `Dienstleister`. Ein kurzlebiger Magic-Link meldet dieses

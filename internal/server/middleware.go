@@ -13,10 +13,14 @@ import (
 // index bug in one of the ~71 handlers returns a 500 instead of killing the
 // request with a bare stack trace) and emits one structured log line per
 // request with a request id, so production is observable at all (HAUSV-141).
-func recoverAndLog(next http.Handler) http.Handler {
+func (a *app) recoverAndLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		reqID := newRequestID()
+		tenantSlug := ""
+		if a != nil {
+			tenantSlug = a.tenantForRequest(r).Slug
+		}
 		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 
 		defer func() {
@@ -31,6 +35,7 @@ func recoverAndLog(next http.Handler) http.Handler {
 					"method", r.Method,
 					"path", r.URL.Path,
 					"host", r.Host,
+					"tenant", tenantSlug,
 					"panic", rec,
 					"stack", string(debug.Stack()),
 				)
@@ -40,6 +45,7 @@ func recoverAndLog(next http.Handler) http.Handler {
 				"method", r.Method,
 				"path", r.URL.Path,
 				"host", r.Host,
+				"tenant", tenantSlug,
 				"status", sw.status,
 				"bytes", sw.bytes,
 				"duration_ms", time.Since(start).Milliseconds(),

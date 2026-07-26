@@ -1363,6 +1363,9 @@ func NewAuditStore(path string) (*AuditStore, error) {
 	if path == "" {
 		return store, nil
 	}
+	if err := store.pruneArchivesLocked(time.Now()); err != nil {
+		log.Printf("audit: archive retention cleanup failed: %v", err)
+	}
 	raw, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return store, nil
@@ -1444,7 +1447,7 @@ func (s *AuditStore) Append(event AuditEvent) error {
 		}
 	}
 	s.entries = append(s.entries, CopyAuditEvent(event))
-	if s.path != "" && len(s.entries) > auditRotateThreshold {
+	if s.path != "" && s.shouldRotateLocked(time.Now()) {
 		if err := s.rotateLocked(); err != nil {
 			// The event is already durably appended; a rotation failure must not
 			// fail the write. Growth continues until the next successful rotate.
@@ -1454,23 +1457,49 @@ func (s *AuditStore) Append(event AuditEvent) error {
 	return nil
 }
 
-// auditRotateThreshold / auditRotateKeep bound the live audit file and the
-// in-memory slice (HAUSV-146). List only ever scans the recent tail, so keeping
-// far fewer than the full history in memory is lossless for queries. Vars, not
-// consts, so a test can force rotation without writing 20k events.
+// Rotation bounds the live audit file and the in-memory slice by count, size
+// and age (HAUSV-146). Archives then have a separate retention ceiling. Vars,
+// not consts, so tests can exercise the policy without large files or clocks.
 var (
-	auditRotateThreshold = 20000
-	auditRotateKeep      = 5000
+	auditRotateThreshold  = 20000
+	auditRotateKeep       = 5000
+	auditRotateMaxBytes   = int64(10 << 20)
+	auditRotateMaxAge     = 90 * 24 * time.Hour
+	auditArchiveRetention = 3 * 365 * 24 * time.Hour
 )
 
+func (s *AuditStore) shouldRotateLocked(now time.Time) bool {
+	if len(s.entries) > auditRotateThreshold {
+		return true
+	}
+	if info, err := os.Stat(s.path); err == nil && info.Size() >= auditRotateMaxBytes {
+		return true
+	}
+	if len(s.entries) == 0 || auditRotateMaxAge <= 0 {
+		return false
+	}
+	oldest := s.entries[0].At
+	return !oldest.IsZero() && now.Sub(oldest) >= auditRotateMaxAge
+}
+
 // rotateLocked archives the current live file and rewrites it with only the
-// recent tail. Nothing is deleted: the full history is preserved in a
-// timestamped archive next to the live file (prune old archives out of band).
-// Must be called with s.mu held.
+// recent tail. Archives older than auditArchiveRetention are removed. Must be
+// called with s.mu held.
 func (s *AuditStore) rotateLocked() error {
-	archive := fmt.Sprintf("%s.%d", s.path, time.Now().UnixNano())
+	now := time.Now()
+	archive := fmt.Sprintf("%s.%d", s.path, now.UnixNano())
 	if err := os.Rename(s.path, archive); err != nil {
 		return err
+	}
+	if auditRotateMaxAge > 0 {
+		cutoff := now.Add(-auditRotateMaxAge)
+		recent := s.entries[:0]
+		for _, event := range s.entries {
+			if !event.At.Before(cutoff) {
+				recent = append(recent, event)
+			}
+		}
+		s.entries = recent
 	}
 	if len(s.entries) > auditRotateKeep {
 		s.entries = append([]AuditEvent(nil), s.entries[len(s.entries)-auditRotateKeep:]...)
@@ -1489,7 +1518,40 @@ func (s *AuditStore) rotateLocked() error {
 			return err
 		}
 	}
-	return f.Sync()
+	if err := f.Sync(); err != nil {
+		return err
+	}
+	return s.pruneArchivesLocked(now)
+}
+
+func (s *AuditStore) pruneArchivesLocked(now time.Time) error {
+	if s.path == "" || auditArchiveRetention <= 0 {
+		return nil
+	}
+	entries, err := os.ReadDir(filepath.Dir(s.path))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	prefix := filepath.Base(s.path) + "."
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasPrefix(entry.Name(), prefix) {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if now.Sub(info.ModTime()) < auditArchiveRetention {
+			continue
+		}
+		if err := os.Remove(filepath.Join(filepath.Dir(s.path), entry.Name())); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *AuditStore) List(filter AuditFilter) []AuditEvent {

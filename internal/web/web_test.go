@@ -31,8 +31,8 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 	if got := strings.Count(PageTemplates, "--ink:#20251f"); got != 1 {
 		t.Fatalf("color token block is duplicated %d times, want once", got)
 	}
-	if got := strings.Count(PageTemplates, `{{template "designTokens" .}}`); got != 3 {
-		t.Fatalf("design token partial is used %d times, want home, landing and app styles", got)
+	if got := strings.Count(PageTemplates, `{{template "designTokens" .}}`); got != 4 {
+		t.Fatalf("design token partial is used %d times, want home, landing, privacy and app styles", got)
 	}
 }
 
@@ -47,6 +47,7 @@ func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
 		`<span id="role-help" class="popup" role="tooltip">`,
 		`aria-label="E-Mail-Adresse" autocomplete="email" required`,
 		`aria-label="Kommentar oder Rückfrage"`,
+		`Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen`,
 		`aria-label="Abrechnung in 2 Schritten.`,
 		`aria-label="Abrechnungsassistent"`,
 		`aria-label="Abrechnungsschritte"`,

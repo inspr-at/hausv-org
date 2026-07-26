@@ -60,6 +60,22 @@ func (a *app) marketingLanding(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (a *app) privacyNotice(w http.ResponseWriter, r *http.Request) {
+	tenant := a.tenantForRequest(r)
+	contactEmail := firstNonEmpty(tenant.ContactEmail, "hello@hausv.org")
+	a.render(w, "privacy", map[string]any{
+		"Title":                         "Datenschutz · hausv.org",
+		"Tenant":                        tenant,
+		"HouseContactName":              firstNonEmpty(tenant.ContactName, tenant.Name, "Hausverwaltung"),
+		"HouseContactEmail":             contactEmail,
+		"HouseContactPhone":             tenant.ContactPhone,
+		"TechnicalContactEmail":         "hello@hausv.org",
+		"ServiceProviderEnabled":        a.serviceAccessEnabled,
+		"ServiceProviderAssessment":     serviceProviderAssessmentVersion,
+		"ServiceProviderRetentionYears": 3,
+	})
+}
+
 func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	if !sameOriginPost(r) {

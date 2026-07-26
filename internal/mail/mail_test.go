@@ -23,3 +23,10 @@ func TestSMTPMailerRequiresPairedCredentials(t *testing.T) {
 		t.Fatal("mailer should reject partial smtp credentials")
 	}
 }
+
+func TestPrivacyURLUsesSamePortalOrigin(t *testing.T) {
+	got := privacyURL("https://jhw22.hausv.org/auth/verify?token=secret")
+	if got != "https://jhw22.hausv.org/datenschutz" {
+		t.Fatalf("privacy URL = %q", got)
+	}
+}

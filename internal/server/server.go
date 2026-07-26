@@ -690,7 +690,10 @@ const (
 	notificationEventPayment      = store.NotificationEventPayment
 )
 
-const serviceProviderAccessClosedMessage = "Datenschutzprüfung offen: Dienstleister-Zugänge sind noch nicht freigeschaltet."
+const (
+	serviceProviderAccessClosedMessage = "Betreiberfreigabe offen: Dienstleister-Zugänge sind noch nicht freigeschaltet."
+	serviceProviderAssessmentVersion   = "2026-07-26"
+)
 
 var errServiceProviderAccessClosed = errors.New("service provider access is disabled")
 
@@ -714,6 +717,7 @@ type app struct {
 	mailer                mailer
 	templates             *template.Template
 	db                    *sql.DB
+	dataDir               string
 	announcementStore     announcementStorage
 	announcementReadStore announcementReadStorage
 	eventStore            eventStorage
@@ -827,6 +831,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /favicon.ico", favicon)
 	mux.HandleFunc("GET /tenant-hero/{tenant}", a.tenantHeroImage)
 	mux.HandleFunc("GET /healthz", a.health)
+	mux.HandleFunc("GET /datenschutz", a.privacyNotice)
 	mux.HandleFunc("GET /", a.home)
 	mux.HandleFunc("POST /auth/request", a.requestLogin)
 	mux.HandleFunc("GET /auth/verify", a.verifyLogin)
@@ -915,7 +920,7 @@ func (a *app) routes() *http.ServeMux {
 func (a *app) handler() http.Handler {
 	// recoverAndLog is outermost so it captures panics and the final status from
 	// every inner layer, including securityHeaders (HAUSV-141).
-	return recoverAndLog(securityHeaders(a.routes()))
+	return a.recoverAndLog(securityHeaders(a.routes()))
 }
 
 func runHealthcheck(target string) error {
@@ -1288,6 +1293,7 @@ func newApp() (*app, error) {
 		mailer:                mailTransport,
 		templates:             tmpl,
 		db:                    database,
+		dataDir:               filepath.Dir(dbPath),
 		announcementStore:     annBackend,
 		announcementReadStore: annReadBackend,
 		eventStore:            eventBackend,
@@ -1329,15 +1335,43 @@ func newApp() (*app, error) {
 	}, nil
 }
 
-// serviceProviderAccessEnabled is the single runtime launch gate for external
-// Dienstleister. Missing, empty and unrecognized values stay closed.
+// serviceProviderAccessEnabled is the runtime launch gate for external
+// Dienstleister. The boolean alone is deliberately insufficient: an operator
+// must also attest to the exact documented self-assessment revision. A future
+// assessment change therefore closes old deployments until the operator has
+// consciously reviewed and adopted it.
 func serviceProviderAccessEnabled() bool {
-	return parseBool(env("SERVICE_PROVIDER_ACCESS_ENABLED", "false"))
+	return parseBool(env("SERVICE_PROVIDER_ACCESS_ENABLED", "false")) &&
+		strings.TrimSpace(env("SERVICE_PROVIDER_ASSESSMENT_VERSION", "")) == serviceProviderAssessmentVersion
 }
 
-func (a *app) health(w http.ResponseWriter, _ *http.Request) {
+func (a *app) health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+	if a == nil || a.db == nil || a.db.PingContext(ctx) != nil || probeWritableDir(a.dataDir) != nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = io.WriteString(w, `{"service":"hausv-org","status":"unhealthy"}`)
+		return
+	}
 	_, _ = io.WriteString(w, `{"service":"hausv-org","status":"ok"}`)
+}
+
+func probeWritableDir(dir string) error {
+	dir = strings.TrimSpace(dir)
+	if dir == "" {
+		return fmt.Errorf("data directory unavailable")
+	}
+	f, err := os.CreateTemp(dir, ".hausv-health-*")
+	if err != nil {
+		return err
+	}
+	name := f.Name()
+	if err := f.Close(); err != nil {
+		_ = os.Remove(name)
+		return err
+	}
+	return os.Remove(name)
 }
 
 func favicon(w http.ResponseWriter, _ *http.Request) {
@@ -5237,7 +5271,7 @@ func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; form-action 'self'; base-uri 'self'; frame-ancestors 'none'")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'")
 		next.ServeHTTP(w, r)
 	})
 }

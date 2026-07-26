@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.18.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Datenschutz & Betrieb",
+			Headline: "Freigaben und Betrieb werden nachvollziehbarer.",
+			Intro:    "Datenschutzinformationen sind vor der Anmeldung erreichbar; Dienstleister bleiben bis zu einer dokumentierten, versionierten Betreiberfreigabe geschlossen.",
+			Items: []NoteItem{
+				{Label: "Datensparsam", Text: "Web-Schriften werden lokal vom Gerät verwendet statt von einem externen Anbieter geladen."},
+				{Label: "Gesundheit", Text: "Die Betriebsprüfung kontrolliert jetzt Datenbank und beschreibbaren Datenspeicher."},
+				{Label: "Nachvollziehbarkeit", Text: "Request-Logs nennen das betroffene Haus; alte Audit-Archive werden nach der Aufbewahrungsfrist entfernt."},
+			},
+		},
+		{
 			Version:  "0.17.7",
 			Date:     "24. Juli 2026",
 			Kind:     "Wartung",
@@ -372,7 +384,7 @@ func Notes() []Note {
 				{Label: "Fair Use", Text: "Bis zu 25 Wohneinheiten können den kostenfreien Rahmen nutzen."},
 				{Label: "Zählweise", Text: "Wohnungen und vergleichbare Nutzungseinheiten zählen vollständig; Zubehör wie Keller und Stellplätze nicht automatisch."},
 				{Label: "Übersicht", Text: "Dokumente nutzen auf der Startseite die volle Breite; längere Texte brechen in Karten ruhiger um."},
-				{Label: "Datenschutz", Text: "Die Dienstleister-Koordination wird bis zur externen Prüfung als technisch vorbereitet statt als freigegebener Pilot ausgewiesen."},
+				{Label: "Datenschutz", Text: "Die Dienstleister-Koordination wird bis zur dokumentierten Betreiberfreigabe als technisch vorbereitet statt als freigegebener Pilot ausgewiesen."},
 				{Label: "Sicherheit", Text: "Die Anwendung wird mit Go 1.26.5 und den aktuellen TLS-Sicherheitskorrekturen gebaut."},
 			},
 		},

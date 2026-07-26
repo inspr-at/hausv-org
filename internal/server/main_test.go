@@ -1142,7 +1142,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Je Wohneinheit als Richtwert",
 		"Impressum",
 		"Datenschutz mitgedacht",
-		"Datenschutzprüfung offen",
+		"Betreiberfreigabe vorbereitet",
 		"KI nur mit Opt-in",
 		"Keine eigene Buchhaltung",
 		"Kommunikation statt Buchhaltung",
@@ -1175,7 +1175,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Bleibt privat.",
 		"Keine öffentlichen Datei-Links",
 		"Keine unkontrollierte Weitergabe",
-		"Rechtsgrundlagen",
+		"Betreiberentscheidungen",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
@@ -2069,7 +2069,7 @@ func TestClosedServiceProviderParkingAccessIsReadOnlyForEffectiveTenantRole(t *t
 		"email":   {"service@example.com"},
 		"parking": {"1"},
 	})
-	if update.Code != http.StatusForbidden || !strings.Contains(update.Body.String(), "Datenschutzprüfung offen") {
+	if update.Code != http.StatusForbidden || !strings.Contains(update.Body.String(), "Betreiberfreigabe offen") {
 		t.Fatalf("closed service parking update = %d %q, want clear 403", update.Code, update.Body.String())
 	}
 	edit := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/edit", url.Values{
@@ -2078,13 +2078,13 @@ func TestClosedServiceProviderParkingAccessIsReadOnlyForEffectiveTenantRole(t *t
 		"first_name": {"Changed"},
 		"role":       {roleResident},
 	})
-	if edit.Code != http.StatusForbidden || !strings.Contains(edit.Body.String(), "Datenschutzprüfung offen") {
+	if edit.Code != http.StatusForbidden || !strings.Contains(edit.Body.String(), "Betreiberfreigabe offen") {
 		t.Fatalf("closed effective service edit = %d %q, want clear 403", edit.Code, edit.Body.String())
 	}
 	deleteResponse := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/delete", url.Values{
 		"email": {"service@example.com"},
 	})
-	if deleteResponse.Code != http.StatusForbidden || !strings.Contains(deleteResponse.Body.String(), "Datenschutzprüfung offen") {
+	if deleteResponse.Code != http.StatusForbidden || !strings.Contains(deleteResponse.Body.String(), "Betreiberfreigabe offen") {
 		t.Fatalf("closed effective service delete = %d %q, want clear 403", deleteResponse.Code, deleteResponse.Body.String())
 	}
 	profile, ok := a.inviteStore.Get("service@example.com")
@@ -3694,7 +3694,7 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 		"priority":       {issuePriorityHigh},
 		"assignee_email": {"external@example.com"},
 	})
-	if assign.Code != http.StatusForbidden || !strings.Contains(assign.Body.String(), "Datenschutzprüfung offen") {
+	if assign.Code != http.StatusForbidden || !strings.Contains(assign.Body.String(), "Betreiberfreigabe offen") {
 		t.Fatalf("closed assignment = %d %q, want clear 403", assign.Code, assign.Body.String())
 	}
 	unchanged, ok := a.issueStore.Get("jhw22", issue.ID)
@@ -3753,11 +3753,11 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	}
 
 	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board").Body.String()
-	if !strings.Contains(board, "placeholder=\"Datenschutzprüfung offen\" disabled") || strings.Contains(board, "datalist id=\"service-provider-contacts\"") {
+	if !strings.Contains(board, "placeholder=\"Betreiberfreigabe offen\" disabled") || strings.Contains(board, "datalist id=\"service-provider-contacts\"") {
 		t.Fatalf("closed issue UI did not disable service assignment:\n%s", board)
 	}
 	contactPage := authedRequest(t, a, "manager@example.com", "/app/kontakte").Body.String()
-	if !strings.Contains(contactPage, "Datenschutzprüfung offen") || strings.Contains(contactPage, "<option value=\"Dienstleister\"") {
+	if !strings.Contains(contactPage, "Betreiberfreigabe offen") || strings.Contains(contactPage, "<option value=\"Dienstleister\"") {
 		t.Fatalf("closed contact UI still offers service-provider creation:\n%s", contactPage)
 	}
 	usersPage := authedRequest(t, a, "manager@example.com", "/app/settings/users").Body.String()
@@ -3766,14 +3766,53 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	}
 }
 
+func TestPublicPrivacyNoticeMatchesActualDependencies(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	rr := httptest.NewRecorder()
+	a.handler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/datenschutz", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("privacy status = %d, body=%q", rr.Code, rr.Body.String())
+	}
+	body := rr.Body.String()
+	for _, want := range []string{
+		"Betreiber-Selbstprüfung",
+		"Dienstleister-Zugang: geschlossen",
+		"Resend",
+		"in die USA übertragen",
+		"Audit-Archive: höchstens drei Jahre",
+		"Österreichische Datenschutzbehörde",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("privacy page missing %q:\n%s", want, body)
+		}
+	}
+	if strings.Contains(body, "fonts.googleapis.com") || strings.Contains(body, "fonts.gstatic.com") {
+		t.Fatalf("privacy page loads an external font dependency:\n%s", body)
+	}
+	csp := rr.Header().Get("Content-Security-Policy")
+	if strings.Contains(csp, "googleapis.com") || strings.Contains(csp, "gstatic.com") {
+		t.Fatalf("CSP still permits external font hosts: %q", csp)
+	}
+}
+
 func TestServiceProviderAccessConfigRequiresExplicitOptIn(t *testing.T) {
 	t.Setenv("SERVICE_PROVIDER_ACCESS_ENABLED", "")
+	t.Setenv("SERVICE_PROVIDER_ASSESSMENT_VERSION", "")
 	if serviceProviderAccessEnabled() {
 		t.Fatal("empty SERVICE_PROVIDER_ACCESS_ENABLED must stay closed")
 	}
 	t.Setenv("SERVICE_PROVIDER_ACCESS_ENABLED", "true")
+	if serviceProviderAccessEnabled() {
+		t.Fatal("boolean opt-in without assessment revision must stay closed")
+	}
+	t.Setenv("SERVICE_PROVIDER_ASSESSMENT_VERSION", "outdated")
+	if serviceProviderAccessEnabled() {
+		t.Fatal("outdated assessment revision must stay closed")
+	}
+	t.Setenv("SERVICE_PROVIDER_ASSESSMENT_VERSION", serviceProviderAssessmentVersion)
 	if !serviceProviderAccessEnabled() {
-		t.Fatal("explicit SERVICE_PROVIDER_ACCESS_ENABLED=true should open the tested flow")
+		t.Fatal("boolean opt-in plus current assessment revision should open the tested flow")
 	}
 }
 
@@ -3789,7 +3828,7 @@ func TestClosedServiceProviderAuthenticationAndNotificationsAreRejected(t *testi
 	loginReq.Header.Set("Origin", "http://jhw22.hausv.org")
 	login := httptest.NewRecorder()
 	a.handler().ServeHTTP(login, loginReq)
-	if login.Code != http.StatusForbidden || !strings.Contains(login.Body.String(), "Datenschutzprüfung offen") || len(mailer.magicLinks) != 0 {
+	if login.Code != http.StatusForbidden || !strings.Contains(login.Body.String(), "Betreiberfreigabe offen") || len(mailer.magicLinks) != 0 {
 		t.Fatalf("closed login request = %d %q magic=%+v", login.Code, login.Body.String(), mailer.magicLinks)
 	}
 
@@ -3797,7 +3836,7 @@ func TestClosedServiceProviderAuthenticationAndNotificationsAreRejected(t *testi
 	verify := httptest.NewRecorder()
 	verifyReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/auth/verify?token=existing-magic-token", nil)
 	a.verifyLogin(verify, verifyReq)
-	if verify.Code != http.StatusForbidden || !strings.Contains(verify.Body.String(), "Datenschutzprüfung offen") || verify.Header().Get("Set-Cookie") != "" {
+	if verify.Code != http.StatusForbidden || !strings.Contains(verify.Body.String(), "Betreiberfreigabe offen") || verify.Header().Get("Set-Cookie") != "" {
 		t.Fatalf("closed magic-link verification = %d %q cookie=%q", verify.Code, verify.Body.String(), verify.Header().Get("Set-Cookie"))
 	}
 
@@ -3809,7 +3848,7 @@ func TestClosedServiceProviderAuthenticationAndNotificationsAreRejected(t *testi
 	sessionReq.AddCookie(&http.Cookie{Name: "weg_session", Value: sessionToken})
 	session := httptest.NewRecorder()
 	a.handler().ServeHTTP(session, sessionReq)
-	if session.Code != http.StatusForbidden || !strings.Contains(session.Body.String(), "Datenschutzprüfung offen") {
+	if session.Code != http.StatusForbidden || !strings.Contains(session.Body.String(), "Betreiberfreigabe offen") {
 		t.Fatalf("closed existing session = %d %q", session.Code, session.Body.String())
 	}
 

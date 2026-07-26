@@ -29,6 +29,8 @@ OIDC_CLIENT_ID=<zitadel-web-app-client-id>
 OIDC_PROVIDER_NAME=Zitadel
 SESSION_TTL=720h
 SERVICE_PROVIDER_ACCESS_ENABLED=false
+# Only set together after the documented operator self-assessment:
+# SERVICE_PROVIDER_ASSESSMENT_VERSION=2026-07-26
 TELEGRAM_BOT_TOKEN=<botfather-token-for-the-hausv-bot>
 ```
 
@@ -39,9 +41,12 @@ Nicht-geheime Ladeparameter (`CHARGING_*`-Entities, Intervalle,
 `TELEGRAM_DATA_PATH`) stehen im Compose-File in nixcfg, nicht in der env.
 
 `SERVICE_PROVIDER_ACCESS_ENABLED` ist die technische Freigabesperre für externe
-Dienstleister. Sie bleibt `false`, bis die Datenschutzprüfung und
-Betreiberentscheidung in HAUSV-86 dokumentiert abgeschlossen sind. Erst danach
-darf sie bewusst auf `true` gesetzt werden.
+Dienstleister. Sie bleibt `false`, bis die versionierte Betreiber-Selbstprüfung
+und Betreiberentscheidung in HAUSV-86 dokumentiert abgeschlossen sind. Selbst
+bei `true` bleibt der Zugang geschlossen, solange
+`SERVICE_PROVIDER_ASSESSMENT_VERSION` nicht exakt der vom Build verlangten
+Prüfversion entspricht. Dadurch kann eine alte Freigabe eine geänderte
+Datenschutzbewertung nicht stillschweigend weiterverwenden.
 
 For Zitadel Web apps using PKCE, `OIDC_CLIENT_SECRET` is not needed. Only set
 `OIDC_CLIENT_SECRET` if Zitadel creates a confidential client that explicitly
@@ -115,111 +120,48 @@ permissions per tenant while the top-level values remain the default:
 }
 ```
 
-Parking accounting is stateful. On csb1 the container writes monthly paid flags,
-grid/base surcharge settings, meter readings, and aWATTar price readings to:
-
-```text
-/data/parking.json
-```
-
-The compose service bind-mounts that path from:
+The compose service bind-mounts all durable state from:
 
 ```text
 /var/lib/csb1-docker/hausv-org
 ```
 
-Invited users (Benutzer & Rechte -> "Person einladen") persist to `/data/invites.json`
-via `INVITE_DATA_PATH` in compose, on the same bind-mount, so they survive redeploys.
-Env-config users (`WEG_USERS_JSON`/`ADMIN_EMAILS`/`INVITE_EMAILS`) stay authoritative;
-a stored invite can never override or escalate an env-defined user.
+## Durable data layout
 
-Login activity (last-login per email) persists to `/data/activity.json` via
-`ACTIVITY_DATA_PATH`. The roster derives status from it (a user who has logged in
-shows `Aktiv` + "zuletzt angemeldet: <date>"; invited-but-never-logged-in shows
-"noch nie angemeldet"), so it stays consistent for both env and invited users
-without mutating their records.
+Relational application data is authoritative in `/data/hausv.db`. The path is
+derived from `PARKING_DATA_PATH` and can be overridden with `DB_PATH`. SQLite is
+required: an unavailable database aborts startup instead of silently falling
+back to stale JSON.
 
-Aushang/Hausjournal entries persist to `/data/announcements.json` via
-`ANNOUNCE_DATA_PATH`. The store uses the same JSON-store pattern as invites and
-parking data: mutexed writes, atomic temp-file replacement, and file mode `0600`.
-Per-user read state persists to `/data/announcement_reads.json` via
-`ANNOUNCE_READ_DATA_PATH`, so "neu" badges survive redeploys. The dashboard shows
-only published, unexpired entries; admin/Verwalter authoring controls live under
-`/app/announcements`.
+The database contains identities and house memberships, login activity,
+preferences, tenants and units, payment-status markers, contacts,
+announcements/read state, events, handovers, ballots, issues/comments/history,
+Telegram state, and document/attachment **metadata**. Schema migrations run
+transactionally and idempotently at boot.
 
-Termine/Kalender entries persist to `/data/events.json` via `EVENT_DATA_PATH`.
-The dashboard agenda renders upcoming entries; past entries roll off the
-resident view while staying editable for the Verwaltung.
+Files remain outside SQLite:
 
-Das Adressbuch persistiert pro Tenant in `/data/contacts.json` via
-`CONTACT_DATA_PATH`. Es enthält Dienstleister, Hausmeister, Notdienste und andere
-wiederkehrende Kontakte; deaktivierte Einträge bleiben für die Verwaltung sichtbar,
-werden aber Bewohnern und Auswahlhilfen nicht angeboten.
+| Path | Purpose |
+|---|---|
+| `/data/documents/` | private document versions and generated protocol PDFs |
+| `/data/attachments/` | private uploads, previews and thumbnails |
+| `/data/tenant-heroes/` | uploaded house imagery |
+| `/data/audit.jsonl` + archives | append-only audit; rotation by count, 10 MiB or 90 days; archives max. three years |
+| `/data/parking.json` | parking/charging time series, tariffs, paid flags and controller state |
 
-Dokumente metadata persists to `/data/documents.json` via `DOC_DATA_PATH`; uploaded
-files are stored under `/data/documents/` via `DOC_FILE_DIR`. The document store
-uses private generated filenames, content-type/size validation, `0600` file modes,
-and does not serve files from `/assets`. Downloads go through the authenticated
-`/app/dokumente/{id}/download` route, which enforces per-document visibility and
-records successful downloads in the audit log.
+Downloads always use authenticated, object-scoped routes. Stored filenames are
+server-generated and files use restrictive modes. Superseded document versions
+are retained deliberately as house-document history. Deleted attachment files
+are removed immediately and their tombstones after one year.
 
-Shared app attachments persist metadata to `/data/attachments.json` via
-`ATTACHMENT_DATA_PATH`; generated files and previews are stored below
-`/data/attachments` via `ATTACHMENT_FILE_DIR`. This covers Aushänge, Termine,
-Abstimmungen, Kommentare and other non-document attachment strips that should
-survive container replacement.
+The old `*_DATA_PATH` JSON values may still be present in nixcfg so a fresh
+database can perform the idempotent historical import. They are not runtime
+backends after the SQLite cutover. Frozen JSON files are rollback evidence, not
+a second source of truth.
 
-Abstimmungen persist to `/data/votes.json` via `VOTE_DATA_PATH`. Ballots store
-options, type, weighting, quorum, open/close timestamps and per-owner votes. The
-store uses the same mutexed atomic JSON pattern and `0600` file mode; vote weights
-come from the Wohneinheiten ownership links for Miteigentumsanteil voting.
-
-Übergabeprotokolle persist to `/data/handovers.json` via `HANDOVER_DATA_PATH`.
-Fotos und andere Anhänge nutzen den gemeinsamen `ATTACHMENT_DATA_PATH` /
-`ATTACHMENT_FILE_DIR`-Store; abgelegte Protokoll-PDFs werden als private
-Dokumente im bestehenden `DOC_DATA_PATH` / `DOC_FILE_DIR`-Store gespeichert.
-Bestätigungslinks speichern nur Token-Hashes im JSON-Store, keine Klartext-Tokens.
-
-Notification preferences persist to `/data/notification_prefs.json` via
-`NOTIFICATION_PREF_DATA_PATH`. Missing preferences default to enabled delivery;
-explicit event opt-outs and the global unsubscribe flag are checked before
-non-authentication emails are sent.
-
-Self-service profile display/contact overlays persist to
-`/data/profile_overlays.json` via `PROFILE_DATA_PATH`. These overlays never carry
-role, permission, tenant or auth-method fields; env/invite records remain
-authoritative for authorization.
-
-Gebäude-/Tenant-Einstellungen persist to `/data/tenant_overrides.json` via
-`TENANT_DATA_PATH`; uploaded tenant hero images are stored below
-`/data/tenant-heroes` via `TENANT_HERO_DIR`. Overrides are layered over
-`WEG_TENANTS_JSON` defaults and carry display/contact/emergency/hero fields plus
-the curated sidebar brand icon and short abbreviation. They never carry roles,
-permissions, auth methods or secret-bearing configuration.
-The `/app/kontakte` page reads these fields plus Beirat role assignments;
-resident directory entries appear only after the user explicitly opts in from
-their profile.
-
-Wohneinheiten and ownership/renter links persist to `/data/units.json` via
-`UNIT_DATA_PATH`. Each unit stores tenant, id, label, type, billable weight,
-Miteigentumsanteil and owner/renter email links; the file uses the same mutexed
-atomic JSON-store pattern and `0600` file mode. Missing legacy unit types are
-normalized as billable Wohnungen. Stellplätze, Keller/Lager and sonstige
-Einheiten can be tracked without counting toward fair-use Wohneinheiten.
-
-Manueller Zahlungsstatus pro Einheit persists to
-`/data/unit_payment_status.json` via `UNIT_PAYMENT_STATUS_DATA_PATH`. The status
-is only a transparency marker (`offen`, `bezahlt`, `teilbezahlt`,
-`ueberfaellig`) and does not create receivables, bookings, reminders or
-accounting records. Residents only see explicit status records for units linked
-to their own email address.
-
-Anliegen submitted by residents persist to `/data/issues.json` via
-`ISSUE_DATA_PATH`. New issue and comment uploads use the shared attachment
-metadata/file stores at `/data/attachments.json` and `/data/attachments`.
-JPG/PNG/WebP files are limited to 5 MB and stored with mode `0600`.
-`/data/issue-attachments/` via `ISSUE_ATTACHMENT_DIR` remains read-only
-compatibility for photos created before the shared attachment migration.
+Env-config users (`WEG_USERS_JSON`, `ADMIN_EMAILS`, `INVITE_EMAILS`) remain
+authoritative over persisted identity data and cannot be escalated by an old
+invite record.
 
 Historical accounting backfill uses Home Assistant recorder statistics from
 `PARKING_HISTORY_START` onward. For the 2026 rollout this is set in compose as:
@@ -235,21 +177,19 @@ openssl rand -base64 48 | tr '+/' '-_' | tr -d '=' | pbcopy
 ```
 
 After the secret exists, rebuild or switch csb1 so agenix materializes
-`/run/agenix/csb1-hausv-org-env`, then deploy the container:
+`/run/agenix/csb1-hausv-org-env`. Commit the release, then use the guarded deploy
+script:
 
 ```fish
 cd ~/Code/hausv-org
-set version (string trim < VERSION)
-test -n "$version"; or begin; echo "VERSION must not be empty" >&2; exit 1; end
-set commit (git rev-parse --short HEAD)
-set dirty 0
-git diff --quiet; or set dirty 1
-git diff --cached --quiet; or set dirty 1
-set untracked (git ls-files --others --exclude-standard)
-test (count $untracked) -eq 0; or set dirty 1
-test "$dirty" -eq 0; or set commit "$commit-dirty"
-git ls-files -co --exclude-standard -z | tar --null -T - -cf - | ssh -p 2222 mba@cs1.barta.cm "bash -lc 'set -euo pipefail; tmpdir=\$(mktemp -d /tmp/hausv-org-deploy.XXXXXX); trap \"rm -rf \\\"\$tmpdir\\\"\" EXIT; tar -xf - -C \"\$tmpdir\"; cd \"\$tmpdir\"; docker build --build-arg APP_VERSION=$version --build-arg GIT_COMMIT=$commit -t ghcr.io/markus-barta/hausv-org:latest .; cd /home/mba/Code/nixcfg/hosts/csb1/docker; docker compose up -d --no-deps hausv-org'"
+scripts/deploy.fish --dry-run
+scripts/deploy.fish
 ```
+
+The script refuses dirty trees and an unchanged live version, ships exactly
+`git archive HEAD`, builds on csb1, tags the previous image for rollback,
+recreates the compose service, verifies the visible version and prints the exact
+rollback command. It never pushes the image to GHCR.
 
 The visible app version is `SEMVER (git-hash)`. Semver is sourced from
 `VERSION`; bump it before every production deployment and keep

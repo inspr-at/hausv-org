@@ -2,6 +2,20 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.18.0] - 2026-07-26
+
+### Neu
+
+- **Datenschutzinformationen direkt erreichbar.** Vor der Anmeldung erklärt eine eigene Seite verständlich, welche Daten das Portal verarbeitet, wofür sie benötigt werden, welche externen Dienste beteiligt sind und an wen sich Betroffene wenden können.
+
+### Verbessert
+
+- **Dienstleister-Freigabe nachvollziehbar abgesichert.** Der eingeschränkte Dienstleister-Zugang bleibt standardmäßig geschlossen und lässt sich erst mit einer ausdrücklich versionierten Betreiber-Selbstprüfung aktivieren. Die Freigabe hängt damit von dokumentierten Nachweisen statt von einer derzeit nicht verfügbaren externen Prüfung ab.
+- **Keine extern geladenen Web-Schriften mehr.** Das Portal verwendet lokale Systemschriften. Beim Aufruf einer Seite entsteht dadurch keine Verbindung mehr zu Google Fonts.
+- **Gesundheitsprüfung prüft echte Abhängigkeiten.** Der Container gilt nur dann als gesund, wenn die eingebettete Datenbank antwortet und das Datenverzeichnis beschreibbar ist.
+- **Anfragen besser nachvollziehbar.** Strukturierte Request-Logs enthalten jetzt zusätzlich das betroffene Haus.
+- **Audit-Aufbewahrung klar begrenzt.** Das laufende Audit-Protokoll rotiert nach Größe oder Alter; Archive oberhalb der dokumentierten Aufbewahrungsfrist werden automatisch entfernt.
+
 ## [0.17.7] - 2026-07-24
 
 ### Verbessert

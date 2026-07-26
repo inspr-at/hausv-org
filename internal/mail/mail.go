@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/mail"
 	"net/smtp"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -113,6 +114,7 @@ func (m SmtpMailer) SendMagicLink(to string, link string) error {
 		link,
 		"",
 		"Der Link ist 15 Minuten gültig und kann nur einmal verwendet werden.",
+		"Datenschutzinformationen: " + privacyURL(link),
 		"",
 		"Freundliche Grüße",
 		"WEG Portal",
@@ -145,11 +147,24 @@ func (m SmtpMailer) SendInvite(to string, loginURL string, address string) error
 		"",
 		"Beim Anmelden erhalten Sie einen einmaligen Login-Link per E-Mail",
 		"oder nutzen Ihren SSO-Zugang.",
+		"Datenschutzinformationen: " + privacyURL(loginURL),
 		"",
 		"Freundliche Grüße",
 		"WEG Portal",
 	}, "\r\n")
 	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
+}
+
+func privacyURL(raw string) string {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return "/datenschutz"
+	}
+	u.Path = "/datenschutz"
+	u.RawPath = ""
+	u.RawQuery = ""
+	u.Fragment = ""
+	return u.String()
 }
 
 func (m SmtpMailer) SendNotification(to string, subject string, body string) error {

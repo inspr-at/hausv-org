@@ -37,8 +37,8 @@ const PageTemplates = `
       --line:#e7e0d2; --paper:#f7f3ea; --panel:#fffefb; --panel-soft:#fbf8f0;
       --gold:#c8993f; --gold-ink:#8a7b3f; --gold-light:#e7c574; --leaf:#2f6b4a;
       --nav:#172019; --nav-2:#20291f;
-      --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --font-serif: Spectral, serif;
+      --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
       --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px;
       --radius-xs:7px; --radius-sm:8px; --radius-md:10px; --radius-lg:12px; --radius-xl:14px; --radius-pill:999px;
       --shadow-panel:0 12px 30px rgba(32,37,31,.04);
@@ -132,9 +132,6 @@ const PageTemplates = `
   <title>{{.Title}}</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: light;
@@ -242,7 +239,7 @@ const PageTemplates = `
         {{end}}
       </section>
     </main>
-    <footer>{{.Tenant.Address}} · Privat für die Hausgemeinschaft <span class="version">{{.AppVersion}}</span></footer>
+    <footer>{{.Tenant.Address}} · Privat für die Hausgemeinschaft · <a href="/datenschutz">Datenschutz</a> <span class="version">{{.AppVersion}}</span></footer>
   </section>
 </body>
 </html>
@@ -258,9 +255,6 @@ const PageTemplates = `
   <meta name="description" content="Sicheres Kommunikations- und Transparenzportal für WEGs, Wohnungen und Mehrparteienhäuser. Aushänge, Termine, Dokumente, Anliegen, Abstimmungen und Schnittstellen ohne eigene Buchhaltung.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
   <style>
     :root {
@@ -464,7 +458,7 @@ const PageTemplates = `
       <h2>Ausblick ohne Nebel.</h2>
       <p class="section-lead">Einige Bausteine laufen bereits im Pilot, andere sind bewusst als nächste Schritte markiert. Die Linie bleibt gleich: besser koordinieren, sauber dokumentieren, offen integrieren. Keine eigene Buchhaltung.</p>
       <div class="roadmap-grid" aria-label="Geplante Produktbausteine">
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M3 20a5 5 0 0 1 10 0"/><path d="M16 7h5M16 12h5M16 17h5"/></svg></span><strong>Dienstleister einbinden</strong><p>Handwerker sehen nur zugewiesene Anliegen, können Status, Fotos, Rückfragen und Termine ergänzen.</p><small>Datenschutzprüfung offen</small></div>
+        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M3 20a5 5 0 0 1 10 0"/><path d="M16 7h5M16 12h5M16 17h5"/></svg></span><strong>Dienstleister einbinden</strong><p>Handwerker sehen nur zugewiesene Anliegen, können Status, Fotos, Rückfragen und Termine ergänzen.</p><small>Betreiberfreigabe vorbereitet</small></div>
         <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h5M8 16h4"/><path d="m15 16 2 2 3-4"/></svg></span><strong>Übergaben dokumentieren</strong><p>Mobile Protokolle für Räume, Zählerstände, Schlüssel, Mängel, Fotos und Bestätigung.</p><small>Pilot verfügbar</small></div>
         <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><path d="M17 15l3 3 3-5"/></svg></span><strong>Zahlungsstatus zeigen</strong><p>Offen, bezahlt oder überfällig als geschützte Statusinformation pro Einheit, ohne Sollstellung oder Mahnwesen.</p><small>Pilot verfügbar</small></div>
         <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><strong>AT-Schnittstellen</strong><p>camt.053 und camt.054 lesen Zahlungsstatus. BMD/RZL und ebInterface bleiben Übergaben an bestehende Systeme.</p><small>Österreich-first</small></div>
@@ -513,7 +507,7 @@ const PageTemplates = `
           <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Keine unkontrollierte Weitergabe</strong><p>Daten bleiben im vorgesehenen Haus-Kontext und werden nur gezielt zugänglich gemacht.</p></div></div>
           <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Rollen und Rechte pro Haus</strong><p>Eigentümer, Mieter, Beirat und Verwaltung sauber getrennt.</p></div></div>
           <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Audit-Spuren für wichtige Aktionen</strong><p>Änderungen bleiben nachvollziehbar.</p></div></div>
-          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Datenschutz mitgedacht</strong><p>Zuständigkeiten, Rechtsgrundlagen und sparsame Profile werden vor der Freigabe geklärt.</p></div></div>
+          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Datenschutz nachvollziehbar</strong><p>Datenflüsse, Aufbewahrung und Betreiberentscheidungen werden versioniert dokumentiert.</p></div></div>
         </div>
       </aside>
     </div>
@@ -581,16 +575,103 @@ const PageTemplates = `
   </section>
 
   <footer>
-    <div><span>hausv.org · sicher, fair und datensparsam</span><span><a href="#impressum">Impressum</a> · <a class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a> · {{.AppVersion}}</span></div>
+    <div><span>hausv.org · sicher, fair und datensparsam</span><span><a href="/datenschutz">Datenschutz</a> · <a href="#impressum">Impressum</a> · <a class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a> · {{.AppVersion}}</span></div>
   </footer>
 </body>
 </html>
 {{end}}
 
+{{define "privacy"}}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <meta name="description" content="Datenschutzinformationen für hausv.org">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    :root { color-scheme: light; {{template "designTokens" .}} }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-sans); }
+    a { color: var(--leaf); }
+    :where(a):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
+    header, main, footer { width: min(820px, calc(100% - 40px)); margin: 0 auto; }
+    header { padding: 34px 0 22px; display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+    header a { font-weight: 800; text-decoration: none; }
+    main { padding-bottom: 56px; }
+    h1, h2 { font-family: var(--font-serif); }
+    h1 { margin: 20px 0 12px; font-size: clamp(38px, 7vw, 58px); line-height: 1; }
+    h2 { margin: 34px 0 10px; font-size: 25px; }
+    p, li { line-height: 1.62; }
+    .lead { color: var(--muted); font-size: 18px; }
+    .status { border: 1px solid rgba(47,107,74,.22); border-radius: var(--radius-md); background: var(--panel); padding: 16px 18px; }
+    .status strong { display: block; margin-bottom: 5px; }
+    dl { display: grid; grid-template-columns: 180px minmax(0,1fr); gap: 8px 18px; }
+    dt { font-weight: 800; }
+    dd { margin: 0; }
+    footer { border-top: 1px solid var(--line); padding: 22px 0 36px; color: var(--muted); font-size: 14px; }
+    @media (max-width: 620px) { dl { grid-template-columns: 1fr; } dt { margin-top: 8px; } }
+  </style>
+</head>
+<body>
+  <header><a href="/">← Zurück zu hausv.org</a><span>{{.AppVersion}}</span></header>
+  <main>
+    <h1>Datenschutz</h1>
+    <p class="lead">Diese Information beschreibt den tatsächlichen Pilotbetrieb von hausv.org. Sie ist eine dokumentierte Betreiber-Selbstprüfung nach den Grundsätzen der DSGVO, kein Zertifikat und keine unabhängige Rechtsberatung.</p>
+
+    <div class="status">
+      <strong>Dienstleister-Zugang: {{if .ServiceProviderEnabled}}für den begrenzten Pilot freigegeben{{else}}geschlossen{{end}}</strong>
+      {{if .ServiceProviderEnabled}}Die Betreiberprüfung {{.ServiceProviderAssessment}} wurde ausdrücklich aktiviert. Dienstleister sehen ausschließlich offene, ihnen zugewiesene Anliegen.{{else}}Ohne ausdrücklich versionierte Betreiberfreigabe können keine Dienstleister eingeladen, zugeordnet oder angemeldet werden.{{end}}
+    </div>
+
+    <h2>Wer ist Ansprechpartner?</h2>
+    <p>Über Zwecke und Inhalte des Hausbetriebs entscheidet die jeweilige Eigentümergemeinschaft beziehungsweise die beauftragte Hausverwaltung. hausv.org stellt den technischen, weisungsgebundenen Portalbetrieb bereit.</p>
+    <dl>
+      <dt>Hausbetrieb</dt><dd>{{.HouseContactName}}, {{.Tenant.Address}}</dd>
+      <dt>Kontakt</dt><dd><a href="mailto:{{.HouseContactEmail}}">{{.HouseContactEmail}}</a>{{if .HouseContactPhone}} · {{.HouseContactPhone}}{{end}}</dd>
+      <dt>Technischer Betrieb</dt><dd><a href="mailto:{{.TechnicalContactEmail}}">{{.TechnicalContactEmail}}</a></dd>
+    </dl>
+
+    <h2>Welche Daten und wofür?</h2>
+    <ul>
+      <li>Identität, Hauszugehörigkeit, Rollen und Rechte für Anmeldung und Zugriffsschutz.</li>
+      <li>Aushänge, Termine, Dokumente, Anliegen, Kommentare, Anhänge und Abstimmungen für Kommunikation und Verwaltung des Hauses.</li>
+      <li>Anmelde- und Auditdaten für Sicherheit, Fehlerklärung und nachvollziehbare Änderungen.</li>
+      <li>Parkplatz- und Ladedaten nur für berechtigte Personen des jeweiligen Hauses.</li>
+    </ul>
+    <p>Die interne Betreiberbewertung stützt diese Verarbeitung – abhängig vom konkreten Vorgang – auf Vertragserfüllung, rechtliche Verwaltungspflichten oder berechtigte Interessen an sicherer, nachvollziehbarer Hausverwaltung (Art. 6 Abs. 1 lit. b, c oder f DSGVO). Freitext und Fotos sollen keine Gesundheitsdaten oder andere besonders geschützte Angaben enthalten.</p>
+
+    <h2>Empfänger und Speicherorte</h2>
+    <ul>
+      <li>Die Fachdaten liegen auf dem Server <code>csb1</code> in Wien und sind je Haus und Rolle getrennt.</li>
+      <li>Resend versendet Transaktionsmails. E-Mail-Adresse, Betreff und Inhalt werden dabei in die USA übertragen. Resend stellt eine Vereinbarung zur Auftragsverarbeitung einschließlich Standardvertragsklauseln bereit und hält Maildaten regulär 30 Tage vor.</li>
+      <li>Zitadel unter <code>auth.inspr.at</code> verarbeitet die für SSO benötigte Identität, sofern dieser Anmeldeweg verwendet wird.</li>
+      <li>Es gibt keine Werbung, keine Analyse-Skripte und keine extern geladenen Web-Schriften.</li>
+    </ul>
+
+    <h2>Aufbewahrung</h2>
+    <ul>
+      <li>Einmalige E-Mail-Anmeldelinks: 15 Minuten; OIDC-Anmeldevorgänge: 10 Minuten; beide nur einmal nutzbar.</li>
+      <li>Sitzungscookie: regulär höchstens 30 Tage oder bis zur Abmeldung beziehungsweise Sperre.</li>
+      <li>Hauszugehörigkeit und Dienstleister-Zugriff: bis zum Entzug; der Zugriff endet sofort.</li>
+      <li>Gelöschte Anhangdateien: sofort entfernt; leere Löschmarkierung nach einem Jahr.</li>
+      <li>Geschlossene Anliegen samt Kommentaren und Anhängen: jährliche Prüfung, regulär Löschung nach {{.ServiceProviderRetentionYears}} Jahren, sofern keine offene Gewährleistungs-, Rechts- oder Dokumentationspflicht entgegensteht.</li>
+      <li>Audit-Archive: höchstens drei Jahre; das laufende Protokoll rotiert zusätzlich nach Größe oder Alter.</li>
+    </ul>
+
+    <h2>Ihre Rechte</h2>
+    <p>Betroffene Personen können Information, Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit oder Widerspruch verlangen. Anfragen gehen an den oben genannten Hauskontakt; technisch notwendige Unterstützung leistet hausv.org. Beschwerden können an die Österreichische Datenschutzbehörde gerichtet werden.</p>
+
+    <h2>Stand und Überprüfung</h2>
+    <p>Stand: 26. Juli 2026. Die Selbstprüfung wird mindestens jährlich sowie bei neuen Empfängern, Datenarten, Rechtsgrundlagen, Speicherorten oder wesentlichen Produktänderungen erneut durchgeführt. Wenn sich ein hohes, nicht ausreichend gemindertes Risiko zeigt, bleibt die Funktion geschlossen und die Datenschutzbehörde wird nach Art. 36 DSGVO konsultiert.</p>
+  </main>
+  <footer>hausv.org · Datenschutzinformation für den Pilotbetrieb</footer>
+</body>
+</html>
+{{end}}
+
 {{define "appStyles"}}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: light;
@@ -1654,7 +1735,7 @@ const PageTemplates = `
       .contacts .contact-list { display: grid; gap: 10px; }
       .contacts .contact-card { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--panel-soft); display: grid; gap: 10px; }
       .contacts .contact-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-      .contacts .contact-head strong { font-family: Spectral, serif; font-size: 20px; line-height: 1.12; overflow-wrap: anywhere; }
+      .contacts .contact-head strong { font-family: var(--font-serif); font-size: 20px; line-height: 1.12; overflow-wrap: anywhere; }
       .contacts .contact-lines { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); font-size: 13.5px; font-weight: 700; }
       .contacts .contact-lines a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(200,153,63,.5); }
       .contacts .contact-lines a:hover { color: var(--gold-ink); }
@@ -1690,7 +1771,7 @@ const PageTemplates = `
               <div>
                 <div class="kicker">Adressbuch</div>
 	                <h2>{{if .ServiceProviderAccessEnabled}}Dienstleister &amp; wichtige Kontakte{{else}}Wichtige Kontakte{{end}}</h2>
-	                <p class="muted">{{if .ServiceProviderAccessEnabled}}Wiederkehrende Kontakte pro Hausverwaltung. Dienstleister mit E-Mail können im Anliegen direkt ausgewählt werden.{{else}}Hausmeister, Notdienste und weitere wiederkehrende Kontakte. Datenschutzprüfung offen: Dienstleister bleiben gesperrt.{{end}}</p>
+	                <p class="muted">{{if .ServiceProviderAccessEnabled}}Wiederkehrende Kontakte pro Hausverwaltung. Dienstleister mit E-Mail können im Anliegen direkt ausgewählt werden.{{else}}Hausmeister, Notdienste und weitere wiederkehrende Kontakte. Betreiberfreigabe offen: Dienstleister bleiben gesperrt.{{end}}</p>
               </div>
             </div>
             {{if .CanManageContacts}}
@@ -1975,7 +2056,7 @@ const PageTemplates = `
                 </label>
                 <label class="full">Anhänge
                   <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span>
-                  <span class="hint">Optional, Bilddateien oder PDF bis 10 MB je Datei.</span>
+                  <span class="hint">Optional, Bilddateien oder PDF bis 10 MB je Datei. Bitte keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen hochladen.</span>
                 </label>
                 <button type="submit">Anliegen senden</button>
               </form>
@@ -2016,6 +2097,7 @@ const PageTemplates = `
 	                      <textarea name="body" maxlength="3000" placeholder="Kommentar oder Ergänzung schreiben" aria-label="Kommentar oder Ergänzung"></textarea>
                       <label class="comment-upload">
                         <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Anhang hinzufügen</span></span>
+                        <span class="hint">Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen teilen.</span>
                       </label>
 		                      <button type="submit">Kommentar senden</button>
 		                    </form>{{end}}
@@ -2149,6 +2231,7 @@ const PageTemplates = `
                           <textarea name="body" maxlength="3000" placeholder="Kommentar oder Rückfrage schreiben" aria-label="Kommentar oder Rückfrage"></textarea>
                           <label class="comment-upload">
                             <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Anhang hinzufügen</span></span>
+                            <span class="hint">Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen teilen.</span>
                           </label>
                           <button type="submit">Kommentar senden</button>
                         </form>{{end}}
@@ -2169,9 +2252,9 @@ const PageTemplates = `
 	                              <input type="email" name="assignee_email" value="{{.AssigneeEmail}}" placeholder="name@example.com"{{if $.HasServiceProviderContacts}} list="service-provider-contacts"{{end}}>
 	                              <span class="hint">Neue E-Mail lädt als Dienstleister ein. Leeren entzieht den Zugriff.</span>
 	                            {{else}}
-	                              <input type="email" value="{{.AssigneeEmail}}" placeholder="Datenschutzprüfung offen" disabled>
+	                              <input type="email" value="{{.AssigneeEmail}}" placeholder="Betreiberfreigabe offen" disabled>
 	                              <input type="hidden" name="assignee_email" value="{{.AssigneeEmail}}">
-	                              <span class="hint">Datenschutzprüfung offen: Neue Dienstleister können nicht zugeordnet werden.</span>
+	                              <span class="hint">Betreiberfreigabe offen: Neue Dienstleister können nicht zugeordnet werden.</span>
 	                              {{if .HasAssignee}}<span class="hint assignee-removal"><input type="checkbox" name="remove_assignee" value="1"> Bestehende Zuordnung entfernen</span>{{end}}
 	                            {{end}}
 	                          </label>
@@ -2647,9 +2730,9 @@ const PageTemplates = `
   <title>{{.Title}}</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; background: #f7f3ea; color: #20251f; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; background: #f7f3ea; color: #20251f; font-family: Georgia, "Times New Roman", serif; }
     main { width: min(920px,100%); margin: 0 auto; padding: 42px 28px; }
-    h1, h2, h3 { font-family: Spectral, serif; margin: 0; }
+    h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; margin: 0; }
     h1 { font-size: 42px; line-height: 1; }
     h2 { font-size: 24px; margin-top: 28px; }
     h3 { font-size: 18px; }
@@ -2661,7 +2744,7 @@ const PageTemplates = `
     .summary { margin-top: 24px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
     .box { border: 1px solid #e7e0d2; border-radius: 8px; background: #fffefb; padding: 14px; }
     .box span { display: block; color: #8a7b3f; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
-    .box strong { display: block; margin-top: 6px; font-family: Spectral, serif; font-size: 22px; }
+    .box strong { display: block; margin-top: 6px; font-family: Georgia, "Times New Roman", serif; font-size: 22px; }
     table { width: 100%; margin-top: 14px; border-collapse: collapse; background: #fffefb; border: 1px solid #e7e0d2; }
     th, td { padding: 12px 14px; border-bottom: 1px solid #e7e0d2; text-align: left; }
     th { color: #8a7b3f; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
@@ -3673,13 +3756,13 @@ const PageTemplates = `
 	      .building .unit-form .f-actions { grid-column: span 2; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
 		      .building .unit-delete { display: inline; margin: 0; }
 		      .building .unit-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-		      .building .unit-summary strong { font-family: Spectral, serif; font-size: 20px; }
+		      .building .unit-summary strong { font-family: var(--font-serif); font-size: 20px; }
 		      .building .unit-summary .pill.soft { background: var(--panel); color: #6f6a5c; }
 		      .building .payment-status-panel { display: grid; gap: 14px; }
 		      .building .payment-status-list { display: grid; gap: 10px; }
 		      .building .payment-status-row { display: grid; grid-template-columns: minmax(180px,1fr) auto minmax(180px,240px) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 13px 14px; background: var(--panel-soft); }
 		      .building .payment-status-unit { display: grid; gap: 3px; min-width: 0; }
-		      .building .payment-status-unit strong { font-family: Spectral, serif; font-size: 19px; line-height: 1.12; overflow-wrap: anywhere; }
+		      .building .payment-status-unit strong { font-family: var(--font-serif); font-size: 19px; line-height: 1.12; overflow-wrap: anywhere; }
 		      .building .payment-status-unit span, .building .payment-status-meta { color: var(--muted); font-size: 12.5px; font-weight: 700; line-height: 1.35; }
 			      .building .payment-status-form { display: grid; grid-template-columns: minmax(130px,1fr) auto; gap: 8px; align-items: end; }
 			      .building .payment-status-form .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
@@ -3914,7 +3997,7 @@ const PageTemplates = `
       .profile .directory-check input { width: auto; min-height: 0; }
       .profile .readonly-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 10px; }
       .profile .readonly-box { border: 1px solid var(--line); border-radius: 8px; padding: 13px; background: var(--panel-soft); display: grid; gap: 8px; }
-      .profile .readonly-box strong { font-family: Spectral, serif; font-size: 18px; }
+      .profile .readonly-box strong { font-family: var(--font-serif); font-size: 18px; }
       .profile .chips { display: flex; flex-wrap: wrap; gap: 6px; }
       .profile .chip { display: inline-flex; align-items: center; border: 1px solid var(--line); background: var(--panel); color: #6f6a5c; border-radius: 8px; padding: 4px 10px; font-size: 12.5px; font-weight: 700; }
       .profile .unit-list { display: grid; gap: 8px; }
@@ -4033,7 +4116,7 @@ const PageTemplates = `
       .parking-access .access-table th, .parking-access .access-table td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
       .parking-access .access-table th { color: var(--gold-ink); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
       .parking-access .person { display: grid; gap: 2px; min-width: 0; }
-      .parking-access .person strong { font-family: Spectral, serif; font-size: 17px; overflow-wrap: anywhere; }
+      .parking-access .person strong { font-family: var(--font-serif); font-size: 17px; overflow-wrap: anywhere; }
       .parking-access .person span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
       .parking-access .actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
       .parking-access .access-flash { margin: 0 0 14px; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
@@ -4412,11 +4495,11 @@ const PageTemplates = `
       .users .popup::before { content: ""; position: absolute; top: -6px; left: 82px; width: 12px; height: 12px; background: var(--panel); border-left: 1px solid var(--line); border-top: 1px solid var(--line); border-radius: 3px 0 0 0; transform: rotate(45deg); }
       .users .popup::after { content: ""; position: absolute; top: -15px; left: 0; right: 0; height: 15px; }
       .users .info:hover .popup, .users .info:focus-within .popup { opacity: 1; visibility: visible; transform: translateY(0); }
-      .users .popup-title { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 18px; color: var(--ink); padding-bottom: 13px; border-bottom: 1px solid var(--line); }
+      .users .popup-title { display: block; font-family: var(--font-serif); font-weight: 600; font-size: 18px; color: var(--ink); padding-bottom: 13px; border-bottom: 1px solid var(--line); }
       .users .popup-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0 24px; }
       .users .popup .permission { display: block; min-width: 0; padding: 14px 0; border-top: 1px solid var(--line); }
       .users .popup-grid .permission:nth-child(-n+3) { border-top: 0; }
-      .users .popup .permission strong { display: block; font-family: Spectral, serif; font-weight: 600; font-size: 15px; color: var(--ink); margin-bottom: 4px; line-height: 1.2; }
+      .users .popup .permission strong { display: block; font-family: var(--font-serif); font-weight: 600; font-size: 15px; color: var(--ink); margin-bottom: 4px; line-height: 1.2; }
       .users .popup .permission .muted { display: block; max-width: 100%; font-size: 13px; font-weight: 400; color: var(--muted); line-height: 1.42; white-space: normal; overflow-wrap: anywhere; }
       .users .rdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 9px; vertical-align: middle; }
       .users .rdot.admin { background: var(--gold); }
@@ -4434,7 +4517,7 @@ const PageTemplates = `
       .users .row-edit svg { stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
       .users .edit-dialog { position: relative; width: min(440px, 92vw); border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--panel); color: var(--ink); box-shadow: 0 30px 80px rgba(32,37,31,.32); }
       .users .edit-dialog::backdrop { background: rgba(32,37,31,.42); }
-      .users .edit-dialog h2 { margin: 0 0 4px; font-family: Spectral, serif; font-weight: 600; font-size: 19px; }
+      .users .edit-dialog h2 { margin: 0 0 4px; font-family: var(--font-serif); font-weight: 600; font-size: 19px; }
       .users .edit-dialog .dlg-sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; word-break: break-word; }
       .users .dlg-x { position: absolute; top: 12px; right: 12px; }
       .users .dlg-x button { border: 0; background: transparent; font-size: 22px; line-height: 1; color: var(--soft); cursor: pointer; padding: 2px 6px; }
@@ -4486,7 +4569,7 @@ const PageTemplates = `
 	        <div>
 	          <h1>Benutzer &amp; Rechte</h1>
 	          <p class="lede">Lokale Verwaltung der eingeladenen E-Mail-Adressen und ihrer Rollen.</p>
-	          {{if not .ServiceProviderAccessEnabled}}<p class="invite-flash warn">Datenschutzprüfung offen: Dienstleister-Zugänge können noch nicht angelegt oder geändert werden.</p>{{end}}
+	          {{if not .ServiceProviderAccessEnabled}}<p class="invite-flash warn">Betreiberfreigabe offen: Dienstleister-Zugänge können noch nicht angelegt oder geändert werden.</p>{{end}}
 	        </div>
     <section class="panel stack">
       <div class="panel-head">

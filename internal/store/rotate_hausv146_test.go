@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
-// HAUSV-146: once the live audit file grows past the threshold it rotates —
-// the in-memory slice and the live file stay bounded, and the full history is
-// preserved in an archive (nothing deleted).
+// HAUSV-146: once the live audit file grows past the threshold it rotates and
+// the in-memory slice and live file stay bounded.
 func TestAuditStoreRotatesAndPreservesHistory(t *testing.T) {
 	// Force rotation quickly.
 	oldT, oldK := auditRotateThreshold, auditRotateKeep
@@ -53,5 +53,63 @@ func TestAuditStoreRotatesAndPreservesHistory(t *testing.T) {
 	// Queries still work off the retained tail.
 	if got := s.List(AuditFilter{TenantSlug: "jhw22", Limit: 3}); len(got) != 3 {
 		t.Fatalf("List after rotation returned %d, want 3", len(got))
+	}
+}
+
+func TestAuditStoreRotatesByAgeAndSize(t *testing.T) {
+	oldT, oldK, oldB, oldA := auditRotateThreshold, auditRotateKeep, auditRotateMaxBytes, auditRotateMaxAge
+	auditRotateThreshold, auditRotateKeep = 1000, 5
+	auditRotateMaxBytes, auditRotateMaxAge = 1<<20, 24*time.Hour
+	defer func() {
+		auditRotateThreshold, auditRotateKeep = oldT, oldK
+		auditRotateMaxBytes, auditRotateMaxAge = oldB, oldA
+	}()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "audit.jsonl")
+	s, err := NewAuditStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-48 * time.Hour)
+	if err := s.Append(AuditEvent{At: old, TenantSlug: "jhw22", Action: AuditActionLogin, Summary: "old"}); err != nil {
+		t.Fatal(err)
+	}
+	if archives, _ := filepath.Glob(path + ".*"); len(archives) == 0 {
+		t.Fatal("age policy did not rotate")
+	}
+	if len(s.entries) != 0 {
+		t.Fatalf("expired events remained in live tail after age rotation: %+v", s.entries)
+	}
+
+	auditRotateMaxAge = 365 * 24 * time.Hour
+	auditRotateMaxBytes = 1
+	if err := s.Append(AuditEvent{TenantSlug: "jhw22", Action: AuditActionLogin, Summary: "large"}); err != nil {
+		t.Fatal(err)
+	}
+	if archives, _ := filepath.Glob(path + ".*"); len(archives) < 2 {
+		t.Fatal("size policy did not rotate")
+	}
+}
+
+func TestAuditStorePrunesExpiredArchives(t *testing.T) {
+	oldR := auditArchiveRetention
+	auditArchiveRetention = 30 * 24 * time.Hour
+	defer func() { auditArchiveRetention = oldR }()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "audit.jsonl")
+	if err := os.WriteFile(path+".old", []byte("{}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-60 * 24 * time.Hour)
+	if err := os.Chtimes(path+".old", old, old); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := NewAuditStore(path); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path + ".old"); !os.IsNotExist(err) {
+		t.Fatalf("expired archive still exists: %v", err)
 	}
 }

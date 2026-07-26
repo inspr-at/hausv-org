@@ -1,80 +1,167 @@
-# Dienstleister-Zugriff und Datenschutz
+# Dienstleister-Zugriff: Betreiber-Selbstprüfung
 
-hausv.org behandelt externe Dienstleister als eng begrenzte Rolle. Der Zugang ist
-für konkrete Anliegen gedacht, nicht als allgemeiner Bewohner- oder Verwaltungszugang.
+Stand: 26. Juli 2026, Prüfrevision `2026-07-26`.
 
-## Freigabestatus
+hausv.org behandelt externe Dienstleister als eng begrenzte Rolle für ein
+konkret zugewiesenes Anliegen. Es gibt auf absehbare Zeit keine verfügbare
+externe Datenschutz- oder Rechtsprüfung. Das ist kein heimlicher offener Punkt
+mehr: Die Freigabe stützt sich stattdessen auf eine dokumentierte
+Betreiber-Selbstprüfung anhand der DSGVO, der österreichischen
+Datenschutzbehörde (DSB), des Europäischen Datenschutzausschusses (EDSA) und der
+tatsächlich eingesetzten Auftragsverarbeiter.
 
-Stand 18. Juli 2026 hat noch keine externe fachkundige Person die konkrete
-Datenschutz- und Rechtsgestaltung geprüft oder freigegeben. Ein formell
-bestellter Datenschutzbeauftragter ist dafür nicht vorausgesetzt; ob eine solche
-Rolle überhaupt erforderlich ist, wurde ebenfalls noch nicht beurteilt.
+Diese Selbstprüfung ist **kein Zertifikat und keine unabhängige Rechtsberatung**.
+Sie erfüllt die Rechenschaftslogik: Annahmen, Zwecke, Mittel, Risiken,
+Schutzmaßnahmen und Prüfauslöser sind nachvollziehbar. Wenn der konkrete Betrieb
+von diesen Annahmen abweicht oder ein hohes, nicht ausreichend gemindertes Risiko
+entsteht, bleibt die Funktion geschlossen und die zuständige Stelle muss nach
+Art. 36 DSGVO die DSB konsultieren.
 
-Bis die Prüfung in HAUSV-86 dokumentiert abgeschlossen ist, darf der
-Dienstleister-Zugang im Betrieb nicht aktiviert oder für echte Einladungen
-verwendet werden. HAUSV-86 ist das fachliche Freigabe-Ticket und blockiert
-HAUSV-128, bis die Prüfung und die Betreiberentscheidung dokumentiert sind.
+## Technisches Freigabe-Gate
 
-Die Anwendung erzwingt diesen Zustand standardmäßig: Ohne die ausdrückliche
-Server-Einstellung `SERVICE_PROVIDER_ACCESS_ENABLED=true` werden neue
-Dienstleister-Zuordnungen, -Kontakte und -Zugänge vor dem Speichern abgelehnt.
-Dabei entstehen weder Profil noch Einladung, E-Mail oder Sitzung. Bereits
-vorhandene Dienstleister-Sitzungen und Anmeldeversuche werden ebenfalls
-abgewiesen. Die Einstellung bleibt bis zur dokumentierten Freigabe auf `false`.
+Der Zugang ist standardmäßig geschlossen. Für eine Aktivierung müssen **beide**
+Werte bewusst gesetzt sein:
 
-## Sichtbare Daten
+```text
+SERVICE_PROVIDER_ACCESS_ENABLED=true
+SERVICE_PROVIDER_ASSESSMENT_VERSION=2026-07-26
+```
 
-Ein Dienstleister sieht nur offene Anliegen, bei denen seine E-Mail-Adresse als
-zuständige Person eingetragen ist. In dieser Ansicht werden nur die Daten gezeigt,
-die für die Bearbeitung nötig sind:
+Ein veraltetes oder fehlendes Prüfdatum hält den Zugang geschlossen. Ohne Gate
+werden Zuordnungen, Kontakte, Einladungen, Magic-Link/OIDC-Anmeldung, bestehende
+Sitzungen, Benachrichtigungen und Parkplatzrechte vor Daten-, Mail-, Audit- oder
+Sitzungsänderungen abgewiesen. Entzug und Deaktivierung bleiben möglich.
 
-- Titel, Kategorie, Priorität und Status des Anliegens
-- Ort im Haus, soweit vom Ersteller angegeben
-- Beschreibung, Kommentare und Anhänge dieses Anliegens
-- eigener Statusbeitrag und ein kurzer Terminvorschlag
+Die Einstellung ist eine technische Attestierung des Betreibers. Sie darf erst
+gesetzt werden, wenn Verantwortlichen- und Kontaktangaben für das Haus stimmen,
+die folgende Bewertung zum realen Auftrag passt und die Hinweise vor der
+Einladung bereitgestellt werden.
 
-Nicht sichtbar sind Hausübersicht, Bewohner- oder Benutzerlisten, Dokumente,
-Abstimmungen, Parkplatzbereich, Einstellungen und andere Anliegen.
+## Rollenannahme
 
-## Begrenzung und Entzug
+Die Begriffe sind funktional: Maßgeblich ist, wer tatsächlich Zwecke und Mittel
+bestimmt.
 
-Der Zugriff ist inhaltlich an das einzelne Anliegen gebunden. Wird die Zuordnung
-entfernt oder das Anliegen geschlossen, verliert der Dienstleister den Zugriff.
-Einladungen laufen über einen Magic-Link mit Deeplink zum betroffenen Anliegen.
+- Die Eigentümergemeinschaft beziehungsweise ihre beauftragte Hausverwaltung
+  bestimmt Zweck und Inhalt der Hausverwaltung und ist dafür Verantwortliche
+  oder gemeinsam Verantwortliche.
+- Der technische hausv.org-Betrieb verarbeitet Portal-Fachdaten
+  weisungsgebunden. Für einen Betrieb für Dritte ist eine Vereinbarung nach
+  Art. 28 DSGVO samt technischen und organisatorischen Maßnahmen erforderlich.
+- Ein Handwerks-/Dienstleistungsbetrieb erhält Daten zur Durchführung seines
+  konkreten Auftrags. Ob er für einzelne Verarbeitungsschritte eigener
+  Verantwortlicher oder Auftragsverarbeiter ist, ergibt sich aus dem realen
+  Vertrag, nicht aus der Rollenbezeichnung im Portal.
+- Resend verarbeitet Transaktionsmails als Auftragsverarbeiter des
+  Resend-Kunden. Zitadel verarbeitet die für den gewählten SSO-Weg erforderliche
+  Identität innerhalb des INSPR-Identitätsbetriebs.
 
-## Dateiwege
+## Zwecke und Rechtsgrundlagen der Selbstprüfung
 
-Anhänge werden nicht als öffentliche Dateien ausgeliefert. Uploads liegen im
-Dateisystem des Servers, die Auslieferung erfolgt ausschließlich über
-authentifizierte App-Routen wie `/app/attachments/...`. Diese Route prüft Tenant,
-Sitzung, Rolle und das konkrete Anliegen, bevor Original, Vorschau oder Thumbnail
-ausgegeben werden. Bilder erhalten kleine Vorschauvarianten, bleiben aber unter
-dem gleichen Zugriffsschutz.
+| Vorgang | Zweck | Betreiberbewertung |
+|---|---|---|
+| Einladung, Anmeldung, Rolle | sichere Identifikation und Zugriff | Art. 6 Abs. 1 lit. b, c oder f DSGVO – abhängig von Vertrags-/Verwaltungsbeziehung |
+| Zuweisung eines Anliegens | erforderliche Weitergabe zur Beauftragung und Mangelbehebung | Art. 6 Abs. 1 lit. b oder f; nur das einzelne offene Anliegen |
+| Kommentare, Fotos, Angebot, Termin | Auftragsklärung und Dokumentation | gleiche Grundlage wie das Anliegen; keine besondere Datenkategorie beabsichtigt |
+| Audit | Zugriffsschutz, Fehlerklärung und Rechtsverteidigung | Art. 6 Abs. 1 lit. f, gegebenenfalls lit. c |
+| Transaktionsmail | Einladung, Anmeldung, notwendige Benachrichtigung | akzessorisch zum jeweiligen Hauptzweck |
 
-## Betreiberprozess
+Einwilligung ist nicht die pauschale Grundlage des normalen Hausbetriebs.
+Gesundheitsdaten, Ausweiskopien und andere Daten nach Art. 9 oder 10 DSGVO sind
+nicht Zweck des Systems. Nutzerhinweise untersagen solche Inhalte in Freitext
+und Bildern; versehentlich eingestellte Inhalte sind nach Meldung zu entfernen.
 
-Ob ein Dienstleister datenschutzrechtlich als Auftragsverarbeiter oder eigener
-Verantwortlicher einzuordnen ist, hängt vom realen Einsatz ab. Für den Betrieb
-gilt daher:
+## DPO- und DSFA-Vorabprüfung
 
-- Dienstleister nur dann einladen, wenn die Weitergabe für das konkrete Anliegen
-  erforderlich ist.
-- Keine unnötigen personenbezogenen Daten in Titel, Beschreibung, Fotos oder
-  Kommentaren erfassen.
-- Bestehende vertragliche Grundlagen der Hausverwaltung nutzen; falls nötig,
-  Auftragsverarbeitervereinbarung oder vergleichbare Vereinbarung außerhalb des
-  Portals klären.
-- Zugriff nach Abschluss oder Fehlzuordnung sofort entziehen.
+Für den aktuellen Einzelhaus-Pilot gibt es keine Behörde, keine umfangreiche
+systematische Überwachung, kein Profiling, keine automatisierte Entscheidung und
+keine beabsichtigte umfangreiche Verarbeitung besonderer Datenkategorien.
+Deshalb ist nach der dokumentierten Vorabprüfung weder ein verpflichtender
+Datenschutzbeauftragter nach Art. 37 Abs. 1 noch eine zwingende DSFA nach den
+bekannten Art.-35-/DSFA-V-Kriterien ersichtlich.
 
-Das Produkt unterstützt diese Linie technisch über Least-Privilege-Rollen,
-geschützte Dateiwege, Audit-Ereignisse für Einladung/Entzug und testsichere
-Sperren für nicht zugewiesene oder geschlossene Anliegen.
+Diese Einschätzung wird neu geprüft bei mehreren Häusern in erheblichem Umfang,
+systematischer Verhaltensanalyse, KI-Auswertung von Inhalten, Standort- oder
+Bildüberwachung, besonderen Datenkategorien, neuen Datenempfängern oder einem
+Sicherheitsvorfall mit erhöhtem Risiko.
 
-## Fachliche Referenzen
+## Sichtbarkeit und technische Minimierung
 
-- [Österreichische Datenschutzbehörde: Pflichten von Verantwortlichen](https://dsb.gv.at/rechte-pflichten/ihre-pflichten-als-verantwortlicher)
-  und [Voraussetzungen für Datenschutzbeauftragte](https://dsb.gv.at/rechte-pflichten/datenschutzbeauftragter)
-- [EU-Datenschutz-Grundverordnung](https://eur-lex.europa.eu/eli/reg/2016/679/oj),
-  insbesondere Rollen, Transparenz, Datenminimierung und Speicherbegrenzung
-- [Europäischer Datenschutzausschuss: Leitlinien zu Verantwortlichen und
-  Auftragsverarbeitern](https://www.edpb.europa.eu/documents/guideline/guidelines-072020-on-the-concepts-of-controller-and-processor-in-the-gdpr_en)
+Ein Dienstleister sieht ausschließlich offene Anliegen, die seiner
+normalisierten E-Mail-Adresse zugewiesen sind:
+
+- Titel, Kategorie, Priorität, Status und notwendiger Ort
+- Beschreibung, Kommentare und geschützte Anhänge dieses Anliegens
+- eigener Statusbeitrag, Terminvorschlag und Kostenschätzung
+
+Hausübersicht, Bewohner-/Benutzerlisten, allgemeine Dokumente, Abstimmungen,
+Parkplatzbereich, Einstellungen und fremde oder geschlossene Anliegen bleiben
+unsichtbar. Entzug oder Schließen wirkt sofort. Dateiabrufe prüfen Haus, Sitzung,
+Rolle und konkretes Objekt; negative Zugriffstests sichern diese Grenzen.
+
+## Auftragsverarbeiter und Drittland
+
+Resend speichert laut eigener Dokumentation Accountdaten einschließlich
+E-Mail-Metadaten, Logs und API-Aufzeichnungen unabhängig von der Senderegion in
+den USA. Die aktuelle DPA ist Teil des Resend-Vertrags, behandelt Resend
+grundsätzlich als Auftragsverarbeiter und bindet EU-Standardvertragsklauseln
+ein. Resend nennt 30 Tage reguläre Maildaten-Aufbewahrung und veröffentlicht
+Subprozessoren. Der Betreiber prüft DPA, Transfermechanismus und
+Subprozessorliste mindestens jährlich und bei Änderungsmitteilungen.
+
+Das Web-Frontend lädt keine externen Schriften, Analyse- oder Werbeskripte.
+
+## Information und Betroffenenrechte
+
+`/datenschutz` ist vor der Anmeldung öffentlich erreichbar und wird in
+Einladungs- und Magic-Link-Mails verlinkt. Die Seite nennt Zwecke, Kategorien,
+Empfänger, Drittlandtransfer, Aufbewahrung, Kontakte, Gate-Status und Rechte.
+Anfragen nach Art. 12 bis 22 DSGVO gehen an den dort genannten Hauskontakt; der
+technische Betrieb unterstützt bei Export, Berichtigung, Einschränkung und
+Löschung.
+
+## Aufbewahrung
+
+- Magic-Link: 15 Minuten, einmalig, nur im Arbeitsspeicher.
+- OIDC-Flow: 10 Minuten; Sitzung regulär höchstens 30 Tage.
+- Mitgliedschaft/Dienstleisterprofil: bis Entzug; ohne weitere
+  Hausmitgliedschaft wird die nicht mehr benötigte Person entfernt.
+- Geschlossene Anliegen, Kommentare und Anhänge: jährliche Prüfung, regulär
+  drei Jahre ab Abschluss; länger nur bei dokumentierter offener
+  Gewährleistungs-, Rechts- oder Nachweispflicht. Bis zur automatischen
+  Löschfunktion ist dies ein dokumentierter manueller Betreiberprozess.
+- Anhangdatei bei Löschung sofort; Tombstone nach einem Jahr.
+- Audit-Live-Datei rotiert nach 10 MiB, 90 Tagen oder 20.000 Einträgen; Archive
+  werden nach drei Jahren automatisch entfernt.
+- Resend-Maildaten: laut Anbieter regulär 30 Tage.
+
+## Wiederholbare Betreiberentscheidung
+
+Vor `SERVICE_PROVIDER_ACCESS_ENABLED=true` wird dokumentiert:
+
+1. Hauskontakt und Verantwortlichenrolle sind für den realen Betrieb bestätigt.
+2. Vertragliche Rolle des beauftragten Dienstleisters passt zur Datenweitergabe.
+3. Art.-28-Vereinbarung/TOMs für den technischen Betrieb sind vorhanden, soweit
+   der Betrieb für eine andere verantwortliche Stelle erfolgt.
+4. Resend-DPA, Transfermechanismus und aktuelle Subprozessoren wurden geprüft.
+5. Einladung verweist auf `/datenschutz`; Freitext-/Foto-Hinweise sind sichtbar.
+6. Es gibt keine beabsichtigten Art.-9-/10-Daten oder ein anderes
+   DSFA-Hochrisikomerkmal.
+7. Lösch- und Betroffenenprozess ist organisatorisch zugewiesen.
+8. Go/No-Go mit Datum, Haus und Prüfrevision ist im PPM-Ticket dokumentiert.
+
+Die Prüfung wird mindestens jährlich und bei jedem genannten Prüfauslöser
+wiederholt. Eine externe Prüfung bleibt willkommen, ist aber kein vorgespieltes
+oder unerreichbares Abnahmekriterium.
+
+## Primär- und Betreiberquellen
+
+- [DSGVO, Verordnung (EU) 2016/679](https://eur-lex.europa.eu/eli/reg/2016/679/oj)
+- [DSB: Pflichten von Verantwortlichen](https://dsb.gv.at/rechte-pflichten/ihre-pflichten-als-verantwortlicher)
+- [DSB: Pflichten von Auftragsverarbeitern](https://dsb.gv.at/rechte-pflichten/ihre-pflichten-als-auftragsverarbeiterin)
+- [DSB: Rechte betroffener Personen](https://dsb.gv.at/rechte-pflichten/ihre-rechte-als-betroffene-person)
+- [EDSA: Accountability](https://www.edpb.europa.eu/topics/accountability-and-compliance-tools/accountability_en)
+- [EDSA: Guidelines 07/2020 zu Verantwortlichen/Auftragsverarbeitern](https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-072020-concepts-controller-and-processor-gdpr_en)
+- [Resend DPA](https://resend.com/legal/dpa)
+- [Resend Datenregionen](https://resend.com/docs/dashboard/domains/regions)
+- [Resend Subprozessoren](https://resend.com/legal/subprocessors)

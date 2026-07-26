@@ -1,34 +1,38 @@
 # Datenfluss Dienstleister-Zugriff (JHW22)
 
-**Zweck dieses Dokuments:** eine vollständige, sachliche Beschreibung, welche Daten
-beim Dienstleister-Zugriff entstehen, wozu sie verarbeitet werden, wer sie
-empfängt und wo sie gespeichert werden. Grundlage für die externe Prüfung nach
-HAUSV-86.
+**Zweck dieses Dokuments:** eine vollständige, sachliche Beschreibung, welche
+Daten beim Dienstleister-Zugriff entstehen, wozu sie verarbeitet werden, wer
+sie empfängt und wo sie gespeichert werden. Es ist die technische Grundlage
+der versionierten Betreiber-Selbstprüfung nach HAUSV-86.
 
-**Dieses Dokument trifft ausdrücklich keine rechtliche Bewertung.** Es enthält
-keine Aussage zu Verantwortlichkeit, Rechtsgrundlage, Erforderlichkeit eines
-Auftragsverarbeitungsvertrags oder Zulässigkeit. Diese Festlegungen sind
-Gegenstand der externen Prüfung. Offene Punkte sind am Ende gesammelt.
+Die zugehörige Einordnung von Rollen, Rechtsgrundlagen, Verträgen,
+Informationspflichten und Fristen steht in
+[`service-provider-privacy.md`](service-provider-privacy.md). Da auf absehbare
+Zeit keine externe Prüfstelle verfügbar ist, dokumentiert der Betreiber die
+Prüfung selbst anhand primärer EU- und österreichischer Quellen. Das ist keine
+Rechtsberatung und kein Zertifikat.
 
-Stand: 24.07.2026, Anwendungsversion 0.17.7.
+Stand: 26.07.2026, Anwendungsversion 0.18.0.
 
 ---
 
 ## 1. Aktueller Betriebszustand
 
 Der Dienstleister-Zugriff ist **technisch implementiert, aber standardmäßig
-geschlossen**. `SERVICE_PROVIDER_ACCESS_ENABLED` ist `false`; in dieser
-Einstellung werden Zuordnungen, Dienstleister-Kontakte und -Einladungen,
-Anmeldung per Magic-Link und OIDC, bestehende Sitzungen, Benachrichtigungen und
-Parkplatzrechte **abgewiesen, bevor** Daten-, Mail-, Audit- oder
-Sitzungsänderungen entstehen. Es wird kein unzugänglicher Entwurf gespeichert.
+geschlossen**. Eine Freigabe erfordert gleichzeitig
+`SERVICE_PROVIDER_ACCESS_ENABLED=true` und die exakt passende
+`SERVICE_PROVIDER_ASSESSMENT_VERSION`. In der geschlossenen Einstellung werden
+Zuordnungen, Dienstleister-Kontakte und -Einladungen, Anmeldung per Magic-Link
+und OIDC, bestehende Sitzungen, Benachrichtigungen und Parkplatzrechte
+**abgewiesen, bevor** Daten-, Mail-, Audit- oder Sitzungsänderungen entstehen.
+Es wird kein unzugänglicher Entwurf gespeichert.
 
 **In der Produktion bei JHW22 existiert derzeit kein Dienstleister-Zugang.** Die
 folgende Beschreibung gilt für den Zustand nach einer etwaigen Freigabe.
 
 ## 2. Speicherorte
 
-Alle Anwendungsdaten liegen auf dem Host `csb1` im Verzeichnis
+Alle Anwendungsdaten liegen auf dem Host `csb1` in Wien im Verzeichnis
 `/var/lib/csb1-docker/hausv-org` (im Container `/data`), das ausschließlich
 diesem Dienst zugeordnet ist.
 
@@ -134,16 +138,16 @@ Speicherort.
   Rechte, Anmeldewege).
 - **Empfänger:** Personen mit Einsichtsrecht in das Protokoll innerhalb der
   Verwaltung.
-- **Speicherort:** `audit.jsonl`; oberhalb von 20 000 Einträgen wird die
-  laufende Datei in ein Archiv daneben verschoben und mit den jüngsten 5 000
-  Einträgen neu geschrieben. **Es wird nichts gelöscht**; die Archive wachsen und
-  werden derzeit nicht automatisch entfernt.
+- **Speicherort:** `audit.jsonl`; die laufende Datei wird bei 20 000 Einträgen,
+  10 MiB oder einem ältesten Eintrag über 90 Tagen archiviert und mit den
+  jüngsten 5 000 Einträgen neu geschrieben. Archive über drei Jahre werden
+  automatisch entfernt.
 
 ## 4. Externe Empfänger
 
 | Empfänger | Wofür | Übermittelte Daten |
 |---|---|---|
-| **Resend** (`smtp.resend.com`, Absender `noreply@notify.hausv.org`) | Versand von Einladungen, Anmeldelinks und Benachrichtigungen | Empfänger-E-Mail-Adresse, Betreff und Inhalt der Nachricht (kann Anliegen-Titel enthalten) |
+| **Resend** (`smtp.resend.com`, Absender `noreply@notify.hausv.org`) | Versand von Einladungen, Anmeldelinks und Benachrichtigungen; Kontodaten und Versand-Metadaten werden laut Anbieter unabhängig von der Versandregion in den USA gespeichert, reguläre E-Mail-Inhalte 30 Tage | Empfänger-E-Mail-Adresse, Betreff und Inhalt der Nachricht (kann Anliegen-Titel enthalten); DPA, EU-Standardvertragsklauseln und Unterauftragnehmerliste werden bei der Betreiberprüfung kontrolliert |
 | **Zitadel** (`https://auth.inspr.at`) | Anmeldung per Single Sign-on, sofern für den Zugang aktiviert | Identitätsdaten im Rahmen des OIDC-Ablaufs |
 | **Home Assistant** (`100.64.0.7`, internes Netz) | Parkplatz-/Ladesteuerung | **kein Dienstleister-Bezug**; hier werden keine Dienstleisterdaten übermittelt |
 
@@ -161,22 +165,35 @@ externen Skripte, Schriftarten oder Analysedienste ein.
   nur der Plattform-Administration zur Änderung frei.
 - Genannte Punkte sind durch Negativtests abgedeckt.
 
-## 6. Offene Punkte für die externe Prüfung
+## 6. Betreiberentscheidungen und verbleibende Risiken
 
-Bewusst **nicht** in diesem Dokument entschieden:
+Die Selbstprüfung vom 26.07.2026 hält fest:
 
-1. Verantwortlichkeit je Verarbeitung (Eigentümergemeinschaft, Verwaltung,
-   Betreiber der Anwendung, Dienstleister).
-2. Rechtsgrundlage je Verarbeitung.
-3. Erforderlichkeit eines Auftragsverarbeitungsvertrags oder eines anderen
-   Vertrags-/Informationsinstruments — insbesondere gegenüber Resend und Zitadel
-   sowie gegenüber dem Dienstleister.
-4. Inhalt und Ort der Informationspflichten gegenüber Bewohnern und
-   Dienstleistern.
-5. Aufbewahrungs- und Löschfristen für Anliegen, Kommentare, Fotos und
-   Auditdaten — heute technisch unbegrenzt, mit Ausnahme der Anhang-Markierungen
-   (ein Jahr) und der Parkplatzmesswerte (rund 13 Monate).
-6. Umgang mit personenbezogenen Daten in Freitext und in Bildinhalten
-   (3.4, 3.5), einschließlich der Frage, ob Aufnahme-Metadaten vor der Speicherung
-   entfernt werden sollen.
-7. Umgang mit den Audit-Archiven, die derzeit unbegrenzt aufbewahrt werden.
+1. Die jeweilige Hausgemeinschaft beziehungsweise Verwaltung bestimmt Zweck und
+   Mittel der Hauskommunikation und ist dafür grundsätzlich verantwortlich;
+   hausv.org verarbeitet die Daten technisch im vereinbarten Auftrag. Die Rolle
+   eines Dienstleisters hängt vom konkreten Auftrag ab.
+2. Vertragserfüllung und vorvertragliche Schritte, gesetzliche Pflichten sowie
+   dokumentierte berechtigte Interessen sind die vorgesehenen Grundlagen nach
+   Art. 6 DSGVO. Ein pauschales Einwilligungsmodell wird nicht verwendet.
+3. Resend wird nur auf Basis des aktuellen DPA samt
+   EU-Standardvertragsklauseln eingesetzt. Zitadel wird als
+   Authentifizierungsanbieter dokumentiert. Änderungen an Empfängern oder
+   Speicherorten schließen das Gate bis zur erneuten Prüfung.
+4. Die öffentliche Seite `/datenschutz` informiert über Zwecke, Empfänger,
+   Fristen, Rechte und Kontakte; ausgehende Anmelde- und Einladungs-E-Mails
+   verlinken darauf.
+5. Geschlossene Anliegen und zugehörige Inhalte werden jährlich geprüft und
+   grundsätzlich nach drei Jahren gelöscht, sofern keine gesetzlichen oder
+   vertraglichen Gründe entgegenstehen. Auditarchive werden nach drei Jahren
+   automatisch entfernt; Anhang-Markierungen nach einem Jahr.
+6. Freitext und Bilder können unbeabsichtigt sensible Daten enthalten.
+   Nutzerhinweise und eng begrenzte Sichtbarkeit mindern das Risiko. EXIF- und
+   andere eingebettete Metadaten werden derzeit nicht entfernt; dieser
+   verbleibende technische Punkt bleibt separat nachzuverfolgen.
+7. Eine Datenschutz-Folgenabschätzung oder Datenschutzbeauftragten-Pflicht ist
+   für den kleinen, hausbezogenen Pilotbetrieb nach der aktuellen Vorprüfung
+   nicht erkennbar. Bei umfangreicher Überwachung, Profiling, besonderen
+   Datenkategorien, neuen Empfängern oder nicht ausreichend gemindertem hohem
+   Risiko wird neu geprüft; nötigenfalls bleibt das Gate geschlossen und die
+   Datenschutzbehörde wird nach Art. 36 DSGVO konsultiert.
