@@ -3991,7 +3991,7 @@ const PageTemplates = `
               <div class="quick-list">
                 {{if .CanManageBuilding}}<a class="quick-row" href="/app/settings/building">
                   <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/><path d="M8 10h.01M16 10h.01"/></svg>
-                  <div><h3>Gebäude</h3><p>Adresse, Kontakt, Hero-Bild und Einheiten verwalten.</p></div>
+                  <div><h3>Gebäude &amp; Einheiten</h3><p>Hausdaten, Kontakte, Einheiten, Zahlungsstatus und Portalbild.</p></div>
                   <span class="quick-arrow">›</span>
                 </a>{{end}}
                 {{if .CanManageUsers}}
@@ -4118,263 +4118,353 @@ const PageTemplates = `
 {{define "buildingSettings"}}
 {{template "appOpen" .}}
     <style>
-      .building .building-grid { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(320px,.85fr); gap: 22px; align-items: start; }
-      .building .settings-card { max-width: none; }
-	      .building .meta-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
-	      .building .meta-form .full, .building .unit-form .full { grid-column: 1 / -1; }
-	      .building .meta-form .f-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
-	      .building .brand-preview { grid-column: 1 / -1; display: grid; grid-template-columns: 58px minmax(0,1fr); gap: 13px; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--panel-soft); }
-	      .building .brand-preview-mark { width: 52px; height: 52px; border-radius: 8px; display: grid; place-items: center; color: var(--gold-ink); background: #fffefb; border: 1px solid var(--line); }
-	      .building .brand-preview-mark svg { width: 39px; height: 34px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-	      .building .brand-preview strong { display: block; font-family: var(--font-serif); font-size: 18px; }
-	      .building .brand-preview span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.35; }
-	      .building textarea { min-height: 92px; }
-      .building .hero-preview { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-soft); }
-      .building .hero-form { display: grid; gap: 12px; }
-      .building .hero-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-      .building .hero-actions .button { flex: 1 1 auto; }
+      .building .page { gap: 18px; }
+      .building .page-intro { display: grid; gap: 6px; }
+      .building .page-intro .lede { max-width: 720px; }
+      .building .section-nav { position: sticky; top: 10px; z-index: 8; display: flex; gap: 8px; overflow-x: auto; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,254,251,.96); box-shadow: 0 8px 22px rgba(37,45,38,.08); scrollbar-width: none; }
+      .building .section-nav::-webkit-scrollbar { display: none; }
+      .building .section-nav a { flex: 0 0 auto; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 15px; border-radius: 8px; color: var(--ink); font-size: 13.5px; font-weight: 800; text-decoration: none; }
+      .building .section-nav a:first-child { background: var(--ink); color: #fff; }
+      .building .section-nav a:hover, .building .section-nav a:focus-visible { background: var(--panel-soft); color: var(--ink); outline: 2px solid var(--gold); outline-offset: 1px; }
+      .building .section-nav a:first-child:hover, .building .section-nav a:first-child:focus-visible { background: var(--ink); color: #fff; }
+      .building #overview, .building #contacts, .building #units, .building #appearance, .building #unit-add { scroll-margin-top: 86px; }
+      .building .settings-disclosure { padding: 0; overflow: clip; }
+      .building .settings-disclosure > summary { min-height: 92px; display: grid; grid-template-columns: 52px minmax(0,1fr) auto; gap: 15px; align-items: center; padding: 18px 20px; cursor: pointer; list-style: none; }
+      .building .settings-disclosure > summary::-webkit-details-marker, .building .unit-editor > summary::-webkit-details-marker, .building .unit-add > summary::-webkit-details-marker { display: none; }
+      .building .settings-disclosure[open] > summary { border-bottom: 1px solid var(--line); }
+      .building .section-icon { width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--panel-soft); color: var(--gold-ink); font-family: var(--font-serif); font-size: 23px; font-weight: 800; }
+      .building .summary-copy { min-width: 0; }
+      .building .summary-copy h2 { margin: 0; }
+      .building .summary-copy p { margin: 3px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.4; overflow-wrap: anywhere; }
+      .building .disclosure-action { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font-size: 13px; font-weight: 800; }
+      .building .disclosure-action::after { content: "›"; font-family: var(--font-serif); font-size: 27px; line-height: 1; transform: rotate(90deg); transition: transform .15s ease; }
+      .building .settings-disclosure[open] .disclosure-action::after { transform: rotate(-90deg); }
+      .building .disclosure-body { display: grid; gap: 18px; padding: 20px; }
+      .building .meta-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+      .building .meta-form .full, .building .unit-form .full { grid-column: 1 / -1; }
+      .building textarea { min-height: 88px; }
+      .building .contact-groups { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+      .building .contact-group { display: grid; align-content: start; gap: 11px; padding: 15px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-soft); }
+      .building .contact-group h3 { margin: 0; font-family: var(--font-serif); font-size: 20px; }
+      .building .section-save { display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding-top: 2px; }
+      .building .section-save .mini { margin-right: auto; }
+      .building .brand-grid { display: grid; grid-template-columns: minmax(0,.9fr) minmax(320px,1.1fr); gap: 18px; align-items: start; }
+      .building .brand-settings, .building .hero-settings { display: grid; gap: 13px; }
+      .building .brand-preview { display: grid; grid-template-columns: 58px minmax(0,1fr); gap: 13px; align-items: center; border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: var(--panel-soft); }
+      .building .brand-preview-mark { width: 52px; height: 52px; border-radius: 8px; display: grid; place-items: center; color: var(--gold-ink); background: #fffefb; border: 1px solid var(--line); }
+      .building .brand-preview-mark svg { width: 39px; height: 34px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .building .brand-preview strong { display: block; font-family: var(--font-serif); font-size: 18px; }
+      .building .brand-preview span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+      .building .hero-preview { width: 100%; aspect-ratio: 16 / 7; object-fit: cover; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-soft); }
+      .building .hero-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: end; }
+      .building .hero-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
       .building .hero-delete { margin: 0; }
-	      .building .unit-panel { display: grid; gap: 18px; }
-	      .building .unit-add, .building .unit-editor { border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: var(--panel-soft); }
-	      .building .unit-list { display: grid; gap: 12px; }
-	      .building .unit-metrics { display: flex; gap: 8px; flex-wrap: wrap; }
-	      .building .unit-metric { display: inline-flex; gap: 7px; align-items: baseline; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: var(--panel); color: #6f6a5c; font-size: 13px; font-weight: 700; }
-	      .building .unit-metric strong { color: var(--ink); font-size: 16px; }
-	      .building .unit-form { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 10px; align-items: end; }
-	      .building .unit-form .f-label { grid-column: span 4; }
-	      .building .unit-form .f-type { grid-column: span 3; }
-	      .building .unit-form .f-share { grid-column: span 3; }
-	      .building .unit-form .f-owners, .building .unit-form .f-renters { grid-column: span 6; }
-	      .building .unit-form .f-actions { grid-column: span 2; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
-		      .building .unit-delete { display: inline; margin: 0; }
-		      .building .unit-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-		      .building .unit-summary strong { font-family: var(--font-serif); font-size: 20px; }
-		      .building .unit-summary .pill.soft { background: var(--panel); color: #6f6a5c; }
-		      .building .payment-status-panel { display: grid; gap: 14px; }
-		      .building .payment-status-list { display: grid; gap: 10px; }
-		      .building .payment-status-row { display: grid; grid-template-columns: minmax(180px,1fr) auto minmax(180px,240px) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 13px 14px; background: var(--panel-soft); }
-		      .building .payment-status-unit { display: grid; gap: 3px; min-width: 0; }
-		      .building .payment-status-unit strong { font-family: var(--font-serif); font-size: 19px; line-height: 1.12; overflow-wrap: anywhere; }
-		      .building .payment-status-unit span, .building .payment-status-meta { color: var(--muted); font-size: 12.5px; font-weight: 700; line-height: 1.35; }
-			      .building .payment-status-form { display: grid; grid-template-columns: minmax(130px,1fr) auto; gap: 8px; align-items: end; }
-			      .building .payment-status-form .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-			      .building .payment-status-form select { min-height: 42px; }
-		      @media (max-width: 960px) { .building .building-grid { grid-template-columns: 1fr; } }
-		      @media (max-width: 760px) {
-		        .building .meta-form, .building .unit-form { grid-template-columns: 1fr; }
-		        .building .unit-form .f-label, .building .unit-form .f-type, .building .unit-form .f-share, .building .unit-form .f-owners, .building .unit-form .f-renters, .building .unit-form .f-actions { grid-column: 1 / -1; }
-	        .building .meta-form .f-actions, .building .unit-form .f-actions { justify-content: stretch; }
-	        .building .unit-form .f-actions .button { flex: 1 1 auto; }
-	        .building .payment-status-row { grid-template-columns: 1fr; align-items: stretch; }
-	        .building .payment-status-form { grid-template-columns: 1fr; gap: 10px; }
-	      }
+      .building .unit-panel { display: grid; gap: 16px; }
+      .building .unit-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: start; }
+      .building .unit-head h2 { margin-bottom: 4px; }
+      .building .unit-metrics { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+      .building .unit-metric { display: inline-flex; gap: 6px; align-items: baseline; border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; background: var(--panel-soft); color: #6f6a5c; font-size: 12.5px; font-weight: 750; }
+      .building .unit-metric strong { color: var(--ink); font-size: 15px; }
+      .building .unit-add { border: 1px solid var(--ink); border-radius: 9px; background: var(--ink); color: #fff; }
+      .building .unit-add > summary { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 15px; cursor: pointer; list-style: none; font-weight: 800; }
+      .building .unit-add > summary::before { content: "+"; width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.55); border-radius: 50%; font-size: 18px; line-height: 1; }
+      .building .unit-add[open] { grid-column: 1 / -1; background: var(--panel-soft); color: var(--ink); border-color: var(--line); }
+      .building .unit-add[open] > summary { justify-content: flex-start; border-bottom: 1px solid var(--line); }
+      .building .unit-add[open] > summary::before { border-color: var(--gold); color: var(--ink); transform: rotate(45deg); }
+      .building .unit-add .unit-form { padding: 16px; }
+      .building .unit-list { display: grid; gap: 8px; }
+      .building .unit-editor { border: 1px solid var(--line); border-radius: 10px; background: #fffefb; overflow: clip; }
+      .building .unit-editor > summary { min-height: 76px; display: grid; grid-template-columns: minmax(145px,1.15fr) minmax(120px,.9fr) minmax(150px,1fr) auto; gap: 14px; align-items: center; padding: 13px 15px; cursor: pointer; list-style: none; }
+      .building .unit-editor[open] > summary { border-bottom: 1px solid var(--line); background: var(--panel-soft); }
+      .building .unit-name { display: grid; gap: 2px; min-width: 0; }
+      .building .unit-name strong { font-family: var(--font-serif); font-size: 20px; line-height: 1.15; overflow-wrap: anywhere; }
+      .building .unit-name span, .building .unit-share span, .building .payment-meta { color: var(--muted); font-size: 12.5px; font-weight: 700; line-height: 1.35; }
+      .building .unit-share { display: grid; gap: 2px; min-width: 0; }
+      .building .unit-share strong { font-size: 13.5px; overflow-wrap: anywhere; }
+      .building .unit-open { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 13px; font-weight: 800; }
+      .building .unit-editor[open] .unit-open { border-color: var(--gold); }
+      .building .unit-editor-body { display: grid; gap: 16px; padding: 16px; }
+      .building .unit-form { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 10px; align-items: end; }
+      .building .unit-form .f-label { grid-column: span 4; }
+      .building .unit-form .f-type { grid-column: span 3; }
+      .building .unit-form .f-share { grid-column: span 3; }
+      .building .unit-form .f-owners, .building .unit-form .f-renters { grid-column: span 6; }
+      .building .unit-form .f-actions { grid-column: span 2; display: flex; justify-content: flex-end; }
+      .building .unit-tools { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: end; padding-top: 15px; border-top: 1px solid var(--line); }
+      .building .payment-block { display: grid; gap: 8px; }
+      .building .payment-block h3 { margin: 0; font-family: var(--font-serif); font-size: 18px; }
+      .building .payment-status-form { display: grid; grid-template-columns: minmax(150px,230px) auto minmax(0,1fr); gap: 8px; align-items: center; }
+      .building .payment-status-form .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+      .building .payment-status-form select { min-height: 42px; }
+      .building .unit-delete { margin: 0; }
+      @media (max-width: 960px) {
+        .building .contact-groups, .building .brand-grid { grid-template-columns: 1fr; }
+        .building .unit-editor > summary { grid-template-columns: minmax(140px,1fr) minmax(120px,.8fr) auto; }
+        .building .unit-editor > summary .unit-share { display: none; }
+      }
+      @media (max-width: 760px) {
+        .building .page { gap: 14px; }
+        .building .page-intro h1 { font-size: clamp(38px,12vw,52px); }
+        .building .page-intro .lede { font-size: 15px; line-height: 1.45; }
+        .building .section-nav { top: 6px; margin-inline: -2px; padding: 6px; }
+        .building .section-nav a { min-height: 44px; padding-inline: 13px; }
+        .building .settings-disclosure > summary { min-height: 82px; grid-template-columns: 44px minmax(0,1fr) auto; gap: 11px; padding: 15px; }
+        .building .section-icon { width: 42px; height: 42px; font-size: 20px; }
+        .building .summary-copy h2 { font-size: 24px; }
+        .building .summary-copy p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .building .disclosure-action { font-size: 0; }
+        .building .disclosure-body { padding: 15px; }
+        .building .meta-form, .building .unit-form { grid-template-columns: 1fr; }
+        .building .meta-form > *, .building .unit-form .f-label, .building .unit-form .f-type, .building .unit-form .f-share, .building .unit-form .f-owners, .building .unit-form .f-renters, .building .unit-form .f-actions { grid-column: 1 / -1; }
+        .building .contact-groups { gap: 10px; }
+        .building .section-save { position: sticky; bottom: 8px; z-index: 5; margin: 2px -5px -5px; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,254,251,.97); box-shadow: 0 8px 24px rgba(37,45,38,.16); }
+        .building .section-save .mini { display: none; }
+        .building .section-save .button { width: 100%; min-height: 46px; }
+        .building .hero-form { grid-template-columns: 1fr; }
+        .building .hero-actions .button { width: 100%; }
+        .building .unit-head { grid-template-columns: 1fr; gap: 13px; }
+        .building .unit-add { width: 100%; }
+        .building .unit-editor > summary { min-height: 96px; grid-template-columns: minmax(0,1fr) auto; gap: 9px; padding: 13px; }
+        .building .unit-editor > summary .unit-share { display: grid; grid-column: 1 / -1; grid-row: 2; }
+        .building .unit-editor > summary .pill { grid-column: 2; grid-row: 1; }
+        .building .unit-open { grid-column: 2; grid-row: 2; min-height: 38px; }
+        .building .unit-tools { grid-template-columns: 1fr; }
+        .building .payment-status-form { grid-template-columns: 1fr; align-items: stretch; }
+        .building .unit-delete .button { width: 100%; min-height: 44px; }
+      }
     </style>
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main building">
       <div class="content-top">
-        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Gebäude</span></span>
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Gebäude &amp; Einheiten</span></span>
         <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a></div>
       </div>
       <section class="page wide">
-        <div>
-          <h1>Gebäude</h1>
-          <p class="lede">Stammdaten, Kontaktblock, Titelbild und Einheiten für {{.Tenant.Address}}.</p>
+        <div class="page-intro">
+          <h1>Gebäude &amp; Einheiten</h1>
+          <p class="lede">Hausdaten, Kontakte und Einheiten an einem Ort.</p>
         </div>
-        <div class="building-grid">
-          <section class="panel settings-card" id="building-contact">
-            <div>
-              <h2>Stammdaten</h2>
-              <p class="muted">Diese Angaben überschreiben die Umgebungswerte für diesen Tenant.</p>
-            </div>
-            {{if .BuildingMsg}}<p class="flash {{if .BuildingOK}}ok{{end}}">{{.BuildingMsg}}</p>{{end}}
-            <form class="meta-form" method="post" action="/app/settings/building">
-              <label class="full" for="building-name">Name
-                <input id="building-name" type="text" name="name" value="{{.Tenant.Name}}" maxlength="160" required>
-              </label>
-	              <label class="full" for="building-address">Adresse
-	                <textarea id="building-address" name="address" maxlength="500" required>{{.Tenant.Address}}</textarea>
-	              </label>
-	              <div class="brand-preview">
-	                <span class="brand-preview-mark">{{template "tenantBrandMark" .}}</span>
-	                <div><strong>{{.BrandIconLabel}}</strong><span>{{.Tenant.BrandAbbreviation}} erscheint als kurze Kennung in der Seitenleiste.</span></div>
-	              </div>
-	              <label for="brand-icon">Portal-Symbol
-	                <select id="brand-icon" name="brand_icon">
-	                  {{range .BrandIconOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-	                </select>
-	              </label>
-	              <label for="brand-abbreviation">Kurzkennung
-	                <input id="brand-abbreviation" type="text" name="brand_abbreviation" value="{{.Tenant.BrandAbbreviation}}" maxlength="12" placeholder="JHW22">
-	              </label>
-	              <label for="contact-name">Verwalter Kontakt
-	                <input id="contact-name" type="text" name="contact_name" value="{{.Tenant.ContactName}}" maxlength="160" placeholder="Name oder Firma">
-	              </label>
-              <label class="full" for="contact-address">Anschrift des verantwortlichen Hausbetriebs
-                <textarea id="contact-address" name="contact_address" maxlength="500" placeholder="Straße, PLZ Ort">{{.Tenant.ContactAddress}}</textarea>
-              </label>
-              <label for="contact-email">Kontakt-E-Mail
-                <input id="contact-email" type="email" name="contact_email" value="{{.Tenant.ContactEmail}}" maxlength="160" autocomplete="email">
-              </label>
-              <label for="contact-phone">Kontakt-Telefon
-                <input id="contact-phone" type="tel" name="contact_phone" value="{{.Tenant.ContactPhone}}" maxlength="80" autocomplete="tel">
-              </label>
-              <label for="emergency-name">Notdienst
-                <input id="emergency-name" type="text" name="emergency_name" value="{{.Tenant.EmergencyName}}" maxlength="160" placeholder="Notdienst">
-              </label>
-              <label for="emergency-phone">Notdienst-Telefon
-                <input id="emergency-phone" type="tel" name="emergency_phone" value="{{.Tenant.EmergencyPhone}}" maxlength="80" autocomplete="tel">
-              </label>
-              <label for="caretaker-name">Hausmeister
-                <input id="caretaker-name" type="text" name="caretaker_name" value="{{.Tenant.CaretakerName}}" maxlength="160">
-              </label>
-              <label for="caretaker-email">Hausmeister-E-Mail
-                <input id="caretaker-email" type="email" name="caretaker_email" value="{{.Tenant.CaretakerEmail}}" maxlength="160" autocomplete="email">
-              </label>
-              <label for="caretaker-phone">Hausmeister-Telefon
-                <input id="caretaker-phone" type="tel" name="caretaker_phone" value="{{.Tenant.CaretakerPhone}}" maxlength="80" autocomplete="tel">
-              </label>
-              <div class="f-actions"><button class="button primary" type="submit">Stammdaten speichern</button></div>
-            </form>
-          </section>
+        <nav class="section-nav" aria-label="Bereiche">
+          <a href="#overview">Stammdaten</a>
+          <a href="#contacts">Kontakte</a>
+          <a href="#units">Einheiten</a>
+          <a href="#appearance">Erscheinungsbild</a>
+        </nav>
 
-          <aside class="panel settings-card">
-            <div>
-              <h2>Hero-Bild</h2>
-              <p class="muted">Das Bild erscheint auf der Startseite und im App-Banner.</p>
-            </div>
-            <img class="hero-preview" src="{{.Tenant.HeroImageURL}}" alt="">
-            {{if .HeroMsg}}<p class="flash {{if .HeroOK}}ok{{end}}">{{.HeroMsg}}</p>{{end}}
-            <form class="hero-form" method="post" action="/app/settings/building/hero" enctype="multipart/form-data">
-              <label for="hero-image">Bilddatei
-                <span class="file-control"><input id="hero-image" type="file" name="hero_image" accept="image/jpeg,image/png,image/webp" required><span>Bild auswählen</span></span>
+        <form id="building-meta-form" method="post" action="/app/settings/building"></form>
+
+        <details class="panel settings-disclosure" id="overview" open>
+          <summary>
+            <span class="section-icon" aria-hidden="true">⌂</span>
+            <span class="summary-copy"><h2>Stammdaten</h2><p>{{.Tenant.Name}} · {{.Tenant.Address}}</p></span>
+            <span class="disclosure-action">Bearbeiten</span>
+          </summary>
+          <div class="disclosure-body">
+            {{if .BuildingMsg}}<p class="flash {{if .BuildingOK}}ok{{end}}">{{.BuildingMsg}}</p>{{end}}
+            <div class="meta-form">
+              <label class="full" for="building-name">Name
+                <input id="building-name" form="building-meta-form" type="text" name="name" value="{{.Tenant.Name}}" maxlength="160" required>
               </label>
-              <div class="hero-actions">
-                <button class="button primary" type="submit">Hero-Bild speichern</button>
-              </div>
-              <span class="mini">JPG, PNG oder WebP bis 5 MB.</span>
-            </form>
-            {{if .HasCustomHero}}
-              <form class="hero-delete" method="post" action="/app/settings/building/hero/delete" data-confirm="Hero-Bild entfernen und Standardbild verwenden?">
-                <button class="button ghost" type="submit">Standardbild verwenden</button>
-              </form>
-            {{end}}
-          </aside>
-        </div>
+              <label class="full" for="building-address">Adresse
+                <textarea id="building-address" form="building-meta-form" name="address" maxlength="500" required>{{.Tenant.Address}}</textarea>
+              </label>
+            </div>
+            <div class="section-save"><span class="mini">Gilt für dieses Hausportal.</span><button class="button primary" type="submit" form="building-meta-form">Änderungen speichern</button></div>
+          </div>
+        </details>
+
+        <details class="panel settings-disclosure" id="contacts">
+          <summary>
+            <span class="section-icon" aria-hidden="true">☎</span>
+            <span class="summary-copy"><h2>Hauskontakte</h2><p>Verwaltung, Notdienst und Hausmeister</p></span>
+            <span class="disclosure-action">Bearbeiten</span>
+          </summary>
+          <div class="disclosure-body">
+            <div class="contact-groups">
+              <section class="contact-group">
+                <h3>Verwaltung</h3>
+                <label for="contact-name">Name oder Firma
+                  <input id="contact-name" form="building-meta-form" type="text" name="contact_name" value="{{.Tenant.ContactName}}" maxlength="160">
+                </label>
+                <label for="contact-address">Anschrift
+                  <textarea id="contact-address" form="building-meta-form" name="contact_address" maxlength="500" placeholder="Straße, PLZ Ort">{{.Tenant.ContactAddress}}</textarea>
+                </label>
+                <label for="contact-email">E-Mail
+                  <input id="contact-email" form="building-meta-form" type="email" name="contact_email" value="{{.Tenant.ContactEmail}}" maxlength="160" autocomplete="email">
+                </label>
+                <label for="contact-phone">Telefon
+                  <input id="contact-phone" form="building-meta-form" type="tel" name="contact_phone" value="{{.Tenant.ContactPhone}}" maxlength="80" autocomplete="tel">
+                </label>
+              </section>
+              <section class="contact-group">
+                <h3>Notdienst</h3>
+                <label for="emergency-name">Bezeichnung
+                  <input id="emergency-name" form="building-meta-form" type="text" name="emergency_name" value="{{.Tenant.EmergencyName}}" maxlength="160" placeholder="Notdienst">
+                </label>
+                <label for="emergency-phone">Telefon
+                  <input id="emergency-phone" form="building-meta-form" type="tel" name="emergency_phone" value="{{.Tenant.EmergencyPhone}}" maxlength="80" autocomplete="tel">
+                </label>
+              </section>
+              <section class="contact-group">
+                <h3>Hausmeister</h3>
+                <label for="caretaker-name">Name
+                  <input id="caretaker-name" form="building-meta-form" type="text" name="caretaker_name" value="{{.Tenant.CaretakerName}}" maxlength="160">
+                </label>
+                <label for="caretaker-email">E-Mail
+                  <input id="caretaker-email" form="building-meta-form" type="email" name="caretaker_email" value="{{.Tenant.CaretakerEmail}}" maxlength="160" autocomplete="email">
+                </label>
+                <label for="caretaker-phone">Telefon
+                  <input id="caretaker-phone" form="building-meta-form" type="tel" name="caretaker_phone" value="{{.Tenant.CaretakerPhone}}" maxlength="80" autocomplete="tel">
+                </label>
+              </section>
+            </div>
+            <div class="section-save"><span class="mini">Diese Angaben erscheinen bei den Hauskontakten.</span><button class="button primary" type="submit" form="building-meta-form">Änderungen speichern</button></div>
+          </div>
+        </details>
 
         <section id="units" class="panel unit-panel">
-	          <div class="section-head">
-	            <div>
-	              <h2>Einheiten</h2>
-	              <p class="muted">Wohnungen, Geschäftslokale und zugehörige Objekte. Nur abrechenbare Wohneinheiten zählen für Fair Use.</p>
-	            </div>
-	            <div class="unit-metrics" aria-label="Einheiten Übersicht">
-	              <span class="unit-metric"><strong>{{.UnitTotal}}</strong> Einträge</span>
-	              <span class="unit-metric"><strong>{{.BillableUnits}}</strong> von {{.FairUseFreeUnits}} {{.BillableLabel}} (Fair Use)</span>
-	            </div>
-	            {{if .FairUseExceeded}}<p class="muted">Über dem kostenlosen Rahmen von {{.FairUseFreeUnits}} Wohneinheiten — Richtwert 1 € pro Einheit und Monat.</p>{{end}}
-	          </div>
-	          {{if .UnitMsg}}<p class="flash {{if .UnitOK}}ok{{end}}">{{.UnitMsg}}</p>{{end}}
-	          <div class="unit-add">
-	            <div class="unit-summary"><strong>Neue Einheit</strong><span class="pill">Anlegen</span></div>
-	            <form class="unit-form" method="post" action="/app/settings/building/units">
-	              <label class="f-label">Einheit
-	                <input type="text" name="label" maxlength="120" required placeholder="Top 1">
-	              </label>
-	              <label class="f-type">Typ
-	                <select name="unit_type">
-	                  <option value="residential" selected>Wohnung</option>
-	                  <option value="commercial">Geschäftslokal</option>
-	                  <option value="parking">Stellplatz</option>
-	                  <option value="storage">Keller / Lager</option>
-	                  <option value="other">Sonstiges</option>
-	                </select>
-	              </label>
-	              <label class="f-share">Miteigentumsanteil
-	                <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="0" inputmode="numeric">
-	              </label>
-              <label class="f-owners">Eigentümer E-Mails
-                <input type="text" name="owner_emails" placeholder="name@example.com, zweite@example.com">
-              </label>
-              <label class="f-renters">Mieter E-Mails
-                <input type="text" name="renter_emails" placeholder="name@example.com">
-              </label>
-              <div class="f-actions"><button class="button primary" type="submit">Einheit anlegen</button></div>
-            </form>
+          <div class="unit-head">
+            <div>
+              <h2>Einheiten</h2>
+              <p class="muted">Stammdaten und manueller Zahlungsstatus direkt je Einheit.</p>
+              <div class="unit-metrics" aria-label="Einheiten Übersicht">
+                <span class="unit-metric"><strong>{{.UnitTotal}}</strong> Einträge</span>
+                <span class="unit-metric"><strong>{{.BillableUnits}}</strong> von {{.FairUseFreeUnits}} {{.BillableLabel}} (Fair Use)</span>
+              </div>
+              {{if .FairUseExceeded}}<p class="muted">Über dem kostenlosen Rahmen von {{.FairUseFreeUnits}} Wohneinheiten — Richtwert 1 € pro Einheit und Monat.</p>{{end}}
+            </div>
+            <details class="unit-add" id="unit-add">
+              <summary>Einheit hinzufügen</summary>
+              <form class="unit-form" method="post" action="/app/settings/building/units">
+                <label class="f-label">Einheit
+                  <input type="text" name="label" maxlength="120" required placeholder="Top 1">
+                </label>
+                <label class="f-type">Typ
+                  <select name="unit_type">
+                    <option value="residential" selected>Wohnung</option>
+                    <option value="commercial">Geschäftslokal</option>
+                    <option value="parking">Stellplatz</option>
+                    <option value="storage">Keller / Lager</option>
+                    <option value="other">Sonstiges</option>
+                  </select>
+                </label>
+                <label class="f-share">Miteigentumsanteil
+                  <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="0" inputmode="numeric">
+                </label>
+                <label class="f-owners">Eigentümer E-Mails
+                  <input type="text" name="owner_emails" placeholder="name@example.com, zweite@example.com">
+                </label>
+                <label class="f-renters">Mieter E-Mails
+                  <input type="text" name="renter_emails" placeholder="name@example.com">
+                </label>
+                <div class="f-actions"><button class="button primary" type="submit">Einheit anlegen</button></div>
+              </form>
+            </details>
           </div>
+          {{if .UnitMsg}}<p class="flash {{if .UnitOK}}ok{{end}}">{{.UnitMsg}}</p>{{end}}
+          {{if .PaymentMsg}}<p class="flash {{if .PaymentOK}}ok{{end}}">{{.PaymentMsg}}</p>{{end}}
           {{if .Units}}
             <div class="unit-list">
-	              {{range .Units}}
-	                <article class="unit-editor">
-	                  <div class="unit-summary"><strong>{{.Label}}</strong><span class="pill">{{.UnitTypeLabel}}</span><span class="pill soft">{{.BillableLabel}}</span><span class="pill soft">{{.Share}}</span></div>
-	                  <form class="unit-form" method="post" action="/app/settings/building/units">
-	                    <input type="hidden" name="orig_id" value="{{.ID}}">
-	                    <input type="hidden" name="id" value="{{.ID}}">
-	                    <label class="f-label">Einheit
-	                      <input type="text" name="label" value="{{.Label}}" maxlength="120" required>
-	                    </label>
-	                    <label class="f-type">Typ
-	                      <select name="unit_type">
-	                        {{range .TypeOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-	                      </select>
-	                    </label>
-	                    <label class="f-share">Miteigentumsanteil
-	                      <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="{{.ShareValue}}" inputmode="numeric">
-	                    </label>
-                    <label class="f-owners">Eigentümer E-Mails
-                      <input type="text" name="owner_emails" value="{{.OwnerEmails}}">
-                    </label>
-                    <label class="f-renters">Mieter E-Mails
-                      <input type="text" name="renter_emails" value="{{.RenterEmails}}">
-                    </label>
-                    <div class="f-actions">
-                      <button class="button primary" type="submit">Speichern</button>
+              {{range .Units}}
+                <details class="unit-editor" id="unit-{{.ID}}">
+                  <summary>
+                    <span class="unit-name"><strong>{{.Label}}</strong><span>{{.UnitTypeLabel}} · {{.BillableLabel}}</span></span>
+                    <span class="unit-share"><strong>{{.Share}}</strong><span>{{.MembersLabel}}</span></span>
+                    <span class="pill {{.PaymentStatusClass}}">{{.PaymentStatus}}</span>
+                    <span class="unit-open">Bearbeiten</span>
+                  </summary>
+                  <div class="unit-editor-body">
+                    <form class="unit-form" method="post" action="/app/settings/building/units">
+                      <input type="hidden" name="orig_id" value="{{.ID}}">
+                      <input type="hidden" name="id" value="{{.ID}}">
+                      <label class="f-label">Einheit
+                        <input type="text" name="label" value="{{.Label}}" maxlength="120" required>
+                      </label>
+                      <label class="f-type">Typ
+                        <select name="unit_type">
+                          {{range .TypeOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                        </select>
+                      </label>
+                      <label class="f-share">Miteigentumsanteil
+                        <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="{{.ShareValue}}" inputmode="numeric">
+                      </label>
+                      <label class="f-owners">Eigentümer E-Mails
+                        <input type="text" name="owner_emails" value="{{.OwnerEmails}}">
+                      </label>
+                      <label class="f-renters">Mieter E-Mails
+                        <input type="text" name="renter_emails" value="{{.RenterEmails}}">
+                      </label>
+                      <div class="f-actions"><button class="button primary" type="submit">Einheit speichern</button></div>
+                    </form>
+                    <div class="unit-tools">
+                      <div class="payment-block">
+                        <h3>Zahlungsstatus</h3>
+                        <form class="payment-status-form" method="post" action="/app/settings/building/payment-status">
+                          <input type="hidden" name="unit_id" value="{{.ID}}">
+                          <label class="sr-only" for="payment-status-{{.ID}}">Status für {{.Label}}</label>
+                          <select id="payment-status-{{.ID}}" name="status">{{range .PaymentOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select>
+                          <button class="button small" type="submit">Status speichern</button>
+                          <span class="payment-meta">{{if .PaymentHasUpdated}}{{.PaymentUpdatedAt}}{{else}}{{.PaymentDetail}}{{end}}</span>
+                        </form>
+                      </div>
+                      <form class="unit-delete" method="post" action="/app/settings/building/units/delete" data-confirm="{{.DeleteConfirmLabel}}?">
+                        <input type="hidden" name="id" value="{{.ID}}">
+                        <button class="button small ghost" type="submit">Einheit entfernen</button>
+                      </form>
                     </div>
-                  </form>
-                  <form class="unit-delete" method="post" action="/app/settings/building/units/delete">
-                    <input type="hidden" name="id" value="{{.ID}}">
-                    <button class="button small ghost" type="submit" aria-label="{{.DeleteConfirmLabel}}">Entfernen</button>
-                  </form>
-                </article>
+                  </div>
+                </details>
               {{end}}
             </div>
-	          {{else}}
-	            {{template "emptyState" .UnitsEmpty}}
-	          {{end}}
-	        </section>
+          {{else}}
+            {{template "emptyState" .UnitsEmpty}}
+          {{end}}
+        </section>
 
-	        <section class="panel payment-status-panel">
-	          <div class="section-head">
-	            <div>
-	              <h2>Zahlungsstatus</h2>
-	              <p class="muted">Manuelle Transparenz pro Einheit. Keine Sollstellung, keine Buchung, kein Mahnwesen.</p>
-	            </div>
-	          </div>
-	          {{if .PaymentMsg}}<p class="flash {{if .PaymentOK}}ok{{end}}">{{.PaymentMsg}}</p>{{end}}
-	          {{if .HasPaymentRows}}
-	            <div class="payment-status-list">
-	              {{range .PaymentRows}}
-	                <article class="payment-status-row">
-	                  <div class="payment-status-unit">
-	                    <strong>{{.UnitLabel}}</strong>
-	                    <span>{{.UnitTypeLabel}}</span>
-	                  </div>
-	                  <span class="pill {{.StatusClass}}">{{.Status}}</span>
-	                  <form class="payment-status-form" method="post" action="/app/settings/building/payment-status">
-	                    <input type="hidden" name="unit_id" value="{{.UnitID}}">
-	                    <label class="sr-only" for="payment-status-{{.UnitID}}">Status für {{.UnitLabel}}</label>
-	                    <select id="payment-status-{{.UnitID}}" name="status">{{range .StatusOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select>
-	                    <button class="button small" type="submit">Status speichern</button>
-	                  </form>
-	                  <span class="payment-status-meta">{{if .HasUpdatedAt}}{{.UpdatedAt}}{{else}}{{.Detail}}{{end}}</span>
-	                </article>
-	              {{end}}
-	            </div>
-	          {{else}}
-	            {{template "emptyState" .UnitsEmpty}}
-	          {{end}}
-	        </section>
-	      </section>
-	    </main>
+        <details class="panel settings-disclosure" id="appearance">
+          <summary>
+            <span class="section-icon" aria-hidden="true">◇</span>
+            <span class="summary-copy"><h2>Erscheinungsbild</h2><p>Portal-Symbol, Kurzkennung und Titelbild</p></span>
+            <span class="disclosure-action">Bearbeiten</span>
+          </summary>
+          <div class="disclosure-body">
+            {{if .HeroMsg}}<p class="flash {{if .HeroOK}}ok{{end}}">{{.HeroMsg}}</p>{{end}}
+            <div class="brand-grid">
+              <section class="brand-settings">
+                <div class="brand-preview">
+                  <span class="brand-preview-mark">{{template "tenantBrandMark" .}}</span>
+                  <div><strong>{{.BrandIconLabel}}</strong><span>{{.Tenant.BrandAbbreviation}} erscheint als kurze Kennung in der Seitenleiste.</span></div>
+                </div>
+                <label for="brand-icon">Portal-Symbol
+                  <select id="brand-icon" form="building-meta-form" name="brand_icon">
+                    {{range .BrandIconOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                  </select>
+                </label>
+                <label for="brand-abbreviation">Kurzkennung
+                  <input id="brand-abbreviation" form="building-meta-form" type="text" name="brand_abbreviation" value="{{.Tenant.BrandAbbreviation}}" maxlength="12" placeholder="JHW22">
+                </label>
+                <div class="section-save"><button class="button primary" type="submit" form="building-meta-form">Änderungen speichern</button></div>
+              </section>
+              <section class="hero-settings">
+                <img class="hero-preview" src="{{.Tenant.HeroImageURL}}" alt="">
+                <form class="hero-form" method="post" action="/app/settings/building/hero" enctype="multipart/form-data">
+                  <label for="hero-image">Titelbild
+                    <span class="file-control"><input id="hero-image" type="file" name="hero_image" accept="image/jpeg,image/png,image/webp" required><span>Bild auswählen</span></span>
+                  </label>
+                  <div class="hero-actions"><button class="button" type="submit">Titelbild speichern</button></div>
+                </form>
+                <span class="mini">JPG, PNG oder WebP bis 5 MB.</span>
+                {{if .HasCustomHero}}
+                  <form class="hero-delete" method="post" action="/app/settings/building/hero/delete" data-confirm="Titelbild entfernen und Standardbild verwenden?">
+                    <button class="button small ghost" type="submit">Standardbild verwenden</button>
+                  </form>
+                {{end}}
+              </section>
+            </div>
+          </div>
+        </details>
+      </section>
+    </main>
 {{template "appClose" .}}
 {{end}}
 

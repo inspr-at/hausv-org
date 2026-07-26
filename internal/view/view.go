@@ -329,6 +329,13 @@ type BuildingUnitView struct {
 	ShareValue         string
 	OwnerEmails        string
 	RenterEmails       string
+	MembersLabel       string
+	PaymentStatus      string
+	PaymentStatusClass string
+	PaymentDetail      string
+	PaymentUpdatedAt   string
+	PaymentHasUpdated  bool
+	PaymentOptions     []SelectOption
 	DeleteConfirmLabel string
 }
 

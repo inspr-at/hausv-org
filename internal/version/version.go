@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.30.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Gebäude",
+			Headline: "Gebäude, Einheiten und Zahlungsstatus sind deutlich ruhiger zu verwalten.",
+			Intro:    "Klare Bereiche und kompakte Einheitenzeilen zeigen zuerst den Überblick; vollständige Formulare öffnen sich erst bei Bedarf.",
+			Items: []NoteItem{
+				{Label: "Schnell orientieren", Text: "Stammdaten, Hauskontakte, Einheiten und Erscheinungsbild lassen sich direkt anspringen."},
+				{Label: "Kompakt verwalten", Text: "Typ, Anteil, Personen und Zahlungsstatus stehen gemeinsam an der jeweiligen Einheit."},
+				{Label: "Mobil speichern", Text: "Kontextbezogene Speichern-Aktionen bleiben auf kleinen Bildschirmen gut erreichbar."},
+			},
+		},
+		{
 			Version:  "0.29.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Kontakte",

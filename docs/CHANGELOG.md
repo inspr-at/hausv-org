@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.30.0] - 2026-07-26
+
+### Verbessert
+
+- **Gebäudedaten sind in klare Arbeitsbereiche gegliedert.** Stammdaten, Hauskontakte, Einheiten und Erscheinungsbild lassen sich direkt anspringen und bei Bedarf öffnen.
+- **Einheiten bleiben als kompakte Liste erfassbar.** Typ, Anteil, verknüpfte Personen und Zahlungsstatus stehen in einer Zeile; die vollständige Bearbeitung öffnet sich erst auf Wunsch.
+- **Zahlungsstatus gehört jetzt direkt zur jeweiligen Einheit.** Eine zweite, wiederholte Einheitenliste entfällt, während Speichern, Zeitangabe und Audit unverändert erhalten bleiben.
+- **Neue Einheiten und das Portaldesign drängen sich nicht mehr in den Alltag.** Beide Funktionen sind weiterhin vollständig verfügbar, aber sinnvoll eingeklappt.
+- **Speichern bleibt auf kleinen Bildschirmen im passenden Abschnitt erreichbar.** Die mobile Ansicht kommt ohne seitliches Scrollen aus und reduziert die Standard-Scrollstrecke bei vier Einheiten um rund 71 Prozent.
+
 ## [0.29.0] - 2026-07-26
 
 ### Verbessert

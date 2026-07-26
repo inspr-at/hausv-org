@@ -1839,7 +1839,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		"address":    {"Neue Gasse 7"},
 		"brand_icon": {"<svg onload=alert(1)>"},
 	})
-	if invalidBrand.Code != http.StatusSeeOther || invalidBrand.Result().Header.Get("Location") != "/app/settings/building?building=invalid" {
+	if invalidBrand.Code != http.StatusSeeOther || invalidBrand.Result().Header.Get("Location") != "/app/settings/building?building=invalid#overview" {
 		t.Fatalf("invalid brand save should redirect invalid, status=%d location=%q", invalidBrand.Code, invalidBrand.Result().Header.Get("Location"))
 	}
 

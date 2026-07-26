@@ -2668,7 +2668,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 	billableWeight := billableUnitWeight(units)
 	fairUseExceeded := billableWeight > fairUseFreeUnits*unitBillableFullPPM
 	a.render(w, "buildingSettings", a.withBase(ac, map[string]any{
-		"Title":            "Gebäude",
+		"Title":            "Gebäude & Einheiten",
 		"ActivePage":       "settings",
 		"BuildingMsg":      buildingMsg,
 		"BuildingOK":       buildingOK,
@@ -2679,7 +2679,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"HasCustomHero":    a.hasTenantHero(tenant.Slug),
 		"UnitMsg":          unitMsg,
 		"UnitOK":           unitOK,
-		"Units":            buildingUnitViews(units),
+		"Units":            a.buildingUnitViewsWithPayments(tenant.Slug, units),
 		"UnitTotal":        len(units),
 		"BillableUnits":    formatBillableUnitWeight(billableWeight),
 		"BillableLabel":    billableUnitCountLabel(billableWeight),
@@ -2688,8 +2688,6 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"UnitsEmpty":       emptyState("Noch keine Einheiten", "Angelegte Einheiten erscheinen hier mit Anteil und Kontaktlinks."),
 		"PaymentMsg":       paymentMsg,
 		"PaymentOK":        paymentOK,
-		"PaymentRows":      a.unitPaymentStatusViewsForUnits(tenant.Slug, units),
-		"HasPaymentRows":   len(units) > 0,
 	}))
 }
 
@@ -2817,13 +2815,13 @@ func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request, ac 
 	}
 	override, err := tenantOverrideFromForm(r.Form)
 	if err != nil {
-		http.Redirect(w, r, "/app/settings/building?building=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?building=invalid#overview", http.StatusSeeOther)
 		return
 	}
 	if a.tenantOverrides != nil {
 		if err := a.tenantOverrides.SetMeta(tenant.Slug, override); err != nil {
 			logError("building settings save failed", err, "tenant", tenant.Slug)
-			http.Redirect(w, r, "/app/settings/building?building=error", http.StatusSeeOther)
+			http.Redirect(w, r, "/app/settings/building?building=error#overview", http.StatusSeeOther)
 			return
 		}
 	}
@@ -2841,7 +2839,7 @@ func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request, ac 
 			"brand_abbreviation": override.BrandAbbreviation,
 		},
 	})
-	http.Redirect(w, r, "/app/settings/building?building=saved", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/settings/building?building=saved#overview", http.StatusSeeOther)
 }
 
 func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -2850,12 +2848,12 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 		return
 	}
 	if err := r.ParseMultipartForm(maxTenantHeroFormBytes); err != nil {
-		http.Redirect(w, r, "/app/settings/building?hero=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?hero=invalid#appearance", http.StatusSeeOther)
 		return
 	}
 	header, ok := tenantHeroHeader(r)
 	if !ok {
-		http.Redirect(w, r, "/app/settings/building?hero=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?hero=invalid#appearance", http.StatusSeeOther)
 		return
 	}
 	previous := ""
@@ -2867,14 +2865,14 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 	filename, err := a.saveTenantHeroImage(tenant.Slug, header)
 	if err != nil {
 		logError("tenant hero upload failed", err, "tenant", tenant.Slug)
-		http.Redirect(w, r, "/app/settings/building?hero=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?hero=invalid#appearance", http.StatusSeeOther)
 		return
 	}
 	if a.tenantOverrides != nil {
 		if err := a.tenantOverrides.SetHeroImage(tenant.Slug, filename); err != nil {
 			_ = a.removeTenantHeroImage(filename)
 			logError("tenant hero save failed", err, "tenant", tenant.Slug)
-			http.Redirect(w, r, "/app/settings/building?hero=error", http.StatusSeeOther)
+			http.Redirect(w, r, "/app/settings/building?hero=error#appearance", http.StatusSeeOther)
 			return
 		}
 	}
@@ -2892,7 +2890,7 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 		TargetID:   tenant.Slug,
 		Summary:    "Hero-Bild geändert",
 	})
-	http.Redirect(w, r, "/app/settings/building?hero=saved", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/settings/building?hero=saved#appearance", http.StatusSeeOther)
 }
 
 func (a *app) deleteBuildingHero(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -2910,7 +2908,7 @@ func (a *app) deleteBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 		previous, err = a.tenantOverrides.ClearHeroImage(tenant.Slug)
 		if err != nil {
 			logError("tenant hero reset failed", err, "tenant", tenant.Slug)
-			http.Redirect(w, r, "/app/settings/building?hero=error", http.StatusSeeOther)
+			http.Redirect(w, r, "/app/settings/building?hero=error#appearance", http.StatusSeeOther)
 			return
 		}
 	}
@@ -2928,7 +2926,7 @@ func (a *app) deleteBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 			Summary:    "Hero-Bild entfernt",
 		})
 	}
-	http.Redirect(w, r, "/app/settings/building?hero=removed", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/settings/building?hero=removed#appearance", http.StatusSeeOther)
 }
 
 func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -2942,7 +2940,7 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 	}
 	item, err := buildingUnitFromForm(tenant.Slug, r.Form)
 	if err != nil {
-		http.Redirect(w, r, "/app/settings/building?unit=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?unit=invalid#unit-add", http.StatusSeeOther)
 		return
 	}
 	origID := normalizeUnitID(r.FormValue("orig_id"))
@@ -2951,11 +2949,11 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 	duplicate, err := a.unitStore.UpsertUnit(tenant.Slug, origID, item)
 	if err != nil {
 		logError("unit save failed", err, "tenant", tenant.Slug, "unit_id", item.ID)
-		http.Redirect(w, r, "/app/settings/building?unit=error", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?unit=error#units", http.StatusSeeOther)
 		return
 	}
 	if duplicate {
-		http.Redirect(w, r, "/app/settings/building?unit=duplicate", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?unit=duplicate#unit-add", http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{
@@ -2973,7 +2971,7 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 			"miteigentumsanteil": formatMiteigentumsanteil(item.MiteigentumsanteilPPM),
 		},
 	})
-	http.Redirect(w, r, "/app/settings/building?unit=saved", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/settings/building?unit=saved#units", http.StatusSeeOther)
 }
 
 func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -2987,18 +2985,18 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 	}
 	deleteID := normalizeUnitID(r.FormValue("id"))
 	if deleteID == "" {
-		http.Redirect(w, r, "/app/settings/building?unit=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?unit=invalid#units", http.StatusSeeOther)
 		return
 	}
 	// Remove under one lock (HAUSV-145).
 	removed, removedUnit, err := a.unitStore.DeleteUnit(tenant.Slug, deleteID)
 	if err != nil {
 		logError("unit delete failed", err, "tenant", tenant.Slug, "unit_id", deleteID)
-		http.Redirect(w, r, "/app/settings/building?unit=error", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?unit=error#units", http.StatusSeeOther)
 		return
 	}
 	if !removed {
-		http.Redirect(w, r, "/app/settings/building?unit=missing", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?unit=missing#units", http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{
@@ -3016,7 +3014,7 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 			"miteigentumsanteil": formatMiteigentumsanteil(removedUnit.MiteigentumsanteilPPM),
 		},
 	})
-	http.Redirect(w, r, "/app/settings/building?unit=deleted", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/settings/building?unit=deleted#units", http.StatusSeeOther)
 }
 
 func (a *app) updateUnitPaymentStatus(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -3031,12 +3029,12 @@ func (a *app) updateUnitPaymentStatus(w http.ResponseWriter, r *http.Request, ac
 	unitID := normalizeUnitID(r.FormValue("unit_id"))
 	status := normalizeUnitPaymentStatus(r.FormValue("status"))
 	if unitID == "" || status == "" {
-		http.Redirect(w, r, "/app/settings/building?payment=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?payment=invalid#units", http.StatusSeeOther)
 		return
 	}
 	members := a.unitStore.MembersForUnit(tenant.Slug, unitID)
 	if !members.Found {
-		http.Redirect(w, r, "/app/settings/building?payment=missing", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?payment=missing#units", http.StatusSeeOther)
 		return
 	}
 	record, err := a.unitPaymentStore.Set(unitPaymentStatus{
@@ -3047,7 +3045,7 @@ func (a *app) updateUnitPaymentStatus(w http.ResponseWriter, r *http.Request, ac
 	})
 	if err != nil {
 		logError("unit payment status save failed", err, "tenant", tenant.Slug, "unit_id", unitID)
-		http.Redirect(w, r, "/app/settings/building?payment=error", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?payment=error#units", http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{
@@ -3063,7 +3061,7 @@ func (a *app) updateUnitPaymentStatus(w http.ResponseWriter, r *http.Request, ac
 			"status":     unitPaymentStatusLabel(record.Status),
 		},
 	})
-	http.Redirect(w, r, "/app/settings/building?payment=saved", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/settings/building?payment=saved#units", http.StatusSeeOther)
 }
 
 func (a *app) buildingSettingsContext(w http.ResponseWriter, ac authCtx) (tenantConfig, string, string, userProfile, bool) {
@@ -3182,10 +3180,42 @@ func buildingUnitViews(units []unit) []buildingUnitView {
 			ShareValue:         strconv.Itoa(item.MiteigentumsanteilPPM),
 			OwnerEmails:        strings.Join(item.OwnerEmails, ", "),
 			RenterEmails:       strings.Join(item.RenterEmails, ", "),
+			MembersLabel:       unitMembersLabel(len(item.OwnerEmails), len(item.RenterEmails)),
 			DeleteConfirmLabel: "Einheit " + item.Label + " entfernen",
 		})
 	}
 	return views
+}
+
+func (a *app) buildingUnitViewsWithPayments(tenantSlug string, units []unit) []buildingUnitView {
+	views := buildingUnitViews(units)
+	payments := a.unitPaymentStatusViewsForUnits(tenantSlug, units)
+	for i := range views {
+		if i >= len(payments) {
+			break
+		}
+		views[i].PaymentStatus = payments[i].Status
+		views[i].PaymentStatusClass = payments[i].StatusClass
+		views[i].PaymentDetail = payments[i].Detail
+		views[i].PaymentUpdatedAt = payments[i].UpdatedAt
+		views[i].PaymentHasUpdated = payments[i].HasUpdatedAt
+		views[i].PaymentOptions = payments[i].StatusOptions
+	}
+	return views
+}
+
+func unitMembersLabel(ownerCount, renterCount int) string {
+	parts := make([]string, 0, 2)
+	if ownerCount > 0 {
+		parts = append(parts, strconv.Itoa(ownerCount)+" Eigentümer")
+	}
+	if renterCount > 0 {
+		parts = append(parts, strconv.Itoa(renterCount)+" Mieter")
+	}
+	if len(parts) == 0 {
+		return "Noch keine Personen verknüpft"
+	}
+	return strings.Join(parts, " · ")
 }
 
 func (a *app) unitPaymentStatusViewsForUnits(tenantSlug string, units []unit) []unitPaymentStatusView {
