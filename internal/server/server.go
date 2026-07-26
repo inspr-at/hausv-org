@@ -1701,8 +1701,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		visible := a.announcementStore.Visible(tenant.Slug, now)
 		unreadAnnouncements = unreadAnnouncementCount(visible, lastSeen, now)
 		announcements = a.announcementViewsWithReadState(tenant.Slug, visible, now, false, lastSeen, email, role)
-		if len(announcements) > 3 {
-			announcements = announcements[:3]
+		if len(announcements) > 1 {
+			announcements = announcements[:1]
 		}
 	}
 	eventCount := 0
@@ -1711,8 +1711,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		upcoming := a.eventStore.Upcoming(tenant.Slug, now)
 		eventCount = len(upcoming)
 		events = a.eventViews(tenant.Slug, upcoming, now, email, role)
-		if len(events) > 4 {
-			events = events[:4]
+		if len(events) > 2 {
+			events = events[:2]
 		}
 	}
 	issueURL := "/app/anliegen"
@@ -1763,6 +1763,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			parkingPillClass = "dringend"
 		}
 	}
+	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen)
 	a.render(w, "portal", a.withBase(ac, map[string]any{
 		"Title":        "WEG Portal",
 		"GreetingName": firstNonEmpty(profile.FirstName, profile.DisplayName()),
@@ -1772,6 +1773,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"CanManageAnnouncements":    canManage,
 		"CanManageEvents":           canManageEvents(role),
 		"ActivePage":                "home",
+		"DashboardDigest":           digest,
+		"HasDashboardDigest":        len(digest) > 0,
 		"UnreadAnnouncements":       unreadAnnouncements,
 		"AnnouncementSummaryDetail": pluralizeCount(unreadAnnouncements, "ungelesener Beitrag", "ungelesene Beiträge"),
 		"EventCount":                eventCount,
@@ -1805,16 +1808,19 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 }
 
 func (a *app) dashboardDigestItems(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time) []dashboardDigestItem {
-	items := []dashboardDigestItem{}
+	var announcementItem *dashboardDigestItem
+	var issueItem *dashboardDigestItem
+	var eventItem *dashboardDigestItem
 	if a.announcementStore != nil {
 		unread := unreadAnnouncementCount(a.announcementStore.Visible(tenantSlug, now), lastSeen, now)
 		if unread > 0 {
-			items = append(items, dashboardDigestItem{
+			item := dashboardDigestItem{
 				Title:  "Neue Aushänge",
 				Detail: pluralizeCount(unread, "ungelesener Beitrag", "ungelesene Beiträge"),
 				URL:    "/app/announcements",
 				Badge:  strconv.Itoa(unread),
-			})
+			}
+			announcementItem = &item
 		}
 	}
 	if a.issueStore != nil {
@@ -1827,25 +1833,43 @@ func (a *app) dashboardDigestItems(tenantSlug string, email string, role string,
 				url = "/app/anliegen/board"
 				title = "Offene Anliegen im Haus"
 			}
-			items = append(items, dashboardDigestItem{
+			item := dashboardDigestItem{
 				Title:  title,
 				Detail: detail,
 				URL:    url,
 				Badge:  strconv.Itoa(open),
-			})
+			}
+			issueItem = &item
 		}
 	}
 	if a.eventStore != nil {
 		upcoming := a.eventStore.Upcoming(tenantSlug, now)
 		if len(upcoming) > 0 {
-			items = append(items, dashboardDigestItem{
+			item := dashboardDigestItem{
 				Title:  "Kommende Termine",
 				Detail: pluralizeCount(len(upcoming), "Termin geplant", "Termine geplant"),
 				URL:    "/app/events",
 				Badge:  strconv.Itoa(len(upcoming)),
-			})
+			}
+			eventItem = &item
 		}
 	}
+	items := []dashboardDigestItem{}
+	appendItem := func(item *dashboardDigestItem) {
+		if item != nil {
+			items = append(items, *item)
+		}
+	}
+	// For administrators, untriaged work is the natural first stop. Residents
+	// see newly published house information first, followed by their own cases.
+	if hasCapability(role, capabilityManageIssues) {
+		appendItem(issueItem)
+		appendItem(announcementItem)
+	} else {
+		appendItem(announcementItem)
+		appendItem(issueItem)
+	}
+	appendItem(eventItem)
 	return items
 }
 
@@ -3975,6 +3999,9 @@ func enrichCapabilityData(data map[string]any) {
 	}
 	if _, ok := data["CanManageAnnouncements"]; !ok {
 		data["CanManageAnnouncements"] = hasCapability(role, capabilityManageAnnouncements)
+	}
+	if _, ok := data["CanManageIssues"]; !ok {
+		data["CanManageIssues"] = hasCapability(role, capabilityManageIssues)
 	}
 	if _, ok := data["CanManageDocuments"]; !ok {
 		data["CanManageDocuments"] = hasCapability(role, capabilityManageDocuments)

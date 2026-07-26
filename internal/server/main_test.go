@@ -2890,7 +2890,7 @@ func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 	}
 }
 
-func TestPortalUsesAnnouncementEmptyStateWithoutPrototypeCopy(t *testing.T) {
+func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
 	rr := authedRequest(t, a, "resident@example.com", "/app")
@@ -2903,13 +2903,18 @@ func TestPortalUsesAnnouncementEmptyStateWithoutPrototypeCopy(t *testing.T) {
 			t.Fatalf("portal must not contain placeholder copy %q", forbidden)
 		}
 	}
-	if !strings.Contains(body, "Noch keine Beiträge") || !strings.Contains(body, `href="/app/announcements"`) {
-		t.Fatal("portal should show announcement empty state and real archive link")
+	for _, want := range []string{"Jetzt wichtig", "Sie müssen gerade nichts tun", "Alles im Blick", `href="/app/announcements"`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("calm portal should contain %q", want)
+		}
 	}
-	if !strings.Contains(body, `class="home-hero"`) || !strings.Contains(body, "Willkommen zurück") || strings.Contains(body, `class="banner"`) {
+	if strings.Contains(body, `class="empty-state"`) || strings.Contains(body, "Noch keine Beiträge") {
+		t.Fatal("calm portal should not stack empty states")
+	}
+	if !strings.Contains(body, `class="home-hero"`) || !strings.Contains(body, "Hier sehen Sie, was jetzt wichtig ist") || strings.Contains(body, `class="banner"`) {
 		t.Fatal("portal should use the integrated home hero instead of the old banner")
 	}
-	for _, want := range []string{`.status-card > span:not(.status-icon)`, `.home-list-row > span:not(.home-list-icon):not(.pill)`} {
+	for _, want := range []string{`.home-attention-item:first-child`, `.home-list-row > span:not(.home-list-icon):not(.pill)`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("portal stylesheet should preserve icon centering selector %q", want)
 		}
@@ -2932,7 +2937,7 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "jhw22", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Privates Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
 
 	resident := authedRequest(t, a, "resident@example.com", "/app").Body.String()
-	for _, want := range []string{"Aktuell", "Aushänge", "neu", "Anliegen", "offen", `href="/app/anliegen"`, "Termine", "anstehend"} {
+	for _, want := range []string{"Jetzt wichtig", "Neue Aushänge", "ungelesener Beitrag", "Offene Anliegen", `href="/app/anliegen"`, "Kommende Termine", "Termin geplant"} {
 		if !strings.Contains(resident, want) {
 			t.Fatalf("resident digest should contain %q", want)
 		}
@@ -2942,10 +2947,13 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 	}
 
 	manager := authedRequest(t, a, "manager@example.com", "/app").Body.String()
-	for _, want := range []string{"Anliegen", ">2<", `href="/app/anliegen/board"`} {
+	for _, want := range []string{"Offene Anliegen im Haus", `home-attention-count">2`, `href="/app/anliegen/board"`} {
 		if !strings.Contains(manager, want) {
 			t.Fatalf("manager digest should contain %q", want)
 		}
+	}
+	if issueIndex, announcementIndex := strings.Index(manager, "Offene Anliegen im Haus"), strings.Index(manager, "Neue Aushänge"); issueIndex < 0 || announcementIndex < 0 || issueIndex > announcementIndex {
+		t.Fatalf("manager digest should put triage before announcements")
 	}
 }
 
@@ -3093,10 +3101,8 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 		t.Fatalf("portal status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	pinnedIndex := strings.Index(body, "Fixierter Hinweis")
-	normalIndex := strings.Index(body, "Normaler Hinweis")
-	if pinnedIndex < 0 || normalIndex < 0 || pinnedIndex > normalIndex {
-		t.Fatalf("portal should render pinned current announcement before normal current announcement:\n%s", body)
+	if !strings.Contains(body, "Fixierter Hinweis") || strings.Contains(body, "Normaler Hinweis") {
+		t.Fatalf("portal should preview only the highest-priority current announcement:\n%s", body)
 	}
 	for _, forbidden := range []string{"Alter Hinweis", "Geplanter Hinweis", "info-card", `class="quick-row disabled"`, "Schnellzugriff", `class="quick-row" href="/app/announcements"`} {
 		if strings.Contains(body, forbidden) {
@@ -3143,13 +3149,18 @@ func TestIssuesPageRendersResidentFormAndNav(t *testing.T) {
 		t.Fatalf("issues status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/app/anliegen"`, "Anliegen", "Neues Anliegen", `enctype="multipart/form-data"`, `name="category"`, `name="location_type"`, `name="attachments"`, `multiple`} {
+	for _, want := range []string{`href="/app/anliegen"`, "Anliegen", "Erstes Anliegen melden", `enctype="multipart/form-data"`, `name="category"`, `name="location_type"`, `name="attachments"`, `multiple`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("issues page should contain %q", want)
 		}
 	}
 	if strings.Contains(body, `class="nav-item disabled"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5`) {
 		t.Fatal("Anliegen nav item must be a live link, not a disabled placeholder")
+	}
+	for _, duplicate := range []string{`class="issue-stats"`, `class="issue-tabs"`, "Kalender abonnieren"} {
+		if strings.Contains(body, duplicate) {
+			t.Fatalf("resident issue flow should not render duplicate or unrelated control %q", duplicate)
+		}
 	}
 }
 
@@ -3178,7 +3189,7 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	if rr.Code != http.StatusSeeOther {
 		t.Fatalf("submit issue status = %d, want redirect", rr.Code)
 	}
-	if loc := rr.Header().Get("Location"); loc != "/app/anliegen?issue=created" {
+	if loc := rr.Header().Get("Location"); !strings.HasPrefix(loc, "/app/anliegen?issue=created#issue-") {
 		t.Fatalf("redirect = %q", loc)
 	}
 	issues := store.ListAuthor("jhw22", "resident@example.com")
@@ -3432,6 +3443,9 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 	if update.Code != http.StatusSeeOther {
 		t.Fatalf("manager workflow status = %d, want redirect", update.Code)
 	}
+	if loc := update.Header().Get("Location"); loc != "/app/anliegen/board?issue=updated#issue-"+issue.ID {
+		t.Fatalf("manager workflow redirect = %q", loc)
+	}
 	updated, ok := a.issueStore.Get("jhw22", issue.ID)
 	if !ok {
 		t.Fatal("updated issue not found")
@@ -3445,10 +3459,13 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 
 	page := authedRequest(t, a, "manager@example.com", "/app/anliegen")
 	body := page.Body.String()
-	for _, want := range []string{"Anliegen verwalten", "Tür schließt nicht", issuePriorityUrgent, "Triage-Board öffnen"} {
+	for _, want := range []string{"Anliegen", "Triage-Board"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("manager issues page should contain %q", want)
 		}
+	}
+	if strings.Contains(body, "Tür schließt nicht") {
+		t.Fatalf("manager overview should not duplicate the triage board")
 	}
 	if strings.Contains(body, `name="assignee_email"`) {
 		t.Fatalf("manager overview should link to board instead of rendering workflow form")
@@ -3456,10 +3473,14 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 
 	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board")
 	boardBody := board.Body.String()
-	for _, want := range []string{"Anliegen verwalten", "Tür schließt nicht", issuePriorityUrgent, `name="assignee_email"`} {
+	for _, want := range []string{"Anliegen bearbeiten", "Tür schließt nicht", issuePriorityUrgent, `name="assignee_email"`} {
 		if !strings.Contains(boardBody, want) {
 			t.Fatalf("manager issue board should contain %q", want)
 		}
+	}
+	if !strings.Contains(boardBody, `<details class="issue-board-tools">`) ||
+		strings.Contains(boardBody, `<details class="issue-board-tools" open>`) {
+		t.Fatalf("inactive issue filters should be collapsed")
 	}
 }
 
@@ -4853,7 +4874,7 @@ func TestIssueTriageBoardFiltersAndOpenCounts(t *testing.T) {
 		t.Fatalf("manager board status = %d", board.Code)
 	}
 	body := board.Body.String()
-	for _, want := range []string{"Anliegen verwalten", "Urgent repair", `name="assignee"`, "Zurücksetzen"} {
+	for _, want := range []string{"Anliegen bearbeiten", "Urgent repair", `name="assignee"`, "Zurücksetzen"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("triage board should contain %q:\n%s", want, body)
 		}
@@ -4863,7 +4884,7 @@ func TestIssueTriageBoardFiltersAndOpenCounts(t *testing.T) {
 	}
 
 	dashboard := authedRequest(t, a, "manager@example.com", "/app").Body.String()
-	if !strings.Contains(dashboard, "<strong>2</strong>") || !strings.Contains(dashboard, "<span>offen</span>") || !strings.Contains(dashboard, "nav-badge") {
+	if !strings.Contains(dashboard, `home-attention-count">2`) || !strings.Contains(dashboard, "2 offene Anliegen") || !strings.Contains(dashboard, "nav-badge") {
 		t.Fatalf("dashboard should surface open issue count:\n%s", dashboard)
 	}
 }

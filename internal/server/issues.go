@@ -59,6 +59,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		}
 	}
 	msg, msgOK := issueMessage(r.URL.Query().Get("issue"))
+	openIssueCreate := canCreateIssue && (!msgOK && msg != "" || r.URL.Query().Get("new") == "1" || len(issues) == 0)
 	calendarFeedURL := ""
 	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
@@ -92,6 +93,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		"ManageIssuesEmpty":          emptyState("Keine Anliegen im Haus", "Sobald ein Anliegen gemeldet wird, erscheint es hier für die Bearbeitung."),
 		"IssueMsg":                   msg,
 		"IssueOK":                    msgOK,
+		"OpenIssueCreate":            openIssueCreate,
 	}))
 }
 
@@ -151,6 +153,7 @@ func (a *app) createIssue(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			return
 		}
 	}
+	createdID := item.ID
 	if a.issueStore != nil {
 		created, err := a.issueStore.Create(item)
 		if err != nil {
@@ -161,9 +164,10 @@ func (a *app) createIssue(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
 			return
 		}
+		createdID = created.ID
 		a.notifyIssueCreated(tenant, created)
 	}
-	http.Redirect(w, r, "/app/anliegen?issue=created", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/anliegen?issue=created#issue-"+url.PathEscape(createdID), http.StatusSeeOther)
 }
 
 func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -477,6 +481,10 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	}
 	a.handleIssueServiceAssignmentChange(r, tenant, existing, updated, email, role)
 	a.notifyIssueUpdated(tenant, updated, email, "Anliegen \""+updated.Title+"\" aktualisiert")
+	if canManage {
+		http.Redirect(w, r, "/app/anliegen/board?issue=updated#issue-"+url.PathEscape(updated.ID), http.StatusSeeOther)
+		return
+	}
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
 }
 
@@ -859,6 +867,7 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 			Category:              item.Category,
 			Status:                status,
 			StatusClass:           issueStatusClass(status),
+			NextStep:              issueNextStep(status, canManage),
 			Priority:              priority,
 			AssigneeEmail:         item.AssigneeEmail,
 			HasAssignee:           item.AssigneeEmail != "",
@@ -889,6 +898,37 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 		})
 	}
 	return views
+}
+
+func issueNextStep(status string, canManage bool) string {
+	if canManage {
+		switch normalizeIssueStatus(status) {
+		case issueStatusOpen:
+			return "Als Nächstes: Priorität und Zuständigkeit festlegen."
+		case issueStatusProgress:
+			return "Als Nächstes: Bearbeitung dokumentieren oder Status aktualisieren."
+		case issueStatusAccepted:
+			return "Als Nächstes: Bearbeitung dokumentieren oder Status aktualisieren."
+		case issueStatusScheduled:
+			return "Als Nächstes: Termin prüfen und danach abschließen."
+		case issueStatusDone:
+			return "Abgeschlossen."
+		}
+	}
+	switch normalizeIssueStatus(status) {
+	case issueStatusOpen:
+		return "Als Nächstes prüft die Verwaltung Ihre Meldung."
+	case issueStatusProgress:
+		return "Die Verwaltung bearbeitet das Anliegen."
+	case issueStatusAccepted:
+		return "Die Verwaltung hat das Anliegen angenommen."
+	case issueStatusScheduled:
+		return "Bitte beachten Sie den vereinbarten Termin."
+	case issueStatusDone:
+		return "Abgeschlossen. Bei Bedarf können Sie das Anliegen wieder öffnen."
+	default:
+		return "Der aktuelle Stand ist oben sichtbar."
+	}
 }
 
 func issueCommentViews(comments []issueComment) []issueCommentView {

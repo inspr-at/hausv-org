@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.24.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Portal-Alltag",
+			Headline: "Die wichtigsten Wege sind ruhiger, kürzer und klar auf den nächsten Schritt ausgerichtet.",
+			Intro:    "Hausüberblick, Anliegen und Aushänge zeigen zuerst das Wesentliche; weitere Angaben bleiben bei Bedarf erreichbar.",
+			Items: []NoteItem{
+				{Label: "Klare Orientierung", Text: "Die mobile Kopfzeile nennt die aktuelle Seite und der Hausüberblick priorisiert echten Handlungsbedarf."},
+				{Label: "Anliegen", Text: "Bewohner sehen Status und nächsten Schritt sofort; die Verwaltung arbeitet in einem kompakten Triage-Board weiter."},
+				{Label: "Aushänge", Text: "Ein eindeutiger Erstellen-Einstieg und automatisch geöffnete neue Beiträge vereinfachen Veröffentlichen und Lesen."},
+			},
+		},
+		{
 			Version:  "0.23.1",
 			Date:     "26. Juli 2026",
 			Kind:     "Datenschutz",

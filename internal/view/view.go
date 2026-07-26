@@ -242,6 +242,7 @@ type IssueView struct {
 	Category                string
 	Status                  string
 	StatusClass             string
+	NextStep                string
 	Priority                string
 	AssigneeEmail           string
 	HasAssignee             bool

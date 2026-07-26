@@ -23,13 +23,12 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	}
 	archive := []announcement{}
 	filtered := []announcement{}
-	all := []announcementView{}
 	if a.announcementStore != nil {
 		archive = a.announcementStore.Archive(tenant.Slug, now)
-		filtered = filterAnnouncements(archive, selectedCategory, searchQuery)
 		if canManage {
-			all = a.announcementViewsWithReadState(tenant.Slug, a.announcementStore.ListTenant(tenant.Slug), now, true, lastSeen, email, role)
+			archive = a.announcementStore.ListTenant(tenant.Slug)
 		}
+		filtered = filterAnnouncements(archive, selectedCategory, searchQuery)
 	}
 	a.render(w, "announcements", a.withBase(ac, map[string]any{
 		"Title":                  "Aushang",
@@ -40,9 +39,6 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"HasAnyAnnouncements":    len(archive) > 0,
 		"AnnouncementsEmpty":     emptyState("Keine Beiträge", "Für diese Suche oder Kategorie gibt es keinen Aushang."),
 		"AnnouncementsBlank":     emptyState("Noch keine Beiträge", "Sobald ein Aushang veröffentlicht ist, erscheint er hier."),
-		"AllAnnouncements":       all,
-		"HasAllAnnouncements":    len(all) > 0,
-		"AllAnnouncementsEmpty":  emptyState("Noch kein Aushang gespeichert", "Neue Aushänge erscheinen hier nach dem Speichern."),
 		"AnnounceMsg":            announcementMessage(r.URL.Query().Get("announce")),
 		"NowInput":               formatLocalDateTimeInput(now),
 		"SearchQuery":            searchQuery,
@@ -98,7 +94,7 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request, ac auth
 		}
 	}
 	a.notifyAnnouncementPublished(tenant, created, email)
-	http.Redirect(w, r, "/app/announcements?announce=created", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/announcements?announce=created#announcement-"+url.PathEscape(created.ID), http.StatusSeeOther)
 }
 
 func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request, ac authCtx) {

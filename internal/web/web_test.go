@@ -72,6 +72,14 @@ func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
 			}
 		}
 	}
+	if got := strings.Count(PageTemplates, `data-dialog="announcement-create"`); got != 1 {
+		t.Fatalf("announcement create should have one entry point, got %d", got)
+	}
+	for _, want := range []string{`class="announcement-body"`, `class="dialog-optional full"`, `Aushang veröffentlichen`} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("announcement flow missing progressive-disclosure marker %q", want)
+		}
+	}
 }
 
 func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {

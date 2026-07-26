@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.24.0] - 2026-07-26
+
+### Verbessert
+
+- **Der Hausüberblick zeigt zuerst, was jetzt wichtig ist.** Bewohner sehen neue Informationen und eigene offene Anliegen in sinnvoller Reihenfolge; die Verwaltung gelangt direkt zur offenen Arbeit. Ohne Handlungsbedarf bleibt eine ruhige Bestätigung statt leerer oder doppelter Übersichten.
+- **Anliegen sind schneller gemeldet und leichter zu verfolgen.** Die Meldung fragt zuerst nur das Wesentliche ab. Danach stehen Status und nächster Schritt direkt an der Karte; Verlauf, Anhänge und weitere Angaben bleiben bei Bedarf erreichbar.
+- **Die Verwaltung bearbeitet Anliegen in einem kompakten Arbeitsablauf.** Filter und Zusatzfelder sind eingeklappt, Priorität und Zuständigkeit sofort erkennbar, und nach einer Aktualisierung bleibt die passende Karte im Triage-Board im Blick.
+- **Aushänge haben einen eindeutigen Veröffentlichungs- und Lesefluss.** Es gibt nur noch einen Erstellen-Einstieg. Neue Beiträge öffnen ihren Text für Bewohner automatisch, während Planung, Fixierung und Anhänge den Hauptdialog nicht überladen.
+- **Mobile Orientierung ist klarer.** Die Kopfzeile nennt die aktuelle Seite, Navigation und Inhalte bleiben ohne seitliches Scrollen bedienbar, und die häufigsten Abläufe passen kompakter auf kleine Bildschirme.
+
 ## [0.23.1] - 2026-07-26
 
 ### Verbessert
