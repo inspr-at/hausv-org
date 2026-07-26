@@ -1738,8 +1738,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if a.documentStore != nil {
 		visible := sortDocumentsForView(a.visibleDocumentsForActor(tenant.Slug, email, role), "newest")
 		documentCount = len(visible)
-		if len(visible) > 3 {
-			visible = visible[:3]
+		if len(visible) > 2 {
+			visible = visible[:2]
 		}
 		documents = a.documentViewsForActor(tenant.Slug, email, role, visible)
 	}

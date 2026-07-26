@@ -25,18 +25,24 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	sortMode := selectedDocumentSort(r.URL.Query().Get("sort"))
 	documents := sortDocumentsForView(filterDocuments(visible, searchQuery), sortMode)
 	documentMsg, documentOK := documentMessage(r.URL.Query().Get("doc"))
+	documentCountLabel := fmt.Sprintf("%d Dokumente", len(documents))
+	if len(documents) == 1 {
+		documentCountLabel = "1 Dokument"
+	}
 	a.render(w, "documents", a.withBase(ac, map[string]any{
 		"Title":              "Dokumente",
 		"CanManageDocuments": canManage,
 		"ActivePage":         "documents",
 		"Documents":          a.documentViewsForActor(tenant.Slug, email, role, documents),
-		"DocumentSections":   a.documentCategorySectionsForActor(tenant.Slug, email, role, documents, true),
+		"DocumentSections":   a.documentCategorySectionsForActor(tenant.Slug, email, role, documents, false),
 		"HasDocuments":       len(documents) > 0,
 		"HasAnyDocuments":    len(visible) > 0,
-		"DocumentsEmpty":     emptyState("Noch keine Dokumente", "Sobald die Verwaltung ein Dokument hochlädt, erscheint es hier nach Sichtbarkeit gefiltert."),
+		"DocumentsEmpty":     emptyState("Noch keine Dokumente", "Sobald die Verwaltung ein Dokument freigibt, erscheint es hier."),
+		"DocumentCountLabel": documentCountLabel,
 		"DocumentMsg":        documentMsg,
 		"DocumentOK":         documentOK,
 		"SearchQuery":        searchQuery,
+		"HasSearchQuery":     searchQuery != "",
 		"SortMode":           sortMode,
 		"SortOptions":        documentSortOptions(sortMode),
 		"CategoryOptions":    documentCategoryOptions(""),
@@ -92,7 +98,7 @@ func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request, ac authCtx)
 			"content_type": created.ContentType,
 		},
 	})
-	http.Redirect(w, r, "/app/dokumente?doc=uploaded", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/dokumente?doc=uploaded#document-"+url.PathEscape(created.ID), http.StatusSeeOther)
 }
 
 func (a *app) replaceDocument(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -136,7 +142,7 @@ func (a *app) replaceDocument(w http.ResponseWriter, r *http.Request, ac authCtx
 			"size":         formatBytes(replacement.Size),
 		},
 	})
-	http.Redirect(w, r, "/app/dokumente?doc=replaced", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/dokumente?doc=replaced#document-"+url.PathEscape(replacement.ID), http.StatusSeeOther)
 }
 
 func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request, ac authCtx) {

@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.26.0] - 2026-07-26
+
+### Verbessert
+
+- **Dokumente sind schneller auffindbar.** Die Hausablage zeigt nur Kategorien mit passenden Unterlagen; Suche und Sortierung bilden eine kompakte Einheit und führen bei leeren Ergebnissen verständlich zurück.
+- **Ansehen ist der klare nächste Schritt.** Vorschau und Download sind eindeutig gewichtet, während Dateiname, Verwaltungsfunktionen und Versionsverlauf bei Bedarf erreichbar bleiben.
+- **Veröffentlichen und Ersetzen sind übersichtlicher.** Der Upload fragt zuerst Titel, Kategorie, Sichtbarkeit und Datei ab; eine Einheit ist optional. Beim Ersetzen bleibt transparent, welche Einordnung erhalten und wo die bisherige Version abgelegt wird.
+- **Neue Unterlagen führen vom Hausüberblick in den richtigen Kontext.** Bis zu zwei aktuelle Dokumente verlinken in die Hausablage statt sofort einen Download zu starten.
+- **Die Dokumentablage nutzt kleine Bildschirme deutlich besser.** Leere Kategorien und der doppelte Upload-Einstieg entfallen; Bewohner sehen keine Verwaltungsaktionen.
+
 ## [0.25.0] - 2026-07-26
 
 ### Verbessert

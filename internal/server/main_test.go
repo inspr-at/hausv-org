@@ -2390,6 +2390,9 @@ func TestDocumentUploadRecordsMetadataAndAudit(t *testing.T) {
 	if len(docs) != 1 || docs[0].Title != "Hausordnung" || docs[0].Visibility != documentVisibilityAllResidents {
 		t.Fatalf("stored docs = %+v", docs)
 	}
+	if location := upload.Header().Get("Location"); location != "/app/dokumente?doc=uploaded#document-"+docs[0].ID {
+		t.Fatalf("upload redirect = %q, want created document anchor", location)
+	}
 	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionDocumentUpload, Limit: 10})
 	if len(events) != 1 || events[0].TargetID != docs[0].ID || events[0].Details["title"] != "Hausordnung" {
 		t.Fatalf("audit events = %+v", events)
@@ -2484,8 +2487,11 @@ func TestDocumentsPageSearchSortAndCategoryEmptyStates(t *testing.T) {
 	if oldIndex < 0 || newIndex < 0 || oldIndex > newIndex {
 		t.Fatalf("oldest sort order not reflected: old=%d new=%d", oldIndex, newIndex)
 	}
-	if !strings.Contains(body, "Keine passenden Dokumente in dieser Kategorie.") {
-		t.Fatal("category empty state missing")
+	if strings.Contains(body, "Keine passenden Dokumente in dieser Kategorie.") || strings.Count(body, `class="document-section"`) != 1 {
+		t.Fatal("default document view should hide empty category sections")
+	}
+	if !strings.Contains(body, `value="" disabled selected>Kategorie wählen`) {
+		t.Fatal("document upload should require an explicit category")
 	}
 	filtered := authedRequest(t, a, "manager@example.com", "/app/dokumente?q=2025")
 	filteredBody := filtered.Body.String()
@@ -2597,9 +2603,12 @@ func TestDocumentReplaceShowsHistoryAndDownloadAuditVersion(t *testing.T) {
 	if len(current) != 1 || current[0].Version != 2 {
 		t.Fatalf("current docs = %+v", current)
 	}
+	if location := replace.Header().Get("Location"); location != "/app/dokumente?doc=replaced#document-"+current[0].ID {
+		t.Fatalf("replace redirect = %q, want current document anchor", location)
+	}
 	page := authedRequest(t, a, "manager@example.com", "/app/dokumente")
 	body := page.Body.String()
-	for _, want := range []string{"Version 2", "Ältere Versionen", "Version 1", "Ersetzen"} {
+	for _, want := range []string{"Version 2", "Versionsverlauf", "Version 1", "Neue Version hochladen"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("documents page missing %q", want)
 		}

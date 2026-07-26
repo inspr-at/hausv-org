@@ -1585,8 +1585,12 @@ func ContactKindOptions(selected string) []SelectOption {
 }
 
 func DocumentCategoryOptions(selected string) []SelectOption {
-	selected = store.NormalizeDocumentCategory(selected)
-	options := make([]SelectOption, 0, len(DocumentCategories()))
+	selected = strings.TrimSpace(selected)
+	if selected != "" {
+		selected = store.NormalizeDocumentCategory(selected)
+	}
+	options := make([]SelectOption, 0, len(DocumentCategories())+1)
+	options = append(options, SelectOption{Value: "", Label: "Kategorie wählen", Selected: selected == ""})
 	for _, category := range DocumentCategories() {
 		options = append(options, SelectOption{Value: category, Label: category, Selected: selected == category})
 	}

@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.26.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Dokumente",
+			Headline: "Die Hausablage zeigt schneller die richtige Unterlage und den nächsten sinnvollen Schritt.",
+			Intro:    "Nur belegte Kategorien bleiben sichtbar; Suche, Vorschau, Download und Verwaltung sind klar nach ihrer täglichen Bedeutung geordnet.",
+			Items: []NoteItem{
+				{Label: "Schneller finden", Text: "Leere Kategorien entfallen und Suche sowie Sortierung bilden eine kompakte Werkzeugleiste."},
+				{Label: "Klar ansehen", Text: "Die Vorschau ist die Hauptaktion; Dateidetails, Versionsverlauf und Verwaltung bleiben bei Bedarf erreichbar."},
+				{Label: "Sicher veröffentlichen", Text: "Titel, Kategorie, Sichtbarkeit und Datei stehen zuerst; optionale Zuordnung und Ersetzen erklären ihre Wirkung."},
+			},
+		},
+		{
 			Version:  "0.25.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Termine & Triage",

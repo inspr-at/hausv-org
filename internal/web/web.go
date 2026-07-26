@@ -830,13 +830,13 @@ const PageTemplates = `
     .home-date span { margin-top: 3px; font-size: 11px; letter-spacing: .06em; }
     .home-event-copy strong { display: block; font-size: 14px; line-height: 1.25; overflow-wrap: anywhere; }
     .home-event-copy span { display: block; margin-top: 5px; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
-    .document-dashboard-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto auto 24px; gap: 14px; align-items: center; min-height: 44px; padding: 10px 12px; color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+    .document-dashboard-row { display: grid; grid-template-columns: minmax(0,1fr) auto 24px; gap: 14px; align-items: center; min-height: 48px; padding: 10px 12px; color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); font-size: 12.5px; }
     .document-dashboard-row:last-child { border-bottom: 0; }
     .document-file-title { min-width: 0; display: inline-flex; align-items: center; gap: 9px; }
     .document-file-title svg, .document-download svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .document-file-title svg { flex: 0 0 auto; color: #b65045; }
     .document-file-title strong { min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
-    .document-dashboard-row > span:not(.document-file-title):not(.document-download) { color: var(--muted); white-space: nowrap; }
+    .document-dashboard-meta { color: var(--muted); white-space: nowrap; }
     .document-download { color: var(--gold-ink); display: grid; place-items: center; }
     .parking-summary { display: grid; grid-template-columns: 64px minmax(0,1fr) auto; gap: 16px; align-items: center; border: 1px solid #d9e1ea; border-radius: var(--radius-sm); padding: 18px 20px; background: linear-gradient(90deg, rgba(76,103,138,.08), rgba(255,254,251,.96)); }
     .parking-summary .status-icon { width: 58px; height: 58px; background: rgba(76,103,138,.12); color: #365475; }
@@ -1354,24 +1354,49 @@ const PageTemplates = `
     .status-cell { display: grid; gap: 4px; }
     .payment-form { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .payment-form input { width: auto; max-width: 128px; min-height: 34px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: #fffefb; color: var(--ink); font: inherit; font-size: 12.5px; }
-    .document-sections { display: grid; gap: 14px; }
-    .filter-form.document-filter { grid-template-columns: minmax(280px,1fr) minmax(150px,.28fr) auto; align-items: end; margin-bottom: 12px; }
-    .filter-form.document-filter button { width: auto; margin-top: 0; min-height: 42px; }
-    .document-section { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 10px; }
-    .document-section:first-child { border-top: 0; padding-top: 0; }
-    .document-section h3 { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 18px; }
+    .documents-page { gap: 20px; }
+    .document-page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+    .document-page-head .lede { max-width: 720px; }
+    .document-library { padding: 20px; display: grid; gap: 22px; }
+    .document-library-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .document-toolbar { display: grid; grid-template-columns: minmax(280px,1fr) minmax(190px,.3fr) auto; align-items: stretch; gap: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fffefb; overflow: hidden; box-shadow: 0 8px 24px rgba(32,37,31,.04); }
+    .document-search { position: relative; min-width: 0; }
+    .document-search svg { position: absolute; left: 14px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); stroke: var(--muted); fill: none; stroke-width: 1.8; pointer-events: none; }
+    .document-search input, .document-sort select { width: 100%; min-height: 50px; border: 0; border-radius: 0; background: transparent; color: var(--ink); font: inherit; }
+    .document-search input { padding: 11px 14px 11px 44px; }
+    .document-sort { position: relative; border-left: 1px solid var(--line); }
+    .document-sort select { padding: 11px 36px 11px 14px; font-weight: 750; }
+    .document-toolbar .button { min-height: 50px; margin: 0; border-width: 0 0 0 1px; border-radius: 0; }
+    .document-toolbar .document-reset { display: inline-flex; align-items: center; justify-content: center; padding-inline: 14px; color: var(--gold-ink); background: var(--panel-soft); font-size: 13px; font-weight: 850; text-decoration: none; border-left: 1px solid var(--line); }
+    .document-sections { display: grid; gap: 24px; }
+    .document-section { display: grid; gap: 10px; }
+    .document-section h3 { display: flex; align-items: center; justify-content: flex-start; gap: 9px; font-size: 20px; }
     .document-section h3 .section-count { font-family: var(--font-sans); font-size: 11px; font-weight: 900; color: var(--gold-ink); background: rgba(200,153,63,.12); border: 1px solid rgba(200,153,63,.24); border-radius: var(--radius-pill); padding: 3px 8px; white-space: nowrap; }
-    .document-section-empty { padding-top: 10px; gap: 6px; }
-    .document-section-empty h3 { color: var(--muted); font-size: 15px; }
-    .document-list { display: grid; gap: 8px; }
-    .document-row { display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 8px 12px; align-items: start; border: 1px solid var(--line); border-radius: var(--radius-xs); background: #fffefb; padding: 10px 12px; }
-    .document-row::before { content: ""; width: 34px; height: 40px; border: 1px solid rgba(200,153,63,.28); border-radius: 8px; background: linear-gradient(135deg, rgba(200,153,63,.18), rgba(200,153,63,.18) 34%, transparent 35%), rgba(200,153,63,.08); box-shadow: inset 0 -10px 0 rgba(255,254,251,.48); }
-    .document-row strong { display: block; font-size: 15px; line-height: 1.25; overflow-wrap: anywhere; }
-    .document-meta { margin-top: 5px; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px 7px; align-items: center; color: var(--muted); font-size: 12.5px; }
-    .document-file { min-width: 0; max-width: min(260px,100%); color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .document-side { grid-column: 2; display: flex; align-items: center; justify-content: flex-start; gap: 7px; flex-wrap: wrap; }
+    .document-list { display: grid; gap: 10px; }
+    .document-row { display: grid; grid-template-columns: 52px minmax(0,1fr) minmax(156px,auto); gap: 12px 16px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fffefb; padding: 16px; box-shadow: 0 10px 28px rgba(32,37,31,.045); }
+    .document-icon { width: 50px; height: 58px; display: grid; place-items: center; border: 1px solid rgba(200,153,63,.28); border-radius: 10px; color: var(--gold-ink); background: rgba(200,153,63,.09); }
+    .document-icon svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .document-copy { min-width: 0; }
+    .document-copy > strong { display: block; font-family: var(--font-serif); font-size: 19px; line-height: 1.2; overflow-wrap: anywhere; }
+    .document-meta { margin-top: 7px; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; color: var(--muted); font-size: 12.5px; }
+    .document-meta-secondary { color: var(--soft); font-weight: 700; }
+    .document-file-details { margin-top: 7px; color: var(--soft); font-size: 12px; }
+    .document-file-details summary { cursor: pointer; font-weight: 750; }
+    .document-file { display: block; max-width: min(520px,100%); margin-top: 5px; overflow-wrap: anywhere; }
+    .document-actions { min-width: 156px; display: grid; gap: 7px; }
+    .document-actions .button { width: 100%; justify-content: center; }
+    .document-admin-tools { grid-column: 2 / -1; border-top: 1px solid var(--line); padding-top: 10px; }
+    .document-admin-tools > summary, .document-versions summary { cursor: pointer; color: var(--gold-ink); font-size: 12.5px; font-weight: 850; }
+    .document-admin-tools-body { margin-top: 9px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .document-versions { grid-column: 2 / -1; border-top: 1px solid var(--line); padding-top: 10px; }
-    .document-versions summary { cursor: pointer; font-weight: 800; color: var(--gold-ink); }
+    .document-empty { min-height: 190px; display: grid; place-items: center; text-align: center; border: 1px dashed rgba(200,153,63,.42); border-radius: var(--radius-sm); background: rgba(255,254,251,.68); padding: 28px; }
+    .document-empty svg { width: 42px; height: 42px; margin-bottom: 11px; stroke: var(--gold-ink); fill: none; stroke-width: 1.45; }
+    .document-empty h3 { font-size: 22px; }
+    .document-empty p { max-width: 450px; margin: 6px auto 0; color: var(--muted); }
+    .document-empty .button { margin-top: 14px; }
+    .document-dialog-intro { margin: 0 0 14px; color: var(--muted); }
+    .document-replace-context { display: grid; gap: 4px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); padding: 12px 14px; margin-bottom: 14px; }
+    .document-replace-context strong { font-family: var(--font-serif); font-size: 17px; }
     .version-list { margin-top: 8px; display: grid; gap: 7px; }
     .version-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 12.5px; }
     .vote-list { display: grid; gap: 12px; }
@@ -1582,13 +1607,27 @@ const PageTemplates = `
       .audit-row-head { gap: 8px; }
       .audit-action strong { font-size: 15px; }
       .audit-meta { gap: 7px; }
-	      .document-row { grid-template-columns: 34px minmax(0,1fr); gap: 8px 10px; padding: 12px; }
-	      .document-row::before { width: 32px; height: 38px; }
-	      .document-row > div:first-of-type { min-width: 0; }
-	      .document-side { gap: 6px; margin-top: 4px; }
-	      .document-side .pill { order: -1; }
+	      .document-page-head { align-items: flex-start; }
+	      .document-page-head > .pill { margin-top: 5px; }
+	      .document-library { padding: 16px; gap: 18px; }
+	      .document-library-head { align-items: flex-start; }
+	      .document-toolbar { grid-template-columns: 1fr auto; border-radius: var(--radius-xs); }
+	      .document-search { grid-column: 1 / -1; border-bottom: 1px solid var(--line); }
+	      .document-sort { border-left: 0; }
+	      .document-toolbar .button, .document-toolbar .document-reset { border-left: 1px solid var(--line); min-height: 46px; }
+	      .document-toolbar .button { padding-inline: 14px; }
+	      .document-section h3 { font-size: 18px; }
+	      .document-row { grid-template-columns: 44px minmax(0,1fr); gap: 10px 12px; padding: 14px; }
+	      .document-icon { width: 42px; height: 49px; border-radius: 9px; }
+	      .document-icon svg { width: 21px; height: 21px; }
+	      .document-copy > strong { font-size: 18px; }
+	      .document-actions { grid-column: 1 / -1; min-width: 0; grid-template-columns: 1fr 1fr; margin-top: 2px; }
+	      .document-actions .primary { grid-column: 1 / -1; }
+	      .document-actions .button:only-child { grid-column: 1 / -1; }
+	      .document-admin-tools, .document-versions { grid-column: 1 / -1; }
+	      .document-admin-tools-body { display: grid; grid-template-columns: 1fr; }
+	      .document-admin-tools-body .button { width: 100%; justify-content: center; }
 	      .document-file { max-width: 100%; }
-	      .document-versions { grid-column: 2; }
 	      .vote-card-head, .vote-actions, .vote-manage-row { display: grid; grid-template-columns: 1fr; }
 	      .vote-card-head > .pill { justify-self: start; }
 	      .vote-result-row { grid-template-columns: 1fr; }
@@ -1608,9 +1647,9 @@ const PageTemplates = `
       .status-card { grid-template-columns: 54px minmax(0,1fr); }
       .home-list-row, .parking-summary { grid-template-columns: 1fr; }
       .home-event-row { grid-template-columns: 52px minmax(0,1fr); }
-      .document-dashboard-row { grid-template-columns: 1fr; gap: 5px; align-items: start; }
-      .document-dashboard-row > span:not(.document-file-title):not(.document-download) { white-space: normal; }
-      .document-download { justify-self: start; }
+      .document-dashboard-row { grid-template-columns: minmax(0,1fr) 24px; gap: 5px 10px; align-items: center; }
+      .document-dashboard-meta { grid-column: 1; white-space: normal; }
+      .document-download { grid-column: 2; grid-row: 1 / span 2; justify-self: end; }
       .parking-summary .pill, .home-list-row .pill { justify-self: start; }
       .parking-check { justify-self: start; }
       .home-list-row .quick-arrow { display: none; }
@@ -1863,17 +1902,15 @@ const PageTemplates = `
             {{if .HasDashboardDocuments}}
             <section class="panel home-wide">
               <div class="section-head">
-                <div class="kicker">Neueste Dokumente</div>
+                <div class="kicker">Neue Dokumente</div>
                 <a class="section-link" href="/app/dokumente">Alle Dokumente</a>
               </div>
               <div class="document-dashboard-list">
                 {{range .DashboardDocuments}}
-                  <a class="document-dashboard-row" href="{{.DownloadURL}}">
+                  <a class="document-dashboard-row" href="/app/dokumente#document-{{.ID}}">
                     <span class="document-file-title"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><strong>{{.Title}}</strong></span>
-                    <span>{{.FileKind}}</span>
-                    <span>{{.Size}}</span>
-                    <span>{{.UploadedDate}}</span>
-                    <span class="document-download"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></span>
+                    <span class="document-dashboard-meta">{{.Category}} · {{.UploadedDate}}</span>
+                    <span class="document-download"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></span>
                   </a>
                 {{end}}
               </div>
@@ -2731,53 +2768,79 @@ const PageTemplates = `
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><span>/</span><span>Dokumente</span></span>
         {{if .CanManageDocuments}}<div class="page-actions"><button class="button primary" type="button" data-dialog="document-upload" aria-haspopup="dialog" aria-controls="document-upload"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Dokument hochladen</button></div>{{end}}
       </div>
-      <section class="page">
-        <div>
-          <h1>Dokumente</h1>
-          <p class="lede">Protokolle, Abrechnungen, Hausordnung und Unterlagen nach Berechtigung der jeweiligen Person.</p>
+      <section class="page documents-page">
+        <div class="document-page-head">
+          <div>
+            <h1>Dokumente</h1>
+            <p class="lede">Die freigegebenen Unterlagen des Hauses – schnell finden, ansehen und herunterladen.</p>
+          </div>
+          {{if .HasAnyDocuments}}<span class="pill">{{.DocumentCountLabel}}</span>{{end}}
         </div>
         {{if .DocumentMsg}}<p class="flash {{if .DocumentOK}}ok{{end}}">{{.DocumentMsg}}</p>{{end}}
-        <div class="home-grid">
-          <section class="panel">
-            <div class="section-head">
-              <div class="kicker">Ablage</div>
-              {{if .HasDocuments}}<span class="pill">{{len .Documents}} Treffer</span>{{else if .HasAnyDocuments}}<span class="pill">0 Treffer</span>{{else}}<span class="pill">Noch leer</span>{{end}}
+        <section class="panel document-library">
+          <div class="document-library-head">
+            <div>
+              <div class="kicker">Hausablage</div>
+              {{if .HasSearchQuery}}<p class="mini">Ergebnis für „{{.SearchQuery}}“</p>{{end}}
             </div>
-            <form class="filter-form document-filter" method="get" action="/app/dokumente">
-              <label for="document-search">Suchen<input id="document-search" name="q" value="{{.SearchQuery}}" placeholder="Titel, Kategorie, Datei oder Person"></label>
-              <label for="document-sort">Sortierung<select id="document-sort" name="sort">
+          </div>
+          <form class="document-toolbar" method="get" action="/app/dokumente" role="search">
+              <label class="document-search" for="document-search">
+                <span class="sr-only">Dokumente durchsuchen</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+                <input id="document-search" name="q" value="{{.SearchQuery}}" placeholder="Titel, Kategorie oder Datei">
+              </label>
+              <label class="document-sort" for="document-sort">
+                <span class="sr-only">Sortierung</span>
+                <select id="document-sort" name="sort">
                 {{range .SortOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-              </select></label>
-              <button class="button" type="submit">Suchen</button>
-            </form>
+                </select>
+              </label>
+              <button class="button" type="submit">Anzeigen</button>
+              {{if .HasSearchQuery}}<a class="document-reset" href="/app/dokumente">Zurücksetzen</a>{{end}}
+          </form>
+          {{if .HasDocuments}}
             <div class="document-sections">
               {{range .DocumentSections}}
-                <section class="document-section{{if not .HasDocuments}} document-section-empty{{end}}">
-                  <h3>{{.Category}}{{if .HasDocuments}}<span class="section-count">{{len .Documents}}</span>{{end}}</h3>
-                  {{if .HasDocuments}}
+                <section class="document-section">
+                  <h3>{{.Category}}<span class="section-count">{{len .Documents}}</span></h3>
                     <div class="document-list">
                       {{range .Documents}}
                         <article class="document-row" id="document-{{.ID}}">
-                          <div>
+                          <span class="document-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg></span>
+                          <div class="document-copy">
                             <strong>{{.Title}}</strong>
                             <div class="document-meta">
                               <span class="pill {{.VisibilityClass}}">{{.Visibility}}</span>
                               {{if .HasUnit}}<span class="pill">Einheit {{.UnitLabel}}</span>{{end}}
                               <span>{{.VersionLabel}}</span>
-                              <span>{{.UploadedAt}}</span>
-                              <span>{{.Size}}</span>
-                              <span class="document-file">{{.Filename}}</span>
+                              <span class="document-meta-secondary">{{.UploadedDate}} · {{.Size}}</span>
                             </div>
+                            <details class="document-file-details">
+                              <summary>Dateidetails</summary>
+                              <span class="document-file">{{.Filename}} · hochgeladen {{.UploadedAt}}</span>
+                            </details>
                           </div>
-                          <div class="document-side">
-                            <span class="pill">{{.Category}}</span>
-                            {{if .CanPreview}}{{if .IsImage}}<button class="button small" type="button" data-lightbox-src="{{.PreviewURL}}" data-lightbox-caption="{{.Filename}}">Vorschau</button>{{else}}<a class="button small" href="{{.PreviewURL}}" target="_blank" rel="noopener">Vorschau</a>{{end}}{{end}}
-                            <a class="button small" href="{{.DownloadURL}}">Herunterladen</a>
-                            {{if $.CanManageDocuments}}<button class="button small" type="button" data-dialog="{{.ReplaceDialogID}}" aria-haspopup="dialog" aria-controls="{{.ReplaceDialogID}}">Ersetzen</button>{{end}}
+                          <div class="document-actions">
+                            {{if .CanPreview}}
+                              {{if .IsImage}}<button class="button primary" type="button" data-lightbox-src="{{.PreviewURL}}" data-lightbox-caption="{{.Filename}}">Vorschau</button>{{else}}<a class="button primary" href="{{.PreviewURL}}" target="_blank" rel="noopener">Vorschau</a>{{end}}
+                              <a class="button small" href="{{.DownloadURL}}">Herunterladen</a>
+                            {{else}}
+                              <a class="button primary" href="{{.DownloadURL}}">Herunterladen</a>
+                            {{end}}
                           </div>
+                          {{if $.CanManageDocuments}}
+                            <details class="document-admin-tools">
+                              <summary>Dokument verwalten</summary>
+                              <div class="document-admin-tools-body">
+                                <button class="button small" type="button" data-dialog="{{.ReplaceDialogID}}" aria-haspopup="dialog" aria-controls="{{.ReplaceDialogID}}">Neue Version hochladen</button>
+                                <span class="mini">Kategorie, Sichtbarkeit und Einheit bleiben dabei erhalten.</span>
+                              </div>
+                            </details>
+                          {{end}}
                           {{if .HasVersions}}
                             <details class="document-versions">
-                              <summary>Ältere Versionen</summary>
+                              <summary>Versionsverlauf</summary>
                               <div class="version-list">
                                 {{range .Versions}}
                                   <div class="version-row">
@@ -2794,79 +2857,77 @@ const PageTemplates = `
                           <form method="post" action="/app/dokumente/replace" enctype="multipart/form-data">
                             <input type="hidden" name="id" value="{{.ID}}">
                             <div class="dialog-head">
-                              <h2 id="{{.ReplaceDialogID}}-title">Neue Version hochladen</h2>
+                              <h2 id="{{.ReplaceDialogID}}-title">Neue Version speichern</h2>
                               <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
                             </div>
                             <div class="dialog-body">
-                              <p class="mini">{{.Title}} · aktuell {{.VersionLabel}}</p>
-                              <div class="dialog-grid">
-                                <label class="full" for="{{.ReplaceDialogID}}-file">Datei<input id="{{.ReplaceDialogID}}-file" type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required></label>
+                              <div class="document-replace-context">
+                                <strong>{{.Title}}</strong>
+                                <span class="mini">Aktuell {{.VersionLabel}} · {{.Visibility}}{{if .HasUnit}} · Einheit {{.UnitLabel}}{{end}}</span>
                               </div>
-                              <p class="mini">Kategorie, Sichtbarkeit und Einheit bleiben unverändert; die bisherige Version bleibt im Verlauf abrufbar.</p>
-                              <button class="button primary" type="submit">Version speichern</button>
+                              <div class="dialog-grid">
+                                <label class="full" for="{{.ReplaceDialogID}}-file">Neue Datei<span class="file-control"><input id="{{.ReplaceDialogID}}-file" type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required><span>PDF oder Bild auswählen</span></span></label>
+                              </div>
+                              <button class="button primary" type="submit">Neue Version speichern</button>
                             </div>
                           </form>
                         </dialog>
                         {{end}}
                       {{end}}
                     </div>
-                  {{else}}
-                    <p class="empty">{{.EmptyMessage}}</p>
-                  {{end}}
                 </section>
               {{end}}
             </div>
-          </section>
-
-          <section class="panel">
-            <div class="kicker">Dokumentenverwaltung</div>
-            {{if .CanManageDocuments}}
-              <div class="quick-list">
-                <button class="quick-row" type="button" data-dialog="document-upload" aria-haspopup="dialog" aria-controls="document-upload">
-                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                  <div><h3>Dokument hochladen</h3><p>Kategorie, Sichtbarkeit und Datei bis {{.MaxDocumentSize}} speichern.</p></div>
-                  <span class="quick-arrow">›</span>
-                </button>
-                <div class="legend" aria-label="Sichtbarkeiten für Dokumente">
-                  <div><strong>Alle Bewohner</strong><span>Allgemeine Informationen wie Hausordnung oder Hinweise.</span></div>
-                  <div><strong>Nur Eigentümer</strong><span>Unterlagen für Eigentümer, etwa Protokolle oder Abrechnungen.</span></div>
-                  <div><strong>Nur Verwaltung</strong><span>Interne Arbeitsdokumente der Verwaltung.</span></div>
-                </div>
+          {{else}}
+            <div class="document-empty">
+              <div>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><circle cx="10" cy="14" r="3.5"/><path d="m12.5 16.5 3 3"/></svg>
+                {{if .HasSearchQuery}}
+                  <h3>Keine Dokumente gefunden</h3>
+                  <p>Versuchen Sie einen anderen Suchbegriff oder zeigen Sie wieder alle Dokumente.</p>
+                  <a class="button" href="/app/dokumente">Alle Dokumente zeigen</a>
+                {{else}}
+                  <h3>{{.DocumentsEmpty.Title}}</h3>
+                  <p>{{.DocumentsEmpty.Message}}</p>
+                {{end}}
               </div>
-            {{else}}
-              <p class="empty">Hochladen und Sichtbarkeit setzen ist der Verwaltung vorbehalten.</p>
-            {{end}}
-          </section>
-        </div>
+            </div>
+          {{end}}
+        </section>
       </section>
 
-      {{if .CanManageDocuments}}
+      {{with $}}{{if .CanManageDocuments}}
       <dialog id="document-upload" class="dialog" aria-labelledby="document-upload-title">
         <form method="post" action="/app/dokumente" enctype="multipart/form-data">
           <div class="dialog-head">
-            <h2 id="document-upload-title">Dokument hochladen</h2>
+            <h2 id="document-upload-title">Dokument veröffentlichen</h2>
             <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
           </div>
           <div class="dialog-body">
+            <p class="document-dialog-intro">Titel, Einordnung und Datei genügen. Die Sichtbarkeit bestimmt, wer das Dokument im Portal findet.</p>
             <div class="dialog-grid">
-              <label class="full" for="document-title">Titel<input id="document-title" name="title" required maxlength="160" autocomplete="off"></label>
+              <label class="full" for="document-title">Titel<input id="document-title" name="title" required maxlength="160" autocomplete="off" placeholder="Zum Beispiel Hausordnung 2026"></label>
               <label for="document-category">Kategorie<select id="document-category" name="category" required>
-                {{range .CategoryOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                {{range .CategoryOptions}}<option value="{{.Value}}"{{if not .Value}} disabled{{end}}{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
               </select></label>
               <label for="document-visibility">Sichtbarkeit<select id="document-visibility" name="visibility" required>
                 {{range .VisibilityOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
               </select></label>
-              <label for="document-unit">Einheit optional<select id="document-unit" name="unit_id">
-                {{range .UnitOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-              </select></label>
-              <label class="full" for="document-file">Datei<input id="document-file" type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required></label>
+              <label class="full" for="document-file">Datei<span class="file-control"><input id="document-file" type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required><span>PDF oder Bild auswählen</span></span></label>
+              <details class="dialog-optional full">
+                <summary>Auf eine Einheit begrenzen</summary>
+                <div class="dialog-optional-grid">
+                  <label class="full" for="document-unit">Einheit<select id="document-unit" name="unit_id">
+                    {{range .UnitOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                  </select></label>
+                </div>
+              </details>
             </div>
-            <p class="mini">Erlaubt sind PDF, JPG, PNG oder WebP bis {{.MaxDocumentSize}}. Dateien werden nicht öffentlich ausgeliefert.</p>
-            <button class="button primary" type="submit">Hochladen</button>
+            <button class="button primary" type="submit">Dokument veröffentlichen</button>
           </div>
         </form>
       </dialog>
-      {{end}}
+      {{end}}{{end}}
     </main>
 {{template "appClose" .}}
 {{end}}
