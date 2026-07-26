@@ -3451,16 +3451,35 @@ func notificationPreferencesFromForm(values url.Values) notificationPreferences 
 func (a *app) userSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant := ac.tenant
 	users := a.userRows(tenant.Slug)
+	activeUsers, invitedUsers, deactivatedUsers := userStatusCounts(users)
 	inviteMsg, inviteOK := inviteMessage(r.URL.Query().Get("invite"))
 	a.render(w, "userSettings", a.withBase(ac, map[string]any{
-		"Title":      "Benutzer & Rechte",
-		"Users":      users,
-		"HasUsers":   len(users) > 0,
-		"UsersEmpty": emptyStateAction("Noch keine Zugänge", "Sobald eine Person eingeladen ist, erscheint sie hier mit Rolle, Rechten und Anmeldestatus.", "/app/settings/users", "Person einladen"),
-		"InviteMsg":  inviteMsg,
-		"InviteOK":   inviteOK,
-		"ActivePage": "users",
+		"Title":             "Benutzer & Rechte",
+		"Users":             users,
+		"HasUsers":          len(users) > 0,
+		"UserCount":         len(users),
+		"ActiveUserCount":   activeUsers,
+		"InvitedUserCount":  invitedUsers,
+		"DisabledUserCount": deactivatedUsers,
+		"UsersEmpty":        emptyState("Noch keine Zugänge", "Sobald eine Person eingeladen ist, erscheint sie hier mit Rolle und Zugangsstatus."),
+		"InviteMsg":         inviteMsg,
+		"InviteOK":          inviteOK,
+		"ActivePage":        "users",
 	}))
+}
+
+func userStatusCounts(users []userRow) (active int, invited int, deactivated int) {
+	for _, user := range users {
+		switch user.Status {
+		case "Deaktiviert":
+			deactivated++
+		case "Eingeladen":
+			invited++
+		default:
+			active++
+		}
+	}
+	return active, invited, deactivated
 }
 
 func inviteMessage(status string) (string, bool) {
@@ -3617,7 +3636,12 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 }
 
 func (a *app) redirectInvite(w http.ResponseWriter, r *http.Request, status string) {
-	http.Redirect(w, r, "/app/settings/users?invite="+url.QueryEscape(status), http.StatusSeeOther)
+	anchor := "access-list"
+	switch status {
+	case "invalid_email", "exists", "error":
+		anchor = "invite"
+	}
+	http.Redirect(w, r, "/app/settings/users?invite="+url.QueryEscape(status)+"#"+anchor, http.StatusSeeOther)
 }
 
 func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -4437,8 +4461,21 @@ func (a *app) userRows(tenantSlug string) []userRow {
 		if rows[i].Deactivated {
 			rows[i].Status = "Deaktiviert"
 		}
+		if a.unitStore != nil {
+			for _, membership := range a.unitStore.UnitsForEmail(tenantSlug, rows[i].Email) {
+				label := strings.TrimSpace(membership.Unit.Label)
+				if relation := unitPaymentRelationLabel(membership.Relation); relation != "" {
+					label += " · " + relation
+				}
+				rows[i].UnitList = append(rows[i].UnitList, label)
+			}
+			rows[i].HasUnits = len(rows[i].UnitList) > 0
+		}
 	}
 	sort.Slice(rows, func(i, j int) bool {
+		if userStatusSortRank(rows[i].Status) != userStatusSortRank(rows[j].Status) {
+			return userStatusSortRank(rows[i].Status) < userStatusSortRank(rows[j].Status)
+		}
 		if rows[i].Role != rows[j].Role {
 			return roleSortRank(rows[i].Role) < roleSortRank(rows[j].Role)
 		}
@@ -4448,6 +4485,17 @@ func (a *app) userRows(tenantSlug string) []userRow {
 		return rows[i].Email < rows[j].Email
 	})
 	return rows
+}
+
+func userStatusSortRank(status string) int {
+	switch status {
+	case "Deaktiviert":
+		return 0
+	case "Eingeladen":
+		return 1
+	default:
+		return 2
+	}
 }
 
 func newTenantOverrideStore(path string) (*tenantOverrideStore, error) {

@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.28.0] - 2026-07-26
+
+### Verbessert
+
+- **Benutzerzugänge lassen sich auf einen Blick erfassen.** Aktive, eingeladene und deaktivierte Personen sind zusammengefasst; Handlungsbedarf steht in der Liste zuerst.
+- **Mobile Benutzerkarten zeigen nur das Wesentliche.** Name, Einheit, Rolle, Status und Bearbeiten bleiben sofort sichtbar, während wiederholte Detailinformationen zurücktreten.
+- **Einladungen beginnen mit E-Mail und Rolle.** Name, Sonderrechte und Anmeldewege können bei Bedarf ergänzt werden, ohne den kurzen Standardweg zu überladen.
+- **Zugänge werden ruhiger und sicherer bearbeitet.** Rolle, Status und Speichern bleiben im sichtbaren Bereich; Identitätsdaten, Anmeldewege und Sonderrechte sind logisch gruppiert.
+- **Sperren und dauerhaftes Entfernen sind klar getrennt.** Die reversible Deaktivierung steht im normalen Ablauf, die dauerhafte Entfernung in einem eigenen bestätigten Gefahrenbereich.
+- **Dienstleister-Hinweise erscheinen im passenden Kontext.** Der geschlossene Zugang wird bei der Rollenwahl erklärt, ohne die gesamte Seite als Warnung zu beginnen.
+
 ## [0.27.0] - 2026-07-26
 
 ### Verbessert

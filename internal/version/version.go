@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.28.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Zugänge",
+			Headline: "Benutzer und Rechte lassen sich schneller erfassen und sicherer ändern.",
+			Intro:    "Handlungsbedarf, Rolle, Einheit und Status stehen im Vordergrund; optionale Identitäts- und Anmeldeinformationen bleiben gezielt erreichbar.",
+			Items: []NoteItem{
+				{Label: "Schnell überblicken", Text: "Aktive, eingeladene und deaktivierte Zugänge sind kompakt zusammengefasst und sinnvoll sortiert."},
+				{Label: "Kurz einladen", Text: "E-Mail und Rolle bilden den Standardweg; Name, Sonderrechte und Anmeldewege sind optional."},
+				{Label: "Sicher verwalten", Text: "Deaktivieren bleibt reaktivierbar, dauerhaftes Entfernen ist klar getrennt und bestätigt."},
+			},
+		},
+		{
 			Version:  "0.27.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Abstimmungen",

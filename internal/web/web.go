@@ -4164,7 +4164,7 @@ const PageTemplates = `
           </aside>
         </div>
 
-        <section class="panel unit-panel">
+        <section id="units" class="panel unit-panel">
 	          <div class="section-head">
 	            <div>
 	              <h2>Einheiten</h2>
@@ -4857,67 +4857,200 @@ const PageTemplates = `
 	        .users td.col-actions::before { display: none; }
 	        .users .row-edit { border-color: var(--line); background: var(--panel-soft); color: var(--gold-ink); }
 	        .users .invite-form > * { grid-column: 1 / -1 !important; }
-	      }
+      }
       @media (max-width: 760px) { .users .popup { left: -96px; width: min(620px, calc(100vw - 32px)); } .users .popup-grid { grid-template-columns: 1fr; } .users .popup-grid .permission { border-top: 1px solid var(--line); } .users .popup-grid .permission:first-child { border-top: 0; } }
+      .users .users-heading .lede { max-width: 680px; margin-bottom: 0; }
+      .users .panel { border-radius: 16px; padding: 24px; box-shadow: var(--shadow-panel); }
+      .users .panel-head { margin: 0; padding: 0 0 12px; border-bottom: 1px solid var(--line); }
+      .users .access-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel-soft); }
+      .users .access-metrics > div { position: relative; display: grid; gap: 2px; padding: 13px 16px; border-left: 1px solid var(--line); }
+      .users .access-metrics > div:first-child { border-left: 0; }
+      .users .access-metrics strong { font-family: var(--font-serif); font-size: 23px; font-weight: 600; line-height: 1; }
+      .users .access-metrics span { color: var(--muted); font-size: 12px; font-weight: 700; }
+      .users .access-metrics .metric-active strong { color: var(--leaf); }
+      .users .access-metrics .metric-pending strong { color: #93701d; }
+      .users .access-metrics .metric-disabled strong { color: #8c3434; }
+      .users .invite-bar { border-color: var(--ink); background: var(--ink); }
+      .users .invite-bar > summary { min-height: 52px; color: #fff; padding: 14px 18px; }
+      .users .invite-bar > summary:hover { color: var(--gold-light); }
+      .users .invite-bar .invite-plus { background: #fff; color: var(--ink); }
+      .users .invite-bar .summary-sub { color: rgba(255,255,255,.68); }
+      .users .invite-bar[open] { border-color: var(--line); background: var(--panel-soft); }
+      .users .invite-bar[open] > summary { background: var(--ink); color: #fff; }
+      .users .disclosure-body { padding: 18px; }
+      .users .invite-intro { margin: 0 0 14px; font-size: 13.5px; }
+      .users .invite-form { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+      .users .core-field, .users .dialog-core-field { display: grid; gap: 6px; color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+      .users .service-note { grid-column: 1 / -1; margin: -2px 0 0; color: #8a6a1f; font-size: 12.5px; line-height: 1.4; }
+      .users .form-disclosure { grid-column: 1 / -1; border: 1px solid var(--line); border-radius: 10px; background: #fffefb; }
+      .users .form-disclosure > summary, .users .danger-zone > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; min-height: 44px; gap: 12px; padding: 11px 13px; color: var(--ink); font-size: 13px; font-weight: 750; }
+      .users .form-disclosure > summary::-webkit-details-marker, .users .danger-zone > summary::-webkit-details-marker { display: none; }
+      .users .form-disclosure > summary::after, .users .danger-zone > summary::after { content: "+"; margin-left: auto; color: var(--gold-ink); font-size: 18px; font-weight: 500; }
+      .users .form-disclosure[open] > summary::after, .users .danger-zone[open] > summary::after { content: "−"; }
+      .users .form-disclosure > summary span { color: var(--soft); font-size: 11.5px; font-weight: 650; }
+      .users .optional-grid { display: grid; grid-template-columns: .7fr 1fr 1fr; gap: 10px; padding: 0 12px 12px; }
+      .users .optional-grid .f-email, .users .optional-grid .dlg-hint { grid-column: 1 / -1; }
+      .users .optional-stack { display: grid; gap: 10px; padding: 0 12px 12px; }
+      .users .invite-form .f-submit { grid-column: 1 / -1; justify-self: start; min-width: 220px; }
+      .users .unit-link-note { grid-column: 1 / -1; margin: -2px 0 0; color: var(--muted); font-size: 12.5px; }
+      .users .unit-link-note a, .users .unit-context a { color: var(--gold-ink); font-weight: 750; }
+      .users .list-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 8px 2px 0; }
+      .users .list-heading strong { font-family: var(--font-serif); font-size: 20px; font-weight: 600; }
+      .users .list-heading span { color: var(--soft); font-size: 12px; font-weight: 650; }
+      .users .role-caps { display: none; }
+      .users .chip.plain { display: none; }
+      .users .person-units { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+      .users .person-units span { color: var(--gold-ink); font-size: 11.5px; font-weight: 700; }
+      .users tbody tr.needs-attention { background: rgba(200,153,63,.045); }
+      .users tbody tr.needs-attention.disabled { background: rgba(150,40,40,.035); }
+      .users .col-actions { width: 112px; }
+      .users .row-edit { width: auto; min-height: 38px; gap: 7px; padding: 0 10px; border-color: var(--line); background: var(--panel-soft); color: var(--gold-ink); font-weight: 750; }
+      .users .edit-label { font-size: 12px; }
+      .users .edit-dialog { width: min(520px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 24px; }
+      .users .edit-dialog h2 { font-size: 25px; }
+      .users .edit-dialog .dlg-sub { margin-bottom: 14px; }
+      .users .dlg-form { display: grid; grid-template-columns: 1fr; gap: 10px; }
+      .users .dlg-form > * { grid-column: 1 / -1; }
+      .users .dialog-core-field { order: 1; }
+      .users .identity-section { order: 2; }
+      .users .unit-section { order: 3; }
+      .users .access-section { order: 4; }
+      .users .status-field { order: 5; }
+      .users .save-access { order: 6; }
+      .users .dialog-disclosure .optional-grid { grid-template-columns: .65fr 1fr 1fr; }
+      .users .unit-context { display: grid; gap: 10px; padding: 0 12px 12px; }
+      .users .unit-context p { margin: 0; color: var(--muted); font-size: 12.5px; }
+      .users .unit-context a { font-size: 12.5px; }
+      .users .status-field { padding: 10px; }
+      .users .status-field .permission-check { background: rgba(150,40,40,.035); }
+      .users .save-access { margin-top: 2px; }
+      .users .danger-zone { margin-top: 12px; border-top: 1px solid var(--line); }
+      .users .danger-zone > summary { padding-inline: 2px; color: #8c3434; }
+      .users .danger-zone > summary::after { color: #8c3434; }
+      .users .dlg-delete { margin-top: 0; padding: 2px 0 0; border-top: 0; align-items: end; }
+      .users .dlg-delete span { max-width: 270px; line-height: 1.45; }
+      @media (max-width: 760px) {
+        .users .users-heading h1 { font-size: clamp(38px,11vw,48px); }
+        .users .users-heading .lede { display: none; }
+        .users .panel { padding: 14px; border-radius: 14px; gap: 12px; }
+        .users .panel-head { padding-bottom: 10px; }
+        .users .access-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); }
+        .users .access-metrics > div { padding: 11px 8px; text-align: center; }
+        .users .access-metrics > div:first-child { display: none; }
+        .users .access-metrics > div:nth-child(2) { border-left: 0; }
+        .users .access-metrics strong { font-size: 21px; }
+        .users .invite-bar > summary { grid-template-columns: 24px minmax(0,1fr); min-height: 54px; }
+        .users .invite-bar .summary-sub { display: none; }
+        .users .disclosure-body { padding: 14px; }
+        .users .invite-form { grid-template-columns: 1fr; }
+        .users .invite-form .f-submit { width: 100%; min-width: 0; justify-self: stretch; }
+        .users .optional-grid, .users .dialog-disclosure .optional-grid { grid-template-columns: 1fr; }
+        .users .optional-grid > * { grid-column: 1 / -1; }
+        .users .list-heading { padding-top: 6px; }
+        .users .list-heading span { display: none; }
+        .users table, .users tbody { display: grid; gap: 9px; }
+        .users tbody tr { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 9px 10px; margin: 0; padding: 13px; border-radius: 12px; box-shadow: none; }
+        .users tbody td { width: auto; min-width: 0; }
+        .users tbody td.col-person { grid-column: 1; grid-row: 1; margin: 0; }
+        .users .person { min-width: 0; padding-right: 0; gap: 10px; }
+        .users .avatar { width: 38px; height: 38px; }
+        .users .person-name { font-size: 14px; }
+        .users .person-mail { font-size: 12px; }
+        .users .person-units { margin-top: 4px; }
+        .users tbody td.col-role, .users tbody td.col-status { display: flex !important; align-items: center; padding: 0 !important; margin: 0 !important; border: 0 !important; }
+        .users tbody td.col-role { grid-column: 1; grid-row: 2; }
+        .users tbody td.col-status { grid-column: 2; grid-row: 2; justify-content: end; }
+        .users tbody td.col-role::before, .users tbody td.col-status::before { display: none !important; }
+        .users tbody td.col-secondary, .users tbody td.col-auth { display: none !important; }
+        .users .pill { min-height: 26px; padding: 3px 9px; font-size: 12px; }
+        .users .last-seen { display: none; }
+        .users td.col-actions { position: static; grid-column: 2; grid-row: 1; align-self: center; width: auto; }
+        .users .row-edit { min-height: 40px; padding-inline: 9px; }
+        .users .edit-label { display: none; }
+        .users .edit-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 18px; border-radius: 16px; }
+        .users .edit-dialog h2 { padding-right: 24px; font-size: 23px; }
+        .users .dialog-disclosure .optional-grid, .users .optional-stack { padding-inline: 10px; }
+        .users .dlg-delete { display: grid; align-items: start; }
+        .users .dlg-delete span { max-width: none; }
+      }
     </style>
     <script src="/assets/users.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main">
       <div class="content-top"><span class="crumb"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg>Benutzer &amp; Rechte</span></div>
       <section class="page users">
-	        <div>
+	        <div class="users-heading">
 	          <h1>Benutzer &amp; Rechte</h1>
-	          <p class="lede">Lokale Verwaltung der eingeladenen E-Mail-Adressen und ihrer Rollen.</p>
-	          {{if not .ServiceProviderAccessEnabled}}<p class="invite-flash warn">Betreiberfreigabe offen: Dienstleister-Zugänge können noch nicht angelegt oder geändert werden.</p>{{end}}
+	          <p class="lede">Zugänge einladen, prüfen und sicher verwalten.</p>
 	        </div>
     <section class="panel stack">
       <div class="panel-head">
         <span class="kicker">Zugänge</span>
-        <span class="count">{{len .Users}} {{if eq (len .Users) 1}}Person{{else}}Personen{{end}}</span>
+        <span class="count">{{.UserCount}} {{if eq .UserCount 1}}Person{{else}}Personen{{end}}</span>
       </div>
 
-      <details class="disclosure invite-bar"{{if .InviteMsg}} open{{end}}>
+      <div class="access-metrics" aria-label="Zugangsübersicht">
+        <div><strong>{{.UserCount}}</strong><span>Gesamt</span></div>
+        <div class="metric-active"><strong>{{.ActiveUserCount}}</strong><span>Aktiv</span></div>
+        <div class="metric-pending"><strong>{{.InvitedUserCount}}</strong><span>Eingeladen</span></div>
+        <div class="metric-disabled"><strong>{{.DisabledUserCount}}</strong><span>Deaktiviert</span></div>
+      </div>
+
+      {{if .InviteMsg}}<p class="invite-flash{{if .InviteOK}} ok{{else}} warn{{end}}" role="status">{{.InviteMsg}}</p>{{end}}
+
+      <details id="invite" class="disclosure invite-bar">
         <summary>
           <span class="invite-plus"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>
           Person einladen
-          <span class="summary-sub">Speichert &amp; lädt per E-Mail ein</span>
+          <span class="summary-sub">Neuen Zugang anlegen</span>
         </summary>
         <div class="disclosure-body">
-          {{if .InviteMsg}}<p class="invite-flash{{if .InviteOK}} ok{{else}} warn{{end}}">{{.InviteMsg}}</p>{{end}}
-          <p class="muted" style="margin-bottom:12px">Die eingeladene Person wird gespeichert und erhält eine E-Mail mit dem Anmelde-Link. Sie kann sich danach mit dieser Adresse anmelden.</p>
+          <p class="muted invite-intro">E-Mail und Rolle genügen. Name und besondere Zugangsregeln sind optional.</p>
           <form class="invite-form" method="post" action="/app/settings/users">
-            <input class="f-titel" type="text" name="title" placeholder="Titel" aria-label="Titel">
-            <input class="f-vorname" type="text" name="first_name" placeholder="Vorname" aria-label="Vorname">
-            <input class="f-nachname" type="text" name="last_name" placeholder="Nachname" aria-label="Nachname">
-            <input class="f-email" type="email" name="email" placeholder="name@example.com" aria-label="E-Mail-Adresse" autocomplete="email" required>
-            <select class="f-role" name="role" aria-label="Rolle">
-              <option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions="">Mieter</option>
-              <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions="">Eigentümer</option>
-              <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions="">Beirat</option>
-	              <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions="">Verwalter</option>
-	              {{if .IsAdmin}}<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking">Admin</option>{{end}}
-	              {{if .ServiceProviderAccessEnabled}}<option value="Dienstleister" data-preset-label="Nur zugewiesene Anliegen" data-preset-permissions="">Dienstleister</option>{{end}}
-	              <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions="">Bewohner</option>
-            </select>
-            <fieldset class="permission-fieldset f-permissions">
-              <legend>Sonderrechte</legend>
-              <span class="preset-label" data-preset-label>Standardzugriff</span>
-              <div class="permission-grid">
-                <label class="permission-check"><input type="checkbox" name="permissions" value="parking" data-permission="parking"><strong>Parkplatznutzung</strong><span>Privater Bereich für Stellplatz- und Ladeabrechnung.</span></label>
+            <label class="core-field f-email"><span>E-Mail-Adresse</span><input type="email" name="email" placeholder="name@example.com" aria-label="E-Mail-Adresse" autocomplete="email" required></label>
+            <label class="core-field"><span>Rolle</span><select class="f-role" name="role" aria-label="Rolle">
+                <option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions="">Mieter</option>
+                <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions="">Eigentümer</option>
+                <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions="">Beirat</option>
+	                <option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions="">Verwalter</option>
+	                {{if .IsAdmin}}<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking">Admin</option>{{end}}
+	                {{if .ServiceProviderAccessEnabled}}<option value="Dienstleister" data-preset-label="Nur zugewiesene Anliegen" data-preset-permissions="">Dienstleister</option>{{end}}
+	                <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions="">Bewohner</option>
+              </select></label>
+            {{if not .ServiceProviderAccessEnabled}}<p class="service-note">Dienstleister-Zugänge können noch nicht angelegt oder geändert werden.</p>{{end}}
+            <details class="form-disclosure f-person-details">
+              <summary>Name ergänzen <span>optional</span></summary>
+              <div class="optional-grid">
+                <input class="f-titel" type="text" name="title" placeholder="Titel" aria-label="Titel">
+                <input class="f-vorname" type="text" name="first_name" placeholder="Vorname" aria-label="Vorname">
+                <input class="f-nachname" type="text" name="last_name" placeholder="Nachname" aria-label="Nachname">
               </div>
-            </fieldset>
-            <fieldset class="permission-fieldset f-permissions">
-              <legend>Anmeldung</legend>
-              <div class="permission-grid">
-                <label class="permission-check"><input type="checkbox" name="auth_methods" value="email" checked><strong>E-Mail-Link</strong><span>Anmeldung per Magic-Link an die E-Mail-Adresse.</span></label>
-                <label class="permission-check"><input type="checkbox" name="auth_methods" value="oidc" checked><strong>Zitadel SSO</strong><span>Anmeldung über den Single-Sign-On-Anbieter (Zitadel).</span></label>
+            </details>
+            <details class="form-disclosure f-access-details">
+              <summary>Zugang anpassen <span>optional</span></summary>
+              <div class="optional-stack">
+                <fieldset class="permission-fieldset f-permissions">
+                  <legend>Sonderrechte</legend>
+                  <span class="preset-label" data-preset-label>Standardzugriff</span>
+                  <div class="permission-grid">
+                    <label class="permission-check"><input type="checkbox" name="permissions" value="parking" data-permission="parking"><strong>Parkplatznutzung</strong><span>Privater Bereich für Stellplatz- und Ladeabrechnung.</span></label>
+                  </div>
+                </fieldset>
+                <fieldset class="permission-fieldset f-permissions">
+                  <legend>Anmeldung</legend>
+                  <div class="permission-grid">
+                    <label class="permission-check"><input type="checkbox" name="auth_methods" value="email" checked><strong>E-Mail-Link</strong><span>Anmeldung per Magic-Link an die E-Mail-Adresse.</span></label>
+                    <label class="permission-check"><input type="checkbox" name="auth_methods" value="oidc" checked><strong>Zitadel SSO</strong><span>Anmeldung über den Single-Sign-On-Anbieter (Zitadel).</span></label>
+                  </div>
+                </fieldset>
               </div>
-            </fieldset>
+            </details>
             <button class="f-submit" type="submit">Einladung senden</button>
+            <p class="unit-link-note">Danach bei Bedarf: <a href="/app/settings/building#units">Einheit verknüpfen</a></p>
           </form>
         </div>
       </details>
 
-      <p class="muted roster-intro">Diese Liste kommt aus der Umgebungskonfiguration und den hier gespeicherten Einladungen.</p>
+      <div id="access-list" class="list-heading"><strong>Personen</strong><span>Handlungsbedarf zuerst</span></div>
 
       {{if .HasUsers}}<div class="table-wrap">
         <table aria-label="Benutzerliste">
@@ -4943,15 +5076,15 @@ const PageTemplates = `
                   </span>
                 </span>
               </th>
-              <th>Rechte</th>
-              <th>Anmeldung</th>
+              <th class="col-secondary">Rechte</th>
+              <th class="col-auth">Anmeldung</th>
               <th class="col-status">Status</th>
               <th class="col-actions" aria-label="Aktionen"></th>
             </tr>
           </thead>
           <tbody>
             {{range .Users}}
-            <tr>
+            <tr class="{{if eq .Status "Deaktiviert"}}needs-attention disabled{{else if eq .Status "Eingeladen"}}needs-attention pending{{end}}">
               <td class="col-person" data-label="Person">
                 <div class="person">
                   <span class="avatar">{{.Initials}}</span>
@@ -4959,31 +5092,27 @@ const PageTemplates = `
                     <div class="person-name">{{.DisplayName}}</div>
                     <div class="person-mail">{{.Email}}</div>
                     {{if .Phone}}<div class="person-mail">{{.Phone}}</div>{{end}}
+                    {{if .HasUnits}}<div class="person-units">{{range .UnitList}}<span>{{.}}</span>{{end}}</div>{{end}}
                   </div>
                 </div>
               </td>
               <td class="col-role" data-label="Rolle"><span class="pill {{.RoleClass}}"><span class="dot"></span>{{.Role}}</span><div class="role-caps">{{range .RoleCapabilities}}<span class="role-cap">{{.}}</span>{{end}}</div></td>
-              <td data-label="Rechte"><div class="chips">{{range .PermissionList}}<span class="chip{{if eq . "Standard"}} plain{{end}}">{{.}}</span>{{end}}</div></td>
-              <td data-label="Anmeldung"><div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div></td>
+              <td class="col-secondary" data-label="Rechte"><div class="chips">{{range .PermissionList}}<span class="chip{{if eq . "Standard"}} plain{{end}}">{{.}}</span>{{end}}</div></td>
+              <td class="col-auth" data-label="Anmeldung"><div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div></td>
               <td class="col-status" data-label="Status"><span class="pill {{if eq .Status "Aktiv"}}status-active{{else if eq .Status "Deaktiviert"}}status-off{{else}}status-pending{{end}}"><span class="dot"></span>{{.Status}}</span>{{if .LastSeen}}<span class="last-seen">{{.LastSeen}}</span>{{end}}</td>
 	              <td class="col-actions" data-label="">
 	                {{if or .Editable (and .IsConfig (not .Protected))}}
 	                {{if and (not $.ServiceProviderAccessEnabled) (eq .Role "Dienstleister")}}
 	                <span class="mini">Schreibgeschützt</span>
 	                {{else}}
-	                <button type="button" class="row-edit" data-edit="{{.Email}}" aria-label="Bearbeiten" aria-haspopup="dialog" aria-controls="edit-{{.Email}}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.83-2.83L5 17.2z"/><path d="M13.5 6.5 17 10"/></svg></button>
+	                <button type="button" class="row-edit" data-edit="{{.Email}}" aria-label="{{.DisplayName}} bearbeiten" aria-haspopup="dialog" aria-controls="edit-{{.Email}}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.83-2.83L5 17.2z"/><path d="M13.5 6.5 17 10"/></svg><span class="edit-label">Bearbeiten</span></button>
                 <dialog id="edit-{{.Email}}" class="edit-dialog" aria-labelledby="edit-title-{{.Email}}">
                   <div class="dlg-x"><form method="dialog"><button aria-label="Schließen">&times;</button></form></div>
                   <h2 id="edit-title-{{.Email}}">Zugang bearbeiten</h2>
                   <p class="dlg-sub">{{.Email}}{{if .IsConfig}} (aus Konfiguration){{end}}</p>
                   <form method="post" action="/app/settings/users/edit" class="dlg-form">
                     <input type="hidden" name="orig_email" value="{{.Email}}">
-                    <input class="f-titel" type="text" name="title" value="{{.Title}}" placeholder="Titel" aria-label="Titel"{{if not $.IsAdmin}} readonly{{end}}>
-                    <input class="f-vorname" type="text" name="first_name" value="{{.FirstName}}" placeholder="Vorname" aria-label="Vorname"{{if not $.IsAdmin}} readonly{{end}}>
-                    <input class="f-nachname" type="text" name="last_name" value="{{.LastName}}" placeholder="Nachname" aria-label="Nachname"{{if not $.IsAdmin}} readonly{{end}}>
-                    <input class="f-email" type="email" name="email" value="{{.Email}}" aria-label="E-Mail-Adresse" autocomplete="email"{{if or .IsConfig (not $.IsAdmin)}} readonly{{else}} required{{end}}>
-                    {{if not $.IsAdmin}}<p class="dlg-hint">Name und E-Mail gehören zur Person und gelten für alle Häuser. Sie werden zentral von der Plattform-Administration gepflegt. Rolle und Rechte unten gelten nur für dieses Haus.</p>{{end}}
-                    <select class="f-role" name="role" aria-label="Rolle">
+                    <label class="dialog-core-field"><span>Rolle in diesem Haus</span><select class="f-role" name="role" aria-label="Rolle" autofocus>
                       <option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions=""{{if eq .Role "Mieter"}} selected{{end}}>Mieter</option>
                       <option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions=""{{if eq .Role "Eigentümer"}} selected{{end}}>Eigentümer</option>
                       <option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions=""{{if eq .Role "Beirat"}} selected{{end}}>Beirat</option>
@@ -4991,36 +5120,61 @@ const PageTemplates = `
 	                      {{if $.IsAdmin}}<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking"{{if eq .Role "Admin"}} selected{{end}}>Admin</option>{{end}}
 	                      {{if $.ServiceProviderAccessEnabled}}<option value="Dienstleister" data-preset-label="Nur zugewiesene Anliegen" data-preset-permissions=""{{if eq .Role "Dienstleister"}} selected{{end}}>Dienstleister</option>{{end}}
 	                      <option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions=""{{if eq .Role "Bewohner"}} selected{{end}}>Bewohner</option>
-                    </select>
-                    <fieldset class="permission-fieldset f-permissions">
-                      <legend>Sonderrechte</legend>
-                      <span class="preset-label" data-preset-label>Gespeicherte Rechte</span>
-                      <div class="permission-grid">
-                        <label class="permission-check"><input type="checkbox" name="permissions" value="parking" data-permission="parking"{{if .ParkingChecked}} checked{{end}}><strong>Parkplatznutzung</strong><span>Privater Bereich für Stellplatz- und Ladeabrechnung.</span></label>
+                    </select></label>
+                    <details class="form-disclosure dialog-disclosure identity-section">
+                      <summary>Personendaten <span>{{if $.IsAdmin}}bearbeiten{{else}}zentral gepflegt{{end}}</span></summary>
+                      <div class="optional-grid">
+                        <input class="f-titel" type="text" name="title" value="{{.Title}}" placeholder="Titel" aria-label="Titel"{{if not $.IsAdmin}} readonly{{end}}>
+                        <input class="f-vorname" type="text" name="first_name" value="{{.FirstName}}" placeholder="Vorname" aria-label="Vorname"{{if not $.IsAdmin}} readonly{{end}}>
+                        <input class="f-nachname" type="text" name="last_name" value="{{.LastName}}" placeholder="Nachname" aria-label="Nachname"{{if not $.IsAdmin}} readonly{{end}}>
+                        <input class="f-email" type="email" name="email" value="{{.Email}}" aria-label="E-Mail-Adresse" autocomplete="email"{{if or .IsConfig (not $.IsAdmin)}} readonly{{else}} required{{end}}>
+                        {{if not $.IsAdmin}}<p class="dlg-hint">Name und E-Mail gelten für alle Häuser und werden zentral von der Plattform-Administration gepflegt. Die Einstellungen hier gelten nur für dieses Haus.</p>{{end}}
                       </div>
-                    </fieldset>
-                    <fieldset class="permission-fieldset f-permissions">
-                      <legend>Anmeldung</legend>
-                      <div class="permission-grid">
-                        <label class="permission-check"><input type="checkbox" name="auth_methods" value="email"{{if .EmailAuthChecked}} checked{{end}}><strong>E-Mail-Link</strong><span>Anmeldung per Magic-Link an die E-Mail-Adresse.</span></label>
-                        <label class="permission-check"><input type="checkbox" name="auth_methods" value="oidc"{{if .OIDCAuthChecked}} checked{{end}}><strong>Zitadel SSO</strong><span>Anmeldung über den Single-Sign-On-Anbieter (Zitadel).</span></label>
+                    </details>
+                    <details class="form-disclosure dialog-disclosure unit-section">
+                      <summary>Einheiten <span>{{if .HasUnits}}{{len .UnitList}} verknüpft{{else}}keine verknüpft{{end}}</span></summary>
+                      <div class="unit-context">
+                        {{if .HasUnits}}<div class="chips">{{range .UnitList}}<span class="chip">{{.}}</span>{{end}}</div>{{else}}<p>Dieser Zugang ist noch keiner Einheit zugeordnet.</p>{{end}}
+                        <a href="/app/settings/building#units">Zuordnung bei Gebäude &amp; Einheiten verwalten</a>
                       </div>
-                    </fieldset>
-                    <fieldset class="permission-fieldset f-permissions">
+                    </details>
+                    <details class="form-disclosure dialog-disclosure access-section">
+                      <summary>Anmeldung &amp; Sonderrechte <span>anpassen</span></summary>
+                      <div class="optional-stack">
+                        <fieldset class="permission-fieldset f-permissions">
+                          <legend>Sonderrechte</legend>
+                          <span class="preset-label" data-preset-label>Gespeicherte Rechte</span>
+                          <div class="permission-grid">
+                            <label class="permission-check"><input type="checkbox" name="permissions" value="parking" data-permission="parking"{{if .ParkingChecked}} checked{{end}}><strong>Parkplatznutzung</strong><span>Privater Bereich für Stellplatz- und Ladeabrechnung.</span></label>
+                          </div>
+                        </fieldset>
+                        <fieldset class="permission-fieldset f-permissions">
+                          <legend>Anmeldung</legend>
+                          <div class="permission-grid">
+                            <label class="permission-check"><input type="checkbox" name="auth_methods" value="email"{{if .EmailAuthChecked}} checked{{end}}><strong>E-Mail-Link</strong><span>Anmeldung per Magic-Link an die E-Mail-Adresse.</span></label>
+                            <label class="permission-check"><input type="checkbox" name="auth_methods" value="oidc"{{if .OIDCAuthChecked}} checked{{end}}><strong>Zitadel SSO</strong><span>Anmeldung über den Single-Sign-On-Anbieter (Zitadel).</span></label>
+                          </div>
+                        </fieldset>
+                      </div>
+                    </details>
+                    <fieldset class="permission-fieldset status-field">
                       <legend>Status</legend>
                       <div class="permission-grid">
-                        <label class="permission-check"><input type="checkbox" name="deactivated" value="1"{{if .Deactivated}} checked{{end}}><strong>Zugang deaktiviert</strong><span>Anmeldung gesperrt. Der Eintrag bleibt erhalten und kann wieder aktiviert werden.</span></label>
+                        <label class="permission-check"><input type="checkbox" name="deactivated" value="1"{{if .Deactivated}} checked{{end}}><strong>Zugang deaktivieren</strong><span>Die Anmeldung wird gesperrt; der Eintrag bleibt reaktivierbar.</span></label>
                       </div>
                     </fieldset>
-                    <button type="submit">Speichern</button>
+                    <button class="save-access" type="submit">Änderungen speichern</button>
                   </form>
-                  {{if not .IsConfig}}<div class="dlg-delete">
-                    <span>Dauerhaft entfernen</span>
-                    <form method="post" action="/app/settings/users/delete" data-confirm="Diesen Zugang wirklich löschen?">
-                      <input type="hidden" name="email" value="{{.Email}}">
-                      <button type="submit" class="danger">Löschen</button>
-                    </form>
-                  </div>{{end}}
+                  {{if not .IsConfig}}<details class="danger-zone">
+                    <summary>Zugang dauerhaft entfernen</summary>
+                    <div class="dlg-delete">
+                      <span>Entfernt die Hauszuordnung dauerhaft. Sperren ist weiterhin rückgängig zu machen.</span>
+                      <form method="post" action="/app/settings/users/delete" data-confirm="Diesen Zugang wirklich dauerhaft entfernen?">
+                        <input type="hidden" name="email" value="{{.Email}}">
+                        <button type="submit" class="danger">Dauerhaft entfernen</button>
+                      </form>
+                    </div>
+                  </details>{{end}}
 	                </dialog>
 	                {{end}}
 	                {{end}}

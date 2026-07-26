@@ -1775,6 +1775,8 @@ type UserRow struct {
 	AuthList           []string
 	EmailAuthChecked   bool
 	OIDCAuthChecked    bool
+	UnitList           []string
+	HasUnits           bool
 	Editable           bool
 	IsConfig           bool
 	Protected          bool
