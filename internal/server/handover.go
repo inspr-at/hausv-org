@@ -94,21 +94,13 @@ func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.Error(w, "Übergabeprotokolle sind der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
-	profile := a.profileForTenant(email, tenant.Slug)
 	items := []handoverRecord{}
 	if a.handoverStore != nil {
 		items = a.handoverStore.ListTenant(tenant.Slug)
 	}
 	msg, okMsg := handoverMessage(r.URL.Query().Get("handover"))
-	a.render(w, "handovers", map[string]any{
+	a.render(w, "handovers", a.withBase(ac, map[string]any{
 		"Title":              "Übergaben",
-		"Tenant":             tenant,
-		"Email":              email,
-		"DisplayName":        profile.DisplayName(),
-		"Initials":           profile.Initials(),
-		"Role":               role,
-		"IsAdmin":            hasCapability(role, capabilityPlatformAdmin),
-		"CanSeeParking":      hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
 		"CanManageHandovers": true,
 		"ActivePage":         "handovers",
 		"Handovers":          a.handoverViewsForActor(tenant.Slug, email, role, items),
@@ -118,7 +110,7 @@ func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"HandoverOK":         okMsg,
 		"UnitOptions":        handoverUnitOptions(a.unitStore.ListTenant(tenant.Slug), ""),
 		"NowInput":           formatLocalDateTimeInput(time.Now()),
-	})
+	}))
 }
 
 func handoverMessage(status string) (string, bool) {

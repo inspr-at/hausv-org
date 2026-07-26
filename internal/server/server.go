@@ -1755,15 +1755,11 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			parkingPillClass = "dringend"
 		}
 	}
-	a.render(w, "portal", map[string]any{
-		"Title":                     "WEG Portal",
-		"Tenant":                    tenant,
-		"Email":                     email,
-		"DisplayName":               profile.DisplayName(),
-		"GreetingName":              firstNonEmpty(profile.FirstName, profile.DisplayName()),
-		"Initials":                  profile.Initials(),
-		"Role":                      role,
-		"IsAdmin":                   isAdmin,
+	a.render(w, "portal", a.withBase(ac, map[string]any{
+		"Title":        "WEG Portal",
+		"GreetingName": firstNonEmpty(profile.FirstName, profile.DisplayName()),
+		// The dashboard uses this value to decide whether to calculate and
+		// display the parking summary, so keep the derived value explicit.
 		"CanSeeParking":             canSeeParking,
 		"CanManageAnnouncements":    canManage,
 		"CanManageEvents":           canManageEvents(role),
@@ -1797,7 +1793,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"Events":                    events,
 		"HasEvents":                 len(events) > 0,
 		"EventsEmpty":               emptyState("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier."),
-	})
+	}))
 }
 
 func (a *app) dashboardDigestItems(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time) []dashboardDigestItem {
@@ -2611,27 +2607,18 @@ func (a *app) actorCanSeeCommonIssues(tenantSlug string, email string, role stri
 }
 
 func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
+	role := ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
-	profile := a.profileForTenant(email, tenant.Slug)
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
-	a.render(w, "settingsHub", map[string]any{
-		"Title":         "Einstellungen",
-		"Tenant":        tenant,
-		"Email":         email,
-		"DisplayName":   profile.DisplayName(),
-		"Initials":      profile.Initials(),
-		"Role":          role,
-		"IsAdmin":       isAdmin,
-		"CanSeeParking": isAdmin || profile.HasPermission(permissionParking),
-		"ActivePage":    "settings",
-	})
+	a.render(w, "settingsHub", a.withBase(ac, map[string]any{
+		"Title":      "Einstellungen",
+		"ActivePage": "settings",
+	}))
 }
 
 func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role, profile, ok := a.buildingSettingsContext(w, ac)
+	tenant, _, _, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
 		return
 	}
@@ -2642,15 +2629,8 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 	units := a.unitStore.ListTenant(tenant.Slug)
 	billableWeight := billableUnitWeight(units)
 	fairUseExceeded := billableWeight > fairUseFreeUnits*unitBillableFullPPM
-	a.render(w, "buildingSettings", map[string]any{
+	a.render(w, "buildingSettings", a.withBase(ac, map[string]any{
 		"Title":            "Gebäude",
-		"Tenant":           tenant,
-		"Email":            email,
-		"DisplayName":      profile.DisplayName(),
-		"Initials":         profile.Initials(),
-		"Role":             role,
-		"IsAdmin":          hasCapability(role, capabilityPlatformAdmin),
-		"CanSeeParking":    hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
 		"ActivePage":       "settings",
 		"BuildingMsg":      buildingMsg,
 		"BuildingOK":       buildingOK,
@@ -2672,16 +2652,15 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"PaymentOK":        paymentOK,
 		"PaymentRows":      a.unitPaymentStatusViewsForUnits(tenant.Slug, units),
 		"HasPaymentRows":   len(units) > 0,
-	})
+	}))
 }
 
 func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
+	tenant, role := ac.tenant, ac.role
 	if !canViewAudit(role) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
-	profile := a.profileForTenant(email, tenant.Slug)
 	action := normalizeAuditAction(r.URL.Query().Get("action"))
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
 	events := []auditEvent{}
@@ -2695,15 +2674,8 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	eventViews := auditEventViews(events)
 	stats := auditStats(events, action, query)
-	a.render(w, "auditLog", map[string]any{
+	a.render(w, "auditLog", a.withBase(ac, map[string]any{
 		"Title":         "Audit-Log",
-		"Tenant":        tenant,
-		"Email":         email,
-		"DisplayName":   profile.DisplayName(),
-		"Initials":      profile.Initials(),
-		"Role":          role,
-		"IsAdmin":       hasCapability(role, capabilityPlatformAdmin),
-		"CanSeeParking": hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
 		"ActivePage":    "audit",
 		"Events":        eventViews,
 		"HasEvents":     len(eventViews) > 0,
@@ -2712,7 +2684,7 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"ActionFilter":  action,
 		"SearchQuery":   query,
 		"AuditStats":    stats,
-	})
+	}))
 }
 
 func auditEventViews(events []auditEvent) []auditEventView {
@@ -3268,18 +3240,10 @@ func (a *app) profileSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	units := profileUnitViews(a.unitStore.UnitsForEmail(tenant.Slug, email))
 	profileMsg, profileOK := profileSettingsMessage(r.URL.Query().Get("profile"))
-	a.render(w, "profileSettings", map[string]any{
+	a.render(w, "profileSettings", a.withBase(ac, map[string]any{
 		"Title":                  "Profil",
-		"Tenant":                 tenant,
-		"Email":                  email,
-		"DisplayName":            profile.DisplayName(),
-		"Initials":               profile.Initials(),
-		"Role":                   role,
-		"IsAdmin":                isAdmin,
-		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
 		"CanManageAnnouncements": canManageAnnouncements(role),
 		"ActivePage":             "settings",
 		"Profile":                profile,
@@ -3289,7 +3253,7 @@ func (a *app) profileSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 		"AuthList":               authMethodsLabelList(profile.AuthMethods),
 		"Units":                  units,
 		"HasUnits":               len(units) > 0,
-	})
+	}))
 }
 
 func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -3369,32 +3333,23 @@ func profileUnitViews(units []unitMembership) []profileUnitView {
 }
 
 func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
+	email, role := ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
-	profile := a.profileForTenant(email, tenant.Slug)
 	prefs := defaultNotificationPreferences()
 	if a.notificationPrefs != nil {
 		prefs = a.notificationPrefs.Get(email)
 	}
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	notifyMsg, notifyOK := notificationSettingsMessage(r.URL.Query().Get("notify"))
-	a.render(w, "notificationSettings", map[string]any{
+	a.render(w, "notificationSettings", a.withBase(ac, map[string]any{
 		"Title":                     "Benachrichtigungen",
-		"Tenant":                    tenant,
-		"Email":                     email,
-		"DisplayName":               profile.DisplayName(),
-		"Initials":                  profile.Initials(),
-		"Role":                      role,
-		"IsAdmin":                   isAdmin,
-		"CanSeeParking":             isAdmin || profile.HasPermission(permissionParking),
 		"ActivePage":                "settings",
 		"NotifyMsg":                 notifyMsg,
 		"NotifyOK":                  notifyOK,
 		"EmailNotificationsEnabled": !prefs.Unsubscribed,
 		"NotificationEvents":        notificationEventOptions(prefs),
-	})
+	}))
 }
 
 func (a *app) updateNotificationSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -3447,26 +3402,18 @@ func notificationPreferencesFromForm(values url.Values) notificationPreferences 
 }
 
 func (a *app) userSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
-	profile := a.profileForTenant(email, tenant.Slug)
+	tenant := ac.tenant
 	users := a.userRows(tenant.Slug)
 	inviteMsg, inviteOK := inviteMessage(r.URL.Query().Get("invite"))
-	a.render(w, "userSettings", map[string]any{
-		"Title":         "Benutzer & Rechte",
-		"Tenant":        tenant,
-		"Email":         email,
-		"DisplayName":   profile.DisplayName(),
-		"Initials":      profile.Initials(),
-		"Role":          role,
-		"Users":         users,
-		"HasUsers":      len(users) > 0,
-		"UsersEmpty":    emptyStateAction("Noch keine Zugänge", "Sobald eine Person eingeladen ist, erscheint sie hier mit Rolle, Rechten und Anmeldestatus.", "/app/settings/users", "Person einladen"),
-		"InviteMsg":     inviteMsg,
-		"InviteOK":      inviteOK,
-		"IsAdmin":       hasCapability(role, capabilityPlatformAdmin),
-		"CanSeeParking": hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
-		"ActivePage":    "users",
-	})
+	a.render(w, "userSettings", a.withBase(ac, map[string]any{
+		"Title":      "Benutzer & Rechte",
+		"Users":      users,
+		"HasUsers":   len(users) > 0,
+		"UsersEmpty": emptyStateAction("Noch keine Zugänge", "Sobald eine Person eingeladen ist, erscheint sie hier mit Rolle, Rechten und Anmeldestatus.", "/app/settings/users", "Person einladen"),
+		"InviteMsg":  inviteMsg,
+		"InviteOK":   inviteOK,
+		"ActivePage": "users",
+	}))
 }
 
 func inviteMessage(status string) (string, bool) {
@@ -3955,6 +3902,31 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	a.enrichUnreadAnnouncementData(data)
 	a.enrichIssueData(data)
 	a.executeTemplate(w, name, data)
+}
+
+// baseContext centralises the identity and navigation data shared by every
+// authenticated page. Page-specific data is layered on top by withBase so
+// intentional overrides remain visible at the call site.
+func (a *app) baseContext(ac authCtx) map[string]any {
+	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
+	isAdmin := hasCapability(ac.role, capabilityPlatformAdmin)
+	return map[string]any{
+		"Tenant":        ac.tenant,
+		"Email":         ac.email,
+		"Role":          ac.role,
+		"IsAdmin":       isAdmin,
+		"DisplayName":   profile.DisplayName(),
+		"Initials":      profile.Initials(),
+		"CanSeeParking": isAdmin || profile.HasPermission(permissionParking),
+	}
+}
+
+func (a *app) withBase(ac authCtx, pageData map[string]any) map[string]any {
+	data := a.baseContext(ac)
+	for key, value := range pageData {
+		data[key] = value
+	}
+	return data
 }
 
 // executeTemplate is the pure rendering step: no store access, no business

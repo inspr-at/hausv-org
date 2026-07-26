@@ -8,12 +8,10 @@ import (
 )
 
 func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
+	tenant, role := ac.tenant, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
-	profile := a.profileForTenant(email, tenant.Slug)
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManageContacts := canManageContacts(role)
 	managerContacts := managerContactViews(tenant)
 	emergencyContacts := emergencyContactViews(tenant)
@@ -25,15 +23,8 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		managedEmptyMessage = "Hausmeister, Notdienste und weitere wichtige Kontakte können hier zentral hinterlegt werden."
 	}
 	contactMsg, contactOK := contactMessage(r.URL.Query().Get("contact"))
-	a.render(w, "contacts", map[string]any{
+	a.render(w, "contacts", a.withBase(ac, map[string]any{
 		"Title":                "Kontakte",
-		"Tenant":               tenant,
-		"Email":                email,
-		"DisplayName":          profile.DisplayName(),
-		"Initials":             profile.Initials(),
-		"Role":                 role,
-		"IsAdmin":              isAdmin,
-		"CanSeeParking":        isAdmin || profile.HasPermission(permissionParking),
 		"CanManageContacts":    canManageContacts,
 		"ActivePage":           "contacts",
 		"ContactMsg":           contactMsg,
@@ -54,7 +45,7 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"ResidentContacts":     residentContacts,
 		"HasResidentContacts":  len(residentContacts) > 0,
 		"ResidentEmpty":        emptyState("Keine freigegebenen Kontakte", "Kontakte aus der Hausgemeinschaft erscheinen nur nach ausdrücklicher Freigabe im Profil."),
-	})
+	}))
 }
 
 func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac authCtx) {

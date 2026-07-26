@@ -13,8 +13,6 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if denyServiceProviderArea(w, role) {
 		return
 	}
-	profile := a.profileForTenant(email, tenant.Slug)
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := canManageEvents(role)
 	now := time.Now()
 	upcoming := []houseEvent{}
@@ -29,15 +27,8 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
-	a.render(w, "events", map[string]any{
+	a.render(w, "events", a.withBase(ac, map[string]any{
 		"Title":                  "Termine",
-		"Tenant":                 tenant,
-		"Email":                  email,
-		"DisplayName":            profile.DisplayName(),
-		"Initials":               profile.Initials(),
-		"Role":                   role,
-		"IsAdmin":                isAdmin,
-		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
 		"CanManageAnnouncements": canManageAnnouncements(role),
 		"CanManageEvents":        canManage,
 		"ActivePage":             "events",
@@ -51,7 +42,7 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"AllEventsEmpty":         emptyState("Noch kein Termin gespeichert", "Neue Termine erscheinen hier nach dem Speichern."),
 		"EventMsg":               eventMessage(r.URL.Query().Get("event")),
 		"NowInput":               formatLocalDateTimeInput(now),
-	})
+	}))
 }
 
 func (a *app) createEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {

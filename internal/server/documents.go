@@ -16,8 +16,6 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if denyServiceProviderArea(w, role) {
 		return
 	}
-	profile := a.profileForTenant(email, tenant.Slug)
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := hasCapability(role, capabilityManageDocuments)
 	visible := []documentRecord{}
 	if a.documentStore != nil {
@@ -27,15 +25,8 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	sortMode := selectedDocumentSort(r.URL.Query().Get("sort"))
 	documents := sortDocumentsForView(filterDocuments(visible, searchQuery), sortMode)
 	documentMsg, documentOK := documentMessage(r.URL.Query().Get("doc"))
-	a.render(w, "documents", map[string]any{
+	a.render(w, "documents", a.withBase(ac, map[string]any{
 		"Title":              "Dokumente",
-		"Tenant":             tenant,
-		"Email":              email,
-		"DisplayName":        profile.DisplayName(),
-		"Initials":           profile.Initials(),
-		"Role":               role,
-		"IsAdmin":            isAdmin,
-		"CanSeeParking":      isAdmin || profile.HasPermission(permissionParking),
 		"CanManageDocuments": canManage,
 		"ActivePage":         "documents",
 		"Documents":          a.documentViewsForActor(tenant.Slug, email, role, documents),
@@ -52,7 +43,7 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"VisibilityOptions":  documentVisibilityOptions(""),
 		"UnitOptions":        documentUnitOptions(a.unitStore.ListTenant(tenant.Slug), ""),
 		"MaxDocumentSize":    formatBytes(maxDocumentBytes),
-	})
+	}))
 }
 
 func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request, ac authCtx) {

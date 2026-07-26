@@ -13,8 +13,6 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	if denyServiceProviderArea(w, role) {
 		return
 	}
-	profile := a.profileForTenant(email, tenant.Slug)
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := canManageAnnouncements(role)
 	now := time.Now()
 	selectedCategory := selectedAnnouncementCategory(r.URL.Query().Get("category"))
@@ -33,15 +31,8 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 			all = a.announcementViewsWithReadState(tenant.Slug, a.announcementStore.ListTenant(tenant.Slug), now, true, lastSeen, email, role)
 		}
 	}
-	a.render(w, "announcements", map[string]any{
+	a.render(w, "announcements", a.withBase(ac, map[string]any{
 		"Title":                  "Aushang",
-		"Tenant":                 tenant,
-		"Email":                  email,
-		"DisplayName":            profile.DisplayName(),
-		"Initials":               profile.Initials(),
-		"Role":                   role,
-		"IsAdmin":                isAdmin,
-		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
 		"CanManageAnnouncements": canManage,
 		"ActivePage":             "announcements",
 		"Announcements":          a.announcementViewsWithReadState(tenant.Slug, filtered, now, true, lastSeen, email, role),
@@ -59,7 +50,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"CategoryFilters":        announcementFilterViews(searchQuery, selectedCategory),
 		"UnreadAnnouncements":    0,
 		"HasUnreadAnnouncements": false,
-	})
+	}))
 	if a.announcementReadStore != nil {
 		if err := a.announcementReadStore.MarkSeen(tenant.Slug, email, now); err != nil {
 			logError("announcement read mark failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))

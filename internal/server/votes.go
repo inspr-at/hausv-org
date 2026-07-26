@@ -203,8 +203,6 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if denyServiceProviderArea(w, role) {
 		return
 	}
-	profile := a.profileForTenant(email, tenant.Slug)
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	canManage := hasCapability(role, capabilityManageVotes)
 	canOversight := hasCapability(role, capabilityOversight)
 	now := time.Now()
@@ -223,15 +221,8 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		}
 	}
 	msg, msgOK := voteMessage(r.URL.Query().Get("vote"))
-	a.render(w, "ballots", map[string]any{
+	a.render(w, "ballots", a.withBase(ac, map[string]any{
 		"Title":              "Abstimmungen",
-		"Tenant":             tenant,
-		"Email":              email,
-		"DisplayName":        profile.DisplayName(),
-		"Initials":           profile.Initials(),
-		"Role":               role,
-		"IsAdmin":            isAdmin,
-		"CanSeeParking":      isAdmin || profile.HasPermission(permissionParking),
 		"CanManageVotes":     canManage,
 		"CanVote":            hasCapability(role, capabilityVote),
 		"CanOversightVotes":  canOversight,
@@ -246,7 +237,7 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"VoteMsg":            msg,
 		"VoteOK":             msgOK,
 		"NowInput":           formatLocalDateTimeInput(now),
-	})
+	}))
 }
 
 func (a *app) submitBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {

@@ -21,8 +21,6 @@ func (a *app) issueBoard(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCtx, boardOnly bool) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	profile := a.profileForTenant(email, tenant.Slug)
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
 	issues := []issueView{}
 	manageIssues := []issueView{}
 	manageIssuePreview := []issueView{}
@@ -66,15 +64,8 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
 	serviceContacts := a.serviceContactOptions(tenant.Slug)
-	a.render(w, "issues", map[string]any{
+	a.render(w, "issues", a.withBase(ac, map[string]any{
 		"Title":                      "Anliegen",
-		"Tenant":                     tenant,
-		"Email":                      email,
-		"DisplayName":                profile.DisplayName(),
-		"Initials":                   profile.Initials(),
-		"Role":                       role,
-		"IsAdmin":                    isAdmin,
-		"CanSeeParking":              isAdmin || profile.HasPermission(permissionParking),
 		"CanManageAnnouncements":     canManageAnnouncements(role),
 		"CanManageIssues":            canManageIssues,
 		"CanCreateIssue":             canCreateIssue,
@@ -101,7 +92,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		"ManageIssuesEmpty":          emptyState("Keine Anliegen im Haus", "Sobald ein Anliegen gemeldet wird, erscheint es hier für die Bearbeitung."),
 		"IssueMsg":                   msg,
 		"IssueOK":                    msgOK,
-	})
+	}))
 }
 
 func issueMessage(status string) (string, bool) {

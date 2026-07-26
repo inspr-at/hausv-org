@@ -33,26 +33,22 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	accounting := a.parkingAccounting(r.Context(), tenant)
 	accounting.Months = a.hydrateParkingMonths(tenant.Slug, email, role, accounting.Months)
 	live := a.chargingLiveView(r.Context(), tenant, isAdmin, true)
-	a.render(w, "parking", map[string]any{
+	a.render(w, "parking", a.withBase(ac, map[string]any{
 		"Title":                    "Parkplatznutzung",
-		"Tenant":                   tenant,
-		"Email":                    email,
-		"DisplayName":              profile.DisplayName(),
-		"Initials":                 profile.Initials(),
-		"Role":                     role,
-		"IsAdmin":                  isAdmin,
 		"CanManageParkingPayments": hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking),
 		"CanMarkParkingPayment":    isAdmin || hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking) || profile.HasPermission(permissionParking),
-		"CanSeeParking":            true,
-		"ActivePage":               "parking",
-		"Telemetry":                telemetry,
-		"Accounting":               accounting,
-		"ParkingMsg":               parkingMsg,
-		"ParkingOK":                parkingOK,
-		"Live":                     live,
-		"TodayInput":               time.Now().In(time.Local).Format("2006-01-02"),
-		"StatementYear":            time.Now().In(time.Local).Year(),
-	})
+		// The parking page is reachable through the explicit per-user parking
+		// permission too, so keep this intentional base-context override.
+		"CanSeeParking": true,
+		"ActivePage":    "parking",
+		"Telemetry":     telemetry,
+		"Accounting":    accounting,
+		"ParkingMsg":    parkingMsg,
+		"ParkingOK":     parkingOK,
+		"Live":          live,
+		"TodayInput":    time.Now().In(time.Local).Format("2006-01-02"),
+		"StatementYear": time.Now().In(time.Local).Year(),
+	}))
 }
 
 // chargingFlashMessage surfaces the redirect outcome of a charging action.
@@ -75,17 +71,13 @@ func chargingFlashMessage(query url.Values) (string, bool) {
 }
 
 func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
-	profile := a.profileForTenant(email, tenant.Slug)
+	tenant := ac.tenant
 	settingsMsg, settingsOK := parkingSettingsMessage(r.URL.Query().Get("settings"))
 	chargingMsg, chargingOK := chargingSettingsMessage(r.URL.Query().Get("charging"))
-	a.render(w, "parkingSettings", map[string]any{
-		"Title":         "Parkplatz-Abrechnung",
-		"Tenant":        tenant,
-		"Email":         email,
-		"DisplayName":   profile.DisplayName(),
-		"Initials":      profile.Initials(),
-		"Role":          role,
+	a.render(w, "parkingSettings", a.withBase(ac, map[string]any{
+		"Title": "Parkplatz-Abrechnung",
+		// This route is capability-gated before the handler. Preserve its
+		// deliberate admin presentation for delegated parking managers.
 		"IsAdmin":       true,
 		"CanSeeParking": true,
 		"ActivePage":    "settings",
@@ -95,7 +87,7 @@ func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 		"ChargingMsg":   chargingMsg,
 		"ChargingOK":    chargingOK,
 		"Charging":      a.chargingAdminView(tenant, r.URL.Query()),
-	})
+	}))
 }
 
 func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -116,18 +108,12 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.NotFound(w, r)
 		return
 	}
-	a.render(w, "parkingMonth", map[string]any{
+	a.render(w, "parkingMonth", a.withBase(ac, map[string]any{
 		"Title":         "Parkplatznutzung · " + view.MonthLabel,
-		"Tenant":        tenant,
-		"Email":         email,
-		"DisplayName":   profile.DisplayName(),
-		"Initials":      profile.Initials(),
-		"Role":          role,
-		"IsAdmin":       hasCapability(role, capabilityPlatformAdmin),
 		"CanSeeParking": true,
 		"ActivePage":    "parking",
 		"Detail":        view,
-	})
+	}))
 }
 
 func (a *app) hydrateParkingMonths(tenantSlug string, email string, role string, months []parkingMonthView) []parkingMonthView {
@@ -600,21 +586,14 @@ func parkingSettingsMessage(status string) (string, bool) {
 }
 
 func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role, profile, ok := a.parkingAccessContext(w, ac)
+	tenant, _, _, _, ok := a.parkingAccessContext(w, ac)
 	if !ok {
 		return
 	}
 	accessMsg, accessOK := parkingAccessMessage(r.URL.Query().Get("parking_access"))
 	rows := a.parkingAccessRows(tenant.Slug)
-	a.render(w, "parkingAccessSettings", map[string]any{
+	a.render(w, "parkingAccessSettings", a.withBase(ac, map[string]any{
 		"Title":           "Parkplatz-Zugriff",
-		"Tenant":          tenant,
-		"Email":           email,
-		"DisplayName":     profile.DisplayName(),
-		"Initials":        profile.Initials(),
-		"Role":            role,
-		"IsAdmin":         hasCapability(role, capabilityPlatformAdmin),
-		"CanSeeParking":   hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking),
 		"ActivePage":      "settings",
 		"AccessRows":      rows,
 		"HasAccessRows":   len(rows) > 0,
@@ -622,7 +601,7 @@ func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request, ac a
 		"AccessMsg":       accessMsg,
 		"AccessOK":        accessOK,
 		"StatementYear":   time.Now().In(time.Local).Year(),
-	})
+	}))
 }
 
 func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request, ac authCtx) {
