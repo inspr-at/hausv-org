@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.19.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Nachvollziehbarkeit",
+			Headline: "Kalenderänderungen erscheinen in der Verwaltungshistorie.",
+			Intro:    "Angelegte, geänderte und gelöschte Termine lassen sich im Audit-Log nach Aktion filtern.",
+			Items: []NoteItem{
+				{Label: "Datensparsam", Text: "Freitext, Ort und Dateinamen bleiben außerhalb des Audit-Protokolls."},
+				{Label: "Klar zugeordnet", Text: "Akteur, Zeitpunkt, Änderungstyp und betroffener Termin bleiben nachvollziehbar."},
+			},
+		},
+		{
 			Version:  "0.18.1",
 			Date:     "26. Juli 2026",
 			Kind:     "Betrieb",

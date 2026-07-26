@@ -45,6 +45,9 @@ const (
 	AuditActionIssueServiceDrop   = "issue.service.drop"
 	AuditActionIssueComment       = "issue.comment"
 	AuditActionIssueCommentDelete = "issue.comment.delete"
+	AuditActionEventCreate        = "event.create"
+	AuditActionEventUpdate        = "event.update"
+	AuditActionEventDelete        = "event.delete"
 	AuditActionContactSave        = "contact.save"
 	AuditActionContactDelete      = "contact.delete"
 	AuditActionDocumentUpload     = "document.upload"
@@ -1612,6 +1615,7 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionChargingSettings, AuditActionChargingManual, AuditActionChargingSession, AuditActionIssueWorkflow,
 		AuditActionIssueEstimate, AuditActionIssueServiceAdd, AuditActionIssueServiceDrop,
 		AuditActionIssueComment, AuditActionIssueCommentDelete,
+		AuditActionEventCreate, AuditActionEventUpdate, AuditActionEventDelete,
 		AuditActionContactSave, AuditActionContactDelete:
 		return raw
 	default:

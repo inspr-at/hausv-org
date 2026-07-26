@@ -1111,6 +1111,9 @@ func AuditActionOptions(selected string) []SelectOption {
 		store.AuditActionIssueServiceDrop,
 		store.AuditActionIssueComment,
 		store.AuditActionIssueCommentDelete,
+		store.AuditActionEventCreate,
+		store.AuditActionEventUpdate,
+		store.AuditActionEventDelete,
 		store.AuditActionContactSave,
 		store.AuditActionContactDelete,
 	} {
@@ -1179,6 +1182,12 @@ func AuditActionLabel(action string) string {
 		return "Kommentar hinzugefügt"
 	case store.AuditActionIssueCommentDelete:
 		return "Kommentar gelöscht"
+	case store.AuditActionEventCreate:
+		return "Termin angelegt"
+	case store.AuditActionEventUpdate:
+		return "Termin geändert"
+	case store.AuditActionEventDelete:
+		return "Termin gelöscht"
 	case store.AuditActionContactSave:
 		return "Kontakt gespeichert"
 	case store.AuditActionContactDelete:
@@ -1190,9 +1199,9 @@ func AuditActionLabel(action string) string {
 
 func AuditActionTone(action string) string {
 	switch store.NormalizeAuditAction(action) {
-	case store.AuditActionInviteCreate, store.AuditActionUnitSave, store.AuditActionDocumentUpload, store.AuditActionHandoverCreate, store.AuditActionHandoverConfirm, store.AuditActionVoteCreate, store.AuditActionVoteOpen, store.AuditActionVoteCast, store.AuditActionVoteReminder, store.AuditActionParkingReminder, store.AuditActionIssueServiceAdd, store.AuditActionContactSave, store.AuditActionLogin:
+	case store.AuditActionInviteCreate, store.AuditActionUnitSave, store.AuditActionDocumentUpload, store.AuditActionHandoverCreate, store.AuditActionHandoverConfirm, store.AuditActionVoteCreate, store.AuditActionVoteOpen, store.AuditActionVoteCast, store.AuditActionVoteReminder, store.AuditActionParkingReminder, store.AuditActionIssueServiceAdd, store.AuditActionEventCreate, store.AuditActionContactSave, store.AuditActionLogin:
 		return "add"
-	case store.AuditActionInviteDelete, store.AuditActionUnitDelete, store.AuditActionDocumentReplace, store.AuditActionVoteClose, store.AuditActionIssueServiceDrop, store.AuditActionContactDelete:
+	case store.AuditActionInviteDelete, store.AuditActionUnitDelete, store.AuditActionDocumentReplace, store.AuditActionVoteClose, store.AuditActionIssueServiceDrop, store.AuditActionEventDelete, store.AuditActionContactDelete:
 		return "danger"
 	default:
 		return "change"
@@ -1244,6 +1253,8 @@ func AuditTargetTypeLabel(targetType string) string {
 		return "Abstimmung"
 	case "handover":
 		return "Übergabe"
+	case "event":
+		return "Termin"
 	default:
 		return strings.TrimSpace(targetType)
 	}

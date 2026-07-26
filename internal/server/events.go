@@ -84,6 +84,7 @@ func (a *app) createEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			return
 		}
 	}
+	a.recordEventAudit(ac, auditActionEventCreate, created.ID, created.Category, len(attachmentHeaders))
 	http.Redirect(w, r, "/app/events?event=created", http.StatusSeeOther)
 }
 
@@ -137,6 +138,7 @@ func (a *app) editEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.Redirect(w, r, "/app/events?event=missing", http.StatusSeeOther)
 		return
 	}
+	a.recordEventAudit(ac, auditActionEventUpdate, id, item.Category, len(uploaded))
 	http.Redirect(w, r, "/app/events?event=updated", http.StatusSeeOther)
 }
 
@@ -150,7 +152,8 @@ func (a *app) deleteEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	removed, err := a.eventStore.Delete(tenant.Slug, strings.TrimSpace(r.FormValue("id")))
+	id := strings.TrimSpace(r.FormValue("id"))
+	removed, err := a.eventStore.Delete(tenant.Slug, id)
 	if err != nil {
 		logError("event delete failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/events?event=error", http.StatusSeeOther)
@@ -160,7 +163,37 @@ func (a *app) deleteEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.Redirect(w, r, "/app/events?event=missing", http.StatusSeeOther)
 		return
 	}
+	a.recordEventAudit(ac, auditActionEventDelete, id, "", 0)
 	http.Redirect(w, r, "/app/events?event=deleted", http.StatusSeeOther)
+}
+
+// recordEventAudit deliberately keeps free-text calendar content out of the
+// audit trail. Titles, descriptions, locations and attachment names remain in
+// their access-controlled stores; the audit log only records the mutation,
+// target, enumerated category and attachment count.
+func (a *app) recordEventAudit(ac authCtx, action string, targetID string, category string, fileCount int) {
+	summary := map[string]string{
+		auditActionEventCreate: "Kalendertermin angelegt",
+		auditActionEventUpdate: "Kalendertermin geändert",
+		auditActionEventDelete: "Kalendertermin gelöscht",
+	}[action]
+	details := map[string]string{}
+	if strings.TrimSpace(category) != "" {
+		details["category"] = normalizeEventCategory(category)
+	}
+	if fileCount > 0 {
+		details["file_count"] = fmt.Sprintf("%d", fileCount)
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: ac.tenant.Slug,
+		ActorEmail: ac.email,
+		ActorRole:  ac.role,
+		Action:     action,
+		TargetType: "event",
+		TargetID:   targetID,
+		Summary:    summary,
+		Details:    details,
+	})
 }
 
 func eventMessage(status string) string {

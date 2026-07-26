@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.19.0] - 2026-07-26
+
+### Verbessert
+
+- **Kalenderänderungen sind im Audit-Log nachvollziehbar.** Angelegte, geänderte und gelöschte Termine erscheinen mit Akteur, Zeitpunkt und Änderungstyp in der Verwaltungshistorie. Freitext, Ort und Dateinamen bleiben dabei bewusst außerhalb des Audit-Protokolls.
+
 ## [0.18.1] - 2026-07-26
 
 ### Verbessert

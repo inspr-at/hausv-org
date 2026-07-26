@@ -476,6 +476,9 @@ const (
 	auditActionIssueWorkflow           = store.AuditActionIssueWorkflow
 	auditActionIssueComment            = store.AuditActionIssueComment
 	auditActionIssueCommentDelete      = store.AuditActionIssueCommentDelete
+	auditActionEventCreate             = store.AuditActionEventCreate
+	auditActionEventUpdate             = store.AuditActionEventUpdate
+	auditActionEventDelete             = store.AuditActionEventDelete
 	auditActionLogin                   = store.AuditActionLogin
 	auditActionParkingMonth            = store.AuditActionParkingMonth
 	auditActionParkingReminder         = store.AuditActionParkingReminder
