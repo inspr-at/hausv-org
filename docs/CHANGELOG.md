@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.27.0] - 2026-07-26
+
+### Verbessert
+
+- **Offene Abstimmungen zeigen sofort den nächsten Schritt.** Eigentümer sehen zuerst Handlungsbedarf, Frist, Frage und ihr Stimmgewicht; Regeln und weitere Zeitangaben bleiben bei Bedarf erreichbar.
+- **Stimmen lassen sich ruhiger abgeben und ändern.** Große Auswahlflächen und eine eindeutige Hauptaktion führen ohne Verwaltungsinformationen durch die Entscheidung.
+- **Ergebnisse ersetzen die Eingabe statt sie zu wiederholen.** Teilnahme, Quorum, Ergebnis, Auszählung und Protokoll bilden nach Abschluss eine kompakte, verständliche Einheit.
+- **Die Verwaltung arbeitet in einer gemeinsamen Übersicht.** Entwurf, Öffnen, laufende Abstimmung und Schließen stehen direkt am jeweiligen Vorgang, ohne eine doppelte Verwaltungsliste.
+- **Neue Abstimmungen beginnen mit dem Wesentlichen.** Titel, Frage, Antwortmöglichkeiten und Frist stehen zuerst; Gewichtung, Quorum, Start, Erinnerung und Unterlagen sind übersichtlich eingeklappt.
+- **Die Abstimmungswege nutzen kleine Bildschirme besser.** Irrelevante Bereiche und wiederholte Metadaten entfallen, während Rollen, Gewichtung, Audit und Protokollierung unverändert abgesichert bleiben.
+
 ## [0.26.0] - 2026-07-26
 
 ### Verbessert

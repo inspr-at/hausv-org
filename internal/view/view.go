@@ -192,6 +192,9 @@ type BallotView struct {
 	ReminderLabel       string
 	Status              string
 	StatusClass         string
+	IsDraft             bool
+	IsOpen              bool
+	IsClosed            bool
 	OpensAt             string
 	HasOpensAt          bool
 	ClosesAt            string
@@ -204,6 +207,7 @@ type BallotView struct {
 	CanOpen             bool
 	CanClose            bool
 	HasVote             bool
+	NeedsVote           bool
 	VoteOption          string
 	VoteWeight          string
 	VotedAt             string

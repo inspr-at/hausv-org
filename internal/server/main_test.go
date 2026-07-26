@@ -362,10 +362,13 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 		t.Fatalf("owner ballots status = %d", ownerPage.Code)
 	}
 	ownerBody := ownerPage.Body.String()
-	for _, want := range []string{`href="/app/abstimmungen"`, "nav-item active", "Dachsanierung", `name="option"`, "Stimmgewicht: " + formatBallotWeight(400000)} {
+	for _, want := range []string{`href="/app/abstimmungen"`, "nav-item active", "Dachsanierung", `name="option"`, "Ihre Stimme zählt: " + formatBallotWeight(400000), "Ihre Stimme ist gefragt", "Details zur Abstimmung"} {
 		if !strings.Contains(ownerBody, want) {
 			t.Fatalf("owner ballots page missing %q:\n%s", want, ownerBody)
 		}
+	}
+	if strings.Contains(ownerBody, `class="kicker">Verwaltung`) {
+		t.Fatalf("owner ballots page should not render an irrelevant administration panel:\n%s", ownerBody)
 	}
 	if strings.Contains(ownerBody, `class="nav-item disabled"`) && strings.Contains(ownerBody, "Abstimmungen") {
 		t.Fatalf("Abstimmungen nav item must be a live link:\n%s", ownerBody)
@@ -377,6 +380,9 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	})
 	if vote.Code != http.StatusSeeOther {
 		t.Fatalf("owner vote status = %d, want redirect", vote.Code)
+	}
+	if location := vote.Header().Get("Location"); location != "/app/abstimmungen?vote=cast#ballot-"+created.ID {
+		t.Fatalf("owner vote redirect = %q, want ballot anchor", location)
 	}
 	stored, _ := a.voteStore.Get("jhw22", created.ID)
 	if got := stored.Votes["owner@example.com"].Weight; got != 400000 {
@@ -418,7 +424,7 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	}
 
 	board := authedRequest(t, a, "beirat@example.com", "/app/abstimmungen").Body.String()
-	if !strings.Contains(board, "Teilnahme 100,0 %") || !strings.Contains(board, formatBallotResultWeight(ballotWeightingPerShare, 400000)+" · 1 Stimmen") {
+	if !strings.Contains(board, "Teilnahme") || !strings.Contains(board, "100,0 %") || !strings.Contains(board, formatBallotResultWeight(ballotWeightingPerShare, 400000)+" · 1 Stimmen") {
 		t.Fatalf("beirat oversight should show weighted aggregate:\n%s", board)
 	}
 }
@@ -448,6 +454,14 @@ func TestBallotCreateShowsAttachmentPreview(t *testing.T) {
 	body := page.Body.String()
 	if !strings.Contains(body, "angebot.pdf") || !strings.Contains(body, "Dachsanierung") {
 		t.Fatalf("ballots page should render attachment:\n%s", body)
+	}
+	for _, want := range []string{"Vor Veröffentlichung prüfen", "Nächster Schritt: Abstimmung öffnen", "Details zur Abstimmung", "Entwurf anlegen"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("manager draft page missing %q:\n%s", want, body)
+		}
+	}
+	if got := strings.Count(body, `data-dialog="ballot-create"`); got != 1 {
+		t.Fatalf("manager draft page should have one create trigger, got %d", got)
 	}
 }
 
@@ -555,7 +569,7 @@ func TestBallotVoteAfterDeadlineAutoCloses(t *testing.T) {
 		t.Fatalf("deadline vote should auto-close ballot: %+v", closed)
 	}
 	page := authedRequest(t, a, "owner@example.com", "/app/abstimmungen").Body.String()
-	if strings.Contains(page, `name="option"`) || !strings.Contains(page, "Abstimmung geschlossen.") {
+	if strings.Contains(page, `name="option"`) || !strings.Contains(page, `aria-label="Abstimmungsergebnis"`) || strings.Contains(page, `class="vote-option vote-option-static"`) {
 		t.Fatalf("closed ballot should render read-only:\n%s", page)
 	}
 }
@@ -2688,13 +2702,22 @@ func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	if len(ballots) != 1 || ballots[0].Title != "Dachsanierung" || ballots[0].QuorumPPM != 500000 || ballots[0].ReminderBeforeMinutes != 720 {
 		t.Fatalf("created ballots = %+v", ballots)
 	}
+	if location := ballotCreate.Header().Get("Location"); location != "/app/abstimmungen?vote=created#ballot-"+ballots[0].ID {
+		t.Fatalf("manager ballot create redirect = %q, want ballot anchor", location)
+	}
 	open := authedFormRequest(t, a, "manager@example.com", "/app/abstimmungen/open", url.Values{"id": {ballots[0].ID}})
 	if open.Code != http.StatusSeeOther {
 		t.Fatalf("manager ballot open status = %d, want redirect", open.Code)
 	}
+	if location := open.Header().Get("Location"); location != "/app/abstimmungen?vote=opened#ballot-"+ballots[0].ID {
+		t.Fatalf("manager ballot open redirect = %q, want ballot anchor", location)
+	}
 	close := authedFormRequest(t, a, "manager@example.com", "/app/abstimmungen/close", url.Values{"id": {ballots[0].ID}})
 	if close.Code != http.StatusSeeOther {
 		t.Fatalf("manager ballot close status = %d, want redirect", close.Code)
+	}
+	if location := close.Header().Get("Location"); location != "/app/abstimmungen?vote=closed#ballot-"+ballots[0].ID {
+		t.Fatalf("manager ballot close redirect = %q, want ballot anchor", location)
 	}
 	closed, _ := a.voteStore.Get("jhw22", ballots[0].ID)
 	if closed.Status != ballotStatusClosed {

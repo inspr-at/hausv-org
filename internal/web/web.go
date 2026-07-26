@@ -1397,29 +1397,66 @@ const PageTemplates = `
     .document-dialog-intro { margin: 0 0 14px; color: var(--muted); }
     .document-replace-context { display: grid; gap: 4px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); padding: 12px 14px; margin-bottom: 14px; }
     .document-replace-context strong { font-family: var(--font-serif); font-size: 17px; }
+    .ballot-dialog textarea { min-height: 92px; }
+    .ballot-dialog #ballot-options { min-height: 104px; }
+    .ballot-dialog .dialog-body > button:last-child { position: static; box-shadow: none; margin-top: 2px; }
     .version-list { margin-top: 8px; display: grid; gap: 7px; }
     .version-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 12.5px; }
-    .vote-list { display: grid; gap: 12px; }
-    .vote-card { border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fffefb; padding: 16px; display: grid; gap: 13px; }
+    .vote-page { gap: 20px; }
+    .vote-page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+    .vote-page-head .lede { max-width: 680px; }
+    .vote-overview { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 13px; align-items: center; border: 1px solid rgba(47,107,74,.22); border-radius: var(--radius-sm); background: rgba(47,107,74,.075); padding: 14px 16px; }
+    .vote-overview.action { border-color: rgba(200,153,63,.34); background: rgba(200,153,63,.085); }
+    .vote-overview-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; color: var(--leaf); background: rgba(47,107,74,.12); font-size: 21px; font-weight: 900; }
+    .vote-overview.action .vote-overview-icon { color: var(--gold-ink); background: rgba(200,153,63,.16); }
+    .vote-overview strong { display: block; font-family: var(--font-serif); font-size: 19px; }
+    .vote-overview p { margin: 3px 0 0; color: var(--muted); font-size: 13.5px; }
+    .vote-library { display: grid; gap: 18px; padding: 20px; }
+    .vote-list { display: grid; gap: 14px; }
+    .vote-card { border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fffefb; padding: 20px; display: grid; gap: 16px; box-shadow: 0 10px 28px rgba(32,37,31,.045); scroll-margin-top: 82px; }
+    .vote-card.needs-action { border-color: rgba(200,153,63,.38); box-shadow: 0 12px 34px rgba(116,87,28,.08); }
     .vote-card form { display: grid; gap: 14px; }
     .vote-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
-    .vote-card-head > .pill { justify-self: end; }
-    .vote-card h3 { font-size: 20px; overflow-wrap: anywhere; }
-    .vote-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; color: var(--soft); font-size: 12.5px; font-weight: 700; }
+    .vote-card-head > .pill { flex: 0 0 auto; }
+    .vote-eyebrow { margin-bottom: 6px; color: var(--gold-ink); font-size: 11.5px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+    .vote-eyebrow.ok { color: var(--leaf); }
+    .vote-card h3 { font-size: 23px; line-height: 1.15; overflow-wrap: anywhere; }
+    .vote-deadline { width: fit-content; display: inline-flex; align-items: center; gap: 7px; border-radius: var(--radius-pill); padding: 6px 10px; color: var(--gold-ink); background: rgba(200,153,63,.11); font-size: 12.5px; font-weight: 850; }
+    .vote-deadline svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+    .vote-question { max-width: 820px; margin: 0; color: var(--ink); font-size: 17px; line-height: 1.45; }
+    .vote-weight { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--muted); font-size: 13px; font-weight: 750; }
+    .vote-weight svg { width: 18px; height: 18px; fill: none; stroke: var(--gold-ink); stroke-width: 1.7; }
     .vote-options { display: grid; gap: 8px; }
-    .vote-option { min-height: 42px; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); padding: 10px 12px; color: var(--ink); font-size: 14px; font-weight: 700; }
-    .vote-option input { width: auto; min-height: 0; }
-    .vote-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 4px; padding-top: 13px; border-top: 1px solid var(--line); }
-    .vote-result { display: grid; gap: 6px; }
-    .vote-result-row { display: grid; grid-template-columns: minmax(110px,.45fr) minmax(120px,1fr) auto; gap: 10px; align-items: center; color: var(--muted); font-size: 13px; }
+    .vote-option { min-height: 50px; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); padding: 11px 14px; color: var(--ink); font-size: 14px; font-weight: 800; cursor: pointer; }
+    .vote-option:has(input:checked) { border-color: rgba(47,107,74,.42); background: rgba(47,107,74,.08); }
+    .vote-option input { width: 18px; height: 18px; min-height: 0; accent-color: var(--leaf); }
+    .vote-option-static { cursor: default; }
+    .vote-actions { display: grid; grid-template-columns: minmax(0,1fr) minmax(210px,auto); gap: 12px; align-items: center; padding-top: 2px; }
+    .vote-actions .button { justify-content: center; }
+    .vote-current { color: var(--muted); font-size: 12.5px; }
+    .vote-management { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding-top: 14px; }
+    .vote-management-copy strong { display: block; font-size: 13.5px; }
+    .vote-management-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 12.5px; }
+    .vote-management-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .vote-management-actions form { margin: 0; }
+    .vote-details, .vote-live-result { border-top: 1px solid var(--line); padding-top: 12px; }
+    .vote-details > summary, .vote-live-result > summary { cursor: pointer; color: var(--gold-ink); font-size: 12.5px; font-weight: 850; }
+    .vote-detail-body { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 7px 14px; color: var(--muted); font-size: 12.5px; }
+    .vote-detail-options { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
+    .vote-result { display: grid; gap: 14px; border-top: 1px solid var(--line); padding-top: 16px; }
+    .vote-live-result .vote-result { margin-top: 12px; border-top: 0; padding-top: 0; }
+    .vote-result-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+    .vote-result-head strong { display: block; margin-top: 4px; font-family: var(--font-serif); font-size: 24px; }
+    .vote-result-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .vote-result-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+    .vote-result-stat { border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); padding: 10px 12px; }
+    .vote-result-stat span { display: block; color: var(--soft); font-size: 10.5px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+    .vote-result-stat strong { display: block; margin-top: 4px; font-size: 15px; }
+    .vote-result-rows { display: grid; gap: 9px; }
+    .vote-result-row { display: grid; grid-template-columns: minmax(110px,.38fr) minmax(140px,1fr) auto; gap: 10px; align-items: center; color: var(--muted); font-size: 12.5px; }
     .vote-result-row strong { color: var(--ink); overflow-wrap: anywhere; }
     .vote-bar { height: 9px; border-radius: var(--radius-pill); background: #ece5d6; overflow: hidden; }
     .vote-bar span { display: block; height: 100%; min-width: 2px; border-radius: inherit; background: var(--gold); }
-    .vote-manage-list { display: grid; gap: 8px; }
-    .vote-manage-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; border-bottom: 1px solid var(--line); padding: 10px 0; }
-    .vote-manage-row:last-child { border-bottom: 0; }
-    .vote-manage-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-    .vote-manage-actions form { margin: 0; }
     .handover-page { display: grid; gap: 18px; }
     .handover-list { display: grid; gap: 14px; }
     .handover-card { gap: 16px; }
@@ -1628,10 +1665,23 @@ const PageTemplates = `
 	      .document-admin-tools-body { display: grid; grid-template-columns: 1fr; }
 	      .document-admin-tools-body .button { width: 100%; justify-content: center; }
 	      .document-file { max-width: 100%; }
-	      .vote-card-head, .vote-actions, .vote-manage-row { display: grid; grid-template-columns: 1fr; }
+	      .vote-page-head { align-items: flex-start; }
+	      .vote-page-head > .pill { display: none; }
+	      .vote-page-head .lede { display: none; }
+	      .vote-library { padding: 16px; }
+	      .vote-card { padding: 16px; gap: 14px; }
+	      .vote-card-head { display: grid; grid-template-columns: 1fr; gap: 9px; }
 	      .vote-card-head > .pill { justify-self: start; }
-	      .vote-result-row { grid-template-columns: 1fr; }
-	      .vote-manage-actions { justify-content: flex-start; }
+	      .vote-card h3 { font-size: 21px; }
+	      .vote-actions { grid-template-columns: 1fr; }
+	      .vote-actions .button { width: 100%; }
+	      .vote-management { display: grid; grid-template-columns: 1fr; }
+	      .vote-management-actions { display: grid; grid-template-columns: 1fr; }
+	      .vote-management-actions .button { width: 100%; justify-content: center; }
+	      .vote-result-head { align-items: flex-start; display: grid; grid-template-columns: 1fr; }
+	      .vote-result-stats { grid-template-columns: 1fr 1fr; }
+	      .vote-result-row { grid-template-columns: minmax(0,1fr) auto; gap: 5px 10px; }
+	      .vote-result-row .vote-bar { grid-column: 1 / -1; grid-row: 2; }
 	      .quick-row .pill { grid-column: 2; justify-self: start; }
 	      .filter-form { grid-template-columns: 1fr; }
 	      .filter-form.document-filter { grid-template-columns: 1fr; }
@@ -3017,6 +3067,34 @@ const PageTemplates = `
 </html>
 {{end}}
 
+{{define "ballotResult"}}
+  <section class="vote-result" aria-label="{{if .IsClosed}}Abstimmungsergebnis{{else}}Zwischenstand{{end}}">
+    <div class="vote-result-head">
+      <div>
+        <div class="kicker">{{if .IsClosed}}Ergebnis{{else}}Zwischenstand{{end}}</div>
+        <strong>{{if .HasWinner}}{{.WinnerLabel}}{{else}}Noch keine Stimmen{{end}}</strong>
+      </div>
+      <div class="vote-result-actions">
+        {{if .HasProtocol}}<a class="button small" href="{{.ProtocolURL}}">Protokoll herunterladen</a>{{end}}
+      </div>
+    </div>
+    <div class="vote-result-stats">
+      <div class="vote-result-stat"><span>Teilnahme</span><strong>{{.Participation}}</strong></div>
+      <div class="vote-result-stat"><span>Stimmen</span><strong>{{.TotalVotes}}</strong></div>
+      <div class="vote-result-stat"><span>Quorum</span><strong>{{.QuorumStatus}}</strong></div>
+    </div>
+    <div class="vote-result-rows">
+      {{range .Options}}
+        <div class="vote-result-row">
+          <strong>{{.Label}}</strong>
+          <span class="vote-bar"><span style="width: {{.PercentStyle}}%;"></span></span>
+          <span>{{.WeightLabel}} · {{.VoteCount}} Stimmen</span>
+        </div>
+      {{end}}
+    </div>
+  </section>
+{{end}}
+
 {{define "ballots"}}
 {{template "appOpen" .}}
     <script src="/assets/announcements.js?v={{.AssetVersion}}" defer></script>
@@ -3026,151 +3104,149 @@ const PageTemplates = `
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg><span>/</span><span>Abstimmungen</span></span>
         {{if .CanManageVotes}}<div class="page-actions"><button class="button primary" type="button" data-dialog="ballot-create" aria-haspopup="dialog" aria-controls="ballot-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Abstimmung anlegen</button></div>{{end}}
       </div>
-      <section class="page">
-        <div>
-          <h1>Abstimmungen</h1>
-          <p class="lede">Beschlüsse, Umlaufbeschlüsse und Stimmabgabe für Eigentümer der Gemeinschaft.</p>
+      <section class="page vote-page">
+        <div class="vote-page-head">
+          <div>
+            <h1>Abstimmungen</h1>
+            <p class="lede">Entscheidungen der Eigentümergemeinschaft – abstimmen und Ergebnisse nachvollziehen.</p>
+          </div>
+          {{if .HasBallots}}<span class="pill">{{.BallotCountLabel}}</span>{{end}}
         </div>
         {{if .VoteMsg}}<p class="flash {{if .VoteOK}}ok{{end}}">{{.VoteMsg}}</p>{{end}}
-        <div class="home-grid">
-          <section class="panel">
-            <div class="section-head">
-              <div class="kicker">Abstimmungen</div>
-              {{if .HasBallots}}<span class="pill">{{.BallotCountLabel}}</span>{{else}}<span class="pill">Noch leer</span>{{end}}
-            </div>
-            {{if .HasBallots}}
-              <div class="vote-list">
-                {{range .Ballots}}
-                  <article class="vote-card" id="ballot-{{.ID}}">
-                    <div class="vote-card-head">
-                      <div>
-                        <h3>{{.Title}}</h3>
-                        <div class="vote-meta">
-                          <span class="pill {{.StatusClass}}">{{.Status}}</span>
-                          <span>{{.Type}}</span>
-                          <span>{{.Weighting}}</span>
-                          {{if .HasQuorum}}<span>Quorum {{.Quorum}}</span>{{end}}
-                          {{if .HasClosesAt}}<span>Erinnerung {{.ReminderLabel}}</span>{{end}}
-                          {{if .HasOpensAt}}<span>ab {{.OpensAt}}</span>{{end}}
-                          {{if .HasClosesAt}}<span>bis {{.ClosesAt}}</span>{{end}}
-                        </div>
-                      </div>
-                      {{if .HasVote}}<span class="pill ok">Stimme gespeichert</span>{{end}}
+        <div class="vote-overview {{.VoteOverviewClass}}">
+          <span class="vote-overview-icon" aria-hidden="true">{{if eq .VoteOverviewClass "action"}}!{{else}}✓{{end}}</span>
+          <div><strong>{{.VoteOverviewTitle}}</strong><p>{{.VoteOverviewText}}</p></div>
+        </div>
+        {{if .HasBallots}}<section class="panel vote-library">
+          <div class="kicker">{{if .CanManageVotes}}Abstimmungsübersicht{{else}}Ihre Abstimmungen{{end}}</div>
+          <div class="vote-list">
+            {{range .Ballots}}
+                <article class="vote-card{{if .NeedsVote}} needs-action{{end}}" id="ballot-{{.ID}}">
+                  <div class="vote-card-head">
+                    <div>
+                      {{if .NeedsVote}}<div class="vote-eyebrow">Ihre Stimme ist gefragt</div>
+                      {{else if .IsDraft}}<div class="vote-eyebrow">Vor Veröffentlichung prüfen</div>
+                      {{else if .IsClosed}}
+                      {{else if .HasVote}}<div class="vote-eyebrow ok">Stimme gespeichert</div>
+                      {{else}}<div class="vote-eyebrow">Offene Abstimmung</div>{{end}}
+                      <h3>{{.Title}}</h3>
                     </div>
-                    {{if .HasDescription}}<p class="muted">{{.Description}}</p>{{end}}
-                    {{template "attachmentStrip" .}}
-                    {{if .CanVote}}
-                      <form method="post" action="/app/abstimmungen">
-                        <input type="hidden" name="ballot_id" value="{{.ID}}">
-                        <div class="vote-options">
-                          {{range .Options}}
-                            <label class="vote-option"><input type="radio" name="option" value="{{.Value}}" required{{if .Selected}} checked{{end}}> <span>{{.Label}}</span></label>
-                          {{end}}
-                        </div>
-                        <div class="vote-actions">
-                          <span class="mini">{{if .HasVote}}Aktuell: {{.VoteOption}} · {{.VoteWeight}} · {{.VotedAt}}{{else}}Stimmgewicht: {{.VoteWeight}}{{end}}</span>
-                          <button class="button primary" type="submit">{{if .HasVote}}Stimme ändern{{else}}Stimme speichern{{end}}</button>
-                        </div>
-                      </form>
-                    {{else}}
+                    <span class="pill {{.StatusClass}}">{{.Status}}</span>
+                  </div>
+
+                  {{if .IsDraft}}
+                    <span class="vote-deadline">Entwurf · noch nicht sichtbar</span>
+                  {{else if and .IsOpen .HasClosesAt}}
+                    <span class="vote-deadline"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>Offen bis {{.ClosesAt}}</span>
+                  {{else if .IsOpen}}
+                    <span class="vote-deadline">Jetzt offen</span>
+                  {{end}}
+
+                  {{if .HasDescription}}<p class="vote-question">{{.Description}}</p>{{end}}
+                  {{template "attachmentStrip" .}}
+
+                  {{if .CanVote}}
+                    <form method="post" action="/app/abstimmungen">
+                      <input type="hidden" name="ballot_id" value="{{.ID}}">
+                      <p class="vote-weight"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>Ihre Stimme zählt: {{.VoteWeight}}</p>
                       <div class="vote-options">
-                        {{range .Options}}<div class="vote-option"><span></span><span>{{.Label}}</span></div>{{end}}
-                      </div>
-                      {{if .ReadOnlyMessage}}<p class="empty">{{.ReadOnlyMessage}}</p>{{end}}
-                    {{end}}
-                    {{if .HasResults}}
-                      <div class="vote-result" aria-label="Abstimmungsergebnis">
-                        <div class="vote-meta">
-                          <span>{{.TotalVotes}} Stimmen</span>
-                          <span>{{.TotalWeightLabel}} von {{.EligibleWeightLabel}}</span>
-                          <span>Teilnahme {{.Participation}}</span>
-                          <span class="pill {{.QuorumClass}}">{{.QuorumStatus}}</span>
-                          {{if .HasWinner}}<span>Ergebnis {{.WinnerLabel}}</span>{{end}}
-                          {{if .HasProtocol}}<a class="button small" href="{{.ProtocolURL}}">Protokoll</a>{{end}}
-                        </div>
                         {{range .Options}}
-                          <div class="vote-result-row">
-                            <strong>{{.Label}}</strong>
-                            <span class="vote-bar"><span style="width: {{.PercentStyle}}%;"></span></span>
-                            <span>{{.WeightLabel}} · {{.VoteCount}} Stimmen</span>
-                          </div>
+                          <label class="vote-option"><input type="radio" name="option" value="{{.Value}}" required{{if .Selected}} checked{{end}}> <span>{{.Label}}</span></label>
                         {{end}}
                       </div>
-                    {{end}}
-                  </article>
-                {{end}}
-              </div>
-            {{else}}
-              {{template "emptyState" .BallotsEmpty}}
-            {{end}}
-          </section>
-
-          <section class="panel">
-            <div class="kicker">Verwaltung</div>
-            {{if .CanManageVotes}}
-              <div class="quick-list">
-                <button class="quick-row" type="button" data-dialog="ballot-create" aria-haspopup="dialog" aria-controls="ballot-create">
-                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                  <div><h3>Abstimmung anlegen</h3><p>Optionen, Frist, Quorum und Gewichtung festlegen.</p></div>
-                  <span class="quick-arrow">›</span>
-                </button>
-              </div>
-              {{if .HasManageBallots}}
-                <div class="vote-manage-list">
-                  {{range .ManageBallots}}
-                    <div class="vote-manage-row">
-                      <div>
-                        <strong>{{.Title}}</strong>
-                        <div class="vote-meta"><span class="pill {{.StatusClass}}">{{.Status}}</span><span>{{.Type}}</span><span>{{.Weighting}}</span>{{if .HasClosesAt}}<span>Erinnerung {{.ReminderLabel}}</span>{{end}}<span>{{.UpdatedAt}}</span></div>
-                        {{template "attachmentStrip" .}}
+                      <div class="vote-actions">
+                        <span class="vote-current">{{if .HasVote}}Aktuell gewählt: {{.VoteOption}} · gespeichert {{.VotedAt}}{{else}}Bitte eine Option auswählen.{{end}}</span>
+                        <button class="button primary" type="submit">{{if .HasVote}}Stimme ändern{{else}}Stimme speichern{{end}}</button>
                       </div>
-                      <div class="vote-manage-actions">
-                        {{if .CanOpen}}<form method="post" action="/app/abstimmungen/open"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Öffnen</button></form>{{end}}
-                        {{if .CanClose}}<form method="post" action="/app/abstimmungen/close"><input type="hidden" name="id" value="{{.ID}}"><button class="button small" type="submit">Schließen</button></form>{{end}}
-                        {{if .HasProtocol}}<a class="button small" href="{{.ProtocolURL}}">Protokoll</a>{{end}}
+                    </form>
+                  {{else if and .IsOpen (not .HasResults)}}
+                    <div class="vote-options">
+                      {{range .Options}}<div class="vote-option vote-option-static"><span></span><span>{{.Label}}</span></div>{{end}}
+                    </div>
+                    {{if .ReadOnlyMessage}}<p class="empty">{{.ReadOnlyMessage}}</p>{{end}}
+                  {{else if and .IsOpen .ReadOnlyMessage (not .CanManage)}}
+                    <p class="mini">{{.ReadOnlyMessage}}</p>
+                  {{end}}
+
+                  {{if .CanManage}}
+                    <div class="vote-management">
+                      <div class="vote-management-copy">
+                        {{if .CanOpen}}<strong>Nächster Schritt: Abstimmung öffnen</strong><span>Danach können stimmberechtigte Eigentümer teilnehmen.</span>
+                        {{else if .CanClose}}<strong>Abstimmung läuft</strong><span>Schließen beendet die Stimmabgabe und veröffentlicht das Ergebnis.</span>
+                        {{else}}<strong>Abstimmung abgeschlossen</strong><span>Ergebnis und Protokoll bleiben dauerhaft erreichbar.</span>{{end}}
+                      </div>
+                      <div class="vote-management-actions">
+                        {{if .CanOpen}}<form method="post" action="/app/abstimmungen/open"><input type="hidden" name="id" value="{{.ID}}"><button class="button primary" type="submit">Abstimmung öffnen</button></form>{{end}}
+                        {{if .CanClose}}<form method="post" action="/app/abstimmungen/close"><input type="hidden" name="id" value="{{.ID}}"><button class="button" type="submit">Abstimmung schließen</button></form>{{end}}
                       </div>
                     </div>
                   {{end}}
-                </div>
-              {{else}}
-                {{template "emptyState" .ManageBallotsEmpty}}
-              {{end}}
-            {{else if .CanOversightVotes}}
-              <p class="empty">Beirat sieht offene Abstimmungen und Ergebnisse lesend.</p>
-            {{else}}
-              <p class="empty">Abstimmungen werden von der Verwaltung angelegt.</p>
+
+                  {{if and .HasResults .IsClosed}}
+                    {{template "ballotResult" .}}
+                  {{else if and .HasResults .IsOpen}}
+                    <details class="vote-live-result">
+                      <summary>Zwischenstand anzeigen</summary>
+                      {{template "ballotResult" .}}
+                    </details>
+                  {{end}}
+
+                  <details class="vote-details">
+                    <summary>Details zur Abstimmung</summary>
+                    <div class="vote-detail-body">
+                      <span>{{.Type}}</span>
+                      <span>Gewichtung: {{.Weighting}}</span>
+                      {{if .HasQuorum}}<span>Quorum: {{.Quorum}}</span>{{end}}
+                      {{if .HasOpensAt}}<span>Start: {{.OpensAt}}</span>{{end}}
+                      {{if .HasClosesAt}}<span>Frist: {{.ClosesAt}}</span>{{end}}
+                      {{if .HasClosesAt}}<span>Erinnerung: {{.ReminderLabel}}</span>{{end}}
+                      {{if .IsDraft}}<div class="vote-detail-options">{{range .Options}}<span class="pill">{{.Label}}</span>{{end}}</div>{{end}}
+                    </div>
+                  </details>
+                </article>
             {{end}}
-          </section>
-        </div>
+          </div>
+        </section>{{end}}
       </section>
 
       {{if .CanManageVotes}}
-      <dialog id="ballot-create" class="dialog" aria-labelledby="ballot-create-title">
+      <dialog id="ballot-create" class="dialog ballot-dialog" aria-labelledby="ballot-create-title">
         <form method="post" action="/app/abstimmungen" enctype="multipart/form-data">
           <div class="dialog-head">
             <h2 id="ballot-create-title">Abstimmung anlegen</h2>
             <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
           </div>
           <div class="dialog-body">
+            <p class="document-dialog-intro">Titel, Frage, Optionen und Frist genügen für einen Entwurf. Regeln und Unterlagen sind optional.</p>
             <div class="dialog-grid">
-              <label class="full" for="ballot-title">Titel<input id="ballot-title" name="title" required maxlength="160" autocomplete="off"></label>
-              <label for="ballot-type">Typ<select id="ballot-type" name="type" required>
-                <option value="Umlaufbeschluss">Umlaufbeschluss</option>
-                <option value="Versammlung">Versammlung</option>
-              </select></label>
-              <label for="ballot-weighting">Gewichtung<select id="ballot-weighting" name="weighting" required>
-                <option value="per-share">nach Miteigentumsanteil</option>
-                <option value="per-head">pro Kopf</option>
-              </select></label>
-              <label for="ballot-opens">Öffnen optional<input id="ballot-opens" type="datetime-local" name="opens_at" value="{{.NowInput}}"></label>
-              <label for="ballot-closes">Frist optional<input id="ballot-closes" type="datetime-local" name="closes_at"></label>
-              <label for="ballot-quorum">Quorum in %<input id="ballot-quorum" name="quorum_percent" inputmode="decimal" placeholder="50"></label>
-              <label for="ballot-reminder">Erinnerung vor Frist (h)<input id="ballot-reminder" name="reminder_before_hours" inputmode="decimal" value="24"></label>
-              <label class="full" for="ballot-options">Optionen<textarea id="ballot-options" name="options_text" required placeholder="Ja&#10;Nein&#10;Enthaltung"></textarea></label>
-              <label class="full" for="ballot-description">Beschreibung<textarea id="ballot-description" name="description"></textarea></label>
-              <label class="full" for="ballot-attachments">Anhänge<span class="file-control"><input id="ballot-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label>
+              <label class="full" for="ballot-title">Kurzer Titel<input id="ballot-title" name="title" required maxlength="160" autocomplete="off" placeholder="Zum Beispiel Fassadensanierung 2026"></label>
+              <label class="full" for="ballot-description">Frage oder Erklärung<textarea id="ballot-description" name="description" placeholder="Was sollen die Eigentümer entscheiden?"></textarea></label>
+              <label class="full" for="ballot-options">Antwortmöglichkeiten<textarea id="ballot-options" name="options_text" required placeholder="Ja&#10;Nein&#10;Enthaltung"></textarea></label>
+              <label class="full" for="ballot-closes">Abstimmungsfrist<input id="ballot-closes" type="datetime-local" name="closes_at"></label>
+              <details class="dialog-optional full">
+                <summary>Abstimmungsregeln</summary>
+                <div class="dialog-optional-grid">
+                  <label for="ballot-type">Typ<select id="ballot-type" name="type" required>
+                    <option value="Umlaufbeschluss">Umlaufbeschluss</option>
+                    <option value="Versammlung">Versammlung</option>
+                  </select></label>
+                  <label for="ballot-weighting">Gewichtung<select id="ballot-weighting" name="weighting" required>
+                    <option value="per-share">nach Miteigentumsanteil</option>
+                    <option value="per-head">pro Kopf</option>
+                  </select></label>
+                  <label for="ballot-opens">Geplanter Start<input id="ballot-opens" type="datetime-local" name="opens_at" value="{{.NowInput}}"></label>
+                  <label for="ballot-quorum">Quorum in %<input id="ballot-quorum" name="quorum_percent" inputmode="decimal" placeholder="50"></label>
+                  <label class="full" for="ballot-reminder">Erinnerung vor Frist (h)<input id="ballot-reminder" name="reminder_before_hours" inputmode="decimal" value="24"></label>
+                </div>
+              </details>
+              <details class="dialog-optional full">
+                <summary>Unterlagen hinzufügen</summary>
+                <div class="dialog-optional-grid">
+                  <label class="full" for="ballot-attachments">Anhänge<span class="file-control"><input id="ballot-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label>
+                </div>
+              </details>
             </div>
-            <button class="button primary" type="submit">Anlegen</button>
+            <button class="button primary" type="submit">Entwurf anlegen</button>
           </div>
         </form>
       </dialog>

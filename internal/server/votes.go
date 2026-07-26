@@ -72,7 +72,7 @@ func (a *app) createBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			"reminder":  formatBallotReminder(created.ReminderBeforeMinutes),
 		},
 	})
-	http.Redirect(w, r, "/app/abstimmungen?vote=created", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/abstimmungen?vote=created#ballot-"+url.PathEscape(created.ID), http.StatusSeeOther)
 }
 
 func (a *app) openBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -142,7 +142,7 @@ func (a *app) updateBallotStatus(w http.ResponseWriter, r *http.Request, ac auth
 			"status": updated.Status,
 		},
 	})
-	http.Redirect(w, r, "/app/abstimmungen?vote="+statusQ, http.StatusSeeOther)
+	http.Redirect(w, r, "/app/abstimmungen?vote="+statusQ+"#ballot-"+url.PathEscape(updated.ID), http.StatusSeeOther)
 }
 
 func ballotFromForm(r *http.Request, tenantSlug string, createdBy string) (ballot, error) {
@@ -220,23 +220,88 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			visible = append(visible, item)
 		}
 	}
+	pageItems := visible
+	if canManage {
+		pageItems = all
+	}
+	views := a.ballotViewsForActor(tenant.Slug, email, role, pageItems, now, canManage || canOversight)
+	pendingCount := 0
+	draftCount := 0
+	openCount := 0
+	for _, view := range views {
+		if view.NeedsVote {
+			pendingCount++
+		}
+		if view.IsDraft {
+			draftCount++
+		}
+		if view.IsOpen {
+			openCount++
+		}
+	}
+	overviewTitle := "Gerade nichts zu tun"
+	overviewText := "Neue und abgeschlossene Abstimmungen erscheinen hier."
+	overviewClass := "ok"
+	if canManage {
+		overviewTitle = "Noch keine Abstimmung"
+		overviewText = "Legen Sie einen Entwurf an, sobald eine Entscheidung ansteht."
+		overviewClass = "action"
+		switch {
+		case draftCount == 1:
+			overviewTitle = "Ein Entwurf wartet auf Öffnung"
+			overviewText = "Prüfen Sie Frage und Regeln und geben Sie die Abstimmung anschließend frei."
+			overviewClass = "action"
+		case draftCount > 1:
+			overviewTitle = fmt.Sprintf("%d Entwürfe warten auf Öffnung", draftCount)
+			overviewText = "Prüfen Sie Frage und Regeln und geben Sie die Abstimmungen anschließend frei."
+			overviewClass = "action"
+		case openCount == 1:
+			overviewTitle = "Eine Abstimmung läuft"
+			overviewText = "Frist und Teilnahme bleiben direkt bei der Abstimmung sichtbar."
+			overviewClass = "ok"
+		case openCount > 1:
+			overviewTitle = fmt.Sprintf("%d Abstimmungen laufen", openCount)
+			overviewText = "Fristen und Teilnahme bleiben direkt bei den Abstimmungen sichtbar."
+			overviewClass = "ok"
+		case len(views) > 0:
+			overviewTitle = "Ergebnisse verfügbar"
+			overviewText = "Abgeschlossene Abstimmungen und Protokolle bleiben direkt darunter erreichbar."
+			overviewClass = "ok"
+		}
+	} else {
+		switch {
+		case pendingCount == 1:
+			overviewTitle = "Ihre Stimme ist gefragt"
+			overviewText = "Eine offene Abstimmung wartet auf Ihre Entscheidung."
+			overviewClass = "action"
+		case pendingCount > 1:
+			overviewTitle = "Ihre Stimme ist gefragt"
+			overviewText = fmt.Sprintf("%d offene Abstimmungen warten auf Ihre Entscheidung.", pendingCount)
+			overviewClass = "action"
+		case openCount > 0:
+			overviewTitle = "Alles erledigt"
+			overviewText = "Ihre Stimme ist gespeichert und kann bis zur Schließung geändert werden."
+		case len(views) > 0:
+			overviewTitle = "Ergebnisse verfügbar"
+			overviewText = "Abgeschlossene Abstimmungen und Protokolle finden Sie direkt darunter."
+		}
+	}
 	msg, msgOK := voteMessage(r.URL.Query().Get("vote"))
 	a.render(w, "ballots", a.withBase(ac, map[string]any{
-		"Title":              "Abstimmungen",
-		"CanManageVotes":     canManage,
-		"CanVote":            hasCapability(role, capabilityVote),
-		"CanOversightVotes":  canOversight,
-		"ActivePage":         "abstimmungen",
-		"Ballots":            a.ballotViewsForActor(tenant.Slug, email, role, visible, now, canManage || canOversight),
-		"HasBallots":         len(visible) > 0,
-		"BallotCountLabel":   pluralizeCount(len(visible), "Eintrag", "Einträge"),
-		"BallotsEmpty":       emptyState("Keine Abstimmungen", "Geöffnete und abgeschlossene Beschlüsse erscheinen hier."),
-		"ManageBallots":      a.ballotViewsForActor(tenant.Slug, email, role, all, now, true),
-		"HasManageBallots":   len(all) > 0,
-		"ManageBallotsEmpty": emptyState("Noch keine Abstimmung", "Neue Entwürfe werden hier angelegt und anschließend geöffnet."),
-		"VoteMsg":            msg,
-		"VoteOK":             msgOK,
-		"NowInput":           formatLocalDateTimeInput(now),
+		"Title":             "Abstimmungen",
+		"CanManageVotes":    canManage,
+		"CanVote":           hasCapability(role, capabilityVote),
+		"CanOversightVotes": canOversight,
+		"ActivePage":        "abstimmungen",
+		"Ballots":           views,
+		"HasBallots":        len(pageItems) > 0,
+		"BallotCountLabel":  pluralizeCount(len(pageItems), "Abstimmung", "Abstimmungen"),
+		"VoteOverviewTitle": overviewTitle,
+		"VoteOverviewText":  overviewText,
+		"VoteOverviewClass": overviewClass,
+		"VoteMsg":           msg,
+		"VoteOK":            msgOK,
+		"NowInput":          formatLocalDateTimeInput(now),
 	}))
 }
 
@@ -290,7 +355,7 @@ func (a *app) castVote(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			},
 		})
 	}
-	http.Redirect(w, r, "/app/abstimmungen?vote=cast", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/abstimmungen?vote=cast#ballot-"+url.PathEscape(updated.ID), http.StatusSeeOther)
 }
 
 func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -404,6 +469,9 @@ func (a *app) ballotViewForActor(tenantSlug string, email string, role string, i
 		ReminderLabel:       formatBallotReminder(item.ReminderBeforeMinutes),
 		Status:              status,
 		StatusClass:         statusClass,
+		IsDraft:             rawStatus == ballotStatusDraft,
+		IsOpen:              rawStatus == ballotStatusOpen && active,
+		IsClosed:            rawStatus == ballotStatusClosed,
 		CreatedAt:           formatLocalDateTime(item.CreatedAt),
 		UpdatedAt:           formatLocalDateTime(item.UpdatedAt),
 		CanManage:           hasCapability(role, capabilityManageVotes),
@@ -427,6 +495,7 @@ func (a *app) ballotViewForActor(tenantSlug string, email string, role string, i
 		HasProtocol:         rawStatus == ballotStatusClosed && (hasCapability(role, capabilityVote) || hasCapability(role, capabilityOversight) || hasCapability(role, capabilityManageVotes)),
 		EditDialogID:        "ballot-" + item.ID,
 	}
+	view.NeedsVote = view.CanVote && !view.HasVote
 	if !item.OpensAt.IsZero() {
 		view.OpensAt = formatLocalDateTime(item.OpensAt)
 		view.HasOpensAt = true

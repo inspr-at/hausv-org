@@ -96,6 +96,14 @@ func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
 			t.Fatalf("document flow missing hierarchy/progressive-disclosure marker %q", want)
 		}
 	}
+	if got := strings.Count(PageTemplates, `data-dialog="ballot-create"`); got != 1 {
+		t.Fatalf("ballot create should have one entry point, got %d", got)
+	}
+	for _, want := range []string{`class="vote-overview {{.VoteOverviewClass}}"`, `Ihre Stimme ist gefragt`, `Ihre Stimme zählt:`, `Details zur Abstimmung`, `Abstimmungsregeln`, `Entwurf anlegen`, `{{template "ballotResult" .}}`} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("ballot flow missing hierarchy/progressive-disclosure marker %q", want)
+		}
+	}
 }
 
 func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {

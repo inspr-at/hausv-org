@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.27.0",
+			Date:     "26. Juli 2026",
+			Kind:     "Abstimmungen",
+			Headline: "Abstimmungen führen klarer von der Frage bis zum nachvollziehbaren Ergebnis.",
+			Intro:    "Handlungsbedarf, Frist, Stimmgewicht und Hauptaktion stehen im Vordergrund; Regeln und Verwaltung bleiben dort erreichbar, wo sie gebraucht werden.",
+			Items: []NoteItem{
+				{Label: "Klar abstimmen", Text: "Eigentümer sehen Frage, Frist, Gewicht und Antwortmöglichkeiten in einer ruhigen Entscheidungsfolge."},
+				{Label: "Sicher steuern", Text: "Entwurf, Öffnen und Schließen finden in einer gemeinsamen Verwaltungsübersicht statt."},
+				{Label: "Ergebnis verstehen", Text: "Teilnahme, Quorum, Auszählung und Protokoll ersetzen nach Abschluss die Eingabeflächen."},
+			},
+		},
+		{
 			Version:  "0.26.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Dokumente",
