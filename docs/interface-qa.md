@@ -22,7 +22,7 @@ Feldgrenzen geprueft sind.
 
 | Adapter | Profilstand | Golden Files | Verfügbarkeit | Entscheidung |
 | --- | --- | --- | --- | --- |
-| camt.053 | `camt.053.001.02`, `camt.053.001.08` | synthetische 2009- und 2019-Fixtures | intern implementiert/getestet; keine produktive Upload-UI | Primärer Zahlungsstatus-Import; reale/anonymisierte Bankdatei ist zusätzliche Profilabdeckung, kein Human-Gate |
+| camt.053 | `camt.053.001.02`, `camt.053.001.08` | synthetische 2009- und 2019-Fixtures | geschützter Vorschau-/Übernahmefluss implementiert und getestet | Primärer Zahlungsstatus-Import; reale/anonymisierte Bankdatei ist zusätzliche Profilabdeckung, kein Human-Gate |
 | camt.054 | `.08` mit synthetischer Repository-Fixture getestet; für `.02` nur Namespace akzeptiert | synthetisches 2019-Golden-File für `.08`; keines für `.02` | intern implementiert/getestet; keine produktive Upload-UI | `.02` bleibt bis Fixture und Golden File unverifiziert |
 | Neutrale Übergabe | `manual-csv/raw-v0` | Golden File vorhanden | intern implementiert/getestet; keine produktive Export-UI | Keine BMD-/RZL-Kompatibilitätsbehauptung, keine Buchungssätze |
 | BMD NTCS | noch kein Zielvertrag | keines | geplant | Erst mit offizieller Importbeschreibung oder betreibereigener Vorlage als Zieladapter bauen |

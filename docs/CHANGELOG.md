@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.37.0] - 2026-07-27
+
+### Neu
+
+- **Zahlungen aus Bankdateien lassen sich sicher prüfen.** Verwalter und Admins wählen den Monat, sehen die gültigen Referenzen und erhalten vor jeder Änderung eine klare Vorschau.
+- **Nur eindeutige Treffer werden übernommen.** Unklare oder abgelehnte Zeilen bleiben unverändert; die Rückmeldung trennt Treffer und tatsächlich geänderte Status.
+- **Bankdaten bleiben datensparsam.** Die Datei wird nicht abgelegt, Vorschauen laufen nach 15 Minuten ab und zeigen weder IBAN noch Namen oder Verwendungszwecke.
+- **Doppelte Übernahmen sind ausgeschlossen.** Ein hausbezogener Dateinachweis verhindert Wiederholungen und protokolliert Format, Prüfsumme und Ergebnis ohne private Bankdetails.
+- **Desktop und Mobil folgen demselben kurzen Ablauf.** Zeitraum, Vorschau und Bestätigung bleiben ohne seitlichen Überlauf verständlich und gut bedienbar.
+
 ## [0.36.0] - 2026-07-27
 
 ### Verbessert

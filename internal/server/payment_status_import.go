@@ -38,9 +38,16 @@ type unitPaymentImportRow struct {
 
 type unitPaymentImportReport struct {
 	Assigned int
+	Changed  int
 	Unclear  int
 	Rejected int
 	Rows     []unitPaymentImportRow
+}
+
+type paymentImportAuditMeta struct {
+	TargetID      string
+	SourceVersion string
+	FileDigest    string
 }
 
 func unitPaymentReferenceCandidates(tenantSlug string, period string, units []unit, expected map[string]integrations.MoneyAmount) ([]unitPaymentReferenceCandidate, error) {
@@ -76,7 +83,7 @@ func unitPaymentReferenceCandidates(tenantSlug string, period string, units []un
 	return candidates, nil
 }
 
-func (a *app) applyImportedPaymentsToUnitStatuses(payments []integrations.Payment, candidates []unitPaymentReferenceCandidate, actorEmail string, actorRole string) (unitPaymentImportReport, error) {
+func (a *app) applyImportedPaymentsToUnitStatuses(payments []integrations.Payment, candidates []unitPaymentReferenceCandidate, actorEmail string, actorRole string, meta paymentImportAuditMeta) (unitPaymentImportReport, error) {
 	report := reconcileImportedPaymentsWithUnitStatus(payments, candidates)
 	if a == nil || a.unitPaymentStore == nil {
 		return report, fmt.Errorf("unit payment status store not configured")
@@ -85,8 +92,12 @@ func (a *app) applyImportedPaymentsToUnitStatuses(payments []integrations.Paymen
 		if row.Decision != unitPaymentImportAssigned {
 			continue
 		}
+		tenantSlug := candidateTenant(candidates, row.Reference)
+		if current, ok := a.unitPaymentStore.Get(tenantSlug, row.UnitID); ok && normalizeUnitPaymentStatus(current.Status) == normalizeUnitPaymentStatus(row.Status) {
+			continue
+		}
 		record, err := a.unitPaymentStore.Set(unitPaymentStatus{
-			TenantSlug: candidateTenant(candidates, row.Reference),
+			TenantSlug: tenantSlug,
 			UnitID:     row.UnitID,
 			Status:     row.Status,
 			UpdatedBy:  actorEmail,
@@ -108,25 +119,43 @@ func (a *app) applyImportedPaymentsToUnitStatuses(payments []integrations.Paymen
 				"source":     string(integrations.FormatCAMT053),
 			},
 		})
+		report.Changed++
 	}
 	if tenantSlug := candidatesTenant(candidates); tenantSlug != "" {
-		a.recordAudit(auditEvent{
+		event := auditEvent{
 			TenantSlug: tenantSlug,
 			ActorEmail: actorEmail,
 			ActorRole:  actorRole,
 			Action:     auditActionIntegrationImport,
 			TargetType: "integration",
-			TargetID:   string(integrations.FormatCAMT053),
+			TargetID:   firstNonEmpty(strings.TrimSpace(meta.TargetID), string(integrations.FormatCAMT053)),
 			Summary:    "Zahlungsstatus-Import verarbeitet",
 			Details: map[string]string{
-				"format":   string(integrations.FormatCAMT053),
-				"assigned": strconv.Itoa(report.Assigned),
-				"unclear":  strconv.Itoa(report.Unclear),
-				"rejected": strconv.Itoa(report.Rejected),
+				"format":         string(integrations.FormatCAMT053),
+				"source_version": strings.TrimSpace(meta.SourceVersion),
+				"file_digest":    shortImportDigest(meta.FileDigest),
+				"assigned":       strconv.Itoa(report.Assigned),
+				"changed":        strconv.Itoa(report.Changed),
+				"unclear":        strconv.Itoa(report.Unclear),
+				"rejected":       strconv.Itoa(report.Rejected),
 			},
-		})
+		}
+		if a.auditStore == nil {
+			return report, fmt.Errorf("audit store not configured")
+		}
+		if err := a.auditStore.Append(event); err != nil {
+			return report, err
+		}
 	}
 	return report, nil
+}
+
+func shortImportDigest(digest string) string {
+	digest = strings.TrimSpace(digest)
+	if len(digest) > 12 {
+		return digest[:12]
+	}
+	return digest
 }
 
 func reconcileImportedPaymentsWithUnitStatus(payments []integrations.Payment, candidates []unitPaymentReferenceCandidate) unitPaymentImportReport {

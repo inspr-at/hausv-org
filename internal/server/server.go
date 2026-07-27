@@ -768,6 +768,9 @@ type app struct {
 	chargingTelegramMu        sync.Mutex
 	chargingTelegramTimes     []time.Time
 	chargingTelegramThrottled bool
+
+	paymentImportMu       sync.Mutex
+	paymentImportPreviews map[string]camtImportPreview
 }
 
 type parkingTelemetry struct {
@@ -907,6 +910,9 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/building/units", a.action(a.upsertBuildingUnit))
 	mux.HandleFunc("POST /app/settings/building/units/delete", a.action(a.deleteBuildingUnit))
 	mux.HandleFunc("POST /app/settings/building/payment-status", a.action(a.updateUnitPaymentStatus))
+	mux.HandleFunc("GET /app/settings/payments/import", a.page(a.paymentImportPage))
+	mux.HandleFunc("POST /app/settings/payments/import/preview", a.action(a.previewPaymentImport))
+	mux.HandleFunc("POST /app/settings/payments/import/apply", a.action(a.applyPaymentImport))
 	mux.HandleFunc("GET /app/settings/profile", a.page(a.profileSettings))
 	mux.HandleFunc("POST /app/settings/profile", a.action(a.updateProfileSettings))
 	mux.HandleFunc("GET /app/settings/notifications", a.page(a.notificationSettings))

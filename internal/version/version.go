@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.37.0",
+			Date:     "27. Juli 2026",
+			Kind:     "Zahlungsstatus",
+			Headline: "Bankdateien werden erst geprüft und danach gezielt übernommen.",
+			Intro:    "Ein kurzer, geschützter Ablauf verbindet Monatsreferenzen, datensparsame Vorschau und nachvollziehbare Statusänderungen.",
+			Items: []NoteItem{
+				{Label: "Vorher prüfen", Text: "Verwalter und Admins sehen eindeutige, unklare und abgelehnte Treffer, bevor sich ein Zahlungsstatus ändert."},
+				{Label: "Daten schützen", Text: "Die Bankdatei wird nicht gespeichert; IBAN, Namen und Verwendungszwecke erscheinen weder in Vorschau noch Audit."},
+				{Label: "Einmal übernehmen", Text: "Nur eindeutige Treffer werden protokolliert gespeichert, während derselbe Dateinachweis keine doppelte Übernahme erlaubt."},
+			},
+		},
+		{
 			Version:  "0.36.0",
 			Date:     "27. Juli 2026",
 			Kind:     "Portal",

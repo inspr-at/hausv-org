@@ -83,3 +83,25 @@ func TestCAMT053AdapterRejectsUnsupportedNamespaceAsReportError(t *testing.T) {
 		t.Fatalf("result = %+v", result)
 	}
 }
+
+func TestCAMT053AdapterUsesTenantBoundSourceInsteadOfBankOwnerName(t *testing.T) {
+	xml := `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.08">
+  <BkToCstmrStmt><Stmt><Id>statement-1</Id>
+    <Acct><Ownr><Nm>Unrelated account owner</Nm></Ownr></Acct>
+    <Ntry><NtryRef>entry-1</NtryRef><Amt Ccy="EUR">1.00</Amt><CdtDbtInd>CRDT</CdtDbtInd><BookgDt><Dt>2026-07-08</Dt></BookgDt>
+      <NtryDtls><TxDtls><Refs><EndToEndId>HV-JHW22-202607-OK123</EndToEndId></Refs></TxDtls></NtryDtls>
+    </Ntry>
+  </Stmt></BkToCstmrStmt>
+</Document>`
+	result, err := CAMT053Adapter{}.ParsePayments(context.Background(), Source{
+		TenantSlug: "jhw22",
+		Format:     FormatCAMT053,
+	}, strings.NewReader(xml))
+	if err != nil {
+		t.Fatalf("ParsePayments: %v", err)
+	}
+	if len(result.Payments) != 1 || result.Payments[0].TenantSlug != "jhw22" {
+		t.Fatalf("tenant-bound payment = %+v", result.Payments)
+	}
+}

@@ -98,8 +98,12 @@ func camtPaymentFromEntry(source Source, statement camtStatement, entry camtEntr
 	}
 	valueDate, _ := parseCAMTDateChoice(entry.ValueDate)
 	tx := entry.FirstTransaction()
+	tenantSlug := textutil.Slug(source.TenantSlug)
+	if tenantSlug == "" {
+		tenantSlug = textutil.Slug(statement.Account.OwnerName)
+	}
 	payment := Payment{
-		TenantSlug:      textutil.Slug(statement.Account.OwnerName),
+		TenantSlug:      tenantSlug,
 		ExternalID:      recordID,
 		Reference:       camtPaymentReference(tx),
 		Amount:          MoneyAmount{Currency: strings.ToUpper(strings.TrimSpace(entry.Amount.Currency)), Cents: amountCents},

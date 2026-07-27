@@ -41,11 +41,15 @@ func TestApplyImportedPaymentsToUnitStatusesReportsAndAppliesOnlyClearMatches(t 
 		{TenantSlug: "jhw22", ExternalID: "p-5", Reference: "HV-JHW22-UNKNOWN-123", Amount: integrations.MoneyAmount{Currency: "EUR", Cents: 10000}},
 	}
 
-	report, err := a.applyImportedPaymentsToUnitStatuses(payments, candidates, "manager@example.com", roleManager)
+	report, err := a.applyImportedPaymentsToUnitStatuses(payments, candidates, "manager@example.com", roleManager, paymentImportAuditMeta{
+		TargetID:      "camt.053:test",
+		SourceVersion: "2019/camt.053.001.08",
+		FileDigest:    "1234567890abcdef",
+	})
 	if err != nil {
 		t.Fatalf("applyImportedPaymentsToUnitStatuses: %v", err)
 	}
-	if report.Assigned != 2 || report.Unclear != 1 || report.Rejected != 2 || len(report.Rows) != 5 {
+	if report.Assigned != 2 || report.Changed != 2 || report.Unclear != 1 || report.Rejected != 2 || len(report.Rows) != 5 {
 		t.Fatalf("report = %+v", report)
 	}
 	if report.Rows[0].Status != unitPaymentStatusPaid || report.Rows[1].Status != unitPaymentStatusPartial || report.Rows[2].Decision != unitPaymentImportUnclear {
@@ -79,6 +83,9 @@ func TestApplyImportedPaymentsToUnitStatusesReportsAndAppliesOnlyClearMatches(t 
 	importEvent := importEvents[0]
 	if importEvent.Details["assigned"] != "2" || importEvent.Details["unclear"] != "1" || importEvent.Details["rejected"] != "2" {
 		t.Fatalf("integration import counts = %+v", importEvent)
+	}
+	if importEvent.TargetID != "camt.053:test" || importEvent.Details["changed"] != "2" || importEvent.Details["source_version"] != "2019/camt.053.001.08" || importEvent.Details["file_digest"] != "1234567890ab" {
+		t.Fatalf("integration import metadata = %+v", importEvent)
 	}
 	haystack := strings.Join(append([]string{importEvent.TargetID, importEvent.Summary}, auditDetailValues(importEvent.Details)...), " ")
 	for _, forbidden := range []string{"p-1", candidates[0].Reference, "10000", "6000"} {

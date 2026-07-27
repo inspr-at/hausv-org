@@ -1,8 +1,9 @@
 # camt-Abgleich und Zahlungsstatus
 
-Status: Parser, Abgleich und Statusübernahme sind intern implementiert und
-getestet, aber noch nicht an eine produktive Bankdatei-Upload-UI angeschlossen.
-Die Profil- und Betreiber-Nachweise aus `docs/interface-qa.md` bleiben offen.
+Status: Parser, Abgleich und Statusübernahme sind als geschützter Vorschau- und
+Übernahmefluss unter `/app/settings/payments/import` implementiert und
+reproduzierbar getestet. Die Betreiber-Selbstprüfung ist in
+`docs/camt053-import.md` dokumentiert.
 
 Der camt.053-Adapter liefert intern `canonicalPayment`-Datensätze. Die
 Zuordnung zum Portal passiert erst danach über bekannte Zahlungsreferenzen pro
@@ -28,13 +29,17 @@ Einheit.
 
 Der Bericht zählt:
 
-- `zugeordnet`: Status wurde übernommen
+- `eindeutig`: Treffer darf übernommen werden
 - `unklar`: Treffer existiert, darf aber nicht automatisch gesetzt werden
 - `abgelehnt`: keine gültige oder bekannte Referenz
 
 Berichtszeilen enthalten Referenz, Einheit, Statusvorschlag, Betrag und Grund.
 Sie enthalten keine IBAN, keinen Debitorennamen und keine unnötigen
 personenbezogenen Bankdaten.
+
+Nach der Bestätigung zeigt die Rückmeldung getrennt, wie viele eindeutige
+Treffer vorlagen und wie viele Status tatsächlich geändert wurden. Derselbe
+Datei-Digest kann pro Haus nur einmal übernommen werden.
 
 ## Produktscope
 

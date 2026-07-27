@@ -4322,6 +4322,165 @@ const PageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
+{{define "paymentImport"}}
+{{template "appOpen" .}}
+    <style>
+      .payment-import .page { gap: 18px; }
+      .payment-import .page-intro { display: grid; gap: 6px; }
+      .payment-import .page-intro .lede { max-width: 720px; }
+      .payment-import .import-steps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+      .payment-import .import-step { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 10px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-soft); }
+      .payment-import .import-step > span { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 850; }
+      .payment-import .import-step strong, .payment-import .import-step small { display: block; }
+      .payment-import .import-step small { margin-top: 2px; color: var(--muted); line-height: 1.35; }
+      .payment-import .import-panel { display: grid; gap: 16px; }
+      .payment-import .import-panel-head { display: flex; gap: 14px; align-items: start; justify-content: space-between; }
+      .payment-import .import-panel-head h2 { margin: 0 0 4px; }
+      .payment-import .period-form { display: flex; gap: 8px; align-items: end; }
+      .payment-import .period-form label { min-width: 165px; }
+      .payment-import .reference-disclosure { border: 1px solid var(--line); border-radius: 10px; background: var(--panel-soft); overflow: clip; }
+      .payment-import .reference-disclosure > summary { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 13px; cursor: pointer; font-weight: 800; }
+      .payment-import .reference-disclosure > summary span { color: var(--muted); font-size: 13px; }
+      .payment-import .reference-list { display: grid; border-top: 1px solid var(--line); }
+      .payment-import .reference-row { display: grid; grid-template-columns: minmax(120px,.7fr) minmax(220px,1.3fr); gap: 12px; align-items: center; padding: 10px 13px; }
+      .payment-import .reference-row + .reference-row { border-top: 1px solid var(--line); }
+      .payment-import .reference-row code { overflow-wrap: anywhere; color: var(--gold-ink); font-size: 12.5px; }
+      .payment-import .upload-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: end; padding: 15px; border: 1px dashed var(--gold); border-radius: 11px; background: #fffefb; }
+      .payment-import .upload-copy { display: grid; gap: 7px; }
+      .payment-import .upload-copy label { font-weight: 850; }
+      .payment-import .upload-copy input[type=file] { width: 100%; min-height: 46px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+      .payment-import .privacy-note { display: flex; gap: 8px; align-items: start; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+      .payment-import .privacy-note::before { content: "✓"; flex: 0 0 auto; color: var(--gold-ink); font-weight: 900; }
+      .payment-import .preview-head { display: flex; gap: 14px; justify-content: space-between; align-items: start; }
+      .payment-import .preview-head h2 { margin: 0 0 4px; }
+      .payment-import .profile-chip { display: inline-flex; min-height: 34px; align-items: center; padding: 0 10px; border-radius: 999px; background: var(--panel-soft); border: 1px solid var(--line); color: var(--gold-ink); font-size: 12px; font-weight: 850; }
+      .payment-import .preview-metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+      .payment-import .preview-metric { display: grid; gap: 2px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-soft); }
+      .payment-import .preview-metric strong { font-family: var(--font-serif); font-size: 24px; }
+      .payment-import .preview-metric span { color: var(--muted); font-size: 12.5px; font-weight: 750; }
+      .payment-import .import-rows { display: grid; gap: 7px; }
+      .payment-import .import-row { display: grid; grid-template-columns: 96px minmax(150px,1.2fr) minmax(120px,.8fr) 100px minmax(180px,1.2fr); gap: 10px; align-items: center; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: #fffefb; }
+      .payment-import .decision { width: fit-content; display: inline-flex; min-height: 30px; align-items: center; padding: 0 9px; border-radius: 999px; font-size: 11.5px; font-weight: 900; text-transform: uppercase; letter-spacing: .025em; }
+      .payment-import .decision.ok { background: #e8f1e6; color: #315c32; }
+      .payment-import .decision.warn { background: #fff1ce; color: #745511; }
+      .payment-import .decision.danger { background: #f8e5df; color: #874331; }
+      .payment-import .row-reference { overflow-wrap: anywhere; font-size: 12px; font-weight: 800; color: var(--gold-ink); }
+      .payment-import .row-unit strong, .payment-import .row-unit span { display: block; }
+      .payment-import .row-unit span, .payment-import .row-reason { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .payment-import .row-amount { font-weight: 850; text-align: right; white-space: nowrap; }
+      .payment-import .apply-bar { display: flex; gap: 13px; align-items: center; justify-content: flex-end; padding-top: 2px; }
+      .payment-import .apply-bar .mini { margin-right: auto; max-width: 620px; }
+      @media (max-width: 900px) {
+        .payment-import .import-row { grid-template-columns: 90px minmax(150px,1fr) minmax(120px,.8fr) 90px; }
+        .payment-import .row-reason { grid-column: 2 / -1; }
+      }
+      @media (max-width: 700px) {
+        .payment-import .page-intro h1 { font-size: clamp(38px,10vw,46px); line-height: .98; }
+        .payment-import .import-steps { grid-template-columns: 1fr; }
+        .payment-import .import-step { min-height: 64px; }
+        .payment-import .import-panel-head, .payment-import .preview-head { display: grid; }
+        .payment-import .period-form { width: 100%; display: grid; grid-template-columns: minmax(0,1fr) auto; }
+        .payment-import .period-form label { min-width: 0; }
+        .payment-import .reference-row { grid-template-columns: 1fr; gap: 3px; }
+        .payment-import .upload-form { grid-template-columns: 1fr; }
+        .payment-import .upload-form .button { width: 100%; min-height: 46px; }
+        .payment-import .preview-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); }
+        .payment-import .preview-metric { padding: 9px; }
+        .payment-import .preview-metric strong { font-size: 21px; }
+        .payment-import .import-row { grid-template-columns: minmax(0,1fr) auto; gap: 7px 10px; }
+        .payment-import .decision { grid-column: 1; }
+        .payment-import .row-amount { grid-column: 2; grid-row: 1; }
+        .payment-import .row-reference, .payment-import .row-unit, .payment-import .row-reason { grid-column: 1 / -1; }
+        .payment-import .row-unit { display: flex; gap: 8px; align-items: baseline; }
+        .payment-import .apply-bar { position: sticky; bottom: 8px; z-index: 5; display: grid; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,254,251,.97); box-shadow: 0 8px 24px rgba(37,45,38,.16); }
+        .payment-import .apply-bar .mini { margin: 0; }
+        .payment-import .apply-bar .button { width: 100%; min-height: 46px; }
+      }
+    </style>
+    <main class="app-main payment-import">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><a href="/app/settings/building#units">Einheiten</a><span>/</span><span>Bankdatei</span></span>
+        <div class="page-actions"><a class="button" href="/app/settings/building#units">Zu den Einheiten</a></div>
+      </div>
+      <section class="page wide">
+        <div class="page-intro">
+          <div class="kicker">Zahlungsstatus</div>
+          <h1>Zahlungen aus Bankdatei</h1>
+          <p class="lede">Erst prüfen, dann übernehmen. Nur eindeutige Zahlungsreferenzen ändern einen Status.</p>
+        </div>
+        <div class="import-steps" aria-label="Ablauf">
+          <div class="import-step"><span>1</span><div><strong>Monat wählen</strong><small>Referenzen gelten für diesen Zeitraum.</small></div></div>
+          <div class="import-step"><span>2</span><div><strong>Datei prüfen</strong><small>Treffer erscheinen zuerst als Vorschau.</small></div></div>
+          <div class="import-step"><span>3</span><div><strong>Sicher übernehmen</strong><small>Nur eindeutige Treffer werden gespeichert.</small></div></div>
+        </div>
+        {{if .PaymentImportMsg}}<p class="flash {{if .PaymentImportOK}}ok{{end}}">{{.PaymentImportMsg}}</p>{{end}}
+
+        <section class="panel import-panel">
+          <div class="import-panel-head">
+            <div><h2>1. Zeitraum und Referenzen</h2><p class="muted">Der Monat bestimmt, welche Referenz zu welcher Einheit gehört.</p></div>
+            <form class="period-form" method="get" action="/app/settings/payments/import">
+              <label>Monat<input type="month" name="period" value="{{.PaymentImportPeriod}}" min="2000-01" max="2100-12" required></label>
+              <button class="button" type="submit">Anzeigen</button>
+            </form>
+          </div>
+          {{if .HasPaymentImportUnits}}
+            <details class="reference-disclosure">
+              <summary><strong>{{len .PaymentImportReferences}} Zahlungsreferenzen</strong><span>Bei Bedarf anzeigen</span></summary>
+              <div class="reference-list">
+                {{range .PaymentImportReferences}}<div class="reference-row"><strong>{{.Label}}</strong><code>{{.Reference}}</code></div>{{end}}
+              </div>
+            </details>
+          {{else}}
+            <p class="muted">Für dieses Haus sind noch keine Einheiten angelegt.</p>
+          {{end}}
+          <form class="upload-form" method="post" action="/app/settings/payments/import/preview" enctype="multipart/form-data">
+            <input type="hidden" name="period" value="{{.PaymentImportPeriod}}">
+            <div class="upload-copy">
+              <label for="camt-file">2. camt.053-Datei auswählen</label>
+              <input id="camt-file" type="file" name="camt_file" accept=".xml,application/xml,text/xml" required>
+              <span class="mini">XML bis {{.MaxCAMTImportSize}} · unterstützt: camt.053.001.02 und .001.08</span>
+            </div>
+            <button class="button primary" type="submit"{{if not .HasPaymentImportUnits}} disabled{{end}}>Vorschau erstellen</button>
+          </form>
+          <p class="privacy-note">Die Datei wird nicht gespeichert. 15 Minuten lang bleiben nur Referenz, Betrag und Prüfdaten im Arbeitsspeicher – nie IBAN oder Namen.</p>
+        </section>
+
+        {{with .PaymentImportPreview}}
+          <section class="panel import-panel" id="preview">
+            <div class="preview-head">
+              <div><div class="kicker">Vorschau</div><h2>{{.Filename}}</h2><p class="muted">Geprüft {{.CreatedAt}} · noch nichts übernommen</p></div>
+              <span class="profile-chip">{{.SourceVersion}}</span>
+            </div>
+            <div class="preview-metrics" aria-label="Prüfergebnis">
+              <div class="preview-metric"><strong>{{.Assigned}}</strong><span>eindeutig</span></div>
+              <div class="preview-metric"><strong>{{.Unclear}}</strong><span>zu prüfen</span></div>
+              <div class="preview-metric"><strong>{{.Rejected}}</strong><span>abgelehnt</span></div>
+            </div>
+            {{if .AlreadyApplied}}<p class="flash ok">Diese Datei wurde bereits übernommen. Eine zweite Übernahme ist gesperrt.</p>{{end}}
+            {{if .Changed}}<p class="flash">Einheiten oder Referenzen haben sich seit der Vorschau geändert. Bitte eine neue Vorschau erstellen.</p>{{end}}
+            <div class="import-rows">
+              {{range .Rows}}
+                <article class="import-row">
+                  <span class="decision {{.DecisionClass}}">{{.Decision}}</span>
+                  <code class="row-reference">{{.Reference}}</code>
+                  <span class="row-unit"><strong>{{.UnitLabel}}</strong>{{if .Status}}<span>→ {{.Status}}</span>{{end}}</span>
+                  <strong class="row-amount">{{.Amount}}</strong>
+                  <span class="row-reason">{{.Reason}}</span>
+                </article>
+              {{end}}
+            </div>
+            <form class="apply-bar" method="post" action="/app/settings/payments/import/apply">
+              <input type="hidden" name="preview_token" value="{{.Token}}">
+                <span class="mini">Unklare Zeilen bleiben unverändert. Die Übernahme wird protokolliert und lässt sich nicht doppelt ausführen.</span>
+              {{if .CanApply}}<button class="button primary" type="submit">Eindeutige Treffer übernehmen</button>{{else}}<button class="button" type="button" disabled>Keine Übernahme möglich</button>{{end}}
+            </form>
+          </section>
+        {{end}}
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
 {{define "buildingSettings"}}
 {{template "appOpen" .}}
     <style>
@@ -4368,6 +4527,7 @@ const PageTemplates = `
       .building .hero-delete { margin: 0; }
       .building .unit-panel { display: grid; gap: 16px; }
       .building .unit-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: start; }
+      .building .unit-head-actions { display: flex; gap: 8px; align-items: start; flex-wrap: wrap; justify-content: flex-end; }
       .building .unit-head h2 { margin-bottom: 4px; }
       .building .unit-metrics { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
       .building .unit-metric { display: inline-flex; gap: 6px; align-items: baseline; border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; background: var(--panel-soft); color: #6f6a5c; font-size: 12.5px; font-weight: 750; }
@@ -4430,6 +4590,8 @@ const PageTemplates = `
         .building .hero-form { grid-template-columns: 1fr; }
         .building .hero-actions .button { width: 100%; }
         .building .unit-head { grid-template-columns: 1fr; gap: 13px; }
+        .building .unit-head-actions { display: grid; grid-template-columns: 1fr; justify-content: stretch; }
+        .building .unit-head-actions > .button { width: 100%; min-height: 44px; }
         .building .unit-add { width: 100%; }
         .building .unit-editor > summary { min-height: 96px; grid-template-columns: minmax(0,1fr) auto; gap: 9px; padding: 13px; }
         .building .unit-editor > summary .unit-share { display: grid; grid-column: 1 / -1; grid-row: 2; }
@@ -4540,9 +4702,11 @@ const PageTemplates = `
               </div>
               {{if .FairUseExceeded}}<p class="muted">Über dem kostenlosen Rahmen von {{.FairUseFreeUnits}} Wohneinheiten — Richtwert 1 € pro Einheit und Monat.</p>{{end}}
             </div>
-            <details class="unit-add" id="unit-add">
-              <summary>Einheit hinzufügen</summary>
-              <form class="unit-form" method="post" action="/app/settings/building/units">
+            <div class="unit-head-actions">
+              <a class="button" href="/app/settings/payments/import">Bankdatei einlesen</a>
+              <details class="unit-add" id="unit-add">
+                <summary>Einheit hinzufügen</summary>
+                <form class="unit-form" method="post" action="/app/settings/building/units">
                 <label class="f-label">Einheit
                   <input type="text" name="label" maxlength="120" required placeholder="Top 1">
                 </label>
@@ -4564,9 +4728,10 @@ const PageTemplates = `
                 <label class="f-renters">Mieter E-Mails
                   <input type="text" name="renter_emails" placeholder="name@example.com">
                 </label>
-                <div class="f-actions"><button class="button primary" type="submit">Einheit anlegen</button></div>
-              </form>
-            </details>
+                  <div class="f-actions"><button class="button primary" type="submit">Einheit anlegen</button></div>
+                </form>
+              </details>
+            </div>
           </div>
           {{if .UnitMsg}}<p class="flash {{if .UnitOK}}ok{{end}}">{{.UnitMsg}}</p>{{end}}
           {{if .PaymentMsg}}<p class="flash {{if .PaymentOK}}ok{{end}}">{{.PaymentMsg}}</p>{{end}}

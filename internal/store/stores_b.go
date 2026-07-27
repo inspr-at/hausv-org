@@ -1589,6 +1589,32 @@ func (s *AuditStore) List(filter AuditFilter) []AuditEvent {
 	return out
 }
 
+// HasTarget checks the complete live audit ledger rather than the paginated
+// presentation view. Import handlers use it as their durable idempotency key:
+// a successfully recorded source file must never be applied a second time.
+func (s *AuditStore) HasTarget(tenantSlug string, action string, targetID string) bool {
+	if s == nil {
+		return false
+	}
+	tenantSlug = textutil.Slug(tenantSlug)
+	action = NormalizeAuditAction(action)
+	targetID = strings.TrimSpace(targetID)
+	if tenantSlug == "" || action == "" || targetID == "" {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := len(s.entries) - 1; i >= 0; i-- {
+		event := s.entries[i]
+		if textutil.Slug(event.TenantSlug) == tenantSlug &&
+			NormalizeAuditAction(event.Action) == action &&
+			strings.TrimSpace(event.TargetID) == targetID {
+			return true
+		}
+	}
+	return false
+}
+
 func NormalizeAuditEvent(event AuditEvent) AuditEvent {
 	event.TenantSlug = textutil.Slug(event.TenantSlug)
 	event.ActorEmail = textutil.Email(event.ActorEmail)
