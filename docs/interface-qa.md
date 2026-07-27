@@ -25,7 +25,7 @@ Feldgrenzen geprueft sind.
 | camt.053 | `camt.053.001.02`, `camt.053.001.08` | synthetische 2009- und 2019-Fixtures | geschützter Vorschau-/Übernahmefluss implementiert und getestet | Primärer Zahlungsstatus-Import; reale/anonymisierte Bankdatei ist zusätzliche Profilabdeckung, kein Human-Gate |
 | camt.054 | `.08` mit synthetischer Repository-Fixture getestet; für `.02` nur Namespace akzeptiert | synthetisches 2019-Golden-File für `.08`; keines für `.02` | intern implementiert/getestet; keine produktive Upload-UI | `.02` bleibt bis Fixture und Golden File unverifiziert |
 | Neutrale Übergabe | `manual-csv/raw-v0` | Golden File und Paket-/Manifest-Tests vorhanden | geschützte Auswahl, Vorschau und einmaliger ZIP-Download produktiv | Mandanten-/Personenbindung, Audit, keine BMD-/RZL-Kompatibilitätsbehauptung oder Buchungssätze |
-| BMD NTCS | noch kein Zielvertrag | keines | geplant | Erst mit offizieller Importbeschreibung oder betreibereigener Vorlage als Zieladapter bauen |
+| BMD NTCS | Betreiberprüfung 27.07.2026: kein öffentlich nutzbarer FIBU-Feldvertrag; weder Betreiber-Vorlage noch Zielumgebung vorhanden | keines | blockiert und im Produkt unverifiziert | Erst mit konkreter NTCS-Version und rechtmäßig nutzbarer offizieller Importbeschreibung oder betreibereigener Vorlage als Zieladapter bauen |
 | RZL FIBU | offizielle Import-Schnittstelle, Stand Juli 2026; Nutzung laut Handbuch nur für berechtigte RZL-Nutzer | noch keines | geplant | Erst mit autorisiertem Betreiberzugang oder von RZL freigegebener Spezifikation als Zieladapter bauen |
 | ebInterface | 6.0 priorisiert, 5.0 Fallback | synthetische, offiziell schema-validierte 5.0- und 6.0-Fixtures | geschützter Vorschau-/Ablagefluss implementiert und getestet | Empfang und Ablage, nicht buchen; 6.1 bleibt ein separates Folgeprofil |
 
@@ -88,3 +88,7 @@ Zielsystem-Kompatibilität wird nicht als produktionsbereit behauptet.
   `https://www.bmd.com/at/akademie/akademieshop/seminar/d/fibu-standardschnittstellen-10943/14`
   und
   `https://www.bmd.com/at/akademie/akademieshop/seminar/d/die-10-wichtigsten-excelfunktionen-um-buchungen-in-ntcs-zu-importieren-11540`
+- öffentliche technische BMD-Dokumentationen (ohne FIBU-Feldvertrag):
+  `https://www.bmd.com/at/technik-und-support/technische-dokumentationen`
+- BMD-Kundeninformation (Anmeldung erforderlich):
+  `https://clientsinfo.bmd.com/`

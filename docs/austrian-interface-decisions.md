@@ -71,6 +71,26 @@ Importvorlagen und ein Schnittstellenhandbuch. Sie liefern aber keinen
 ausreichenden öffentlichen Feldvertrag, der `raw-v0` als NTCS-kompatibel
 belegen würde.
 
+Betreiberprüfung vom 27.07.2026:
+
+- Die öffentliche technische Dokumentation enthält Installations-, System- und
+  EDI-Unterlagen, aber keinen FIBU-Feldvertrag für Buchungsimporte.
+- Die offizielle BMD-Schulung nennt vier unterschiedliche
+  Buchungsimportvorlagen (`KA`, `BK`, `ER`, `AR`), die
+  Fleximport-Excel-Schnittstelle und ein Schnittstellenhandbuch. Handbuch und
+  Vorlagen werden als Schulungsunterlagen bereitgestellt und sind nicht als
+  öffentlicher Feldvertrag abrufbar.
+- Die weiterführende BMD-Kundeninformation erfordert eine Anmeldung.
+- Im Betreiberbestand liegt derzeit weder eine rechtmäßig nutzbare
+  NTCS-Importvorlage noch eine kontrollierte NTCS-Zielumgebung vor.
+
+Damit sind Zielprofil, Pflichtfelder, Feldlimits und Mapping nicht belastbar
+bestimmbar. HAUSV baut deshalb keinen geratenen Adapter. Das fehlende Artefakt
+ist ein technischer Input und kein Auditor-Gate: Sobald eine offizielle
+Vorlage/ein Handbuch oder eine betreibereigene Importvorlage samt konkreter
+NTCS-Version vorliegt, kann die Selbstprüfung ohne externe Fachperson
+fortgesetzt werden.
+
 Gate vor einer BMD-Kompatibilitätsbehauptung:
 
 - konkretes NTCS-Importziel und Version benennen
