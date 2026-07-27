@@ -1447,6 +1447,12 @@ const PageTemplates = `
     .payment-form { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .payment-form input { width: auto; max-width: 128px; min-height: 34px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: #fffefb; color: var(--ink); font: inherit; font-size: 12.5px; }
     .documents-page { gap: 20px; }
+    .documents-screen .content-top .page-actions .button,
+    .documents-screen .document-actions .button,
+    .documents-screen .document-admin-tools-body .button { min-height: 44px; }
+    .documents-screen .document-file-details summary,
+    .documents-screen .document-admin-tools > summary,
+    .documents-screen .document-versions summary { min-height: 44px; display: flex; align-items: center; }
     .document-page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
     .document-page-head .lede { max-width: 720px; }
     .document-library { padding: 20px; display: grid; gap: 22px; }
@@ -3153,10 +3159,10 @@ const PageTemplates = `
 {{template "appOpen" .}}
     <script src="/assets/announcements.js?v={{.AssetVersion}}" defer></script>
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
-    <main class="app-main">
+    <main class="app-main documents-screen">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><span>/</span><span>Dokumente</span></span>
-        {{if .CanManageDocuments}}<div class="page-actions"><button class="button primary" type="button" data-dialog="document-upload" aria-haspopup="dialog" aria-controls="document-upload"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Dokument hochladen</button></div>{{end}}
+        {{if .CanManageDocuments}}<div class="page-actions"><a class="button" href="/app/dokumente/rechnungen/import">E-Rechnung einlesen</a><button class="button primary" type="button" data-dialog="document-upload" aria-haspopup="dialog" aria-controls="document-upload"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Dokument hochladen</button></div>{{end}}
       </div>
       <section class="page documents-page">
         <div class="document-page-head">
@@ -4320,6 +4326,123 @@ const PageTemplates = `
             {{template "emptyState" .EventsEmpty}}
           {{end}}
         </section>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "ebInterfaceImport"}}
+{{template "appOpen" .}}
+    <style>
+      .invoice-import .page { gap: 18px; }
+      .invoice-import .content-top .button { min-height: 44px; }
+      .invoice-import .page-intro { display: grid; gap: 6px; }
+      .invoice-import .page-intro .lede { max-width: 720px; }
+      .invoice-import .flow-strip { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+      .invoice-import .flow-step { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 10px; align-items: center; min-height: 64px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel-soft); }
+      .invoice-import .flow-step > span { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 850; }
+      .invoice-import .flow-step strong, .invoice-import .flow-step small { display: block; }
+      .invoice-import .flow-step small { margin-top: 2px; color: var(--muted); line-height: 1.35; }
+      .invoice-import .import-panel { display: grid; gap: 15px; }
+      .invoice-import .import-panel-head { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
+      .invoice-import .import-panel-head h2 { margin: 0 0 4px; }
+      .invoice-import .upload-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: end; padding: 15px; border: 1px dashed var(--gold); border-radius: 11px; background: #fffefb; }
+      .invoice-import .upload-copy { display: grid; gap: 7px; }
+      .invoice-import .upload-copy label { font-weight: 850; }
+      .invoice-import .upload-copy input[type=file] { width: 100%; min-height: 46px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+      .invoice-import .privacy-note { display: flex; gap: 8px; align-items: start; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+      .invoice-import .privacy-note::before { content: "✓"; flex: 0 0 auto; color: var(--gold-ink); font-weight: 900; }
+      .invoice-import .profile-chip { display: inline-flex; min-height: 34px; align-items: center; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-soft); color: var(--gold-ink); font-size: 12px; font-weight: 850; white-space: nowrap; }
+      .invoice-import .preview-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+      .invoice-import .preview-actions .button { min-height: 44px; }
+      .invoice-import .invoice-hero { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: end; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(135deg,#fffefb,var(--panel-soft)); }
+      .invoice-import .invoice-hero .kicker { margin-bottom: 5px; }
+      .invoice-import .invoice-number { margin: 0; font-family: var(--font-serif); font-size: clamp(25px,4vw,38px); line-height: 1.05; overflow-wrap: anywhere; }
+      .invoice-import .invoice-amount { font-family: var(--font-serif); font-size: clamp(25px,4vw,38px); font-weight: 800; line-height: 1; white-space: nowrap; }
+      .invoice-import .invoice-parties { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+      .invoice-import .party-card, .invoice-import .date-card { display: grid; gap: 3px; padding: 12px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+      .invoice-import .party-card span, .invoice-import .date-card span { color: var(--muted); font-size: 12px; font-weight: 750; }
+      .invoice-import .party-card strong { overflow-wrap: anywhere; }
+      .invoice-import .invoice-dates { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+      .invoice-import .error-list { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+      .invoice-import .error-list li { min-height: 44px; display: flex; align-items: center; gap: 9px; padding: 9px 11px; border: 1px solid #e5c6bc; border-radius: 9px; background: #fff6f2; color: #743e30; font-weight: 700; }
+      .invoice-import .error-list li::before { content: "!"; width: 24px; height: 24px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: #874331; color: #fff; font-size: 12px; font-weight: 900; }
+      .invoice-import .store-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 2px; }
+      .invoice-import .store-bar .mini { max-width: 650px; }
+      @media (max-width: 720px) {
+        .invoice-import .flow-strip, .invoice-import .invoice-parties { grid-template-columns: 1fr; }
+        .invoice-import .upload-form { grid-template-columns: 1fr; }
+        .invoice-import .upload-form .button { width: 100%; min-height: 48px; }
+        .invoice-import .import-panel-head, .invoice-import .store-bar { align-items: stretch; flex-direction: column; }
+        .invoice-import .invoice-hero { grid-template-columns: 1fr; align-items: start; }
+        .invoice-import .invoice-amount { white-space: normal; }
+        .invoice-import .invoice-dates { grid-template-columns: 1fr; }
+        .invoice-import .store-bar .button { width: 100%; min-height: 48px; }
+      }
+    </style>
+    <main class="app-main invoice-import">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><span>/</span><span>Dokumente</span><span>/</span><span>E-Rechnung</span></span>
+        <div class="page-actions"><a class="button" href="/app/dokumente">Zur Ablage</a></div>
+      </div>
+      <section class="page">
+        <div class="page-intro">
+          <h1>E-Rechnung einlesen</h1>
+          <p class="lede">Rechnung zuerst prüfen, dann unverändert und nur für die Verwaltung ablegen.</p>
+        </div>
+        <div class="flow-strip" aria-label="Ablauf">
+          <div class="flow-step"><span>1</span><div><strong>Prüfen</strong><small>Profil und wichtigste Rechnungsdaten ansehen</small></div></div>
+          <div class="flow-step"><span>2</span><div><strong>Ablegen</strong><small>Original-XML geschützt in Dokumente speichern</small></div></div>
+        </div>
+        {{if .EBInterfaceImportMsg}}<p class="flash {{if .EBInterfaceImportOK}}ok{{end}}">{{.EBInterfaceImportMsg}}</p>{{end}}
+        {{if not .EBInterfacePreview}}<section class="panel import-panel">
+          <div class="import-panel-head">
+            <div><div class="kicker">Neue Rechnung</div><h2>XML auswählen</h2><p class="muted">Für ebInterface 5.0 und 6.0.</p></div>
+          </div>
+          <form class="upload-form" method="post" action="/app/dokumente/rechnungen/import/preview" enctype="multipart/form-data">
+            <div class="upload-copy">
+              <label for="invoice-file">ebInterface-Datei</label>
+              <input id="invoice-file" type="file" name="invoice_file" accept=".xml,application/xml,text/xml" required>
+              <span class="mini">XML bis {{.MaxEBInterfaceImportSize}}</span>
+            </div>
+            <button class="button primary" type="submit">Vorschau erstellen</button>
+          </form>
+          <p class="privacy-note">Die Vorschau bleibt höchstens 15 Minuten im Arbeitsspeicher und wird nicht an externe Prüfdienste gesendet.</p>
+        </section>{{end}}
+
+        {{with .EBInterfacePreview}}
+          <section class="panel import-panel" id="preview">
+            <div class="import-panel-head">
+              <div><div class="kicker">Vorschau</div><h2>{{.Filename}}</h2><p class="muted">Geprüft {{.CreatedAt}} · noch nicht abgelegt</p></div>
+              <div class="preview-actions"><span class="profile-chip">ebInterface {{.SourceVersion}}</span><a class="button small" href="/app/dokumente/rechnungen/import">Andere Datei</a></div>
+            </div>
+            {{if .AlreadyStored}}<p class="flash ok">Diese Datei wurde bereits abgelegt. Ein zweites Dokument ist gesperrt.</p>{{end}}
+            {{if .ErrorLabels}}
+              <ul class="error-list">
+                {{range .ErrorLabels}}<li>{{.}}</li>{{end}}
+              </ul>
+            {{else}}
+              <div class="invoice-hero">
+                <div><div class="kicker">Rechnung</div><p class="invoice-number">{{.InvoiceNumber}}</p></div>
+                <strong class="invoice-amount">{{.Amount}}</strong>
+              </div>
+              <div class="invoice-parties">
+                <div class="party-card"><span>Von</span><strong>{{.IssuerName}}</strong></div>
+                <div class="party-card"><span>An</span><strong>{{.RecipientName}}</strong></div>
+              </div>
+              <div class="invoice-dates">
+                <div class="date-card"><span>Rechnungsdatum</span><strong>{{.IssueDate}}</strong></div>
+                <div class="date-card"><span>Fällig</span><strong>{{.DueDate}}</strong></div>
+                <div class="date-card"><span>Leistungszeitraum</span><strong>{{.ServicePeriod}}</strong></div>
+              </div>
+            {{end}}
+            <form class="store-bar" method="post" action="/app/dokumente/rechnungen/import/store">
+              <input type="hidden" name="preview_token" value="{{.Token}}">
+              <span class="mini">Gespeichert wird die unveränderte XML als „Abrechnung“. Sie bleibt ausschließlich für die Verwaltung sichtbar; es wird nichts gebucht oder bezahlt.</span>
+              {{if .CanStore}}<button class="button primary" type="submit">Geschützt ablegen</button>{{else}}<button class="button" type="button" disabled>Ablage nicht möglich</button>{{end}}
+            </form>
+          </section>
+        {{end}}
       </section>
     </main>
 {{template "appClose" .}}

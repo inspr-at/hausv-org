@@ -771,6 +771,9 @@ type app struct {
 
 	paymentImportMu       sync.Mutex
 	paymentImportPreviews map[string]camtImportPreview
+
+	ebInterfaceImportMu       sync.Mutex
+	ebInterfaceImportPreviews map[string]ebInterfaceImportPreview
 }
 
 type parkingTelemetry struct {
@@ -860,6 +863,9 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /app/dokumente", a.page(a.documents))
 	mux.HandleFunc("POST /app/dokumente", a.authedAction(capabilityManageDocuments, a.uploadDocument))
 	mux.HandleFunc("POST /app/dokumente/replace", a.authedAction(capabilityManageDocuments, a.replaceDocument))
+	mux.HandleFunc("GET /app/dokumente/rechnungen/import", a.authed(capabilityManageDocuments, a.ebInterfaceImportPage))
+	mux.HandleFunc("POST /app/dokumente/rechnungen/import/preview", a.authedAction(capabilityManageDocuments, a.previewEBInterfaceImport))
+	mux.HandleFunc("POST /app/dokumente/rechnungen/import/store", a.authedAction(capabilityManageDocuments, a.storeEBInterfaceImport))
 	mux.HandleFunc("GET /app/dokumente/{id}/preview", a.page(a.previewDocument))
 	mux.HandleFunc("GET /app/dokumente/{id}/download", a.page(a.downloadDocument))
 	mux.HandleFunc("GET /app/attachments/{id}", a.page(a.serveAttachment))
@@ -4898,7 +4904,7 @@ func uploadedFilesFromHeaders(hs []*multipart.FileHeader) []uploadedFile {
 	return out
 }
 
-func storeEBInterfaceInvoiceDocument(store *documentStore, invoice integrations.Invoice, uploadedBy string, data []byte, now time.Time) (documentRecord, error) {
+func storeEBInterfaceInvoiceDocument(store documentStorage, invoice integrations.Invoice, uploadedBy string, data []byte, now time.Time) (documentRecord, error) {
 	if store == nil {
 		return documentRecord{}, fmt.Errorf("document store unavailable")
 	}

@@ -1,14 +1,15 @@
 # ebInterface-Import
 
-Status: Parser und geschuetzte Ablage sind intern implementiert und getestet,
-aber noch nicht an eine produktive Upload-UI angeschlossen. Offizielle
-Schema-Validierung und der reproduzierbare Betreiber-Check aus
-`docs/interface-qa.md` bleiben das Freigabe-Gate.
+Status: Der produktive, geschützte Vorschau- und Ablageweg ist implementiert.
+Verwalter und Admins erreichen ihn im Dokumentenbereich über
+`/app/dokumente/rechnungen/import`.
 
-Der ebInterface-Adapter kann Dienstleister-Rechnungen als strukturierte
-Metadaten lesen und die Original-XML ueber den internen Speicherhelfer als
-geschuetztes Dokument ablegen. Das ist ein Empfangs- und Weitergabeweg, keine
-Buchhaltung.
+Der ebInterface-Adapter liest Dienstleister-Rechnungen als strukturierte
+Metadaten. Vor der Ablage zeigt das Portal Rechnungsnummer, Aussteller,
+Empfänger, Betrag, Rechnungs- und Fälligkeitsdatum sowie den Leistungszeitraum.
+Erst nach einer ausdrücklichen Bestätigung wird die unveränderte Original-XML
+als geschütztes Dokument abgelegt. Das ist ein Empfangs- und Weitergabeweg,
+keine Buchhaltung.
 
 ## Unterstuetzte Profile
 
@@ -27,12 +28,44 @@ separates Folgeprofil. 4.x und 3.x werden nicht akzeptiert.
 - Faelligkeit
 - Leistungszeitraum, falls vorhanden
 
-## Ablage
+## Produktablauf
 
-Der interne Speicherhelfer legt die XML-Datei im Dokumentenbereich als
-`Abrechnung` mit `verwalter-only`-Sichtbarkeit ab. Damit bleibt sie ueber
-geschuetzte App-Routen erreichbar und wird nicht als oeffentlicher Datei-Link
-geteilt. Ein produktiver Importweg ruft diesen Helfer derzeit noch nicht auf.
+1. Eine Verwaltungsperson wählt genau eine XML-Datei bis 4 MB.
+2. Das Portal bindet die Vorschau an das aktuelle Haus und verwirft sie nach
+   15 Minuten. Die Datei verlässt den Server nicht.
+3. Unterstütztes Profil und erforderliche Rechnungsmetadaten werden geprüft.
+   Fehler werden ohne XML-Inhalt verständlich angezeigt.
+4. Nach Bestätigung wird das Original im Dokumentenbereich als `Abrechnung`
+   mit `verwalter-only`-Sichtbarkeit abgelegt.
+5. Ein hausbezogener SHA-256-Nachweis sperrt doppelte Ablagen. Audit und
+   Import-Ledger enthalten nur Format, Profil, gekürzte Prüfsumme,
+   Rechnungsnummer und Dokumentbezug.
+
+Die Originaldatei ist ausschließlich über authentisierte App-Routen erreichbar.
+Bewohner sehen sie weder in der Dokumentliste noch über einen öffentlichen
+Datei-Link.
+
+## Reproduzierbarer Betreibercheck
+
+Die synthetischen Repository-Fixtures werden mit
+`scripts/validate-ebinterface-fixtures.fish` gegen den offiziellen
+ebInterface-Validator geprüft. Das Skript akzeptiert absichtlich keine
+Dateiangaben und kann daher keine echte Rechnung versehentlich an den externen
+Dienst übertragen. Produktive Uploads werden niemals an diesen Validator
+gesendet.
+
+Am 27.07.2026 bestanden beide synthetischen Fixtures die offizielle
+Schema-Prüfung:
+
+- `internal/integrations/testdata/ebinterface-5p0.xml`: ebInterface 5.0
+  (`SHA-256 193aa847f0d10effa6f29783adcede6c1b188747a878a0b7b112401d291e2043`)
+- `internal/integrations/testdata/ebinterface-6p0.xml`: ebInterface 6.0
+  (`SHA-256 21a27027b9dc509ef524b7708d86b2b40f63c2b85b9249cf409e93802a9ec33e`)
+
+Der Betreibercheck mit Primärquelle, versionierten Fixtures sowie automatischen
+Positiv-, Negativ-, Rollen-, Datenschutz- und Idempotenztests ersetzt die auf
+absehbare Zeit nicht verfügbare externe Fachabnahme. Er ist kein Zertifikat und
+keine Steuer- oder Rechtsberatung.
 
 ## Grenzen
 
@@ -41,3 +74,4 @@ geteilt. Ein produktiver Importweg ruft diesen Helfer derzeit noch nicht auf.
 - keine Zahlungsfreigabe
 - keine Zahlungsausloesung
 - kein Mahnwesen
+- ebInterface 6.1 bleibt ein separates Folgeprofil

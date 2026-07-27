@@ -1,5 +1,5 @@
--- Durable idempotency ledger for product-facing integration imports. Raw bank
--- files and personal payment details are deliberately not stored here.
+-- Durable idempotency ledger for product-facing integration imports. Raw
+-- source files and personal details are deliberately not stored here.
 CREATE TABLE IF NOT EXISTS integration_imports (
     tenant_slug    TEXT NOT NULL,
     format         TEXT NOT NULL,

@@ -80,7 +80,7 @@ func ebInterfaceCanonicalInvoice(source Source, document ebInterfaceDocument, da
 		amount = document.InvoiceTotals.TotalGrossAmount
 	}
 	amountCents, _ := ParseDecimalCents(amount.Value)
-	currency := textutil.FirstNonEmpty(amount.Currency, document.Currency, "EUR")
+	currency := textutil.FirstNonEmpty(amount.Currency, document.InvoiceCurrency, document.Currency, "EUR")
 	invoiceNumber := strings.TrimSpace(document.InvoiceNumber)
 	externalID := invoiceNumber
 	if externalID == "" {
@@ -129,6 +129,7 @@ func SanitizeFilenameToken(raw string) string {
 type ebInterfaceDocument struct {
 	XMLName           xml.Name                     `xml:"Invoice"`
 	Currency          string                       `xml:"Currency,attr"`
+	InvoiceCurrency   string                       `xml:"InvoiceCurrency,attr"`
 	InvoiceNumber     string                       `xml:"InvoiceNumber"`
 	InvoiceDate       string                       `xml:"InvoiceDate"`
 	Biller            ebInterfaceParty             `xml:"Biller"`

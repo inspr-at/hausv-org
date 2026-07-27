@@ -27,7 +27,7 @@ Feldgrenzen geprueft sind.
 | Neutrale Übergabe | `manual-csv/raw-v0` | Golden File vorhanden | intern implementiert/getestet; keine produktive Export-UI | Keine BMD-/RZL-Kompatibilitätsbehauptung, keine Buchungssätze |
 | BMD NTCS | noch kein Zielvertrag | keines | geplant | Erst mit offizieller Importbeschreibung oder betreibereigener Vorlage als Zieladapter bauen |
 | RZL FIBU | offizielle Import-Schnittstelle, Stand Juli 2026; Nutzung laut Handbuch nur für berechtigte RZL-Nutzer | noch keines | geplant | Erst mit autorisiertem Betreiberzugang oder von RZL freigegebener Spezifikation als Zieladapter bauen |
-| ebInterface | 6.0 priorisiert, 5.0 Fallback | synthetische 5.0- und 6.0-Fixtures | Parser/Ablage intern implementiert/getestet; keine produktive Upload-UI | Empfang und Ablage nach offizieller Schema-Validierung, nicht buchen |
+| ebInterface | 6.0 priorisiert, 5.0 Fallback | synthetische, offiziell schema-validierte 5.0- und 6.0-Fixtures | geschützter Vorschau-/Ablagefluss implementiert und getestet | Empfang und Ablage, nicht buchen; 6.1 bleibt ein separates Folgeprofil |
 
 ## XSD-Gate
 
@@ -40,7 +40,20 @@ Feldlimits und fachliche Richtung automatisiert.
 
 Fuer ebInterface ist labs.ebinterface.at der offizielle Online-Gegencheck: dort
 koennen ebInterface 5.0, 6.0 und 6.1 gegen das XML Schema geprueft werden. Die
-App unterstuetzt derzeit 5.0 und 6.0; 6.1 bleibt ein eigenes Folgeprofil.
+App unterstuetzt derzeit 5.0 und 6.0; 6.1 bleibt ein eigenes Folgeprofil. Der
+reproduzierbare Check `scripts/validate-ebinterface-fixtures.fish` sendet
+ausschließlich die synthetischen Repository-Fixtures. Echte Rechnungen werden
+weder im Produkt noch im Betreibercheck an den externen Validator übertragen.
+
+Betreiberprotokoll vom 27.07.2026:
+
+- Quelle: offizielle ebInterface-Dokumentation 5.0/6.0 und
+  `https://labs.ebinterface.at/`
+- Profile: ebInterface 5.0 und 6.0
+- Ergebnis: beide synthetischen Fixtures laut offiziellem Validator gültig
+- Produkttests: positive Profile, fehlende Pflichtwerte, 6.1-Ablehnung,
+  Dateityp/-größe, CSRF, Rollen, Hausgrenze, Vorschau-Ablauf,
+  Originaltreue, geschützte Auslieferung, Digest-Idempotenz und Audit
 
 ## Betreiber-Selbstprüfung statt externer Freigabe
 

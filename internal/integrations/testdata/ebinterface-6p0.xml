@@ -1,21 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Invoice xmlns="http://www.ebinterface.at/schema/6p0/" Currency="EUR">
+<Invoice xmlns="http://www.ebinterface.at/schema/6p0/"
+         GeneratingSystem="hausv.org synthetic fixture"
+         DocumentType="Invoice"
+         InvoiceCurrency="EUR"
+         DocumentTitle="Synthetische Testrechnung">
   <InvoiceNumber>RE-2026-0006</InvoiceNumber>
   <InvoiceDate>2026-07-09</InvoiceDate>
-  <Biller>
-    <Name>Hausservice Beispiel e.U.</Name>
-  </Biller>
-  <InvoiceRecipient>
-    <Address><Name>jhw22</Name></Address>
-  </InvoiceRecipient>
   <Delivery>
     <Period>
       <FromDate>2026-07-02</FromDate>
       <ToDate>2026-07-09</ToDate>
     </Period>
   </Delivery>
-  <PaymentMethod><DueDate>2026-07-23</DueDate></PaymentMethod>
-  <InvoiceTotals>
-    <TotalGrossAmount Currency="EUR">99.90</TotalGrossAmount>
-  </InvoiceTotals>
+  <Biller>
+    <VATIdentificationNumber>ATU00000003</VATIdentificationNumber>
+    <Address>
+      <Name>Hausservice Beispiel e.U.</Name>
+      <Street>Musterstraße 6</Street>
+      <Town>Graz</Town>
+      <ZIP>8010</ZIP>
+      <Country CountryCode="AT">Österreich</Country>
+    </Address>
+  </Biller>
+  <InvoiceRecipient>
+    <VATIdentificationNumber>ATU00000004</VATIdentificationNumber>
+    <Address>
+      <Name>jhw22</Name>
+      <Street>Janischhofweg 22</Street>
+      <Town>Graz</Town>
+      <ZIP>8043</ZIP>
+      <Country CountryCode="AT">Österreich</Country>
+    </Address>
+  </InvoiceRecipient>
+  <Details>
+    <ItemList>
+      <ListLineItem>
+        <PositionNumber>1</PositionNumber>
+        <Description>Synthetische Hausserviceleistung</Description>
+        <Quantity Unit="C62">1.0000</Quantity>
+        <UnitPrice>83.2500</UnitPrice>
+        <TaxItem>
+          <TaxableAmount>83.25</TaxableAmount>
+          <TaxPercent TaxCategoryCode="S">20.00</TaxPercent>
+          <TaxAmount>16.65</TaxAmount>
+        </TaxItem>
+        <LineItemAmount>83.25</LineItemAmount>
+      </ListLineItem>
+    </ItemList>
+  </Details>
+  <Tax>
+    <TaxItem>
+      <TaxableAmount>83.25</TaxableAmount>
+      <TaxPercent TaxCategoryCode="S">20.00</TaxPercent>
+      <TaxAmount>16.65</TaxAmount>
+    </TaxItem>
+  </Tax>
+  <TotalGrossAmount>99.90</TotalGrossAmount>
+  <PayableAmount>99.90</PayableAmount>
+  <PaymentConditions><DueDate>2026-07-23</DueDate></PaymentConditions>
 </Invoice>

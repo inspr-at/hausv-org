@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.38.0",
+			Date:     "27. Juli 2026",
+			Kind:     "E-Rechnungen",
+			Headline: "E-Rechnungen werden vor der geschützten Ablage verständlich geprüft.",
+			Intro:    "Ein kurzer ebInterface-Ablauf zeigt nur die entscheidenden Rechnungsdaten und speichert das unveränderte Original ausschließlich für die Verwaltung.",
+			Items: []NoteItem{
+				{Label: "Vorher verstehen", Text: "Rechnungsnummer, Betrag, Beteiligte und Termine stehen vor jeder Ablage in einer ruhigen Vorschau."},
+				{Label: "Geschützt ablegen", Text: "Bestätigte Originaldateien bleiben für Bewohner unsichtbar und können nicht doppelt übernommen werden."},
+				{Label: "Sauber begrenzen", Text: "Der Ablauf bucht und bezahlt nichts; ebInterface 5.0 und 6.0 sind mit offiziellen Schema-Checks und automatisierten Tests nachgewiesen."},
+			},
+		},
+		{
 			Version:  "0.37.1",
 			Date:     "27. Juli 2026",
 			Kind:     "Zahlungsstatus",

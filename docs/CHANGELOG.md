@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.38.0] - 2026-07-27
+
+### Neu
+
+- **E-Rechnungen lassen sich direkt in der Dokumentablage prüfen.** Verwalter und Admins sehen vor der Ablage Rechnungsnummer, Betrag, Beteiligte und Termine in einer kurzen, verständlichen Vorschau.
+- **Originale bleiben geschützt und unverändert.** Bestätigte ebInterface-Dateien werden als „Abrechnung“ ausschließlich für die Verwaltung gespeichert; Bewohner erhalten weder Listen- noch Downloadzugriff.
+- **Doppelte Ablagen sind ausgeschlossen.** Ein hausbezogener Dateinachweis und der Aktivitätsverlauf machen jede Übernahme nachvollziehbar, ohne Rechnungsinhalte in technische Protokolle zu kopieren.
+- **ebInterface 5.0 und 6.0 sind reproduzierbar geprüft.** Synthetische Golden Files bestehen den offiziellen Schema-Validator; Positiv-, Negativ-, Rollen-, Datenschutz- und Wiederholungstests sichern den Produktweg ab.
+- **Desktop und Mobil führen durch denselben kurzen Ablauf.** Nach der Dateiwahl konzentriert sich die Seite auf die Rechnung und die nächste Entscheidung; bei 390 Pixeln bleibt alles ohne seitlichen Überlauf und mit mindestens 44 Pixel hohen Bedienelementen erreichbar.
+
 ## [0.37.1] - 2026-07-27
 
 ### Verbessert

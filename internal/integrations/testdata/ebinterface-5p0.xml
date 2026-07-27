@@ -1,19 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Invoice xmlns="http://www.ebinterface.at/schema/5p0/" Currency="EUR">
+<Invoice xmlns="http://www.ebinterface.at/schema/5p0/"
+         GeneratingSystem="hausv.org synthetic fixture"
+         DocumentType="Invoice"
+         InvoiceCurrency="EUR"
+         DocumentTitle="Synthetische Testrechnung">
   <InvoiceNumber>RE-2026-0005</InvoiceNumber>
   <InvoiceDate>2026-07-08</InvoiceDate>
-  <Biller>
-    <Address><Name>Elektro Beispiel GmbH</Name></Address>
-  </Biller>
-  <InvoiceRecipient>
-    <Address><Name>jhw22</Name></Address>
-  </InvoiceRecipient>
   <Delivery>
     <Period>
       <FromDate>2026-07-01</FromDate>
       <ToDate>2026-07-08</ToDate>
     </Period>
   </Delivery>
+  <Biller>
+    <VATIdentificationNumber>ATU00000001</VATIdentificationNumber>
+    <Address>
+      <Name>Elektro Beispiel GmbH</Name>
+      <Street>Beispielweg 1</Street>
+      <Town>Graz</Town>
+      <ZIP>8010</ZIP>
+      <Country CountryCode="AT">Österreich</Country>
+    </Address>
+  </Biller>
+  <InvoiceRecipient>
+    <VATIdentificationNumber>ATU00000002</VATIdentificationNumber>
+    <Address>
+      <Name>jhw22</Name>
+      <Street>Janischhofweg 22</Street>
+      <Town>Graz</Town>
+      <ZIP>8043</ZIP>
+      <Country CountryCode="AT">Österreich</Country>
+    </Address>
+  </InvoiceRecipient>
+  <Details>
+    <ItemList>
+      <ListLineItem>
+        <PositionNumber>1</PositionNumber>
+        <Description>Synthetische Elektroarbeit</Description>
+        <Quantity Unit="C62">1.0000</Quantity>
+        <UnitPrice>200.4200</UnitPrice>
+        <TaxItem>
+          <TaxableAmount>200.42</TaxableAmount>
+          <TaxPercent TaxCategoryCode="S">20.00</TaxPercent>
+          <TaxAmount>40.08</TaxAmount>
+        </TaxItem>
+        <LineItemAmount>200.42</LineItemAmount>
+      </ListLineItem>
+    </ItemList>
+  </Details>
+  <Tax>
+    <TaxItem>
+      <TaxableAmount>200.42</TaxableAmount>
+      <TaxPercent TaxCategoryCode="S">20.00</TaxPercent>
+      <TaxAmount>40.08</TaxAmount>
+    </TaxItem>
+  </Tax>
+  <TotalGrossAmount>240.50</TotalGrossAmount>
+  <PayableAmount>240.50</PayableAmount>
   <PaymentConditions><DueDate>2026-07-22</DueDate></PaymentConditions>
-  <TotalGrossAmount Currency="EUR">240.50</TotalGrossAmount>
 </Invoice>

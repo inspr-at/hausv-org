@@ -435,6 +435,8 @@ func documentMessage(status string) (string, bool) {
 		return "Dokument hochgeladen.", true
 	case "replaced":
 		return "Neue Version gespeichert.", true
+	case "invoice-imported":
+		return "E-Rechnung geprüft und geschützt abgelegt.", true
 	case "invalid":
 		return "Bitte Titel, Kategorie, Sichtbarkeit und Datei prüfen. Erlaubt sind PDF, JPG, PNG oder WebP bis 20 MB.", false
 	default:
