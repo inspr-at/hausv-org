@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.34.0",
+			Date:     "27. Juli 2026",
+			Kind:     "Parkplatz",
+			Headline: "Laden, Monatskosten und Zahlung bilden einen kurzen, sicheren Ablauf.",
+			Intro:    "Der aktuelle Zustand und genau eine nächste Aktion stehen zuerst; Abrechnungs- und Technikdetails bleiben vollständig, öffnen sich aber nur bei Bedarf.",
+			Items: []NoteItem{
+				{Label: "Sicher laden", Text: "Automatik und manuelles Normalladen sind klar getrennt, damit die beabsichtigte Aktion eindeutig bleibt."},
+				{Label: "Monat verstehen", Text: "Gesamtbetrag, Verbrauch und Status führen in eine eigene Abrechnung ohne doppelte Kennzahlen."},
+				{Label: "Gezielt nachsehen", Text: "Kosten, Stunden, Ladevorgänge sowie CSV- und PDF-Ausgabe bleiben in kurzen, progressiven Bereichen erreichbar."},
+			},
+		},
+		{
 			Version:  "0.33.0",
 			Date:     "27. Juli 2026",
 			Kind:     "Verlauf",

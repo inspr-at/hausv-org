@@ -105,7 +105,7 @@ func TestParkingPageRendersLiveCardStructures(t *testing.T) {
 	}
 	// Without charging entities the live card stays hidden but the page must
 	// render — the template handles a zero Live view.
-	if strings.Contains(rr.Body.String(), "parking-live") {
+	if strings.Contains(rr.Body.String(), `<section class="panel parking-live"`) {
 		t.Fatal("live card must be hidden when charging is not configured")
 	}
 }

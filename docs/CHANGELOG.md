@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.34.0] - 2026-07-27
+
+### Verbessert
+
+- **Der Parkplatz zeigt zuerst den aktuellen Ladezustand.** Leistung, Hausakku und Einspeisung stehen gemeinsam in einer ruhigen Zeile; die passende nächste Aktion ist sofort erkennbar.
+- **Automatik und manuelles Laden konkurrieren nicht mehr.** Ist die Automatik pausiert, wird ihre sichere Reaktivierung zur Hauptaktion; Normalladen bleibt bewusst unter „Manuell steuern“ erreichbar.
+- **Monate öffnen eine eigene, klare Abrechnung.** Die neueste Abrechnung erscheint genau einmal mit Betrag, Verbrauch und Status; ältere Monate folgen als kompakte, vollständig antippbare Zeilen.
+- **Das Monatsdetail beginnt mit Gesamtbetrag und Zahlung.** Kostenaufschlüsselung, Stundenwerte und Ladevorgänge öffnen sich erst bei Bedarf, ohne Informationen zu verlieren.
+- **CSV und PDF bleiben direkt erreichbar.** Exporte sind an der Monatsabrechnung gebündelt und wurden für Bewohner sowie Verwaltung geprüft.
+- **Die mobile Strecke ist 57 bis 67 Prozent kürzer.** Übersicht und Monatsdetail funktionieren bei 390 Pixeln ohne seitlichen Überlauf, mit großen Touch-Zielen und vollständiger Tastaturbedienung.
+
 ## [0.33.0] - 2026-07-27
 
 ### Verbessert

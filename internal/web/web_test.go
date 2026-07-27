@@ -48,12 +48,10 @@ func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
 		`aria-label="E-Mail-Adresse" autocomplete="email" required`,
 		`aria-label="Kommentar oder Rückfrage"`,
 		`Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen`,
-		`aria-label="Abrechnung in 2 Schritten.`,
-		`aria-label="Abrechnungsassistent"`,
-		`aria-label="Abrechnungsschritte"`,
-		`aria-label="Zahlungsdetails"`,
-		`role="region" aria-label="Stundenwerte Parkplatznutzung"`,
-		`<caption class="sr-only">Stundenwerte Parkplatznutzung`,
+		`aria-label="Parkplatzbereiche"`,
+		`aria-label="Monatsabrechnungen"`,
+		`aria-label="Ältere Monate"`,
+		`aria-label="Aktueller Ladezustand Parkplatz 20"`,
 	}
 	for _, want := range wants {
 		if !strings.Contains(PageTemplates, want) {

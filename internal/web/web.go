@@ -1343,6 +1343,90 @@ const PageTemplates = `
     .parking-dropzone strong { display: block; color: var(--ink); }
     .parking-detail-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); padding: 12px 22px; color: var(--soft); font-size: 12px; }
     .parking-receipts .attachment-strip { grid-template-columns: repeat(auto-fill,minmax(96px,1fr)); }
+    .parking-switcher { width: min(520px,100%); display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 4px; }
+    .parking-switcher a { min-height: 42px; display: grid; place-items: center; border-radius: 8px; color: var(--ink); font-weight: 850; text-decoration: none; }
+    .parking-switcher a:first-child { background: var(--ink); color: #fff; box-shadow: 0 5px 14px rgba(30,39,31,.12); }
+    .parking-live { display: grid; gap: 16px; scroll-margin-top: 88px; }
+    .parking-live-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
+    .parking-live-head h2 { margin-top: 4px; font-size: clamp(26px,3vw,34px); }
+    .parking-live-head p { margin-top: 4px; }
+    .parking-live .pill.live-surplus { background: rgba(200,153,63,.16); color: #8a6a1f; border: 1px solid rgba(200,153,63,.32); }
+    .parking-live .pill.live-manual { background: rgba(76,103,138,.12); color: #365475; border: 1px solid rgba(76,103,138,.24); }
+    .parking-live .pill.live-idle { background: var(--panel-soft); color: var(--muted); border: 1px solid var(--line); }
+    .parking-live-facts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
+    .parking-live-facts > span { min-height: 68px; display: grid; align-content: center; gap: 3px; padding: 10px 15px; border-left: 1px solid var(--line); }
+    .parking-live-facts > span:first-child { border-left: 0; }
+    .parking-live-facts small, .parking-current-facts small { color: var(--soft); font-size: 10.5px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+    .parking-live-facts strong { font-family: var(--font-serif); font-size: 22px; }
+    .parking-live .battery-full { color: var(--leaf); }
+    .parking-live .battery-partial { color: #93701d; }
+    .parking-live .battery-low { color: #a04545; }
+    .parking-live-actions { display: flex; flex-wrap: wrap; gap: 9px; align-items: flex-start; }
+    .parking-live-actions form { margin: 0; }
+    .parking-manual { position: relative; }
+    .parking-manual > summary { list-style: none; }
+    .parking-manual > summary::-webkit-details-marker { display: none; }
+    .parking-manual > form { position: absolute; z-index: 10; top: calc(100% + 7px); left: 0; width: max-content; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 8px; box-shadow: var(--shadow-dialog); }
+    .parking-live-details, .parking-utility, .parking-month-disclosure { border-top: 1px solid var(--line); padding-top: 12px; }
+    .parking-live-details > summary, .parking-utility > summary, .parking-month-disclosure > summary { min-height: 42px; display: flex; align-items: center; cursor: pointer; color: var(--gold-ink); font-weight: 850; }
+    .parking-live-details-body { display: grid; gap: 13px; padding-top: 9px; }
+    .parking-split-list { display: grid; gap: 7px; }
+    .parking-split-list p { display: grid; grid-template-columns: 70px repeat(2,minmax(0,1fr)); gap: 8px; margin: 0; color: var(--muted); font-size: 12.5px; }
+    .parking-split-list strong { color: var(--ink); }
+    .parking-admin-state { display: flex; align-items: center; gap: 7px 12px; flex-wrap: wrap; border-radius: var(--radius-xs); background: var(--panel-soft); padding: 10px 12px; color: var(--muted); font-size: 12.5px; }
+    .parking-session-list { display: grid; gap: 6px; margin-top: 8px; }
+    .parking-session-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-soft); font-size: 13.5px; }
+    .parking-session-row .pill.mode-surplus { background: rgba(200,153,63,.16); color: #8a6a1f; border: 1px solid rgba(200,153,63,.32); }
+    .parking-session-row .pill.mode-normal { background: rgba(76,103,138,.12); color: #365475; border: 1px solid rgba(76,103,138,.24); }
+    .parking-session-row .amount { margin-left: auto; }
+    .parking-months-panel { display: grid; gap: 14px; scroll-margin-top: 88px; }
+    .parking-months-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+    .parking-months-head h2 { font-size: clamp(27px,3vw,34px); }
+    .parking-months-status { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+    .parking-current-month { min-height: 132px; display: grid; grid-template-columns: minmax(150px,1fr) minmax(220px,.8fr) auto 18px; gap: 18px; align-items: center; border: 1px solid rgba(200,153,63,.32); border-radius: var(--radius-sm); background: linear-gradient(120deg,rgba(200,153,63,.08),#fffefb); padding: 18px; color: inherit; text-decoration: none; }
+    .parking-current-month > span:first-child { display: grid; gap: 3px; }
+    .parking-current-month > span:first-child strong { font-family: var(--font-serif); font-size: 22px; }
+    .parking-current-month > span:first-child b { font-family: var(--font-serif); font-size: 32px; line-height: 1; }
+    .parking-current-facts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0; }
+    .parking-current-facts > span { display: grid; gap: 2px; border-left: 1px solid var(--line); padding-left: 18px; }
+    .parking-current-facts strong { font-size: 15px; }
+    .parking-row-arrow { color: var(--gold-ink); font-size: 28px; line-height: 1; }
+    .parking-month-list { display: grid; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+    .parking-compact-month { min-height: 62px; display: grid; grid-template-columns: minmax(0,1fr) auto auto 18px; gap: 14px; align-items: center; border-top: 1px solid var(--line); padding: 10px 14px; color: inherit; text-decoration: none; background: #fffefb; }
+    .parking-compact-month:first-child { border-top: 0; }
+    .parking-compact-month:hover, .parking-current-month:hover { border-color: var(--gold); }
+    .parking-compact-month > span:first-child { display: grid; gap: 2px; }
+    .parking-compact-month small { color: var(--soft); font-size: 11.5px; }
+    .parking-months-panel .parking-utility { border-right: 0; border-bottom: 0; border-left: 0; border-radius: 0; background: transparent; padding: 8px 0 0; }
+    .parking-months-panel .parking-utility summary { font-family: var(--font-sans); font-size: 13px; }
+    .parking-month-page { gap: 16px; }
+    .parking-month-hero { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: end; }
+    .parking-month-hero h1 { margin-top: 3px; }
+    .parking-month-hero-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .parking-month-summary { display: grid; gap: 18px; }
+    .parking-month-total { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    .parking-month-total strong { display: block; margin-top: 4px; font-family: var(--font-serif); font-size: clamp(38px,6vw,56px); line-height: 1; }
+    .parking-month-essential { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .parking-month-essential > div { display: grid; gap: 3px; padding: 14px; border-left: 1px solid var(--line); }
+    .parking-month-essential > div:first-child { border-left: 0; }
+    .parking-month-essential dt { color: var(--soft); font-size: 10.5px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+    .parking-month-essential dd { margin: 0; font-size: 17px; font-weight: 850; }
+    .parking-month-payment { display: grid; gap: 10px; }
+    .parking-month-payment .pay-row { align-items: center; }
+    .parking-month-payment .pay-row .button { min-width: 220px; }
+    .parking-cost-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 24px; margin: 8px 0 0; }
+    .parking-cost-list div { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding: 10px 0; }
+    .parking-cost-list dt { color: var(--muted); }
+    .parking-cost-list dd { margin: 0; font-weight: 850; }
+    .parking-hour-list { display: grid; gap: 7px; margin-top: 8px; }
+    .parking-hour-row { border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); overflow: hidden; }
+    .parking-hour-row > summary { min-height: 52px; display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 12px; align-items: center; cursor: pointer; list-style: none; padding: 9px 12px; }
+    .parking-hour-row > summary::-webkit-details-marker { display: none; }
+    .parking-hour-row > summary strong { font-variant-numeric: tabular-nums; }
+    .parking-hour-details { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; border-top: 1px solid var(--line); padding: 10px 12px; }
+    .parking-hour-details div { display: grid; gap: 2px; }
+    .parking-hour-details dt { color: var(--soft); font-size: 10px; font-weight: 850; text-transform: uppercase; }
+    .parking-hour-details dd { margin: 0; font-size: 12.5px; font-weight: 750; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
     .table-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); }
     .table-wrap:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
@@ -1707,13 +1791,45 @@ const PageTemplates = `
 	      .handover-review-files { display: grid; gap: 3px; }
 	      .handover-confirm-submit { position: static; padding-top: 2px; margin: 0; background: transparent; }
 	      .parking-page-head, .parking-page-head > *, .parking-primary-actions, .parking-page .panel { min-width: 0; max-width: 100%; }
-	      .parking-primary-actions { width: 100%; display: grid; grid-template-columns: 1fr; justify-content: stretch; }
-	      .parking-primary-actions .button, .parking-primary-actions form, .parking-primary-actions form button { width: 100%; }
-	      .parking-more { width: 100%; }
-	      .parking-more-menu { left: 0; right: auto; width: min(270px, 100%); }
+	      .parking-page-head { grid-template-columns: minmax(0,1fr) auto; }
+	      .parking-primary-actions { width: auto; display: block; }
+	      .parking-more-menu { left: auto; right: 0; width: min(270px, calc(100vw - 36px)); }
 	      .parking-month-row { grid-template-columns: 40px minmax(0,1fr) auto; }
 	      .parking-month-row .amount { grid-column: 2; }
 	      .parking-month-row .pill, .parking-month-row .parking-queue-action { justify-self: start; }
+	      .parking-switcher { width: 100%; }
+	      .parking-live-head, .parking-months-head, .parking-month-hero { align-items: flex-start; }
+	      .parking-live-facts { grid-template-columns: repeat(3,minmax(0,1fr)); }
+	      .parking-live-facts > span { min-height: 60px; padding: 9px; }
+	      .parking-live-facts strong { font-size: 18px; }
+	      .parking-live-actions { display: grid; grid-template-columns: 1fr; }
+	      .parking-live-actions form, .parking-live-actions .button, .parking-manual { width: 100%; }
+	      .parking-manual > form { position: static; width: 100%; margin-top: 7px; }
+	      .parking-split-list p { grid-template-columns: 1fr; gap: 3px; }
+	      .parking-months-head { display: grid; }
+	      .parking-months-status { justify-content: flex-start; }
+	      .parking-current-month { grid-template-columns: minmax(0,1fr) auto 16px; gap: 12px; padding: 15px; }
+	      .parking-current-month > span:first-child { grid-column: 1; }
+	      .parking-current-facts { grid-column: 1 / -1; grid-row: 2; }
+	      .parking-current-facts > span:first-child { border-left: 0; padding-left: 0; }
+	      .parking-current-month > .pill { grid-column: 2; grid-row: 1; }
+	      .parking-current-month > .parking-row-arrow { grid-column: 3; grid-row: 1; }
+	      .parking-compact-month { grid-template-columns: minmax(0,1fr) auto 16px; gap: 8px 10px; }
+	      .parking-compact-month .amount { grid-column: 1; }
+	      .parking-compact-month .pill { grid-column: 2; grid-row: 1 / span 2; }
+	      .parking-compact-month .parking-row-arrow { grid-column: 3; grid-row: 1 / span 2; }
+	      .parking-month-hero { grid-template-columns: 1fr; }
+	      .parking-month-hero-actions { justify-content: flex-start; }
+	      .parking-month-essential { grid-template-columns: repeat(3,minmax(0,1fr)); }
+	      .parking-month-essential > div { padding: 11px 8px; }
+	      .parking-month-essential dd { font-size: 14px; }
+	      .parking-month-payment .pay-row { display: grid; grid-template-columns: 1fr; }
+	      .parking-month-payment .pay-row .button { width: 100%; min-width: 0; }
+	      .parking-cost-list { grid-template-columns: 1fr; }
+	      .parking-hour-row > summary { grid-template-columns: minmax(0,1fr) auto; }
+	      .parking-hour-row > summary span { grid-column: 1; }
+	      .parking-hour-row > summary strong { grid-column: 2; grid-row: 1 / span 2; }
+	      .parking-hour-details { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .parking-stepper { grid-template-columns: 1fr; }
       .parking-step { justify-items: start; grid-template-columns: 32px minmax(0,1fr); text-align: left; }
       .parking-step-number { width: 32px; height: 32px; }
@@ -3678,12 +3794,10 @@ const PageTemplates = `
       <section class="page wide parking-page">
         <div class="parking-page-head">
           <div>
-            <h1>Parkplatznutzung</h1>
-            <p class="lede">Private Lade- und Stellplatzabrechnung für die persönlich abgestimmte Nutzung.</p>
-            <p class="muted subtle-note">Sichtbar nur für berechtigte Personen. Die Seite führt Schritt für Schritt durch offene Monate.</p>
+            <h1>Parkplatz</h1>
+            <p class="lede">Laden und Monatskosten auf einen Blick.</p>
           </div>
           <div class="parking-primary-actions">
-            {{if .Accounting.HasMonths}}{{with index .Accounting.Months 0}}<a class="button primary" href="#parking-detail-{{.Month}}">Nächsten offenen Monat prüfen</a>{{end}}{{end}}
             <details class="parking-more">
               <summary class="button">Mehr</summary>
               <div class="parking-more-menu">
@@ -3695,176 +3809,67 @@ const PageTemplates = `
             </details>
           </div>
         </div>
+        {{if and .Live.Available .Accounting.HasMonths}}
+          <nav class="parking-switcher" aria-label="Parkplatzbereiche">
+            <a href="#parking-live">Jetzt</a>
+            <a href="#parking-months">Monate</a>
+          </nav>
+        {{end}}
 
         {{if .ParkingMsg}}<p class="flash {{if .ParkingOK}}ok{{end}}">{{.ParkingMsg}}</p>{{end}}
 
         {{template "parkingLiveCard" .}}
 
         {{if .Accounting.HasMonths}}
-          <section class="parking-guide" aria-label="Abrechnung in 2 Schritten. Offen {{.Accounting.Outstanding}}. Überfällig {{.Accounting.Overdue}}.">
-            <div>
-              <h2>Abrechnung in 2 Schritten</h2>
-              <p class="muted">Monat prüfen und Zahlung markieren.</p>
-            </div>
-            <div class="parking-stepper" aria-label="Abrechnungsschritte">
-              <div class="parking-step active">
-                <span class="parking-step-number">1</span>
-                <span><strong>Monat prüfen</strong><small>Verbrauch und Betrag kontrollieren</small></span>
-              </div>
-              <div class="parking-step">
-                <span class="parking-step-number">2</span>
-                <span><strong>Zahlung markieren</strong><small>Zahlung bestätigen und abschließen</small></span>
-              </div>
-            </div>
-            <div class="parking-guide-status">
-              {{if .Accounting.HasOutstanding}}<span class="pill">{{.Accounting.Outstanding}} offen</span>{{end}}
-              {{if .Accounting.HasOverdue}}<span class="pill dringend">{{.Accounting.Overdue}} überfällig</span>{{end}}
-              {{if .Telemetry.Configured}}<span class="pill ok">Home Assistant aktiv</span>{{end}}
-            </div>
-          </section>
-
-          <div class="parking-workspace">
-            <section class="panel parking-assistant" aria-label="Abrechnungsassistent">
-              <div class="parking-queue-head">
-                <div>
-                  <h2>Monate in Bearbeitung</h2>
-                  <p class="muted">Offene und überfällige Monate auf einen Blick.</p>
-                </div>
-                {{if .Accounting.HasOutstanding}}<span class="pill">{{.Accounting.Outstanding}} offen</span>{{end}}
-              </div>
+          <section class="panel parking-months-panel" id="parking-months" aria-label="Monatsabrechnungen">
+            <div class="parking-months-head">
               <div>
-                <div class="parking-month-queue">
-                  {{range .Accounting.Months}}
-                    <a class="parking-month-row" id="parking-month-{{.Month}}" href="#parking-detail-{{.Month}}">
-                      <span class="parking-month-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M5 6h14v14H5z"/><path d="M5 10h14"/></svg></span>
-                      <span><strong>{{.MonthLabel}}</strong><span class="mini">{{if .Partial}}Teilmonat · {{end}}{{.HourCount}} Stunden</span></span>
-                      <span class="amount">{{.TotalCost}}</span>
-                      <span class="pill {{if .Paid}}ok{{else if .Overdue}}dringend{{end}}">{{.PaidLabel}}</span>
-                      <span class="parking-queue-action">{{if .Paid}}Ansehen{{else}}Prüfen{{end}}</span>
-                    </a>
-                  {{end}}
-                </div>
+                <h2>Monate</h2>
+                <p class="muted">Aktueller Betrag und Zahlungsstatus.</p>
               </div>
-              <details class="parking-utility">
-                <summary>Messwerte und Berechnungsgrundlage</summary>
-                <div class="parking-utility-body">
-                  <p class="muted">{{.Accounting.Message}}</p>
-                  {{if .Telemetry.Connected}}
-                    <div class="metric-grid">
-                      {{range .Telemetry.Metrics}}
-                        <div class="metric-card">
-                          <span class="metric-label">{{.Label}}</span>
-                          <strong class="metric-value">{{.Value}}</strong>
-                          <code>{{.Detail}}</code>
-                        </div>
-                      {{end}}
-                    </div>
-                  {{else}}
-                    <p class="empty">{{.Telemetry.Message}}</p>
-                  {{end}}
-                </div>
-              </details>
-            </section>
+              <div class="parking-months-status">
+                {{if .Accounting.HasOutstanding}}<span class="pill">{{.Accounting.Outstanding}} offen</span>{{end}}
+                {{if .Accounting.HasOverdue}}<span class="pill dringend">{{.Accounting.Overdue}} überfällig</span>{{end}}
+              </div>
+            </div>
 
-            <aside class="parking-detail-stack" aria-label="Zahlungsdetails">
-              {{range .Accounting.Months}}
-                <section class="parking-month-detail" id="parking-detail-{{.Month}}">
-                  <div class="parking-detail-head">
-                    <div>
-                      <span class="metric-label">Ausgewählter Monat</span>
-                      <h2>{{.MonthLabel}}</h2>
-                      <strong>{{.TotalCost}}</strong>
-                      {{if .Paid}}<p class="muted">Zahlung ist markiert.</p>{{else if .Overdue}}<p class="muted">Überfällig. Bitte Zahlung prüfen.</p>{{else if .Outstanding}}<p class="muted">Noch nicht als bezahlt markiert.</p>{{else}}<p class="muted">Keine offene Zahlung für diesen Monat.</p>{{end}}
-                    </div>
+            {{with .CurrentMonth}}
+              <a class="parking-current-month" id="parking-month-{{.Month}}" href="{{.DetailPath}}">
+                <span>
+                  <span class="metric-label">{{$.CurrentMonthHeading}}</span>
+                  <strong>{{.MonthLabel}}</strong>
+                  <b>{{.TotalCost}}</b>
+                </span>
+                <span class="parking-current-facts">
+                  <span><strong>{{.KWh}}</strong><small>Verbrauch</small></span>
+                  <span><strong>{{.GridCost}}</strong><small>Netzgebühr</small></span>
+                </span>
+                <span class="pill {{if .Paid}}ok{{else if .Overdue}}dringend{{end}}">{{.PaidLabel}}</span>
+                <span class="parking-row-arrow" aria-hidden="true">›</span>
+              </a>
+            {{end}}
+
+            {{if .HasOlderMonths}}
+              <div class="parking-month-list" aria-label="Ältere Monate">
+                {{range .OlderMonths}}
+                  <a class="parking-compact-month" id="parking-month-{{.Month}}" href="{{.DetailPath}}">
+                    <span><strong>{{.MonthLabel}}</strong><small>{{if .Partial}}Teilmonat · {{end}}{{.HourCount}} Stunden</small></span>
+                    <span class="amount">{{.TotalCost}}</span>
                     <span class="pill {{if .Paid}}ok{{else if .Overdue}}dringend{{end}}">{{.PaidLabel}}</span>
-                  </div>
-                  <dl class="parking-breakdown">
-                    <div><dt>Verbrauch</dt><dd>{{.KWh}}</dd></div>
-                    {{if .HasSurplus}}
-                      <div><dt>☀️ Überschuss</dt><dd>{{.SurplusKWh}} · {{.SurplusCost}}</dd></div>
-                      <div><dt>Normal</dt><dd>{{.NormalKWh}}</dd></div>
-                    {{end}}
-                    <div><dt>Ø aWATTar</dt><dd>{{.AverageAwattar}}</dd></div>
-                    <div><dt>Ø effektiv</dt><dd>{{.EffectivePrice}}</dd></div>
-                    <div><dt>Strom</dt><dd>{{.EnergyCost}}</dd></div>
-                    <div><dt>Netzgebühr</dt><dd>{{.GridCost}}</dd></div>
-                    <div><dt>Basis</dt><dd>{{.BaseFee}}</dd></div>
-                  </dl>
-                  <div class="parking-tabs" aria-label="Ansichten für {{.MonthLabel}}">
-                    <span>Übersicht</span>
-                    <a href="{{.DetailPath}}">Stundenwerte</a>
-                  </div>
-                  <div class="parking-detail-actions">
-                    <div class="pay-sec">
-                      <div class="pay-head">
-                        <h3>Zahlung</h3>
-                        {{if .Paid}}<span class="pay-state paid">Bezahlt</span>{{else}}<span class="pay-state">Offen</span>{{end}}
-                      </div>
-                      {{if .Paid}}
-                        <div class="pay-settled">
-                          <span class="pay-check" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 12.5l2.6 2.6L16.5 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                          <div class="pay-settled-meta">
-                            {{if $.CanManageParkingPayments}}
-                              <strong>Bezahlt{{if .PaidAtLabel}} am {{.PaidAtLabel}}{{end}}{{if .PaymentMethod}} · {{.PaymentMethod}}{{end}}</strong>
-                              {{if .PaymentReference}}<span>Referenz: {{.PaymentReference}}</span>{{end}}
-                            {{else}}
-                              <strong>Bezahlt{{if .PaidAtLabel}} am {{.PaidAtLabel}}{{end}}</strong>
-                              <span>Zahlung ist markiert.</span>
-                            {{end}}
-                          </div>
-                          {{if $.CanManageParkingPayments}}
-                            <form class="pay-unmark" method="post" action="/app/parking/month">
-                              <input type="hidden" name="month" value="{{.Month}}">
-                              <input type="hidden" name="paid" value="false">
-                              <button class="button pay-ghost" type="submit">Als offen markieren</button>
-                            </form>
-                          {{end}}
-                        </div>
-                        {{if $.CanManageParkingPayments}}
-                          <details class="pay-details">
-                            <summary>Details bearbeiten</summary>
-                            <form class="pay-form" method="post" action="/app/parking/month">
-                              <input type="hidden" name="month" value="{{.Month}}">
-                              <input type="hidden" name="paid" value="true">
-                              <div class="pay-fields">
-                                <label>Datum<input type="date" name="paid_at" value="{{.PaidAtInput}}" autocomplete="off"></label>
-                                <label>Zahlungsart<input type="text" name="payment_method" value="{{.PaymentMethod}}" placeholder="Überweisung" autocomplete="off"></label>
-                                <label class="pay-ref">Referenz<input type="text" name="payment_reference" value="{{.PaymentReference}}" placeholder="z. B. Telegram-Abrechnung 05.03.2026" autocomplete="off"></label>
-                              </div>
-                              <div class="pay-actions"><button class="button primary" type="submit">Details speichern</button></div>
-                            </form>
-                          </details>
-                        {{end}}
-                      {{else if $.CanMarkParkingPayment}}
-                        <form class="pay-form" method="post" action="/app/parking/month">
-                          <input type="hidden" name="month" value="{{.Month}}">
-                          <input type="hidden" name="paid" value="true">
-                          <div class="pay-row">
-                            <p class="muted">{{if $.CanManageParkingPayments}}Wenn der Betrag eingegangen ist, als erhalten markieren.{{else}}Markieren Sie diesen Monat, wenn Sie die Zahlung erledigt haben.{{end}}</p>
-                            <button class="button primary" type="submit">{{if $.CanManageParkingPayments}}Bezahlung erhalten{{else}}Als bezahlt markieren{{end}}</button>
-                          </div>
-                          <details class="pay-details">
-                            <summary>Details (optional)</summary>
-                            <div class="pay-fields">
-                              <label>Datum<input type="date" name="paid_at" value="{{.PaidAtInput}}" autocomplete="off"></label>
-                              <label>Zahlungsart<input type="text" name="payment_method" value="{{.PaymentMethod}}" placeholder="Überweisung" autocomplete="off"></label>
-                              <label class="pay-ref">Referenz<input type="text" name="payment_reference" value="{{.PaymentReference}}" placeholder="z. B. Telegram-Abrechnung 05.03.2026" autocomplete="off"></label>
-                            </div>
-                          </details>
-                        </form>
-                      {{else}}
-                        <p class="muted">Zahlungen können nur von berechtigten Personen markiert werden.</p>
-                      {{end}}
-                    </div>
-                  </div>
-                  <div class="parking-detail-foot">
-                    <span>Historie wird ab 01.01.2026 aus Home Assistant nachgezogen.</span>
-                    <span>Letzter Messpunkt: {{if $.Accounting.LastSampleLabel}}{{$.Accounting.LastSampleLabel}}{{else}}-{{end}}</span>
-                  </div>
-                </section>
-              {{end}}
-            </aside>
-          </div>
+                    <span class="parking-row-arrow" aria-hidden="true">›</span>
+                  </a>
+                {{end}}
+              </div>
+            {{end}}
+
+            <details class="parking-utility">
+              <summary>Wie wird gerechnet?</summary>
+              <div class="parking-utility-body">
+                <p class="muted">{{.Accounting.Message}}</p>
+                <p class="mini">Letzter Messpunkt: {{if .Accounting.LastSampleLabel}}{{.Accounting.LastSampleLabel}}{{else}}–{{end}}</p>
+              </div>
+            </details>
+          </section>
         {{else}}
           <section class="panel parking-empty" aria-label="Parkplatznutzung einrichten">
             <div class="parking-empty-art" aria-hidden="true">
@@ -3925,87 +3930,67 @@ const PageTemplates = `
 
 {{define "parkingLiveCard"}}
 {{with .Live}}{{if .Available}}
-  <style>
-    .parking-live { display: grid; gap: 14px; }
-    .parking-live-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-    .parking-live .pill.live-surplus { background: rgba(200,153,63,.16); color: #8a6a1f; border: 1px solid rgba(200,153,63,.32); }
-    .parking-live .pill.live-manual { background: rgba(76,103,138,.12); color: #365475; border: 1px solid rgba(76,103,138,.24); }
-    .parking-live .pill.live-idle { background: var(--panel-soft); color: var(--muted); border: 1px solid var(--line); }
-    .parking-live .live-rate { font-weight: 700; }
-    .parking-live .battery-full { color: var(--leaf); font-weight: 600; }
-    .parking-live .battery-partial { color: #93701d; font-weight: 600; }
-    .parking-live .battery-low { color: #a04545; font-weight: 600; }
-    .parking-live .bar.split { position: relative; }
-    .parking-live .bar.split .surplus { position: absolute; inset: 0 auto 0 0; background: var(--gold); border-radius: inherit; }
-    .parking-live .split-row { display: grid; gap: 4px; }
-    .parking-live .split-row .mini { display: flex; flex-wrap: wrap; gap: 10px; }
-    .parking-live-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    .parking-session-list { display: grid; gap: 6px; }
-    .parking-session-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-soft); font-size: 13.5px; }
-    .parking-session-row .pill.mode-surplus { background: rgba(200,153,63,.16); color: #8a6a1f; border: 1px solid rgba(200,153,63,.32); }
-    .parking-session-row .pill.mode-normal { background: rgba(76,103,138,.12); color: #365475; border: 1px solid rgba(76,103,138,.24); }
-    .parking-session-row .amount { margin-left: auto; font-weight: 700; }
-  </style>
   <section class="panel parking-live" id="parking-live" aria-label="Aktueller Ladezustand Parkplatz 20">
     <div class="parking-live-head">
-      <span class="pill {{.ModeClass}}">{{if eq .Mode "surplus"}}☀️ {{else if eq .Mode "manual"}}⚡ {{end}}{{.ModeLabel}}</span>
-      {{if .RateLabel}}<span class="live-rate">{{.RateLabel}}</span>{{end}}
-      {{if .SessionSince}}<span class="mini">seit {{.SessionSince}}{{if .SessionKWh}} · {{.SessionKWh}}{{if .SessionCost}} · ≈ {{.SessionCost}}{{end}}{{end}}</span>{{end}}
-      {{if .ShadowMode}}<span class="pill">Testbetrieb</span>{{end}}
-      {{if .StaleData}}<span class="pill dringend">Daten veraltet</span>{{end}}
-    </div>
-    <p class="muted">{{.ModeDetail}}</p>
-    <div class="metric-grid">
-      {{if .PowerLabel}}<div class="metric-card"><span class="metric-label">Leistung</span><strong class="metric-value">{{.PowerLabel}}</strong></div>{{end}}
-      {{if .BatterySOCLabel}}<div class="metric-card"><span class="metric-label">Hausakku</span><strong class="metric-value">{{.BatterySOCLabel}}</strong><span class="battery-{{.BatteryClass}}">{{.BatteryHint}}</span></div>{{end}}
-      {{if .FeedInLabel}}<div class="metric-card"><span class="metric-label">Einspeisung</span><strong class="metric-value">{{.FeedInLabel}}</strong></div>{{end}}
-    </div>
-    {{if or .TodaySplit.HasAny .MonthSplit.HasAny}}
-      <div class="split-row">
-        {{if .TodaySplit.HasAny}}
-          <div>
-            <span class="metric-label">{{.TodaySplit.Label}}</span>
-            <div class="bar split"><span class="surplus" style="width: {{.TodaySplit.SurplusPct}}%;"></span></div>
-            <div class="mini"><span>☀️ {{.TodaySplit.SurplusKWh}} · {{.TodaySplit.SurplusCost}}</span><span>⚡ {{.TodaySplit.NormalKWh}} · {{.TodaySplit.NormalCost}}</span></div>
-          </div>
-        {{end}}
-        {{if .MonthSplit.HasAny}}
-          <div>
-            <span class="metric-label">{{.MonthSplit.Label}}</span>
-            <div class="bar split"><span class="surplus" style="width: {{.MonthSplit.SurplusPct}}%;"></span></div>
-            <div class="mini"><span>☀️ {{.MonthSplit.SurplusKWh}} · {{.MonthSplit.SurplusCost}}</span><span>⚡ {{.MonthSplit.NormalKWh}} · {{.MonthSplit.NormalCost}}</span></div>
-          </div>
-        {{end}}
+      <div>
+        <span class="metric-label">Jetzt</span>
+        <h2>{{.ModeLabel}}</h2>
+        <p class="muted">{{.ModeDetail}}</p>
       </div>
-    {{end}}
+      <span class="pill {{.ModeClass}}">{{if .AutoPaused}}Automatik pausiert{{else if .ToggleOn}}Lädt{{else}}Bereit{{end}}</span>
+    </div>
+    <div class="parking-live-facts">
+      {{if .PowerLabel}}<span><small>Leistung</small><strong>{{.PowerLabel}}</strong></span>{{end}}
+      {{if .BatterySOCLabel}}<span><small>Hausakku</small><strong class="battery-{{.BatteryClass}}">{{.BatterySOCLabel}}</strong></span>{{end}}
+      {{if .FeedInLabel}}<span><small>Einspeisung</small><strong>{{.FeedInLabel}}</strong></span>{{end}}
+    </div>
     {{if .CanToggle}}
       <div class="parking-live-actions">
-        {{if .ToggleOn}}
+        {{if .AutoPaused}}
+          <form method="post" action="/app/parking/charging/auto"><button class="button primary" type="submit">Automatik aktivieren</button></form>
+          <details class="parking-manual">
+            <summary class="button">Manuell steuern</summary>
+            <form method="post" action="/app/parking/charging/on"><button class="button" type="submit">Jetzt laden · Normaltarif</button></form>
+          </details>
+        {{else if .ToggleOn}}
           <form method="post" action="/app/parking/charging/off"><button class="button" type="submit">Ladung ausschalten</button></form>
         {{else}}
-          <form method="post" action="/app/parking/charging/on"><button class="button primary" type="submit">Jetzt laden (Normaltarif)</button></form>
-        {{end}}
-        {{if .AutoPaused}}
-          <form method="post" action="/app/parking/charging/auto"><button class="button" type="submit">Automatik aktivieren</button></form>
+          <form method="post" action="/app/parking/charging/on"><button class="button primary" type="submit">Jetzt laden · Normaltarif</button></form>
         {{end}}
       </div>
     {{end}}
-    {{if .Admin.Show}}
-      <div class="rule">
-        <span class="pill">Regler: {{.Admin.PhaseLabel}}</span>
-        {{if .Admin.SinceLabel}}<span class="mini">seit {{.Admin.SinceLabel}}</span>{{end}}
-        {{if .Admin.PollLabel}}<span class="mini{{if .Admin.StalePill}} pill dringend{{end}}">HA-Poll {{.Admin.PollLabel}}</span>{{end}}
-        {{if .Admin.LastReason}}<span class="mini">{{.Admin.LastReason}}</span>{{end}}
-        {{if .Admin.ErrorDetail}}<span class="pill dringend">{{.Admin.ErrorDetail}}</span>{{end}}
-        <a class="button" href="/app/parking/settings#laderegelung">Laderegelung</a>
+    <details class="parking-live-details">
+      <summary>Ladeverbrauch und technische Details</summary>
+      <div class="parking-live-details-body">
+        {{if .SessionSince}}<p class="mini">Seit {{.SessionSince}}{{if .SessionKWh}} · {{.SessionKWh}}{{if .SessionCost}} · ca. {{.SessionCost}}{{end}}{{end}}</p>{{end}}
+        {{if .RateLabel}}<p class="mini">Aktueller Tarif: {{.RateLabel}}</p>{{end}}
+        {{if .BatteryHint}}<p class="mini">{{.BatteryHint}}</p>{{end}}
+        {{if or .TodaySplit.HasAny .MonthSplit.HasAny}}
+          <div class="parking-split-list">
+            {{if .TodaySplit.HasAny}}<p><strong>Heute</strong><span>Überschuss {{.TodaySplit.SurplusKWh}} · {{.TodaySplit.SurplusCost}}</span><span>Normal {{.TodaySplit.NormalKWh}} · {{.TodaySplit.NormalCost}}</span></p>{{end}}
+            {{if .MonthSplit.HasAny}}<p><strong>Monat</strong><span>Überschuss {{.MonthSplit.SurplusKWh}} · {{.MonthSplit.SurplusCost}}</span><span>Normal {{.MonthSplit.NormalKWh}} · {{.MonthSplit.NormalCost}}</span></p>{{end}}
+          </div>
+        {{end}}
+        {{if .Admin.Show}}
+          <div class="parking-admin-state">
+            <strong>Regler: {{.Admin.PhaseLabel}}</strong>
+            {{if .Admin.SinceLabel}}<span>seit {{.Admin.SinceLabel}}</span>{{end}}
+            {{if .Admin.PollLabel}}<span>HA-Poll {{.Admin.PollLabel}}</span>{{end}}
+            {{if .Admin.LastReason}}<span>{{.Admin.LastReason}}</span>{{end}}
+            {{if .Admin.ErrorDetail}}<span class="pill dringend">{{.Admin.ErrorDetail}}</span>{{end}}
+            <a href="/app/parking/settings#laderegelung">Laderegelung öffnen</a>
+          </div>
+        {{end}}
+        {{if .HasSessions}}
+          <div>
+            <h3>Letzte Ladevorgänge</h3>
+            {{template "parkingSessionList" .Sessions}}
+          </div>
+        {{end}}
+        {{if .ShadowMode}}<span class="pill">Testbetrieb</span>{{end}}
+        {{if .StaleData}}<span class="pill dringend">Daten veraltet</span>{{end}}
       </div>
-    {{end}}
-    {{if .HasSessions}}
-      <details>
-        <summary>Letzte Ladevorgänge</summary>
-        {{template "parkingSessionList" .Sessions}}
       </details>
-    {{end}}
   </section>
 {{end}}{{end}}
 {{end}}
@@ -4030,7 +4015,7 @@ const PageTemplates = `
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <style>
       @media print {
-        .sidebar, .content-top .page-actions, .legend, [data-print], .attachment-strip, .release-dialog { display: none !important; }
+        .sidebar, .content-top .page-actions, .parking-month-hero-actions, [data-print], .attachment-strip, .release-dialog { display: none !important; }
         .app-shell, .app-main { display: block !important; margin: 0 !important; padding: 0 !important; }
         .panel { box-shadow: none !important; border-color: #ccc !important; break-inside: avoid; }
         body, .app-shell { background: #fff !important; }
@@ -4041,88 +4026,123 @@ const PageTemplates = `
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/parking">Parkplatznutzung</a><span>/</span><span>{{.Detail.MonthLabel}}</span></span>
-        <div class="page-actions"><a class="button" href="{{.Detail.BackPath}}">Monate</a>{{if .Detail.Summary.Month}}<a class="button" href="/app/parking/month/{{.Detail.Month}}/export">CSV exportieren</a><button class="button" type="button" data-print>Drucken / PDF</button>{{end}}</div>
+        <div class="page-actions"><a class="button" href="{{.Detail.BackPath}}#parking-months">Zurück zu Monaten</a></div>
       </div>
-      <section class="page wide">
-        <div>
-          <h1>{{.Detail.MonthLabel}}</h1>
-          <p class="lede">{{.Detail.Message}}</p>
-        </div>
-        {{if .Detail.Summary.Partial}}<div class="notice warn">Messdaten unvollständig: Die Abdeckung beginnt nicht am Monatsanfang. Die Summe kann Lücken enthalten und sollte vor dem Teilen geprüft werden.</div>{{end}}
-        <section class="panel status-strip">
-          <div class="rule">
-            <span class="pill">Netzgebühr {{.Detail.GridFeeLabel}}</span>
-            {{if .Detail.Summary.Paid}}<span class="pill">Bezahlt{{if .Detail.Summary.PaidAtLabel}} · {{.Detail.Summary.PaidAtLabel}}{{end}}{{if .Detail.Summary.PaidBy}} · {{.Detail.Summary.PaidBy}}{{end}}</span>{{end}}
-            {{if .Detail.LastSampleLabel}}<span class="mini">Letzter Zählerwert: {{.Detail.LastSampleLabel}}</span>{{end}}
+      <section class="page wide parking-month-page">
+        <div class="parking-month-hero">
+          <div>
+            <span class="metric-label">Monatsabrechnung</span>
+            <h1>{{.Detail.MonthLabel}}</h1>
+            <p class="lede">Verbrauch, Kosten und Zahlungsstatus.</p>
           </div>
           {{if .Detail.Summary.Month}}
-            <div class="metric-grid">
-              <div class="metric-card"><span class="metric-label">Verbrauch</span><strong class="metric-value">{{.Detail.Summary.KWh}}</strong></div>
-              {{if .Detail.Summary.HasSurplus}}
-                <div class="metric-card"><span class="metric-label">☀️ Überschuss</span><strong class="metric-value">{{.Detail.Summary.SurplusKWh}}</strong><span class="mini">{{.Detail.Summary.SurplusCost}}</span></div>
-                <div class="metric-card"><span class="metric-label">Normal</span><strong class="metric-value">{{.Detail.Summary.NormalKWh}}</strong></div>
-              {{end}}
-              <div class="metric-card"><span class="metric-label">Ø aWATTar</span><strong class="metric-value">{{.Detail.Summary.AverageAwattar}}</strong></div>
-              <div class="metric-card"><span class="metric-label">Ø effektiv</span><strong class="metric-value">{{.Detail.Summary.EffectivePrice}}</strong></div>
-              <div class="metric-card"><span class="metric-label">Strom</span><strong class="metric-value">{{.Detail.Summary.EnergyCost}}</strong></div>
-              <div class="metric-card"><span class="metric-label">Netzgeb.</span><strong class="metric-value">{{.Detail.Summary.GridCost}}</strong></div>
-              <div class="metric-card"><span class="metric-label">Basis</span><strong class="metric-value">{{.Detail.Summary.BaseFee}}</strong></div>
-              <div class="metric-card"><span class="metric-label">Summe</span><strong class="metric-value">{{.Detail.Summary.TotalCost}}</strong></div>
+            <div class="parking-month-hero-actions">
+              <details class="parking-more">
+                <summary class="button">Exportieren</summary>
+                <div class="parking-more-menu">
+                  <a class="button" href="/app/parking/month/{{.Detail.Month}}/export">CSV herunterladen</a>
+                  <button class="button" type="button" data-print>Drucken / PDF</button>
+                </div>
+              </details>
             </div>
-            {{template "attachmentStrip" .Detail.Summary}}
           {{end}}
-        </section>
-        <section class="panel accounting">
-          <h2>Stundenwerte</h2>
-          <div class="legend" aria-label="Legende für Stundenwerte">
-            <div><strong>Stunde</strong><span>Beginn der Abrechnungsstunde; jede Zeile umfasst diese Stunde.</span></div>
-            <div><strong>Verbrauch</strong><span>Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.</span></div>
-            <div><strong>Ø aWATTar</strong><span>Stündlicher aWATTar-Arbeitspreis ohne Netzgebühr.</span></div>
-            <div><strong>Strom</strong><span>Verbrauch × aWATTar-Preis.</span></div>
-            <div><strong>Netzgeb.</strong><span>Verbrauch × in dieser Stunde gültige Netzgebühr.</span></div>
-            <div><strong>Summe</strong><span>Strom plus Netzgebühr für diese Stunde.</span></div>
-            <div><strong>Gewichtung</strong><span>Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.</span></div>
-          </div>
-          {{if .Detail.HasHours}}
-            <div class="table-wrap" tabindex="0" role="region" aria-label="Stundenwerte Parkplatznutzung">
-              <table>
-                <caption class="sr-only">Stundenwerte Parkplatznutzung mit Verbrauch, aWATTar-Preis, Stromkosten, Netzgebühr, Summe und Gewichtung.</caption>
-                <thead>
-                  <tr>
-                    <th scope="col" title="Beginn der Abrechnungsstunde; jede Zeile umfasst diese Stunde.">Stunde</th>
-                    <th scope="col" class="num" title="Geschätzte kWh aus der Differenz der Zählerstände innerhalb dieser Stunde.">Verbrauch</th>
-                    <th scope="col" class="num" title="Anteil der Stunde, der als PV-Überschuss zum Fixpreis abgerechnet wird.">☀️ Überschuss</th>
-                    <th scope="col" class="num" title="Stündlicher aWATTar-Arbeitspreis ohne Netzgebühr.">Ø aWATTar</th>
-                    <th scope="col" class="num" title="Verbrauch × aWATTar-Preis.">Strom</th>
-                    <th scope="col" class="num" title="Verbrauch × in dieser Stunde gültige Netzgebühr.">Netzgeb.</th>
-                    <th scope="col" class="num" title="Strom plus Netzgebühr für diese Stunde.">Summe</th>
-                    <th scope="col" title="Relative Balkenlänge im Vergleich zur teuersten Stunde des Monats.">Gewichtung</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {{range .Detail.Hours}}
-                    <tr>
-                      <th scope="row" title="{{.AtTitle}}">{{.AtLabel}}</th>
-                      <td class="num" title="{{.KWhTitle}}">{{.KWh}}</td>
-                      <td class="num" title="{{.SurplusKWhTitle}}">{{if .HasSurplus}}{{.SurplusKWh}}{{else}}—{{end}}</td>
-                      <td class="num" title="{{.AverageAwattarTitle}}">{{.AverageAwattar}}</td>
-                      <td class="num" title="{{.EnergyCostTitle}}">{{.EnergyCost}}</td>
-                      <td class="num" title="{{.GridCostTitle}}">{{.GridCost}}</td>
-                      <td class="num amount" title="{{.TotalCostTitle}}">{{.TotalCost}}</td>
-                      <td class="bar-cell" title="{{.WeightTitle}}"><div class="bar"><span style="width: {{.ChartPercent}}%;"></span></div></td>
-                    </tr>
+        </div>
+        {{if .ParkingMsg}}<p class="flash {{if .ParkingOK}}ok{{end}}">{{.ParkingMsg}}</p>{{end}}
+        {{if .Detail.Summary.Partial}}<div class="notice warn"><strong>Messdaten unvollständig · Teilmonat:</strong> Werte beginnen nicht am Monatsanfang; bitte vor dem Teilen prüfen.</div>{{end}}
+        {{if .Detail.Summary.Month}}
+          <section class="panel parking-month-summary">
+            <div class="parking-month-total">
+              <div>
+                <span class="metric-label">Gesamt</span>
+                <strong>{{.Detail.Summary.TotalCost}}</strong>
+              </div>
+              <span class="pill {{if .Detail.Summary.Paid}}ok{{else if .Detail.Summary.Overdue}}dringend{{end}}">{{.Detail.Summary.PaidLabel}}</span>
+            </div>
+
+            <dl class="parking-month-essential">
+              <div><dt>Verbrauch</dt><dd>{{.Detail.Summary.KWh}}</dd></div>
+              <div><dt>Netzgebühr</dt><dd>{{.Detail.Summary.GridCost}}</dd></div>
+              <div><dt>Stromkosten</dt><dd>{{.Detail.Summary.EnergyCost}}</dd></div>
+            </dl>
+
+            <div class="parking-month-payment">
+              {{if .Detail.Summary.Paid}}
+                <div class="pay-settled">
+                  <span class="pay-check" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 12.5l2.6 2.6L16.5 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="pay-settled-meta">
+                    <strong>Bezahlt{{if .Detail.Summary.PaidAtLabel}} am {{.Detail.Summary.PaidAtLabel}}{{end}}</strong>
+                    {{if .CanManageParkingPayments}}{{if .Detail.Summary.PaymentMethod}}<span>{{.Detail.Summary.PaymentMethod}}{{if .Detail.Summary.PaymentReference}} · {{.Detail.Summary.PaymentReference}}{{end}}</span>{{end}}{{else}}<span>Zahlung ist markiert.</span>{{end}}
+                  </div>
+                  {{if .CanManageParkingPayments}}
+                    <form class="pay-unmark" method="post" action="/app/parking/month">
+                      <input type="hidden" name="month" value="{{.Detail.Summary.Month}}">
+                      <input type="hidden" name="paid" value="false">
+                      <button class="button pay-ghost" type="submit">Als offen markieren</button>
+                    </form>
                   {{end}}
-                </tbody>
-              </table>
+                </div>
+              {{else if .CanMarkParkingPayment}}
+                <form class="pay-form" method="post" action="/app/parking/month">
+                  <input type="hidden" name="month" value="{{.Detail.Summary.Month}}">
+                  <input type="hidden" name="paid" value="true">
+                  <div class="pay-row">
+                    <p class="muted">{{if .CanManageParkingPayments}}Zahlungseingang für diesen Monat bestätigen.{{else}}Nach der Zahlung können Sie den Monat hier abschließen.{{end}}</p>
+                    <button class="button primary" type="submit">{{if .CanManageParkingPayments}}Bezahlung erhalten{{else}}Als bezahlt markieren{{end}}</button>
+                  </div>
+                  <details class="pay-details">
+                    <summary>Details (optional)</summary>
+                    <div class="pay-fields">
+                      <label>Datum<input type="date" name="paid_at" value="{{.Detail.Summary.PaidAtInput}}" autocomplete="off"></label>
+                      <label>Zahlungsart<input type="text" name="payment_method" value="{{.Detail.Summary.PaymentMethod}}" placeholder="Überweisung" autocomplete="off"></label>
+                      <label class="pay-ref">Referenz<input type="text" name="payment_reference" value="{{.Detail.Summary.PaymentReference}}" placeholder="z. B. Abrechnung Juli" autocomplete="off"></label>
+                    </div>
+                  </details>
+                </form>
+              {{end}}
             </div>
-          {{else}}
-            <p class="empty">Für diesen Monat sind noch keine Stundenwerte gespeichert.</p>
-          {{end}}
-        </section>
-        {{if .Detail.HasSessions}}
-          <section class="panel">
-            <h2>Ladevorgänge</h2>
-            {{template "parkingSessionList" .Detail.Sessions}}
+
+            <details class="parking-month-disclosure">
+              <summary>Kosten aufschlüsseln</summary>
+              <dl class="parking-cost-list">
+                {{if .Detail.Summary.HasSurplus}}<div><dt>PV-Überschuss · {{.Detail.Summary.SurplusKWh}}</dt><dd>{{.Detail.Summary.SurplusCost}}</dd></div>{{end}}
+                <div><dt>Normalladen · {{.Detail.Summary.NormalKWh}}</dt><dd>{{.Detail.Summary.EnergyCost}}</dd></div>
+                <div><dt>Netzgebühr · {{.Detail.GridFeeLabel}}</dt><dd>{{.Detail.Summary.GridCost}}</dd></div>
+                <div><dt>Basis</dt><dd>{{.Detail.Summary.BaseFee}}</dd></div>
+                <div><dt>Ø aWATTar</dt><dd>{{.Detail.Summary.AverageAwattar}}</dd></div>
+                <div><dt>Ø effektiv</dt><dd>{{.Detail.Summary.EffectivePrice}}</dd></div>
+              </dl>
+            </details>
+
+            <details class="parking-month-disclosure">
+              <summary>Stundenwerte · {{.Detail.Summary.HourCount}} Stunden</summary>
+              {{if .Detail.HasHours}}
+                <div class="parking-hour-list">
+                  {{range .Detail.Hours}}
+                    <details class="parking-hour-row">
+                      <summary><span>{{.AtLabel}}</span><span>{{.KWh}}</span><strong>{{.TotalCost}}</strong></summary>
+                      <dl class="parking-hour-details">
+                        <div><dt>Überschuss</dt><dd>{{if .HasSurplus}}{{.SurplusKWh}}{{else}}–{{end}}</dd></div>
+                        <div><dt>aWATTar</dt><dd>{{.AverageAwattar}}</dd></div>
+                        <div><dt>Strom</dt><dd>{{.EnergyCost}}</dd></div>
+                        <div><dt>Netzgebühr</dt><dd>{{.GridCost}}</dd></div>
+                      </dl>
+                    </details>
+                  {{end}}
+                </div>
+              {{else}}
+                <p class="empty">Noch keine Stundenwerte gespeichert.</p>
+              {{end}}
+            </details>
+
+            {{if .Detail.HasSessions}}
+              <details class="parking-month-disclosure">
+                <summary>Ladevorgänge</summary>
+                {{template "parkingSessionList" .Detail.Sessions}}
+              </details>
+            {{end}}
+
+            {{if and .CanManageParkingPayments .Detail.Summary.HasAttachments}}{{template "attachmentStrip" .Detail.Summary}}{{end}}
+            <p class="mini">Messwerte aus Zählerdifferenz und aWATTar-Preis. {{if .Detail.LastSampleLabel}}Letzter Zählerwert: {{.Detail.LastSampleLabel}}.{{end}}</p>
           </section>
         {{end}}
       </section>

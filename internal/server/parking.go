@@ -32,6 +32,16 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	accounting := a.parkingAccounting(r.Context(), tenant)
 	accounting.Months = a.hydrateParkingMonths(tenant.Slug, email, role, accounting.Months)
+	var currentMonth parkingMonthView
+	var olderMonths []parkingMonthView
+	currentMonthHeading := "Neuester Monat"
+	if len(accounting.Months) > 0 {
+		currentMonth = accounting.Months[0]
+		olderMonths = accounting.Months[1:]
+		if currentMonth.Month == time.Now().In(time.Local).Format("2006-01") {
+			currentMonthHeading = "Aktueller Monat"
+		}
+	}
 	live := a.chargingLiveView(r.Context(), tenant, isAdmin, true)
 	a.render(w, "parking", a.withBase(ac, map[string]any{
 		"Title":                    "Parkplatznutzung",
@@ -39,15 +49,19 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"CanMarkParkingPayment":    isAdmin || hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking) || profile.HasPermission(permissionParking),
 		// The parking page is reachable through the explicit per-user parking
 		// permission too, so keep this intentional base-context override.
-		"CanSeeParking": true,
-		"ActivePage":    "parking",
-		"Telemetry":     telemetry,
-		"Accounting":    accounting,
-		"ParkingMsg":    parkingMsg,
-		"ParkingOK":     parkingOK,
-		"Live":          live,
-		"TodayInput":    time.Now().In(time.Local).Format("2006-01-02"),
-		"StatementYear": time.Now().In(time.Local).Year(),
+		"CanSeeParking":       true,
+		"ActivePage":          "parking",
+		"Telemetry":           telemetry,
+		"Accounting":          accounting,
+		"CurrentMonth":        currentMonth,
+		"CurrentMonthHeading": currentMonthHeading,
+		"OlderMonths":         olderMonths,
+		"HasOlderMonths":      len(olderMonths) > 0,
+		"ParkingMsg":          parkingMsg,
+		"ParkingOK":           parkingOK,
+		"Live":                live,
+		"TodayInput":          time.Now().In(time.Local).Format("2006-01-02"),
+		"StatementYear":       time.Now().In(time.Local).Year(),
 	}))
 }
 
@@ -108,11 +122,16 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.NotFound(w, r)
 		return
 	}
+	parkingMsg, parkingOK := parkingMessage(r.URL.Query().Get("month"), "")
 	a.render(w, "parkingMonth", a.withBase(ac, map[string]any{
-		"Title":         "Parkplatznutzung · " + view.MonthLabel,
-		"CanSeeParking": true,
-		"ActivePage":    "parking",
-		"Detail":        view,
+		"Title":                    "Parkplatznutzung · " + view.MonthLabel,
+		"CanSeeParking":            true,
+		"CanManageParkingPayments": hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking),
+		"CanMarkParkingPayment":    hasCapability(role, capabilityPlatformAdmin) || hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking) || profile.HasPermission(permissionParking),
+		"ActivePage":               "parking",
+		"Detail":                   view,
+		"ParkingMsg":               parkingMsg,
+		"ParkingOK":                parkingOK,
 	}))
 }
 
@@ -355,9 +374,10 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac auth
 		http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
 		return
 	}
+	returnPath := "/app/parking/month/" + url.PathEscape(month)
 	payment, err := parkingPaymentFromForm(r.Form, actorEmail)
 	if err != nil {
-		http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, returnPath+"?month=invalid", http.StatusSeeOther)
 		return
 	}
 	if !payment.Paid && !canManagePayment {
@@ -366,19 +386,19 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac auth
 	}
 	attachmentHeaders, err := attachmentFormHeaders(r, maxIssueAttachmentCount, "attachments")
 	if err != nil {
-		http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, returnPath+"?month=invalid", http.StatusSeeOther)
 		return
 	}
 	var uploaded []attachmentRecord
 	if len(attachmentHeaders) > 0 {
 		if a.attachmentStore == nil {
-			http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
+			http.Redirect(w, r, returnPath+"?month=invalid", http.StatusSeeOther)
 			return
 		}
 		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "parking", month, actorEmail, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
 		if err != nil {
 			logError("parking attachment upload failed", err, "tenant", tenant.Slug, "month", month, "actor", redactedEmail(actorEmail))
-			http.Redirect(w, r, "/app/parking?month=invalid", http.StatusSeeOther)
+			http.Redirect(w, r, returnPath+"?month=invalid", http.StatusSeeOther)
 			return
 		}
 	}
@@ -418,7 +438,7 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac auth
 		Summary:    "Monatsstatus geändert",
 		Details:    details,
 	})
-	http.Redirect(w, r, "/app/parking?month=saved", http.StatusSeeOther)
+	http.Redirect(w, r, returnPath+"?month=saved", http.StatusSeeOther)
 }
 
 func (a *app) sendParkingReminders(w http.ResponseWriter, r *http.Request, ac authCtx) {

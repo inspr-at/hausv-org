@@ -5596,23 +5596,27 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 	}
 
 	parkerPage := authedRequest(t, a, "parker@example.com", "/app/parking")
-	if parkerPage.Code != http.StatusOK || !strings.Contains(parkerPage.Body.String(), "Offen 0,80 €") {
+	if parkerPage.Code != http.StatusOK || !strings.Contains(parkerPage.Body.String(), "0,80 €") || !strings.Contains(parkerPage.Body.String(), "OFFEN") {
 		t.Fatalf("parker outstanding page = %d\n%s", parkerPage.Code, parkerPage.Body.String())
 	}
 	adminParking := authedRequest(t, a, "admin@example.com", "/app/parking")
 	adminBody := adminParking.Body.String()
-	// PP20 payment redesign (2026-07-19): the mark-paid form regained OPTIONAL
-	// date/method/reference fields, collapsed behind "Details (optional)" — the
-	// dense always-visible payment UI from before the workspace redesign stays
-	// banned (tables, attachment drop zone).
-	for _, want := range []string{"parking-workspace", "Abrechnung in 2 Schritten", "parking-month-queue", "Nächsten offenen Monat prüfen", "Zahlungsdetails", "parking-detail-2026-06", "pay-form", "Bezahlung erhalten", "Details (optional)", `name="payment_reference"`} {
+	// The overview keeps one current-month summary and moves payment details to
+	// the dedicated month page instead of rendering the same figures twice.
+	for _, want := range []string{"parking-months-panel", "parking-current-month", "Neuester Monat", `/app/parking/month/2026-06`, "Wie wird gerechnet?"} {
 		if !strings.Contains(adminBody, want) {
 			t.Fatalf("parking overview redesign missing %q:\n%s", want, adminBody)
 		}
 	}
-	for _, old := range []string{`parking-month-table`, `<table>`, `month-strip`, `name="attachments"`, "Belege ablegen"} {
+	for _, old := range []string{`class="parking-workspace"`, `id="parking-detail-2026-06"`, `class="parking-month-table"`, `<table>`, `class="month-strip"`, `class="pay-form"`, `name="attachments"`, "Belege ablegen"} {
 		if strings.Contains(adminBody, old) {
 			t.Fatalf("parking overview should not render old dense/payment UI %q:\n%s", old, adminBody)
+		}
+	}
+	adminMonth := authedRequest(t, a, "admin@example.com", "/app/parking/month/2026-06")
+	for _, want := range []string{"parking-month-summary", "Bezahlung erhalten", "Details (optional)", `name="payment_reference"`, "Kosten aufschlüsseln", "Stundenwerte"} {
+		if !strings.Contains(adminMonth.Body.String(), want) {
+			t.Fatalf("parking month redesign missing %q:\n%s", want, adminMonth.Body.String())
 		}
 	}
 	residentMark := authedFormRequest(t, a, "parker@example.com", "/app/parking/month", url.Values{
@@ -5629,7 +5633,7 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 	if err := a.parkingStore.SetMonthPaid("jhw22", "2026-06", false); err != nil {
 		t.Fatalf("reset resident payment: %v", err)
 	}
-	residentParking := authedRequest(t, a, "parker@example.com", "/app/parking")
+	residentParking := authedRequest(t, a, "parker@example.com", "/app/parking/month/2026-06")
 	if residentParking.Code != http.StatusOK || !strings.Contains(residentParking.Body.String(), "Als bezahlt markieren") || strings.Contains(residentParking.Body.String(), "Bezahlung erhalten") {
 		t.Fatalf("resident parking action mismatch = %d\n%s", residentParking.Code, residentParking.Body.String())
 	}
@@ -5648,7 +5652,7 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 	if save.Code != http.StatusSeeOther {
 		t.Fatalf("payment save status = %d, want redirect", save.Code)
 	}
-	if loc := save.Header().Get("Location"); loc != "/app/parking?month=saved" {
+	if loc := save.Header().Get("Location"); loc != "/app/parking/month/2026-06?month=saved" {
 		t.Fatalf("payment save redirect = %q", loc)
 	}
 	state := a.parkingStore.TenantData("jhw22").Months["2026-06"]
@@ -5670,7 +5674,7 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 	if len(attachments) != 1 || attachments[0].ContentType != "application/pdf" {
 		t.Fatalf("parking attachments = %+v", attachments)
 	}
-	paidPage := authedRequest(t, a, "parker@example.com", "/app/parking")
+	paidPage := authedRequest(t, a, "parker@example.com", "/app/parking/month/2026-06")
 	body := paidPage.Body.String()
 	for _, want := range []string{"BEZAHLT", "Zahlung ist markiert."} {
 		if !strings.Contains(body, want) {
