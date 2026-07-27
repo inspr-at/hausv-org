@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.37.1] - 2026-07-27
+
+### Verbessert
+
+- **Der Bankdatei-Import lässt sich auf kleinen Bildschirmen sicherer bedienen.** Zeitraum, Zurück-Aktion und Navigationswege bieten nun auch bei echten 390 Pixeln mindestens 44 Pixel hohe Touch-Ziele.
+
 ## [0.37.0] - 2026-07-27
 
 ### Neu

@@ -704,6 +704,7 @@ const PageTemplates = `
     .side-mark { width: 48px; height: 48px; border-radius: var(--radius-sm); display: grid; place-items: center; color: var(--gold-light); border: 1px solid rgba(255,255,255,.34); background: rgba(255,255,255,.07); text-decoration: none; }
 	    .side-mark:hover { border-color: rgba(231,197,116,.72); background: rgba(255,255,255,.1); color: #f0d58c; }
 	    .side-mark svg { width: 38px; height: 34px; display: block; stroke: currentColor; stroke-width: 2.3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+	    .side-brand-copy { min-width: 0; color: inherit; text-decoration: none; }
 	    .side-title { display: block; font-family: var(--font-serif); font-size: 18px; font-weight: 600; line-height: 1.1; color: #fff; text-decoration: none; }
 	    .side-sub { display: block; margin-top: 5px; font-size: 14px; color: rgba(255,255,255,.72); }
 	    .side-code { display: inline-flex; align-items: center; width: max-content; max-width: 100%; margin-top: 7px; border: 1px solid rgba(231,197,116,.28); border-radius: var(--radius-pill); padding: 2px 8px; color: var(--gold-light); background: rgba(231,197,116,.08); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
@@ -1722,7 +1723,8 @@ const PageTemplates = `
 	      .app-shell { display: block; }
 	      .sidebar { position: sticky; top: 0; z-index: 50; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; height: auto; padding: 10px 14px; box-shadow: 0 10px 28px rgba(23,32,25,.18); }
 	      .side-brand { grid-template-columns: 42px minmax(0,1fr); gap: 10px; align-items: center; padding: 0; min-width: 0; }
-	      .side-mark { width: 42px; height: 42px; }
+	      .side-mark { width: 44px; height: 44px; }
+	      .side-brand-copy { min-height: 44px; display: grid; align-content: center; }
 	      .side-mark svg { width: 34px; height: 30px; }
 	      .side-title { font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	      .side-sub { margin-top: 3px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1749,6 +1751,7 @@ const PageTemplates = `
 	      .logout-form { grid-column: 1 / -1; justify-self: stretch; min-width: 0; }
 	      .logout-button { min-height: 44px; }
       .content-top { height: auto; min-height: 58px; flex-direction: column; align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
+      .content-top .crumb a { min-height: 44px; display: inline-flex; align-items: center; }
       .home-hero { min-height: 176px; align-items: flex-end; padding: 70px 18px 24px; }
       .home-hero::before { inset: 0; background-position: center top; }
       .home-hero::after { background: linear-gradient(180deg, rgba(247,243,234,.28) 0%, rgba(247,243,234,.86) 50%, rgba(247,243,234,.98) 100%); }
@@ -1954,11 +1957,11 @@ const PageTemplates = `
 	      <a class="side-mark" href="/app" aria-label="{{if .IsServiceProvider}}Anliegen{{else}}Hausüberblick{{end}}">
         {{template "tenantBrandMark" .}}
       </a>
-      <div>
-        <a class="side-title" href="/app">{{.Tenant.Name}}</a>
+      <a class="side-brand-copy" href="/app">
+        <span class="side-title">{{.Tenant.Name}}</span>
         <span class="side-sub">{{.Tenant.Address}}</span>
         {{if .Tenant.BrandAbbreviation}}<span class="side-code">{{.Tenant.BrandAbbreviation}}</span>{{end}}
-      </div>
+      </a>
 	    </div>
 	    <input class="nav-toggle" id="portal-nav-toggle" type="checkbox" aria-label="Navigation anzeigen">
 	    <label class="mobile-menu-toggle" for="portal-nav-toggle">Menü · {{if eq .ActivePage "home"}}Überblick{{else if eq .ActivePage "announcements"}}Aushang{{else if eq .ActivePage "events"}}Termine{{else if eq .ActivePage "contacts"}}Kontakte{{else if eq .ActivePage "parking"}}Parkplatz{{else if eq .ActivePage "documents"}}Dokumente{{else if eq .ActivePage "handovers"}}Übergaben{{else if eq .ActivePage "issues"}}Anliegen{{else if eq .ActivePage "abstimmungen"}}Abstimmung{{else if eq .ActivePage "users"}}Benutzer{{else if eq .ActivePage "audit"}}Audit{{else}}Einstellungen{{end}}</label>
@@ -4381,6 +4384,7 @@ const PageTemplates = `
         .payment-import .import-panel-head, .payment-import .preview-head { display: grid; }
         .payment-import .period-form { width: 100%; display: grid; grid-template-columns: minmax(0,1fr) auto; }
         .payment-import .period-form label { min-width: 0; }
+        .payment-import .period-form input, .payment-import .period-form .button, .payment-import .content-top .page-actions .button { min-height: 44px; }
         .payment-import .reference-row { grid-template-columns: 1fr; gap: 3px; }
         .payment-import .upload-form { grid-template-columns: 1fr; }
         .payment-import .upload-form .button { width: 100%; min-height: 46px; }

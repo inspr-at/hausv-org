@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.37.1",
+			Date:     "27. Juli 2026",
+			Kind:     "Zahlungsstatus",
+			Headline: "Der Bankdatei-Import ist auf kleinen Bildschirmen leichter zu bedienen.",
+			Intro:    "Die letzten Aktionsfelder des neuen Ablaufs folgen nun auch bei 390 Pixeln vollständig den großen mobilen Touch-Zielen.",
+			Items: []NoteItem{
+				{Label: "Sicher tippen", Text: "Zeitraum, Zurück-Aktion und Navigationswege bieten mindestens 44 Pixel hohe Trefferflächen."},
+			},
+		},
+		{
 			Version:  "0.37.0",
 			Date:     "27. Juli 2026",
 			Kind:     "Zahlungsstatus",
