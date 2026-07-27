@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.39.0] - 2026-07-27
+
+### Neu
+
+- **Ausgewählte Hausdaten lassen sich kontrolliert weitergeben.** Verwalter und Admins wählen einzelne Datenbereiche, prüfen den Umfang und laden erst danach ein strukturiertes ZIP-Paket herunter.
+- **Jedes Paket ist nachvollziehbar.** Eine lesbare CSV-Datei und ein Manifest mit Version, Zeitpunkt, Datensatzanzahl und SHA-256-Prüfsumme machen die Übergabe reproduzierbar.
+- **Haus- und Personengrenzen bleiben geschützt.** Vorschauen gelten nur 15 Minuten für den erstellenden Zugang, Downloads sind einmalig und erscheinen ohne Fachdaten im Aktivitätsverlauf.
+- **Persönliche Zuordnungen bleiben draußen.** Der Einheitenstatus enthält keine Eigentümer-, Mieter- oder E-Mail-Listen; Parkplatz-Monatswerte sind ausschließlich für Admins auswählbar.
+- **Die Produktgrenze ist sichtbar.** `raw-v0` ist eine neutrale Rohdatenübergabe ohne BMD-/RZL-Zusage, Buchungs-, Steuer-, Mahn- oder Zahlungslogik.
+- **Desktop und Mobil führen durch denselben Dreischritt.** Auswahl, Prüfung und Download bleiben bei 390 Pixeln ohne seitlichen Überlauf und mit klaren nächsten Aktionen verständlich.
+
 ## [0.38.0] - 2026-07-27
 
 ### Neu

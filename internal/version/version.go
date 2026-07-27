@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.39.0",
+			Date:     "27. Juli 2026",
+			Kind:     "Datenübergabe",
+			Headline: "Ausgewählte Hausdaten werden als prüfbares Paket weitergegeben.",
+			Intro:    "Ein kurzer Dreischritt verbindet bewusste Auswahl, klare Vorschau und einen geschützten, nachvollziehbaren Download.",
+			Items: []NoteItem{
+				{Label: "Bewusst auswählen", Text: "Nichts ist vorausgewählt; Verwalter und Admins bestimmen den Datenbereich vor jeder Übergabe."},
+				{Label: "Einfach prüfen", Text: "CSV, Manifest, Datensatzanzahl und SHA-256-Prüfsumme machen den Inhalt transparent und reproduzierbar."},
+				{Label: "Sicher begrenzen", Text: "Vorschau und Download bleiben haus- und personengebunden; raw-v0 erzeugt keine Buchungen und verspricht keine BMD-/RZL-Kompatibilität."},
+			},
+		},
+		{
 			Version:  "0.38.0",
 			Date:     "27. Juli 2026",
 			Kind:     "E-Rechnungen",

@@ -4248,9 +4248,126 @@ const PageTemplates = `
               {{if .CanManageUsers}}<a class="settings-link" href="/app/settings/users"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/></svg></span><span class="settings-link-copy"><strong>Benutzer &amp; Rechte</strong><span>Einladungen und Rollen verwalten</span></span><span class="settings-link-arrow">›</span></a>
               <a class="settings-link" href="/app/settings/parking-access"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/></svg></span><span class="settings-link-copy"><strong>Parkplatz-Zugriff</strong><span>Nutzung freigeben oder entziehen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
               {{if .CanManageDocuments}}<a class="settings-link" href="/app/dokumente"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/></svg></span><span class="settings-link-copy"><strong>Dokumente</strong><span>Unterlagen verwalten</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if .CanManageBuilding}}<a class="settings-link" href="/app/settings/data-export"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M5 19h14"/></svg></span><span class="settings-link-copy"><strong>Datenübergabe</strong><span>Ausgewählte Rohdaten sicher weitergeben</span></span><span class="settings-link-arrow">›</span></a>{{end}}
               {{if .CanManageHandovers}}<a class="settings-link" href="/app/uebergaben"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/></svg></span><span class="settings-link-copy"><strong>Übergaben</strong><span>Protokolle vorbereiten und ablegen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
               {{if .CanViewAudit}}<a class="settings-link" href="/app/audit"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="settings-link-copy"><strong>Aktivitätsverlauf</strong><span>Änderungen nachvollziehen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
               {{if .IsAdmin}}<a class="settings-link" href="/app/parking/settings"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/></svg></span><span class="settings-link-copy"><strong>Parkplatz-Abrechnung</strong><span>Tarife und Abrechnungswerte</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+            </div>
+          </section>
+          {{end}}
+        </div>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "structuredExport"}}
+{{template "appOpen" .}}
+    <style>
+      .raw-export { display: grid; gap: 18px; }
+      .raw-export-head { display: grid; gap: 6px; max-width: 760px; }
+      .raw-export-head .lede { max-width: 690px; }
+      .raw-export-steps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+      .raw-export-step { display: grid; grid-template-columns: 30px minmax(0,1fr); gap: 9px; align-items: center; padding: 11px 12px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: rgba(255,255,255,.55); color: var(--muted); font-size: 12.5px; font-weight: 700; }
+      .raw-export-step b { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--panel-soft); color: var(--gold-ink); font-family: var(--font-serif); font-size: 17px; }
+      .raw-export-grid { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(280px,.85fr); gap: 16px; align-items: start; }
+      .raw-export-card { padding: 20px; }
+      .raw-export-card-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+      .raw-export-card-head h2 { font-size: 23px; }
+      .raw-export-card-head p { margin-top: 4px; color: var(--muted); font-size: 13px; }
+      .raw-export-kicker { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 9px; border-radius: 999px; background: rgba(47,107,74,.1); color: var(--leaf); font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+      .raw-export-options { display: grid; gap: 10px; }
+      .raw-export-option { position: relative; display: grid; grid-template-columns: 26px minmax(0,1fr) auto; gap: 12px; align-items: center; min-height: 78px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: #fff; cursor: pointer; text-transform: none; letter-spacing: normal; font-weight: 400; }
+      .raw-export-option:hover { border-color: rgba(200,153,63,.55); background: rgba(200,153,63,.04); }
+      .raw-export-option input { width: 20px; height: 20px; accent-color: var(--leaf); }
+      .raw-export-option strong { display: block; color: var(--ink); font-family: var(--font-serif); font-size: 18px; line-height: 1.15; overflow-wrap: anywhere; }
+      .raw-export-option small { display: block; margin-top: 3px; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
+      .raw-export-count { min-width: 34px; height: 28px; display: grid; place-items: center; padding: 0 8px; border-radius: 999px; background: var(--panel-soft); color: var(--gold-ink); font-size: 12px; font-weight: 800; }
+      .raw-export-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+      .raw-export-guard { display: grid; gap: 14px; }
+      .raw-export-guard-row { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 11px; align-items: start; }
+      .raw-export-guard-row svg { width: 34px; height: 34px; padding: 7px; border-radius: 50%; background: rgba(200,153,63,.11); color: var(--gold-ink); fill: none; stroke: currentColor; stroke-width: 1.7; }
+      .raw-export-guard-row strong { display: block; font-size: 14px; }
+      .raw-export-guard-row span { display: block; margin-top: 2px; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+      .raw-export-preview { grid-column: 1 / -1; padding: 20px; border-color: rgba(47,107,74,.25); }
+      .raw-export-preview-top { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
+      .raw-export-preview h2 { font-size: 24px; }
+      .raw-export-preview p { color: var(--muted); font-size: 13px; }
+      .raw-export-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 16px 0; }
+      .raw-export-metric { padding: 13px; border-radius: var(--radius-xs); background: var(--panel-soft); }
+      .raw-export-metric strong { display: block; font-family: var(--font-serif); font-size: 24px; }
+      .raw-export-metric span { color: var(--muted); font-size: 11.5px; }
+      .raw-export-selection { display: grid; gap: 8px; margin-bottom: 16px; }
+      .raw-export-selection-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-xs); font-size: 13px; }
+      .raw-export-checksum { overflow-wrap: anywhere; font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 11px !important; }
+      .raw-export-download { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding-top: 16px; border-top: 1px solid var(--line); }
+      .raw-export-download strong { display: block; font-size: 14px; overflow-wrap: anywhere; }
+      @media (max-width: 760px) {
+        .raw-export { gap: 14px; }
+        .raw-export-steps { grid-template-columns: 1fr; gap: 7px; }
+        .raw-export-step { min-height: 48px; }
+        .raw-export-grid { grid-template-columns: 1fr; }
+        .raw-export-card { padding: 16px; }
+        .raw-export-option { grid-template-columns: 24px minmax(0,1fr) auto; padding: 12px; }
+        .raw-export-preview { grid-column: 1; }
+        .raw-export-preview-top, .raw-export-download { display: grid; }
+        .raw-export-summary { grid-template-columns: 1fr 1fr; }
+        .raw-export-metric:last-child { grid-column: 1 / -1; }
+        .raw-export-download .button { width: 100%; }
+      }
+    </style>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Datenübergabe</span></span>
+      </div>
+      <section class="page raw-export">
+        <header class="raw-export-head">
+          <h1>Daten sicher weitergeben</h1>
+          <p class="lede">Sie wählen bewusst aus. hausv.org bündelt nur diese Rohdaten mit Prüfdatei — ohne Buchungen zu erzeugen.</p>
+        </header>
+        <div class="raw-export-steps" aria-label="Ablauf">
+          <div class="raw-export-step"><b>1</b><span>Datenbereiche wählen</span></div>
+          <div class="raw-export-step"><b>2</b><span>Umfang prüfen</span></div>
+          <div class="raw-export-step"><b>3</b><span>Paket herunterladen</span></div>
+        </div>
+        {{if .StructuredExportMsg}}<p class="flash {{if .StructuredExportOK}}ok{{end}}">{{.StructuredExportMsg}}</p>{{end}}
+        <div class="raw-export-grid">
+          <section class="panel raw-export-card">
+            <div class="raw-export-card-head"><div><h2>Was soll ins Paket?</h2><p>Nichts ist vorausgewählt.</p></div><span class="raw-export-kicker">raw-v0</span></div>
+            <form method="post" action="/app/settings/data-export/preview">
+              <div class="raw-export-options">
+                {{range .StructuredExportSources}}
+                <label class="raw-export-option">
+                  <input type="checkbox" name="source" value="{{.Value}}">
+                  <span><strong>{{.Title}}</strong><small>{{.Description}}</small></span>
+                  <span class="raw-export-count">{{.Count}}</span>
+                </label>
+                {{end}}
+              </div>
+              <div class="raw-export-actions"><button class="button primary" type="submit">Auswahl prüfen</button></div>
+            </form>
+          </section>
+          <aside class="panel raw-export-card raw-export-guard">
+            <div class="raw-export-card-head"><div><h2>Was Sie bekommen</h2><p>Ein prüfbares ZIP-Paket.</p></div></div>
+            <div class="raw-export-guard-row"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/></svg><div><strong>Lesbare CSV-Datei</strong><span>UTF-8, Semikolon, stabile Spalten.</span></div></div>
+            <div class="raw-export-guard-row"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg><div><strong>Manifest mit Prüfsumme</strong><span>Version, Zeitpunkt, Anzahl und SHA-256.</span></div></div>
+            <div class="raw-export-guard-row"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 2.8 8 7 10 4.2-2 7-5.5 7-10V6z"/><path d="M9 12h6"/></svg><div><strong>Keine Zielsystem-Zusage</strong><span>Kein BMD-/RZL-Format, keine Steuer- oder Buchungslogik.</span></div></div>
+          </aside>
+          {{with .StructuredExportPreview}}
+          <section class="panel raw-export-preview">
+            <div class="raw-export-preview-top"><div><span class="raw-export-kicker">Bereit</span><h2>Auswahl geprüft</h2><p>Erstellt {{.CreatedAt}} · nur für diesen Zugang · 15 Minuten verfügbar</p></div></div>
+            <div class="raw-export-summary">
+              <div class="raw-export-metric"><strong>{{.Accepted}}</strong><span>Datensätze im CSV</span></div>
+              <div class="raw-export-metric"><strong>{{len .Sources}}</strong><span>gewählte Bereiche</span></div>
+              <div class="raw-export-metric"><strong>{{.Rejected}}</strong><span>nicht übernommen</span></div>
+            </div>
+            <div class="raw-export-selection">
+              {{range .Sources}}<div class="raw-export-selection-row"><strong>{{.Title}}</strong><span>{{.Count}} {{if eq .Count 1}}Datensatz{{else}}Datensätze{{end}}</span></div>{{end}}
+            </div>
+            <p class="raw-export-checksum">CSV SHA-256: {{.CSVChecksum}}</p>
+            <div class="raw-export-download">
+              <div><strong>{{.Filename}}</strong><p>Der Download wird im Aktivitätsverlauf protokolliert und ist einmalig.</p></div>
+              <form method="post" action="/app/settings/data-export/download"><input type="hidden" name="preview_token" value="{{.Token}}"><button class="button primary" type="submit">ZIP herunterladen</button></form>
             </div>
           </section>
           {{end}}

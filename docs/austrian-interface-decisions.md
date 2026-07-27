@@ -44,19 +44,23 @@ strukturierte Übergabe und kein BMD- oder RZL-Importformat. BMD NTCS und RZL
 FIBU werden als getrennte Zieladapter geplant. Der Scope bleibt
 Rohdaten-/Belegübergabe, nicht fertige Buchungssätze.
 
-Geplante Rohdaten:
+Freigegebene Rohdaten:
 
-- Tenant/Haus, Einheit, Zeitraum und interne Referenz
-- Zahlungsstatus und Zahlungsreferenz
-- Dokument-/Anhangsreferenzen zu Belegen oder Dienstleister-Rechnungen
+- Zahlungsstatus der Einheiten mit Tenant/Haus, Einheit und Änderungsdatum
+- Parkplatz-Monatsabrechnungen mit Zeitraum, Betrag, Status und optionaler
+  Zahlungsreferenz
 - Beträge nur als Übergabewerte, nicht als gebuchte Soll/Haben-Sätze
+- keine Eigentümer-, Mieter- oder E-Mail-Listen
 
-Interner Stand:
+Produktiver Stand:
 
 - Profil `manual-csv/raw-v0` als Semikolon-CSV für kontrollierte Übergaben
 - Golden File
   `internal/integrations/testdata/structured-handoff-raw-v0.csv`
 - Formatvertrag `docs/structured-handoff-export.md`
+- geschützte, bewusst leere Auswahl mit Vorschau und einmaligem ZIP-Download
+- Manifest mit Version, Zeitpunkt, Datensatzanzahl und CSV-SHA-256
+- Vorschau an Haus und Person gebunden; Download im Aktivitätsverlauf
 - Konten- und Steuerfelder werden als außerhalb des Produkts abgelehnt
 - keine Behauptung, dass BMD NTCS oder RZL dieses CSV direkt importieren kann
 

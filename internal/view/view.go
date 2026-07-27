@@ -1199,6 +1199,8 @@ func AuditActionLabel(action string) string {
 		return "Anhang entfernt"
 	case store.AuditActionIntegrationImport:
 		return "Integration importiert"
+	case store.AuditActionIntegrationExport:
+		return "Rohdaten exportiert"
 	case store.AuditActionHandoverCreate:
 		return "Übergabe angelegt"
 	case store.AuditActionHandoverConfirm:

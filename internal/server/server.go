@@ -774,6 +774,9 @@ type app struct {
 
 	ebInterfaceImportMu       sync.Mutex
 	ebInterfaceImportPreviews map[string]ebInterfaceImportPreview
+
+	structuredExportMu       sync.Mutex
+	structuredExportPreviews map[string]structuredExportPreview
 }
 
 type parkingTelemetry struct {
@@ -919,6 +922,9 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /app/settings/payments/import", a.page(a.paymentImportPage))
 	mux.HandleFunc("POST /app/settings/payments/import/preview", a.action(a.previewPaymentImport))
 	mux.HandleFunc("POST /app/settings/payments/import/apply", a.action(a.applyPaymentImport))
+	mux.HandleFunc("GET /app/settings/data-export", a.authed(capabilityManageBuilding, a.structuredExportPage))
+	mux.HandleFunc("POST /app/settings/data-export/preview", a.authedAction(capabilityManageBuilding, a.previewStructuredExport))
+	mux.HandleFunc("POST /app/settings/data-export/download", a.authedAction(capabilityManageBuilding, a.downloadStructuredExport))
 	mux.HandleFunc("GET /app/settings/profile", a.page(a.profileSettings))
 	mux.HandleFunc("POST /app/settings/profile", a.action(a.updateProfileSettings))
 	mux.HandleFunc("GET /app/settings/notifications", a.page(a.notificationSettings))

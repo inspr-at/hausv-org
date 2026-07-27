@@ -24,7 +24,7 @@ Feldgrenzen geprueft sind.
 | --- | --- | --- | --- | --- |
 | camt.053 | `camt.053.001.02`, `camt.053.001.08` | synthetische 2009- und 2019-Fixtures | geschützter Vorschau-/Übernahmefluss implementiert und getestet | Primärer Zahlungsstatus-Import; reale/anonymisierte Bankdatei ist zusätzliche Profilabdeckung, kein Human-Gate |
 | camt.054 | `.08` mit synthetischer Repository-Fixture getestet; für `.02` nur Namespace akzeptiert | synthetisches 2019-Golden-File für `.08`; keines für `.02` | intern implementiert/getestet; keine produktive Upload-UI | `.02` bleibt bis Fixture und Golden File unverifiziert |
-| Neutrale Übergabe | `manual-csv/raw-v0` | Golden File vorhanden | intern implementiert/getestet; keine produktive Export-UI | Keine BMD-/RZL-Kompatibilitätsbehauptung, keine Buchungssätze |
+| Neutrale Übergabe | `manual-csv/raw-v0` | Golden File und Paket-/Manifest-Tests vorhanden | geschützte Auswahl, Vorschau und einmaliger ZIP-Download produktiv | Mandanten-/Personenbindung, Audit, keine BMD-/RZL-Kompatibilitätsbehauptung oder Buchungssätze |
 | BMD NTCS | noch kein Zielvertrag | keines | geplant | Erst mit offizieller Importbeschreibung oder betreibereigener Vorlage als Zieladapter bauen |
 | RZL FIBU | offizielle Import-Schnittstelle, Stand Juli 2026; Nutzung laut Handbuch nur für berechtigte RZL-Nutzer | noch keines | geplant | Erst mit autorisiertem Betreiberzugang oder von RZL freigegebener Spezifikation als Zieladapter bauen |
 | ebInterface | 6.0 priorisiert, 5.0 Fallback | synthetische, offiziell schema-validierte 5.0- und 6.0-Fixtures | geschützter Vorschau-/Ablagefluss implementiert und getestet | Empfang und Ablage, nicht buchen; 6.1 bleibt ein separates Folgeprofil |
