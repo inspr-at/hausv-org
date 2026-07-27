@@ -128,6 +128,54 @@ func TestSetTenantMembershipDoesNotLeakToOtherHouseParity(t *testing.T) {
 	}
 }
 
+func TestMutateTenantPermissionsIsScopedAndPreservesOtherBitsParity(t *testing.T) {
+	for name, build := range profileBackends() {
+		t.Run(name, func(t *testing.T) {
+			s := build(t)
+			profile := twoHouseProfile()
+			profile.Permissions = []string{"documents"}
+			profile.TenantMemberships["haus-b"] = TenantMembership{Role: RoleOwner, Permissions: []string{"billing"}}
+			if _, err := s.Add(profile); err != nil {
+				t.Fatalf("add: %v", err)
+			}
+
+			updated, ok, err := s.MutateTenantPermissions("anna@example.com", "jhw22", func(permissions []string) []string {
+				return append(permissions, PermissionParking)
+			})
+			if err != nil || !ok {
+				t.Fatalf("grant: ok=%v err=%v", ok, err)
+			}
+			jhw22 := updated.ForTenant("jhw22")
+			if !jhw22.HasPermission(PermissionParking) || !jhw22.HasPermission("documents") || jhw22.Role != RoleRenter {
+				t.Fatalf("jhw22 permission mutation damaged membership: %+v", jhw22)
+			}
+			other := updated.ForTenant("haus-b")
+			if !other.HasPermission("billing") || other.HasPermission(PermissionParking) || other.Role != RoleOwner {
+				t.Fatalf("other house changed: %+v", other)
+			}
+
+			updated, ok, err = s.MutateTenantPermissions("anna@example.com", "jhw22", func(permissions []string) []string {
+				out := []string{}
+				for _, permission := range permissions {
+					if permission != PermissionParking {
+						out = append(out, permission)
+					}
+				}
+				return out
+			})
+			if err != nil || !ok {
+				t.Fatalf("revoke: ok=%v err=%v", ok, err)
+			}
+			if effective := updated.ForTenant("jhw22"); effective.HasPermission(PermissionParking) || !effective.HasPermission("documents") {
+				t.Fatalf("revoke lost unrelated permission: %+v", effective)
+			}
+			if _, ok, err := s.MutateTenantPermissions("nobody@example.com", "jhw22", func(p []string) []string { return p }); err != nil || ok {
+				t.Fatalf("unknown person: ok=%v err=%v", ok, err)
+			}
+		})
+	}
+}
+
 // Removing someone from one house must keep them in the others; only the last
 // house removes the record entirely.
 func TestRemoveTenantIsHouseScopedParity(t *testing.T) {

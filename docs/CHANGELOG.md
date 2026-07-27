@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.35.0] - 2026-07-27
+
+### Verbessert
+
+- **Die Parkplatz-Verwaltung beginnt mit vier klaren Aufgaben.** Zugriff, Abrechnung, Laderegeln und Telegram sind direkt erreichbar, ohne dass alle Formulare gleichzeitig sichtbar werden.
+- **Zugänge lassen sich als kurze Personenliste pflegen.** Name, Rolle, Status und genau die passende Aktion ersetzen wiederholte Feldüberschriften; Beträge und Erinnerungen bleiben bewusst in der Abrechnung.
+- **Tarif und Zahlung folgen einer verständlichen Reihenfolge.** Gültigkeitsdatum und Preise stehen zuerst, Zahlungsstände führen zu den jeweiligen Monaten und Erinnerungen öffnen sich nur bei Bedarf.
+- **Laderegeln erklären ihre Wirkung vor den Grenzwerten.** Automatik, Testbetrieb, Start und sicherer Stopp sind sofort verständlich; sieben technische Werte sowie der Regler-Verlauf bleiben vollständig einklappbar.
+- **Telegram zeigt zuerst seine Einsatzbereitschaft.** Neue Codes und vorhandene Verknüpfungen sind getrennt; eine fehlende Server-Einrichtung wird klar erklärt, ohne gespeicherte Chats anzutasten.
+- **Rollen und Hausgrenzen bleiben zuverlässig gewahrt.** Verwalter sehen keine unerreichbaren Technikwege; Parkplatzrechte werden gezielt für das aktuelle Haus gespeichert und lassen andere Berechtigungen unverändert.
+- **Mobile Arbeitsseiten sind deutlich kürzer.** Zugriff benötigt rund 36 Prozent weniger Strecke; Abrechnung, Laderegeln und Telegram sind gegenüber der bisherigen Sammelseite rund 50 bis 67 Prozent kürzer.
+
 ## [0.34.0] - 2026-07-27
 
 ### Verbessert

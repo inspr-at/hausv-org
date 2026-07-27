@@ -435,7 +435,7 @@ func (a *app) updateChargingSettings(w http.ResponseWriter, r *http.Request, ac 
 	}
 	cfg, err := chargingControlFromForm(r.Form)
 	if err != nil {
-		http.Redirect(w, r, "/app/parking/settings?charging=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/parking/settings?section=charging&charging=invalid", http.StatusSeeOther)
 		return
 	}
 	if err := a.parkingStore.SetChargingControl(tenant.Slug, cfg); err != nil {
@@ -456,7 +456,7 @@ func (a *app) updateChargingSettings(w http.ResponseWriter, r *http.Request, ac 
 			"shadow":  strconv.FormatBool(cfg.ShadowMode),
 		},
 	})
-	http.Redirect(w, r, "/app/parking/settings?charging=saved", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/parking/settings?section=charging&charging=saved", http.StatusSeeOther)
 }
 
 func chargingControlFromForm(values url.Values) (chargingControlSettings, error) {
@@ -506,7 +506,7 @@ func chargingControlFromForm(values url.Values) (chargingControlSettings, error)
 func (a *app) createTelegramLinkCode(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
 	if a.telegramStore == nil {
-		http.Redirect(w, r, "/app/parking/settings?charging=tgerror", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/parking/settings?section=telegram&charging=tgerror", http.StatusSeeOther)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -516,7 +516,7 @@ func (a *app) createTelegramLinkCode(w http.ResponseWriter, r *http.Request, ac 
 	target := normalizeEmail(r.Form.Get("email"))
 	code, err := a.telegramStore.CreateLinkCode(target, email, 24*time.Hour)
 	if err != nil {
-		http.Redirect(w, r, "/app/parking/settings?charging=tgerror", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/parking/settings?section=telegram&charging=tgerror", http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{
@@ -528,13 +528,13 @@ func (a *app) createTelegramLinkCode(w http.ResponseWriter, r *http.Request, ac 
 		TargetID:   target,
 		Summary:    "Telegram-Verknüpfungscode erzeugt",
 	})
-	http.Redirect(w, r, "/app/parking/settings?charging=tgcode&tgcode="+url.QueryEscape(code)+"&tgmail="+url.QueryEscape(target)+"#telegram", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/parking/settings?section=telegram&charging=tgcode&tgcode="+url.QueryEscape(code)+"&tgmail="+url.QueryEscape(target)+"#telegram", http.StatusSeeOther)
 }
 
 func (a *app) unlinkTelegramChat(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
 	if a.telegramStore == nil {
-		http.Redirect(w, r, "/app/parking/settings?charging=tgerror", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/parking/settings?section=telegram&charging=tgerror", http.StatusSeeOther)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -543,11 +543,11 @@ func (a *app) unlinkTelegramChat(w http.ResponseWriter, r *http.Request, ac auth
 	}
 	chatID, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("chat_id")), 10, 64)
 	if err != nil {
-		http.Redirect(w, r, "/app/parking/settings?charging=tgerror", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/parking/settings?section=telegram&charging=tgerror", http.StatusSeeOther)
 		return
 	}
 	if err := a.telegramStore.Unlink(chatID); err != nil {
-		http.Redirect(w, r, "/app/parking/settings?charging=tgerror", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/parking/settings?section=telegram&charging=tgerror", http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{
@@ -559,7 +559,7 @@ func (a *app) unlinkTelegramChat(w http.ResponseWriter, r *http.Request, ac auth
 		TargetID:   tenant.Slug,
 		Summary:    "Telegram-Chat getrennt",
 	})
-	http.Redirect(w, r, "/app/parking/settings?charging=tgunlinked#telegram", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/parking/settings?section=telegram&charging=tgunlinked#telegram", http.StatusSeeOther)
 }
 
 func chargingSettingsMessage(code string) (string, bool) {

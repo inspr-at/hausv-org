@@ -461,6 +461,39 @@ func (s *InviteStore) SetTenantMembership(email string, tenantSlug string, role 
 	})
 }
 
+func (s *InviteStore) MutateTenantPermissions(email string, tenantSlug string, fn func([]string) []string) (UserProfile, bool, error) {
+	email = textutil.Email(email)
+	tenantSlug = textutil.Slug(tenantSlug)
+	if email == "" || tenantSlug == "" || fn == nil {
+		return UserProfile{}, false, fmt.Errorf("invalid membership permission target")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.data.Invites {
+		if textutil.Email(s.data.Invites[i].Email) != email {
+			continue
+		}
+		profile := &s.data.Invites[i]
+		if !profile.HasTenant(tenantSlug) {
+			return UserProfile{}, false, nil
+		}
+		effective := profile.ForTenant(tenantSlug)
+		materializeMemberships(profile)
+		membership := profile.TenantMemberships[tenantSlug]
+		if NormalizeRole(membership.Role) == "" {
+			membership.Role = effective.Role
+		}
+		membership.Permissions = NormalizePermissions(fn(effective.Permissions))
+		profile.TenantMemberships[tenantSlug] = membership
+		syncProfileDefaults(profile)
+		if err := s.saveLocked(); err != nil {
+			return UserProfile{}, false, err
+		}
+		return *profile, true, nil
+	}
+	return UserProfile{}, false, nil
+}
+
 // materializeMemberships gives every house the person belongs to an explicit
 // membership, resolved from what is effective right now. Afterwards the flat
 // top-level fields are only a default for houses that do not exist yet, and can

@@ -4881,70 +4881,102 @@ const PageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
+{{define "parkingAdminNav"}}
+  <nav class="pk-nav{{if not .CanManageParkingConfig}} pk-nav-one{{else if not .CanManageUsers}} pk-nav-three{{end}}" aria-label="Parkplatz-Verwaltung">
+    {{if .CanManageUsers}}<a class="pk-nav-item{{if eq .ParkingSection "access"}} active{{end}}" href="/app/settings/parking-access"><span class="pk-nav-icon"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><path d="M3 20a5 5 0 0 1 10 0M15 12h6M18 9v6"/></svg></span><strong>Zugriff</strong><span>Personen</span></a>{{end}}
+    {{if .CanManageParkingConfig}}
+    <a class="pk-nav-item{{if eq .ParkingSection "accounting"}} active{{end}}" href="/app/parking/settings?section=accounting"><span class="pk-nav-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg></span><strong>Abrechnung</strong><span>Tarif &amp; Zahlung</span></a>
+    <a class="pk-nav-item{{if eq .ParkingSection "charging"}} active{{end}}" href="/app/parking/settings?section=charging"><span class="pk-nav-icon"><svg viewBox="0 0 24 24"><path d="m13 2-7 12h6l-1 8 7-12h-6z"/></svg></span><strong>Laderegeln</strong><span>Automatik</span></a>
+    <a class="pk-nav-item{{if eq .ParkingSection "telegram"}} active{{end}}" href="/app/parking/settings?section=telegram"><span class="pk-nav-icon"><svg viewBox="0 0 24 24"><path d="m3 11 18-8-6 18-3-7zM12 14l5-6"/></svg></span><strong>Telegram</strong><span>Verknüpfung</span></a>
+    {{end}}
+  </nav>
+{{end}}
+
 {{define "parkingAccessSettings"}}
 {{template "appOpen" .}}
     <style>
-      .parking-access .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
-      .parking-access .access-table { width: 100%; border-collapse: collapse; }
-      .parking-access .access-table th, .parking-access .access-table td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
-      .parking-access .access-table th { color: var(--gold-ink); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
-      .parking-access .person { display: grid; gap: 2px; min-width: 0; }
-      .parking-access .person strong { font-family: var(--font-serif); font-size: 17px; overflow-wrap: anywhere; }
-      .parking-access .person span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
-      .parking-access .actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-      .parking-access .access-flash { margin: 0 0 14px; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
-      .parking-access .access-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
-      .parking-access .access-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
+      .parking-access { display: grid; gap: 22px; max-width: 920px; }
+      .pk-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+      .pk-nav-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .pk-nav-one { grid-template-columns: minmax(180px, 260px); }
+      .pk-nav-item { min-width: 0; min-height: 92px; padding: 13px 12px 11px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); text-decoration: none; display: grid; justify-items: start; align-content: center; gap: 2px; position: relative; transition: border-color .15s ease, background .15s ease; }
+      .pk-nav-item:hover { border-color: rgba(200,153,63,.52); background: var(--panel-soft); }
+      .pk-nav-item.active { border-color: rgba(200,153,63,.76); background: rgba(200,153,63,.07); box-shadow: inset 0 -3px var(--gold); }
+      .pk-nav-item strong { font-size: 14px; }
+      .pk-nav-item > span:last-child { color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+      .pk-nav-icon { width: 22px; height: 22px; margin-bottom: 4px; color: var(--gold-ink); }
+      .pk-nav-icon svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .parking-access .panel { padding: 0; overflow: hidden; }
+      .access-head { padding: 18px 20px 14px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+      .access-head h2 { margin: 0; font-size: 20px; }
+      .access-head span { color: var(--muted); font-size: 12.5px; }
+      .access-list { display: grid; }
+      .access-row { display: grid; grid-template-columns: minmax(220px, 1fr) 126px 132px minmax(106px, auto); align-items: center; gap: 14px; padding: 15px 20px; border-top: 1px solid var(--line); }
+      .access-row:first-child { border-top: 0; }
+      .access-row:hover { background: rgba(250,247,239,.6); }
+      .access-person { display: flex; align-items: center; gap: 11px; min-width: 0; }
+      .access-avatar { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-family: var(--font-serif); font-size: 15px; }
+      .access-person-copy { display: grid; min-width: 0; }
+      .access-person-copy strong { font-family: var(--font-serif); font-size: 16.5px; overflow-wrap: anywhere; }
+      .access-person-copy span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+      .access-action { justify-self: end; margin: 0; }
+      .access-action .button { min-width: 102px; min-height: 42px; margin: 0; }
+      .access-locked { justify-self: end; color: var(--soft); font-size: 12px; line-height: 1.35; text-align: right; }
+      .access-flash { margin: 0; padding: 11px 15px; border-radius: 9px; font-size: 13.5px; font-weight: 650; border: 1px solid transparent; }
+      .access-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
+      .access-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
       @media (max-width: 680px) {
-        .parking-access .access-table, .parking-access .access-table tbody, .parking-access .access-table tr, .parking-access .access-table td { display: block; width: 100%; min-width: 0; }
-        .parking-access .access-table thead { display: none; }
-        .parking-access .access-table tr { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; background: var(--panel-soft); }
-        .parking-access .access-table td { border-bottom: 0; padding: 7px 0; }
-        .parking-access .access-table td::before { content: attr(data-label); display: block; color: var(--gold-ink); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
-        .parking-access .actions { justify-content: flex-start; }
+        .parking-access { gap: 17px; }
+        .pk-nav { grid-template-columns: repeat(4, minmax(72px, 1fr)); gap: 6px; overflow-x: auto; padding: 0 1px 5px; scrollbar-width: none; }
+        .pk-nav-three { grid-template-columns: repeat(3, minmax(92px, 1fr)); }
+        .pk-nav-one { grid-template-columns: minmax(0, 1fr); }
+        .pk-nav::-webkit-scrollbar { display: none; }
+        .pk-nav-item { min-height: 78px; padding: 10px 8px 9px; }
+        .pk-nav-item strong { font-size: 12.5px; }
+        .pk-nav-item > span:last-child { display: none; }
+        .pk-nav-icon { width: 19px; height: 19px; }
+        .access-head { padding: 15px 16px 12px; }
+        .access-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; padding: 14px 16px; }
+        .access-person { grid-column: 1 / -1; }
+        .access-row > .role-pill { justify-self: start; }
+        .access-row > .pill { justify-self: end; }
+        .access-action, .access-locked { grid-column: 1 / -1; justify-self: stretch; text-align: left; }
+        .access-action .button { width: 100%; min-height: 44px; }
       }
     </style>
     <main class="app-main">
       <div class="content-top">
-        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz-Zugriff</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a><form method="post" action="/app/parking/reminders"><input type="hidden" name="return_to" value="parking_access"><button class="button" type="submit">Erinnerungen senden</button></form></div>
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz</span></span>
+        <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a><a class="button" href="/app/parking">Parkplatz öffnen</a></div>
       </div>
       <section class="page parking-access">
         <div>
-          <h1>Parkplatz-Zugriff</h1>
-          <p class="lede">Berechtigungen für die private Stellplatz- und Ladeabrechnung.</p>
+          <h1>Parkplatz verwalten</h1>
+          <p class="lede">Zugriff, Abrechnung und Laden – jeweils dort, wo es hingehört.</p>
         </div>
-        <section class="panel">
-          {{if .AccessMsg}}<p class="access-flash{{if .AccessOK}} ok{{else}} warn{{end}}">{{.AccessMsg}}</p>{{end}}
+        {{template "parkingAdminNav" .}}
+        {{if .AccessMsg}}<p class="access-flash{{if .AccessOK}} ok{{else}} warn{{end}}" role="status">{{.AccessMsg}}</p>{{end}}
+        <section class="panel" aria-labelledby="access-title">
+          <div class="access-head"><h2 id="access-title">Wer darf den Parkplatz nutzen?</h2><span>{{len .AccessRows}} Personen</span></div>
           {{if .HasAccessRows}}
-            <table class="access-table" aria-label="Parkplatz-Zugriff">
-              <thead><tr><th>Person</th><th>Rolle</th><th>Status</th><th>Offen</th><th>Quelle</th><th></th></tr></thead>
-              <tbody>
-                {{range .AccessRows}}
-                <tr>
-                  <td data-label="Person"><span class="person"><strong>{{.DisplayName}}</strong><span>{{.Email}}</span></span></td>
-                  <td data-label="Rolle"><span class="role-pill {{.RoleClass}}">{{.Role}}</span></td>
-                  <td data-label="Status">{{if .ParkingChecked}}<span class="pill ok">Freigegeben</span>{{else}}<span class="pill">Kein Zugriff</span>{{end}}</td>
-                  <td data-label="Offen">{{if .HasOutstanding}}<span class="pill">{{.OutstandingBalance}}</span>{{else}}<span class="mini">-</span>{{end}}</td>
-                  <td data-label="Quelle">{{if .Editable}}<span class="mini">Portal</span>{{else}}<span class="mini">Konfiguration</span>{{end}}</td>
-                  <td data-label="Aktion">
-                    <div class="actions">
-                      {{if .ParkingChecked}}<a class="button small" href="/app/parking/export/{{$.StatementYear}}?user={{.Email}}">CSV</a>{{end}}
-                      {{if and .Editable (or $.ServiceProviderAccessEnabled (ne .Role "Dienstleister")) (or $.IsAdmin (ne .Role "Admin"))}}
-                        <form method="post" action="/app/settings/parking-access">
-                          <input type="hidden" name="email" value="{{.Email}}">
-                          <input type="hidden" name="parking" value="{{if .ParkingChecked}}0{{else}}1{{end}}">
-                          <button class="button small" type="submit">{{if .ParkingChecked}}Entziehen{{else}}Freigeben{{end}}</button>
-                        </form>
-                      {{else}}
-                        <span class="mini">Schreibgeschützt</span>
-                      {{end}}
-                    </div>
-                  </td>
-                </tr>
-                {{end}}
-              </tbody>
-            </table>
+            <div class="access-list">
+              {{range .AccessRows}}
+                <article class="access-row">
+                  <span class="access-person"><span class="access-avatar">{{.Initials}}</span><span class="access-person-copy"><strong>{{.DisplayName}}</strong><span>{{.Email}}</span></span></span>
+                  <span class="role-pill {{.RoleClass}}">{{.Role}}</span>
+                  {{if .ParkingChecked}}<span class="pill ok">Freigegeben</span>{{else}}<span class="pill">Kein Zugriff</span>{{end}}
+                  {{if and .Editable (or $.ServiceProviderAccessEnabled (ne .Role "Dienstleister")) (or $.IsAdmin (ne .Role "Admin"))}}
+                    <form class="access-action" method="post" action="/app/settings/parking-access">
+                      <input type="hidden" name="email" value="{{.Email}}">
+                      <input type="hidden" name="parking" value="{{if .ParkingChecked}}0{{else}}1{{end}}">
+                      <button class="button small{{if not .ParkingChecked}} primary{{end}}" type="submit">{{if .ParkingChecked}}Entziehen{{else}}Freigeben{{end}}</button>
+                    </form>
+                  {{else}}
+                    <span class="access-locked">Aus Konfiguration<br>Schreibgeschützt</span>
+                  {{end}}
+                </article>
+              {{end}}
+            </div>
           {{else}}
             {{template "emptyState" .AccessRowsEmpty}}
           {{end}}
@@ -4957,8 +4989,19 @@ const PageTemplates = `
 {{define "parkingSettings"}}
 {{template "appOpen" .}}
     <style>
-      .pk-set { display: grid; gap: 24px; max-width: 760px; }
+      .pk-set { display: grid; gap: 22px; max-width: 920px; }
       .pk-set .panel { display: grid; gap: 16px; }
+      .pk-set .settings-card { max-width: none; }
+      .pk-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+      .pk-nav-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .pk-nav-one { grid-template-columns: minmax(180px, 260px); }
+      .pk-nav-item { min-width: 0; min-height: 92px; padding: 13px 12px 11px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); text-decoration: none; display: grid; justify-items: start; align-content: center; gap: 2px; position: relative; transition: border-color .15s ease, background .15s ease; }
+      .pk-nav-item:hover { border-color: rgba(200,153,63,.52); background: var(--panel-soft); }
+      .pk-nav-item.active { border-color: rgba(200,153,63,.76); background: rgba(200,153,63,.07); box-shadow: inset 0 -3px var(--gold); }
+      .pk-nav-item strong { font-size: 14px; }
+      .pk-nav-item > span:last-child { color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+      .pk-nav-icon { width: 22px; height: 22px; margin-bottom: 4px; color: var(--gold-ink); }
+      .pk-nav-icon svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
       .pk-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
       .pk-head h2 { margin: 0; }
       .pk-head .muted { margin: 5px 0 0; max-width: 52ch; }
@@ -4982,6 +5025,32 @@ const PageTemplates = `
       .pk-actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap; }
       .pk-actions .mini { margin-right: auto; }
       .pk-set .button { width: auto; margin: 0; padding: 11px 24px; }
+      .pk-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .pk-overview-item { min-height: 78px; padding: 13px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); display: grid; align-content: center; gap: 4px; }
+      .pk-overview-item span { color: var(--muted); font-size: 12px; }
+      .pk-overview-item strong { font-family: var(--font-serif); font-size: 17px; }
+      .pk-flow { display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+      .pk-flow-row { min-height: 58px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); color: var(--ink); text-decoration: none; background: var(--panel-soft); }
+      .pk-flow-row:first-child { border-top: 0; }
+      .pk-flow-step { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: #fff; font-size: 12px; font-weight: 750; }
+      .pk-flow-copy { display: grid; min-width: 0; }
+      .pk-flow-copy strong { font-size: 14px; }
+      .pk-flow-copy span { color: var(--muted); font-size: 12.5px; }
+      .pk-flow-arrow { margin-left: auto; color: var(--gold-ink); font-size: 21px; }
+      details.pk-disclosure { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
+      details.pk-disclosure > summary { min-height: 54px; padding: 12px 15px; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 11px; font-weight: 700; color: var(--ink); }
+      details.pk-disclosure > summary::-webkit-details-marker { display: none; }
+      details.pk-disclosure > summary::after { content: "›"; margin-left: auto; color: var(--gold-ink); font-size: 23px; transform: rotate(90deg); transition: transform .15s ease; }
+      details.pk-disclosure[open] > summary::after { transform: rotate(-90deg); }
+      details.pk-disclosure[open] > summary { border-bottom: 1px solid var(--line); }
+      .pk-disclosure-note { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 600; }
+      details.pk-disclosure > summary::after { margin-left: 0; }
+      .pk-disclosure-body { padding: 14px; display: grid; gap: 13px; }
+      .pk-rule-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .pk-rule { min-height: 68px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255,255,255,.55); display: grid; gap: 3px; }
+      .pk-rule strong { font-size: 13.5px; }
+      .pk-rule span { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+      .pk-safety { border-color: rgba(47,107,74,.28); background: rgba(47,107,74,.06); }
       .pk-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
       .pk-strip .mini { display: inline-flex; align-items: center; min-height: 26px; padding: 2px 11px; border: 1px solid var(--line); border-radius: var(--radius-pill); background: var(--panel-soft); color: var(--muted); font-weight: 600; }
       .pk-events { display: grid; gap: 6px; max-height: 360px; overflow-y: auto; }
@@ -5000,32 +5069,58 @@ const PageTemplates = `
       .pk-chat-meta strong { display: block; font-size: 14px; }
       .pk-chat-meta span { color: var(--muted); font-size: 12.5px; }
       .pk-chat form { margin-left: auto; }
-      .pk-chat .button { padding: 8px 14px; font-size: 13px; }
+      .pk-chat .button { min-height: 42px; padding: 8px 14px; font-size: 13px; }
+      .pk-status.panel { padding: 0; gap: 0; }
+      .pk-status > summary { background: var(--panel); }
+      .pk-status .pk-disclosure-body { background: var(--panel-soft); }
+      .pk-telegram-state { padding: 13px 15px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 11px; background: rgba(47,107,74,.07); border: 1px solid rgba(47,107,74,.22); }
+      .pk-telegram-state.warn { background: rgba(150,40,40,.055); border-color: rgba(150,40,40,.18); }
+      .pk-telegram-state-copy { display: grid; gap: 2px; }
+      .pk-telegram-state-copy strong { font-size: 14px; }
+      .pk-telegram-state-copy span { color: var(--muted); font-size: 12.5px; }
       @media (max-width: 620px) {
+        .pk-set { gap: 17px; }
+        .pk-nav { grid-template-columns: repeat(4, minmax(72px, 1fr)); gap: 6px; overflow-x: auto; padding: 0 1px 5px; scrollbar-width: none; }
+        .pk-nav-three { grid-template-columns: repeat(3, minmax(92px, 1fr)); }
+        .pk-nav-one { grid-template-columns: minmax(0, 1fr); }
+        .pk-nav::-webkit-scrollbar { display: none; }
+        .pk-nav-item { min-height: 78px; padding: 10px 8px 9px; }
+        .pk-nav-item strong { font-size: 12.5px; }
+        .pk-nav-item > span:last-child { display: none; }
+        .pk-nav-icon { width: 19px; height: 19px; }
         .pk-fields, .pk-fields.cols-3, .pk-toggles { grid-template-columns: 1fr; }
+        .pk-overview, .pk-rule-summary { grid-template-columns: 1fr; }
         .pk-inline { grid-template-columns: 1fr; }
         .pk-actions { justify-content: stretch; }
         .pk-set .button { width: 100%; }
         .pk-actions .mini { margin-right: 0; }
+        .pk-disclosure-note { display: none; }
+        .pk-event { grid-template-columns: 80px auto; }
+        .pk-event span:last-child { grid-column: 1 / -1; }
+        .pk-chat { align-items: flex-start; flex-wrap: wrap; }
+        .pk-chat form { width: 100%; margin-left: 48px; }
       }
     </style>
     <main class="app-main">
       <div class="content-top">
-        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz-Abrechnung</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a><a class="button" href="/app/parking">Zur Parkplatznutzung</a></div>
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz</span></span>
+        <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a><a class="button" href="/app/parking">Parkplatz öffnen</a></div>
       </div>
       <section class="page pk-set">
         <div>
-          <h1>Parkplatz-Abrechnung</h1>
-          <p class="lede">Tarif, Laderegelung und Benachrichtigungen für Parkplatz 20.</p>
+          <h1>Parkplatz verwalten</h1>
+          <p class="lede">Zugriff, Abrechnung und Laden – jeweils dort, wo es hingehört.</p>
         </div>
+        {{template "parkingAdminNav" .}}
 
-        <section class="panel settings-card">
+        {{if .SectionAccounting}}
+        <section class="panel settings-card" id="abrechnung">
           <div class="pk-head">
             <div>
-              <h2>Tarif</h2>
-              <p class="muted">Preise gelten ab dem Gültigkeitsdatum; ältere Monate behalten ihren Tarif.</p>
+              <h2>Tarif &amp; Gültigkeit</h2>
+              <p class="muted">Ein neuer Tarif gilt erst ab dem gewählten Datum. Bereits abgerechnete Monate bleiben unverändert.</p>
             </div>
+            <span class="pill ok">Aktiv ab {{.Accounting.EffectiveFromLabel}}</span>
           </div>
           {{if .SettingsMsg}}<p class="flash {{if .SettingsOK}}ok{{end}}">{{.SettingsMsg}}</p>{{end}}
           <form class="pk-form" method="post" action="/app/parking/settings">
@@ -5049,20 +5144,44 @@ const PageTemplates = `
             </div>
           </form>
           {{if .Accounting.HasTariffs}}
-            <div class="legend" aria-label="Tarifhistorie">
-              {{range .Accounting.Tariffs}}
-                <div><strong>{{.EffectiveFrom}}</strong><span>{{.GridFee}} · Basis {{.BaseFee}}</span></div>
-              {{end}}
-            </div>
+            <details class="pk-disclosure">
+              <summary><span>Frühere Tarife</span><span class="pk-disclosure-note">{{len .Accounting.Tariffs}} Einträge</span></summary>
+              <div class="pk-disclosure-body"><div class="legend" aria-label="Tarifhistorie">
+                {{range .Accounting.Tariffs}}<div><strong>{{.EffectiveFrom}}</strong><span>{{.GridFee}} · Basis {{.BaseFee}}</span></div>{{end}}
+              </div></div>
+            </details>
           {{end}}
         </section>
 
+        <section class="panel settings-card" aria-labelledby="payment-flow-title">
+          <div class="pk-head">
+            <div>
+              <h2 id="payment-flow-title">Monate &amp; Zahlungen</h2>
+              <p class="muted">Vom Monatsbetrag bis zur Erinnerung in einer nachvollziehbaren Reihenfolge.</p>
+            </div>
+          </div>
+          <div class="pk-flow">
+            <div class="pk-flow-row"><span class="pk-flow-step">1</span><span class="pk-flow-copy"><strong>Tarif und Zeitraum</strong><span>Oben festlegen, ab wann neue Preise gelten.</span></span></div>
+            <a class="pk-flow-row" href="/app/parking?view=months#monate"><span class="pk-flow-step">2</span><span class="pk-flow-copy"><strong>Zahlungsstände prüfen</strong><span>Monate öffnen, Zahlungseingang bestätigen oder Beleg ansehen.</span></span><span class="pk-flow-arrow">›</span></a>
+          </div>
+          <details class="pk-disclosure">
+            <summary><span>Offene Zahlungen erinnern</span><span class="pk-disclosure-note">nur überfällige Monate</span></summary>
+            <div class="pk-disclosure-body">
+              <p class="muted">Es erhält nur eine Person eine Nachricht, wenn ein überfälliger Betrag offen ist und noch keine Erinnerung für diesen Monat versandt wurde.</p>
+              <form method="post" action="/app/parking/reminders"><button class="button" type="submit">Erinnerungen jetzt senden</button></form>
+            </div>
+          </details>
+        </section>
+        {{end}}
+
+        {{if .SectionCharging}}
         <section class="panel settings-card" id="laderegelung">
           <div class="pk-head">
             <div>
-              <h2>Laderegelung</h2>
-              <p class="muted">Automatisches PV-Überschussladen. Im Testbetrieb entscheidet und protokolliert der Regler, schaltet aber nicht.</p>
+              <h2>Laderegeln</h2>
+              <p class="muted">Die Automatik nutzt Sonnenstrom und schützt Relais, Hausakku und Ladeelektronik.</p>
             </div>
+            {{if .Charging.Enabled}}<span class="pill ok">Automatik aktiv</span>{{else}}<span class="pill">Automatik aus</span>{{end}}
           </div>
           {{if .ChargingMsg}}<p class="flash {{if .ChargingOK}}ok{{end}}">{{.ChargingMsg}}</p>{{end}}
           <form class="pk-form" method="post" action="/app/parking/charging/settings">
@@ -5078,81 +5197,91 @@ const PageTemplates = `
                 <small>Nur beobachten und protokollieren — die Steckdose bleibt unberührt.</small>
               </label>
             </div>
-            <div class="pk-group">
-              <div class="pk-group-head"><h3>Starten</h3><span>beide Bedingungen müssen erfüllt sein</span></div>
-              <div class="pk-fields">
-                <label for="start_soc_percent">Akkustand mindestens
-                  <span class="pk-unit"><input id="start_soc_percent" type="text" inputmode="decimal" name="start_soc_percent" value="{{.Charging.StartSocValue}}" autocomplete="off"><span class="unit">%</span></span>
-                </label>
-                <label for="start_feed_in_w">Einspeisung mindestens
-                  <span class="pk-unit"><input id="start_feed_in_w" type="text" inputmode="numeric" name="start_feed_in_w" value="{{.Charging.StartFeedInValue}}" autocomplete="off"><span class="unit">W</span></span>
-                </label>
-              </div>
+            <div class="pk-rule-summary" aria-label="Zusammenfassung der Laderegeln">
+              <div class="pk-rule"><strong>Start</strong><span>Bei mindestens {{.Charging.StartSocValue}} % Akku und {{.Charging.StartFeedInValue}} W Einspeisung.</span></div>
+              <div class="pk-rule pk-safety"><strong>Stopp &amp; Schutz</strong><span>Unter {{.Charging.StopSocValue}} % Akku oder {{.Charging.StopFeedInValue}} W; Schaltpausen bleiben aktiv.</span></div>
             </div>
-            <div class="pk-group">
-              <div class="pk-group-head"><h3>Stoppen</h3><span>sobald eine Bedingung zutrifft</span></div>
-              <div class="pk-fields cols-3">
-                <label for="stop_soc_percent">Akkustand unter
-                  <span class="pk-unit"><input id="stop_soc_percent" type="text" inputmode="decimal" name="stop_soc_percent" value="{{.Charging.StopSocValue}}" autocomplete="off"><span class="unit">%</span></span>
-                </label>
-                <label for="stop_feed_in_w">Einspeisung unter
-                  <span class="pk-unit"><input id="stop_feed_in_w" type="text" inputmode="numeric" name="stop_feed_in_w" value="{{.Charging.StopFeedInValue}}" autocomplete="off"><span class="unit">W</span></span>
-                </label>
-                <label for="stop_delay_minutes">… und zwar durchgehend für
-                  <span class="pk-unit"><input id="stop_delay_minutes" type="text" inputmode="numeric" name="stop_delay_minutes" value="{{.Charging.StopDelayValue}}" autocomplete="off"><span class="unit">Min.</span></span>
-                </label>
+            <details class="pk-disclosure">
+              <summary><span>Erweiterte Grenzwerte</span><span class="pk-disclosure-note">7 Werte</span></summary>
+              <div class="pk-disclosure-body">
+                <div class="pk-group">
+                  <div class="pk-group-head"><h3>Starten</h3><span>beide Bedingungen müssen erfüllt sein</span></div>
+                  <div class="pk-fields">
+                    <label for="start_soc_percent">Akkustand mindestens
+                      <span class="pk-unit"><input id="start_soc_percent" type="text" inputmode="decimal" name="start_soc_percent" value="{{.Charging.StartSocValue}}" autocomplete="off"><span class="unit">%</span></span>
+                    </label>
+                    <label for="start_feed_in_w">Einspeisung mindestens
+                      <span class="pk-unit"><input id="start_feed_in_w" type="text" inputmode="numeric" name="start_feed_in_w" value="{{.Charging.StartFeedInValue}}" autocomplete="off"><span class="unit">W</span></span>
+                    </label>
+                  </div>
+                </div>
+                <div class="pk-group">
+                  <div class="pk-group-head"><h3>Stoppen</h3><span>sobald eine Bedingung zutrifft</span></div>
+                  <div class="pk-fields cols-3">
+                    <label for="stop_soc_percent">Akkustand unter
+                      <span class="pk-unit"><input id="stop_soc_percent" type="text" inputmode="decimal" name="stop_soc_percent" value="{{.Charging.StopSocValue}}" autocomplete="off"><span class="unit">%</span></span>
+                    </label>
+                    <label for="stop_feed_in_w">Einspeisung unter
+                      <span class="pk-unit"><input id="stop_feed_in_w" type="text" inputmode="numeric" name="stop_feed_in_w" value="{{.Charging.StopFeedInValue}}" autocomplete="off"><span class="unit">W</span></span>
+                    </label>
+                    <label for="stop_delay_minutes">… und zwar durchgehend für
+                      <span class="pk-unit"><input id="stop_delay_minutes" type="text" inputmode="numeric" name="stop_delay_minutes" value="{{.Charging.StopDelayValue}}" autocomplete="off"><span class="unit">Min.</span></span>
+                    </label>
+                  </div>
+                </div>
+                <div class="pk-group pk-safety">
+                  <div class="pk-group-head"><h3>Schaltschutz</h3><span>schont Relais und Ladeelektronik</span></div>
+                  <div class="pk-fields">
+                    <label for="min_on_minutes">Mindest-Einschaltdauer
+                      <span class="pk-unit"><input id="min_on_minutes" type="text" inputmode="numeric" name="min_on_minutes" value="{{.Charging.MinOnValue}}" autocomplete="off"><span class="unit">Min.</span></span>
+                    </label>
+                    <label for="min_off_minutes">Mindest-Pausendauer
+                      <span class="pk-unit"><input id="min_off_minutes" type="text" inputmode="numeric" name="min_off_minutes" value="{{.Charging.MinOffValue}}" autocomplete="off"><span class="unit">Min.</span></span>
+                    </label>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="pk-group">
-              <div class="pk-group-head"><h3>Schaltschutz</h3><span>schont Relais und Ladeelektronik</span></div>
-              <div class="pk-fields">
-                <label for="min_on_minutes">Mindest-Einschaltdauer
-                  <span class="pk-unit"><input id="min_on_minutes" type="text" inputmode="numeric" name="min_on_minutes" value="{{.Charging.MinOnValue}}" autocomplete="off"><span class="unit">Min.</span></span>
-                </label>
-                <label for="min_off_minutes">Mindest-Pausendauer
-                  <span class="pk-unit"><input id="min_off_minutes" type="text" inputmode="numeric" name="min_off_minutes" value="{{.Charging.MinOffValue}}" autocomplete="off"><span class="unit">Min.</span></span>
-                </label>
-              </div>
-            </div>
+            </details>
             <div class="pk-actions">
-              <button class="button primary" type="submit">Laderegelung speichern</button>
+              <button class="button primary" type="submit">Laderegeln speichern</button>
             </div>
           </form>
         </section>
 
-        <section class="panel settings-card">
-          <div class="pk-head">
-            <div>
-              <h2>Regler-Status</h2>
-              <p class="muted">Aktueller Zustand und die letzten Entscheidungen.</p>
+        <details class="panel pk-disclosure pk-status" id="regler-status">
+          <summary><span>Regler-Status &amp; Ereignisse</span><span class="pk-disclosure-note">{{.Charging.State.PhaseLabel}}</span></summary>
+          <div class="pk-disclosure-body">
+            <div class="pk-strip">
+              {{if .Charging.State.SinceLabel}}<span class="mini">seit {{.Charging.State.SinceLabel}}</span>{{end}}
+              {{if .Charging.State.PollLabel}}<span class="mini">HA-Poll {{.Charging.State.PollLabel}}</span>{{end}}
+              {{if .Charging.State.ShadowPill}}<span class="pill">Testbetrieb</span>{{end}}
+              {{if .Charging.State.ErrorDetail}}<span class="pill dringend">{{.Charging.State.ErrorDetail}}</span>{{end}}
             </div>
-            <span class="pill">{{.Charging.State.PhaseLabel}}</span>
+            {{if .Charging.HasEvents}}
+              <div class="pk-events" aria-label="Ereignisprotokoll">
+                {{range .Charging.Events}}<div class="pk-event"><time>{{.AtLabel}}</time><span class="pill {{.KindClass}}">{{.KindLabel}}</span><span>{{.Detail}}</span></div>{{end}}
+              </div>
+            {{else}}
+              <p class="empty">Noch keine Ereignisse seit dem letzten Neustart. Die nächste Entscheidung erscheint automatisch hier.</p>
+            {{end}}
           </div>
-          <div class="pk-strip">
-            {{if .Charging.State.SinceLabel}}<span class="mini">seit {{.Charging.State.SinceLabel}}</span>{{end}}
-            {{if .Charging.State.PollLabel}}<span class="mini">HA-Poll {{.Charging.State.PollLabel}}</span>{{end}}
-            {{if .Charging.State.ShadowPill}}<span class="pill">Testbetrieb</span>{{end}}
-            {{if .Charging.State.ErrorDetail}}<span class="pill dringend">{{.Charging.State.ErrorDetail}}</span>{{end}}
-          </div>
-          {{if .Charging.HasEvents}}
-            <div class="pk-events" aria-label="Ereignisprotokoll">
-              {{range .Charging.Events}}
-                <div class="pk-event"><time>{{.AtLabel}}</time><span class="pill {{.KindClass}}">{{.KindLabel}}</span><span>{{.Detail}}</span></div>
-              {{end}}
-            </div>
-          {{else}}
-            <p class="empty">Noch keine Ereignisse seit dem letzten Neustart — sobald der Regler entscheidet, erscheint hier jede Aktion.</p>
-          {{end}}
-        </section>
+        </details>
+        {{end}}
 
+        {{if .SectionTelegram}}
         <section class="panel settings-card" id="telegram">
           <div class="pk-head">
             <div>
-              <h2>Telegram-Bot</h2>
-              <p class="muted">Benachrichtigungen und Befehle laufen über den eigenen Bot. Chats werden per Einmal-Code verknüpft; Chat-Kennungen bleiben auf dem Server.</p>
+              <h2>Telegram verbinden</h2>
+              <p class="muted">Eine Person auswählen, Einmal-Code erzeugen und direkt an den HAUSV-Bot senden.</p>
             </div>
-            {{if .Charging.Telegram.Configured}}<span class="pill ok">Verbunden</span>{{else}}<span class="pill dringend">Kein Token</span>{{end}}
           </div>
+          {{if .Charging.Telegram.Configured}}
+            <div class="pk-telegram-state"><span class="pill ok">Bot bereit</span><span class="pk-telegram-state-copy"><strong>Telegram ist eingerichtet</strong><span>Neue Verknüpfungen können sofort erstellt werden.</span></span></div>
+          {{else}}
+            <div class="pk-telegram-state warn"><span class="pill dringend">Nicht bereit</span><span class="pk-telegram-state-copy"><strong>Bot-Zugang fehlt am Server</strong><span>Bestehende Verknüpfungen bleiben gespeichert; neue Codes funktionieren erst nach der Einrichtung.</span></span></div>
+          {{end}}
+          {{if .ChargingMsg}}<p class="flash {{if .ChargingOK}}ok{{end}}" role="status">{{.ChargingMsg}}</p>{{end}}
           {{if .Charging.Telegram.PendingCode}}
             <div class="pk-code">
               <span class="mini">Code für {{.Charging.Telegram.CodeEmail}} — 24 h gültig, einmal verwendbar:</span>
@@ -5166,22 +5295,26 @@ const PageTemplates = `
                 {{range .Charging.Telegram.LinkOptions}}<option value="{{.Email}}">{{.Label}} ({{.Email}})</option>{{end}}
               </select>
             </label>
-            <button class="button" type="submit">Code erzeugen</button>
+            <button class="button primary" type="submit">Code erzeugen</button>
           </form>
           {{if .Charging.Telegram.HasChats}}
-            <div class="pk-chats" aria-label="Verknüpfte Chats">
-              {{range .Charging.Telegram.Chats}}
-                <div class="pk-chat">
-                  <span class="pk-avatar">{{printf "%.1s" .DisplayName}}</span>
-                  <span class="pk-chat-meta"><strong>{{.DisplayName}}</strong><span>{{.Email}} · verknüpft seit {{.LinkedAt}}</span></span>
-                  <form method="post" action="/app/parking/charging/telegram/unlink"><input type="hidden" name="chat_id" value="{{.ChatID}}"><button class="button" type="submit">Trennen</button></form>
-                </div>
-              {{end}}
-            </div>
+            <details class="pk-disclosure">
+              <summary><span>Verknüpfte Chats</span><span class="pk-disclosure-note">{{len .Charging.Telegram.Chats}} aktiv</span></summary>
+              <div class="pk-disclosure-body"><div class="pk-chats" aria-label="Verknüpfte Chats">
+                {{range .Charging.Telegram.Chats}}
+                  <div class="pk-chat">
+                    <span class="pk-avatar">{{printf "%.1s" .DisplayName}}</span>
+                    <span class="pk-chat-meta"><strong>{{.DisplayName}}</strong><span>{{.Email}} · seit {{.LinkedAt}}</span></span>
+                    <form method="post" action="/app/parking/charging/telegram/unlink"><input type="hidden" name="chat_id" value="{{.ChatID}}"><button class="button" type="submit">Trennen</button></form>
+                  </div>
+                {{end}}
+              </div></div>
+            </details>
           {{else}}
-            <p class="empty">Noch keine Chats verknüpft.</p>
+            <p class="empty">Noch niemand verbunden. Der erste Schritt ist ein Einmal-Code.</p>
           {{end}}
         </section>
+        {{end}}
       </section>
     </main>
 {{template "appClose" .}}

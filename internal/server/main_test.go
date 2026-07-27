@@ -2163,10 +2163,13 @@ func TestParkingAccessPageGrantsAndRevokesInvitePermission(t *testing.T) {
 		t.Fatalf("parking access status = %d, want 200", page.Code)
 	}
 	body := page.Body.String()
-	for _, want := range []string{"Parkplatz-Zugriff", "parker@example.com", "Freigeben", "Portal"} {
+	for _, want := range []string{"Parkplatz verwalten", "parker@example.com", "Freigeben", "Wer darf den Parkplatz nutzen?"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("parking access page missing %q:\n%s", want, body)
 		}
+	}
+	if strings.Contains(body, `/app/parking/settings?section=`) {
+		t.Fatal("user manager must not see links to admin-only parking configuration")
 	}
 
 	grant := authedFormRequest(t, a, "manager@example.com", "/app/settings/parking-access", url.Values{
@@ -2322,11 +2325,12 @@ func TestNavigationActionsStayScopedToRelevantPages(t *testing.T) {
 	if access.Code != http.StatusOK {
 		t.Fatalf("parking access status = %d, want 200", access.Code)
 	}
-	accessBody := access.Body.String()
-	for _, want := range []string{`action="/app/parking/reminders"`, `name="return_to" value="parking_access"`} {
-		if !strings.Contains(accessBody, want) {
-			t.Fatalf("parking access page missing %q", want)
-		}
+	if strings.Contains(access.Body.String(), `action="/app/parking/reminders"`) {
+		t.Fatal("parking access should keep payment reminders in the accounting flow")
+	}
+	accounting := authedRequest(t, a, "admin@example.com", "/app/parking/settings?section=accounting")
+	if accounting.Code != http.StatusOK || !strings.Contains(accounting.Body.String(), `action="/app/parking/reminders"`) {
+		t.Fatalf("parking accounting should own the reminder action, status=%d", accounting.Code)
 	}
 
 	for _, tc := range []struct {
@@ -2809,13 +2813,64 @@ func TestParkingSettingsIsParkingSpecificNotGlobalSettings(t *testing.T) {
 		t.Fatalf("parking settings status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{"Parkplatz-Abrechnung", `href="/app/settings"`, "Zurück zu Einstellungen"} {
+	for _, want := range []string{"Parkplatz verwalten", `href="/app/settings"`, "Einstellungen", "Tarif &amp; Gültigkeit"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("parking settings should contain %q", want)
 		}
 	}
 	if strings.Contains(body, "<h1>Einstellungen</h1>") {
 		t.Fatal("parking settings page must not use generic Einstellungen heading")
+	}
+}
+
+func TestParkingSettingsSeparatesAdminTasksIntoSections(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	tests := []struct {
+		path   string
+		active string
+		wants  []string
+		hides  []string
+	}{
+		{
+			path:   "/app/parking/settings?section=accounting",
+			active: "accounting",
+			wants:  []string{`id="abrechnung"`, "Tarif &amp; Gültigkeit", "Zahlungsstände prüfen", "Offene Zahlungen erinnern"},
+			hides:  []string{`id="laderegelung"`, `id="telegram"`},
+		},
+		{
+			path:   "/app/parking/settings?section=charging",
+			active: "charging",
+			wants:  []string{`id="laderegelung"`, "Erweiterte Grenzwerte", "Regler-Status &amp; Ereignisse", "Laderegeln speichern"},
+			hides:  []string{`id="abrechnung"`, `id="telegram"`},
+		},
+		{
+			path:   "/app/parking/settings?section=telegram",
+			active: "telegram",
+			wants:  []string{`id="telegram"`, "Telegram verbinden", "Code erzeugen", "Noch niemand verbunden"},
+			hides:  []string{`id="abrechnung"`, `id="laderegelung"`},
+		},
+	}
+	for _, test := range tests {
+		page := authedRequest(t, a, "admin@example.com", test.path)
+		if page.Code != http.StatusOK {
+			t.Fatalf("%s status = %d", test.active, page.Code)
+		}
+		body := page.Body.String()
+		activeLink := `class="pk-nav-item active" href="/app/parking/settings?section=` + test.active + `"`
+		if !strings.Contains(body, activeLink) {
+			t.Fatalf("%s section missing active navigation", test.active)
+		}
+		for _, want := range test.wants {
+			if !strings.Contains(body, want) {
+				t.Fatalf("%s section missing %q", test.active, want)
+			}
+		}
+		for _, hidden := range test.hides {
+			if strings.Contains(body, hidden) {
+				t.Fatalf("%s section exposes unrelated panel %q", test.active, hidden)
+			}
+		}
 	}
 }
 
@@ -5638,8 +5693,14 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 		t.Fatalf("resident parking action mismatch = %d\n%s", residentParking.Code, residentParking.Body.String())
 	}
 	accessPage := authedRequest(t, a, "admin@example.com", "/app/settings/parking-access")
-	if accessPage.Code != http.StatusOK || !strings.Contains(accessPage.Body.String(), "parker@example.com") || !strings.Contains(accessPage.Body.String(), "0,80 €") {
-		t.Fatalf("access outstanding page = %d\n%s", accessPage.Code, accessPage.Body.String())
+	if accessPage.Code != http.StatusOK || !strings.Contains(accessPage.Body.String(), "parker@example.com") || strings.Contains(accessPage.Body.String(), "0,80 €") {
+		t.Fatalf("access page should show permissions without mixing in balances = %d\n%s", accessPage.Code, accessPage.Body.String())
+	}
+	accountingPage := authedRequest(t, a, "admin@example.com", "/app/parking/settings?section=accounting")
+	for _, want := range []string{"Zahlungsstände prüfen", `/app/parking?view=months#monate`, "Offene Zahlungen erinnern"} {
+		if accountingPage.Code != http.StatusOK || !strings.Contains(accountingPage.Body.String(), want) {
+			t.Fatalf("accounting flow missing %q = %d\n%s", want, accountingPage.Code, accountingPage.Body.String())
+		}
 	}
 
 	save := authedMultipartFileRequest(t, a, "admin@example.com", "/app/parking/month", map[string]string{

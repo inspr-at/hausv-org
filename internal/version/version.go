@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.35.0",
+			Date:     "27. Juli 2026",
+			Kind:     "Parkplatz-Verwaltung",
+			Headline: "Zugriff, Abrechnung, Laderegeln und Telegram sind klare einzelne Aufgaben.",
+			Intro:    "Eine gemeinsame Abschnittsnavigation ersetzt die lange Sammelseite; pro Arbeitsbereich stehen Zustand, nächste Aktion und nur die dafür nötigen Entscheidungen im Vordergrund.",
+			Items: []NoteItem{
+				{Label: "Zugriff pflegen", Text: "Kompakte Personenkarten zeigen Rolle, Freigabe und genau die zulässige Aktion, ohne Zahlungsdaten zu vermischen."},
+				{Label: "Sicher einstellen", Text: "Tarife und Laderegeln erklären zuerst ihre Wirkung; Historie, Grenzwerte und Regler-Ereignisse öffnen sich bei Bedarf."},
+				{Label: "Richtig begrenzen", Text: "Navigation und Speicherung beachten Verwaltungsrolle und Hauszugehörigkeit auch bei gezielten Parkplatzänderungen."},
+			},
+		},
+		{
 			Version:  "0.34.0",
 			Date:     "27. Juli 2026",
 			Kind:     "Parkplatz",

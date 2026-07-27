@@ -439,24 +439,25 @@ type AnnouncementFilterView struct {
 }
 
 type ParkingAccountingView struct {
-	Message          string
-	GridFeeValue     string
-	GridFeeLabel     string
-	BaseFeeValue     string
-	BaseFeeLabel     string
-	EffectiveFrom    string
-	Tariffs          []ParkingTariffView
-	HasTariffs       bool
-	Months           []ParkingMonthView
-	HasMonths        bool
-	OutstandingValue float64
-	Outstanding      string
-	HasOutstanding   bool
-	OverdueValue     float64
-	Overdue          string
-	HasOverdue       bool
-	LastSampleLabel  string
-	HistoryAvailable bool
+	Message            string
+	GridFeeValue       string
+	GridFeeLabel       string
+	BaseFeeValue       string
+	BaseFeeLabel       string
+	EffectiveFrom      string
+	EffectiveFromLabel string
+	Tariffs            []ParkingTariffView
+	HasTariffs         bool
+	Months             []ParkingMonthView
+	HasMonths          bool
+	OutstandingValue   float64
+	Outstanding        string
+	HasOutstanding     bool
+	OverdueValue       float64
+	Overdue            string
+	HasOverdue         bool
+	LastSampleLabel    string
+	HistoryAvailable   bool
 }
 
 type ParkingTariffView struct {

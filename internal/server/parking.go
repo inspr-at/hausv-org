@@ -87,21 +87,42 @@ func chargingFlashMessage(query url.Values) (string, bool) {
 func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant := ac.tenant
 	settingsMsg, settingsOK := parkingSettingsMessage(r.URL.Query().Get("settings"))
-	chargingMsg, chargingOK := chargingSettingsMessage(r.URL.Query().Get("charging"))
+	chargingStatus := r.URL.Query().Get("charging")
+	chargingMsg, chargingOK := chargingSettingsMessage(chargingStatus)
+	section := parkingAdminSection(r.URL.Query().Get("section"), chargingStatus)
 	a.render(w, "parkingSettings", a.withBase(ac, map[string]any{
-		"Title": "Parkplatz-Abrechnung",
+		"Title": "Parkplatz verwalten",
 		// This route is capability-gated before the handler. Preserve its
 		// deliberate admin presentation for delegated parking managers.
-		"IsAdmin":       true,
-		"CanSeeParking": true,
-		"ActivePage":    "settings",
-		"Accounting":    a.parkingAccounting(r.Context(), tenant),
-		"SettingsMsg":   settingsMsg,
-		"SettingsOK":    settingsOK,
-		"ChargingMsg":   chargingMsg,
-		"ChargingOK":    chargingOK,
-		"Charging":      a.chargingAdminView(tenant, r.URL.Query()),
+		"IsAdmin":                true,
+		"CanSeeParking":          true,
+		"ActivePage":             "settings",
+		"Accounting":             a.parkingAccounting(r.Context(), tenant),
+		"SettingsMsg":            settingsMsg,
+		"SettingsOK":             settingsOK,
+		"ChargingMsg":            chargingMsg,
+		"ChargingOK":             chargingOK,
+		"Charging":               a.chargingAdminView(tenant, r.URL.Query()),
+		"ParkingSection":         section,
+		"SectionAccounting":      section == "accounting",
+		"SectionCharging":        section == "charging",
+		"SectionTelegram":        section == "telegram",
+		"CanManageParkingConfig": true,
 	}))
+}
+
+func parkingAdminSection(requested string, chargingStatus string) string {
+	switch strings.TrimSpace(requested) {
+	case "accounting", "charging", "telegram":
+		return strings.TrimSpace(requested)
+	}
+	if strings.HasPrefix(strings.TrimSpace(chargingStatus), "tg") {
+		return "telegram"
+	}
+	if strings.TrimSpace(chargingStatus) != "" {
+		return "charging"
+	}
+	return "accounting"
 }
 
 func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -300,7 +321,7 @@ func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request, ac a
 	}
 	tariff, err := parkingTariffFromForm(r.Form)
 	if err != nil {
-		http.Redirect(w, r, "/app/parking/settings?settings=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/parking/settings?section=accounting&settings=invalid", http.StatusSeeOther)
 		return
 	}
 	if err := a.parkingStore.UpsertTariff(tenant.Slug, tariff); err != nil {
@@ -322,7 +343,7 @@ func (a *app) updateParkingSettings(w http.ResponseWriter, r *http.Request, ac a
 			"base_fee":       formatEUR(tariff.BaseFeeEUR),
 		},
 	})
-	http.Redirect(w, r, "/app/parking/settings?settings=saved", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/parking/settings?section=accounting&settings=saved", http.StatusSeeOther)
 }
 
 func parkingTariffFromForm(values url.Values) (parkingTariff, error) {
@@ -606,21 +627,23 @@ func parkingSettingsMessage(status string) (string, bool) {
 }
 
 func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, _, _, _, ok := a.parkingAccessContext(w, ac)
+	tenant, _, role, _, ok := a.parkingAccessContext(w, ac)
 	if !ok {
 		return
 	}
 	accessMsg, accessOK := parkingAccessMessage(r.URL.Query().Get("parking_access"))
 	rows := a.parkingAccessRows(tenant.Slug)
 	a.render(w, "parkingAccessSettings", a.withBase(ac, map[string]any{
-		"Title":           "Parkplatz-Zugriff",
-		"ActivePage":      "settings",
-		"AccessRows":      rows,
-		"HasAccessRows":   len(rows) > 0,
-		"AccessRowsEmpty": emptyState("Noch keine Zugänge", "Sobald Personen eingeladen sind, kann der Parkplatz-Zugriff hier gepflegt werden."),
-		"AccessMsg":       accessMsg,
-		"AccessOK":        accessOK,
-		"StatementYear":   time.Now().In(time.Local).Year(),
+		"Title":                  "Parkplatz-Zugriff",
+		"ActivePage":             "settings",
+		"ParkingSection":         "access",
+		"CanManageParkingConfig": hasCapability(role, capabilityManageParking),
+		"AccessRows":             rows,
+		"HasAccessRows":          len(rows) > 0,
+		"AccessRowsEmpty":        emptyState("Noch keine Zugänge", "Sobald Personen eingeladen sind, kann der Parkplatz-Zugriff hier gepflegt werden."),
+		"AccessMsg":              accessMsg,
+		"AccessOK":               accessOK,
+		"StatementYear":          time.Now().In(time.Local).Year(),
 	}))
 }
 
@@ -657,19 +680,16 @@ func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request, ac aut
 		http.Redirect(w, r, "/app/settings/parking-access?parking_access=not_editable", http.StatusSeeOther)
 		return
 	}
-	// Toggle only the parking bit under one lock, reading the CURRENT permissions
-	// so a concurrent change to a different permission is not clobbered
-	// (HAUSV-145). The role/tenant guards above are on fields another parking
-	// toggle wouldn't touch, so they stay on the pre-read snapshot.
-	updated, changed, err := a.inviteStore.Mutate(targetEmail, func(p *userProfile) {
-		p.Permissions = setPermission(p.Permissions, permissionParking, enabled)
-		if len(p.Tenants) == 0 {
-			p.Tenants = []string{tenant.Slug}
-		}
-		if len(p.AuthMethods) == 0 {
-			p.AuthMethods = defaultAuthMethods()
-		}
-	})
+	// Permissions are house-scoped in the SQLite identity model. Writing the
+	// flat profile would be ignored by an explicit membership and could affect
+	// another house, so update exactly this tenant's effective membership.
+	updated, changed, err := a.inviteStore.MutateTenantPermissions(
+		targetEmail,
+		tenant.Slug,
+		func(permissions []string) []string {
+			return setPermission(permissions, permissionParking, enabled)
+		},
+	)
 	if err != nil {
 		logError("parking access update failed", err, "actor", redactedEmail(targetEmail))
 		http.Redirect(w, r, "/app/settings/parking-access?parking_access=error", http.StatusSeeOther)
@@ -689,8 +709,8 @@ func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request, ac aut
 		Summary:    "Parkplatz-Zugriff geändert",
 		Details: map[string]string{
 			"changed_fields":   "Parkplatz-Zugriff",
-			"permissions_from": strings.Join(permissionLabelList(existing.Permissions), ", "),
-			"permissions_to":   strings.Join(permissionLabelList(updated.Permissions), ", "),
+			"permissions_from": strings.Join(permissionLabelList(effectiveProfile.Permissions), ", "),
+			"permissions_to":   strings.Join(permissionLabelList(updated.ForTenant(tenant.Slug).Permissions), ", "),
 		},
 	})
 	status := "revoked"
@@ -835,22 +855,23 @@ func (a *app) parkingAccounting(ctx context.Context, tenant tenantConfig) parkin
 	currentTariff := parkingTariffAt(data.Settings, time.Now(), time.Local)
 	tariffs := parkingTariffViews(data.Settings)
 	view := parkingAccountingView{
-		GridFeeValue:     formatInputFloat(currentTariff.GridFeeEURPerKWh),
-		GridFeeLabel:     formatEURPerKWh(currentTariff.GridFeeEURPerKWh),
-		BaseFeeValue:     formatInputFloat(currentTariff.BaseFeeEUR),
-		BaseFeeLabel:     formatEUR(currentTariff.BaseFeeEUR),
-		EffectiveFrom:    currentTariff.EffectiveFrom,
-		Tariffs:          tariffs,
-		HasTariffs:       len(tariffs) > 0,
-		Months:           months,
-		HasMonths:        len(months) > 0,
-		OutstandingValue: balance.Outstanding,
-		Outstanding:      formatEUR(balance.Outstanding),
-		HasOutstanding:   balance.Outstanding > 0,
-		OverdueValue:     balance.Overdue,
-		Overdue:          formatEUR(balance.Overdue),
-		HasOverdue:       balance.Overdue > 0,
-		HistoryAvailable: len(data.EnergySamples) >= 2 && len(data.PriceSamples) > 0,
+		GridFeeValue:       formatInputFloat(currentTariff.GridFeeEURPerKWh),
+		GridFeeLabel:       formatEURPerKWh(currentTariff.GridFeeEURPerKWh),
+		BaseFeeValue:       formatInputFloat(currentTariff.BaseFeeEUR),
+		BaseFeeLabel:       formatEUR(currentTariff.BaseFeeEUR),
+		EffectiveFrom:      currentTariff.EffectiveFrom,
+		EffectiveFromLabel: formatParkingTariffDate(currentTariff.EffectiveFrom),
+		Tariffs:            tariffs,
+		HasTariffs:         len(tariffs) > 0,
+		Months:             months,
+		HasMonths:          len(months) > 0,
+		OutstandingValue:   balance.Outstanding,
+		Outstanding:        formatEUR(balance.Outstanding),
+		HasOutstanding:     balance.Outstanding > 0,
+		OverdueValue:       balance.Overdue,
+		Overdue:            formatEUR(balance.Overdue),
+		HasOverdue:         balance.Overdue > 0,
+		HistoryAvailable:   len(data.EnergySamples) >= 2 && len(data.PriceSamples) > 0,
 	}
 	if len(data.EnergySamples) > 0 {
 		last := data.EnergySamples[len(data.EnergySamples)-1].At.In(time.Local)

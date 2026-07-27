@@ -21,7 +21,8 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 		`Shared components: panel, button, pill, quick-row, table-wrap, dialog, flash and empty-state.`,
 		`.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-6); box-shadow: var(--shadow-panel); }`,
 		`.empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm);`,
-		`.parking-access .access-table, .parking-access .access-table tbody, .parking-access .access-table tr, .parking-access .access-table td { display: block; width: 100%; min-width: 0; }`,
+		`.access-row { display: grid; grid-template-columns: minmax(220px, 1fr) 126px 132px minmax(106px, auto);`,
+		`aria-label="Parkplatz-Verwaltung"`,
 	}
 	for _, want := range wants {
 		if !strings.Contains(PageTemplates, want) {

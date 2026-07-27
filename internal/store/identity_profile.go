@@ -22,6 +22,7 @@ type ProfileStorage interface {
 	Delete(email string) (bool, error)
 	Mutate(email string, fn func(*UserProfile)) (UserProfile, bool, error)
 	SetTenantMembership(email string, tenantSlug string, role string, permissions []string) (UserProfile, bool, error)
+	MutateTenantPermissions(email string, tenantSlug string, fn func([]string) []string) (UserProfile, bool, error)
 	RemoveTenant(email string, tenantSlug string) (removedProfile bool, found bool, err error)
 	// SetTenantDirectoryOptIn sets contact-directory visibility for ONE house.
 	// The directory is rendered per house, so the switch belongs there
@@ -280,6 +281,54 @@ func (s *SQLIdentityStore) SetTenantMembership(email string, tenantSlug string, 
 		return UserProfile{}, false, err
 	}
 	fresh, _ := s.PersonByEmail(email)
+	return s.profileFromPerson(fresh), true, nil
+}
+
+// MutateTenantPermissions changes the permissions of exactly one membership in
+// one database transaction. This is the permission-bit counterpart to
+// SetTenantMembership: callers can toggle one bit without replacing a
+// concurrent change to another bit or touching another house.
+func (s *SQLIdentityStore) MutateTenantPermissions(email string, tenantSlug string, fn func([]string) []string) (UserProfile, bool, error) {
+	if s == nil {
+		return UserProfile{}, false, nil
+	}
+	email = textutil.Email(email)
+	tenantSlug = textutil.Slug(tenantSlug)
+	if email == "" || tenantSlug == "" || fn == nil {
+		return UserProfile{}, false, fmt.Errorf("invalid membership permission target")
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return UserProfile{}, false, err
+	}
+	defer tx.Rollback()
+	var personID, rawPermissions string
+	if err := tx.QueryRow(
+		`SELECT p.id, m.permissions
+		   FROM persons p
+		   JOIN house_memberships m ON m.person_id=p.id
+		  WHERE p.email=? AND m.tenant_slug=?`,
+		email, tenantSlug,
+	).Scan(&personID, &rawPermissions); err != nil {
+		if err == sql.ErrNoRows {
+			return UserProfile{}, false, nil
+		}
+		return UserProfile{}, false, err
+	}
+	permissions := NormalizePermissions(fn(decodeStringList(rawPermissions)))
+	if _, err := tx.Exec(
+		`UPDATE house_memberships SET permissions=?, updated_at=? WHERE person_id=? AND tenant_slug=?`,
+		encodeStringList(permissions), identityTime(time.Now()), personID, tenantSlug,
+	); err != nil {
+		return UserProfile{}, false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return UserProfile{}, false, err
+	}
+	fresh, ok := s.PersonByEmail(email)
+	if !ok {
+		return UserProfile{}, false, nil
+	}
 	return s.profileFromPerson(fresh), true, nil
 }
 
