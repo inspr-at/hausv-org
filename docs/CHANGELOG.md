@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.36.0] - 2026-07-27
+
+### Verbessert
+
+- **Die mobile Portalnavigation lässt sich leichter treffen.** Menü, Navigationswege, Versionsverlauf und Abmelden verwenden nun durchgängig mindestens 44 Pixel hohe Touch-Ziele.
+- **Navigationsbezeichnungen verhalten sich einheitlich.** Auch längere Einträge bleiben in der zweispaltigen mobilen Navigation stabil und ohne seitlichen Überlauf.
+- **Der gesamte Portalweg ist gemeinsam geprüft.** Eigentümer-, Verwalter- und Admin-Seiten wurden auf Desktop und 390 Pixeln mit Rollenabgrenzung, aktiver Navigation, Tastaturdialogen und geschlossener Dienstleister-Freigabe gegengeprüft.
+
 ## [0.35.0] - 2026-07-27
 
 ### Verbessert

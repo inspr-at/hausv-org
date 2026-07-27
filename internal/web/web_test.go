@@ -23,6 +23,9 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 		`.empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm);`,
 		`.access-row { display: grid; grid-template-columns: minmax(220px, 1fr) 126px 132px minmax(106px, auto);`,
 		`aria-label="Parkplatz-Verwaltung"`,
+		`.mobile-menu-toggle { min-height: 44px;`,
+		`.side-version { justify-self: end; min-height: 44px; }`,
+		`.logout-button { min-height: 44px; }`,
 	}
 	for _, want := range wants {
 		if !strings.Contains(PageTemplates, want) {
@@ -34,6 +37,9 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 	}
 	if got := strings.Count(PageTemplates, `{{template "designTokens" .}}`); got != 4 {
 		t.Fatalf("design token partial is used %d times, want home, landing, privacy and app styles", got)
+	}
+	if got := strings.Count(PageTemplates, `<span class="nav-label">`); got != 12 {
+		t.Fatalf("navigation labels are wrapped inconsistently: got %d, want 12", got)
 	}
 }
 

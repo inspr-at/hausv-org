@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.36.0",
+			Date:     "27. Juli 2026",
+			Kind:     "Portal",
+			Headline: "Die mobile Navigation ist leichter zu treffen und durchgängig konsistent.",
+			Intro:    "Der abschließende Gesamtrundgang verbindet alle überarbeiteten Portalwege: Rollen, Navigation, Dialoge und kleine Bildschirme folgen denselben verlässlichen Mustern.",
+			Items: []NoteItem{
+				{Label: "Sicher tippen", Text: "Menü, Navigationswege, Versionsverlauf und Abmelden bieten auf kleinen Bildschirmen mindestens 44 Pixel hohe Touch-Ziele."},
+				{Label: "Ruhig orientieren", Text: "Längere Navigationsbezeichnungen bleiben in der mobilen Zweispaltenansicht stabil und frei von seitlichem Überlauf."},
+				{Label: "Gemeinsam geprüft", Text: "Eigentümer-, Verwalter- und Admin-Wege sowie die geschlossene Dienstleister-Freigabe wurden über Desktop und Mobil hinweg gegengeprüft."},
+			},
+		},
+		{
 			Version:  "0.35.0",
 			Date:     "27. Juli 2026",
 			Kind:     "Parkplatz-Verwaltung",

@@ -1728,14 +1728,14 @@ const PageTemplates = `
 	      .side-sub { margin-top: 3px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	      .side-code { margin-top: 4px; padding: 1px 7px; font-size: 9.5px; }
 	      .nav-toggle { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none; }
-	      .mobile-menu-toggle { min-height: 38px; max-width: 180px; align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); padding: 8px 10px; color: rgba(255,255,255,.92); background: rgba(255,255,255,.07); font-size: 12px; font-weight: 850; letter-spacing: .01em; cursor: pointer; }
+	      .mobile-menu-toggle { min-height: 44px; max-width: 180px; align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); padding: 8px 10px; color: rgba(255,255,255,.92); background: rgba(255,255,255,.07); font-size: 12px; font-weight: 850; letter-spacing: .01em; cursor: pointer; }
 	      .mobile-menu-toggle::before { content: ""; width: 14px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; box-shadow: 0 4px 0 currentColor inset; }
 	      .nav-toggle:focus-visible + .mobile-menu-toggle { outline: 3px solid var(--gold); outline-offset: 3px; }
 	      .nav-toggle:checked + .mobile-menu-toggle { border-color: rgba(231,197,116,.62); color: #fff; background: rgba(231,197,116,.13); }
 	      .side-nav, .side-foot { grid-column: 1 / -1; display: none; }
 	      .nav-toggle:checked ~ .side-nav, .nav-toggle:checked ~ .side-foot { display: grid; }
 	      .side-nav { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.14); }
-	      .nav-item { min-height: 40px; padding: 8px 9px; gap: 8px; font-size: 12.5px; }
+	      .nav-item { min-height: 44px; padding: 8px 9px; gap: 8px; font-size: 12.5px; }
 	      .nav-item.active::before { left: -14px; width: 3px; }
 	      .nav-icon { width: 18px; height: 18px; }
 	      .nav-icon svg { width: 17px; height: 17px; }
@@ -1745,9 +1745,9 @@ const PageTemplates = `
 	      .avatar { width: 34px; height: 34px; font-size: 12px; }
 	      .side-user strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	      .side-user span { font-size: 12px; }
-	      .side-version { justify-self: end; }
+	      .side-version { justify-self: end; min-height: 44px; }
 	      .logout-form { grid-column: 1 / -1; justify-self: stretch; min-width: 0; }
-	      .logout-button { min-height: 38px; }
+	      .logout-button { min-height: 44px; }
       .content-top { height: auto; min-height: 58px; flex-direction: column; align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
       .home-hero { min-height: 176px; align-items: flex-end; padding: 70px 18px 24px; }
       .home-hero::before { inset: 0; background-position: center top; }
@@ -1968,16 +1968,16 @@ const PageTemplates = `
 	      <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
 	      <a class="nav-item {{if eq .ActivePage "events"}}active{{end}}" href="/app/events"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></span><span class="nav-label">Termine</span></a>
 	      <a class="nav-item {{if eq .ActivePage "contacts"}}active{{end}}" href="/app/kontakte"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg></span><span class="nav-label">Kontakte</span></a>
-	      {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>Parkplatznutzung</a>{{end}}
-	      <a class="nav-item {{if eq .ActivePage "documents"}}active{{end}}" href="/app/dokumente"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span>Dokumente</a>
-	      {{if .CanManageHandovers}}<a class="nav-item {{if eq .ActivePage "handovers"}}active{{end}}" href="/app/uebergaben"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg></span>Übergaben</a>{{end}}
+	      {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span><span class="nav-label">Parkplatznutzung</span></a>{{end}}
+	      <a class="nav-item {{if eq .ActivePage "documents"}}active{{end}}" href="/app/dokumente"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span><span class="nav-label">Dokumente</span></a>
+	      {{if .CanManageHandovers}}<a class="nav-item {{if eq .ActivePage "handovers"}}active{{end}}" href="/app/uebergaben"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg></span><span class="nav-label">Übergaben</span></a>{{end}}
 	      {{end}}
-	      <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>Anliegen{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
+	      <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span><span class="nav-label">Anliegen</span>{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
 	      {{if .CanUseResidentAreas}}
-	      <a class="nav-item {{if eq .ActivePage "abstimmungen"}}active{{end}}" href="/app/abstimmungen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</a>
-	      {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
-	      {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Verlauf</a>{{end}}
-	      <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>
+	      <a class="nav-item {{if eq .ActivePage "abstimmungen"}}active{{end}}" href="/app/abstimmungen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span><span class="nav-label">Abstimmungen</span></a>
+	      {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span><span class="nav-label">Benutzer &amp; Rechte</span></a>{{end}}
+	      {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="nav-label">Verlauf</span></a>{{end}}
+	      <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span><span class="nav-label">Einstellungen</span></a>
 	      {{end}}
 	    </nav>
     <div class="side-foot">
