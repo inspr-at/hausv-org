@@ -1577,10 +1577,13 @@ func TestSettingsHubVisibleToResidentWithoutAdminSections(t *testing.T) {
 		t.Fatalf("settings hub status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/app/settings"`, "Profil", "Benachrichtigungen", "Kalender-Abo", "/calendar/"} {
+	for _, want := range []string{`href="/app/settings"`, "Profil", "Benachrichtigungen", "Kalender-Abo", "/calendar/", "<h2>Verlauf</h2>", "Eigene Änderungen nachvollziehen."} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("settings hub should contain %q", want)
 		}
+	}
+	if strings.Contains(body, "<h2>Verwaltung</h2>") {
+		t.Fatal("resident settings hub must not label the personal audit area as management")
 	}
 	if strings.Contains(body, `href="/app/parking/settings"`) {
 		t.Fatal("resident settings hub must not expose parking settings")
@@ -1612,6 +1615,22 @@ func TestNotificationSettingsPersistAndRender(t *testing.T) {
 	body := page.Body.String()
 	if !strings.Contains(body, `href="/app/settings"`) || !strings.Contains(body, `value="announcement" checked`) || strings.Contains(body, `value="issue" checked`) {
 		t.Fatalf("notification settings page did not reflect saved prefs:\n%s", body)
+	}
+	for _, want := range []string{`data-notification-form`, "Haus &amp; Kommunikation", "Entscheidungen &amp; Unterlagen", "Zahlung &amp; Nutzung", "2 von 6 aktiv"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("notification settings page should contain %q", want)
+		}
+	}
+
+	pause := authedFormRequest(t, a, "resident@example.com", "/app/settings/notifications", url.Values{
+		"events": {notificationEventAnnouncement, notificationEventDocument},
+	})
+	if pause.Code != http.StatusSeeOther {
+		t.Fatalf("notification pause status = %d", pause.Code)
+	}
+	hub := authedRequest(t, a, "resident@example.com", "/app/settings")
+	if !strings.Contains(hub.Body.String(), "E-Mails pausiert") {
+		t.Fatalf("settings hub should summarize paused notifications:\n%s", hub.Body.String())
 	}
 }
 
@@ -1741,7 +1760,7 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 		t.Fatalf("profile page status = %d", page.Code)
 	}
 	body := page.Body.String()
-	for _, want := range []string{`value="Dr."`, `value="Resi"`, `value="Dent"`, "43 1 234", `name="directory_opt_in" checked`, roleResident, "Top 1", "12.345 / 1.000.000"} {
+	for _, want := range []string{`value="Dr."`, `value="Resi"`, `value="Dent"`, "43 1 234", `name="directory_opt_in" checked`, "Die Freigabe ist freiwillig.", `class="account-details"`, roleResident, "Top 1", "12.345 / 1.000.000"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("profile page should contain %q", want)
 		}

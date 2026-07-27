@@ -2648,11 +2648,28 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
+	profile := a.profileForTenant(email, tenant.Slug)
+	prefs := defaultNotificationPreferences()
+	if a.notificationPrefs != nil {
+		prefs = a.notificationPrefs.Get(email)
+	}
+	enabledNotifications := 0
+	for _, option := range notificationEventOptions(prefs) {
+		if option.Checked {
+			enabledNotifications++
+		}
+	}
+	notificationSummary := fmt.Sprintf("%d von %d Themen aktiv", enabledNotifications, len(notificationEventCatalog()))
+	if prefs.Unsubscribed {
+		notificationSummary = "E-Mails pausiert"
+	}
 	a.render(w, "settingsHub", a.withBase(ac, map[string]any{
-		"Title":              "Einstellungen",
-		"ActivePage":         "settings",
-		"CalendarFeedURL":    calendarFeedURL,
-		"HasCalendarFeedURL": calendarFeedURL != "",
+		"Title":                       "Einstellungen",
+		"ActivePage":                  "settings",
+		"CalendarFeedURL":             calendarFeedURL,
+		"HasCalendarFeedURL":          calendarFeedURL != "",
+		"SettingsDisplayName":         profile.DisplayName(),
+		"SettingsNotificationSummary": notificationSummary,
 	}))
 }
 
@@ -3420,13 +3437,22 @@ func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request, ac au
 		prefs = a.notificationPrefs.Get(email)
 	}
 	notifyMsg, notifyOK := notificationSettingsMessage(r.URL.Query().Get("notify"))
+	events := notificationEventOptions(prefs)
+	enabledCount := 0
+	for _, event := range events {
+		if event.Checked {
+			enabledCount++
+		}
+	}
 	a.render(w, "notificationSettings", a.withBase(ac, map[string]any{
 		"Title":                     "Benachrichtigungen",
 		"ActivePage":                "settings",
 		"NotifyMsg":                 notifyMsg,
 		"NotifyOK":                  notifyOK,
 		"EmailNotificationsEnabled": !prefs.Unsubscribed,
-		"NotificationEvents":        notificationEventOptions(prefs),
+		"NotificationEvents":        events,
+		"NotificationEnabledCount":  enabledCount,
+		"NotificationEventCount":    len(events),
 	}))
 }
 

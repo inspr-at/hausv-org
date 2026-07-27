@@ -4118,88 +4118,99 @@ const PageTemplates = `
 
 {{define "settingsHub"}}
 {{template "appOpen" .}}
+    <style>
+      .settings-hub { display: grid; gap: 18px; }
+      .settings-hub-head { display: grid; gap: 5px; }
+      .settings-hub-head .lede { max-width: 620px; }
+      .settings-account { display: grid; grid-template-columns: 58px minmax(0,1fr) auto; gap: 14px; align-items: center; padding: 18px; }
+      .settings-account-icon { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; }
+      .settings-account-icon svg { width: 27px; height: 27px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+      .settings-account-copy { min-width: 0; }
+      .settings-account-copy h2 { font-size: 23px; overflow-wrap: anywhere; }
+      .settings-account-copy p { margin-top: 3px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+      .settings-account .pill { justify-self: end; }
+      .settings-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; align-items: start; }
+      .settings-section { padding: 0; overflow: hidden; }
+      .settings-section-head { padding: 16px 18px 10px; }
+      .settings-section-head h2 { font-size: 21px; }
+      .settings-section-head p { margin-top: 3px; color: var(--muted); font-size: 12.5px; }
+      .settings-links { display: grid; }
+      .settings-link { min-height: 76px; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding: 12px 17px; color: var(--ink); text-decoration: none; }
+      .settings-link:hover { background: var(--panel-soft); }
+      .settings-link-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: var(--radius-xs); background: rgba(200,153,63,.12); color: var(--gold-ink); }
+      .settings-link-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+      .settings-link-copy { min-width: 0; }
+      .settings-link-copy strong { display: block; font-family: var(--font-serif); font-size: 18px; }
+      .settings-link-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
+      .settings-link-arrow { color: var(--gold-ink); font-size: 24px; }
+      .settings-link.secondary { min-height: 64px; }
+      .settings-link.secondary .settings-link-icon { width: 36px; height: 36px; background: var(--panel-soft); }
+      .settings-management { grid-column: 1 / -1; }
+      .settings-management .settings-links { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .settings-management .settings-link:nth-child(even) { border-left: 1px solid var(--line); }
+      @media (max-width: 760px) {
+        .settings-hub { gap: 14px; }
+        .settings-hub-head .lede { font-size: 15px; }
+        .settings-account { grid-template-columns: 48px minmax(0,1fr); padding: 15px; }
+        .settings-account-icon { width: 48px; height: 48px; }
+        .settings-account .pill { grid-column: 2; justify-self: start; }
+        .settings-layout { grid-template-columns: 1fr; }
+        .settings-management { grid-column: 1; }
+        .settings-management .settings-links { grid-template-columns: 1fr; }
+        .settings-management .settings-link:nth-child(even) { border-left: 0; }
+      }
+    </style>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><span>Einstellungen</span></span>
       </div>
-      <section class="page">
-        <div>
+      <section class="page settings-hub">
+        <div class="settings-hub-head">
           <h1>Einstellungen</h1>
-          <p class="lede">Persönliche Einstellungen und Verwaltungsbereiche für {{.Tenant.Address}}.</p>
+          <p class="lede">Konto und Kommunikation für {{.Tenant.Address}}.</p>
         </div>
-        <div class="home-grid">
-          <section class="panel">
-            <div class="kicker">Konto</div>
-            <div class="quick-list">
-              <a class="quick-row" href="/app/settings/profile">
-                <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>
-                <div><h3>Profil</h3><p>{{.Email}} · {{.Role}}</p></div>
-                <span class="quick-arrow">›</span>
+        <section class="panel settings-account">
+          <span class="settings-account-icon"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg></span>
+          <div class="settings-account-copy"><h2>{{.SettingsDisplayName}}</h2><p>{{.Email}}</p></div>
+          <span class="pill">{{.Role}}</span>
+        </section>
+        <div class="settings-layout">
+          <section class="panel settings-section">
+            <div class="settings-section-head"><h2>Mein Konto</h2><p>Persönliche Angaben und Erreichbarkeit.</p></div>
+            <div class="settings-links">
+              <a class="settings-link" href="/app/settings/profile">
+                <span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg></span>
+                <span class="settings-link-copy"><strong>Profil</strong><span>Name, Telefon und Sichtbarkeit verwalten</span></span><span class="settings-link-arrow">›</span>
               </a>
-              <a class="quick-row" href="/app/settings/notifications">
-                <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
-                <div><h3>Benachrichtigungen</h3><p>E-Mail-Ereignisse pro Bereich steuern.</p></div>
-                <span class="quick-arrow">›</span>
+            </div>
+          </section>
+          <section class="panel settings-section">
+            <div class="settings-section-head"><h2>Kommunikation</h2><p>Was automatisch bei Ihnen ankommt.</p></div>
+            <div class="settings-links">
+              <a class="settings-link" href="/app/settings/notifications">
+                <span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span>
+                <span class="settings-link-copy"><strong>Benachrichtigungen</strong><span>{{.SettingsNotificationSummary}}</span></span><span class="settings-link-arrow">›</span>
               </a>
-              {{if .HasCalendarFeedURL}}<a class="quick-row" href="{{.CalendarFeedURL}}">
-                <svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h8M8 17h5"/></svg>
-                <div><h3>Kalender-Abo</h3><p>Haustermine automatisch im eigenen Kalender anzeigen.</p></div>
-                <span class="quick-arrow">›</span>
+              {{if .HasCalendarFeedURL}}<a class="settings-link secondary" href="{{.CalendarFeedURL}}">
+                <span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h8M8 17h5"/></svg></span>
+                <span class="settings-link-copy"><strong>Kalender-Abo</strong><span>Haustermine im eigenen Kalender</span></span><span class="settings-link-arrow">›</span>
               </a>{{end}}
             </div>
           </section>
-          <section class="panel">
-            <div class="kicker">Verwaltung</div>
-            {{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .IsAdmin}}
-              <div class="quick-list">
-                {{if .CanManageBuilding}}<a class="quick-row" href="/app/settings/building">
-                  <svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/><path d="M8 10h.01M16 10h.01"/></svg>
-                  <div><h3>Gebäude &amp; Einheiten</h3><p>Hausdaten, Kontakte, Einheiten, Zahlungsstatus und Portalbild.</p></div>
-                  <span class="quick-arrow">›</span>
-                </a>{{end}}
-                {{if .CanManageUsers}}
-                <a class="quick-row" href="/app/settings/users">
-                  <svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg>
-                  <div><h3>Benutzer &amp; Rechte</h3><p>Einladungen, Rollen und Zugriff der Hausgemeinschaft verwalten.</p></div>
-                  <span class="quick-arrow">›</span>
-                </a>
-                <a class="quick-row" href="/app/settings/parking-access">
-                  <svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg>
-                  <div><h3>Parkplatz-Zugriff</h3><p>Parkplatznutzung für Bewohner freigeben oder entziehen.</p></div>
-                  <span class="quick-arrow">›</span>
-                </a>
-                {{end}}
-                {{if .CanManageDocuments}}
-                <a class="quick-row" href="/app/dokumente">
-                  <svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg>
-                  <div><h3>Dokumente</h3><p>Unterlagen hochladen, kategorisieren und Sichtbarkeit setzen.</p></div>
-                  <span class="quick-arrow">›</span>
-                </a>
-                {{end}}
-                {{if .CanManageHandovers}}
-                <a class="quick-row" href="/app/uebergaben">
-                  <svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg>
-                  <div><h3>Übergaben</h3><p>Nutzerwechsel mit Räumen, Zählern, Schlüsseln, Fotos und Bestätigung dokumentieren.</p></div>
-                  <span class="quick-arrow">›</span>
-                </a>
-                {{end}}
-                {{if .CanViewAudit}}
-                <a class="quick-row" href="/app/audit">
-                  <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-                  <div><h3>Audit-Log</h3><p>Sensible Aktionen und Änderungen im Portal nachvollziehen.</p></div>
-                  <span class="quick-arrow">›</span>
-                </a>
-                {{end}}
-                {{if .IsAdmin}}<a class="quick-row" href="/app/parking/settings">
-                  <svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg>
-                  <div><h3>Parkplatz-Abrechnung</h3><p>Netzgebühr und Abrechnungswerte für die private Parkplatznutzung.</p></div>
-                  <span class="quick-arrow">›</span>
-                </a>{{end}}
-              </div>
-            {{else}}
-              <p class="empty">Verwaltungsbereiche sind nur für berechtigte Personen sichtbar.</p>
-            {{end}}
+          {{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .CanViewAudit .IsAdmin}}
+          <section class="panel settings-section settings-management">
+            <div class="settings-section-head">{{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .IsAdmin}}<h2>Verwaltung</h2><p>Nur Bereiche, für die Sie berechtigt sind.</p>{{else}}<h2>Verlauf</h2><p>Eigene Änderungen nachvollziehen.</p>{{end}}</div>
+            <div class="settings-links">
+              {{if .CanManageBuilding}}<a class="settings-link" href="/app/settings/building"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/></svg></span><span class="settings-link-copy"><strong>Gebäude &amp; Einheiten</strong><span>Hausdaten und Einheiten pflegen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if .CanManageUsers}}<a class="settings-link" href="/app/settings/users"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/></svg></span><span class="settings-link-copy"><strong>Benutzer &amp; Rechte</strong><span>Einladungen und Rollen verwalten</span></span><span class="settings-link-arrow">›</span></a>
+              <a class="settings-link" href="/app/settings/parking-access"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/></svg></span><span class="settings-link-copy"><strong>Parkplatz-Zugriff</strong><span>Nutzung freigeben oder entziehen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if .CanManageDocuments}}<a class="settings-link" href="/app/dokumente"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/></svg></span><span class="settings-link-copy"><strong>Dokumente</strong><span>Unterlagen verwalten</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if .CanManageHandovers}}<a class="settings-link" href="/app/uebergaben"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/></svg></span><span class="settings-link-copy"><strong>Übergaben</strong><span>Protokolle vorbereiten und ablegen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if .CanViewAudit}}<a class="settings-link" href="/app/audit"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="settings-link-copy"><strong>Audit-Log</strong><span>Änderungen nachvollziehen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if .IsAdmin}}<a class="settings-link" href="/app/parking/settings"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/></svg></span><span class="settings-link-copy"><strong>Parkplatz-Abrechnung</strong><span>Tarife und Abrechnungswerte</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+            </div>
           </section>
+          {{end}}
         </div>
       </section>
     </main>
@@ -4634,48 +4645,85 @@ const PageTemplates = `
 {{define "profileSettings"}}
 {{template "appOpen" .}}
     <style>
-      .profile .settings-card { max-width: 820px; display: grid; gap: 18px; }
+      .profile { display: grid; gap: 18px; }
+      .profile .profile-head { display: flex; justify-content: space-between; gap: 18px; align-items: end; }
+      .profile .profile-head .lede { margin-top: 4px; }
+      .profile .settings-card { max-width: 820px; display: grid; gap: 0; padding: 0; overflow: hidden; }
       .profile .profile-flash { margin: 0; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
       .profile .profile-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
       .profile .profile-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
-      .profile .profile-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
-      .profile .profile-form .short { grid-column: span 1; }
-      .profile .profile-form .full { grid-column: 1 / -1; }
-      .profile .directory-check { grid-column: 1 / -1; min-height: 42px; display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; }
-      .profile .directory-check input { width: auto; min-height: 0; }
-      .profile .readonly-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 10px; }
-      .profile .readonly-box { border: 1px solid var(--line); border-radius: 8px; padding: 13px; background: var(--panel-soft); display: grid; gap: 8px; }
-      .profile .readonly-box strong { font-family: var(--font-serif); font-size: 18px; }
+      .profile .profile-flash { margin: 18px 18px 0; }
+      .profile .profile-form { display: grid; gap: 0; }
+      .profile .profile-section { display: grid; gap: 12px; padding: 18px; border-bottom: 1px solid var(--line); }
+      .profile .profile-section-head { display: grid; gap: 3px; }
+      .profile .profile-section-head h2 { font-size: 20px; }
+      .profile .profile-section-head p { color: var(--muted); font-size: 12.5px; }
+      .profile .profile-fields { display: grid; grid-template-columns: 140px repeat(2,minmax(0,1fr)); gap: 12px; }
+      .profile .profile-contact-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+      .profile .profile-readonly { display: grid; gap: 7px; }
+      .profile .profile-readonly span { color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+      .profile .profile-readonly strong { min-height: 42px; display: flex; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 9px 12px; background: var(--panel-soft); font-size: 13px; overflow-wrap: anywhere; }
+      .profile .directory-check { min-height: 72px; display: grid; grid-template-columns: 22px minmax(0,1fr); gap: 11px; align-items: start; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px; background: var(--panel-soft); color: var(--ink); font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; cursor: pointer; }
+      .profile .directory-check input { width: 20px; height: 20px; min-height: 0; margin: 1px 0 0; accent-color: var(--leaf); }
+      .profile .directory-check span { display: grid; gap: 3px; }
+      .profile .directory-check small { color: var(--muted); font-size: 12.5px; font-weight: 500; line-height: 1.4; }
+      .profile .profile-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 15px 18px; background: rgba(247,243,234,.55); }
+      .profile .profile-cancel { color: var(--muted); font-size: 13px; font-weight: 750; }
+      .profile .account-details { max-width: 820px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); overflow: hidden; }
+      .profile .account-details > summary { min-height: 56px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 16px; cursor: pointer; color: var(--ink); font-weight: 850; }
+      .profile .account-details > summary span { color: var(--muted); font-size: 12px; font-weight: 600; }
+      .profile .readonly-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; padding: 0 16px 16px; }
+      .profile .readonly-box { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--panel-soft); display: grid; align-content: start; gap: 7px; min-width: 0; }
+      .profile .readonly-box strong { font-family: var(--font-serif); font-size: 17px; overflow-wrap: anywhere; }
       .profile .chips { display: flex; flex-wrap: wrap; gap: 6px; }
       .profile .chip { display: inline-flex; align-items: center; border: 1px solid var(--line); background: var(--panel); color: #6f6a5c; border-radius: 8px; padding: 4px 10px; font-size: 12.5px; font-weight: 700; }
       .profile .unit-list { display: grid; gap: 8px; }
       .profile .unit-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding-top: 8px; }
       .profile .unit-row:first-child { border-top: 0; padding-top: 0; }
-      @media (max-width: 680px) { .profile .profile-form { grid-template-columns: 1fr; } .profile .profile-form .short { grid-column: 1 / -1; } }
+      @media (max-width: 680px) {
+        .profile .profile-head { display: grid; gap: 8px; }
+        .profile .profile-fields, .profile .profile-contact-fields, .profile .readonly-grid { grid-template-columns: 1fr; }
+        .profile .profile-actions { display: grid; grid-template-columns: 1fr; padding: 12px 18px; }
+        .profile .profile-actions .button { width: 100%; }
+        .profile .profile-cancel { text-align: center; }
+      }
     </style>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Profil</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a></div>
+        <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>
       </div>
       <section class="page profile">
-        <div>
-          <h1>Profil</h1>
-          <p class="lede">{{.Email}}</p>
+        <div class="profile-head">
+          <div><h1>Profil</h1><p class="lede">Ihre Angaben und Sichtbarkeit.</p></div>
         </div>
         <section class="panel settings-card">
           {{if .ProfileMsg}}<p class="profile-flash{{if .ProfileOK}} ok{{else}} warn{{end}}">{{.ProfileMsg}}</p>{{end}}
           <form class="profile-form" method="post" action="/app/settings/profile">
-            <label class="short" for="profile-title">Titel<input id="profile-title" name="title" value="{{.Profile.Title}}" maxlength="40" autocomplete="honorific-prefix"></label>
-            <label class="short" for="profile-phone">Telefon optional<input id="profile-phone" name="phone" value="{{.Profile.Phone}}" maxlength="80" autocomplete="tel"></label>
-            <label for="profile-first">Vorname<input id="profile-first" name="first_name" value="{{.Profile.FirstName}}" maxlength="120" autocomplete="given-name"></label>
-            <label for="profile-last">Nachname<input id="profile-last" name="last_name" value="{{.Profile.LastName}}" maxlength="120" autocomplete="family-name"></label>
-            <label class="directory-check" for="profile-directory"><input id="profile-directory" type="checkbox" name="directory_opt_in"{{if .Profile.DirectoryOptIn}} checked{{end}}>Im Kontakte-Verzeichnis anzeigen</label>
-            <div class="full row-actions">
-              <button class="button primary" type="submit">Speichern</button>
-              <a class="button" href="/app/settings">Abbrechen</a>
+            <section class="profile-section">
+              <div class="profile-section-head"><h2>Name</h2><p>So werden Sie im Portal angesprochen.</p></div>
+              <div class="profile-fields">
+                <label for="profile-title">Titel optional<input id="profile-title" name="title" value="{{.Profile.Title}}" maxlength="40" autocomplete="honorific-prefix" placeholder="z. B. Dr."></label>
+                <label for="profile-first">Vorname<input id="profile-first" name="first_name" value="{{.Profile.FirstName}}" maxlength="120" autocomplete="given-name"></label>
+                <label for="profile-last">Nachname<input id="profile-last" name="last_name" value="{{.Profile.LastName}}" maxlength="120" autocomplete="family-name"></label>
+              </div>
+            </section>
+            <section class="profile-section">
+              <div class="profile-section-head"><h2>Kontakt &amp; Sichtbarkeit</h2><p>Ihre Anmeldung bleibt unverändert.</p></div>
+              <div class="profile-contact-fields">
+                <div class="profile-readonly"><span>E-Mail</span><strong>{{.Email}}</strong></div>
+                <label for="profile-phone">Telefon optional<input id="profile-phone" name="phone" value="{{.Profile.Phone}}" maxlength="80" autocomplete="tel"></label>
+              </div>
+              <label class="directory-check" for="profile-directory"><input id="profile-directory" type="checkbox" name="directory_opt_in"{{if .Profile.DirectoryOptIn}} checked{{end}}><span>Im Kontakte-Verzeichnis anzeigen<small>Name, E-Mail und – falls angegeben – Telefon werden für die Hausgemeinschaft sichtbar. Die Freigabe ist freiwillig.</small></span></label>
+            </section>
+            <div class="profile-actions">
+              <a class="profile-cancel" href="/app/settings">Abbrechen</a>
+              <button class="button primary" type="submit">Profil speichern</button>
             </div>
           </form>
+        </section>
+        <details class="account-details">
+          <summary>Konto &amp; Berechtigungen <span>Rolle, Anmeldung und Einheiten</span></summary>
           <div class="readonly-grid">
             <div class="readonly-box">
               <span class="field-label">Rolle</span>
@@ -4699,7 +4747,7 @@ const PageTemplates = `
               {{end}}
             </div>
           </div>
-        </section>
+        </details>
       </section>
     </main>
 {{template "appClose" .}}
@@ -4708,46 +4756,90 @@ const PageTemplates = `
 {{define "notificationSettings"}}
 {{template "appOpen" .}}
     <style>
-      .notifications .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
-      .notifications .settings-card { max-width: 760px; display: grid; gap: 16px; }
+      .notifications { display: grid; gap: 18px; }
+      .notifications .notification-head { display: grid; gap: 5px; }
+      .notifications .settings-card { max-width: 820px; display: grid; gap: 14px; }
       .notifications .notify-flash { margin: 0; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
       .notifications .notify-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
       .notifications .notify-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
-      .notifications .toggle-list { display: grid; gap: 10px; }
-      .notifications .toggle-row { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 11px; align-items: start; border: 1px solid var(--line); border-radius: 9px; padding: 13px; background: var(--panel-soft); color: var(--ink); }
-      .notifications .toggle-row input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--gold); }
-      .notifications .toggle-row strong { display: block; font-size: 14px; }
-      .notifications .toggle-row span { display: block; color: var(--muted); font-size: 13px; line-height: 1.45; margin-top: 2px; }
-      .notifications .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .notifications .notification-form { display: grid; gap: 16px; }
+      .notifications .notification-master { min-height: 88px; display: grid; grid-template-columns: 48px minmax(0,1fr) auto; gap: 13px; align-items: center; border: 1px solid rgba(47,107,74,.22); border-radius: var(--radius-sm); padding: 14px; background: linear-gradient(120deg,rgba(47,107,74,.08),rgba(255,255,255,.7)); color: var(--ink); letter-spacing: 0; text-transform: none; cursor: pointer; }
+      .notifications .notification-master-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: rgba(200,153,63,.14); color: var(--gold-ink); }
+      .notifications .notification-master-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+      .notifications .notification-master-copy { display: grid; gap: 3px; }
+      .notifications .notification-master-copy strong { font-family: var(--font-serif); font-size: 19px; }
+      .notifications .notification-master-copy span { color: var(--muted); font-size: 12.5px; font-weight: 500; line-height: 1.35; }
+      .notifications .notification-switch { position: relative; width: 48px; height: 28px; display: inline-block; flex: 0 0 auto; }
+      .notifications .notification-switch input { position: absolute; opacity: 0; pointer-events: none; }
+      .notifications .notification-switch-track { position: absolute; inset: 0; border-radius: 20px; background: #d7d5cf; box-shadow: inset 0 0 0 1px rgba(23,32,25,.1); transition: .16s ease; }
+      .notifications .notification-switch-track::after { content: ""; position: absolute; width: 22px; height: 22px; left: 3px; top: 3px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(23,32,25,.2); transition: .16s ease; }
+      .notifications .notification-switch input:checked + .notification-switch-track { background: var(--leaf); }
+      .notifications .notification-switch input:checked + .notification-switch-track::after { transform: translateX(20px); }
+      .notifications .notification-switch input:focus-visible + .notification-switch-track { outline: 3px solid var(--gold); outline-offset: 3px; }
+      .notifications .notification-topics { display: grid; gap: 12px; transition: opacity .16s ease; }
+      .notifications .notification-topics-head { display: flex; justify-content: space-between; gap: 14px; align-items: end; }
+      .notifications .notification-topics-head h2 { font-size: 22px; }
+      .notifications .notification-topics-head p { margin-top: 3px; color: var(--muted); font-size: 12.5px; }
+      .notifications .notification-count { color: var(--gold-ink); font-size: 12px; font-weight: 850; white-space: nowrap; }
+      .notifications .notification-group { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); }
+      .notifications .notification-group-title { padding: 10px 14px 7px; color: var(--gold-ink); font-size: 10.5px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+      .notifications .notification-row { min-height: 64px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: center; border-top: 1px solid var(--line); padding: 11px 14px; color: var(--ink); letter-spacing: 0; text-transform: none; cursor: pointer; }
+      .notifications .notification-row-copy { display: grid; gap: 3px; }
+      .notifications .notification-row-copy strong { font-size: 14px; }
+      .notifications .notification-row-copy span { color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.35; }
+      .notifications .email-paused .notification-topics { opacity: .72; }
+      .notifications .notification-paused-note { display: none; border-left: 3px solid var(--gold); padding: 9px 12px; background: rgba(200,153,63,.09); color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .notifications .email-paused .notification-paused-note { display: block; }
+      .notifications .actions { display: flex; justify-content: flex-end; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 14px; }
+      .notifications .actions a { color: var(--muted); font-size: 13px; font-weight: 750; }
+      @media (max-width: 680px) {
+        .notifications .settings-card { padding: 14px; }
+        .notifications .notification-master { grid-template-columns: 42px minmax(0,1fr) auto; padding: 12px; }
+        .notifications .notification-master-icon { width: 42px; height: 42px; }
+        .notifications .notification-master-copy strong { font-size: 17px; }
+        .notifications .notification-topics-head { align-items: start; }
+        .notifications .actions { display: grid; grid-template-columns: 1fr; padding: 12px 0 0; }
+        .notifications .actions .button { width: 100%; }
+        .notifications .actions a { text-align: center; }
+      }
     </style>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Benachrichtigungen</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a></div>
+        <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>
       </div>
       <section class="page notifications">
-        <div>
+        <div class="notification-head">
           <h1>Benachrichtigungen</h1>
-          <p class="lede">{{.Email}}</p>
+          <p class="lede">Festlegen, welche E-Mails Sie erhalten möchten.</p>
         </div>
         <section class="panel settings-card">
           {{if .NotifyMsg}}<p class="notify-flash{{if .NotifyOK}} ok{{else}} warn{{end}}">{{.NotifyMsg}}</p>{{end}}
-          <form class="form-grid" method="post" action="/app/settings/notifications">
-            <div class="toggle-list full">
-              <label class="toggle-row">
-                <input type="checkbox" name="email_enabled" value="on"{{if .EmailNotificationsEnabled}} checked{{end}}>
-                <span><strong>E-Mail-Benachrichtigungen</strong><span>Globale Zustellung für dieses Konto.</span></span>
-              </label>
-              {{range .NotificationEvents}}
-              <label class="toggle-row">
-                <input type="checkbox" name="events" value="{{.Key}}"{{if .Checked}} checked{{end}}>
-                <span><strong>{{.Label}}</strong><span>{{.Description}}</span></span>
-              </label>
-              {{end}}
+          <form class="notification-form{{if not .EmailNotificationsEnabled}} email-paused{{end}}" method="post" action="/app/settings/notifications" data-notification-form>
+            <label class="notification-master">
+              <span class="notification-master-icon"><svg viewBox="0 0 24 24"><path d="M3 6h18v12H3z"/><path d="m3 7 9 6 9-6"/></svg></span>
+              <span class="notification-master-copy"><strong>E-Mails erhalten</strong><span data-notification-status>{{if .EmailNotificationsEnabled}}Aktuell zu {{.NotificationEnabledCount}} von {{.NotificationEventCount}} Themen.{{else}}Der Versand ist derzeit pausiert.{{end}}</span></span>
+              <span class="notification-switch"><input type="checkbox" name="email_enabled" value="on" data-notification-master{{if .EmailNotificationsEnabled}} checked{{end}}><span class="notification-switch-track"></span></span>
+            </label>
+            <div class="notification-topics">
+              <div class="notification-topics-head"><div><h2>Wofür?</h2><p>Ihre Auswahl für einzelne Themen.</p></div><span class="notification-count" data-notification-count>{{.NotificationEnabledCount}} von {{.NotificationEventCount}} aktiv</span></div>
+              <p class="notification-paused-note">Die Themenauswahl bleibt gespeichert und gilt wieder, sobald Sie E-Mails aktivieren.</p>
+              <section class="notification-group">
+                <h3 class="notification-group-title">Haus &amp; Kommunikation</h3>
+                {{range .NotificationEvents}}{{if or (eq .Key "announcement") (eq .Key "issue")}}<label class="notification-row"><span class="notification-row-copy"><strong>{{.Label}}</strong><span>{{.Description}}</span></span><span class="notification-switch"><input type="checkbox" name="events" value="{{.Key}}"{{if .Checked}} checked{{end}} data-notification-topic><span class="notification-switch-track"></span></span></label>{{end}}{{end}}
+              </section>
+              <section class="notification-group">
+                <h3 class="notification-group-title">Entscheidungen &amp; Unterlagen</h3>
+                {{range .NotificationEvents}}{{if or (eq .Key "vote") (eq .Key "document")}}<label class="notification-row"><span class="notification-row-copy"><strong>{{.Label}}</strong><span>{{.Description}}</span></span><span class="notification-switch"><input type="checkbox" name="events" value="{{.Key}}"{{if .Checked}} checked{{end}} data-notification-topic><span class="notification-switch-track"></span></span></label>{{end}}{{end}}
+              </section>
+              <section class="notification-group">
+                <h3 class="notification-group-title">Zahlung &amp; Nutzung</h3>
+                {{range .NotificationEvents}}{{if or (eq .Key "payment") (eq .Key "charging")}}<label class="notification-row"><span class="notification-row-copy"><strong>{{.Label}}</strong><span>{{.Description}}</span></span><span class="notification-switch"><input type="checkbox" name="events" value="{{.Key}}"{{if .Checked}} checked{{end}} data-notification-topic><span class="notification-switch-track"></span></span></label>{{end}}{{end}}
+              </section>
             </div>
-            <div class="actions full">
-              <button class="button primary" type="submit">Speichern</button>
-              <a class="button" href="/app/settings">Abbrechen</a>
+            <div class="actions">
+              <a href="/app/settings">Abbrechen</a>
+              <button class="button primary" type="submit">Benachrichtigungen speichern</button>
             </div>
           </form>
         </section>

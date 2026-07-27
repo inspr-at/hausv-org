@@ -2000,12 +2000,12 @@ func IssueCategories() []string {
 // labels shown in the UI. The keys belong to the store; the words belong here.
 func NotificationEventCatalog() []NotificationEventOption {
 	labels := map[string][2]string{
-		store.NotificationEventAnnouncement: {"Aushang", "Neue veröffentlichte Aushänge"},
-		store.NotificationEventIssue:        {"Anliegen", "Neue Anliegen, Kommentare und Statusänderungen"},
+		store.NotificationEventAnnouncement: {"Aushänge & Bekanntmachungen", "Neue und wichtige Informationen zum Haus"},
+		store.NotificationEventIssue:        {"Anliegen & Status", "Kommentare und Änderungen bei Anliegen"},
 		store.NotificationEventVote:         {"Abstimmungen", "Neue Abstimmungen und Erinnerungen"},
-		store.NotificationEventDocument:     {"Dokumente", "Neu bereitgestellte Dokumente"},
+		store.NotificationEventDocument:     {"Dokumente", "Neu bereitgestellte Unterlagen"},
 		store.NotificationEventPayment:      {"Zahlungen", "Fällige oder überfällige Zahlungen"},
-		store.NotificationEventCharging:     {"Laden", "Start und Ende von Ladevorgängen am Parkplatz"},
+		store.NotificationEventCharging:     {"Parkplatz-Laden", "Start und Ende eigener Ladevorgänge"},
 	}
 	out := make([]NotificationEventOption, 0, len(store.NotificationEvents))
 	for _, key := range store.NotificationEvents {

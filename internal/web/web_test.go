@@ -138,7 +138,7 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		t.Fatalf("read submit guard: %v", err)
 	}
 	text := string(body)
-	for _, want := range []string{`dataset.submitting`, `Bitte warten`, `dataset.confirm`, `setTimeout`} {
+	for _, want := range []string{`dataset.submitting`, `Bitte warten`, `dataset.confirm`, `setTimeout`, `data-notification-form`, `email-paused`, `data-notification-count`} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("submit guard missing %q", want)
 		}

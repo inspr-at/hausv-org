@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.32.0] - 2026-07-27
+
+### Verbessert
+
+- **Einstellungen beginnen mit dem eigenen Konto.** Name, E-Mail, Rolle sowie die wichtigsten Wege zu Profil und Benachrichtigungen sind sofort erfassbar.
+- **Das Profil trennt Angaben, Sichtbarkeit und Berechtigungen.** Persönliche Daten lassen sich ruhig bearbeiten; die freiwillige Freigabe für das Kontakte-Verzeichnis erklärt genau, was sichtbar wird.
+- **Benachrichtigungen sind nach Alltagsthemen geordnet.** Der gesamte E-Mail-Versand und sechs einzelne Themen lassen sich über verständliche Schalter steuern.
+- **Pausieren verliert keine Auswahl.** Gewählte Themen bleiben erhalten und werden beim erneuten Aktivieren wieder verwendet; der aktuelle Zustand ist auch in der Einstellungsübersicht sichtbar.
+- **Rollen sehen nur ihre passenden Wege.** Bewohner finden den eigenen Verlauf unter einer verständlichen Bezeichnung, während Verwaltungsfunktionen ausschließlich Berechtigten angeboten werden.
+- **Mobil bleibt alles lesbar und frei zugänglich.** Große Schalter und Hauptaktionen funktionieren ohne seitliches Scrollen oder überdeckte Inhalte.
+
 ## [0.31.0] - 2026-07-26
 
 ### Verbessert

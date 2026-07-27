@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.32.0",
+			Date:     "27. Juli 2026",
+			Kind:     "Einstellungen",
+			Headline: "Profil und Benachrichtigungen sind einfacher zu verstehen und schneller eingestellt.",
+			Intro:    "Konto, Sichtbarkeit und Kommunikation bilden klare Bereiche; der aktuelle Zustand und die jeweils nächste Aktion bleiben auf Desktop und Mobil sofort erkennbar.",
+			Items: []NoteItem{
+				{Label: "Konto überblicken", Text: "Name, E-Mail, Rolle, Profil und Benachrichtigungsstatus stehen gemeinsam in einer ruhigen Übersicht."},
+				{Label: "Sichtbarkeit verstehen", Text: "Die freiwillige Kontaktfreigabe erklärt, welche persönlichen Angaben für die Hausgemeinschaft sichtbar werden."},
+				{Label: "E-Mails steuern", Text: "Der Versand lässt sich insgesamt pausieren, ohne die Auswahl der sechs verständlich gruppierten Themen zu verlieren."},
+			},
+		},
+		{
 			Version:  "0.31.0",
 			Date:     "26. Juli 2026",
 			Kind:     "Übergaben",

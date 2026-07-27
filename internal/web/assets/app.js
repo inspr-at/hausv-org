@@ -51,6 +51,31 @@
     }
   });
 
+  Array.prototype.forEach.call(document.querySelectorAll("[data-notification-form]"), function (form) {
+    var master = form.querySelector("[data-notification-master]");
+    var topics = Array.prototype.slice.call(form.querySelectorAll("[data-notification-topic]"));
+    var status = form.querySelector("[data-notification-status]");
+    var count = form.querySelector("[data-notification-count]");
+    if (!master) return;
+
+    function updateNotificationState() {
+      var active = topics.filter(function (input) { return input.checked; }).length;
+      form.classList.toggle("email-paused", !master.checked);
+      if (count) count.textContent = active + " von " + topics.length + " aktiv";
+      if (status) {
+        status.textContent = master.checked
+          ? "Aktuell zu " + active + " von " + topics.length + " Themen."
+          : "Der Versand ist derzeit pausiert.";
+      }
+    }
+
+    master.addEventListener("change", updateNotificationState);
+    topics.forEach(function (input) {
+      input.addEventListener("change", updateNotificationState);
+    });
+    updateNotificationState();
+  });
+
   function submitButtons(form, submitter) {
     var buttons = Array.prototype.slice.call(
       form.querySelectorAll("button[type='submit'], input[type='submit']")
