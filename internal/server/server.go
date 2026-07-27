@@ -85,7 +85,6 @@ type (
 var announcementViewFrom = view.AnnouncementViewFrom
 var attachmentViewFromRecord = view.AttachmentViewFromRecord
 var auditActionLabel = view.AuditActionLabel
-var auditActionOptions = view.AuditActionOptions
 var auditActionTone = view.AuditActionTone
 var auditDetailLabel = view.AuditDetailLabel
 var auditEventViewFrom = view.AuditEventViewFrom
@@ -2728,25 +2727,62 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if !fullAudit {
 		events = a.scopedAuditEvents(ac, events)
 	}
+	availableEvents := events
 	events = filterAuditEvents(events, action, query)
 	eventViews := auditEventViews(events)
 	stats := auditStats(events, action, query)
-	auditLede := "Sensible Aktionen im Portal, begrenzt auf " + tenant.Address + "."
-	if !fullAudit {
-		auditLede = "Ihre Aktionen sowie freigegebene Vorgänge – ohne interne oder personenbezogene Verwaltungsdetails."
+	auditTitle := "Mein Verlauf"
+	auditLede := "Was in Ihrem Konto und bei freigegebenen Vorgängen passiert ist. Interne Verwaltungsdetails bleiben geschützt."
+	if fullAudit {
+		auditTitle = "Aktivitätsverlauf"
+		auditLede = "Änderungen und Zugriffe für " + tenant.Address + "."
+	} else if normalizeRole(role) == roleServiceProvider {
+		auditTitle = "Freigegebener Verlauf"
+		auditLede = "Änderungen bei den Vorgängen, auf die Sie aktuell Zugriff haben. Interne Verwaltungsdetails bleiben geschützt."
 	}
 	a.render(w, "auditLog", a.withBase(ac, map[string]any{
-		"Title":         "Audit-Log",
-		"ActivePage":    "audit",
-		"Events":        eventViews,
-		"HasEvents":     len(eventViews) > 0,
-		"EventsEmpty":   emptyState("Noch keine Audit-Einträge", "Sensible Aktionen erscheinen hier, sobald sie im Portal ausgeführt werden."),
-		"ActionOptions": auditActionOptions(action),
-		"ActionFilter":  action,
-		"SearchQuery":   query,
-		"AuditStats":    stats,
-		"AuditLede":     auditLede,
+		"Title":          auditTitle,
+		"ActivePage":     "audit",
+		"Events":         eventViews,
+		"HasEvents":      len(eventViews) > 0,
+		"EventsEmpty":    emptyState("Noch keine Audit-Einträge", "Sensible Aktionen erscheinen hier, sobald sie im Portal ausgeführt werden."),
+		"ActionOptions":  auditActionOptionsForEvents(action, availableEvents),
+		"ActionFilter":   action,
+		"SearchQuery":    query,
+		"AuditStats":     stats,
+		"AuditPageTitle": auditTitle,
+		"AuditLede":      auditLede,
+		"AuditIsFull":    fullAudit,
 	}))
+}
+
+func auditActionOptionsForEvents(selected string, events []auditEvent) []selectOption {
+	selected = normalizeAuditAction(selected)
+	actions := map[string]struct{}{}
+	for _, event := range events {
+		if action := normalizeAuditAction(event.Action); action != "" {
+			actions[action] = struct{}{}
+		}
+	}
+	if selected != "" {
+		actions[selected] = struct{}{}
+	}
+	keys := make([]string, 0, len(actions))
+	for action := range actions {
+		keys = append(keys, action)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return auditActionLabel(keys[i]) < auditActionLabel(keys[j])
+	})
+	options := []selectOption{{Value: "", Label: "Alle Arten", Selected: selected == ""}}
+	for _, action := range keys {
+		options = append(options, selectOption{
+			Value:    action,
+			Label:    auditActionLabel(action),
+			Selected: selected == action,
+		})
+	}
+	return options
 }
 
 func auditEventViews(events []auditEvent) []auditEventView {

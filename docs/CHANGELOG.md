@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.33.0] - 2026-07-27
+
+### Verbessert
+
+- **Der eigene Verlauf spricht Alltagssprache.** Bewohner sehen „Mein Verlauf“, berechtigte Verwaltungsrollen den „Aktivitätsverlauf“; der sichtbare Umfang und der Schutz interner Verwaltungsdetails werden klar erklärt.
+- **Zeit, Vorgang und Kontext sind sofort erfassbar.** Datum steht nur einmal pro Tagesgruppe, während jede Zeile einen verständlichen Titel und genau eine ruhige Kontextzeile zeigt.
+- **Filter bleiben kompakt und passend.** Eine schmale Übersichtsleiste ersetzt drei große Kennzahlen; angeboten werden nur Änderungsarten, die im aktuell freigegebenen Verlauf tatsächlich vorkommen.
+- **Details öffnen sich direkt am Ereignis.** Die gesamte Zeile ist ein großes Tastatur- und Touch-Ziel; technische Angaben erscheinen erst auf Wunsch als klare Schlüssel-Wert-Liste.
+- **Die Rollenabgrenzung bleibt unverändert sicher.** Bewohner und Dienstleister erhalten weiterhin ausschließlich aktuell freigegebene, datensparsam aufbereitete Einträge; die Verwaltung behält ihren mandantenbegrenzten Gesamtüberblick.
+- **Der mobile Verlauf ist rund 52 Prozent kürzer.** Bewohner- und Admin-Beispielverläufe kommen ohne seitliches Scrollen aus und behalten alle Ereignisse sowie optionalen Details.
+
 ## [0.32.0] - 2026-07-27
 
 ### Verbessert

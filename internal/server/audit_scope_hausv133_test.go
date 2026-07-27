@@ -175,3 +175,42 @@ func TestAuditActionsExposeUnderstandableLabelsAndTones(t *testing.T) {
 		t.Errorf("ballot target label = %q", got)
 	}
 }
+
+func TestAuditEventViewUsesOneReadableTitleAndCompactContext(t *testing.T) {
+	login := auditEventViewFrom(auditEvent{
+		ActorEmail: "Sie",
+		Action:     auditActionLogin,
+		TargetType: "session",
+		TargetID:   "resident@example.com",
+		Summary:    "Anmeldung",
+	})
+	if login.DisplayTitle != "Anmeldung" || login.Context != "Sie" || strings.Contains(login.Context, "resident@example.com") {
+		t.Fatalf("compact login view = %+v", login)
+	}
+
+	document := auditEventViewFrom(auditEvent{
+		ActorEmail: "resident@example.com",
+		ActorRole:  roleResident,
+		Action:     auditActionDocumentDownload,
+		TargetType: "document",
+		TargetID:   "Hausordnung 2026",
+		Summary:    "Hausordnung 2026 heruntergeladen",
+	})
+	if document.DisplayTitle != "Hausordnung 2026 heruntergeladen" || document.Context != "resident@example.com · Bewohner · Dokument: Hausordnung 2026" {
+		t.Fatalf("compact document view = %+v", document)
+	}
+}
+
+func TestAuditFilterOffersOnlyActionsVisibleInCurrentScope(t *testing.T) {
+	options := auditActionOptionsForEvents(auditActionDocumentDownload, []auditEvent{
+		{Action: auditActionLogin},
+		{Action: auditActionDocumentDownload},
+		{Action: auditActionLogin},
+	})
+	if len(options) != 3 {
+		t.Fatalf("action options = %+v, want all plus two visible actions", options)
+	}
+	if options[0].Label != "Alle Arten" || !options[2].Selected {
+		t.Fatalf("action option hierarchy = %+v", options)
+	}
+}

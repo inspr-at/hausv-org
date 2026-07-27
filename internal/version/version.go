@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.33.0",
+			Date:     "27. Juli 2026",
+			Kind:     "Verlauf",
+			Headline: "Änderungen und Zugriffe lassen sich wie eine ruhige Zeitleiste lesen.",
+			Intro:    "Ein kompakter Überblick, passende Filter und direkt am Ereignis erreichbare Details ersetzen die bisher gleichzeitig sichtbare Informationsdichte.",
+			Items: []NoteItem{
+				{Label: "Schnell verstehen", Text: "Zeit, verständlicher Vorgang und freigegebener Kontext bilden pro Ereignis eine klare Zeile."},
+				{Label: "Gezielt eingrenzen", Text: "Der Filter bietet nur Änderungsarten an, die im eigenen sichtbaren Verlauf tatsächlich vorkommen."},
+				{Label: "Sicher nachsehen", Text: "Technische Details bleiben auf Wunsch erreichbar, während Rollen- und Datenschutzgrenzen unverändert gelten."},
+			},
+		},
+		{
 			Version:  "0.32.0",
 			Date:     "27. Juli 2026",
 			Kind:     "Einstellungen",

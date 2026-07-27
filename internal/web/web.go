@@ -863,47 +863,54 @@ const PageTemplates = `
     .announcement-body-content { display: grid; gap: 12px; padding-top: 4px; }
     .archive-tools { display: grid; gap: 12px; margin: -4px 0 20px; }
     .filter-form { display: grid; grid-template-columns: minmax(220px,1fr) auto; gap: 10px; align-items: end; }
-    .filter-form.audit-filter { grid-template-columns: minmax(180px,.55fr) minmax(240px,1fr) auto auto; }
+    .filter-form.audit-filter { grid-template-columns: minmax(180px,.55fr) minmax(240px,1fr) auto; }
     .filter-form label { margin: 0; }
-    .audit-panel { display: grid; gap: 16px; }
-    .audit-summary-grid { margin: 0; }
-    .audit-summary-grid .metric-card { background: #fffdf8; }
-    .audit-filter-panel { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
-    .audit-filter-panel > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; align-items: baseline; padding: 13px 16px; color: var(--muted); }
+    .audit-page { display: grid; gap: 18px; }
+    .audit-page-head { display: grid; gap: 5px; max-width: 720px; }
+    .audit-panel { display: grid; gap: 14px; }
+    .audit-filter-panel { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); overflow: hidden; }
+    .audit-filter-panel > summary { list-style: none; cursor: pointer; min-height: 54px; display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 10px 13px 10px 16px; color: var(--muted); }
     .audit-filter-panel > summary::-webkit-details-marker { display: none; }
-    .audit-filter-panel > summary::after { content: "›"; justify-self: end; color: var(--gold-ink); font-size: 22px; line-height: 1; transition: transform .18s ease; }
-    .audit-filter-panel[open] > summary::after { transform: rotate(90deg); }
-    .audit-filter-panel > summary span { color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
-    .audit-filter-panel > summary strong { min-width: 0; color: var(--ink); overflow-wrap: anywhere; }
-    .audit-filter-panel .audit-filter { padding: 0 16px 14px; }
-    .audit-active-filters { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 16px 14px; }
+    .audit-filter-panel > summary:hover, .audit-filter-panel > summary:focus-visible { background: var(--panel-soft); outline: 2px solid var(--gold); outline-offset: -2px; }
+    .audit-overview { min-width: 0; display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 13.5px; }
+    .audit-overview svg { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: var(--gold-ink); stroke-width: 1.8; }
+    .audit-overview strong { font-size: 14px; }
+    .audit-overview span { color: var(--muted); }
+    .audit-filter-trigger { min-height: 36px; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 6px 10px; background: #fffefb; color: var(--ink); font-size: 13px; font-weight: 850; white-space: nowrap; }
+    .audit-filter-trigger svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+    .audit-filter-trigger .chip { min-height: 20px; padding: 2px 7px; }
+    .audit-filter-content { display: grid; gap: 12px; border-top: 1px solid var(--line); padding: 14px 16px 16px; background: var(--panel-soft); }
+    .audit-filter-content-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+    .audit-filter-content-head strong { font-family: var(--font-serif); font-size: 18px; }
+    .audit-filter-content-head span { color: var(--muted); font-size: 12px; }
+    .audit-filter-actions { display: flex; gap: 8px; align-items: center; }
+    .audit-filter-actions .button { min-height: 42px; }
+    .audit-active-filters { display: flex; gap: 8px; flex-wrap: wrap; }
     .audit-timeline { display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); overflow: hidden; }
-    .audit-day { margin: 0; padding: 14px 18px 10px; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; background: rgba(251,248,240,.82); border-bottom: 1px solid var(--line); }
-    .audit-row { display: grid; grid-template-columns: 82px 18px minmax(0,1fr); gap: 14px; align-items: start; padding: 16px 18px; border-bottom: 1px solid var(--line); }
-    .audit-row:last-child { border-bottom: 0; }
-    .audit-marker { width: 12px; height: 12px; border-radius: 50%; margin-top: 7px; background: var(--gold); box-shadow: 0 0 0 5px rgba(200,153,63,.14); }
-    .audit-row.audit-add .audit-marker { background: var(--leaf); box-shadow: 0 0 0 5px rgba(47,107,74,.12); }
-    .audit-row.audit-danger .audit-marker { background: #9e2a2b; box-shadow: 0 0 0 5px rgba(158,42,43,.11); }
-    .audit-time { display: grid; gap: 3px; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
-    .audit-time strong { font-family: var(--font-serif); font-size: 20px; line-height: 1.05; }
-    .audit-time span { color: var(--soft); font-size: 11.5px; font-weight: 800; }
-    .audit-main { min-width: 0; display: grid; gap: 10px; }
-    .audit-row-head { display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; align-items: start; }
-    .audit-action { display: grid; gap: 7px; min-width: 0; }
-    .audit-action strong { min-width: 0; font-size: 16px; line-height: 1.35; overflow-wrap: anywhere; }
-    .audit-pill { justify-self: start; gap: 7px; }
-    .audit-pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-    .audit-pill.audit-add { background: rgba(47,107,74,.12); color: var(--leaf); }
-    .audit-pill.audit-danger { background: rgba(158,42,43,.11); color: #9e2a2b; }
-    .audit-pill.audit-change { background: rgba(200,153,63,.16); color: #8a6a1f; }
-	.audit-meta { display: flex; gap: 10px 18px; flex-wrap: wrap; color: var(--muted); font-size: 13px; line-height: 1.35; }
-    .audit-meta span { min-width: 0; overflow-wrap: anywhere; }
-    .audit-meta strong { color: var(--gold-ink); font-size: 10.5px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
-    .audit-meta em { color: var(--soft); font-style: normal; }
-    .audit-details { min-width: 0; border-top: 1px dashed var(--line); padding-top: 9px; }
-    .audit-details summary { cursor: pointer; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
-    .audit-details .chips { gap: 7px; margin-top: 8px; }
-    .audit-details .chip { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+    .audit-day { margin: 0; padding: 12px 16px 9px; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .04em; background: rgba(251,248,240,.82); border-bottom: 1px solid var(--line); }
+    .audit-event { border-bottom: 1px solid var(--line); }
+    .audit-event:last-child { border-bottom: 0; }
+    details.audit-event > summary { list-style: none; cursor: pointer; }
+    details.audit-event > summary::-webkit-details-marker { display: none; }
+    details.audit-event > summary:hover, details.audit-event > summary:focus-visible { background: var(--panel-soft); outline: 2px solid var(--gold); outline-offset: -2px; }
+    .audit-row { display: grid; grid-template-columns: 64px 14px minmax(0,1fr); gap: 12px; align-items: start; min-height: 72px; padding: 14px 16px; }
+    details.audit-event .audit-row { grid-template-columns: 64px 14px minmax(0,1fr) 18px; }
+    .audit-marker { position: relative; width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; background: var(--gold); box-shadow: 0 0 0 4px rgba(200,153,63,.13); }
+    .audit-marker::after { content: ""; position: absolute; top: 14px; bottom: -65px; left: 4px; width: 1px; background: var(--line); }
+    .audit-row.audit-add .audit-marker, .audit-event.audit-add .audit-marker { background: var(--leaf); box-shadow: 0 0 0 4px rgba(47,107,74,.11); }
+    .audit-row.audit-danger .audit-marker, .audit-event.audit-danger .audit-marker { background: #9e2a2b; box-shadow: 0 0 0 4px rgba(158,42,43,.1); }
+    .audit-time { color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
+    .audit-time strong { font-family: var(--font-serif); font-size: 17px; line-height: 1.1; }
+    .audit-main { min-width: 0; display: grid; gap: 5px; }
+    .audit-title { min-width: 0; font-size: 15px; line-height: 1.35; overflow-wrap: anywhere; }
+    .audit-context { color: var(--muted); font-size: 12.5px; line-height: 1.4; overflow-wrap: anywhere; }
+    .audit-row-chevron { align-self: center; color: var(--gold-ink); font-size: 23px; line-height: 1; transition: transform .16s ease; }
+    details.audit-event[open] .audit-row-chevron { transform: rotate(90deg); }
+    .audit-detail-list { display: grid; margin: -3px 16px 14px 106px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); overflow: hidden; }
+    .audit-detail-row { display: grid; grid-template-columns: minmax(110px,.42fr) minmax(0,1fr); gap: 12px; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .audit-detail-row:last-child { border-bottom: 0; }
+    .audit-detail-row dt { color: var(--muted); }
+    .audit-detail-row dd { min-width: 0; margin: 0; color: var(--ink); font-weight: 700; overflow-wrap: anywhere; }
     .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
     .filter-tab { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 6px 12px; color: var(--muted); background: var(--panel); text-decoration: none; font-size: 13px; font-weight: 800; }
     .filter-tab.active, .filter-tab:hover { border-color: var(--gold); color: var(--ink); background: rgba(200,153,63,.14); }
@@ -1742,18 +1749,25 @@ const PageTemplates = `
 	      .quick-row .entry-actions form .button { width: 100%; }
 	      .filter-form.audit-filter { grid-template-columns: 1fr; align-items: stretch; }
       .filter-form.audit-filter button, .filter-form.audit-filter .button { width: 100%; min-height: 42px; }
-      .audit-filter-panel > summary { grid-template-columns: 1fr auto; align-items: center; }
-      .audit-filter-panel > summary strong { grid-column: 1 / -1; font-size: 13px; }
+      .audit-panel { padding: 14px; }
+      .audit-filter-panel > summary { padding-left: 13px; }
+      .audit-overview { gap: 6px; font-size: 12.5px; }
+      .audit-overview strong { font-size: 13px; }
+      .audit-filter-content-head { align-items: start; }
+      .audit-filter-actions { display: grid; grid-template-columns: 1fr; }
+      .audit-filter-actions .button { width: 100%; }
       .audit-timeline { width: 100%; }
-      .audit-day { padding: 12px 14px 9px; }
-      .audit-row { grid-template-columns: 56px 14px minmax(0,1fr); gap: 10px; padding: 14px; }
+      .audit-day { padding: 11px 12px 8px; }
+      .audit-row { grid-template-columns: 48px 10px minmax(0,1fr); gap: 9px; min-height: 68px; padding: 12px; }
+      details.audit-event .audit-row { grid-template-columns: 48px 10px minmax(0,1fr) 16px; }
       .audit-time { text-align: left; }
-      .audit-time strong { font-size: 16px; }
-      .audit-time span { font-size: 10.5px; overflow-wrap: anywhere; }
-      .audit-marker { width: 10px; height: 10px; margin-top: 5px; box-shadow: 0 0 0 4px rgba(200,153,63,.13); }
-      .audit-row-head { gap: 8px; }
-      .audit-action strong { font-size: 15px; }
-      .audit-meta { gap: 7px; }
+      .audit-time strong { font-size: 15.5px; }
+      .audit-marker { width: 8px; height: 8px; margin-top: 5px; box-shadow: 0 0 0 3px rgba(200,153,63,.13); }
+      .audit-marker::after { top: 11px; bottom: -64px; left: 3px; }
+      .audit-title { font-size: 14px; }
+      .audit-context { font-size: 12px; }
+      .audit-detail-list { margin: -2px 12px 12px 79px; }
+      .audit-detail-row { grid-template-columns: 1fr; gap: 3px; }
 	      .document-page-head { align-items: flex-start; }
 	      .document-page-head > .pill { margin-top: 5px; }
 	      .document-library { padding: 16px; gap: 18px; }
@@ -1846,7 +1860,7 @@ const PageTemplates = `
 	      {{if .CanUseResidentAreas}}
 	      <a class="nav-item {{if eq .ActivePage "abstimmungen"}}active{{end}}" href="/app/abstimmungen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span>Abstimmungen</a>
 	      {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span>Benutzer &amp; Rechte</a>{{end}}
-	      {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Audit-Log</a>{{end}}
+	      {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Verlauf</a>{{end}}
 	      <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span>Einstellungen</a>
 	      {{end}}
 	    </nav>
@@ -4206,7 +4220,7 @@ const PageTemplates = `
               <a class="settings-link" href="/app/settings/parking-access"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/></svg></span><span class="settings-link-copy"><strong>Parkplatz-Zugriff</strong><span>Nutzung freigeben oder entziehen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
               {{if .CanManageDocuments}}<a class="settings-link" href="/app/dokumente"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/></svg></span><span class="settings-link-copy"><strong>Dokumente</strong><span>Unterlagen verwalten</span></span><span class="settings-link-arrow">›</span></a>{{end}}
               {{if .CanManageHandovers}}<a class="settings-link" href="/app/uebergaben"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/></svg></span><span class="settings-link-copy"><strong>Übergaben</strong><span>Protokolle vorbereiten und ablegen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
-              {{if .CanViewAudit}}<a class="settings-link" href="/app/audit"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="settings-link-copy"><strong>Audit-Log</strong><span>Änderungen nachvollziehen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if .CanViewAudit}}<a class="settings-link" href="/app/audit"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="settings-link-copy"><strong>Aktivitätsverlauf</strong><span>Änderungen nachvollziehen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
               {{if .IsAdmin}}<a class="settings-link" href="/app/parking/settings"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/></svg></span><span class="settings-link-copy"><strong>Parkplatz-Abrechnung</strong><span>Tarife und Abrechnungswerte</span></span><span class="settings-link-arrow">›</span></a>{{end}}
             </div>
           </section>
@@ -4221,63 +4235,62 @@ const PageTemplates = `
 {{template "appOpen" .}}
     <main class="app-main">
       <div class="content-top">
-        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>/</span><span>Audit-Log</span></span>
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>/</span><span>Verlauf</span></span>
         {{if .CanUseResidentAreas}}<div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>{{end}}
       </div>
-      <section class="page wide">
-        <div>
-          <h1>Audit-Log</h1>
+      <section class="page wide audit-page">
+        <div class="audit-page-head">
+          <h1>{{.AuditPageTitle}}</h1>
           <p class="lede">{{.AuditLede}}</p>
         </div>
         <section class="panel audit-panel">
-          <div class="metric-grid audit-summary-grid" aria-label="Audit-Überblick">
-            <div class="metric-card"><span class="metric-label">Ereignisse</span><strong class="metric-value">{{.AuditStats.TotalEvents}}</strong><span class="mini">aktuelle Auswahl</span></div>
-            <div class="metric-card"><span class="metric-label">Personen</span><strong class="metric-value">{{.AuditStats.ActorCount}}</strong><span class="mini">sichtbare Akteure</span></div>
-            <div class="metric-card"><span class="metric-label">Heute</span><strong class="metric-value">{{.AuditStats.TodayCount}}</strong><span class="mini">Aktionen im Portal</span></div>
-          </div>
           <details class="audit-filter-panel"{{if .AuditStats.HasActiveFilters}} open{{end}}>
-            <summary><span>Filter</span><strong>{{.AuditStats.FilterSummary}}</strong></summary>
-            <form class="filter-form audit-filter" method="get" action="/app/audit">
-              <label for="audit-action">Aktion
-                <select id="audit-action" name="action">
-                  {{range .ActionOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-                </select>
-              </label>
-              <label for="audit-search">Suche
-                <input id="audit-search" type="search" name="q" value="{{.SearchQuery}}" placeholder="Person, Ziel oder Aktion">
-              </label>
-              <button class="button" type="submit">Filtern</button>
-              {{if .AuditStats.HasActiveFilters}}<a class="button ghost" href="/app/audit">Zurücksetzen</a>{{end}}
-            </form>
-            {{if .AuditStats.HasActiveFilters}}
-              <div class="audit-active-filters" aria-label="Aktive Filter">
-                {{range .AuditStats.ActiveFilters}}<span class="chip"><strong>{{.Label}}:</strong> {{.Value}}</span>{{end}}
-              </div>
-            {{end}}
+            <summary>
+              <span class="audit-overview"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/><path d="M2.5 7h.01M2.5 12h.01M2.5 17h.01"/></svg><strong>{{.AuditStats.TotalEvents}} Einträge</strong><span>· {{.AuditStats.TodayCount}} heute</span></span>
+              <span class="audit-filter-trigger"><svg viewBox="0 0 24 24"><path d="M4 5h16l-6 7v6l-4 2v-8z"/></svg>Filtern{{if .AuditStats.HasActiveFilters}} <span class="chip">{{len .AuditStats.ActiveFilters}}</span>{{end}}</span>
+            </summary>
+            <div class="audit-filter-content">
+              <div class="audit-filter-content-head"><strong>Filter</strong>{{if .AuditIsFull}}<span>{{.AuditStats.ActorCount}} sichtbare Personen</span>{{end}}</div>
+              <form class="filter-form audit-filter" method="get" action="/app/audit">
+                <label for="audit-action">Art der Änderung
+                  <select id="audit-action" name="action">
+                    {{range .ActionOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+                  </select>
+                </label>
+                <label for="audit-search">Suche
+                  <input id="audit-search" type="search" name="q" value="{{.SearchQuery}}" placeholder="Vorgang, Dokument oder Person">
+                </label>
+                <button class="button primary" type="submit">Ergebnisse zeigen</button>
+              </form>
+              {{if .AuditStats.HasActiveFilters}}
+                <div class="audit-active-filters" aria-label="Aktive Filter">
+                  {{range .AuditStats.ActiveFilters}}<span class="chip"><strong>{{.Label}}:</strong> {{.Value}}</span>{{end}}
+                </div>
+                <div class="audit-filter-actions"><a class="button ghost" href="/app/audit">Filter zurücksetzen</a></div>
+              {{end}}
+            </div>
           </details>
           {{if .HasEvents}}
-            <div class="audit-timeline" aria-label="Audit-Log">
+            <div class="audit-timeline" aria-label="Aktivitätsverlauf">
               {{range .Events}}
                 {{if .ShowDateHeader}}<h2 class="audit-day">{{.DateHeader}}</h2>{{end}}
-                <article class="audit-row audit-{{.ActionTone}}">
-                  <time class="audit-time" datetime="{{.AtISO}}"><strong>{{.AtTime}}</strong><span>{{.AtDate}}</span></time>
-                  <span class="audit-marker" aria-label="{{.ToneLabel}}"></span>
-					<div class="audit-main">
-						<div class="audit-row-head">
-							<div class="audit-action"><span class="pill audit-pill audit-{{.ActionTone}}">{{.ActionText}}</span><strong>{{.Summary}}</strong></div>
-						</div>
-                    <div class="audit-meta">
-                      <span><strong>Wer</strong> {{.Actor}}{{if .ActorRole}} <em>{{.ActorRole}}</em>{{end}}</span>
-                      <span><strong>Ziel</strong> {{if .HasTarget}}{{.Target}}{{else}}-{{end}}</span>
-                    </div>
-                    {{if .HasDetails}}
-                      <details class="audit-details">
-                        <summary>Details</summary>
-                        <div class="chips">{{range .Details}}<span class="chip"><strong>{{.Key}}:</strong> {{.Value}}</span>{{end}}</div>
-                      </details>
-                    {{end}}
-                  </div>
-                </article>
+                {{if .HasDetails}}
+                  <details class="audit-event audit-{{.ActionTone}}">
+                    <summary class="audit-row">
+                      <time class="audit-time" datetime="{{.AtISO}}" aria-label="{{.At}}"><strong>{{.AtTime}}</strong></time>
+                      <span class="audit-marker" aria-label="{{.ToneLabel}}"></span>
+                      <span class="audit-main"><strong class="audit-title">{{.DisplayTitle}}</strong>{{if .HasContext}}<span class="audit-context">{{.Context}}</span>{{end}}</span>
+                      <span class="audit-row-chevron" aria-hidden="true">›</span><span class="sr-only">Details zu {{.DisplayTitle}}</span>
+                    </summary>
+                    <dl class="audit-detail-list">{{range .Details}}<div class="audit-detail-row"><dt>{{.Key}}</dt><dd>{{.Value}}</dd></div>{{end}}</dl>
+                  </details>
+                {{else}}
+                  <article class="audit-event audit-row audit-{{.ActionTone}}">
+                    <time class="audit-time" datetime="{{.AtISO}}" aria-label="{{.At}}"><strong>{{.AtTime}}</strong></time>
+                    <span class="audit-marker" aria-label="{{.ToneLabel}}"></span>
+                    <span class="audit-main"><strong class="audit-title">{{.DisplayTitle}}</strong>{{if .HasContext}}<span class="audit-context">{{.Context}}</span>{{end}}</span>
+                  </article>
+                {{end}}
               {{end}}
             </div>
           {{else}}

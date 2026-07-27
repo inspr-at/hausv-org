@@ -406,6 +406,9 @@ type AuditEventView struct {
 	TargetType     string
 	HasTarget      bool
 	Summary        string
+	DisplayTitle   string
+	Context        string
+	HasContext     bool
 	Details        []AuditDetailView
 	HasDetails     bool
 }
@@ -1077,23 +1080,43 @@ func AuditEventViewFrom(event store.AuditEvent) AuditEventView {
 		details = append(details, AuditDetailView{Key: AuditDetailLabel(key), Value: event.Details[key]})
 	}
 	target := AuditTargetLabel(event.TargetType, event.TargetID)
+	actionText := AuditActionLabel(event.Action)
+	displayTitle := strings.TrimSpace(event.Summary)
+	if displayTitle == "" || strings.EqualFold(displayTitle, actionText) {
+		displayTitle = actionText
+	}
+	contextParts := make([]string, 0, 2)
+	actor := strings.TrimSpace(event.ActorEmail)
+	if role := strings.TrimSpace(event.ActorRole); actor != "" && role != "" {
+		actor += " · " + role
+	}
+	if actor != "" {
+		contextParts = append(contextParts, actor)
+	}
+	if target != "" && AuditTargetTypeLabel(event.TargetType) != "Sitzung" {
+		contextParts = append(contextParts, target)
+	}
+	context := strings.Join(contextParts, " · ")
 	return AuditEventView{
-		At:         FormatLocalDateTime(event.At),
-		AtDate:     FormatLocalDate(event.At),
-		AtTime:     FormatLocalTime(event.At),
-		AtISO:      event.At.Format(time.RFC3339),
-		Action:     event.Action,
-		ActionText: AuditActionLabel(event.Action),
-		ActionTone: AuditActionTone(event.Action),
-		ToneLabel:  AuditToneLabel(event.Action),
-		Actor:      event.ActorEmail,
-		ActorRole:  event.ActorRole,
-		Target:     target,
-		TargetType: AuditTargetTypeLabel(event.TargetType),
-		HasTarget:  target != "",
-		Summary:    event.Summary,
-		Details:    details,
-		HasDetails: len(details) > 0,
+		At:           FormatLocalDateTime(event.At),
+		AtDate:       FormatLocalDate(event.At),
+		AtTime:       FormatLocalTime(event.At),
+		AtISO:        event.At.Format(time.RFC3339),
+		Action:       event.Action,
+		ActionText:   actionText,
+		ActionTone:   AuditActionTone(event.Action),
+		ToneLabel:    AuditToneLabel(event.Action),
+		Actor:        event.ActorEmail,
+		ActorRole:    event.ActorRole,
+		Target:       target,
+		TargetType:   AuditTargetTypeLabel(event.TargetType),
+		HasTarget:    target != "",
+		Summary:      event.Summary,
+		DisplayTitle: displayTitle,
+		Context:      context,
+		HasContext:   context != "",
+		Details:      details,
+		HasDetails:   len(details) > 0,
 	}
 }
 

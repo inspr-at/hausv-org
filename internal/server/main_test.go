@@ -2417,7 +2417,7 @@ func TestAuditLogRecordsInviteAndGatesAccess(t *testing.T) {
 	}
 	body := authedRequest(t, a, "manager@example.com", "/app/audit")
 	auditBody := body.Body.String()
-	for _, want := range []string{"Einladung angelegt", "new.resident@example.com", "audit-timeline", "audit-summary-grid", "audit-filter-panel", "audit-details", "audit-add", "audit-time"} {
+	for _, want := range []string{"Einladung angelegt", "new.resident@example.com", "Aktivitätsverlauf", "audit-timeline", "audit-filter-panel", "audit-event", "audit-detail-list", "audit-add", "audit-time"} {
 		if !strings.Contains(auditBody, want) {
 			t.Fatalf("manager audit page missing %q status/body = %d\n%s", want, body.Code, auditBody)
 		}
@@ -2433,7 +2433,7 @@ func TestAuditLogRecordsInviteAndGatesAccess(t *testing.T) {
 	if strings.Contains(residentBody, "new.resident@example.com") || strings.Contains(residentBody, "manager@example.com") {
 		t.Fatalf("resident audit leaks unrelated management event:\n%s", residentBody)
 	}
-	if !strings.Contains(residentBody, "ohne interne oder personenbezogene Verwaltungsdetails") {
+	if !strings.Contains(residentBody, "Interne Verwaltungsdetails bleiben geschützt") {
 		t.Fatalf("resident audit scope explanation missing:\n%s", residentBody)
 	}
 }
