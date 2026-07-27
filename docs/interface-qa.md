@@ -7,7 +7,8 @@ Feldgrenzen geprueft sind.
 ## Gemeinsame Gates
 
 - Profil-/Namespace-Pruefung gegen das konkret unterstuetzte Format.
-- Golden Files mit anonymisierten realen oder verifizierten Beispieldateien.
+- Golden Files mit synthetischen oder anonymisierten Beispieldateien und
+  dokumentierter Herkunft.
 - Versionsmatrix je Adapter, z. B. camt 2009/2019 oder ebInterface 5.0/6.0.
 - Harte Feldlimits: Zahlungsreferenz maximal 35 Zeichen, nur sichere
   ASCII-Zeichen; Verwendungszweck als Zusatzkontext, nicht als sichere ID.
@@ -21,30 +22,56 @@ Feldgrenzen geprueft sind.
 
 | Adapter | Profilstand | Golden Files | Verfügbarkeit | Entscheidung |
 | --- | --- | --- | --- | --- |
-| camt.053 | `camt.053.001.02`, `camt.053.001.08` | synthetische 2009- und 2019-Fixtures | intern implementiert/getestet; keine produktive Upload-UI | Primaerer Zahlungsstatus-Import nach externem Bankprofil-Gate |
-| camt.054 | `.08` mit synthetischer Repository-Fixture getestet; für `.02` nur Namespace akzeptiert | synthetisches 2019-Golden-File für `.08`; keines für `.02` | intern implementiert/getestet; keine produktive Upload-UI | Reales/anonymisiertes Bankprofil und Profilnachweis fehlen |
-| BMD/RZL | BMD `raw-v0` Kandidat, RZL spaeter | BMD Golden File vorhanden, externe NTCS-Pruefung offen | interner Exportkandidat | Keine fertigen Buchungssaetze |
-| ebInterface | 6.0 priorisiert, 5.0 Fallback | synthetische 5.0- und 6.0-Fixtures | Parser/Ablage intern implementiert/getestet; keine produktive Upload-UI | Empfang und Ablage nach externem Profil-Gate, nicht buchen |
+| camt.053 | `camt.053.001.02`, `camt.053.001.08` | synthetische 2009- und 2019-Fixtures | intern implementiert/getestet; keine produktive Upload-UI | Primärer Zahlungsstatus-Import; reale/anonymisierte Bankdatei ist zusätzliche Profilabdeckung, kein Human-Gate |
+| camt.054 | `.08` mit synthetischer Repository-Fixture getestet; für `.02` nur Namespace akzeptiert | synthetisches 2019-Golden-File für `.08`; keines für `.02` | intern implementiert/getestet; keine produktive Upload-UI | `.02` bleibt bis Fixture und Golden File unverifiziert |
+| Neutrale Übergabe | `manual-csv/raw-v0` | Golden File vorhanden | intern implementiert/getestet; keine produktive Export-UI | Keine BMD-/RZL-Kompatibilitätsbehauptung, keine Buchungssätze |
+| BMD NTCS | noch kein Zielvertrag | keines | geplant | Erst mit offizieller Importbeschreibung oder betreibereigener Vorlage als Zieladapter bauen |
+| RZL FIBU | offizielle Import-Schnittstelle, Stand Juli 2026; Nutzung laut Handbuch nur für berechtigte RZL-Nutzer | noch keines | geplant | Erst mit autorisiertem Betreiberzugang oder von RZL freigegebener Spezifikation als Zieladapter bauen |
+| ebInterface | 6.0 priorisiert, 5.0 Fallback | synthetische 5.0- und 6.0-Fixtures | Parser/Ablage intern implementiert/getestet; keine produktive Upload-UI | Empfang und Ablage nach offizieller Schema-Validierung, nicht buchen |
 
 ## XSD-Gate
 
-Offizielle XSD-Validierung bleibt das Ziel fuer produktive Formatfreigaben. Weil
-XSD-Dateien lizenz- und quellenabhaengig gepflegt werden muessen, wird kein
-Adapter ohne dokumentierte Quelle, Profilname und Golden File als "fertig"
-bewertet. Bis zur vendorten oder CI-verfuegbaren XSD pruefen Adapter mindestens
-Profil/Namespace, Pflichtfelder, Feldlimits und fachliche Richtung.
+Offizielle XSD-Validierung bleibt das Ziel fuer produktive Formatfreigaben. Kein
+Adapter wird ohne dokumentierte Quelle, Profilname und Golden File als "fertig"
+bewertet. Kann eine offizielle XSD aus Lizenz- oder Verfügbarkeitsgründen nicht
+versioniert werden, dokumentiert der Betreiber URL, Abrufdatum, Prüfsumme und
+Validator-Ergebnis. Der Adapter prüft weiterhin Namespace, Pflichtfelder,
+Feldlimits und fachliche Richtung automatisiert.
 
-Fuer ebInterface ist labs.ebinterface.at der praktische externe Gegencheck: dort
+Fuer ebInterface ist labs.ebinterface.at der offizielle Online-Gegencheck: dort
 koennen ebInterface 5.0, 6.0 und 6.1 gegen das XML Schema geprueft werden. Die
 App unterstuetzt derzeit 5.0 und 6.0; 6.1 bleibt ein eigenes Folgeprofil.
 
-## Steuerberater-Gate
+## Betreiber-Selbstprüfung statt externer Freigabe
 
-BMD/RZL-Ausgaben brauchen zusaetzlich einen echten Testimport mit einem
-oesterreichischen Steuerberater. Ohne dokumentierten Gegencheck wird kein Export
-als produktiv markiert.
+Auf absehbare Zeit steht kein externer Auditor oder Steuerberater für Abnahmen
+zur Verfügung. Das ist kein unsichtbarer Dauerblocker: HAUSV arbeitet mit
+primären Hersteller-/Standardquellen, versionierten Fixtures, automatisierten
+Positiv- und Negativtests sowie einem datierten Betreiberprotokoll. Diese
+Selbstprüfung ist kein Zertifikat und keine Steuer- oder Rechtsberatung.
 
-Fuer BMD gibt es ein internes Pruefpaket in
-`docs/bmd-rawdata-verification.md` und ein Golden File
-`internal/integrations/testdata/bmd-raw-v0.csv`. Der Kandidat prueft nur Rohdatenfelder und lehnt
-Konten-/Steuerkennzeichen ab, bis ein reales BMD-NTCS-Mapping bestaetigt ist.
+Der neutrale Export ist in `docs/structured-handoff-export.md` beschrieben. BMD
+und RZL brauchen davon getrennte Zieladapter. Für BMD muss zuerst ein offizieller
+Importvertrag oder eine betreibereigene NTCS-Vorlage vorliegen. Die offizielle
+RZL-FIBU-Importschnittstelle ist zwar auffindbar, laut Handbuch aber nur für
+berechtigte RZL-Nutzer bestimmt; vor Verwendung braucht HAUSV daher einen
+autorisierten Betreiberzugang oder eine von RZL freigegebene Spezifikation. Ein
+Testimport in einer vom Betreiber kontrollierten Zielumgebung erhöht den
+Nachweis; fehlt diese Umgebung, bleibt genau dieser Punkt sichtbar und die
+Zielsystem-Kompatibilität wird nicht als produktionsbereit behauptet.
+
+## Primärquellen (verifiziert 27.07.2026)
+
+- ISO 20022 Message Definitions und Message Archive für camt.053/.054:
+  `https://www.iso20022.org/iso-20022-message-definitions` und
+  `https://www.iso20022.org/catalogue-messages/iso-20022-messages-archive`
+- ebInterface 5.0/6.0 Dokumentation und offizieller Validator:
+  `https://www.ebinterface.at/download/documentation/ebInvoice_5p0.pdf`,
+  `https://www.ebinterface.at/download/documentation/ebInvoice_6p0.pdf`,
+  `https://labs.ebinterface.at/`
+- RZL FIBU Import-Schnittstelle, Stand Juli 2026:
+  `https://rzlsoftware.at/fileadmin/user_upload/PDF_Schnittstelle/RZL_FIBU_Import_Schnittstelle.pdf`
+- BMD NTCS Standardschnittstellen und Import-Schulung:
+  `https://www.bmd.com/at/akademie/akademieshop/seminar/d/fibu-standardschnittstellen-10943/14`
+  und
+  `https://www.bmd.com/at/akademie/akademieshop/seminar/d/die-10-wichtigsten-excelfunktionen-um-buchungen-in-ntcs-zu-importieren-11540`

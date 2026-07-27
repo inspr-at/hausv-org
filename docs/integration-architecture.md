@@ -15,7 +15,8 @@ Die App trennt Formatadapter von Produktdaten über kleine interne Modelle:
 - `canonicalInvoice`: empfangene Dienstleisterrechnung oder Kostennachweis, z. B.
   ebInterface. Enthält Rechnungsnummer, Aussteller, Betrag, Daten und optional
   eine geschützte Attachment-ID.
-- `canonicalExportRecord`: formatneutrale Rohdaten für BMD/RZL/CSV-Exporte. Das
+- `canonicalExportRecord`: formatneutrale Rohdaten für kontrollierte
+  CSV-Übergaben und spätere BMD-/RZL-Zieladapter. Das
   Modell enthält fachliche Felder und Statusinformationen, aber keine Soll/Haben-
   Buchungsvorgaben.
 
@@ -26,9 +27,10 @@ Export. Sie erhalten ein `integrationSource` mit Format/Version/Dateiname und
 geben pro Datensatz entweder ein kanonisches Modell oder einen strukturierten
 Fehler zurück.
 
-So bleiben camt, BMD, RZL und ebInterface austauschbar. Formatbesonderheiten,
-Schemas und Golden Files gehören in den jeweiligen Adapter, nicht in die Portal-
-Workflows.
+So bleiben camt, BMD, RZL und ebInterface austauschbar. Das neutrale
+`manual-csv/raw-v0` ist ausdrücklich kein BMD- oder RZL-Importformat.
+Formatbesonderheiten, Schemas und Golden Files gehören in den jeweiligen
+Zieladapter, nicht in die Portal-Workflows.
 
 ## Fehlerberichte
 
@@ -43,12 +45,13 @@ entschieden:
 
 Keine Schnittstelle darf im Produkt eigene Buchhaltung, Mahnwesen, Steuerlogik
 oder Zahlungsaufträge einführen. Zahlungsdaten sind Transparenzstatus. Exporte
-liefern strukturierte Rohdaten für bestehende Systeme und Steuerberater.
+liefern strukturierte Rohdaten für kontrollierte Übergaben; Kompatibilität mit
+einem Zielsystem wird nur für einen eigens dagegen geprüften Adapter behauptet.
 
 Zahlungsabgleich verwendet das kurze Referenzformat aus
 `docs/payment-references.md`; Freitext-Verwendungszwecke sind nur Zusatzkontext.
 Die ersten Zahlungsadapter sind in `docs/camt053-import.md` und
 `docs/camt054-evaluation.md` beschrieben. Der Rechnungsadapter ist in
-`docs/ebinterface-import.md` beschrieben. Der BMD-Rohdatenkandidat fuer die
-Steuerberater-Pruefung liegt in `docs/bmd-rawdata-verification.md`. Die
+`docs/ebinterface-import.md` beschrieben. Das neutrale Übergabeformat liegt in
+`docs/structured-handoff-export.md`. Die
 gemeinsamen QA-Gates liegen in `docs/interface-qa.md`.

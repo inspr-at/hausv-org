@@ -50,7 +50,7 @@ func TestCanonicalIntegrationAdaptersAreFormatNeutral(t *testing.T) {
 	var _ InvoiceImportAdapter = fakeInvoiceAdapter{}
 	var _ InvoiceImportAdapter = EBInterfaceAdapter{}
 	var _ ExportDataAdapter = fakeExportAdapter{}
-	var _ ExportDataAdapter = BMDRawDataAdapter{}
+	var _ ExportDataAdapter = StructuredHandoffAdapter{}
 
 	payments, err := fakePaymentAdapter{}.ParsePayments(context.Background(), Source{Format: FormatCAMT053}, strings.NewReader("fixture"))
 	if err != nil {
@@ -82,7 +82,7 @@ func TestInterfaceDocumentationCoversQAGatesAndAustrianFormats(t *testing.T) {
 	for _, path := range []string{
 		"../../docs/interface-qa.md",
 		"../../docs/camt054-evaluation.md",
-		"../../docs/bmd-rawdata-verification.md",
+		"../../docs/structured-handoff-export.md",
 		"../../docs/austrian-interface-decisions.md",
 		"../../docs/integration-architecture.md",
 	} {
@@ -100,8 +100,8 @@ func TestInterfaceDocumentationCoversQAGatesAndAustrianFormats(t *testing.T) {
 		"Golden Files",
 		"camt.053",
 		"camt.054",
-		"BMD/RZL",
-		"BMD-NTCS",
+		"BMD NTCS",
+		"RZL FIBU",
 		"ebInterface",
 		"Keine Buchung",
 		"Zahlungsreferenz maximal 35 Zeichen",

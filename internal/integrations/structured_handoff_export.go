@@ -11,9 +11,9 @@ import (
 	"time"
 )
 
-const RawDataVersion = "raw-v0"
+const StructuredHandoffVersion = "raw-v0"
 
-var RawDataHeader = []string{
+var StructuredHandoffHeader = []string{
 	"tenant_slug",
 	"record_id",
 	"kind",
@@ -32,7 +32,7 @@ var RawDataHeader = []string{
 	"verification_note",
 }
 
-var bmdRawDataAllowedFields = map[string]struct{}{
+var structuredHandoffAllowedFields = map[string]struct{}{
 	"period":             {},
 	"status":             {},
 	"source":             {},
@@ -41,7 +41,7 @@ var bmdRawDataAllowedFields = map[string]struct{}{
 	"verification_note":  {},
 }
 
-var bmdRawDataAccountingFields = map[string]struct{}{
+var structuredHandoffAccountingFields = map[string]struct{}{
 	"account":        {},
 	"contra_account": {},
 	"credit_account": {},
@@ -52,13 +52,16 @@ var bmdRawDataAccountingFields = map[string]struct{}{
 	"vat_code":       {},
 }
 
-type BMDRawDataAdapter struct{}
+// StructuredHandoffAdapter writes a format-neutral CSV for controlled manual
+// handoff. It deliberately does not claim compatibility with BMD, RZL, or any
+// other accounting system.
+type StructuredHandoffAdapter struct{}
 
-func (BMDRawDataAdapter) WriteExportData(ctx context.Context, w io.Writer, records []ExportRecord) (Report, error) {
-	source := Source{Format: FormatBMD, Version: RawDataVersion}
+func (StructuredHandoffAdapter) WriteExportData(ctx context.Context, w io.Writer, records []ExportRecord) (Report, error) {
+	source := Source{Format: FormatManualCSV, Version: StructuredHandoffVersion}
 	writer := csv.NewWriter(w)
 	writer.Comma = ';'
-	if err := writer.Write(RawDataHeader); err != nil {
+	if err := writer.Write(StructuredHandoffHeader); err != nil {
 		return Report{}, err
 	}
 
@@ -68,12 +71,12 @@ func (BMDRawDataAdapter) WriteExportData(ctx context.Context, w io.Writer, recor
 		if err := ctx.Err(); err != nil {
 			return Report{}, err
 		}
-		recordErrors := bmdRawDataRecordErrors(record)
+		recordErrors := structuredHandoffRecordErrors(record)
 		if len(recordErrors) > 0 {
 			errors = append(errors, recordErrors...)
 			continue
 		}
-		if err := writer.Write(bmdRawDataRow(record)); err != nil {
+		if err := writer.Write(structuredHandoffRow(record)); err != nil {
 			return Report{}, err
 		}
 		accepted++
@@ -85,31 +88,31 @@ func (BMDRawDataAdapter) WriteExportData(ctx context.Context, w io.Writer, recor
 	return buildReport(source, accepted, errors), nil
 }
 
-func bmdRawDataRecordErrors(record ExportRecord) []RecordError {
+func structuredHandoffRecordErrors(record ExportRecord) []RecordError {
 	errors := record.Validate()
 	if record.Occurred.IsZero() {
-		errors = append(errors, RecordError{RecordType: RecordExportRawData, RecordID: record.RecordID, Field: "occurred", Message: "event date required for BMD raw data candidate"})
+		errors = append(errors, RecordError{RecordType: RecordExportRawData, RecordID: record.RecordID, Field: "occurred", Message: "event date required for structured handoff"})
 	}
 	for key := range record.Fields {
-		normalized := normalizeBMDRawDataField(key)
-		if _, reserved := bmdRawDataAccountingFields[normalized]; reserved {
-			errors = append(errors, RecordError{RecordType: RecordExportRawData, RecordID: record.RecordID, Field: key, Message: "accounting account fields are out of scope before Steuerberater verification"})
+		normalized := normalizeStructuredHandoffField(key)
+		if _, reserved := structuredHandoffAccountingFields[normalized]; reserved {
+			errors = append(errors, RecordError{RecordType: RecordExportRawData, RecordID: record.RecordID, Field: key, Message: "accounting account and tax fields are out of scope for this product"})
 			continue
 		}
-		if _, allowed := bmdRawDataAllowedFields[normalized]; !allowed {
-			errors = append(errors, RecordError{RecordType: RecordExportRawData, RecordID: record.RecordID, Field: key, Message: "field is not part of BMD raw data candidate v0"})
+		if _, allowed := structuredHandoffAllowedFields[normalized]; !allowed {
+			errors = append(errors, RecordError{RecordType: RecordExportRawData, RecordID: record.RecordID, Field: key, Message: "field is not part of structured handoff raw-v0"})
 		}
 	}
 	return errors
 }
 
-func bmdRawDataRow(record ExportRecord) []string {
-	fields := normalizeBMDRawDataFields(record.Fields)
+func structuredHandoffRow(record ExportRecord) []string {
+	fields := normalizeStructuredHandoffFields(record.Fields)
 	return []string{
 		textutil.Slug(record.TenantSlug),
 		strings.TrimSpace(record.RecordID),
 		strings.TrimSpace(record.Kind),
-		formatBMDRawDataDate(record.Occurred),
+		formatStructuredHandoffDate(record.Occurred),
 		strings.TrimSpace(record.UnitID),
 		strings.TrimSpace(record.PersonRef),
 		strings.TrimSpace(record.Reference),
@@ -125,7 +128,7 @@ func bmdRawDataRow(record ExportRecord) []string {
 	}
 }
 
-func normalizeBMDRawDataFields(fields map[string]string) map[string]string {
+func normalizeStructuredHandoffFields(fields map[string]string) map[string]string {
 	normalized := map[string]string{}
 	keys := make([]string, 0, len(fields))
 	for key := range fields {
@@ -133,16 +136,16 @@ func normalizeBMDRawDataFields(fields map[string]string) map[string]string {
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		normalized[normalizeBMDRawDataField(key)] = strings.TrimSpace(fields[key])
+		normalized[normalizeStructuredHandoffField(key)] = strings.TrimSpace(fields[key])
 	}
 	return normalized
 }
 
-func normalizeBMDRawDataField(field string) string {
+func normalizeStructuredHandoffField(field string) string {
 	return strings.ToLower(strings.TrimSpace(field))
 }
 
-func formatBMDRawDataDate(t time.Time) string {
+func formatStructuredHandoffDate(t time.Time) string {
 	if t.IsZero() {
 		return ""
 	}

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func TestBMDRawDataAdapterWritesCandidateCSV(t *testing.T) {
+func TestStructuredHandoffAdapterWritesCSV(t *testing.T) {
 	record := ExportRecord{
 		TenantSlug: "JHW22",
 		RecordID:   "parking-2026-06-top-11",
@@ -24,28 +24,28 @@ func TestBMDRawDataAdapterWritesCandidateCSV(t *testing.T) {
 			"source":             "parking",
 			"document_reference": "doc-abc",
 			"description":        "Parkplatzabrechnung Juni 2026",
-			"verification_note":  "Candidate for BMD NTCS field mapping only",
+			"verification_note":  "Neutral handoff without target-system compatibility claim",
 		},
 	}
 
 	var out strings.Builder
-	report, err := BMDRawDataAdapter{}.WriteExportData(context.Background(), &out, []ExportRecord{record})
+	report, err := StructuredHandoffAdapter{}.WriteExportData(context.Background(), &out, []ExportRecord{record})
 	if err != nil {
 		t.Fatalf("WriteExportData: %v", err)
 	}
-	if report.Source.Format != FormatBMD || report.Source.Version != RawDataVersion || report.Accepted != 1 || report.Rejected != 0 {
+	if report.Source.Format != FormatManualCSV || report.Source.Version != StructuredHandoffVersion || report.Accepted != 1 || report.Rejected != 0 {
 		t.Fatalf("report = %+v", report)
 	}
-	want, err := os.ReadFile("testdata/bmd-raw-v0.csv")
+	want, err := os.ReadFile("testdata/structured-handoff-raw-v0.csv")
 	if err != nil {
 		t.Fatalf("read golden file: %v", err)
 	}
 	if out.String() != string(want) {
-		t.Fatalf("BMD raw CSV mismatch\nwant:\n%s\ngot:\n%s", string(want), out.String())
+		t.Fatalf("structured handoff CSV mismatch\nwant:\n%s\ngot:\n%s", string(want), out.String())
 	}
 }
 
-func TestBMDRawDataAdapterRejectsBookingFields(t *testing.T) {
+func TestStructuredHandoffAdapterRejectsAccountingFields(t *testing.T) {
 	record := ExportRecord{
 		TenantSlug: "jhw22",
 		RecordID:   "raw-1",
@@ -60,7 +60,7 @@ func TestBMDRawDataAdapterRejectsBookingFields(t *testing.T) {
 	}
 
 	var out strings.Builder
-	report, err := BMDRawDataAdapter{}.WriteExportData(context.Background(), &out, []ExportRecord{record})
+	report, err := StructuredHandoffAdapter{}.WriteExportData(context.Background(), &out, []ExportRecord{record})
 	if err != nil {
 		t.Fatalf("WriteExportData: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestBMDRawDataAdapterRejectsBookingFields(t *testing.T) {
 	}
 }
 
-func TestBMDRawDataAdapterRejectsUnmappedFieldsAndMissingDate(t *testing.T) {
+func TestStructuredHandoffAdapterRejectsUnmappedFieldsAndMissingDate(t *testing.T) {
 	record := ExportRecord{
 		TenantSlug: "jhw22",
 		RecordID:   "raw-2",
@@ -96,7 +96,7 @@ func TestBMDRawDataAdapterRejectsUnmappedFieldsAndMissingDate(t *testing.T) {
 	}
 
 	var out strings.Builder
-	report, err := BMDRawDataAdapter{}.WriteExportData(context.Background(), &out, []ExportRecord{record})
+	report, err := StructuredHandoffAdapter{}.WriteExportData(context.Background(), &out, []ExportRecord{record})
 	if err != nil {
 		t.Fatalf("WriteExportData: %v", err)
 	}

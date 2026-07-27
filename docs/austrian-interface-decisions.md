@@ -37,10 +37,12 @@ Leitplanken:
 Eine weitere Tenant-Mitgliedschaft für dieselbe Identität braucht immer eine
 eigene, ausdrückliche Zuordnung und den passenden Vertrags-/Rollenrahmen.
 
-## BMD zuerst
+## Neutrale Übergabe zuerst, Zieladapter getrennt
 
-Entscheidung: BMD wird als erste Kanzlei-/Steuerberater-Schnittstelle behandelt.
-Der Scope ist Rohdaten-/Belegübergabe, nicht fertige Buchungssätze.
+Entscheidung: Der vorhandene `raw-v0`-Export ist eine formatneutrale,
+strukturierte Übergabe und kein BMD- oder RZL-Importformat. BMD NTCS und RZL
+FIBU werden als getrennte Zieladapter geplant. Der Scope bleibt
+Rohdaten-/Belegübergabe, nicht fertige Buchungssätze.
 
 Geplante Rohdaten:
 
@@ -49,36 +51,54 @@ Geplante Rohdaten:
 - Dokument-/Anhangsreferenzen zu Belegen oder Dienstleister-Rechnungen
 - Beträge nur als Übergabewerte, nicht als gebuchte Soll/Haben-Sätze
 
-Interner Kandidat:
+Interner Stand:
 
-- Profil `raw-v0` als Semikolon-CSV fuer die Steuerberater-Pruefung
-- Golden File `internal/integrations/testdata/bmd-raw-v0.csv`
-- Pruefpaket `docs/bmd-rawdata-verification.md`
-- Konten- und Steuerfelder werden vor externer BMD-NTCS-Bestaetigung abgelehnt
+- Profil `manual-csv/raw-v0` als Semikolon-CSV für kontrollierte Übergaben
+- Golden File
+  `internal/integrations/testdata/structured-handoff-raw-v0.csv`
+- Formatvertrag `docs/structured-handoff-export.md`
+- Konten- und Steuerfelder werden als außerhalb des Produkts abgelehnt
+- keine Behauptung, dass BMD NTCS oder RZL dieses CSV direkt importieren kann
 
-Abnahme-Gate vor produktiver Freigabe:
+## BMD NTCS als eigener Zieladapter
 
-- Feldmapping mit einem realen Steuerberater prüfen
-- Kontenbedarf und Importziel in BMD NTCS festhalten
-- vorhandenes Golden File mit dem bestaetigten Mapping aktualisieren
-- Testimport in BMD NTCS dokumentieren
+Öffentliche BMD-Seiten bestätigen Importwege für XLS, CSV, TXT und PDF sowie
+Importvorlagen und ein Schnittstellenhandbuch. Sie liefern aber keinen
+ausreichenden öffentlichen Feldvertrag, der `raw-v0` als NTCS-kompatibel
+belegen würde.
 
-Ohne dieses Gate wird kein BMD-Export als produktive Funktion freigeschaltet.
+Gate vor einer BMD-Kompatibilitätsbehauptung:
 
-## RZL als Fast-Follow
+- konkretes NTCS-Importziel und Version benennen
+- offizielles Schnittstellenhandbuch oder betreibereigene Importvorlage
+  versioniert dokumentieren
+- Pflichtfelder, Feldlimits und Mapping als eigenen Adapter umsetzen
+- eigenes Golden File sowie Positiv- und Negativtests
+- wenn eine betreiberkontrollierte NTCS-Umgebung verfügbar ist:
+  anonymisierten Testimport protokollieren
+- keine eigene Buchungs-, Steuer-, Mahn- oder Zahlungslogik
 
-Entscheidung: RZL wird nach der BMD-Klärung geprüft. Der bevorzugte Weg ist,
-dieselben kanonischen Export-Rohdaten zu verwenden und nur den Adapter zu
-wechseln.
+Eine externe Steuerberater- oder Auditor-Freigabe ist kein Gate. Fehlt der
+Zielvertrag oder eine kontrollierte Zielumgebung, bleibt BMD sichtbar
+unverifiziert und wird nicht als produktionsbereit bezeichnet.
 
-Zu klären:
+## RZL FIBU als autorisierter Fast-Follow
 
-- ob RZL die BMD-Rohdatenstruktur direkt oder mit kleinem Mapping akzeptiert
-- welche Pflichtfelder/Kontenfelder abweichen
-- ob Zielkunden RZL tatsächlich benötigen
+RZL beschreibt den Selbstimport in der öffentlichen Online-Hilfe. Das aktuelle
+FIBU-Importhandbuch (Stand Juli 2026) ist auffindbar, erklärt seine Nutzung aber
+ausdrücklich als berechtigten RZL-Nutzern vorbehalten. Der Zieladapter kann ohne
+externe Fachperson entwickelt werden, aber nicht ohne autorisierten
+Betreiberzugang oder eine von RZL freigegebene Schnittstellenbeschreibung.
 
-Falls RZL umgesetzt wird, gelten dieselben Gates wie bei BMD: Golden File,
-Testimport und keine Buchungslogik im Produkt.
+Gate:
+
+- Nutzungsberechtigung und konkretes RZL-Profil samt Quellstand festhalten
+- kanonische Exportdaten auf die offiziellen RZL-Felder abbilden
+- Pflichtfelder und Limits automatisiert prüfen
+- eigenes anonymisiertes Golden File und Negativtests
+- Betreiberprotokoll für Parser-/Formatprüfung; kontrollierter Testimport, sobald
+  eine RZL-Umgebung verfügbar ist
+- keine Buchungslogik im Portal
 
 ## ebInterface empfangen, nicht buchen
 
@@ -109,10 +129,15 @@ Quellen fuer das Profil-Gate:
 - labs.ebinterface.at bietet eine Schema-Pruefung fuer ebInterface 5.0, 6.0 und
   6.1; diese Versionen bleiben die praktische Referenz fuer Testdateien.
 
+Eine externe Freigabe ist nicht erforderlich. Offizielle XSD-/Validator-
+Ergebnisse, Repository-Fixtures, Negativtests und ein datiertes
+Betreiberprotokoll bilden den Nachweis.
+
 ## Peppol, DATEV und ZUGFeRD nachrangig
 
-Peppol bleibt strategisch interessant, wird aber erst umgesetzt, wenn ein
-Access-Point-Ansatz und realer Bedarf bestätigt sind.
+Peppol bleibt strategisch interessant, wird aber nur über einen akkreditierten
+Access-Point-Anbieter umgesetzt, wenn realer Bedarf bestätigt ist. hausv.org
+baut keinen eigenen Peppol Access Point.
 
 DATEV und ZUGFeRD sind für die Österreich-first Roadmap nachrangig. Sie werden
 nicht umgesetzt, solange kein bestätigter Kundenbedarf vorliegt. Deutscher
@@ -122,7 +147,7 @@ Entscheidungsvorlage:
 
 | Thema | AT-Relevanz | Aufwand | Entscheidung |
 | --- | --- | --- | --- |
-| Peppol | mittelfristig strategisch | hoch, Access Point nötig | beobachten, nicht bauen |
+| Peppol | mittelfristig strategisch | Anbieterintegration nötig | akkreditierten Anbieter nutzen, nicht selbst AP bauen |
 | DATEV | niedrig für AT-Fokus | mittel bis hoch | kein Scope ohne Bedarf |
 | ZUGFeRD | niedrig für AT-Fokus | mittel | kein Scope ohne Bedarf |
 
@@ -133,7 +158,7 @@ Bankbewegungen. camt.054 wird als Zahlungsavis-/Detailabgleich unterstützt,
 wenn eine Bank Detailavise getrennt vom Kontoauszug liefert; fachlich bleibt es
 derselbe geschützte Statusabgleich. `camt.054.001.08` ist derzeit nur mit dem
 Repository-Golden-File getestet; die produktive Freigabe braucht weiterhin die
-unten genannten Bankprofil-Nachweise. Für `.02` wird lediglich der Namespace
+unten genannten Profil-Nachweise. Für `.02` wird lediglich der Namespace
 akzeptiert; ohne eigene Fixture und eigenes Golden File bleibt das Profil
 unverifiziert. MT940 bleibt ein bewertbarer Legacy-Fallback,
 wird aber erst gebaut, wenn ein echter Kunde nur MT940 liefern kann und
@@ -141,14 +166,17 @@ Testdateien freigibt.
 
 Gate für camt.054:
 
-- reale oder anonymisierte Beispiel-Datei je Bankprofil
+- offizielle ISO-Profilquelle und unterstützte Version dokumentieren
+- synthetische Fixture und Golden File je behauptetem Profil
+- reale oder anonymisierte Beispiel-Datei je Bankprofil, sobald verfügbar
 - Golden File und Importprotokoll
 - gleiche Zahlungsreferenz-Regeln wie camt.053
 - keine automatische Buchung, nur Status-/Referenzabgleich
 
 Gate für MT940:
 
-- reale Beispiel-Datei ohne Secrets
+- öffentliche Spezifikation oder reale/anonymisierte Beispiel-Datei ohne
+  Secrets
 - Feldmapping zu hausv.org-Zahlungsreferenzen
 - Golden File und Importprotokoll
 - keine automatische Buchung, nur Status-/Referenzabgleich

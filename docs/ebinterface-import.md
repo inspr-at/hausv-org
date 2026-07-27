@@ -1,8 +1,9 @@
 # ebInterface-Import
 
 Status: Parser und geschuetzte Ablage sind intern implementiert und getestet,
-aber noch nicht an eine produktive Upload-UI angeschlossen. Die externe
-Profil-/Praxispruefung aus `docs/interface-qa.md` bleibt das Freigabe-Gate.
+aber noch nicht an eine produktive Upload-UI angeschlossen. Offizielle
+Schema-Validierung und der reproduzierbare Betreiber-Check aus
+`docs/interface-qa.md` bleiben das Freigabe-Gate.
 
 Der ebInterface-Adapter kann Dienstleister-Rechnungen als strukturierte
 Metadaten lesen und die Original-XML ueber den internen Speicherhelfer als
