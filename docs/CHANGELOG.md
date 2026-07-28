@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.41.0] - 2026-07-28
+
+### Verbessert
+
+- **Bewohner sehen bei Anliegen nur noch die tatsächlich nötige nächste Aktion.** Ohne Rückfrage bleibt die Seite ruhig; bei einer Frage erscheint genau ein Antwortfeld, bei einer vorgeschlagenen Lösung eine klare Ja-/Nein-Entscheidung.
+- **Verwaltungsnachrichten unterscheiden Information und Rückfrage.** Eine Information ist ohne Antwortdruck im Verlauf sichtbar, während eine Rückfrage automatisch eine eindeutige Bewohneraufgabe erzeugt.
+- **Antworten schließen offene Rückfragen nachvollziehbar.** Nachrichtentypen bleiben im Anliegen gespeichert und im Aktivitätsverlauf erkennbar; vorhandene ältere Kommentare bleiben unverändert lesbar.
+- **Lösungen werden gemeinsam abgeschlossen.** Die Verwaltung schlägt die erledigte Bearbeitung vor, Bewohner bestätigen sie oder öffnen das Anliegen mit einem Klick wieder.
+- **Details bleiben erreichbar, ohne den Hauptweg zu überladen.** Meldung, Dateien, Kostenschätzung und bisheriger Verlauf liegen in einem ruhigen, optionalen Bereich unter der aktuellen Aufgabe.
+- **Desktop und Mobil sind entlang beider Rollen geprüft.** Rückfrage, Antwort, Wartezustand und Lösungsbestätigung funktionieren bei 390 Pixeln ohne seitlichen Überlauf und mit großen Touch-Zielen.
+
 ## [0.40.0] - 2026-07-28
 
 ### Verbessert

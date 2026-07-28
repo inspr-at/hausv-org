@@ -1191,6 +1191,41 @@ const PageTemplates = `
     .issue-triage-more > summary::after { content: "+"; float: right; color: var(--gold-ink); font-size: 18px; }
     .issue-triage-more[open] > summary::after { content: "−"; }
     .issue-triage-more-body { display: grid; gap: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: var(--panel); }
+    .issue-detail-link { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 13px; border-top: 1px solid var(--line); padding: 13px 2px 0; color: var(--muted); text-decoration: none; }
+    .issue-detail-link strong { color: var(--ink); }
+    .issue-detail-link:hover strong { color: var(--gold-ink); }
+    .issue-message-form { display: grid; gap: 20px; }
+    .issue-message-body { display: grid; gap: 8px; color: var(--gold-ink); font-size: 12px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+    .issue-message-body textarea { min-height: 130px; resize: vertical; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 14px; background: #fffefb; color: var(--ink); font: 500 15px/1.5 var(--font-sans); letter-spacing: 0; text-transform: none; }
+    .issue-message-body textarea:focus { outline: 3px solid rgba(200,153,63,.22); border-color: var(--gold); }
+    .issue-resolution-propose { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid var(--line); padding-top: 22px; }
+    .issue-resolution-propose span { display: grid; gap: 3px; }
+    .issue-resolution-propose small { color: var(--muted); }
+    .issue-resolution-propose button { min-height: 44px; }
+    .issue-resident-page { width: min(980px,100%); gap: 28px; padding-bottom: 48px; }
+    .issue-resident-context { display: grid; gap: 14px; border-bottom: 1px solid var(--line); padding-bottom: 24px; }
+    .issue-resident-title-row { display: flex; align-items: end; justify-content: space-between; gap: 22px; }
+    .issue-resident-title-row h1 { font-size: clamp(38px,5vw,58px); }
+    .issue-resident-title-row p { margin-top: 8px; color: var(--muted); font-weight: 650; }
+    .issue-resident-task { width: min(780px,100%); justify-self: center; display: grid; gap: 22px; border: 1px solid rgba(32,37,31,.13); border-radius: 16px; padding: clamp(24px,4vw,40px); background: var(--panel); box-shadow: 0 18px 50px rgba(38,34,25,.08); }
+    .issue-resident-task h2 { max-width: 680px; font-size: clamp(26px,3.4vw,38px); line-height: 1.2; }
+    .issue-resident-task > p { color: var(--muted); }
+    .issue-answer-form { display: grid; gap: 16px; }
+    .issue-answer-form > label:first-of-type { display: grid; gap: 8px; color: var(--ink); font-size: 14px; font-weight: 800; }
+    .issue-answer-form textarea { min-height: 150px; resize: vertical; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 14px; background: #fffefb; color: var(--ink); font: 500 15px/1.5 var(--font-sans); }
+    .issue-answer-form > button { min-height: 48px; border: 1px solid var(--ink); border-radius: var(--radius-xs); background: var(--ink); color: white; font: inherit; font-weight: 850; cursor: pointer; }
+    .issue-resident-task.waiting { grid-template-columns: auto minmax(0,1fr); align-items: start; }
+    .issue-resident-task.waiting > .kicker { grid-column: 1 / -1; }
+    .issue-resolution-actions { display: flex; align-items: center; gap: 12px; }
+    .issue-resolution-actions form { margin: 0; }
+    .issue-resolution-actions button { min-height: 46px; border: 1px solid var(--ink); border-radius: var(--radius-xs); padding: 10px 20px; background: var(--ink); color: white; font: inherit; font-weight: 850; cursor: pointer; }
+    .issue-resolution-actions button.ghost { background: transparent; color: var(--ink); }
+    .issue-resident-history { width: min(780px,100%); justify-self: center; border-top: 1px solid var(--line); }
+    .issue-resident-history > summary { cursor: pointer; list-style: none; padding: 17px 2px; color: var(--ink); font-size: 14px; font-weight: 850; }
+    .issue-resident-history > summary::-webkit-details-marker { display: none; }
+    .issue-resident-history > summary::after { content: "›"; float: right; color: var(--gold-ink); font-size: 19px; }
+    .issue-resident-history[open] > summary::after { transform: rotate(90deg); }
+    .issue-resident-history-body { display: grid; gap: 18px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 18px; background: var(--panel); }
     .issue-subtools { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); overflow: hidden; }
     .issue-subtools > summary { cursor: pointer; list-style: none; padding: 10px 11px; color: var(--ink); font-size: 12.5px; font-weight: 850; }
     .issue-subtools > summary::-webkit-details-marker { display: none; }
@@ -1914,6 +1949,17 @@ const PageTemplates = `
       .issue-triage-actions button, .issue-triage-actions .button { min-width: 0; min-height: 46px; }
       .issue-triage-done { grid-template-columns: 1fr; }
       .issue-triage-done .issue-triage-actions { grid-column: 1; display: grid; }
+      .issue-resolution-propose { align-items: stretch; flex-direction: column; }
+      .issue-resolution-propose button { width: 100%; }
+      .issue-resident-page { gap: 20px; padding: 22px 16px 36px; }
+      .issue-resident-context { gap: 10px; padding-bottom: 18px; }
+      .issue-resident-title-row { align-items: start; flex-direction: column; gap: 12px; }
+      .issue-resident-title-row h1 { font-size: 36px; }
+      .issue-resident-task { gap: 19px; border-radius: var(--radius-sm); padding: 22px 16px; }
+      .issue-resident-task h2 { font-size: 27px; }
+      .issue-resident-task.waiting { grid-template-columns: 1fr; }
+      .issue-resolution-actions { align-items: stretch; flex-direction: column; }
+      .issue-resolution-actions form, .issue-resolution-actions button { width: 100%; }
       .event-card { grid-template-columns: 1fr; gap: 11px; padding: 13px; }
       .date-badge { width: 54px; min-height: 54px; }
       .event-card-head { display: grid; grid-template-columns: 1fr; gap: 7px; }
@@ -2625,7 +2671,7 @@ const PageTemplates = `
 {{define "issueComment"}}
   <div class="comment" id="comment-{{.ID}}">
     <div class="comment-head">
-      <span class="comment-meta">{{.Author}} · {{.CreatedAt}}</span>
+      <span class="comment-meta">{{if .KindLabel}}<strong>{{.KindLabel}}</strong> · {{end}}{{.Author}} · {{.CreatedAt}}</span>
       {{if .CanDelete}}
         <form class="comment-delete" method="post" action="{{.DeleteURL}}" data-confirm="Diesen Kommentar löschen?">
           <input type="hidden" name="comment_id" value="{{.ID}}">
@@ -2685,6 +2731,7 @@ const PageTemplates = `
                   <p class="issue-next-step">{{.NextStep}}</p>
                   {{if .HasServiceAppointment}}<p class="issue-proposal"><strong>Termin:</strong> {{.ServiceAppointment}}</p>{{end}}
                   {{if .HasServiceProposal}}<p class="issue-proposal"><strong>Hinweis:</strong> {{.ServiceProposal}}</p>{{end}}
+                  {{if .CanServiceUpdate}}
                   <details class="issue-card-details">
                     <summary>Details &amp; Verlauf{{if .HasComments}} · {{len .Comments}} Beiträge{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{else if .HasAttachments}} · Anhänge{{end}}</summary>
                     <div class="issue-card-details-body">
@@ -2717,6 +2764,9 @@ const PageTemplates = `
                       </div>{{end}}
                     </div>
                   </details>
+                  {{else}}
+                    <a class="issue-detail-link" href="{{.DetailURL}}"><span>{{if eq .ResidentState "question"}}Ihre Antwort wird gebraucht{{else if eq .ResidentState "resolution"}}Ist das Anliegen erledigt?{{else}}Details und Verlauf{{end}}</span><strong>{{.DetailAction}} ›</strong></a>
+                  {{end}}
                 </article>
               {{end}}
             </div>
@@ -2930,7 +2980,7 @@ const PageTemplates = `
               <button type="submit">Bearbeitung starten</button>
             </div>
           </form>
-        {{else}}
+        {{else if eq .TriageStep "done"}}
           <section class="issue-triage-card issue-triage-done">
             <div class="issue-triage-done-mark" aria-hidden="true">✓</div>
             <div>
@@ -2940,25 +2990,169 @@ const PageTemplates = `
             </div>
             <div class="issue-triage-actions">
               <a href="/app/anliegen/board/{{.Issue.ID}}">Entscheidung ändern</a>
+              <a class="button primary" href="/app/anliegen/board/{{.Issue.ID}}?step=message">Bewohner kontaktieren</a>
+            </div>
+          </section>
+        {{else if eq .TriageStep "message"}}
+          <section class="issue-triage-card issue-message-card">
+            <div class="issue-triage-progress"><span>Nächster Schritt</span></div>
+            <form class="issue-message-form" method="post" action="/app/anliegen/comment" enctype="multipart/form-data">
+              <input type="hidden" name="id" value="{{.Issue.ID}}">
+              <input type="hidden" name="redirect" value="/app/anliegen/board/{{.Issue.ID}}?step=sent">
+              <fieldset>
+                <legend>Was soll der Bewohner wissen?</legend>
+                <label class="issue-triage-choice calm">
+                  <input type="radio" name="message_type" value="information" checked required>
+                  <span><strong>Information senden</strong><small>Nur informieren, keine Antwort nötig</small></span>
+                </label>
+                <label class="issue-triage-choice">
+                  <input type="radio" name="message_type" value="question" required>
+                  <span><strong>Rückfrage stellen</strong><small>Der Bewohner erhält eine klare Antwort-Aufgabe</small></span>
+                </label>
+              </fieldset>
+              <label class="issue-message-body">Nachricht
+                <textarea name="body" maxlength="3000" required placeholder="Kurz und konkret formulieren" aria-label="Nachricht an Bewohner"></textarea>
+              </label>
+              <label class="comment-upload">
+                <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Datei optional hinzufügen</span></span>
+              </label>
+              <div class="issue-triage-actions">
+                <a href="/app/anliegen/board">Zur Liste</a>
+                <button type="submit">Nachricht senden</button>
+              </div>
+            </form>
+            {{if ne .Issue.Status "Erledigt"}}
+              <form class="issue-resolution-propose" method="post" action="/app/anliegen/workflow">
+                <input type="hidden" name="id" value="{{.Issue.ID}}">
+                <input type="hidden" name="status" value="Erledigt">
+                <input type="hidden" name="priority" value="{{.Issue.Priority}}">
+                <input type="hidden" name="assignee_email" value="{{.Issue.AssigneeEmail}}">
+                <input type="hidden" name="redirect" value="/app/anliegen/board/{{.Issue.ID}}?step=resolution-sent">
+                <span><strong>Arbeit abgeschlossen?</strong><small>Der Bewohner prüft und bestätigt die Lösung.</small></span>
+                <button class="ghost" type="submit">Lösung zur Prüfung senden</button>
+              </form>
+            {{end}}
+          </section>
+        {{else if eq .TriageStep "sent"}}
+          <section class="issue-triage-card issue-triage-done">
+            <div class="issue-triage-done-mark" aria-hidden="true">✓</div>
+            <div>
+              <span class="kicker">Nachricht gesendet</span>
+              {{if .Issue.HasOpenQuestion}}
+                <h2>Der Bewohner sieht jetzt „Antworten“.</h2>
+                <p>Bis zur Antwort ist keine weitere Aktion nötig.</p>
+              {{else}}
+                <h2>Die Information ist im Verlauf sichtbar.</h2>
+                <p>Der Bewohner muss darauf nicht reagieren.</p>
+              {{end}}
+            </div>
+            <div class="issue-triage-actions">
+              <a href="/app/anliegen/board/{{.Issue.ID}}?step=message">Weitere Nachricht</a>
+              <a class="button primary" href="/app/anliegen/board">Zur Liste</a>
+            </div>
+          </section>
+        {{else}}
+          <section class="issue-triage-card issue-triage-done">
+            <div class="issue-triage-done-mark" aria-hidden="true">✓</div>
+            <div>
+              <span class="kicker">Lösung vorgeschlagen</span>
+              <h2>Der Bewohner prüft jetzt das Ergebnis.</h2>
+              <p>Er kann „Ja, erledigt“ bestätigen oder das Anliegen wieder öffnen.</p>
+            </div>
+            <div class="issue-triage-actions">
+              <a href="/app/anliegen/board/{{.Issue.ID}}?step=message">Nachricht senden</a>
               <a class="button primary" href="/app/anliegen/board">Zur Liste</a>
             </div>
           </section>
         {{end}}
 
         <details class="issue-triage-more">
-          <summary>Verlauf und Unterlagen{{if .Issue.HasComments}} · {{len .Issue.Comments}} Beitrag{{if ne (len .Issue.Comments) 1}}e{{end}}{{end}}{{if .Issue.HasPhotos}} · {{.Issue.PhotoCount}} Foto{{if ne .Issue.PhotoCount 1}}s{{end}}{{end}}</summary>
+          <summary>Verlauf und Unterlagen{{if .Issue.HasComments}} · {{len .Issue.Comments}} {{if eq (len .Issue.Comments) 1}}Beitrag{{else}}Beiträge{{end}}{{end}}{{if .Issue.HasPhotos}} · {{.Issue.PhotoCount}} Foto{{if ne .Issue.PhotoCount 1}}s{{end}}{{end}}</summary>
           <div class="issue-triage-more-body">
             {{template "attachmentStrip" .Issue}}
             {{if .Issue.HasComments}}<div class="comment-thread">{{range .Issue.Comments}}{{template "issueComment" .}}{{end}}</div>{{else}}<p class="muted">Noch keine Rückmeldung.</p>{{end}}
-            {{if .Issue.CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment" enctype="multipart/form-data">
+            {{template "issueEstimate" .Issue}}
+          </div>
+        </details>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "issueResidentDetail"}}
+{{template "appOpen" .}}
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><a href="/app/anliegen">Anliegen</a><span>/</span><span>{{.Issue.Title}}</span></span>
+      </div>
+      <section class="page issue-resident-page" id="issue-{{.Issue.ID}}">
+        <header class="issue-resident-context">
+          <a class="issue-triage-back" href="/app/anliegen">← Zurück zu Anliegen</a>
+          <div class="issue-resident-title-row">
+            <div>
+              <h1>{{.Issue.Title}}</h1>
+              <p>{{.Issue.Location}} · {{.Issue.CreatedAt}}</p>
+            </div>
+            <span class="pill {{.Issue.StatusClass}}">{{.Issue.Status}}</span>
+          </div>
+        </header>
+
+        {{if eq .Issue.ResidentState "question"}}
+          <section class="issue-resident-task question">
+            <span class="kicker">Rückfrage der Verwaltung</span>
+            <h2>{{.Issue.OpenQuestion.Body}}</h2>
+            <form class="issue-answer-form" method="post" action="/app/anliegen/comment" enctype="multipart/form-data">
               <input type="hidden" name="id" value="{{.Issue.ID}}">
-              <input type="hidden" name="redirect" value="/app/anliegen/board/{{.Issue.ID}}?step=done">
-              <textarea name="body" maxlength="3000" placeholder="Information oder Rückfrage schreiben" aria-label="Kommentar oder Rückfrage"></textarea>
-              <label class="comment-upload">
-                <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Anhang hinzufügen</span></span>
+              <input type="hidden" name="redirect" value="/app/anliegen/{{.Issue.ID}}">
+              <label>Ihre Antwort
+                <textarea name="body" maxlength="3000" required placeholder="Kurz antworten, damit es weitergehen kann" aria-label="Ihre Antwort"></textarea>
               </label>
-              <button type="submit">Nachricht senden</button>
-            </form>{{end}}
+              <label class="comment-upload">
+                <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Foto optional hinzufügen</span></span>
+              </label>
+              <button type="submit">Antwort senden</button>
+            </form>
+          </section>
+        {{else if eq .Issue.ResidentState "resolution"}}
+          <section class="issue-resident-task resolution">
+            <span class="kicker">Lösung prüfen</span>
+            <h2>Ist das Anliegen für Sie erledigt?</h2>
+            <p>Die Verwaltung hat die Bearbeitung abgeschlossen.</p>
+            <div class="issue-resolution-actions">
+              <form method="post" action="/app/anliegen/resolution">
+                <input type="hidden" name="id" value="{{.Issue.ID}}">
+                <input type="hidden" name="resolved" value="yes">
+                <button type="submit">Ja, erledigt</button>
+              </form>
+              <form method="post" action="/app/anliegen/resolution">
+                <input type="hidden" name="id" value="{{.Issue.ID}}">
+                <input type="hidden" name="resolved" value="no">
+                <button class="ghost" type="submit">Nein, noch offen</button>
+              </form>
+            </div>
+          </section>
+        {{else if eq .Issue.ResidentState "done"}}
+          <section class="issue-resident-task waiting">
+            <div class="issue-triage-done-mark" aria-hidden="true">✓</div>
+            <div><span class="kicker">Erledigt</span><h2>Sie haben die Lösung bestätigt.</h2><p>Für Sie ist nichts mehr zu tun.</p></div>
+          </section>
+        {{else}}
+          <section class="issue-resident-task waiting">
+            <span class="kicker">Aktueller Stand</span>
+            <h2>{{.Issue.NextStep}}</h2>
+            <p>Sie müssen im Moment nichts tun. Sobald eine Antwort gebraucht wird, erscheint sie hier eindeutig.</p>
+          </section>
+        {{end}}
+
+        <details class="issue-resident-history">
+          <summary>Bisheriger Verlauf{{if .Issue.HasComments}} · {{len .Issue.Comments}} {{if eq (len .Issue.Comments) 1}}Beitrag{{else}}Beiträge{{end}}{{end}}{{if .Issue.HasPhotos}} · {{.Issue.PhotoCount}} Foto{{if ne .Issue.PhotoCount 1}}s{{end}}{{end}}</summary>
+          <div class="issue-resident-history-body">
+            <div class="issue-description"><strong>Ihre Meldung</strong><p>{{.Issue.Body}}</p></div>
+            {{if .Issue.HasServiceAppointment}}<p class="issue-proposal"><strong>Termin:</strong> {{.Issue.ServiceAppointment}}</p>{{end}}
+            {{if .Issue.HasServiceProposal}}<p class="issue-proposal"><strong>Hinweis:</strong> {{.Issue.ServiceProposal}}</p>{{end}}
+            {{template "attachmentStrip" .Issue}}
+            {{if .Issue.HasComments}}<div class="comment-thread">{{range .Issue.Comments}}{{template "issueComment" .}}{{end}}</div>{{end}}
             {{template "issueEstimate" .Issue}}
           </div>
         </details>

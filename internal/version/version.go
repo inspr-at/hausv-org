@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.41.0",
+			Date:     "28. Juli 2026",
+			Kind:     "Anliegen",
+			Headline: "Rückfragen und Lösungen zeigen genau die passende nächste Aufgabe.",
+			Intro:    "Informationen bleiben ruhig im Verlauf; offene Fragen führen direkt zur Antwort und abgeschlossene Arbeiten zur gemeinsamen Bestätigung.",
+			Items: []NoteItem{
+				{Label: "Gezielt antworten", Text: "Nur eine echte Rückfrage öffnet ein Antwortfeld mit einer klaren Hauptaktion."},
+				{Label: "Ohne Druck informiert", Text: "Reine Informationen sind sichtbar, verlangen aber keine Reaktion."},
+				{Label: "Gemeinsam abschließen", Text: "Bewohner bestätigen die vorgeschlagene Lösung oder öffnen das Anliegen wieder."},
+			},
+		},
+		{
 			Version:  "0.40.0",
 			Date:     "28. Juli 2026",
 			Kind:     "Anliegen",

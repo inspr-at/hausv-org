@@ -114,11 +114,26 @@ func TestIssueStorageParity(t *testing.T) {
 			}); ok {
 				t.Fatal("workflow on unknown issue must report not found")
 			}
+			confirmed, ok, err := s.UpdateWorkflow("jhw22", id, IssueWorkflowUpdate{
+				Status: IssueStatusDone, Priority: IssuePriorityHigh,
+				ResolutionConfirmed: true, UpdateResolution: true,
+				ActorEmail: "resident@example.com", ChangedAt: now.Add(90 * time.Second),
+			})
+			if err != nil || !ok || confirmed.ResolutionConfirmedBy != "resident@example.com" || confirmed.ResolutionConfirmedAt.IsZero() {
+				t.Fatalf("resolution confirmation: err=%v ok=%v issue=%+v", err, ok, confirmed)
+			}
+			reopened, ok, err := s.UpdateWorkflow("jhw22", id, IssueWorkflowUpdate{
+				Status: IssueStatusProgress, Priority: IssuePriorityHigh,
+				ActorEmail: "manager@example.com", ChangedAt: now.Add(100 * time.Second),
+			})
+			if err != nil || !ok || !reopened.ResolutionConfirmedAt.IsZero() || reopened.ResolutionConfirmedBy != "" {
+				t.Fatalf("reopen must clear resolution confirmation: err=%v ok=%v issue=%+v", err, ok, reopened)
+			}
 
 			// Comments.
 			withComment, ok, err := s.AddComment("jhw22", id, IssueComment{
 				AuthorEmail: "manager@example.com", AuthorName: "Manager",
-				Body: "Wir schauen uns das an.", CreatedAt: now.Add(2 * time.Minute),
+				Body: "Wir schauen uns das an.", Kind: IssueCommentKindQuestion, CreatedAt: now.Add(2 * time.Minute),
 			})
 			if err != nil || !ok || len(withComment.Comments) != 1 {
 				t.Fatalf("add comment: err=%v ok=%v comments=%+v", err, ok, withComment.Comments)
@@ -126,6 +141,9 @@ func TestIssueStorageParity(t *testing.T) {
 			commentID := withComment.Comments[0].ID
 			if commentID == "" {
 				t.Fatal("comment id must be generated")
+			}
+			if withComment.Comments[0].Kind != IssueCommentKindQuestion {
+				t.Fatalf("comment kind not persisted: %+v", withComment.Comments[0])
 			}
 			// A photo-only (empty body) comment is allowed.
 			if _, _, err := s.AddComment("jhw22", id, IssueComment{
@@ -167,7 +185,7 @@ func TestSQLIssueImportFromJSON(t *testing.T) {
 		t.Fatalf("seed workflow: %v", err)
 	}
 	if _, _, err := jsonStore.AddComment("jhw22", created.ID, IssueComment{
-		AuthorEmail: "manager@example.com", Body: "Notiz", CreatedAt: now.Add(time.Minute),
+		AuthorEmail: "manager@example.com", Body: "Notiz", Kind: IssueCommentKindInformation, CreatedAt: now.Add(time.Minute),
 	}); err != nil {
 		t.Fatalf("seed comment: %v", err)
 	}
@@ -192,7 +210,7 @@ func TestSQLIssueImportFromJSON(t *testing.T) {
 	if !ok {
 		t.Fatal("imported issue not found")
 	}
-	if len(got.Comments) != 1 || got.Comments[0].Body != "Notiz" {
+	if len(got.Comments) != 1 || got.Comments[0].Body != "Notiz" || got.Comments[0].Kind != IssueCommentKindInformation {
 		t.Fatalf("comments lost in import: %+v", got.Comments)
 	}
 	if len(got.StatusHistory) != 1 || got.Status != IssueStatusProgress {

@@ -103,6 +103,10 @@ type IssueCommentView struct {
 	ID             string
 	Author         string
 	Body           string
+	Kind           string
+	KindLabel      string
+	IsQuestion     bool
+	IsAnswer       bool
 	CreatedAt      string
 	CanDelete      bool
 	DeleteURL      string
@@ -250,6 +254,12 @@ type IssueView struct {
 	Status                  string
 	StatusClass             string
 	NextStep                string
+	DetailURL               string
+	DetailAction            string
+	ResidentState           string
+	HasOpenQuestion         bool
+	OpenQuestion            IssueCommentView
+	ResolutionConfirmed     bool
 	Priority                string
 	AssigneeEmail           string
 	HasAssignee             bool

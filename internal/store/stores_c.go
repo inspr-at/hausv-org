@@ -68,34 +68,36 @@ type IssueStoreData struct {
 }
 
 type ResidentIssue struct {
-	ID                   string              `json:"id"`
-	TenantSlug           string              `json:"tenant"`
-	AuthorEmail          string              `json:"author_email"`
-	AuthorName           string              `json:"author_name"`
-	Category             string              `json:"category"`
-	Title                string              `json:"title"`
-	Body                 string              `json:"body"`
-	LocationType         string              `json:"location_type"`
-	LocationDetail       string              `json:"location_detail"`
-	PhotoPaths           []string            `json:"photo_paths"`
-	Status               string              `json:"status"`
-	Priority             string              `json:"priority"`
-	AssigneeEmail        string              `json:"assignee_email,omitempty"`
-	StatusChangedAt      time.Time           `json:"status_changed_at,omitempty"`
-	StatusChangedBy      string              `json:"status_changed_by,omitempty"`
-	StatusHistory        []IssueStatusChange `json:"status_history,omitempty"`
-	ServiceProposal      string              `json:"service_proposal,omitempty"`
-	ServiceProposedBy    string              `json:"service_proposed_by,omitempty"`
-	ServiceProposedAt    time.Time           `json:"service_proposed_at,omitempty"`
-	ServiceProposedStart time.Time           `json:"service_proposed_start,omitempty"`
-	ServiceProposedEnd   time.Time           `json:"service_proposed_end,omitempty"`
-	EstimateAmountCents  int64               `json:"estimate_amount_cents,omitempty"`
-	EstimateNote         string              `json:"estimate_note,omitempty"`
-	EstimateUpdatedBy    string              `json:"estimate_updated_by,omitempty"`
-	EstimateUpdatedAt    time.Time           `json:"estimate_updated_at,omitempty"`
-	Comments             []IssueComment      `json:"comments,omitempty"`
-	CreatedAt            time.Time           `json:"created_at"`
-	UpdatedAt            time.Time           `json:"updated_at"`
+	ID                    string              `json:"id"`
+	TenantSlug            string              `json:"tenant"`
+	AuthorEmail           string              `json:"author_email"`
+	AuthorName            string              `json:"author_name"`
+	Category              string              `json:"category"`
+	Title                 string              `json:"title"`
+	Body                  string              `json:"body"`
+	LocationType          string              `json:"location_type"`
+	LocationDetail        string              `json:"location_detail"`
+	PhotoPaths            []string            `json:"photo_paths"`
+	Status                string              `json:"status"`
+	Priority              string              `json:"priority"`
+	AssigneeEmail         string              `json:"assignee_email,omitempty"`
+	StatusChangedAt       time.Time           `json:"status_changed_at,omitempty"`
+	StatusChangedBy       string              `json:"status_changed_by,omitempty"`
+	StatusHistory         []IssueStatusChange `json:"status_history,omitempty"`
+	ServiceProposal       string              `json:"service_proposal,omitempty"`
+	ServiceProposedBy     string              `json:"service_proposed_by,omitempty"`
+	ServiceProposedAt     time.Time           `json:"service_proposed_at,omitempty"`
+	ServiceProposedStart  time.Time           `json:"service_proposed_start,omitempty"`
+	ServiceProposedEnd    time.Time           `json:"service_proposed_end,omitempty"`
+	EstimateAmountCents   int64               `json:"estimate_amount_cents,omitempty"`
+	EstimateNote          string              `json:"estimate_note,omitempty"`
+	EstimateUpdatedBy     string              `json:"estimate_updated_by,omitempty"`
+	EstimateUpdatedAt     time.Time           `json:"estimate_updated_at,omitempty"`
+	ResolutionConfirmedBy string              `json:"resolution_confirmed_by,omitempty"`
+	ResolutionConfirmedAt time.Time           `json:"resolution_confirmed_at,omitempty"`
+	Comments              []IssueComment      `json:"comments,omitempty"`
+	CreatedAt             time.Time           `json:"created_at"`
+	UpdatedAt             time.Time           `json:"updated_at"`
 }
 
 type IssueComment struct {
@@ -103,6 +105,7 @@ type IssueComment struct {
 	AuthorEmail string    `json:"author_email"`
 	AuthorName  string    `json:"author_name"`
 	Body        string    `json:"body"`
+	Kind        string    `json:"kind,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -125,6 +128,8 @@ type IssueWorkflowUpdate struct {
 	EstimateAmountCents   int64
 	EstimateNote          string
 	UpdateEstimate        bool
+	ResolutionConfirmed   bool
+	UpdateResolution      bool
 	ActorEmail            string
 	ActorName             string
 	ChangedAt             time.Time
@@ -582,6 +587,19 @@ func (s *IssueStore) UpdateWorkflow(tenantSlug string, id string, update IssueWo
 				updated.EstimateUpdatedAt = time.Time{}
 			}
 		}
+		if status != IssueStatusDone {
+			updated.ResolutionConfirmedBy = ""
+			updated.ResolutionConfirmedAt = time.Time{}
+		}
+		if update.UpdateResolution {
+			if update.ResolutionConfirmed && status == IssueStatusDone {
+				updated.ResolutionConfirmedBy = actorEmail
+				updated.ResolutionConfirmedAt = changedAt
+			} else {
+				updated.ResolutionConfirmedBy = ""
+				updated.ResolutionConfirmedAt = time.Time{}
+			}
+		}
 		updated.UpdatedAt = changedAt
 		if oldStatus != status {
 			updated.StatusChangedAt = changedAt
@@ -612,6 +630,7 @@ func (s *IssueStore) AddComment(tenantSlug string, id string, comment IssueComme
 	comment.Body = strings.TrimSpace(comment.Body)
 	comment.AuthorEmail = textutil.Email(comment.AuthorEmail)
 	comment.AuthorName = strings.TrimSpace(comment.AuthorName)
+	comment.Kind = NormalizeIssueCommentKind(comment.Kind)
 	// Body may be empty for a photo-only comment (HAUSV-128); the handler enforces
 	// that a comment carries either text or at least one attachment.
 	if tenantSlug == "" || id == "" || len([]rune(comment.Body)) > 3000 || comment.AuthorEmail == "" {

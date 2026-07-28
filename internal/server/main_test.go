@@ -3407,7 +3407,7 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 		t.Fatalf("thumbnail content type = %q", ct)
 	}
 
-	page := authedRequest(t, a, "resident@example.com", "/app/anliegen")
+	page := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issue.ID)
 	if !strings.Contains(page.Body.String(), "Licht flackert") || !strings.Contains(page.Body.String(), "1 Foto") || !strings.Contains(page.Body.String(), `data-lightbox-src`) {
 		t.Fatalf("issues page should show submitted issue with photo count:\n%s", page.Body.String())
 	}
@@ -3459,7 +3459,7 @@ func TestMigratedLegacyIssuePhotoStillRendersOnTheIssue(t *testing.T) {
 		t.Fatalf("migrate: n=%d err=%v", n, err)
 	}
 
-	page := authedRequest(t, a, "resident@example.com", "/app/anliegen")
+	page := authedRequest(t, a, "resident@example.com", "/app/anliegen/legacy-1")
 	body := page.Body.String()
 	for _, want := range []string{"Altes Foto", "1 Foto", legacyFilename, "data-lightbox-src="} {
 		if !strings.Contains(body, want) {
@@ -3497,7 +3497,7 @@ func TestResidentCanSubmitIssueWithMultipleAttachments(t *testing.T) {
 	if attachments[0].ContentType != "image/png" || attachments[1].ContentType != "application/pdf" {
 		t.Fatalf("attachment content types = %+v", attachments)
 	}
-	page := authedRequest(t, a, "resident@example.com", "/app/anliegen")
+	page := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issues[0].ID)
 	body := page.Body.String()
 	for _, want := range []string{"keller.png", "notiz.pdf", "1 Foto", `data-lightbox-src`} {
 		if !strings.Contains(body, want) {
@@ -3656,7 +3656,7 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 		strings.Contains(boardBody, `<details class="issue-board-tools" open>`) {
 		t.Fatalf("inactive issue filters should be collapsed")
 	}
-	triage := authedRequest(t, a, "manager@example.com", "/app/anliegen/board/"+issue.ID).Body.String()
+	triage := authedRequest(t, a, "manager@example.com", "/app/anliegen/board/"+issue.ID+"?step=1").Body.String()
 	for _, want := range []string{"Schritt 1 von 2", "Wie dringend ist das Anliegen?", "Heute kümmern", "Diese Woche", "Kann warten"} {
 		if !strings.Contains(triage, want) {
 			t.Fatalf("focused issue triage should contain %q", want)
@@ -3721,10 +3721,185 @@ func TestManagerIssueTriageKeepsTheIssueContextAcrossBothSteps(t *testing.T) {
 		t.Fatalf("triaged issue = %+v found=%v", updated, found)
 	}
 	done := authedRequest(t, a, "manager@example.com", doneRedirect)
-	for _, want := range []string{"Der nächste Schritt ist festgelegt.", issuePriorityHigh, "manager@example.com", "Zur Liste"} {
+	for _, want := range []string{"Der nächste Schritt ist festgelegt.", issuePriorityHigh, "manager@example.com", "Bewohner kontaktieren"} {
 		if !strings.Contains(done.Body.String(), want) {
 			t.Fatalf("triage confirmation should contain %q", want)
 		}
+	}
+}
+
+func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	issue, err := a.issueStore.Create(residentIssue{
+		TenantSlug:    "jhw22",
+		AuthorEmail:   "resident@example.com",
+		AuthorName:    "Resi Dent",
+		Category:      "Reparatur",
+		Title:         "Kellerlicht defekt",
+		Body:          "Das Licht ist ausgefallen.",
+		LocationType:  issueLocationCommon,
+		Status:        issueStatusProgress,
+		Priority:      issuePriorityHigh,
+		AssigneeEmail: "manager@example.com",
+	})
+	if err != nil {
+		t.Fatalf("Create issue: %v", err)
+	}
+
+	managerPage := authedRequest(t, a, "manager@example.com", "/app/anliegen/board/"+issue.ID)
+	for _, want := range []string{"Was soll der Bewohner wissen?", "Information senden", "Rückfrage stellen", "Lösung zur Prüfung senden"} {
+		if !strings.Contains(managerPage.Body.String(), want) {
+			t.Fatalf("manager message step missing %q", want)
+		}
+	}
+
+	sentRedirect := "/app/anliegen/board/" + issue.ID + "?step=sent"
+	question := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/comment", url.Values{
+		"id":           {issue.ID},
+		"body":         {"In welchem Stockwerk ist das Licht ausgefallen?"},
+		"message_type": {issueCommentKindQuestion},
+		"redirect":     {sentRedirect},
+	})
+	if question.Code != http.StatusSeeOther || question.Header().Get("Location") != sentRedirect {
+		t.Fatalf("question redirect = %d %q", question.Code, question.Header().Get("Location"))
+	}
+	stored, found := a.issueStore.Get("jhw22", issue.ID)
+	if !found || len(stored.Comments) != 1 || stored.Comments[0].Kind != issueCommentKindQuestion {
+		t.Fatalf("stored question = %+v found=%v", stored.Comments, found)
+	}
+	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIssueComment, Limit: 10})
+	if len(events) != 1 || events[0].Details["message_type"] != issueCommentKindQuestion {
+		t.Fatalf("question audit = %+v", events)
+	}
+	confirmation := authedRequest(t, a, "manager@example.com", sentRedirect).Body.String()
+	if !strings.Contains(confirmation, "Der Bewohner sieht jetzt „Antworten“.") {
+		t.Fatalf("question confirmation missing resident state")
+	}
+
+	overview := authedRequest(t, a, "resident@example.com", "/app/anliegen").Body.String()
+	for _, want := range []string{"Die Verwaltung braucht Ihre Antwort.", `href="/app/anliegen/` + issue.ID + `"`, "Antworten"} {
+		if !strings.Contains(overview, want) {
+			t.Fatalf("resident overview missing %q", want)
+		}
+	}
+	for _, unwanted := range []string{"Kommentar senden", "Als erledigt melden"} {
+		if strings.Contains(overview, unwanted) {
+			t.Fatalf("resident overview must not show generic action %q", unwanted)
+		}
+	}
+	detailURL := "/app/anliegen/" + issue.ID
+	detail := authedRequest(t, a, "resident@example.com", detailURL).Body.String()
+	for _, want := range []string{"Rückfrage der Verwaltung", "In welchem Stockwerk ist das Licht ausgefallen?", `aria-label="Ihre Antwort"`, "Antwort senden", "Bisheriger Verlauf"} {
+		if !strings.Contains(detail, want) {
+			t.Fatalf("resident answer task missing %q", want)
+		}
+	}
+
+	answer := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/comment", url.Values{
+		"id":           {issue.ID},
+		"body":         {"Im zweiten Stock."},
+		"message_type": {issueCommentKindQuestion},
+		"redirect":     {detailURL},
+	})
+	if answer.Code != http.StatusSeeOther || answer.Header().Get("Location") != detailURL {
+		t.Fatalf("answer redirect = %d %q", answer.Code, answer.Header().Get("Location"))
+	}
+	stored, _ = a.issueStore.Get("jhw22", issue.ID)
+	if len(stored.Comments) != 2 || stored.Comments[1].Kind != issueCommentKindAnswer {
+		t.Fatalf("stored answer kind = %+v", stored.Comments)
+	}
+	afterAnswer := authedRequest(t, a, "resident@example.com", detailURL).Body.String()
+	if strings.Contains(afterAnswer, `aria-label="Ihre Antwort"`) || !strings.Contains(afterAnswer, "Sie müssen im Moment nichts tun.") {
+		t.Fatalf("answered question should return to waiting state")
+	}
+
+	info := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/comment", url.Values{
+		"id":           {issue.ID},
+		"body":         {"Der Elektriker ist informiert."},
+		"message_type": {issueCommentKindInformation},
+		"redirect":     {sentRedirect},
+	})
+	if info.Code != http.StatusSeeOther {
+		t.Fatalf("information status = %d", info.Code)
+	}
+	stored, _ = a.issueStore.Get("jhw22", issue.ID)
+	if got := stored.Comments[len(stored.Comments)-1].Kind; got != issueCommentKindInformation {
+		t.Fatalf("stored information kind = %q", got)
+	}
+	infoConfirmation := authedRequest(t, a, "manager@example.com", sentRedirect).Body.String()
+	if !strings.Contains(infoConfirmation, "Der Bewohner muss darauf nicht reagieren.") {
+		t.Fatalf("information confirmation should not request resident action")
+	}
+}
+
+func TestResidentConfirmsOrRejectsProposedIssueResolution(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	createDone := func(title string) residentIssue {
+		item, err := a.issueStore.Create(residentIssue{
+			TenantSlug:   "jhw22",
+			AuthorEmail:  "resident@example.com",
+			AuthorName:   "Resident",
+			Category:     "Reparatur",
+			Title:        title,
+			Body:         "Bitte prüfen.",
+			LocationType: issueLocationUnit,
+			Status:       issueStatusDone,
+			Priority:     issuePriorityNorm,
+		})
+		if err != nil {
+			t.Fatalf("Create issue: %v", err)
+		}
+		return item
+	}
+
+	confirmedIssue := createDone("Gelöste Tür")
+	detailURL := "/app/anliegen/" + confirmedIssue.ID
+	detail := authedRequest(t, a, "resident@example.com", detailURL).Body.String()
+	for _, want := range []string{"Ist das Anliegen für Sie erledigt?", "Ja, erledigt", "Nein, noch offen"} {
+		if !strings.Contains(detail, want) {
+			t.Fatalf("resolution task missing %q", want)
+		}
+	}
+	forbidden := authedFormRequest(t, a, "other@example.com", "/app/anliegen/resolution", url.Values{
+		"id":       {confirmedIssue.ID},
+		"resolved": {"yes"},
+	})
+	if forbidden.Code != http.StatusForbidden {
+		t.Fatalf("other resident resolution status = %d, want 403", forbidden.Code)
+	}
+	confirm := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/resolution", url.Values{
+		"id":       {confirmedIssue.ID},
+		"resolved": {"yes"},
+	})
+	if confirm.Code != http.StatusSeeOther || confirm.Header().Get("Location") != detailURL {
+		t.Fatalf("confirm redirect = %d %q", confirm.Code, confirm.Header().Get("Location"))
+	}
+	confirmed, _ := a.issueStore.Get("jhw22", confirmedIssue.ID)
+	if confirmed.Status != issueStatusDone || confirmed.ResolutionConfirmedAt.IsZero() || confirmed.ResolutionConfirmedBy != "resident@example.com" {
+		t.Fatalf("confirmed resolution = %+v", confirmed)
+	}
+	confirmedPage := authedRequest(t, a, "resident@example.com", detailURL).Body.String()
+	if !strings.Contains(confirmedPage, "Sie haben die Lösung bestätigt.") || strings.Contains(confirmedPage, `value="no"`) {
+		t.Fatalf("confirmed resolution should have no remaining decision")
+	}
+
+	reopenedIssue := createDone("Noch klemmende Tür")
+	reopen := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/resolution", url.Values{
+		"id":       {reopenedIssue.ID},
+		"resolved": {"no"},
+	})
+	if reopen.Code != http.StatusSeeOther {
+		t.Fatalf("reopen status = %d", reopen.Code)
+	}
+	reopened, _ := a.issueStore.Get("jhw22", reopenedIssue.ID)
+	if reopened.Status != issueStatusNew || !reopened.ResolutionConfirmedAt.IsZero() {
+		t.Fatalf("reopened resolution = %+v", reopened)
+	}
+	reopenedPage := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+reopenedIssue.ID).Body.String()
+	if !strings.Contains(reopenedPage, "Als Nächstes prüft die Verwaltung Ihre Meldung.") {
+		t.Fatalf("reopened issue should return to waiting state")
 	}
 }
 
@@ -3846,7 +4021,7 @@ func TestIssueCommentsRenderAndNotify(t *testing.T) {
 	}
 	managerCommentID := updated.Comments[0].ID
 	residentCommentID := updated.Comments[1].ID
-	page := authedRequest(t, a, "resident@example.com", "/app/anliegen")
+	page := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issues[0].ID)
 	body := page.Body.String()
 	first := strings.Index(body, "Ich prüfe das")
 	second := strings.Index(body, "Danke, ich ergänze")
@@ -4459,7 +4634,7 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 	if !ok || updated.Status != issueStatusProgress || updated.Priority != issuePriorityNorm || updated.AssigneeEmail != "service@example.com" || updated.ServiceProposal != "Dienstag, 14. Juli, 9-11 Uhr" {
 		t.Fatalf("service workflow update = %+v ok=%v", updated, ok)
 	}
-	residentPage := authedRequest(t, a, "resident@example.com", "/app/anliegen").Body.String()
+	residentPage := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issue.ID).Body.String()
 	if !strings.Contains(residentPage, "Hinweis:") || !strings.Contains(residentPage, "Dienstag, 14. Juli, 9-11 Uhr") || !strings.Contains(residentPage, "Leuchte ist bestellt") {
 		t.Fatalf("resident should see service proposal and comment:\n%s", residentPage)
 	}
@@ -5071,7 +5246,7 @@ func TestIssueEstimateMetadataAndAttachmentUseProtectedRoutes(t *testing.T) {
 			t.Fatalf("estimate filename should not be persisted in audit details: %+v", events[0])
 		}
 	}
-	residentPage := authedRequest(t, a, "resident@example.com", "/app/anliegen").Body.String()
+	residentPage := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issue.ID).Body.String()
 	for _, want := range []string{"Kostenvoranschlag", "240,50 €", "Material und Anfahrt grob geschätzt.", "kostenvoranschlag.pdf", "keine Rechnung und kein Zahlungsstatus"} {
 		if !strings.Contains(residentPage, want) {
 			t.Fatalf("resident estimate view missing %q:\n%s", want, residentPage)

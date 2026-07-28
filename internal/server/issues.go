@@ -36,8 +36,14 @@ func (a *app) issueTriage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	step := strings.TrimSpace(r.URL.Query().Get("step"))
-	if step != "2" && step != "done" {
-		step = "1"
+	switch step {
+	case "1", "2", "done", "message", "sent", "resolution-sent":
+	default:
+		if normalizeIssueStatus(item.Status) == issueStatusOpen {
+			step = "1"
+		} else {
+			step = "message"
+		}
 	}
 	a.render(w, "issueTriage", a.withBase(ac, map[string]any{
 		"Title":      "Anliegen bearbeiten",
@@ -45,6 +51,33 @@ func (a *app) issueTriage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"Issue":      views[0],
 		"TriageStep": step,
 		"ActorEmail": normalizeEmail(ac.email),
+	}))
+}
+
+func (a *app) issueResidentDetail(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	id := strings.TrimSpace(r.PathValue("id"))
+	item, found := a.issueStore.Get(ac.tenant.Slug, id)
+	if !found {
+		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
+		return
+	}
+	if !a.canViewIssueForActor(ac.tenant.Slug, item, ac.email, ac.role) {
+		http.Error(w, "Dieses Anliegen ist für diesen Zugang nicht sichtbar.", http.StatusForbidden)
+		return
+	}
+	views := a.issueViewsForActor(ac.tenant.Slug, []residentIssue{item}, ac.role, ac.email)
+	if len(views) != 1 {
+		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
+		return
+	}
+	if hasCapability(ac.role, capabilityManageIssues) {
+		http.Redirect(w, r, "/app/anliegen/board/"+url.PathEscape(item.ID), http.StatusSeeOther)
+		return
+	}
+	a.render(w, "issueResidentDetail", a.withBase(ac, map[string]any{
+		"Title":      item.Title,
+		"ActivePage": "issues",
+		"Issue":      views[0],
 	}))
 }
 
@@ -263,11 +296,23 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 		}
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
+	commentKind := issueCommentKindNeutral
+	if canManage {
+		commentKind = normalizeIssueCommentKind(r.FormValue("message_type"))
+		if commentKind != issueCommentKindQuestion {
+			commentKind = issueCommentKindInformation
+		}
+	} else if isOwner {
+		if _, open := issueOpenQuestion(existing.Comments); open {
+			commentKind = issueCommentKindAnswer
+		}
+	}
 	updated, ok, err := a.issueStore.AddComment(tenant.Slug, id, issueComment{
 		ID:          commentID,
 		AuthorEmail: email,
 		AuthorName:  profile.DisplayName(),
 		Body:        body,
+		Kind:        commentKind,
 		CreatedAt:   time.Now(),
 	})
 	if err != nil {
@@ -294,14 +339,21 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 		TargetID:   updated.ID,
 		Summary:    "Kommentar zu Anliegen hinzugefügt",
 		Details: map[string]string{
-			"comment_id": commentID,
-			"has_file":   strconv.FormatBool(len(uploaded) > 0),
-			"file_count": strconv.Itoa(len(uploaded)),
+			"comment_id":   commentID,
+			"message_type": commentKind,
+			"has_file":     strconv.FormatBool(len(uploaded) > 0),
+			"file_count":   strconv.Itoa(len(uploaded)),
 		},
 	})
 	a.notifyIssueUpdated(tenant, updated, email, "Neuer Kommentar zu Anliegen \""+updated.Title+"\"")
 	if canManage {
 		if redirect := issueContextRedirect(updated.ID, r.FormValue("redirect")); redirect != "" {
+			http.Redirect(w, r, redirect, http.StatusSeeOther)
+			return
+		}
+	}
+	if isOwner {
+		if redirect := issueResidentContextRedirect(updated.ID, r.FormValue("redirect")); redirect != "" {
 			http.Redirect(w, r, redirect, http.StatusSeeOther)
 			return
 		}
@@ -354,6 +406,63 @@ func (a *app) deleteIssueComment(w http.ResponseWriter, r *http.Request, ac auth
 	})
 	a.notifyIssueUpdated(tenant, updated, email, "Kommentar zu Anliegen \""+updated.Title+"\" gelöscht")
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
+}
+
+func (a *app) confirmIssueResolution(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimSpace(r.FormValue("id"))
+	existing, found := a.issueStore.Get(ac.tenant.Slug, id)
+	if !found {
+		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
+		return
+	}
+	isOwner := normalizeEmail(existing.AuthorEmail) == normalizeEmail(ac.email)
+	if !isOwner || hasCapability(ac.role, capabilityManageIssues) || normalizeIssueStatus(existing.Status) != issueStatusDone {
+		http.Error(w, "Diese Rückmeldung ist nur für die meldende Person möglich.", http.StatusForbidden)
+		return
+	}
+	resolved := strings.TrimSpace(r.FormValue("resolved"))
+	if resolved != "yes" && resolved != "no" {
+		http.Redirect(w, r, "/app/anliegen/"+url.PathEscape(id), http.StatusSeeOther)
+		return
+	}
+	status := issueStatusDone
+	if resolved == "no" {
+		status = issueStatusNew
+	}
+	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
+	updated, ok, err := a.issueStore.UpdateWorkflow(ac.tenant.Slug, id, issueWorkflowUpdate{
+		Status:              status,
+		Priority:            existing.Priority,
+		AssigneeEmail:       existing.AssigneeEmail,
+		ResolutionConfirmed: resolved == "yes",
+		UpdateResolution:    true,
+		ActorEmail:          ac.email,
+		ActorName:           profile.DisplayName(),
+		ChangedAt:           time.Now(),
+	})
+	if err != nil || !ok {
+		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: ac.tenant.Slug,
+		ActorEmail: ac.email,
+		ActorRole:  ac.role,
+		Action:     auditActionIssueWorkflow,
+		TargetType: "issue",
+		TargetID:   updated.ID,
+		Summary:    "Lösungsstatus zu Anliegen bestätigt",
+		Details: map[string]string{
+			"resolution": resolved,
+			"status":     normalizeIssueStatus(updated.Status),
+		},
+	})
+	a.notifyIssueUpdated(ac.tenant, updated, ac.email, "Rückmeldung zur Lösung von Anliegen \""+updated.Title+"\"")
+	http.Redirect(w, r, "/app/anliegen/"+url.PathEscape(updated.ID), http.StatusSeeOther)
 }
 
 func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -530,11 +639,19 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 func issueContextRedirect(issueID string, requested string) string {
 	base := "/app/anliegen/board/" + url.PathEscape(strings.TrimSpace(issueID))
 	switch strings.TrimSpace(requested) {
-	case base, base + "?step=1", base + "?step=2", base + "?step=done":
+	case base, base + "?step=1", base + "?step=2", base + "?step=done", base + "?step=message", base + "?step=sent", base + "?step=resolution-sent":
 		return strings.TrimSpace(requested)
 	default:
 		return ""
 	}
+}
+
+func issueResidentContextRedirect(issueID string, requested string) string {
+	base := "/app/anliegen/" + url.PathEscape(strings.TrimSpace(issueID))
+	if strings.TrimSpace(requested) == base {
+		return base
+	}
+	return ""
 }
 
 func (a *app) issueManagerEmails(tenantSlug string) []string {
@@ -907,6 +1024,35 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 		canResidentAct := !canManage && !readOnly && isOwner
 		canServiceAct := isServiceProviderRole(role) && issueAssignedToActor(item, actorEmail) && issueIsOpen(item)
 		hasEstimate := item.EstimateAmountCents > 0 || strings.TrimSpace(item.EstimateNote) != ""
+		openQuestion, hasOpenQuestion := issueOpenQuestion(item.Comments)
+		residentState := "waiting"
+		detailURL := "/app/anliegen/" + url.PathEscape(item.ID)
+		detailAction := "Ansehen"
+		if canManage {
+			detailURL = "/app/anliegen/board/" + url.PathEscape(item.ID)
+			if status == issueStatusOpen {
+				detailAction = "Priorisieren"
+			} else {
+				detailAction = "Weiter bearbeiten"
+			}
+		} else if canResidentAct && hasOpenQuestion {
+			residentState = "question"
+			detailAction = "Antworten"
+		} else if canResidentAct && status == issueStatusDone && item.ResolutionConfirmedAt.IsZero() {
+			residentState = "resolution"
+			detailAction = "Lösung prüfen"
+		} else if status == issueStatusDone && !item.ResolutionConfirmedAt.IsZero() {
+			residentState = "done"
+		}
+		nextStep := issueNextStep(status, canManage)
+		switch residentState {
+		case "question":
+			nextStep = "Die Verwaltung braucht Ihre Antwort."
+		case "resolution":
+			nextStep = "Bitte prüfen Sie die vorgeschlagene Lösung."
+		case "done":
+			nextStep = "Von Ihnen als erledigt bestätigt."
+		}
 		views = append(views, issueView{
 			ID:                    item.ID,
 			Title:                 item.Title,
@@ -916,7 +1062,13 @@ func issueViewsForActor(items []residentIssue, role string, actorEmail string) [
 			Category:              item.Category,
 			Status:                status,
 			StatusClass:           issueStatusClass(status),
-			NextStep:              issueNextStep(status, canManage),
+			NextStep:              nextStep,
+			DetailURL:             detailURL,
+			DetailAction:          detailAction,
+			ResidentState:         residentState,
+			HasOpenQuestion:       hasOpenQuestion,
+			OpenQuestion:          issueCommentViewFrom(openQuestion),
+			ResolutionConfirmed:   !item.ResolutionConfirmedAt.IsZero(),
 			Priority:              priority,
 			AssigneeEmail:         item.AssigneeEmail,
 			HasAssignee:           item.AssigneeEmail != "",
@@ -990,12 +1142,55 @@ func issueCommentViews(comments []issueComment) []issueCommentView {
 		if author == "" {
 			author = comment.AuthorEmail
 		}
-		views = append(views, issueCommentView{
-			ID:        comment.ID,
-			Author:    author,
-			Body:      comment.Body,
-			CreatedAt: formatLocalDateTime(comment.CreatedAt),
-		})
+		view := issueCommentViewFrom(comment)
+		view.Author = author
+		views = append(views, view)
 	}
 	return views
+}
+
+func issueCommentViewFrom(comment issueComment) issueCommentView {
+	author := strings.TrimSpace(comment.AuthorName)
+	if author == "" {
+		author = comment.AuthorEmail
+	}
+	kind := normalizeIssueCommentKind(comment.Kind)
+	label := ""
+	switch kind {
+	case issueCommentKindInformation:
+		label = "Information der Verwaltung"
+	case issueCommentKindQuestion:
+		label = "Rückfrage der Verwaltung"
+	case issueCommentKindAnswer:
+		label = "Antwort"
+	}
+	return issueCommentView{
+		ID:         comment.ID,
+		Author:     author,
+		Body:       comment.Body,
+		Kind:       kind,
+		KindLabel:  label,
+		IsQuestion: kind == issueCommentKindQuestion,
+		IsAnswer:   kind == issueCommentKindAnswer,
+		CreatedAt:  formatLocalDateTime(comment.CreatedAt),
+	}
+}
+
+func issueOpenQuestion(comments []issueComment) (issueComment, bool) {
+	sorted := append([]issueComment(nil), comments...)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return sorted[i].CreatedAt.Before(sorted[j].CreatedAt)
+	})
+	var open issueComment
+	found := false
+	for _, comment := range sorted {
+		switch normalizeIssueCommentKind(comment.Kind) {
+		case issueCommentKindQuestion:
+			open = comment
+			found = true
+		case issueCommentKindAnswer:
+			found = false
+		}
+	}
+	return open, found
 }

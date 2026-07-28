@@ -1,5 +1,7 @@
 package store
 
+import "strings"
+
 // Domain vocabulary. These are the values that get PERSISTED and validated, so
 // they belong to the store rather than to the UI. main aliases them, so call
 // sites read unchanged.
@@ -29,6 +31,11 @@ const (
 	IssueStatusDuplicate = "Duplikat"
 	IssueStatusOpen      = IssueStatusNew
 
+	IssueCommentKindNeutral     = ""
+	IssueCommentKindInformation = "information"
+	IssueCommentKindQuestion    = "question"
+	IssueCommentKindAnswer      = "answer"
+
 	IssuePriorityLow    = "Niedrig"
 	IssuePriorityNorm   = "Mittel"
 	IssuePriorityHigh   = "Hoch"
@@ -37,3 +44,16 @@ const (
 	IssueLocationUnit   = "own-unit"
 	IssueLocationCommon = "common"
 )
+
+func NormalizeIssueCommentKind(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case IssueCommentKindInformation:
+		return IssueCommentKindInformation
+	case IssueCommentKindQuestion:
+		return IssueCommentKindQuestion
+	case IssueCommentKindAnswer:
+		return IssueCommentKindAnswer
+	default:
+		return IssueCommentKindNeutral
+	}
+}

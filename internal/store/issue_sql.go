@@ -264,6 +264,19 @@ func (s *SQLIssueStore) UpdateWorkflow(tenantSlug string, id string, update Issu
 			updated.EstimateUpdatedAt = time.Time{}
 		}
 	}
+	if status != IssueStatusDone {
+		updated.ResolutionConfirmedBy = ""
+		updated.ResolutionConfirmedAt = time.Time{}
+	}
+	if update.UpdateResolution {
+		if update.ResolutionConfirmed && status == IssueStatusDone {
+			updated.ResolutionConfirmedBy = actorEmail
+			updated.ResolutionConfirmedAt = changedAt
+		} else {
+			updated.ResolutionConfirmedBy = ""
+			updated.ResolutionConfirmedAt = time.Time{}
+		}
+	}
 	updated.UpdatedAt = changedAt
 	if oldStatus != status {
 		updated.StatusChangedAt = changedAt
@@ -294,6 +307,7 @@ func (s *SQLIssueStore) AddComment(tenantSlug string, id string, comment IssueCo
 	comment.Body = strings.TrimSpace(comment.Body)
 	comment.AuthorEmail = textutil.Email(comment.AuthorEmail)
 	comment.AuthorName = strings.TrimSpace(comment.AuthorName)
+	comment.Kind = NormalizeIssueCommentKind(comment.Kind)
 	// Body may be empty for a photo-only comment (HAUSV-128).
 	if tenantSlug == "" || id == "" || len([]rune(comment.Body)) > 3000 || comment.AuthorEmail == "" {
 		return ResidentIssue{}, false, fmt.Errorf("invalid issue comment")

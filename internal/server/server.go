@@ -438,6 +438,7 @@ var normalizeHandoverRooms = store.NormalizeHandoverRooms
 var normalizeHandoverType = store.NormalizeHandoverType
 var normalizeHandovers = store.NormalizeHandovers
 var normalizeIssueCategory = store.NormalizeIssueCategory
+var normalizeIssueCommentKind = store.NormalizeIssueCommentKind
 var normalizeIssueLocation = store.NormalizeIssueLocation
 var normalizeIssuePriority = store.NormalizeIssuePriority
 var normalizeIssueStatus = store.NormalizeIssueStatus
@@ -682,6 +683,10 @@ const (
 	issueStatusRejected           = store.IssueStatusRejected
 	issueStatusDuplicate          = store.IssueStatusDuplicate
 	issueStatusOpen               = store.IssueStatusOpen
+	issueCommentKindNeutral       = store.IssueCommentKindNeutral
+	issueCommentKindInformation   = store.IssueCommentKindInformation
+	issueCommentKindQuestion      = store.IssueCommentKindQuestion
+	issueCommentKindAnswer        = store.IssueCommentKindAnswer
 	issuePriorityLow              = store.IssuePriorityLow
 	issuePriorityNorm             = store.IssuePriorityNorm
 	issuePriorityHigh             = store.IssuePriorityHigh
@@ -892,9 +897,11 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /app/anliegen", a.page(a.issues))
 	mux.HandleFunc("GET /app/anliegen/board", a.page(a.issueBoard))
 	mux.HandleFunc("GET /app/anliegen/board/{id}", a.page(a.issueTriage))
+	mux.HandleFunc("GET /app/anliegen/{id}", a.page(a.issueResidentDetail))
 	mux.HandleFunc("POST /app/anliegen", a.action(a.createIssue))
 	mux.HandleFunc("POST /app/anliegen/comment", a.action(a.addIssueComment))
 	mux.HandleFunc("POST /app/anliegen/comment/delete", a.action(a.deleteIssueComment))
+	mux.HandleFunc("POST /app/anliegen/resolution", a.action(a.confirmIssueResolution))
 	mux.HandleFunc("POST /app/anliegen/workflow", a.action(a.updateIssueWorkflow))
 	mux.HandleFunc("GET /app/parking", a.page(a.parking))
 	mux.HandleFunc("GET /app/parking/settings", a.authed(capabilityManageParking, a.parkingSettings))
