@@ -17,6 +17,9 @@ go run ./cmd/hausv-org
 
 Local-only environment belongs in `.env.local`; it is intentionally ignored.
 
+The repeatable Playwright role check for the main portal flows is documented in
+[`docs/playwright-main-flow-qa.md`](docs/playwright-main-flow-qa.md).
+
 ## Production
 
 csb1 deployment notes live in `docs/csb1-deploy.md`. Secrets stay in agenix and

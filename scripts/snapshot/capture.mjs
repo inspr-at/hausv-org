@@ -28,6 +28,7 @@ const PERSONAS = [
   { name: 'admin', email: 'admin@example.com' },
   { name: 'verwalter', email: 'verwalter@example.com' },
   { name: 'owner', email: 'owner@example.com' },
+  { name: 'resident', email: 'resident@example.com' },
 ];
 
 const ROUTES = [

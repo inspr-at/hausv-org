@@ -17,9 +17,9 @@ set -gx DEFAULT_TENANT jhw22
 set -gx LOCAL_DEV_LOGIN true
 
 set -gx WEG_TENANTS_JSON '[{"slug":"jhw22","name":"WEG Portal","address":"Janischhofweg 22","host":"localhost"}]'
-set -gx WEG_USERS_JSON '[{"email":"admin@example.com","first_name":"Ada","last_name":"Admin","role":"Admin","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"verwalter@example.com","first_name":"Vera","last_name":"Verwalter","role":"Verwalter","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"owner@example.com","first_name":"Otto","last_name":"Eigentuemer","role":"Eigentümer","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]}]'
+set -gx WEG_USERS_JSON '[{"email":"admin@example.com","first_name":"Ada","last_name":"Admin","role":"Admin","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"verwalter@example.com","first_name":"Vera","last_name":"Verwalter","role":"Verwalter","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"owner@example.com","first_name":"Otto","last_name":"Eigentuemer","role":"Eigentümer","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"resident@example.com","first_name":"Rita","last_name":"Bewohnerin","role":"Bewohner","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]}]'
 set -gx ADMIN_EMAILS admin@example.com
-set -gx INVITE_EMAILS admin@example.com,verwalter@example.com,owner@example.com
+set -gx INVITE_EMAILS admin@example.com,verwalter@example.com,owner@example.com,resident@example.com
 
 # Fixed session key so cookies from the baseline run stay valid for the
 # candidate run — otherwise every page would just be the login screen.
