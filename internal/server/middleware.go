@@ -33,8 +33,7 @@ func (a *app) recoverAndLog(next http.Handler) http.Handler {
 				slog.Error("panic recovered",
 					"request_id", reqID,
 					"method", r.Method,
-					"path", r.URL.Path,
-					"host", r.Host,
+					"route", requestLogRoute(r),
 					"tenant", tenantSlug,
 					"panic", rec,
 					"stack", string(debug.Stack()),
@@ -43,8 +42,7 @@ func (a *app) recoverAndLog(next http.Handler) http.Handler {
 			slog.Info("request",
 				"request_id", reqID,
 				"method", r.Method,
-				"path", r.URL.Path,
-				"host", r.Host,
+				"route", requestLogRoute(r),
 				"tenant", tenantSlug,
 				"status", sw.status,
 				"bytes", sw.bytes,
@@ -54,6 +52,19 @@ func (a *app) recoverAndLog(next http.Handler) http.Handler {
 
 		next.ServeHTTP(sw, r)
 	})
+}
+
+// requestLogRoute deliberately records the registered route pattern, not the
+// concrete URL path. Public calendar and handover URLs contain bearer tokens in
+// their path; object routes also contain identifiers that are unnecessary for
+// request-level operations. The matched pattern keeps logs useful for
+// filtering without retaining either. Unmatched attacker-controlled paths are
+// collapsed to one stable value.
+func requestLogRoute(r *http.Request) string {
+	if r != nil && r.Pattern != "" {
+		return r.Pattern
+	}
+	return "unmatched"
 }
 
 // authCtx carries the authenticated identity for a request. It can be minted

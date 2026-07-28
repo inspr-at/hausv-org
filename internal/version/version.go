@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.45.1",
+			Date:     "28. Juli 2026",
+			Kind:     "Datenschutz & Betrieb",
+			Headline: "Betriebsprotokolle bleiben aussagekräftig, ohne konkrete Portaladressen zu speichern.",
+			Intro:    "Stabile Routennamen ersetzen konkrete Pfade; eine automatische Prüfung schützt zusätzlich vor unnötigen persönlichen oder geheimen Angaben.",
+			Items: []NoteItem{
+				{Label: "Token schützen", Text: "Kalender- und Übergabezugriffe hinterlassen nur den Routentyp, niemals den geheimen Bestandteil ihrer Adresse."},
+				{Label: "Datensparsam prüfen", Text: "Die Logprüfung erkennt Klartext-E-Mail-Adressen, sensitive Felder und fehlende Betriebsangaben automatisch."},
+				{Label: "Diskret auswerten", Text: "Produktionsstichproben zeigen ausschließlich Zähler und Abweichungsarten statt konkreter Logwerte."},
+			},
+		},
+		{
 			Version:  "0.45.0",
 			Date:     "28. Juli 2026",
 			Kind:     "Orientierung",

@@ -29,3 +29,7 @@ must not be committed.
 
 External service-provider access and attachment privacy are documented in
 `docs/service-provider-privacy.md`.
+
+Repeatable role-aware browser QA and the privacy-safe structured-log check are
+documented in `docs/playwright-main-flow-qa.md` and
+`docs/structured-log-qa.md`.

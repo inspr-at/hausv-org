@@ -74,3 +74,6 @@ end
 echo "── running Playwright role flows"
 node "$repo/scripts/snapshot/qa-main-flows.mjs" "http://localhost:$port"; or exit 1
 echo "  ✓ Rollen-QA vollständig"
+
+echo "── checking structured logs"
+python3 "$repo/scripts/check-structured-logs.py" < "$tmp/app.log"; or exit 1

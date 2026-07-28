@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.45.1] - 2026-07-28
+
+### Verbessert
+
+- **Betriebsprotokolle sind noch datensparsamer.** Request-Einträge verwenden stabile Routennamen statt konkreter Adressen; Zugriffstoken und unnötige Objektkennungen gelangen dadurch auch bei Kalender- und Übergabeaufrufen nicht in die Logs.
+- **Die Datenschutzprüfung ist wiederholbar.** Der Rollen-Test kontrolliert seine JSON-Logs jetzt automatisch auf Struktur, Severity, notwendige Betriebsfelder, Klartext-E-Mail-Adressen, Token, Chat-IDs und Request-Inhalte.
+- **Produktionsstichproben bleiben diskret.** Der Prüfweg gibt ausschließlich Zähler und Abweichungsarten aus, niemals Logwerte oder mögliche personenbezogene Daten.
+
 ## [0.45.0] - 2026-07-28
 
 ### Verbessert
