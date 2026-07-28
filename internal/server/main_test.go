@@ -44,7 +44,7 @@ type recordingMailer struct {
 	notifications []sentNotification
 }
 
-func (m *recordingMailer) SendMagicLink(to string, link string) error {
+func (m *recordingMailer) SendMagicLink(to string, link string, _ string) error {
 	m.magicLinks = append(m.magicLinks, sentMagicLink{To: to, Link: link})
 	return nil
 }
@@ -1207,15 +1207,9 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 	}
 }
 
-func TestHomeUsesUnitCountFromStore(t *testing.T) {
+func TestTenantHomeUsesHouseLanguageAndPrivateMapLink(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
-		{ID: "top-1", Label: "Top 1", OwnerEmails: []string{"owner1@example.com"}},
-		{ID: "top-2", Label: "Top 2", OwnerEmails: []string{"owner2@example.com"}},
-		{ID: "stellplatz-1", Label: "Stellplatz 1", UnitType: unitTypeParking},
-	}); err != nil {
-		t.Fatalf("SetTenantUnits: %v", err)
-	}
+	a.mailer = &recordingMailer{}
 
 	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
 	rr := httptest.NewRecorder()
@@ -1224,11 +1218,46 @@ func TestHomeUsesUnitCountFromStore(t *testing.T) {
 		t.Fatalf("home status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	if !strings.Contains(body, "<strong>2</strong>") || !strings.Contains(body, "Wohneinheiten im Haus") {
-		t.Fatalf("home should render real billable unit count, body: %s", body)
+	for _, want := range []string{
+		"Ihr Hausportal",
+		"Alles Wichtige rund um unser Haus.",
+		"Willkommen zurück",
+		"Anmeldelink senden",
+		"Auf OpenStreetMap ansehen",
+		"Privat für die Hausgemeinschaft",
+		"Impressum",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("home should render house-focused entry %q, body: %s", want, body)
+		}
 	}
-	if strings.Contains(body, "12 Wohneinheiten") {
-		t.Fatal("home must not render the old hardcoded unit count")
+	for _, forbidden := range []string{"WEG Portal", "Zitadel", "SSO", "Parkplatzabrechnung", "Wohneinheiten im Haus"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("home should not expose provider/product jargon %q, body: %s", forbidden, body)
+		}
+	}
+}
+
+func TestExpiredMagicLinkReturnsToFriendlyLoginWithoutToken(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	verify := httptest.NewRecorder()
+	a.verifyLogin(verify, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/auth/verify?token=expired-secret", nil))
+	if verify.Code != http.StatusSeeOther {
+		t.Fatalf("expired verify status = %d, want redirect", verify.Code)
+	}
+	location := verify.Header().Get("Location")
+	if location != "/?login=expired#login" || strings.Contains(location, "token") || strings.Contains(location, "expired-secret") {
+		t.Fatalf("expired verify location = %q", location)
+	}
+
+	page := httptest.NewRecorder()
+	a.home(page, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/?login=expired", nil))
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Dieser Anmeldelink ist nicht mehr gültig") {
+		t.Fatalf("friendly expired page = %d %q", page.Code, page.Body.String())
+	}
+	if strings.Contains(page.Body.String(), "expired-secret") {
+		t.Fatal("expired page must not expose the consumed token")
 	}
 }
 
@@ -1396,7 +1425,7 @@ func TestParseUserProfilesNormalizesAuthMethods(t *testing.T) {
 	if profile.AllowsAuthMethod(authMethodEmail) {
 		t.Fatal("profile should not allow email login")
 	}
-	if got := userRowFrom(profile).AuthLabel; got != "Zitadel SSO" {
+	if got := userRowFrom(profile).AuthLabel; got != "Sichere Anmeldung" {
 		t.Fatalf("auth label = %q", got)
 	}
 }
@@ -3118,6 +3147,9 @@ func TestPortalDashboardShowsRoleScopedDocumentsAndParking(t *testing.T) {
 	resident := authedRequest(t, a, "resident@example.com", "/app").Body.String()
 	if !strings.Contains(resident, "Hausordnung") {
 		t.Fatal("resident dashboard should show all-resident documents")
+	}
+	if !strings.Contains(resident, "<title>Janischhofweg 22</title>") || strings.Contains(resident, "<title>WEG Portal</title>") {
+		t.Fatal("dashboard browser title should use the house name instead of the legacy product name")
 	}
 	if strings.Contains(resident, `href="/app/parking"`) || strings.Contains(resident, `href="/app/parking#`) || strings.Contains(resident, `Parkplatz öffnen`) {
 		t.Fatal("resident without parking permission must not see parking dashboard links")

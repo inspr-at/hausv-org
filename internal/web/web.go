@@ -138,43 +138,44 @@ const PageTemplates = `
 {{template "designTokens" .}}
     }
     * { box-sizing: border-box; }
-    body { margin: 0; color: var(--ink); background: #10160f; }
+    body { margin: 0; color: var(--ink); background: var(--paper); }
     /* Accessibility convention: all keyboard-reachable controls keep a visible focus ring. */
     :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
-    .hero { position: relative; min-height: 100vh; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; }
+    .hero { position: relative; isolation: isolate; min-height: 100vh; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; background: #10160f; }
     .hero::before {
       content: ""; position: absolute; inset: -16px;
       background: url('{{.Tenant.HeroImageURL}}') center 42% / cover no-repeat;
-      filter: blur(3px) brightness(.74) saturate(.95); transform: scale(1.05); z-index: -2;
+      filter: blur(2px) brightness(.78) saturate(.95); transform: scale(1.04); z-index: -2;
     }
     .hero::after {
       content: ""; position: absolute; inset: 0;
-      background: linear-gradient(180deg, rgba(16,22,16,.52) 0%, rgba(16,22,16,.3) 34%, rgba(16,22,16,.6) 76%, rgba(16,22,16,.9) 100%);
+      background: rgba(12,18,13,.48);
       z-index: -1;
     }
-    header { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 28px clamp(20px,5vw,72px); color: #fff; }
-    .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; }
-    .mark { width: 58px; height: 46px; border-radius: var(--radius-sm); background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.4); backdrop-filter: blur(6px); display: grid; place-items: center; color: var(--gold-light); }
-    .mark .hausv-mark { width: 52px; height: 40px; display: block; stroke: currentColor; stroke-width: 2.15; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .mark .mark-word { fill: currentColor; stroke: none; font-family: var(--font-sans); font-size: 6.2px; font-weight: 900; letter-spacing: .02em; }
-    .brand .name { font-family: var(--font-serif); font-weight: 600; font-size: 17px; }
-    nav { display: flex; gap: 24px; color: rgba(255,255,255,.92); font-size: 14px; font-weight: 600; }
+    header { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 22px clamp(20px,5vw,72px); color: var(--ink); background: rgba(255,254,251,.97); border-bottom: 1px solid rgba(231,224,210,.78); }
+    .brand { display: inline-flex; align-items: center; gap: 13px; text-decoration: none; color: var(--ink); }
+    .mark { width: 62px; height: 46px; display: grid; place-items: center; color: var(--gold); }
+    .mark .hausv-mark { width: 62px; height: 46px; display: block; stroke: currentColor; stroke-width: 2.15; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .brand .name { font-family: var(--font-serif); font-weight: 600; font-size: 18px; }
+    nav { display: flex; gap: 24px; color: var(--ink); font-size: 14px; font-weight: 650; }
     nav a { color: inherit; text-decoration: none; padding-bottom: 4px; border-bottom: 1px solid rgba(231,197,116,.65); }
-    nav a:hover { color: #fff; border-bottom-color: var(--gold-light); }
-    main { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(320px,420px); gap: clamp(28px,6vw,64px); align-items: end; padding: 0 clamp(20px,5vw,72px) clamp(40px,8vh,72px); }
+    nav a:hover { border-bottom-color: var(--gold); }
+    main { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(320px,420px); gap: clamp(28px,6vw,64px); align-items: center; padding: clamp(34px,6vh,58px) clamp(20px,5vw,72px); }
     .copy { max-width: 760px; color: #fff; }
     .eyebrow { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .2em; color: var(--gold-light); margin-bottom: 18px; }
     h1 { margin: 0; font-family: var(--font-serif); font-weight: 500; font-size: clamp(46px,7vw,72px); line-height: 1.0; letter-spacing: -.01em; text-shadow: 0 2px 30px rgba(0,0,0,.3); }
-    .lead { max-width: 440px; margin: 24px 0 0; font-size: clamp(17px,2vw,19px); line-height: 1.55; color: rgba(255,255,255,.9); }
-    .meta { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; margin-top: 34px; max-width: 620px; }
-    .meta div { border-left: 1px solid rgba(231,197,116,.58); padding-left: 16px; min-width: 0; }
-    .meta strong { display: block; font-weight: 700; font-size: 14px; color: #fff; margin-bottom: 6px; }
-    .meta span { color: rgba(255,255,255,.78); font-size: 13px; line-height: 1.4; }
-    .login { background: var(--paper); border-radius: var(--radius-xl); padding: 30px; box-shadow: var(--shadow-login); }
+    .lead { max-width: 560px; margin: 24px 0 0; font-size: clamp(17px,2vw,19px); line-height: 1.55; color: rgba(255,255,255,.92); }
+    .meta { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; margin-top: 32px; max-width: 650px; }
+    .meta div { border-left: 1px solid rgba(231,197,116,.58); padding-left: 15px; min-width: 0; }
+    .meta strong { display: block; font-weight: 760; font-size: 14px; color: #fff; margin-bottom: 4px; }
+    .meta span { color: rgba(255,255,255,.8); font-size: 12.5px; line-height: 1.4; }
+    .side-stack { display: grid; gap: 16px; }
+    .login, .location-card { background: var(--paper); border-radius: var(--radius-xl); box-shadow: var(--shadow-login); }
+    .login { padding: 28px; }
     .login h2 { margin: 0; font-family: var(--font-serif); font-weight: 600; font-size: 26px; }
     .login p { color: var(--muted); line-height: 1.5; margin: 9px 0 18px; font-size: 14.5px; }
     .login-email { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
-    .login-email summary { cursor: pointer; color: var(--ink); font-size: 13.5px; font-weight: 750; }
+    .login-email summary { min-height: 42px; display: flex; align-items: center; cursor: pointer; color: var(--ink); font-size: 13.5px; font-weight: 750; }
     .login-email summary::marker { color: var(--gold); }
     .login-email form { margin-top: 14px; }
     label { display: block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--gold-ink); margin-bottom: 8px; }
@@ -187,64 +188,100 @@ const PageTemplates = `
     .dev-link:hover { border-color: var(--gold); }
     .sso-button { display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 10px; background: var(--ink); color: #fff; text-decoration: none; font-weight: 700; margin-bottom: 14px; }
     .sso-button:hover { background: #000; }
-    .divider { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; margin: 12px 0; }
-    .divider::before, .divider::after { content: ""; height: 1px; background: var(--line); }
     .foot-note { margin: 16px 0 0; font-size: 13px; line-height: 1.4; color: var(--soft); }
-    footer { padding: 20px clamp(20px,5vw,72px) 26px; color: rgba(255,255,255,.85); font-weight: 500; font-size: 14px; }
-    footer .version { margin-left: 8px; color: rgba(255,255,255,.54); font-size: 12px; }
+    .location-card { overflow: hidden; }
+    .location-head { display: flex; align-items: center; gap: 9px; padding: 14px 17px; color: var(--ink); font-size: 13.5px; font-weight: 760; }
+    .location-head svg { width: 18px; height: 18px; flex: 0 0 auto; stroke: var(--leaf); stroke-width: 2; fill: none; }
+    .location-map { position: relative; height: 92px; overflow: hidden; background: #ebe8de; }
+    .location-map svg { width: 100%; height: 100%; display: block; stroke: rgba(138,123,63,.25); stroke-width: 3; fill: none; }
+    .location-pin { position: absolute; left: 58%; top: 46%; width: 19px; height: 19px; border-radius: 50% 50% 50% 0; background: var(--nav); transform: translate(-50%,-50%) rotate(-45deg); box-shadow: 0 2px 6px rgba(0,0,0,.22); }
+    .location-pin::after { content: ""; position: absolute; width: 7px; height: 7px; left: 6px; top: 6px; border-radius: 50%; background: var(--paper); }
+    .location-link { min-height: 44px; display: flex; align-items: center; padding: 10px 17px; color: var(--ink); font-size: 12.5px; font-weight: 700; text-underline-offset: 3px; }
+    footer { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px clamp(20px,5vw,72px); color: var(--muted); background: rgba(255,254,251,.97); border-top: 1px solid rgba(231,224,210,.78); font-weight: 550; font-size: 13px; }
+    .footer-links { display: flex; align-items: center; gap: 16px; }
+    footer a { color: var(--ink); text-underline-offset: 3px; }
+    footer .version { color: var(--soft); font-size: 11px; }
     @media (max-width: 860px) {
+      header { padding-block: 14px; }
       nav { display: none; }
-      main { grid-template-columns: 1fr; align-items: start; gap: 28px; }
-      .meta { grid-template-columns: 1fr; gap: 12px; max-width: 320px; margin-top: 22px; }
-      .meta div:not(:first-child) { display: none; }
-      h1 { font-size: clamp(40px,12vw,56px); }
+      main { grid-template-columns: 1fr; align-items: start; gap: 24px; padding-block: 28px; }
+      .copy { max-width: 560px; }
+      .eyebrow { margin-bottom: 12px; }
+      .lead { margin-top: 16px; }
+      .meta { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin-top: 20px; }
+      .meta div { padding-left: 9px; }
+      .meta span { display: none; }
+      h1 { font-size: clamp(38px,11vw,52px); }
+      footer { align-items: flex-start; }
+    }
+    @media (max-width: 520px) {
+      .brand .name { font-size: 16px; }
+      .mark { width: 52px; }
+      .mark .hausv-mark { width: 52px; }
+      .login { padding: 23px 20px; }
+      footer { display: grid; }
+      .footer-links { gap: 13px; flex-wrap: wrap; }
     }
   </style>
 </head>
 <body>
   <section class="hero">
     <header>
-      <a class="brand" href="/" aria-label="WEG Portal Startseite"><span class="mark">{{template "hausvLandingMark" .}}</span><span class="name">{{.Tenant.Name}}</span></a>
+      <a class="brand" href="/" aria-label="Hausportal {{.HouseName}}"><span class="mark">{{template "tenantBrandMark" .}}</span><span class="name">{{.HouseName}}</span></a>
       <nav aria-label="Seitennavigation">
         <a href="#login">Anmelden</a>
       </nav>
     </header>
     <main>
       <div class="copy">
-        <div class="eyebrow">WEG Portal</div>
-        <h1>Alles rund um unser gemeinsames Haus.</h1>
-        <p class="lead">Der private digitale Eingang für die Hausgemeinschaft, erreichbar per persönlichem E-Mail-Zugang oder SSO.</p>
+        <div class="eyebrow">Ihr Hausportal</div>
+        <h1>Alles Wichtige rund um unser Haus.</h1>
+        <p class="lead">Aushänge, Termine, Dokumente und Anliegen – privat für unsere Hausgemeinschaft.</p>
         <div class="meta" aria-label="Portalüberblick">
-          {{if .HasUnitCount}}<div><strong>{{.UnitCount}}</strong><span>{{.UnitCountLabel}} im Haus, direkt aus den hinterlegten Einheiten.</span></div>{{else}}<div><strong>Eingeladen</strong><span>Zugang nur für freigegebene E-Mail-Adressen der Hausgemeinschaft.</span></div>{{end}}
-          <div><strong>Einmalig</strong><span>Anmeldung per SSO oder zeitlich begrenztem E-Mail-Link.</span></div>
-          <div><strong>Parkplatz</strong><span>Verbrauch und Abrechnung bleiben im geschützten Portal.</span></div>
+          <div><strong>Informiert</strong><span>Wichtige Aushänge und Neuigkeiten.</span></div>
+          <div><strong>Organisiert</strong><span>Termine und Aufgaben im Blick.</span></div>
+          <div><strong>Privat</strong><span>Nur für unsere Hausgemeinschaft.</span></div>
         </div>
       </div>
-      <section id="login" class="login" aria-label="Anmeldung">
-        <h2>Anmelden</h2>
-        <p>{{if .OIDCConfigured}}Mit Ihrem persönlichen Hauszugang fortfahren.{{else}}Wir senden Ihnen einen einmaligen Anmeldelink.{{end}}</p>
-        {{if .OIDCConfigured}}<a class="sso-button" href="/auth/oidc/start">Mit {{.OIDCProviderName}} anmelden</a>{{end}}
-        {{if .Sent}}
-          <div class="notice">Wenn die Adresse eingeladen ist, wurde ein Link verschickt. Bitte Posteingang prüfen.</div>
-          {{if not .MailConfigured}}<div class="notice warn">Mailversand ist lokal noch nicht konfiguriert. In Produktion kommt SMTP aus agenix.</div>{{end}}
-          {{if .DevLoginLink}}<a class="dev-link" href="{{.DevLoginLink}}">Lokalen Dev-Login öffnen</a>{{end}}
-        {{end}}
-        {{if .Denied}}<div class="notice warn">Diese Adresse ist noch nicht eingeladen.</div>{{end}}
-        {{if and .EmailLoginAvailable .OIDCConfigured}}<details class="login-email" {{if or .Sent .Denied}}open{{end}}><summary>Alternativ per E-Mail anmelden</summary>{{end}}
-        {{if .EmailLoginAvailable}}
-          <form method="post" action="/auth/request">
-            <label for="email">E-Mail-Adresse</label>
-            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="name@example.com">
-            <button type="submit">Anmeldelink senden</button>
-          </form>
-          <p class="foot-note">15 Minuten gültig · nur für eingeladene Personen</p>
-        {{else}}
-          <div class="notice">E-Mail-Anmeldelinks sind nicht aktiv. Bitte SSO verwenden.</div>
-        {{end}}
-        {{if and .EmailLoginAvailable .OIDCConfigured}}</details>{{end}}
-      </section>
+      <div class="side-stack">
+        <section id="login" class="login" aria-label="Anmeldung">
+          <h2>Willkommen zurück</h2>
+          <p>{{if .OIDCConfigured}}Sicher und ohne eigenes Passwort anmelden.{{else}}Wir senden Ihnen einen einmaligen Anmeldelink.{{end}}</p>
+          {{if .OIDCConfigured}}<a class="sso-button" href="/auth/oidc/start">Anmelden</a>{{end}}
+          {{if .Expired}}<div class="notice warn">Dieser Anmeldelink ist nicht mehr gültig. Fordern Sie einfach einen neuen an.</div>{{end}}
+          {{if .Sent}}
+            <div class="notice">Wenn die Adresse eingeladen ist, wurde ein Link verschickt. Bitte Posteingang prüfen.</div>
+            {{if not .MailConfigured}}<div class="notice warn">Der lokale Mailversand ist nicht eingerichtet.</div>{{end}}
+            {{if .DevLoginLink}}<a class="dev-link" href="{{.DevLoginLink}}">Lokalen Testzugang öffnen</a>{{end}}
+          {{end}}
+          {{if .Denied}}<div class="notice warn">Diese Adresse ist noch nicht eingeladen.</div>{{end}}
+          {{if and .EmailLoginAvailable .OIDCConfigured}}<details class="login-email" {{if or .Sent .Denied .Expired}}open{{end}}><summary>Anmeldelink per E-Mail erhalten</summary>{{end}}
+          {{if .EmailLoginAvailable}}
+            <form method="post" action="/auth/request">
+              <label for="email">E-Mail-Adresse</label>
+              <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="name@example.com">
+              <button type="submit">Anmeldelink senden</button>
+            </form>
+            <p class="foot-note">15 Minuten gültig · nur für eingeladene Personen</p>
+          {{else if not .OIDCConfigured}}
+            <div class="notice">Die Anmeldung ist gerade nicht verfügbar.</div>
+          {{end}}
+          {{if and .EmailLoginAvailable .OIDCConfigured}}</details>{{end}}
+        </section>
+        <section class="location-card" aria-label="Hausstandort">
+          <div class="location-head"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg><span>{{.Tenant.Address}}</span></div>
+          <div class="location-map" aria-hidden="true">
+            <svg viewBox="0 0 420 92" preserveAspectRatio="none"><path d="M-10 70 105 22 205 58 300 10 435 48"/><path d="M32 -12 95 106M175 -12 232 104M350 -12 318 104"/><path d="M-20 26 118 55 230 20 442 78"/></svg>
+            <span class="location-pin"></span>
+          </div>
+          <a class="location-link" href="{{.MapURL}}" rel="noopener noreferrer" target="_blank">Auf OpenStreetMap ansehen</a>
+        </section>
+      </div>
     </main>
-    <footer>{{.Tenant.Address}} · Privat für die Hausgemeinschaft · <a href="/datenschutz">Datenschutz</a> <span class="version">{{.AppVersion}}</span></footer>
+    <footer>
+      <span>{{.Tenant.Address}} · Privat für die Hausgemeinschaft</span>
+      <span class="footer-links"><a href="/datenschutz">Datenschutz</a><a href="https://hausv.org/#impressum">Impressum</a><span class="version">{{.AppVersion}}</span></span>
+    </footer>
   </section>
 </body>
 </html>
@@ -701,8 +738,8 @@ const PageTemplates = `
     .app-shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0,1fr); background: var(--paper); }
     .sidebar { position: sticky; top: 0; height: 100vh; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 22px 16px 18px; color: rgba(255,255,255,.86); background: radial-gradient(circle at 20% 0%, rgba(255,255,255,.08), transparent 28%), var(--nav); border-right: 1px solid rgba(255,255,255,.08); }
     .side-brand { flex: 0 0 auto; display: grid; grid-template-columns: 50px 1fr; gap: 14px; align-items: center; padding: 0 8px 12px; }
-    .side-mark { width: 48px; height: 48px; border-radius: var(--radius-sm); display: grid; place-items: center; color: var(--gold-light); border: 1px solid rgba(255,255,255,.34); background: rgba(255,255,255,.07); text-decoration: none; }
-	    .side-mark:hover { border-color: rgba(231,197,116,.72); background: rgba(255,255,255,.1); color: #f0d58c; }
+    .side-mark { width: 48px; height: 48px; display: grid; place-items: center; color: var(--gold-light); text-decoration: none; }
+	    .side-mark:hover { color: #f0d58c; }
 	    .side-mark svg { width: 38px; height: 34px; display: block; stroke: currentColor; stroke-width: 2.3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 	    .side-brand-copy { min-width: 0; color: inherit; text-decoration: none; }
 	    .side-title { display: block; font-family: var(--font-serif); font-size: 18px; font-weight: 600; line-height: 1.1; color: #fff; text-decoration: none; }
@@ -2099,8 +2136,8 @@ const PageTemplates = `
         {{template "tenantBrandMark" .}}
       </a>
       <a class="side-brand-copy" href="/app">
-        <span class="side-title">{{.Tenant.Name}}</span>
-        <span class="side-sub">{{.Tenant.Address}}</span>
+        <span class="side-title">{{.HouseName}}</span>
+        <span class="side-sub">Hausportal</span>
         {{if .Tenant.BrandAbbreviation}}<span class="side-code">{{.Tenant.BrandAbbreviation}}</span>{{end}}
       </a>
 	    </div>
@@ -6450,7 +6487,7 @@ const PageTemplates = `
                   <legend>Anmeldung</legend>
                   <div class="permission-grid">
                     <label class="permission-check"><input type="checkbox" name="auth_methods" value="email" checked><strong>E-Mail-Link</strong><span>Anmeldung per Magic-Link an die E-Mail-Adresse.</span></label>
-                    <label class="permission-check"><input type="checkbox" name="auth_methods" value="oidc" checked><strong>Zitadel SSO</strong><span>Anmeldung über den Single-Sign-On-Anbieter (Zitadel).</span></label>
+                    <label class="permission-check"><input type="checkbox" name="auth_methods" value="oidc" checked><strong>Sichere Anmeldung</strong><span>Anmeldung über den zentralen Hauszugang.</span></label>
                   </div>
                 </fieldset>
               </div>
@@ -6563,7 +6600,7 @@ const PageTemplates = `
                           <legend>Anmeldung</legend>
                           <div class="permission-grid">
                             <label class="permission-check"><input type="checkbox" name="auth_methods" value="email"{{if .EmailAuthChecked}} checked{{end}}><strong>E-Mail-Link</strong><span>Anmeldung per Magic-Link an die E-Mail-Adresse.</span></label>
-                            <label class="permission-check"><input type="checkbox" name="auth_methods" value="oidc"{{if .OIDCAuthChecked}} checked{{end}}><strong>Zitadel SSO</strong><span>Anmeldung über den Single-Sign-On-Anbieter (Zitadel).</span></label>
+                            <label class="permission-check"><input type="checkbox" name="auth_methods" value="oidc"{{if .OIDCAuthChecked}} checked{{end}}><strong>Sichere Anmeldung</strong><span>Anmeldung über den zentralen Hauszugang.</span></label>
                           </div>
                         </fieldset>
                       </div>

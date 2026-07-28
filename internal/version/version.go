@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.43.0",
+			Date:     "28. Juli 2026",
+			Kind:     "Anmeldung",
+			Headline: "Der Hauszugang ist jetzt einfacher, persönlicher und frei von Anbieterjargon.",
+			Intro:    "Hausname, Adresse und eine einzige klare Anmeldung stehen im Mittelpunkt; der E-Mail-Link bleibt als verständliche Alternative erreichbar.",
+			Items: []NoteItem{
+				{Label: "Einfach anmelden", Text: "Ein neutraler Anmeldeknopf führt zum sicheren Hauszugang, ohne technische Produktnamen erklären zu müssen."},
+				{Label: "Freundlich zurückfinden", Text: "Abgelaufene Links führen zur vertrauten Startseite und direkt zur Anforderung eines neuen Links."},
+				{Label: "Haus im Mittelpunkt", Text: "Das reduzierte Hauszeichen, die Adresse und ein datensparsamer Kartenhinweis geben sofort Orientierung."},
+			},
+		},
+		{
 			Version:  "0.42.0",
 			Date:     "28. Juli 2026",
 			Kind:     "Anliegen",

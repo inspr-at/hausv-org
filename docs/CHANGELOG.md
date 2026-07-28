@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.43.0] - 2026-07-28
+
+### Verbessert
+
+- **Die Anmeldung spricht jetzt die Sprache der Hausgemeinschaft.** Ein neutraler „Anmelden“-Knopf ersetzt Anbieter- und Produktjargon; die E-Mail-Alternative bleibt direkt erreichbar.
+- **Hausname und Adresse stehen im Mittelpunkt.** Das reduzierte Drei-Häuser-Zeichen, die Adresse und der Begriff „Hausportal“ ersetzen die bisherige technische Portalbezeichnung auch im Browser und in Anmelde-E-Mails.
+- **Abgelaufene Links führen freundlich zurück.** Statt einer technischen Textseite erscheint wieder der vertraute Einstieg mit einer klaren Möglichkeit, einen neuen Link anzufordern; der alte Token bleibt nicht in der Adresse sichtbar.
+- **Der Hausstandort ergänzt den Einstieg datensparsam.** Eine ruhige Kartenillustration lädt keine externen Karteninhalte; OpenStreetMap öffnet sich erst nach einem bewussten Klick.
+- **Desktop und Mobil wurden mit beiden Anmeldewegen geprüft.** Der Einstieg bleibt bei 390 Pixeln ohne seitlichen Überlauf, der zentrale Login leitet korrekt weiter und der E-Mail-Testzugang führt ins Portal.
+
 ## [0.42.0] - 2026-07-28
 
 ### Verbessert

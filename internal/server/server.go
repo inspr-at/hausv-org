@@ -1027,7 +1027,7 @@ func newApp() (*app, error) {
 		env("SMTP_PORT", "587"),
 		env("SMTP_USER", ""),
 		env("SMTP_PASS", ""),
-		env("MAIL_FROM", "WEG Portal <noreply@example.invalid>"),
+		env("MAIL_FROM", "hausv.org <noreply@example.invalid>"),
 	)
 	if err := mailTransport.Validate(); err != nil {
 		return nil, err
@@ -1791,7 +1791,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen)
 	a.render(w, "portal", a.withBase(ac, map[string]any{
-		"Title":        "WEG Portal",
+		"Title":        houseDisplayName(tenant),
 		"GreetingName": firstNonEmpty(profile.FirstName, profile.DisplayName()),
 		// The dashboard uses this value to decide whether to calculate and
 		// display the parking summary, so keep the derived value explicit.
@@ -2085,7 +2085,7 @@ func (a *app) sendServiceProviderMagicLink(r *http.Request, tenant tenantConfig,
 	redirectPath := "/app/anliegen#issue-" + url.PathEscape(issue.ID)
 	a.tokens.PutWithRedirect(token, email, tenant.Slug, 15*time.Minute, redirectPath)
 	link := a.publicBaseURL(r, tenant) + "/auth/verify?token=" + url.QueryEscape(token)
-	return a.mailer.SendMagicLink(email, link)
+	return a.mailer.SendMagicLink(email, link, tenant.Address)
 }
 
 func (a *app) notifyIssueCreated(tenant tenantConfig, issue residentIssue) {
@@ -4102,6 +4102,7 @@ func (a *app) baseContext(ac authCtx) map[string]any {
 	isAdmin := hasCapability(ac.role, capabilityPlatformAdmin)
 	return map[string]any{
 		"Tenant":        ac.tenant,
+		"HouseName":     houseDisplayName(ac.tenant),
 		"Email":         ac.email,
 		"Role":          ac.role,
 		"IsAdmin":       isAdmin,

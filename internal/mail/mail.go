@@ -19,7 +19,7 @@ import (
 )
 
 type Mailer interface {
-	SendMagicLink(to string, link string) error
+	SendMagicLink(to string, link string, address string) error
 	SendInvite(to string, loginURL string, address string) error
 	SendNotification(to string, subject string, body string) error
 	Configured() bool
@@ -90,7 +90,7 @@ func (m SmtpMailer) auth() smtp.Auth {
 	return smtp.PlainAuth("", m.user, m.pass, m.host)
 }
 
-func (m SmtpMailer) SendMagicLink(to string, link string) error {
+func (m SmtpMailer) SendMagicLink(to string, link string, address string) error {
 	if !m.Configured() {
 		return errors.New("smtp not configured")
 	}
@@ -101,26 +101,38 @@ func (m SmtpMailer) SendMagicLink(to string, link string) error {
 		return fmt.Errorf("invalid MAIL_FROM")
 	}
 
-	msg := strings.Join([]string{
-		"From: " + m.from,
+	address = strings.TrimSpace(address)
+	if address == "" {
+		address = "Ihrem Haus"
+	}
+	msg := magicLinkMessage(m.from, to, link, address)
+
+	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
+}
+
+func magicLinkMessage(from string, to string, link string, address string) string {
+	address = strings.TrimSpace(address)
+	if address == "" {
+		address = "Ihrem Haus"
+	}
+	return strings.Join([]string{
+		"From: " + from,
 		"To: " + to,
-		"Subject: Ihr Zugang zum WEG Portal",
+		"Subject: Ihr Anmeldelink für " + address,
 		"MIME-Version: 1.0",
 		"Content-Type: text/plain; charset=UTF-8",
 		"",
 		"Hallo,",
 		"",
-		"hier ist Ihr Anmeldelink für das WEG Portal:",
+		"mit diesem Link melden Sie sich im Hausportal für " + address + " an:",
 		link,
 		"",
 		"Der Link ist 15 Minuten gültig und kann nur einmal verwendet werden.",
 		"Datenschutzinformationen: " + privacyURL(link),
 		"",
 		"Freundliche Grüße",
-		"WEG Portal",
+		"Hausportal " + address,
 	}, "\r\n")
-
-	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
 }
 
 func (m SmtpMailer) SendInvite(to string, loginURL string, address string) error {
@@ -135,22 +147,22 @@ func (m SmtpMailer) SendInvite(to string, loginURL string, address string) error
 	msg := strings.Join([]string{
 		"From: " + m.from,
 		"To: " + to,
-		"Subject: Einladung zum WEG Portal " + address,
+		"Subject: Einladung zum Hausportal " + address,
 		"MIME-Version: 1.0",
 		"Content-Type: text/plain; charset=UTF-8",
 		"",
 		"Hallo,",
 		"",
-		"Sie wurden zum WEG Portal \"" + address + "\" eingeladen.",
+		"Sie wurden zum privaten Hausportal für " + address + " eingeladen.",
 		"Melden Sie sich mit dieser E-Mail-Adresse an:",
 		loginURL,
 		"",
-		"Beim Anmelden erhalten Sie einen einmaligen Login-Link per E-Mail",
-		"oder nutzen Ihren SSO-Zugang.",
+		"Beim Anmelden erhalten Sie einen einmaligen Link per E-Mail",
+		"oder verwenden die normale Anmeldung auf der Startseite.",
 		"Datenschutzinformationen: " + privacyURL(loginURL),
 		"",
 		"Freundliche Grüße",
-		"WEG Portal",
+		"Hausportal " + address,
 	}, "\r\n")
 	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
 }
@@ -178,11 +190,11 @@ func (m SmtpMailer) SendNotification(to string, subject string, body string) err
 	}
 	subject = strings.TrimSpace(subject)
 	if subject == "" {
-		subject = "WEG Portal Benachrichtigung"
+		subject = "Neue Nachricht aus Ihrem Hausportal"
 	}
 	body = strings.TrimSpace(body)
 	if body == "" {
-		body = "Es gibt eine neue Aktualisierung im WEG Portal."
+		body = "Es gibt eine neue Aktualisierung in Ihrem Hausportal."
 	}
 	msg := strings.Join([]string{
 		"From: " + m.from,
@@ -194,7 +206,7 @@ func (m SmtpMailer) SendNotification(to string, subject string, body string) err
 		body,
 		"",
 		"Freundliche Grüße",
-		"WEG Portal",
+		"hausv.org",
 	}, "\r\n")
 	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
 }

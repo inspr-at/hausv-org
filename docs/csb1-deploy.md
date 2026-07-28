@@ -57,7 +57,7 @@ Resend first, add the DNS records it gives you in Cloudflare, then store the
 API key only in agenix as `SMTP_PASS`. The production sender is:
 
 ```text
-WEG Portal <noreply@notify.hausv.org>
+hausv.org <noreply@notify.hausv.org>
 ```
 
 The service-provider access gate must stay closed until the controller has

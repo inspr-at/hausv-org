@@ -2117,7 +2117,7 @@ func AuthMethodsLabelList(methods []string) []string {
 		case store.AuthMethodEmail:
 			labels = append(labels, "E-Mail-Link")
 		case store.AuthMethodOIDC:
-			labels = append(labels, "Zitadel SSO")
+			labels = append(labels, "Sichere Anmeldung")
 		default:
 			labels = append(labels, method)
 		}

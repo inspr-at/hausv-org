@@ -19,14 +19,17 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	}
 
 	got := a.baseContext(ac)
-	if len(got) != 7 {
-		t.Fatalf("baseContext keys = %d, want 7: %#v", len(got), got)
+	if len(got) != 8 {
+		t.Fatalf("baseContext keys = %d, want 8: %#v", len(got), got)
 	}
 	if got["Tenant"] != ac.tenant || got["Email"] != ac.email || got["Role"] != ac.role {
 		t.Fatalf("baseContext identity = %#v", got)
 	}
 	if got["DisplayName"] != "Ada Lovelace" || got["Initials"] != "AL" {
 		t.Fatalf("baseContext profile = %#v", got)
+	}
+	if got["HouseName"] != "Janischhofweg 22" {
+		t.Fatalf("baseContext house name = %#v", got["HouseName"])
 	}
 	if got["IsAdmin"] != false || got["CanSeeParking"] != true {
 		t.Fatalf("baseContext capabilities = %#v", got)

@@ -25,25 +25,20 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app", http.StatusSeeOther)
 		return
 	}
-	unitWeight := 0
-	if a.unitStore != nil {
-		unitWeight = a.unitStore.BillableUnitWeight(tenant.Slug)
-	}
-	titleName := firstNonEmpty(tenant.Name, "WEG Portal")
+	houseName := houseDisplayName(tenant)
 	a.render(w, "home", map[string]any{
-		"Title":               titleName + " " + tenant.Address,
+		"Title":               houseName + " · Hausportal",
 		"Tenant":              tenant,
+		"HouseName":           houseName,
 		"Email":               email,
-		"UnitCount":           formatBillableUnitWeight(unitWeight),
-		"UnitCountLabel":      billableUnitCountLabel(unitWeight),
-		"HasUnitCount":        unitWeight > 0,
 		"Sent":                r.URL.Query().Get("sent") == "1",
+		"Expired":             r.URL.Query().Get("login") == "expired",
 		"MailConfigured":      a.mailer.Configured(),
 		"DevLoginLink":        "",
 		"Denied":              r.URL.Query().Get("denied") == "1",
 		"OIDCConfigured":      a.oidc.Configured(),
-		"OIDCProviderName":    a.oidc.ProviderName(),
 		"EmailLoginAvailable": a.emailLoginAvailable(),
+		"MapURL":              tenantMapURL(tenant.Address),
 	})
 }
 
@@ -121,21 +116,23 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	link := a.publicBaseURL(r, tenant) + "/auth/verify?token=" + url.QueryEscape(token)
 	if a.localDevLogin && !a.mailer.Configured() {
 		a.render(w, "home", map[string]any{
-			"Title":               "WEG Portal " + tenant.Address,
+			"Title":               tenant.Address + " · Hausportal",
 			"Tenant":              tenant,
+			"HouseName":           houseDisplayName(tenant),
 			"Email":               email,
 			"Sent":                true,
+			"Expired":             false,
 			"MailConfigured":      false,
 			"DevLoginLink":        link,
 			"Denied":              false,
 			"OIDCConfigured":      a.oidc.Configured(),
-			"OIDCProviderName":    a.oidc.ProviderName(),
 			"EmailLoginAvailable": a.emailLoginAvailable(),
+			"MapURL":              tenantMapURL(tenant.Address),
 		})
 		return
 	}
 
-	if err := a.mailer.SendMagicLink(email, link); err != nil {
+	if err := a.mailer.SendMagicLink(email, link, tenant.Address); err != nil {
 		logError("magic link delivery failed", err, "recipient", redactedEmail(email))
 		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
 		return
@@ -148,7 +145,7 @@ func (a *app) verifyLogin(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	email, tenantSlug, redirectPath, ok := a.tokens.Consume(token)
 	if !ok {
-		http.Error(w, "Dieser Anmeldelink ist abgelaufen oder wurde bereits verwendet.", http.StatusUnauthorized)
+		http.Redirect(w, r, "/?login=expired#login", http.StatusSeeOther)
 		return
 	}
 
@@ -162,6 +159,23 @@ func (a *app) verifyLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, firstNonEmpty(redirectPath, "/app"), http.StatusSeeOther)
 }
 
+func tenantMapURL(address string) string {
+	query := strings.TrimSpace(address)
+	if query == "" {
+		query = "Graz, Österreich"
+	}
+	return "https://www.openstreetmap.org/search?query=" + url.QueryEscape(query)
+}
+
+func houseDisplayName(tenant tenantConfig) string {
+	name := strings.TrimSpace(tenant.Name)
+	lower := strings.ToLower(name)
+	if name == "" || lower == "weg portal" || strings.Contains(lower, "-portal") {
+		return firstNonEmpty(tenant.Address, "Hausportal")
+	}
+	return name
+}
+
 func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	if !a.oidc.Configured() {
 		http.NotFound(w, r)
@@ -170,22 +184,22 @@ func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	if err := a.oidc.EnsureProvider(r.Context()); err != nil {
 		logError("OIDC discovery failed during login start", err)
-		http.Error(w, "SSO ist gerade nicht erreichbar. Bitte später erneut versuchen oder den E-Mail-Link verwenden.", http.StatusServiceUnavailable)
+		http.Error(w, "Die Anmeldung ist gerade nicht erreichbar. Bitte später erneut versuchen oder den E-Mail-Link verwenden.", http.StatusServiceUnavailable)
 		return
 	}
 	state, err := randomToken(32)
 	if err != nil {
-		http.Error(w, "Could not start SSO login", http.StatusInternalServerError)
+		http.Error(w, "Anmeldung konnte nicht gestartet werden.", http.StatusInternalServerError)
 		return
 	}
 	nonce, err := randomToken(32)
 	if err != nil {
-		http.Error(w, "Could not start SSO login", http.StatusInternalServerError)
+		http.Error(w, "Anmeldung konnte nicht gestartet werden.", http.StatusInternalServerError)
 		return
 	}
 	codeVerifier, err := randomToken(32)
 	if err != nil {
-		http.Error(w, "Could not start SSO login", http.StatusInternalServerError)
+		http.Error(w, "Anmeldung konnte nicht gestartet werden.", http.StatusInternalServerError)
 		return
 	}
 	a.oidcFlows.Put(state, auth.NewOIDCFlow(tenant.Slug, nonce, codeVerifier), 10*time.Minute)
@@ -208,7 +222,7 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := a.oidc.EnsureProvider(r.Context()); err != nil {
 		logError("OIDC discovery failed during login callback", err)
-		http.Error(w, "SSO ist gerade nicht erreichbar. Bitte später erneut versuchen.", http.StatusServiceUnavailable)
+		http.Error(w, "Die Anmeldung ist gerade nicht erreichbar. Bitte später erneut versuchen.", http.StatusServiceUnavailable)
 		return
 	}
 	if errText := strings.TrimSpace(r.URL.Query().Get("error")); errText != "" {
@@ -218,7 +232,7 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	flow, ok := a.oidcFlows.Consume(r.URL.Query().Get("state"))
 	if !ok {
-		http.Error(w, "Diese SSO-Anmeldung ist abgelaufen. Bitte erneut anmelden.", http.StatusUnauthorized)
+		http.Redirect(w, r, "/?login=expired#login", http.StatusSeeOther)
 		return
 	}
 	tenant, ok := a.tenantBySlug(flow.TenantSlug())
@@ -228,7 +242,7 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	code := strings.TrimSpace(r.URL.Query().Get("code"))
 	if code == "" {
-		http.Error(w, "SSO-Anmeldung ohne Code.", http.StatusUnauthorized)
+		http.Error(w, "Die Anmeldung konnte nicht abgeschlossen werden.", http.StatusUnauthorized)
 		return
 	}
 
@@ -242,31 +256,31 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		logError("OIDC token exchange failed", err)
-		http.Error(w, "SSO-Anmeldung konnte nicht abgeschlossen werden.", http.StatusUnauthorized)
+		http.Error(w, "Die Anmeldung konnte nicht abgeschlossen werden.", http.StatusUnauthorized)
 		return
 	}
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok || rawIDToken == "" {
 		logWarn("OIDC token exchange returned no ID token")
-		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
+		http.Error(w, "Die Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
 		return
 	}
 	idToken, err := a.oidc.Verifier().Verify(ctx, rawIDToken)
 	if err != nil {
 		logError("OIDC ID token verification failed", err)
-		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
+		http.Error(w, "Die Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
 		return
 	}
 	if idToken.Nonce != flow.Nonce() {
 		logWarn("OIDC nonce mismatch")
-		http.Error(w, "SSO-Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
+		http.Error(w, "Die Anmeldung konnte nicht geprüft werden.", http.StatusUnauthorized)
 		return
 	}
 
 	claims := oidcUserClaims{}
 	if err := idToken.Claims(&claims); err != nil {
 		logError("OIDC claims decode failed", err)
-		http.Error(w, "SSO-Anmeldung konnte nicht gelesen werden.", http.StatusUnauthorized)
+		http.Error(w, "Die Anmeldung konnte nicht gelesen werden.", http.StatusUnauthorized)
 		return
 	}
 	if claims.Email == "" || claims.EmailVerified == nil {
