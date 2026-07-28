@@ -114,6 +114,30 @@ ausdrücklich als berechtigten RZL-Nutzern vorbehalten. Der Zieladapter kann ohn
 externe Fachperson entwickelt werden, aber nicht ohne autorisierten
 Betreiberzugang oder eine von RZL freigegebene Schnittstellenbeschreibung.
 
+Betreiberprüfung vom 28.07.2026:
+
+- Die öffentliche RZL-Online-Hilfe bestätigt eine fixe RZL-Schnittstelle für
+  Sach- und Personenkonten, Salden/Konten, Buchungen, offene Posten und
+  Journalzeilen. Sie verweist für die genaue Aufbereitung auf die
+  Schnittstellenbeschreibung im Anwenderbereich oder auf einen Bezug bei RZL.
+- RZL listet getrennte Beschreibungen für `RZL FIBU Import` und
+  `RZL FIBU Next`. Vor einem Adapter muss deshalb auch das konkrete Zielprodukt
+  feststehen.
+- Das direkt auffindbare Handbuch mit Stand Juli 2026 erklärt sich
+  ausdrücklich als nur für berechtigte Benutzerinnen und Benutzer der
+  RZL-Programme bestimmt und untersagt Reproduktion, Vervielfältigung oder
+  Verbreitung ohne schriftliche Einwilligung.
+- Für HAUSV ist derzeit weder eine RZL-Betreiberberechtigung noch eine
+  schriftliche Nutzungserlaubnis oder kontrollierte RZL-Zielumgebung
+  dokumentiert.
+
+Der öffentlich erreichbare Download allein begründet kein Nutzungsrecht.
+HAUSV übernimmt deshalb weder Felddefinitionen noch Prüfsumme oder Beispiele
+aus dem geschützten Handbuch und baut keinen geratenen Adapter. Das fehlende
+Nutzungsrecht und die Zielauswahl sind technische Inputs, kein
+Auditor-Gate. Nach dokumentierter Berechtigung kann die Betreiber-Selbstprüfung
+ohne externe Fachperson fortgesetzt werden.
+
 Gate:
 
 - Nutzungsberechtigung und konkretes RZL-Profil samt Quellstand festhalten
