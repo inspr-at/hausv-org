@@ -891,6 +891,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/kontakte/delete", a.action(a.deactivateManagedContact))
 	mux.HandleFunc("GET /app/anliegen", a.page(a.issues))
 	mux.HandleFunc("GET /app/anliegen/board", a.page(a.issueBoard))
+	mux.HandleFunc("GET /app/anliegen/board/{id}", a.page(a.issueTriage))
 	mux.HandleFunc("POST /app/anliegen", a.action(a.createIssue))
 	mux.HandleFunc("POST /app/anliegen/comment", a.action(a.addIssueComment))
 	mux.HandleFunc("POST /app/anliegen/comment/delete", a.action(a.deleteIssueComment))

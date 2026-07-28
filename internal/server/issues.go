@@ -19,6 +19,35 @@ func (a *app) issueBoard(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	a.renderIssuesPage(w, r, ac, true)
 }
 
+func (a *app) issueTriage(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !hasCapability(ac.role, capabilityManageIssues) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	id := strings.TrimSpace(r.PathValue("id"))
+	item, found := a.issueStore.Get(ac.tenant.Slug, id)
+	if !found {
+		http.Redirect(w, r, "/app/anliegen/board?issue=missing", http.StatusSeeOther)
+		return
+	}
+	views := a.issueViewsForActor(ac.tenant.Slug, []residentIssue{item}, ac.role, ac.email)
+	if len(views) != 1 {
+		http.Redirect(w, r, "/app/anliegen/board?issue=missing", http.StatusSeeOther)
+		return
+	}
+	step := strings.TrimSpace(r.URL.Query().Get("step"))
+	if step != "2" && step != "done" {
+		step = "1"
+	}
+	a.render(w, "issueTriage", a.withBase(ac, map[string]any{
+		"Title":      "Anliegen bearbeiten",
+		"ActivePage": "issues",
+		"Issue":      views[0],
+		"TriageStep": step,
+		"ActorEmail": normalizeEmail(ac.email),
+	}))
+}
+
 func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCtx, boardOnly bool) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
 	issues := []issueView{}
@@ -271,6 +300,12 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 		},
 	})
 	a.notifyIssueUpdated(tenant, updated, email, "Neuer Kommentar zu Anliegen \""+updated.Title+"\"")
+	if canManage {
+		if redirect := issueContextRedirect(updated.ID, r.FormValue("redirect")); redirect != "" {
+			http.Redirect(w, r, redirect, http.StatusSeeOther)
+			return
+		}
+	}
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
 }
 
@@ -482,10 +517,24 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	a.handleIssueServiceAssignmentChange(r, tenant, existing, updated, email, role)
 	a.notifyIssueUpdated(tenant, updated, email, "Anliegen \""+updated.Title+"\" aktualisiert")
 	if canManage {
+		if redirect := issueContextRedirect(updated.ID, r.FormValue("redirect")); redirect != "" {
+			http.Redirect(w, r, redirect, http.StatusSeeOther)
+			return
+		}
 		http.Redirect(w, r, "/app/anliegen/board?issue=updated#issue-"+url.PathEscape(updated.ID), http.StatusSeeOther)
 		return
 	}
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
+}
+
+func issueContextRedirect(issueID string, requested string) string {
+	base := "/app/anliegen/board/" + url.PathEscape(strings.TrimSpace(issueID))
+	switch strings.TrimSpace(requested) {
+	case base, base + "?step=1", base + "?step=2", base + "?step=done":
+		return strings.TrimSpace(requested)
+	default:
+		return ""
+	}
 }
 
 func (a *app) issueManagerEmails(tenantSlug string) []string {

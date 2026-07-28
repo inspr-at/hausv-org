@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.40.0] - 2026-07-28
+
+### Verbessert
+
+- **Die Verwaltung bearbeitet Anliegen jetzt in zwei klaren Entscheidungen.** Dringlichkeit und Zuständigkeit erhalten eine eigene, ruhige Seite, statt gemeinsam mit Kommentaren, Dateien und Kosten in einer großen Kontrollansicht zu konkurrieren.
+- **Alltagssprache ersetzt technische Felder.** „Heute kümmern“, „Diese Woche“ und „Kann warten“ machen die Priorisierung verständlich; anschließend lässt sich das Anliegen selbst übernehmen oder bewusst noch offen lassen.
+- **Der Arbeitskontext bleibt erhalten.** Nach jedem Schritt bleibt dasselbe Anliegen geöffnet und bestätigt übersichtlich Priorität und Zuständigkeit.
+- **Verlauf und Unterlagen bleiben vollständig erreichbar.** Kommentare, Anhänge und Kostenschätzungen sind weiterhin verfügbar, drängen sich aber erst auf Wunsch in den Vordergrund.
+- **Rollen und Hausgrenzen bleiben geschützt.** Nur Verwaltung und Admins erreichen die Bearbeitung; Bewohner sehen weiterhin ausschließlich den für sie bestimmten Status.
+- **Desktop und Mobil folgen demselben kurzen Weg.** Der zweistufige Ablauf ist bei 390 Pixeln ohne seitlichen Überlauf geprüft und behält klar erkennbare Hauptaktionen.
+
 ## [0.39.0] - 2026-07-27
 
 ### Neu

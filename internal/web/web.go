@@ -1150,6 +1150,47 @@ const PageTemplates = `
     .issue-card-foot .issue-card-tools[open] > summary::after { content: "Schließen"; padding-left: 13px; color: var(--muted); font-size: 12px; }
     .issue-card-foot .issue-card-tools[open] > summary { border-bottom: 0; }
     .issue-card-foot .issue-card-tools-body { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); }
+    .issue-triage-link { min-width: 118px; }
+    .issue-triage-page { width: min(980px,100%); gap: 28px; padding-bottom: 48px; }
+    .issue-triage-context { display: grid; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 24px; }
+    .issue-triage-context h1 { font-size: clamp(38px,5vw,58px); }
+    .issue-triage-context > p { max-width: 720px; color: var(--muted); font-size: 16px; line-height: 1.6; }
+    .issue-triage-back { width: max-content; color: var(--muted); font-size: 13px; font-weight: 800; text-decoration: none; }
+    .issue-triage-back:hover { color: var(--ink); }
+    .issue-triage-facts { display: flex; flex-wrap: wrap; gap: 7px 22px; color: var(--muted); font-size: 13.5px; font-weight: 700; }
+    .issue-triage-facts span { position: relative; }
+    .issue-triage-facts span + span::before { content: "·"; position: absolute; left: -13px; color: var(--gold); }
+    .issue-triage-card { width: min(780px,100%); justify-self: center; display: grid; gap: 28px; border: 1px solid rgba(32,37,31,.13); border-radius: 16px; padding: clamp(22px,4vw,40px); background: var(--panel); box-shadow: 0 18px 50px rgba(38,34,25,.08); }
+    .issue-triage-progress { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--gold-ink); font-size: 12px; font-weight: 850; }
+    .issue-triage-progress > span:last-child { display: flex; gap: 6px; }
+    .issue-triage-progress i { width: 26px; height: 4px; border-radius: var(--radius-pill); background: #e4e1d9; }
+    .issue-triage-progress i.active { background: var(--gold); }
+    .issue-triage-card fieldset { min-width: 0; display: grid; gap: 12px; border: 0; padding: 0; }
+    .issue-triage-card legend { margin-bottom: 20px; font-family: var(--font-serif); color: var(--ink); font-size: clamp(27px,3.4vw,36px); font-weight: 750; line-height: 1.15; }
+    .issue-triage-choice { position: relative; min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 17px 18px; background: #fffefb; color: var(--ink); cursor: pointer; font-size: inherit; font-weight: inherit; letter-spacing: 0; text-transform: none; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease; }
+    .issue-triage-choice:hover { border-color: rgba(47,107,74,.45); }
+    .issue-triage-choice:has(input:focus-visible) { outline: 3px solid rgba(200,153,63,.28); outline-offset: 2px; }
+    .issue-triage-choice:has(input:checked) { border-color: var(--leaf); background: rgba(47,107,74,.07); box-shadow: inset 0 0 0 1px rgba(47,107,74,.12); }
+    .issue-triage-choice.urgent:has(input:checked) { border-color: #9e2a2b; background: rgba(158,42,43,.055); box-shadow: inset 0 0 0 1px rgba(158,42,43,.1); }
+    .issue-triage-choice > span { min-width: 0; display: grid; gap: 3px; }
+    .issue-triage-choice strong { color: var(--ink); font-size: 16px; letter-spacing: 0; text-transform: none; }
+    .issue-triage-choice small { color: var(--muted); font-size: 13px; font-weight: 600; letter-spacing: 0; line-height: 1.4; text-transform: none; }
+    .issue-triage-choice input { grid-column: 2; grid-row: 1; width: 20px; height: 20px; margin: 0; accent-color: var(--leaf); }
+    .issue-triage-actions { display: flex; align-items: center; justify-content: space-between; gap: 14px; border-top: 1px solid var(--line); padding-top: 22px; }
+    .issue-triage-actions > a:not(.button) { color: var(--muted); font-size: 13px; font-weight: 800; }
+    .issue-triage-actions button { min-width: 132px; min-height: 44px; border: 1px solid var(--ink); border-radius: var(--radius-xs); padding: 10px 18px; background: var(--ink); color: #fff; font: inherit; font-weight: 850; cursor: pointer; }
+    .issue-triage-actions button:hover { background: #2c3329; }
+    .issue-triage-done { grid-template-columns: auto minmax(0,1fr); align-items: start; }
+    .issue-triage-done-mark { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: rgba(47,107,74,.1); color: var(--leaf); font-size: 22px; font-weight: 900; }
+    .issue-triage-done h2 { margin-top: 7px; font-size: clamp(25px,3vw,34px); }
+    .issue-triage-done p { margin-top: 8px; color: var(--muted); }
+    .issue-triage-done .issue-triage-actions { grid-column: 1 / -1; width: 100%; }
+    .issue-triage-more { width: min(780px,100%); justify-self: center; border-top: 1px solid var(--line); }
+    .issue-triage-more > summary { cursor: pointer; list-style: none; padding: 16px 2px; color: var(--muted); font-size: 13px; font-weight: 850; }
+    .issue-triage-more > summary::-webkit-details-marker { display: none; }
+    .issue-triage-more > summary::after { content: "+"; float: right; color: var(--gold-ink); font-size: 18px; }
+    .issue-triage-more[open] > summary::after { content: "−"; }
+    .issue-triage-more-body { display: grid; gap: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: var(--panel); }
     .issue-subtools { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); overflow: hidden; }
     .issue-subtools > summary { cursor: pointer; list-style: none; padding: 10px 11px; color: var(--ink); font-size: 12.5px; font-weight: 850; }
     .issue-subtools > summary::-webkit-details-marker { display: none; }
@@ -1859,6 +1900,20 @@ const PageTemplates = `
       .issue-work-card { padding: 18px 17px 17px 23px; }
       .issue-card-foot { grid-template-columns: 1fr; gap: 12px; }
       .issue-card-foot .issue-card-tools > summary { width: 100%; margin-left: 0; justify-content: center; }
+      .issue-triage-page { gap: 20px; padding: 22px 16px 36px; }
+      .issue-triage-context { gap: 9px; padding-bottom: 18px; }
+      .issue-triage-context h1 { font-size: 36px; }
+      .issue-triage-context > p { font-size: 14px; }
+      .issue-triage-facts { gap: 4px 16px; font-size: 12px; }
+      .issue-triage-facts span + span::before { left: -10px; }
+      .issue-triage-card { gap: 21px; border-radius: var(--radius-sm); padding: 20px 16px; }
+      .issue-triage-card legend { margin-bottom: 15px; font-size: 27px; }
+      .issue-triage-choice { gap: 11px; padding: 14px; }
+      .issue-triage-choice strong { font-size: 15px; }
+      .issue-triage-actions { align-items: stretch; }
+      .issue-triage-actions button, .issue-triage-actions .button { min-width: 0; min-height: 46px; }
+      .issue-triage-done { grid-template-columns: 1fr; }
+      .issue-triage-done .issue-triage-actions { grid-column: 1; display: grid; }
       .event-card { grid-template-columns: 1fr; gap: 11px; padding: 13px; }
       .date-badge { width: 54px; min-height: 54px; }
       .event-card-head { display: grid; grid-template-columns: 1fr; gap: 7px; }
@@ -2784,56 +2839,7 @@ const PageTemplates = `
                     {{if .HasServiceProposal}}<p class="issue-proposal"><strong>Hinweis:</strong> {{.ServiceProposal}}</p>{{end}}
                     <div class="issue-card-foot">
                       <div class="issue-description issue-description-preview"><p>{{.Body}}</p></div>
-                      <details class="issue-card-tools">
-                        <summary>Bearbeitung öffnen</summary>
-                        <div class="issue-card-tools-body">
-                        <form class="issue-actions" method="post" action="/app/anliegen/workflow">
-                          <input type="hidden" name="id" value="{{.ID}}">
-                          <label>Status
-                            <select name="status">
-                              {{range .StatusOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-                            </select>
-                          </label>
-                          <label>Priorität
-                            <select name="priority">
-                              {{range .PriorityOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-                            </select>
-                          </label>
-	                          <label class="assignee">Zuständig
-	                            {{if $.ServiceProviderAccessEnabled}}
-	                              <input type="email" name="assignee_email" value="{{.AssigneeEmail}}" placeholder="name@example.com"{{if $.HasServiceProviderContacts}} list="service-provider-contacts"{{end}}>
-	                              <span class="hint">Neue E-Mail lädt als Dienstleister ein. Leeren entzieht den Zugriff.</span>
-	                            {{else}}
-	                              <input type="email" value="{{.AssigneeEmail}}" placeholder="Betreiberfreigabe offen" disabled>
-	                              <input type="hidden" name="assignee_email" value="{{.AssigneeEmail}}">
-	                              <span class="hint">Externe Zuordnung ist derzeit geschlossen.</span>
-	                              {{if .HasAssignee}}<span class="hint assignee-removal"><input type="checkbox" name="remove_assignee" value="1"> Bestehende Zuordnung entfernen</span>{{end}}
-	                            {{end}}
-	                          </label>
-                          <button type="submit">Bearbeitung aktualisieren</button>
-                        </form>
-                        <details class="issue-subtools">
-                          <summary>Kommunikation &amp; Anhänge{{if .HasComments}} · {{len .Comments}} Beiträge{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Fotos{{else if .HasAttachments}} · Dateien{{end}}</summary>
-                          <div class="issue-subtools-body">
-                            {{template "attachmentStrip" .}}
-                            {{if .HasComments}}<div class="comment-thread">{{range .Comments}}{{template "issueComment" .}}{{end}}</div>{{else}}<p class="muted">Noch keine Rückmeldung.</p>{{end}}
-                            {{if .CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment" enctype="multipart/form-data">
-                              <input type="hidden" name="id" value="{{.ID}}">
-                              <textarea name="body" maxlength="3000" placeholder="Kommentar oder Rückfrage schreiben" aria-label="Kommentar oder Rückfrage"></textarea>
-                              <label class="comment-upload">
-                                <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Anhang hinzufügen</span></span>
-                                <span class="hint">Nur nötige Unterlagen teilen; keine Gesundheitsdaten oder Ausweiskopien.</span>
-                              </label>
-                              <button type="submit">Kommentar senden</button>
-                            </form>{{end}}
-                          </div>
-                        </details>
-                        <details class="issue-subtools">
-                          <summary>Kosten &amp; Kostenvoranschlag{{if .HasEstimate}} · vorhanden{{end}}</summary>
-                          <div class="issue-subtools-body">{{template "issueEstimate" .}}</div>
-                        </details>
-                        </div>
-                      </details>
+                      <a class="button primary issue-triage-link" href="/app/anliegen/board/{{.ID}}">Bearbeiten</a>
                     </div>
                   </article>
                 {{end}}
@@ -2843,6 +2849,119 @@ const PageTemplates = `
             {{end}}
           </section>
         {{end}}
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "issueTriage"}}
+{{template "appOpen" .}}
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><a href="/app/anliegen/board">Anliegen</a><span>/</span><span>{{.Issue.Title}}</span></span>
+      </div>
+      <section class="page issue-triage-page">
+        <header class="issue-triage-context">
+          <a class="issue-triage-back" href="/app/anliegen/board">← Zurück zur Liste</a>
+          <h1>{{.Issue.Title}}</h1>
+          <div class="issue-triage-facts">
+            <span>{{.Issue.Author}}</span>
+            <span>{{.Issue.Location}}</span>
+            <span>{{.Issue.CreatedAt}}</span>
+            <span>{{.Issue.Category}}</span>
+          </div>
+          <p>{{.Issue.Body}}</p>
+        </header>
+
+        {{if eq .TriageStep "1"}}
+          <form class="issue-triage-card" method="post" action="/app/anliegen/workflow">
+            <input type="hidden" name="id" value="{{.Issue.ID}}">
+            <input type="hidden" name="status" value="{{.Issue.Status}}">
+            <input type="hidden" name="assignee_email" value="{{.Issue.AssigneeEmail}}">
+            <input type="hidden" name="redirect" value="/app/anliegen/board/{{.Issue.ID}}?step=2">
+            <div class="issue-triage-progress"><span>Schritt 1 von 2</span><span aria-hidden="true"><i class="active"></i><i></i></span></div>
+            <fieldset>
+              <legend>Wie dringend ist das Anliegen?</legend>
+              <label class="issue-triage-choice urgent">
+                <input type="radio" name="priority" value="Dringend"{{if eq .Issue.Priority "Dringend"}} checked{{end}} required>
+                <span><strong>Heute kümmern</strong><small>Sicherheitsrisiko oder akuter Schaden</small></span>
+              </label>
+              <label class="issue-triage-choice">
+                <input type="radio" name="priority" value="Hoch"{{if eq .Issue.Priority "Hoch"}} checked{{end}} required>
+                <span><strong>Diese Woche</strong><small>Bald bearbeiten, aber nicht akut</small></span>
+              </label>
+              <label class="issue-triage-choice calm">
+                <input type="radio" name="priority" value="Niedrig"{{if eq .Issue.Priority "Niedrig"}} checked{{end}} required>
+                <span><strong>Kann warten</strong><small>Bei Gelegenheit einplanen</small></span>
+              </label>
+            </fieldset>
+            <div class="issue-triage-actions">
+              <a href="/app/anliegen/board">Abbrechen</a>
+              <button type="submit">Weiter</button>
+            </div>
+          </form>
+        {{else if eq .TriageStep "2"}}
+          <form class="issue-triage-card" method="post" action="/app/anliegen/workflow">
+            <input type="hidden" name="id" value="{{.Issue.ID}}">
+            <input type="hidden" name="status" value="In Bearbeitung">
+            <input type="hidden" name="priority" value="{{.Issue.Priority}}">
+            <input type="hidden" name="redirect" value="/app/anliegen/board/{{.Issue.ID}}?step=done">
+            <div class="issue-triage-progress"><span>Schritt 2 von 2</span><span aria-hidden="true"><i class="active"></i><i class="active"></i></span></div>
+            <fieldset>
+              <legend>Wer kümmert sich als Nächstes?</legend>
+              <label class="issue-triage-choice">
+                <input type="radio" name="assignee_email" value="{{.ActorEmail}}"{{if eq .Issue.AssigneeEmail .ActorEmail}} checked{{end}} required>
+                <span><strong>Ich übernehme</strong><small>Das Anliegen wird Ihnen zugeordnet</small></span>
+              </label>
+              <label class="issue-triage-choice calm">
+                <input type="radio" name="assignee_email" value=""{{if not .Issue.HasAssignee}} checked{{end}} required>
+                <span><strong>Noch offen lassen</strong><small>Die Zuständigkeit wird später festgelegt</small></span>
+              </label>
+              {{if and .Issue.HasAssignee (ne .Issue.AssigneeEmail .ActorEmail)}}
+                <label class="issue-triage-choice">
+                  <input type="radio" name="assignee_email" value="{{.Issue.AssigneeEmail}}" checked required>
+                  <span><strong>Bestehende Zuordnung behalten</strong><small>{{.Issue.AssigneeEmail}}</small></span>
+                </label>
+              {{end}}
+            </fieldset>
+            <div class="issue-triage-actions">
+              <a href="/app/anliegen/board/{{.Issue.ID}}">Zurück</a>
+              <button type="submit">Bearbeitung starten</button>
+            </div>
+          </form>
+        {{else}}
+          <section class="issue-triage-card issue-triage-done">
+            <div class="issue-triage-done-mark" aria-hidden="true">✓</div>
+            <div>
+              <span class="kicker">Gespeichert</span>
+              <h2>Der nächste Schritt ist festgelegt.</h2>
+              <p><strong>{{.Issue.Priority}}</strong> · {{if .Issue.HasAssignee}}Zuständig: {{.Issue.AssigneeEmail}}{{else}}Zuständigkeit noch offen{{end}}</p>
+            </div>
+            <div class="issue-triage-actions">
+              <a href="/app/anliegen/board/{{.Issue.ID}}">Entscheidung ändern</a>
+              <a class="button primary" href="/app/anliegen/board">Zur Liste</a>
+            </div>
+          </section>
+        {{end}}
+
+        <details class="issue-triage-more">
+          <summary>Verlauf und Unterlagen{{if .Issue.HasComments}} · {{len .Issue.Comments}} Beitrag{{if ne (len .Issue.Comments) 1}}e{{end}}{{end}}{{if .Issue.HasPhotos}} · {{.Issue.PhotoCount}} Foto{{if ne .Issue.PhotoCount 1}}s{{end}}{{end}}</summary>
+          <div class="issue-triage-more-body">
+            {{template "attachmentStrip" .Issue}}
+            {{if .Issue.HasComments}}<div class="comment-thread">{{range .Issue.Comments}}{{template "issueComment" .}}{{end}}</div>{{else}}<p class="muted">Noch keine Rückmeldung.</p>{{end}}
+            {{if .Issue.CanComment}}<form class="comment-form" method="post" action="/app/anliegen/comment" enctype="multipart/form-data">
+              <input type="hidden" name="id" value="{{.Issue.ID}}">
+              <input type="hidden" name="redirect" value="/app/anliegen/board/{{.Issue.ID}}?step=done">
+              <textarea name="body" maxlength="3000" placeholder="Information oder Rückfrage schreiben" aria-label="Kommentar oder Rückfrage"></textarea>
+              <label class="comment-upload">
+                <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Anhang hinzufügen</span></span>
+              </label>
+              <button type="submit">Nachricht senden</button>
+            </form>{{end}}
+            {{template "issueEstimate" .Issue}}
+          </div>
+        </details>
       </section>
     </main>
 {{template "appClose" .}}

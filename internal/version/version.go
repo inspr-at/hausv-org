@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.40.0",
+			Date:     "28. Juli 2026",
+			Kind:     "Anliegen",
+			Headline: "Anliegen werden in zwei klaren Entscheidungen bearbeitet.",
+			Intro:    "Dringlichkeit und Zuständigkeit stehen nacheinander im Mittelpunkt; Verlauf, Dateien und Kosten bleiben bei Bedarf erreichbar.",
+			Items: []NoteItem{
+				{Label: "Einfach priorisieren", Text: "Alltagsnahe Auswahlmöglichkeiten übersetzen die technische Priorität in eine verständliche Entscheidung."},
+				{Label: "Klar zuordnen", Text: "Die Verwaltung übernimmt ein Anliegen selbst oder lässt die Zuständigkeit bewusst noch offen."},
+				{Label: "Im Kontext bleiben", Text: "Nach jedem Schritt bleibt dasselbe Anliegen geöffnet und bestätigt den erreichten Stand."},
+			},
+		},
+		{
 			Version:  "0.39.0",
 			Date:     "27. Juli 2026",
 			Kind:     "Datenübergabe",

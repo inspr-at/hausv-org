@@ -3644,14 +3644,87 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 
 	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board")
 	boardBody := board.Body.String()
-	for _, want := range []string{"Anliegen bearbeiten", "Tür schließt nicht", issuePriorityUrgent, `name="assignee_email"`} {
+	for _, want := range []string{"Anliegen bearbeiten", "Tür schließt nicht", issuePriorityUrgent, `href="/app/anliegen/board/` + issue.ID + `"`} {
 		if !strings.Contains(boardBody, want) {
 			t.Fatalf("manager issue board should contain %q", want)
 		}
 	}
+	if strings.Contains(boardBody, `name="assignee_email"`) || strings.Contains(boardBody, "Bearbeitung aktualisieren") {
+		t.Fatalf("manager issue board should link to the focused triage instead of rendering the workflow form")
+	}
 	if !strings.Contains(boardBody, `<details class="issue-board-tools">`) ||
 		strings.Contains(boardBody, `<details class="issue-board-tools" open>`) {
 		t.Fatalf("inactive issue filters should be collapsed")
+	}
+	triage := authedRequest(t, a, "manager@example.com", "/app/anliegen/board/"+issue.ID).Body.String()
+	for _, want := range []string{"Schritt 1 von 2", "Wie dringend ist das Anliegen?", "Heute kümmern", "Diese Woche", "Kann warten"} {
+		if !strings.Contains(triage, want) {
+			t.Fatalf("focused issue triage should contain %q", want)
+		}
+	}
+}
+
+func TestManagerIssueTriageKeepsTheIssueContextAcrossBothSteps(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	issue, err := a.issueStore.Create(residentIssue{
+		TenantSlug:   "jhw22",
+		AuthorEmail:  "resident@example.com",
+		AuthorName:   "Resident",
+		Category:     "Reparatur",
+		Title:        "Licht im Stiegenhaus",
+		Body:         "Das Licht fällt immer wieder aus.",
+		LocationType: issueLocationCommon,
+		Status:       issueStatusNew,
+		Priority:     issuePriorityNorm,
+	})
+	if err != nil {
+		t.Fatalf("Create issue: %v", err)
+	}
+
+	resident := authedRequest(t, a, "resident@example.com", "/app/anliegen/board/"+issue.ID)
+	if resident.Code != http.StatusForbidden {
+		t.Fatalf("resident triage status = %d, want forbidden", resident.Code)
+	}
+
+	stepOneRedirect := "/app/anliegen/board/" + issue.ID + "?step=2"
+	stepOne := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/workflow", url.Values{
+		"id":             {issue.ID},
+		"status":         {issueStatusNew},
+		"priority":       {issuePriorityHigh},
+		"assignee_email": {""},
+		"redirect":       {stepOneRedirect},
+	})
+	if stepOne.Code != http.StatusSeeOther || stepOne.Header().Get("Location") != stepOneRedirect {
+		t.Fatalf("triage step one redirect = %d %q", stepOne.Code, stepOne.Header().Get("Location"))
+	}
+	stepTwoPage := authedRequest(t, a, "manager@example.com", stepOneRedirect)
+	for _, want := range []string{"Schritt 2 von 2", "Wer kümmert sich als Nächstes?", "Ich übernehme", "Noch offen lassen"} {
+		if !strings.Contains(stepTwoPage.Body.String(), want) {
+			t.Fatalf("triage step two should contain %q", want)
+		}
+	}
+
+	doneRedirect := "/app/anliegen/board/" + issue.ID + "?step=done"
+	stepTwo := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/workflow", url.Values{
+		"id":             {issue.ID},
+		"status":         {issueStatusProgress},
+		"priority":       {issuePriorityHigh},
+		"assignee_email": {"manager@example.com"},
+		"redirect":       {doneRedirect},
+	})
+	if stepTwo.Code != http.StatusSeeOther || stepTwo.Header().Get("Location") != doneRedirect {
+		t.Fatalf("triage step two redirect = %d %q", stepTwo.Code, stepTwo.Header().Get("Location"))
+	}
+	updated, found := a.issueStore.Get("jhw22", issue.ID)
+	if !found || updated.Status != issueStatusProgress || updated.Priority != issuePriorityHigh || updated.AssigneeEmail != "manager@example.com" {
+		t.Fatalf("triaged issue = %+v found=%v", updated, found)
+	}
+	done := authedRequest(t, a, "manager@example.com", doneRedirect)
+	for _, want := range []string{"Der nächste Schritt ist festgelegt.", issuePriorityHigh, "manager@example.com", "Zur Liste"} {
+		if !strings.Contains(done.Body.String(), want) {
+			t.Fatalf("triage confirmation should contain %q", want)
+		}
 	}
 }
 
@@ -4080,8 +4153,8 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	}
 
 	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board").Body.String()
-	if !strings.Contains(board, "placeholder=\"Betreiberfreigabe offen\" disabled") || strings.Contains(board, "datalist id=\"service-provider-contacts\"") {
-		t.Fatalf("closed issue UI did not disable service assignment:\n%s", board)
+	if strings.Contains(board, "Betreiberfreigabe offen") || strings.Contains(board, "datalist id=\"service-provider-contacts\"") || strings.Contains(board, `name="assignee_email"`) {
+		t.Fatalf("closed issue board should not expose service assignment controls or internal gate language:\n%s", board)
 	}
 	contactPage := authedRequest(t, a, "manager@example.com", "/app/kontakte").Body.String()
 	if !strings.Contains(contactPage, "Betreiberfreigabe offen") || strings.Contains(contactPage, "<option value=\"Dienstleister\"") {
