@@ -277,10 +277,38 @@ async function assertHomeOnboarding() {
   if (!(await page.getByRole('button', { name: 'Ohne Verbindung starten' }).count())) {
     fail('Onboarding: klarer Offline-Weg fehlt');
   }
-  if (await page.locator('details.form-disclosure').evaluate((element) => element.open)) {
-    fail('Onboarding: optionale technische Zuordnung ist ungefragt offen');
+  if ((await page.locator('.onboarding-recommended .onboarding-candidate').count()) !== 5) {
+    fail('Onboarding: es werden nicht genau fünf priorisierte Messwerte gezeigt');
   }
-  await page.getByRole('button', { name: 'Ohne Verbindung starten' }).press('Enter');
+  if ((await page.getByText('Nur lesen', { exact: true }).count()) < 5) {
+    fail('Onboarding: Read-only-Charakter ist nicht pro Empfehlung sichtbar');
+  }
+  for (const noisyEntity of ['iphone_battery', 'robot_battery', 'pv_forecast_power', 'kettle_power', 'battery_force_charge', 'lock_battery']) {
+    if (await page.getByText(noisyEntity, { exact: false }).count()) {
+      fail(`Onboarding: irrelevanter Home-Assistant-Treffer sichtbar: ${noisyEntity}`);
+    }
+  }
+  const disclosures = page.locator('details.onboarding-disclosure');
+  if (await disclosures.evaluateAll((elements) => elements.some((element) => element.open))) {
+    fail('Onboarding: optionale technische Treffer oder Zuordnung sind ungefragt offen');
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, 'energy-onboarding-desktop.png'),
+      fullPage: true,
+    });
+  }
+  const technicalHits = page.getByText('Weitere technische Treffer anzeigen', { exact: false });
+  if (!(await technicalHits.count())) {
+    fail('Onboarding: zusätzliche plausible Treffer sind nicht kontrolliert einklappbar');
+  }
+  await technicalHits.click();
+  if (!(await page.getByText('sensor.home_consumption', { exact: true }).count())) {
+    fail('Onboarding: zusätzliche plausible Messwerte fehlen in den Technikdetails');
+  }
+  await technicalHits.click();
+  await page.getByRole('button', { name: '5 Messwerte übernehmen' }).press('Enter');
   await page.waitForURL(/step=5/);
   if ((await page.locator('.onboarding-trust').count()) !== 2 ||
       !(await page.getByText('Als Nächstes:', { exact: false }).count())) {

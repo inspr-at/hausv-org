@@ -928,11 +928,26 @@ const PageTemplates = `
     .onboarding-choice { min-height: 64px; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: #fff; cursor: pointer; }
     .onboarding-choice:has(input:checked) { border-color: #9e8740; background: #faf5e8; box-shadow: inset 0 0 0 1px #c7a953; }
     .onboarding-choice small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .onboarding-recommended { display: grid; gap: 10px; border: 0; padding: 0; }
+    .onboarding-recommended .onboarding-legend { margin-bottom: 0; }
     .onboarding-candidates { display: grid; gap: 8px; }
     .onboarding-candidate { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 12px 14px; background: #fff; }
+    .onboarding-candidate:has(input:checked) { border-color: #9ebda5; background: #f5faf5; }
     .onboarding-candidate strong { display: block; font-size: 14px; }
-    .onboarding-candidate small { color: var(--muted); font-size: 11px; }
+    .onboarding-candidate small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
     .onboarding-candidate-value { font-weight: 800; white-space: nowrap; }
+    .onboarding-readonly { border-radius: var(--radius-pill); padding: 5px 9px; color: #2f6b4a; background: #e7f1e8; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .onboarding-disclosure { border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fbf8f1; overflow: hidden; }
+    .onboarding-disclosure > summary { min-height: 48px; display: flex; align-items: center; gap: 9px; padding: 11px 14px; color: var(--ink); cursor: pointer; list-style: none; font-size: 13px; font-weight: 750; }
+    .onboarding-disclosure > summary::-webkit-details-marker { display: none; }
+    .onboarding-disclosure > summary::after { content: "+"; margin-left: auto; color: var(--gold-ink); font-size: 18px; font-weight: 500; }
+    .onboarding-disclosure[open] > summary::after { content: "−"; }
+    .onboarding-disclosure > summary span { color: var(--muted); font-size: 11px; font-weight: 650; }
+    .onboarding-disclosure .onboarding-candidates, .onboarding-disclosure .optional-grid { display: grid; gap: 8px; border-top: 1px solid var(--line); padding: 12px; }
+    .onboarding-disclosure .optional-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .onboarding-additional .onboarding-candidate { background: #fff; }
+    .onboarding-additional code { display: block; margin-top: 3px; overflow-wrap: anywhere; color: var(--muted); font-size: 10px; }
+    .onboarding-skip { margin-left: auto; }
     .onboarding-actions { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding-top: 4px; }
     .onboarding-actions .button { min-height: 48px; }
     .onboarding-trust { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 11px; align-items: start; border: 1px solid #b9d0bd; border-radius: var(--radius-sm); padding: 15px; background: #f1f7f1; }
@@ -2004,7 +2019,9 @@ const PageTemplates = `
 	      .onboarding-actions { align-items: stretch; flex-direction: column-reverse; }
 	      .onboarding-actions .button { width: 100%; }
 	      .onboarding-candidate { grid-template-columns: auto minmax(0,1fr); }
-	      .onboarding-candidate-value { grid-column: 2; }
+	      .onboarding-candidate-value, .onboarding-readonly { grid-column: 2; justify-self: start; }
+	      .onboarding-disclosure .optional-grid { grid-template-columns: 1fr; }
+	      .onboarding-skip { margin-left: 0; }
 	      .energy-reference-grid { grid-template-columns: 1fr; }
 	      .energy-quality, .energy-scenario, .energy-tariff-grid { grid-template-columns: 1fr; }
 	      .energy-caretaker { grid-template-columns: 1fr 1fr; }
@@ -6792,15 +6809,16 @@ const PageTemplates = `
         {{else if eq .Step 4}}
           <header class="onboarding-card-head"><span class="eyebrow">Datenquelle</span><h1>Wie kommen Messwerte herein?</h1><p>{{.ConnectorMessage}}</p></header>
           <form class="onboarding-body onboarding-form" method="post" action="/app/zuhause/onboarding">
-            {{if .HasCandidates}}<div class="onboarding-candidates">{{range .Candidates}}<label class="onboarding-candidate"><input type="checkbox" name="entities" value="{{.EntityID}}"{{if .Checked}} checked{{end}}><span><strong>{{.DisplayName}}</strong><small>{{.MetricLabel}} · {{.EntityID}}</small></span><span class="onboarding-candidate-value">{{.Value}} {{.Unit}}</span></label>{{end}}</div>
+            {{if .HasCandidates}}<fieldset class="onboarding-recommended"><legend class="onboarding-legend">Empfohlen</legend><div class="onboarding-candidates">{{range .Candidates}}<label class="onboarding-candidate"><input type="checkbox" name="entities" value="{{.EntityID}}"{{if .Checked}} checked{{end}}><span><strong>{{.DisplayName}}</strong><small>{{.SourceName}}</small></span><span class="onboarding-readonly">Nur lesen</span></label>{{end}}</div></fieldset>
             {{else}}<div class="onboarding-trust"><span aria-hidden="true">i</span><div><strong>Ohne Verbindung fortfahren</strong><p>Sie können das Haus-Cockpit bereits nutzen und Home Assistant später ergänzen. Es werden keine Zugangsdaten im Portal angezeigt oder gespeichert.</p></div></div>{{end}}
-            <details class="form-disclosure"><summary>Messwert selbst zuordnen <span>optional</span></summary><div class="optional-grid">
+            {{if .HasAdditional}}<details class="onboarding-disclosure onboarding-additional"><summary>Weitere technische Treffer anzeigen <span>{{len .AdditionalCandidates}} optional</span></summary><div class="onboarding-candidates">{{range .AdditionalCandidates}}<label class="onboarding-candidate"><input type="checkbox" name="entities" value="{{.EntityID}}"{{if .Checked}} checked{{end}}><span><strong>{{.MetricLabel}}</strong><small>{{.SourceName}}</small><code>{{.EntityID}}</code></span><span class="onboarding-readonly">Nur lesen</span></label>{{end}}</div></details>{{end}}
+            <details class="onboarding-disclosure"><summary>Messwert selbst zuordnen <span>nur falls nötig</span></summary><div class="optional-grid">
               <label><span>Sensor-ID</span><input type="text" name="manual_entity_id" placeholder="sensor.netzbezug"></label>
               <label><span>Bedeutung</span><select name="manual_metric"><option value="grid-import-power">Netzbezug Leistung</option><option value="grid-import-energy">Netzbezug Energie</option><option value="grid-export-power">Netzeinspeisung</option><option value="pv-power">PV-Leistung</option><option value="battery-power">Batterie-Leistung</option><option value="battery-soc">Batterie-Ladestand</option><option value="load-power">Hausverbrauch</option></select></label>
               <label><span>Verständlicher Name</span><input type="text" name="manual_name" placeholder="Netzbezug gesamt"></label>
               <label><span>Einheit</span><input type="text" name="manual_unit" placeholder="W oder kW"></label>
             </div></details>
-            <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button><button class="button primary" type="submit" name="action" value="mappings">{{if .HasCandidates}}Auswahl übernehmen{{else}}Ohne Verbindung starten{{end}}</button></div>
+            <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button>{{if .HasCandidates}}<button class="button ghost onboarding-skip" type="submit" name="action" value="skip-mappings">Ohne Verbindung starten</button><button class="button primary" type="submit" name="action" value="mappings">{{.RecommendedCount}} Messwerte übernehmen</button>{{else}}<button class="button primary" type="submit" name="action" value="skip-mappings">Ohne Verbindung starten</button>{{end}}</div>
           </form>
         {{else}}
           <header class="onboarding-card-head"><span class="eyebrow">Bereit</span><h1>Ihr Zuhause ist startklar.</h1><p>Alles bleibt im sicheren Beobachtungsmodus. Sie gehen in Ihrem Tempo weiter.</p></header>

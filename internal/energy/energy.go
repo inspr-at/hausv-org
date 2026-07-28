@@ -297,21 +297,101 @@ func ClassifyCandidate(entityID, displayName, unit, deviceClass, stateClass, raw
 	deviceClass = strings.ToLower(strings.TrimSpace(deviceClass))
 	stateClass = strings.ToLower(strings.TrimSpace(stateClass))
 	name := strings.ToLower(strings.TrimSpace(displayName + " " + entityID))
+	if !strings.HasPrefix(entityID, "sensor.") {
+		return EntityCandidate{}, false
+	}
+	normalizedUnit := strings.ToLower(strings.ReplaceAll(unit, " ", ""))
+	isPowerUnit := normalizedUnit == "w" || normalizedUnit == "kw" || normalizedUnit == "mw"
+	isEnergyUnit := normalizedUnit == "wh" || normalizedUnit == "kwh" || normalizedUnit == "mwh"
+	isPower := deviceClass == "power" && isPowerUnit
+	isEnergy := deviceClass == "energy" && isEnergyUnit
+	isStationaryBattery := containsAny(
+		name,
+		"sonnenbatterie",
+		"home battery",
+		"home_battery",
+		"house battery",
+		"house_battery",
+		"hausspeicher",
+		"haus speicher",
+		"energiespeicher",
+		"energy storage",
+		"energy_storage",
+		"battery storage",
+		"battery_storage",
+		"speicherstand",
+		"battery soc",
+		"battery_soc",
+		"battery state of charge",
+		"battery_state_of_charge",
+	)
+	isPortableOrVehicleBattery := containsAny(
+		name,
+		"iphone",
+		"ipad",
+		"phone",
+		"mobile",
+		"watch",
+		"macbook",
+		"laptop",
+		"tablet",
+		"vehicle",
+		"tesla",
+		"model 3",
+		"model y",
+		"auto batterie",
+		"car battery",
+		"robot",
+		"robi",
+		"nuki",
+		"lock",
+		"remote",
+		"zigbee",
+		"button",
+	)
+	isForecast := containsAny(name, "forecast", "prediction", "predicted", "estimate", "prognose")
+	isGrid := containsAny(name, "grid", "netz")
+	isExport := containsAny(name, "export", "feed in", "feed_in", "einspeis")
+	isImport := containsAny(name, "import", "bezug", "netzbezug", "grid_import")
+	isPV := containsAny(name, "solar", "photovolta", " pv", "pv_", "pv.")
+	isBatteryFlow := containsAny(name, "battery", "batter", "speicher") &&
+		containsAny(name, "charge", "discharge", "laden", "entladen", "inout", "in_out")
+	isHouseLoad := containsAny(
+		name,
+		"home consumption",
+		"home_consumption",
+		"house consumption",
+		"house_consumption",
+		"hausverbrauch",
+		"gesamtverbrauch",
+		"total consumption",
+		"total_consumption",
+		"load power",
+		"load_power",
+		"consumption current",
+		"consumption_current",
+	)
 	metric := MetricUnknown
 	switch {
-	case deviceClass == "energy" && containsAny(name, "grid", "netz", "import", "bezug"):
+	case isEnergy && isGrid && isExport:
+		// Exported energy has no supported metric yet. Treating it as imported
+		// energy would invert the meaning of the reading.
+		return EntityCandidate{}, false
+	case isEnergy && isGrid && isImport:
 		metric = MetricGridImportEnergy
-	case deviceClass == "power" && containsAny(name, "grid", "netz", "import", "bezug"):
-		metric = MetricGridImportPower
-	case deviceClass == "power" && containsAny(name, "export", "feed", "einspeis"):
+	case isPower && isGrid && isExport:
 		metric = MetricGridExportPower
-	case deviceClass == "power" && containsAny(name, "solar", "photovolta", " pv", "pv_", "pv."):
+	case isPower && isGrid && isImport:
+		metric = MetricGridImportPower
+	case isPower && isPV && !isForecast:
 		metric = MetricPVPower
-	case deviceClass == "power" && containsAny(name, "battery", "batter", "speicher"):
+	case isPower && !isPortableOrVehicleBattery && (isStationaryBattery || isBatteryFlow):
 		metric = MetricBatteryPower
-	case (deviceClass == "battery" || unit == "%") && containsAny(name, "battery", "batter", "speicher", "state of charge", " soc"):
+	case normalizedUnit == "%" && !isPortableOrVehicleBattery &&
+		(deviceClass == "battery" || isStationaryBattery) &&
+		containsAny(name, "battery", "batter", "speicher", "state of charge", "state_of_charge", " soc", "_soc"):
 		metric = MetricBatterySOC
-	case deviceClass == "power":
+	case isPower && isHouseLoad && !isForecast:
 		metric = MetricLoadPower
 	default:
 		return EntityCandidate{}, false

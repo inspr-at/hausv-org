@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.48.1",
+			Date:     "28. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Home Assistant schlägt jetzt nur wenige, eindeutig lesende Hausenergie-Messwerte vor.",
+			Intro:    "Die Auswahl bleibt ruhig und verständlich: sichere Empfehlungen stehen vorn, technische Alternativen öffnen sich nur bei Bedarf und bestehende Zuordnungen bleiben erhalten.",
+			Items: []NoteItem{
+				{Label: "Geräte-Rauschen ausblenden", Text: "Handy-, Schloss-, Roboter-, Fahrzeug- und Prognosewerte gelangen nicht in die Hausenergie-Auswahl."},
+				{Label: "Wenige Werte verstehen", Text: "Höchstens fünf Empfehlungen tragen Alltagsnamen und den sichtbaren Hinweis „Nur lesen“; Sensor-IDs bleiben in den Technikdetails."},
+				{Label: "Bewusste Auswahl schützen", Text: "Bestätigte oder manuell benannte Messwerte werden durch eine neue Suche oder den Offline-Weg nicht entfernt."},
+			},
+		},
+		{
 			Version:  "0.48.0",
 			Date:     "28. Juli 2026",
 			Kind:     "Mein Zuhause",

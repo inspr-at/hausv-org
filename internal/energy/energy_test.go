@@ -40,6 +40,45 @@ func TestClassifyCandidateIsConservativeAndReadOnly(t *testing.T) {
 	}
 }
 
+func TestClassifyCandidateRejectsDeviceNoiseAndKeepsEnergyMeaning(t *testing.T) {
+	tests := []struct {
+		entityID    string
+		displayName string
+		unit        string
+		deviceClass string
+		wantMetric  string
+		wantOK      bool
+	}{
+		{"sensor.grid_export_power", "Netzeinspeisung", "W", "power", MetricGridExportPower, true},
+		{"sensor.pv_current_power", "PV Leistung", "kW", "power", MetricPVPower, true},
+		{"sensor.home_battery_soc", "Hausspeicher Ladestand", "%", "battery", MetricBatterySOC, true},
+		{"sensor.home_consumption", "Hausverbrauch", "W", "power", MetricLoadPower, true},
+		{"sensor.grid_export_energy", "Netzeinspeisung Energie", "kWh", "energy", "", false},
+		{"sensor.pv_forecast_power", "PV Forecast", "W", "power", "", false},
+		{"sensor.iphone_battery", "iPhone Battery", "%", "battery", "", false},
+		{"sensor.tesla_battery_soc", "Tesla Battery SOC", "%", "battery", "", false},
+		{"sensor.kettle_power", "Wasserkocher Leistung", "W", "power", "", false},
+		{"number.battery_force_charge", "Battery Force Charge", "%", "battery", "", false},
+		{"binary_sensor.lock_battery", "Nuki Battery", "%", "battery", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.entityID, func(t *testing.T) {
+			item, ok := ClassifyCandidate(
+				tt.entityID,
+				tt.displayName,
+				tt.unit,
+				tt.deviceClass,
+				"measurement",
+				"1",
+				time.Now(),
+			)
+			if ok != tt.wantOK || (ok && item.Metric != tt.wantMetric) {
+				t.Fatalf("candidate = %+v ok=%v, want metric=%q ok=%v", item, ok, tt.wantMetric, tt.wantOK)
+			}
+		})
+	}
+}
+
 func TestMemoryStoreKeepsHousesSeparated(t *testing.T) {
 	store := NewMemoryStore()
 	for _, tenant := range []string{"home-a", "home-b"} {

@@ -18,11 +18,17 @@ import (
 type energyCandidateView struct {
 	EntityID    string
 	DisplayName string
+	SourceName  string
 	Metric      string
 	MetricLabel string
 	Value       string
 	Unit        string
 	Checked     bool
+}
+
+type energyDiscoveryView struct {
+	Recommended []energyCandidateView
+	Additional  []energyCandidateView
 }
 
 type energyAssetOption struct {
@@ -206,16 +212,20 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 			step = parsed
 		}
 	}
-	candidates := []energyCandidateView{}
+	discovery := energyDiscoveryView{}
 	connectorMessage := "Home Assistant ist noch nicht verbunden. Das ist okay – Sie können später weitermachen."
 	connectorOK := false
 	if step == 4 && ac.tenant.HA.Configured() {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 		if discovered, discoverErr := discoverEnergyCandidates(ctx, ac.tenant.HA, mappings); discoverErr == nil {
-			candidates = discovered
+			discovery = discovered
 			connectorOK = true
-			connectorMessage = fmt.Sprintf("%d passende Messwerte gefunden. Sie entscheiden, welche übernommen werden.", len(candidates))
+			if len(discovery.Recommended) > 0 {
+				connectorMessage = fmt.Sprintf("%d sichere Vorschläge gefunden. Sie bleiben vollständig lesend.", len(discovery.Recommended))
+			} else {
+				connectorMessage = "Verbindung hergestellt, aber noch kein eindeutig passender Hausenergie-Messwert gefunden."
+			}
 		} else {
 			connectorMessage = "Home Assistant antwortet gerade nicht. Ihre bisherigen Angaben bleiben erhalten."
 		}
@@ -227,8 +237,11 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		"Step":                 step,
 		"Progress":             step * 20,
 		"AssetOptions":         buildEnergyAssetOptions(assets),
-		"Candidates":           candidates,
-		"HasCandidates":        len(candidates) > 0,
+		"Candidates":           discovery.Recommended,
+		"HasCandidates":        len(discovery.Recommended) > 0,
+		"RecommendedCount":     len(discovery.Recommended),
+		"AdditionalCandidates": discovery.Additional,
+		"HasAdditional":        len(discovery.Additional) > 0,
 		"ConnectorOK":          connectorOK,
 		"ConnectorMessage":     connectorMessage,
 		"FinishRecommendation": finishRecommendation,
@@ -285,6 +298,8 @@ func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac au
 				return
 			}
 		}
+		nextStep = 5
+	case "skip-mappings":
 		nextStep = 5
 	case "finish":
 		profile.OnboardingComplete = true
@@ -1669,39 +1684,143 @@ func (a *app) saveManualEnergyMapping(tenantSlug, entityID, metric, displayName,
 	})
 }
 
-func discoverEnergyCandidates(ctx context.Context, cfg homeassistant.Config, mappings []energy.EntityMapping) ([]energyCandidateView, error) {
+func discoverEnergyCandidates(ctx context.Context, cfg homeassistant.Config, mappings []energy.EntityMapping) (energyDiscoveryView, error) {
 	states, err := cfg.States(ctx)
 	if err != nil {
-		return nil, err
+		return energyDiscoveryView{}, err
 	}
 	confirmed := map[string]bool{}
+	confirmedMappings := map[string]energy.EntityMapping{}
 	for _, mapping := range mappings {
-		confirmed[mapping.EntityID] = mapping.Confirmed
+		entityID := strings.ToLower(mapping.EntityID)
+		confirmed[entityID] = mapping.Confirmed
+		if mapping.Confirmed {
+			confirmedMappings[entityID] = mapping
+		}
 	}
 	candidates := []energy.EntityCandidate{}
 	for _, state := range states {
 		if candidate, ok := classifyHAState(state); ok {
 			candidates = append(candidates, candidate)
+		} else if mapping, found := confirmedMappings[strings.ToLower(state.EntityID)]; found {
+			value, parseErr := homeassistant.ParseFloat(state.State)
+			var valuePtr *float64
+			if parseErr == nil {
+				valuePtr = &value
+			}
+			candidates = append(candidates, energy.EntityCandidate{
+				EntityID:    strings.ToLower(state.EntityID),
+				DisplayName: firstNonEmpty(mapping.DisplayName, haAttribute(state.Attributes, "friendly_name"), state.EntityID),
+				Unit:        firstNonEmpty(mapping.Unit, haAttribute(state.Attributes, "unit_of_measurement")),
+				DeviceClass: firstNonEmpty(mapping.DeviceClass, haAttribute(state.Attributes, "device_class")),
+				Metric:      mapping.Metric,
+				Value:       valuePtr,
+				LastUpdated: state.LastUpdated,
+			})
 		}
 	}
 	energy.SortCandidates(candidates)
-	out := make([]energyCandidateView, 0, len(candidates))
-	for _, candidate := range candidates {
-		value := "–"
-		if candidate.Value != nil {
-			value = formatEnergyNumber(*candidate.Value)
+	sort.SliceStable(candidates, func(i, j int) bool {
+		leftConfirmed := confirmed[candidates[i].EntityID]
+		rightConfirmed := confirmed[candidates[j].EntityID]
+		if leftConfirmed != rightConfirmed {
+			return leftConfirmed
 		}
-		out = append(out, energyCandidateView{
-			EntityID:    candidate.EntityID,
-			DisplayName: firstNonEmpty(candidate.DisplayName, candidate.EntityID),
-			Metric:      candidate.Metric,
-			MetricLabel: energyMetricLabel(candidate.Metric),
-			Value:       value,
-			Unit:        candidate.Unit,
-			Checked:     confirmed[candidate.EntityID],
-		})
+		left := energyCandidatePriority(candidates[i])
+		right := energyCandidatePriority(candidates[j])
+		if left != right {
+			return left < right
+		}
+		return candidates[i].EntityID < candidates[j].EntityID
+	})
+	hasConfirmed := false
+	for _, value := range confirmed {
+		hasConfirmed = hasConfirmed || value
 	}
-	return out, nil
+	recommended := make([]energy.EntityCandidate, 0, 5)
+	additional := make([]energy.EntityCandidate, 0, 8)
+	recommendedEntities := map[string]bool{}
+	recommendedMetrics := map[string]bool{}
+	for _, candidate := range candidates {
+		if len(recommended) >= 5 || !confirmed[candidate.EntityID] {
+			continue
+		}
+		recommended = append(recommended, candidate)
+		recommendedEntities[candidate.EntityID] = true
+		recommendedMetrics[candidate.Metric] = true
+	}
+	for _, candidate := range candidates {
+		if len(recommended) >= 5 {
+			break
+		}
+		if recommendedEntities[candidate.EntityID] || recommendedMetrics[candidate.Metric] {
+			continue
+		}
+		recommended = append(recommended, candidate)
+		recommendedEntities[candidate.EntityID] = true
+		recommendedMetrics[candidate.Metric] = true
+	}
+	for _, candidate := range candidates {
+		if recommendedEntities[candidate.EntityID] || len(additional) >= 8 {
+			continue
+		}
+		additional = append(additional, candidate)
+	}
+	toView := func(items []energy.EntityCandidate, isRecommended bool) []energyCandidateView {
+		out := make([]energyCandidateView, 0, len(items))
+		for _, candidate := range items {
+			value := "–"
+			if candidate.Value != nil {
+				value = formatEnergyNumber(*candidate.Value)
+			}
+			metricLabel := energyMetricLabel(candidate.Metric)
+			out = append(out, energyCandidateView{
+				EntityID:    candidate.EntityID,
+				DisplayName: metricLabel,
+				SourceName:  firstNonEmpty(candidate.DisplayName, candidate.EntityID),
+				Metric:      candidate.Metric,
+				MetricLabel: metricLabel,
+				Value:       value,
+				Unit:        candidate.Unit,
+				Checked:     confirmed[candidate.EntityID] || (isRecommended && !hasConfirmed),
+			})
+		}
+		return out
+	}
+	return energyDiscoveryView{
+		Recommended: toView(recommended, true),
+		Additional:  toView(additional, false),
+	}, nil
+}
+
+func energyCandidatePriority(candidate energy.EntityCandidate) int {
+	name := strings.ToLower(candidate.DisplayName + " " + candidate.EntityID)
+	score := 50
+	preferred := []string{
+		"grid_import_power",
+		"netzbezug",
+		"grid_import_energy",
+		"grid_export_power",
+		"netzeinspeisung",
+		"pv_current_power",
+		"current_power",
+		"home_battery_soc",
+		"battery_percentage",
+		"home_consumption",
+		"consumption_current",
+		"battery_charge_power",
+		"battery_discharge_power",
+	}
+	for index, marker := range preferred {
+		if strings.Contains(name, marker) {
+			score = index
+			break
+		}
+	}
+	if strings.Contains(name, "daily") || strings.Contains(name, "monthly") || strings.Contains(name, "yearly") {
+		score += 30
+	}
+	return score
 }
 
 func classifyHAState(state homeassistant.EntityState) (energy.EntityCandidate, bool) {

@@ -573,7 +573,18 @@ func TestEnergyDiscoveryOnlySuggestsMeasurementEntities(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`[
-			{"entity_id":"sensor.grid_power","state":"2.4","attributes":{"friendly_name":"Netzbezug","device_class":"power","unit_of_measurement":"kW"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"sensor.grid_import_power","state":"2.4","attributes":{"friendly_name":"Netzbezug","device_class":"power","unit_of_measurement":"kW"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"sensor.grid_export_power","state":"0.4","attributes":{"friendly_name":"Netzeinspeisung","device_class":"power","unit_of_measurement":"kW"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"sensor.grid_import_energy","state":"42","attributes":{"friendly_name":"Netzbezug Energie","device_class":"energy","unit_of_measurement":"kWh"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"sensor.solaredge_keller_current_power","state":"3.1","attributes":{"friendly_name":"SolarEdge Keller Current Power","device_class":"power","unit_of_measurement":"kW"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"sensor.sonnenbatterie_state_battery_percentage_user","state":"78","attributes":{"friendly_name":"Sonnenbatterie State Battery Percentage User","device_class":"battery","unit_of_measurement":"%"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"sensor.sonnenbatterie_state_consumption_current","state":"1.8","attributes":{"friendly_name":"Sonnenbatterie State Consumption Current","device_class":"power","unit_of_measurement":"kW"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"sensor.battery_charge_power","state":"0.8","attributes":{"friendly_name":"Battery Charge Power","device_class":"power","unit_of_measurement":"kW"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"sensor.iphone_battery","state":"81","attributes":{"friendly_name":"iPhone Battery","device_class":"battery","unit_of_measurement":"%"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"sensor.pv_forecast_power","state":"4.4","attributes":{"friendly_name":"PV Forecast Power","device_class":"power","unit_of_measurement":"kW"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"sensor.kettle_power","state":"1.9","attributes":{"friendly_name":"Wasserkocher Leistung","device_class":"power","unit_of_measurement":"kW"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"number.battery_force_charge","state":"0","attributes":{"friendly_name":"Battery Force Charge","device_class":"battery","unit_of_measurement":"%"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"binary_sensor.lock_battery","state":"off","attributes":{"friendly_name":"Nuki Battery","device_class":"battery","unit_of_measurement":"%"},"last_updated":"2026-07-28T10:00:00Z"},
 			{"entity_id":"switch.wallbox","state":"off","attributes":{"friendly_name":"Wallbox"}},
 			{"entity_id":"light.kitchen","state":"on","attributes":{"friendly_name":"Küche"}}
 		]`))
@@ -584,8 +595,25 @@ func TestEnergyDiscoveryOnlySuggestsMeasurementEntities(t *testing.T) {
 	if err != nil {
 		t.Fatalf("discoverEnergyCandidates: %v", err)
 	}
-	if len(candidates) != 1 || candidates[0].EntityID != "sensor.grid_power" {
-		t.Fatalf("candidates = %+v", candidates)
+	if len(candidates.Recommended) != 5 {
+		t.Fatalf("recommended = %+v", candidates.Recommended)
+	}
+	if len(candidates.Additional) != 2 {
+		t.Fatalf("additional = %+v", candidates.Additional)
+	}
+	all := append(append([]energyCandidateView{}, candidates.Recommended...), candidates.Additional...)
+	for _, candidate := range all {
+		if strings.Contains(candidate.EntityID, "iphone") ||
+			strings.Contains(candidate.EntityID, "forecast") ||
+			strings.Contains(candidate.EntityID, "kettle") ||
+			!strings.HasPrefix(candidate.EntityID, "sensor.") {
+			t.Fatalf("unsafe discovery candidate = %+v", candidate)
+		}
+	}
+	for _, candidate := range candidates.Recommended {
+		if !candidate.Checked {
+			t.Fatalf("recommended candidate is not selected by default: %+v", candidate)
+		}
 	}
 }
 
@@ -620,5 +648,32 @@ func TestManualEnergyMappingIsValidatedAndNotOverwrittenByDiscovery(t *testing.T
 	}
 	if err := a.saveManualEnergyMapping("jhw22", "switch.wallbox", energy.MetricLoadPower, "Nope", "kW"); err == nil {
 		t.Fatal("switch entity should be rejected")
+	}
+}
+
+func TestEnergyOnboardingCanSkipConnectionWithoutDeletingMappings(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{
+		Email:       "owner@example.com",
+		Role:        roleOwner,
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	})
+	profile := energy.DefaultProfile("jhw22", time.Now())
+	profile.OnboardingStep = 4
+	if err := a.energyStore.SaveProfile(profile); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.saveManualEnergyMapping("jhw22", "sensor.grid_power", energy.MetricGridImportPower, "Bestehender Netzbezug", "kW"); err != nil {
+		t.Fatal(err)
+	}
+	response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", url.Values{
+		"action": {"skip-mappings"},
+	})
+	if response.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d body=%s", response.Code, response.Body.String())
+	}
+	mappings, err := a.energyStore.ListMappings("jhw22")
+	if err != nil || len(mappings) != 1 || mappings[0].DisplayName != "Bestehender Netzbezug" {
+		t.Fatalf("mappings after skip = %+v err=%v", mappings, err)
 	}
 }

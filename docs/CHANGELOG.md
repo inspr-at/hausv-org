@@ -2,6 +2,15 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.48.1] - 2026-07-28
+
+### Verbessert
+
+- **Home Assistant zeigt nur noch sichere Hausenergie-Vorschläge.** Netzbezug, Einspeisung, PV, Hausspeicher und Hausverbrauch werden anhand eindeutiger Sensortypen, Einheiten und Namen erkannt; Handy-, Schloss-, Roboter-, Fahrzeug- und Prognosewerte bleiben draußen.
+- **Die Messwertauswahl ist deutlich ruhiger.** Höchstens fünf verständliche Empfehlungen sind vorausgewählt und jeweils als „Nur lesen“ gekennzeichnet; weitere plausible Treffer und technische Sensor-IDs öffnen sich erst bei Bedarf.
+- **Bestehende Zuordnungen bleiben geschützt.** Bewusst bestätigte oder manuell benannte Messwerte werden weder durch eine neue Suche überschrieben noch durch „Ohne Verbindung starten“ entfernt.
+- **Der reale Pilotweg ist reproduzierbar geprüft.** Eine Home-Assistant-Testinstanz enthält absichtlich passende und unpassende Geräte; Playwright kontrolliert Auswahl, Technikdetails, Offline-Weg, Tastatur, Rollen und mobile Darstellung.
+
 ## [0.48.0] - 2026-07-28
 
 ### Neu

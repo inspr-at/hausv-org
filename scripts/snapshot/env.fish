@@ -26,9 +26,10 @@ set -gx INVITE_EMAILS admin@example.com,verwalter@example.com,owner@example.com,
 # candidate run — otherwise every page would just be the login screen.
 set -gx SESSION_KEY snapshot-harness-fixed-key-not-a-secret-000
 
-# No Home Assistant, no SMTP: outbound calls would make runs non-deterministic.
-set -gx HA_BASE_URL ""
-set -gx HA_TOKEN ""
+# Deterministic, local-only Home Assistant fixture. It deliberately includes
+# device noise so Playwright proves that onboarding stays calm and read-only.
+set -gx HA_BASE_URL "http://127.0.0.1:$HV_QA_HA_PORT"
+set -gx HA_TOKEN "qa-read-only-fixture"
 set -gx SMTP_HOST ""
 
 # All state under one dir, seeded identically per run.
