@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.42.0] - 2026-07-28
+
+### Verbessert
+
+- **Ein neues Anliegen entsteht jetzt in drei kurzen Schritten.** Bewohner beschreiben zuerst das Ereignis, wählen danach den Ort und prüfen zuletzt eine verständliche Zusammenfassung.
+- **Fotos gehören direkt zur Meldung.** Ein optionales Bild lässt sich beim Ereignis ergänzen, ohne Ortsangaben und Dateien in einem gemeinsamen Aufklappbereich suchen zu müssen.
+- **Der Titel wird sinnvoll vorgeschlagen.** Aus der Beschreibung entsteht automatisch eine kurze Überschrift, die vor dem Senden frei angepasst werden kann.
+- **Jede Seite zeigt genau die nächste Aktion.** Zurück, Weiter und Senden stehen nicht gleichzeitig im Wettbewerb; Pflichtangaben werden jeweils dort geprüft, wo sie benötigt werden.
+- **Desktop und Mobil sind entlang des vollständigen Meldewegs geprüft.** Alle drei Schritte funktionieren bei 390 Pixeln ohne seitlichen Überlauf, mit mindestens 46 Pixel hohen Aktionen und ohne überlange Formularseite.
+
 ## [0.41.0] - 2026-07-28
 
 ### Verbessert

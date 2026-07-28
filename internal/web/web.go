@@ -1019,11 +1019,10 @@ const PageTemplates = `
     .issue-preview-card .pill { margin-top: 0; }
     .issue-management-actions { display: flex; flex-wrap: wrap; gap: 10px; }
     .issue-layout { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(280px,.8fr); gap: 22px; align-items: start; }
-    .issue-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+    .issue-form { display: grid; gap: 20px; max-width: 920px; margin: 0 auto; }
     .issue-form label { display: grid; gap: 7px; color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-    .issue-form .full { grid-column: 1 / -1; }
     .issue-form input, .issue-form select, .issue-form textarea { width: 100%; border: 1px solid #e2dac9; border-radius: var(--radius-sm); padding: 12px; font: inherit; background: #fffefb; color: var(--ink); }
-    .issue-form textarea { min-height: 148px; resize: vertical; line-height: 1.45; }
+    .issue-form textarea { min-height: 132px; resize: vertical; line-height: 1.45; }
     .issue-form input[type=file] { padding: 10px; color: var(--muted); }
     .file-control { position: relative; min-height: 44px; display: flex; align-items: center; gap: 10px; border: 1px solid #e2dac9; border-radius: var(--radius-sm); padding: 10px 12px; background: #fffefb; color: var(--ink); overflow: hidden; }
     .file-control input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
@@ -1047,14 +1046,42 @@ const PageTemplates = `
     .attachment-picker.is-uploading .attachment-picker-progress { display: block; }
     @keyframes upload-progress { 0% { transform: translateX(-120%); } 100% { transform: translateX(260%); } }
     .issue-form .hint { margin-top: 2px; color: var(--soft); font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; }
-    .issue-form-more { grid-column: 1 / -1; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
-    .issue-form-more > summary { cursor: pointer; list-style: none; padding: 12px 13px; color: var(--ink); font-size: 13.5px; font-weight: 800; text-transform: none; letter-spacing: 0; }
-    .issue-form-more > summary::-webkit-details-marker { display: none; }
-    .issue-form-more > summary::after { content: "›"; float: right; color: var(--gold-ink); font-size: 20px; line-height: .8; transition: transform .18s ease; }
-    .issue-form-more[open] > summary::after { transform: rotate(90deg); }
-    .issue-form-more-body { display: grid; gap: 12px; border-top: 1px solid var(--line); padding: 12px 13px 14px; }
-    .issue-form button { grid-column: 1 / -1; min-height: 46px; border: 1px solid var(--ink); border-radius: var(--radius-sm); background: var(--ink); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+    .issue-wizard-step { display: grid; gap: 18px; min-width: 0; border: 0; padding: 0; }
+    .issue-wizard-step[hidden] { display: none; }
+    .issue-wizard-heading { display: grid; gap: 6px; }
+    .issue-wizard-progress { color: var(--gold-ink); font-size: 12px; font-weight: 850; letter-spacing: .06em; }
+    .issue-wizard-heading h3 { font-family: var(--font-serif); font-size: clamp(30px,4vw,42px); line-height: 1.04; }
+    .issue-wizard-heading p { color: var(--muted); font-size: 15px; line-height: 1.45; }
+    .issue-category { display: grid; gap: 8px; }
+    .issue-category > span { color: var(--ink); font-size: 13px; font-weight: 800; }
+    .issue-category-options { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border: 1px solid #e2dac9; border-radius: var(--radius-sm); overflow: hidden; }
+    .issue-form .issue-category-choice { position: relative; min-height: 64px; display: grid; place-items: center; padding: 12px 9px; color: var(--ink); font-size: 13px; font-weight: 800; letter-spacing: 0; text-align: center; text-transform: none; cursor: pointer; }
+    .issue-category-choice + .issue-category-choice { border-left: 1px solid #e2dac9; }
+    .issue-category-choice input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .issue-category-choice:has(input:checked) { background: rgba(200,153,63,.1); box-shadow: inset 0 0 0 2px rgba(200,153,63,.72); }
+    .issue-category-choice:has(input:focus-visible) { outline: 3px solid rgba(200,153,63,.42); outline-offset: -3px; }
+    .issue-file-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .issue-file-row label { min-width: 200px; }
+    .issue-file-row .file-control { border-style: dashed; }
+    .issue-location-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+    .issue-form .issue-location-choice { position: relative; min-height: 70px; display: grid; gap: 3px; align-content: center; border: 1px solid #e2dac9; border-radius: var(--radius-sm); padding: 13px 15px; color: var(--ink); letter-spacing: 0; text-transform: none; cursor: pointer; }
+    .issue-location-choice input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .issue-location-choice strong { font-size: 14px; }
+    .issue-location-choice span { color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1.35; }
+    .issue-location-choice:has(input:checked) { border-color: rgba(200,153,63,.72); background: rgba(200,153,63,.08); box-shadow: inset 0 0 0 1px rgba(200,153,63,.46); }
+    .issue-location-choice:has(input:focus-visible) { outline: 3px solid rgba(200,153,63,.42); outline-offset: 2px; }
+    .issue-review { display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); }
+    .issue-review-row { display: grid; grid-template-columns: 132px minmax(0,1fr); gap: 16px; padding: 13px 15px; }
+    .issue-review-row + .issue-review-row { border-top: 1px solid var(--line); }
+    .issue-review-row dt { color: var(--muted); font-size: 12px; font-weight: 750; }
+    .issue-review-row dd { min-width: 0; color: var(--ink); font-size: 13px; font-weight: 750; line-height: 1.45; overflow-wrap: anywhere; }
+    .issue-wizard-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 2px; }
+    .issue-wizard-actions .wizard-back, .issue-wizard-actions .wizard-cancel { min-height: 46px; border-color: transparent; background: transparent; color: var(--ink); padding-inline: 2px; text-decoration: underline; text-underline-offset: 4px; }
+    .issue-wizard-actions .wizard-next, .issue-wizard-actions .wizard-submit { min-width: 220px; padding-inline: 28px; }
+    .issue-form button { min-height: 46px; border: 1px solid var(--ink); border-radius: var(--radius-sm); background: var(--ink); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
     .issue-form button:hover { background: #2c3329; }
+    .issue-form .wizard-only { display: none; }
+    .issue-form.is-enhanced .wizard-only { display: inline-flex; align-items: center; justify-content: center; }
     .issue-flash { margin: 0 0 14px; padding: 11px 13px; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 700; border: 1px solid transparent; }
     .issue-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
     .issue-flash.warn { background: rgba(200,153,63,.14); color: #93701d; border-color: rgba(200,153,63,.3); }
@@ -1925,6 +1952,13 @@ const PageTemplates = `
       .issue-card-head { grid-template-columns: 1fr; }
       .issue-card-head .issue-meta { justify-content: flex-start; }
       .issue-form { grid-template-columns: 1fr; }
+      .issue-category-options { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .issue-category-choice:nth-child(3) { border-left: 0; border-top: 1px solid #e2dac9; }
+      .issue-category-choice:nth-child(4) { border-top: 1px solid #e2dac9; }
+      .issue-location-options { grid-template-columns: 1fr; }
+      .issue-review-row { grid-template-columns: 1fr; gap: 3px; }
+      .issue-wizard-actions { align-items: stretch; }
+      .issue-wizard-actions .wizard-next, .issue-wizard-actions .wizard-submit { min-width: 0; flex: 1; }
       .issue-board-filter { grid-template-columns: 1fr; }
       .issue-board-filter label, .issue-board-filter label.assignee, .issue-board-filter label.sort, .issue-board-filter .board-filter-actions { grid-column: 1 / -1; }
       .issue-board-toolbar { grid-template-columns: 1fr; }
@@ -2687,6 +2721,7 @@ const PageTemplates = `
 {{define "issues"}}
 {{template "appOpen" .}}
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
+    <script src="/assets/issues.js?v={{.AssetVersion}}" defer></script>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><span>/</span><span>Anliegen</span></span>
@@ -2778,44 +2813,90 @@ const PageTemplates = `
             <summary>
               <div>
                 <h2>{{if .HasIssues}}Neues Anliegen{{else}}Erstes Anliegen melden{{end}}</h2>
-                <p>Titel, Ort und eine kurze Beschreibung genügen.</p>
+                <p>In drei kurzen Schritten verständlich melden.</p>
               </div>
             </summary>
             <div class="issue-create-body">
-              <form class="issue-form" method="post" action="/app/anliegen" enctype="multipart/form-data">
-                <label class="full">Was ist passiert?
-                  <input type="text" name="title" maxlength="140" required placeholder="Kurzer Titel">
-                </label>
-                <label>Kategorie
-                  <select name="category" required>
-                    <option value="Reparatur">Reparatur</option>
-                    <option value="Frage">Frage</option>
-                    <option value="Vorschlag">Vorschlag</option>
-                    <option value="Sonstiges">Sonstiges</option>
-                  </select>
-                </label>
-                <label>Wo?
-                  <select name="location_type" required>
-                    <option value="common">Gemeinschaftsbereich</option>
-                    <option value="own-unit">Eigene Einheit</option>
-                  </select>
-                </label>
-                <label class="full">Kurze Beschreibung
-                  <textarea name="body" maxlength="4000" required placeholder="Was ist wichtig, damit die Verwaltung beginnen kann?"></textarea>
-                </label>
-                <details class="issue-form-more">
-                  <summary>Ort genauer angeben oder Datei anhängen</summary>
-                  <div class="issue-form-more-body">
-                    <label>Details zum Ort
-                      <input type="text" name="location_detail" maxlength="160" placeholder="z. B. Stiegenhaus, Garage, Top 3">
+              <form class="issue-form" method="post" action="/app/anliegen" enctype="multipart/form-data" data-issue-wizard>
+                <fieldset class="issue-wizard-step" data-issue-step="1">
+                  <div class="issue-wizard-heading">
+                    <span class="issue-wizard-progress">Schritt 1 von 3</span>
+                    <h3>Was ist passiert?</h3>
+                    <p>Beschreiben Sie kurz, worum es geht.</p>
+                  </div>
+                  <div class="issue-category">
+                    <span id="issue-category-label">Art des Anliegens</span>
+                    <div class="issue-category-options" role="radiogroup" aria-labelledby="issue-category-label">
+                      <label class="issue-category-choice"><input type="radio" name="category" value="Reparatur" required checked><span>Reparatur</span></label>
+                      <label class="issue-category-choice"><input type="radio" name="category" value="Frage" required><span>Frage</span></label>
+                      <label class="issue-category-choice"><input type="radio" name="category" value="Vorschlag" required><span>Vorschlag</span></label>
+                      <label class="issue-category-choice"><input type="radio" name="category" value="Sonstiges" required><span>Sonstiges</span></label>
+                    </div>
+                  </div>
+                  <label>Kurze Beschreibung
+                    <textarea name="body" maxlength="4000" required placeholder="Zum Beispiel: Das Licht im Keller funktioniert nicht mehr."></textarea>
+                  </label>
+                  <div class="issue-file-row">
+                    <label>
+                      <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Foto hinzufügen</span></span>
                     </label>
-                    <label>Anhänge
-                      <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Fotos oder PDF auswählen</span></span>
-                      <span class="hint">Optional, höchstens 10 MB je Datei. Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen.</span>
+                    <span class="hint">Optional · höchstens 10 MB je Datei</span>
+                  </div>
+                  <p class="hint">Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen.</p>
+                  <div class="issue-wizard-actions">
+                    <button class="wizard-cancel wizard-only" type="button">Abbrechen</button>
+                    <button class="wizard-next wizard-only" type="button" data-issue-next>Weiter</button>
+                  </div>
+                </fieldset>
+
+                <fieldset class="issue-wizard-step" data-issue-step="2">
+                  <div class="issue-wizard-heading">
+                    <span class="issue-wizard-progress">Schritt 2 von 3</span>
+                    <h3>Wo ist es?</h3>
+                    <p>Eine grobe Angabe genügt.</p>
+                  </div>
+                  <div class="issue-location-options" role="radiogroup" aria-label="Bereich">
+                    <label class="issue-location-choice">
+                      <input type="radio" name="location_type" value="common" required checked>
+                      <strong>Im Gemeinschaftsbereich</strong>
+                      <span>Zum Beispiel Stiegenhaus, Keller oder Garage</span>
+                    </label>
+                    <label class="issue-location-choice">
+                      <input type="radio" name="location_type" value="own-unit" required>
+                      <strong>In meiner Einheit</strong>
+                      <span>In der eigenen Wohnung oder im eigenen Nebenraum</span>
                     </label>
                   </div>
-                </details>
-                <button type="submit">Anliegen melden</button>
+                  <label>Ort genauer beschreiben <span class="hint">Optional</span>
+                    <input type="text" name="location_detail" maxlength="160" placeholder="Zum Beispiel: Keller, neben dem Fahrradraum">
+                  </label>
+                  <div class="issue-wizard-actions">
+                    <button class="wizard-back wizard-only" type="button" data-issue-back>Zurück</button>
+                    <button class="wizard-next wizard-only" type="button" data-issue-next>Weiter</button>
+                  </div>
+                </fieldset>
+
+                <fieldset class="issue-wizard-step" data-issue-step="3">
+                  <div class="issue-wizard-heading">
+                    <span class="issue-wizard-progress">Schritt 3 von 3</span>
+                    <h3>Stimmt alles?</h3>
+                    <p>Prüfen Sie die Meldung vor dem Senden.</p>
+                  </div>
+                  <dl class="issue-review" aria-label="Zusammenfassung">
+                    <div class="issue-review-row"><dt>Art</dt><dd data-issue-summary="category">Reparatur</dd></div>
+                    <div class="issue-review-row"><dt>Beschreibung</dt><dd data-issue-summary="body">—</dd></div>
+                    <div class="issue-review-row"><dt>Ort</dt><dd data-issue-summary="location">Gemeinschaftsbereich</dd></div>
+                    <div class="issue-review-row"><dt>Dateien</dt><dd data-issue-summary="files">Keine</dd></div>
+                  </dl>
+                  <label>Titel
+                    <input type="text" name="title" maxlength="140" required placeholder="Kurzer, passender Titel">
+                    <span class="hint">Wird aus Ihrer Beschreibung vorgeschlagen und kann geändert werden.</span>
+                  </label>
+                  <div class="issue-wizard-actions">
+                    <button class="wizard-back wizard-only" type="button" data-issue-back>Zurück</button>
+                    <button class="wizard-submit" type="submit">Anliegen melden</button>
+                  </div>
+                </fieldset>
               </form>
             </div>
           </details>

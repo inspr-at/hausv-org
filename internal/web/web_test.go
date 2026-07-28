@@ -169,4 +169,41 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 			t.Fatalf("attachment picker script missing %q", want)
 		}
 	}
+
+	issueJS, err := os.ReadFile("assets/issues.js")
+	if err != nil {
+		t.Fatalf("read issue wizard script: %v", err)
+	}
+	issueText := string(issueJS)
+	for _, want := range []string{`data-issue-step`, `reportValidity`, `suggestedTitle`, `data-issue-summary`, `scrollIntoView`} {
+		if !strings.Contains(issueText, want) {
+			t.Fatalf("issue wizard script missing %q", want)
+		}
+	}
+}
+
+func TestIssueCreationUsesThreeFocusedSteps(t *testing.T) {
+	for _, want := range []string{
+		`<script src="/assets/issues.js?v={{.AssetVersion}}" defer></script>`,
+		`data-issue-wizard`,
+		`data-issue-step="1"`,
+		`Schritt 1 von 3`,
+		`Was ist passiert?`,
+		`Foto hinzufügen`,
+		`data-issue-step="2"`,
+		`Schritt 2 von 3`,
+		`Wo ist es?`,
+		`data-issue-step="3"`,
+		`Schritt 3 von 3`,
+		`Stimmt alles?`,
+		`data-issue-summary="body"`,
+		`Wird aus Ihrer Beschreibung vorgeschlagen und kann geändert werden.`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("issue creation flow missing %q", want)
+		}
+	}
+	if strings.Contains(PageTemplates, `Ort genauer angeben oder Datei anhängen`) {
+		t.Fatal("issue creation should not mix location and attachments in one disclosure")
+	}
 }

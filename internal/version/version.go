@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.42.0",
+			Date:     "28. Juli 2026",
+			Kind:     "Anliegen",
+			Headline: "Ein neues Anliegen entsteht in drei kurzen, verständlichen Schritten.",
+			Intro:    "Ereignis, Ort und Prüfung stehen nacheinander im Mittelpunkt, damit Bewohner nie eine ganze Formularwand verarbeiten müssen.",
+			Items: []NoteItem{
+				{Label: "Ruhig beschreiben", Text: "Art, kurze Beschreibung und ein optionales Foto gehören direkt zum Ereignis."},
+				{Label: "Ort ergänzen", Text: "Der Bereich und eine freiwillige genauere Angabe bilden einen eigenen, kurzen Schritt."},
+				{Label: "Vor dem Senden prüfen", Text: "Eine lesbare Zusammenfassung und ein editierbarer Titel machen die fertige Meldung transparent."},
+			},
+		},
+		{
 			Version:  "0.41.0",
 			Date:     "28. Juli 2026",
 			Kind:     "Anliegen",
