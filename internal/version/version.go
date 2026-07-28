@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.48.2",
+			Date:     "28. Juli 2026",
+			Kind:     "Sicherheitsmodus",
+			Headline: "Den Hausmodus dürfen ausschließlich Eigentümer oder Hausadministration bewusst umlegen.",
+			Intro:    "Technische Vertrauenspersonen können Energiedaten weiterhin ansehen und die Einrichtung unterstützen, erhalten aber keine Freigabe für die hausweite Steuerung.",
+			Items: []NoteItem{
+				{Label: "Hausentscheidung schützen", Text: "Eigentümer, Verwalter beziehungsweise Hausadministration und Admin behalten die bewusste Modusfreigabe."},
+				{Label: "Technikhilfe begrenzen", Text: "Ansehen und Einrichten bleiben delegierbar; ein früheres Steuerungsrecht erweitert den Zugriff nicht."},
+				{Label: "Rechte verständlich halten", Text: "Einladung und Rechteverwaltung zeigen nur die tatsächlich delegierbaren Aufgaben."},
+			},
+		},
+		{
 			Version:  "0.48.1",
 			Date:     "28. Juli 2026",
 			Kind:     "Mein Zuhause",

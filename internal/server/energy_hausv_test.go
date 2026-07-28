@@ -64,7 +64,7 @@ func TestEnergyModeRequiresOwnerAndExplicitConfirmation(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "resident@example.com",
 		Role:        roleResident,
-		Permissions: []string{permissionEnergyCaretaker},
+		Permissions: []string{permissionEnergyCaretaker, permissionEnergyControl},
 		Tenants:     []string{"jhw22"},
 		AuthMethods: defaultAuthMethods(),
 	})
@@ -80,7 +80,7 @@ func TestEnergyModeRequiresOwnerAndExplicitConfirmation(t *testing.T) {
 		"confirmation_text": {"AKTIVIEREN"},
 	})
 	if response.Code != http.StatusForbidden {
-		t.Fatalf("caretaker active status = %d", response.Code)
+		t.Fatalf("caretaker with legacy energy-control active status = %d", response.Code)
 	}
 
 	a.profiles["owner@example.com"] = userProfile{
@@ -122,7 +122,7 @@ func TestEnergyModeRequiresOwnerAndExplicitConfirmation(t *testing.T) {
 	}
 }
 
-func TestOwnerCanGrantAndImmediatelyRevokeScopedEnergyAccess(t *testing.T) {
+func TestOwnerCanGrantAndImmediatelyRevokeScopedEnergyAccessWithoutDelegatingHouseMode(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
@@ -148,10 +148,13 @@ func TestOwnerCanGrantAndImmediatelyRevokeScopedEnergyAccess(t *testing.T) {
 		t.Fatalf("grant status = %d body=%s", response.Code, response.Body.String())
 	}
 	helper := a.profileForTenant("helper@example.com", "jhw22")
-	for _, permission := range []string{permissionEnergyView, permissionEnergyConfigure, permissionEnergyControl} {
+	for _, permission := range []string{permissionEnergyView, permissionEnergyConfigure} {
 		if !helper.HasPermission(permission) {
 			t.Fatalf("helper missing %q: %+v", permission, helper.Permissions)
 		}
+	}
+	if helper.HasPermission(permissionEnergyControl) {
+		t.Fatalf("technical helper received forbidden house-mode permission: %+v", helper.Permissions)
 	}
 	profile := energy.DefaultProfile("jhw22", time.Now())
 	profile.OnboardingComplete = true
@@ -163,8 +166,8 @@ func TestOwnerCanGrantAndImmediatelyRevokeScopedEnergyAccess(t *testing.T) {
 		"confirm":           {"yes"},
 		"confirmation_text": {"AKTIVIEREN"},
 	})
-	if response.Code != http.StatusSeeOther {
-		t.Fatalf("separately granted control status = %d", response.Code)
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("technical helper active status = %d", response.Code)
 	}
 	response = authedFormRequest(t, a, "owner@example.com", "/app/energie/caretaker", url.Values{
 		"email": {"helper@example.com"},
@@ -244,7 +247,8 @@ func TestOwnerCanInviteEnergyCaretakerButResidentCannot(t *testing.T) {
 	}
 	known, ok := a.inviteStore.Get("known@example.com")
 	if !ok || !known.HasTenant("other-house") || !known.HasTenant("jhw22") ||
-		!known.ForTenant("jhw22").HasPermission(permissionEnergyControl) {
+		!known.ForTenant("jhw22").HasPermission(permissionEnergyView) ||
+		known.ForTenant("jhw22").HasPermission(permissionEnergyControl) {
 		t.Fatalf("multi-house caretaker = %+v ok=%v", known, ok)
 	}
 

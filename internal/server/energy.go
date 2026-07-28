@@ -96,7 +96,6 @@ type energyCaretakerView struct {
 	Name         string
 	CanView      bool
 	CanConfigure bool
-	CanControl   bool
 	IsSelf       bool
 	Editable     bool
 }
@@ -184,8 +183,9 @@ func (a *app) canManageEnergy(ac authCtx) bool {
 }
 
 func (a *app) canControlEnergy(ac authCtx) bool {
-	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
-	return hasCapability(ac.role, capabilityControlEnergy) || profile.HasPermission(permissionEnergyControl)
+	// The house-wide mode is a property decision, not a technical support
+	// permission. Legacy energy-control grants intentionally do not widen it.
+	return hasCapability(ac.role, capabilityControlEnergy)
 }
 
 func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -1133,9 +1133,6 @@ func (a *app) inviteEnergyCaretaker(w http.ResponseWriter, r *http.Request, ac a
 	if scopes["configure"] {
 		permissions = append(permissions, permissionEnergyConfigure)
 	}
-	if scopes["control"] {
-		permissions = append(permissions, permissionEnergyControl)
-	}
 	profile := userProfile{
 		Email:       email,
 		FirstName:   cleanEnergyText(r.FormValue("first_name"), 80),
@@ -1487,7 +1484,6 @@ func (a *app) energyCaretakerViews(ac authCtx) []energyCaretakerView {
 			Name:         member.DisplayName(),
 			CanView:      canView,
 			CanConfigure: member.HasPermission(permissionEnergyConfigure) || member.HasPermission(permissionEnergyCaretaker),
-			CanControl:   member.HasPermission(permissionEnergyControl),
 			Editable:     editable,
 		})
 	}
@@ -1526,14 +1522,11 @@ func (a *app) updateEnergyCaretaker(w http.ResponseWriter, r *http.Request, ac a
 				out = append(out, permission)
 			}
 		}
-		if grant["view"] || grant["configure"] || grant["control"] {
+		if grant["view"] || grant["configure"] {
 			out = append(out, permissionEnergyView)
 		}
 		if grant["configure"] {
 			out = append(out, permissionEnergyConfigure)
-		}
-		if grant["control"] {
-			out = append(out, permissionEnergyControl)
 		}
 		return out
 	})

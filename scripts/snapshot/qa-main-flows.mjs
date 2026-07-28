@@ -474,6 +474,9 @@ async function assertEnergySafetyAndFlow(viewport) {
         !(await helper.getByText('Nur beobachten', { exact: true }).count())) {
       fail('Energie Desktop: eingeladene Vertrauensperson kann den hausbezogenen Zugang nicht annehmen');
     }
+    if (await helper.getByText('Steuerung bewusst freigeben', { exact: true }).count()) {
+      fail('Energie Desktop: technische Vertrauensperson sieht die Eigentümer-/Admin-Freigabe');
+    }
     await helperContext.close();
 
     const measureControl = page.locator('details.energy-measure-control');

@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.48.2] - 2026-07-28
+
+### Verbessert
+
+- **Der Hausmodus bleibt eine Eigentümerentscheidung.** Ausschließlich Eigentümer, Verwalter beziehungsweise Hausadministration und Admin dürfen „Nur beobachten“ bewusst umlegen; technische Vertrauenspersonen können weiterhin ansehen und einrichten.
+- **Alte Freigaben erweitern den Zugriff nicht.** Ein früher gespeichertes Steuerungsrecht erlaubt einer technischen Hilfe keine Aktivierung und wird bei der nächsten Rechteänderung entfernt.
+- **Die Rechteverwaltung spricht dieselbe klare Sprache.** Einladungen bieten nur noch Ansehen und Einrichten an; der permanente Schalter erklärt sichtbar, wer ihn für die Liegenschaft bedienen darf.
+
 ## [0.48.1] - 2026-07-28
 
 ### Verbessert

@@ -6963,17 +6963,15 @@ const PageTemplates = `
           <div><strong>{{.Name}}</strong><small>{{.Email}}</small></div>
           <label><input type="checkbox" name="scope" value="view"{{if .CanView}} checked{{end}}{{if not .Editable}} disabled{{end}}> ansehen</label>
           <label><input type="checkbox" name="scope" value="configure"{{if .CanConfigure}} checked{{end}}{{if not .Editable}} disabled{{end}}> einrichten</label>
-          <label><input type="checkbox" name="scope" value="control"{{if .CanControl}} checked{{end}}{{if not .Editable}} disabled{{end}}> Steuerung freigeben</label>
           {{if and $.CanGrantEnergyAccess .Editable}}<button class="button" type="submit">Zugriff speichern</button>{{else if not .Editable}}<a href="/app/settings/users">Zuerst als Portalzugang übernehmen</a>{{end}}
         </form>{{end}}</div>{{else}}<p class="muted">Noch keine weitere Person ist diesem Haus zugeordnet. Laden Sie zuerst ein eigenes Benutzerkonto ein.</p>{{end}}
         {{if .CanInviteEnergyAccess}}<details class="energy-compact-create"><summary>Technische Vertrauensperson einladen</summary><form class="energy-inline-form" method="post" action="/app/energie/caretaker/invite">
           <label>Vorname<input name="first_name" maxlength="80"></label><label>Nachname<input name="last_name" maxlength="80"></label>
           <label class="wide">E-Mail<input type="email" name="email" required></label>
           <label><input type="checkbox" name="scope" value="configure"> darf Messwerte und Geräte einrichten</label>
-          <label><input type="checkbox" name="scope" value="control"> darf den sichtbaren Haus-Schalter nach eigener Bestätigung umlegen</label>
           <div class="actions"><button class="button primary" type="submit">Hausbezogen einladen</button></div>
         </form></details>{{end}}
-        <div class="energy-business-note"><span aria-hidden="true">i</span><p>„Ansehen“, „Einrichten“ und „Steuerung freigeben“ sind getrennte Rechte. Der dauerhaft sichtbare Haus-Schalter muss trotzdem bewusst umgelegt werden.</p></div>
+        <div class="energy-business-note"><span aria-hidden="true">i</span><p>Technische Vertrauenspersonen dürfen ansehen und einrichten. Den dauerhaft sichtbaren Haus-Schalter dürfen ausschließlich Eigentümer oder Hausadministration bewusst umlegen.</p></div>
         </div>
       </details>
       <details class="energy-card energy-collapsible" id="fachhilfe">
