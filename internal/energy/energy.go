@@ -77,6 +77,7 @@ type EntityMapping struct {
 	ID          string
 	TenantSlug  string
 	EntityID    string
+	AssetID     string
 	Metric      string
 	DisplayName string
 	Unit        string
@@ -238,6 +239,7 @@ func NormalizeMapping(mapping EntityMapping, now time.Time) EntityMapping {
 	}
 	mapping.TenantSlug = normalizeSlug(mapping.TenantSlug)
 	mapping.EntityID = strings.ToLower(strings.TrimSpace(mapping.EntityID))
+	mapping.AssetID = strings.TrimSpace(mapping.AssetID)
 	mapping.Metric = normalizeMetric(mapping.Metric)
 	mapping.DisplayName = strings.TrimSpace(mapping.DisplayName)
 	mapping.Unit = strings.TrimSpace(mapping.Unit)

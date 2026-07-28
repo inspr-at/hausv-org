@@ -2,6 +2,20 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.49.0] - 2026-07-28
+
+### Neu
+
+- **Messwerte und Anlagen gehören sichtbar zusammen.** PV- und Speichermessungen werden bei eindeutiger Zuordnung mit der richtigen Anlage verbunden; manuelle Messpunkte lassen sich bewusst einem Verbraucher oder dem gesamten Haus zuordnen.
+- **Die Messabdeckung erklärt Lücken auf einen Blick.** Das Cockpit zeigt kompakt, ob Hausanschluss, PV, Speicher, E-Auto, Warmwasser oder Wärmepumpe bereits gemessen oder bisher nur erfasst sind – ohne technische Sensor-IDs.
+
+### Verbessert
+
+- **Drei private Hauswege sind reproduzierbar geprüft.** Wohnung, Eltern-Haus ohne Speicher und Schwiegereltern-Haus mit Speicher laufen als getrennte, ausschließlich lesende Home-Assistant-Piloten durch Desktop- und Mobil-QA.
+- **Technische Hilfe bleibt klar begrenzt.** Eine eigene Vertrauensperson kann das richtige Haus ansehen und einrichten, sieht aber niemals den Eigentümer-Schalter für die aktive Steuerung.
+- **Die visuelle Hierarchie ist ruhiger.** ImageGen-Review und echte Browseraufnahmen führten zu einer flachen, immer sichtbaren Messübersicht statt eines weiteren versteckten Detailbereichs.
+- **Der QA-Werkzeugkasten ist sicherer.** Playwright wurde auf eine Version ohne den gemeldeten Browser-Download-Mangel aktualisiert; Go-, Race-, Abhängigkeits-, Rollen- und Datenschutzprüfungen bleiben grün.
+
 ## [0.48.2] - 2026-07-28
 
 ### Verbessert

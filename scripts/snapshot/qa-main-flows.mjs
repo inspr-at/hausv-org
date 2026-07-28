@@ -38,7 +38,7 @@ const executableCandidates = [
 ].filter(Boolean);
 const executablePath = executableCandidates.find(existsSync);
 const launchOptions = {
-  args: ['--host-resolver-rules=MAP hausv.test 127.0.0.1', '--no-proxy-server'],
+  args: ['--host-resolver-rules=MAP hausv.test 127.0.0.1, MAP *.hausv.test 127.0.0.1', '--no-proxy-server'],
 };
 if (executablePath) {
   launchOptions.executablePath = executablePath;
@@ -51,9 +51,15 @@ function fail(message) {
   throw new Error(message);
 }
 
-async function localLogin(context, email) {
+function tenantOrigin(hostname) {
+  const url = new URL(baseURL);
+  url.hostname = hostname;
+  return url.origin;
+}
+
+async function localLogin(context, email, origin = baseURL) {
   const page = await context.newPage();
-  await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+  await page.goto(`${origin}/`, { waitUntil: 'networkidle' });
   const emailDetails = page.locator('details:has(form[action="/auth/request"])');
   if (await emailDetails.count()) {
     await emailDetails.evaluate((element) => {
@@ -66,7 +72,11 @@ async function localLogin(context, email) {
   await devLink.waitFor({ state: 'visible', timeout: 10_000 });
   const href = await devLink.getAttribute('href');
   if (!href) fail(`Kein lokaler Anmeldelink für ${email}`);
-  await page.goto(new URL(href, baseURL).href, { waitUntil: 'networkidle' });
+  const target = new URL(href, origin);
+  const localOrigin = new URL(origin);
+  target.protocol = localOrigin.protocol;
+  target.port = localOrigin.port;
+  await page.goto(target.href, { waitUntil: 'networkidle' });
   if (!page.url().includes('/app')) fail(`Lokale Anmeldung für ${email} endete auf ${page.url()}`);
   return page;
 }
@@ -337,6 +347,134 @@ async function assertHomeOnboarding() {
   process.stdout.write('  ✓ Energie-Onboarding · Tastatur · Fortsetzen · Mobil\n');
 }
 
+async function importPilotReference(page) {
+  const measurementPanel = page.locator('details.energy-collapsible').filter({ hasText: 'Messwerte & Referenz' });
+  await measurementPanel.locator(':scope > summary').click();
+  await page.locator('input[name="smart_meter_file"]').setInputFiles({
+    name: 'smart-meter-pilot.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('timestamp;import_kwh\n2026-07-01T00:00:00+02:00;0,42\n2026-07-01T00:15:00+02:00;0,38\n'),
+  });
+  await page.getByRole('button', { name: 'Als Referenz importieren' }).click();
+  await page.waitForLoadState('networkidle');
+  if (!(await page.getByText('Smart-Meter-Datei übernommen.', { exact: false }).count())) {
+    fail('Pilot: Smart-Meter-Referenz wurde nicht übernommen');
+  }
+}
+
+async function assertPilotHome({
+  slug,
+  email,
+  householdName,
+  expectedAssets,
+  absentAssets = [],
+  expectedMeasured,
+  expectedCaptured,
+  inviteHelper = false,
+}) {
+  const origin = tenantOrigin(`${slug}.hausv.test`);
+  const context = await newContext({ width: 1440, height: 900 });
+  const page = await localLogin(context, email, origin);
+  await page.goto(`${origin}/app/zuhause/onboarding`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Verstanden, weiter' }).click();
+  await page.waitForURL(/step=2/);
+  await page.locator('input[name="household_name"]').fill(householdName);
+  await page.locator('select[name="home_type"]').selectOption('house');
+  await page.getByRole('button', { name: 'Weiter zu den Verbrauchern' }).click();
+  await page.waitForURL(/step=3/);
+  for (const kind of expectedAssets) {
+    if (!(await page.locator(`input[name="assets"][value="${kind}"]`).isChecked())) {
+      fail(`${householdName}: vorhandene Anlage ${kind} ist im sanften Onboarding nicht vorausgewählt`);
+    }
+  }
+  for (const kind of absentAssets) {
+    if (await page.locator(`input[name="assets"][value="${kind}"]`).isChecked()) {
+      fail(`${householdName}: nicht vorhandene Anlage ${kind} wurde vorausgewählt`);
+    }
+  }
+  await page.getByRole('button', { name: 'Weiter zu den Messwerten' }).click();
+  await page.waitForURL(/step=4/);
+  const candidateCount = await page.locator('.onboarding-recommended .onboarding-candidate').count();
+  if (candidateCount < 1 || candidateCount > 5) {
+    fail(`${householdName}: ${candidateCount} statt höchstens fünf ruhiger Messvorschläge`);
+  }
+  if (await page.locator('.onboarding-recommended code').count()) {
+    fail(`${householdName}: technische Sensor-IDs stehen in der normalen Empfehlung`);
+  }
+  if ((await page.getByText('Nur lesen', { exact: true }).count()) < candidateCount) {
+    fail(`${householdName}: Read-only-Zusage fehlt an Messvorschlägen`);
+  }
+  await page.getByRole('button', { name: /Messwerte übernehmen/ }).click();
+  await page.waitForURL(/step=5/);
+  if (!(await page.getByText('Drei Jahre voller Produktumfang kostenlos', { exact: true }).count()) ||
+      !(await page.getByText('1 € pro Monat', { exact: false }).count())) {
+    fail(`${householdName}: transparentes Drei-Jahres-/12-Euro-Modell fehlt`);
+  }
+  await page.getByRole('button', { name: 'Mein Zuhause öffnen' }).click();
+  await page.waitForURL(/\/app\/energie/);
+  if ((await page.locator('.energy-mode-strip strong').first().innerText()).trim() !== 'Nur beobachten') {
+    fail(`${householdName}: startet nicht sicher im Beobachtungsmodus`);
+  }
+  const coverage = page.locator('.energy-coverage');
+  for (const label of expectedMeasured) {
+    const row = coverage.locator('.energy-coverage-row').filter({ hasText: label });
+    if (!(await row.locator('.energy-coverage-state.good').getByText('Gemessen', { exact: false }).count())) {
+      fail(`${householdName}: ${label} wird trotz Messwert nicht als gemessen erklärt`);
+    }
+  }
+  for (const label of expectedCaptured) {
+    const row = coverage.locator('.energy-coverage-row').filter({ hasText: label });
+    if (!(await row.locator('.energy-coverage-state.open').getByText('Nur erfasst', { exact: false }).count())) {
+      fail(`${householdName}: Messlücke bei ${label} ist nicht verständlich sichtbar`);
+    }
+  }
+  for (const label of absentAssets.map((kind) => ({
+    battery: 'Batteriespeicher',
+    pv: 'PV-Anlage',
+    ev: 'E-Auto',
+  })[kind]).filter(Boolean)) {
+    if (await coverage.locator('.energy-coverage-row').filter({ hasText: label }).count()) {
+      fail(`${householdName}: nicht vorhandene Anlage ${label} steht in der Messabdeckung`);
+    }
+  }
+
+  await importPilotReference(page);
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, `energy-pilot-${slug}.png`),
+      fullPage: true,
+    });
+  }
+
+  if (inviteHelper) {
+    const caretakerPanel = page.locator('details.energy-collapsible').filter({ hasText: 'Technische Betreuung' });
+    await caretakerPanel.locator(':scope > summary').click();
+    const invitation = caretakerPanel.locator('details.energy-compact-create').filter({ hasText: 'Technische Vertrauensperson einladen' });
+    await invitation.locator('summary').click();
+    await invitation.locator('input[name="first_name"]').fill('Sanfte');
+    await invitation.locator('input[name="last_name"]').fill('Hilfe');
+    await invitation.locator('input[name="email"]').fill('inlaws-helper@example.com');
+    await invitation.locator('input[value="configure"]').check();
+    await invitation.getByRole('button', { name: 'Hausbezogen einladen' }).click();
+    await page.waitForLoadState('networkidle');
+    const helperContext = await newContext({ width: 390, height: 844 });
+    const helper = await localLogin(helperContext, 'inlaws-helper@example.com', origin);
+    const response = await helper.goto(`${origin}/app/energie`, { waitUntil: 'networkidle' });
+    if (!response || response.status() !== 200 ||
+        !(await helper.getByText('Nur beobachten', { exact: true }).count())) {
+      fail(`${householdName}: technische Hilfe erreicht das Haus nicht`);
+    }
+    if (await helper.getByText('Steuerung bewusst freigeben', { exact: true }).count()) {
+      fail(`${householdName}: technische Hilfe sieht den Eigentümer-Schalter`);
+    }
+    await helperContext.close();
+  }
+
+  await context.close();
+  process.stdout.write(`  ✓ Pilot ${householdName} · getrennt · read-only · Messlücken\n`);
+}
+
 async function assertPage(page, persona, route, viewportName) {
   const response = await page.goto(`${baseURL}${route.path}`, { waitUntil: 'networkidle' });
   if (!response || response.status() !== 200) {
@@ -531,6 +669,24 @@ try {
 
   if (process.env.HV_QA_LANDING_ONLY !== 'true') {
     await assertHomeOnboarding();
+    await assertPilotHome({
+      slug: 'eltern',
+      email: 'parents-owner@example.com',
+      householdName: 'Haus Eltern',
+      expectedAssets: ['pv', 'ev', 'hot-water', 'heat-pump'],
+      absentAssets: ['battery'],
+      expectedMeasured: ['Hausanschluss', 'PV-Anlage'],
+      expectedCaptured: ['E-Auto', 'Warmwasser', 'Wärmepumpe'],
+    });
+    await assertPilotHome({
+      slug: 'schwiegereltern',
+      email: 'inlaws-owner@example.com',
+      householdName: 'Haus Schwiegereltern',
+      expectedAssets: ['pv', 'battery', 'ev'],
+      expectedMeasured: ['Hausanschluss', 'PV-Anlage', 'Batteriespeicher'],
+      expectedCaptured: ['E-Auto'],
+      inviteHelper: true,
+    });
     await createIssue('resident@example.com', 'QA Bewohneranliegen');
     await createIssue('owner@example.com', 'QA Eigentümeranliegen');
     await seedManagedContent();

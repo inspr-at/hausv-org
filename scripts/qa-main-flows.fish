@@ -65,7 +65,7 @@ set -g HAUSV_QA_HA_PID $last_pid
 
 set -l ha_ready 0
 for i in (seq 40)
-    if curl -sf "http://127.0.0.1:$ha_port/api/states" >/dev/null 2>&1
+    if curl -sf "http://127.0.0.1:$ha_port/jhw22/api/states" >/dev/null 2>&1
         set ha_ready 1
         break
     end

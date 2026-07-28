@@ -17,8 +17,7 @@ keinen Steuerungsmodus setzen: jedes Profil beginnt immer mit
     "tenant_slug": "jhw22",
     "household_name": "Wohnung Barta",
     "home_type": "apartment",
-    "assets": ["ev", "wallbox"],
-    "complete": true
+    "assets": ["ev", "wallbox"]
   },
   {
     "tenant_slug": "eltern",
@@ -75,6 +74,13 @@ erst nach verständlicher Bestätigung als Messpunkte gespeichert. Schalter und
 Leuchten werden nicht vorgeschlagen und Discovery erteilt keinerlei
 Steuerrecht.
 
+Ein bestätigter Messpunkt kann optional mit genau einer Anlage desselben Hauses
+verbunden sein. PV- und Batteriesensoren werden nur dann automatisch
+zugeordnet, wenn im Haus genau eine passende Anlage existiert. Alle anderen
+Zuordnungen bleiben eine bewusste Auswahl. Im Cockpit steht anschließend in
+Alltagssprache, welche Bereiche tatsächlich gemessen und welche lediglich
+erfasst sind; technische Entity-IDs bleiben in eingeklappten Einrichtungsdetails.
+
 ## Smart-Meter-Referenz
 
 Unterstützt wird UTF-8-CSV mit Komma oder Semikolon:
@@ -101,6 +107,8 @@ timestamp;import_kwh
    führen zu Nicht-Eingreifen.
 
 Der prominent sichtbare Hausschalter öffnet zunächst nur `shadow`. Zur
-Freigabe muss ein Eigentümer, Haus-Admin oder eine ausdrücklich mit
-`energy-control` berechtigte Vertrauensperson die Folgen bestätigen und
-`AKTIVIEREN` eingeben. Die Rückkehr zu `Nur beobachten` wirkt unmittelbar.
+Freigabe muss ein Eigentümer oder die Hausadministration die Folgen bestätigen
+und `AKTIVIEREN` eingeben. Technische Vertrauenspersonen dürfen beim Einrichten
+helfen, können diesen Schalter aber niemals betätigen – auch nicht mit einem
+historisch noch gespeicherten `energy-control`-Recht. Die Rückkehr zu
+`Nur beobachten` wirkt unmittelbar.

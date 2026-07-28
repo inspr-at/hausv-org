@@ -44,6 +44,13 @@ type energyMetricView struct {
 	Tone   string
 }
 
+type energyCoverageView struct {
+	Label  string
+	Status string
+	Detail string
+	Tone   string
+}
+
 type energyRoadmapStep struct {
 	Number  int
 	Title   string
@@ -237,6 +244,7 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		"Step":                 step,
 		"Progress":             step * 20,
 		"AssetOptions":         buildEnergyAssetOptions(assets),
+		"MappingAssetOptions":  buildEnergyMappingAssetOptions(assets),
 		"Candidates":           discovery.Recommended,
 		"HasCandidates":        len(discovery.Recommended) > 0,
 		"RecommendedCount":     len(discovery.Recommended),
@@ -293,7 +301,7 @@ func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac au
 			}
 		}
 		if strings.TrimSpace(r.FormValue("manual_entity_id")) != "" {
-			if err := a.saveManualEnergyMapping(ac.tenant.Slug, r.FormValue("manual_entity_id"), r.FormValue("manual_metric"), r.FormValue("manual_name"), r.FormValue("manual_unit")); err != nil {
+			if err := a.saveManualEnergyMapping(ac.tenant.Slug, r.FormValue("manual_entity_id"), r.FormValue("manual_metric"), r.FormValue("manual_name"), r.FormValue("manual_unit"), r.FormValue("manual_asset_id")); err != nil {
 				http.Error(w, "Die manuelle Zuordnung ist ungültig.", http.StatusBadRequest)
 				return
 			}
@@ -357,6 +365,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
 	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
 	metrics, sourceStatus := a.currentEnergyMetrics(r.Context(), ac.tenant, mappings, profile)
+	coverage, coverageSummary := buildEnergyCoverageViews(assets, mappings)
 	imports, _ := a.energyStore.ListImports(ac.tenant.Slug)
 	importViews := make([]energyImportView, 0, len(imports))
 	for _, item := range imports {
@@ -403,6 +412,8 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"HasMappings":             len(mappings) > 0,
 		"Metrics":                 metrics,
 		"HasMetrics":              len(metrics) > 0,
+		"Coverage":                coverage,
+		"CoverageSummary":         coverageSummary,
 		"SourceStatus":            sourceStatus,
 		"Roadmap":                 energyRoadmap(profile, len(assets), len(mappings)),
 		"CanManageEnergy":         a.canManageEnergy(ac),
@@ -1612,6 +1623,7 @@ func (a *app) saveSelectedEnergyMappings(ctx context.Context, tenant tenantConfi
 		selectedSet[strings.ToLower(strings.TrimSpace(entityID))] = struct{}{}
 	}
 	existing, _ := a.energyStore.ListMappings(tenant.Slug)
+	assets, _ := a.energyStore.ListAssets(tenant.Slug)
 	existingByEntity := map[string]energy.EntityMapping{}
 	for _, mapping := range existing {
 		existingByEntity[strings.ToLower(mapping.EntityID)] = mapping
@@ -1638,6 +1650,7 @@ func (a *app) saveSelectedEnergyMappings(ctx context.Context, tenant tenantConfi
 		if err := a.energyStore.UpsertMapping(energy.EntityMapping{
 			TenantSlug:  tenant.Slug,
 			EntityID:    candidate.EntityID,
+			AssetID:     inferredEnergyAssetID(candidate.Metric, assets),
 			Metric:      candidate.Metric,
 			DisplayName: candidate.DisplayName,
 			Unit:        candidate.Unit,
@@ -1651,7 +1664,7 @@ func (a *app) saveSelectedEnergyMappings(ctx context.Context, tenant tenantConfi
 	return nil
 }
 
-func (a *app) saveManualEnergyMapping(tenantSlug, entityID, metric, displayName, unit string) error {
+func (a *app) saveManualEnergyMapping(tenantSlug, entityID, metric, displayName, unit, assetID string) error {
 	entityID = strings.ToLower(strings.TrimSpace(entityID))
 	metric = strings.TrimSpace(metric)
 	if !strings.HasPrefix(entityID, "sensor.") {
@@ -1670,11 +1683,35 @@ func (a *app) saveManualEnergyMapping(tenantSlug, entityID, metric, displayName,
 	return a.energyStore.UpsertMapping(energy.EntityMapping{
 		TenantSlug:  tenantSlug,
 		EntityID:    entityID,
+		AssetID:     strings.TrimSpace(assetID),
 		Metric:      metric,
 		DisplayName: displayName,
 		Unit:        cleanEnergyText(unit, 24),
 		Confirmed:   true,
 	})
+}
+
+func inferredEnergyAssetID(metric string, assets []energy.Asset) string {
+	kind := ""
+	switch metric {
+	case energy.MetricPVPower:
+		kind = "pv"
+	case energy.MetricBatteryPower, energy.MetricBatterySOC:
+		kind = "battery"
+	default:
+		return ""
+	}
+	match := ""
+	for _, asset := range assets {
+		if asset.Kind != kind {
+			continue
+		}
+		if match != "" {
+			return ""
+		}
+		match = asset.ID
+	}
+	return match
 }
 
 func discoverEnergyCandidates(ctx context.Context, cfg homeassistant.Config, mappings []energy.EntityMapping) (energyDiscoveryView, error) {
@@ -1888,6 +1925,72 @@ func buildEnergyAssetOptions(assets []energy.Asset) []energyAssetOption {
 		out = append(out, energyAssetOption{Kind: kind, Label: energy.AssetKindLabel(kind), Checked: selected[kind]})
 	}
 	return out
+}
+
+func buildEnergyMappingAssetOptions(assets []energy.Asset) []energyOption {
+	out := make([]energyOption, 0, len(assets))
+	for _, asset := range assets {
+		out = append(out, energyOption{Value: asset.ID, Label: asset.Name})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return strings.ToLower(out[i].Label) < strings.ToLower(out[j].Label)
+	})
+	return out
+}
+
+func buildEnergyCoverageViews(assets []energy.Asset, mappings []energy.EntityMapping) ([]energyCoverageView, string) {
+	confirmedMetrics := map[string]bool{}
+	confirmedAssets := map[string]bool{}
+	for _, mapping := range mappings {
+		if !mapping.Confirmed {
+			continue
+		}
+		confirmedMetrics[mapping.Metric] = true
+		if mapping.AssetID != "" {
+			confirmedAssets[mapping.AssetID] = true
+		}
+	}
+	houseMeasured := confirmedMetrics[energy.MetricGridImportPower] || confirmedMetrics[energy.MetricGridImportEnergy] ||
+		confirmedMetrics[energy.MetricLoadPower]
+	houseStatus := "Noch offen"
+	houseDetail := "Noch kein hausweiter Referenzwert bestätigt."
+	houseTone := "open"
+	if houseMeasured {
+		houseStatus = "Gemessen"
+		houseDetail = "Hausweiter Bezug oder Verbrauch ist bestätigt."
+		houseTone = "good"
+	}
+	out := []energyCoverageView{{
+		Label:  "Hausanschluss",
+		Status: houseStatus,
+		Detail: houseDetail,
+		Tone:   houseTone,
+	}}
+	measured := 0
+	if houseMeasured {
+		measured++
+	}
+	for _, asset := range assets {
+		hasMeasurement := confirmedAssets[asset.ID]
+		if hasMeasurement {
+			measured++
+		}
+		status := "Nur erfasst"
+		detail := "Noch kein separater Messwert bestätigt."
+		tone := "open"
+		if hasMeasurement {
+			status = "Gemessen"
+			detail = "Mindestens ein Messwert ist dieser Anlage zugeordnet."
+			tone = "good"
+		}
+		out = append(out, energyCoverageView{
+			Label:  asset.Name,
+			Status: status,
+			Detail: detail,
+			Tone:   tone,
+		})
+	}
+	return out, fmt.Sprintf("%d von %d Bereichen gemessen", measured, len(out))
 }
 
 func energyRoadmap(profile energy.HomeProfile, assetCount, mappingCount int) []energyRoadmapStep {

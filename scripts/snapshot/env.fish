@@ -16,11 +16,11 @@ set -gx ROOT_DOMAIN hausv.test
 set -gx DEFAULT_TENANT jhw22
 set -gx LOCAL_DEV_LOGIN true
 
-set -gx WEG_TENANTS_JSON '[{"slug":"jhw22","name":"WEG Portal","address":"Janischhofweg 22","host":"localhost"}]'
-set -gx WEG_USERS_JSON '[{"email":"admin@example.com","first_name":"Ada","last_name":"Admin","role":"Admin","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"verwalter@example.com","first_name":"Vera","last_name":"Verwalter","role":"Verwalter","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"owner@example.com","first_name":"Otto","last_name":"Eigentuemer","role":"Eigentümer","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"resident@example.com","first_name":"Rita","last_name":"Bewohnerin","role":"Bewohner","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]}]'
-set -gx HOME_PROFILE_SEEDS_JSON '[{"tenant_slug":"jhw22","household_name":"QA Zuhause","home_type":"apartment","assets":["pv","ev","wallbox"]}]'
+set -gx WEG_TENANTS_JSON '[{"slug":"jhw22","name":"JHW22-Portal","address":"Janischhofweg 22","host":"localhost"},{"slug":"eltern","name":"Haus Eltern","address":"Pilot Eltern","host":"eltern.hausv.test"},{"slug":"schwiegereltern","name":"Haus Schwiegereltern","address":"Pilot Schwiegereltern","host":"schwiegereltern.hausv.test"}]'
+set -gx WEG_USERS_JSON '[{"email":"admin@example.com","first_name":"Ada","last_name":"Admin","role":"Admin","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"verwalter@example.com","first_name":"Vera","last_name":"Verwalter","role":"Verwalter","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"owner@example.com","first_name":"Otto","last_name":"Eigentuemer","role":"Eigentümer","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"resident@example.com","first_name":"Rita","last_name":"Bewohnerin","role":"Bewohner","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"parents-owner@example.com","first_name":"Erika","last_name":"Eigentuemerin","role":"Eigentümer","status":"Aktiv","tenants":["eltern"],"auth_methods":["email"]},{"email":"inlaws-owner@example.com","first_name":"Ilse","last_name":"Eigentuemerin","role":"Eigentümer","status":"Aktiv","tenants":["schwiegereltern"],"auth_methods":["email"]}]'
+set -gx HOME_PROFILE_SEEDS_JSON '[{"tenant_slug":"jhw22","household_name":"QA Zuhause","home_type":"apartment","assets":["pv","ev","wallbox"]},{"tenant_slug":"eltern","household_name":"Haus Eltern","home_type":"house","assets":["pv","ev","hot-water","heat-pump"]},{"tenant_slug":"schwiegereltern","household_name":"Haus Schwiegereltern","home_type":"house","assets":["pv","battery","ev"]}]'
 set -gx ADMIN_EMAILS admin@example.com
-set -gx INVITE_EMAILS admin@example.com,verwalter@example.com,owner@example.com,resident@example.com
+set -gx INVITE_EMAILS admin@example.com,verwalter@example.com,owner@example.com,resident@example.com,parents-owner@example.com,inlaws-owner@example.com
 
 # Fixed session key so cookies from the baseline run stay valid for the
 # candidate run — otherwise every page would just be the login screen.
@@ -28,8 +28,10 @@ set -gx SESSION_KEY snapshot-harness-fixed-key-not-a-secret-000
 
 # Deterministic, local-only Home Assistant fixture. It deliberately includes
 # device noise so Playwright proves that onboarding stays calm and read-only.
-set -gx HA_BASE_URL "http://127.0.0.1:$HV_QA_HA_PORT"
-set -gx HA_TOKEN "qa-read-only-fixture"
+set -gx HV_QA_JHW_HA_TOKEN "qa-read-only-jhw-fixture"
+set -gx HV_QA_PARENTS_HA_TOKEN "qa-read-only-parents-fixture"
+set -gx HV_QA_INLAWS_HA_TOKEN "qa-read-only-inlaws-fixture"
+set -gx HA_CONNECTORS_JSON "[{\"tenant_slug\":\"jhw22\",\"base_url\":\"http://127.0.0.1:$HV_QA_HA_PORT/jhw22\",\"token_env\":\"HV_QA_JHW_HA_TOKEN\"},{\"tenant_slug\":\"eltern\",\"base_url\":\"http://127.0.0.1:$HV_QA_HA_PORT/eltern\",\"token_env\":\"HV_QA_PARENTS_HA_TOKEN\"},{\"tenant_slug\":\"schwiegereltern\",\"base_url\":\"http://127.0.0.1:$HV_QA_HA_PORT/schwiegereltern\",\"token_env\":\"HV_QA_INLAWS_HA_TOKEN\"}]"
 set -gx SMTP_HOST ""
 
 # All state under one dir, seeded identically per run.

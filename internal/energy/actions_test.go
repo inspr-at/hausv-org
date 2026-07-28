@@ -40,6 +40,25 @@ func TestEnergyActionStorageParityAndHistory(t *testing.T) {
 			if got, _ := store.ListAssets("home-a"); len(got) != 1 || got[0].ID == energy.StableAssetID("home-b", "pv") {
 				t.Fatalf("home-a assets = %+v", got)
 			}
+			mapping := energy.EntityMapping{
+				ID: "mapping-a", TenantSlug: "home-a", EntityID: "sensor.pv_power",
+				AssetID: energy.StableAssetID("home-a", "pv"), Metric: energy.MetricPVPower,
+				DisplayName: "PV-Leistung", Unit: "kW", Confirmed: true,
+			}
+			if err := store.UpsertMapping(mapping); err != nil {
+				t.Fatalf("save asset mapping: %v", err)
+			}
+			foreign := mapping
+			foreign.ID = "mapping-foreign"
+			foreign.EntityID = "sensor.foreign_pv_power"
+			foreign.AssetID = energy.StableAssetID("home-b", "pv")
+			if err := store.UpsertMapping(foreign); err == nil {
+				t.Fatal("cross-tenant asset mapping was accepted")
+			}
+			if mappings, err := store.ListMappings("home-a"); err != nil || len(mappings) != 1 ||
+				mappings[0].AssetID != energy.StableAssetID("home-a", "pv") {
+				t.Fatalf("asset mappings = %+v err=%v", mappings, err)
+			}
 
 			completed := now.Add(-24 * time.Hour)
 			plan := energy.MaintenancePlan{
@@ -104,6 +123,9 @@ func TestEnergyActionStorageParityAndHistory(t *testing.T) {
 			}
 			if plans, err := store.ListMaintenance("home-a"); err != nil || len(plans) != 0 {
 				t.Fatalf("maintenance should cascade with asset: %+v err=%v", plans, err)
+			}
+			if mappings, err := store.ListMappings("home-a"); err != nil || len(mappings) != 1 || mappings[0].AssetID != "" {
+				t.Fatalf("deleting asset should keep measurement and clear link: %+v err=%v", mappings, err)
 			}
 			if assets, _ := store.ListAssets("home-b"); len(assets) != 1 {
 				t.Fatalf("home-b asset affected by home-a delete: %+v", assets)

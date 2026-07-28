@@ -1,8 +1,8 @@
 # Playwright-QA der Hauptwege
 
 Der lokale QA-Lauf startet das aktuelle Arbeitsverzeichnis mit ausschließlich
-erfundenen Daten und vier Rollen. Er sendet keine E-Mails und greift nicht auf
-Produktivdaten zu.
+erfundenen Daten, mehreren Rollen und drei strikt getrennten Hausprofilen. Er
+sendet keine E-Mails und greift nicht auf Produktivdaten zu.
 
 ```fish
 scripts/qa-main-flows.fish
@@ -17,6 +17,12 @@ Der Lauf:
 - prüft das private Haus-Cockpit für Bewohner und Eigentümer, einschließlich
   dauerhaft sichtbarem Beobachtungsmodus, bewusstem Shadow-Testlauf,
   Sofort-Rückkehr und idempotentem Smart-Meter-Import;
+- spielt die Eltern-Konstellation mit PV, E-Auto, Warmwasser-Wärmepumpe und
+  bewusst fehlendem Speicher sowie die Schwiegereltern-Konstellation mit PV,
+  Speicher, E-Auto und eigener technischer Vertrauensperson durch;
+- prüft an drei simulierten, ausschließlich lesenden Home-Assistant-Instanzen,
+  dass Messwerte hausbezogen bleiben, höchstens fünf ruhige Vorschläge
+  erscheinen und Messlücken ohne Entity-IDs erklärt werden;
 - öffnet die Hauptwege auf 1440 × 900 und 390 × 844;
 - prüft Überschriften, zentrale Aktionen, Rollenverbote und horizontalen
   Überlauf;
@@ -27,6 +33,25 @@ Voraussetzungen sind Go, Node.js, npm und ein lokales Chromium oder Google
 Chrome. Falls die Playwright-Abhängigkeiten fehlen, installiert der Runner die
 in `scripts/snapshot/package-lock.json` festgeschriebene Version ohne einen
 Browser herunterzuladen.
+
+Die automatisierte UX-Selbstprüfung orientiert sich an WCAG 2.2: sichtbarer
+Tastaturfokus, sprechende Beschriftungen, kein horizontaler Überlauf und für
+primäre mobile Bedienelemente mindestens 44 Pixel Höhe (bewusst strenger als
+das AA-Minimum von 24 × 24 CSS-Pixeln). Sie ersetzt keine spätere Beobachtung
+mit realen Bewohnern; diese bleibt in PPM als eigene Pilotabnahme sichtbar.
+
+Die Autorisierungsprüfung folgt dem serverseitigen Fail-closed-Prinzip: Ein
+ausgeblendeter Schalter allein ist kein Schutz. Playwright und Go-Tests senden
+deshalb auch direkte unzulässige Requests und prüfen fremde Häuser. Logs werden
+anschließend strukturell validiert und auf versehentlich ausgegebene
+Zugangsdaten beziehungsweise personenbezogene Inhalte stichprobenartig geprüft.
+
+Referenzen:
+
+- <https://www.w3.org/TR/WCAG22/>
+- <https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html>
+- <https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html>
+- <https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck>
 
 Für einen abweichenden Port:
 

@@ -116,6 +116,13 @@ func (s *MemoryStore) DeleteAsset(tenantSlug, id string) (bool, error) {
 		return false, nil
 	}
 	delete(s.assets, key)
+	for mappingKey, mapping := range s.mappings {
+		if mapping.TenantSlug == tenantSlug && mapping.AssetID == id {
+			mapping.AssetID = ""
+			mapping.UpdatedAt = time.Now().UTC()
+			s.mappings[mappingKey] = mapping
+		}
+	}
 	for maintenanceKey, plan := range s.maintenance {
 		if plan.TenantSlug == tenantSlug && plan.AssetID == id {
 			delete(s.maintenance, maintenanceKey)
@@ -144,6 +151,11 @@ func (s *MemoryStore) UpsertMapping(mapping EntityMapping) error {
 	mapping = NormalizeMapping(mapping, time.Now())
 	if mapping.TenantSlug == "" || mapping.EntityID == "" {
 		return fmt.Errorf("energy: tenant and entity required")
+	}
+	if mapping.AssetID != "" {
+		if _, ok := s.assets[mapping.TenantSlug+"\x00"+mapping.AssetID]; !ok {
+			return fmt.Errorf("energy: mapping asset must belong to tenant")
+		}
 	}
 	// Entity id is the natural per-house key; rediscovery must update instead of
 	// multiplying suggestions.
@@ -528,16 +540,30 @@ func (s *SQLStore) UpsertAsset(asset Asset) error {
 }
 
 func (s *SQLStore) DeleteAsset(tenantSlug, id string) (bool, error) {
-	result, err := s.db.Exec(`DELETE FROM energy_assets WHERE tenant_slug=? AND id=?`, normalizeSlug(tenantSlug), strings.TrimSpace(id))
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`UPDATE energy_entity_mappings SET asset_id='',updated_at=? WHERE tenant_slug=? AND asset_id=?`,
+		time.Now().UTC().Format(time.RFC3339Nano), tenantSlug, id); err != nil {
+		return false, err
+	}
+	result, err := tx.Exec(`DELETE FROM energy_assets WHERE tenant_slug=? AND id=?`, tenantSlug, id)
 	if err != nil {
 		return false, err
 	}
 	n, _ := result.RowsAffected()
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
 	return n > 0, nil
 }
 
 func (s *SQLStore) ListMappings(tenantSlug string) ([]EntityMapping, error) {
-	rows, err := s.db.Query(`SELECT id,tenant_slug,entity_id,metric,display_name,unit,device_class,confirmed,last_seen_at,created_at,updated_at
+	rows, err := s.db.Query(`SELECT id,tenant_slug,entity_id,asset_id,metric,display_name,unit,device_class,confirmed,last_seen_at,created_at,updated_at
 		FROM energy_entity_mappings WHERE tenant_slug=? ORDER BY confirmed DESC,metric,display_name,entity_id`, normalizeSlug(tenantSlug))
 	if err != nil {
 		return nil, err
@@ -549,7 +575,7 @@ func (s *SQLStore) ListMappings(tenantSlug string) ([]EntityMapping, error) {
 		var confirmed int
 		var lastSeen sql.NullString
 		var created, updated string
-		if err := rows.Scan(&item.ID, &item.TenantSlug, &item.EntityID, &item.Metric, &item.DisplayName, &item.Unit, &item.DeviceClass, &confirmed, &lastSeen, &created, &updated); err != nil {
+		if err := rows.Scan(&item.ID, &item.TenantSlug, &item.EntityID, &item.AssetID, &item.Metric, &item.DisplayName, &item.Unit, &item.DeviceClass, &confirmed, &lastSeen, &created, &updated); err != nil {
 			return nil, err
 		}
 		item.Confirmed = confirmed == 1
@@ -568,18 +594,27 @@ func (s *SQLStore) UpsertMapping(mapping EntityMapping) error {
 		return err
 	}
 	mapping = NormalizeMapping(mapping, time.Now())
+	if mapping.AssetID != "" {
+		var exists int
+		if err := s.db.QueryRow(`SELECT COUNT(*) FROM energy_assets WHERE tenant_slug=? AND id=?`, mapping.TenantSlug, mapping.AssetID).Scan(&exists); err != nil {
+			return err
+		}
+		if exists != 1 {
+			return fmt.Errorf("energy: mapping asset must belong to tenant")
+		}
+	}
 	var seen any
 	if mapping.LastSeenAt != nil {
 		seen = mapping.LastSeenAt.UTC().Format(time.RFC3339Nano)
 	}
 	_, err := s.db.Exec(`INSERT INTO energy_entity_mappings
-		(id,tenant_slug,entity_id,metric,display_name,unit,device_class,confirmed,last_seen_at,created_at,updated_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?)
+		(id,tenant_slug,entity_id,asset_id,metric,display_name,unit,device_class,confirmed,last_seen_at,created_at,updated_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(tenant_slug,entity_id) DO UPDATE SET
-		metric=excluded.metric,display_name=excluded.display_name,unit=excluded.unit,
+		asset_id=excluded.asset_id,metric=excluded.metric,display_name=excluded.display_name,unit=excluded.unit,
 		device_class=excluded.device_class,confirmed=excluded.confirmed,last_seen_at=excluded.last_seen_at,
 		updated_at=excluded.updated_at`,
-		mapping.ID, mapping.TenantSlug, mapping.EntityID, mapping.Metric, mapping.DisplayName,
+		mapping.ID, mapping.TenantSlug, mapping.EntityID, mapping.AssetID, mapping.Metric, mapping.DisplayName,
 		mapping.Unit, mapping.DeviceClass, boolInt(mapping.Confirmed), seen,
 		mapping.CreatedAt.Format(time.RFC3339Nano), mapping.UpdatedAt.Format(time.RFC3339Nano))
 	return err

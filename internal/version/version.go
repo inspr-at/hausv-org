@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.49.0",
+			Date:     "28. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Das Cockpit zeigt jetzt sofort, welche Anlagen wirklich gemessen und welche erst erfasst sind.",
+			Intro:    "Messpunkte bleiben hausbezogen, lesend und verständlich. Die drei privaten Pilotkonstellationen sind getrennt auf Desktop und Mobil durchgespielt.",
+			Items: []NoteItem{
+				{Label: "Messung zuordnen", Text: "PV- und Speicherwerte finden bei eindeutigem Bestand die richtige Anlage; manuelle Zuordnungen bleiben bewusst steuerbar."},
+				{Label: "Lücken überblicken", Text: "Eine flache Übersicht unterscheidet gemessene Bereiche von lediglich erfassten Verbrauchern, ohne Sensor-IDs zu zeigen."},
+				{Label: "Piloten absichern", Text: "Wohnung, Eltern-Haus ohne Speicher und Schwiegereltern-Haus mit Speicher bleiben getrennt und starten ausschließlich mit „Nur beobachten“."},
+				{Label: "Technikhilfe begrenzen", Text: "Eigene Betreuungskonten dürfen einrichten, erhalten aber niemals den Eigentümer-Schalter für die aktive Steuerung."},
+			},
+		},
+		{
 			Version:  "0.48.2",
 			Date:     "28. Juli 2026",
 			Kind:     "Sicherheitsmodus",

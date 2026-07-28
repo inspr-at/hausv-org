@@ -635,7 +635,7 @@ func TestManualEnergyMappingIsValidatedAndNotOverwrittenByDiscovery(t *testing.T
 		Tenants:     []string{"jhw22"},
 		AuthMethods: defaultAuthMethods(),
 	})
-	if err := a.saveManualEnergyMapping("jhw22", "sensor.grid_power", energy.MetricLoadPower, "Hausverbrauch korrigiert", "kW"); err != nil {
+	if err := a.saveManualEnergyMapping("jhw22", "sensor.grid_power", energy.MetricLoadPower, "Hausverbrauch korrigiert", "kW", ""); err != nil {
 		t.Fatalf("saveManualEnergyMapping: %v", err)
 	}
 	tenant := a.tenants["jhw22"]
@@ -650,8 +650,87 @@ func TestManualEnergyMappingIsValidatedAndNotOverwrittenByDiscovery(t *testing.T
 	if mappings[0].Metric != energy.MetricLoadPower || mappings[0].DisplayName != "Hausverbrauch korrigiert" {
 		t.Fatalf("confirmed manual mapping overwritten: %+v", mappings[0])
 	}
-	if err := a.saveManualEnergyMapping("jhw22", "switch.wallbox", energy.MetricLoadPower, "Nope", "kW"); err == nil {
+	if err := a.saveManualEnergyMapping("jhw22", "switch.wallbox", energy.MetricLoadPower, "Nope", "kW", ""); err == nil {
 		t.Fatal("switch entity should be rejected")
+	}
+}
+
+func TestEnergyMappingsLinkOnlySameHouseAssetsAndExplainCoverage(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[
+			{"entity_id":"sensor.grid_import_power","state":"2.4","attributes":{"friendly_name":"Netzbezug","device_class":"power","unit_of_measurement":"kW"},"last_updated":"2026-07-28T10:00:00Z"},
+			{"entity_id":"sensor.pv_current_power","state":"3.1","attributes":{"friendly_name":"PV Leistung","device_class":"power","unit_of_measurement":"kW"},"last_updated":"2026-07-28T10:00:00Z"}
+		]`))
+	}))
+	t.Cleanup(server.Close)
+	a := newTestPortalApp(t, userProfile{
+		Email:       "owner@example.com",
+		Role:        roleOwner,
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	})
+	for _, kind := range []string{"pv", "ev", "heat-pump"} {
+		if err := a.energyStore.UpsertAsset(energy.Asset{
+			ID:          energy.StableAssetID("jhw22", kind),
+			TenantSlug:  "jhw22",
+			Kind:        kind,
+			Name:        energy.AssetKindLabel(kind),
+			Confirmed:   true,
+			Flexibility: energy.FlexUnknown,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := a.energyStore.UpsertAsset(energy.Asset{
+		ID:         energy.StableAssetID("other-home", "pv"),
+		TenantSlug: "other-home",
+		Kind:       "pv",
+		Name:       "Fremde PV",
+		Confirmed:  true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.saveManualEnergyMapping(
+		"jhw22", "sensor.foreign", energy.MetricPVPower, "Fremd", "kW",
+		energy.StableAssetID("other-home", "pv"),
+	); err == nil {
+		t.Fatal("manual mapping accepted an asset from another house")
+	}
+
+	tenant := a.tenants["jhw22"]
+	tenant.HA = homeassistant.NewConfig(server.URL, "fixture", "", "", "")
+	if err := a.saveSelectedEnergyMappings(t.Context(), tenant, []string{
+		"sensor.grid_import_power",
+		"sensor.pv_current_power",
+	}); err != nil {
+		t.Fatalf("saveSelectedEnergyMappings: %v", err)
+	}
+	mappings, err := a.energyStore.ListMappings("jhw22")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pvMapping energy.EntityMapping
+	for _, mapping := range mappings {
+		if mapping.Metric == energy.MetricPVPower {
+			pvMapping = mapping
+		}
+	}
+	if pvMapping.AssetID != energy.StableAssetID("jhw22", "pv") {
+		t.Fatalf("automatic PV asset link = %+v", pvMapping)
+	}
+	assets, _ := a.energyStore.ListAssets("jhw22")
+	coverage, summary := buildEnergyCoverageViews(assets, mappings)
+	if summary != "2 von 4 Bereichen gemessen" {
+		t.Fatalf("coverage summary = %q, rows=%+v", summary, coverage)
+	}
+	status := map[string]string{}
+	for _, row := range coverage {
+		status[row.Label] = row.Status
+	}
+	if status["Hausanschluss"] != "Gemessen" || status["PV-Anlage"] != "Gemessen" ||
+		status["E-Auto"] != "Nur erfasst" || status["Wärmepumpe"] != "Nur erfasst" {
+		t.Fatalf("coverage = %+v", coverage)
 	}
 }
 
@@ -667,7 +746,7 @@ func TestEnergyOnboardingCanSkipConnectionWithoutDeletingMappings(t *testing.T) 
 	if err := a.energyStore.SaveProfile(profile); err != nil {
 		t.Fatal(err)
 	}
-	if err := a.saveManualEnergyMapping("jhw22", "sensor.grid_power", energy.MetricGridImportPower, "Bestehender Netzbezug", "kW"); err != nil {
+	if err := a.saveManualEnergyMapping("jhw22", "sensor.grid_power", energy.MetricGridImportPower, "Bestehender Netzbezug", "kW", ""); err != nil {
 		t.Fatal(err)
 	}
 	response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", url.Values{

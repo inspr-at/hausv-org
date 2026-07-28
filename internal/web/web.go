@@ -864,6 +864,15 @@ const PageTemplates = `
     .energy-quality strong { display: block; }
     .energy-quality p { margin-top: 3px; color: var(--muted); font-size: 13px; }
     .energy-quality small { color: #765f1d; font-weight: 750; }
+    .energy-coverage { margin-top: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; background: #fff; }
+    .energy-coverage-head { min-height: 50px; display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 16px; }
+    .energy-coverage-head span { color: var(--muted); font-size: 13px; font-weight: 750; }
+    .energy-coverage-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); border-top: 1px solid var(--line); }
+    .energy-coverage-row { display: grid; gap: 5px; min-height: 76px; align-content: center; padding: 12px 16px; border-right: 1px solid var(--line); }
+    .energy-coverage-row:last-child { border-right: 0; }
+    .energy-coverage-row strong { font-size: 13px; }
+    .energy-coverage-state { color: #765f1d; font-size: 12px; font-weight: 850; }
+    .energy-coverage-state.good { color: #2e6842; }
     .energy-scenario { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 18px; background: #fff; }
     .energy-scenario strong { display: block; font-size: 16px; }
     .energy-scenario p { margin-top: 5px; color: var(--muted); font-size: 13px; line-height: 1.45; }
@@ -2024,6 +2033,10 @@ const PageTemplates = `
 	      .onboarding-skip { margin-left: 0; }
 	      .energy-reference-grid { grid-template-columns: 1fr; }
 	      .energy-quality, .energy-scenario, .energy-tariff-grid { grid-template-columns: 1fr; }
+	      .energy-coverage-head { align-items: flex-start; flex-direction: column; gap: 2px; }
+	      .energy-coverage-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
+	      .energy-coverage-row { min-height: 70px; border-bottom: 1px solid var(--line); }
+	      .energy-coverage-row:nth-child(2n) { border-right: 0; }
 	      .energy-caretaker { grid-template-columns: 1fr 1fr; }
 	      .energy-caretaker > div, .energy-caretaker .button { grid-column: 1 / -1; }
 	      .energy-measure-control, .energy-measure-control > summary { width: 100%; }
@@ -6817,6 +6830,7 @@ const PageTemplates = `
               <label><span>Bedeutung</span><select name="manual_metric"><option value="grid-import-power">Netzbezug Leistung</option><option value="grid-import-energy">Netzbezug Energie</option><option value="grid-export-power">Netzeinspeisung</option><option value="pv-power">PV-Leistung</option><option value="battery-power">Batterie-Leistung</option><option value="battery-soc">Batterie-Ladestand</option><option value="load-power">Hausverbrauch</option></select></label>
               <label><span>Verständlicher Name</span><input type="text" name="manual_name" placeholder="Netzbezug gesamt"></label>
               <label><span>Einheit</span><input type="text" name="manual_unit" placeholder="W oder kW"></label>
+              <label><span>Gehört zu</span><select name="manual_asset_id"><option value="">Gesamtes Haus</option>{{range .MappingAssetOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select></label>
             </div></details>
             <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button>{{if .HasCandidates}}<button class="button ghost onboarding-skip" type="submit" name="action" value="skip-mappings">Ohne Verbindung starten</button><button class="button primary" type="submit" name="action" value="mappings">{{.RecommendedCount}} Messwerte übernehmen</button>{{else}}<button class="button primary" type="submit" name="action" value="skip-mappings">Ohne Verbindung starten</button>{{end}}</div>
           </form>
@@ -6882,6 +6896,7 @@ const PageTemplates = `
       <section class="energy-card">
         <header class="energy-card-head"><div><h2>Datenlage</h2><p>Keine scheinpräzisen Aussagen bei Lücken oder alten Werten.</p></div></header>
         <div class="energy-quality"><span aria-hidden="true">{{if eq .Quality.Status "measured"}}✓{{else}}!{{end}}</span><div><strong>{{.Quality.Label}}</strong><p>{{.Quality.Effect}}</p></div><small>{{.Quality.NextAction}}</small></div>
+        <div class="energy-coverage" aria-label="Messabdeckung"><div class="energy-coverage-head"><strong>Messabdeckung</strong><span>{{.CoverageSummary}}</span></div><div class="energy-coverage-list">{{range .Coverage}}<div class="energy-coverage-row" title="{{.Detail}}"><strong>{{.Label}}</strong><span class="energy-coverage-state {{.Tone}}">{{if eq .Tone "good"}}✓{{else}}•{{end}} {{.Status}}</span></div>{{end}}</div></div>
       </section>
       {{if .HasScenarios}}<section class="energy-card" id="szenarien">
         <header class="energy-card-head"><div><h2>Was-wäre-wenn</h2><p>Bandbreite statt Einsparversprechen.</p></div></header>
