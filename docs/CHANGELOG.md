@@ -2,6 +2,22 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.47.0] - 2026-07-28
+
+### Neu
+
+- **„Mein Zuhause“ führt ohne Technikvorwissen zum ersten Energie-Fahrplan.** Wohnung oder Haus, große Verbraucher und vorhandene Messwerte werden in fünf ruhigen Schritten erfasst; PV, Speicher oder Home Assistant sind keine Voraussetzung.
+- **Der Sicherheitsmodus bleibt immer sichtbar.** Jedes Haus startet mit „Nur beobachten“. Eine bewusste Freigabe beginnt zunächst in einem wirkungslosen Testlauf; der sofortige Rückweg steht dauerhaft bereit.
+- **Home Assistant und Smart Meter liefern eine hausbezogene Messbasis.** Sensoren werden ausschließlich lesend vorgeschlagen und verständlich bestätigt; Smart-Meter-Dateien bleiben lokal zugeordnet und lassen sich ohne Duplikate erneut importieren.
+- **Viertelstunden-Spitzen werden nachvollziehbar eingeordnet.** Datenqualität, Monatsmaximum, unverbindlicher Tarifentwurf und Was-wäre-wenn-Bandbreiten unterscheiden Messung, Annahme und fehlende Information klar.
+- **Technische Hilfe lässt sich sicher delegieren.** Ansehen, Einrichten und eine spätere Steuerungsfreigabe sind getrennte, widerrufbare Rechte mit eigenem Benutzerkonto und Audit-Verlauf.
+- **Empfehlungen werden zu normalen Hausaufgaben.** Nutzer wählen ausdrücklich, welche Daten in ein Anliegen übernommen werden; es entsteht weder eine automatische Beauftragung noch ein Zahlungs- oder Provisionsfluss.
+- **Das private Preismodell ist transparent.** Der volle Produktumfang bleibt ab Abschluss der Einrichtung drei Jahre kostenlos; danach gilt als heutige Hypothese 12 € pro Jahr – noch ohne Paywall oder Abrechnung.
+
+### Verbessert
+
+- **Desktop und Mobil prüfen den Energie-Hauptweg automatisch.** Rollenverbote, Shadow-Testlauf, Sofort-Rückkehr, Touch-Ziele, Smart-Meter-Wiederholung, Datenschutzlogs und seitlicher Überlauf gehören jetzt zum Playwright-Regressionslauf.
+
 ## [0.46.0] - 2026-07-28
 
 ### Verbessert

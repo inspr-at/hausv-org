@@ -14,6 +14,9 @@ Der Lauf:
   Entwicklungszugang an;
 - legt einen Aushang, einen Termin, einen Kontakt, ein Dokument und ein Anliegen
   an;
+- prüft das private Haus-Cockpit für Bewohner und Eigentümer, einschließlich
+  dauerhaft sichtbarem Beobachtungsmodus, bewusstem Shadow-Testlauf,
+  Sofort-Rückkehr und idempotentem Smart-Meter-Import;
 - öffnet die Hauptwege auf 1440 × 900 und 390 × 844;
 - prüft Überschriften, zentrale Aktionen, Rollenverbote und horizontalen
   Überlauf;

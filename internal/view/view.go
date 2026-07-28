@@ -1808,35 +1808,36 @@ type ParkingBalanceView struct {
 }
 
 type UserRow struct {
-	Email              string
-	Title              string
-	FirstName          string
-	LastName           string
-	Phone              string
-	DirectoryOptIn     bool
-	DisplayName        string
-	Initials           string
-	Role               string
-	RoleClass          string
-	RoleCapabilities   []string
-	Status             string
-	Tenants            string
-	PermissionLabel    string
-	PermissionList     []string
-	ParkingChecked     bool
-	OutstandingBalance string
-	HasOutstanding     bool
-	AuthLabel          string
-	AuthList           []string
-	EmailAuthChecked   bool
-	OIDCAuthChecked    bool
-	UnitList           []string
-	HasUnits           bool
-	Editable           bool
-	IsConfig           bool
-	Protected          bool
-	Deactivated        bool
-	LastSeen           string
+	Email                  string
+	Title                  string
+	FirstName              string
+	LastName               string
+	Phone                  string
+	DirectoryOptIn         bool
+	DisplayName            string
+	Initials               string
+	Role                   string
+	RoleClass              string
+	RoleCapabilities       []string
+	Status                 string
+	Tenants                string
+	PermissionLabel        string
+	PermissionList         []string
+	ParkingChecked         bool
+	EnergyCaretakerChecked bool
+	OutstandingBalance     string
+	HasOutstanding         bool
+	AuthLabel              string
+	AuthList               []string
+	EmailAuthChecked       bool
+	OIDCAuthChecked        bool
+	UnitList               []string
+	HasUnits               bool
+	Editable               bool
+	IsConfig               bool
+	Protected              bool
+	Deactivated            bool
+	LastSeen               string
 }
 
 // User-facing formatting convention: de-AT copy uses local time, dot-grouped
@@ -2142,6 +2143,8 @@ func PermissionLabelList(permissions []string) []string {
 		switch permission {
 		case store.PermissionParking:
 			labels = append(labels, "Parkplatznutzung")
+		case store.PermissionEnergyCaretaker:
+			labels = append(labels, "Technische Vertrauensperson")
 		default:
 			labels = append(labels, permission)
 		}

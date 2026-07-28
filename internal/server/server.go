@@ -28,6 +28,7 @@ import (
 	"github.com/markus-barta/hausv-org/internal/authz"
 	"github.com/markus-barta/hausv-org/internal/config"
 	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/markus-barta/hausv-org/internal/energy"
 	"github.com/markus-barta/hausv-org/internal/homeassistant"
 	appmail "github.com/markus-barta/hausv-org/internal/mail"
 	"github.com/markus-barta/hausv-org/internal/view"
@@ -292,6 +293,8 @@ const (
 	capabilityOwnerDocuments      = authz.CapabilityOwnerDocuments
 	capabilityVote                = authz.CapabilityVote
 	capabilityOversight           = authz.CapabilityOversight
+	capabilityManageEnergy        = authz.CapabilityManageEnergy
+	capabilityControlEnergy       = authz.CapabilityControlEnergy
 )
 
 // ── extracted to authz ──────────────────────────────────────────────
@@ -673,6 +676,10 @@ const (
 	roleResident                  = store.RoleResident
 	roleServiceProvider           = store.RoleServiceProvider
 	permissionParking             = store.PermissionParking
+	permissionEnergyView          = store.PermissionEnergyView
+	permissionEnergyConfigure     = store.PermissionEnergyConfigure
+	permissionEnergyControl       = store.PermissionEnergyControl
+	permissionEnergyCaretaker     = store.PermissionEnergyCaretaker
 	authMethodEmail               = store.AuthMethodEmail
 	authMethodOIDC                = store.AuthMethodOIDC
 	issueStatusNew                = store.IssueStatusNew
@@ -755,6 +762,7 @@ type app struct {
 	parkingStore          *parkingStore
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
+	energyStore           energy.Storage
 
 	chargingTickInterval   time.Duration
 	chargingStaleAfter     time.Duration
@@ -860,6 +868,17 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /auth/logout", a.logout)
 	mux.HandleFunc("GET /calendar/{token}", a.calendarFeed)
 	mux.HandleFunc("GET /app", a.page(a.portal))
+	mux.HandleFunc("GET /app/zuhause/onboarding", a.page(a.homeOnboarding))
+	mux.HandleFunc("POST /app/zuhause/onboarding", a.action(a.updateHomeOnboarding))
+	mux.HandleFunc("GET /app/energie", a.page(a.energyCockpit))
+	mux.HandleFunc("POST /app/energie/mode", a.action(a.updateEnergyMode))
+	mux.HandleFunc("POST /app/energie/mappings", a.action(a.updateEnergyMappings))
+	mux.HandleFunc("POST /app/energie/assets", a.action(a.updateEnergyAssets))
+	mux.HandleFunc("POST /app/energie/smart-meter", a.action(a.importSmartMeter))
+	mux.HandleFunc("POST /app/energie/target", a.action(a.updateEnergyTarget))
+	mux.HandleFunc("POST /app/energie/recommendation", a.action(a.updateEnergyRecommendation))
+	mux.HandleFunc("POST /app/energie/measure", a.action(a.createEnergyMeasure))
+	mux.HandleFunc("POST /app/energie/caretaker", a.action(a.updateEnergyCaretaker))
 	mux.HandleFunc("GET /app/announcements", a.page(a.announcements))
 	mux.HandleFunc("POST /app/announcements", a.action(a.createAnnouncement))
 	mux.HandleFunc("POST /app/announcements/edit", a.action(a.editAnnouncement))
@@ -1014,6 +1033,9 @@ func newApp() (*app, error) {
 	defaultTenant := env("DEFAULT_TENANT", "jhw22")
 	tenants, err := parseTenants(env("WEG_TENANTS_JSON", ""), rootDomain, defaultTenant, newHomeAssistantConfig())
 	if err != nil {
+		return nil, err
+	}
+	if err := config.ApplyHomeAssistantConnectors(env("HA_CONNECTORS_JSON", ""), tenants); err != nil {
 		return nil, err
 	}
 	profiles, err := parseUserProfiles(env("WEG_USERS_JSON", ""), allowed, admins, defaultTenant)
@@ -1225,6 +1247,14 @@ func newApp() (*app, error) {
 	sqlVotes := newSQLVoteStore(database)
 	sqlIssues := newSQLIssueStore(database, issueAttachmentDir)
 	identity := newSQLIdentityStore(database)
+	energyBackend := energy.NewSQLStore(database)
+	knownEnergyTenants := make(map[string]struct{}, len(tenants))
+	for slug := range tenants {
+		knownEnergyTenants[slug] = struct{}{}
+	}
+	if err := energy.ApplyProfileSeeds(energyBackend, env("HOME_PROFILE_SEEDS_JSON", ""), knownEnergyTenants, time.Now()); err != nil {
+		return nil, err
+	}
 
 	for _, step := range []struct {
 		name    string
@@ -1351,6 +1381,7 @@ func newApp() (*app, error) {
 		parkingStore:          parkingStore,
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
+		energyStore:           energyBackend,
 
 		chargingTickInterval:   chargingTickInterval,
 		chargingStaleAfter:     chargingStaleAfter,
@@ -4202,6 +4233,18 @@ func (a *app) baseContext(ac authCtx) map[string]any {
 		"DisplayName":   profile.DisplayName(),
 		"Initials":      profile.Initials(),
 		"CanSeeParking": isAdmin || profile.HasPermission(permissionParking),
+		"CanViewEnergy": canUseResidentAreas(ac.role) &&
+			(hasCapability(ac.role, capabilityManageEnergy) ||
+				profile.HasPermission(permissionEnergyView) ||
+				profile.HasPermission(permissionEnergyConfigure) ||
+				profile.HasPermission(permissionEnergyControl) ||
+				profile.HasPermission(permissionEnergyCaretaker) ||
+				ac.role == roleRenter || ac.role == roleResident || ac.role == roleBeirat),
+		"CanManageEnergy": hasCapability(ac.role, capabilityManageEnergy) ||
+			profile.HasPermission(permissionEnergyConfigure) ||
+			profile.HasPermission(permissionEnergyCaretaker),
+		"CanControlEnergy": hasCapability(ac.role, capabilityControlEnergy) ||
+			profile.HasPermission(permissionEnergyControl),
 	}
 }
 
@@ -5476,27 +5519,28 @@ func userRowFrom(p userProfile) userRow {
 		p.Status = "Eingeladen"
 	}
 	return userRow{
-		Email:            p.Email,
-		Title:            p.Title,
-		FirstName:        p.FirstName,
-		LastName:         p.LastName,
-		Phone:            p.Phone,
-		DirectoryOptIn:   p.DirectoryOptIn,
-		DisplayName:      p.DisplayName(),
-		Initials:         p.Initials(),
-		Role:             p.Role,
-		RoleClass:        roleClass(p.Role),
-		RoleCapabilities: roleCapabilityLabels(p.Role),
-		Status:           p.Status,
-		Tenants:          strings.Join(p.Tenants, ", "),
-		PermissionLabel:  permissionLabel(p.Permissions),
-		PermissionList:   permissionLabelList(p.Permissions),
-		ParkingChecked:   p.HasPermission(permissionParking),
-		AuthLabel:        authMethodsLabel(p.AuthMethods),
-		AuthList:         authMethodsLabelList(p.AuthMethods),
-		EmailAuthChecked: p.AllowsAuthMethod(authMethodEmail),
-		OIDCAuthChecked:  p.AllowsAuthMethod(authMethodOIDC),
-		Deactivated:      p.Deactivated,
+		Email:                  p.Email,
+		Title:                  p.Title,
+		FirstName:              p.FirstName,
+		LastName:               p.LastName,
+		Phone:                  p.Phone,
+		DirectoryOptIn:         p.DirectoryOptIn,
+		DisplayName:            p.DisplayName(),
+		Initials:               p.Initials(),
+		Role:                   p.Role,
+		RoleClass:              roleClass(p.Role),
+		RoleCapabilities:       roleCapabilityLabels(p.Role),
+		Status:                 p.Status,
+		Tenants:                strings.Join(p.Tenants, ", "),
+		PermissionLabel:        permissionLabel(p.Permissions),
+		PermissionList:         permissionLabelList(p.Permissions),
+		ParkingChecked:         p.HasPermission(permissionParking),
+		EnergyCaretakerChecked: p.HasPermission(permissionEnergyCaretaker),
+		AuthLabel:              authMethodsLabel(p.AuthMethods),
+		AuthList:               authMethodsLabelList(p.AuthMethods),
+		EmailAuthChecked:       p.AllowsAuthMethod(authMethodEmail),
+		OIDCAuthChecked:        p.AllowsAuthMethod(authMethodOIDC),
+		Deactivated:            p.Deactivated,
 	}
 }
 
@@ -5580,7 +5624,11 @@ func excludeEmail(raw []string, excluded string) []string {
 
 func parsePermissionForm(values url.Values) []string {
 	allowed := map[string]struct{}{
-		permissionParking: {},
+		permissionParking:         {},
+		permissionEnergyView:      {},
+		permissionEnergyConfigure: {},
+		permissionEnergyControl:   {},
+		permissionEnergyCaretaker: {},
 	}
 	out := []string{}
 	for _, permission := range normalizePermissions(values["permissions"]) {

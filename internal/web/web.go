@@ -776,6 +776,131 @@ const PageTemplates = `
     .logout-button { width: 100%; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); color: rgba(255,255,255,.92); background: transparent; font-weight: 700; cursor: pointer; }
     .logout-button:hover { border-color: var(--gold); color: #fff; }
     .app-main { min-width: 0; padding-bottom: 58px; }
+    .energy-mode-strip { position: sticky; top: 0; z-index: 40; min-height: 78px; display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 16px; align-items: center; padding: 13px clamp(28px,4vw,44px); color: #fff; background: #17261d; border-bottom: 4px solid var(--gold); box-shadow: 0 8px 24px rgba(23,38,29,.18); }
+    .energy-mode-strip.active { background: #562c25; border-bottom-color: #e9b65a; }
+    .energy-mode-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; color: #17261d; background: var(--gold-light); font-size: 24px; font-weight: 900; }
+    .energy-mode-copy { min-width: 0; display: grid; gap: 2px; }
+    .energy-mode-copy strong { font-family: var(--font-serif); font-size: 22px; line-height: 1.05; }
+    .energy-mode-copy span { color: rgba(255,255,255,.78); font-size: 13.5px; line-height: 1.35; }
+    .energy-mode-action { min-height: 44px; border: 1px solid rgba(255,255,255,.42); border-radius: var(--radius-xs); padding: 10px 16px; color: #fff; background: rgba(255,255,255,.08); font-weight: 800; cursor: pointer; }
+    .energy-mode-action:hover { border-color: var(--gold-light); background: rgba(255,255,255,.14); }
+    .energy-mode-control { position: relative; }
+    .energy-mode-control > summary { list-style: none; }
+    .energy-mode-control > summary::-webkit-details-marker { display: none; }
+    .energy-mode-popover { position: absolute; right: 0; top: calc(100% + 10px); width: min(410px,calc(100vw - 32px)); display: grid; gap: 14px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px; color: var(--ink); background: var(--surface); box-shadow: var(--shadow-lg); }
+    .energy-mode-popover h3 { font-size: 19px; }
+    .energy-mode-popover p { color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .energy-mode-popover label { display: grid; grid-template-columns: auto 1fr; gap: 9px; align-items: start; font-size: 13px; line-height: 1.4; }
+    .energy-mode-popover input[type="text"] { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 9px 11px; background: #fff; }
+    .energy-page { width: min(1160px,100%); gap: 22px; }
+    .energy-page .button { min-height: 44px; }
+    .energy-heading { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 24px; align-items: end; }
+    .energy-heading .eyebrow { margin-bottom: 10px; }
+    .energy-source { color: var(--muted); font-size: 13px; }
+    .energy-health { display: grid; grid-template-columns: minmax(280px,1.3fr) minmax(220px,.7fr); gap: 18px; }
+    .energy-hero-card, .energy-card { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-sm); }
+    .energy-hero-card { min-height: 232px; display: grid; align-content: center; gap: 15px; padding: clamp(26px,4vw,44px); background: radial-gradient(circle at 88% 12%,rgba(200,153,63,.18),transparent 32%), var(--surface); }
+    .energy-hero-card h2 { max-width: 620px; font-size: clamp(30px,4vw,44px); font-weight: 500; }
+    .energy-hero-card p { max-width: 620px; color: var(--muted); font-size: 16px; line-height: 1.55; }
+    .energy-next-meta { display: flex; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 12px; }
+    .energy-next-meta span { border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 6px 9px; background: rgba(255,255,255,.65); }
+    .energy-recommendation-actions { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+    .energy-recommendation-actions form { display: flex; flex-wrap: wrap; gap: 6px; }
+    .energy-measure-control { position: relative; }
+    .energy-measure-control > summary { list-style: none; }
+    .energy-measure-control > summary::-webkit-details-marker { display: none; }
+    .energy-measure-form { position: absolute; left: 0; top: calc(100% + 8px); z-index: 12; width: min(420px,calc(100vw - 40px)); display: grid !important; gap: 11px !important; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 17px; background: var(--surface); box-shadow: var(--shadow-lg); }
+    .energy-measure-form p { font-size: 13px; }
+    .energy-measure-form label { display: flex; gap: 9px; align-items: center; font-size: 13px; }
+    .energy-hero-card .button { justify-self: start; margin-top: 3px; }
+    .energy-summary { display: grid; gap: 10px; }
+    .energy-metric { min-height: 104px; display: grid; align-content: center; gap: 3px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px 18px; background: #fff; }
+    .energy-metric strong { font-family: var(--font-serif); font-size: 28px; font-weight: 600; }
+    .energy-metric span { color: var(--muted); font-size: 12.5px; }
+    .energy-metric.good { border-color: #b7d0bc; background: #f2f7f1; }
+    .energy-metric.warning { border-color: #e4c884; background: #fff8e8; }
+    .energy-metric.danger { border-color: #ddb0aa; background: #fff2f0; }
+    .energy-card { padding: 24px; }
+    .energy-card-head { display: flex; justify-content: space-between; gap: 18px; align-items: start; margin-bottom: 18px; }
+    .energy-card-head p { margin-top: 6px; color: var(--muted); font-size: 14px; }
+    .energy-roadmap { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+    .energy-roadmap-step { min-height: 166px; display: grid; align-content: start; gap: 8px; padding: 20px; background: #fff; border-right: 1px solid var(--line); }
+    .energy-roadmap-step:last-child { border-right: 0; }
+    .energy-roadmap-step.current { background: #f5f1e6; box-shadow: inset 0 4px 0 var(--gold); }
+    .energy-roadmap-number { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--nav); font-size: 12px; font-weight: 900; }
+    .energy-roadmap-step strong { font-size: 16px; }
+    .energy-roadmap-step p { color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .energy-roadmap-step a { min-height: 44px; display: inline-flex; align-items: center; margin-top: auto; color: #735c1b; font-size: 13px; font-weight: 800; }
+    .energy-roadmap-state { color: #8a742d; font-size: 10px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+    .energy-assets { display: flex; flex-wrap: wrap; gap: 8px; }
+    .energy-asset { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 8px 12px; background: #fff; font-size: 13px; font-weight: 700; }
+    .energy-business-note { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 12px; align-items: center; border-top: 1px solid var(--line); margin-top: 18px; padding-top: 18px; color: var(--muted); font-size: 13px; }
+    .energy-business-note strong { color: var(--ink); }
+    .energy-related-links { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 14px; font-size: 13px; font-weight: 750; }
+    .energy-related-links a, .energy-card-head > a, .energy-tariff-copy > a { min-height: 44px; display: inline-flex; align-items: center; }
+    .energy-caretaker-list { display: grid; gap: 10px; }
+    .energy-caretaker { display: grid; grid-template-columns: minmax(180px,1fr) repeat(3,auto) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px; background: #fff; }
+    .energy-caretaker > div { display: grid; gap: 2px; }
+    .energy-caretaker small { color: var(--muted); overflow-wrap: anywhere; }
+    .energy-caretaker label { display: flex; gap: 6px; align-items: center; font-size: 12px; font-weight: 700; }
+    .energy-marketplace-gate { display: grid; gap: 3px; margin-top: 16px; border: 1px dashed #c6aa68; border-radius: var(--radius-sm); padding: 14px 16px; background: #fbf7eb; }
+    .energy-marketplace-gate span { color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .energy-reference-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+    .energy-reference-item { display: grid; gap: 3px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 16px; background: #fff; }
+    .energy-reference-item strong { font-family: var(--font-serif); font-size: 22px; }
+    .energy-reference-item span { color: var(--muted); font-size: 12px; }
+    .energy-import-form { display: grid; gap: 12px; margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px; }
+    .energy-import-form input[type="file"] { min-height: 48px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px; background: #fff; }
+    .energy-import-form small { color: var(--muted); line-height: 1.4; }
+    .energy-import-history { margin-top: 14px; }
+    .energy-quality { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: #fff; }
+    .energy-quality > span:first-child { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: #edf4ed; color: #2e6842; font-weight: 900; }
+    .energy-quality strong { display: block; }
+    .energy-quality p { margin-top: 3px; color: var(--muted); font-size: 13px; }
+    .energy-quality small { color: #765f1d; font-weight: 750; }
+    .energy-scenario { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 18px; background: #fff; }
+    .energy-scenario strong { display: block; font-size: 16px; }
+    .energy-scenario p { margin-top: 5px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .energy-scenario-result { text-align: right; }
+    .energy-scenario-result strong { font-family: var(--font-serif); font-size: 24px; }
+    .energy-tariff-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(240px,.6fr); gap: 18px; }
+    .energy-tariff-copy { display: grid; align-content: start; gap: 9px; }
+    .energy-tariff-copy p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .energy-tariff-copy a { color: #765f1d; font-weight: 750; }
+    .energy-target-form { display: grid; align-content: start; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: #fff; }
+    .energy-target-form input { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 12px; }
+    .onboarding-page { width: min(940px,100%); padding-top: 28px; gap: 18px; }
+    .onboarding-progress { display: grid; gap: 8px; }
+    .onboarding-progress-head { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; font-weight: 750; }
+    .onboarding-progress-track { height: 5px; overflow: hidden; border-radius: var(--radius-pill); background: #e8e1d4; }
+    .onboarding-progress-track span { display: block; height: 100%; background: var(--gold); }
+    .onboarding-card { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-md); overflow: hidden; }
+    .onboarding-card-head { display: grid; gap: 9px; padding: clamp(24px,4vw,38px); border-bottom: 1px solid var(--line); }
+    .onboarding-card-head h1 { font-size: clamp(34px,5vw,50px); }
+    .onboarding-card-head p { max-width: 660px; color: var(--muted); line-height: 1.55; }
+    .onboarding-body { display: grid; gap: 22px; padding: clamp(24px,4vw,38px); }
+    .onboarding-explain { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+    .onboarding-explain article { min-height: 142px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 18px; background: #fff; }
+    .onboarding-explain strong { display: block; margin-bottom: 8px; font-size: 15px; }
+    .onboarding-explain p { color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .onboarding-form { display: grid; gap: 18px; }
+    .onboarding-form label > span, .onboarding-legend { display: block; margin-bottom: 7px; color: #75652d; font-size: 11px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+    .onboarding-form input[type="text"], .onboarding-form select { width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 12px; color: var(--ink); background: #fff; }
+    .onboarding-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .onboarding-choice-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+    .onboarding-choice { min-height: 64px; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: #fff; cursor: pointer; }
+    .onboarding-choice:has(input:checked) { border-color: #9e8740; background: #faf5e8; box-shadow: inset 0 0 0 1px #c7a953; }
+    .onboarding-choice small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .onboarding-candidates { display: grid; gap: 8px; }
+    .onboarding-candidate { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 12px 14px; background: #fff; }
+    .onboarding-candidate strong { display: block; font-size: 14px; }
+    .onboarding-candidate small { color: var(--muted); font-size: 11px; }
+    .onboarding-candidate-value { font-weight: 800; white-space: nowrap; }
+    .onboarding-actions { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding-top: 4px; }
+    .onboarding-actions .button { min-height: 48px; }
+    .onboarding-trust { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 11px; align-items: start; border: 1px solid #b9d0bd; border-radius: var(--radius-sm); padding: 15px; background: #f1f7f1; }
+    .onboarding-trust strong { display: block; margin-bottom: 3px; }
+    .onboarding-trust p { color: #53675a; font-size: 13px; line-height: 1.4; }
     .content-top { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 clamp(28px,4vw,44px); border-bottom: 1px solid var(--line); background: rgba(255,254,251,.72); }
     .crumb { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
     .crumb svg, .action svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
@@ -1825,6 +1950,31 @@ const PageTemplates = `
     }
 	    @media (max-width: 900px) {
 	      .app-shell { display: block; }
+	      .energy-mode-strip { position: sticky; top: 64px; grid-template-columns: 38px minmax(0,1fr); gap: 10px; min-height: 72px; padding: 10px 14px; }
+	      .energy-mode-icon { width: 36px; height: 36px; font-size: 19px; }
+	      .energy-mode-copy strong { font-size: 17px; }
+	      .energy-mode-copy span { font-size: 11.5px; }
+	      .energy-mode-control, .energy-mode-strip > form { grid-column: 1 / -1; }
+	      .energy-mode-action { width: 100%; }
+	      .energy-mode-popover { position: static; width: 100%; margin-top: 8px; }
+	      .energy-heading, .energy-health { grid-template-columns: 1fr; }
+	      .energy-roadmap { grid-template-columns: 1fr; }
+	      .energy-roadmap-step { min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
+	      .energy-roadmap-step:last-child { border-bottom: 0; }
+	      .energy-card { padding: 18px; }
+	      .onboarding-page { padding: 18px 14px 0; }
+	      .onboarding-explain, .onboarding-grid, .onboarding-choice-grid { grid-template-columns: 1fr; }
+	      .onboarding-actions { align-items: stretch; flex-direction: column-reverse; }
+	      .onboarding-actions .button { width: 100%; }
+	      .onboarding-candidate { grid-template-columns: auto minmax(0,1fr); }
+	      .onboarding-candidate-value { grid-column: 2; }
+	      .energy-reference-grid { grid-template-columns: 1fr; }
+	      .energy-quality, .energy-scenario, .energy-tariff-grid { grid-template-columns: 1fr; }
+	      .energy-caretaker { grid-template-columns: 1fr 1fr; }
+	      .energy-caretaker > div, .energy-caretaker .button { grid-column: 1 / -1; }
+	      .energy-measure-control, .energy-measure-control > summary { width: 100%; }
+	      .energy-measure-form { position: static; width: 100%; margin-top: 8px; }
+	      .energy-scenario-result { text-align: left; }
 	      .sidebar { position: sticky; top: 0; z-index: 50; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; height: auto; padding: 10px 14px; box-shadow: 0 10px 28px rgba(23,32,25,.18); }
 	      .side-brand { grid-template-columns: 42px minmax(0,1fr); gap: 10px; align-items: center; padding: 0; min-width: 0; }
 	      .side-mark { width: 44px; height: 44px; }
@@ -2094,10 +2244,11 @@ const PageTemplates = `
       </a>
 	    </div>
 	    <input class="nav-toggle" id="portal-nav-toggle" type="checkbox" aria-label="Navigation anzeigen">
-	    <label class="mobile-menu-toggle" for="portal-nav-toggle">Menü · {{if eq .ActivePage "home"}}Überblick{{else if eq .ActivePage "announcements"}}Aushang{{else if eq .ActivePage "events"}}Termine{{else if eq .ActivePage "contacts"}}Kontakte{{else if eq .ActivePage "parking"}}Parkplatz{{else if eq .ActivePage "documents"}}Dokumente{{else if eq .ActivePage "handovers"}}Übergaben{{else if eq .ActivePage "issues"}}Anliegen{{else if eq .ActivePage "abstimmungen"}}Abstimmung{{else if eq .ActivePage "users"}}Benutzer{{else if eq .ActivePage "audit"}}Audit{{else}}Einstellungen{{end}}</label>
+	    <label class="mobile-menu-toggle" for="portal-nav-toggle">Menü · {{if eq .ActivePage "home"}}Überblick{{else if eq .ActivePage "energy"}}Zuhause{{else if eq .ActivePage "announcements"}}Aushang{{else if eq .ActivePage "events"}}Termine{{else if eq .ActivePage "contacts"}}Kontakte{{else if eq .ActivePage "parking"}}Parkplatz{{else if eq .ActivePage "documents"}}Dokumente{{else if eq .ActivePage "handovers"}}Übergaben{{else if eq .ActivePage "issues"}}Anliegen{{else if eq .ActivePage "abstimmungen"}}Abstimmung{{else if eq .ActivePage "users"}}Benutzer{{else if eq .ActivePage "audit"}}Audit{{else}}Einstellungen{{end}}</label>
 	    <nav class="side-nav">
 	      {{if .CanUseResidentAreas}}
 	      <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="nav-label">Hausüberblick</span></a>
+	      {{if .CanViewEnergy}}<a class="nav-item {{if eq .ActivePage "energy"}}active{{end}}" href="/app/energie"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 13h5l2-7 3 12 2-5h4"/><path d="M5 20h14"/></svg></span><span class="nav-label">Mein Zuhause</span></a>{{end}}
 	      <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
 	      <a class="nav-item {{if eq .ActivePage "events"}}active{{end}}" href="/app/events"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></span><span class="nav-label">Termine</span></a>
 	      <a class="nav-item {{if eq .ActivePage "contacts"}}active{{end}}" href="/app/kontakte"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg></span><span class="nav-label">Kontakte</span></a>
@@ -6337,6 +6488,7 @@ const PageTemplates = `
                   <span class="preset-label" data-preset-label>Standardzugriff</span>
                   <div class="permission-grid">
                     <label class="permission-check"><input type="checkbox" name="permissions" value="parking" data-permission="parking"><strong>Parkplatznutzung</strong><span>Privater Bereich für Stellplatz- und Ladeabrechnung.</span></label>
+                    <label class="permission-check"><input type="checkbox" name="permissions" value="energy-caretaker" data-permission="energy-caretaker"><strong>Technische Vertrauensperson</strong><span>Darf Energiedaten ansehen und die Einrichtung unterstützen, aber keine Steuerung aktivieren.</span></label>
                   </div>
                 </fieldset>
                 <fieldset class="permission-fieldset f-permissions">
@@ -6450,6 +6602,7 @@ const PageTemplates = `
                           <span class="preset-label" data-preset-label>Gespeicherte Rechte</span>
                           <div class="permission-grid">
                             <label class="permission-check"><input type="checkbox" name="permissions" value="parking" data-permission="parking"{{if .ParkingChecked}} checked{{end}}><strong>Parkplatznutzung</strong><span>Privater Bereich für Stellplatz- und Ladeabrechnung.</span></label>
+                            <label class="permission-check"><input type="checkbox" name="permissions" value="energy-caretaker" data-permission="energy-caretaker"{{if .EnergyCaretakerChecked}} checked{{end}}><strong>Technische Vertrauensperson</strong><span>Darf Energiedaten ansehen und die Einrichtung unterstützen, aber keine Steuerung aktivieren.</span></label>
                           </div>
                         </fieldset>
                         <fieldset class="permission-fieldset f-permissions">
@@ -6493,6 +6646,204 @@ const PageTemplates = `
     </section>
       </section>
     </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "energyModeStrip"}}
+  <section class="energy-mode-strip {{if .IsActiveMode}}active{{end}}" aria-label="Energiemodus">
+    <span class="energy-mode-icon" aria-hidden="true">{{if .IsActiveMode}}!{{else}}✓{{end}}</span>
+    <div class="energy-mode-copy">
+      <strong>{{if .IsActiveMode}}{{if .IsShadowMode}}Steuerung freigegeben · Testlauf{{else}}Aktive Steuerung{{end}}{{else}}Nur beobachten{{end}}</strong>
+      <span>{{if .IsActiveMode}}{{if .IsShadowMode}}HAUSV protokolliert Entscheidungen, schaltet aber noch kein Gerät.{{else}}HAUSV darf freigegebene Geräte nach Ihren Regeln steuern.{{end}}{{else}}HAUSV liest und empfiehlt. Es steuert nichts.{{end}}</span>
+    </div>
+    {{if .IsActiveMode}}
+      {{if .CanControlEnergy}}<form method="post" action="/app/energie/mode">
+        <input type="hidden" name="mode" value="observe">
+        <button class="energy-mode-action" type="submit">Sofort zurück zu „Nur beobachten“</button>
+      </form>{{end}}
+    {{else}}
+      {{if .CanControlEnergy}}<details class="energy-mode-control">
+        <summary class="energy-mode-action">Steuerung bewusst freigeben</summary>
+        <form class="energy-mode-popover" method="post" action="/app/energie/mode">
+          <h3>Aktive Steuerung freigeben?</h3>
+          <p>Das ist später der einzige Weg, wie HAUSV Geräte schalten darf. Solange noch keine geprüften Regeln eingerichtet sind, bleibt die Freigabe ohne Gerätewirkung.</p>
+          <label><input type="checkbox" name="confirm" value="yes" required><span>Ich bin Eigentümer oder Hausadministrator und möchte die aktive Steuerung für diese Liegenschaft bewusst freigeben.</span></label>
+          <label><span>Zur Bestätigung <strong>AKTIVIEREN</strong> eingeben</span></label>
+          <input type="text" name="confirmation_text" autocomplete="off" placeholder="AKTIVIEREN" required>
+          <input type="hidden" name="mode" value="active">
+          <button class="button primary" type="submit">Aktive Steuerung freigeben</button>
+        </form>
+      </details>{{else}}<span class="energy-source">Nur Eigentümer oder Hausadministration können umschalten.</span>{{end}}
+    {{end}}
+  </section>
+{{end}}
+
+{{define "homeOnboarding"}}
+{{template "appOpen" .}}
+  <main class="app-main">
+    {{template "energyModeStrip" .}}
+    <div class="page onboarding-page">
+      <div class="onboarding-progress" aria-label="Einrichtungsfortschritt">
+        <div class="onboarding-progress-head"><span>Einrichtung Ihres Zuhauses</span><span>Schritt {{.Step}} von 5</span></div>
+        <div class="onboarding-progress-track"><span style="width:{{.Progress}}%"></span></div>
+      </div>
+      <section class="onboarding-card">
+        {{if eq .Step 1}}
+          <header class="onboarding-card-head">
+            <span class="eyebrow">Ganz ohne Technikstress</span>
+            <h1>Wir beginnen mit dem, was schon da ist.</h1>
+            <p>Für einen guten Start brauchen Sie weder PV-Anlage noch Batterie. Zuerst verstehen wir Ihr Zuhause, danach messen wir – und erst viel später entscheiden Sie über Automatisierung.</p>
+          </header>
+          <form class="onboarding-body" method="post" action="/app/zuhause/onboarding">
+            <div class="onboarding-explain">
+              <article><strong>1 · Verstehen</strong><p>Welche großen Verbraucher gibt es und was lässt sich zeitlich verschieben?</p></article>
+              <article><strong>2 · Messen</strong><p>Bestehende Messwerte lesen. Home Assistant ist hilfreich, aber keine Voraussetzung.</p></article>
+              <article><strong>3 · Verbessern</strong><p>HAUSV zeigt kleine, nachvollziehbare Schritte. Sie behalten die Kontrolle.</p></article>
+            </div>
+            <div class="onboarding-trust"><span aria-hidden="true">✓</span><div><strong>Standard bleibt „Nur beobachten“</strong><p>Während der gesamten Einrichtung wird nichts geschaltet. Eine spätere Freigabe ist separat, dauerhaft sichtbar und nur für Eigentümer oder Hausadministration möglich.</p></div></div>
+            <div class="onboarding-actions"><a class="button" href="/app">Später</a><button class="button primary" type="submit" name="action" value="understand">Verstanden, weiter</button></div>
+          </form>
+        {{else if eq .Step 2}}
+          <header class="onboarding-card-head"><span class="eyebrow">Ihr Zuhause</span><h1>Was richten wir gemeinsam ein?</h1><p>Ein Name und die Art des Zuhauses genügen. Technische Details kommen erst, wenn sie wirklich helfen.</p></header>
+          <form class="onboarding-body onboarding-form" method="post" action="/app/zuhause/onboarding">
+            <label><span>Name des Zuhauses</span><input type="text" name="household_name" value="{{.Profile.HouseholdName}}" placeholder="z. B. Zuhause Barta" required maxlength="100"></label>
+            <label><span>Art</span><select name="home_type">
+              <option value="apartment"{{if eq .Profile.HomeType "apartment"}} selected{{end}}>Wohnung</option>
+              <option value="house"{{if eq .Profile.HomeType "house"}} selected{{end}}>Einfamilienhaus</option>
+              <option value="community"{{if eq .Profile.HomeType "community"}} selected{{end}}>Hausgemeinschaft</option>
+            </select></label>
+            <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button><button class="button primary" type="submit" name="action" value="profile">Weiter zu den Verbrauchern</button></div>
+          </form>
+        {{else if eq .Step 3}}
+          <header class="onboarding-card-head"><span class="eyebrow">Bestandsaufnahme</span><h1>Was gibt es bereits?</h1><p>Wählen Sie nur, was Sie sicher wissen. Fehlende Details können jederzeit ergänzt werden.</p></header>
+          <form class="onboarding-body onboarding-form" method="post" action="/app/zuhause/onboarding">
+            <fieldset><legend class="onboarding-legend">Anlagen und größere Verbraucher</legend>
+              <div class="onboarding-choice-grid">{{range .AssetOptions}}<label class="onboarding-choice"><input type="checkbox" name="assets" value="{{.Kind}}"{{if .Checked}} checked{{end}}><span><strong>{{.Label}}</strong><small>Vorhanden oder regelmäßig genutzt</small></span></label>{{end}}</div>
+            </fieldset>
+            <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button><button class="button primary" type="submit" name="action" value="assets">Weiter zu den Messwerten</button></div>
+          </form>
+        {{else if eq .Step 4}}
+          <header class="onboarding-card-head"><span class="eyebrow">Sicher verbinden</span><h1>Welche Werte dürfen wir lesen?</h1><p>{{.ConnectorMessage}}</p></header>
+          <form class="onboarding-body onboarding-form" method="post" action="/app/zuhause/onboarding">
+            {{if .HasCandidates}}<div class="onboarding-candidates">{{range .Candidates}}<label class="onboarding-candidate"><input type="checkbox" name="entities" value="{{.EntityID}}"{{if .Checked}} checked{{end}}><span><strong>{{.DisplayName}}</strong><small>{{.MetricLabel}} · {{.EntityID}}</small></span><span class="onboarding-candidate-value">{{.Value}} {{.Unit}}</span></label>{{end}}</div>
+            {{else}}<div class="onboarding-trust"><span aria-hidden="true">i</span><div><strong>Ohne Verbindung fortfahren</strong><p>Sie können das Haus-Cockpit bereits nutzen und Home Assistant später ergänzen. Es werden keine Zugangsdaten im Portal angezeigt oder gespeichert.</p></div></div>{{end}}
+            <details class="form-disclosure"><summary>Messwert selbst zuordnen <span>optional</span></summary><div class="optional-grid">
+              <label><span>Sensor-ID</span><input type="text" name="manual_entity_id" placeholder="sensor.netzbezug"></label>
+              <label><span>Bedeutung</span><select name="manual_metric"><option value="grid-import-power">Netzbezug Leistung</option><option value="grid-import-energy">Netzbezug Energie</option><option value="grid-export-power">Netzeinspeisung</option><option value="pv-power">PV-Leistung</option><option value="battery-power">Batterie-Leistung</option><option value="battery-soc">Batterie-Ladestand</option><option value="load-power">Hausverbrauch</option></select></label>
+              <label><span>Verständlicher Name</span><input type="text" name="manual_name" placeholder="Netzbezug gesamt"></label>
+              <label><span>Einheit</span><input type="text" name="manual_unit" placeholder="W oder kW"></label>
+            </div></details>
+            <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button><button class="button primary" type="submit" name="action" value="mappings">{{if .HasCandidates}}Auswahl übernehmen{{else}}Jetzt überspringen{{end}}</button></div>
+          </form>
+        {{else}}
+          <header class="onboarding-card-head"><span class="eyebrow">Bereit</span><h1>Ihr Haus-Cockpit ist vorbereitet.</h1><p>Sie sehen ab jetzt einen verständlichen Fahrplan. Alles bleibt im sicheren Beobachtungsmodus, bis ein Eigentümer oder Hausadministrator den sichtbaren Schalter bewusst umlegt.</p></header>
+          <form class="onboarding-body" method="post" action="/app/zuhause/onboarding">
+            <div class="onboarding-trust"><span aria-hidden="true">✓</span><div><strong>Drei Jahre voller Produktumfang kostenlos</strong><p>Danach gilt nach heutigem Modell: 1 € pro Monat, jährlich als 12 € verrechnet. Noch gibt es keine Zahlung und keine versteckte Einschränkung.</p></div></div>
+            <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Noch einmal prüfen</button><button class="button primary" type="submit" name="action" value="finish">Mein Zuhause öffnen</button></div>
+          </form>
+        {{end}}
+      </section>
+    </div>
+  </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "energyCockpit"}}
+{{template "appOpen" .}}
+  <main class="app-main">
+    {{template "energyModeStrip" .}}
+    <div class="page energy-page">
+      <header class="energy-heading">
+        <div><span class="eyebrow">Mein Zuhause</span><h1>{{.Profile.HouseholdName}}</h1><p class="lede">Was jetzt wichtig ist – ohne Technik-Überladung.</p></div>
+        <span class="energy-source">{{.SourceStatus}}</span>
+      </header>
+      {{if .Welcome}}<div class="message success">Ihr Hausprofil ist bereit. Der sichere Beobachtungsmodus bleibt aktiv.</div>{{end}}
+      {{if .ModeChanged}}<div class="message success">Der Energiemodus wurde nachvollziehbar geändert.</div>{{end}}
+      <section class="energy-health">
+        <article class="energy-hero-card" id="naechster-schritt">
+          <span class="eyebrow">Als Nächstes</span>
+          <h2>{{.Recommendation.Title}}</h2>
+          <p>{{.Recommendation.Reason}}</p>
+          <div class="energy-next-meta"><span>{{.Recommendation.Benefit}}</span><span>Aufwand: {{.Recommendation.Effort}}</span><span>{{.Recommendation.ImpactRange}}</span></div>
+          {{if .MeasureCreated}}<div class="message success">Als nachvollziehbare Hausaufgabe angelegt. Erst dort wählen Sie später bewusst einen bekannten Dienstleister.</div>{{end}}
+          {{if .RecommendationDeferred}}<div class="message">Für später gemerkt. HAUSV aktiviert dadurch nichts.</div>{{else if .RecommendationDismissed}}<div class="message">Abgelehnt. Die Entscheidung bleibt nachvollziehbar und löst nichts aus.</div>{{else}}
+          <div class="energy-recommendation-actions">
+            {{if .RecommendationURL}}<a class="button primary" href="{{.RecommendationURL}}">Diesen Schritt öffnen</a>{{end}}
+            <details class="energy-measure-control">
+              <summary class="button">Als Hausaufgabe übernehmen</summary>
+              <form class="energy-measure-form" method="post" action="/app/energie/measure">
+                <h3>Was darf in die Aufgabe?</h3>
+                <p>Es entsteht ein normales Anliegen – keine Bestellung und keine Preiszusage.</p>
+                <label><input type="checkbox" name="share" value="inventory"><span>Anlageninventar beilegen</span></label>
+                <label><input type="checkbox" name="share" value="measurements"><span>Zusammengefasste Messwerte beilegen</span></label>
+                <label><input type="checkbox" name="share" value="contact"><span>Kontaktdaten beilegen</span></label>
+                <input type="hidden" name="recommendation_id" value="{{.Recommendation.ID}}">
+                <button class="button primary" type="submit">Hausaufgabe anlegen</button>
+              </form>
+            </details>
+            <form method="post" action="/app/energie/recommendation"><input type="hidden" name="recommendation_id" value="{{.Recommendation.ID}}"><button class="button quiet" type="submit" name="status" value="deferred">Später</button><button class="button quiet" type="submit" name="status" value="dismissed">Nicht für uns</button></form>
+          </div>{{end}}
+        </article>
+        <div class="energy-summary">
+          {{if .HasMetrics}}{{range .Metrics}}<article class="energy-metric {{.Tone}}"><span>{{.Label}}</span><strong>{{.Value}}</strong><span>{{.Detail}}</span></article>{{end}}
+          {{else}}<article class="energy-metric"><span>Messwerte</span><strong>Noch offen</strong><span>Home Assistant kann später verbunden werden.</span></article>{{end}}
+        </div>
+      </section>
+      <section class="energy-card" id="fahrplan">
+        <header class="energy-card-head"><div><h2>Ihr Energie-Fahrplan</h2><p>Ein klarer Schritt nach dem anderen.</p></div></header>
+        <div class="energy-roadmap">{{range .Roadmap}}<article class="energy-roadmap-step {{if .Current}}current{{end}}"><span class="energy-roadmap-number">{{.Number}}</span><span class="energy-roadmap-state">{{.State}}</span><strong>{{.Title}}</strong><p>{{.Detail}}</p>{{if .Action}}<a href="{{.URL}}">{{.Action}} →</a>{{end}}</article>{{end}}</div>
+      </section>
+      <section class="energy-card">
+        <header class="energy-card-head"><div><h2>Datenlage</h2><p>Keine scheinpräzisen Aussagen bei Lücken oder alten Werten.</p></div></header>
+        <div class="energy-quality"><span aria-hidden="true">{{if eq .Quality.Status "measured"}}✓{{else}}!{{end}}</span><div><strong>{{.Quality.Label}}</strong><p>{{.Quality.Effect}}</p></div><small>{{.Quality.NextAction}}</small></div>
+      </section>
+      {{if .HasScenarios}}<section class="energy-card" id="szenarien">
+        <header class="energy-card-head"><div><h2>Was-wäre-wenn</h2><p>Bandbreite statt Einsparversprechen.</p></div></header>
+        {{range .Scenarios}}<article class="energy-scenario"><div><strong>{{.Title}}</strong><p>{{.EffectBand}} · Unsicherheit: {{.Uncertainty}}</p><p>{{.Assumptions}}</p></div><div class="energy-scenario-result"><span>mögliche Spitze</span><strong>{{.PeakBand}}</strong></div></article>{{end}}
+      </section>{{end}}
+      <section class="energy-card" id="tarif">
+        <header class="energy-card-head"><div><h2>Tarif-Entwurf 2027</h2><p>Versioniert und jederzeit austauschbar.</p></div><span class="pill">{{.Tariff.Status}}</span></header>
+        {{if .TargetChanged}}<div class="message success">Ihr persönliches Peak-Ziel wurde gespeichert.</div>{{end}}
+        <div class="energy-tariff-grid"><div class="energy-tariff-copy"><strong>{{.Tariff.Rule}}</strong>{{if .Tariff.HasEstimate}}<p><strong>{{.Tariff.Estimate}}</strong></p>{{end}}<p>{{.Tariff.Disclaimer}}</p><p>Regelprofil {{.Tariff.ID}} · Stand {{.Tariff.Version}}</p><a href="{{.Tariff.SourceURL}}" target="_blank" rel="noopener noreferrer">Quelle: {{.Tariff.SourceTitle}} →</a></div>
+        {{if .CanManageEnergy}}<form class="energy-target-form" method="post" action="/app/energie/target"><label><span class="onboarding-legend">Persönliches Peak-Ziel in kW</span><input type="text" name="target_peak_kw" inputmode="decimal" value="{{.TargetPeakValue}}" placeholder="z. B. 8,0" required></label><small class="muted">Ein Planungsziel, keine technische Anschlussgrenze.</small><button class="button" type="submit">Ziel speichern</button></form>{{end}}</div>
+      </section>
+      <section class="energy-card">
+        <header class="energy-card-head"><div><h2>Was Ihr Zuhause mitbringt</h2><p>Die Grundlage für Empfehlungen – keine Einkaufsliste.</p></div>{{if .CanManageEnergy}}<a class="button" href="/app/zuhause/onboarding?step=3">Bearbeiten</a>{{end}}</header>
+        {{if .HasAssets}}<div class="energy-assets">{{range .Assets}}<span class="energy-asset"><span aria-hidden="true">✓</span>{{.Name}}</span>{{end}}</div><nav class="energy-related-links" aria-label="Verknüpfte Hausbereiche"><a href="/app/dokumente">Unterlagen</a><a href="/app/events">Wartungstermine</a><a href="/app/anliegen?new=1">Aufgabe melden</a><a href="/app/kontakte">Fachkontakte</a></nav>{{else}}<p class="muted">Noch keine größeren Verbraucher erfasst.</p>{{end}}
+        <div class="energy-business-note"><span aria-hidden="true">◎</span><p><strong>Kostenmodell:</strong> voller Produktumfang drei Jahre kostenlos{{if .FreeUntil}} bis {{.FreeUntil}}{{end}}, danach nach heutigem Modell 12 € pro Jahr. Kein Zahlungszwang während des Piloten.</p></div>
+      </section>
+      <section class="energy-card">
+        <header class="energy-card-head"><div><h2>Messwerte &amp; Referenz</h2><p>Home Assistant für den Alltag, Smart Meter als lokale Abrechnungsreferenz.</p></div></header>
+        {{if eq .ImportStatus "added"}}<div class="message success">Smart-Meter-Datei übernommen. Ein erneuter Import derselben Datei erzeugt keine Duplikate.</div>{{else if eq .ImportStatus "duplicate"}}<div class="message">Diese Datei war bereits vorhanden; es wurde nichts doppelt gespeichert.</div>{{else if eq .ImportStatus "invalid"}}<div class="message error">Datei nicht erkannt. Erwartet werden 15-Minuten-Zeilen mit <strong>timestamp</strong> und <strong>import_kwh</strong>.</div>{{end}}
+        {{if .HasPeaks}}<div class="energy-reference-grid">{{range .Peaks}}<article class="energy-reference-item"><span>Monatsspitze · {{.Source}}</span><strong>{{.Value}}</strong><span>höchstes abgeschlossenes 15-Minuten-Fenster</span></article>{{end}}</div>{{else}}<p class="muted">Noch keine abgeschlossenen Viertelstunden vorhanden.</p>{{end}}
+        {{if .HasComparison}}<div class="energy-quality {{.Comparison.Tone}}"><span aria-hidden="true">{{if eq .Comparison.Tone "good"}}✓{{else}}!{{end}}</span><div><strong>{{.Comparison.Title}}</strong><p>{{.Comparison.Details}}</p></div></div>{{end}}
+        {{if .HasImports}}<div class="energy-assets energy-import-history">{{range .Imports}}<span class="energy-asset">{{.Filename}} · {{.Date}}</span>{{end}}</div>{{end}}
+        {{if .CanManageEnergy}}<form class="energy-import-form" method="post" action="/app/energie/smart-meter" enctype="multipart/form-data">
+          <label><span class="onboarding-legend">Smart-Meter-CSV auswählen</span><input type="file" name="smart_meter_file" accept=".csv,text/csv" required></label>
+          <small>Unterstütztes Profil: <strong>timestamp;import_kwh</strong>, exakt um Minute 00, 15, 30 oder 45. Originaldatei und Auswertung bleiben diesem Haus zugeordnet.</small>
+          <button class="button" type="submit">Als Referenz importieren</button>
+        </form>{{end}}
+      </section>
+      <section class="energy-card" id="betreuung">
+        <header class="energy-card-head"><div><h2>Technische Betreuung</h2><p>Eigene Konten, hausbezogene Rechte und jederzeit sofort entziehbar.</p></div><a href="/app/settings/users">Personen verwalten</a></header>
+        {{if .CaretakerChanged}}<div class="message success">Der technische Zugriff für dieses Haus wurde geändert und protokolliert.</div>{{end}}
+        {{if .HasCaretakers}}<div class="energy-caretaker-list">{{range .Caretakers}}<form class="energy-caretaker" method="post" action="/app/energie/caretaker">
+          <input type="hidden" name="email" value="{{.Email}}">
+          <div><strong>{{.Name}}</strong><small>{{.Email}}</small></div>
+          <label><input type="checkbox" name="scope" value="view"{{if .CanView}} checked{{end}}{{if not .Editable}} disabled{{end}}> ansehen</label>
+          <label><input type="checkbox" name="scope" value="configure"{{if .CanConfigure}} checked{{end}}{{if not .Editable}} disabled{{end}}> einrichten</label>
+          <label><input type="checkbox" name="scope" value="control"{{if .CanControl}} checked{{end}}{{if not .Editable}} disabled{{end}}> Steuerung freigeben</label>
+          {{if and $.CanGrantEnergyAccess .Editable}}<button class="button" type="submit">Zugriff speichern</button>{{else if not .Editable}}<a href="/app/settings/users">Zuerst als Portalzugang übernehmen</a>{{end}}
+        </form>{{end}}</div>{{else}}<p class="muted">Noch keine weitere Person ist diesem Haus zugeordnet. Laden Sie zuerst ein eigenes Benutzerkonto ein.</p>{{end}}
+        <div class="energy-business-note"><span aria-hidden="true">i</span><p>„Ansehen“, „Einrichten“ und „Steuerung freigeben“ sind getrennte Rechte. Der dauerhaft sichtbare Haus-Schalter muss trotzdem bewusst umgelegt werden.</p></div>
+      </section>
+      <section class="energy-card">
+        <header class="energy-card-head"><div><h2>Fachhilfe, wenn sie wirklich nötig ist</h2><p>Erst bekannte Kontakte, keine offene Plattform und keine automatische Vergabe.</p></div><a href="/app/kontakte">Bekannte Kontakte</a></header>
+        <p>Eine Empfehlung wird zuerst als Hausaufgabe angelegt. Dort bleiben Rückfragen, Angebot, Termin und Nachweis zusammen. Sie entscheiden ausdrücklich, welche Daten geteilt werden.</p>
+        <div class="energy-marketplace-gate"><strong>Marktplatz geschlossen</strong><span>Kein Zahlungsfluss, keine Provision und keine öffentliche Anbieterreihung vor belastbaren Pilotdaten.</span></div>
+      </section>
+    </div>
+  </main>
 {{template "appClose" .}}
 {{end}}
 `

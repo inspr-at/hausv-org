@@ -23,6 +23,8 @@ const (
 	CapabilityOwnerDocuments      Capability = "owner-documents"
 	CapabilityVote                Capability = "vote"
 	CapabilityOversight           Capability = "oversight"
+	CapabilityManageEnergy        Capability = "manage-energy"
+	CapabilityControlEnergy       Capability = "control-energy"
 )
 
 func CanManageContacts(role string) bool {
@@ -47,6 +49,8 @@ func HasCapability(role string, action Capability) bool {
 		return false
 	case CapabilityManageUsers, CapabilityManageAnnouncements, CapabilityManageDocuments, CapabilityManageIssues, CapabilityManageVotes, CapabilityManageBuilding:
 		return role == store.RoleManager
+	case CapabilityManageEnergy, CapabilityControlEnergy:
+		return role == store.RoleManager || role == store.RoleOwner
 	case CapabilityOwnerDocuments, CapabilityVote:
 		return role == store.RoleOwner
 	case CapabilityOversight:

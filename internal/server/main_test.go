@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/markus-barta/hausv-org/internal/auth"
+	"github.com/markus-barta/hausv-org/internal/energy"
 	"github.com/markus-barta/hausv-org/internal/version"
 	"github.com/markus-barta/hausv-org/internal/web"
 )
@@ -5654,6 +5655,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		handoverStore:         handoverStore,
 		voteStore:             voteStore,
 		parkingStore:          parkingStore,
+		energyStore:           energy.NewMemoryStore(),
 	}
 }
 

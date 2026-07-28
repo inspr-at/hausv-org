@@ -91,6 +91,19 @@
     form.dataset.submitting = "true";
     form.setAttribute("aria-busy", "true");
 
+    // Disabled submit buttons are excluded from the browser's form payload.
+    // Preserve the clicked button's name/value before locking it so forms with
+    // multiple explicit actions (Back, Continue, Finish) keep their intent.
+    var submitterValue = null;
+    if (submitter && submitter.name) {
+      submitterValue = document.createElement("input");
+      submitterValue.type = "hidden";
+      submitterValue.name = submitter.name;
+      submitterValue.value = submitter.value;
+      submitterValue.dataset.submitterValue = "true";
+      form.appendChild(submitterValue);
+    }
+
     submitButtons(form, submitter).forEach(function (button) {
       if (!button || button.disabled) return;
       button.dataset.submitText = button.value || button.textContent || "";
@@ -105,6 +118,9 @@
       if (!document.body.contains(form)) return;
       form.dataset.submitting = "false";
       form.removeAttribute("aria-busy");
+      if (submitterValue && submitterValue.parentNode === form) {
+        form.removeChild(submitterValue);
+      }
       submitButtons(form, submitter).forEach(function (button) {
         if (!button) return;
         button.disabled = false;

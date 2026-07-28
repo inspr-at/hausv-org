@@ -17,7 +17,13 @@ const (
 	RoleResident        = "Bewohner"
 	RoleServiceProvider = "Dienstleister"
 
-	PermissionParking = "parking"
+	PermissionParking         = "parking"
+	PermissionEnergyView      = "energy-view"
+	PermissionEnergyConfigure = "energy-configure"
+	PermissionEnergyControl   = "energy-control"
+	// PermissionEnergyCaretaker is the legacy combined view/configure grant.
+	// It remains readable so existing profiles do not lose access.
+	PermissionEnergyCaretaker = "energy-caretaker"
 
 	AuthMethodEmail = "email"
 	AuthMethodOIDC  = "oidc"

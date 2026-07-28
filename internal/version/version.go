@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.47.0",
+			Date:     "28. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Das private Haus-Cockpit führt vom Verstehen zur sicheren Energieplanung.",
+			Intro:    "Ein ruhiges Onboarding, lesende Messquellen und genau eine nächste Empfehlung machen Peak Shaving auch ohne technische Vorkenntnisse zugänglich.",
+			Items: []NoteItem{
+				{Label: "Sicher beginnen", Text: "Der dauerhaft sichtbare Modus „Nur beobachten“ ist Standard; eine bewusste Freigabe startet zunächst ohne Gerätewirkung im Testlauf."},
+				{Label: "Messung verstehen", Text: "Home Assistant, Smart Meter, Viertelstunden-Spitze, Datenqualität und unverbindliche Szenarien bleiben nachvollziehbar getrennt."},
+				{Label: "Hilfe gezielt teilen", Text: "Technische Rechte und Datenfreigaben sind hausbezogen, widerrufbar und erzeugen weder automatische Aufträge noch Zahlungen."},
+				{Label: "Preisrahmen einordnen", Text: "Private Hausprofile nutzen drei Jahre den vollen Umfang kostenlos; die Gemeinschaft bleibt im Pilot bis 25 Wohneinheiten kostenfrei und behält ihren gesonderten Zukunftsrichtwert je Wohneinheit."},
+			},
+		},
+		{
 			Version:  "0.46.0",
 			Date:     "28. Juli 2026",
 			Kind:     "Öffentliche Startseite",

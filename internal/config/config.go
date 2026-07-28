@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net"
 	"net/mail"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -41,6 +42,22 @@ type TenantConfig struct {
 	HeroImageURL      string               `json:"hero_image_url,omitempty"`
 	Host              string               `json:"host"`
 	HA                homeassistant.Config `json:"-"`
+}
+
+// HomeAssistantConnector is the non-secret, tenant-scoped connector
+// declaration. Tokens are referenced by file or environment-variable name;
+// inline token material is intentionally not part of the schema.
+type HomeAssistantConnector struct {
+	TenantSlug  string `json:"tenant_slug"`
+	BaseURL     string `json:"base_url"`
+	TokenFile   string `json:"token_file,omitempty"`
+	TokenEnv    string `json:"token_env,omitempty"`
+	MeterEnergy string `json:"meter_energy_entity,omitempty"`
+	Power       string `json:"power_entity,omitempty"`
+	Price       string `json:"price_entity,omitempty"`
+	PlugSwitch  string `json:"plug_switch_entity,omitempty"`
+	BatterySOC  string `json:"battery_soc_entity,omitempty"`
+	GridFeedIn  string `json:"grid_feed_in_entity,omitempty"`
 }
 
 func (t TenantConfig) PublicURL(path string) string {
@@ -213,6 +230,81 @@ func ParseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 		}
 	}
 	return out, nil
+}
+
+// ApplyHomeAssistantConnectors adds tenant-scoped Home Assistant connections
+// after ParseTenants. The JSON is safe to keep in declarative host config:
+// credentials are only loaded from an agenix-mounted file or a named env var.
+func ApplyHomeAssistantConnectors(raw string, tenants map[string]TenantConfig) error {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	var connectors []HomeAssistantConnector
+	if err := json.Unmarshal([]byte(raw), &connectors); err != nil {
+		return fmt.Errorf("invalid HA_CONNECTORS_JSON")
+	}
+	seen := map[string]struct{}{}
+	for _, connector := range connectors {
+		slug := textutil.Slug(connector.TenantSlug)
+		tenant, ok := tenants[slug]
+		if slug == "" || !ok {
+			return fmt.Errorf("home assistant connector references unknown tenant")
+		}
+		if _, duplicate := seen[slug]; duplicate {
+			return fmt.Errorf("duplicate home assistant connector for tenant %s", slug)
+		}
+		seen[slug] = struct{}{}
+		baseURL := strings.TrimRight(strings.TrimSpace(connector.BaseURL), "/")
+		parsed, err := url.Parse(baseURL)
+		if err != nil || parsed.Scheme == "" || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+			return fmt.Errorf("invalid home assistant base URL for tenant %s", slug)
+		}
+		token, err := connectorToken(connector)
+		if err != nil {
+			return fmt.Errorf("home assistant credential unavailable for tenant %s", slug)
+		}
+		tenant.HA = homeassistant.NewConfig(
+			baseURL,
+			token,
+			strings.TrimSpace(connector.MeterEnergy),
+			strings.TrimSpace(connector.Power),
+			strings.TrimSpace(connector.Price),
+		).WithChargingEntities(
+			strings.TrimSpace(connector.PlugSwitch),
+			strings.TrimSpace(connector.BatterySOC),
+			strings.TrimSpace(connector.GridFeedIn),
+		)
+		tenants[slug] = tenant
+	}
+	return nil
+}
+
+func connectorToken(connector HomeAssistantConnector) (string, error) {
+	tokenFile := strings.TrimSpace(connector.TokenFile)
+	tokenEnv := strings.TrimSpace(connector.TokenEnv)
+	if (tokenFile == "") == (tokenEnv == "") {
+		return "", errors.New("exactly one token source is required")
+	}
+	if tokenFile != "" {
+		raw, err := os.ReadFile(tokenFile)
+		if err != nil {
+			return "", errors.New("token file unavailable")
+		}
+		token := strings.TrimSpace(string(raw))
+		if token == "" {
+			return "", errors.New("token file empty")
+		}
+		return token, nil
+	}
+	if strings.ContainsAny(tokenEnv, " \t\r\n=") {
+		return "", errors.New("invalid token env name")
+	}
+	token := strings.TrimSpace(os.Getenv(tokenEnv))
+	if token == "" {
+		return "", errors.New("token env unavailable")
+	}
+	return token, nil
 }
 
 func ParseUserProfiles(raw string, allowed map[string]struct{}, admins map[string]struct{}, defaultTenant string) (map[string]store.UserProfile, error) {

@@ -25,6 +25,7 @@ const routes = [
   { path: '/app/kontakte', heading: 'Kontakte', content: 'QA Hausbetreuung' },
   { path: '/app/dokumente', heading: 'Dokumente', content: 'QA Hausordnung' },
   { path: '/app/anliegen', heading: 'Anliegen', content: 'Anliegen' },
+  { path: '/app/energie', heading: 'QA Zuhause', content: 'Nur beobachten' },
 ];
 
 const executableCandidates = [
@@ -267,6 +268,74 @@ async function assertRoleActions(page, persona) {
   }
 }
 
+async function assertEnergySafetyAndFlow(viewport) {
+  const residentContext = await newContext(viewport.size);
+  const resident = await localLogin(residentContext, 'resident@example.com');
+  await resident.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
+  if (await resident.getByText('Steuerung bewusst freigeben', { exact: true }).count()) {
+    fail(`Bewohner ${viewport.name}: Steuerungsfreigabe sichtbar`);
+  }
+  await residentContext.close();
+
+  const ownerContext = await newContext(viewport.size);
+  const page = await localLogin(ownerContext, 'owner@example.com');
+  await page.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
+  const strip = page.locator('.energy-mode-strip');
+  if ((await strip.locator('strong').first().innerText()).trim() !== 'Nur beobachten') {
+    fail(`Energie ${viewport.name}: startet nicht in Nur beobachten`);
+  }
+  await page.getByText('Steuerung bewusst freigeben', { exact: true }).click();
+  const modeForm = page.locator('.energy-mode-popover');
+  await modeForm.locator('input[type="checkbox"]').check();
+  await modeForm.locator('input[name="confirmation_text"]').fill('AKTIVIEREN');
+  await modeForm.getByRole('button', { name: 'Aktive Steuerung freigeben' }).click();
+  await page.waitForLoadState('networkidle');
+  if ((await strip.locator('strong').first().innerText()).trim() !== 'Steuerung freigegeben · Testlauf') {
+    fail(`Energie ${viewport.name}: Freigabe startet nicht im Testlauf`);
+  }
+  if (!(await page.getByText('schaltet aber noch kein Gerät', { exact: false }).count())) {
+    fail(`Energie ${viewport.name}: Shadow-Mode-Erklärung fehlt`);
+  }
+  await page.getByRole('button', { name: /Sofort zurück/ }).click();
+  await page.waitForLoadState('networkidle');
+  if ((await strip.locator('strong').first().innerText()).trim() !== 'Nur beobachten') {
+    fail(`Energie ${viewport.name}: Sofort-Rückkehr fehlgeschlagen`);
+  }
+
+  if (viewport.name === 'Desktop') {
+    const csv = Buffer.from('timestamp;import_kwh\n2026-07-01T00:00:00+02:00;0,42\n2026-07-01T00:15:00+02:00;0,38\n');
+    const file = { name: 'smart-meter.csv', mimeType: 'text/csv', buffer: csv };
+    await page.locator('input[name="smart_meter_file"]').setInputFiles(file);
+    await page.getByRole('button', { name: 'Als Referenz importieren' }).click();
+    await page.waitForLoadState('networkidle');
+    if (!(await page.getByText('Smart-Meter-Datei übernommen.', { exact: false }).count())) {
+      fail('Energie Desktop: Smart-Meter-Import nicht bestätigt');
+    }
+    await page.locator('input[name="smart_meter_file"]').setInputFiles(file);
+    await page.getByRole('button', { name: 'Als Referenz importieren' }).click();
+    await page.waitForLoadState('networkidle');
+    if (!(await page.getByText('bereits vorhanden', { exact: false }).count())) {
+      fail('Energie Desktop: doppelter Import nicht erkannt');
+    }
+  }
+
+  if (viewport.name === 'Mobil') {
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
+    const box = await strip.boundingBox();
+    if (!box || box.y > 65) fail(`Energie Mobil: Modus nicht permanent sichtbar (${box?.y ?? 'fehlt'})`);
+    const primaryTargets = await page.locator('.energy-page .button, .energy-mode-action').evaluateAll((nodes) =>
+      nodes.filter((node) => {
+        const rect = node.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && rect.height < 44;
+      }).map((node) => (node.textContent || '').trim())
+    );
+    if (primaryTargets.length) fail(`Energie Mobil: Touch-Ziele unter 44px: ${primaryTargets.join(', ')}`);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+  if (overflow) fail(`Energie ${viewport.name}: horizontaler Überlauf`);
+  await ownerContext.close();
+}
+
 try {
   for (const viewport of [
     { name: 'Desktop', size: { width: 1440, height: 900 } },
@@ -284,6 +353,7 @@ try {
       { name: 'Desktop', size: { width: 1440, height: 900 } },
       { name: 'Mobil', size: { width: 390, height: 844 } },
     ]) {
+      await assertEnergySafetyAndFlow(viewport);
       for (const persona of personas) {
         const context = await newContext(viewport.size);
         const page = await localLogin(context, persona.email);

@@ -234,6 +234,41 @@ func (c Config) State(ctx context.Context, entityID string) (EntityState, error)
 	return state, nil
 }
 
+// States returns the current entity catalogue. It is deliberately read-only
+// and bounded: discovery may suggest measurement entities, but never exposes a
+// service-call capability to the onboarding flow.
+func (c Config) States(ctx context.Context) ([]EntityState, error) {
+	if c.baseURL == "" || c.token == "" {
+		return nil, errors.New("home assistant not configured")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/states", nil)
+	if err != nil {
+		return nil, errors.New("could not build home assistant request")
+	}
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.New("home assistant request failed")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("home assistant returned %d", resp.StatusCode)
+	}
+
+	var states []EntityState
+	dec := json.NewDecoder(io.LimitReader(resp.Body, 16<<20))
+	if err := dec.Decode(&states); err != nil {
+		return nil, errors.New("home assistant returned invalid json")
+	}
+	if len(states) > 50000 {
+		return nil, errors.New("home assistant returned too many entities")
+	}
+	sort.Slice(states, func(i, j int) bool { return states[i].EntityID < states[j].EntityID })
+	return states, nil
+}
+
 func (c Config) History(ctx context.Context, start time.Time, end time.Time, entityIDs []string) (map[string][]HistoryState, error) {
 	if c.baseURL == "" || c.token == "" || len(entityIDs) == 0 {
 		return nil, errors.New("home assistant not configured")
