@@ -187,6 +187,41 @@ Peppol bleibt strategisch interessant, wird aber nur über einen akkreditierten
 Access-Point-Anbieter umgesetzt, wenn realer Bedarf bestätigt ist. hausv.org
 baut keinen eigenen Peppol Access Point.
 
+Betreiberprüfung vom 28.07.2026:
+
+- In Österreich ist die strukturierte E-Rechnung für Lieferanten des Bundes
+  verpflichtend; die Einbringung kann unter anderem über Peppol erfolgen.
+  HAUSV stellt jedoch keine Rechnungen im Namen einer Verwaltung aus.
+- Für den privaten Rechnungseingang ist derzeit kein konkreter
+  Peppol-Handelspartner, keine Participant-ID und kein erwartetes
+  Nachrichtenvolumen dokumentiert.
+- ViDA macht strukturierte E-Rechnungen für grenzüberschreitende
+  EU-B2B-Transaktionen ab 01.07.2030 relevant. Das ist ein Beobachtungspunkt,
+  aber kein heutiger Produktbedarf.
+- Endnutzer senden und empfangen über einen frei gewählten
+  Peppol-akkreditierten Service Provider. HAUSV wird weder OpenPeppol-Mitglied
+  noch eigener Access Point.
+
+Vorbewerteter Anbieter: ecosio ist in der aktuellen OpenPeppol-Liste als
+zertifizierter Access-Point- und SMP-Anbieter geführt. Öffentlich belegt sind
+API-Integration, Peppol-Routing, Monitoring, Rollensteuerung, dreimonatige
+Standardaufbewahrung sowie ein Art.-28-Vertrag mit Datenrückgabe beim
+Vertragsende. Gegen eine Auswahl ohne Bedarf sprechen fehlende öffentliche
+Preise und die veröffentlichten Mindestlaufzeiten. Ein Angebot wird deshalb
+erst mit realem Fall und Volumen eingeholt.
+
+Rollentrennung:
+
+- ebInterface: lokales Rechnungsformat prüfen und das empfangene Original
+  geschützt ablegen
+- Peppol: Transport und Teilnehmeradressierung über den akkreditierten Anbieter
+- HAUSV: empfangene Rechnung in das kanonische `Invoice`-Modell übernehmen,
+  ohne Buchung, Steuerlogik, Zahlung oder eigenes Rechnungsausstellen
+
+Entscheidung: derzeit No-Go. Entblockt wird die Anbieterentscheidung durch
+einen benannten Sender oder Empfänger, Sende-/Empfangsrichtung, erwartetes
+Monatsvolumen und benötigtes Peppol-Profil.
+
 DATEV und ZUGFeRD sind für die Österreich-first Roadmap nachrangig. Sie werden
 nicht umgesetzt, solange kein bestätigter Kundenbedarf vorliegt. Deutscher
 Content darf die österreichische Priorisierung nicht treiben.
@@ -198,6 +233,21 @@ Entscheidungsvorlage:
 | Peppol | mittelfristig strategisch | Anbieterintegration nötig | akkreditierten Anbieter nutzen, nicht selbst AP bauen |
 | DATEV | niedrig für AT-Fokus | mittel bis hoch | kein Scope ohne Bedarf |
 | ZUGFeRD | niedrig für AT-Fokus | mittel | kein Scope ohne Bedarf |
+
+Primärquellen der Betreiberprüfung:
+
+- OpenPeppol für Endnutzer und Liste zertifizierter Anbieter:
+  `https://peppol.org/about/for-end-users/` und
+  `https://peppol.org/members/peppol-certified-service-providers/`
+- österreichisches Unternehmensserviceportal zur E-Rechnung an die
+  öffentliche Verwaltung:
+  `https://www.usp.gv.at/themen/steuern-finanzen/umsatzsteuer-ueberblick/weitere-informationen-zur-umsatzsteuer/vorsteuerabzug-und-rechnung/e-rechnung-an-die-oeffentliche-verwaltung.html`
+- EU-Kommission zu ViDA:
+  `https://taxation-customs.ec.europa.eu/taxation/vat/vat-digital-age-vida_en`
+- ecosio Produkt-, Datenschutz- und Vertragsinformationen:
+  `https://ecosio.com/en/products/einvoicing/`,
+  `https://ecosio.com/en/data-protection/` und
+  `https://ecosio.com/app/uploads/2025/10/2025-10-20_agb_ecosio_all-annexes_en.pdf`
 
 ## Bankdateien: camt.053 vor camt.054 vor MT940
 
