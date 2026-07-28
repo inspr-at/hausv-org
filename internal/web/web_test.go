@@ -121,11 +121,9 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 	}
 	for _, want := range []string{
 		`<a class="side-mark" href="/app" aria-label="{{if .IsServiceProvider}}Anliegen{{else}}Hausüberblick{{end}}">`,
-		`{{template "hausvLandingMark" .}}`,
+		`{{define "hausvLandingMark"}}`,
 		`{{define "hausvPlatformMark"}}`,
 		`{{template "tenantBrandMark" .}}`,
-		`class="mark-word"`,
-		`hausv.org</text>`,
 		`rel="icon" type="image/svg+xml" href="/favicon.svg"`,
 		`data-dialog="release-history"`,
 		`Versionsverlauf`,
@@ -134,6 +132,18 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		if !strings.Contains(PageTemplates, want) {
 			t.Fatalf("app shell missing logo/fav icon convention %q", want)
 		}
+	}
+	landingMarkStart := strings.Index(PageTemplates, `{{define "hausvLandingMark"}}`)
+	if landingMarkStart < 0 {
+		t.Fatal("simple public landing mark template is missing")
+	}
+	landingMarkEnd := strings.Index(PageTemplates[landingMarkStart:], `{{end}}`)
+	if landingMarkEnd < 0 {
+		t.Fatal("simple public landing mark template is incomplete")
+	}
+	landingMark := PageTemplates[landingMarkStart : landingMarkStart+landingMarkEnd]
+	if strings.Contains(landingMark, "mark-frame") || strings.Contains(landingMark, "<text") {
+		t.Fatal("public landing mark should contain only the three houses")
 	}
 	if strings.Contains(PageTemplates, `inset: 0 0 0 34%`) || !strings.Contains(PageTemplates, `.home-hero::before { content: ""; position: absolute; z-index: -2; inset: 0;`) {
 		t.Fatal("home overview hero image should span the full header width")

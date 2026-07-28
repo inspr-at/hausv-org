@@ -47,17 +47,15 @@ const PageTemplates = `
       font-family: var(--font-sans);
 {{end}}
 {{define "hausvLandingMark"}}
-<svg class="hausv-mark hausv-mark-with-text" viewBox="0 0 72 56" aria-hidden="true" focusable="false">
-  <path class="mark-frame" d="M11 7h50c2.8 0 5 2.2 5 5v32c0 2.8-2.2 5-5 5H11c-2.8 0-5-2.2-5-5V12c0-2.8 2.2-5 5-5z"/>
-  <path d="M15 34h42"/>
-  <path d="M16 34v-8.5l7-5.5 7 5.5V34"/>
-  <path d="M42 34v-8.5l7-5.5 7 5.5V34"/>
-  <path d="M28 34V20.5L36 14l8 6.5V34"/>
-  <path d="M32.5 34v-7h7v7"/>
-  <path d="M19.5 28h3"/>
-  <path d="M49.5 28h3"/>
-  <path d="M32.5 23.5h7"/>
-  <text class="mark-word" x="36" y="44.2" text-anchor="middle">hausv.org</text>
+<svg class="hausv-mark" viewBox="0 0 72 42" aria-hidden="true" focusable="false">
+  <path d="M9 35h54"/>
+  <path d="M11 35V23l8-6 8 6v12"/>
+  <path d="M45 35V23l8-6 8 6v12"/>
+  <path d="M25 35V17.5L36 9l11 8.5V35"/>
+  <path d="M31.5 35v-9h9v9"/>
+  <path d="M15.5 27h5"/>
+  <path d="M51.5 27h5"/>
+  <path d="M31 21h10"/>
 </svg>
 {{end}}
 {{define "hausvPlatformMark"}}
@@ -305,8 +303,8 @@ const PageTemplates = `
       --sky:#6f9ab3; --mint:#dfeee5; --rose:#f0d7d0; --cream:#faf6ed;
     }
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body { margin: 0; color: var(--ink); background: var(--cream); font-family: var(--font-sans); }
+    html { max-width: 100%; overflow-x: clip; scroll-behavior: smooth; }
+    body { max-width: 100%; overflow-x: clip; margin: 0; color: var(--ink); background: var(--cream); font-family: var(--font-sans); }
     a { color: inherit; }
     :where(a, button):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
     .landing-hero { position: relative; min-height: 86svh; display: grid; grid-template-rows: auto minmax(0,1fr); overflow: hidden; color: #fff; background: #162018; }
@@ -315,9 +313,8 @@ const PageTemplates = `
     .landing-nav, .landing-copy { position: relative; z-index: 1; width: min(1180px,100%); margin: 0 auto; padding-left: clamp(20px,4vw,42px); padding-right: clamp(20px,4vw,42px); }
     .landing-nav { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding-top: 26px; padding-bottom: 20px; }
     .landing-brand { display: inline-flex; align-items: center; text-decoration: none; color: #fff; font-weight: 800; }
-    .landing-mark { width: 74px; height: 54px; border-radius: 8px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.42); background: rgba(255,255,255,.14); backdrop-filter: blur(8px); color: var(--gold-light); }
-    .landing-mark .hausv-mark { width: 64px; height: 48px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .landing-mark .mark-word { fill: currentColor; stroke: none; font-family: var(--font-sans); font-size: 6.2px; font-weight: 900; letter-spacing: .02em; }
+    .landing-mark { width: 72px; height: 44px; display: grid; place-items: center; color: var(--gold-light); }
+    .landing-mark .hausv-mark { width: 70px; height: 42px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .landing-links { display: flex; align-items: center; gap: 20px; font-size: 14px; font-weight: 700; }
     .landing-links a { text-decoration: none; color: rgba(255,255,255,.88); }
     .landing-links a:hover { color: #fff; }
@@ -329,19 +326,20 @@ const PageTemplates = `
     .landing-button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; padding: 12px 18px; text-decoration: none; font-weight: 900; }
     .landing-button.primary { background: #fff; color: var(--ink); }
     .landing-button.secondary { border: 1px solid rgba(255,255,255,.48); color: #fff; background: rgba(255,255,255,.08); backdrop-filter: blur(8px); }
-    .landing-proof { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; max-width: 760px; }
-    .landing-proof span { border: 1px solid rgba(255,255,255,.28); border-radius: 999px; padding: 8px 12px; color: rgba(255,255,255,.86); background: rgba(255,255,255,.08); font-size: 13px; font-weight: 800; }
+    .landing-access { display: flex; align-items: center; gap: 9px; margin: 26px 0 0; color: rgba(255,255,255,.82); font-size: 14px; font-weight: 750; }
+    .landing-access svg { width: 18px; height: 18px; flex: 0 0 auto; stroke: var(--gold-light); stroke-width: 1.9; fill: none; }
     .section { padding: clamp(48px,8vw,86px) clamp(20px,4vw,42px); }
     .section-inner { position: relative; z-index: 1; width: min(1180px,100%); margin: 0 auto; }
     .section h2 { margin: 0; font-family: var(--font-serif); font-size: clamp(34px,4.6vw,56px); line-height: 1.02; font-weight: 500; max-width: 820px; }
     .section-kicker { color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 14px; }
     .section-lead { max-width: 760px; margin-top: 18px; color: var(--muted); font-size: 18px; line-height: 1.55; }
-    .feature-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; margin-top: 34px; }
-    .feature { border: 1px solid var(--line); border-radius: 8px; padding: 18px; background: var(--panel); display: grid; gap: 14px; align-content: start; box-shadow: 0 12px 26px rgba(32,37,31,.035); }
-    .feature-icon { width: 48px; height: 48px; border-radius: 8px; display: grid; place-items: center; background: rgba(200,153,63,.12); color: var(--gold-ink); }
+    .feature-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 0; margin-top: 34px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .feature { min-width: 0; border-right: 1px solid var(--line); padding: 24px 18px; display: grid; gap: 14px; align-content: start; }
+    .feature:last-child { border-right: 0; }
+    .feature-icon { width: 42px; height: 42px; display: grid; place-items: center; color: var(--gold-ink); }
     .feature-icon svg { width: 25px; height: 25px; display: block; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .feature strong { display: block; font-family: var(--font-serif); font-size: 23px; line-height: 1.15; }
-    .feature p { margin: 10px 0 0; color: var(--muted); line-height: 1.5; }
+    .feature strong { display: block; font-family: var(--font-serif); font-size: 22px; line-height: 1.15; }
+    .feature p { margin: 7px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
     .positioning-strip { margin-top: 30px; display: grid; grid-template-columns: 68px minmax(0,1fr) auto; gap: 18px; align-items: center; border: 1px solid rgba(47,107,74,.2); border-radius: 10px; background: rgba(47,107,74,.06); padding: 20px 22px; }
     .positioning-mark { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: rgba(47,107,74,.12); color: var(--leaf); }
     .positioning-mark svg { width: 26px; height: 26px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -427,12 +425,64 @@ const PageTemplates = `
     .final-cta .landing-button.secondary { color: #fff; }
     footer { padding: 24px clamp(20px,4vw,42px); color: #6b6f63; background: #fffefb; border-top: 1px solid var(--line); }
     footer div { width: min(1180px,100%); margin: 0 auto; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+    .product-state { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0; margin-top: 28px; border: 1px solid rgba(47,107,74,.2); border-radius: 10px; background: rgba(47,107,74,.045); overflow: hidden; }
+    .product-state > div { padding: 20px 22px; }
+    .product-state > div + div { border-left: 1px solid rgba(47,107,74,.16); }
+    .product-state span { display: block; margin-bottom: 7px; color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .product-state strong { font-family: var(--font-serif); font-size: 24px; line-height: 1.12; }
+    .product-state p { margin: 7px 0 0; color: var(--muted); line-height: 1.45; }
+    .landing-more { margin-top: 14px; border-bottom: 1px solid var(--line); }
+    .landing-more summary { min-height: 50px; display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; color: var(--ink); font-weight: 850; list-style: none; }
+    .landing-more summary::-webkit-details-marker { display: none; }
+    .landing-more summary::after { content: "+"; color: var(--gold-ink); font-size: 24px; font-weight: 500; }
+    .landing-more[open] summary::after { content: "−"; }
+    .landing-more-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; padding: 4px 0 22px; }
+    .landing-more-grid h3 { margin: 0 0 10px; font-family: var(--font-serif); font-size: 24px; }
+    .landing-more-grid ul { margin: 0; padding-left: 20px; color: var(--muted); line-height: 1.65; }
+    .landing-more-grid small { color: var(--gold-ink); font-weight: 800; }
+    .trust-layout { grid-template-columns: minmax(280px,.82fr) minmax(0,1.18fr); align-items: center; }
+    .trust-copy { gap: 16px; }
+    .trust-summary { grid-template-columns: repeat(2,minmax(0,1fr)); border-top: 0; gap: 0 28px; }
+    .trust-line { grid-template-columns: 34px minmax(0,1fr); gap: 12px; padding: 17px 0; }
+    .trust-number { width: 26px; height: 26px; }
+    .price-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); border: 1px solid rgba(138,123,63,.24); border-radius: 10px; background: var(--panel); overflow: hidden; }
+    .price-summary > div { padding: 24px; }
+    .price-summary > div + div { border-left: 1px solid var(--line); }
+    .price-summary strong { display: block; font-family: var(--font-serif); font-size: clamp(27px,2.2vw,32px); line-height: 1.05; }
+    .price-summary p { margin: 9px 0 0; color: var(--muted); line-height: 1.48; }
+    .price-examples { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 14px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .price-example { padding: 16px; text-align: center; border-right: 1px solid var(--line); }
+    .price-example:last-child { border-right: 0; }
+    .price-example b { display: block; font-family: var(--font-serif); color: var(--gold-ink); font-size: 26px; }
+    .price-example span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .price-footnote { margin: 14px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .imprint-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+    .legal-details { margin-top: 14px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .legal-details summary { min-height: 52px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 800; list-style: none; }
+    .legal-details summary::-webkit-details-marker { display: none; }
+    .legal-details summary::after { content: "+"; color: var(--gold-ink); font-size: 24px; font-weight: 500; }
+    .legal-details[open] summary::after { content: "−"; }
+    .legal-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; padding-bottom: 18px; }
+    .landing-contact { display: flex; align-items: center; justify-content: space-between; gap: 22px; margin-top: 28px; padding: 22px 24px; border-radius: 10px; background: var(--nav); color: #fff; }
+    .landing-contact strong { display: block; font-family: var(--font-serif); font-size: 28px; }
+    .landing-contact p { margin: 5px 0 0; color: rgba(255,255,255,.72); }
+    .landing-contact .landing-button { flex: 0 0 auto; background: #fff; color: var(--ink); }
     @media (max-width: 900px) {
       .landing-links { display: none; }
       .landing-hero { min-height: 88svh; }
       .landing-hero::after { background: linear-gradient(180deg, rgba(12,18,13,.78) 0%, rgba(12,18,13,.5) 46%, rgba(12,18,13,.88) 100%); }
       .landing-copy { padding-top: 64px; }
-      .feature-grid, .use-grid, .trust-layout, .cost-layout, .imprint-grid, .roadmap-grid, .positioning-strip { grid-template-columns: 1fr; }
+      .feature-grid, .use-grid, .trust-layout, .cost-layout, .imprint-grid, .roadmap-grid, .positioning-strip, .product-state, .landing-more-grid, .price-summary, .legal-grid { grid-template-columns: 1fr; }
+      .feature-grid { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+      .feature { grid-template-columns: 42px minmax(0,1fr); gap: 14px; padding: 16px; border-right: 0; border-bottom: 1px solid var(--line); background: rgba(255,254,251,.88); }
+      .feature:last-child { border-bottom: 0; }
+      .feature-icon { grid-row: 1; }
+      .feature > div { grid-column: 2; }
+      .feature strong { font-size: 20px; }
+      .product-state > div + div, .price-summary > div + div { border-left: 0; border-top: 1px solid var(--line); }
+      .trust-summary { grid-template-columns: 1fr; }
+      .imprint-grid { gap: 10px; }
+      .landing-contact { align-items: flex-start; flex-direction: column; }
       .roadmap-card:last-child { grid-column: auto; }
       .positioning-tag { justify-self: start; }
       .trust-proof-grid { grid-template-columns: 1fr; }
@@ -445,6 +495,22 @@ const PageTemplates = `
       .use { min-height: 0; grid-template-rows: 42px auto auto; }
       .use strong, .use p { max-width: none; }
     }
+    @media (max-width: 520px) {
+      .landing-hero { min-height: 780px; }
+      .landing-nav { padding-top: 20px; }
+      .landing-copy { align-self: center; padding-top: 54px; padding-bottom: 42px; }
+      .landing-copy h1 { font-size: clamp(43px,13vw,56px); line-height: .94; }
+      .landing-lead { font-size: 17px; line-height: 1.46; }
+      .landing-actions { display: grid; }
+      .landing-button { width: 100%; }
+      .section { padding: 46px 20px; }
+      .section h2 { font-size: 37px; }
+      .section-lead { font-size: 17px; }
+      .price-examples { grid-template-columns: 1fr; }
+      .price-example { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; border-right: 0; border-bottom: 1px solid var(--line); text-align: left; }
+      .price-example:last-child { border-bottom: 0; }
+      footer div { display: grid; }
+    }
   </style>
 </head>
 <body>
@@ -453,7 +519,6 @@ const PageTemplates = `
       <a class="landing-brand" href="/" aria-label="hausv.org"><span class="landing-mark">{{template "hausvLandingMark" .}}</span></a>
       <nav class="landing-links" aria-label="Navigation">
         <a href="#funktionen">Funktionen</a>
-        <a href="#ausblick">Ausblick</a>
         <a href="#sicherheit">Sicherheit</a>
         <a href="#preise">Preise</a>
         <a href="#impressum">Impressum</a>
@@ -463,71 +528,38 @@ const PageTemplates = `
     <div class="landing-copy">
       <div class="landing-eyebrow">Hausverwaltung von und für Mehrparteien</div>
       <h1>Ein Portal für alle, die ein Haus gemeinsam verwalten.</h1>
-      <p class="landing-lead">Kommunikation, Transparenz und Self-Service für WEGs, Wohnungen und Mehrparteienhäuser. Klar für Eigentümer, Mieter, Beiräte und kleine Verwaltungen.</p>
+      <p class="landing-lead">Aushänge, Termine, Dokumente, Anliegen und Beschlüsse an einem privaten Ort. Für Eigentümer, Mieter, Beiräte und kleine Verwaltungen.</p>
       <div class="landing-actions">
         <a class="landing-button primary js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org Pilot anfragen" data-mail-reveal="false">Privaten Pilot anfragen</a>
         <a class="landing-button secondary" href="#funktionen">Funktionen ansehen</a>
       </div>
-      <div class="landing-proof" aria-label="Kurzversprechen">
-        <span>Privater Pilot · Zugang nach Abstimmung</span>
-        <span>Datenschutz mitgedacht</span>
-        <span>Kommunikation statt Buchhaltung</span>
-        <span>KI nur mit Opt-in</span>
-      </div>
+      <p class="landing-access"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Privater Pilot · Zugang nach Abstimmung</p>
     </div>
   </section>
 
   <section id="funktionen" class="section band visual-section features-section">
     <div class="section-inner">
-      <div class="section-kicker">Betrieb statt Bauchgefühl</div>
-      <h2>Alles für den Alltag einer Hausgemeinschaft.</h2>
-      <p class="section-lead">Ein ruhiger Arbeitsbereich für wiederkehrende Abläufe: informieren, entscheiden, dokumentieren, nachverfolgen. Finanzdaten bleiben Status und Nachweis, nicht Buchhaltung.</p>
+      <div class="section-kicker">Der gemeinsame Arbeitsbereich</div>
+      <h2>Was Sie damit tun können.</h2>
+      <p class="section-lead">Fünf klare Aufgaben statt vieler einzelner Werkzeuge.</p>
       <div class="feature-grid">
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5"/><path d="M6 10.5V20h12v-9.5"/><path d="M9 20v-5h6v5"/></svg></span><div><strong>Hausüberblick</strong><p>Offene Punkte, Termine, Dokumente, Zahlungsstatus und nächste Schritte direkt auf der Startseite.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 3z"/><path d="M8 9h8M8 13h6"/></svg></span><div><strong>Aushang & Termine</strong><p>Mitteilungen, Wartungen, Fristen und Versammlungen mit Anhängen und Archiv.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H10z"/><path d="M8.5 8.5h7"/></svg></span><div><strong>Anliegen</strong><p>Meldungen mit Fotos, Kommentaren, Zuständigkeit und nachvollziehbarem Status.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><div><strong>Dokumente</strong><p>Protokolle, Abrechnungen und Unterlagen sicher abgelegt und passend freigegeben.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 18V9M12 18V5M18 18v-6"/><path d="M4 18h16"/></svg></span><div><strong>Abstimmungen</strong><p>Beschlüsse vorbereiten, transparent abstimmen und Ergebnisse dokumentieren.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M8 19h1M15 19h1"/></svg></span><div><strong>Parkplätze</strong><p>Stellplätze, Ladeverbrauch, Zahlungserinnerungen und CSV-Export im Blick.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M3 21a5 5 0 0 1 10 0"/><path d="M16 12h5M18.5 9.5v5"/></svg></span><div><strong>Rollen & Rechte</strong><p>Eigentümer, Mieter, Beirat und Verwaltung sehen nur, was für sie gedacht ist.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span><div><strong>Benachrichtigungen</strong><p>Mails führen direkt zum betroffenen Aushang, Anliegen, Dokument oder Zahlungspunkt.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M4.6 6.6l2.1 2.1M17.3 17.3l2.1 2.1M3 12h3M18 12h3M4.6 17.4l2.1-2.1M17.3 6.7l2.1-2.1"/><path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/></svg></span><div><strong>KI-Assistenz</strong><p>Zusammenfassen und Formulieren auf Wunsch, nur tenantweise und mit Opt-in.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 3z"/><path d="M8 9h8M8 13h6"/></svg></span><div><strong>Informieren</strong><p>Aushänge, Termine und Hinweise erreichen alle am richtigen Ort.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H10z"/><path d="M8.5 8.5h7"/></svg></span><div><strong>Anliegen klären</strong><p>Melden, nachfragen und den nächsten Schritt nachvollziehen.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><div><strong>Unterlagen ordnen</strong><p>Dokumente, Protokolle und Nachweise passend freigeben.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 18V9M12 18V5M18 18v-6"/><path d="M4 18h16"/></svg></span><div><strong>Entscheiden</strong><p>Abstimmungen und Übergaben verständlich dokumentieren.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.7 2.9 8.4 7 10 4.1-1.6 7-5.3 7-10V6z"/><path d="m8.8 12.2 2.1 2.1 4.3-4.6"/></svg></span><div><strong>Rechte schützen</strong><p>Jede Rolle sieht nur die für sie bestimmten Inhalte.</p></div></div>
       </div>
-      <div class="positioning-strip" aria-label="Produktgrenze">
-        <span class="positioning-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/><path d="M18 15l2 2 3-4"/></svg></span>
-        <div><strong>Kommunikation statt Buchhaltung.</strong><p>hausv.org ist der Kommunikations- und Transparenz-Layer. Wir zeigen Status, Dokumente und Nachweise und binden bestehende Systeme an. Keine eigene Buchhaltung, keine Nebenkostenabrechnung, kein Mahnwesen, kein Dienstleister-Marktplatz und keine Zahlungsaufträge in der ersten Produktstufe.</p></div>
-        <span class="positioning-tag">Transparenz statt Buchung</span>
+      <div class="product-state" aria-label="Produktstand">
+        <div><span>Heute im privaten Pilot</span><strong>Hausalltag an einem Ort</strong><p>Aushänge, Termine, Anliegen, Dokumente, Abstimmungen, Übergaben und ein verständlicher Verlauf.</p></div>
+        <div><span>Nächste Ausbaustufe</span><strong>Gezielte Übergaben</strong><p>Dienstleister-Zugänge sind derzeit geschlossen. Fachsystem-Anbindungen entstehen schrittweise.</p></div>
       </div>
-    </div>
-  </section>
-
-  <section id="ausblick" class="section roadmap-section">
-    <div class="section-inner">
-      <div class="section-kicker">Roadmap</div>
-      <h2>Ausblick ohne Nebel.</h2>
-      <p class="section-lead">Jeder Baustein ist klar markiert: verfügbar im Pilot, in Arbeit oder geplant. Verfügbar heißt im Pilot nutzbar – nicht automatisch für jede Rolle freigeschaltet.</p>
-      <div class="roadmap-grid" aria-label="Produkt-Roadmap nach Status">
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M3 20a5 5 0 0 1 10 0"/><path d="M16 7h5M16 12h5M16 17h5"/></svg></span><strong>Dienstleister einbinden</strong><p>Handwerker sehen nur zugewiesene Anliegen und können dort Status, Fotos, Rückfragen und Termine ergänzen.</p><small class="roadmap-status status-in-progress" data-status="in-progress">In Arbeit · Freigabe offen</small></div>
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h5M8 16h4"/><path d="m15 16 2 2 3-4"/></svg></span><strong>Übergaben dokumentieren</strong><p>Räume, Zählerstände, Schlüssel, Mängel, Fotos und Bestätigung direkt vor Ort festhalten.</p><small class="roadmap-status status-available" data-status="available">Verfügbar · Pilot</small></div>
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><path d="M17 15l3 3 3-5"/></svg></span><strong>Zahlungsstatus zeigen</strong><p>Offen, bezahlt oder überfällig als geschützte Information pro Einheit sehen – ohne Sollstellung.</p><small class="roadmap-status status-available" data-status="available">Verfügbar · Pilot</small></div>
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><strong>Bestehende Systeme anbinden</strong><p>Zahlungsstatus aus österreichischen Bankdaten übernehmen und Unterlagen an vorhandene Fachsysteme übergeben.</p><small class="roadmap-status status-in-progress" data-status="in-progress">In Arbeit · Schrittweise</small></div>
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M8 12h8M8 16h5"/></svg></span><strong>Kalender abonnieren</strong><p>Termine, Versammlungen und Dienstleister-Zeitfenster direkt im eigenen Kalender abonnieren.</p><small class="roadmap-status status-available" data-status="available">Verfügbar · Pilot</small></div>
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a4.5 4.5 0 0 1 9 0"/><path d="M16 11a2.5 2.5 0 1 0 0-5"/><path d="M16.5 15a4 4 0 0 1 4 4"/></svg></span><strong>Kontakte wiederverwenden</strong><p>Hausmeister, Notdienste und wiederkehrende Dienstleister pro Verwaltung pflegen und in Anliegen auswählen.</p><small class="roadmap-status status-available" data-status="available">Verfügbar · Pilot</small></div>
-        <div class="roadmap-card"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="m15 17 2 2 3-4"/></svg></span><strong>Änderungen nachvollziehen</strong><p>Wichtige Aktionen mit Akteur, Zeitpunkt und Änderungstyp in einer verständlichen Historie prüfen.</p><small class="roadmap-status status-available" data-status="available">Verfügbar · Pilot</small></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section visual-section roles-section">
-    <div class="section-inner">
-      <div class="section-kicker">Für alle Rollen</div>
-      <h2>Ein Portal, mehrere Perspektiven.</h2>
-      <div class="use-grid">
-        <div class="use"><span>Eigentümer</span><strong>Entscheiden und prüfen</strong><p>Beschlüsse, Dokumente, Hausstatus und relevante Abrechnungen bleiben auffindbar.</p></div>
-        <div class="use"><span>Mieter</span><strong>Melden ohne Umwege</strong><p>Anliegen erfassen, Aushänge lesen und informiert bleiben.</p></div>
-        <div class="use"><span>Verwalter</span><strong>Steuern und dokumentieren</strong><p>Rollen, Status, Benachrichtigungen und Audit-Spuren für den Alltag.</p></div>
-        <div class="use"><span>Beirat</span><strong>Mitsehen und begleiten</strong><p>Überblick dort, wo er hilft, ohne Rechte zu vermischen.</p></div>
-      </div>
+      <details id="ausblick" class="landing-more">
+        <summary>Produktstand im Detail</summary>
+        <div class="landing-more-grid">
+          <div><h3>Heute nutzbar</h3><ul><li>Kalender abonnieren</li><li>Kontakte wiederverwenden</li><li>Zahlungsstatus geschützt anzeigen</li><li>Änderungen nachvollziehen</li></ul></div>
+          <div><h3>Bewusst begrenzt</h3><ul><li><small>Vorbereitet</small> Dienstleister-Koordination</li><li><small>Schrittweise</small> Übergabe an bestehende Fachsysteme</li><li>Keine eigene Buchhaltung, kein Mahnwesen und keine Zahlungsaufträge</li></ul></div>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -538,28 +570,14 @@ const PageTemplates = `
           <div class="section-kicker">Sicherheit & Datenschutz</div>
           <h2>Vertrauen zuerst.</h2>
         </div>
-        <p class="section-lead">Einfach genug für die Hausgemeinschaft. Strukturiert genug für Verwaltung, Datenschutz und saubere Abläufe.</p>
-        <div class="trust-summary" aria-label="Sicherheitsprinzipien">
-          <div class="trust-line"><span class="trust-number">01</span><div><strong>Getrennte Häuser</strong><p>Eigene Domain, eigene Rollen, eigene Sichtbarkeit.</p></div></div>
-          <div class="trust-line"><span class="trust-number">02</span><div><strong>Geschützte Dateiwege</strong><p>Anhänge und Dokumente laufen über App-Routen.</p></div></div>
-          <div class="trust-line"><span class="trust-number">03</span><div><strong>Datensparsam</strong><p>Nur Profile, Rechte und Protokolle, die der Betrieb wirklich braucht.</p></div></div>
-          <div class="trust-line"><span class="trust-number">04</span><div><strong>KI nur mit Opt-in</strong><p>Keine automatische Auswertung, Aktivierung pro Haus.</p></div></div>
-        </div>
+        <p class="section-lead">Einfach für die Hausgemeinschaft, nachvollziehbar für den Betrieb.</p>
       </div>
-      <aside class="trust-board" aria-label="Sicherheitsversprechen">
-        <div class="trust-board-head">
-          <span class="trust-seal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.7 2.9 8.4 7 10 4.1-1.6 7-5.3 7-10V6z"/><path d="m8.8 12.2 2.1 2.1 4.3-4.6"/></svg></span>
-          <div><strong>Bleibt privat.</strong><p>Ein Portal pro Hausgemeinschaft, klare Rollen und geschützte Wege für sensible Inhalte.</p></div>
-        </div>
-        <div class="trust-proof-grid">
-          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Keine öffentlichen Datei-Links</strong><p>Downloads laufen über geschützte App-Routen.</p></div></div>
-          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Keine KI ohne Zustimmung</strong><p>Funktionen werden bewusst pro Haus aktiviert.</p></div></div>
-          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Keine unkontrollierte Weitergabe</strong><p>Daten bleiben im vorgesehenen Haus-Kontext und werden nur gezielt zugänglich gemacht.</p></div></div>
-          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Rollen und Rechte pro Haus</strong><p>Eigentümer, Mieter, Beirat und Verwaltung sauber getrennt.</p></div></div>
-          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Audit-Spuren für wichtige Aktionen</strong><p>Änderungen bleiben nachvollziehbar.</p></div></div>
-          <div class="trust-proof"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><div><strong>Datenschutz nachvollziehbar</strong><p>Datenflüsse, Aufbewahrung und Betreiberentscheidungen werden versioniert dokumentiert.</p></div></div>
-        </div>
-      </aside>
+      <div class="trust-summary" aria-label="Sicherheitsprinzipien">
+        <div class="trust-line"><span class="trust-number">01</span><div><strong>Getrennte Häuser</strong><p>Eigene Domain, Rollen und Sichtbarkeit.</p></div></div>
+        <div class="trust-line"><span class="trust-number">02</span><div><strong>Geschützte Dateien</strong><p>Downloads nur über geprüfte App-Wege.</p></div></div>
+        <div class="trust-line"><span class="trust-number">03</span><div><strong>Datensparsam</strong><p>Nur Angaben, die der Betrieb braucht.</p></div></div>
+        <div class="trust-line"><span class="trust-number">04</span><div><strong>KI nur mit Opt-in</strong><p>Keine automatische Auswertung ohne Zustimmung.</p></div></div>
+      </div>
     </div>
   </section>
 
@@ -567,28 +585,20 @@ const PageTemplates = `
     <div class="section-inner cost-layout">
       <div class="cost-copy">
         <div class="section-kicker">Fair geregelt</div>
-        <h2>Kosten fair.</h2>
-      <p class="section-lead">Der aktuelle Betrieb ist ein persönlich abgestimmter, privater Pilot. Die folgenden Werte zeigen die beabsichtigte faire Richtung und sind noch kein öffentliches Vertragsangebot.</p>
+        <h2>Einfach gerechnet.</h2>
+        <p class="section-lead">Der Pilot ist persönlich abgestimmt. Für später gilt eine klare Richtung pro Wohnungseinheit – nicht pro Haus und nicht pro Zubehör.</p>
       </div>
       <div>
-        <div class="cost-panel" aria-label="Faire Nutzung und Preise">
-          <div class="cost-row">
-            <span class="cost-value">25</span>
-            <div><strong>Im Pilot kostenlos</strong><p>Bis 25 Wohneinheiten im aktuellen privaten Pilot. Zugang und Umfang werden persönlich abgestimmt.</p></div>
-          </div>
-          <div class="cost-row">
-            <span class="cost-value">1€</span>
-            <div><strong>1 € pro Monat als Zukunftsrichtwert</strong><p>Unverbindliche Orientierung je Wohneinheit für eine mögliche spätere öffentliche Leistung. Wohnungen und vergleichbare Nutzungseinheiten zählen; Zubehör wie Keller oder Stellplätze nicht automatisch.</p></div>
-          </div>
-          <div class="cost-row">
-            <span class="cost-value">frei</span>
-            <div><strong>Spenden</strong><p>Optional. Hilft bei Betrieb, Backups, Sicherheit und Weiterentwicklung.</p></div>
-          </div>
+        <div class="price-summary" aria-label="Faire Nutzung und Preise">
+          <div><strong>Bis 25 Einheiten im Pilot kostenlos</strong><p>Zugang und Umfang werden persönlich abgestimmt.</p></div>
+          <div><strong>1 € je Einheit und Monat</strong><p>Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit. Unverbindlicher Zukunftsrichtwert, noch kein öffentliches Vertragsangebot.</p></div>
         </div>
-        <div class="cost-note">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><path d="M6 7h12"/><path d="M7 7l-4 7h8z"/><path d="M17 7l-4 7h8z"/></svg>
-          <div><strong>Fair bleibt fair.</strong> Derzeit kein öffentlicher Online-Vertragsabschluss und keine automatische Vertragsannahme. Vor einem geschäftlichen Angebot werden Betreiber-, Steuer- und Vertragsangaben neu geprüft.</div>
+        <div class="price-examples" aria-label="Preisbeispiele für den Zukunftsrichtwert">
+          <div class="price-example"><b>8 €</b><span>Kleines Haus · 8 Wohnungen / Monat</span></div>
+          <div class="price-example"><b>25 €</b><span>Kleine Verwaltung · 25 Wohnungen / Monat</span></div>
+          <div class="price-example"><b>100 €</b><span>Größere Verwaltung · 100 Wohnungen / Monat</span></div>
         </div>
+        <p class="price-footnote">Wohnungen und vergleichbare Nutzungseinheiten zählen. Zubehör wie Keller oder Stellplätze zählt nicht automatisch. Spenden bleiben freiwillig.</p>
       </div>
     </div>
   </section>
@@ -597,29 +607,25 @@ const PageTemplates = `
     <div class="section-inner">
       <div class="section-kicker">Impressum</div>
       <h2>Impressum & Kontakt</h2>
-      <p class="section-lead">Verantwortlich für den persönlichen, nicht gewerblichen Pilotbetrieb von hausv.org.</p>
+      <p class="section-lead">Direkter Kontakt statt anonymer Hotline.</p>
       <div class="imprint-grid">
         <div class="imprint-card"><strong>Medieninhaber / Betreiber</strong><p>{{.OperatorName}} · natürliche Person</p></div>
         <div class="imprint-card"><strong>Ladungsfähige Anschrift</strong><p>{{.OperatorAddress}}</p></div>
         <div class="imprint-card"><strong>Kontakt</strong><p><a id="kontakt" class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a></p></div>
-        <div class="imprint-card"><strong>Zweck des Angebots</strong><p>Information und technischer Pilot einer digitalen Kommunikations- und Transparenzplattform für Hausgemeinschaften.</p></div>
-        <div class="imprint-card"><strong>Firmenbuch / UID</strong><p>Nicht anwendbar: privates Projekt einer natürlichen Person, kein Unternehmen und derzeit kein öffentliches Vertragsangebot.</p></div>
-        <div class="imprint-card"><strong>Gewerbebehörde / Kammer</strong><p>Nicht anwendbar: der aktuelle persönliche Pilot wird nicht gewerblich angeboten.</p></div>
-        <div class="imprint-card"><strong>Rechtlicher Rahmen</strong><p>Österreichisches Medien-, E-Commerce- und Datenschutzrecht, soweit auf den konkreten Betrieb anwendbar.</p></div>
-        <div class="imprint-card"><strong>Blattlinie</strong><p>Informationen über hausv.org und digitale Selbstverwaltung für Mehrparteienhäuser.</p></div>
       </div>
-      <p class="mini">Betreiber-Selbstprüfung vom {{.LegalReviewDate}} anhand von <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a>, <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a> und der <a href="https://www.dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>. Keine externe Zertifizierung oder Rechtsberatung.</p>
-    </div>
-  </section>
-
-  <section class="section final-cta">
-    <div class="section-inner">
-      <div class="section-kicker">Starten</div>
-      <h2>Aus einer Hausgemeinschaft heraus gebaut, für echte Hausgemeinschaften.</h2>
-      <p class="section-lead">Entstanden aus dem eigenen Verwaltungsalltag: zu viel Papier, zu viele Tools, zu wenig Überblick. Deshalb ein Portal, das WEGs und Mehrparteienhäuser wirklich nutzen können.</p>
-      <div class="landing-actions">
-        <a class="landing-button primary js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org Pilotzugang" data-mail-reveal="false">Kontakt aufnehmen</a>
-        <a class="landing-button secondary" href="{{.PrimaryAppURL}}">Beispielportal öffnen</a>
+      <details class="legal-details">
+        <summary>Rechtliche Details</summary>
+        <div class="legal-grid">
+          <div class="imprint-card"><strong>Zweck des Angebots</strong><p>Information und technischer Pilot einer Kommunikations- und Transparenzplattform für Hausgemeinschaften.</p></div>
+          <div class="imprint-card"><strong>Firmenbuch / UID</strong><p>Nicht anwendbar: privates Projekt einer natürlichen Person, kein Unternehmen und derzeit kein öffentlicher Online-Vertragsabschluss.</p></div>
+          <div class="imprint-card"><strong>Gewerbebehörde / Kammer</strong><p>Nicht anwendbar: der aktuelle persönliche Pilot wird nicht gewerblich angeboten.</p></div>
+          <div class="imprint-card"><strong>Blattlinie</strong><p>Information über hausv.org und digitale Selbstverwaltung für Mehrparteienhäuser.</p></div>
+        </div>
+        <p class="mini">Betreiber-Selbstprüfung vom {{.LegalReviewDate}} anhand von <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a>, <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a> und der <a href="https://www.dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>. Keine externe Zertifizierung oder Rechtsberatung.</p>
+      </details>
+      <div class="landing-contact">
+        <div><strong>Passt das zu Ihrem Haus?</strong><p>Wir klären persönlich, ob der private Pilot sinnvoll ist.</p></div>
+        <a class="landing-button js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org Pilotzugang" data-mail-reveal="false">Pilot anfragen</a>
       </div>
     </div>
   </section>

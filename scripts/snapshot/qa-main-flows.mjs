@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Role-aware, stateful QA for the portal's most common paths.
 
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { chromium } from 'playwright';
 
 const baseURL = process.argv[2];
@@ -35,7 +36,15 @@ const executableCandidates = [
   '/usr/bin/google-chrome',
 ].filter(Boolean);
 const executablePath = executableCandidates.find(existsSync);
-const browser = await chromium.launch(executablePath ? { executablePath } : { channel: 'chrome' });
+const launchOptions = {
+  args: ['--host-resolver-rules=MAP hausv.test 127.0.0.1', '--no-proxy-server'],
+};
+if (executablePath) {
+  launchOptions.executablePath = executablePath;
+} else {
+  launchOptions.channel = 'chrome';
+}
+const browser = await chromium.launch(launchOptions);
 
 function fail(message) {
   throw new Error(message);
@@ -68,6 +77,68 @@ async function newContext(viewport) {
     locale: 'de-AT',
     timezoneId: 'Europe/Vienna',
   });
+}
+
+async function assertPublicLanding(viewport) {
+  const context = await browser.newContext({
+    viewport: viewport.size,
+    deviceScaleFactor: 1,
+    locale: 'de-AT',
+    timezoneId: 'Europe/Vienna',
+  });
+  const page = await context.newPage();
+  const publicURL = new URL(baseURL);
+  publicURL.hostname = 'hausv.test';
+  const response = await page.goto(publicURL.href, { waitUntil: 'networkidle' });
+  if (!response || response.status() !== 200) {
+    fail(`Öffentliche Startseite ${viewport.name}: Status ${response?.status() ?? 0}`);
+  }
+  if (!(await page.getByRole('heading', { name: 'Ein Portal für alle, die ein Haus gemeinsam verwalten.' }).count())) {
+    fail(`Öffentliche Startseite ${viewport.name}: Hauptaussage fehlt`);
+  }
+  const features = await page.locator('.feature').count();
+  if (features !== 5) fail(`Öffentliche Startseite ${viewport.name}: ${features} statt 5 Kernaufgaben`);
+  for (const text of [
+    'Heute im privaten Pilot',
+    'Nächste Ausbaustufe',
+    'Bis 25 Einheiten im Pilot kostenlos',
+    '1 € je Einheit und Monat',
+  ]) {
+    if (!(await page.getByText(text, { exact: true }).count())) {
+      fail(`Öffentliche Startseite ${viewport.name}: „${text}“ fehlt`);
+    }
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, `landing-${viewport.name.toLowerCase()}.png`),
+      fullPage: true,
+    });
+  }
+  const productDetails = page.locator('details.landing-more');
+  if (await productDetails.evaluate((element) => element.open)) {
+    fail(`Öffentliche Startseite ${viewport.name}: Produktdetails sind ungefragt offen`);
+  }
+  await productDetails.locator('summary').click();
+  if (!(await page.getByRole('heading', { name: 'Heute nutzbar' }).count())) {
+    fail(`Öffentliche Startseite ${viewport.name}: Produktdetails lassen sich nicht öffnen`);
+  }
+  const legalDetails = page.locator('details.legal-details');
+  await legalDetails.locator('summary').click();
+  if (!(await page.getByText('Datenschutz', { exact: true }).count())) {
+    fail(`Öffentliche Startseite ${viewport.name}: Datenschutz ist nicht erreichbar`);
+  }
+  const metrics = await page.evaluate(() => ({
+    overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+    height: document.documentElement.scrollHeight,
+  }));
+  if (metrics.overflow) fail(`Öffentliche Startseite ${viewport.name}: horizontaler Überlauf`);
+  const maxHeight = viewport.name === 'Mobil' ? 7_200 : 5_200;
+  if (metrics.height > maxHeight) {
+    fail(`Öffentliche Startseite ${viewport.name}: mit ${metrics.height}px unnötig lang (maximal ${maxHeight}px)`);
+  }
+  await context.close();
+  process.stdout.write(`  ✓ Öffentliche Startseite · ${viewport.name} · ${metrics.height}px\n`);
 }
 
 async function createIssue(email, title) {
@@ -197,23 +268,32 @@ async function assertRoleActions(page, persona) {
 }
 
 try {
-  await createIssue('resident@example.com', 'QA Bewohneranliegen');
-  await createIssue('owner@example.com', 'QA Eigentümeranliegen');
-  await seedManagedContent();
-
   for (const viewport of [
     { name: 'Desktop', size: { width: 1440, height: 900 } },
     { name: 'Mobil', size: { width: 390, height: 844 } },
   ]) {
-    for (const persona of personas) {
-      const context = await newContext(viewport.size);
-      const page = await localLogin(context, persona.email);
-      for (const route of routes) {
-        await assertPage(page, persona, route, viewport.name);
+    await assertPublicLanding(viewport);
+  }
+
+  if (process.env.HV_QA_LANDING_ONLY !== 'true') {
+    await createIssue('resident@example.com', 'QA Bewohneranliegen');
+    await createIssue('owner@example.com', 'QA Eigentümeranliegen');
+    await seedManagedContent();
+
+    for (const viewport of [
+      { name: 'Desktop', size: { width: 1440, height: 900 } },
+      { name: 'Mobil', size: { width: 390, height: 844 } },
+    ]) {
+      for (const persona of personas) {
+        const context = await newContext(viewport.size);
+        const page = await localLogin(context, persona.email);
+        for (const route of routes) {
+          await assertPage(page, persona, route, viewport.name);
+        }
+        await assertRoleActions(page, persona);
+        await context.close();
+        process.stdout.write(`  ✓ ${persona.name} · ${viewport.name}\n`);
       }
-      await assertRoleActions(page, persona);
-      await context.close();
-      process.stdout.write(`  ✓ ${persona.name} · ${viewport.name}\n`);
     }
   }
 } finally {

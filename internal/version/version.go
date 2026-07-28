@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.46.0",
+			Date:     "28. Juli 2026",
+			Kind:     "Öffentliche Startseite",
+			Headline: "Die Startseite erklärt Nutzen, Produktstand und Preisrichtung in etwa halb so viel Raum.",
+			Intro:    "Fünf Kernaufgaben und zwei klare Produktzustände ersetzen lange Listen; Details bleiben bei Bedarf direkt erreichbar.",
+			Items: []NoteItem{
+				{Label: "Schneller verstehen", Text: "Informieren, Anliegen klären, Unterlagen ordnen, entscheiden und Rechte schützen bilden den gesamten Einstieg."},
+				{Label: "Ehrlich einordnen", Text: "Heute nutzbare Bereiche und nächste Ausbaustufen stehen sichtbar getrennt, ohne interne Freigabebegriffe."},
+				{Label: "Preise vergleichen", Text: "Kostenfreier Pilotrahmen, Zukunftsrichtwert und Beispiele für Haus und Verwaltung stehen kompakt beieinander."},
+			},
+		},
+		{
 			Version:  "0.45.1",
 			Date:     "28. Juli 2026",
 			Kind:     "Datenschutz & Betrieb",

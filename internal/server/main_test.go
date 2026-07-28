@@ -1275,8 +1275,11 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Mehrparteien",
 		"hello [at] hausv [dot] org",
 		"Privater Pilot · Zugang nach Abstimmung",
-		"1 € pro Monat als Zukunftsrichtwert",
-		"Unverbindliche Orientierung je Wohneinheit",
+		"1 € je Einheit und Monat",
+		"Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit.",
+		"Kleines Haus · 8 Wohnungen / Monat",
+		"Kleine Verwaltung · 25 Wohnungen / Monat",
+		"Größere Verwaltung · 100 Wohnungen / Monat",
 		"Impressum",
 		"Ing. Markus Barta",
 		"Janischhofweg 22/11, 8043 Graz, Österreich",
@@ -1288,41 +1291,28 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"§ 5 ECG",
 		"§ 24 MedienG",
 		"Keine externe Zertifizierung",
-		"Datenschutz mitgedacht",
-		"In Arbeit · Freigabe offen",
+		"Datensparsam",
 		"KI nur mit Opt-in",
 		"Keine eigene Buchhaltung",
 		"kein Mahnwesen",
-		"kein Dienstleister-Marktplatz",
 		"keine Zahlungsaufträge",
-		"Kommunikation statt Buchhaltung",
-		"Kommunikations- und Transparenz-Layer",
-		"Transparenz statt Buchung",
-		"Ausblick ohne Nebel.",
-		"Verfügbar · Pilot",
-		"In Arbeit · Schrittweise",
-		"Dienstleister einbinden",
-		"Übergaben dokumentieren",
-		"Zahlungsstatus zeigen",
-		"Bestehende Systeme anbinden",
+		"Heute im privaten Pilot",
+		"Nächste Ausbaustufe",
+		"Produktstand im Detail",
+		"Dienstleister-Koordination",
+		"Übergabe an bestehende Fachsysteme",
 		"Kalender abonnieren",
 		"Kontakte wiederverwenden",
-		"Änderungen nachvollziehen",
+		"Zahlungsstatus geschützt anzeigen",
 		`/assets/landing.js`,
 		"/assets/hausv-landing-hero.png",
-		"/assets/landing-features.jpg",
-		"/assets/landing-roles.jpg",
-		"/assets/landing-closing.jpg",
-		"Im Pilot kostenlos",
+		"Bis 25 Einheiten im Pilot kostenlos",
 		"Sicherheit & Datenschutz",
-		"Kosten fair.",
+		"Einfach gerechnet.",
 		"Zubehör wie Keller oder Stellplätze",
 		"Spenden",
-		"Fair bleibt fair.",
-		"Bleibt privat.",
-		"Keine öffentlichen Datei-Links",
-		"Keine unkontrollierte Weitergabe",
-		"Betreiberentscheidungen",
+		"Rechtliche Details",
+		"Passt das zu Ihrem Haus?",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
@@ -1333,34 +1323,14 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
 	}
-	roadmapStatuses := map[string]string{
-		"Dienstleister einbinden":     "in-progress",
-		"Übergaben dokumentieren":     "available",
-		"Zahlungsstatus zeigen":       "available",
-		"Bestehende Systeme anbinden": "in-progress",
-		"Kalender abonnieren":         "available",
-		"Kontakte wiederverwenden":    "available",
-		"Änderungen nachvollziehen":   "available",
+	if got := strings.Count(body, `class="feature"`); got != 5 {
+		t.Fatalf("focused feature count = %d, want 5", got)
 	}
-	for title, status := range roadmapStatuses {
-		start := strings.Index(body, "<strong>"+title+"</strong>")
-		if start < 0 {
-			t.Fatalf("roadmap line %q missing", title)
-		}
-		end := strings.Index(body[start:], "</div>")
-		if end < 0 {
-			t.Fatalf("roadmap line %q has no card boundary", title)
-		}
-		card := body[start : start+end]
-		if !strings.Contains(card, `data-status="`+status+`"`) {
-			t.Fatalf("roadmap line %q missing status %q: %s", title, status, card)
-		}
+	if strings.Count(body, `class="product-state"`) != 1 {
+		t.Fatal("landing should separate the current pilot from the next expansion exactly once")
 	}
-	if got := strings.Count(body, `data-status="available"`); got != 5 {
-		t.Fatalf("available roadmap statuses = %d, want 5", got)
-	}
-	if got := strings.Count(body, `data-status="in-progress"`); got != 2 {
-		t.Fatalf("in-progress roadmap statuses = %d, want 2", got)
+	if strings.Contains(body, `class="roadmap-grid"`) || strings.Contains(body, `class="use-grid"`) {
+		t.Fatal("landing should not render the old repetitive roadmap or role card grids")
 	}
 	if strings.Contains(body, `action="/auth/request"`) {
 		t.Fatal("root-domain landing should not render the tenant login form")

@@ -2,6 +2,15 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.46.0] - 2026-07-28
+
+### Verbessert
+
+- **Die öffentliche Startseite kommt schneller auf den Punkt.** Fünf Kernaufgaben, ein kompakter Produktstand und klare Grenzen ersetzen lange Funktions-, Rollen- und Zukunftslisten.
+- **Pilot und Preisrichtung sind leichter einzuordnen.** Der kostenfreie Rahmen bis 25 Einheiten, der unverbindliche Zukunftsrichtwert von 1 € je Wohnungseinheit und drei konkrete Beispiele stehen gemeinsam an einer Stelle.
+- **Details bleiben erreichbar, ohne den Einstieg zu überladen.** Produktgrenzen, rechtliche Angaben und Datenschutz öffnen sich erst bei Bedarf; Kontakt und Pilotanfrage bleiben direkt sichtbar.
+- **Desktop und Mobil werden automatisch gegengeprüft.** Die Playwright-Rollenprüfung umfasst jetzt auch die öffentliche Startseite, ihre Aufklappwege, Textwahrheit, Seitenlänge und seitlichen Überlauf.
+
 ## [0.45.1] - 2026-07-28
 
 ### Verbessert
