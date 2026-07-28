@@ -1714,170 +1714,168 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
-	canManage := canManageAnnouncements(role)
-	announcements := []announcementView{}
 	now := time.Now()
 	lastSeen := time.Time{}
 	if a.announcementReadStore != nil {
 		lastSeen = a.announcementReadStore.LastSeen(tenant.Slug, email)
 	}
-	unreadAnnouncements := 0
-	if a.announcementStore != nil {
-		visible := a.announcementStore.Visible(tenant.Slug, now)
-		unreadAnnouncements = unreadAnnouncementCount(visible, lastSeen, now)
-		announcements = a.announcementViewsWithReadState(tenant.Slug, visible, now, false, lastSeen, email, role)
-		if len(announcements) > 1 {
-			announcements = announcements[:1]
-		}
-	}
-	eventCount := 0
-	events := []houseEventView{}
-	if a.eventStore != nil {
-		upcoming := a.eventStore.Upcoming(tenant.Slug, now)
-		eventCount = len(upcoming)
-		events = a.eventViews(tenant.Slug, upcoming, now, email, role)
-		if len(events) > 1 {
-			events = events[:1]
-		}
-	}
-	issueURL := "/app/anliegen"
-	issueTitle := "Offene Anliegen"
-	if hasCapability(role, capabilityManageIssues) {
-		issueURL = "/app/anliegen/board"
-		issueTitle = "Offene Anliegen im Haus"
-	}
-	openIssues := []residentIssue{}
-	if a.issueStore != nil {
-		for _, item := range a.visibleIssuesForActor(tenant.Slug, email, role) {
-			if issueIsOpen(item) {
-				openIssues = append(openIssues, item)
-			}
-		}
-	}
-	issuePreviews := a.issueViewsForActor(tenant.Slug, openIssues, role, email)
-	if len(issuePreviews) > 2 {
-		issuePreviews = issuePreviews[:2]
-	}
-	documents := []documentView{}
-	documentCount := 0
-	if a.documentStore != nil {
-		visible := sortDocumentsForView(a.visibleDocumentsForActor(tenant.Slug, email, role), "newest")
-		documentCount = len(visible)
-		if len(visible) > 2 {
-			visible = visible[:2]
-		}
-		documents = a.documentViewsForActor(tenant.Slug, email, role, visible)
-	}
-	unitPaymentStatuses := a.unitPaymentStatusViewsForEmail(tenant.Slug, email)
-	canSeeParking := isAdmin || profile.HasPermission(permissionParking)
-	parkingTitle := "Alles erledigt"
-	parkingDetail := "keine offenen Posten"
-	parkingSummaryDetail := "Für alle Stellplätze sind keine offenen Meldungen oder Zahlungsrückstände vorhanden."
-	parkingPillClass := "ok"
-	if canSeeParking {
-		balance := a.parkingBalance(tenant.Slug)
-		if balance.Outstanding > 0 {
-			parkingTitle = "Offen " + formatEUR(balance.Outstanding)
-			parkingDetail = "für die Stellplatznutzung"
-			parkingSummaryDetail = "Offene Beträge für die Stellplatznutzung sind vorhanden."
-			parkingPillClass = "info"
-		}
-		if balance.Overdue > 0 {
-			parkingDetail = "Überfällig " + formatEUR(balance.Overdue)
-			parkingSummaryDetail = "Überfällige Beträge sollten geprüft und zugeordnet werden."
-			parkingPillClass = "dringend"
-		}
-	}
 	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen)
+	var primary dashboardDigestItem
+	hasPrimary := false
+	followUps := make([]dashboardDigestItem, 0, 3)
+	for _, item := range digest {
+		if !hasPrimary && item.Actionable {
+			primary = item
+			hasPrimary = true
+			continue
+		}
+		if len(followUps) < 3 {
+			followUps = append(followUps, item)
+		}
+	}
+	canSeeParking := hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking)
+	hasHomeUtilities := canSeeParking || canManageHandovers(role) || hasCapability(role, capabilityManageUsers)
 	a.render(w, "portal", a.withBase(ac, map[string]any{
-		"Title":        houseDisplayName(tenant),
-		"GreetingName": firstNonEmpty(profile.FirstName, profile.DisplayName()),
-		// The dashboard uses this value to decide whether to calculate and
-		// display the parking summary, so keep the derived value explicit.
-		"CanSeeParking":             canSeeParking,
-		"CanManageAnnouncements":    canManage,
-		"CanManageEvents":           canManageEvents(role),
-		"ActivePage":                "home",
-		"DashboardDigest":           digest,
-		"HasDashboardDigest":        len(digest) > 0,
-		"UnreadAnnouncements":       unreadAnnouncements,
-		"AnnouncementSummaryDetail": pluralizeCount(unreadAnnouncements, "ungelesener Beitrag", "ungelesene Beiträge"),
-		"EventCount":                eventCount,
-		"EventSummaryDetail":        pluralizeCount(eventCount, "Termin geplant", "Termine geplant"),
-		"IssueCount":                len(openIssues),
-		"IssueSummaryTitle":         issueTitle,
-		"IssueSummaryURL":           issueURL,
-		"IssueSummaryDetail":        pluralizeCount(len(openIssues), "offenes Anliegen", "offene Anliegen"),
-		"DashboardIssues":           issuePreviews,
-		"HasDashboardIssues":        len(issuePreviews) > 0,
-		"DashboardIssuesEmpty":      emptyState("Alles erledigt", "Aktuell sind keine offenen Anliegen sichtbar."),
-		"DashboardDocuments":        documents,
-		"HasDashboardDocuments":     len(documents) > 0,
-		"DocumentCount":             documentCount,
-		"DocumentSummaryDetail":     pluralizeCount(documentCount, "Dokument sichtbar", "Dokumente sichtbar"),
-		"DashboardDocumentsEmpty":   emptyState("Noch keine Dokumente", "Sichtbare Unterlagen erscheinen hier nach Rolle und Berechtigung."),
-		"UnitPaymentStatuses":       unitPaymentStatuses,
-		"HasUnitPaymentStatuses":    len(unitPaymentStatuses) > 0,
-		"ParkingStatusTitle":        parkingTitle,
-		"ParkingStatusValue":        parkingTitle,
-		"ParkingStatusDetail":       parkingDetail,
-		"ParkingSummaryDetail":      parkingSummaryDetail,
-		"ParkingStatusClass":        parkingPillClass,
-		"Announcements":             announcements,
-		"HasAnnouncements":          len(announcements) > 0,
-		"AnnouncementsEmpty":        emptyState("Noch keine Beiträge", "Sobald die Verwaltung einen Aushang veröffentlicht, erscheint er hier."),
-		"Events":                    events,
-		"HasEvents":                 len(events) > 0,
-		"EventsEmpty":               emptyState("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier."),
+		"Title":                 houseDisplayName(tenant),
+		"GreetingName":          firstNonEmpty(profile.FirstName, profile.DisplayName()),
+		"CanSeeParking":         canSeeParking,
+		"ActivePage":            "home",
+		"DashboardPrimary":      primary,
+		"HasDashboardPrimary":   hasPrimary,
+		"DashboardFollowUps":    followUps,
+		"HasDashboardFollowUps": len(followUps) > 0,
+		"HasHomeUtilities":      hasHomeUtilities,
 	}))
 }
 
 func (a *app) dashboardDigestItems(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time) []dashboardDigestItem {
+	var paymentItem *dashboardDigestItem
 	var announcementItem *dashboardDigestItem
 	var issueItem *dashboardDigestItem
 	var eventItem *dashboardDigestItem
+	for _, status := range a.unitPaymentStatusViewsForEmail(tenantSlug, email) {
+		if status.StatusValue == unitPaymentStatusPaid {
+			continue
+		}
+		title := "Zahlungsstatus prüfen"
+		if status.StatusValue == unitPaymentStatusOverdue {
+			title = "Offenen Zahlungsstatus klären"
+		}
+		item := dashboardDigestItem{
+			Kind:        "Zahlungsstatus",
+			Title:       title,
+			Detail:      status.UnitLabel + " · " + status.Status,
+			URL:         "/app/kontakte",
+			ActionLabel: "Verwaltung kontaktieren",
+			Actionable:  true,
+		}
+		paymentItem = &item
+		break
+	}
 	if a.announcementStore != nil {
 		unread := unreadAnnouncementCount(a.announcementStore.Visible(tenantSlug, now), lastSeen, now)
 		if unread > 0 {
+			title := "Neue Aushänge lesen"
+			if unread == 1 {
+				title = "Neuen Aushang lesen"
+			}
 			item := dashboardDigestItem{
-				Title:  "Neue Aushänge",
-				Detail: pluralizeCount(unread, "ungelesener Beitrag", "ungelesene Beiträge"),
-				URL:    "/app/announcements",
-				Badge:  strconv.Itoa(unread),
+				Kind:        "Aushang",
+				Title:       title,
+				Detail:      pluralizeCount(unread, "ungelesener Beitrag", "ungelesene Beiträge"),
+				URL:         "/app/announcements",
+				ActionLabel: "Jetzt lesen",
+				Actionable:  true,
 			}
 			announcementItem = &item
 		}
 	}
 	if a.issueStore != nil {
-		open := issueOpenCount(a.visibleIssuesForActor(tenantSlug, email, role))
-		if open > 0 {
-			url := "/app/anliegen"
-			title := "Offene Anliegen"
-			detail := pluralizeCount(open, "offenes Anliegen", "offene Anliegen")
-			if hasCapability(role, capabilityManageIssues) {
-				url = "/app/anliegen/board"
-				title = "Offene Anliegen im Haus"
+		visible := a.visibleIssuesForActor(tenantSlug, email, role)
+		if hasCapability(role, capabilityManageIssues) {
+			openIssues := make([]residentIssue, 0, len(visible))
+			for _, issue := range visible {
+				if issueIsOpen(issue) {
+					openIssues = append(openIssues, issue)
+				}
 			}
-			item := dashboardDigestItem{
-				Title:  title,
-				Detail: detail,
-				URL:    url,
-				Badge:  strconv.Itoa(open),
+			if len(openIssues) > 0 {
+				views := a.issueViewsForActor(tenantSlug, openIssues, role, email)
+				first := views[0]
+				detail := first.Title
+				if len(openIssues) > 1 {
+					detail += " · " + pluralizeCount(len(openIssues), "offenes Anliegen", "offene Anliegen")
+				}
+				item := dashboardDigestItem{
+					Kind:        "Anliegen",
+					Title:       first.DetailAction,
+					Detail:      detail,
+					URL:         first.DetailURL,
+					ActionLabel: first.DetailAction,
+					Actionable:  true,
+				}
+				issueItem = &item
 			}
-			issueItem = &item
+		} else {
+			views := a.issueViewsForActor(tenantSlug, visible, role, email)
+			var waiting *issueView
+			for i := range views {
+				item := &views[i]
+				switch item.ResidentState {
+				case "question":
+					issueItem = &dashboardDigestItem{
+						Kind:        "Ihr Anliegen",
+						Title:       "Rückfrage beantworten",
+						Detail:      item.Title + " · " + item.NextStep,
+						URL:         item.DetailURL,
+						ActionLabel: item.DetailAction,
+						Actionable:  true,
+					}
+				case "resolution":
+					issueItem = &dashboardDigestItem{
+						Kind:        "Ihr Anliegen",
+						Title:       "Lösung prüfen",
+						Detail:      item.Title + " · " + item.NextStep,
+						URL:         item.DetailURL,
+						ActionLabel: item.DetailAction,
+						Actionable:  true,
+					}
+				case "waiting":
+					if waiting == nil && issueIsOpen(visible[i]) {
+						waiting = item
+					}
+				}
+				if issueItem != nil {
+					break
+				}
+			}
+			if issueItem == nil && waiting != nil {
+				issueItem = &dashboardDigestItem{
+					Kind:        "Ihr Anliegen",
+					Title:       "Anliegen bleibt im Blick",
+					Detail:      waiting.Title + " · " + waiting.NextStep,
+					URL:         waiting.DetailURL,
+					ActionLabel: "Status ansehen",
+					Actionable:  false,
+				}
+			}
 		}
 	}
 	if a.eventStore != nil {
 		upcoming := a.eventStore.Upcoming(tenantSlug, now)
 		if len(upcoming) > 0 {
-			item := dashboardDigestItem{
-				Title:  "Kommende Termine",
-				Detail: pluralizeCount(len(upcoming), "Termin geplant", "Termine geplant"),
-				URL:    "/app/events",
-				Badge:  strconv.Itoa(len(upcoming)),
+			views := a.eventViews(tenantSlug, upcoming[:1], now, email, role)
+			if len(views) > 0 {
+				item := dashboardDigestItem{
+					Kind:        "Termin",
+					Title:       "Nächster Termin: " + views[0].Title,
+					Detail:      views[0].StartsAt,
+					URL:         "/app/events",
+					ActionLabel: "Termine ansehen",
+					Actionable:  false,
+				}
+				eventItem = &item
 			}
-			eventItem = &item
 		}
 	}
 	items := []dashboardDigestItem{}
@@ -1886,9 +1884,14 @@ func (a *app) dashboardDigestItems(tenantSlug string, email string, role string,
 			items = append(items, *item)
 		}
 	}
-	// For administrators, untriaged work is the natural first stop. Residents
-	// see newly published house information first, followed by their own cases.
 	if hasCapability(role, capabilityManageIssues) {
+		appendItem(issueItem)
+		appendItem(announcementItem)
+	} else if paymentItem != nil {
+		appendItem(paymentItem)
+		appendItem(issueItem)
+		appendItem(announcementItem)
+	} else if issueItem != nil && issueItem.Actionable {
 		appendItem(issueItem)
 		appendItem(announcementItem)
 	} else {

@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.44.0] - 2026-07-28
+
+### Verbessert
+
+- **Der Hausüberblick zeigt genau die nächste sinnvolle Aufgabe.** Rückfragen, neue Aushänge, offene Zahlungsstatus und Verwaltungsarbeit führen mit einer klaren Aktion direkt an die richtige Stelle.
+- **Folgepunkte bleiben ruhig im Blick.** Bis zu drei weitere Hinweise stehen kompakt unter der Hauptaufgabe, ohne Inhalte aus Aushang, Anliegen oder Terminseiten als große Karten zu wiederholen.
+- **Anliegen öffnen sofort den passenden Assistenten.** Die Verwaltung landet beim konkreten Priorisierungsschritt; Bewohner gelangen bei einer Rückfrage direkt zu ihrer Antwort.
+- **Sonderfunktionen drängen sich nicht mehr vor.** Parkplatznutzung, Übergaben und Benutzerrechte stehen in einem zurückhaltenden Verwaltungsbereich statt im Mittelpunkt des Hausalltags.
+- **Navigation und Kopfbereich sind leichter geworden.** Interne Kurzmarken und die auffällige Versionsplakette entfallen; Standardbereiche und Verwaltung sind klarer getrennt.
+- **Admin- und Bewohnerwege sind auf Desktop und Mobil geprüft.** Der vollständige Weg vom neuen Anliegen über Priorisierung und Rückfrage bis zur Bewohnerantwort bleibt bei 390 Pixeln ohne seitlichen Überlauf.
+
 ## [0.43.0] - 2026-07-28
 
 ### Verbessert

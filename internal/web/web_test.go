@@ -124,7 +124,6 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		`{{template "hausvLandingMark" .}}`,
 		`{{define "hausvPlatformMark"}}`,
 		`{{template "tenantBrandMark" .}}`,
-		`side-code`,
 		`class="mark-word"`,
 		`hausv.org</text>`,
 		`rel="icon" type="image/svg+xml" href="/favicon.svg"`,
@@ -136,7 +135,7 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 			t.Fatalf("app shell missing logo/fav icon convention %q", want)
 		}
 	}
-	if strings.Contains(PageTemplates, `inset: 0 0 0 34%`) || !strings.Contains(PageTemplates, `.home-hero::before { content: ""; position: absolute; inset: 0;`) {
+	if strings.Contains(PageTemplates, `inset: 0 0 0 34%`) || !strings.Contains(PageTemplates, `.home-hero::before { content: ""; position: absolute; z-index: -2; inset: 0;`) {
 		t.Fatal("home overview hero image should span the full header width")
 	}
 	body, err := os.ReadFile("assets/app.js")

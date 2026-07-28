@@ -744,7 +744,6 @@ const PageTemplates = `
 	    .side-brand-copy { min-width: 0; color: inherit; text-decoration: none; }
 	    .side-title { display: block; font-family: var(--font-serif); font-size: 18px; font-weight: 600; line-height: 1.1; color: #fff; text-decoration: none; }
 	    .side-sub { display: block; margin-top: 5px; font-size: 14px; color: rgba(255,255,255,.72); }
-	    .side-code { display: inline-flex; align-items: center; width: max-content; max-width: 100%; margin-top: 7px; border: 1px solid rgba(231,197,116,.28); border-radius: var(--radius-pill); padding: 2px 8px; color: var(--gold-light); background: rgba(231,197,116,.08); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
     .side-nav { flex: 1 1 auto; min-height: 0; display: grid; align-content: start; gap: 5px; overflow-y: auto; overflow-x: hidden; padding-right: 3px; }
     .side-nav::-webkit-scrollbar { width: 7px; }
     .side-nav::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: rgba(255,255,255,.16); }
@@ -759,13 +758,14 @@ const PageTemplates = `
     .nav-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .nav-label { min-width: 0; }
     .nav-badge { margin-left: auto; min-width: 25px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); padding: 0 7px; background: var(--gold); color: #172019; font-size: 11px; font-weight: 900; line-height: 1; }
+    .nav-group-label { margin: 10px 12px 2px; color: rgba(255,255,255,.42); font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
     .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 16px 8px 0; display: grid; gap: 12px; }
     .side-user { display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: center; }
     .avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: #fff; font-weight: 800; border: 1px solid rgba(255,255,255,.25); }
     .side-user strong { display: -webkit-box; max-height: 2.5em; color: #fff; font-size: 14px; line-height: 1.22; overflow: hidden; overflow-wrap: anywhere; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .side-user span, .side-version { color: rgba(255,255,255,.64); font-size: 13px; }
-    .version-button { justify-self: start; width: auto; min-height: 30px; border: 1px solid rgba(255,255,255,.16); border-radius: var(--radius-pill); padding: 4px 10px; background: rgba(255,255,255,.05); color: rgba(255,255,255,.72); font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; }
-    .version-button:hover { border-color: rgba(231,197,116,.48); color: #fff; background: rgba(255,255,255,.09); }
+    .version-button { justify-self: start; width: auto; min-height: 26px; border: 0; padding: 3px 0; background: transparent; color: rgba(255,255,255,.48); font: inherit; font-size: 11.5px; font-weight: 650; cursor: pointer; }
+    .version-button:hover { color: rgba(255,255,255,.84); }
     .logout-form { margin: 0; }
     .logout-button { width: 100%; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); color: rgba(255,255,255,.92); background: transparent; font-weight: 700; cursor: pointer; }
     .logout-button:hover { border-color: var(--gold); color: #fff; }
@@ -796,93 +796,47 @@ const PageTemplates = `
     .button.small, button.small { min-height: 31px; padding: 6px 10px; font-size: 12px; }
     .button.ghost { background: transparent; }
     .issue-card, .entry, .event-card, .document-row, .vote-card, tr[id^="parking-month-"] { scroll-margin-top: 82px; }
-    .home-hero { position: relative; min-height: 156px; display: flex; align-items: center; overflow: hidden; border-bottom: 1px solid var(--line); background: #f7f3ea; padding: 30px clamp(28px,4vw,72px); }
-    .home-hero::before { content: ""; position: absolute; inset: 0; background: url('{{.Tenant.HeroImageURL}}') center 47% / cover no-repeat; }
-    .home-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(247,243,234,.98) 0%, rgba(247,243,234,.93) 32%, rgba(247,243,234,.58) 55%, rgba(247,243,234,.18) 100%); }
-    .home-hero-copy { position: relative; z-index: 1; width: min(720px,100%); }
-    .home-hero h1 { font-size: clamp(42px,5vw,54px); }
-    .home-hero p { margin-top: 11px; color: var(--muted); font-size: 15.5px; line-height: 1.45; }
-    .home-page { padding-top: 24px; }
-    .home-page .panel { padding: 24px 26px; }
-    .home-grid { display: grid; gap: 22px; align-items: start; }
-    .home-attention { display: grid; gap: 12px; }
-    .home-attention-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
-    .home-attention-head .kicker { margin: 0; }
-    .home-attention-head p { color: var(--muted); font-size: 13.5px; }
-    .home-attention-list { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
-    .home-attention-item { min-width: 0; display: grid; grid-template-columns: 38px minmax(0,1fr) auto; gap: 11px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px 14px; color: inherit; background: var(--panel-soft); text-decoration: none; }
-    .home-attention-item:hover { border-color: var(--gold); background: rgba(200,153,63,.08); }
-    .home-attention-item:first-child { border-color: rgba(47,107,74,.34); background: linear-gradient(135deg, rgba(47,107,74,.11), rgba(255,254,251,.95)); }
-    .home-attention-count { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--ink); font-family: var(--font-serif); font-size: 20px; font-weight: 700; }
-    .home-attention-copy { min-width: 0; }
-    .home-attention-copy strong { display: block; font-size: 14.5px; line-height: 1.25; overflow-wrap: anywhere; }
-    .home-attention-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
-    .home-attention-arrow { color: var(--gold-ink); font-size: 22px; }
-    .home-calm { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 13px; align-items: center; border-radius: var(--radius-sm); padding: 15px; color: var(--leaf); background: rgba(47,107,74,.09); }
+    .home-hero { position: relative; min-height: 118px; display: flex; align-items: center; overflow: hidden; border-bottom: 1px solid var(--line); background: #f7f3ea; padding: 25px clamp(28px,4vw,58px); isolation: isolate; }
+    .home-hero::before { content: ""; position: absolute; z-index: -2; inset: 0; background: url('{{.Tenant.HeroImageURL}}') center 47% / cover no-repeat; filter: saturate(.72); opacity: .46; }
+    .home-hero::after { content: ""; position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg, rgba(247,243,234,.99) 0%, rgba(247,243,234,.94) 38%, rgba(247,243,234,.58) 72%, rgba(247,243,234,.34) 100%); }
+    .home-hero-copy { width: min(720px,100%); }
+    .home-hero h1 { font-size: clamp(34px,4vw,44px); }
+    .home-hero p { margin-top: 8px; color: var(--muted); font-size: 15px; line-height: 1.4; }
+    .home-page { width: min(1080px,100%); padding-top: 30px; gap: 30px; }
+    .home-focus, .home-follow, .home-utilities { display: grid; gap: 16px; }
+    .home-focus-head { display: grid; gap: 5px; }
+    .home-eyebrow { color: var(--gold-ink); font-size: 11px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+    .home-focus h2, .home-follow h2, .home-utilities h2 { font-size: 22px; }
+    .home-primary-task { min-width: 0; display: grid; grid-template-columns: 48px minmax(0,1fr) auto; gap: 18px; align-items: center; border: 1px solid rgba(47,107,74,.34); border-radius: var(--radius-sm); padding: 22px 24px; background: linear-gradient(135deg, rgba(47,107,74,.09), rgba(255,254,251,.98) 62%); box-shadow: var(--shadow-panel); }
+    .home-task-number { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--ink); font-family: var(--font-serif); font-size: 22px; font-weight: 700; }
+    .home-task-copy { min-width: 0; }
+    .home-task-copy > span { color: var(--leaf); font-size: 11px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+    .home-task-copy h3 { margin-top: 4px; font-size: 24px; overflow-wrap: anywhere; }
+    .home-task-copy p { margin-top: 6px; color: var(--muted); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+    .home-task-action { min-height: 44px; padding-inline: 17px; }
+    .home-calm { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 13px; align-items: center; border: 1px solid rgba(47,107,74,.2); border-radius: var(--radius-sm); padding: 18px 20px; color: var(--leaf); background: rgba(47,107,74,.07); }
     .home-calm-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--leaf); font-size: 20px; font-weight: 900; }
-    .home-calm strong { display: block; font-family: var(--font-serif); font-size: 20px; }
-    .home-calm span { display: block; margin-top: 3px; color: var(--muted); font-size: 13.5px; }
-    .home-content-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px; align-items: start; }
-    .home-content-grid .panel { min-width: 0; }
-    .home-content-grid .entry-body { display: -webkit-box; max-height: 4.8em; overflow: hidden; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-    .home-content-grid .home-wide { grid-column: 1 / -1; }
-    .home-stack { display: grid; gap: 22px; min-width: 0; }
-    .home-grid .section-head { align-items: center; margin-bottom: 18px; }
-    .home-grid .section-head .kicker { margin-bottom: 0; }
+    .home-calm-copy strong { display: block; font-family: var(--font-serif); font-size: 20px; }
+    .home-calm-copy > span { display: block; margin-top: 3px; color: var(--muted); font-size: 13.5px; }
+    .home-follow-list { overflow: hidden; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .home-follow-row { min-width: 0; display: grid; grid-template-columns: 120px minmax(0,1fr) auto; gap: 18px; align-items: center; padding: 15px 2px; color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); }
+    .home-follow-row:last-child { border-bottom: 0; }
+    .home-follow-row:hover strong, .home-follow-row:hover .home-follow-action { color: var(--gold-ink); }
+    .home-follow-kind { color: var(--soft); font-size: 11px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+    .home-follow-copy { min-width: 0; }
+    .home-follow-copy strong { display: block; font-size: 15px; line-height: 1.3; overflow-wrap: anywhere; }
+    .home-follow-copy > span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+    .home-follow-action { color: var(--ink); font-size: 13px; font-weight: 750; white-space: nowrap; }
+    .home-utilities { border-top: 1px solid var(--line); padding-top: 22px; }
+    .home-utilities h2 { color: var(--muted); font-family: var(--font-sans); font-size: 14px; font-weight: 750; }
+    .home-utility-links { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
+    .home-utility-links a { min-width: 180px; display: grid; gap: 3px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 11px 13px; color: inherit; background: rgba(255,254,251,.68); text-decoration: none; }
+    .home-utility-links a:hover { border-color: var(--gold); background: var(--panel); }
+    .home-utility-links strong { font-size: 13.5px; }
+    .home-utility-links span { color: var(--muted); font-size: 12px; }
     .section-link { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; }
     .section-link::after { content: "›"; color: var(--gold-ink); font-size: 21px; line-height: 1; }
     .section-link:hover { color: var(--gold-ink); }
-    .home-status-panel { grid-column: 1 / -1; padding: 24px 26px 26px; }
-    .home-full { grid-column: 1 / -1; }
-    .home-status-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
-    .home-status-head .kicker { margin-bottom: 0; }
-    .home-status-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 20px 32px; align-items: center; }
-    .status-card { min-width: 0; display: grid; grid-template-columns: 64px minmax(0,1fr); gap: 14px; align-items: center; color: inherit; text-decoration: none; }
-    .status-card:hover strong { color: var(--gold-ink); }
-    .status-icon { width: 64px; height: 64px; border-radius: 50%; display: inline-grid; place-items: center; line-height: 0; background: rgba(200,153,63,.14); color: var(--gold-ink); }
-    .status-icon svg { display: block; width: 24px; height: 24px; margin: 0; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
-    .status-card.status-announcements .status-icon { background: rgba(47,107,74,.12); color: var(--leaf); }
-    .status-card.status-events .status-icon { background: rgba(200,153,63,.15); color: var(--gold-ink); }
-    .status-card.status-issues .status-icon { background: rgba(158,42,43,.1); color: #9e2a2b; }
-    .status-card.status-parking .status-icon { background: rgba(76,103,138,.12); color: #365475; }
-    .status-card strong { display: block; font-family: var(--font-serif); font-size: 24px; line-height: 1.02; }
-    .status-card > span:not(.status-icon) { display: block; min-width: 0; color: var(--muted); font-size: 13.5px; line-height: 1.35; overflow-wrap: anywhere; }
-    .status-card > span:not(.status-icon) > span { display: block; }
-    .status-card .status-label { color: var(--soft); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-    .home-list { display: grid; gap: 10px; }
-    .home-list-row { display: grid; grid-template-columns: 52px minmax(0,1fr) auto; gap: 14px; align-items: center; min-height: 74px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: var(--panel-soft); color: inherit; text-decoration: none; }
-    .home-list-row:hover { border-color: var(--gold); }
-    .home-list-row svg { display: block; width: 22px; height: 22px; margin: 0; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
-    .home-list-icon { width: 52px; height: 52px; border-radius: var(--radius-sm); display: inline-grid; place-items: center; line-height: 0; background: rgba(200,153,63,.12); color: var(--gold-ink); }
-    .home-list-row strong { display: block; font-size: 15.5px; overflow-wrap: anywhere; }
-    .home-list-row > span:not(.home-list-icon):not(.pill) { display: block; min-width: 0; color: var(--muted); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
-    .home-list-row > span:not(.home-list-icon):not(.pill) > span { display: block; margin-top: 3px; }
-    .home-card-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; }
-    .home-card-actions .section-link { min-height: 34px; padding: 0 2px; }
-    .home-events-list, .document-dashboard-list { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fffefb; }
-    .home-event-row { display: grid; grid-template-columns: 56px minmax(0,1fr) auto; gap: 14px; align-items: center; min-height: 74px; padding: 12px 14px; color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); }
-    .home-event-row:last-child { border-bottom: 0; }
-    .home-event-row:hover, .document-dashboard-row:hover { background: rgba(200,153,63,.07); }
-    .home-date { display: grid; justify-items: center; align-content: center; min-height: 48px; color: var(--ink); font-weight: 800; text-transform: uppercase; }
-    .home-date strong { font-family: var(--font-serif); font-size: 24px; line-height: 1; }
-    .home-date span { margin-top: 3px; font-size: 11px; letter-spacing: .06em; }
-    .home-event-copy strong { display: block; font-size: 14px; line-height: 1.25; overflow-wrap: anywhere; }
-    .home-event-copy span { display: block; margin-top: 5px; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
-    .document-dashboard-row { display: grid; grid-template-columns: minmax(0,1fr) auto 24px; gap: 14px; align-items: center; min-height: 48px; padding: 10px 12px; color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); font-size: 12.5px; }
-    .document-dashboard-row:last-child { border-bottom: 0; }
-    .document-file-title { min-width: 0; display: inline-flex; align-items: center; gap: 9px; }
-    .document-file-title svg, .document-download svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .document-file-title svg { flex: 0 0 auto; color: #b65045; }
-    .document-file-title strong { min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
-    .document-dashboard-meta { color: var(--muted); white-space: nowrap; }
-    .document-download { color: var(--gold-ink); display: grid; place-items: center; }
-    .parking-summary { display: grid; grid-template-columns: 64px minmax(0,1fr) auto; gap: 16px; align-items: center; border: 1px solid #d9e1ea; border-radius: var(--radius-sm); padding: 18px 20px; background: linear-gradient(90deg, rgba(76,103,138,.08), rgba(255,254,251,.96)); }
-    .parking-summary .status-icon { width: 58px; height: 58px; background: rgba(76,103,138,.12); color: #365475; }
-    .parking-summary strong { display: block; font-family: var(--font-serif); font-size: 24px; line-height: 1.08; }
-    .parking-summary p { margin-top: 5px; color: var(--muted); font-size: 13.5px; line-height: 1.4; }
-    .parking-check { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; justify-self: end; background: rgba(47,107,74,.12); color: var(--leaf); border: 1px solid rgba(47,107,74,.16); }
-    .parking-check svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .parking-summary .pill, .home-list-row .pill { justify-self: end; }
     .entries { display: grid; gap: 22px; }
     .entry + .entry { border-top: 1px solid var(--line); padding-top: 22px; }
     .entry-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
@@ -1831,7 +1785,7 @@ const PageTemplates = `
       .side-brand { grid-template-columns: 40px 1fr; gap: 10px; padding-bottom: 4px; }
       .side-mark { width: 40px; height: 40px; }
       .side-mark svg { width: 32px; height: 28px; }
-      .side-sub, .side-code { display: none; }
+      .side-sub { display: none; }
       .side-nav { gap: 2px; scrollbar-gutter: stable; }
       .nav-item { min-height: 36px; padding-top: 6px; padding-bottom: 6px; font-size: 13.5px; }
       .nav-icon { width: 19px; height: 19px; }
@@ -1841,13 +1795,11 @@ const PageTemplates = `
       .avatar { width: 32px; height: 32px; font-size: 11px; }
       .side-user strong { font-size: 12.5px; }
       .side-user span { font-size: 11.5px; }
-      .version-button { min-height: 26px; padding: 3px 8px; font-size: 11px; }
+      .version-button { min-height: 24px; padding: 2px 0; font-size: 10.5px; }
       .logout-button { min-height: 34px; font-size: 12.5px; }
     }
     @media (max-width: 1120px) {
-      .home-grid, .home-content-grid, .metric-grid, .issue-layout { grid-template-columns: 1fr; }
-      .home-content-grid .home-wide { grid-column: 1; }
-      .home-attention-list { grid-template-columns: 1fr; }
+      .metric-grid, .issue-layout { grid-template-columns: 1fr; }
       .handover-detail-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .handover-head { grid-template-columns: 1fr; }
       .handover-actions { justify-content: flex-start; }
@@ -1874,7 +1826,6 @@ const PageTemplates = `
 	      .side-mark svg { width: 34px; height: 30px; }
 	      .side-title { font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	      .side-sub { margin-top: 3px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	      .side-code { margin-top: 4px; padding: 1px 7px; font-size: 9.5px; }
 	      .nav-toggle { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none; }
 	      .mobile-menu-toggle { min-height: 44px; max-width: 180px; align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); padding: 8px 10px; color: rgba(255,255,255,.92); background: rgba(255,255,255,.07); font-size: 12px; font-weight: 850; letter-spacing: .01em; cursor: pointer; }
 	      .mobile-menu-toggle::before { content: ""; width: 14px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; box-shadow: 0 4px 0 currentColor inset; }
@@ -1888,6 +1839,7 @@ const PageTemplates = `
 	      .nav-icon { width: 18px; height: 18px; }
 	      .nav-icon svg { width: 17px; height: 17px; }
 	      .nav-badge { min-width: 20px; height: 18px; padding: 0 6px; font-size: 10px; }
+	      .nav-group-label { grid-column: 1 / -1; margin: 7px 4px 0; }
 	      .side-foot { margin-top: 2px; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 9px 10px; padding: 10px 0 0; }
 	      .side-user { grid-template-columns: 34px minmax(0,1fr); gap: 9px; min-width: 0; }
 	      .avatar { width: 34px; height: 34px; font-size: 12px; }
@@ -1898,14 +1850,18 @@ const PageTemplates = `
 	      .logout-button { min-height: 44px; }
       .content-top { height: auto; min-height: 58px; flex-direction: column; align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
       .content-top .crumb a { min-height: 44px; display: inline-flex; align-items: center; }
-      .home-hero { min-height: 176px; align-items: flex-end; padding: 70px 18px 24px; }
-      .home-hero::before { inset: 0; background-position: center top; }
-      .home-hero::after { background: linear-gradient(180deg, rgba(247,243,234,.28) 0%, rgba(247,243,234,.86) 50%, rgba(247,243,234,.98) 100%); }
-      .home-hero h1 { font-size: clamp(40px,12vw,52px); }
-      .home-hero p { font-size: 15px; }
-      .home-attention-head { display: grid; gap: 5px; }
-      .home-attention-item { grid-template-columns: 36px minmax(0,1fr) auto; padding: 12px; }
-      .home-attention-count { width: 36px; height: 36px; font-size: 18px; }
+      .home-hero { min-height: 108px; align-items: center; padding: 22px 18px; }
+      .home-hero::before { background-position: center 46%; }
+      .home-hero::after { background: linear-gradient(90deg, rgba(247,243,234,.98), rgba(247,243,234,.82)); }
+      .home-hero h1 { font-size: clamp(32px,9vw,40px); }
+      .home-hero p { font-size: 14px; }
+      .home-page { padding-top: 24px; gap: 26px; }
+      .home-primary-task { grid-template-columns: 42px minmax(0,1fr); gap: 14px; padding: 18px; }
+      .home-task-action { grid-column: 1 / -1; width: 100%; }
+      .home-follow-row { grid-template-columns: minmax(0,1fr) auto; gap: 5px 12px; padding: 14px 2px; }
+      .home-follow-kind { grid-column: 1; }
+      .home-follow-copy { grid-column: 1; }
+      .home-follow-action { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
 	      .page, .page.wide { width: 100vw; max-width: 100vw; padding-left: 18px; padding-right: 18px; overflow-x: clip; }
 	      .page > *, .panel, .audit-timeline, .filter-form.audit-filter { min-width: 0; max-width: 100%; }
 	      h1 { font-size: clamp(34px,10.5vw,42px); }
@@ -2113,17 +2069,8 @@ const PageTemplates = `
       .release-rail { grid-template-columns: repeat(auto-fit,minmax(132px,1fr)); border-right: 0; border-bottom: 1px solid var(--line); padding-right: 0; padding-bottom: 12px; }
       .release-item { grid-template-columns: 1fr; gap: 4px; }
       .empty-state { grid-template-columns: 1fr; }
-      .home-status-head { display: grid; gap: 12px; }
-      .home-status-grid { grid-template-columns: 1fr; }
-      .status-card { grid-template-columns: 54px minmax(0,1fr); }
-      .home-list-row, .parking-summary { grid-template-columns: 1fr; }
-      .home-event-row { grid-template-columns: 52px minmax(0,1fr); }
-      .document-dashboard-row { grid-template-columns: minmax(0,1fr) 24px; gap: 5px 10px; align-items: center; }
-      .document-dashboard-meta { grid-column: 1; white-space: normal; }
-      .document-download { grid-column: 2; grid-row: 1 / span 2; justify-self: end; }
-      .parking-summary .pill, .home-list-row .pill { justify-self: start; }
-      .parking-check { justify-self: start; }
-      .home-list-row .quick-arrow { display: none; }
+      .home-utility-links { display: grid; grid-template-columns: 1fr; }
+      .home-utility-links a { min-width: 0; }
       .quick-arrow { display: none; }
     }
   </style>
@@ -2138,7 +2085,6 @@ const PageTemplates = `
       <a class="side-brand-copy" href="/app">
         <span class="side-title">{{.HouseName}}</span>
         <span class="side-sub">Hausportal</span>
-        {{if .Tenant.BrandAbbreviation}}<span class="side-code">{{.Tenant.BrandAbbreviation}}</span>{{end}}
       </a>
 	    </div>
 	    <input class="nav-toggle" id="portal-nav-toggle" type="checkbox" aria-label="Navigation anzeigen">
@@ -2149,13 +2095,14 @@ const PageTemplates = `
 	      <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
 	      <a class="nav-item {{if eq .ActivePage "events"}}active{{end}}" href="/app/events"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></span><span class="nav-label">Termine</span></a>
 	      <a class="nav-item {{if eq .ActivePage "contacts"}}active{{end}}" href="/app/kontakte"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg></span><span class="nav-label">Kontakte</span></a>
-	      {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span><span class="nav-label">Parkplatznutzung</span></a>{{end}}
 	      <a class="nav-item {{if eq .ActivePage "documents"}}active{{end}}" href="/app/dokumente"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span><span class="nav-label">Dokumente</span></a>
-	      {{if .CanManageHandovers}}<a class="nav-item {{if eq .ActivePage "handovers"}}active{{end}}" href="/app/uebergaben"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg></span><span class="nav-label">Übergaben</span></a>{{end}}
 	      {{end}}
 	      <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span><span class="nav-label">Anliegen</span>{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
 	      {{if .CanUseResidentAreas}}
 	      <a class="nav-item {{if eq .ActivePage "abstimmungen"}}active{{end}}" href="/app/abstimmungen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span><span class="nav-label">Abstimmungen</span></a>
+	      {{if or .CanSeeParking .CanManageHandovers .CanManageUsers}}<span class="nav-group-label">{{if or .CanManageHandovers .CanManageUsers}}Verwaltung{{else}}Weitere Bereiche{{end}}</span>{{end}}
+	      {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span><span class="nav-label">Parkplatznutzung</span></a>{{end}}
+	      {{if .CanManageHandovers}}<a class="nav-item {{if eq .ActivePage "handovers"}}active{{end}}" href="/app/uebergaben"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg></span><span class="nav-label">Übergaben</span></a>{{end}}
 	      {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span><span class="nav-label">Benutzer &amp; Rechte</span></a>{{end}}
 	      {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="nav-label">Verlauf</span></a>{{end}}
 	      <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span><span class="nav-label">Einstellungen</span></a>
@@ -2237,158 +2184,61 @@ const PageTemplates = `
 {{define "portal"}}
 {{template "appOpen" .}}
     <main class="app-main">
-      <div class="content-top"><span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg>Hausüberblick</span></div>
       <section class="home-hero">
         <div class="home-hero-copy">
-          <h1>Hausüberblick</h1>
-          <p>Hallo {{.GreetingName}}. Hier sehen Sie, was jetzt wichtig ist.</p>
+          <h1>Hallo {{.GreetingName}}.</h1>
+          <p>Hier steht, was jetzt wichtig ist.</p>
         </div>
       </section>
       <section class="page home-page">
-        <div class="home-grid">
-          <section class="panel home-attention" aria-labelledby="home-attention-title">
-            <div class="home-attention-head">
-              <div class="kicker" id="home-attention-title">Jetzt wichtig</div>
-              <p>{{if .HasDashboardDigest}}Der erste Punkt ist Ihr nächster sinnvoller Schritt.{{else}}Sie müssen gerade nichts tun.{{end}}</p>
+        <section class="home-focus" aria-labelledby="home-focus-title">
+          <header class="home-focus-head">
+            <p class="home-eyebrow">Heute</p>
+            <h2 id="home-focus-title">Was ist als Nächstes zu tun?</h2>
+          </header>
+          {{if .HasDashboardPrimary}}
+            <article class="home-primary-task">
+              <div class="home-task-number" aria-hidden="true">1</div>
+              <div class="home-task-copy">
+                <span>{{.DashboardPrimary.Kind}}</span>
+                <h3>{{.DashboardPrimary.Title}}</h3>
+                <p>{{.DashboardPrimary.Detail}}</p>
+              </div>
+              <a class="button primary home-task-action" href="{{.DashboardPrimary.URL}}">{{.DashboardPrimary.ActionLabel}} <span aria-hidden="true">→</span></a>
+            </article>
+          {{else}}
+            <div class="home-calm">
+              <span class="home-calm-icon" aria-hidden="true">✓</span>
+              <span class="home-calm-copy"><strong>Alles im Blick</strong><span>Heute ist nichts zu erledigen.</span></span>
             </div>
-            {{if .HasDashboardDigest}}
-              <div class="home-attention-list">
-                {{range $index, $item := .DashboardDigest}}
-                  <a class="home-attention-item" href="{{$item.URL}}" {{if eq $index 0}}aria-label="Als Nächstes: {{$item.Title}}"{{end}}>
-                    <span class="home-attention-count">{{$item.Badge}}</span>
-                    <span class="home-attention-copy"><strong>{{$item.Title}}</strong><span>{{$item.Detail}}</span></span>
-                    <span class="home-attention-arrow" aria-hidden="true">›</span>
-                  </a>
-                {{end}}
-              </div>
-            {{else}}
-              <div class="home-calm">
-                <span class="home-calm-icon" aria-hidden="true">✓</span>
-                <span><strong>Alles im Blick</strong><span>{{if .IsAdmin}}Keine offenen Verwaltungsaufgaben.{{else}}Keine neuen oder offenen Punkte.{{end}}</span></span>
-              </div>
-            {{end}}
-          </section>
+          {{end}}
+        </section>
 
-          <div class="home-content-grid">
-            {{if .HasAnnouncements}}
-            <section class="panel">
-              <div class="section-head">
-                <div class="kicker">Neuester Aushang</div>
-                {{if .HasUnreadAnnouncements}}<span class="pill unread">{{.UnreadAnnouncements}} neu</span>{{end}}
-                <a class="section-link" href="/app/announcements">Alle Aushänge</a>
-              </div>
-              <div class="entries">
-                {{range .Announcements}}
-                  <article class="entry">
-                    <div class="entry-head">
-                      <div>
-                        <h3><a href="/app/announcements">{{.Title}}</a></h3>
-                        <div class="entry-meta">
-                          <span class="pill {{.CategoryClass}}">{{.Category}}</span>
-                          {{if .Unread}}<span class="pill unread">neu</span>{{end}}
-                          {{if .Pinned}}<span class="pill">Fixiert</span>{{end}}
-                          <span>{{.PublishedAt}}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="entry-body">{{.BodyHTML}}</div>
-                  </article>
-                {{end}}
-              </div>
-            </section>
-            {{end}}
-
-            {{if .HasDashboardIssues}}
-            <section class="panel">
-              <div class="section-head">
-                <div class="kicker">{{.IssueSummaryTitle}}</div>
-                <a class="section-link" href="{{.IssueSummaryURL}}">Alle öffnen</a>
-              </div>
-              <div class="home-list">
-                {{range .DashboardIssues}}
-                  <a class="home-list-row" href="{{$.IssueSummaryURL}}">
-                    <span class="home-list-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span>
-                    <span><strong>{{.Title}}</strong><span>{{.Priority}} · {{.CreatedAt}}{{if .Location}} · {{.Location}}{{end}}</span></span>
-                    <span class="pill {{.StatusClass}}">{{.Status}}</span>
-                  </a>
-                {{end}}
-              </div>
-            </section>
-            {{end}}
-
-            {{if .HasEvents}}
-            <section class="panel">
-              <div class="section-head">
-                <div class="kicker">Nächster Termin</div>
-                <a class="section-link" href="/app/events">Alle Termine</a>
-              </div>
-              <div class="home-events-list">
-                {{range .Events}}
-                  <a class="home-event-row" href="/app/events">
-                    <span class="home-date"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
-                    <span class="home-event-copy">
-                      <strong>{{.Title}}</strong>
-                      <span>{{.StartsAt}}{{if .HasLocation}} · {{.Location}}{{end}}{{if .Status}} · {{.Status}}{{end}}</span>
-                    </span>
-                    <span class="quick-arrow">›</span>
-                  </a>
-                {{end}}
-              </div>
-            </section>
-            {{end}}
-
-            {{if .HasUnitPaymentStatuses}}
-            <section class="panel">
-              <div class="section-head"><div class="kicker">Zahlungsstatus</div></div>
-              <div class="home-list">
-                {{range .UnitPaymentStatuses}}
-                  <div class="home-list-row">
-                    <span class="home-list-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"/><path d="M7 10h3"/><path d="M14 14h3"/></svg></span>
-                    <span><strong>{{.UnitLabel}}</strong><span>{{.UnitTypeLabel}}{{if .Relation}} · {{.Relation}}{{end}}{{if .HasUpdatedAt}} · {{.UpdatedAt}}{{end}}</span></span>
-                    <span class="pill {{.StatusClass}}">{{.Status}}</span>
-                  </div>
-                {{end}}
-              </div>
-            </section>
-            {{end}}
-
-            {{if .CanSeeParking}}
-            <section class="panel">
-              <div class="section-head">
-                <div class="kicker">Parkplatznutzung</div>
-                <a class="section-link" href="/app/parking">Öffnen</a>
-              </div>
-              <div class="parking-summary">
-                <span class="status-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span>
-                <span><strong>{{.ParkingStatusTitle}}</strong><p>{{.ParkingSummaryDetail}}</p></span>
-                {{if eq .ParkingStatusClass "ok"}}
-                  <span class="parking-check"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>
-                {{else}}
-                  <span class="pill {{.ParkingStatusClass}}">{{.ParkingStatusTitle}}</span>
-                {{end}}
-              </div>
-            </section>
-            {{end}}
-
-            {{if .HasDashboardDocuments}}
-            <section class="panel home-wide">
-              <div class="section-head">
-                <div class="kicker">Neue Dokumente</div>
-                <a class="section-link" href="/app/dokumente">Alle Dokumente</a>
-              </div>
-              <div class="document-dashboard-list">
-                {{range .DashboardDocuments}}
-                  <a class="document-dashboard-row" href="/app/dokumente#document-{{.ID}}">
-                    <span class="document-file-title"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><strong>{{.Title}}</strong></span>
-                    <span class="document-dashboard-meta">{{.Category}} · {{.UploadedDate}}</span>
-                    <span class="document-download"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></span>
-                  </a>
-                {{end}}
-              </div>
-            </section>
+        {{if .HasDashboardFollowUps}}
+        <section class="home-follow" aria-labelledby="home-follow-title">
+          <h2 id="home-follow-title">{{if .HasDashboardPrimary}}Danach{{else}}Im Blick{{end}}</h2>
+          <div class="home-follow-list">
+            {{range .DashboardFollowUps}}
+            <a class="home-follow-row" href="{{.URL}}">
+              <span class="home-follow-kind">{{.Kind}}</span>
+              <span class="home-follow-copy"><strong>{{.Title}}</strong><span>{{.Detail}}</span></span>
+              <span class="home-follow-action">{{.ActionLabel}} <span aria-hidden="true">→</span></span>
+            </a>
             {{end}}
           </div>
-        </div>
+        </section>
+        {{end}}
+
+        {{if .HasHomeUtilities}}
+        <section class="home-utilities" aria-labelledby="home-utilities-title">
+          <h2 id="home-utilities-title">{{if or .CanManageHandovers .CanManageUsers}}Verwaltung{{else}}Weitere Bereiche{{end}}</h2>
+          <div class="home-utility-links">
+            {{if .CanSeeParking}}<a href="/app/parking"><strong>Parkplatznutzung</strong><span>Verbrauch und Abrechnung</span></a>{{end}}
+            {{if .CanManageHandovers}}<a href="/app/uebergaben"><strong>Übergaben</strong><span>Termine und Protokolle</span></a>{{end}}
+            {{if .CanManageUsers}}<a href="/app/settings/users"><strong>Benutzer &amp; Rechte</strong><span>Zugänge verwalten</span></a>{{end}}
+          </div>
+        </section>
+        {{end}}
       </section>
     </main>
 {{template "appClose" .}}

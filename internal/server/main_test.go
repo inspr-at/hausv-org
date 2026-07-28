@@ -1902,10 +1902,13 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatalf("home should render layered name, address and default hero:\n%s", home.Body.String())
 	}
 	appPage := authedRequest(t, a, "manager@example.com", "/app")
-	for _, want := range []string{`tenant-brand-mark`, `SUN-ECK`, `M16 17l16-7 16 7`} {
+	for _, want := range []string{`tenant-brand-mark`, `M16 17l16-7 16 7`} {
 		if !strings.Contains(appPage.Body.String(), want) {
 			t.Fatalf("app sidebar should render selected brand marker %q:\n%s", want, appPage.Body.String())
 		}
+	}
+	if strings.Contains(appPage.Body.String(), `class="side-code"`) || strings.Contains(appPage.Body.String(), ">SUN-ECK<") {
+		t.Fatal("app sidebar should not repeat the internal brand abbreviation")
 	}
 	settingsPage := authedRequest(t, a, "manager@example.com", "/app/settings/building")
 	for _, want := range []string{`name="brand_icon"`, `value="mixed-use" selected`, `value="SUN-ECK"`, `Gemischt genutzt`} {
@@ -3069,7 +3072,7 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 			t.Fatalf("portal must not contain placeholder copy %q", forbidden)
 		}
 	}
-	for _, want := range []string{"Jetzt wichtig", "Sie müssen gerade nichts tun", "Alles im Blick", `href="/app/announcements"`} {
+	for _, want := range []string{"Was ist als Nächstes zu tun?", "Heute ist nichts zu erledigen", "Alles im Blick", "Hier steht, was jetzt wichtig ist"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("calm portal should contain %q", want)
 		}
@@ -3077,17 +3080,17 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 	if strings.Contains(body, `class="empty-state"`) || strings.Contains(body, "Noch keine Beiträge") {
 		t.Fatal("calm portal should not stack empty states")
 	}
-	if !strings.Contains(body, `class="home-hero"`) || !strings.Contains(body, "Hier sehen Sie, was jetzt wichtig ist") || strings.Contains(body, `class="banner"`) {
+	if !strings.Contains(body, `class="home-hero"`) || strings.Contains(body, `class="banner"`) {
 		t.Fatal("portal should use the integrated home hero instead of the old banner")
 	}
-	for _, want := range []string{`.home-attention-item:first-child`, `.home-list-row > span:not(.home-list-icon):not(.pill)`} {
+	for _, want := range []string{`.home-primary-task {`, `.home-follow-row {`, `.home-utilities {`} {
 		if !strings.Contains(body, want) {
-			t.Fatalf("portal stylesheet should preserve icon centering selector %q", want)
+			t.Fatalf("portal stylesheet should contain focused dashboard selector %q", want)
 		}
 	}
-	for _, forbidden := range []string{`.status-card span {`, `.home-list-row span {`} {
+	for _, forbidden := range []string{`.status-card span {`, `.home-list-row span {`, `.home-attention-item:first-child`} {
 		if strings.Contains(body, forbidden) {
-			t.Fatalf("portal stylesheet must not use broad icon-breaking selector %q", forbidden)
+			t.Fatalf("portal stylesheet must not contain obsolete dashboard selector %q", forbidden)
 		}
 	}
 }
@@ -3103,7 +3106,7 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "jhw22", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Privates Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
 
 	resident := authedRequest(t, a, "resident@example.com", "/app").Body.String()
-	for _, want := range []string{"Jetzt wichtig", "Neue Aushänge", "ungelesener Beitrag", "Offene Anliegen", `href="/app/anliegen"`, "Kommende Termine", "Termin geplant"} {
+	for _, want := range []string{"Was ist als Nächstes zu tun?", "Neuen Aushang lesen", "ungelesener Beitrag", "Anliegen bleibt im Blick", "Eigenes Anliegen", "Nächster Termin: Versammlung"} {
 		if !strings.Contains(resident, want) {
 			t.Fatalf("resident digest should contain %q", want)
 		}
@@ -3113,12 +3116,12 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 	}
 
 	manager := authedRequest(t, a, "manager@example.com", "/app").Body.String()
-	for _, want := range []string{"Offene Anliegen im Haus", `home-attention-count">2`, `href="/app/anliegen/board"`} {
+	for _, want := range []string{"Priorisieren", "2 offene Anliegen", `href="/app/anliegen/board/`} {
 		if !strings.Contains(manager, want) {
 			t.Fatalf("manager digest should contain %q", want)
 		}
 	}
-	if issueIndex, announcementIndex := strings.Index(manager, "Offene Anliegen im Haus"), strings.Index(manager, "Neue Aushänge"); issueIndex < 0 || announcementIndex < 0 || issueIndex > announcementIndex {
+	if issueIndex, announcementIndex := strings.Index(manager, "Priorisieren"), strings.Index(manager, "Neuen Aushang lesen"); issueIndex < 0 || announcementIndex < 0 || issueIndex > announcementIndex {
 		t.Fatalf("manager digest should put triage before announcements")
 	}
 }
@@ -3138,15 +3141,18 @@ func TestPortalDashboardShowsRoleScopedDocumentsAndParking(t *testing.T) {
 	}
 
 	parker := authedRequest(t, a, "parker@example.com", "/app").Body.String()
-	for _, want := range []string{"Dokumente", "Hausordnung", "Parkplatznutzung", "Alles erledigt"} {
+	for _, want := range []string{"Dokumente", "Parkplatznutzung", "Weitere Bereiche", "Alles im Blick"} {
 		if !strings.Contains(parker, want) {
 			t.Fatalf("parking user dashboard should contain %q", want)
 		}
 	}
+	if strings.Contains(parker, "Hausordnung") {
+		t.Fatal("dashboard should not duplicate the document library without a real unread state")
+	}
 
 	resident := authedRequest(t, a, "resident@example.com", "/app").Body.String()
-	if !strings.Contains(resident, "Hausordnung") {
-		t.Fatal("resident dashboard should show all-resident documents")
+	if !strings.Contains(resident, "Dokumente") || strings.Contains(resident, "Hausordnung") {
+		t.Fatal("resident dashboard should keep documents in navigation without duplicating arbitrary files")
 	}
 	if !strings.Contains(resident, "<title>Janischhofweg 22</title>") || strings.Contains(resident, "<title>WEG Portal</title>") {
 		t.Fatal("dashboard browser title should use the house name instead of the legacy product name")
@@ -3304,16 +3310,16 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 		t.Fatalf("portal status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	if !strings.Contains(body, "Fixierter Hinweis") || strings.Contains(body, "Normaler Hinweis") {
-		t.Fatalf("portal should preview only the highest-priority current announcement:\n%s", body)
+	if strings.Contains(body, "Fixierter Hinweis") || strings.Contains(body, "Normaler Hinweis") {
+		t.Fatalf("portal should point to unread announcements without duplicating their content:\n%s", body)
 	}
 	for _, forbidden := range []string{"Alter Hinweis", "Geplanter Hinweis", "info-card", `class="quick-row disabled"`, "Schnellzugriff", `class="quick-row" href="/app/announcements"`} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("portal must not contain %q", forbidden)
 		}
 	}
-	if !strings.Contains(body, `href="/app/announcements"`) || !strings.Contains(body, "Aushang") {
-		t.Fatal("portal should keep the announcement card and archive link")
+	if !strings.Contains(body, `href="/app/announcements"`) || !strings.Contains(body, "Neue Aushänge lesen") {
+		t.Fatal("portal should keep one focused unread-announcement action")
 	}
 }
 
@@ -3818,6 +3824,12 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 	for _, unwanted := range []string{"Kommentar senden", "Als erledigt melden"} {
 		if strings.Contains(overview, unwanted) {
 			t.Fatalf("resident overview must not show generic action %q", unwanted)
+		}
+	}
+	dashboard := authedRequest(t, a, "resident@example.com", "/app").Body.String()
+	for _, want := range []string{"Rückfrage beantworten", "Kellerlicht defekt", "Die Verwaltung braucht Ihre Antwort.", `href="/app/anliegen/` + issue.ID + `"`, "Antworten"} {
+		if !strings.Contains(dashboard, want) {
+			t.Fatalf("resident dashboard missing focused answer task %q", want)
 		}
 	}
 	detailURL := "/app/anliegen/" + issue.ID
@@ -5135,7 +5147,7 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 	}
 
 	ownerPage := authedRequest(t, a, "owner@example.com", "/app").Body.String()
-	if !strings.Contains(ownerPage, "Zahlungsstatus") || !strings.Contains(ownerPage, "Top 1") || !strings.Contains(ownerPage, "Überfällig") {
+	if !strings.Contains(ownerPage, "Offenen Zahlungsstatus klären") || !strings.Contains(ownerPage, "Top 1") || !strings.Contains(ownerPage, "Überfällig") {
 		t.Fatalf("owner page missing own payment status:\n%s", ownerPage)
 	}
 	if strings.Contains(ownerPage, "Top 2") || strings.Contains(ownerPage, "Bezahlt") {
@@ -5335,7 +5347,7 @@ func TestIssueTriageBoardFiltersAndOpenCounts(t *testing.T) {
 	}
 
 	dashboard := authedRequest(t, a, "manager@example.com", "/app").Body.String()
-	if !strings.Contains(dashboard, `home-attention-count">2`) || !strings.Contains(dashboard, "2 offene Anliegen") || !strings.Contains(dashboard, "nav-badge") {
+	if !strings.Contains(dashboard, "2 offene Anliegen") || !strings.Contains(dashboard, "Priorisieren") || !strings.Contains(dashboard, "nav-badge") {
 		t.Fatalf("dashboard should surface open issue count:\n%s", dashboard)
 	}
 }
@@ -5446,7 +5458,7 @@ func TestAnnouncementUnreadBadgeClearsAfterArchiveView(t *testing.T) {
 	if before.Code != http.StatusOK {
 		t.Fatalf("portal before status = %d", before.Code)
 	}
-	if body := before.Body.String(); !strings.Contains(body, "Neue Wartung") || !strings.Contains(body, `pill unread">neu`) || !strings.Contains(body, `<span class="nav-badge">1</span>`) {
+	if body := before.Body.String(); !strings.Contains(body, "Neuen Aushang lesen") || !strings.Contains(body, "1 ungelesener Beitrag") || !strings.Contains(body, `<span class="nav-badge">1</span>`) {
 		t.Fatalf("portal should show unread announcement and nav badge before archive view:\n%s", body)
 	}
 
@@ -5463,7 +5475,7 @@ func TestAnnouncementUnreadBadgeClearsAfterArchiveView(t *testing.T) {
 		t.Fatalf("portal after status = %d", after.Code)
 	}
 	body := after.Body.String()
-	if strings.Contains(body, `<span class="nav-badge">`) || strings.Contains(body, `pill unread">neu`) {
+	if strings.Contains(body, `<span class="nav-badge">`) || strings.Contains(body, "ungelesener Beitrag") {
 		t.Fatalf("portal should clear unread badges after archive view:\n%s", body)
 	}
 }

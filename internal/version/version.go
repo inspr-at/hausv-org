@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.44.0",
+			Date:     "28. Juli 2026",
+			Kind:     "Hausüberblick",
+			Headline: "Der Hausüberblick führt jetzt mit einer Aufgabe statt mit vielen Karten.",
+			Intro:    "Eine klare Hauptaktion und wenige ruhige Folgepunkte zeigen sofort, was zu tun ist und was lediglich im Blick bleiben soll.",
+			Items: []NoteItem{
+				{Label: "Direkt handeln", Text: "Anliegen, Rückfragen, Aushänge und offene Zahlungsstatus führen ohne Umweg zum passenden nächsten Schritt."},
+				{Label: "Weniger wiederholen", Text: "Inhalte aus Aushang, Anliegen, Terminen und Dokumenten werden nicht mehr als konkurrierende Dashboard-Karten dupliziert."},
+				{Label: "Verwaltung einordnen", Text: "Parkplatznutzung, Übergaben und Benutzerrechte bleiben erreichbar, stehen aber sichtbar hinter dem normalen Hausalltag."},
+			},
+		},
+		{
 			Version:  "0.43.0",
 			Date:     "28. Juli 2026",
 			Kind:     "Anmeldung",

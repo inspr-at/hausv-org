@@ -393,10 +393,12 @@ type EmptyStateView struct {
 }
 
 type DashboardDigestItem struct {
-	Title  string
-	Detail string
-	URL    string
-	Badge  string
+	Kind        string
+	Title       string
+	Detail      string
+	URL         string
+	ActionLabel string
+	Actionable  bool
 }
 
 type AuditEventView struct {
