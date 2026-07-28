@@ -2476,7 +2476,7 @@ const PageTemplates = `
                 <details class="contact-add" id="contact-add" {{if .ContactFormOpen}}open{{end}}>
                   <summary>Kontakt hinzufügen</summary>
                   <div class="contact-add-body">
-                    <p class="contact-add-hint">Name oder Firma und mindestens Telefon oder E-Mail angeben. {{if not .ServiceProviderAccessEnabled}}Betreiberfreigabe offen: Dienstleister bleiben gesperrt.{{end}}</p>
+                    <p class="contact-add-hint">Name oder Firma und mindestens Telefon oder E-Mail angeben. {{if not .ServiceProviderAccessEnabled}}Dienstleister-Zugänge sind derzeit nicht verfügbar.{{end}}</p>
                     <form class="contact-form" method="post" action="/app/kontakte">
                       <input type="hidden" name="active" value="true">
                       <label>Art<select name="kind" required>{{range .ContactKindOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
@@ -2655,7 +2655,7 @@ const PageTemplates = `
                   {{if .HasServiceProposal}}<p class="issue-proposal"><strong>Hinweis:</strong> {{.ServiceProposal}}</p>{{end}}
                   {{if .CanServiceUpdate}}
                   <details class="issue-card-details">
-                    <summary>Details &amp; Verlauf{{if .HasComments}} · {{len .Comments}} Beiträge{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{else if .HasAttachments}} · Anhänge{{end}}</summary>
+                    <summary>Details &amp; Verlauf{{if .HasComments}} · {{len .Comments}} {{if eq (len .Comments) 1}}Beitrag{{else}}Beiträge{{end}}{{end}}{{if .HasPhotos}} · {{.PhotoCount}} Foto{{if ne .PhotoCount 1}}s{{end}}{{else if .HasAttachments}} · Anhänge{{end}}</summary>
                     <div class="issue-card-details-body">
                       <div class="issue-description"><strong>Beschreibung</strong><p>{{.Body}}</p></div>
                       {{template "issueEstimate" .}}
@@ -2793,7 +2793,7 @@ const PageTemplates = `
         </div>{{end}}
         {{if and .CanManageIssues .BoardOnly}}
           <section class="panel issue-board-panel" id="issue-manage">
-            <div class="issue-board-toolbar">
+            {{if .TotalIssueCount}}<div class="issue-board-toolbar">
               <div class="issue-board-summary" aria-label="Anliegen-Überblick">
                 <span class="pill">{{.OpenIssueCount}} offen</span>
                 {{if .UrgentIssueCount}}<span class="pill dringend">{{.UrgentIssueCount}} dringend</span>{{end}}
@@ -2835,7 +2835,7 @@ const PageTemplates = `
                   </div>
                 </form>
               </details>
-            </div>
+            </div>{{end}}
             {{if .HasManageIssues}}
               <div class="issue-list">
                 {{range .ManageIssues}}
@@ -3150,7 +3150,7 @@ const PageTemplates = `
               <div class="kicker">Archiv</div>
               {{if .HasAnnouncements}}<span class="pill">{{len .Announcements}} Treffer</span>{{end}}
             </div>
-            <div class="archive-tools">
+            {{if .HasAnyAnnouncements}}<div class="archive-tools">
               <form class="filter-form" method="get" action="/app/announcements">
                 {{if .SelectedCategory}}<input type="hidden" name="category" value="{{.SelectedCategory}}">{{end}}
                 <label for="announcement-search">Suche<input id="announcement-search" name="q" value="{{.SearchQuery}}" placeholder="Titel, Text oder Kategorie"></label>
@@ -3159,7 +3159,7 @@ const PageTemplates = `
               <div class="filter-tabs" aria-label="Aushang-Kategorien">
                 {{range .CategoryFilters}}<a class="filter-tab {{if .Active}}active{{end}}" href="{{.URL}}">{{.Label}}</a>{{end}}
               </div>
-            </div>
+            </div>{{end}}
             {{if .HasAnnouncements}}
               <div class="entries">
                 {{range .Announcements}}
@@ -3461,7 +3461,7 @@ const PageTemplates = `
               {{if .HasSearchQuery}}<p class="mini">Ergebnis für „{{.SearchQuery}}“</p>{{end}}
             </div>
           </div>
-          <form class="document-toolbar" method="get" action="/app/dokumente" role="search">
+          {{if or .HasAnyDocuments .HasSearchQuery}}<form class="document-toolbar" method="get" action="/app/dokumente" role="search">
               <label class="document-search" for="document-search">
                 <span class="sr-only">Dokumente durchsuchen</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -3475,7 +3475,7 @@ const PageTemplates = `
               </label>
               <button class="button" type="submit">Anzeigen</button>
               {{if .HasSearchQuery}}<a class="document-reset" href="/app/dokumente">Zurücksetzen</a>{{end}}
-          </form>
+          </form>{{end}}
           {{if .HasDocuments}}
             <div class="document-sections">
               {{range .DocumentSections}}
@@ -4671,9 +4671,9 @@ const PageTemplates = `
           <p class="lede">{{.AuditLede}}</p>
         </div>
         <section class="panel audit-panel">
-          <details class="audit-filter-panel"{{if .AuditStats.HasActiveFilters}} open{{end}}>
+          {{if .HasAnyEvents}}<details class="audit-filter-panel"{{if .AuditStats.HasActiveFilters}} open{{end}}>
             <summary>
-              <span class="audit-overview"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/><path d="M2.5 7h.01M2.5 12h.01M2.5 17h.01"/></svg><strong>{{.AuditStats.TotalEvents}} Einträge</strong><span>· {{.AuditStats.TodayCount}} heute</span></span>
+              <span class="audit-overview"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/><path d="M2.5 7h.01M2.5 12h.01M2.5 17h.01"/></svg><strong>{{.AuditStats.TotalEvents}} {{if eq .AuditStats.TotalEvents 1}}Eintrag{{else}}Einträge{{end}}</strong><span>· {{.AuditStats.TodayCount}} heute</span></span>
               <span class="audit-filter-trigger"><svg viewBox="0 0 24 24"><path d="M4 5h16l-6 7v6l-4 2v-8z"/></svg>Filtern{{if .AuditStats.HasActiveFilters}} <span class="chip">{{len .AuditStats.ActiveFilters}}</span>{{end}}</span>
             </summary>
             <div class="audit-filter-content">
@@ -4696,7 +4696,7 @@ const PageTemplates = `
                 <div class="audit-filter-actions"><a class="button ghost" href="/app/audit">Filter zurücksetzen</a></div>
               {{end}}
             </div>
-          </details>
+          </details>{{end}}
           {{if .HasEvents}}
             <div class="audit-timeline" aria-label="Aktivitätsverlauf">
               {{range .Events}}

@@ -106,14 +106,14 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 		t.Fatalf("resident audit status = %d", residentPage.Code)
 	}
 	residentBody := residentPage.Body.String()
-	for _, want := range []string{"Verwaltung", "Sie", ownIssue.ID, "top-1", "In Bearbeitung", "E-Mail-Link"} {
+	for _, want := range []string{"Verwaltung", "Sie", "Eigener Vorgang", "Top 1", "In Bearbeitung", "E-Mail-Link", "Anliegen bearbeitet"} {
 		if !strings.Contains(residentBody, want) {
 			t.Fatalf("resident audit missing %q:\n%s", want, residentBody)
 		}
 	}
 	for _, forbidden := range []string{
 		"manager@example.com", "private@example.com", "SECRET-REFERENCE", "UNIT-SECRET",
-		"PERSONAL-SUMMARY-MUST-NOT-LEAK", hiddenIssue.ID, "other.person@example.com", "cross-tenant@example.com",
+		"PERSONAL-SUMMARY-MUST-NOT-LEAK", ownIssue.ID, hiddenIssue.ID, "other.person@example.com", "cross-tenant@example.com",
 	} {
 		if strings.Contains(residentBody, forbidden) {
 			t.Fatalf("resident audit leaks %q:\n%s", forbidden, residentBody)
@@ -125,10 +125,10 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 		t.Fatalf("provider audit status = %d", providerPage.Code)
 	}
 	providerBody := providerPage.Body.String()
-	if !strings.Contains(providerBody, providerIssue.ID) || !strings.Contains(providerBody, "Verwaltung") {
+	if !strings.Contains(providerBody, "Zugewiesener Vorgang") || !strings.Contains(providerBody, "Verwaltung") {
 		t.Fatalf("provider audit missing assigned history:\n%s", providerBody)
 	}
-	for _, forbidden := range []string{ownIssue.ID, hiddenIssue.ID, "manager@example.com", `href="/app/settings"`} {
+	for _, forbidden := range []string{providerIssue.ID, ownIssue.ID, hiddenIssue.ID, "manager@example.com", `href="/app/settings"`} {
 		if strings.Contains(providerBody, forbidden) {
 			t.Fatalf("provider audit leaks or links forbidden value %q:\n%s", forbidden, providerBody)
 		}
@@ -159,6 +159,7 @@ func TestAuditActionsExposeUnderstandableLabelsAndTones(t *testing.T) {
 		{auditActionAttachmentDelete, "Anhang entfernt", "danger"},
 		{auditActionIntegrationImport, "Integration importiert", "change"},
 		{auditActionInviteCreate, "Einladung angelegt", "add"},
+		{auditActionIssueWorkflow, "Anliegen bearbeitet", "change"},
 	}
 	for _, tc := range cases {
 		if got := auditActionLabel(tc.action); got != tc.label {

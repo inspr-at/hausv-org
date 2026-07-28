@@ -58,7 +58,7 @@ func (a *app) canViewAuditUnit(ac authCtx, unitID string) bool {
 
 func scopedAuditEvent(event auditEvent, selfEmail string) auditEvent {
 	event = copyAuditEvent(event)
-	event.Summary = auditActionLabel(event.Action)
+	event.Summary = scopedAuditSummary(event, selfEmail)
 	switch {
 	case normalizeEmail(event.ActorEmail) == normalizeEmail(selfEmail):
 		event.ActorEmail = "Sie"
@@ -72,6 +72,33 @@ func scopedAuditEvent(event auditEvent, selfEmail string) auditEvent {
 	event.ActorRole = ""
 	event.Details = scopedAuditDetails(event.Details)
 	return event
+}
+
+func scopedAuditSummary(event auditEvent, selfEmail string) string {
+	byCurrentUser := normalizeEmail(event.ActorEmail) == normalizeEmail(selfEmail)
+	switch normalizeAuditAction(event.Action) {
+	case auditActionIssueComment:
+		switch strings.TrimSpace(event.Details["message_type"]) {
+		case issueCommentKindQuestion:
+			if !byCurrentUser {
+				return "Rückfrage erhalten"
+			}
+			return "Rückfrage gestellt"
+		case issueCommentKindAnswer:
+			if !byCurrentUser {
+				return "Antwort erhalten"
+			}
+			return "Rückfrage beantwortet"
+		default:
+			return "Nachricht hinzugefügt"
+		}
+	case auditActionIssueCommentDelete:
+		return "Nachricht entfernt"
+	case auditActionIssueWorkflow:
+		return "Anliegen bearbeitet"
+	default:
+		return auditActionLabel(event.Action)
+	}
 }
 
 func scopedAuditDetails(details map[string]string) map[string]string {

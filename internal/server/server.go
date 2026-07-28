@@ -701,7 +701,7 @@ const (
 )
 
 const (
-	serviceProviderAccessClosedMessage = "Betreiberfreigabe offen: Dienstleister-Zugänge sind noch nicht freigeschaltet."
+	serviceProviderAccessClosedMessage = "Dienstleister-Zugänge sind derzeit nicht verfügbar."
 	serviceProviderAssessmentVersion   = "2026-07-26"
 )
 
@@ -2758,7 +2758,7 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	availableEvents := events
 	events = filterAuditEvents(events, action, query)
-	eventViews := auditEventViews(events)
+	eventViews := auditEventViews(a.auditEventsForView(tenant.Slug, events, fullAudit))
 	stats := auditStats(events, action, query)
 	auditTitle := "Mein Verlauf"
 	auditLede := "Was in Ihrem Konto und bei freigegebenen Vorgängen passiert ist. Interne Verwaltungsdetails bleiben geschützt."
@@ -2774,7 +2774,8 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"ActivePage":     "audit",
 		"Events":         eventViews,
 		"HasEvents":      len(eventViews) > 0,
-		"EventsEmpty":    emptyState("Noch keine Audit-Einträge", "Sensible Aktionen erscheinen hier, sobald sie im Portal ausgeführt werden."),
+		"HasAnyEvents":   len(availableEvents) > 0,
+		"EventsEmpty":    emptyState("Noch nichts im Verlauf", "Relevante Änderungen an Ihrem Zugang und Ihren Vorgängen erscheinen hier."),
 		"ActionOptions":  auditActionOptionsForEvents(action, availableEvents),
 		"ActionFilter":   action,
 		"SearchQuery":    query,
@@ -2783,6 +2784,95 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"AuditLede":      auditLede,
 		"AuditIsFull":    fullAudit,
 	}))
+}
+
+func (a *app) auditEventsForView(tenantSlug string, events []auditEvent, includeTechnicalID bool) []auditEvent {
+	out := make([]auditEvent, 0, len(events))
+	for _, event := range events {
+		event = copyAuditEvent(event)
+		label := a.auditTargetTitle(tenantSlug, event.TargetType, event.TargetID)
+		if label != "" {
+			if event.Details == nil {
+				event.Details = map[string]string{}
+			}
+			event.Details["target_label"] = label
+			if includeTechnicalID {
+				event.Details["target_id"] = event.TargetID
+			}
+		}
+		out = append(out, event)
+	}
+	return out
+}
+
+func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID string) string {
+	targetID = strings.TrimSpace(targetID)
+	if targetID == "" {
+		return ""
+	}
+	switch strings.TrimSpace(targetType) {
+	case "attachment":
+		if a.attachmentStore != nil {
+			if item, found := a.attachmentStore.Get(tenantSlug, targetID); found {
+				switch normalizeAttachmentEntity(item.EntityType) {
+				case "issue", "issue-estimate":
+					if title := a.auditTargetTitle(tenantSlug, "issue", item.EntityID); title != "" {
+						return title
+					}
+				case "issue-comment":
+					if issue, _, found := a.issueCommentTarget(tenantSlug, item.EntityID); found {
+						return strings.TrimSpace(issue.Title)
+					}
+				case "document", "ballot", "handover", "event":
+					if title := a.auditTargetTitle(tenantSlug, item.EntityType, item.EntityID); title != "" {
+						return title
+					}
+				}
+				return strings.TrimSpace(item.Filename)
+			}
+		}
+	case "issue":
+		if a.issueStore != nil {
+			if item, found := a.issueStore.Get(tenantSlug, targetID); found {
+				return strings.TrimSpace(item.Title)
+			}
+		}
+	case "document":
+		if a.documentStore != nil {
+			if item, found := a.documentStore.Get(tenantSlug, targetID); found {
+				return strings.TrimSpace(item.Title)
+			}
+		}
+	case "store.Ballot", "ballot":
+		if a.voteStore != nil {
+			if item, found := a.voteStore.Get(tenantSlug, targetID); found {
+				return strings.TrimSpace(item.Title)
+			}
+		}
+	case "handover":
+		if a.handoverStore != nil {
+			if item, found := a.handoverStore.Get(tenantSlug, targetID); found {
+				return strings.TrimSpace(item.Title)
+			}
+		}
+	case "event":
+		if a.eventStore != nil {
+			for _, item := range a.eventStore.ListTenant(tenantSlug) {
+				if item.ID == targetID {
+					return strings.TrimSpace(item.Title)
+				}
+			}
+		}
+	case "store.Unit", "unit":
+		if a.unitStore != nil {
+			for _, item := range a.unitStore.ListTenant(tenantSlug) {
+				if normalizeUnitID(item.ID) == normalizeUnitID(targetID) {
+					return strings.TrimSpace(item.Label)
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func auditActionOptionsForEvents(selected string, events []auditEvent) []selectOption {

@@ -596,7 +596,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		Action:     auditActionIssueWorkflow,
 		TargetType: "issue",
 		TargetID:   updated.ID,
-		Summary:    "Anliegen-Workflow geändert",
+		Summary:    "Anliegen bearbeitet",
 		Details: map[string]string{
 			"status":   normalizeIssueStatus(updated.Status),
 			"priority": normalizeIssuePriority(updated.Priority),

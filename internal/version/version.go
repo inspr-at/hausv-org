@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.45.0",
+			Date:     "28. Juli 2026",
+			Kind:     "Orientierung",
+			Headline: "Leere Seiten und der persönliche Verlauf erklären sich jetzt ohne Systemwissen.",
+			Intro:    "Werkzeuge erscheinen erst, wenn sie gebraucht werden; Verlaufseinträge nennen verständliche Vorgänge statt technischer Kennungen.",
+			Items: []NoteItem{
+				{Label: "Ruhig starten", Text: "Leere Ablagen und Listen zeigen eine kurze Erklärung, ohne Suche und Filter ohne Inhalt anzubieten."},
+				{Label: "Vorgänge verstehen", Text: "Anliegen erscheinen im persönlichen Verlauf mit ihrem Titel und klaren Änderungen wie Rückfrage oder Bearbeitung."},
+				{Label: "Technik schützen", Text: "Interne Begriffe bleiben aus der normalen Oberfläche heraus, während die vollständigen Auditdaten für berechtigte Verwaltung erhalten bleiben."},
+			},
+		},
+		{
 			Version:  "0.44.0",
 			Date:     "28. Juli 2026",
 			Kind:     "Hausüberblick",

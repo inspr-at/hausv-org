@@ -1086,13 +1086,20 @@ func AuditEventViewFrom(event store.AuditEvent) AuditEventView {
 	details := make([]AuditDetailView, 0, len(event.Details))
 	keys := make([]string, 0, len(event.Details))
 	for key := range event.Details {
+		if key == "target_label" {
+			continue
+		}
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
 		details = append(details, AuditDetailView{Key: AuditDetailLabel(key), Value: event.Details[key]})
 	}
-	target := AuditTargetLabel(event.TargetType, event.TargetID)
+	targetID := event.TargetID
+	if label := strings.TrimSpace(event.Details["target_label"]); label != "" {
+		targetID = label
+	}
+	target := AuditTargetLabel(event.TargetType, targetID)
 	actionText := AuditActionLabel(event.Action)
 	displayTitle := strings.TrimSpace(event.Summary)
 	if displayTitle == "" || strings.EqualFold(displayTitle, actionText) {
@@ -1236,7 +1243,7 @@ func AuditActionLabel(action string) string {
 	case store.AuditActionParkingReminder:
 		return "Zahlungserinnerung gesendet"
 	case store.AuditActionIssueWorkflow:
-		return "Anliegen-Workflow geändert"
+		return "Anliegen bearbeitet"
 	case store.AuditActionIssueEstimate:
 		return "Kostenvoranschlag aktualisiert"
 	case store.AuditActionIssueServiceAdd:
@@ -1419,6 +1426,8 @@ func AuditDetailLabel(key string) string {
 		return "Bereich"
 	case "entity_id":
 		return "Vorgang"
+	case "target_id":
+		return "Technische ID"
 	case "access":
 		return "Zugriff"
 	case "source":

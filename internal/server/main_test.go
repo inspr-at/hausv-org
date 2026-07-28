@@ -2272,7 +2272,7 @@ func TestClosedServiceProviderParkingAccessIsReadOnlyForEffectiveTenantRole(t *t
 		"email":   {"service@example.com"},
 		"parking": {"1"},
 	})
-	if update.Code != http.StatusForbidden || !strings.Contains(update.Body.String(), "Betreiberfreigabe offen") {
+	if update.Code != http.StatusForbidden || !strings.Contains(update.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") {
 		t.Fatalf("closed service parking update = %d %q, want clear 403", update.Code, update.Body.String())
 	}
 	edit := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/edit", url.Values{
@@ -2281,13 +2281,13 @@ func TestClosedServiceProviderParkingAccessIsReadOnlyForEffectiveTenantRole(t *t
 		"first_name": {"Changed"},
 		"role":       {roleResident},
 	})
-	if edit.Code != http.StatusForbidden || !strings.Contains(edit.Body.String(), "Betreiberfreigabe offen") {
+	if edit.Code != http.StatusForbidden || !strings.Contains(edit.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") {
 		t.Fatalf("closed effective service edit = %d %q, want clear 403", edit.Code, edit.Body.String())
 	}
 	deleteResponse := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/delete", url.Values{
 		"email": {"service@example.com"},
 	})
-	if deleteResponse.Code != http.StatusForbidden || !strings.Contains(deleteResponse.Body.String(), "Betreiberfreigabe offen") {
+	if deleteResponse.Code != http.StatusForbidden || !strings.Contains(deleteResponse.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") {
 		t.Fatalf("closed effective service delete = %d %q, want clear 403", deleteResponse.Code, deleteResponse.Body.String())
 	}
 	profile, ok := a.inviteStore.Get("service@example.com")
@@ -2597,6 +2597,31 @@ func TestDocumentsPageSearchSortAndCategoryEmptyStates(t *testing.T) {
 	filteredBody := filtered.Body.String()
 	if !strings.Contains(filteredBody, oldDoc.Title) || strings.Contains(filteredBody, newDoc.Title) {
 		t.Fatalf("search filtering body = %s", filteredBody)
+	}
+}
+
+func TestEmptyLibrariesHideToolsThatHaveNothingToSearch(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+
+	documents := authedRequest(t, a, "resident@example.com", "/app/dokumente").Body.String()
+	if !strings.Contains(documents, "Noch keine Dokumente") || strings.Contains(documents, `class="document-toolbar"`) {
+		t.Fatalf("empty document library should explain itself without search tools:\n%s", documents)
+	}
+
+	announcements := authedRequest(t, a, "resident@example.com", "/app/announcements").Body.String()
+	if !strings.Contains(announcements, "Noch keine Beiträge") || strings.Contains(announcements, `class="archive-tools"`) {
+		t.Fatalf("empty announcement archive should explain itself without search tools:\n%s", announcements)
+	}
+
+	audit := authedRequest(t, a, "resident@example.com", "/app/audit").Body.String()
+	if !strings.Contains(audit, "Noch nichts im Verlauf") || strings.Contains(audit, `class="audit-filter-panel"`) {
+		t.Fatalf("empty resident history should explain itself without filters:\n%s", audit)
+	}
+
+	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board").Body.String()
+	if !strings.Contains(board, "Keine Anliegen im Haus") || strings.Contains(board, `class="issue-board-tools"`) {
+		t.Fatalf("empty issue board should explain itself without filters:\n%s", board)
 	}
 }
 
@@ -4313,7 +4338,7 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 		"priority":       {issuePriorityHigh},
 		"assignee_email": {"external@example.com"},
 	})
-	if assign.Code != http.StatusForbidden || !strings.Contains(assign.Body.String(), "Betreiberfreigabe offen") {
+	if assign.Code != http.StatusForbidden || !strings.Contains(assign.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") {
 		t.Fatalf("closed assignment = %d %q, want clear 403", assign.Code, assign.Body.String())
 	}
 	unchanged, ok := a.issueStore.Get("jhw22", issue.ID)
@@ -4376,7 +4401,7 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 		t.Fatalf("closed issue board should not expose service assignment controls or internal gate language:\n%s", board)
 	}
 	contactPage := authedRequest(t, a, "manager@example.com", "/app/kontakte").Body.String()
-	if !strings.Contains(contactPage, "Betreiberfreigabe offen") || strings.Contains(contactPage, "<option value=\"Dienstleister\"") {
+	if !strings.Contains(contactPage, "Dienstleister-Zugänge sind derzeit nicht verfügbar") || strings.Contains(contactPage, "<option value=\"Dienstleister\"") {
 		t.Fatalf("closed contact UI still offers service-provider creation:\n%s", contactPage)
 	}
 	usersPage := authedRequest(t, a, "manager@example.com", "/app/settings/users").Body.String()
@@ -4467,7 +4492,7 @@ func TestClosedServiceProviderAuthenticationAndNotificationsAreRejected(t *testi
 	loginReq.Header.Set("Origin", "http://jhw22.hausv.org")
 	login := httptest.NewRecorder()
 	a.handler().ServeHTTP(login, loginReq)
-	if login.Code != http.StatusForbidden || !strings.Contains(login.Body.String(), "Betreiberfreigabe offen") || len(mailer.magicLinks) != 0 {
+	if login.Code != http.StatusForbidden || !strings.Contains(login.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") || len(mailer.magicLinks) != 0 {
 		t.Fatalf("closed login request = %d %q magic=%+v", login.Code, login.Body.String(), mailer.magicLinks)
 	}
 
@@ -4475,7 +4500,7 @@ func TestClosedServiceProviderAuthenticationAndNotificationsAreRejected(t *testi
 	verify := httptest.NewRecorder()
 	verifyReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/auth/verify?token=existing-magic-token", nil)
 	a.verifyLogin(verify, verifyReq)
-	if verify.Code != http.StatusForbidden || !strings.Contains(verify.Body.String(), "Betreiberfreigabe offen") || verify.Header().Get("Set-Cookie") != "" {
+	if verify.Code != http.StatusForbidden || !strings.Contains(verify.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") || verify.Header().Get("Set-Cookie") != "" {
 		t.Fatalf("closed magic-link verification = %d %q cookie=%q", verify.Code, verify.Body.String(), verify.Header().Get("Set-Cookie"))
 	}
 
@@ -4487,7 +4512,7 @@ func TestClosedServiceProviderAuthenticationAndNotificationsAreRejected(t *testi
 	sessionReq.AddCookie(&http.Cookie{Name: "weg_session", Value: sessionToken})
 	session := httptest.NewRecorder()
 	a.handler().ServeHTTP(session, sessionReq)
-	if session.Code != http.StatusForbidden || !strings.Contains(session.Body.String(), "Betreiberfreigabe offen") {
+	if session.Code != http.StatusForbidden || !strings.Contains(session.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") {
 		t.Fatalf("closed existing session = %d %q", session.Code, session.Body.String())
 	}
 
@@ -5071,6 +5096,19 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 		t.Fatalf("resident contacts leaked other tenant, inactive, or management UI:\n%s", residentPage)
 	}
 
+	if _, err := a.issueStore.Create(residentIssue{
+		TenantSlug:   "jhw22",
+		AuthorEmail:  "resident@example.com",
+		AuthorName:   "Resident",
+		Category:     "Reparatur",
+		Title:        "Licht prüfen",
+		Body:         "Das Licht flackert.",
+		LocationType: issueLocationCommon,
+		Status:       issueStatusOpen,
+		Priority:     issuePriorityNorm,
+	}); err != nil {
+		t.Fatalf("create issue for service-provider chooser: %v", err)
+	}
 	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board").Body.String()
 	if !strings.Contains(board, `datalist id="service-provider-contacts"`) || !strings.Contains(board, `value="eva@example.com"`) || !strings.Contains(board, `list="service-provider-contacts"`) {
 		t.Fatalf("issue board missing service-provider contact chooser:\n%s", board)

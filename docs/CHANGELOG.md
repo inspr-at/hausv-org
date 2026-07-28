@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.45.0] - 2026-07-28
+
+### Verbessert
+
+- **Leere Seiten erklären sich selbst.** Dokumente, Aushang, Verlauf und die Anliegen-Verwaltung zeigen ohne Inhalte keine nutzlosen Such- oder Filterwerkzeuge mehr.
+- **Der Bewohner-Verlauf spricht über echte Vorgänge.** Verständliche Titel wie „Kellerlicht defekt“ ersetzen technische Kennungen; „Rückfrage erhalten“ und „Anliegen bearbeitet“ erklären die Änderung ohne Systemjargon.
+- **Technische Nachvollziehbarkeit bleibt erhalten.** Verwaltung und Audit behalten die vollständigen Ereignisdaten, während normale Bewohneransichten nur den notwendigen Kontext zeigen.
+- **Dienstleister-Hinweise sind produktreif formuliert.** Interne Begriffe wie Betreiberfreigabe verschwinden aus Formularen und Fehlermeldungen; die derzeitige Verfügbarkeit bleibt eindeutig.
+- **Einzahl und Mehrzahl sind konsistent.** Beiträge und Verlaufseinträge werden auch bei genau einem Treffer natürlich bezeichnet.
+- **Die überarbeiteten Zustände sind auf Desktop und Mobil geprüft.** Leere Ablagen und ein gefüllter Bewohner-Verlauf bleiben bei 390 Pixeln ohne technischen Text oder seitlichen Überlauf.
+
 ## [0.44.0] - 2026-07-28
 
 ### Verbessert
