@@ -67,7 +67,7 @@ func ApplyProfileSeeds(storage Storage, raw string, knownTenants map[string]stru
 				continue
 			}
 			if err := storage.UpsertAsset(Asset{
-				ID:          "asset-" + kind,
+				ID:          StableAssetID(slug, kind),
 				TenantSlug:  slug,
 				Kind:        kind,
 				Name:        AssetKindLabel(kind),

@@ -62,6 +62,18 @@ const (
 	AuditActionVoteClose          = "vote.close"
 	AuditActionVoteCast           = "vote.cast"
 	AuditActionVoteReminder       = "vote.reminder"
+	AuditActionEnergyOnboarding   = "energy.onboarding.update"
+	AuditActionEnergyMode         = "energy.mode.change"
+	AuditActionEnergyImport       = "energy.smart-meter.import"
+	AuditActionEnergyTarget       = "energy.target.change"
+	AuditActionEnergyRecommend    = "energy.recommendation.update"
+	AuditActionEnergyMeasureAdd   = "energy.measure.create"
+	AuditActionEnergyMeasureEdit  = "energy.measure.update"
+	AuditActionEnergyCaretaker    = "energy.caretaker.scope"
+	AuditActionEnergyInvite       = "energy.caretaker.invite"
+	AuditActionEnergyMaintSave    = "energy.maintenance.save"
+	AuditActionEnergyMaintDone    = "energy.maintenance.complete"
+	AuditActionEnergyTariff       = "energy.tariff.assessment"
 )
 
 const (
@@ -1647,7 +1659,11 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionIssueEstimate, AuditActionIssueServiceAdd, AuditActionIssueServiceDrop,
 		AuditActionIssueComment, AuditActionIssueCommentDelete,
 		AuditActionEventCreate, AuditActionEventUpdate, AuditActionEventDelete,
-		AuditActionContactSave, AuditActionContactDelete:
+		AuditActionContactSave, AuditActionContactDelete,
+		AuditActionEnergyOnboarding, AuditActionEnergyMode, AuditActionEnergyImport, AuditActionEnergyTarget,
+		AuditActionEnergyRecommend, AuditActionEnergyMeasureAdd, AuditActionEnergyMeasureEdit,
+		AuditActionEnergyCaretaker, AuditActionEnergyInvite, AuditActionEnergyMaintSave,
+		AuditActionEnergyMaintDone, AuditActionEnergyTariff:
 		return raw
 	default:
 		return ""

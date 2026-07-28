@@ -36,13 +36,19 @@ func TestContactBookStorageParity(t *testing.T) {
 			}
 
 			created, isNew, err := s.Upsert(ManagedContact{
-				TenantSlug: "jhw22", Kind: "dienstleister", Name: "Test AG", Phone: "+43 1 234", Active: true,
+				TenantSlug: "jhw22", Kind: "energie-fachbetrieb", Name: "Test AG", Phone: "+43 1 234", Active: true,
+				ServiceRegion: "Graz und Umgebung", Qualification: "Elektrotechnik",
+				EnergyCapabilities: []string{"metering", "home-assistant", "unknown", "metering"},
 			})
 			if err != nil || !isNew {
 				t.Fatalf("create: err=%v isNew=%v", err, isNew)
 			}
 			if created.ID == "" || created.CreatedAt.IsZero() {
 				t.Fatalf("created missing id/timestamp: %+v", created)
+			}
+			if created.Kind != "Energie-Fachbetrieb" || created.ServiceRegion != "Graz und Umgebung" ||
+				created.Qualification != "Elektrotechnik" || len(created.EnergyCapabilities) != 2 {
+				t.Fatalf("energy contact fields = %+v", created)
 			}
 			id := created.ID
 

@@ -68,3 +68,13 @@ func TestPeakForMonthIgnoresOtherMonths(t *testing.T) {
 		t.Fatalf("peak = %v, want 6.8", got)
 	}
 }
+
+func TestSmartMeterIntervalsAdvanceRoadmapWithoutHomeAssistantMapping(t *testing.T) {
+	profile := DefaultProfile("home", time.Now())
+	recommendation := NextRecommendation(profile, []Asset{{ID: "pv", TenantSlug: "home", Kind: "pv"}}, nil, []Interval{
+		{TenantSlug: "home", StartsAt: time.Now(), AverageKW: 4.2, Quality: QualityMeasured, Source: "smart-meter"},
+	})
+	if recommendation.ID != "observe" {
+		t.Fatalf("recommendation = %+v, want observe after first smart-meter intervals", recommendation)
+	}
+}

@@ -100,17 +100,20 @@ type ContactBookStoreData struct {
 }
 
 type ManagedContact struct {
-	ID         string    `json:"id"`
-	TenantSlug string    `json:"tenant"`
-	Kind       string    `json:"kind"`
-	Name       string    `json:"name,omitempty"`
-	Company    string    `json:"company,omitempty"`
-	Email      string    `json:"email,omitempty"`
-	Phone      string    `json:"phone,omitempty"`
-	Notes      string    `json:"notes,omitempty"`
-	Active     bool      `json:"active"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID                 string    `json:"id"`
+	TenantSlug         string    `json:"tenant"`
+	Kind               string    `json:"kind"`
+	Name               string    `json:"name,omitempty"`
+	Company            string    `json:"company,omitempty"`
+	Email              string    `json:"email,omitempty"`
+	Phone              string    `json:"phone,omitempty"`
+	Notes              string    `json:"notes,omitempty"`
+	ServiceRegion      string    `json:"service_region,omitempty"`
+	Qualification      string    `json:"qualification,omitempty"`
+	EnergyCapabilities []string  `json:"energy_capabilities,omitempty"`
+	Active             bool      `json:"active"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 func ManagedContactDisplayName(item ManagedContact) string {
@@ -688,6 +691,9 @@ func NormalizeManagedContact(item ManagedContact) (ManagedContact, error) {
 	item.Email = textutil.Email(item.Email)
 	item.Phone = textutil.Truncate(strings.TrimSpace(item.Phone), 80)
 	item.Notes = textutil.Truncate(strings.TrimSpace(item.Notes), 300)
+	item.ServiceRegion = textutil.Truncate(strings.TrimSpace(item.ServiceRegion), 120)
+	item.Qualification = textutil.Truncate(strings.TrimSpace(item.Qualification), 240)
+	item.EnergyCapabilities = NormalizeEnergyCapabilities(item.EnergyCapabilities)
 	if item.TenantSlug == "" || item.Kind == "" {
 		return ManagedContact{}, fmt.Errorf("invalid contact")
 	}
@@ -715,10 +721,37 @@ func NormalizeManagedContact(item ManagedContact) (ManagedContact, error) {
 	return item, nil
 }
 
+func NormalizeEnergyCapabilities(values []string) []string {
+	allowed := map[string]bool{
+		"metering":       true,
+		"smart-meter":    true,
+		"home-assistant": true,
+		"pv":             true,
+		"battery":        true,
+		"wallbox":        true,
+		"heat-pump":      true,
+		"electrical":     true,
+	}
+	seen := map[string]bool{}
+	out := []string{}
+	for _, value := range values {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if !allowed[value] || seen[value] {
+			continue
+		}
+		seen[value] = true
+		out = append(out, value)
+	}
+	sort.Strings(out)
+	return out
+}
+
 func NormalizeContactKind(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "dienstleister", "handwerker", "service":
 		return "Dienstleister"
+	case "energie-fachbetrieb", "energiefachbetrieb", "energy-specialist":
+		return "Energie-Fachbetrieb"
 	case "hausmeister", "caretaker":
 		return "Hausmeister"
 	case "notdienst", "emergency":

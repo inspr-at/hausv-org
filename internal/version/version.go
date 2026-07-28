@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.48.0",
+			Date:     "28. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Wartung, Tarife und Fachhilfe führen jetzt vom Hinweis bis zum belegten Ergebnis.",
+			Intro:    "Das Energie-Cockpit zeigt weiterhin genau einen nächsten Schritt; weiterführende Arbeit bleibt bei Bedarf erreichbar und sicher dem richtigen Haus zugeordnet.",
+			Items: []NoteItem{
+				{Label: "Wartung vorausplanen", Text: "Wiederkehrende Termine verbinden Anlage, Fachkontakt, Unterlage, Aufgabe und Erledigungsnachweis."},
+				{Label: "Tarife nachvollziehen", Text: "Monatliche Bewertungen bewahren Messspitze, Datenqualität, Regelprofil und Regelversion als unveränderlichen Wissensstand."},
+				{Label: "Fachhilfe koordinieren", Text: "Bekannte Energie-Fachbetriebe und Maßnahmen verbinden Angebot, Termin, Arbeit, Nachweis sowie Vorher-/Nachher-Vergleich, ohne automatisch Portalzugang oder Zahlung auszulösen."},
+				{Label: "Betreuung sauber trennen", Text: "Technische Vertrauenspersonen lassen sich direkt für ein Haus einladen; Ansehen, Einrichten und Steuerungsfreigabe bleiben getrennt und widerrufbar."},
+			},
+		},
+		{
 			Version:  "0.47.0",
 			Date:     "28. Juli 2026",
 			Kind:     "Mein Zuhause",

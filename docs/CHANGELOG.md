@@ -2,6 +2,22 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.48.0] - 2026-07-28
+
+### Neu
+
+- **Wiederkehrende Wartung bleibt direkt an der Anlage.** Fälligkeit, Intervall, Fachkontakt, Unterlage, Aufgabe und Erledigungsnachweis bilden einen nachvollziehbaren Wartungsplan; nach Abschluss wird der nächste Termin automatisch vorgemerkt.
+- **Tarifbewertungen behalten ihren damaligen Wissensstand.** Monat, Messspitze, Datenqualität, Regelprofil und Regelversion lassen sich als unveränderlicher Verlauf festhalten, ohne einen Entwurf als gültigen Tarif auszugeben.
+- **Bekannte Energie-Fachbetriebe lassen sich passend einordnen.** Region, Qualifikation und Fähigkeiten wie Leistungsmessung, Home Assistant, PV, Speicher, Wallbox oder Wärmepumpe bleiben am normalen Kontakt – ohne automatisch einen Portalzugang zu öffnen.
+- **Energiemaßnahmen erhalten einen gemeinsamen Arbeitskontext.** Anfrage, bekannter Kontakt, Angebot, Termin, ausgeführte Arbeit, Nachweis und gemessener Vorher-/Nachher-Vergleich bleiben mit dem zugehörigen Anliegen verbunden.
+- **Technische Vertrauenspersonen können direkt hausbezogen eingeladen werden.** Ansehen, Einrichten und Steuerungsfreigabe bleiben getrennte Rechte; vorhandene Konten behalten ihre anderen Hauszuordnungen unverändert.
+
+### Verbessert
+
+- **Das Energie-Cockpit ist auf den nächsten Schritt konzentriert.** Messdaten, Betreuung und Fachhilfe öffnen sich erst bei Bedarf; der Modus „Nur beobachten“ bleibt trotzdem immer prominent sichtbar.
+- **Mehrere Zuhause bleiben technisch sauber getrennt.** Automatisch angelegte Anlagen verwenden hausbezogene Identitäten; Wartungen, Bewertungen und Maßnahmen sind in Speicher, Datenbank und Serverpfaden mandantensicher geprüft.
+- **Der vollständige Hauptweg ist automatisiert abgesichert.** Playwright prüft Onboarding-Unterbrechung, Tastaturbedienung, Offline-Einstieg, Rollen, mobile Darstellung, Tarifverlauf, Wartung, Betreuungseinladung und kuratierte Fachhilfe.
+
 ## [0.47.0] - 2026-07-28
 
 ### Neu

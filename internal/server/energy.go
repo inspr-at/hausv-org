@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/mail"
 	"sort"
 	"strconv"
 	"strings"
@@ -94,6 +95,68 @@ type energyCaretakerView struct {
 	Editable     bool
 }
 
+type energyOption struct {
+	Value string
+	Label string
+}
+
+type energyMaintenanceView struct {
+	ID             string
+	AssetID        string
+	AssetName      string
+	Title          string
+	IntervalMonths int
+	NextDueValue   string
+	DueLabel       string
+	Tone           string
+	LastCompleted  string
+	ContactID      string
+	ContactName    string
+	DocumentID     string
+	DocumentTitle  string
+	IssueID        string
+	IssueTitle     string
+	EvidenceNote   string
+	Active         bool
+}
+
+type energyTariffAssessmentView struct {
+	ID            string
+	Month         string
+	Profile       string
+	Peak          string
+	Annual        string
+	Quality       string
+	Created       string
+	SourceURL     string
+	ProfileStatus string
+}
+
+type energyMeasureView struct {
+	ID               string
+	IssueID          string
+	Title            string
+	Status           string
+	StatusLabel      string
+	ContactID        string
+	ContactName      string
+	OfferNote        string
+	AppointmentValue string
+	Appointment      string
+	WorkNote         string
+	EvidenceNote     string
+	BeforeFrom       string
+	BeforeTo         string
+	AfterFrom        string
+	AfterTo          string
+	BeforePeak       string
+	AfterPeak        string
+	BeforeQuality    string
+	AfterQuality     string
+	HasComparison    bool
+	Completed        string
+}
+
 func (a *app) canViewEnergy(ac authCtx) bool {
 	if !canUseResidentAreas(ac.role) {
 		return false
@@ -135,6 +198,8 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 	}
 	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
 	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
+	intervals, _ := a.energyStore.ListIntervals(ac.tenant.Slug, time.Now().AddDate(0, -1, 0), time.Time{})
+	finishRecommendation := energy.NextRecommendation(profile, assets, mappings, intervals)
 	step := profile.OnboardingStep
 	if raw := strings.TrimSpace(r.URL.Query().Get("step")); raw != "" {
 		if parsed, parseErr := strconv.Atoi(raw); parseErr == nil && parsed >= 1 && parsed <= 5 {
@@ -156,20 +221,21 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		}
 	}
 	a.render(w, "homeOnboarding", a.withBase(ac, map[string]any{
-		"Title":              "Mein Zuhause einrichten",
-		"ActivePage":         "energy",
-		"Profile":            profile,
-		"Step":               step,
-		"Progress":           step * 20,
-		"AssetOptions":       buildEnergyAssetOptions(assets),
-		"Candidates":         candidates,
-		"HasCandidates":      len(candidates) > 0,
-		"ConnectorOK":        connectorOK,
-		"ConnectorMessage":   connectorMessage,
-		"CanManageEnergy":    a.canManageEnergy(ac),
-		"CanControlEnergy":   a.canControlEnergy(ac),
-		"IsObserveMode":      profile.OperatingMode == energy.ModeObserve,
-		"OnboardingComplete": profile.OnboardingComplete,
+		"Title":                "Mein Zuhause einrichten",
+		"ActivePage":           "energy",
+		"Profile":              profile,
+		"Step":                 step,
+		"Progress":             step * 20,
+		"AssetOptions":         buildEnergyAssetOptions(assets),
+		"Candidates":           candidates,
+		"HasCandidates":        len(candidates) > 0,
+		"ConnectorOK":          connectorOK,
+		"ConnectorMessage":     connectorMessage,
+		"FinishRecommendation": finishRecommendation,
+		"CanManageEnergy":      a.canManageEnergy(ac),
+		"CanControlEnergy":     a.canControlEnergy(ac),
+		"IsObserveMode":        profile.OperatingMode == energy.ModeObserve,
+		"OnboardingComplete":   profile.OnboardingComplete,
 	}))
 }
 
@@ -296,6 +362,18 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	tariffView := buildEnergyTariffView(profile, monthIntervals)
 	scenarioViews := buildEnergyScenarioViews(assets, monthIntervals)
 	caretakers := a.energyCaretakerViews(ac)
+	maintenance, _ := a.energyStore.ListMaintenance(ac.tenant.Slug)
+	if maintenanceRecommendation, ok := energy.MaintenanceRecommendation(time.Now(), maintenance); ok {
+		recommendation = maintenanceRecommendation
+	}
+	contactOptions, contactNames := a.energyContactOptions(ac.tenant.Slug)
+	documentOptions, documentNames := a.energyDocumentOptions(ac.tenant.Slug)
+	issueOptions, issueNames := a.energyIssueOptions(ac.tenant.Slug)
+	maintenanceViews := buildEnergyMaintenanceViews(maintenance, assets, contactNames, documentNames, issueNames, time.Now())
+	assessments, _ := a.energyStore.ListTariffAssessments(ac.tenant.Slug)
+	assessmentViews := buildEnergyTariffAssessmentViews(assessments)
+	measures, _ := a.energyStore.ListMeasures(ac.tenant.Slug)
+	measureViews := buildEnergyMeasureViews(measures, contactNames)
 	freeUntil := ""
 	if profile.FreeStartedAt != nil {
 		freeUntil = profile.FreeStartedAt.AddDate(3, 0, 0).In(time.Local).Format("02.01.2006")
@@ -342,6 +420,21 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"HasCaretakers":           len(caretakers) > 0,
 		"CaretakerChanged":        r.URL.Query().Get("caretaker") == "1",
 		"CanGrantEnergyAccess":    hasCapability(ac.role, capabilityControlEnergy),
+		"CanInviteEnergyAccess":   hasCapability(ac.role, capabilityControlEnergy),
+		"CaretakerInviteStatus":   r.URL.Query().Get("caretaker_invite"),
+		"Maintenance":             maintenanceViews,
+		"HasMaintenance":          len(maintenanceViews) > 0,
+		"MaintenanceStatus":       r.URL.Query().Get("maintenance"),
+		"ContactOptions":          contactOptions,
+		"DocumentOptions":         documentOptions,
+		"IssueOptions":            issueOptions,
+		"TariffAssessments":       assessmentViews,
+		"HasTariffAssessments":    len(assessmentViews) > 0,
+		"TariffAssessmentStatus":  r.URL.Query().Get("assessment"),
+		"Measures":                measureViews,
+		"HasMeasures":             len(measureViews) > 0,
+		"MeasureStatus":           r.URL.Query().Get("measure_status"),
+		"ServiceAccessEnabled":    a.serviceAccessEnabled,
 	}))
 }
 
@@ -373,6 +466,9 @@ func energyTargetValue(value *float64) string {
 }
 
 func recommendationURL(id string) string {
+	if strings.HasPrefix(id, "maintenance-") {
+		return "/app/energie#wartung"
+	}
 	switch id {
 	case "inventory":
 		return "/app/zuhause/onboarding?step=3"
@@ -385,6 +481,304 @@ func recommendationURL(id string) string {
 	default:
 		return ""
 	}
+}
+
+func (a *app) energyContactOptions(tenantSlug string) ([]energyOption, map[string]string) {
+	options := []energyOption{}
+	names := map[string]string{}
+	if a.contactStore == nil {
+		return options, names
+	}
+	for _, item := range a.contactStore.ListTenant(tenantSlug, false) {
+		label := managedContactDisplayName(item)
+		if item.Company != "" && !strings.EqualFold(item.Company, label) {
+			label += " · " + item.Company
+		}
+		if item.ServiceRegion != "" {
+			label += " · " + item.ServiceRegion
+		}
+		names[item.ID] = label
+		options = append(options, energyOption{Value: item.ID, Label: label})
+	}
+	sort.Slice(options, func(i, j int) bool { return strings.ToLower(options[i].Label) < strings.ToLower(options[j].Label) })
+	return options, names
+}
+
+func (a *app) energyContact(tenantSlug, id string) (managedContact, bool) {
+	if a.contactStore == nil || strings.TrimSpace(id) == "" {
+		return managedContact{}, false
+	}
+	for _, item := range a.contactStore.ListTenant(tenantSlug, false) {
+		if item.ID == id {
+			return item, true
+		}
+	}
+	return managedContact{}, false
+}
+
+func (a *app) energyDocumentOptions(tenantSlug string) ([]energyOption, map[string]string) {
+	options := []energyOption{}
+	names := map[string]string{}
+	if a.documentStore == nil {
+		return options, names
+	}
+	for _, item := range a.documentStore.ListCurrentTenant(tenantSlug) {
+		names[item.ID] = item.Title
+		options = append(options, energyOption{Value: item.ID, Label: item.Title})
+	}
+	sort.Slice(options, func(i, j int) bool { return strings.ToLower(options[i].Label) < strings.ToLower(options[j].Label) })
+	return options, names
+}
+
+func (a *app) energyIssueOptions(tenantSlug string) ([]energyOption, map[string]string) {
+	options := []energyOption{}
+	names := map[string]string{}
+	if a.issueStore == nil {
+		return options, names
+	}
+	for _, item := range a.issueStore.ListTenant(tenantSlug) {
+		names[item.ID] = item.Title
+		options = append(options, energyOption{Value: item.ID, Label: item.Title})
+	}
+	sort.Slice(options, func(i, j int) bool { return strings.ToLower(options[i].Label) < strings.ToLower(options[j].Label) })
+	return options, names
+}
+
+func buildEnergyMaintenanceViews(plans []energy.MaintenancePlan, assets []energy.Asset, contacts, documents, issues map[string]string, now time.Time) []energyMaintenanceView {
+	assetNames := map[string]string{}
+	for _, asset := range assets {
+		assetNames[asset.ID] = asset.Name
+	}
+	out := make([]energyMaintenanceView, 0, len(plans))
+	for _, plan := range plans {
+		days := int(plan.NextDueAt.Sub(now).Hours() / 24)
+		dueLabel := "Fällig am " + plan.NextDueAt.In(time.Local).Format("02.01.2006")
+		tone := ""
+		if days < 0 {
+			dueLabel = "Überfällig seit " + plan.NextDueAt.In(time.Local).Format("02.01.2006")
+			tone = "danger"
+		} else if days <= 30 {
+			tone = "warning"
+		}
+		lastCompleted := ""
+		if plan.LastCompletedAt != nil {
+			lastCompleted = plan.LastCompletedAt.In(time.Local).Format("02.01.2006")
+		}
+		out = append(out, energyMaintenanceView{
+			ID: plan.ID, AssetID: plan.AssetID, AssetName: firstNonEmpty(assetNames[plan.AssetID], "Anlage"),
+			Title: plan.Title, IntervalMonths: plan.IntervalMonths, NextDueValue: plan.NextDueAt.In(time.Local).Format("2006-01-02"),
+			DueLabel: dueLabel, Tone: tone, LastCompleted: lastCompleted, ContactID: plan.ContactID,
+			ContactName: contacts[plan.ContactID], DocumentID: plan.DocumentID, DocumentTitle: documents[plan.DocumentID],
+			IssueID: plan.IssueID, IssueTitle: issues[plan.IssueID], EvidenceNote: plan.EvidenceNote, Active: plan.Active,
+		})
+	}
+	return out
+}
+
+func buildEnergyTariffAssessmentViews(items []energy.TariffAssessment) []energyTariffAssessmentView {
+	out := make([]energyTariffAssessmentView, 0, len(items))
+	for _, item := range items {
+		month := item.AssessmentMonth
+		if parsed, err := time.Parse("2006-01", item.AssessmentMonth); err == nil {
+			month = parsed.Format("01/2006")
+		}
+		out = append(out, energyTariffAssessmentView{
+			ID: item.ID, Month: month, Profile: item.ProfileID + " · " + item.ProfileVersion,
+			Peak: formatEnergyNumber(item.PeakKW) + " kW", Annual: formatEnergyNumber(item.AnnualPowerEUR) + " € Modellwert/Jahr",
+			Quality: energyQualityLabel(item.DataQuality), Created: item.CreatedAt.In(time.Local).Format("02.01.2006 15:04"),
+			SourceURL: item.SourceURL, ProfileStatus: item.ProfileStatus,
+		})
+	}
+	return out
+}
+
+func buildEnergyMeasureViews(items []energy.Measure, contacts map[string]string) []energyMeasureView {
+	out := make([]energyMeasureView, 0, len(items))
+	for _, item := range items {
+		view := energyMeasureView{
+			ID: item.ID, IssueID: item.IssueID, Title: item.Title, Status: item.Status,
+			StatusLabel: energyMeasureStatusLabel(item.Status), ContactID: item.ContactID, ContactName: contacts[item.ContactID],
+			OfferNote: item.OfferNote, WorkNote: item.WorkNote, EvidenceNote: item.EvidenceNote,
+			BeforeQuality: energyQualityLabel(item.BeforeQuality), AfterQuality: energyQualityLabel(item.AfterQuality),
+		}
+		if item.AppointmentAt != nil {
+			view.AppointmentValue = item.AppointmentAt.In(time.Local).Format("2006-01-02T15:04")
+			view.Appointment = item.AppointmentAt.In(time.Local).Format("02.01.2006 15:04")
+		}
+		if item.CompletedAt != nil {
+			view.Completed = item.CompletedAt.In(time.Local).Format("02.01.2006")
+		}
+		view.BeforeFrom = energyDateValue(item.BeforeFrom)
+		view.BeforeTo = energyDateValue(item.BeforeTo)
+		view.AfterFrom = energyDateValue(item.AfterFrom)
+		view.AfterTo = energyDateValue(item.AfterTo)
+		if item.BeforePeakKW != nil && item.AfterPeakKW != nil {
+			view.BeforePeak = formatEnergyNumber(*item.BeforePeakKW) + " kW"
+			view.AfterPeak = formatEnergyNumber(*item.AfterPeakKW) + " kW"
+			view.HasComparison = true
+		}
+		out = append(out, view)
+	}
+	return out
+}
+
+func energyMeasureStatusLabel(status string) string {
+	switch status {
+	case energy.MeasureRequested:
+		return "Anfrage vorbereitet"
+	case energy.MeasureAssigned:
+		return "Kontakt ausgewählt"
+	case energy.MeasureScheduled:
+		return "Termin vereinbart"
+	case energy.MeasureCompleted:
+		return "Abgeschlossen"
+	case energy.MeasureCancelled:
+		return "Nicht weiterverfolgt"
+	default:
+		return "Entwurf"
+	}
+}
+
+func energyQualityLabel(quality string) string {
+	switch quality {
+	case energy.QualityMeasured:
+		return "gemessen"
+	case energy.QualityEstimated:
+		return "teilweise geschätzt"
+	case energy.QualityGap:
+		return "mit Messlücken"
+	case energy.QualityConflict:
+		return "widersprüchlich"
+	default:
+		return "keine ausreichenden Daten"
+	}
+}
+
+func energyDateValue(value *time.Time) string {
+	if value == nil {
+		return ""
+	}
+	return value.In(time.Local).Format("2006-01-02")
+}
+
+func parseEnergyLocalDate(raw string) (time.Time, error) {
+	value, err := time.ParseInLocation("2006-01-02", strings.TrimSpace(raw), time.Local)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return value.UTC(), nil
+}
+
+func parseEnergyLocalDateTime(raw string) (time.Time, error) {
+	value, err := time.ParseInLocation("2006-01-02T15:04", strings.TrimSpace(raw), time.Local)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return value.UTC(), nil
+}
+
+func energyAssetBelongsToTenant(storage energy.Storage, tenantSlug, assetID string) bool {
+	items, err := storage.ListAssets(tenantSlug)
+	if err != nil {
+		return false
+	}
+	for _, item := range items {
+		if item.ID == assetID {
+			return true
+		}
+	}
+	return false
+}
+
+func findMaintenancePlan(storage energy.Storage, tenantSlug, id string) (energy.MaintenancePlan, bool) {
+	items, err := storage.ListMaintenance(tenantSlug)
+	if err != nil {
+		return energy.MaintenancePlan{}, false
+	}
+	for _, item := range items {
+		if item.ID == id {
+			return item, true
+		}
+	}
+	return energy.MaintenancePlan{}, false
+}
+
+func findMaintenancePlanByAsset(storage energy.Storage, tenantSlug, assetID string) (energy.MaintenancePlan, bool) {
+	items, err := storage.ListMaintenance(tenantSlug)
+	if err != nil {
+		return energy.MaintenancePlan{}, false
+	}
+	for _, item := range items {
+		if item.AssetID == assetID {
+			return item, true
+		}
+	}
+	return energy.MaintenancePlan{}, false
+}
+
+func (a *app) validEnergyReferences(tenantSlug, contactID, documentID, issueID string) bool {
+	if contactID != "" {
+		if _, ok := a.energyContact(tenantSlug, contactID); !ok {
+			return false
+		}
+	}
+	if documentID != "" {
+		if a.documentStore == nil {
+			return false
+		}
+		if _, ok := a.documentStore.Get(tenantSlug, documentID); !ok {
+			return false
+		}
+	}
+	if issueID != "" {
+		if a.issueStore == nil {
+			return false
+		}
+		if _, ok := a.issueStore.Get(tenantSlug, issueID); !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (a *app) completeEnergyMeasureRanges(item *energy.Measure, r *http.Request) error {
+	beforeFrom, err := parseEnergyLocalDate(r.FormValue("before_from"))
+	if err != nil {
+		return err
+	}
+	beforeTo, err := parseEnergyLocalDate(r.FormValue("before_to"))
+	if err != nil {
+		return err
+	}
+	afterFrom, err := parseEnergyLocalDate(r.FormValue("after_from"))
+	if err != nil {
+		return err
+	}
+	afterTo, err := parseEnergyLocalDate(r.FormValue("after_to"))
+	if err != nil {
+		return err
+	}
+	if beforeTo.Before(beforeFrom) || afterTo.Before(afterFrom) || !beforeTo.Before(afterFrom) ||
+		beforeTo.Sub(beforeFrom) > 180*24*time.Hour || afterTo.Sub(afterFrom) > 180*24*time.Hour {
+		return fmt.Errorf("invalid comparison ranges")
+	}
+	beforeIntervals, err := a.energyStore.ListIntervals(item.TenantSlug, beforeFrom, beforeTo.AddDate(0, 0, 1))
+	if err != nil {
+		return err
+	}
+	afterIntervals, err := a.energyStore.ListIntervals(item.TenantSlug, afterFrom, afterTo.AddDate(0, 0, 1))
+	if err != nil {
+		return err
+	}
+	item.BeforeFrom, item.BeforeTo = &beforeFrom, &beforeTo
+	item.AfterFrom, item.AfterTo = &afterFrom, &afterTo
+	item.BeforePeakKW, item.BeforeQuality = energy.PeakForRange(beforeIntervals)
+	item.AfterPeakKW, item.AfterQuality = energy.PeakForRange(afterIntervals)
+	if item.BeforePeakKW == nil || item.AfterPeakKW == nil ||
+		strings.TrimSpace(item.WorkNote) == "" || strings.TrimSpace(item.EvidenceNote) == "" {
+		return fmt.Errorf("comparison evidence incomplete")
+	}
+	return nil
 }
 
 func (a *app) updateEnergyMode(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -624,6 +1018,11 @@ func (a *app) createEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
 	intervals, _ := a.energyStore.ListIntervals(ac.tenant.Slug, time.Now().AddDate(0, -1, 0), time.Time{})
 	recommendation := energy.NextRecommendation(profile, assets, mappings, intervals)
+	if maintenance, listErr := a.energyStore.ListMaintenance(ac.tenant.Slug); listErr == nil {
+		if due, ok := energy.MaintenanceRecommendation(time.Now(), maintenance); ok {
+			recommendation = due
+		}
+	}
 	if strings.TrimSpace(r.FormValue("recommendation_id")) != recommendation.ID {
 		http.Error(w, "Empfehlung ist nicht mehr aktuell.", http.StatusConflict)
 		return
@@ -668,6 +1067,18 @@ func (a *app) createEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		http.Error(w, "Maßnahme wurde angelegt, der Hausstatus konnte aber nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
+	measure := energy.Measure{
+		TenantSlug:       ac.tenant.Slug,
+		IssueID:          created.ID,
+		RecommendationID: recommendation.ID,
+		Title:            "Energiemaßnahme: " + recommendation.Title,
+		Status:           energy.MeasureRequested,
+		SharedFields:     shared,
+	}
+	if err := a.energyStore.UpsertMeasure(measure); err != nil {
+		http.Error(w, "Hausaufgabe wurde angelegt, der Maßnahmenkontext konnte aber nicht gespeichert werden.", http.StatusInternalServerError)
+		return
+	}
 	a.recordAudit(auditEvent{
 		TenantSlug: ac.tenant.Slug,
 		ActorEmail: ac.email,
@@ -683,6 +1094,326 @@ func (a *app) createEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		},
 	})
 	http.Redirect(w, r, "/app/energie?measure=created#naechster-schritt", http.StatusSeeOther)
+}
+
+func (a *app) inviteEnergyCaretaker(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !hasCapability(ac.role, capabilityControlEnergy) {
+		http.Error(w, "Nur Eigentümer oder Hausadministration dürfen technische Betreuung einladen.", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
+		return
+	}
+	email := normalizeEmail(r.FormValue("email"))
+	if _, err := mail.ParseAddress(email); err != nil {
+		http.Redirect(w, r, "/app/energie?caretaker_invite=invalid#betreuung", http.StatusSeeOther)
+		return
+	}
+	scopes := map[string]bool{}
+	for _, scope := range r.Form["scope"] {
+		scopes[scope] = true
+	}
+	permissions := []string{permissionEnergyView}
+	if scopes["configure"] {
+		permissions = append(permissions, permissionEnergyConfigure)
+	}
+	if scopes["control"] {
+		permissions = append(permissions, permissionEnergyControl)
+	}
+	profile := userProfile{
+		Email:       email,
+		FirstName:   cleanEnergyText(r.FormValue("first_name"), 80),
+		LastName:    cleanEnergyText(r.FormValue("last_name"), 80),
+		Role:        roleResident,
+		Status:      "Eingeladen",
+		Tenants:     []string{ac.tenant.Slug},
+		Permissions: permissions,
+		AuthMethods: defaultAuthMethods(),
+	}
+	if existing, ok := a.directoryProfile(email); ok {
+		if existing.HasTenant(ac.tenant.Slug) {
+			http.Redirect(w, r, "/app/energie?caretaker_invite=exists#betreuung", http.StatusSeeOther)
+			return
+		}
+		if _, stored := a.inviteStore.Get(email); !stored {
+			http.Redirect(w, r, "/app/energie?caretaker_invite=error#betreuung", http.StatusSeeOther)
+			return
+		}
+		if _, found, membershipErr := a.inviteStore.SetTenantMembership(email, ac.tenant.Slug, roleResident, permissions); membershipErr != nil || !found {
+			http.Redirect(w, r, "/app/energie?caretaker_invite=error#betreuung", http.StatusSeeOther)
+			return
+		}
+	} else {
+		added, addErr := a.inviteStore.Add(profile)
+		if addErr != nil || !added {
+			http.Redirect(w, r, "/app/energie?caretaker_invite=error#betreuung", http.StatusSeeOther)
+			return
+		}
+	}
+	mailStatus := "verschickt"
+	if err := a.mailer.SendInvite(email, a.publicBaseURL(r, ac.tenant)+"/", ac.tenant.Address); err != nil {
+		mailStatus = "nicht zugestellt"
+		logError("energy caretaker invite delivery failed", err, "recipient", redactedEmail(email), "tenant", ac.tenant.Slug)
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: ac.tenant.Slug,
+		ActorEmail: ac.email,
+		ActorRole:  ac.role,
+		Action:     "energy.caretaker.invite",
+		TargetType: "user",
+		TargetID:   email,
+		Summary:    "Technische Vertrauensperson eingeladen",
+		Details: map[string]string{
+			"permissions": strings.Join(permissionLabelList(permissions), ", "),
+			"mail_status": mailStatus,
+		},
+	})
+	status := "invited"
+	if mailStatus != "verschickt" {
+		status = "saved_no_mail"
+	}
+	http.Redirect(w, r, "/app/energie?caretaker_invite="+status+"#betreuung", http.StatusSeeOther)
+}
+
+func (a *app) upsertEnergyMaintenance(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.canManageEnergy(ac) {
+		http.Error(w, "Kein Zugriff", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
+		return
+	}
+	assetID := strings.TrimSpace(r.FormValue("asset_id"))
+	if !energyAssetBelongsToTenant(a.energyStore, ac.tenant.Slug, assetID) {
+		http.Error(w, "Anlage gehört nicht zu diesem Haus.", http.StatusBadRequest)
+		return
+	}
+	months, err := strconv.Atoi(strings.TrimSpace(r.FormValue("interval_months")))
+	if err != nil {
+		http.Redirect(w, r, "/app/energie?maintenance=invalid#wartung", http.StatusSeeOther)
+		return
+	}
+	due, err := parseEnergyLocalDate(r.FormValue("next_due"))
+	if err != nil {
+		http.Redirect(w, r, "/app/energie?maintenance=invalid#wartung", http.StatusSeeOther)
+		return
+	}
+	contactID := strings.TrimSpace(r.FormValue("contact_id"))
+	documentID := strings.TrimSpace(r.FormValue("document_id"))
+	issueID := strings.TrimSpace(r.FormValue("issue_id"))
+	if !a.validEnergyReferences(ac.tenant.Slug, contactID, documentID, issueID) {
+		http.Error(w, "Verknüpfung gehört nicht zu diesem Haus.", http.StatusBadRequest)
+		return
+	}
+	plan := energy.MaintenancePlan{
+		ID:             strings.TrimSpace(r.FormValue("id")),
+		TenantSlug:     ac.tenant.Slug,
+		AssetID:        assetID,
+		Title:          cleanEnergyText(r.FormValue("title"), 140),
+		IntervalMonths: months,
+		NextDueAt:      due,
+		ContactID:      contactID,
+		DocumentID:     documentID,
+		IssueID:        issueID,
+		EvidenceNote:   cleanEnergyText(r.FormValue("evidence_note"), 500),
+		Active:         r.FormValue("active") != "false",
+	}
+	if plan.ID == "" {
+		plan.ID = energy.NewID("maintenance")
+	}
+	if existing, ok := findMaintenancePlanByAsset(a.energyStore, ac.tenant.Slug, assetID); ok {
+		plan.ID = existing.ID
+		plan.CreatedAt = existing.CreatedAt
+		plan.LastCompletedAt = existing.LastCompletedAt
+	}
+	if err := a.energyStore.UpsertMaintenance(plan); err != nil {
+		http.Redirect(w, r, "/app/energie?maintenance=invalid#wartung", http.StatusSeeOther)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: ac.tenant.Slug, ActorEmail: ac.email, ActorRole: ac.role,
+		Action: "energy.maintenance.save", TargetType: "energy-maintenance", TargetID: plan.ID,
+		Summary: "Wartungsplan gespeichert", Details: map[string]string{"asset_id": assetID, "interval_months": strconv.Itoa(months)},
+	})
+	http.Redirect(w, r, "/app/energie?maintenance=saved#wartung", http.StatusSeeOther)
+}
+
+func (a *app) completeEnergyMaintenance(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.canManageEnergy(ac) {
+		http.Error(w, "Kein Zugriff", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
+		return
+	}
+	plan, ok := findMaintenancePlan(a.energyStore, ac.tenant.Slug, strings.TrimSpace(r.FormValue("id")))
+	if !ok {
+		http.Error(w, "Wartungsplan nicht gefunden.", http.StatusNotFound)
+		return
+	}
+	completed := time.Now().UTC()
+	if raw := strings.TrimSpace(r.FormValue("completed_at")); raw != "" {
+		parsed, err := parseEnergyLocalDate(raw)
+		if err != nil {
+			http.Redirect(w, r, "/app/energie?maintenance=invalid#wartung", http.StatusSeeOther)
+			return
+		}
+		completed = parsed
+	}
+	plan.LastCompletedAt = &completed
+	plan.NextDueAt = completed.AddDate(0, plan.IntervalMonths, 0)
+	plan.EvidenceNote = cleanEnergyText(r.FormValue("evidence_note"), 500)
+	if issueID := strings.TrimSpace(r.FormValue("issue_id")); issueID != "" {
+		if _, found := a.issueStore.Get(ac.tenant.Slug, issueID); !found {
+			http.Error(w, "Nachweis-Aufgabe gehört nicht zu diesem Haus.", http.StatusBadRequest)
+			return
+		}
+		plan.IssueID = issueID
+	}
+	if plan.EvidenceNote == "" && plan.IssueID == "" {
+		http.Redirect(w, r, "/app/energie?maintenance=invalid#wartung", http.StatusSeeOther)
+		return
+	}
+	if err := a.energyStore.UpsertMaintenance(plan); err != nil {
+		http.Error(w, "Wartung konnte nicht abgeschlossen werden.", http.StatusInternalServerError)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: ac.tenant.Slug, ActorEmail: ac.email, ActorRole: ac.role,
+		Action: "energy.maintenance.complete", TargetType: "energy-maintenance", TargetID: plan.ID,
+		Summary: "Wartung abgeschlossen", Details: map[string]string{"next_due": plan.NextDueAt.Format("2006-01-02")},
+	})
+	http.Redirect(w, r, "/app/energie?maintenance=completed#wartung", http.StatusSeeOther)
+}
+
+func (a *app) saveEnergyTariffAssessment(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.canManageEnergy(ac) {
+		http.Error(w, "Kein Zugriff", http.StatusForbidden)
+		return
+	}
+	now := time.Now()
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
+	intervals, err := a.energyStore.ListIntervals(ac.tenant.Slug, monthStart.UTC(), monthStart.AddDate(0, 1, 0).UTC())
+	if err != nil {
+		http.Error(w, "Messwerte konnten nicht geladen werden.", http.StatusInternalServerError)
+		return
+	}
+	peak := energy.PeakForMonth(intervals, now, time.Local)
+	if peak <= 0 {
+		http.Redirect(w, r, "/app/energie?assessment=no_data#tarif", http.StatusSeeOther)
+		return
+	}
+	rules := energy.AustrianDraft2027()
+	estimate := rules.Estimate(peak, 0)
+	gaps, conflicts := intervalQualityCounts(intervals)
+	quality := energy.QualityMeasured
+	if gaps > 0 || conflicts > 0 {
+		quality = energy.QualityGap
+	}
+	item := energy.TariffAssessment{
+		ID:         energy.NewID("tariff"),
+		TenantSlug: ac.tenant.Slug, AssessmentMonth: monthStart.Format("2006-01"),
+		ProfileID: rules.ID, ProfileVersion: rules.Version, ProfileStatus: rules.Status, SourceURL: rules.SourceURL,
+		PeakKW: peak, BilledKW: estimate.BilledKW, AnnualPowerEUR: estimate.AnnualPowerEUR, DataQuality: quality,
+	}
+	if err := a.energyStore.SaveTariffAssessment(item); err != nil {
+		http.Error(w, "Tarifbewertung konnte nicht festgehalten werden.", http.StatusInternalServerError)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: ac.tenant.Slug, ActorEmail: ac.email, ActorRole: ac.role,
+		Action: "energy.tariff.assessment", TargetType: "energy-tariff-assessment", TargetID: item.ID,
+		Summary: "Tarifbewertung unveränderlich festgehalten", Details: map[string]string{"profile_id": rules.ID, "profile_version": rules.Version},
+	})
+	http.Redirect(w, r, "/app/energie?assessment=saved#tarif", http.StatusSeeOther)
+}
+
+func (a *app) updateEnergyMeasure(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.canManageEnergy(ac) {
+		http.Error(w, "Kein Zugriff", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
+		return
+	}
+	item, ok, err := a.energyStore.GetMeasure(ac.tenant.Slug, strings.TrimSpace(r.FormValue("id")))
+	if err != nil || !ok {
+		http.Error(w, "Maßnahme nicht gefunden.", http.StatusNotFound)
+		return
+	}
+	issue, found := a.issueStore.Get(ac.tenant.Slug, item.IssueID)
+	if !found {
+		http.Error(w, "Verknüpftes Anliegen nicht gefunden.", http.StatusConflict)
+		return
+	}
+	status := strings.TrimSpace(r.FormValue("status"))
+	switch status {
+	case energy.MeasureRequested, energy.MeasureAssigned, energy.MeasureScheduled, energy.MeasureCompleted, energy.MeasureCancelled:
+		item.Status = status
+	default:
+		http.Redirect(w, r, "/app/energie?measure_status=invalid#fachhilfe", http.StatusSeeOther)
+		return
+	}
+	item.ContactID = strings.TrimSpace(r.FormValue("contact_id"))
+	contact, contactOK := a.energyContact(ac.tenant.Slug, item.ContactID)
+	if item.ContactID != "" && !contactOK {
+		http.Error(w, "Fachkontakt gehört nicht zu diesem Haus.", http.StatusBadRequest)
+		return
+	}
+	item.OfferNote = cleanEnergyText(r.FormValue("offer_note"), 1000)
+	item.WorkNote = cleanEnergyText(r.FormValue("work_note"), 1000)
+	item.EvidenceNote = cleanEnergyText(r.FormValue("evidence_note"), 1000)
+	item.AppointmentAt = nil
+	if raw := strings.TrimSpace(r.FormValue("appointment_at")); raw != "" {
+		appointment, parseErr := parseEnergyLocalDateTime(raw)
+		if parseErr != nil {
+			http.Redirect(w, r, "/app/energie?measure_status=invalid#fachhilfe", http.StatusSeeOther)
+			return
+		}
+		item.AppointmentAt = &appointment
+	}
+	if item.Status == energy.MeasureScheduled && item.AppointmentAt == nil {
+		http.Redirect(w, r, "/app/energie?measure_status=appointment#fachhilfe", http.StatusSeeOther)
+		return
+	}
+	if item.Status == energy.MeasureCompleted {
+		if err := a.completeEnergyMeasureRanges(&item, r); err != nil {
+			http.Redirect(w, r, "/app/energie?measure_status=ranges#fachhilfe", http.StatusSeeOther)
+			return
+		}
+		completed := time.Now().UTC()
+		item.CompletedAt = &completed
+	}
+	if item.ContactID != "" && item.Status == energy.MeasureRequested {
+		item.Status = energy.MeasureAssigned
+	}
+	if err := a.energyStore.UpsertMeasure(item); err != nil {
+		http.Error(w, "Maßnahme konnte nicht gespeichert werden.", http.StatusInternalServerError)
+		return
+	}
+	if contactOK && a.serviceAccessEnabled && normalizeEmail(contact.Email) != "" {
+		updated, changed, updateErr := a.issueStore.UpdateWorkflow(ac.tenant.Slug, issue.ID, issueWorkflowUpdate{
+			Status: issue.Status, Priority: issue.Priority, AssigneeEmail: normalizeEmail(contact.Email),
+			ActorEmail: ac.email, ActorName: a.profileForTenant(ac.email, ac.tenant.Slug).DisplayName(), ChangedAt: time.Now(),
+		})
+		if updateErr != nil {
+			http.Error(w, "Maßnahme ist gespeichert, aber der Dienstleisterzugriff konnte nicht aktualisiert werden.", http.StatusInternalServerError)
+			return
+		}
+		if changed {
+			a.handleIssueServiceAssignmentChange(r, ac.tenant, issue, updated, ac.email, ac.role)
+		}
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: ac.tenant.Slug, ActorEmail: ac.email, ActorRole: ac.role,
+		Action: "energy.measure.update", TargetType: "energy-measure", TargetID: item.ID,
+		Summary: "Energiemaßnahme aktualisiert", Details: map[string]string{"status": item.Status, "contact_id": item.ContactID},
+	})
+	http.Redirect(w, r, "/app/energie?measure_status=saved#fachhilfe", http.StatusSeeOther)
 }
 
 func energySharedFieldLabels(values []string) string {
@@ -725,6 +1456,11 @@ func (a *app) energyCaretakerViews(ac authCtx) []energyCaretakerView {
 		if isServiceProviderRole(member.Role) {
 			continue
 		}
+		canView := member.HasPermission(permissionEnergyView) || member.HasPermission(permissionEnergyConfigure) ||
+			member.HasPermission(permissionEnergyControl) || member.HasPermission(permissionEnergyCaretaker)
+		if !canView {
+			continue
+		}
 		stored, hasStored := userProfile{}, false
 		if a.inviteStore != nil {
 			stored, hasStored = a.inviteStore.Get(member.Email)
@@ -734,7 +1470,7 @@ func (a *app) energyCaretakerViews(ac authCtx) []energyCaretakerView {
 		out = append(out, energyCaretakerView{
 			Email:        member.Email,
 			Name:         member.DisplayName(),
-			CanView:      member.HasPermission(permissionEnergyView) || member.HasPermission(permissionEnergyConfigure) || member.HasPermission(permissionEnergyControl) || member.HasPermission(permissionEnergyCaretaker),
+			CanView:      canView,
 			CanConfigure: member.HasPermission(permissionEnergyConfigure) || member.HasPermission(permissionEnergyCaretaker),
 			CanControl:   member.HasPermission(permissionEnergyControl),
 			Editable:     editable,
@@ -820,16 +1556,21 @@ func (a *app) saveOnboardingAssets(tenantSlug string, selected []string) error {
 		}
 	}
 	for kind := range allowed {
-		id := "asset-" + kind
+		id := energy.StableAssetID(tenantSlug, kind)
 		if _, keep := selectedSet[kind]; !keep {
 			if _, err := a.energyStore.DeleteAsset(tenantSlug, id); err != nil {
+				return err
+			}
+			// Remove the single-home legacy identity after upgrading. Tenant
+			// scoping prevents this compatibility cleanup touching another home.
+			if _, err := a.energyStore.DeleteAsset(tenantSlug, "asset-"+kind); err != nil {
 				return err
 			}
 		}
 	}
 	for kind := range selectedSet {
 		if err := a.energyStore.UpsertAsset(energy.Asset{
-			ID:          "asset-" + kind,
+			ID:          energy.StableAssetID(tenantSlug, kind),
 			TenantSlug:  tenantSlug,
 			Kind:        kind,
 			Name:        energy.AssetKindLabel(kind),
@@ -837,6 +1578,11 @@ func (a *app) saveOnboardingAssets(tenantSlug string, selected []string) error {
 			Source:      "onboarding",
 			Confirmed:   true,
 		}); err != nil {
+			return err
+		}
+		// Pre-multi-home versions used asset-<kind>. The migration handles
+		// durable SQL data; this also keeps in-memory/JSON-like test stores clean.
+		if _, err := a.energyStore.DeleteAsset(tenantSlug, "asset-"+kind); err != nil {
 			return err
 		}
 	}

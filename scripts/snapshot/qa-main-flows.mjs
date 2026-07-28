@@ -22,7 +22,7 @@ const routes = [
   { path: '/app', heading: /Hallo /, content: 'Was ist als Nächstes zu tun?' },
   { path: '/app/announcements', heading: 'Aushang', content: 'QA Hausinformation' },
   { path: '/app/events', heading: 'Termine', content: 'QA Hausbegehung' },
-  { path: '/app/kontakte', heading: 'Kontakte', content: 'QA Hausbetreuung' },
+  { path: '/app/kontakte', heading: 'Kontakte', content: 'QA Energiehilfe' },
   { path: '/app/dokumente', heading: 'Dokumente', content: 'QA Hausordnung' },
   { path: '/app/anliegen', heading: 'Anliegen', content: 'Anliegen' },
   { path: '/app/energie', heading: 'QA Zuhause', content: 'Nur beobachten' },
@@ -197,9 +197,13 @@ async function seedManagedContent() {
     await contactPanel.locator('summary').click();
   }
   const contact = contactPanel.locator('form');
-  await contact.locator('select[name="kind"]').selectOption({ index: 1 });
-  await contact.locator('input[name="name"]').fill('QA Hausbetreuung');
+  await contact.locator('select[name="kind"]').selectOption({ label: 'Energie-Fachbetrieb' });
+  await contact.locator('input[name="name"]').fill('QA Energiehilfe');
   await contact.locator('input[name="phone"]').fill('+43 316 000000');
+  await contact.locator('input[name="service_region"]').fill('Graz und Umgebung');
+  await contact.locator('input[name="qualification"]').fill('Elektrotechnik');
+  await contact.locator('input[name="energy_capabilities"][value="metering"]').check();
+  await contact.locator('input[name="energy_capabilities"][value="home-assistant"]').check();
   await contact.locator('button[type="submit"]').click();
   await page.waitForURL(/\/app\/kontakte/);
 
@@ -218,6 +222,91 @@ async function seedManagedContent() {
   await page.waitForURL(/\/app\/dokumente/);
 
   await context.close();
+}
+
+async function assertHomeOnboarding() {
+  let context = await newContext({ width: 1440, height: 900 });
+  let page = await localLogin(context, 'owner@example.com');
+  await page.goto(`${baseURL}/app/zuhause/onboarding`, { waitUntil: 'networkidle' });
+  if (!(await page.getByRole('heading', { name: 'Womit möchten Sie beginnen? Mit Ihrem Zuhause.' }).count())) {
+    fail('Onboarding: verständlicher Einstieg fehlt');
+  }
+  const strip = page.locator('.energy-mode-strip');
+  if ((await strip.locator('strong').first().innerText()).trim() !== 'Nur beobachten') {
+    fail('Onboarding: sichtbarer Beobachtungsmodus fehlt');
+  }
+  const firstNext = page.getByRole('button', { name: 'Verstanden, weiter' });
+  await firstNext.focus();
+  if (!(await firstNext.evaluate((node) => node === document.activeElement))) {
+    fail('Onboarding: Tastaturfokus ist am ersten Weiter-Schritt nicht sichtbar erreichbar');
+  }
+  await firstNext.press('Enter');
+  await page.waitForURL(/step=2/);
+  await context.close();
+
+  // A fresh browser context proves that the saved step survives an interruption.
+  context = await newContext({ width: 1440, height: 900 });
+  page = await localLogin(context, 'owner@example.com');
+  await page.goto(`${baseURL}/app/zuhause/onboarding`, { waitUntil: 'networkidle' });
+  if (!(await page.getByRole('heading', { name: 'Was richten wir gemeinsam ein?' }).count())) {
+    fail('Onboarding: unterbrochener Schritt wurde nicht fortgesetzt');
+  }
+  await page.locator('input[name="household_name"]').fill('');
+  await page.getByRole('button', { name: 'Weiter zu den Verbrauchern' }).press('Enter');
+  const householdName = page.locator('input[name="household_name"]');
+  const householdValidation = await householdName.evaluate((node) => ({
+    valid: node.checkValidity(),
+    message: node.validationMessage,
+  }));
+  if (
+    await page.getByRole('heading', { name: 'Was richten wir gemeinsam ein?' }).count() !== 1
+    || householdValidation.valid
+    || !householdValidation.message.trim()
+  ) {
+    fail('Onboarding: verständliche Pflichtfeldprüfung greift nicht');
+  }
+  await page.locator('input[name="household_name"]').fill('QA Zuhause');
+  await page.locator('select[name="home_type"]').selectOption('apartment');
+  await page.getByRole('button', { name: 'Weiter zu den Verbrauchern' }).press('Enter');
+  await page.waitForURL(/step=3/);
+  await page.locator('input[name="assets"][value="pv"]').check();
+  await page.locator('input[name="assets"][value="ev"]').check();
+  await page.locator('input[name="assets"][value="wallbox"]').check();
+  await page.getByRole('button', { name: 'Weiter zu den Messwerten' }).press('Enter');
+  await page.waitForURL(/step=4/);
+  if (!(await page.getByRole('button', { name: 'Ohne Verbindung starten' }).count())) {
+    fail('Onboarding: klarer Offline-Weg fehlt');
+  }
+  if (await page.locator('details.form-disclosure').evaluate((element) => element.open)) {
+    fail('Onboarding: optionale technische Zuordnung ist ungefragt offen');
+  }
+  await page.getByRole('button', { name: 'Ohne Verbindung starten' }).press('Enter');
+  await page.waitForURL(/step=5/);
+  if ((await page.locator('.onboarding-trust').count()) !== 2 ||
+      !(await page.getByText('Als Nächstes:', { exact: false }).count())) {
+    fail('Onboarding: Abschluss zeigt nicht genau einen nächsten Schritt plus Kostenhinweis');
+  }
+  await page.getByRole('button', { name: 'Mein Zuhause öffnen' }).press('Enter');
+  await page.waitForURL(/\/app\/energie/);
+  await context.close();
+
+  context = await newContext({ width: 390, height: 844 });
+  page = await localLogin(context, 'owner@example.com');
+  await page.goto(`${baseURL}/app/zuhause/onboarding?step=4`, { waitUntil: 'networkidle' });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+  if (overflow) fail('Onboarding Mobil: horizontaler Überlauf');
+  const smallTargets = await page.locator('.onboarding-page .button, .energy-mode-action').evaluateAll((nodes) =>
+    nodes.filter((node) => {
+      const rect = node.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && rect.height < 44;
+    }).map((node) => (node.textContent || '').trim())
+  );
+  if (smallTargets.length) fail(`Onboarding Mobil: Touch-Ziele unter 44px: ${smallTargets.join(', ')}`);
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  const box = await page.locator('.energy-mode-strip').boundingBox();
+  if (!box || box.y > 65) fail(`Onboarding Mobil: Beobachtungsmodus nicht permanent sichtbar (${box?.y ?? 'fehlt'})`);
+  await context.close();
+  process.stdout.write('  ✓ Energie-Onboarding · Tastatur · Fortsetzen · Mobil\n');
 }
 
 async function assertPage(page, persona, route, viewportName) {
@@ -303,6 +392,8 @@ async function assertEnergySafetyAndFlow(viewport) {
   }
 
   if (viewport.name === 'Desktop') {
+    const measurementPanel = page.locator('details.energy-collapsible').filter({ hasText: 'Messwerte & Referenz' });
+    await measurementPanel.locator(':scope > summary').click();
     const csv = Buffer.from('timestamp;import_kwh\n2026-07-01T00:00:00+02:00;0,42\n2026-07-01T00:15:00+02:00;0,38\n');
     const file = { name: 'smart-meter.csv', mimeType: 'text/csv', buffer: csv };
     await page.locator('input[name="smart_meter_file"]').setInputFiles(file);
@@ -311,11 +402,67 @@ async function assertEnergySafetyAndFlow(viewport) {
     if (!(await page.getByText('Smart-Meter-Datei übernommen.', { exact: false }).count())) {
       fail('Energie Desktop: Smart-Meter-Import nicht bestätigt');
     }
+    await measurementPanel.locator(':scope > summary').click();
     await page.locator('input[name="smart_meter_file"]').setInputFiles(file);
     await page.getByRole('button', { name: 'Als Referenz importieren' }).click();
     await page.waitForLoadState('networkidle');
     if (!(await page.getByText('bereits vorhanden', { exact: false }).count())) {
       fail('Energie Desktop: doppelter Import nicht erkannt');
+    }
+
+    await page.getByRole('button', { name: 'Diesen Stand festhalten' }).click();
+    await page.waitForLoadState('networkidle');
+    if (!(await page.getByText('Festgehaltene Bewertungen', { exact: true }).count())) {
+      fail('Energie Desktop: Tarifstand wurde nicht historisch sichtbar');
+    }
+
+    const maintenance = page.locator('details.energy-compact-create').filter({ hasText: 'Wartung an einer Anlage vormerken' });
+    await maintenance.locator('summary').click();
+    await maintenance.locator('input[name="title"]').fill('QA PV-Sichtprüfung');
+    await maintenance.locator('input[name="next_due"]').fill(new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
+    await maintenance.locator('button[type="submit"]').click();
+    await page.waitForLoadState('networkidle');
+    if (!(await page.getByText('QA PV-Sichtprüfung', { exact: true }).count())) {
+      fail('Energie Desktop: wiederkehrende Wartung wurde nicht sichtbar');
+    }
+
+    const caretakerPanel = page.locator('details.energy-collapsible').filter({ hasText: 'Technische Betreuung' });
+    await caretakerPanel.locator(':scope > summary').click();
+    const invitation = caretakerPanel.locator('details.energy-compact-create').filter({ hasText: 'Technische Vertrauensperson einladen' });
+    await invitation.locator('summary').click();
+    await invitation.locator('input[name="first_name"]').fill('QA');
+    await invitation.locator('input[name="last_name"]').fill('Hilfe');
+    await invitation.locator('input[name="email"]').fill('qa-helper@example.com');
+    await invitation.locator('input[value="configure"]').check();
+    await invitation.getByRole('button', { name: 'Hausbezogen einladen' }).click();
+    await page.waitForLoadState('networkidle');
+    if (!(await page.getByText(/Einladung verschickt|Zugang gespeichert/).count())) {
+      fail('Energie Desktop: hausbezogene Betreuungseinladung ohne Rückmeldung');
+    }
+    const helperContext = await newContext({ width: 390, height: 844 });
+    const helper = await localLogin(helperContext, 'qa-helper@example.com');
+    const helperEnergy = await helper.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
+    if (!helperEnergy || helperEnergy.status() !== 200 ||
+        !(await helper.getByText('Nur beobachten', { exact: true }).count())) {
+      fail('Energie Desktop: eingeladene Vertrauensperson kann den hausbezogenen Zugang nicht annehmen');
+    }
+    await helperContext.close();
+
+    const measureControl = page.locator('details.energy-measure-control');
+    await measureControl.locator('summary').click();
+    await measureControl.locator('input[value="inventory"]').check();
+    await measureControl.getByRole('button', { name: 'Hausaufgabe anlegen' }).click();
+    await page.waitForLoadState('networkidle');
+    const specialistPanel = page.locator('details.energy-collapsible').filter({ hasText: 'Fachhilfe, wenn sie wirklich nötig ist' });
+    await specialistPanel.locator(':scope > summary').click();
+    const measure = specialistPanel.locator('details.energy-measure-row').first();
+    await measure.locator('summary').click();
+    await measure.locator('select[name="contact_id"]').selectOption({ label: 'QA Energiehilfe · Graz und Umgebung' });
+    await measure.locator('input[name="offer_note"]').fill('Messkonzept angefragt');
+    await measure.getByRole('button', { name: 'Maßnahmenstand speichern' }).click();
+    await page.waitForLoadState('networkidle');
+    if (!(await page.getByText('QA Energiehilfe', { exact: false }).count())) {
+      fail('Energie Desktop: kuratierter Fachkontakt fehlt an der Maßnahme');
     }
   }
 
@@ -333,6 +480,13 @@ async function assertEnergySafetyAndFlow(viewport) {
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   if (overflow) fail(`Energie ${viewport.name}: horizontaler Überlauf`);
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, `energy-${viewport.name.toLowerCase()}.png`),
+      fullPage: true,
+    });
+  }
   await ownerContext.close();
 }
 
@@ -345,6 +499,7 @@ try {
   }
 
   if (process.env.HV_QA_LANDING_ONLY !== 'true') {
+    await assertHomeOnboarding();
     await createIssue('resident@example.com', 'QA Bewohneranliegen');
     await createIssue('owner@example.com', 'QA Eigentümeranliegen');
     await seedManagedContent();

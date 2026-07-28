@@ -283,6 +283,12 @@ func NewID(prefix string) string {
 	return normalizeToken(prefix, "item") + "-" + hex.EncodeToString(raw[:])
 }
 
+// StableAssetID keeps bootstrapped and onboarding-managed asset identities
+// deterministic without colliding when several homes use the same asset kind.
+func StableAssetID(tenantSlug, kind string) string {
+	return "asset-" + normalizeSlug(tenantSlug) + "-" + normalizeToken(kind, "other")
+}
+
 // ClassifyCandidate translates Home Assistant metadata into a conservative
 // measurement suggestion. It never grants write capability.
 func ClassifyCandidate(entityID, displayName, unit, deviceClass, stateClass, rawValue string, updated time.Time) (EntityCandidate, bool) {

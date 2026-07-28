@@ -370,6 +370,11 @@ type ManagedContactView struct {
 	Email              string
 	Phone              string
 	Notes              string
+	ServiceRegion      string
+	Qualification      string
+	EnergyCapabilities []string
+	EnergySummary      string
+	HasEnergyProfile   bool
 	Active             bool
 	CanEdit            bool
 	StatusLabel        string
@@ -799,6 +804,23 @@ func ManagedContactViewFrom(item store.ManagedContact) ManagedContactView {
 	if description == "" || strings.EqualFold(description, displayName) {
 		description = strings.TrimSpace(item.Notes)
 	}
+	capabilityLabels := map[string]string{
+		"metering": "Leistungsmessung", "smart-meter": "Smart Meter", "home-assistant": "Home Assistant",
+		"pv": "PV", "battery": "Speicher", "wallbox": "Wallbox", "heat-pump": "Wärmepumpe", "electrical": "Elektro-Fachnachweis",
+	}
+	labels := []string{}
+	for _, capability := range item.EnergyCapabilities {
+		if label := capabilityLabels[capability]; label != "" {
+			labels = append(labels, label)
+		}
+	}
+	summaryParts := []string{}
+	if item.ServiceRegion != "" {
+		summaryParts = append(summaryParts, item.ServiceRegion)
+	}
+	if len(labels) > 0 {
+		summaryParts = append(summaryParts, strings.Join(labels, ", "))
+	}
 	return ManagedContactView{
 		ID:                 item.ID,
 		Kind:               item.Kind,
@@ -810,6 +832,11 @@ func ManagedContactViewFrom(item store.ManagedContact) ManagedContactView {
 		Email:              item.Email,
 		Phone:              item.Phone,
 		Notes:              item.Notes,
+		ServiceRegion:      item.ServiceRegion,
+		Qualification:      item.Qualification,
+		EnergyCapabilities: append([]string(nil), item.EnergyCapabilities...),
+		EnergySummary:      strings.Join(summaryParts, " · "),
+		HasEnergyProfile:   item.ServiceRegion != "" || item.Qualification != "" || len(labels) > 0,
 		Active:             item.Active,
 		StatusLabel:        ContactStatusLabel(item.Active),
 		HasEmail:           textutil.Email(item.Email) != "",
@@ -1635,7 +1662,7 @@ func TenantBrandIconOptions(selected string) []SelectOption {
 
 func ContactKindOptions(selected string) []SelectOption {
 	selected = store.NormalizeContactKind(selected)
-	kinds := []string{"Dienstleister", "Hausmeister", "Notdienst", "Verwaltung", "Sonstiges"}
+	kinds := []string{"Dienstleister", "Energie-Fachbetrieb", "Hausmeister", "Notdienst", "Verwaltung", "Sonstiges"}
 	options := make([]SelectOption, 0, len(kinds))
 	for _, kind := range kinds {
 		options = append(options, SelectOption{Value: kind, Label: kind, Selected: selected == kind})

@@ -220,7 +220,7 @@ func NextRecommendation(profile HomeProfile, assets []Asset, mappings []EntityMa
 	if len(assets) == 0 {
 		return Recommendation{ID: "inventory", Title: "Große Verbraucher erfassen", Reason: "Ohne Inventar bleibt unklar, was sich verschieben lässt.", Benefit: "Ausgangslage verstehen", Prerequisite: "Keine", Effort: "5 Minuten", ImpactRange: "Noch keine Peak-Schätzung", State: "now"}
 	}
-	if len(mappings) == 0 {
+	if len(mappings) == 0 && len(intervals) == 0 {
 		return Recommendation{ID: "measure", Title: "Netzbezug messen", Reason: "Ein einzelner Netzbezugswert reicht für den ersten echten Überblick.", Benefit: "15-Minuten-Spitze sichtbar machen", Prerequisite: "Smart Meter oder vorhandener Sensor", Effort: "10–30 Minuten", ImpactRange: "Messung statt Vermutung", State: "now"}
 	}
 	measured := 0

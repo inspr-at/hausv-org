@@ -1,0 +1,126 @@
+package energy_test
+
+import (
+	"path/filepath"
+	"testing"
+	"time"
+
+	appdb "github.com/markus-barta/hausv-org/internal/db"
+	"github.com/markus-barta/hausv-org/internal/energy"
+)
+
+func TestEnergyActionStorageParityAndHistory(t *testing.T) {
+	now := time.Date(2026, 7, 28, 8, 0, 0, 0, time.UTC)
+	factories := map[string]func(*testing.T) energy.Storage{
+		"memory": func(t *testing.T) energy.Storage {
+			return energy.NewMemoryStore()
+		},
+		"sqlite": func(t *testing.T) energy.Storage {
+			database, err := appdb.Open(filepath.Join(t.TempDir(), "energy.db"))
+			if err != nil {
+				t.Fatalf("open database: %v", err)
+			}
+			t.Cleanup(func() { _ = database.Close() })
+			return energy.NewSQLStore(database)
+		},
+	}
+	for name, factory := range factories {
+		t.Run(name, func(t *testing.T) {
+			store := factory(t)
+			for _, tenant := range []string{"home-a", "home-b"} {
+				if err := store.SaveProfile(energy.DefaultProfile(tenant, now)); err != nil {
+					t.Fatalf("save profile: %v", err)
+				}
+				if err := store.UpsertAsset(energy.Asset{
+					ID: energy.StableAssetID(tenant, "pv"), TenantSlug: tenant, Kind: "pv", Name: "PV", Confirmed: true,
+				}); err != nil {
+					t.Fatalf("save %s asset: %v", tenant, err)
+				}
+			}
+			if got, _ := store.ListAssets("home-a"); len(got) != 1 || got[0].ID == energy.StableAssetID("home-b", "pv") {
+				t.Fatalf("home-a assets = %+v", got)
+			}
+
+			completed := now.Add(-24 * time.Hour)
+			plan := energy.MaintenancePlan{
+				ID: "maintenance-a", TenantSlug: "home-a", AssetID: energy.StableAssetID("home-a", "pv"),
+				Title: "PV-Sichtprüfung", IntervalMonths: 12, LastCompletedAt: &completed,
+				NextDueAt: now.Add(14 * 24 * time.Hour), Active: true,
+			}
+			if err := store.UpsertMaintenance(plan); err != nil {
+				t.Fatalf("save maintenance: %v", err)
+			}
+			plans, err := store.ListMaintenance("home-a")
+			if err != nil || len(plans) != 1 || plans[0].ID != plan.ID {
+				t.Fatalf("maintenance = %+v err=%v", plans, err)
+			}
+			recommendation, ok := energy.MaintenanceRecommendation(now, plans)
+			if !ok || recommendation.State != "now" || recommendation.Title != "PV-Sichtprüfung" {
+				t.Fatalf("maintenance recommendation = %+v ok=%v", recommendation, ok)
+			}
+
+			for index, version := range []string{"draft-2027-v1", "draft-2027-v2"} {
+				if err := store.SaveTariffAssessment(energy.TariffAssessment{
+					ID: "tariff-" + version, TenantSlug: "home-a", AssessmentMonth: "2026-07",
+					ProfileID: "at-grid-power", ProfileVersion: version, ProfileStatus: "draft",
+					SourceURL: "https://example.invalid/rules", PeakKW: 8.25 + float64(index),
+					BilledKW: 8.25 + float64(index), AnnualPowerEUR: 99 + float64(index),
+					DataQuality: energy.QualityMeasured, CreatedAt: now.Add(time.Duration(index) * time.Minute),
+				}); err != nil {
+					t.Fatalf("save tariff assessment: %v", err)
+				}
+			}
+			assessments, err := store.ListTariffAssessments("home-a")
+			if err != nil || len(assessments) != 2 || assessments[0].ProfileVersion != "draft-2027-v2" ||
+				assessments[1].ProfileVersion != "draft-2027-v1" {
+				t.Fatalf("tariff history = %+v err=%v", assessments, err)
+			}
+
+			appointment := now.Add(48 * time.Hour)
+			beforeFrom := now.AddDate(0, -1, 0)
+			beforeTo := beforeFrom.Add(7 * 24 * time.Hour)
+			afterFrom := now
+			afterTo := now.Add(7 * 24 * time.Hour)
+			beforePeak, afterPeak := 9.4, 6.7
+			if err := store.UpsertMeasure(energy.Measure{
+				ID: "measure-a", TenantSlug: "home-a", IssueID: "issue-a", RecommendationID: "peak",
+				Title: "Lastspitze glätten", Status: energy.MeasureCompleted, ContactID: "contact-a",
+				SharedFields: []string{"measurements", "inventory"}, OfferNote: "Angebot geprüft",
+				AppointmentAt: &appointment, WorkNote: "Wallbox begrenzt", CompletedAt: &now,
+				EvidenceNote: "Messung geprüft", BeforeFrom: &beforeFrom, BeforeTo: &beforeTo,
+				AfterFrom: &afterFrom, AfterTo: &afterTo, BeforePeakKW: &beforePeak, AfterPeakKW: &afterPeak,
+				BeforeQuality: energy.QualityMeasured, AfterQuality: energy.QualityEstimated,
+			}); err != nil {
+				t.Fatalf("save measure: %v", err)
+			}
+			measure, ok, err := store.GetMeasure("home-a", "measure-a")
+			if err != nil || !ok || measure.AppointmentAt == nil || measure.BeforeFrom == nil || measure.AfterTo == nil ||
+				measure.BeforePeakKW == nil || *measure.BeforePeakKW != 9.4 || len(measure.SharedFields) != 2 {
+				t.Fatalf("measure = %+v ok=%v err=%v", measure, ok, err)
+			}
+
+			if deleted, err := store.DeleteAsset("home-a", energy.StableAssetID("home-a", "pv")); err != nil || !deleted {
+				t.Fatalf("delete asset: deleted=%v err=%v", deleted, err)
+			}
+			if plans, err := store.ListMaintenance("home-a"); err != nil || len(plans) != 0 {
+				t.Fatalf("maintenance should cascade with asset: %+v err=%v", plans, err)
+			}
+			if assets, _ := store.ListAssets("home-b"); len(assets) != 1 {
+				t.Fatalf("home-b asset affected by home-a delete: %+v", assets)
+			}
+		})
+	}
+}
+
+func TestPeakForRangeReportsQuality(t *testing.T) {
+	peak, quality := energy.PeakForRange([]energy.Interval{
+		{AverageKW: 4.2, Quality: energy.QualityMeasured},
+		{AverageKW: 5.3, Quality: energy.QualityEstimated},
+	})
+	if peak == nil || *peak != 5.3 || quality != energy.QualityEstimated {
+		t.Fatalf("peak=%v quality=%q", peak, quality)
+	}
+	if peak, quality := energy.PeakForRange([]energy.Interval{{AverageKW: 7, Quality: energy.QualityGap}}); peak != nil || quality != energy.QualityUnavailable {
+		t.Fatalf("gap-only peak=%v quality=%q", peak, quality)
+	}
+}

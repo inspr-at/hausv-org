@@ -272,14 +272,17 @@ func (a *app) residentDirectoryViews(tenantSlug string) []contactCardView {
 
 func managedContactFromForm(tenantSlug string, values url.Values) (managedContact, error) {
 	return normalizeManagedContact(managedContact{
-		ID:         strings.TrimSpace(values.Get("id")),
-		TenantSlug: tenantSlug,
-		Kind:       values.Get("kind"),
-		Name:       values.Get("name"),
-		Company:    values.Get("company"),
-		Email:      values.Get("email"),
-		Phone:      values.Get("phone"),
-		Notes:      values.Get("notes"),
-		Active:     values.Get("active") != "false",
+		ID:                 strings.TrimSpace(values.Get("id")),
+		TenantSlug:         tenantSlug,
+		Kind:               values.Get("kind"),
+		Name:               values.Get("name"),
+		Company:            values.Get("company"),
+		Email:              values.Get("email"),
+		Phone:              values.Get("phone"),
+		Notes:              values.Get("notes"),
+		ServiceRegion:      values.Get("service_region"),
+		Qualification:      values.Get("qualification"),
+		EnergyCapabilities: values["energy_capabilities"],
+		Active:             values.Get("active") != "false",
 	})
 }

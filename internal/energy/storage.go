@@ -23,24 +23,38 @@ type Storage interface {
 	ListIntervals(tenantSlug string, from, to time.Time) ([]Interval, error)
 	PutImport(record ImportRecord, intervals []Interval) (bool, error)
 	ListImports(tenantSlug string) ([]ImportRecord, error)
+	ListMaintenance(tenantSlug string) ([]MaintenancePlan, error)
+	UpsertMaintenance(plan MaintenancePlan) error
+	DeleteMaintenance(tenantSlug, id string) (bool, error)
+	SaveTariffAssessment(item TariffAssessment) error
+	ListTariffAssessments(tenantSlug string) ([]TariffAssessment, error)
+	UpsertMeasure(item Measure) error
+	GetMeasure(tenantSlug, id string) (Measure, bool, error)
+	ListMeasures(tenantSlug string) ([]Measure, error)
 }
 
 type MemoryStore struct {
-	mu        sync.Mutex
-	profiles  map[string]HomeProfile
-	assets    map[string]Asset
-	mappings  map[string]EntityMapping
-	intervals map[string]Interval
-	imports   map[string]ImportRecord
+	mu          sync.Mutex
+	profiles    map[string]HomeProfile
+	assets      map[string]Asset
+	mappings    map[string]EntityMapping
+	intervals   map[string]Interval
+	imports     map[string]ImportRecord
+	maintenance map[string]MaintenancePlan
+	assessments map[string]TariffAssessment
+	measures    map[string]Measure
 }
 
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		profiles:  map[string]HomeProfile{},
-		assets:    map[string]Asset{},
-		mappings:  map[string]EntityMapping{},
-		intervals: map[string]Interval{},
-		imports:   map[string]ImportRecord{},
+		profiles:    map[string]HomeProfile{},
+		assets:      map[string]Asset{},
+		mappings:    map[string]EntityMapping{},
+		intervals:   map[string]Interval{},
+		imports:     map[string]ImportRecord{},
+		maintenance: map[string]MaintenancePlan{},
+		assessments: map[string]TariffAssessment{},
+		measures:    map[string]Measure{},
 	}
 }
 
@@ -95,11 +109,18 @@ func (s *MemoryStore) UpsertAsset(asset Asset) error {
 func (s *MemoryStore) DeleteAsset(tenantSlug, id string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	key := normalizeSlug(tenantSlug) + "\x00" + strings.TrimSpace(id)
+	tenantSlug = normalizeSlug(tenantSlug)
+	id = strings.TrimSpace(id)
+	key := tenantSlug + "\x00" + id
 	if _, ok := s.assets[key]; !ok {
 		return false, nil
 	}
 	delete(s.assets, key)
+	for maintenanceKey, plan := range s.maintenance {
+		if plan.TenantSlug == tenantSlug && plan.AssetID == id {
+			delete(s.maintenance, maintenanceKey)
+		}
+	}
 	return true, nil
 }
 
@@ -246,6 +267,121 @@ func (s *MemoryStore) ListImports(tenantSlug string) ([]ImportRecord, error) {
 	return out, nil
 }
 
+func (s *MemoryStore) ListMaintenance(tenantSlug string) ([]MaintenancePlan, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tenantSlug = normalizeSlug(tenantSlug)
+	out := []MaintenancePlan{}
+	for _, item := range s.maintenance {
+		if item.TenantSlug == tenantSlug {
+			out = append(out, item)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].NextDueAt.Equal(out[j].NextDueAt) {
+			return out[i].Title < out[j].Title
+		}
+		return out[i].NextDueAt.Before(out[j].NextDueAt)
+	})
+	return out, nil
+}
+
+func (s *MemoryStore) UpsertMaintenance(plan MaintenancePlan) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	normalized, err := NormalizeMaintenancePlan(plan, time.Now())
+	if err != nil {
+		return err
+	}
+	for key, existing := range s.maintenance {
+		if existing.TenantSlug == normalized.TenantSlug && existing.AssetID == normalized.AssetID {
+			normalized.ID = existing.ID
+			normalized.CreatedAt = existing.CreatedAt
+			delete(s.maintenance, key)
+			break
+		}
+	}
+	s.maintenance[normalized.TenantSlug+"\x00"+normalized.ID] = normalized
+	return nil
+}
+
+func (s *MemoryStore) DeleteMaintenance(tenantSlug, id string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	key := normalizeSlug(tenantSlug) + "\x00" + strings.TrimSpace(id)
+	if _, ok := s.maintenance[key]; !ok {
+		return false, nil
+	}
+	delete(s.maintenance, key)
+	return true, nil
+}
+
+func (s *MemoryStore) SaveTariffAssessment(item TariffAssessment) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	normalized, err := NormalizeTariffAssessment(item, time.Now())
+	if err != nil {
+		return err
+	}
+	s.assessments[normalized.TenantSlug+"\x00"+normalized.ID] = normalized
+	return nil
+}
+
+func (s *MemoryStore) ListTariffAssessments(tenantSlug string) ([]TariffAssessment, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tenantSlug = normalizeSlug(tenantSlug)
+	out := []TariffAssessment{}
+	for _, item := range s.assessments {
+		if item.TenantSlug == tenantSlug {
+			out = append(out, item)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].CreatedAt.After(out[j].CreatedAt) })
+	return out, nil
+}
+
+func (s *MemoryStore) UpsertMeasure(item Measure) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	normalized, err := NormalizeMeasure(item, time.Now())
+	if err != nil {
+		return err
+	}
+	for key, existing := range s.measures {
+		if existing.TenantSlug == normalized.TenantSlug && existing.IssueID == normalized.IssueID {
+			normalized.ID = existing.ID
+			normalized.CreatedAt = existing.CreatedAt
+			delete(s.measures, key)
+			break
+		}
+	}
+	s.measures[normalized.TenantSlug+"\x00"+normalized.ID] = normalized
+	return nil
+}
+
+func (s *MemoryStore) GetMeasure(tenantSlug, id string) (Measure, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	item, ok := s.measures[normalizeSlug(tenantSlug)+"\x00"+strings.TrimSpace(id)]
+	return item, ok, nil
+}
+
+func (s *MemoryStore) ListMeasures(tenantSlug string) ([]Measure, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tenantSlug = normalizeSlug(tenantSlug)
+	out := []Measure{}
+	for _, item := range s.measures {
+		if item.TenantSlug == tenantSlug {
+			item.SharedFields = append([]string(nil), item.SharedFields...)
+			out = append(out, item)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].UpdatedAt.After(out[j].UpdatedAt) })
+	return out, nil
+}
+
 type SQLStore struct {
 	db *sql.DB
 }
@@ -368,7 +504,7 @@ func (s *SQLStore) UpsertAsset(asset Asset) error {
 		rated = *asset.RatedPowerKW
 	}
 	metadata, _ := json.Marshal(asset.Metadata)
-	_, err := s.db.Exec(`INSERT INTO energy_assets
+	result, err := s.db.Exec(`INSERT INTO energy_assets
 		(id,tenant_slug,kind,name,rated_power_kw,flexibility,source,confirmed,metadata_json,created_at,updated_at)
 		VALUES(?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,name=excluded.name,rated_power_kw=excluded.rated_power_kw,
@@ -378,7 +514,17 @@ func (s *SQLStore) UpsertAsset(asset Asset) error {
 		asset.ID, asset.TenantSlug, asset.Kind, asset.Name, rated, asset.Flexibility,
 		asset.Source, boolInt(asset.Confirmed), string(metadata),
 		asset.CreatedAt.Format(time.RFC3339Nano), asset.UpdatedAt.Format(time.RFC3339Nano))
-	return err
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return fmt.Errorf("energy: asset id belongs to another tenant")
+	}
+	return nil
 }
 
 func (s *SQLStore) DeleteAsset(tenantSlug, id string) (bool, error) {
@@ -587,6 +733,215 @@ func (s *SQLStore) ListImports(tenantSlug string) ([]ImportRecord, error) {
 	return out, rows.Err()
 }
 
+func (s *SQLStore) ListMaintenance(tenantSlug string) ([]MaintenancePlan, error) {
+	rows, err := s.db.Query(`SELECT id,tenant_slug,asset_id,title,interval_months,last_completed_at,next_due_at,contact_id,document_id,issue_id,evidence_note,active,created_at,updated_at
+		FROM energy_maintenance_plans WHERE tenant_slug=? ORDER BY next_due_at,title,id`, normalizeSlug(tenantSlug))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []MaintenancePlan{}
+	for rows.Next() {
+		var item MaintenancePlan
+		var completed sql.NullString
+		var nextDue, created, updated string
+		var active int
+		if err := rows.Scan(&item.ID, &item.TenantSlug, &item.AssetID, &item.Title, &item.IntervalMonths, &completed, &nextDue,
+			&item.ContactID, &item.DocumentID, &item.IssueID, &item.EvidenceNote, &active, &created, &updated); err != nil {
+			return nil, err
+		}
+		if parsed, ok := parseTime(completed.String); ok {
+			item.LastCompletedAt = &parsed
+		}
+		item.NextDueAt, _ = time.Parse(time.RFC3339Nano, nextDue)
+		item.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
+		item.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updated)
+		item.Active = active == 1
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func (s *SQLStore) UpsertMaintenance(plan MaintenancePlan) error {
+	if err := s.ensureProfile(plan.TenantSlug); err != nil {
+		return err
+	}
+	normalized, err := NormalizeMaintenancePlan(plan, time.Now())
+	if err != nil {
+		return err
+	}
+	var completed any
+	if normalized.LastCompletedAt != nil {
+		completed = normalized.LastCompletedAt.Format(time.RFC3339Nano)
+	}
+	_, err = s.db.Exec(`INSERT INTO energy_maintenance_plans
+		(id,tenant_slug,asset_id,title,interval_months,last_completed_at,next_due_at,contact_id,document_id,issue_id,evidence_note,active,created_at,updated_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+		ON CONFLICT(tenant_slug,asset_id) DO UPDATE SET
+		title=excluded.title,interval_months=excluded.interval_months,last_completed_at=excluded.last_completed_at,
+		next_due_at=excluded.next_due_at,contact_id=excluded.contact_id,document_id=excluded.document_id,
+		issue_id=excluded.issue_id,evidence_note=excluded.evidence_note,active=excluded.active,updated_at=excluded.updated_at`,
+		normalized.ID, normalized.TenantSlug, normalized.AssetID, normalized.Title, normalized.IntervalMonths, completed,
+		normalized.NextDueAt.Format(time.RFC3339Nano), normalized.ContactID, normalized.DocumentID, normalized.IssueID,
+		normalized.EvidenceNote, boolInt(normalized.Active), normalized.CreatedAt.Format(time.RFC3339Nano), normalized.UpdatedAt.Format(time.RFC3339Nano))
+	return err
+}
+
+func (s *SQLStore) DeleteMaintenance(tenantSlug, id string) (bool, error) {
+	result, err := s.db.Exec(`DELETE FROM energy_maintenance_plans WHERE tenant_slug=? AND id=?`, normalizeSlug(tenantSlug), strings.TrimSpace(id))
+	if err != nil {
+		return false, err
+	}
+	n, _ := result.RowsAffected()
+	return n > 0, nil
+}
+
+func (s *SQLStore) SaveTariffAssessment(item TariffAssessment) error {
+	if err := s.ensureProfile(item.TenantSlug); err != nil {
+		return err
+	}
+	normalized, err := NormalizeTariffAssessment(item, time.Now())
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec(`INSERT INTO energy_tariff_assessments
+		(id,tenant_slug,assessment_month,profile_id,profile_version,profile_status,source_url,peak_kw,billed_kw,annual_power_eur,data_quality,created_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,
+		normalized.ID, normalized.TenantSlug, normalized.AssessmentMonth, normalized.ProfileID, normalized.ProfileVersion,
+		normalized.ProfileStatus, normalized.SourceURL, normalized.PeakKW, normalized.BilledKW, normalized.AnnualPowerEUR,
+		normalized.DataQuality, normalized.CreatedAt.Format(time.RFC3339Nano))
+	return err
+}
+
+func (s *SQLStore) ListTariffAssessments(tenantSlug string) ([]TariffAssessment, error) {
+	rows, err := s.db.Query(`SELECT id,tenant_slug,assessment_month,profile_id,profile_version,profile_status,source_url,peak_kw,billed_kw,annual_power_eur,data_quality,created_at
+		FROM energy_tariff_assessments WHERE tenant_slug=? ORDER BY created_at DESC,id`, normalizeSlug(tenantSlug))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []TariffAssessment{}
+	for rows.Next() {
+		var item TariffAssessment
+		var created string
+		if err := rows.Scan(&item.ID, &item.TenantSlug, &item.AssessmentMonth, &item.ProfileID, &item.ProfileVersion,
+			&item.ProfileStatus, &item.SourceURL, &item.PeakKW, &item.BilledKW, &item.AnnualPowerEUR,
+			&item.DataQuality, &created); err != nil {
+			return nil, err
+		}
+		item.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func (s *SQLStore) UpsertMeasure(item Measure) error {
+	if err := s.ensureProfile(item.TenantSlug); err != nil {
+		return err
+	}
+	normalized, err := NormalizeMeasure(item, time.Now())
+	if err != nil {
+		return err
+	}
+	shared, _ := json.Marshal(normalized.SharedFields)
+	_, err = s.db.Exec(`INSERT INTO energy_measures
+		(id,tenant_slug,issue_id,recommendation_id,title,status,contact_id,shared_fields_json,offer_note,appointment_at,
+		 work_note,completed_at,evidence_note,before_from,before_to,after_from,after_to,before_peak_kw,after_peak_kw,
+		 before_quality,after_quality,created_at,updated_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+		ON CONFLICT(tenant_slug,issue_id) DO UPDATE SET
+		recommendation_id=excluded.recommendation_id,title=excluded.title,status=excluded.status,contact_id=excluded.contact_id,
+		shared_fields_json=excluded.shared_fields_json,offer_note=excluded.offer_note,appointment_at=excluded.appointment_at,
+		work_note=excluded.work_note,completed_at=excluded.completed_at,evidence_note=excluded.evidence_note,
+		before_from=excluded.before_from,before_to=excluded.before_to,after_from=excluded.after_from,after_to=excluded.after_to,
+		before_peak_kw=excluded.before_peak_kw,after_peak_kw=excluded.after_peak_kw,
+		before_quality=excluded.before_quality,after_quality=excluded.after_quality,updated_at=excluded.updated_at`,
+		normalized.ID, normalized.TenantSlug, normalized.IssueID, normalized.RecommendationID, normalized.Title,
+		normalized.Status, normalized.ContactID, string(shared), normalized.OfferNote, nullableTimePtr(normalized.AppointmentAt),
+		normalized.WorkNote, nullableTimePtr(normalized.CompletedAt), normalized.EvidenceNote,
+		nullableTimePtr(normalized.BeforeFrom), nullableTimePtr(normalized.BeforeTo), nullableTimePtr(normalized.AfterFrom), nullableTimePtr(normalized.AfterTo),
+		nullableFloat(normalized.BeforePeakKW), nullableFloat(normalized.AfterPeakKW), normalized.BeforeQuality, normalized.AfterQuality,
+		normalized.CreatedAt.Format(time.RFC3339Nano), normalized.UpdatedAt.Format(time.RFC3339Nano))
+	return err
+}
+
+func (s *SQLStore) GetMeasure(tenantSlug, id string) (Measure, bool, error) {
+	row := s.db.QueryRow(`SELECT id,tenant_slug,issue_id,recommendation_id,title,status,contact_id,shared_fields_json,offer_note,appointment_at,
+		work_note,completed_at,evidence_note,before_from,before_to,after_from,after_to,before_peak_kw,after_peak_kw,
+		before_quality,after_quality,created_at,updated_at
+		FROM energy_measures WHERE tenant_slug=? AND id=?`, normalizeSlug(tenantSlug), strings.TrimSpace(id))
+	item, err := scanMeasure(row)
+	if err == sql.ErrNoRows {
+		return Measure{}, false, nil
+	}
+	return item, err == nil, err
+}
+
+func (s *SQLStore) ListMeasures(tenantSlug string) ([]Measure, error) {
+	rows, err := s.db.Query(`SELECT id,tenant_slug,issue_id,recommendation_id,title,status,contact_id,shared_fields_json,offer_note,appointment_at,
+		work_note,completed_at,evidence_note,before_from,before_to,after_from,after_to,before_peak_kw,after_peak_kw,
+		before_quality,after_quality,created_at,updated_at
+		FROM energy_measures WHERE tenant_slug=? ORDER BY updated_at DESC,id`, normalizeSlug(tenantSlug))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Measure{}
+	for rows.Next() {
+		item, scanErr := scanMeasure(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+type measureScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanMeasure(scanner measureScanner) (Measure, error) {
+	var item Measure
+	var shared string
+	var appointment, completed, beforeFrom, beforeTo, afterFrom, afterTo sql.NullString
+	var beforePeak, afterPeak sql.NullFloat64
+	var created, updated string
+	err := scanner.Scan(&item.ID, &item.TenantSlug, &item.IssueID, &item.RecommendationID, &item.Title, &item.Status,
+		&item.ContactID, &shared, &item.OfferNote, &appointment, &item.WorkNote, &completed, &item.EvidenceNote,
+		&beforeFrom, &beforeTo, &afterFrom, &afterTo, &beforePeak, &afterPeak, &item.BeforeQuality, &item.AfterQuality,
+		&created, &updated)
+	if err != nil {
+		return Measure{}, err
+	}
+	_ = json.Unmarshal([]byte(shared), &item.SharedFields)
+	for _, candidate := range []struct {
+		raw    string
+		target **time.Time
+	}{
+		{appointment.String, &item.AppointmentAt},
+		{completed.String, &item.CompletedAt},
+		{beforeFrom.String, &item.BeforeFrom},
+		{beforeTo.String, &item.BeforeTo},
+		{afterFrom.String, &item.AfterFrom},
+		{afterTo.String, &item.AfterTo},
+	} {
+		if parsed, ok := parseTime(candidate.raw); ok {
+			value := parsed
+			*candidate.target = &value
+		}
+	}
+	if beforePeak.Valid {
+		item.BeforePeakKW = &beforePeak.Float64
+	}
+	if afterPeak.Valid {
+		item.AfterPeakKW = &afterPeak.Float64
+	}
+	item.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
+	item.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updated)
+	return item, nil
+}
+
 func boolInt(value bool) int {
 	if value {
 		return 1
@@ -607,4 +962,18 @@ func nullableTime(value time.Time) string {
 		return ""
 	}
 	return value.UTC().Format(time.RFC3339Nano)
+}
+
+func nullableTimePtr(value *time.Time) any {
+	if value == nil || value.IsZero() {
+		return nil
+	}
+	return value.UTC().Format(time.RFC3339Nano)
+}
+
+func nullableFloat(value *float64) any {
+	if value == nil {
+		return nil
+	}
+	return *value
 }

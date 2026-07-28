@@ -823,6 +823,12 @@ const PageTemplates = `
     .energy-card { padding: 24px; }
     .energy-card-head { display: flex; justify-content: space-between; gap: 18px; align-items: start; margin-bottom: 18px; }
     .energy-card-head p { margin-top: 6px; color: var(--muted); font-size: 14px; }
+    .energy-collapsible > summary { position: relative; margin-bottom: 0; padding-right: 42px; list-style: none; cursor: pointer; }
+    .energy-collapsible > summary::-webkit-details-marker { display: none; }
+    .energy-collapsible > summary::after { content: "+"; position: absolute; right: 4px; top: 50%; color: var(--gold-ink); font-size: 24px; font-weight: 700; transform: translateY(-50%); }
+    .energy-collapsible[open] > summary { margin-bottom: 18px; }
+    .energy-collapsible[open] > summary::after { content: "−"; }
+    .energy-collapsible-body { display: grid; gap: 14px; border-top: 1px solid var(--line); padding-top: 18px; }
     .energy-roadmap { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
     .energy-roadmap-step { min-height: 166px; display: grid; align-content: start; gap: 8px; padding: 20px; background: #fff; border-right: 1px solid var(--line); }
     .energy-roadmap-step:last-child { border-right: 0; }
@@ -869,6 +875,37 @@ const PageTemplates = `
     .energy-tariff-copy a { color: #765f1d; font-weight: 750; }
     .energy-target-form { display: grid; align-content: start; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: #fff; }
     .energy-target-form input { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 12px; }
+    .energy-history { display: grid; gap: 8px; margin-top: 16px; }
+    .energy-history-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 12px; font-size: 13px; }
+    .energy-history-row strong { display: block; }
+    .energy-history-row span, .energy-history-row small { color: var(--muted); }
+    .energy-maintenance-list, .energy-measure-list { display: grid; gap: 10px; }
+    .energy-maintenance-row, .energy-measure-row { border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; }
+    .energy-maintenance-summary, .energy-measure-summary { min-height: 64px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: center; padding: 14px 16px; list-style: none; cursor: pointer; }
+    .energy-maintenance-summary::-webkit-details-marker, .energy-measure-summary::-webkit-details-marker { display: none; }
+    .energy-maintenance-summary > span:first-child, .energy-measure-summary > span:first-child { display: grid; gap: 3px; }
+    .energy-maintenance-summary small, .energy-measure-summary small { color: var(--muted); }
+    .energy-maintenance-summary::after, .energy-measure-summary::after { content: "›"; color: #876d23; font-size: 24px; transform: rotate(90deg); }
+    details[open] > .energy-maintenance-summary::after, details[open] > .energy-measure-summary::after { transform: rotate(-90deg); }
+    .energy-maintenance-body, .energy-measure-body { display: grid; gap: 14px; border-top: 1px solid var(--line); padding: 16px; }
+    .energy-inline-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+    .energy-inline-form label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 750; }
+    .energy-inline-form input, .energy-inline-form select, .energy-inline-form textarea { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 9px 11px; background: #fff; color: var(--ink); }
+    .energy-inline-form textarea { min-height: 82px; resize: vertical; }
+    .energy-inline-form .wide, .energy-inline-form .actions { grid-column: 1 / -1; }
+    .energy-inline-form .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .energy-compact-create { margin-top: 14px; border: 1px dashed #c6aa68; border-radius: var(--radius-sm); background: #fbf7eb; }
+    .energy-compact-create > summary { min-height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; list-style: none; cursor: pointer; font-weight: 800; }
+    .energy-compact-create > summary::-webkit-details-marker { display: none; }
+    .energy-compact-create > summary::after { content: "+"; font-size: 20px; }
+    .energy-compact-create[open] > summary::after { content: "−"; }
+    .energy-compact-create > form { border-top: 1px solid var(--line); padding: 15px; }
+    .energy-comparison { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; border-radius: var(--radius-xs); padding: 13px; background: #f4f6f1; }
+    .energy-comparison > span { color: var(--muted); font-size: 12px; text-align: center; }
+    .energy-comparison strong { display: block; font-family: var(--font-serif); font-size: 22px; }
+    .energy-comparison small { color: var(--muted); }
+    .energy-status-danger { color: #9c3a31; }
+    .energy-status-warning { color: #876517; }
     .onboarding-page { width: min(940px,100%); padding-top: 28px; gap: 18px; }
     .onboarding-progress { display: grid; gap: 8px; }
     .onboarding-progress-head { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; font-weight: 750; }
@@ -1975,6 +2012,10 @@ const PageTemplates = `
 	      .energy-measure-control, .energy-measure-control > summary { width: 100%; }
 	      .energy-measure-form { position: static; width: 100%; margin-top: 8px; }
 	      .energy-scenario-result { text-align: left; }
+	      .energy-history-row, .energy-inline-form { grid-template-columns: 1fr; }
+	      .energy-inline-form .wide, .energy-inline-form .actions { grid-column: 1; }
+	      .energy-comparison { grid-template-columns: 1fr; }
+	      .energy-maintenance-summary, .energy-measure-summary { min-height: 72px; }
 	      .sidebar { position: sticky; top: 0; z-index: 50; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; height: auto; padding: 10px 14px; box-shadow: 0 10px 28px rgba(23,32,25,.18); }
 	      .side-brand { grid-template-columns: 42px minmax(0,1fr); gap: 10px; align-items: center; padding: 0; min-width: 0; }
 	      .side-mark { width: 44px; height: 44px; }
@@ -2413,6 +2454,7 @@ const PageTemplates = `
     <div class="contact-row-copy">
       <span class="contact-row-title"><strong>{{.DisplayName}}</strong><span class="pill">{{.Kind}}</span></span>
       {{if .Description}}<span class="contact-description">{{.Description}}</span>{{end}}
+      {{if .HasEnergyProfile}}<span class="contact-description"><strong>Energie-Fachhilfe:</strong> {{.EnergySummary}}{{if .Qualification}} · {{.Qualification}}{{end}}</span>{{end}}
       <span class="contact-meta">{{if .HasPhone}}<span>{{.Phone}}</span>{{end}}{{if .HasEmail}}<span>{{.Email}}</span>{{end}}</span>
     </div>
     {{template "contactRouteActions" .}}
@@ -2435,6 +2477,7 @@ const PageTemplates = `
     <div class="contact-row-copy">
       <span class="contact-row-title"><strong>{{.DisplayName}}</strong><span class="pill">{{.Kind}}</span>{{if not .Active}}<span class="pill quiet">Inaktiv</span>{{end}}</span>
       {{if .Description}}<span class="contact-description">{{.Description}}</span>{{end}}
+      {{if .HasEnergyProfile}}<span class="contact-description"><strong>Energie-Fachhilfe:</strong> {{.EnergySummary}}{{if .Qualification}} · {{.Qualification}}{{end}}</span>{{end}}
       <span class="contact-meta">{{if .HasPhone}}<span>{{.Phone}}</span>{{end}}{{if .HasEmail}}<span>{{.Email}}</span>{{end}}</span>
     </div>
     <div class="contact-row-actions">
@@ -2462,6 +2505,18 @@ const PageTemplates = `
               <label>Telefon<input name="phone" value="{{.Phone}}" maxlength="80"></label>
               <label>E-Mail<input type="email" name="email" value="{{.Email}}"></label>
               <label class="f-wide">Notiz<input name="notes" value="{{.Notes}}" maxlength="300"></label>
+              <label>Region<input name="service_region" value="{{.ServiceRegion}}" maxlength="120" placeholder="z. B. Graz und Umgebung"></label>
+              <label>Qualifikation<input name="qualification" value="{{.Qualification}}" maxlength="240" placeholder="z. B. konzessionierter Elektrobetrieb"></label>
+              <fieldset class="f-wide"><legend>Energie-Fähigkeiten</legend><div class="permission-grid">
+                <label><input type="checkbox" name="energy_capabilities" value="metering"{{range .EnergyCapabilities}}{{if eq . "metering"}} checked{{end}}{{end}}> Leistungsmessung</label>
+                <label><input type="checkbox" name="energy_capabilities" value="smart-meter"{{range .EnergyCapabilities}}{{if eq . "smart-meter"}} checked{{end}}{{end}}> Smart Meter</label>
+                <label><input type="checkbox" name="energy_capabilities" value="home-assistant"{{range .EnergyCapabilities}}{{if eq . "home-assistant"}} checked{{end}}{{end}}> Home Assistant</label>
+                <label><input type="checkbox" name="energy_capabilities" value="pv"{{range .EnergyCapabilities}}{{if eq . "pv"}} checked{{end}}{{end}}> PV</label>
+                <label><input type="checkbox" name="energy_capabilities" value="battery"{{range .EnergyCapabilities}}{{if eq . "battery"}} checked{{end}}{{end}}> Speicher</label>
+                <label><input type="checkbox" name="energy_capabilities" value="wallbox"{{range .EnergyCapabilities}}{{if eq . "wallbox"}} checked{{end}}{{end}}> Wallbox</label>
+                <label><input type="checkbox" name="energy_capabilities" value="heat-pump"{{range .EnergyCapabilities}}{{if eq . "heat-pump"}} checked{{end}}{{end}}> Wärmepumpe</label>
+                <label><input type="checkbox" name="energy_capabilities" value="electrical"{{range .EnergyCapabilities}}{{if eq . "electrical"}} checked{{end}}{{end}}> Elektro-Fachnachweis</label>
+              </div></fieldset>
               <div class="f-actions"><button class="button primary" type="submit">Änderungen speichern</button></div>
             </div>
           </form>
@@ -2472,7 +2527,7 @@ const PageTemplates = `
             </div>
           {{else}}
             <form class="contact-reactivate" method="post" action="/app/kontakte">
-              <input type="hidden" name="id" value="{{.ID}}"><input type="hidden" name="kind" value="{{.Kind}}"><input type="hidden" name="name" value="{{.Name}}"><input type="hidden" name="company" value="{{.Company}}"><input type="hidden" name="email" value="{{.Email}}"><input type="hidden" name="phone" value="{{.Phone}}"><input type="hidden" name="notes" value="{{.Notes}}"><input type="hidden" name="active" value="true">
+              <input type="hidden" name="id" value="{{.ID}}"><input type="hidden" name="kind" value="{{.Kind}}"><input type="hidden" name="name" value="{{.Name}}"><input type="hidden" name="company" value="{{.Company}}"><input type="hidden" name="email" value="{{.Email}}"><input type="hidden" name="phone" value="{{.Phone}}"><input type="hidden" name="notes" value="{{.Notes}}"><input type="hidden" name="service_region" value="{{.ServiceRegion}}"><input type="hidden" name="qualification" value="{{.Qualification}}">{{range .EnergyCapabilities}}<input type="hidden" name="energy_capabilities" value="{{.}}">{{end}}<input type="hidden" name="active" value="true">
               <p>Dieser Kontakt ist derzeit nur für die Verwaltung sichtbar.</p><button class="button primary" type="submit">Wieder aktivieren</button>
             </form>
           {{end}}
@@ -2642,6 +2697,18 @@ const PageTemplates = `
                       <label>Telefon<input name="phone" maxlength="80" placeholder="+43 ..."></label>
                       <label>E-Mail<input type="email" name="email" placeholder="kontakt@example.com"></label>
                       <label class="f-wide">Notiz<input name="notes" maxlength="300" placeholder="z. B. Lift, Elektrik oder Erreichbarkeit"></label>
+                      <label>Region <span class="muted">(optional)</span><input name="service_region" maxlength="120" placeholder="z. B. Graz und Umgebung"></label>
+                      <label>Qualifikation <span class="muted">(optional)</span><input name="qualification" maxlength="240" placeholder="z. B. konzessionierter Elektrobetrieb"></label>
+                      <fieldset class="f-wide"><legend>Energie-Fähigkeiten <span class="muted">(optional, kein Portalzugang)</span></legend><div class="permission-grid">
+                        <label><input type="checkbox" name="energy_capabilities" value="metering"> Leistungsmessung</label>
+                        <label><input type="checkbox" name="energy_capabilities" value="smart-meter"> Smart Meter</label>
+                        <label><input type="checkbox" name="energy_capabilities" value="home-assistant"> Home Assistant</label>
+                        <label><input type="checkbox" name="energy_capabilities" value="pv"> PV</label>
+                        <label><input type="checkbox" name="energy_capabilities" value="battery"> Speicher</label>
+                        <label><input type="checkbox" name="energy_capabilities" value="wallbox"> Wallbox</label>
+                        <label><input type="checkbox" name="energy_capabilities" value="heat-pump"> Wärmepumpe</label>
+                        <label><input type="checkbox" name="energy_capabilities" value="electrical"> Elektro-Fachnachweis</label>
+                      </div></fieldset>
                       <div class="f-actions"><button class="button primary" type="submit">Kontakt anlegen</button></div>
                     </form>
                   </div>
@@ -6691,8 +6758,8 @@ const PageTemplates = `
         {{if eq .Step 1}}
           <header class="onboarding-card-head">
             <span class="eyebrow">Ganz ohne Technikstress</span>
-            <h1>Wir beginnen mit dem, was schon da ist.</h1>
-            <p>Für einen guten Start brauchen Sie weder PV-Anlage noch Batterie. Zuerst verstehen wir Ihr Zuhause, danach messen wir – und erst viel später entscheiden Sie über Automatisierung.</p>
+            <h1>Womit möchten Sie beginnen? Mit Ihrem Zuhause.</h1>
+            <p>Wir lernen zuerst kennen, was schon da ist. PV, Batterie oder Home Assistant sind keine Voraussetzung.</p>
           </header>
           <form class="onboarding-body" method="post" action="/app/zuhause/onboarding">
             <div class="onboarding-explain">
@@ -6723,7 +6790,7 @@ const PageTemplates = `
             <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button><button class="button primary" type="submit" name="action" value="assets">Weiter zu den Messwerten</button></div>
           </form>
         {{else if eq .Step 4}}
-          <header class="onboarding-card-head"><span class="eyebrow">Sicher verbinden</span><h1>Welche Werte dürfen wir lesen?</h1><p>{{.ConnectorMessage}}</p></header>
+          <header class="onboarding-card-head"><span class="eyebrow">Datenquelle</span><h1>Wie kommen Messwerte herein?</h1><p>{{.ConnectorMessage}}</p></header>
           <form class="onboarding-body onboarding-form" method="post" action="/app/zuhause/onboarding">
             {{if .HasCandidates}}<div class="onboarding-candidates">{{range .Candidates}}<label class="onboarding-candidate"><input type="checkbox" name="entities" value="{{.EntityID}}"{{if .Checked}} checked{{end}}><span><strong>{{.DisplayName}}</strong><small>{{.MetricLabel}} · {{.EntityID}}</small></span><span class="onboarding-candidate-value">{{.Value}} {{.Unit}}</span></label>{{end}}</div>
             {{else}}<div class="onboarding-trust"><span aria-hidden="true">i</span><div><strong>Ohne Verbindung fortfahren</strong><p>Sie können das Haus-Cockpit bereits nutzen und Home Assistant später ergänzen. Es werden keine Zugangsdaten im Portal angezeigt oder gespeichert.</p></div></div>{{end}}
@@ -6733,11 +6800,12 @@ const PageTemplates = `
               <label><span>Verständlicher Name</span><input type="text" name="manual_name" placeholder="Netzbezug gesamt"></label>
               <label><span>Einheit</span><input type="text" name="manual_unit" placeholder="W oder kW"></label>
             </div></details>
-            <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button><button class="button primary" type="submit" name="action" value="mappings">{{if .HasCandidates}}Auswahl übernehmen{{else}}Jetzt überspringen{{end}}</button></div>
+            <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button><button class="button primary" type="submit" name="action" value="mappings">{{if .HasCandidates}}Auswahl übernehmen{{else}}Ohne Verbindung starten{{end}}</button></div>
           </form>
         {{else}}
-          <header class="onboarding-card-head"><span class="eyebrow">Bereit</span><h1>Ihr Haus-Cockpit ist vorbereitet.</h1><p>Sie sehen ab jetzt einen verständlichen Fahrplan. Alles bleibt im sicheren Beobachtungsmodus, bis ein Eigentümer oder Hausadministrator den sichtbaren Schalter bewusst umlegt.</p></header>
+          <header class="onboarding-card-head"><span class="eyebrow">Bereit</span><h1>Ihr Zuhause ist startklar.</h1><p>Alles bleibt im sicheren Beobachtungsmodus. Sie gehen in Ihrem Tempo weiter.</p></header>
           <form class="onboarding-body" method="post" action="/app/zuhause/onboarding">
+            <div class="onboarding-trust"><span aria-hidden="true">→</span><div><strong>Als Nächstes: {{.FinishRecommendation.Title}}</strong><p>{{.FinishRecommendation.Reason}}</p></div></div>
             <div class="onboarding-trust"><span aria-hidden="true">✓</span><div><strong>Drei Jahre voller Produktumfang kostenlos</strong><p>Danach gilt nach heutigem Modell: 1 € pro Monat, jährlich als 12 € verrechnet. Noch gibt es keine Zahlung und keine versteckte Einschränkung.</p></div></div>
             <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Noch einmal prüfen</button><button class="button primary" type="submit" name="action" value="finish">Mein Zuhause öffnen</button></div>
           </form>
@@ -6804,16 +6872,57 @@ const PageTemplates = `
       <section class="energy-card" id="tarif">
         <header class="energy-card-head"><div><h2>Tarif-Entwurf 2027</h2><p>Versioniert und jederzeit austauschbar.</p></div><span class="pill">{{.Tariff.Status}}</span></header>
         {{if .TargetChanged}}<div class="message success">Ihr persönliches Peak-Ziel wurde gespeichert.</div>{{end}}
+        {{if eq .TariffAssessmentStatus "saved"}}<div class="message success">Diese Modellbewertung wurde mit ihrer damaligen Regelversion festgehalten.</div>{{else if eq .TariffAssessmentStatus "no_data"}}<div class="message">Für eine historische Bewertung fehlen noch abgeschlossene Viertelstunden.</div>{{end}}
         <div class="energy-tariff-grid"><div class="energy-tariff-copy"><strong>{{.Tariff.Rule}}</strong>{{if .Tariff.HasEstimate}}<p><strong>{{.Tariff.Estimate}}</strong></p>{{end}}<p>{{.Tariff.Disclaimer}}</p><p>Regelprofil {{.Tariff.ID}} · Stand {{.Tariff.Version}}</p><a href="{{.Tariff.SourceURL}}" target="_blank" rel="noopener noreferrer">Quelle: {{.Tariff.SourceTitle}} →</a></div>
         {{if .CanManageEnergy}}<form class="energy-target-form" method="post" action="/app/energie/target"><label><span class="onboarding-legend">Persönliches Peak-Ziel in kW</span><input type="text" name="target_peak_kw" inputmode="decimal" value="{{.TargetPeakValue}}" placeholder="z. B. 8,0" required></label><small class="muted">Ein Planungsziel, keine technische Anschlussgrenze.</small><button class="button" type="submit">Ziel speichern</button></form>{{end}}</div>
+        {{if and .CanManageEnergy .Tariff.HasEstimate}}<form method="post" action="/app/energie/tariff/assessment"><button class="button" type="submit">Diesen Stand festhalten</button></form>{{end}}
+        {{if .HasTariffAssessments}}<div class="energy-history"><h4>Festgehaltene Bewertungen</h4><div aria-label="Historische Tarifbewertungen">{{range .TariffAssessments}}<article class="energy-history-row"><div><strong>{{.Month}} · {{.Peak}}</strong><span>{{.Profile}} · {{.Quality}}</span></div><strong>{{.Annual}}</strong><small>{{.Created}}</small></article>{{end}}</div></div>{{end}}
       </section>
       <section class="energy-card">
         <header class="energy-card-head"><div><h2>Was Ihr Zuhause mitbringt</h2><p>Die Grundlage für Empfehlungen – keine Einkaufsliste.</p></div>{{if .CanManageEnergy}}<a class="button" href="/app/zuhause/onboarding?step=3">Bearbeiten</a>{{end}}</header>
         {{if .HasAssets}}<div class="energy-assets">{{range .Assets}}<span class="energy-asset"><span aria-hidden="true">✓</span>{{.Name}}</span>{{end}}</div><nav class="energy-related-links" aria-label="Verknüpfte Hausbereiche"><a href="/app/dokumente">Unterlagen</a><a href="/app/events">Wartungstermine</a><a href="/app/anliegen?new=1">Aufgabe melden</a><a href="/app/kontakte">Fachkontakte</a></nav>{{else}}<p class="muted">Noch keine größeren Verbraucher erfasst.</p>{{end}}
         <div class="energy-business-note"><span aria-hidden="true">◎</span><p><strong>Kostenmodell:</strong> voller Produktumfang drei Jahre kostenlos{{if .FreeUntil}} bis {{.FreeUntil}}{{end}}, danach nach heutigem Modell 12 € pro Jahr. Kein Zahlungszwang während des Piloten.</p></div>
       </section>
-      <section class="energy-card">
-        <header class="energy-card-head"><div><h2>Messwerte &amp; Referenz</h2><p>Home Assistant für den Alltag, Smart Meter als lokale Abrechnungsreferenz.</p></div></header>
+      <section class="energy-card" id="wartung">
+        <header class="energy-card-head"><div><h2>Wartung, ohne daran denken zu müssen</h2><p>Fälligkeit, Kontakt, Unterlage und Nachweis bleiben an der Anlage.</p></div><a href="/app/events">Termine</a></header>
+        {{if eq .MaintenanceStatus "saved"}}<div class="message success">Wartungsplan gespeichert.</div>{{else if eq .MaintenanceStatus "completed"}}<div class="message success">Erledigt. Der nächste Termin wurde automatisch vorgemerkt.</div>{{else if eq .MaintenanceStatus "invalid"}}<div class="message error">Bitte Anlage, Intervall und Fälligkeit prüfen.</div>{{end}}
+        {{if .HasMaintenance}}<div class="energy-maintenance-list">{{range .Maintenance}}{{$plan := .}}<details class="energy-maintenance-row">
+          <summary class="energy-maintenance-summary"><span><strong>{{.Title}}</strong><small>{{.AssetName}} · alle {{.IntervalMonths}} Monate{{if .LastCompleted}} · zuletzt {{.LastCompleted}}{{end}}</small></span><span class="energy-status-{{.Tone}}">{{.DueLabel}}</span></summary>
+          <div class="energy-maintenance-body">
+            {{if or .ContactName .DocumentTitle .IssueTitle}}<nav class="energy-related-links" aria-label="Wartungsnachweise">{{if .ContactName}}<a href="/app/kontakte">{{.ContactName}}</a>{{end}}{{if .DocumentTitle}}<a href="/app/dokumente/{{.DocumentID}}/preview">{{.DocumentTitle}}</a>{{end}}{{if .IssueTitle}}<a href="/app/anliegen/{{.IssueID}}">{{.IssueTitle}}</a>{{end}}</nav>{{end}}
+            {{if .EvidenceNote}}<p class="muted">{{.EvidenceNote}}</p>{{end}}
+            {{if $.CanManageEnergy}}<form class="energy-inline-form" method="post" action="/app/energie/maintenance">
+              <input type="hidden" name="id" value="{{.ID}}"><input type="hidden" name="asset_id" value="{{.AssetID}}"><input type="hidden" name="active" value="true">
+              <label>Titel<input name="title" value="{{.Title}}" maxlength="140" required></label><label>Intervall in Monaten<input type="number" name="interval_months" min="1" max="120" value="{{.IntervalMonths}}" required></label>
+              <label>Nächste Fälligkeit<input type="date" name="next_due" value="{{.NextDueValue}}" required></label>
+              <label>Fachkontakt<select name="contact_id"><option value="">Noch offen</option>{{range $.ContactOptions}}<option value="{{.Value}}"{{if eq .Value $plan.ContactID}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+              <label>Unterlage<select name="document_id"><option value="">Keine verknüpft</option>{{range $.DocumentOptions}}<option value="{{.Value}}"{{if eq .Value $plan.DocumentID}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+              <label>Aufgabe / Nachweis<select name="issue_id"><option value="">Keine verknüpft</option>{{range $.IssueOptions}}<option value="{{.Value}}"{{if eq .Value $plan.IssueID}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+              <label class="wide">Hinweis<input name="evidence_note" value="{{.EvidenceNote}}" maxlength="500" placeholder="Was ist beim nächsten Mal wichtig?"></label>
+              <div class="actions"><button class="button" type="submit">Plan speichern</button></div>
+            </form>
+            <form class="energy-inline-form" method="post" action="/app/energie/maintenance/complete">
+              <input type="hidden" name="id" value="{{.ID}}">
+              <label>Erledigt am<input type="date" name="completed_at" required></label><label>Nachweis-Aufgabe<select name="issue_id"><option value="">Keine</option>{{range $.IssueOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select></label>
+              <label class="wide">Was wurde gemacht?<input name="evidence_note" maxlength="500" placeholder="Kurz und nachvollziehbar"></label>
+              <div class="actions"><button class="button primary" type="submit">Als erledigt eintragen</button></div>
+            </form>{{end}}
+          </div>
+        </details>{{end}}</div>{{else}}<p class="muted">Noch kein wiederkehrender Wartungspunkt hinterlegt.</p>{{end}}
+        {{if and .CanManageEnergy .HasAssets}}<details class="energy-compact-create"><summary>Wartung an einer Anlage vormerken</summary><form class="energy-inline-form" method="post" action="/app/energie/maintenance">
+          <input type="hidden" name="active" value="true">
+          <label>Anlage<select name="asset_id" required>{{range .Assets}}<option value="{{.ID}}">{{.Name}}</option>{{end}}</select></label>
+          <label>Titel<input name="title" maxlength="140" placeholder="z. B. Wärmepumpe warten" required></label>
+          <label>Alle wie viele Monate?<input type="number" name="interval_months" min="1" max="120" value="12" required></label>
+          <label>Erstmals fällig<input type="date" name="next_due" required></label>
+          <label>Fachkontakt<select name="contact_id"><option value="">Später wählen</option>{{range .ContactOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select></label>
+          <label>Unterlage<select name="document_id"><option value="">Später verknüpfen</option>{{range .DocumentOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select></label>
+          <div class="actions"><button class="button primary" type="submit">Wartung vormerken</button></div>
+        </form></details>{{end}}
+      </section>
+      <details class="energy-card energy-collapsible">
+        <summary class="energy-card-head"><div><h2>Messwerte &amp; Referenz</h2><p>{{if .HasPeaks}}Referenz vorhanden – Details und Import öffnen.{{else}}Home Assistant oder Smart Meter später verbinden.{{end}}</p></div></summary>
+        <div class="energy-collapsible-body">
         {{if eq .ImportStatus "added"}}<div class="message success">Smart-Meter-Datei übernommen. Ein erneuter Import derselben Datei erzeugt keine Duplikate.</div>{{else if eq .ImportStatus "duplicate"}}<div class="message">Diese Datei war bereits vorhanden; es wurde nichts doppelt gespeichert.</div>{{else if eq .ImportStatus "invalid"}}<div class="message error">Datei nicht erkannt. Erwartet werden 15-Minuten-Zeilen mit <strong>timestamp</strong> und <strong>import_kwh</strong>.</div>{{end}}
         {{if .HasPeaks}}<div class="energy-reference-grid">{{range .Peaks}}<article class="energy-reference-item"><span>Monatsspitze · {{.Source}}</span><strong>{{.Value}}</strong><span>höchstes abgeschlossenes 15-Minuten-Fenster</span></article>{{end}}</div>{{else}}<p class="muted">Noch keine abgeschlossenen Viertelstunden vorhanden.</p>{{end}}
         {{if .HasComparison}}<div class="energy-quality {{.Comparison.Tone}}"><span aria-hidden="true">{{if eq .Comparison.Tone "good"}}✓{{else}}!{{end}}</span><div><strong>{{.Comparison.Title}}</strong><p>{{.Comparison.Details}}</p></div></div>{{end}}
@@ -6823,10 +6932,14 @@ const PageTemplates = `
           <small>Unterstütztes Profil: <strong>timestamp;import_kwh</strong>, exakt um Minute 00, 15, 30 oder 45. Originaldatei und Auswertung bleiben diesem Haus zugeordnet.</small>
           <button class="button" type="submit">Als Referenz importieren</button>
         </form>{{end}}
-      </section>
-      <section class="energy-card" id="betreuung">
-        <header class="energy-card-head"><div><h2>Technische Betreuung</h2><p>Eigene Konten, hausbezogene Rechte und jederzeit sofort entziehbar.</p></div><a href="/app/settings/users">Personen verwalten</a></header>
+        </div>
+      </details>
+      <details class="energy-card energy-collapsible" id="betreuung">
+        <summary class="energy-card-head"><div><h2>Technische Betreuung</h2><p>{{if .HasCaretakers}}Hausbezogene Hilfe ist eingerichtet.{{else}}Optional eine Vertrauensperson einladen.{{end}}</p></div></summary>
+        <div class="energy-collapsible-body">
+        <nav class="energy-related-links"><a href="/app/settings/users">Personen verwalten</a></nav>
         {{if .CaretakerChanged}}<div class="message success">Der technische Zugriff für dieses Haus wurde geändert und protokolliert.</div>{{end}}
+        {{if eq .CaretakerInviteStatus "invited"}}<div class="message success">Einladung verschickt. Die Person meldet sich mit ihrem eigenen Konto an.</div>{{else if eq .CaretakerInviteStatus "saved_no_mail"}}<div class="message">Zugang gespeichert; die Einladung konnte nicht zugestellt werden.</div>{{else if eq .CaretakerInviteStatus "exists"}}<div class="message">Diese Person gehört bereits zum Haus. Rechte können unten geändert werden.</div>{{else if eq .CaretakerInviteStatus "invalid"}}<div class="message error">Bitte eine gültige E-Mail-Adresse angeben.</div>{{else if eq .CaretakerInviteStatus "error"}}<div class="message error">Der hausbezogene Zugang konnte nicht angelegt werden. Bitte in der Personenverwaltung prüfen.</div>{{end}}
         {{if .HasCaretakers}}<div class="energy-caretaker-list">{{range .Caretakers}}<form class="energy-caretaker" method="post" action="/app/energie/caretaker">
           <input type="hidden" name="email" value="{{.Email}}">
           <div><strong>{{.Name}}</strong><small>{{.Email}}</small></div>
@@ -6835,13 +6948,44 @@ const PageTemplates = `
           <label><input type="checkbox" name="scope" value="control"{{if .CanControl}} checked{{end}}{{if not .Editable}} disabled{{end}}> Steuerung freigeben</label>
           {{if and $.CanGrantEnergyAccess .Editable}}<button class="button" type="submit">Zugriff speichern</button>{{else if not .Editable}}<a href="/app/settings/users">Zuerst als Portalzugang übernehmen</a>{{end}}
         </form>{{end}}</div>{{else}}<p class="muted">Noch keine weitere Person ist diesem Haus zugeordnet. Laden Sie zuerst ein eigenes Benutzerkonto ein.</p>{{end}}
+        {{if .CanInviteEnergyAccess}}<details class="energy-compact-create"><summary>Technische Vertrauensperson einladen</summary><form class="energy-inline-form" method="post" action="/app/energie/caretaker/invite">
+          <label>Vorname<input name="first_name" maxlength="80"></label><label>Nachname<input name="last_name" maxlength="80"></label>
+          <label class="wide">E-Mail<input type="email" name="email" required></label>
+          <label><input type="checkbox" name="scope" value="configure"> darf Messwerte und Geräte einrichten</label>
+          <label><input type="checkbox" name="scope" value="control"> darf den sichtbaren Haus-Schalter nach eigener Bestätigung umlegen</label>
+          <div class="actions"><button class="button primary" type="submit">Hausbezogen einladen</button></div>
+        </form></details>{{end}}
         <div class="energy-business-note"><span aria-hidden="true">i</span><p>„Ansehen“, „Einrichten“ und „Steuerung freigeben“ sind getrennte Rechte. Der dauerhaft sichtbare Haus-Schalter muss trotzdem bewusst umgelegt werden.</p></div>
-      </section>
-      <section class="energy-card">
-        <header class="energy-card-head"><div><h2>Fachhilfe, wenn sie wirklich nötig ist</h2><p>Erst bekannte Kontakte, keine offene Plattform und keine automatische Vergabe.</p></div><a href="/app/kontakte">Bekannte Kontakte</a></header>
+        </div>
+      </details>
+      <details class="energy-card energy-collapsible" id="fachhilfe">
+        <summary class="energy-card-head"><div><h2>Fachhilfe, wenn sie wirklich nötig ist</h2><p>{{if .HasMeasures}}Eine Hausaufgabe ist in Bearbeitung.{{else}}Bekannte Kontakte statt offener Marktplatz.{{end}}</p></div></summary>
+        <div class="energy-collapsible-body">
+        <nav class="energy-related-links"><a href="/app/kontakte">Bekannte Kontakte</a></nav>
         <p>Eine Empfehlung wird zuerst als Hausaufgabe angelegt. Dort bleiben Rückfragen, Angebot, Termin und Nachweis zusammen. Sie entscheiden ausdrücklich, welche Daten geteilt werden.</p>
+        {{if eq .MeasureStatus "saved"}}<div class="message success">Maßnahmenstand gespeichert und protokolliert.</div>{{else if eq .MeasureStatus "appointment"}}<div class="message error">Für „Termin vereinbart“ bitte einen Termin eintragen.</div>{{else if eq .MeasureStatus "ranges"}}<div class="message error">Für den Abschluss brauchen wir zwei getrennte, gültige Vorher-/Nachher-Zeiträume.</div>{{end}}
+        {{if .HasMeasures}}<div class="energy-measure-list">{{range .Measures}}{{$measure := .}}<details class="energy-measure-row">
+          <summary class="energy-measure-summary"><span><strong>{{.Title}}</strong><small>{{.StatusLabel}}{{if .ContactName}} · {{.ContactName}}{{end}}{{if .Appointment}} · {{.Appointment}}{{end}}</small></span><span>Öffnen</span></summary>
+          <div class="energy-measure-body">
+            {{if .HasComparison}}<div class="energy-comparison"><div><small>Vorher · {{.BeforeQuality}}</small><strong>{{.BeforePeak}}</strong></div><span>→ Messbefund →</span><div><small>Nachher · {{.AfterQuality}}</small><strong>{{.AfterPeak}}</strong></div></div>{{end}}
+            <nav class="energy-related-links"><a href="/app/anliegen/{{.IssueID}}">Anliegen, Rückfragen &amp; Anhänge öffnen</a></nav>
+            {{if $.CanManageEnergy}}<form class="energy-inline-form" method="post" action="/app/energie/measure/update">
+              <input type="hidden" name="id" value="{{.ID}}">
+              <label>Status<select name="status"><option value="requested"{{if eq .Status "requested"}} selected{{end}}>Anfrage vorbereitet</option><option value="assigned"{{if eq .Status "assigned"}} selected{{end}}>Kontakt ausgewählt</option><option value="scheduled"{{if eq .Status "scheduled"}} selected{{end}}>Termin vereinbart</option><option value="completed"{{if eq .Status "completed"}} selected{{end}}>Abgeschlossen</option><option value="cancelled"{{if eq .Status "cancelled"}} selected{{end}}>Nicht weiterverfolgt</option></select></label>
+              <label>Bekannter Fachkontakt<select name="contact_id"><option value="">Noch niemand</option>{{range $.ContactOptions}}<option value="{{.Value}}"{{if eq .Value $measure.ContactID}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+              <label>Termin<input type="datetime-local" name="appointment_at" value="{{.AppointmentValue}}"></label>
+              <label>Angebot / Rückfrage<input name="offer_note" value="{{.OfferNote}}" maxlength="1000" placeholder="Noch keine Zusage oder Zahlung"></label>
+              <label class="wide">Ausgeführte Arbeit<input name="work_note" value="{{.WorkNote}}" maxlength="1000"></label>
+              <label class="wide">Nachweis / Fachnachweis<input name="evidence_note" value="{{.EvidenceNote}}" maxlength="1000" placeholder="Dateien im verknüpften Anliegen anhängen"></label>
+              <label>Vorher von<input type="date" name="before_from" value="{{.BeforeFrom}}"></label><label>Vorher bis<input type="date" name="before_to" value="{{.BeforeTo}}"></label>
+              <label>Nachher von<input type="date" name="after_from" value="{{.AfterFrom}}"></label><label>Nachher bis<input type="date" name="after_to" value="{{.AfterTo}}"></label>
+              <div class="actions"><button class="button primary" type="submit">Maßnahmenstand speichern</button></div>
+            </form>{{end}}
+          </div>
+        </details>{{end}}</div>{{else}}<p class="muted">Noch keine Energieempfehlung wurde als Hausaufgabe übernommen.</p>{{end}}
         <div class="energy-marketplace-gate"><strong>Marktplatz geschlossen</strong><span>Kein Zahlungsfluss, keine Provision und keine öffentliche Anbieterreihung vor belastbaren Pilotdaten.</span></div>
-      </section>
+        </div>
+      </details>
     </div>
   </main>
 {{template "appClose" .}}
