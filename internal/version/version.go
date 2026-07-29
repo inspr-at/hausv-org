@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.55.0",
+			Date:     "29. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Energiefluss und Tagesverlauf sind jetzt lebendiger, klarer und größer.",
+			Intro:    "Eigene Zeichen erklären die aktuellen Flüsse; der Speicher zeigt Füllstand und Richtung, während das Diagramm zwischen rollenden 24 Stunden und dem vollständigen heutigen Tag wechselt.",
+			Items: []NoteItem{
+				{Label: "Flüsse erkennen", Text: "Hausverbrauch, PV, Netzbezug und Einspeisung erhalten eine konsistente, unabhängig von Home Assistant gelieferte SVG-Bildsprache."},
+				{Label: "Speicher verstehen", Text: "Die Batterie lässt freie Kapazität proportional sichtbar und zeigt Laden oder Entladen mit einer ruhigen, abschaltbaren Bewegung."},
+				{Label: "Heute überblicken", Text: "Die feste Achse von 00 bis 24 Uhr zeigt nur bereits gemessene Werte; zukünftige Stunden bleiben ehrlich leer."},
+				{Label: "Bildschirm ausnutzen", Text: "Der Energieverlauf öffnet sich wahlweise vergrößert oder im echten Vollbild und bleibt per Maus, Touch und Tastatur erkundbar."},
+			},
+		},
+		{
 			Version:  "0.54.1",
 			Date:     "29. Juli 2026",
 			Kind:     "Hausportal",

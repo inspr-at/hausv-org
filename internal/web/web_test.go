@@ -155,12 +155,12 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		t.Fatalf("read submit guard: %v", err)
 	}
 	text := string(body)
-	for _, want := range []string{`dataset.submitting`, `Bitte warten`, `dataset.confirm`, `setTimeout`, `data-notification-form`, `email-paused`, `data-notification-count`, `data-home-type-select`, `data-home-type-explanation`, `dataset.description`, `data-energy-chart-interactive`, `data-chart-tooltip`, `ArrowLeft`, `ArrowRight`} {
+	for _, want := range []string{`dataset.submitting`, `Bitte warten`, `dataset.confirm`, `setTimeout`, `data-notification-form`, `email-paused`, `data-notification-count`, `data-home-type-select`, `data-home-type-explanation`, `dataset.description`, `data-energy-chart-interactive`, `data-chart-tooltip`, `ArrowLeft`, `ArrowRight`, `requestFullscreen`, `fullscreenchange`, `is-fullscreen-fallback`} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("submit guard missing %q", want)
 		}
 	}
-	for _, want := range []string{`data-dialog="energy-chart-dialog"`, `Letzte 24 Stunden im Detail`, `data-chart-hit`, `data-chart-marker-index`} {
+	for _, want := range []string{`data-dialog="energy-chart-dialog"`, `{{.Chart.DialogTitle}}`, `data-chart-hit`, `data-chart-marker-index`, `zeitraum=heute`, `data-energy-fullscreen`, `data-energy-fullscreen-surface`} {
 		if !strings.Contains(PageTemplates, want) {
 			t.Fatalf("energy chart interaction missing %q", want)
 		}
@@ -214,6 +214,24 @@ func TestHomeTypeGuidanceAndSidebarBrandHierarchy(t *testing.T) {
 	} {
 		if !strings.Contains(PageTemplates, want) {
 			t.Fatalf("home-type/sidebar polish missing %q", want)
+		}
+	}
+}
+
+func TestEnergyLiveCardUsesIndependentIconsAndAccessibleMotion(t *testing.T) {
+	for _, want := range []string{
+		`{{define "energyMetricIcon"}}`,
+		`energy-metric-icon load`,
+		`energy-metric-icon pv`,
+		`energy-metric-icon grid-import`,
+		`energy-metric-icon grid-export`,
+		`energy-battery-visual {{.Live.Battery.Direction}}`,
+		`data-energy-direction="{{.Live.Battery.Direction}}"`,
+		`@media (prefers-reduced-motion: reduce)`,
+		`.energy-flow-item:last-child:nth-child(odd)`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("energy live-card polish missing %q", want)
 		}
 	}
 }

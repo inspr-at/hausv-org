@@ -617,10 +617,28 @@ async function assertEnergySafetyAndFlow(viewport) {
     fail(`Energie ${viewport.name}: weitere Messwerte sind nicht progressiv erreichbar`);
   }
   const batteryGauge = live.locator('.energy-battery-gauge');
+  const batteryVisual = live.locator('.energy-battery-visual');
   if (!(await batteryGauge.count()) ||
-      !((await batteryGauge.getAttribute('aria-label')) || '').includes('78 %') ||
+      !((await batteryVisual.getAttribute('aria-label')) || '').includes('78 %') ||
       !(await live.getByText('lädt · 600 W', { exact: true }).count())) {
     fail(`Energie ${viewport.name}: Batterie-Füllstand und aktuelle Speicherleistung fehlen`);
+  }
+  const batteryFill = batteryGauge.locator('i');
+  const gaugeBox = await batteryGauge.boundingBox();
+  const fillBox = await batteryFill.boundingBox();
+  if (!gaugeBox || !fillBox || fillBox.width / gaugeBox.width < 0.62 || fillBox.width / gaugeBox.width > 0.75 ||
+      (await batteryVisual.getAttribute('data-energy-direction')) !== 'charging' ||
+      (await batteryVisual.locator('.energy-battery-chevron').count()) !== 3 ||
+      (await live.locator('.energy-metric-icon').count()) < 4) {
+    fail(`Energie ${viewport.name}: proportionaler Batteriestand, Laderichtung oder Energie-Icons fehlen`);
+  }
+  const flowGrid = live.locator('.energy-flow-grid');
+  const lastFlow = flowGrid.locator('.energy-flow-item').last();
+  const flowGridBox = await flowGrid.boundingBox();
+  const lastFlowBox = await lastFlow.boundingBox();
+  if (!flowGridBox || !lastFlowBox ||
+      (viewport.name === 'Desktop' && lastFlowBox.width < flowGridBox.width - 2)) {
+    fail(`Energie ${viewport.name}: ungerader Energiefluss lässt eine unbeabsichtigte Leerzelle zurück`);
   }
   if (!(await live.getByRole('link', { name: 'Messwerte zuordnen' }).count())) {
     fail(`Energie ${viewport.name}: dauerhafter Einstieg ins Messwert-Setup fehlt`);
@@ -634,6 +652,37 @@ async function assertEnergySafetyAndFlow(viewport) {
       !(await chart.getByText('Die höchste Last lag um', { exact: false }).count())) {
     fail(`Energie ${viewport.name}: verständlicher 24-Stunden-Verlauf fehlt`);
   }
+  if ((await chart.getByRole('link', { name: 'Letzte 24 h' }).getAttribute('aria-current')) !== 'page' ||
+      !(await chart.getByRole('button', { name: 'Vollbild', exact: true }).count())) {
+    fail(`Energie ${viewport.name}: Zeitraum- oder Vollbildsteuerung fehlt`);
+  }
+  await chart.getByRole('link', { name: 'Heute' }).click();
+  await page.waitForLoadState('networkidle');
+  if (!(await chart.getByRole('heading', { name: 'Heute · 00 bis 24 Uhr' }).count()) ||
+      (await chart.getByRole('link', { name: 'Heute' }).getAttribute('aria-current')) !== 'page') {
+    fail(`Energie ${viewport.name}: feste Heute-Ansicht lässt sich nicht auswählen`);
+  }
+  const todayHeadingBox = await chart.getByRole('heading', { name: 'Heute · 00 bis 24 Uhr' }).boundingBox();
+  const stickyModeBox = await page.locator('.energy-mode-strip').boundingBox();
+  if (!todayHeadingBox || !stickyModeBox || todayHeadingBox.y < stickyModeBox.y + stickyModeBox.height - 1) {
+    fail(`Energie ${viewport.name}: Zeitraumwechsel verdeckt den Diagrammkopf unter der Sicherheitsleiste (${JSON.stringify({ todayHeadingBox, stickyModeBox })})`);
+  }
+  const todayAxis = await chart.locator('svg.energy-chart-svg:visible text.energy-chart-axis-label').allTextContents();
+  for (const label of ['00:00', '06:00', '12:00', '18:00', '24:00']) {
+    if (!todayAxis.includes(label)) fail(`Energie ${viewport.name}: Heute-Achse enthält ${label} nicht`);
+  }
+  const todayHitCount = await chart.locator('svg.energy-chart-svg:visible [data-chart-hit]').count();
+  if (todayHitCount < 2 || todayHitCount >= 97) {
+    fail(`Energie ${viewport.name}: zukünftige Heute-Werte sind nicht leer (${todayHitCount} von 97 belegt)`);
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, `energy-today-${viewport.name.toLowerCase()}.png`),
+    });
+  }
+  await chart.getByRole('link', { name: 'Letzte 24 h' }).click();
+  await page.waitForLoadState('networkidle');
   const visibleChart = chart.locator('svg.energy-chart-svg:visible');
   if (!(await visibleChart.locator('path.energy-chart-area.load').count()) ||
       !(await visibleChart.locator('line.energy-chart-threshold').count()) ||
@@ -672,6 +721,47 @@ async function assertEnergySafetyAndFlow(viewport) {
   await zoomButton.click();
   const chartDialog = page.locator('#energy-chart-dialog');
   await chartDialog.waitFor({ state: 'visible' });
+  const fullscreenButton = chartDialog.getByRole('button', { name: 'Vollbild', exact: true });
+  await fullscreenButton.click();
+  await page.waitForFunction(() => {
+    const dialog = document.querySelector('#energy-chart-dialog');
+    const surface = dialog?.querySelector('[data-energy-fullscreen-surface]');
+    return Boolean(surface && document.fullscreenElement === surface) || Boolean(dialog?.classList.contains('is-fullscreen-fallback'));
+  });
+  const fullscreenSurface = chartDialog.locator('[data-energy-fullscreen-surface]');
+  const fullscreenBox = await fullscreenSurface.boundingBox();
+  if (!fullscreenBox || fullscreenBox.width < viewport.size.width - 2 || fullscreenBox.height < viewport.size.height - 2) {
+    fail(`Energie ${viewport.name}: Vollbild nutzt nicht den ganzen Bildschirm`);
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, `energy-fullscreen-${viewport.name.toLowerCase()}.png`),
+    });
+  }
+  await chartDialog.getByRole('button', { name: 'Vollbild beenden', exact: true }).click();
+  await page.waitForFunction(() => {
+    const dialog = document.querySelector('#energy-chart-dialog');
+    return !document.fullscreenElement && !dialog?.classList.contains('is-fullscreen-fallback');
+  });
+  if (!(await chartDialog.isVisible()) ||
+      (await fullscreenButton.getAttribute('aria-pressed')) !== 'false') {
+    fail(`Energie ${viewport.name}: „Vollbild beenden“ beendet den Vollbildmodus nicht sauber`);
+  }
+  await fullscreenButton.click();
+  await page.waitForFunction(() => {
+    const dialog = document.querySelector('#energy-chart-dialog');
+    const surface = dialog?.querySelector('[data-energy-fullscreen-surface]');
+    return Boolean(surface && document.fullscreenElement === surface) || Boolean(dialog?.classList.contains('is-fullscreen-fallback'));
+  });
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => {
+    const dialog = document.querySelector('#energy-chart-dialog');
+    return !document.fullscreenElement && !dialog?.classList.contains('is-fullscreen-fallback');
+  });
+  if (!(await chartDialog.isVisible()) || !(await fullscreenButton.evaluate((node) => document.activeElement === node))) {
+    fail(`Energie ${viewport.name}: erstes Escape beendet nicht nur das Vollbild mit sauberem Fokus`);
+  }
   const zoomChart = chartDialog.locator('[data-energy-chart-interactive]');
   const zoomSVG = zoomChart.locator('svg:visible');
   const zoomChartBox = await zoomSVG.boundingBox();

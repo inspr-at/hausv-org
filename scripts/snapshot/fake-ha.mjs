@@ -69,13 +69,16 @@ createServer((request, response) => {
     const requested = (url.searchParams.get('filter_entity_id') || '').split(',').filter(Boolean);
     const startPart = url.pathname.split('/period/')[1];
     const start = startPart ? new Date(decodeURIComponent(startPart)) : new Date(Date.now() - 24 * 3600000);
+    const requestedEnd = url.searchParams.get('end_time');
+    const end = requestedEnd ? new Date(requestedEnd) : new Date();
+    const pointCount = Math.max(1, Math.floor((end.getTime() - start.getTime()) / (15 * 60000)) + 1);
     const groups = requested.map((entityID) => {
       const source = states.find((candidate) => candidate.entity_id === entityID);
       if (!source) return [];
-      return Array.from({ length: 97 }, (_, index) => {
+      return Array.from({ length: pointCount }, (_, index) => {
         const at = new Date(start.getTime() + index * 15 * 60000).toISOString();
         return {
-          entity_id: index === 0 || index === 96 ? entityID : undefined,
+          entity_id: index === 0 || index === pointCount - 1 ? entityID : undefined,
           state: String(historyValue(entityID, Number(source.state), index)),
           last_changed: at,
           last_updated: at,

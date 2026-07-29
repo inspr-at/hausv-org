@@ -2,6 +2,21 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.55.0] - 2026-07-29
+
+### Neu
+
+- **Der Energiefluss hat eine gemeinsame Bildsprache.** Hausverbrauch, PV, Netzbezug und Einspeisung erhalten ruhige, eigenständige Zeichen, die auch ohne Farbe unterscheidbar bleiben.
+- **Der Speicher zeigt Füllstand und Richtung.** Eine proportionale horizontale Batterie lässt freie Kapazität sichtbar; sanfte Pfeile zeigen Laden oder Entladen und bleiben bei reduzierter Bewegung statisch.
+- **Der Tagesverlauf kann den ganzen heutigen Tag zeigen.** „Heute“ spannt die Achse fest von 00 bis 24 Uhr auf und lässt noch nicht gemessene Zukunft bewusst leer.
+- **Das Diagramm nutzt auf Wunsch den ganzen Bildschirm.** Neben der vergrößerten Ansicht steht echtes Vollbild mit verständlichem Beenden, Escape-Verhalten und sicherer Rückkehr zum auslösenden Knopf bereit.
+
+### Verbessert
+
+- **Ungerade Messwertzahlen hinterlassen keine leere Kachel mehr.** Die letzte Energiezelle nutzt die verfügbare Breite und hält Desktop wie Mobil ausgewogen.
+- **Der Zeitraumwechsel bleibt sichtbar.** Der Diagrammkopf landet auch unter den festen Sicherheitsleisten vollständig im Blick.
+- **Lokale Tage bleiben zeitlich korrekt.** Tagesachsen berücksichtigen die Wiener Zeitzone einschließlich Zeitumstellungen.
+
 ## [0.54.1] - 2026-07-29
 
 ### Verbessert

@@ -655,7 +655,7 @@ func TestEnergyLiveViewCondensesManyReadingsIntoHouseFlow(t *testing.T) {
 	if !view.HasMain || view.Main.Label != "Hausverbrauch" || view.Main.Value != "7,19 kW" {
 		t.Fatalf("main = %+v", view.Main)
 	}
-	if !view.HasBattery || view.Battery.Value != "701 W" || view.Battery.Detail != "liefert Energie" {
+	if !view.HasBattery || view.Battery.Value != "701 W" || view.Battery.Detail != "liefert Energie" || view.Battery.Direction != "discharging" {
 		t.Fatalf("battery = %+v", view.Battery)
 	}
 	if !view.HasBatterySOC || view.BatterySOC.Value != "50 %" || view.BatteryFill != "50.0" {
@@ -668,6 +668,45 @@ func TestEnergyLiveViewCondensesManyReadingsIntoHouseFlow(t *testing.T) {
 		view.Additional[0].Metric != energy.MetricGridImportEnergy ||
 		view.Additional[0].Detail != "" {
 		t.Fatalf("additional = %+v", view.Additional)
+	}
+}
+
+func TestEnergyLiveViewClampsSOCAndExposesChargingDirection(t *testing.T) {
+	view := buildEnergyLiveView([]energyMetricView{
+		{Metric: energy.MetricBatteryPower, Kind: "battery-charge", Numeric: 500, Unit: "W"},
+		{Metric: energy.MetricBatterySOC, Kind: energy.MetricBatterySOC, Value: "108 %", Numeric: 108, Unit: "%"},
+	})
+	if !view.HasBatterySOC || view.BatterySOC.Value != "100 %" || view.BatteryFill != "100.0" {
+		t.Fatalf("clamped battery SOC = %+v fill=%q", view.BatterySOC, view.BatteryFill)
+	}
+	if !view.HasBattery || view.Battery.Direction != "charging" || view.Battery.Detail != "lädt" || view.Battery.Value != "500 W" {
+		t.Fatalf("charging battery = %+v", view.Battery)
+	}
+}
+
+func TestEnergyLiveViewNormalisesSignedGenericBatteryPower(t *testing.T) {
+	tests := []struct {
+		name      string
+		numeric   float64
+		unit      string
+		value     string
+		detail    string
+		direction string
+	}{
+		{name: "charging", numeric: -1.25, unit: "kW", value: "1,25 kW", detail: "lädt", direction: "charging"},
+		{name: "discharging", numeric: 720, unit: "W", value: "720 W", detail: "liefert Energie", direction: "discharging"},
+		{name: "idle", numeric: 0, unit: "W", value: "0 W", detail: "in Ruhe", direction: "idle"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			view := buildEnergyLiveView([]energyMetricView{
+				{Metric: energy.MetricBatteryPower, Kind: energy.MetricBatteryPower, Numeric: test.numeric, Unit: test.unit},
+				{Metric: energy.MetricBatterySOC, Kind: energy.MetricBatterySOC, Numeric: 90, Unit: "%"},
+			})
+			if !view.HasBattery || view.Battery.Value != test.value || view.Battery.Detail != test.detail || view.Battery.Direction != test.direction {
+				t.Fatalf("generic battery = %+v", view.Battery)
+			}
+		})
 	}
 }
 
@@ -701,12 +740,30 @@ func TestEnergyHistoryBucketsForwardFillAndConvertPower(t *testing.T) {
 		{EntityID: "sensor.house", State: "1000", LastChanged: start},
 		{EntityID: "sensor.house", State: "2400", LastChanged: start.Add(30 * time.Minute)},
 	}
-	values, present := energyHistoryBuckets(items, "W", start, start.Add(time.Hour), 5)
+	end := start.Add(time.Hour)
+	values, present := energyHistoryBuckets(items, "W", start, end, end, 5)
 	want := []float64{1, 1, 2.4, 2.4, 2.4}
 	for index := range want {
 		if !present[index] || math.Abs(values[index]-want[index]) > 0.0001 {
 			t.Fatalf("bucket %d = %v present=%v, want %v", index, values[index], present[index], want[index])
 		}
+	}
+}
+
+func TestEnergyHistoryBucketsLeaveFutureTodaySlotsEmpty(t *testing.T) {
+	start := time.Date(2026, 7, 29, 0, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+	now := start.Add(10*time.Hour + 7*time.Minute)
+	items := []homeassistant.HistoryState{
+		{EntityID: "sensor.house", State: "1800", LastChanged: start},
+		{EntityID: "sensor.house", State: "2400", LastChanged: start.Add(10 * time.Hour)},
+	}
+	values, present := energyHistoryBuckets(items, "W", start, end, now, 97)
+	if !present[40] || math.Abs(values[40]-2.4) > 0.0001 {
+		t.Fatalf("10:00 bucket = %v present=%v, want 2.4", values[40], present[40])
+	}
+	if present[41] || present[96] {
+		t.Fatalf("future buckets must remain empty: 10:15=%v 24:00=%v", present[41], present[96])
 	}
 }
 
@@ -724,7 +781,7 @@ func TestEnergyChartSummarisesPeakWithoutPromise(t *testing.T) {
 	load[48] = 6
 	pv[48] = 4
 	battery[48] = 1
-	summary, detail := energyChartSummary(start, load, present, pv, present, grid, present, battery, present, time.UTC)
+	summary, detail := energyChartSummary(start, start.Add(24*time.Hour), load, present, pv, present, grid, present, battery, present, time.UTC)
 	if !strings.Contains(summary, "12:00 Uhr") || !strings.Contains(summary, "6 kW") {
 		t.Fatalf("summary = %q", summary)
 	}
@@ -766,6 +823,71 @@ func TestEnergyChartUsesSymmetricFiveKWScaleWithHeadroom(t *testing.T) {
 	}
 }
 
+func TestEnergyChartDayTicksCoverFullLocalDayIncludingDST(t *testing.T) {
+	vienna, err := time.LoadLocation("Europe/Vienna")
+	if err != nil {
+		t.Fatal(err)
+	}
+	localStart := time.Date(2026, 3, 29, 0, 0, 0, 0, vienna)
+	localEnd := localStart.AddDate(0, 0, 1)
+	if got := int(localEnd.Sub(localStart)/(15*time.Minute)) + 1; got != 93 {
+		t.Fatalf("DST point count = %d, want 93", got)
+	}
+	ticks := energyChartDayTicks(localStart.UTC(), localEnd.UTC(), vienna)
+	labels := make([]string, 0, len(ticks))
+	for _, tick := range ticks {
+		labels = append(labels, tick.Label)
+	}
+	if got := strings.Join(labels, ","); got != "00:00,06:00,12:00,18:00,24:00" {
+		t.Fatalf("day ticks = %q", got)
+	}
+}
+
+func TestEnergyChartTodayRendersFullDayWithFirstRecordedSlot(t *testing.T) {
+	vienna, err := time.LoadLocation("Europe/Vienna")
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 7, 29, 0, 5, 0, 0, vienna)
+	start := time.Date(2026, 7, 29, 0, 0, 0, 0, vienna).UTC()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `[[{"entity_id":"sensor.house_power","state":"1200","last_changed":%q}]]`, start.Format(time.RFC3339))
+	}))
+	t.Cleanup(server.Close)
+
+	chart := (&app{}).energy24HourChart(
+		t.Context(),
+		tenantConfig{Slug: "early-home", HA: homeassistant.NewConfig(server.URL, "fixture", "", "", "")},
+		[]energy.EntityMapping{{
+			TenantSlug: "early-home",
+			EntityID:   "sensor.house_power",
+			Metric:     energy.MetricLoadPower,
+			Unit:       "W",
+			Confirmed:  true,
+		}},
+		energy.DefaultProfile("early-home", now),
+		now,
+		"heute",
+	)
+	if !chart.HasData || !chart.IsToday || chart.Title != "Heute · 00 bis 24 Uhr" {
+		t.Fatalf("early today chart missing: %+v", chart)
+	}
+	if len(chart.Series) != 1 || chart.PointSet != 1 || len(chart.Samples) != 1 {
+		t.Fatalf("early today series=%d points=%d samples=%d", len(chart.Series), chart.PointSet, len(chart.Samples))
+	}
+	if !strings.Contains(chart.Series[0].Path, "L") {
+		t.Fatalf("single recorded slot is not visibly rendered: %q", chart.Series[0].Path)
+	}
+	labels := make([]string, 0, len(chart.XTicks))
+	for _, tick := range chart.XTicks {
+		labels = append(labels, tick.Label)
+	}
+	if got := strings.Join(labels, ","); got != "00:00,06:00,12:00,18:00,24:00" {
+		t.Fatalf("early today ticks = %q", got)
+	}
+}
+
 func TestEnergyChartSamplesExplainSignedFlowsAndOmitMissingValues(t *testing.T) {
 	start := time.Date(2026, 7, 29, 8, 0, 0, 0, time.UTC)
 	end := start.Add(30 * time.Minute)
@@ -774,7 +896,7 @@ func TestEnergyChartSamplesExplainSignedFlowsAndOmitMissingValues(t *testing.T) 
 		{Key: "pv", Label: "PV-Erzeugung", Values: []float64{1, 2, 0}, Present: []bool{true, true, false}},
 		{Key: "grid", Label: "Netz", Values: []float64{-1, 2, 3}, Present: []bool{true, true, true}},
 		{Key: "battery", Label: "Speicher", Values: []float64{-0.5, 0.8, 0}, Present: []bool{true, true, true}},
-	}, -15, 15)
+	}, -15, 15, 2)
 	if len(samples) != 3 {
 		t.Fatalf("samples = %d, want 3", len(samples))
 	}
