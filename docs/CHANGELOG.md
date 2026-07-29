@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.53.0] - 2026-07-29
+
+### Neu
+
+- **Der Energieverlauf lässt sich groß öffnen.** Ein eigener Detailmodus schafft mehr Platz für Kurven, Skala und Planungsgrenze und schließt per Knopf oder Escape wieder an derselben Stelle.
+- **Jeder Viertelstundenwert ist direkt ablesbar.** Maus, Touch und Pfeiltasten zeigen Uhrzeit, Hausverbrauch, PV-Erzeugung sowie verständlich benannten Netz- und Speicherfluss am gewählten Punkt.
+
+### Verbessert
+
+- **Nur der relevante Messpunkt wird hervorgehoben.** Eine ruhige Führungslinie und farblich passende Punkte geben Orientierung, ohne alle 97 Viertelstunden gleichzeitig auszuzeichnen.
+- **Die Interaktion bleibt auch ohne Maus vollständig.** Tastatursteuerung, Fokus-Rückkehr, Live-Ansage und ausreichend große mobile Touch-Ziele sind im Rollenlauf abgesichert.
+
 ## [0.52.0] - 2026-07-29
 
 ### Verbessert

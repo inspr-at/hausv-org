@@ -863,6 +863,9 @@ const PageTemplates = `
     .energy-chart-head p, .energy-chart-head small { color: var(--muted); font-size: 12.5px; }
     .energy-chart-head p { margin-top: 4px; }
     .energy-chart-head small { text-align: right; }
+    .energy-chart-head-actions { display: flex; align-items: center; gap: 12px; }
+    .energy-page .button.energy-chart-zoom-button { min-height: 46px; flex: 0 0 auto; gap: 7px; background: #fff; }
+    .energy-chart-zoom-button svg { width: 17px; height: 17px; }
     .energy-chart-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(220px,.28fr); gap: 24px; align-items: stretch; }
     .energy-chart-plot { min-width: 0; display: grid; gap: 10px; }
     .energy-chart-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; }
@@ -888,6 +891,26 @@ const PageTemplates = `
     .energy-chart-area.load { fill: rgba(184,92,82,.13); }
     .energy-chart-threshold { stroke: #6f6b63; stroke-width: 1.4; stroke-dasharray: 7 5; vector-effect: non-scaling-stroke; }
     .energy-chart-threshold-label { fill: #625e56; font-family: var(--font-sans); font-size: 10.5px; font-weight: 750; }
+    .energy-chart-interactive { position: relative; min-width: 0; border-radius: var(--radius-xs); outline: none; }
+    .energy-chart-interactive:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 4px; }
+    .energy-chart-hit { fill: transparent; cursor: crosshair; pointer-events: all; }
+    .energy-chart-guide { stroke: rgba(27,32,26,.52); stroke-width: 1.2; stroke-dasharray: 3 3; pointer-events: none; vector-effect: non-scaling-stroke; }
+    .energy-chart-marker { fill: #fffefb; stroke: var(--nav); stroke-width: 2.5; pointer-events: none; vector-effect: non-scaling-stroke; }
+    .energy-chart-marker.load { stroke: #b85c52; }
+    .energy-chart-marker.pv { stroke: #477957; }
+    .energy-chart-marker.grid { stroke: #b18122; }
+    .energy-chart-marker.battery { stroke: #607987; }
+    .energy-chart-marker[hidden], .energy-chart-guide[hidden] { display: none; }
+    .energy-chart-tooltip { position: absolute; z-index: 5; top: 12px; width: 210px; border: 1px solid rgba(171,157,126,.55); border-radius: 9px; padding: 11px 12px; color: var(--ink); background: rgba(255,254,251,.97); box-shadow: 0 14px 34px rgba(32,37,31,.15); pointer-events: none; }
+    .energy-chart-tooltip > strong { display: block; margin-bottom: 7px; font-family: var(--font-serif); font-size: 18px; }
+    .energy-chart-tooltip [data-chart-tooltip-values] { display: grid; gap: 5px; }
+    .energy-chart-tooltip-row { display: grid; grid-template-columns: 8px minmax(0,1fr) auto; gap: 7px; align-items: center; color: var(--muted); font-size: 11.5px; }
+    .energy-chart-tooltip-row b { color: var(--ink); font-size: 12px; }
+    .energy-chart-tooltip-row i { width: 7px; height: 7px; border-radius: 50%; background: var(--nav); }
+    .energy-chart-tooltip-row i.load { background: #b85c52; }
+    .energy-chart-tooltip-row i.pv { background: #477957; }
+    .energy-chart-tooltip-row i.grid { background: #b18122; }
+    .energy-chart-tooltip-row i.battery { background: #607987; }
     .energy-chart-note { display: grid; align-content: center; gap: 8px; border-left: 1px solid var(--line); padding-left: 24px; }
     .energy-chart-note span { color: var(--gold-ink); font-size: 11px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
     .energy-chart-note strong { font-family: var(--font-serif); font-size: 21px; line-height: 1.25; }
@@ -895,6 +918,15 @@ const PageTemplates = `
     .energy-chart-hint { color: var(--muted); font-size: 11.5px; }
     .energy-chart-empty { display: grid; gap: 5px; border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 20px; }
     .energy-chart-empty p { color: var(--muted); font-size: 13px; }
+    .energy-chart-dialog { width: min(1320px,calc(100vw - 48px)); max-width: none; max-height: calc(100dvh - 48px); border: 0; border-radius: var(--radius-md); padding: 0; overflow: hidden; color: var(--ink); background: transparent; box-shadow: 0 36px 110px rgba(18,24,19,.38); }
+    .energy-chart-dialog::backdrop { background: rgba(19,27,21,.56); backdrop-filter: blur(2px); }
+    .energy-chart-dialog-shell { max-height: calc(100dvh - 48px); display: grid; gap: 18px; overflow: auto; overscroll-behavior: contain; padding: clamp(24px,3vw,40px); background: #fbf7ee; }
+    .energy-chart-dialog-shell > header { display: flex; justify-content: space-between; gap: 24px; align-items: start; }
+    .energy-chart-dialog-shell > header h2 { margin-top: 5px; font-size: clamp(28px,3vw,42px); }
+    .energy-chart-dialog-shell > header p { margin-top: 5px; color: var(--muted); font-size: 14px; }
+    .energy-chart-dialog-plot { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px 18px 4px; background: #fffefb; }
+    .energy-chart-dialog .energy-chart-svg { min-height: min(54vh,520px); }
+    .energy-chart-dialog .energy-chart-tooltip { top: 26px; }
     .energy-card { padding: 24px; }
     .energy-card-head { display: flex; justify-content: space-between; gap: 18px; align-items: start; margin-bottom: 18px; }
     .energy-card-head p { margin-top: 6px; color: var(--muted); font-size: 14px; }
@@ -2120,10 +2152,19 @@ const PageTemplates = `
 	      .energy-live-tools { max-width: 126px; }
 	      .energy-chart-head { align-items: start; flex-direction: column; gap: 4px; }
 	      .energy-chart-head small { text-align: left; }
+	      .energy-chart-head-actions { width: 100%; justify-content: space-between; }
 	      .energy-chart-layout { grid-template-columns: 1fr; gap: 14px; }
 	      .energy-chart-note { border-top: 1px solid var(--line); border-left: 0; padding-top: 16px; padding-left: 0; }
 	      .energy-chart-svg.desktop { display: none; }
 	      .energy-chart-svg.mobile { min-height: 0; display: block; }
+	      .energy-chart-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); border-radius: var(--radius-sm); }
+	      .energy-chart-dialog-shell { max-height: calc(100dvh - 20px); gap: 14px; padding: 18px 14px; }
+	      .energy-chart-dialog-shell > header { align-items: start; }
+	      .energy-chart-dialog-shell > header h2 { font-size: 27px; }
+	      .energy-chart-dialog-shell > header p { font-size: 12px; }
+	      .energy-chart-dialog-plot { padding: 10px 6px 0; }
+	      .energy-chart-dialog .energy-chart-svg.mobile { min-height: 0; }
+	      .energy-chart-tooltip { top: 8px; width: 190px; }
 	      .energy-roadmap { grid-template-columns: 1fr; }
 	      .energy-roadmap-step { min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
 	      .energy-roadmap-step:last-child { border-bottom: 0; }
@@ -6972,6 +7013,39 @@ const PageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
+{{define "energyChartLegend"}}
+<div class="energy-chart-legend" aria-label="Diagrammlegende">{{range .Chart.Series}}<span class="{{.Key}}"><i aria-hidden="true"></i>{{.Label}} <strong>{{.Latest}}</strong></span>{{end}}{{if .Chart.HasThreshold}}<span class="threshold"><i aria-hidden="true"></i>{{.Chart.ThresholdLabel}} {{.Chart.ThresholdValue}} <small>(konfigurierbar)</small></span>{{end}}</div>
+{{end}}
+
+{{define "energyChartInteractive"}}
+<div class="energy-chart-interactive" data-energy-chart-interactive tabindex="0" aria-label="Viertelstundenwerte. Mit der Maus erkunden oder mit den Pfeiltasten durchgehen.">
+  <svg class="energy-chart-svg desktop" viewBox="0 0 800 236" role="img" aria-label="Leistungsverlauf der letzten 24 Stunden">
+    <title>Leistungsverlauf der letzten 24 Stunden</title>
+    <desc>Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc>
+    {{range .Chart.YTicks}}<line class="energy-chart-grid{{if eq .Label "0 kW"}} zero{{end}}" x1="52" x2="788" y1="{{.Position}}" y2="{{.Position}}"></line><text class="energy-chart-axis-label" x="44" y="{{.Position}}" text-anchor="end" dominant-baseline="middle">{{.Label}}</text>{{end}}
+    {{range .Chart.XTicks}}<line class="energy-chart-grid" x1="{{.Position}}" x2="{{.Position}}" y1="16" y2="204"></line><text class="energy-chart-axis-label" x="{{.Position}}" y="226" text-anchor="middle">{{.Label}}</text>{{end}}
+    {{range .Chart.Series}}{{if .AreaPath}}<path class="energy-chart-area {{.Key}}" d="{{.AreaPath}}"></path>{{end}}{{end}}
+    {{if .Chart.HasThreshold}}<line class="energy-chart-threshold" x1="52" x2="788" y1="{{.Chart.ThresholdPosition}}" y2="{{.Chart.ThresholdPosition}}"></line><text class="energy-chart-threshold-label" x="782" y="{{.Chart.ThresholdPosition}}" dy="-6" text-anchor="end">{{.Chart.ThresholdValue}}</text>{{end}}
+    {{range .Chart.Series}}<path class="energy-chart-line {{.Key}}" d="{{.Path}}"></path>{{end}}
+    <line class="energy-chart-guide" data-chart-guide x1="52" x2="52" y1="16" y2="204" hidden></line>
+    {{range .Chart.Samples}}{{$sample := .}}{{range .Values}}<circle class="energy-chart-marker {{.Key}}" data-chart-marker-index="{{$sample.Index}}" cx="{{$sample.Position}}" cy="{{.Position}}" r="4" hidden></circle>{{end}}<rect class="energy-chart-hit" data-chart-hit data-index="{{.Index}}" data-x="{{.Position}}" x="{{.HitPosition}}" y="16" width="{{.HitWidth}}" height="188"></rect>{{end}}
+  </svg>
+  <svg class="energy-chart-svg mobile" viewBox="0 0 400 236" role="img" aria-label="Leistungsverlauf der letzten 24 Stunden">
+    <title>Leistungsverlauf der letzten 24 Stunden</title>
+    <desc>Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc>
+    {{range .Chart.YTicks}}<line class="energy-chart-grid{{if eq .Label "0 kW"}} zero{{end}}" x1="44" x2="388" y1="{{.MobilePosition}}" y2="{{.MobilePosition}}"></line><text class="energy-chart-axis-label" x="37" y="{{.MobilePosition}}" text-anchor="end" dominant-baseline="middle">{{.Label}}</text>{{end}}
+    {{range .Chart.XTicks}}<line class="energy-chart-grid" x1="{{.MobilePosition}}" x2="{{.MobilePosition}}" y1="16" y2="204"></line><text class="energy-chart-axis-label" x="{{.MobilePosition}}" y="226" text-anchor="middle">{{.Label}}</text>{{end}}
+    {{range .Chart.Series}}{{if .MobileAreaPath}}<path class="energy-chart-area {{.Key}}" d="{{.MobileAreaPath}}"></path>{{end}}{{end}}
+    {{if .Chart.HasThreshold}}<line class="energy-chart-threshold" x1="44" x2="388" y1="{{.Chart.ThresholdMobilePosition}}" y2="{{.Chart.ThresholdMobilePosition}}"></line><text class="energy-chart-threshold-label" x="382" y="{{.Chart.ThresholdMobilePosition}}" dy="-5" text-anchor="end">{{.Chart.ThresholdValue}}</text>{{end}}
+    {{range .Chart.Series}}<path class="energy-chart-line {{.Key}}" d="{{.MobilePath}}"></path>{{end}}
+    <line class="energy-chart-guide" data-chart-guide x1="44" x2="44" y1="16" y2="204" hidden></line>
+    {{range .Chart.Samples}}{{$sample := .}}{{range .Values}}<circle class="energy-chart-marker {{.Key}}" data-chart-marker-index="{{$sample.Index}}" cx="{{$sample.MobilePosition}}" cy="{{.MobilePosition}}" r="4" hidden></circle>{{end}}<rect class="energy-chart-hit" data-chart-hit data-index="{{.Index}}" data-x="{{.MobilePosition}}" x="{{.MobileHit}}" y="16" width="{{.MobileHitWidth}}" height="188"></rect>{{end}}
+  </svg>
+  <div class="energy-chart-tooltip" data-chart-tooltip role="status" aria-live="polite" hidden><strong data-chart-tooltip-time></strong><div data-chart-tooltip-values></div></div>
+  <div class="energy-chart-sample-bank" data-chart-sample-bank hidden>{{range .Chart.Samples}}<div data-chart-sample="{{.Index}}" data-time="{{.Time}}">{{range .Values}}<span data-key="{{.Key}}" data-label="{{.Label}}" data-value="{{.Value}}"></span>{{end}}</div>{{end}}</div>
+</div>
+{{end}}
+
 {{define "energyCockpit"}}
 {{template "appOpen" .}}
   <main class="app-main">
@@ -7022,33 +7096,22 @@ const PageTemplates = `
         </aside>
       </section>
       <section class="energy-card energy-chart" aria-labelledby="energy-chart-title">
-        <header class="energy-chart-head"><div><h2 id="energy-chart-title">Letzte 24 Stunden</h2><p>Wann war viel los – und woher kam die Energie?</p></div><small>{{.Chart.Status}}</small></header>
+        <header class="energy-chart-head"><div><h2 id="energy-chart-title">Letzte 24 Stunden</h2><p>Wann war viel los – und woher kam die Energie?</p></div><div class="energy-chart-head-actions"><small>{{.Chart.Status}}</small>{{if .Chart.HasData}}<button class="button small energy-chart-zoom-button" type="button" data-dialog="energy-chart-dialog" aria-haspopup="dialog" aria-controls="energy-chart-dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Vergrößern</button>{{end}}</div></header>
         {{if .Chart.HasData}}<div class="energy-chart-layout">
           <div class="energy-chart-plot">
-            <div class="energy-chart-legend" aria-label="Diagrammlegende">{{range .Chart.Series}}<span class="{{.Key}}"><i aria-hidden="true"></i>{{.Label}} <strong>{{.Latest}}</strong></span>{{end}}{{if .Chart.HasThreshold}}<span class="threshold"><i aria-hidden="true"></i>{{.Chart.ThresholdLabel}} {{.Chart.ThresholdValue}} <small>(konfigurierbar)</small></span>{{end}}</div>
-            <svg class="energy-chart-svg desktop" viewBox="0 0 800 236" role="img" aria-labelledby="energy-chart-svg-title energy-chart-svg-desc">
-              <title id="energy-chart-svg-title">Leistungsverlauf der letzten 24 Stunden</title>
-              <desc id="energy-chart-svg-desc">Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc>
-              {{range .Chart.YTicks}}<line class="energy-chart-grid{{if eq .Label "0 kW"}} zero{{end}}" x1="52" x2="788" y1="{{.Position}}" y2="{{.Position}}"></line><text class="energy-chart-axis-label" x="44" y="{{.Position}}" text-anchor="end" dominant-baseline="middle">{{.Label}}</text>{{end}}
-              {{range .Chart.XTicks}}<line class="energy-chart-grid" x1="{{.Position}}" x2="{{.Position}}" y1="16" y2="204"></line><text class="energy-chart-axis-label" x="{{.Position}}" y="226" text-anchor="middle">{{.Label}}</text>{{end}}
-              {{range .Chart.Series}}{{if .AreaPath}}<path class="energy-chart-area {{.Key}}" d="{{.AreaPath}}"></path>{{end}}{{end}}
-              {{if .Chart.HasThreshold}}<line class="energy-chart-threshold" x1="52" x2="788" y1="{{.Chart.ThresholdPosition}}" y2="{{.Chart.ThresholdPosition}}"></line><text class="energy-chart-threshold-label" x="782" y="{{.Chart.ThresholdPosition}}" dy="-6" text-anchor="end">{{.Chart.ThresholdValue}}</text>{{end}}
-              {{range .Chart.Series}}<path class="energy-chart-line {{.Key}}" d="{{.Path}}"></path>{{end}}
-            </svg>
-            <svg class="energy-chart-svg mobile" viewBox="0 0 400 236" role="img" aria-labelledby="energy-chart-mobile-title energy-chart-mobile-desc">
-              <title id="energy-chart-mobile-title">Leistungsverlauf der letzten 24 Stunden</title>
-              <desc id="energy-chart-mobile-desc">Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc>
-              {{range .Chart.YTicks}}<line class="energy-chart-grid{{if eq .Label "0 kW"}} zero{{end}}" x1="44" x2="388" y1="{{.MobilePosition}}" y2="{{.MobilePosition}}"></line><text class="energy-chart-axis-label" x="37" y="{{.MobilePosition}}" text-anchor="end" dominant-baseline="middle">{{.Label}}</text>{{end}}
-              {{range .Chart.XTicks}}<line class="energy-chart-grid" x1="{{.MobilePosition}}" x2="{{.MobilePosition}}" y1="16" y2="204"></line><text class="energy-chart-axis-label" x="{{.MobilePosition}}" y="226" text-anchor="middle">{{.Label}}</text>{{end}}
-              {{range .Chart.Series}}{{if .MobileAreaPath}}<path class="energy-chart-area {{.Key}}" d="{{.MobileAreaPath}}"></path>{{end}}{{end}}
-              {{if .Chart.HasThreshold}}<line class="energy-chart-threshold" x1="44" x2="388" y1="{{.Chart.ThresholdMobilePosition}}" y2="{{.Chart.ThresholdMobilePosition}}"></line><text class="energy-chart-threshold-label" x="382" y="{{.Chart.ThresholdMobilePosition}}" dy="-5" text-anchor="end">{{.Chart.ThresholdValue}}</text>{{end}}
-              {{range .Chart.Series}}<path class="energy-chart-line {{.Key}}" d="{{.MobilePath}}"></path>{{end}}
-            </svg>
+            {{template "energyChartLegend" .}}
+            {{template "energyChartInteractive" .}}
             <small class="energy-chart-hint">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. Die Planungsgrenze ist eine änderbare Modellannahme, kein geltender Tarif. {{.Chart.Range}}</small>
           </div>
           <aside class="energy-chart-note"><span>Auf einen Blick</span><strong>{{.Chart.Summary}}</strong><p>{{.Chart.Detail}}</p></aside>
         </div>{{else}}<div class="energy-chart-empty"><strong>Noch kein vollständiger Tagesverlauf</strong><p>{{.Chart.Status}}</p></div>{{end}}
       </section>
+      {{if .Chart.HasData}}<dialog id="energy-chart-dialog" class="energy-chart-dialog" aria-labelledby="energy-chart-dialog-title"><div class="energy-chart-dialog-shell">
+        <header><div><span class="eyebrow">Energieverlauf</span><h2 id="energy-chart-dialog-title">Letzte 24 Stunden im Detail</h2><p>Fahren Sie über die Kurve oder nutzen Sie die Pfeiltasten.</p></div><button class="button" type="button" data-close-dialog>Schließen</button></header>
+        {{template "energyChartLegend" .}}
+        <div class="energy-chart-dialog-plot">{{template "energyChartInteractive" .}}</div>
+        <small class="energy-chart-hint">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. {{.Chart.Range}}</small>
+      </div></dialog>{{end}}
       <section class="energy-card" id="fahrplan">
         <header class="energy-card-head"><div><h2>Ihr Energie-Fahrplan</h2><p>Ein klarer Schritt nach dem anderen.</p></div></header>
         <div class="energy-roadmap">{{range .Roadmap}}<article class="energy-roadmap-step {{if .Current}}current{{end}}"><span class="energy-roadmap-number">{{.Number}}</span><span class="energy-roadmap-state">{{.State}}</span><strong>{{.Title}}</strong><p>{{.Detail}}</p>{{if .Action}}<a href="{{.URL}}">{{.Action}} →</a>{{end}}</article>{{end}}</div>

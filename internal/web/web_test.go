@@ -153,9 +153,14 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		t.Fatalf("read submit guard: %v", err)
 	}
 	text := string(body)
-	for _, want := range []string{`dataset.submitting`, `Bitte warten`, `dataset.confirm`, `setTimeout`, `data-notification-form`, `email-paused`, `data-notification-count`, `data-home-type-select`, `data-home-type-explanation`, `dataset.description`} {
+	for _, want := range []string{`dataset.submitting`, `Bitte warten`, `dataset.confirm`, `setTimeout`, `data-notification-form`, `email-paused`, `data-notification-count`, `data-home-type-select`, `data-home-type-explanation`, `dataset.description`, `data-energy-chart-interactive`, `data-chart-tooltip`, `ArrowLeft`, `ArrowRight`} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("submit guard missing %q", want)
+		}
+	}
+	for _, want := range []string{`data-dialog="energy-chart-dialog"`, `Letzte 24 Stunden im Detail`, `data-chart-hit`, `data-chart-marker-index`} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("energy chart interaction missing %q", want)
 		}
 	}
 	landingJS, err := os.ReadFile("assets/landing.js")

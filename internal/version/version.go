@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.53.0",
+			Date:     "29. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Der Energieverlauf lässt sich jetzt groß öffnen und Punkt für Punkt lesen.",
+			Intro:    "Ein ruhiger Detailmodus zeigt die vier Energieflüsse mit Uhrzeit und Viertelstundenwert – per Maus, Touch oder Tastatur.",
+			Items: []NoteItem{
+				{Label: "Groß ansehen", Text: "Der neue Vergrößern-Knopf öffnet Kurven, Skala und Planungsgrenze in einem eigenen übersichtlichen Detailmodus."},
+				{Label: "Werte ablesen", Text: "Ein Fadenkreuz verbindet den gewählten Zeitpunkt mit Hausverbrauch, PV-Erzeugung, Netzbezug oder Einspeisung sowie Laden oder Entladen des Speichers."},
+				{Label: "Ohne Maus bedienen", Text: "Pfeiltasten, Escape, Fokus-Rückkehr und ausreichend große Touch-Ziele machen die Interaktion auf Desktop und Mobil vollständig zugänglich."},
+			},
+		},
+		{
 			Version:  "0.52.0",
 			Date:     "29. Juli 2026",
 			Kind:     "Mein Zuhause",

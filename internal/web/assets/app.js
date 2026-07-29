@@ -51,6 +51,112 @@
     }
   });
 
+  Array.prototype.forEach.call(document.querySelectorAll("[data-energy-chart-interactive]"), function (chart) {
+    var tooltip = chart.querySelector("[data-chart-tooltip]");
+    var tooltipTime = chart.querySelector("[data-chart-tooltip-time]");
+    var tooltipValues = chart.querySelector("[data-chart-tooltip-values]");
+    var samples = Array.prototype.slice.call(chart.querySelectorAll("[data-chart-sample]"));
+    var indices = samples.map(function (sample) { return Number(sample.dataset.chartSample); });
+    var currentIndex = indices.length ? indices[indices.length - 1] : -1;
+
+    function visibleSVG() {
+      return Array.prototype.find.call(chart.querySelectorAll("svg"), function (svg) {
+        return svg.getBoundingClientRect().width > 0;
+      }) || null;
+    }
+
+    function sampleFor(index) {
+      return chart.querySelector('[data-chart-sample="' + index + '"]');
+    }
+
+    function hitFor(svg, index) {
+      return svg ? svg.querySelector('[data-chart-hit][data-index="' + index + '"]') : null;
+    }
+
+    function hideSample() {
+      if (tooltip) {
+        tooltip.hidden = true;
+        tooltip.removeAttribute("data-index");
+      }
+      Array.prototype.forEach.call(chart.querySelectorAll("[data-chart-guide], [data-chart-marker-index]"), function (node) {
+        node.setAttribute("hidden", "");
+      });
+    }
+
+    function showSample(index, hit) {
+      var sample = sampleFor(index);
+      var svg = hit ? hit.closest("svg") : visibleSVG();
+      hit = hit || hitFor(svg, index);
+      if (!sample || !svg || !hit || !tooltip || !tooltipTime || !tooltipValues) return;
+      currentIndex = index;
+
+      Array.prototype.forEach.call(chart.querySelectorAll("[data-chart-guide], [data-chart-marker-index]"), function (node) {
+        node.setAttribute("hidden", "");
+      });
+      var guide = svg.querySelector("[data-chart-guide]");
+      if (guide) {
+        guide.setAttribute("x1", hit.dataset.x);
+        guide.setAttribute("x2", hit.dataset.x);
+        guide.removeAttribute("hidden");
+      }
+      Array.prototype.forEach.call(svg.querySelectorAll('[data-chart-marker-index="' + index + '"]'), function (marker) {
+        marker.removeAttribute("hidden");
+      });
+
+      tooltipTime.textContent = sample.dataset.time + " Uhr";
+      tooltipValues.textContent = "";
+      Array.prototype.forEach.call(sample.querySelectorAll("[data-label]"), function (value) {
+        var row = document.createElement("span");
+        var swatch = document.createElement("i");
+        var label = document.createElement("span");
+        var reading = document.createElement("b");
+        row.className = "energy-chart-tooltip-row";
+        swatch.className = value.dataset.key || "";
+        label.textContent = value.dataset.label || "";
+        reading.textContent = value.dataset.value || "";
+        row.appendChild(swatch);
+        row.appendChild(label);
+        row.appendChild(reading);
+        tooltipValues.appendChild(row);
+      });
+      tooltip.hidden = false;
+      tooltip.dataset.index = String(index);
+
+      var chartBox = chart.getBoundingClientRect();
+      var hitBox = hit.getBoundingClientRect();
+      var centered = hitBox.left + hitBox.width / 2 - chartBox.left - tooltip.offsetWidth / 2;
+      var maximum = Math.max(8, chartBox.width - tooltip.offsetWidth - 8);
+      tooltip.style.left = Math.max(8, Math.min(maximum, centered)) + "px";
+    }
+
+    Array.prototype.forEach.call(chart.querySelectorAll("[data-chart-hit]"), function (hit) {
+      hit.addEventListener("pointermove", function () {
+        showSample(Number(hit.dataset.index), hit);
+      });
+      hit.addEventListener("pointerdown", function () {
+        showSample(Number(hit.dataset.index), hit);
+      });
+    });
+    chart.addEventListener("pointerleave", function (event) {
+      if (!event.pointerType || event.pointerType === "mouse") hideSample();
+    });
+    chart.addEventListener("focus", function () {
+      if (currentIndex >= 0) showSample(currentIndex);
+    });
+    chart.addEventListener("blur", hideSample);
+    chart.addEventListener("keydown", function (event) {
+      if (!indices.length) return;
+      var position = Math.max(0, indices.indexOf(currentIndex));
+      if (event.key === "ArrowLeft") position = Math.max(0, position - 1);
+      else if (event.key === "ArrowRight") position = Math.min(indices.length - 1, position + 1);
+      else if (event.key === "Home") position = 0;
+      else if (event.key === "End") position = indices.length - 1;
+      else return;
+      event.preventDefault();
+      showSample(indices[position]);
+    });
+  });
+
   Array.prototype.forEach.call(document.querySelectorAll("[data-notification-form]"), function (form) {
     var master = form.querySelector("[data-notification-master]");
     var topics = Array.prototype.slice.call(form.querySelectorAll("[data-notification-topic]"));

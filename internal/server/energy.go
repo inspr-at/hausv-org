@@ -80,11 +80,32 @@ type energyChartTickView struct {
 	Label          string
 }
 
+type energyChartSampleValueView struct {
+	Key            string
+	Label          string
+	Value          string
+	Position       string
+	MobilePosition string
+}
+
+type energyChartSampleView struct {
+	Index          int
+	Time           string
+	Position       string
+	MobilePosition string
+	HitPosition    string
+	HitWidth       string
+	MobileHit      string
+	MobileHitWidth string
+	Values         []energyChartSampleValueView
+}
+
 type energyChartView struct {
 	HasData                 bool
 	Series                  []energyChartSeriesView
 	XTicks                  []energyChartTickView
 	YTicks                  []energyChartTickView
+	Samples                 []energyChartSampleView
 	Summary                 string
 	Detail                  string
 	Status                  string
@@ -2354,6 +2375,7 @@ func (a *app) energy24HourChart(ctx context.Context, tenant tenantConfig, mappin
 	location := time.Local
 	view.XTicks = energyChartTimeTicks(start, end, location)
 	view.YTicks = energyChartValueTicks(limit)
+	view.Samples = energyChartSamples(start, end, location, data, minValue, maxValue)
 	if threshold > 0 && threshold <= maxValue {
 		position := energyChartValuePosition(threshold, minValue, maxValue)
 		view.ThresholdPosition = formatEnergySVGNumber(position)
@@ -2602,6 +2624,84 @@ func energyChartValueTicks(limit float64) []energyChartTickView {
 			MobilePosition: formatEnergySVGNumber(y),
 			Label:          formatEnergyCompact(value, 0) + " kW",
 		})
+	}
+	return out
+}
+
+func energyChartSamples(start, end time.Time, location *time.Location, data []energyChartData, minValue, maxValue float64) []energyChartSampleView {
+	pointCount := 0
+	for _, series := range data {
+		if len(series.Values) > pointCount {
+			pointCount = len(series.Values)
+		}
+	}
+	if pointCount < 2 || maxValue <= minValue {
+		return nil
+	}
+	step := end.Sub(start) / time.Duration(pointCount-1)
+	desktopStep := (788.0 - 52.0) / float64(pointCount-1)
+	mobileStep := (388.0 - 44.0) / float64(pointCount-1)
+	out := make([]energyChartSampleView, 0, pointCount)
+	for index := 0; index < pointCount; index++ {
+		desktopX := 52.0 + float64(index)*desktopStep
+		mobileX := 44.0 + float64(index)*mobileStep
+		desktopLeft := desktopX - desktopStep/2
+		mobileLeft := mobileX - mobileStep/2
+		desktopWidth := desktopStep
+		mobileWidth := mobileStep
+		if index == 0 {
+			desktopLeft = 52
+			mobileLeft = 44
+			desktopWidth = desktopStep / 2
+			mobileWidth = mobileStep / 2
+		} else if index == pointCount-1 {
+			desktopWidth = desktopStep / 2
+			mobileWidth = mobileStep / 2
+		}
+		sample := energyChartSampleView{
+			Index:          index,
+			Time:           start.Add(time.Duration(index) * step).In(location).Format("15:04"),
+			Position:       formatEnergySVGNumber(desktopX),
+			MobilePosition: formatEnergySVGNumber(mobileX),
+			HitPosition:    formatEnergySVGNumber(desktopLeft),
+			HitWidth:       formatEnergySVGNumber(desktopWidth),
+			MobileHit:      formatEnergySVGNumber(mobileLeft),
+			MobileHitWidth: formatEnergySVGNumber(mobileWidth),
+		}
+		for _, series := range data {
+			if countPresent(series.Present) < 2 || index >= len(series.Values) || index >= len(series.Present) || !series.Present[index] {
+				continue
+			}
+			value := series.Values[index]
+			label := series.Label
+			displayValue := value
+			switch series.Key {
+			case "grid":
+				if value < 0 {
+					label = "Einspeisung"
+					displayValue = math.Abs(value)
+				} else {
+					label = "Netzbezug"
+				}
+			case "battery":
+				if value < 0 {
+					label = "Speicher lädt"
+					displayValue = math.Abs(value)
+				} else {
+					label = "Speicher entlädt"
+				}
+			}
+			sample.Values = append(sample.Values, energyChartSampleValueView{
+				Key:            series.Key,
+				Label:          label,
+				Value:          formatEnergyCompact(displayValue, 2) + " kW",
+				Position:       formatEnergySVGNumber(energyChartValuePosition(value, minValue, maxValue)),
+				MobilePosition: formatEnergySVGNumber(energyChartValuePosition(value, minValue, maxValue)),
+			})
+		}
+		if len(sample.Values) > 0 {
+			out = append(out, sample)
+		}
 	}
 	return out
 }

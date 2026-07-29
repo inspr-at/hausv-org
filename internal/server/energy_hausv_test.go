@@ -766,6 +766,36 @@ func TestEnergyChartUsesSymmetricFiveKWScaleWithHeadroom(t *testing.T) {
 	}
 }
 
+func TestEnergyChartSamplesExplainSignedFlowsAndOmitMissingValues(t *testing.T) {
+	start := time.Date(2026, 7, 29, 8, 0, 0, 0, time.UTC)
+	end := start.Add(30 * time.Minute)
+	samples := energyChartSamples(start, end, time.UTC, []energyChartData{
+		{Key: "load", Label: "Hausverbrauch", Values: []float64{2, 3, 4}, Present: []bool{true, true, true}},
+		{Key: "pv", Label: "PV-Erzeugung", Values: []float64{1, 2, 0}, Present: []bool{true, true, false}},
+		{Key: "grid", Label: "Netz", Values: []float64{-1, 2, 3}, Present: []bool{true, true, true}},
+		{Key: "battery", Label: "Speicher", Values: []float64{-0.5, 0.8, 0}, Present: []bool{true, true, true}},
+	}, -15, 15)
+	if len(samples) != 3 {
+		t.Fatalf("samples = %d, want 3", len(samples))
+	}
+	if samples[0].Time != "08:00" || samples[1].Time != "08:15" || samples[0].Position == "" || samples[0].HitWidth == "" {
+		t.Fatalf("sample geometry/time missing: %+v", samples[:2])
+	}
+	labels := map[string]string{}
+	for _, value := range samples[0].Values {
+		labels[value.Key] = value.Label
+		if value.Position == "" || value.MobilePosition == "" {
+			t.Fatalf("sample value position missing: %+v", value)
+		}
+	}
+	if labels["grid"] != "Einspeisung" || labels["battery"] != "Speicher lädt" {
+		t.Fatalf("signed flow labels = %+v", labels)
+	}
+	if got := len(samples[2].Values); got != 3 {
+		t.Fatalf("missing PV value was not omitted: values=%+v", samples[2].Values)
+	}
+}
+
 func TestEnergyMappingSlotsExplainRequiredAndDerivedValues(t *testing.T) {
 	assets := []energy.Asset{
 		{Kind: "pv", Confirmed: true},

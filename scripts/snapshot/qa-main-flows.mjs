@@ -629,7 +629,7 @@ async function assertEnergySafetyAndFlow(viewport) {
       !(await chart.getByText('Die höchste Last lag um', { exact: false }).count())) {
     fail(`Energie ${viewport.name}: verständlicher 24-Stunden-Verlauf fehlt`);
   }
-  const visibleChart = chart.locator('svg:visible');
+  const visibleChart = chart.locator('svg.energy-chart-svg:visible');
   if (!(await visibleChart.locator('path.energy-chart-area.load').count()) ||
       !(await visibleChart.locator('line.energy-chart-threshold').count()) ||
       !(await chart.getByText('Planungsgrenze 10 kW', { exact: false }).count())) {
@@ -642,6 +642,52 @@ async function assertEnergySafetyAndFlow(viewport) {
   const loadStyle = await visibleChart.locator('path.energy-chart-line.load').evaluate((node) => getComputedStyle(node).stroke);
   if (!loadStyle || loadStyle === 'none' || loadStyle === 'rgb(27, 32, 26)') {
     fail(`Energie ${viewport.name}: Hausverbrauch ist nicht eigenständig rot ausgezeichnet`);
+  }
+  const chartInteraction = chart.locator('[data-energy-chart-interactive]').first();
+  const chartHit = visibleChart.locator('[data-chart-hit]').nth(20);
+  await chartHit.hover();
+  const chartTooltip = chartInteraction.locator('[data-chart-tooltip]');
+  await chartTooltip.waitFor({ state: 'visible' });
+  if (!(await chartTooltip.getByText('Hausverbrauch', { exact: true }).count()) ||
+      !(await chartTooltip.getByText('PV-Erzeugung', { exact: true }).count()) ||
+      !(await chartTooltip.getByText(/Netzbezug|Einspeisung/, { exact: true }).count()) ||
+      !(await chartTooltip.getByText(/Speicher lädt|Speicher entlädt/, { exact: true }).count()) ||
+      !(await visibleChart.locator('[data-chart-guide]:not([hidden])').count()) ||
+      !(await visibleChart.locator('[data-chart-marker-index]:not([hidden])').count())) {
+    fail(`Energie ${viewport.name}: Hover erklärt den Viertelstundenwert nicht vollständig`);
+  }
+  await chartInteraction.focus();
+  await page.keyboard.press('End');
+  if (!(await chartTooltip.isVisible()) || (await chartTooltip.getAttribute('data-index')) === null) {
+    fail(`Energie ${viewport.name}: Diagrammwerte sind nicht mit der Tastatur erreichbar`);
+  }
+
+  const mainChartBox = await visibleChart.boundingBox();
+  const zoomButton = chart.getByRole('button', { name: 'Vergrößern' });
+  await zoomButton.click();
+  const chartDialog = page.locator('#energy-chart-dialog');
+  await chartDialog.waitFor({ state: 'visible' });
+  const zoomChart = chartDialog.locator('[data-energy-chart-interactive]');
+  const zoomSVG = zoomChart.locator('svg:visible');
+  const zoomChartBox = await zoomSVG.boundingBox();
+  if (!zoomChartBox || (viewport.name === 'Desktop' && mainChartBox && zoomChartBox.width <= mainChartBox.width)) {
+    fail(`Energie ${viewport.name}: vergrößerter Verlauf ist nicht größer als die Übersicht`);
+  }
+  await zoomChart.focus();
+  await page.keyboard.press('ArrowLeft');
+  if (!(await zoomChart.locator('[data-chart-tooltip]').isVisible())) {
+    fail(`Energie ${viewport.name}: vergrößerter Verlauf zeigt keine Tastaturwerte`);
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, `energy-zoom-${viewport.name.toLowerCase()}.png`),
+    });
+  }
+  await page.keyboard.press('Escape');
+  await chartDialog.waitFor({ state: 'hidden' });
+  if (!(await zoomButton.evaluate((node) => document.activeElement === node))) {
+    fail(`Energie ${viewport.name}: Fokus kehrt nach dem Schließen nicht zum Vergrößern-Knopf zurück`);
   }
   if (!(await page.getByText('Messwerte aktuell', { exact: true }).count())) {
     fail(`Energie ${viewport.name}: Live-Aktualität verwendet nicht den aktuellen Home-Assistant-Zeitpunkt`);
