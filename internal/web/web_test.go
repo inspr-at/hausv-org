@@ -121,7 +121,8 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 	}
 	for _, want := range []string{
 		`<div class="side-map" role="group" aria-label="Fester Kartenausschnitt für {{.Tenant.Address}}">`,
-		`<span class="side-map-pin" aria-hidden="true"><span class="side-map-pin-mark">{{template "tenantBrandMark" .}}</span></span>`,
+		`<svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false">`,
+		`<span class="side-map-pin-mark">{{template "tenantBrandMark" .}}</span>`,
 		`{{define "hausvLandingMark"}}`,
 		`{{define "hausvPlatformMark"}}`,
 		`{{template "tenantBrandMark" .}}`,
@@ -205,9 +206,10 @@ func TestHomeTypeGuidanceAndSidebarBrandHierarchy(t *testing.T) {
 		`data-description="Ein Haushalt mit eigenem Gebäude.`,
 		`data-description="Mehrere Parteien und gemeinsam genutzte Anlagen.`,
 		`Rechte und „Nur beobachten“ bleiben unverändert.`,
-		`.side-map { position: relative; width: 100%; height: 138px;`,
-		`.side-map-pin svg { width: 36px; height: 31px;`,
-		`© OpenStreetMap`,
+		`.side-map { position: relative; width: 100%; height: 210px;`,
+		`.side-map-pin-mark svg { width: 25px; height: 21px;`,
+		`Kartendaten © OpenStreetMap`,
+		`text-decoration: none;`,
 		`Hausportal</strong><span>· hausv.org`,
 	} {
 		if !strings.Contains(PageTemplates, want) {

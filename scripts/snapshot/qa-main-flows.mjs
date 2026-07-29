@@ -538,9 +538,9 @@ async function assertPage(page, persona, route, viewportName) {
     const focusCount = await page.locator('.home-primary-task, .home-calm').count();
     if (focusCount !== 1) fail(`${persona.name} ${viewportName}: Hausüberblick hat ${focusCount} Hauptzustände`);
     const map = await page.locator('.side-map').boundingBox();
-    const pin = await page.locator('.side-map-pin svg').boundingBox();
+    const pin = await page.locator('.side-map-pin-mark svg').boundingBox();
     if (!map || !pin) fail(`${persona.name} ${viewportName}: Karte oder Haus-Pin fehlt`);
-    if (viewportName === 'Desktop' && (map.width < 220 || map.height < 120 || pin.width < 32)) {
+    if (viewportName === 'Desktop' && (map.width < 250 || map.height < 190 || pin.width < 22)) {
       fail(`${persona.name} Desktop: Ortskopf ist mit ${map.width}×${map.height}px / Pin ${pin.width}px zu klein`);
     }
     if (viewportName === 'Mobil' && (map.width > 64 || map.height > 54 || pin.width > 24)) {

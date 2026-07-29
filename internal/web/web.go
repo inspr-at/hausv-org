@@ -744,26 +744,23 @@ const PageTemplates = `
     :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
     .app-shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0,1fr); background: var(--paper); }
     .sidebar { position: sticky; top: 0; height: 100vh; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 22px 16px 18px; color: rgba(255,255,255,.86); background: radial-gradient(circle at 20% 0%, rgba(255,255,255,.08), transparent 28%), var(--nav); border-right: 1px solid rgba(255,255,255,.08); }
-    .side-brand { flex: 0 0 auto; display: grid; gap: 10px; padding: 0 0 12px; }
-    .side-map { position: relative; width: 100%; height: 138px; overflow: hidden; border: 1px solid rgba(255,255,255,.16); border-radius: 14px; background: #d8d2c4; box-shadow: 0 10px 24px rgba(0,0,0,.14); isolation: isolate; }
-    .side-map::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(247,243,234,.16), rgba(23,38,29,.15)); box-shadow: inset 0 0 34px rgba(23,38,29,.12); }
-    .side-map-tiles { position: absolute; inset: 0; z-index: 1; pointer-events: none; filter: saturate(.58) sepia(.12) contrast(.88) brightness(.94); }
+    .side-brand { flex: 0 0 auto; display: grid; gap: 0; margin: -22px -16px 0; padding: 0 0 10px; }
+    .side-map { position: relative; width: 100%; height: 210px; overflow: hidden; border: 0; border-radius: 0; background: #d8d2c4; isolation: isolate; }
+    .side-map::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(247,243,234,.08) 0%, rgba(23,32,25,.06) 48%, rgba(23,32,25,.48) 73%, rgba(23,32,25,.93) 94%, var(--nav) 100%); box-shadow: inset 0 -18px 28px rgba(23,32,25,.42); }
+    .side-map-tiles { position: absolute; inset: 0; z-index: 1; pointer-events: none; filter: saturate(.54) sepia(.1) contrast(.86) brightness(.97); }
     .side-map-tile { position: absolute; width: 256px; height: 256px; max-width: none; display: block; user-select: none; pointer-events: none; }
     .side-map-fallback { position: absolute; inset: 0; z-index: 1; opacity: .72; background-color: #d9d5c9; background-image: linear-gradient(28deg, transparent 47%, rgba(255,255,255,.9) 48% 52%, transparent 53%), linear-gradient(118deg, transparent 46%, rgba(255,255,255,.72) 47% 51%, transparent 52%), linear-gradient(90deg, rgba(23,38,29,.12) 1px, transparent 1px), linear-gradient(rgba(23,38,29,.12) 1px, transparent 1px); background-size: 120px 90px, 145px 110px, 42px 42px, 42px 42px; }
-    .side-map-pin { position: absolute; left: 50%; top: 50%; z-index: 4; width: 58px; height: 70px; display: grid; place-items: start center; padding-top: 12px; color: var(--gold-light); background: var(--nav); border: 3px solid rgba(255,255,255,.92); border-radius: 50% 50% 50% 8px; box-shadow: 0 9px 19px rgba(23,32,25,.35); transform: translate(-50%,-62%) rotate(-45deg); }
-    .side-map-pin-mark { width: 38px; height: 36px; display: grid; place-items: center; transform: rotate(45deg); }
-    .side-map-pin svg { width: 36px; height: 31px; display: block; stroke: currentColor; stroke-width: 2.15; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .side-map-credit { position: absolute; right: 4px; bottom: 4px; z-index: 5; border-radius: 3px; padding: 2px 4px; color: #34443a; background: rgba(255,255,255,.88); font-size: 9px; line-height: 1; text-decoration: none; }
-    .side-map-credit:hover { text-decoration: underline; }
-    .side-place-copy { min-width: 0; display: grid; gap: 7px; padding: 0 7px; }
-    .side-address { min-width: 0; display: inline-flex; align-items: center; gap: 5px; justify-self: start; color: rgba(255,255,255,.77); font-size: 12px; line-height: 1.25; text-decoration-color: rgba(231,197,116,.4); text-underline-offset: 3px; }
-    .side-address:hover { color: #fff; text-decoration-color: var(--gold-light); }
-    .side-address svg { width: 12px; height: 12px; flex: 0 0 auto; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .side-ruler { position: relative; height: 8px; overflow: hidden; border-top: 1px solid rgba(231,197,116,.64); }
-    .side-ruler::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 13px, rgba(231,197,116,.48) 13px 14px); mask-image: linear-gradient(#000 0 4px, transparent 4px); }
+    .side-map-pin { position: absolute; left: 50%; top: 50%; z-index: 4; width: 44px; height: 56px; color: var(--gold-light); filter: drop-shadow(0 6px 7px rgba(23,32,25,.38)); transform: translate(-50%,-100%); }
+    .side-map-pin-shape { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; fill: var(--nav); stroke: rgba(231,216,177,.88); stroke-width: 1.25; stroke-linejoin: round; }
+    .side-map-pin-mark { position: absolute; left: 50%; top: 9px; width: 25px; height: 22px; display: grid; place-items: center; transform: translateX(-50%); }
+    .side-map-pin-mark svg { width: 25px; height: 21px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .side-place-copy { position: relative; z-index: 6; min-width: 0; display: grid; gap: 12px; margin-top: -54px; padding: 0 22px 15px; }
+    .side-address { min-width: 0; justify-self: start; color: rgba(255,255,255,.7); font-family: var(--font-sans); font-size: 12.5px; font-weight: 500; line-height: 1.3; text-decoration: none; }
+    .side-address:hover { color: rgba(255,255,255,.92); text-decoration: none; }
+    .side-ruler { height: 12px; border-top: 1px solid rgba(207,171,83,.72); background: linear-gradient(rgba(207,171,83,.72),rgba(207,171,83,.72)) 25% 0/1px 6px no-repeat, linear-gradient(rgba(207,171,83,.82),rgba(207,171,83,.82)) 50% 0/1px 11px no-repeat, linear-gradient(rgba(207,171,83,.72),rgba(207,171,83,.72)) 75% 0/1px 6px no-repeat; }
     .side-portal { min-width: 0; display: flex; align-items: baseline; gap: 4px; justify-self: start; color: inherit; text-decoration: none; }
-    .side-portal strong { font-family: var(--font-serif); color: #fff; font-size: 17px; line-height: 1; }
-    .side-portal span { color: rgba(255,255,255,.56); font-size: 11.5px; }
+    .side-portal strong { font-family: var(--font-sans); color: rgba(255,255,255,.9); font-size: 15px; font-weight: 600; line-height: 1; }
+    .side-portal span { color: rgba(255,255,255,.48); font-family: var(--font-sans); font-size: 12px; font-weight: 450; }
     .side-portal:hover span { color: rgba(255,255,255,.82); }
     .side-nav { flex: 1 1 auto; min-height: 0; display: grid; align-content: start; gap: 5px; overflow-y: auto; overflow-x: hidden; padding-right: 3px; }
     .side-nav::-webkit-scrollbar { width: 7px; }
@@ -781,6 +778,8 @@ const PageTemplates = `
     .nav-badge { margin-left: auto; min-width: 25px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); padding: 0 7px; background: var(--gold); color: #172019; font-size: 11px; font-weight: 900; line-height: 1; }
     .nav-group-label { margin: 10px 12px 2px; color: rgba(255,255,255,.42); font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
     .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 16px 8px 0; display: grid; gap: 12px; }
+    .side-map-attribution { justify-self: start; color: rgba(255,255,255,.38); font-size: 9px; line-height: 1.2; text-decoration: none; }
+    .side-map-attribution:hover { color: rgba(255,255,255,.68); }
     .side-user { display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: center; }
     .avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: #fff; font-weight: 800; border: 1px solid rgba(255,255,255,.25); }
     .side-user strong { display: -webkit-box; max-height: 2.5em; color: #fff; font-size: 14px; line-height: 1.22; overflow: hidden; overflow-wrap: anywhere; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
@@ -2117,14 +2116,14 @@ const PageTemplates = `
     .bar-cell { min-width: 150px; }
     @media (min-width: 901px) and (max-height: 800px) {
       .sidebar { gap: 10px; padding-top: 14px; padding-bottom: 12px; }
-      .side-brand { gap: 6px; padding-bottom: 5px; }
-      .side-map { height: 92px; border-radius: 11px; }
-      .side-map-pin { width: 44px; height: 52px; padding-top: 8px; border-width: 2px; }
-      .side-map-pin-mark { width: 29px; height: 27px; }
-      .side-map-pin svg { width: 28px; height: 24px; }
-      .side-place-copy { gap: 4px; }
+      .side-brand { margin-top: -14px; padding-bottom: 3px; }
+      .side-map { height: 144px; }
+      .side-map-pin { width: 35px; height: 45px; }
+      .side-map-pin-mark { top: 7px; width: 20px; height: 18px; }
+      .side-map-pin-mark svg { width: 20px; height: 17px; }
+      .side-place-copy { gap: 5px; margin-top: -42px; padding-bottom: 8px; }
       .side-address { font-size: 10.5px; }
-      .side-ruler { height: 5px; }
+      .side-ruler { height: 8px; background-size: 1px 4px,1px 7px,1px 4px; }
       .side-portal strong { font-size: 14.5px; }
       .side-portal span { font-size: 10px; }
       .side-nav { gap: 2px; scrollbar-gutter: stable; }
@@ -2217,13 +2216,12 @@ const PageTemplates = `
 	      .energy-comparison { grid-template-columns: 1fr; }
 	      .energy-maintenance-summary, .energy-measure-summary { min-height: 72px; }
 	      .sidebar { position: sticky; top: 0; z-index: 50; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; height: auto; padding: 10px 14px; box-shadow: 0 10px 28px rgba(23,32,25,.18); }
-	      .side-brand { grid-template-columns: 58px minmax(0,1fr); gap: 10px; align-items: center; padding: 0; min-width: 0; }
-	      .side-map { width: 58px; height: 48px; border-radius: 9px; box-shadow: none; }
-	      .side-map-pin { width: 30px; height: 36px; padding-top: 6px; border-width: 2px; box-shadow: 0 4px 9px rgba(23,32,25,.3); }
-	      .side-map-pin-mark { width: 20px; height: 18px; }
-	      .side-map-pin svg { width: 19px; height: 16px; stroke-width: 2.4; }
-	      .side-map-credit { right: 1px; bottom: 1px; padding: 1px 2px; font-size: 6.5px; }
-	      .side-place-copy { min-width: 0; gap: 3px; padding: 0; }
+	      .side-brand { grid-template-columns: 58px minmax(0,1fr); gap: 10px; align-items: center; margin: 0; padding: 0; min-width: 0; }
+	      .side-map { width: 58px; height: 48px; }
+	      .side-map-pin { width: 24px; height: 31px; }
+	      .side-map-pin-mark { top: 5px; width: 14px; height: 13px; }
+	      .side-map-pin-mark svg { width: 14px; height: 12px; stroke-width: 2.5; }
+	      .side-place-copy { position: static; min-width: 0; gap: 3px; margin: 0; padding: 0; }
 	      .side-address { max-width: 100%; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	      .side-address span { overflow: hidden; text-overflow: ellipsis; }
 	      .side-ruler { display: none; }
@@ -2244,6 +2242,7 @@ const PageTemplates = `
 	      .nav-badge { min-width: 20px; height: 18px; padding: 0 6px; font-size: 10px; }
 	      .nav-group-label { grid-column: 1 / -1; margin: 7px 4px 0; }
 	      .side-foot { margin-top: 2px; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 9px 10px; padding: 10px 0 0; }
+	      .side-map-attribution { grid-column: 1 / -1; }
 	      .side-user { grid-template-columns: 34px minmax(0,1fr); gap: 9px; min-width: 0; }
 	      .avatar { width: 34px; height: 34px; font-size: 12px; }
 	      .side-user strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -2488,13 +2487,14 @@ const PageTemplates = `
           {{range .SidebarMap.Tiles}}<img class="side-map-tile" src="{{.URL}}" style="{{.Style}}" width="256" height="256" alt="" draggable="false">{{end}}
         </div>
         {{else}}<span class="side-map-fallback" aria-hidden="true"></span>{{end}}
-        <span class="side-map-pin" aria-hidden="true"><span class="side-map-pin-mark">{{template "tenantBrandMark" .}}</span></span>
-        <a class="side-map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap</a>
+        <span class="side-map-pin" aria-hidden="true">
+          <svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false"><path d="M22 55C18.7 49.2 4.5 36.7 4.5 22.2A17.5 17.5 0 1 1 39.5 22.2C39.5 36.7 25.3 49.2 22 55Z"/></svg>
+          <span class="side-map-pin-mark">{{template "tenantBrandMark" .}}</span>
+        </span>
       </div>
       <div class="side-place-copy">
         <a class="side-address" href="{{.MapURL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.Tenant.Address}} in OpenStreetMap öffnen">
           <span>{{.Tenant.Address}}</span>
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3h7v7"/><path d="m13 3-7.5 7.5"/><path d="M11 9.5V13H3V5h3.5"/></svg>
         </a>
         <span class="side-ruler" aria-hidden="true"></span>
         <a class="side-portal" href="/app"><strong>Hausportal</strong><span>· hausv.org</span></a>
@@ -2523,6 +2523,7 @@ const PageTemplates = `
 	      {{end}}
 	    </nav>
     <div class="side-foot">
+      <a class="side-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Kartendaten © OpenStreetMap</a>
       <div class="side-user">
         <span class="avatar">{{.Initials}}</span>
         <div><strong>{{.DisplayName}}</strong><span>{{.Role}}</span></div>

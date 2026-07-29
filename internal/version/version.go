@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.54.1",
+			Date:     "29. Juli 2026",
+			Kind:     "Hausportal",
+			Headline: "Der Ortskopf ist jetzt präziser, ruhiger und vollständig in die Seitenleiste integriert.",
+			Intro:    "Die Karte nutzt die ganze Breite, läuft weich in die Navigation aus und markiert das Haus mit der Spitze eines kompakten Pins.",
+			Items: []NoteItem{
+				{Label: "Adresse genau treffen", Text: "Die Pin-Spitze sitzt auf der konfigurierten Position statt den Pin-Körper um die Adresse zu zentrieren."},
+				{Label: "Fläche konsequent nutzen", Text: "Der feste Kartenausschnitt kommt ohne Rahmen, abgerundete Zusatzkarte oder ungenutzten Seitenrand aus."},
+				{Label: "Typografie beruhigen", Text: "Adresse, reduzierter Trenner und Portalname folgen einer schlichten Sans-Serif-Hierarchie ohne Link-Unterstreichung."},
+				{Label: "Quelle sauber nennen", Text: "Die OpenStreetMap-Quellenangabe steht dezent im Fußbereich statt über der Karte."},
+			},
+		},
+		{
 			Version:  "0.54.0",
 			Date:     "29. Juli 2026",
 			Kind:     "Hausportal",

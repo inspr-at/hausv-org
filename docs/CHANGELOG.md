@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.54.1] - 2026-07-29
+
+### Verbessert
+
+- **Der Ortskopf nutzt die ganze Seitenleiste.** Die Karte steht ohne zusätzlichen Rahmen oder abgerundete Karte bündig am Rand und läuft mit einem weichen Schatten in die Navigation aus.
+- **Der Pin zeigt präzise auf das Haus.** Seine Spitze sitzt auf der konfigurierten Adresse; das gewählte Hauszeichen bleibt klein und klar erkennbar.
+- **Adresse, Trenner und Portalname bleiben ruhig.** Die Adresse erscheint ohne Link-Dekoration, der reduzierte Trenner erhält sichtbar Abstand und die Kartenquellenangabe steht dezent im Fußbereich.
+
 ## [0.54.0] - 2026-07-29
 
 ### Neu

@@ -19,8 +19,8 @@ import (
 const (
 	defaultMapZoom       = 17
 	mapTileSize          = 256
-	sidebarMapWidth      = 232
-	sidebarMapHeight     = 138
+	sidebarMapWidth      = 264
+	sidebarMapHeight     = 210
 	mapTileCacheMaxAge   = 30 * 24 * time.Hour
 	mapTileResponseBytes = 1 << 20
 	osmTileBaseURL       = "https://tile.openstreetmap.org"
