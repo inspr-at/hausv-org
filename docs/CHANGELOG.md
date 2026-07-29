@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.57.1] - 2026-07-29
+
+### Verbessert
+
+- **Der Energiemodus nennt den Testlauf jetzt eindeutig beim Namen.** HAUSV protokolliert darin nur mögliche Entscheidungen und schaltet ausdrücklich kein Gerät.
+- **Aktive Steuerung bleibt klar getrennt.** Sie wird erst später mit einer eigenen Freigabe für konkrete Geräte möglich; der heutige Testlauf kann keine solche Freigabe vorwegnehmen.
+
 ## [0.57.0] - 2026-07-29
 
 ### Verbessert

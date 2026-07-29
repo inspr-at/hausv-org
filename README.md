@@ -1,8 +1,16 @@
 # hausv.org
 
-Private multi-tenant portal for communication, transparency, and self-service in
-WEGs and other multi-unit buildings. The Janischhofweg 22 tenant is the first
-production deployment and includes the parking-usage area.
+Private multi-tenant platform with two product surfaces on one secure core:
+
+- **HAUSV Gemeinschaft** supports communication, transparency, and self-service
+  for WEGs and other multi-unit buildings.
+- **HAUSV Zuhause** helps private apartments and houses understand their current
+  state and identify the next sensible task, including read-only energy insights.
+
+Both surfaces share houses, people, roles, assets, documents, tasks,
+measurements, recommendations, and audit. The Janischhofweg 22 tenant is the
+first production deployment and includes both community workflows and the first
+private-home energy pilot.
 
 hausv.org deliberately complements existing accounting and property-management
 systems. It does not implement bookkeeping, tax logic, dunning, or payment

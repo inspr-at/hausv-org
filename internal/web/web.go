@@ -7141,8 +7141,8 @@ const PageTemplates = `
   <section class="energy-mode-strip {{if .IsActiveMode}}active{{end}}" aria-label="Energiemodus">
     <span class="energy-mode-icon" aria-hidden="true">{{if .IsActiveMode}}!{{else}}✓{{end}}</span>
     <div class="energy-mode-copy">
-      <strong>{{if .IsActiveMode}}{{if .IsShadowMode}}Steuerung freigegeben · Testlauf{{else}}Aktive Steuerung{{end}}{{else}}Nur beobachten{{end}}</strong>
-      <span>{{if .IsActiveMode}}{{if .IsShadowMode}}HAUSV protokolliert Entscheidungen, schaltet aber noch kein Gerät.{{else}}HAUSV darf freigegebene Geräte nach Ihren Regeln steuern.{{end}}{{else}}HAUSV liest und empfiehlt. Es steuert nichts.{{end}}</span>
+      <strong>{{if .IsActiveMode}}{{if .IsShadowMode}}Testlauf aktiv · keine Gerätewirkung{{else}}Aktive Steuerung{{end}}{{else}}Nur beobachten{{end}}</strong>
+      <span>{{if .IsActiveMode}}{{if .IsShadowMode}}HAUSV protokolliert nur, welche Entscheidungen Regeln treffen würden. Es schaltet kein Gerät.{{else}}HAUSV darf freigegebene Geräte nach Ihren Regeln steuern.{{end}}{{else}}HAUSV liest und empfiehlt. Es steuert nichts.{{end}}</span>
     </div>
     {{if .IsActiveMode}}
       {{if .CanControlEnergy}}<form method="post" action="/app/energie/mode">
@@ -7151,17 +7151,17 @@ const PageTemplates = `
       </form>{{end}}
     {{else}}
       {{if .CanControlEnergy}}<details class="energy-mode-control">
-        <summary class="energy-mode-action">Steuerung bewusst freigeben</summary>
+        <summary class="energy-mode-action">Testlauf bewusst starten</summary>
         <form class="energy-mode-popover" method="post" action="/app/energie/mode">
-          <h3>Aktive Steuerung freigeben?</h3>
-          <p>Das ist später der einzige Weg, wie HAUSV Geräte schalten darf. Solange noch keine geprüften Regeln eingerichtet sind, bleibt die Freigabe ohne Gerätewirkung.</p>
-          <label><input type="checkbox" name="confirm" value="yes" required><span>Ich bin Eigentümer oder Hausadministrator und möchte die aktive Steuerung für diese Liegenschaft bewusst freigeben.</span></label>
-          <label><span>Zur Bestätigung <strong>AKTIVIEREN</strong> eingeben</span></label>
-          <input type="text" name="confirmation_text" autocomplete="off" placeholder="AKTIVIEREN" required>
+          <h3>Wirkungslosen Testlauf starten?</h3>
+          <p>HAUSV protokolliert nur, welche Entscheidungen seine Regeln treffen würden. Es wird kein Gerät geschaltet. Aktive Steuerung ist erst nach einer späteren, gerätespezifischen Freigabe möglich.</p>
+          <label><input type="checkbox" name="confirm" value="yes" required><span>Ich bin Eigentümer oder Hausadministrator und möchte diesen wirkungslosen Testlauf für diese Liegenschaft bewusst starten.</span></label>
+          <label><span>Zur Bestätigung <strong>TESTLAUF</strong> eingeben</span></label>
+          <input type="text" name="confirmation_text" autocomplete="off" placeholder="TESTLAUF" required>
           <input type="hidden" name="mode" value="active">
-          <button class="button primary" type="submit">Aktive Steuerung freigeben</button>
+          <button class="button primary" type="submit">Testlauf starten</button>
         </form>
-      </details>{{else}}<span class="energy-source">Nur Eigentümer oder Hausadministration können umschalten.</span>{{end}}
+      </details>{{else}}<span class="energy-source">Nur Eigentümer oder Hausadministration können den Testlauf starten.</span>{{end}}
     {{end}}
   </section>
 {{end}}

@@ -580,7 +580,7 @@ async function assertPilotHome({
         !(await helper.getByText('Nur beobachten', { exact: true }).count())) {
       fail(`${householdName}: technische Hilfe erreicht das Haus nicht`);
     }
-    if (await helper.getByText('Steuerung bewusst freigeben', { exact: true }).count()) {
+    if (await helper.getByText('Testlauf bewusst starten', { exact: true }).count()) {
       fail(`${householdName}: technische Hilfe sieht den Eigentümer-Schalter`);
     }
     await helperContext.close();
@@ -663,7 +663,7 @@ async function assertEnergySafetyAndFlow(viewport) {
   const residentContext = await newContext(viewport.size);
   const resident = await localLogin(residentContext, 'resident@example.com');
   await resident.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
-  if (await resident.getByText('Steuerung bewusst freigeben', { exact: true }).count()) {
+  if (await resident.getByText('Testlauf bewusst starten', { exact: true }).count()) {
     fail(`Bewohner ${viewport.name}: Steuerungsfreigabe sichtbar`);
   }
   await residentContext.close();
@@ -941,16 +941,16 @@ async function assertEnergySafetyAndFlow(viewport) {
   if ((await strip.locator('strong').first().innerText()).trim() !== 'Nur beobachten') {
     fail(`Energie ${viewport.name}: startet nicht in Nur beobachten`);
   }
-  await page.getByText('Steuerung bewusst freigeben', { exact: true }).click();
+  await page.getByText('Testlauf bewusst starten', { exact: true }).click();
   const modeForm = page.locator('.energy-mode-popover');
   await modeForm.locator('input[type="checkbox"]').check();
-  await modeForm.locator('input[name="confirmation_text"]').fill('AKTIVIEREN');
-  await modeForm.getByRole('button', { name: 'Aktive Steuerung freigeben' }).click();
+  await modeForm.locator('input[name="confirmation_text"]').fill('TESTLAUF');
+  await modeForm.getByRole('button', { name: 'Testlauf starten' }).click();
   await page.waitForLoadState('networkidle');
-  if ((await strip.locator('strong').first().innerText()).trim() !== 'Steuerung freigegeben · Testlauf') {
+  if ((await strip.locator('strong').first().innerText()).trim() !== 'Testlauf aktiv · keine Gerätewirkung') {
     fail(`Energie ${viewport.name}: Freigabe startet nicht im Testlauf`);
   }
-  if (!(await page.getByText('schaltet aber noch kein Gerät', { exact: false }).count())) {
+  if (!(await page.getByText('Es schaltet kein Gerät.', { exact: false }).count())) {
     fail(`Energie ${viewport.name}: Shadow-Mode-Erklärung fehlt`);
   }
   await page.getByRole('button', { name: /Sofort zurück/ }).click();
@@ -1014,7 +1014,7 @@ async function assertEnergySafetyAndFlow(viewport) {
         !(await helper.getByText('Nur beobachten', { exact: true }).count())) {
       fail('Energie Desktop: eingeladene Vertrauensperson kann den hausbezogenen Zugang nicht annehmen');
     }
-    if (await helper.getByText('Steuerung bewusst freigeben', { exact: true }).count()) {
+    if (await helper.getByText('Testlauf bewusst starten', { exact: true }).count()) {
       fail('Energie Desktop: technische Vertrauensperson sieht die Eigentümer-/Admin-Freigabe');
     }
     if (await helper.getByRole('link', { name: 'Zuhause bearbeiten' }).count()) {

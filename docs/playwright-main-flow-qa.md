@@ -4,6 +4,10 @@ Der lokale QA-Lauf startet das aktuelle Arbeitsverzeichnis mit ausschließlich
 erfundenen Daten, mehreren Rollen und drei strikt getrennten Hausprofilen. Er
 sendet keine E-Mails und greift nicht auf Produktivdaten zu.
 
+Dieser Lauf ist derzeit das umfassende lokale Browser-Regressionsgate. Er ist
+noch kein verpflichtender CI-Schritt; die CI-Integration und ihr Schutz für
+Änderungen auf `main` bleiben ausdrücklich in HAUSV-404 offen.
+
 ```fish
 scripts/qa-main-flows.fish
 ```

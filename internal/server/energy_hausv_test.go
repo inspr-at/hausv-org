@@ -670,7 +670,7 @@ func TestEnergyModeRequiresOwnerAndExplicitConfirmation(t *testing.T) {
 	response := authedFormRequest(t, a, "resident@example.com", "/app/energie/mode", url.Values{
 		"mode":              {"active"},
 		"confirm":           {"yes"},
-		"confirmation_text": {"AKTIVIEREN"},
+		"confirmation_text": {"TESTLAUF"},
 	})
 	if response.Code != http.StatusForbidden {
 		t.Fatalf("caretaker with legacy energy-control active status = %d", response.Code)
@@ -685,15 +685,15 @@ func TestEnergyModeRequiresOwnerAndExplicitConfirmation(t *testing.T) {
 	response = authedFormRequest(t, a, "owner@example.com", "/app/energie/mode", url.Values{
 		"mode":              {"active"},
 		"confirm":           {"yes"},
-		"confirmation_text": {"wrong"},
+		"confirmation_text": {"AKTIVIEREN"},
 	})
 	if response.Code != http.StatusBadRequest {
-		t.Fatalf("unconfirmed active status = %d", response.Code)
+		t.Fatalf("legacy activation token status = %d", response.Code)
 	}
 	response = authedFormRequest(t, a, "owner@example.com", "/app/energie/mode", url.Values{
 		"mode":              {"active"},
 		"confirm":           {"yes"},
-		"confirmation_text": {"AKTIVIEREN"},
+		"confirmation_text": {"TESTLAUF"},
 	})
 	if response.Code != http.StatusSeeOther {
 		t.Fatalf("confirmed active status = %d body=%s", response.Code, response.Body.String())
@@ -757,7 +757,7 @@ func TestOwnerCanGrantAndImmediatelyRevokeScopedEnergyAccessWithoutDelegatingHou
 	response = authedFormRequest(t, a, "helper@example.com", "/app/energie/mode", url.Values{
 		"mode":              {"active"},
 		"confirm":           {"yes"},
-		"confirmation_text": {"AKTIVIEREN"},
+		"confirmation_text": {"TESTLAUF"},
 	})
 	if response.Code != http.StatusForbidden {
 		t.Fatalf("technical helper active status = %d", response.Code)

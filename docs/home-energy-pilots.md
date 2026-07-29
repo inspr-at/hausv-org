@@ -38,6 +38,12 @@ Die drei Slugs müssen zuvor jeweils als eigener Eintrag in `WEG_TENANTS_JSON`
 existieren. So bleiben Personen, Daten, Geräte und Berechtigungen strikt
 hausbezogen.
 
+Der aktuelle Pilot unterstützt bewusst genau ein wirksames Zuhause-Profil und
+einen Home-Assistant-Connector je Tenant. Mehrere Zuhause oder mehrere
+Connectoren innerhalb desselben Tenants sind noch kein unterstützter
+Produktumfang. Diese Erweiterung gehört zu HAUSV-402; bis dahin erhalten
+getrennte Pilot-Haushalte jeweils einen eigenen Tenant.
+
 ## Home Assistant pro Haus
 
 `HA_CONNECTORS_JSON` enthält nur nicht geheime Zuordnung. Genau eine
@@ -106,9 +112,12 @@ timestamp;import_kwh
 4. `active`: nur nach separater Gerätefreigabe; stale Daten oder Adapterfehler
    führen zu Nicht-Eingreifen.
 
-Der prominent sichtbare Hausschalter öffnet zunächst nur `shadow`. Zur
-Freigabe muss ein Eigentümer oder die Hausadministration die Folgen bestätigen
-und `AKTIVIEREN` eingeben. Technische Vertrauenspersonen dürfen beim Einrichten
-helfen, können diesen Schalter aber niemals betätigen – auch nicht mit einem
+Der prominent sichtbare Hausschalter startet zunächst nur einen wirkungslosen
+`shadow`-Testlauf. Dabei werden mögliche Entscheidungen protokolliert, aber kein
+Gerät geschaltet. Zum Start muss ein Eigentümer oder die Hausadministration die
+Folgen bestätigen und `TESTLAUF` eingeben. Dieser Testlauf ist keine Freigabe
+für aktive Steuerung; dafür ist später eine separate, gerätespezifische
+Freigabe erforderlich. Technische Vertrauenspersonen dürfen beim Einrichten
+helfen, können den Testlauf aber niemals starten – auch nicht mit einem
 historisch noch gespeicherten `energy-control`-Recht. Die Rückkehr zu
 `Nur beobachten` wirkt unmittelbar.

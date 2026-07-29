@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.57.1",
+			Date:     "29. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Der sichere Energie-Testlauf sagt jetzt genau, was er tut.",
+			Intro:    "HAUSV protokolliert dabei nur mögliche Entscheidungen und schaltet ausdrücklich kein Gerät.",
+			Items: []NoteItem{
+				{Label: "Bewusst starten", Text: "Eigentümer oder Hausadministration bestätigen ausdrücklich einen wirkungslosen Testlauf – keine allgemeine Steuerungsfreigabe."},
+				{Label: "Ohne Gerätewirkung", Text: "Der sichtbare Status erklärt dauerhaft, dass mögliche Regelentscheidungen nur aufgezeichnet werden."},
+				{Label: "Aktiv klar trennen", Text: "Eine spätere aktive Steuerung benötigt eine eigene Freigabe für konkrete Geräte und kann durch den Testlauf nicht vorweggenommen werden."},
+				{Label: "Sicher zurückkehren", Text: "Die unmittelbare Rückkehr zu „Nur beobachten“ bleibt jederzeit verfügbar."},
+			},
+		},
+		{
 			Version:  "0.57.0",
 			Date:     "29. Juli 2026",
 			Kind:     "Mein Zuhause",

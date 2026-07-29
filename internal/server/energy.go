@@ -1386,8 +1386,8 @@ func (a *app) updateEnergyMode(w http.ResponseWriter, r *http.Request, ac authCt
 		profile.OperatingMode = energy.ModeObserve
 		profile.AutomationStage = energy.StageObserve
 	case energy.ModeActive:
-		if r.FormValue("confirm") != "yes" || strings.TrimSpace(r.FormValue("confirmation_text")) != "AKTIVIEREN" {
-			http.Error(w, "Aktivierung muss bewusst bestätigt werden.", http.StatusBadRequest)
+		if r.FormValue("confirm") != "yes" || strings.TrimSpace(r.FormValue("confirmation_text")) != "TESTLAUF" {
+			http.Error(w, "Der Testlauf muss bewusst bestätigt werden.", http.StatusBadRequest)
 			return
 		}
 		profile.OperatingMode = energy.ModeActive
