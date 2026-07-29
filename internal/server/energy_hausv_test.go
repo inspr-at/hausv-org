@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -687,6 +689,69 @@ func TestEnergyReadingUsesHumanScaleAndUnitAwarePeakTone(t *testing.T) {
 	}
 	if got := energyMetricTone(energy.MetricGridImportPower, 50, "W", &target); got != "" {
 		t.Fatalf("50 W tone = %q", got)
+	}
+}
+
+func TestEnergyHistoryBucketsForwardFillAndConvertPower(t *testing.T) {
+	start := time.Date(2026, 7, 29, 8, 0, 0, 0, time.UTC)
+	items := []homeassistant.HistoryState{
+		{EntityID: "sensor.house", State: "1000", LastChanged: start},
+		{EntityID: "sensor.house", State: "2400", LastChanged: start.Add(30 * time.Minute)},
+	}
+	values, present := energyHistoryBuckets(items, "W", start, start.Add(time.Hour), 5)
+	want := []float64{1, 1, 2.4, 2.4, 2.4}
+	for index := range want {
+		if !present[index] || math.Abs(values[index]-want[index]) > 0.0001 {
+			t.Fatalf("bucket %d = %v present=%v, want %v", index, values[index], present[index], want[index])
+		}
+	}
+}
+
+func TestEnergyChartSummarisesPeakWithoutPromise(t *testing.T) {
+	start := time.Date(2026, 7, 29, 0, 0, 0, 0, time.UTC)
+	load := make([]float64, 97)
+	pv := make([]float64, 97)
+	grid := make([]float64, 97)
+	battery := make([]float64, 97)
+	present := make([]bool, 97)
+	for index := range present {
+		present[index] = true
+		load[index] = 1
+	}
+	load[48] = 6
+	pv[48] = 4
+	battery[48] = 1
+	summary, detail := energyChartSummary(start, load, present, pv, present, grid, present, battery, present, time.UTC)
+	if !strings.Contains(summary, "12:00 Uhr") || !strings.Contains(summary, "6 kW") {
+		t.Fatalf("summary = %q", summary)
+	}
+	if detail != "PV und Speicher deckten zu diesem Zeitpunkt den größten Teil." {
+		t.Fatalf("detail = %q", detail)
+	}
+}
+
+func TestCurrentEnergyMetricsUsesLiveTimestampAndCorrectsLegacyConsumptionDisplay(t *testing.T) {
+	updated := time.Now().UTC().Add(-time.Minute).Truncate(time.Second)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"entity_id":"sensor.sonnenbatterie_state_consumption_current","state":"7228","attributes":{"friendly_name":"Home Current Consumption","device_class":"power","unit_of_measurement":"W"},"last_updated":%q}`, updated.Format(time.RFC3339))
+	}))
+	t.Cleanup(server.Close)
+
+	cfg := homeassistant.NewConfig(server.URL, "fixture", "", "", "")
+	a := &app{}
+	metrics, _, latest := a.currentEnergyMetrics(t.Context(), tenantConfig{Slug: "jhw22", HA: cfg}, []energy.EntityMapping{{
+		TenantSlug: "jhw22", EntityID: "sensor.sonnenbatterie_state_consumption_current",
+		Metric: energy.MetricBatteryPower, DisplayName: "Home Current Consumption", Unit: "W", Confirmed: true,
+	}}, energy.DefaultProfile("jhw22", time.Now()))
+	if len(metrics) != 1 || metrics[0].Metric != energy.MetricLoadPower || metrics[0].Value != "7,23 kW" {
+		t.Fatalf("metrics = %+v", metrics)
+	}
+	if !latest.Equal(updated) {
+		t.Fatalf("latest = %s, want %s", latest, updated)
+	}
+	if quality := energy.AssessQuality(time.Now(), latestEnergySeen(nil, nil, latest), 0, 0); quality.Status != energy.QualityMeasured {
+		t.Fatalf("quality = %+v", quality)
 	}
 }
 

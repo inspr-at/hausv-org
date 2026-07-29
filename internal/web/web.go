@@ -848,6 +848,36 @@ const PageTemplates = `
     .energy-live-more-row strong { font-family: var(--font-serif); font-size: 17px; }
     .energy-live-empty { display: grid; gap: 5px; padding: 24px 22px; }
     .energy-live-empty span { color: var(--muted); font-size: 13px; }
+    .energy-chart { display: grid; gap: 18px; }
+    .energy-chart-head { display: flex; justify-content: space-between; gap: 18px; align-items: end; }
+    .energy-chart-head h2 { font-size: 26px; }
+    .energy-chart-head p, .energy-chart-head small { color: var(--muted); font-size: 12.5px; }
+    .energy-chart-head p { margin-top: 4px; }
+    .energy-chart-head small { text-align: right; }
+    .energy-chart-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(220px,.28fr); gap: 24px; align-items: stretch; }
+    .energy-chart-plot { min-width: 0; display: grid; gap: 10px; }
+    .energy-chart-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+    .energy-chart-legend span { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+    .energy-chart-legend i { width: 24px; height: 3px; border-radius: 3px; background: var(--nav); }
+    .energy-chart-legend .pv i { background: #477957; }
+    .energy-chart-legend .grid i { background: #b18122; }
+    .energy-chart-legend .battery i { height: 0; border-top: 2px dashed #817668; background: transparent; }
+    .energy-chart-svg { width: 100%; height: auto; min-height: 220px; display: block; overflow: visible; }
+    .energy-chart-svg.mobile { display: none; }
+    .energy-chart-grid { stroke: #ddd5c6; stroke-width: 1; }
+    .energy-chart-grid.zero { stroke: #a9a08f; stroke-width: 1.35; }
+    .energy-chart-axis-label { fill: #756f63; font-family: var(--font-sans); font-size: 11px; }
+    .energy-chart-line { fill: none; stroke: var(--nav); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+    .energy-chart-line.pv { stroke: #477957; }
+    .energy-chart-line.grid { stroke: #b18122; }
+    .energy-chart-line.battery { stroke: #817668; stroke-width: 2; stroke-dasharray: 5 4; }
+    .energy-chart-note { display: grid; align-content: center; gap: 8px; border-left: 1px solid var(--line); padding-left: 24px; }
+    .energy-chart-note span { color: var(--gold-ink); font-size: 11px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+    .energy-chart-note strong { font-family: var(--font-serif); font-size: 21px; line-height: 1.25; }
+    .energy-chart-note p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .energy-chart-hint { color: var(--muted); font-size: 11.5px; }
+    .energy-chart-empty { display: grid; gap: 5px; border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 20px; }
+    .energy-chart-empty p { color: var(--muted); font-size: 13px; }
     .energy-card { padding: 24px; }
     .energy-card-head { display: flex; justify-content: space-between; gap: 18px; align-items: start; margin-bottom: 18px; }
     .energy-card-head p { margin-top: 6px; color: var(--muted); font-size: 14px; }
@@ -2055,6 +2085,12 @@ const PageTemplates = `
 	      .energy-heading, .energy-health { grid-template-columns: 1fr; }
 	      .energy-measure-form { grid-template-columns: 1fr; }
 	      .energy-live-head > small { max-width: 96px; }
+	      .energy-chart-head { align-items: start; flex-direction: column; gap: 4px; }
+	      .energy-chart-head small { text-align: left; }
+	      .energy-chart-layout { grid-template-columns: 1fr; gap: 14px; }
+	      .energy-chart-note { border-top: 1px solid var(--line); border-left: 0; padding-top: 16px; padding-left: 0; }
+	      .energy-chart-svg.desktop { display: none; }
+	      .energy-chart-svg.mobile { min-height: 0; display: block; }
 	      .energy-roadmap { grid-template-columns: 1fr; }
 	      .energy-roadmap-step { min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
 	      .energy-roadmap-step:last-child { border-bottom: 0; }
@@ -6935,6 +6971,30 @@ const PageTemplates = `
             {{if .Live.HasAdditional}}<details class="energy-live-more"><summary><span><strong>Weitere Messwerte ({{.Live.AdditionalCount}})</strong><small>{{.Live.AdditionalTopics}}</small></span></summary><div class="energy-live-more-list">{{range .Live.Additional}}<div class="energy-live-more-row"><span>{{.Label}}</span><strong>{{.Value}}</strong></div>{{end}}</div></details>{{end}}
           {{else}}<div class="energy-live-empty"><strong>Noch keine Live-Werte</strong><span>Home Assistant kann später verbunden werden.</span></div>{{end}}
         </aside>
+      </section>
+      <section class="energy-card energy-chart" aria-labelledby="energy-chart-title">
+        <header class="energy-chart-head"><div><h2 id="energy-chart-title">Letzte 24 Stunden</h2><p>Wann war viel los – und woher kam die Energie?</p></div><small>{{.Chart.Status}}</small></header>
+        {{if .Chart.HasData}}<div class="energy-chart-layout">
+          <div class="energy-chart-plot">
+            <div class="energy-chart-legend" aria-label="Diagrammlegende">{{range .Chart.Series}}<span class="{{.Key}}"><i aria-hidden="true"></i>{{.Label}} <strong>{{.Latest}}</strong></span>{{end}}</div>
+            <svg class="energy-chart-svg desktop" viewBox="0 0 800 236" role="img" aria-labelledby="energy-chart-svg-title energy-chart-svg-desc">
+              <title id="energy-chart-svg-title">Leistungsverlauf der letzten 24 Stunden</title>
+              <desc id="energy-chart-svg-desc">Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt.</desc>
+              {{range .Chart.YTicks}}<line class="energy-chart-grid{{if eq .Label "0 kW"}} zero{{end}}" x1="52" x2="788" y1="{{.Position}}" y2="{{.Position}}"></line><text class="energy-chart-axis-label" x="44" y="{{.Position}}" text-anchor="end" dominant-baseline="middle">{{.Label}}</text>{{end}}
+              {{range .Chart.XTicks}}<line class="energy-chart-grid" x1="{{.Position}}" x2="{{.Position}}" y1="16" y2="204"></line><text class="energy-chart-axis-label" x="{{.Position}}" y="226" text-anchor="middle">{{.Label}}</text>{{end}}
+              {{range .Chart.Series}}<path class="energy-chart-line {{.Key}}" d="{{.Path}}"></path>{{end}}
+            </svg>
+            <svg class="energy-chart-svg mobile" viewBox="0 0 400 236" role="img" aria-labelledby="energy-chart-mobile-title energy-chart-mobile-desc">
+              <title id="energy-chart-mobile-title">Leistungsverlauf der letzten 24 Stunden</title>
+              <desc id="energy-chart-mobile-desc">Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt.</desc>
+              {{range .Chart.YTicks}}<line class="energy-chart-grid{{if eq .Label "0 kW"}} zero{{end}}" x1="44" x2="388" y1="{{.MobilePosition}}" y2="{{.MobilePosition}}"></line><text class="energy-chart-axis-label" x="37" y="{{.MobilePosition}}" text-anchor="end" dominant-baseline="middle">{{.Label}}</text>{{end}}
+              {{range .Chart.XTicks}}<line class="energy-chart-grid" x1="{{.MobilePosition}}" x2="{{.MobilePosition}}" y1="16" y2="204"></line><text class="energy-chart-axis-label" x="{{.MobilePosition}}" y="226" text-anchor="middle">{{.Label}}</text>{{end}}
+              {{range .Chart.Series}}<path class="energy-chart-line {{.Key}}" d="{{.MobilePath}}"></path>{{end}}
+            </svg>
+            <small class="energy-chart-hint">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. {{.Chart.Range}}</small>
+          </div>
+          <aside class="energy-chart-note"><span>Auf einen Blick</span><strong>{{.Chart.Summary}}</strong><p>{{.Chart.Detail}}</p></aside>
+        </div>{{else}}<div class="energy-chart-empty"><strong>Noch kein vollständiger Tagesverlauf</strong><p>{{.Chart.Status}}</p></div>{{end}}
       </section>
       <section class="energy-card" id="fahrplan">
         <header class="energy-card-head"><div><h2>Ihr Energie-Fahrplan</h2><p>Ein klarer Schritt nach dem anderen.</p></div></header>

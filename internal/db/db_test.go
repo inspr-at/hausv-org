@@ -121,3 +121,51 @@ func TestForeignKeysEnforced(t *testing.T) {
 		t.Fatal("insert violating a foreign key must fail with foreign_keys ON")
 	}
 }
+
+func TestConsumptionMappingMigrationOnlyCorrectsLegacyBatteryHeuristic(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "energy-mapping.db")
+	database, err := Open(path)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	now := "2026-07-29T10:00:00Z"
+	if _, err := database.Exec(`INSERT INTO home_profiles(tenant_slug,created_at,updated_at) VALUES('jhw22',?,?)`, now, now); err != nil {
+		t.Fatalf("insert profile: %v", err)
+	}
+	for _, item := range []struct {
+		id, entity, name string
+	}{
+		{"legacy-load", "sensor.sonnenbatterie_state_consumption_current", "Home Current Consumption"},
+		{"real-battery", "sensor.battery_discharge_power", "Battery Discharge Power"},
+	} {
+		if _, err := database.Exec(`INSERT INTO energy_entity_mappings
+			(id,tenant_slug,entity_id,metric,display_name,unit,device_class,confirmed,created_at,updated_at,asset_id)
+			VALUES(?,'jhw22',?,'battery-power',?,'W','power',1,?,?, '')`,
+			item.id, item.entity, item.name, now, now,
+		); err != nil {
+			t.Fatalf("insert mapping %s: %v", item.id, err)
+		}
+	}
+	if _, err := database.Exec(`DELETE FROM schema_migrations WHERE version='0023_energy_consumption_mapping.sql'`); err != nil {
+		t.Fatalf("reset migration marker: %v", err)
+	}
+	if err := database.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+
+	database, err = Open(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	defer database.Close()
+	var legacy, battery string
+	if err := database.QueryRow(`SELECT metric FROM energy_entity_mappings WHERE id='legacy-load'`).Scan(&legacy); err != nil {
+		t.Fatalf("legacy query: %v", err)
+	}
+	if err := database.QueryRow(`SELECT metric FROM energy_entity_mappings WHERE id='real-battery'`).Scan(&battery); err != nil {
+		t.Fatalf("battery query: %v", err)
+	}
+	if legacy != "load-power" || battery != "battery-power" {
+		t.Fatalf("migration metrics: legacy=%q battery=%q", legacy, battery)
+	}
+}

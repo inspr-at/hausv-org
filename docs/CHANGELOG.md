@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.51.0] - 2026-07-29
+
+### Neu
+
+- **Die letzten 24 Stunden werden als ruhiger Energieverlauf sichtbar.** Hausverbrauch, PV, Netz und Speicher stehen auf einer gemeinsamen Kilowatt-Skala; eine kurze Zusammenfassung nennt die höchste Last und ordnet ihre Herkunft verständlich ein.
+
+### Verbessert
+
+- **Mobil bleibt der Verlauf wirklich lesbar.** Eine eigene schmale Diagrammgeometrie bewahrt Achsen, Linien und Zeitangaben ohne seitliches Scrollen.
+- **Home Assistant wird geschont.** Viele tausend ausschließlich lesend geladene Zustandswechsel werden serverseitig auf 96 Viertelstunden verdichtet und pro Haus kurz zwischengespeichert; der Browser benötigt weder externe Chart-Bibliothek noch CDN.
+- **Aktualität richtet sich nach den gerade gelesenen Werten.** Das Cockpit erkennt eine aktive Home-Assistant-Verbindung anhand der tatsächlichen Live-Zeitpunkte statt anhand der ursprünglichen Einrichtung.
+- **Hausverbrauch bleibt Hausverbrauch.** Ältere eindeutig benannte Verbrauchssensoren werden aus einer früheren Batterie-Zuordnung sicher in die richtige Bedeutung überführt.
+
 ## [0.50.0] - 2026-07-29
 
 ### Verbessert

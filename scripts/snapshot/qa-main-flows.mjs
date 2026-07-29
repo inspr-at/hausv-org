@@ -614,6 +614,19 @@ async function assertEnergySafetyAndFlow(viewport) {
   if (await page.getByText('Home Current Consumption', { exact: true }).isVisible().catch(() => false)) {
     fail(`Energie ${viewport.name}: technische Home-Assistant-Rohbezeichnung konkurriert mit der Übersicht`);
   }
+  const chart = page.locator('.energy-chart');
+  if (!(await chart.getByRole('heading', { name: 'Letzte 24 Stunden' }).count()) ||
+      (await chart.locator('path.energy-chart-line').count()) < 3 ||
+      !(await chart.getByText('Die höchste Last lag um', { exact: false }).count())) {
+    fail(`Energie ${viewport.name}: verständlicher 24-Stunden-Verlauf fehlt`);
+  }
+  if (!(await page.getByText('Messwerte aktuell', { exact: true }).count())) {
+    fail(`Energie ${viewport.name}: Live-Aktualität verwendet nicht den aktuellen Home-Assistant-Zeitpunkt`);
+  }
+  const chartBox = await chart.locator('svg:visible').boundingBox();
+  if (!chartBox || chartBox.width > viewport.size.width + 1) {
+    fail(`Energie ${viewport.name}: 24-Stunden-Diagramm läuft aus dem sichtbaren Bereich`);
+  }
   const strip = page.locator('.energy-mode-strip');
   if ((await strip.locator('strong').first().innerText()).trim() !== 'Nur beobachten') {
     fail(`Energie ${viewport.name}: startet nicht in Nur beobachten`);
@@ -709,6 +722,9 @@ async function assertEnergySafetyAndFlow(viewport) {
         path: join(process.env.HV_QA_SCREENSHOT_DIR, 'energy-many-metrics-desktop.png'),
         fullPage: true,
       });
+      await chart.screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, 'energy-24h-desktop.png'),
+      });
     }
     await measureControl.locator('input[value="inventory"]').check();
     await measureControl.getByRole('button', { name: 'Hausaufgabe anlegen' }).click();
@@ -750,6 +766,9 @@ async function assertEnergySafetyAndFlow(viewport) {
       await page.screenshot({
         path: join(process.env.HV_QA_SCREENSHOT_DIR, 'energy-many-metrics-mobile.png'),
         fullPage: true,
+      });
+      await chart.screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, 'energy-24h-mobile.png'),
       });
     }
   }

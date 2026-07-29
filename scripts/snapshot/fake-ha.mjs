@@ -4,7 +4,7 @@
 import { createServer } from 'node:http';
 
 const port = Number(process.argv[2] || 8122);
-const updated = '2026-07-28T10:00:00Z';
+const updated = new Date().toISOString();
 const commonNoise = [
   state('sensor.iphone_battery', '81', 'iPhone Battery', 'battery', '%'),
   state('sensor.robot_battery', '64', 'Saugroboter Battery', 'battery', '%'),
@@ -62,7 +62,31 @@ function state(entity_id, value, friendly_name, device_class, unit_of_measuremen
 
 createServer((request, response) => {
   response.setHeader('Content-Type', 'application/json');
-  const match = request.url?.match(/^\/(jhw22|eltern|schwiegereltern)\/api\/states(?:\/(.*))?$/);
+  const url = new URL(request.url || '/', 'http://127.0.0.1');
+  const historyMatch = url.pathname.match(/^\/(jhw22|eltern|schwiegereltern)\/api\/history\/period(?:\/.*)?$/);
+  if (request.method === 'GET' && historyMatch) {
+    const states = homes[historyMatch[1]];
+    const requested = (url.searchParams.get('filter_entity_id') || '').split(',').filter(Boolean);
+    const startPart = url.pathname.split('/period/')[1];
+    const start = startPart ? new Date(decodeURIComponent(startPart)) : new Date(Date.now() - 24 * 3600000);
+    const groups = requested.map((entityID) => {
+      const source = states.find((candidate) => candidate.entity_id === entityID);
+      if (!source) return [];
+      return Array.from({ length: 97 }, (_, index) => {
+        const at = new Date(start.getTime() + index * 15 * 60000).toISOString();
+        return {
+          entity_id: index === 0 || index === 96 ? entityID : undefined,
+          state: String(historyValue(entityID, Number(source.state), index)),
+          last_changed: at,
+          last_updated: at,
+          attributes: index === 0 ? source.attributes : undefined,
+        };
+      });
+    }).filter((group) => group.length);
+    response.end(JSON.stringify(groups));
+    return;
+  }
+  const match = url.pathname.match(/^\/(jhw22|eltern|schwiegereltern)\/api\/states(?:\/(.*))?$/);
   if (request.method !== 'GET' || !match) {
     response.statusCode = 404;
     response.end('{"message":"not found"}');
@@ -84,3 +108,17 @@ createServer((request, response) => {
 }).listen(port, '127.0.0.1', () => {
   process.stdout.write(`fake Home Assistant listening on ${port}\n`);
 });
+
+function historyValue(entityID, current, index) {
+  const phase = index / 96;
+  const daylight = Math.max(0, Math.sin((phase - 0.25) * Math.PI * 2));
+  const evening = Math.exp(-Math.pow((phase - 0.82) / 0.08, 2));
+  const morning = Math.exp(-Math.pow((phase - 0.30) / 0.07, 2));
+  if (entityID.includes('pv_current_power')) return Number((daylight * Math.max(current, 5.2)).toFixed(3));
+  if (entityID.includes('home_consumption')) return Number((0.8 + morning * 1.5 + evening * 4.6 + phase * 0.25).toFixed(3));
+  if (entityID.includes('grid_import_power')) return Number((0.15 + evening * 2.1).toFixed(3));
+  if (entityID.includes('grid_export_power')) return Number((daylight * 1.7).toFixed(3));
+  if (entityID.includes('battery_charge_power')) return Number((daylight * 1.4).toFixed(3));
+  if (entityID.includes('battery_discharge_power')) return Number((evening * 1.8).toFixed(3));
+  return current;
+}

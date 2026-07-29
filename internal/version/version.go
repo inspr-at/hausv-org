@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.51.0",
+			Date:     "29. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Die letzten 24 Stunden erzählen jetzt verständlich, was energetisch im Haus passiert ist.",
+			Intro:    "Ein ruhiger Verlauf verbindet Hausverbrauch, PV, Netz und Speicher – ohne Technik-Dashboard und ohne externe Diagrammverbindung.",
+			Items: []NoteItem{
+				{Label: "Tagesverlauf verstehen", Text: "Vier vergleichbare Leistungslinien zeigen, wann viel Energie gebraucht und woher sie bezogen wurde."},
+				{Label: "Spitze einordnen", Text: "Eine kurze Zusammenfassung nennt Zeitpunkt und Höhe der größten Last sowie die gemessene Herkunft."},
+				{Label: "Mobil lesen", Text: "Eine eigene schmale Darstellung hält Achsen, Zeiten und Linien auch auf kleinen Bildschirmen klar."},
+				{Label: "Aktualität erkennen", Text: "Der Datenstatus folgt den tatsächlich gerade gelesenen Home-Assistant-Werten."},
+			},
+		},
+		{
 			Version:  "0.50.0",
 			Date:     "29. Juli 2026",
 			Kind:     "Mein Zuhause",

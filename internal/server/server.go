@@ -763,6 +763,8 @@ type app struct {
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
 	energyStore           energy.Storage
+	energyChartMu         sync.Mutex
+	energyChartCache      map[string]energyChartCacheEntry
 
 	chargingTickInterval   time.Duration
 	chargingStaleAfter     time.Duration

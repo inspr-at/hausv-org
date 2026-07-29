@@ -1,5 +1,6 @@
 // Package homeassistant talks to a Home Assistant instance: entity state,
-// history and long-term statistics. Used only by the parking module.
+// history and long-term statistics. Used by parking and the read-only home
+// energy cockpit.
 //
 // Display formatting deliberately stays OUT of here — that is a view concern.
 package homeassistant
@@ -277,6 +278,8 @@ func (c Config) History(ctx context.Context, start time.Time, end time.Time, ent
 	q := url.Values{}
 	q.Set("end_time", end.UTC().Format(time.RFC3339))
 	q.Set("filter_entity_id", strings.Join(entityIDs, ","))
+	q.Set("minimal_response", "")
+	q.Set("no_attributes", "")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"?"+q.Encode(), nil)
 	if err != nil {
 		return nil, errors.New("could not build home assistant history request")
@@ -300,9 +303,19 @@ func (c Config) History(ctx context.Context, start time.Time, end time.Time, ent
 	}
 	out := map[string][]HistoryState{}
 	for _, group := range groups {
+		entityID := ""
+		for _, item := range group {
+			if item.EntityID != "" {
+				entityID = item.EntityID
+				break
+			}
+		}
+		if entityID == "" {
+			continue
+		}
 		for _, item := range group {
 			if item.EntityID == "" {
-				continue
+				item.EntityID = entityID
 			}
 			out[item.EntityID] = append(out[item.EntityID], item)
 		}
