@@ -331,6 +331,8 @@ type UnitPaymentStatusView struct {
 type BuildingUnitView struct {
 	ID                 string
 	Label              string
+	HomeDisplayName    string
+	HasHomeDisplayName bool
 	UnitType           string
 	UnitTypeLabel      string
 	TypeOptions        []SelectOption
@@ -347,6 +349,14 @@ type BuildingUnitView struct {
 	PaymentHasUpdated  bool
 	PaymentOptions     []SelectOption
 	DeleteConfirmLabel string
+}
+
+type HomeIdentityView struct {
+	DisplayName    string
+	UnitLabel      string
+	AriaLabel      string
+	HasDisplayName bool
+	HasUnit        bool
 }
 
 type ContactCardView struct {

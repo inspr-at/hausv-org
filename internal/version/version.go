@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.57.0",
+			Date:     "29. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Der persönliche Anzeigename führt jetzt einheitlich durch das Portal.",
+			Intro:    "Der gewählte Name steht im Vordergrund; die offizielle Wohneinheit bleibt direkt darunter ruhig und eindeutig sichtbar.",
+			Items: []NoteItem{
+				{Label: "Schneller erkennen", Text: "Seitenleiste, Mobilmenü, Energieüberblick und Einstellungen nennen dasselbe Zuhause gleich."},
+				{Label: "Sauber unterscheiden", Text: "„QA Zuhause“ kann persönlich heißen, während „Top 11“ die unveränderte offizielle Stammdatenbezeichnung bleibt."},
+				{Label: "Überall mitnehmen", Text: "Der Anzeigename bleibt auch während eines noch laufenden Onboardings auf anderen Portalseiten erhalten."},
+				{Label: "Mobil lesbar bleiben", Text: "Auch lange Namen ordnen sich ohne horizontales Überlaufen in die klare zweistufige Hierarchie ein."},
+			},
+		},
+		{
 			Version:  "0.56.0",
 			Date:     "29. Juli 2026",
 			Kind:     "Mein Zuhause",

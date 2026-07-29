@@ -740,6 +740,7 @@ const PageTemplates = `
     body { margin: 0; background: var(--paper); color: var(--ink); }
     a { color: inherit; }
     button, input { font: inherit; }
+    [data-home-display-name], [data-home-unit-label] { min-width: 0; overflow-wrap: anywhere; }
     /* Accessibility convention: all keyboard-reachable controls keep a visible focus ring. */
     :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
     .app-shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0,1fr); background: var(--paper); }
@@ -775,6 +776,9 @@ const PageTemplates = `
     .nav-icon { width: 23px; height: 23px; display: grid; place-items: center; flex: 0 0 auto; color: currentColor; }
     .nav-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .nav-label { min-width: 0; }
+    .nav-home-identity { min-width: 0; display: grid; gap: 1px; line-height: 1.08; }
+    .nav-home-identity strong { min-width: 0; overflow: hidden; color: inherit; font-size: 15px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .nav-home-identity small { min-width: 0; overflow: hidden; color: rgba(255,255,255,.48); font-size: 11px; font-weight: 550; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
     .nav-badge { margin-left: auto; min-width: 25px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); padding: 0 7px; background: var(--gold); color: #172019; font-size: 11px; font-weight: 900; line-height: 1; }
     .nav-group-label { margin: 10px 12px 2px; color: rgba(255,255,255,.42); font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
     .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 16px 8px 0; display: grid; gap: 12px; }
@@ -811,7 +815,8 @@ const PageTemplates = `
     .energy-heading { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 24px; align-items: end; }
     .energy-heading-copy { min-width: 0; }
     .energy-heading .eyebrow { margin-bottom: 10px; }
-    .energy-heading-context { margin: 7px 0 0; color: var(--muted); font-size: 12.5px; font-weight: 700; }
+    .energy-heading-unit { margin: 4px 0 0; color: var(--muted); font-size: 13px; font-weight: 650; line-height: 1.3; }
+    .energy-heading-context { margin: 8px 0 0; color: var(--soft); font-size: 12px; font-weight: 600; }
     .energy-heading .lede { margin-top: 10px; }
     .energy-heading-action { align-self: center; gap: 7px; }
     .energy-heading-action svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -1090,6 +1095,7 @@ const PageTemplates = `
     .onboarding-card { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-md); overflow: hidden; }
     .onboarding-card-head { display: grid; gap: 9px; padding: clamp(24px,4vw,38px); border-bottom: 1px solid var(--line); }
     .onboarding-card-head h1 { font-size: clamp(34px,5vw,50px); }
+    .onboarding-card-head .onboarding-home-unit { margin-top: -4px; color: var(--muted); font-size: 13px; font-weight: 650; line-height: 1.35; }
     .onboarding-card-head p { max-width: 660px; color: var(--muted); line-height: 1.55; }
     .onboarding-body { display: grid; gap: 22px; padding: clamp(24px,4vw,38px); }
     .onboarding-explain { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
@@ -2287,8 +2293,13 @@ const PageTemplates = `
 	      .side-portal strong { font-size: 15px; }
 	      .side-portal span { display: none; }
 	      .nav-toggle { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none; }
-	      .mobile-menu-toggle { min-height: 44px; max-width: 180px; align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); padding: 8px 10px; color: rgba(255,255,255,.92); background: rgba(255,255,255,.07); font-size: 12px; font-weight: 850; letter-spacing: .01em; cursor: pointer; }
+	      .mobile-menu-toggle { min-height: 44px; max-width: min(230px,44vw); align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); padding: 7px 10px; color: rgba(255,255,255,.92); background: rgba(255,255,255,.07); font-size: 12px; font-weight: 850; letter-spacing: .01em; cursor: pointer; }
 	      .mobile-menu-toggle::before { content: ""; width: 14px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; box-shadow: 0 4px 0 currentColor inset; }
+	      .mobile-menu-prefix { color: rgba(255,255,255,.58); font-size: 10px; font-weight: 650; }
+	      .mobile-home-identity { min-width: 0; display: grid; gap: 1px; text-align: left; line-height: 1.05; }
+	      .mobile-home-identity strong, .mobile-home-identity small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	      .mobile-home-identity strong { color: #fff; font-size: 12px; }
+	      .mobile-home-identity small { color: rgba(255,255,255,.52); font-size: 10px; font-weight: 550; }
 	      .nav-toggle:focus-visible + .mobile-menu-toggle { outline: 3px solid var(--gold); outline-offset: 3px; }
 	      .nav-toggle:checked + .mobile-menu-toggle { border-color: rgba(231,197,116,.62); color: #fff; background: rgba(231,197,116,.13); }
 	      .side-nav, .side-foot { grid-column: 1 / -1; display: none; }
@@ -2560,11 +2571,11 @@ const PageTemplates = `
       </div>
 	    </div>
 	    <input class="nav-toggle" id="portal-nav-toggle" type="checkbox" aria-label="Navigation anzeigen">
-	    <label class="mobile-menu-toggle" for="portal-nav-toggle">Menü · {{if eq .ActivePage "home"}}Überblick{{else if eq .ActivePage "energy"}}Zuhause{{else if eq .ActivePage "announcements"}}Aushang{{else if eq .ActivePage "events"}}Termine{{else if eq .ActivePage "contacts"}}Kontakte{{else if eq .ActivePage "parking"}}Parkplatz{{else if eq .ActivePage "documents"}}Dokumente{{else if eq .ActivePage "handovers"}}Übergaben{{else if eq .ActivePage "issues"}}Anliegen{{else if eq .ActivePage "abstimmungen"}}Abstimmung{{else if eq .ActivePage "users"}}Benutzer{{else if eq .ActivePage "audit"}}Audit{{else}}Einstellungen{{end}}</label>
+	    <label class="mobile-menu-toggle" for="portal-nav-toggle"><span class="mobile-menu-prefix">Menü</span>{{if eq .ActivePage "energy"}}<span class="mobile-home-identity" data-home-identity="mobile-menu" aria-label="{{.HomeIdentity.AriaLabel}}"><strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<small data-home-unit-label>{{.HomeIdentity.UnitLabel}}</small>{{end}}</span>{{else}}<span>{{if eq .ActivePage "home"}}Überblick{{else if eq .ActivePage "announcements"}}Aushang{{else if eq .ActivePage "events"}}Termine{{else if eq .ActivePage "contacts"}}Kontakte{{else if eq .ActivePage "parking"}}Parkplatz{{else if eq .ActivePage "documents"}}Dokumente{{else if eq .ActivePage "handovers"}}Übergaben{{else if eq .ActivePage "issues"}}Anliegen{{else if eq .ActivePage "abstimmungen"}}Abstimmung{{else if eq .ActivePage "users"}}Benutzer{{else if eq .ActivePage "audit"}}Audit{{else}}Einstellungen{{end}}</span>{{end}}</label>
 	    <nav class="side-nav">
 	      {{if .CanUseResidentAreas}}
 	      <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="nav-label">Hausüberblick</span></a>
-	      {{if .CanViewEnergy}}<a class="nav-item {{if eq .ActivePage "energy"}}active{{end}}" href="/app/energie"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 13h5l2-7 3 12 2-5h4"/><path d="M5 20h14"/></svg></span><span class="nav-label">Mein Zuhause</span></a>{{end}}
+	      {{if .CanViewEnergy}}<a class="nav-item {{if eq .ActivePage "energy"}}active{{end}}" href="/app/energie" data-home-identity="nav" aria-label="{{.HomeIdentity.AriaLabel}}"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 13h5l2-7 3 12 2-5h4"/><path d="M5 20h14"/></svg></span><span class="nav-label"><span class="nav-home-identity"><strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<small data-home-unit-label>{{.HomeIdentity.UnitLabel}}</small>{{end}}</span></span></a>{{end}}
 	      <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
 	      <a class="nav-item {{if eq .ActivePage "events"}}active{{end}}" href="/app/events"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></span><span class="nav-label">Termine</span></a>
 	      <a class="nav-item {{if eq .ActivePage "contacts"}}active{{end}}" href="/app/kontakte"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg></span><span class="nav-label">Kontakte</span></a>
@@ -4966,6 +4977,8 @@ const PageTemplates = `
       .settings-link-copy { min-width: 0; }
       .settings-link-copy strong { display: block; font-family: var(--font-serif); font-size: 18px; }
       .settings-link-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
+      .settings-link-copy .settings-home-unit { margin-top: 2px; color: var(--muted); font-size: 12.5px; font-weight: 650; }
+      .settings-link-copy .settings-home-purpose { margin-top: 6px; color: var(--soft); font-size: 11.5px; font-weight: 550; }
       .settings-link-arrow { color: var(--gold-ink); font-size: 24px; }
       .settings-link.secondary { min-height: 64px; }
       .settings-link.secondary .settings-link-icon { width: 36px; height: 36px; background: var(--panel-soft); }
@@ -5003,9 +5016,9 @@ const PageTemplates = `
           {{if .CanManageHomeIdentity}}<section class="panel settings-section settings-home-profile">
             <div class="settings-section-head"><h2>Mein Zuhause</h2><p>Anzeigename, Art und zugeordnete Wohnung.</p></div>
             <div class="settings-links">
-              <a class="settings-link" href="{{.SettingsHomeURL}}">
+              <a class="settings-link" href="{{.SettingsHomeURL}}"{{if .HomeIdentity.HasDisplayName}} data-home-identity="settings" aria-label="{{.HomeIdentity.AriaLabel}} bearbeiten"{{end}}>
                 <span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/></svg></span>
-                <span class="settings-link-copy"><strong>{{.SettingsHomeName}}</strong><span>Name und offizielle Einheit für „Mein Zuhause“ festlegen</span></span><span class="settings-link-arrow">›</span>
+                <span class="settings-link-copy">{{if .HomeIdentity.HasDisplayName}}<strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<span class="settings-home-unit" data-home-unit-label>{{.HomeIdentity.UnitLabel}}</span>{{end}}<span class="settings-home-purpose">Anzeigename und Zuordnung bearbeiten</span>{{else}}<strong>Mein Zuhause einrichten</strong><span>Name, Art und Zuordnung festlegen</span>{{end}}</span><span class="settings-link-arrow">›</span>
               </a>
             </div>
           </section>{{end}}
@@ -5057,6 +5070,7 @@ const PageTemplates = `
     <style>
       .home-identity-page { width: min(920px,100%); gap: 18px; }
       .home-identity-head { display: grid; gap: 6px; max-width: 760px; }
+      .home-identity-head-unit { margin-top: -1px; color: var(--muted); font-size: 13px; font-weight: 650; line-height: 1.35; }
       .home-identity-head .lede { max-width: 680px; }
       .home-identity-map { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); overflow: hidden; padding: 0; }
       .home-identity-scope { min-height: 116px; display: grid; align-content: center; gap: 5px; padding: 18px 20px; border-right: 1px solid var(--line); }
@@ -5065,6 +5079,8 @@ const PageTemplates = `
       .home-identity-scope span { color: var(--gold-ink); font-size: 10.5px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
       .home-identity-scope strong { font-family: var(--font-serif); font-size: 21px; line-height: 1.2; overflow-wrap: anywhere; }
       .home-identity-scope small { color: var(--muted); font-size: 12px; line-height: 1.4; }
+      .home-identity-scope .home-identity-unit-label { font-weight: 650; }
+      .home-identity-scope .home-identity-scope-meta { margin-top: 1px; color: var(--soft); font-size: 11.5px; }
       .home-identity-form-card { display: grid; gap: 18px; padding: clamp(20px,3vw,30px); }
       .home-identity-form-head { display: grid; gap: 5px; }
       .home-identity-form-head h2 { font-size: 28px; }
@@ -5095,16 +5111,17 @@ const PageTemplates = `
         <div class="page-actions"><a class="button" href="{{.BackURL}}">{{.BackLabel}}</a></div>
       </div>
       <section class="page home-identity-page">
-        <header class="home-identity-head">
-          <span class="eyebrow">Einstellungen</span>
-          <h1>Mein Zuhause</h1>
-          <p class="lede">Hier ändern Sie den freundlichen Namen im Energie- und Wartungsbereich.</p>
+        <header class="home-identity-head" data-home-identity="editor-heading" aria-label="{{.HomeIdentity.AriaLabel}}">
+          <span class="eyebrow">Mein Zuhause · Einstellungen</span>
+          <h1 data-home-display-name>{{.Profile.HouseholdName}}</h1>
+          {{if .HasHomeUnit}}<p class="home-identity-head-unit" data-home-unit-label>{{.HomeUnitLabel}}</p>{{end}}
+          <p class="lede">Anzeigename, Art und Zuordnung an einem Ort.</p>
         </header>
         {{if .Saved}}<div class="message success">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</div>{{end}}
         {{if .Invalid}}<div class="message error">Bitte einen Namen und eine gültige Zuhause-Art auswählen.</div>{{end}}
         <section class="panel home-identity-map" aria-label="Namensbereiche">
           <div class="home-identity-scope"><span>Liegenschaft</span><strong>{{.HouseName}}</strong><small>{{if eq .HouseName .Tenant.Address}}Name und Adresse der Liegenschaft{{else}}{{.Tenant.Address}}{{end}}</small></div>
-          <div class="home-identity-scope current"><span>Mein Zuhause</span><strong>{{.Profile.HouseholdName}}</strong><small>{{.HomeTypeLabel}}{{if .HasHomeUnit}} · {{.HomeUnitLabel}}{{else}} · Hausprofil{{end}}</small></div>
+          <div class="home-identity-scope current" data-home-identity="editor-summary" aria-label="{{.HomeIdentity.AriaLabel}}"><span>Mein Zuhause</span><strong data-home-display-name>{{.Profile.HouseholdName}}</strong>{{if .HasHomeUnit}}<small class="home-identity-unit-label" data-home-unit-label>{{.HomeUnitLabel}}</small>{{end}}<small class="home-identity-scope-meta">{{.HomeTypeLabel}}{{if not .HasHomeUnit}} · Hausprofil{{end}}</small></div>
           <div class="home-identity-scope"><span>{{.OfficialUnitTitle}}</span><strong>{{.OfficialUnitSummary}}</strong><small>{{if .HasHomeUnit}}Diesem Hausprofil zugeordnet.{{else}}Legt fest, wem dieses Hausprofil gehört.{{end}}</small></div>
         </section>
         <section class="panel home-identity-form-card">
@@ -5668,6 +5685,8 @@ const PageTemplates = `
       .building .home-profile-context-name span { color: var(--gold-ink); font-size: 10.5px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
       .building .home-profile-context-name strong { font-family: var(--font-serif); font-size: 21px; line-height: 1.15; overflow-wrap: anywhere; }
       .building .home-profile-context-name small, .building .home-profile-context > p { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .building .home-profile-context-name .home-profile-unit { font-weight: 650; }
+      .building .home-profile-context-name .home-profile-meta { margin-top: 1px; color: var(--soft); font-size: 11.5px; }
       .building .home-profile-context > p { margin: 0; }
       .building .unit-add { border: 1px solid var(--ink); border-radius: 9px; background: var(--ink); color: #fff; }
       .building .unit-add > summary { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 15px; cursor: pointer; list-style: none; font-weight: 800; }
@@ -5683,6 +5702,8 @@ const PageTemplates = `
       .building .unit-name { display: grid; gap: 2px; min-width: 0; }
       .building .unit-name strong { font-family: var(--font-serif); font-size: 20px; line-height: 1.15; overflow-wrap: anywhere; }
       .building .unit-name span, .building .unit-share span, .building .payment-meta { color: var(--muted); font-size: 12.5px; font-weight: 700; line-height: 1.35; }
+      .building .unit-name .unit-official { font-weight: 650; }
+      .building .unit-name .unit-meta { color: var(--soft); font-size: 11.5px; font-weight: 600; line-height: 1.3; }
       .building .unit-share { display: grid; gap: 2px; min-width: 0; }
       .building .unit-share strong { font-size: 13.5px; overflow-wrap: anywhere; }
       .building .unit-open { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 13px; font-weight: 800; }
@@ -5875,10 +5896,10 @@ const PageTemplates = `
           </div>
           {{if .HasHomeProfile}}
             {{if .HomeProfileSaved}}<p class="flash ok">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</p>{{end}}
-            <aside class="home-profile-context" aria-label="Abgrenzung zum Hausprofil">
+            <aside class="home-profile-context" data-home-identity="building-context" aria-label="{{.HomeIdentity.AriaLabel}}">
               <span class="home-profile-context-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 11 8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-6h4v6"/></svg></span>
-              <span class="home-profile-context-name"><span>Mein Zuhause</span><strong>{{.HomeProfile.HouseholdName}}</strong><small>{{.HomeTypeLabel}} · {{.HomeProfileScopeLabel}}</small></span>
-              <p>{{if .HasHomeProfileUnit}}Freundlicher Name für das Hausprofil der offiziellen Einheit „{{.HomeProfileUnitLabel}}“.{{else if eq .HomeProfile.HomeType "apartment"}}Dieses Wohnungsprofil ist noch keiner offiziellen Einheit zugeordnet.{{else}}Anzeigename für Energie, Wartung und Empfehlungen der Liegenschaft.{{end}}</p>
+              <span class="home-profile-context-name"><span>Mein Zuhause</span><strong data-home-display-name>{{.HomeProfile.HouseholdName}}</strong>{{if .HasHomeProfileUnit}}<small class="home-profile-unit" data-home-unit-label>{{.HomeProfileUnitLabel}}</small>{{end}}<small class="home-profile-meta">{{.HomeTypeLabel}}{{if not .HasHomeProfileUnit}} · {{.HomeProfileScopeLabel}}{{end}}</small></span>
+              <p>{{if .HasHomeProfileUnit}}„{{.HomeProfileUnitLabel}}“ bleibt die offizielle Stammdatenbezeichnung.{{else if eq .HomeProfile.HomeType "apartment"}}Dieses Wohnungsprofil ist noch keiner offiziellen Einheit zugeordnet.{{else}}Anzeigename für Energie, Wartung und Empfehlungen der Liegenschaft.{{end}}</p>
               <a class="button" href="/app/settings/home?from=building">Zuhause bearbeiten</a>
             </aside>
           {{end}}
@@ -5889,7 +5910,7 @@ const PageTemplates = `
               {{range .Units}}
                 <details class="unit-editor" id="unit-{{.ID}}">
                   <summary>
-                    <span class="unit-name"><strong>{{.Label}}</strong><span>{{.UnitTypeLabel}} · {{.BillableLabel}}</span></span>
+                    <span class="unit-name"{{if .HasHomeDisplayName}} data-home-identity="building-unit" aria-label="{{.HomeDisplayName}}, offizielle Einheit {{.Label}}"{{end}}>{{if .HasHomeDisplayName}}<strong data-home-display-name>{{.HomeDisplayName}}</strong><span class="unit-official" data-home-unit-label>{{.Label}}</span><small class="unit-meta">{{.UnitTypeLabel}} · {{.BillableLabel}}</small>{{else}}<strong>{{.Label}}</strong><span>{{.UnitTypeLabel}} · {{.BillableLabel}}</span>{{end}}</span>
                     <span class="unit-share"><strong>{{.Share}}</strong><span>{{.MembersLabel}}</span></span>
                     <span class="pill {{.PaymentStatusClass}}">{{.PaymentStatus}}</span>
                     <span class="unit-open">Bearbeiten</span>
@@ -7229,7 +7250,7 @@ const PageTemplates = `
             <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button>{{if .HasCandidates}}<button class="button ghost onboarding-skip" type="submit" name="action" value="skip-mappings">Ohne Verbindung starten</button><button class="button primary" type="submit" name="action" value="mappings">{{.RecommendedCount}} Messwerte übernehmen</button>{{else}}<button class="button primary" type="submit" name="action" value="skip-mappings">Ohne Verbindung starten</button>{{end}}</div>
           </form>
         {{else}}
-          <header class="onboarding-card-head"><span class="eyebrow">Bereit</span><h1>Ihr Zuhause ist startklar.</h1><p>Alles bleibt im sicheren Beobachtungsmodus. Sie gehen in Ihrem Tempo weiter.</p></header>
+          <header class="onboarding-card-head" data-home-identity="onboarding-summary"{{if .HasHomeUnit}} aria-label="{{.Profile.HouseholdName}}, offizielle Einheit {{.HomeUnitLabel}}"{{end}}><span class="eyebrow">Ihr Zuhause ist startklar</span><h1 data-home-display-name>{{.Profile.HouseholdName}}</h1>{{if .HasHomeUnit}}<span class="onboarding-home-unit" data-home-unit-label>{{.HomeUnitLabel}}</span>{{end}}<p>Alles bleibt im sicheren Beobachtungsmodus. Sie gehen in Ihrem Tempo weiter.</p></header>
           <form class="onboarding-body" method="post" action="/app/zuhause/onboarding">
             <div class="onboarding-trust"><span aria-hidden="true">→</span><div><strong>Als Nächstes: {{.FinishRecommendation.Title}}</strong><p>{{.FinishRecommendation.Reason}}</p></div></div>
             <div class="onboarding-trust"><span aria-hidden="true">✓</span><div><strong>Drei Jahre voller Produktumfang kostenlos</strong><p>Danach gilt nach heutigem Modell: 1 € pro Monat, jährlich als 12 € verrechnet. Noch gibt es keine Zahlung und keine versteckte Einschränkung.</p></div></div>
@@ -7290,10 +7311,11 @@ const PageTemplates = `
     {{template "energyModeStrip" .}}
     <div class="page energy-page">
       <header class="energy-heading">
-        <div class="energy-heading-copy">
+        <div class="energy-heading-copy" data-home-identity="energy-heading" aria-label="{{.HomeIdentity.AriaLabel}}">
           <span class="eyebrow">Mein Zuhause</span>
-          <h1>{{.Profile.HouseholdName}}</h1>
-          <p class="energy-heading-context">{{.HomeTypeLabel}}{{if .HasHomeUnit}} · {{.HomeUnitLabel}}{{else}} · Hausprofil{{end}} · {{.Tenant.Address}}</p>
+          <h1 data-home-display-name>{{.Profile.HouseholdName}}</h1>
+          {{if .HasHomeUnit}}<p class="energy-heading-unit" data-home-unit-label>{{.HomeUnitLabel}}</p>{{end}}
+          <p class="energy-heading-context">{{.HomeTypeLabel}} · {{.Tenant.Address}}</p>
           <p class="lede">Was jetzt wichtig ist – ohne Technik-Überladung.</p>
         </div>
         {{if .CanManageHomeIdentity}}<a class="button energy-heading-action" href="/app/settings/home?from=energy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16-.7 4.7L8 20l10.8-10.8a2.3 2.3 0 0 0-3.2-3.2Z"/><path d="m14.5 7.1 3.2 3.2"/></svg>Zuhause bearbeiten</a>{{end}}

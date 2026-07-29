@@ -51,6 +51,40 @@ function fail(message) {
   throw new Error(message);
 }
 
+async function assertHomeIdentityPair(page, scope, displayName, unitLabel, label) {
+  const identity = page.locator(`[data-home-identity="${scope}"]`).first();
+  if (!(await identity.count())) fail(`${label}: Zuhause-Identität fehlt`);
+  const result = await identity.evaluate((root, expected) => {
+    const primary = root.querySelector('[data-home-display-name]');
+    const secondary = root.querySelector('[data-home-unit-label]');
+    const primaryStyle = primary ? getComputedStyle(primary) : null;
+    const secondaryStyle = secondary ? getComputedStyle(secondary) : null;
+    const primaryRect = primary?.getBoundingClientRect();
+    const secondaryRect = secondary?.getBoundingClientRect();
+    return {
+      primary: primary?.textContent?.trim() || '',
+      secondary: secondary?.textContent?.trim() || '',
+      inOrder: Boolean(primary && secondary && (primary.compareDocumentPosition(secondary) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      primaryFont: Number.parseFloat(primaryStyle?.fontSize || '0'),
+      secondaryFont: Number.parseFloat(secondaryStyle?.fontSize || '0'),
+      visible: Boolean(root.getClientRects().length),
+      below: !primaryRect || !secondaryRect || !root.getClientRects().length || secondaryRect.top >= primaryRect.bottom - 1,
+      aria: root.getAttribute('aria-label') || '',
+      expected,
+    };
+  }, { displayName, unitLabel });
+  if (result.primary !== displayName ||
+      result.secondary !== unitLabel ||
+      !result.inOrder ||
+      result.secondaryFont >= result.primaryFont ||
+      !result.visible ||
+      !result.below ||
+      !result.aria.includes(displayName) ||
+      !result.aria.includes(unitLabel)) {
+    fail(`${label}: Anzeigename und offizielle Einheit sind nicht sauber hierarchisiert (${JSON.stringify(result)})`);
+  }
+}
+
 function tenantOrigin(hostname) {
   const url = new URL(baseURL);
   url.hostname = hostname;
@@ -252,7 +286,9 @@ async function seedManagedContent() {
     await page.waitForURL(/\/app\/settings\/building\?home=saved/);
   }
   await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
-  if (!(await page.locator('[aria-label="Abgrenzung zum Hausprofil"]').getByText('QA Zuhause', { exact: true }).count()) ||
+  await assertHomeIdentityPair(page, 'building-context', 'QA Zuhause', 'Top 11', 'Gebäude-Einstellungen');
+  await assertHomeIdentityPair(page, 'building-unit', 'QA Zuhause', 'Top 11', 'Verknüpfte Einheit');
+  if (!(await page.locator('[data-home-identity="building-context"]').getByText('QA Zuhause', { exact: true }).count()) ||
       !(await page.getByText('Offizielle Bezeichnung', { exact: true }).count())) {
     fail('Gebäude-Einstellungen: „Mein Zuhause“ und offizielle Einheit werden nicht klar getrennt');
   }
@@ -635,13 +671,30 @@ async function assertEnergySafetyAndFlow(viewport) {
   const ownerContext = await newContext(viewport.size);
   const page = await localLogin(ownerContext, 'owner@example.com');
   await page.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
-  if (!(await page.locator('.energy-heading-context').getByText('Wohnung · Top 11 ·', { exact: false }).count()) ||
+  await assertHomeIdentityPair(page, 'energy-heading', 'QA Zuhause', 'Top 11', `Energie ${viewport.name}`);
+  if (viewport.name === 'Mobil') {
+    await page.locator('.mobile-menu-toggle').click();
+    await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Top 11', `Navigation ${viewport.name}`);
+    await assertHomeIdentityPair(page, 'mobile-menu', 'QA Zuhause', 'Top 11', `Mobiler Menükopf ${viewport.name}`);
+    if (process.env.HV_QA_SCREENSHOT_DIR) {
+      mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, 'home-name-nav-mobile-open.png'),
+      });
+    }
+    await page.locator('.mobile-menu-toggle').click();
+  } else {
+    await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Top 11', `Navigation ${viewport.name}`);
+  }
+  if (!(await page.locator('.energy-heading-context').getByText('Wohnung ·', { exact: false }).count()) ||
       !(await page.getByRole('link', { name: 'Zuhause bearbeiten' }).count())) {
     fail(`Energie ${viewport.name}: Name, offizielle Wohnung oder sichtbarer Bearbeitungsweg fehlt`);
   }
   await page.getByRole('link', { name: 'Zuhause bearbeiten' }).click();
   await page.waitForURL(/\/app\/settings\/home/);
-  if (!(await page.getByRole('heading', { name: 'Mein Zuhause', exact: true }).count()) ||
+  await assertHomeIdentityPair(page, 'editor-heading', 'QA Zuhause', 'Top 11', `Zuhause-Einstellungen ${viewport.name}`);
+  await assertHomeIdentityPair(page, 'editor-summary', 'QA Zuhause', 'Top 11', `Zuhause-Zusammenfassung ${viewport.name}`);
+  if (!(await page.getByRole('heading', { name: 'QA Zuhause', exact: true }).count()) ||
       (await page.locator('input[name="household_name"]').inputValue()) !== 'QA Zuhause' ||
       !(await page.getByText('Top 11', { exact: true }).count()) ||
       (await page.locator('[name="unit_id"]').inputValue()) !== 'top-11' ||
@@ -659,8 +712,42 @@ async function assertEnergySafetyAndFlow(viewport) {
       fullPage: true,
     });
   }
-  await page.getByRole('button', { name: 'Änderungen speichern' }).click();
-  await page.waitForURL(/\/app\/energie/);
+  if (viewport.name === 'Desktop') {
+    await page.locator('input[name="household_name"]').fill('Sonnendeck QA');
+    await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await page.waitForURL(/\/app\/energie/);
+    await assertHomeIdentityPair(page, 'energy-heading', 'Sonnendeck QA', 'Top 11', 'Umbenennung Energie Desktop');
+    await assertHomeIdentityPair(page, 'nav', 'Sonnendeck QA', 'Top 11', 'Umbenennung Navigation Desktop');
+    await page.getByRole('link', { name: 'Zuhause bearbeiten' }).click();
+    await page.locator('input[name="household_name"]').fill('QA Zuhause');
+    await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await page.waitForURL(/\/app\/energie/);
+  } else {
+    const longDisplayName = 'DachterrassenwohnungMitAußergewöhnlichLangemAnzeigenamenFürDieMobileDarstellung';
+    await page.locator('input[name="household_name"]').fill(longDisplayName);
+    await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await page.waitForURL(/\/app\/energie/);
+    await assertHomeIdentityPair(page, 'energy-heading', longDisplayName, 'Top 11', 'Langer Anzeigename Mobil');
+    await page.locator('.mobile-menu-toggle').click();
+    await assertHomeIdentityPair(page, 'nav', longDisplayName, 'Top 11', 'Langer Navigationsname Mobil');
+    if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)) {
+      fail('Langer Anzeigename Mobil: Darstellung läuft horizontal über');
+    }
+    await page.locator('.mobile-menu-toggle').click();
+    await page.getByRole('link', { name: 'Zuhause bearbeiten' }).click();
+    await page.locator('input[name="household_name"]').fill('QA Zuhause');
+    await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await page.waitForURL(/\/app\/energie/);
+  }
+  await page.goto(`${baseURL}/app/settings`, { waitUntil: 'networkidle' });
+  await assertHomeIdentityPair(page, 'settings', 'QA Zuhause', 'Top 11', `Einstellungen ${viewport.name}`);
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, `home-name-settings-${viewport.name.toLowerCase()}.png`),
+      fullPage: true,
+    });
+  }
+  await page.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
   const live = page.locator('.energy-live');
   const readingCount = Number(await live.getAttribute('data-energy-reading-count'));
   if (readingCount < 8) {

@@ -208,7 +208,14 @@ func TestHomeIdentityUXSeparatesFriendlyNameFromOfficialUnits(t *testing.T) {
 		`Zugeordnete offizielle Wohnung`,
 		`Die Sichtbarkeit folgt dieser Wohnung`,
 		`aria-describedby="home-settings-unit-help"`,
-		`{{if .HasHomeUnit}} · {{.HomeUnitLabel}}`,
+		`data-home-identity="nav"`,
+		`data-home-identity="energy-heading"`,
+		`data-home-identity="settings"`,
+		`data-home-identity="building-context"`,
+		`data-home-identity="building-unit"`,
+		`data-home-identity="onboarding-summary"`,
+		`data-home-display-name`,
+		`data-home-unit-label`,
 		`{{if .CanManageHomeIdentity}}`,
 	} {
 		if !strings.Contains(PageTemplates, want) {

@@ -64,6 +64,7 @@ type (
 	documentVersionView     = view.DocumentVersionView
 	documentView            = view.DocumentView
 	emptyStateView          = view.EmptyStateView
+	homeIdentityView        = view.HomeIdentityView
 	houseEventView          = view.HouseEventView
 	issueBoardFilterView    = view.IssueBoardFilterView
 	issueCommentView        = view.IssueCommentView
@@ -2734,10 +2735,8 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if prefs.Unsubscribed {
 		notificationSummary = "E-Mails pausiert"
 	}
-	homeName := "Mein Zuhause einrichten"
 	homeURL := "/app/zuhause/onboarding"
 	if homeProfile, exists, profileErr := a.energyStore.Profile(tenant.Slug); profileErr == nil && exists && homeProfile.OnboardingComplete {
-		homeName = homeProfile.HouseholdName
 		homeURL = "/app/settings/home"
 	}
 	a.render(w, "settingsHub", a.withBase(ac, map[string]any{
@@ -2747,7 +2746,6 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"HasCalendarFeedURL":          calendarFeedURL != "",
 		"SettingsDisplayName":         profile.DisplayName(),
 		"SettingsNotificationSummary": notificationSummary,
-		"SettingsHomeName":            homeName,
 		"SettingsHomeURL":             homeURL,
 	}))
 }
@@ -3472,6 +3470,18 @@ func (a *app) buildingUnitViewsWithPayments(tenantSlug string, units []unit) []b
 		views[i].PaymentUpdatedAt = payments[i].UpdatedAt
 		views[i].PaymentHasUpdated = payments[i].HasUpdatedAt
 		views[i].PaymentOptions = payments[i].StatusOptions
+	}
+	if profile, exists, err := a.energyStore.Profile(tenantSlug); err == nil && exists && profile.OnboardingComplete {
+		if linked, ok := a.effectiveEnergyUnit(profile); ok {
+			displayName := strings.TrimSpace(profile.HouseholdName)
+			for i := range views {
+				if displayName != "" && normalizeUnitID(views[i].ID) == normalizeUnitID(linked.ID) {
+					views[i].HomeDisplayName = displayName
+					views[i].HasHomeDisplayName = true
+					break
+				}
+			}
+		}
 	}
 	return views
 }
@@ -4294,6 +4304,7 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 func (a *app) baseContext(ac authCtx) map[string]any {
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
 	isAdmin := hasCapability(ac.role, capabilityPlatformAdmin)
+	canViewEnergy := a.canViewEnergy(ac)
 	return map[string]any{
 		"Tenant":                ac.tenant,
 		"HouseName":             houseDisplayName(ac.tenant),
@@ -4305,11 +4316,48 @@ func (a *app) baseContext(ac authCtx) map[string]any {
 		"DisplayName":           profile.DisplayName(),
 		"Initials":              profile.Initials(),
 		"CanSeeParking":         isAdmin || profile.HasPermission(permissionParking),
-		"CanViewEnergy":         a.canViewEnergy(ac),
+		"CanViewEnergy":         canViewEnergy,
 		"CanManageEnergy":       a.canManageEnergy(ac),
 		"CanManageHomeIdentity": a.canManageHomeIdentity(ac),
 		"CanControlEnergy":      a.canControlEnergy(ac),
+		"HomeIdentity":          a.homeIdentityForActor(ac, canViewEnergy),
 	}
+}
+
+func (a *app) homeIdentityForActor(ac authCtx, canViewEnergy bool) homeIdentityView {
+	identity := defaultHomeIdentityView()
+	if !canViewEnergy || a.energyStore == nil {
+		return identity
+	}
+	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	if err != nil || !exists || (!profile.OnboardingComplete && profile.OnboardingStep < 3) {
+		return identity
+	}
+	return a.homeIdentityFromProfile(profile)
+}
+
+func defaultHomeIdentityView() homeIdentityView {
+	return homeIdentityView{
+		DisplayName: "Mein Zuhause",
+		AriaLabel:   "Mein Zuhause",
+	}
+}
+
+func (a *app) homeIdentityFromProfile(profile energy.HomeProfile) homeIdentityView {
+	identity := defaultHomeIdentityView()
+	displayName := strings.TrimSpace(profile.HouseholdName)
+	if displayName == "" {
+		return identity
+	}
+	identity.DisplayName = displayName
+	identity.AriaLabel = displayName
+	identity.HasDisplayName = true
+	if unitLabel, ok := a.energyHomeUnitLabel(profile); ok {
+		identity.UnitLabel = unitLabel
+		identity.HasUnit = true
+		identity.AriaLabel = displayName + ", offizielle Einheit " + unitLabel
+	}
+	return identity
 }
 
 func (a *app) withBase(ac authCtx, pageData map[string]any) map[string]any {

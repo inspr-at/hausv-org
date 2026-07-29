@@ -526,6 +526,10 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.Error(w, "Name und Zuordnung dürfen nur zuständige Eigentümer oder die Hausverwaltung ändern.", http.StatusForbidden)
 		return
 	}
+	onboardingIdentity := defaultHomeIdentityView()
+	if exists && profile.OnboardingStep >= 3 {
+		onboardingIdentity = a.homeIdentityFromProfile(profile)
+	}
 	discovery := energyDiscoveryView{}
 	connectorMessage := "Home Assistant ist noch nicht verbunden. Das ist okay – Sie können später weitermachen."
 	connectorOK := false
@@ -572,6 +576,7 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		"HomeUnitID":            homeUnitID,
 		"HomeUnitLabel":         homeUnitLabel,
 		"HasHomeUnit":           hasHomeUnit,
+		"HomeIdentity":          onboardingIdentity,
 		"IsObserveMode":         profile.OperatingMode == energy.ModeObserve,
 		"OnboardingComplete":    profile.OnboardingComplete,
 	}))
@@ -715,7 +720,7 @@ func (a *app) homeIdentitySettings(w http.ResponseWriter, r *http.Request, ac au
 		unitID = linked.ID
 	}
 	a.render(w, "homeIdentitySettings", a.withBase(ac, map[string]any{
-		"Title":               "Mein Zuhause",
+		"Title":               profile.HouseholdName + " · Mein Zuhause",
 		"ActivePage":          "settings",
 		"Profile":             profile,
 		"HomeTypeLabel":       energyHomeTypeLabel(profile.HomeType),
@@ -949,7 +954,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	}
 	homeUnitLabel, hasHomeUnit := a.energyHomeUnitLabel(profile)
 	a.render(w, "energyCockpit", a.withBase(ac, map[string]any{
-		"Title":                   "Mein Zuhause",
+		"Title":                   profile.HouseholdName,
 		"ActivePage":              "energy",
 		"Profile":                 profile,
 		"Assets":                  assets,

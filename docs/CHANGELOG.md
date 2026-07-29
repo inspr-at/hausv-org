@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.57.0] - 2026-07-29
+
+### Verbessert
+
+- **Der persönliche Name des Zuhauses führt durch das Portal.** Seitenleiste, Mobilmenü, Energieüberblick und Einstellungen verwenden durchgehend den gewählten Anzeigenamen.
+- **Die offizielle Wohneinheit bleibt direkt erkennbar.** Bezeichnungen wie „Top 11“ stehen ruhig und kleiner unter dem Anzeigenamen, statt mit ihm um Aufmerksamkeit zu konkurrieren.
+- **Gebäudeübersicht und Zuhause-Einstellung sprechen dieselbe Sprache.** Die verknüpfte Einheit zeigt den persönlichen Namen, während Eingabefelder, Zahlungen, Dokumente und andere formale Bereiche weiterhin die offizielle Stammdatenbezeichnung verwenden.
+- **Der Anzeigename begleitet bereits das laufende Onboarding.** Nach der Namenswahl bleibt die neue Identität auch in den folgenden Schritten sichtbar.
+- **Die Darstellung ist für alle Rollen abgesichert.** Automatisierte Prüfungen kontrollieren Hierarchie, Reihenfolge, Umbenennen und mobile Darstellung sowie den Schutz vor Einblicken durch nicht zugeordnete Nutzer.
+
 ## [0.56.0] - 2026-07-29
 
 ### Neu

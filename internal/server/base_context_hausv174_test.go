@@ -19,8 +19,8 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	}
 
 	got := a.baseContext(ac)
-	if len(got) != 14 {
-		t.Fatalf("baseContext keys = %d, want 14: %#v", len(got), got)
+	if len(got) != 15 {
+		t.Fatalf("baseContext keys = %d, want 15: %#v", len(got), got)
 	}
 	if got["Tenant"] != ac.tenant || got["Email"] != ac.email || got["Role"] != ac.role {
 		t.Fatalf("baseContext identity = %#v", got)
@@ -43,6 +43,10 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	}
 	if got["CanViewEnergy"] != true || got["CanManageEnergy"] != false || got["CanManageHomeIdentity"] != false || got["CanControlEnergy"] != false {
 		t.Fatalf("baseContext energy capabilities = %#v", got)
+	}
+	homeIdentity, ok := got["HomeIdentity"].(homeIdentityView)
+	if !ok || homeIdentity.DisplayName != "Mein Zuhause" || homeIdentity.HasDisplayName || homeIdentity.HasUnit {
+		t.Fatalf("baseContext default home identity = %#v", got["HomeIdentity"])
 	}
 }
 

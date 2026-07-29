@@ -79,6 +79,51 @@ func TestHomeOnboardingCompletesInObserveMode(t *testing.T) {
 	}
 }
 
+func TestPartialOnboardingUsesChosenHomeIdentityInSidebar(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{
+		Email:       "owner@example.com",
+		Role:        roleOwner,
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	})
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{
+		ID:          "top-11",
+		TenantSlug:  "jhw22",
+		Label:       "Top 11",
+		UnitType:    unitTypeResidential,
+		OwnerEmails: []string{"owner@example.com"},
+	}}); err != nil {
+		t.Fatalf("seed unit: %v", err)
+	}
+	if response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", url.Values{"action": {"understand"}}); response.Code != http.StatusSeeOther {
+		t.Fatalf("understand status = %d", response.Code)
+	}
+	if response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", url.Values{
+		"action":         {"profile"},
+		"household_name": {"Penthouse"},
+		"home_type":      {"apartment"},
+		"unit_id":        {"top-11"},
+	}); response.Code != http.StatusSeeOther {
+		t.Fatalf("profile status = %d body=%s", response.Code, response.Body.String())
+	}
+	profile, exists, err := a.energyStore.Profile("jhw22")
+	if err != nil || !exists || profile.OnboardingComplete || profile.OnboardingStep != 3 {
+		t.Fatalf("partial profile = %+v exists=%v err=%v", profile, exists, err)
+	}
+	for _, path := range []string{"/app/zuhause/onboarding?step=3", "/app", "/app/settings"} {
+		page := authedRequest(t, a, "owner@example.com", path)
+		for _, want := range []string{
+			`data-home-identity="nav" aria-label="Penthouse, offizielle Einheit Top 11"`,
+			`<strong data-home-display-name>Penthouse</strong>`,
+			`<small data-home-unit-label>Top 11</small>`,
+		} {
+			if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), want) {
+				t.Fatalf("partial onboarding sidebar at %s missing %q: status=%d", path, want, page.Code)
+			}
+		}
+	}
+}
+
 func TestOfficialUnitOwnerCanContinueFreshOnboardingAfterFirstStep(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
@@ -167,6 +212,35 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 		Tenants:     []string{"jhw22"},
 		AuthMethods: defaultAuthMethods(),
 	}
+	residentIdentity := a.baseContext(authCtx{
+		email:  "resident@example.com",
+		role:   roleResident,
+		tenant: a.tenants["jhw22"],
+	})["HomeIdentity"].(homeIdentityView)
+	if residentIdentity.DisplayName != "Penthouse" || residentIdentity.UnitLabel != "Top 11" || !residentIdentity.HasDisplayName || !residentIdentity.HasUnit {
+		t.Fatalf("linked resident home identity = %+v", residentIdentity)
+	}
+	foreignIdentity := a.baseContext(authCtx{
+		email:  "other@example.com",
+		role:   roleOwner,
+		tenant: a.tenants["jhw22"],
+	})["HomeIdentity"].(homeIdentityView)
+	if foreignIdentity.HasDisplayName || foreignIdentity.HasUnit || strings.Contains(foreignIdentity.AriaLabel, "Penthouse") || strings.Contains(foreignIdentity.AriaLabel, "Top 11") {
+		t.Fatalf("foreign owner leaked home identity = %+v", foreignIdentity)
+	}
+	foreignPortal := authedRequest(t, a, "other@example.com", "/app")
+	foreignBody := foreignPortal.Body.String()
+	identityFragments := []string{
+		`data-home-identity="nav"`,
+		`data-home-display-name>Penthouse</`,
+		`data-home-unit-label>Top 11</`,
+		`aria-label="Penthouse, offizielle Einheit Top 11"`,
+	}
+	for _, fragment := range identityFragments {
+		if foreignPortal.Code != http.StatusOK || strings.Contains(foreignBody, fragment) {
+			t.Fatalf("foreign owner portal leaked home identity: status=%d fragment=%q", foreignPortal.Code, fragment)
+		}
+	}
 	residentPage := authedRequest(t, a, "resident@example.com", "/app/energie")
 	if residentPage.Code != http.StatusOK || strings.Contains(residentPage.Body.String(), `href="/app/settings/home?from=energy"`) {
 		t.Fatalf("resident of linked unit energy status=%d or editor exposed", residentPage.Code)
@@ -197,7 +271,10 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 		t.Fatalf("GET home settings status = %d body=%s", settings.Code, settings.Body.String())
 	}
 	for _, want := range []string{
-		`<h1>Mein Zuhause</h1>`,
+		`<title>Penthouse · Mein Zuhause</title>`,
+		`data-home-identity="editor-heading" aria-label="Penthouse, offizielle Einheit Top 11"`,
+		`<h1 data-home-display-name>Penthouse</h1>`,
+		`<p class="home-identity-head-unit" data-home-unit-label>Top 11</p>`,
 		`value="Penthouse"`,
 		`Top 11`,
 		`name="unit_id" value="top-11"`,
@@ -209,7 +286,11 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 		}
 	}
 	hub := authedRequest(t, a, "owner@example.com", "/app/settings")
-	if hub.Code != http.StatusOK || !strings.Contains(hub.Body.String(), `href="/app/settings/home"`) || !strings.Contains(hub.Body.String(), `<strong>Penthouse</strong>`) {
+	if hub.Code != http.StatusOK ||
+		!strings.Contains(hub.Body.String(), `href="/app/settings/home"`) ||
+		!strings.Contains(hub.Body.String(), `data-home-identity="settings" aria-label="Penthouse, offizielle Einheit Top 11 bearbeiten"`) ||
+		!strings.Contains(hub.Body.String(), `<strong data-home-display-name>Penthouse</strong>`) ||
+		!strings.Contains(hub.Body.String(), `data-home-unit-label>Top 11</span>`) {
 		t.Fatalf("owner settings hub does not expose home identity: status=%d", hub.Code)
 	}
 
@@ -232,8 +313,12 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 	}
 	cockpit := authedRequest(t, a, "owner@example.com", "/app/energie?profile=1")
 	for _, want := range []string{
-		`<h1>Sonnendeck</h1>`,
-		`Wohnung · Top 11 ·`,
+		`<title>Sonnendeck</title>`,
+		`data-home-identity="nav" aria-label="Sonnendeck, offizielle Einheit Top 11"`,
+		`data-home-identity="energy-heading" aria-label="Sonnendeck, offizielle Einheit Top 11"`,
+		`<h1 data-home-display-name>Sonnendeck</h1>`,
+		`<p class="energy-heading-unit" data-home-unit-label>Top 11</p>`,
+		`<p class="energy-heading-context">Wohnung ·`,
 		`href="/app/settings/home?from=energy"`,
 		`Der Anzeigename von „Mein Zuhause“ wurde gespeichert.`,
 	} {
