@@ -19,8 +19,8 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	}
 
 	got := a.baseContext(ac)
-	if len(got) != 11 {
-		t.Fatalf("baseContext keys = %d, want 11: %#v", len(got), got)
+	if len(got) != 13 {
+		t.Fatalf("baseContext keys = %d, want 13: %#v", len(got), got)
 	}
 	if got["Tenant"] != ac.tenant || got["Email"] != ac.email || got["Role"] != ac.role {
 		t.Fatalf("baseContext identity = %#v", got)
@@ -30,6 +30,13 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	}
 	if got["HouseName"] != "Janischhofweg 22" {
 		t.Fatalf("baseContext house name = %#v", got["HouseName"])
+	}
+	if got["MapURL"] != "https://www.openstreetmap.org/search?query=Janischhofweg+22" {
+		t.Fatalf("baseContext map URL = %#v", got["MapURL"])
+	}
+	sidebarMap, ok := got["SidebarMap"].(sidebarMapView)
+	if !ok || !sidebarMap.Configured || len(sidebarMap.Tiles) == 0 || len(sidebarMap.Tiles) > 4 {
+		t.Fatalf("baseContext sidebar map = %#v", got["SidebarMap"])
 	}
 	if got["IsAdmin"] != false || got["CanSeeParking"] != true {
 		t.Fatalf("baseContext capabilities = %#v", got)

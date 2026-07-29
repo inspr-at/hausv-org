@@ -66,6 +66,9 @@ func TestParseTenantsKeepsDefaultConnectorFallback(t *testing.T) {
 	if !tenants["home"].HA.Configured() {
 		t.Fatal("default connector not preserved")
 	}
+	if tenants["home"].MapLatitude == 0 || tenants["home"].MapLongitude == 0 || tenants["home"].MapZoom != 17 {
+		t.Fatalf("default tenant map coordinates = %#v", tenants["home"])
+	}
 }
 
 func quoteJSON(value string) string {

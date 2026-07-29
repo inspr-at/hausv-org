@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.54.0] - 2026-07-29
+
+### Neu
+
+- **Das eigene Haus ist sofort verortet.** Ein ruhiger, fester OpenStreetMap-Ausschnitt zeigt die konfigurierte Adresse mit dem gewählten Hauszeichen direkt im Pin.
+
+### Verbessert
+
+- **Adresse und Portalname bilden einen klaren Ortskopf.** Die Adresse führt dezent zur großen Karte; eine feine Messlatte trennt sie von „Hausportal · hausv.org“.
+- **Die Karte bleibt bewusst still.** Sie lässt sich weder verschieben noch zoomen, lädt keine Karten-Skripte und ruft nur die tatsächlich sichtbaren, serverseitig zwischengespeicherten Kacheln ab.
+- **Mobil bleibt die Navigation kompakt.** Karte, Pin und Adresse werden zu einer kleinen Ortsmarke, ohne Menü oder Seiteninhalt zu verdrängen.
+
 ## [0.53.0] - 2026-07-29
 
 ### Neu

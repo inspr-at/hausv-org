@@ -30,6 +30,9 @@ type TenantConfig struct {
 	Address           string               `json:"address"`
 	BrandIcon         string               `json:"brand_icon,omitempty"`
 	BrandAbbreviation string               `json:"brand_abbreviation,omitempty"`
+	MapLatitude       float64              `json:"map_latitude,omitempty"`
+	MapLongitude      float64              `json:"map_longitude,omitempty"`
+	MapZoom           int                  `json:"map_zoom,omitempty"`
 	ContactName       string               `json:"contact_name,omitempty"`
 	ContactAddress    string               `json:"contact_address,omitempty"`
 	ContactEmail      string               `json:"contact_email,omitempty"`
@@ -224,6 +227,9 @@ func ParseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 			Slug:         defaultTenant,
 			Name:         "WEG Portal",
 			Address:      "Janischhofweg 22",
+			MapLatitude:  47.1008592,
+			MapLongitude: 15.4717681,
+			MapZoom:      17,
 			HeroImageURL: store.DefaultTenantHeroImageURL,
 			Host:         host,
 			HA:           defaultHA,

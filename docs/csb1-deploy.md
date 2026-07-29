@@ -34,6 +34,28 @@ SERVICE_PROVIDER_ACCESS_ENABLED=false
 TELEGRAM_BOT_TOKEN=<botfather-token-for-the-hausv-bot>
 ```
 
+Jeder Eintrag in `WEG_TENANTS_JSON` kann den festen OpenStreetMap-Ausschnitt der
+Portalnavigation ohne Laufzeit-Geocoding exakt verorten:
+
+```json
+{
+  "slug": "jhw22",
+  "name": "Hausportal",
+  "address": "Janischhofweg 22, 8043 Graz",
+  "host": "jhw22.hausv.org",
+  "brand_icon": "community",
+  "map_latitude": 47.1008592,
+  "map_longitude": 15.4717681,
+  "map_zoom": 17
+}
+```
+
+`brand_icon` bleibt über die Gebäudeeinstellungen änderbar und erscheint im
+Karten-Pin. Für neue Häuser werden Breiten- und Längengrad deklarativ gesetzt;
+`map_zoom` ist aus Sicherheits- und Darstellungsgründen auf 15 bis 18 begrenzt.
+Ohne gültige Koordinaten zeigt das Portal eine neutrale Kartenfläche und
+verlinkt die konfigurierte Adresse weiterhin zu OpenStreetMap.
+
 `TELEGRAM_BOT_TOKEN` aktiviert den hausv-eigenen Telegram-Bot (Ladesteuerung
 Parkplatz 20: Befehle + Benachrichtigungen). Ohne den Schlüssel bleibt der Bot
 vollständig deaktiviert; die Ladesteuerung selbst läuft unabhängig davon.

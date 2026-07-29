@@ -765,6 +765,8 @@ type app struct {
 	energyStore           energy.Storage
 	energyChartMu         sync.Mutex
 	energyChartCache      map[string]energyChartCacheEntry
+	mapTileMu             sync.Mutex
+	mapTileBaseURL        string
 
 	chargingTickInterval   time.Duration
 	chargingStaleAfter     time.Duration
@@ -860,6 +862,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /favicon.svg", favicon)
 	mux.HandleFunc("GET /favicon.ico", favicon)
 	mux.HandleFunc("GET /tenant-hero/{tenant}", a.tenantHeroImage)
+	mux.HandleFunc("GET /map-tiles/{z}/{x}/{tile}", a.mapTile)
 	mux.HandleFunc("GET /healthz", a.health)
 	mux.HandleFunc("GET /datenschutz", a.privacyNotice)
 	mux.HandleFunc("GET /", a.home)
@@ -4234,6 +4237,8 @@ func (a *app) baseContext(ac authCtx) map[string]any {
 	return map[string]any{
 		"Tenant":        ac.tenant,
 		"HouseName":     houseDisplayName(ac.tenant),
+		"MapURL":        tenantMapURL(ac.tenant.Address),
+		"SidebarMap":    sidebarMapForTenant(ac.tenant),
 		"Email":         ac.email,
 		"Role":          ac.role,
 		"IsAdmin":       isAdmin,

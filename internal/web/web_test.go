@@ -120,7 +120,8 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		t.Fatal("app shell should not use the old WEG/HV text or dot placeholder logo")
 	}
 	for _, want := range []string{
-		`<a class="side-mark" href="/app" aria-label="{{if .IsServiceProvider}}Anliegen{{else}}Hausüberblick{{end}}">`,
+		`<div class="side-map" role="group" aria-label="Fester Kartenausschnitt für {{.Tenant.Address}}">`,
+		`<span class="side-map-pin" aria-hidden="true"><span class="side-map-pin-mark">{{template "tenantBrandMark" .}}</span></span>`,
 		`{{define "hausvLandingMark"}}`,
 		`{{define "hausvPlatformMark"}}`,
 		`{{template "tenantBrandMark" .}}`,
@@ -204,8 +205,10 @@ func TestHomeTypeGuidanceAndSidebarBrandHierarchy(t *testing.T) {
 		`data-description="Ein Haushalt mit eigenem Gebäude.`,
 		`data-description="Mehrere Parteien und gemeinsam genutzte Anlagen.`,
 		`Rechte und „Nur beobachten“ bleiben unverändert.`,
-		`.side-brand { flex: 0 0 auto; display: grid; grid-template-columns: 76px minmax(0,1fr);`,
-		`.side-mark svg { width: 70px; height: 56px;`,
+		`.side-map { position: relative; width: 100%; height: 138px;`,
+		`.side-map-pin svg { width: 36px; height: 31px;`,
+		`© OpenStreetMap`,
+		`Hausportal</strong><span>· hausv.org`,
 	} {
 		if !strings.Contains(PageTemplates, want) {
 			t.Fatalf("home-type/sidebar polish missing %q", want)

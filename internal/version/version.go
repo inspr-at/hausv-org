@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.54.0",
+			Date:     "29. Juli 2026",
+			Kind:     "Hausportal",
+			Headline: "Die Seitenleiste verortet das eigene Haus jetzt ruhig und eindeutig.",
+			Intro:    "Ein fester OpenStreetMap-Ausschnitt verbindet Adresse, konfigurierbares Hauszeichen und Portalname zu einem klaren Ortskopf.",
+			Items: []NoteItem{
+				{Label: "Haus wiedererkennen", Text: "Das gewählte Hauszeichen sitzt direkt im Pin an der konfigurierten Adresse."},
+				{Label: "Karte ruhig halten", Text: "Der Ausschnitt lässt sich weder verschieben noch zoomen und lädt keine Karten-Skripte."},
+				{Label: "Adresse öffnen", Text: "Ein dezenter Link unter der Karte führt bei Bedarf zur vollständigen OpenStreetMap-Ansicht."},
+				{Label: "Mobil Platz bewahren", Text: "Die Ortsmarke wird auf kleinen Bildschirmen kompakt, ohne Menü oder Inhalt zu verdrängen."},
+			},
+		},
+		{
 			Version:  "0.53.0",
 			Date:     "29. Juli 2026",
 			Kind:     "Mein Zuhause",
