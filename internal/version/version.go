@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.50.0",
+			Date:     "29. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Viele Energiemesswerte werden jetzt zu einem ruhigen, verständlichen Hausbild.",
+			Intro:    "Der Live-Bereich erklärt den Energiefluss, während technische und kumulierte Werte erst bei Bedarf erscheinen.",
+			Items: []NoteItem{
+				{Label: "Haus im Blick", Text: "Hausverbrauch, PV, Netz, Speicher und Batteriestand stehen kompakt in einem gemeinsamen Zusammenhang."},
+				{Label: "Werte leichter lesen", Text: "Große Wattwerte erscheinen passend in Kilowatt; Laden und Entladen werden als ein Speicherzustand zusammengefasst."},
+				{Label: "Details dosieren", Text: "Weitere Messwerte bleiben erreichbar, verdrängen aber weder die nächste Empfehlung noch den Energie-Fahrplan."},
+				{Label: "Aufgabe sicher öffnen", Text: "Das Freigabeformular bleibt im normalen Seitenfluss und überlagert keine folgenden Inhalte mehr."},
+			},
+		},
+		{
 			Version:  "0.49.1",
 			Date:     "29. Juli 2026",
 			Kind:     "Mein Zuhause",

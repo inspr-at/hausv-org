@@ -387,14 +387,17 @@ func ClassifyCandidate(entityID, displayName, unit, deviceClass, stateClass, raw
 		metric = MetricGridImportPower
 	case isPower && isPV && !isForecast:
 		metric = MetricPVPower
+	case isPower && isHouseLoad && !isForecast:
+		// Some stationary battery integrations prefix every sensor with the
+		// battery product name. Consumption is still the house load and must
+		// win over the broader battery-name heuristic below.
+		metric = MetricLoadPower
 	case isPower && !isPortableOrVehicleBattery && (isStationaryBattery || isBatteryFlow):
 		metric = MetricBatteryPower
 	case normalizedUnit == "%" && !isPortableOrVehicleBattery &&
 		(deviceClass == "battery" || isStationaryBattery) &&
 		containsAny(name, "battery", "batter", "speicher", "state of charge", "state_of_charge", " soc", "_soc"):
 		metric = MetricBatterySOC
-	case isPower && isHouseLoad && !isForecast:
-		metric = MetricLoadPower
 	default:
 		return EntityCandidate{}, false
 	}

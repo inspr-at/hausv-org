@@ -356,6 +356,13 @@ async function assertHomeOnboarding() {
   if (!(await page.getByText('sensor.home_consumption', { exact: true }).count())) {
     fail('Onboarding: zusätzliche plausible Messwerte fehlen in den Technikdetails');
   }
+  const additionalReadings = page.locator('.onboarding-additional input[name="entities"]');
+  if ((await additionalReadings.count()) < 3) {
+    fail('Onboarding: Fixture liefert nicht mindestens acht prüfbare Messwerte');
+  }
+  for (const checkbox of await additionalReadings.all()) {
+    await checkbox.check();
+  }
   await technicalHits.click();
   await page.getByRole('button', { name: '5 Messwerte übernehmen' }).press('Enter');
   await page.waitForURL(/step=5/);
@@ -590,6 +597,23 @@ async function assertEnergySafetyAndFlow(viewport) {
   const ownerContext = await newContext(viewport.size);
   const page = await localLogin(ownerContext, 'owner@example.com');
   await page.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
+  const live = page.locator('.energy-live');
+  const readingCount = Number(await live.getAttribute('data-energy-reading-count'));
+  if (readingCount < 8) {
+    fail(`Energie ${viewport.name}: Mehr-Messwerte-QA hat nur ${readingCount || 0} Live-Werte`);
+  }
+  if (!(await live.getByText('Hausverbrauch', { exact: true }).count()) ||
+      !(await live.locator('[data-energy-metric="pv-power"]').count()) ||
+      !(await live.locator('[data-energy-metric="grid-import-power"]').count()) ||
+      !(await live.locator('[data-energy-metric="battery-power"]').count())) {
+    fail(`Energie ${viewport.name}: verständliche Energiefluss-Zusammenfassung fehlt`);
+  }
+  if (!(await live.locator('details.energy-live-more').count())) {
+    fail(`Energie ${viewport.name}: weitere Messwerte sind nicht progressiv erreichbar`);
+  }
+  if (await page.getByText('Home Current Consumption', { exact: true }).isVisible().catch(() => false)) {
+    fail(`Energie ${viewport.name}: technische Home-Assistant-Rohbezeichnung konkurriert mit der Übersicht`);
+  }
   const strip = page.locator('.energy-mode-strip');
   if ((await strip.locator('strong').first().innerText()).trim() !== 'Nur beobachten') {
     fail(`Energie ${viewport.name}: startet nicht in Nur beobachten`);
@@ -674,6 +698,18 @@ async function assertEnergySafetyAndFlow(viewport) {
 
     const measureControl = page.locator('details.energy-measure-control');
     await measureControl.locator('summary').click();
+    const measureBox = await measureControl.locator('.energy-measure-form').boundingBox();
+    const roadmapBox = await page.locator('#fahrplan').boundingBox();
+    if (!measureBox || !roadmapBox || measureBox.y + measureBox.height > roadmapBox.y + 1) {
+      fail('Energie Desktop: geöffnetes Hausaufgaben-Formular überlagert den Fahrplan');
+    }
+    if (process.env.HV_QA_SCREENSHOT_DIR) {
+      mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, 'energy-many-metrics-desktop.png'),
+        fullPage: true,
+      });
+    }
     await measureControl.locator('input[value="inventory"]').check();
     await measureControl.getByRole('button', { name: 'Hausaufgabe anlegen' }).click();
     await page.waitForLoadState('networkidle');
@@ -710,6 +746,12 @@ async function assertEnergySafetyAndFlow(viewport) {
       path: join(process.env.HV_QA_SCREENSHOT_DIR, `energy-${viewport.name.toLowerCase()}.png`),
       fullPage: true,
     });
+    if (viewport.name === 'Mobil') {
+      await page.screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, 'energy-many-metrics-mobile.png'),
+        fullPage: true,
+      });
+    }
   }
   await ownerContext.close();
 }

@@ -38,10 +38,26 @@ type energyAssetOption struct {
 }
 
 type energyMetricView struct {
-	Label  string
-	Value  string
-	Detail string
-	Tone   string
+	Metric  string
+	Kind    string
+	Label   string
+	Value   string
+	Detail  string
+	Tone    string
+	Numeric float64
+	Unit    string
+}
+
+type energyLiveView struct {
+	Main             energyMetricView
+	HasMain          bool
+	Flows            []energyMetricView
+	Battery          energyMetricView
+	HasBattery       bool
+	Additional       []energyMetricView
+	HasAdditional    bool
+	AdditionalCount  int
+	AdditionalTopics string
 }
 
 type energyCoverageView struct {
@@ -365,6 +381,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
 	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
 	metrics, sourceStatus := a.currentEnergyMetrics(r.Context(), ac.tenant, mappings, profile)
+	live := buildEnergyLiveView(metrics)
 	coverage, coverageSummary := buildEnergyCoverageViews(assets, mappings)
 	imports, _ := a.energyStore.ListImports(ac.tenant.Slug)
 	importViews := make([]energyImportView, 0, len(imports))
@@ -412,6 +429,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"HasMappings":             len(mappings) > 0,
 		"Metrics":                 metrics,
 		"HasMetrics":              len(metrics) > 0,
+		"Live":                    live,
 		"Coverage":                coverage,
 		"CoverageSummary":         coverageSummary,
 		"SourceStatus":            sourceStatus,
@@ -1886,7 +1904,12 @@ func (a *app) currentEnergyMetrics(ctx context.Context, tenant tenantConfig, map
 		}
 		readings = append(readings, reading{mapping: mapping, state: state})
 	}
-	sort.Slice(readings, func(i, j int) bool { return readings[i].mapping.Metric < readings[j].mapping.Metric })
+	sort.Slice(readings, func(i, j int) bool {
+		if readings[i].mapping.Metric == readings[j].mapping.Metric {
+			return readings[i].mapping.EntityID < readings[j].mapping.EntityID
+		}
+		return readings[i].mapping.Metric < readings[j].mapping.Metric
+	})
 	metrics := make([]energyMetricView, 0, len(readings))
 	for _, reading := range readings {
 		value, err := homeassistant.ParseFloat(reading.state.State)
@@ -1901,17 +1924,206 @@ func (a *app) currentEnergyMetrics(ctx context.Context, tenant tenantConfig, map
 		if detail == "" {
 			detail = reading.mapping.EntityID
 		}
+		metric := energyMetricForDisplay(reading.mapping, reading.state)
 		metrics = append(metrics, energyMetricView{
-			Label:  energyMetricLabel(reading.mapping.Metric),
-			Value:  formatEnergyNumber(value) + energyUnitSuffix(unit),
-			Detail: detail,
-			Tone:   energyMetricTone(reading.mapping.Metric, value, profile.TargetPeakKW),
+			Metric:  metric,
+			Kind:    energyMetricKind(metric, detail),
+			Label:   energyMetricLabel(metric),
+			Value:   formatEnergyReading(value, unit),
+			Detail:  detail,
+			Tone:    energyMetricTone(metric, value, unit, profile.TargetPeakKW),
+			Numeric: value,
+			Unit:    unit,
 		})
 	}
 	if len(metrics) == 0 {
 		return nil, "Messquelle verbunden, aber noch keine bestätigten Live-Werte"
 	}
 	return metrics, "Live aus Home Assistant · nur gelesen"
+}
+
+func energyMetricForDisplay(mapping energy.EntityMapping, state homeassistant.EntityState) string {
+	if mapping.Metric != energy.MetricBatteryPower {
+		return mapping.Metric
+	}
+	// Older auto-discovery classified a few battery-prefixed consumption
+	// sensors as battery power. Correct that narrow presentation mistake
+	// without mutating the user's confirmed mapping.
+	candidate, ok := classifyHAState(state)
+	if ok && candidate.Metric == energy.MetricLoadPower {
+		return candidate.Metric
+	}
+	return mapping.Metric
+}
+
+func energyMetricKind(metric, detail string) string {
+	if metric != energy.MetricBatteryPower {
+		return metric
+	}
+	name := strings.ToLower(detail)
+	switch {
+	case strings.Contains(name, "discharge") || strings.Contains(name, "entlad"):
+		return "battery-discharge"
+	case strings.Contains(name, "charge") || strings.Contains(name, "lade"):
+		return "battery-charge"
+	default:
+		return metric
+	}
+}
+
+func buildEnergyLiveView(metrics []energyMetricView) energyLiveView {
+	var view energyLiveView
+	selected := map[int]bool{}
+
+	first := func(metric string) (energyMetricView, int, bool) {
+		for index, item := range metrics {
+			if !selected[index] && item.Metric == metric {
+				return item, index, true
+			}
+		}
+		return energyMetricView{}, 0, false
+	}
+
+	if item, index, ok := first(energy.MetricLoadPower); ok {
+		item.Label = "Hausverbrauch"
+		item.Detail = "Momentan aus allen Quellen"
+		view.Main = item
+		view.HasMain = true
+		selected[index] = true
+	}
+
+	for _, metric := range []string{
+		energy.MetricPVPower,
+		energy.MetricGridImportPower,
+		energy.MetricGridExportPower,
+	} {
+		if item, index, ok := first(metric); ok {
+			item.Detail = energyFlowDetail(metric)
+			view.Flows = append(view.Flows, item)
+			selected[index] = true
+		}
+	}
+
+	view.Battery, view.HasBattery = combineBatteryMetrics(metrics, selected)
+	if item, index, ok := first(energy.MetricBatterySOC); ok {
+		item.Detail = "Ladestand"
+		view.Flows = append(view.Flows, item)
+		selected[index] = true
+	}
+
+	topics := map[string]bool{}
+	for index, item := range metrics {
+		if selected[index] {
+			continue
+		}
+		item.Detail = ""
+		view.Additional = append(view.Additional, item)
+		switch item.Metric {
+		case energy.MetricGridImportEnergy:
+			topics["Verbrauch"] = true
+		case energy.MetricBatteryPower:
+			topics["Speicher"] = true
+		default:
+			topics[item.Label] = true
+		}
+	}
+	view.HasAdditional = len(view.Additional) > 0
+	view.AdditionalCount = len(view.Additional)
+	labels := make([]string, 0, len(topics))
+	for label := range topics {
+		labels = append(labels, label)
+	}
+	sort.Strings(labels)
+	view.AdditionalTopics = strings.Join(labels, ", ")
+	return view
+}
+
+func combineBatteryMetrics(metrics []energyMetricView, selected map[int]bool) (energyMetricView, bool) {
+	var charge, discharge, generic *energyMetricView
+	chargeIndex, dischargeIndex, genericIndex := -1, -1, -1
+	for index := range metrics {
+		item := metrics[index]
+		if item.Metric != energy.MetricBatteryPower {
+			continue
+		}
+		switch item.Kind {
+		case "battery-charge":
+			if charge == nil {
+				copy := item
+				charge = &copy
+				chargeIndex = index
+			}
+		case "battery-discharge":
+			if discharge == nil {
+				copy := item
+				discharge = &copy
+				dischargeIndex = index
+			}
+		default:
+			if generic == nil {
+				copy := item
+				generic = &copy
+				genericIndex = index
+			}
+		}
+	}
+	if charge != nil || discharge != nil {
+		chargeW := energyPowerWatts(charge)
+		dischargeW := energyPowerWatts(discharge)
+		netW := dischargeW - chargeW
+		item := energyMetricView{Metric: energy.MetricBatteryPower, Kind: "battery-power", Label: "Speicher"}
+		if netW > 0 {
+			item.Value = formatEnergyReading(netW, "W")
+			item.Detail = "liefert Energie"
+		} else if netW < 0 {
+			item.Value = formatEnergyReading(-netW, "W")
+			item.Detail = "lädt"
+		} else {
+			item.Value = "0 W"
+			item.Detail = "in Ruhe"
+		}
+		if chargeIndex >= 0 {
+			selected[chargeIndex] = true
+		}
+		if dischargeIndex >= 0 {
+			selected[dischargeIndex] = true
+		}
+		return item, true
+	}
+	if generic != nil {
+		generic.Label = "Speicher"
+		generic.Detail = "Leistung"
+		selected[genericIndex] = true
+		return *generic, true
+	}
+	return energyMetricView{}, false
+}
+
+func energyPowerWatts(item *energyMetricView) float64 {
+	if item == nil {
+		return 0
+	}
+	switch strings.ToLower(strings.TrimSpace(item.Unit)) {
+	case "kw":
+		return item.Numeric * 1000
+	case "mw":
+		return item.Numeric * 1000000
+	default:
+		return item.Numeric
+	}
+}
+
+func energyFlowDetail(metric string) string {
+	switch metric {
+	case energy.MetricPVPower:
+		return "erzeugt"
+	case energy.MetricGridImportPower:
+		return "Bezug"
+	case energy.MetricGridExportPower:
+		return "Einspeisung"
+	default:
+		return ""
+	}
 }
 
 func buildEnergyAssetOptions(assets []energy.Asset) []energyAssetOption {
@@ -2175,18 +2387,25 @@ func energyMetricLabel(metric string) string {
 	case energy.MetricBatterySOC:
 		return "Batteriestand"
 	case energy.MetricLoadPower:
-		return "Verbrauch"
+		return "Hausverbrauch"
 	default:
 		return "Messwert"
 	}
 }
 
-func energyMetricTone(metric string, value float64, target *float64) string {
+func energyMetricTone(metric string, value float64, unit string, target *float64) string {
 	if metric == energy.MetricGridImportPower && target != nil && *target > 0 {
-		if value >= *target {
+		valueKW := value
+		switch strings.ToLower(strings.TrimSpace(unit)) {
+		case "w":
+			valueKW = value / 1000
+		case "mw":
+			valueKW = value * 1000
+		}
+		if valueKW >= *target {
 			return "danger"
 		}
-		if value >= *target*0.8 {
+		if valueKW >= *target*0.8 {
 			return "warning"
 		}
 	}
@@ -2202,6 +2421,35 @@ func formatEnergyNumber(value float64) string {
 		precision = 0
 	}
 	return strings.ReplaceAll(strconv.FormatFloat(value, 'f', precision, 64), ".", ",")
+}
+
+func formatEnergyReading(value float64, unit string) string {
+	normalized := strings.ToLower(strings.TrimSpace(unit))
+	switch normalized {
+	case "w":
+		if value >= 1000 || value <= -1000 {
+			return formatEnergyCompact(value/1000, 2) + " kW"
+		}
+		return formatEnergyCompact(value, 0) + " W"
+	case "kw":
+		return formatEnergyCompact(value, 2) + " kW"
+	case "%":
+		return formatEnergyCompact(value, 1) + " %"
+	case "kwh":
+		return formatEnergyCompact(value, 1) + " kWh"
+	case "mwh":
+		return formatEnergyCompact(value, 2) + " MWh"
+	default:
+		return formatEnergyNumber(value) + energyUnitSuffix(unit)
+	}
+}
+
+func formatEnergyCompact(value float64, precision int) string {
+	raw := strconv.FormatFloat(value, 'f', precision, 64)
+	if precision > 0 {
+		raw = strings.TrimRight(strings.TrimRight(raw, "0"), ".")
+	}
+	return strings.ReplaceAll(raw, ".", ",")
 }
 
 func energyUnitSuffix(unit string) string {

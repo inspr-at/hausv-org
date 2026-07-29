@@ -637,6 +637,59 @@ func TestEnergyDiscoveryOnlySuggestsMeasurementEntities(t *testing.T) {
 	}
 }
 
+func TestEnergyLiveViewCondensesManyReadingsIntoHouseFlow(t *testing.T) {
+	metrics := []energyMetricView{
+		{Metric: energy.MetricBatteryPower, Kind: "battery-charge", Label: "Batterieleistung", Value: "0 W", Detail: "Battery Charge Power", Numeric: 0, Unit: "W"},
+		{Metric: energy.MetricBatteryPower, Kind: "battery-discharge", Label: "Batterieleistung", Value: "701 W", Detail: "Battery Discharge Power", Numeric: 701, Unit: "W"},
+		{Metric: energy.MetricLoadPower, Kind: energy.MetricLoadPower, Label: "Hausverbrauch", Value: "7,19 kW", Detail: "Home Current Consumption", Numeric: 7192, Unit: "W"},
+		{Metric: energy.MetricBatterySOC, Kind: energy.MetricBatterySOC, Label: "Batteriestand", Value: "50 %", Detail: "Sonnenbatterie Ladestand", Numeric: 50, Unit: "%"},
+		{Metric: energy.MetricGridExportPower, Kind: energy.MetricGridExportPower, Label: "Einspeisung", Value: "0 W", Detail: "Grid Export Power", Numeric: 0, Unit: "W"},
+		{Metric: energy.MetricGridImportEnergy, Kind: energy.MetricGridImportEnergy, Label: "Netzbezug gesamt", Value: "5.407 kWh", Detail: "Grid Import Energy", Numeric: 5407, Unit: "kWh"},
+		{Metric: energy.MetricGridImportPower, Kind: energy.MetricGridImportPower, Label: "Netzbezug jetzt", Value: "50 W", Detail: "Grid Import Power", Numeric: 50, Unit: "W"},
+		{Metric: energy.MetricPVPower, Kind: energy.MetricPVPower, Label: "PV-Leistung", Value: "6,35 kW", Detail: "SolarEdge Current Power", Numeric: 6345, Unit: "W"},
+	}
+
+	view := buildEnergyLiveView(metrics)
+	if !view.HasMain || view.Main.Label != "Hausverbrauch" || view.Main.Value != "7,19 kW" {
+		t.Fatalf("main = %+v", view.Main)
+	}
+	if !view.HasBattery || view.Battery.Value != "701 W" || view.Battery.Detail != "liefert Energie" {
+		t.Fatalf("battery = %+v", view.Battery)
+	}
+	if len(view.Flows) != 4 {
+		t.Fatalf("flows = %+v", view.Flows)
+	}
+	if !view.HasAdditional || view.AdditionalCount != 1 ||
+		view.Additional[0].Metric != energy.MetricGridImportEnergy ||
+		view.Additional[0].Detail != "" {
+		t.Fatalf("additional = %+v", view.Additional)
+	}
+}
+
+func TestEnergyReadingUsesHumanScaleAndUnitAwarePeakTone(t *testing.T) {
+	for _, test := range []struct {
+		value float64
+		unit  string
+		want  string
+	}{
+		{7192, "W", "7,19 kW"},
+		{701, "W", "701 W"},
+		{0.05, "kW", "0,05 kW"},
+		{50, "%", "50 %"},
+	} {
+		if got := formatEnergyReading(test.value, test.unit); got != test.want {
+			t.Fatalf("formatEnergyReading(%v, %q) = %q, want %q", test.value, test.unit, got, test.want)
+		}
+	}
+	target := 8.0
+	if got := energyMetricTone(energy.MetricGridImportPower, 7000, "W", &target); got != "warning" {
+		t.Fatalf("unit-aware tone = %q", got)
+	}
+	if got := energyMetricTone(energy.MetricGridImportPower, 50, "W", &target); got != "" {
+		t.Fatalf("50 W tone = %q", got)
+	}
+}
+
 func TestManualEnergyMappingIsValidatedAndNotOverwrittenByDiscovery(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

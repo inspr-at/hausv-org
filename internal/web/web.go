@@ -797,29 +797,57 @@ const PageTemplates = `
     .energy-heading { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 24px; align-items: end; }
     .energy-heading .eyebrow { margin-bottom: 10px; }
     .energy-source { color: var(--muted); font-size: 13px; }
-    .energy-health { display: grid; grid-template-columns: minmax(280px,1.3fr) minmax(220px,.7fr); gap: 18px; }
+    .energy-health { display: grid; grid-template-columns: minmax(0,1.18fr) minmax(330px,.82fr); gap: 18px; align-items: start; }
     .energy-hero-card, .energy-card { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-sm); }
-    .energy-hero-card { min-height: 232px; display: grid; align-content: center; gap: 15px; padding: clamp(26px,4vw,44px); background: radial-gradient(circle at 88% 12%,rgba(200,153,63,.18),transparent 32%), var(--surface); }
+    .energy-hero-card { display: grid; align-content: start; gap: 15px; padding: clamp(26px,4vw,40px); background: radial-gradient(circle at 88% 12%,rgba(200,153,63,.12),transparent 32%), var(--surface); }
     .energy-hero-card h2 { max-width: 620px; font-size: clamp(30px,4vw,44px); font-weight: 500; }
     .energy-hero-card p { max-width: 620px; color: var(--muted); font-size: 16px; line-height: 1.55; }
     .energy-next-meta { display: flex; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 12px; }
     .energy-next-meta span { border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 6px 9px; background: rgba(255,255,255,.65); }
     .energy-recommendation-actions { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
     .energy-recommendation-actions form { display: flex; flex-wrap: wrap; gap: 6px; }
-    .energy-measure-control { position: relative; }
+    .energy-measure-control { max-width: 100%; }
+    .energy-measure-control[open] { flex: 1 0 100%; }
     .energy-measure-control > summary { list-style: none; }
     .energy-measure-control > summary::-webkit-details-marker { display: none; }
-    .energy-measure-form { position: absolute; left: 0; top: calc(100% + 8px); z-index: 12; width: min(420px,calc(100vw - 40px)); display: grid !important; gap: 11px !important; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 17px; background: var(--surface); box-shadow: var(--shadow-lg); }
+    .energy-measure-control[open] > summary { border-color: var(--gold); }
+    .energy-measure-form { width: 100%; display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 11px !important; margin-top: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 17px; background: rgba(250,247,238,.84); }
+    .energy-measure-form h3, .energy-measure-form p, .energy-measure-form .button { grid-column: 1 / -1; }
     .energy-measure-form p { font-size: 13px; }
-    .energy-measure-form label { display: flex; gap: 9px; align-items: center; font-size: 13px; }
+    .energy-measure-form label { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 9px; align-items: start; font-size: 13px; line-height: 1.4; }
     .energy-hero-card .button { justify-self: start; margin-top: 3px; }
-    .energy-summary { display: grid; gap: 10px; }
-    .energy-metric { min-height: 104px; display: grid; align-content: center; gap: 3px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px 18px; background: #fff; }
-    .energy-metric strong { font-family: var(--font-serif); font-size: 28px; font-weight: 600; }
-    .energy-metric span { color: var(--muted); font-size: 12.5px; }
-    .energy-metric.good { border-color: #b7d0bc; background: #f2f7f1; }
-    .energy-metric.warning { border-color: #e4c884; background: #fff8e8; }
-    .energy-metric.danger { border-color: #ddb0aa; background: #fff2f0; }
+    .energy-live { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-sm); }
+    .energy-live-head { display: flex; justify-content: space-between; gap: 16px; align-items: start; padding: 20px 22px 16px; border-bottom: 1px solid var(--line); }
+    .energy-live-head h2 { font-size: 22px; }
+    .energy-live-head span, .energy-live-head small { display: block; color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .energy-live-head > small { max-width: 110px; text-align: right; }
+    .energy-live-main { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 22px; }
+    .energy-live-main > div { display: grid; gap: 3px; }
+    .energy-live-main span, .energy-flow-item span { color: var(--muted); font-size: 12px; }
+    .energy-live-main strong { font-family: var(--font-serif); font-size: clamp(32px,4vw,42px); font-weight: 600; line-height: 1; }
+    .energy-live-house { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 50%; color: #7c6423; background: #f6edd7; }
+    .energy-live-house svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+    .energy-flow-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); border-top: 1px solid var(--line); }
+    .energy-flow-item { min-height: 92px; display: grid; align-content: center; gap: 3px; padding: 15px 18px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .energy-flow-item:nth-child(2n) { border-right: 0; }
+    .energy-flow-item strong { font-family: var(--font-serif); font-size: 24px; font-weight: 600; line-height: 1.1; }
+    .energy-flow-item small { color: var(--muted); font-size: 11.5px; }
+    .energy-flow-item.good strong { color: #315f3d; }
+    .energy-flow-item.warning strong { color: #806116; }
+    .energy-flow-item.danger strong { color: #96372d; }
+    .energy-live-more { margin-top: -1px; }
+    .energy-live-more > summary { min-height: 58px; display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 13px 22px; list-style: none; cursor: pointer; }
+    .energy-live-more > summary::-webkit-details-marker { display: none; }
+    .energy-live-more > summary::after { content: "⌄"; color: var(--gold-ink); font-size: 20px; transition: transform .16s ease; }
+    .energy-live-more[open] > summary::after { transform: rotate(180deg); }
+    .energy-live-more > summary span { display: grid; gap: 2px; }
+    .energy-live-more > summary small { color: var(--muted); font-size: 11.5px; font-weight: 500; }
+    .energy-live-more-list { display: grid; border-top: 1px solid var(--line); }
+    .energy-live-more-row { min-height: 48px; display: flex; justify-content: space-between; gap: 18px; align-items: center; padding: 10px 22px; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .energy-live-more-row:last-child { border-bottom: 0; }
+    .energy-live-more-row strong { font-family: var(--font-serif); font-size: 17px; }
+    .energy-live-empty { display: grid; gap: 5px; padding: 24px 22px; }
+    .energy-live-empty span { color: var(--muted); font-size: 13px; }
     .energy-card { padding: 24px; }
     .energy-card-head { display: flex; justify-content: space-between; gap: 18px; align-items: start; margin-bottom: 18px; }
     .energy-card-head p { margin-top: 6px; color: var(--muted); font-size: 14px; }
@@ -2025,6 +2053,8 @@ const PageTemplates = `
 	      .energy-mode-action { width: 100%; }
 	      .energy-mode-popover { position: static; width: 100%; margin-top: 8px; }
 	      .energy-heading, .energy-health { grid-template-columns: 1fr; }
+	      .energy-measure-form { grid-template-columns: 1fr; }
+	      .energy-live-head > small { max-width: 96px; }
 	      .energy-roadmap { grid-template-columns: 1fr; }
 	      .energy-roadmap-step { min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
 	      .energy-roadmap-step:last-child { border-bottom: 0; }
@@ -2046,7 +2076,6 @@ const PageTemplates = `
 	      .energy-caretaker { grid-template-columns: 1fr 1fr; }
 	      .energy-caretaker > div, .energy-caretaker .button { grid-column: 1 / -1; }
 	      .energy-measure-control, .energy-measure-control > summary { width: 100%; }
-	      .energy-measure-form { position: static; width: 100%; margin-top: 8px; }
 	      .energy-scenario-result { text-align: left; }
 	      .energy-history-row, .energy-inline-form { grid-template-columns: 1fr; }
 	      .energy-inline-form .wide, .energy-inline-form .actions { grid-column: 1; }
@@ -6867,10 +6896,7 @@ const PageTemplates = `
   <main class="app-main">
     {{template "energyModeStrip" .}}
     <div class="page energy-page">
-      <header class="energy-heading">
-        <div><span class="eyebrow">Mein Zuhause</span><h1>{{.Profile.HouseholdName}}</h1><p class="lede">Was jetzt wichtig ist – ohne Technik-Überladung.</p></div>
-        <span class="energy-source">{{.SourceStatus}}</span>
-      </header>
+      <header class="energy-heading"><div><span class="eyebrow">Mein Zuhause</span><h1>{{.Profile.HouseholdName}}</h1><p class="lede">Was jetzt wichtig ist – ohne Technik-Überladung.</p></div></header>
       {{if .Welcome}}<div class="message success">Ihr Hausprofil ist bereit. Der sichere Beobachtungsmodus bleibt aktiv.</div>{{end}}
       {{if .ModeChanged}}<div class="message success">Der Energiemodus wurde nachvollziehbar geändert.</div>{{end}}
       <section class="energy-health">
@@ -6898,10 +6924,17 @@ const PageTemplates = `
             <form method="post" action="/app/energie/recommendation"><input type="hidden" name="recommendation_id" value="{{.Recommendation.ID}}"><button class="button quiet" type="submit" name="status" value="deferred">Später</button><button class="button quiet" type="submit" name="status" value="dismissed">Nicht für uns</button></form>
           </div>{{end}}
         </article>
-        <div class="energy-summary">
-          {{if .HasMetrics}}{{range .Metrics}}<article class="energy-metric {{.Tone}}"><span>{{.Label}}</span><strong>{{.Value}}</strong><span>{{.Detail}}</span></article>{{end}}
-          {{else}}<article class="energy-metric"><span>Messwerte</span><strong>Noch offen</strong><span>Home Assistant kann später verbunden werden.</span></article>{{end}}
-        </div>
+        <aside class="energy-live" aria-label="Energie gerade jetzt" data-energy-reading-count="{{len .Metrics}}">
+          <header class="energy-live-head"><div><h2>Energie gerade jetzt</h2><span>Live aus Home Assistant</span></div><small>Nur gelesen</small></header>
+          {{if .HasMetrics}}
+            {{if .Live.HasMain}}<div class="energy-live-main"><div><span>{{.Live.Main.Label}}</span><strong>{{.Live.Main.Value}}</strong><span>{{.Live.Main.Detail}}</span></div><span class="energy-live-house" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 15.5 16 6l11 9.5V27H5Z"/><path d="M12 27v-8h8v8"/></svg></span></div>{{end}}
+            {{if or .Live.Flows .Live.HasBattery}}<div class="energy-flow-grid">
+              {{range .Live.Flows}}<div class="energy-flow-item {{.Tone}}" data-energy-metric="{{.Metric}}"><span>{{.Label}}</span><strong>{{.Value}}</strong><small>{{.Detail}}</small></div>{{end}}
+              {{if .Live.HasBattery}}<div class="energy-flow-item" data-energy-metric="battery-power"><span>{{.Live.Battery.Label}}</span><strong>{{.Live.Battery.Value}}</strong><small>{{.Live.Battery.Detail}}</small></div>{{end}}
+            </div>{{end}}
+            {{if .Live.HasAdditional}}<details class="energy-live-more"><summary><span><strong>Weitere Messwerte ({{.Live.AdditionalCount}})</strong><small>{{.Live.AdditionalTopics}}</small></span></summary><div class="energy-live-more-list">{{range .Live.Additional}}<div class="energy-live-more-row"><span>{{.Label}}</span><strong>{{.Value}}</strong></div>{{end}}</div></details>{{end}}
+          {{else}}<div class="energy-live-empty"><strong>Noch keine Live-Werte</strong><span>Home Assistant kann später verbunden werden.</span></div>{{end}}
+        </aside>
       </section>
       <section class="energy-card" id="fahrplan">
         <header class="energy-card-head"><div><h2>Ihr Energie-Fahrplan</h2><p>Ein klarer Schritt nach dem anderen.</p></div></header>

@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.50.0] - 2026-07-29
+
+### Verbessert
+
+- **Viele Messwerte werden zu einem verständlichen Energiefluss.** Hausverbrauch, PV, Netz, Speicher und Batteriestand stehen gemeinsam in einer kompakten Live-Übersicht; kumulierte und zusätzliche Werte öffnen sich erst bei Bedarf.
+- **Leistungswerte sind leichter zu lesen.** Große Wattwerte wechseln automatisch in eine passende Kilowatt-Darstellung, Lade- und Entladeleistung ergeben einen gemeinsamen Speicherzustand.
+- **Home-Assistant-Technik bleibt im Hintergrund.** Normale Nutzer sehen verständliche deutsche Bedeutungen statt konkurrierender Sensorbezeichnungen; ein älterer Sonderfall bei batteriepräfixiertem Hausverbrauch wird korrekt eingeordnet.
+- **Hausaufgaben bleiben im Seitenfluss.** Das geöffnete Freigabeformular verschiebt den Energie-Fahrplan zuverlässig nach unten, anstatt ihn zu überlagern.
+- **Acht Live-Werte sind auf Desktop und Mobil abgesichert.** Playwright prüft Verdichtung, progressive Details, Touch-Ziele, Sicherheitsmodus und überlagerungsfreie Darstellung im vollständigen Rollenlauf.
+
 ## [0.49.1] - 2026-07-29
 
 ### Verbessert

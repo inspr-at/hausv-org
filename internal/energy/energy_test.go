@@ -53,6 +53,7 @@ func TestClassifyCandidateRejectsDeviceNoiseAndKeepsEnergyMeaning(t *testing.T) 
 		{"sensor.pv_current_power", "PV Leistung", "kW", "power", MetricPVPower, true},
 		{"sensor.home_battery_soc", "Hausspeicher Ladestand", "%", "battery", MetricBatterySOC, true},
 		{"sensor.home_consumption", "Hausverbrauch", "W", "power", MetricLoadPower, true},
+		{"sensor.sonnenbatterie_state_consumption_current", "Sonnenbatterie Home Current Consumption", "W", "power", MetricLoadPower, true},
 		{"sensor.grid_export_energy", "Netzeinspeisung Energie", "kWh", "energy", "", false},
 		{"sensor.pv_forecast_power", "PV Forecast", "W", "power", "", false},
 		{"sensor.iphone_battery", "iPhone Battery", "%", "battery", "", false},

@@ -23,6 +23,7 @@ const homes = {
   state('sensor.home_battery_soc', '78', 'Hausspeicher Ladestand', 'battery', '%'),
   state('sensor.home_consumption', '1.8', 'Hausverbrauch', 'power', 'kW'),
   state('sensor.battery_charge_power', '0.8', 'Batteriespeicher Ladeleistung', 'power', 'kW'),
+  state('sensor.battery_discharge_power', '0.2', 'Batteriespeicher Entladeleistung', 'power', 'kW'),
   ...commonNoise,
   ],
   eltern: [
