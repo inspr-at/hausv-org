@@ -140,8 +140,9 @@ Speicherort.
   Verwaltung.
 - **Speicherort:** `audit.jsonl`; die laufende Datei wird bei 20 000 Einträgen,
   10 MiB oder einem ältesten Eintrag über 90 Tagen archiviert und mit den
-  jüngsten 5 000 Einträgen neu geschrieben. Archive über drei Jahre werden
-  automatisch entfernt.
+  jüngsten 5 000 Einträgen neu geschrieben. Auditdaten werden nach drei Jahren
+  zur Löschung fällig und beim nächsten sechsstündlichen Bereinigungslauf aus
+  Live-Datei und Archiven entfernt.
 
 ## 4. Externe Empfänger
 
@@ -189,8 +190,9 @@ Die Selbstprüfung vom 26.07.2026 hält fest:
    verlinken darauf.
 5. Geschlossene Anliegen und zugehörige Inhalte werden jährlich geprüft und
    grundsätzlich nach drei Jahren gelöscht, sofern keine gesetzlichen oder
-   vertraglichen Gründe entgegenstehen. Auditarchive werden nach drei Jahren
-   automatisch entfernt; Anhang-Markierungen nach einem Jahr.
+   vertraglichen Gründe entgegenstehen. Auditdaten werden nach drei Jahren
+   beim nächsten sechsstündlichen Bereinigungslauf entfernt;
+   Anhang-Markierungen nach einem Jahr.
 6. Freitext und Bilder können unbeabsichtigt sensible Daten enthalten.
    Nutzerhinweise und eng begrenzte Sichtbarkeit mindern das Risiko. EXIF- und
    andere eingebettete Metadaten werden derzeit nicht entfernt; dieser

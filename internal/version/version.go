@@ -91,6 +91,20 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.58.0",
+			Date:     "29. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Ihre Energiedaten gehören sichtbar Ihnen.",
+			Intro:    "Eigentümer und Hausadministration können den gespeicherten Umfang verstehen, vollständig mitnehmen und bewusst löschen.",
+			Items: []NoteItem{
+				{Label: "Alles mitnehmen", Text: "Profil, Anlagen, Zuordnungen, Messwerte, Auswertungen und Energieprotokoll stehen als maschinenlesbares ZIP bereit."},
+				{Label: "Gezielt löschen", Text: "Messverlauf und vollständiges Energieprofil haben getrennte, klar bestätigte Löschwege; technische Freigaben enden mit dem Profil sofort."},
+				{Label: "Fristen verstehen", Text: "Die Energiedaten-Zentrale erklärt, welche Daten kurz, länger oder als notwendiger Vertragsmarker aufbewahrt werden."},
+				{Label: "Privat einordnen", Text: "Home-Assistant-Zugangsdaten bleiben in der geschützten Host-Konfiguration; gelesene Live-Verläufe werden nicht dauerhaft als Portalhistorie gespeichert."},
+				{Label: "Fair bleiben", Text: "Die Hausgemeinschaft bleibt im Pilot bis 25 Wohneinheiten kostenfrei; private Hausprofile behalten ihren eigenen dreijährigen Gratiszeitraum."},
+			},
+		},
+		{
 			Version:  "0.57.1",
 			Date:     "29. Juli 2026",
 			Kind:     "Mein Zuhause",

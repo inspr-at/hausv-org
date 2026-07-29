@@ -58,6 +58,8 @@ func main() {
 	defer stopCharging()
 	stopTelegram := app.StartTelegramBot()
 	defer stopTelegram()
+	stopEnergyRetention := app.StartEnergyRetentionWorker()
+	defer stopEnergyRetention()
 
 	srv := &http.Server{
 		Addr:              app.Addr(),

@@ -102,7 +102,12 @@ timestamp;import_kwh
 - `import_kwh` ist die in dieser Viertelstunde aus dem Netz bezogene Energie.
 - Dieselbe Datei kann wiederholt importiert werden, ohne doppelte Intervalle zu
   erzeugen.
-- Originaldatei und abgeleitete Intervalle bleiben dem Haus zugeordnet.
+- Originaldatei und abgeleitete Intervalle bleiben strikt dem Haus zugeordnet.
+  Originaldateien werden nach 30 Tagen und normalisierte Viertelstundenwerte
+  nach 13 Monaten zur Löschung fällig; der automatische Lauf entfernt sie
+  spätestens sechs Stunden später. Eigentümer und Hausadministration können
+  beides vorher unter `/app/settings/energy-data` exportieren oder den gesamten
+  Messverlauf beziehungsweise das Energieprofil bewusst löschen.
 
 ## Sicherheitszustände
 

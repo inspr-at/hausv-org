@@ -375,7 +375,7 @@
           button.textContent = button.dataset.submitText;
         }
       });
-    }, lockTimeoutMs);
+    }, form.hasAttribute("data-download-form") ? 2500 : lockTimeoutMs);
     return true;
   }
 

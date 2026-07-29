@@ -144,8 +144,9 @@ Löschung.
   Gewährleistungs-, Rechts- oder Nachweispflicht. Bis zur automatischen
   Löschfunktion ist dies ein dokumentierter manueller Betreiberprozess.
 - Anhangdatei bei Löschung sofort; Tombstone nach einem Jahr.
-- Audit-Live-Datei rotiert nach 10 MiB, 90 Tagen oder 20.000 Einträgen; Archive
-  werden nach drei Jahren automatisch entfernt.
+- Audit-Live-Datei rotiert nach 10 MiB, 90 Tagen oder 20.000 Einträgen.
+  Auditdaten werden nach drei Jahren zur Löschung fällig und beim nächsten
+  sechsstündlichen Bereinigungslauf aus Live-Datei und Archiven entfernt.
 - Resend: reguläre E-Mail-Inhalte laut Anbieter 30 Tage; verbleibende
   Kunden-/Nutzerdaten nach Vertragsende laut DPA innerhalb von 90 Tagen.
 

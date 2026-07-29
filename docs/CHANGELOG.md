@@ -2,6 +2,21 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.58.0] - 2026-07-29
+
+### Neu
+
+- **Eigentümer und Hausadministration haben eine verständliche Energiedaten-Zentrale.** Profil, Anlagen, bestätigte Zuordnungen, Messwerte, Auswertungen und Energieprotokoll lassen sich als maschinenlesbares ZIP mitnehmen.
+- **Messverlauf und vollständiges Energieprofil lassen sich bewusst getrennt löschen.** Eindeutige Bestätigungstexte, nachvollziehbare Protokollierung und der sofortige Widerruf technischer Freigaben schützen vor Versehen.
+
+### Verbessert
+
+- **Aufbewahrung ist sichtbar und technisch durchgesetzt.** Smart-Meter-Originale, Viertelstundenwerte, Tarifbewertungen und Auditdaten werden nach ihren Fristen automatisch bereinigt; ein Fehlschlag wird im Gesundheitsstatus sichtbar.
+- **Home Assistant bleibt konsequent datensparsam.** Adresse und Token verlassen die geschützte Host-Konfiguration nicht, und transient gelesene Diagrammwerte verschwinden bei der Profil-Löschung sofort aus dem Arbeitsspeicher.
+- **Hausportal und persönliches Zuhause bleiben sauber getrennt.** JHW22 bleibt rechtlich und redaktionell eine Hausgemeinschaft, auch wenn „Mein Zuhause“ darin als einzelne Wohnung eingerichtet ist.
+- **Datenschutz und Produkttext beschreiben denselben tatsächlichen Betrieb.** Zuständigkeiten, Export, Löschung, Gratiszeitraum-Marker und interne Betreiber-Selbstprüfung sind ohne vorausgesetzten externen Auditor konsistent dokumentiert.
+- **Die Datenkontrolle ist auf Desktop und Mobil ruhiger lesbar.** Fristen, Inventar und sichere Löschwege geben Überblick, ohne alle Details gleichzeitig aufzudrängen.
+
 ## [0.57.1] - 2026-07-29
 
 ### Verbessert

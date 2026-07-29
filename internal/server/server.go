@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/markus-barta/hausv-org/internal/auth"
@@ -764,6 +765,8 @@ type app struct {
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
 	energyStore           energy.Storage
+	retentionFailure      atomic.Bool
+	energyLifecycleLocks  sync.Map
 	energyChartMu         sync.Mutex
 	energyChartCache      map[string]energyChartCacheEntry
 	mapTileMu             sync.Mutex
@@ -874,22 +877,26 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /auth/logout", a.logout)
 	mux.HandleFunc("GET /calendar/{token}", a.calendarFeed)
 	mux.HandleFunc("GET /app", a.page(a.portal))
-	mux.HandleFunc("GET /app/zuhause/onboarding", a.page(a.homeOnboarding))
-	mux.HandleFunc("POST /app/zuhause/onboarding", a.action(a.updateHomeOnboarding))
-	mux.HandleFunc("GET /app/energie", a.page(a.energyCockpit))
-	mux.HandleFunc("POST /app/energie/mode", a.action(a.updateEnergyMode))
-	mux.HandleFunc("POST /app/energie/mappings", a.action(a.updateEnergyMappings))
-	mux.HandleFunc("POST /app/energie/assets", a.action(a.updateEnergyAssets))
-	mux.HandleFunc("POST /app/energie/smart-meter", a.action(a.importSmartMeter))
-	mux.HandleFunc("POST /app/energie/target", a.action(a.updateEnergyTarget))
-	mux.HandleFunc("POST /app/energie/recommendation", a.action(a.updateEnergyRecommendation))
-	mux.HandleFunc("POST /app/energie/measure", a.action(a.createEnergyMeasure))
-	mux.HandleFunc("POST /app/energie/measure/update", a.action(a.updateEnergyMeasure))
-	mux.HandleFunc("POST /app/energie/caretaker", a.action(a.updateEnergyCaretaker))
-	mux.HandleFunc("POST /app/energie/caretaker/invite", a.action(a.inviteEnergyCaretaker))
-	mux.HandleFunc("POST /app/energie/maintenance", a.action(a.upsertEnergyMaintenance))
-	mux.HandleFunc("POST /app/energie/maintenance/complete", a.action(a.completeEnergyMaintenance))
-	mux.HandleFunc("POST /app/energie/tariff/assessment", a.action(a.saveEnergyTariffAssessment))
+	mux.HandleFunc("GET /app/zuhause/onboarding", a.page(a.withEnergyLifecycleOperation(a.homeOnboarding)))
+	mux.HandleFunc("POST /app/zuhause/onboarding", a.action(a.withEnergyLifecycleOperation(a.updateHomeOnboarding)))
+	mux.HandleFunc("GET /app/energie", a.page(a.withEnergyLifecycleOperation(a.energyCockpit)))
+	mux.HandleFunc("POST /app/energie/mode", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyMode)))
+	mux.HandleFunc("POST /app/energie/mappings", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyMappings)))
+	mux.HandleFunc("POST /app/energie/assets", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyAssets)))
+	mux.HandleFunc("POST /app/energie/smart-meter", a.action(a.withClaimedEnergyLifecycleOperation(a.importSmartMeter)))
+	mux.HandleFunc("POST /app/energie/target", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyTarget)))
+	mux.HandleFunc("POST /app/energie/recommendation", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyRecommendation)))
+	mux.HandleFunc("POST /app/energie/measure", a.action(a.withClaimedEnergyLifecycleOperation(a.createEnergyMeasure)))
+	mux.HandleFunc("POST /app/energie/measure/update", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyMeasure)))
+	mux.HandleFunc("POST /app/energie/caretaker", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyCaretaker)))
+	mux.HandleFunc("POST /app/energie/caretaker/invite", a.action(a.withClaimedEnergyLifecycleOperation(a.inviteEnergyCaretaker)))
+	mux.HandleFunc("POST /app/energie/maintenance", a.action(a.withClaimedEnergyLifecycleOperation(a.upsertEnergyMaintenance)))
+	mux.HandleFunc("POST /app/energie/maintenance/complete", a.action(a.withClaimedEnergyLifecycleOperation(a.completeEnergyMaintenance)))
+	mux.HandleFunc("POST /app/energie/tariff/assessment", a.action(a.withClaimedEnergyLifecycleOperation(a.saveEnergyTariffAssessment)))
+	mux.HandleFunc("GET /app/settings/energy-data", a.page(a.withEnergyLifecycleOperation(a.energyDataPage)))
+	mux.HandleFunc("POST /app/settings/energy-data/export", a.action(a.withEnergyLifecycleOperation(a.exportEnergyData)))
+	mux.HandleFunc("POST /app/settings/energy-data/history/delete", a.action(a.withEnergyLifecycleReset(a.deleteEnergyMeasurementData)))
+	mux.HandleFunc("POST /app/settings/energy-data/profile/delete", a.action(a.withEnergyLifecycleReset(a.deleteEnergyProfile)))
 	mux.HandleFunc("GET /app/announcements", a.page(a.announcements))
 	mux.HandleFunc("POST /app/announcements", a.action(a.createAnnouncement))
 	mux.HandleFunc("POST /app/announcements/edit", a.action(a.editAnnouncement))
@@ -950,8 +957,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/parking/charging/telegram/unlink", a.authedAction(capabilityManageParking, a.unlinkTelegramChat))
 	mux.HandleFunc("GET /app/audit", a.page(a.auditLog))
 	mux.HandleFunc("GET /app/settings", a.page(a.settingsHub))
-	mux.HandleFunc("GET /app/settings/home", a.page(a.homeIdentitySettings))
-	mux.HandleFunc("POST /app/settings/home", a.action(a.updateHomeIdentity))
+	mux.HandleFunc("GET /app/settings/home", a.page(a.withEnergyLifecycleOperation(a.homeIdentitySettings)))
+	mux.HandleFunc("POST /app/settings/home", a.action(a.withEnergyLifecycleOperation(a.updateHomeIdentity)))
 	mux.HandleFunc("GET /app/settings/building", a.page(a.buildingSettings))
 	mux.HandleFunc("POST /app/settings/building", a.action(a.updateBuildingSettings))
 	mux.HandleFunc("POST /app/settings/building/hero", a.action(a.updateBuildingHero))
@@ -1268,6 +1275,16 @@ func newApp() (*app, error) {
 	if err := energy.ApplyProfileSeeds(energyBackend, env("HOME_PROFILE_SEEDS_JSON", ""), knownEnergyTenants, time.Now()); err != nil {
 		return nil, err
 	}
+	rawBefore, intervalBefore, assessmentBefore := energyRetentionCutoffs(time.Now())
+	if summary, err := energyBackend.PurgeExpired(rawBefore, intervalBefore, assessmentBefore); err != nil {
+		return nil, fmt.Errorf("expired energy data purge failed: %w", err)
+	} else if summary.Imports+summary.Intervals+summary.TariffAssessments > 0 {
+		logInfo("expired energy data purged",
+			"raw_imports", summary.Imports,
+			"intervals", summary.Intervals,
+			"assessments", summary.TariffAssessments,
+		)
+	}
 
 	for _, step := range []struct {
 		name    string
@@ -1426,7 +1443,7 @@ func (a *app) health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
-	if a == nil || a.db == nil || a.db.PingContext(ctx) != nil || probeWritableDir(a.dataDir) != nil {
+	if a == nil || a.db == nil || a.db.PingContext(ctx) != nil || probeWritableDir(a.dataDir) != nil || a.retentionFailure.Load() {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		_, _ = io.WriteString(w, `{"service":"hausv-org","status":"unhealthy"}`)
 		return
@@ -2736,9 +2753,14 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		notificationSummary = "E-Mails pausiert"
 	}
 	homeURL := "/app/zuhause/onboarding"
-	if homeProfile, exists, profileErr := a.energyStore.Profile(tenant.Slug); profileErr == nil && exists && homeProfile.OnboardingComplete {
+	homeProfile, homeProfileExists, homeProfileErr := a.energyStore.Profile(tenant.Slug)
+	if homeProfileErr == nil && homeProfileExists && homeProfile.OnboardingComplete {
 		homeURL = "/app/settings/home"
 	}
+	canManageEnergyData := homeProfileErr == nil &&
+		homeProfileExists &&
+		!energyProfileUnclaimed(homeProfile) &&
+		a.canManageHomeIdentityProfile(ac, homeProfile, homeProfileExists)
 	a.render(w, "settingsHub", a.withBase(ac, map[string]any{
 		"Title":                       "Einstellungen",
 		"ActivePage":                  "settings",
@@ -2747,6 +2769,7 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"SettingsDisplayName":         profile.DisplayName(),
 		"SettingsNotificationSummary": notificationSummary,
 		"SettingsHomeURL":             homeURL,
+		"SettingsCanManageEnergyData": canManageEnergyData,
 	}))
 }
 
@@ -5817,6 +5840,10 @@ func (a *app) Close() error {
 	}
 	return nil
 }
+
+// StartEnergyRetentionWorker enforces the published maximum energy-data
+// retention while a process remains up between deployments.
+func (a *app) StartEnergyRetentionWorker() func() { return a.startEnergyRetentionWorker() }
 
 // RunHealthcheck is the container health probe.
 func RunHealthcheck(target string) error { return runHealthcheck(target) }

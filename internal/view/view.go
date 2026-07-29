@@ -1301,6 +1301,14 @@ func AuditActionLabel(action string) string {
 		return "Kontakt gespeichert"
 	case store.AuditActionContactDelete:
 		return "Kontakt deaktiviert"
+	case store.AuditActionEnergyExport:
+		return "Energiedaten exportiert"
+	case store.AuditActionEnergyIdentity:
+		return "Zuhause-Darstellung geändert"
+	case store.AuditActionEnergyHistoryDelete:
+		return "Energie-Messverlauf gelöscht"
+	case store.AuditActionEnergyProfileDelete:
+		return "Energieprofil gelöscht"
 	default:
 		return action
 	}

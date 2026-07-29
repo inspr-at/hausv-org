@@ -11,8 +11,18 @@ import (
 
 	oidc "github.com/coreos/go-oidc/v3/oidc"
 	"github.com/markus-barta/hausv-org/internal/auth"
+	"github.com/markus-barta/hausv-org/internal/config"
 	"golang.org/x/oauth2"
 )
+
+type publicHomeCopy struct {
+	Eyebrow       string
+	Headline      string
+	Lead          string
+	FirstDetail   string
+	SecondDetail  string
+	PrivacyDetail string
+}
 
 func (a *app) home(w http.ResponseWriter, r *http.Request) {
 	if a.isMarketingHost(r) {
@@ -26,6 +36,7 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	houseName := houseDisplayName(tenant)
+	copy := a.publicHomeCopy(tenant.Slug)
 	a.render(w, "home", map[string]any{
 		"Title":               houseName + " · Hausportal",
 		"Tenant":              tenant,
@@ -39,6 +50,7 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 		"OIDCConfigured":      a.oidc.Configured(),
 		"EmailLoginAvailable": a.emailLoginAvailable(),
 		"MapURL":              tenantMapURL(tenant.Address),
+		"HomeCopy":            copy,
 	})
 }
 
@@ -60,6 +72,15 @@ func (a *app) marketingLanding(w http.ResponseWriter, r *http.Request) {
 func (a *app) privacyNotice(w http.ResponseWriter, r *http.Request) {
 	tenant := a.tenantForRequest(r)
 	contactEmail := firstNonEmpty(tenant.ContactEmail, platformContactEmail)
+	energyProfileExists := false
+	if a.energyStore != nil {
+		if profile, exists, err := a.energyStore.Profile(tenant.Slug); err == nil && exists {
+			if !energyProfileUnclaimed(profile) {
+				energyProfileExists = true
+			}
+		}
+	}
+	portalType, portalClassified := classifiedPortalType(tenant)
 	a.render(w, "privacy", map[string]any{
 		"Title":                         "Datenschutz · hausv.org",
 		"Tenant":                        tenant,
@@ -74,6 +95,9 @@ func (a *app) privacyNotice(w http.ResponseWriter, r *http.Request) {
 		"ServiceProviderEnabled":        a.serviceAccessEnabled,
 		"ServiceProviderAssessment":     serviceProviderAssessmentVersion,
 		"ServiceProviderRetentionYears": 3,
+		"IsPrivateHome":                 portalType == config.PortalTypeApartment || portalType == config.PortalTypeHouse,
+		"PortalClassified":              portalClassified,
+		"EnergyProfileExists":           energyProfileExists,
 	})
 }
 
@@ -115,6 +139,7 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 
 	link := a.publicBaseURL(r, tenant) + "/auth/verify?token=" + url.QueryEscape(token)
 	if a.localDevLogin && !a.mailer.Configured() {
+		copy := a.publicHomeCopy(tenant.Slug)
 		a.render(w, "home", map[string]any{
 			"Title":               tenant.Address + " · Hausportal",
 			"Tenant":              tenant,
@@ -128,6 +153,7 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 			"OIDCConfigured":      a.oidc.Configured(),
 			"EmailLoginAvailable": a.emailLoginAvailable(),
 			"MapURL":              tenantMapURL(tenant.Address),
+			"HomeCopy":            copy,
 		})
 		return
 	}
@@ -139,6 +165,76 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
+}
+
+func (a *app) publicHomeCopy(tenantSlug string) publicHomeCopy {
+	tenant, ok := a.tenantBySlug(tenantSlug)
+	if !ok {
+		return neutralPublicHomeCopy()
+	}
+	portalType, classified := classifiedPortalType(tenant)
+	if !classified {
+		return neutralPublicHomeCopy()
+	}
+	switch portalType {
+	case config.PortalTypeApartment:
+		return publicHomeCopy{
+			Eyebrow:       "Ihr Zuhause-Portal",
+			Headline:      "Alles Wichtige für Ihre Wohnung.",
+			Lead:          "Aushänge, Termine, Dokumente, Anliegen und Energie – privat an einem Ort.",
+			FirstDetail:   "Neuigkeiten und Unterlagen im Blick.",
+			SecondDetail:  "Aufgaben und Energie verständlich gebündelt.",
+			PrivacyDetail: "Nur für eingeladene Personen.",
+		}
+	case config.PortalTypeHouse:
+		return publicHomeCopy{
+			Eyebrow:       "Ihr Zuhause-Portal",
+			Headline:      "Alles Wichtige für Ihr Zuhause.",
+			Lead:          "Termine, Dokumente, Aufgaben und Energie – privat an einem Ort.",
+			FirstDetail:   "Unterlagen und Wartung im Blick.",
+			SecondDetail:  "Energie verstehen und Schritt für Schritt planen.",
+			PrivacyDetail: "Nur für eingeladene Personen.",
+		}
+	case config.PortalTypeCommunity:
+		return publicHomeCopy{
+			Eyebrow:       "Ihr Hausportal",
+			Headline:      "Alles Wichtige rund um unser Haus.",
+			Lead:          "Aushänge, Termine, Dokumente und Anliegen – privat für unsere Hausgemeinschaft.",
+			FirstDetail:   "Wichtige Aushänge und Neuigkeiten.",
+			SecondDetail:  "Termine und Aufgaben im Blick.",
+			PrivacyDetail: "Nur für unsere Hausgemeinschaft.",
+		}
+	default:
+		return neutralPublicHomeCopy()
+	}
+}
+
+func classifiedPortalType(tenant tenantConfig) (string, bool) {
+	switch strings.ToLower(strings.TrimSpace(tenant.PortalType)) {
+	case config.PortalTypeApartment:
+		return config.PortalTypeApartment, true
+	case config.PortalTypeHouse:
+		return config.PortalTypeHouse, true
+	case config.PortalTypeCommunity:
+		return config.PortalTypeCommunity, true
+	case "":
+		// Existing tenant declarations predate portal_type and all describe WEG
+		// portals. Private B2C portals must opt in explicitly.
+		return config.PortalTypeCommunity, true
+	default:
+		return "", false
+	}
+}
+
+func neutralPublicHomeCopy() publicHomeCopy {
+	return publicHomeCopy{
+		Eyebrow:       "Ihr privates Portal",
+		Headline:      "Alles Wichtige an einem Ort.",
+		Lead:          "Aushänge, Termine, Dokumente und Anliegen – nur für eingeladene Personen.",
+		FirstDetail:   "Neuigkeiten und Unterlagen im Blick.",
+		SecondDetail:  "Termine und Aufgaben verständlich gebündelt.",
+		PrivacyDetail: "Nur für eingeladene Personen.",
+	}
 }
 
 func (a *app) verifyLogin(w http.ResponseWriter, r *http.Request) {

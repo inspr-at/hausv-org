@@ -69,6 +69,32 @@ func TestParseTenantsKeepsDefaultConnectorFallback(t *testing.T) {
 	if tenants["home"].MapLatitude == 0 || tenants["home"].MapLongitude == 0 || tenants["home"].MapZoom != 17 {
 		t.Fatalf("default tenant map coordinates = %#v", tenants["home"])
 	}
+	if tenants["home"].PortalType != PortalTypeCommunity {
+		t.Fatalf("default portal type = %q", tenants["home"].PortalType)
+	}
+}
+
+func TestParseTenantsValidatesIndependentPortalType(t *testing.T) {
+	tenants, err := ParseTenants(
+		`[{"slug":"private-home","portal_type":"house"},{"slug":"weg","portal_type":"community"}]`,
+		"hausv.org",
+		"weg",
+		homeassistant.Config{},
+	)
+	if err != nil {
+		t.Fatalf("ParseTenants: %v", err)
+	}
+	if tenants["private-home"].PortalType != PortalTypeHouse || tenants["weg"].PortalType != PortalTypeCommunity {
+		t.Fatalf("portal types = %#v", tenants)
+	}
+	if _, err := ParseTenants(
+		`[{"slug":"invalid","portal_type":"mixed-up"}]`,
+		"hausv.org",
+		"invalid",
+		homeassistant.Config{},
+	); err == nil {
+		t.Fatal("expected invalid portal_type error")
+	}
 }
 
 func quoteJSON(value string) string {

@@ -14,6 +14,7 @@ import (
 
 	"github.com/markus-barta/hausv-org/internal/energy"
 	"github.com/markus-barta/hausv-org/internal/homeassistant"
+	"github.com/markus-barta/hausv-org/internal/store"
 )
 
 type energyCandidateView struct {
@@ -283,22 +284,22 @@ func (a *app) canViewEnergy(ac authCtx) bool {
 	if a.isEnergyHouseAdmin(ac) {
 		return true
 	}
+	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	if err != nil {
+		return false
+	}
+	if !exists || energyProfileUnclaimed(profile) {
+		// The durable directory role may still be "resident" while the official
+		// unit relation identifies this person as its owner. Keep that owner
+		// relation authoritative for first-time and post-deletion onboarding.
+		return a.ownerCanAccessEnergyProfile(ac, profile, exists)
+	}
 	person := a.profileForTenant(ac.email, ac.tenant.Slug)
 	if person.HasPermission(permissionEnergyView) ||
 		person.HasPermission(permissionEnergyConfigure) ||
 		person.HasPermission(permissionEnergyControl) ||
 		person.HasPermission(permissionEnergyCaretaker) {
 		return true
-	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
-	if err != nil {
-		return false
-	}
-	if !exists {
-		if ac.role == roleOwner {
-			return a.ownerCanAccessEnergyProfile(ac, profile, false)
-		}
-		return ac.role == roleRenter || ac.role == roleResident || ac.role == roleBeirat
 	}
 	if profile.HomeType != energy.HomeApartment {
 		return ac.role == roleOwner || ac.role == roleRenter || ac.role == roleResident || ac.role == roleBeirat
@@ -316,12 +317,16 @@ func (a *app) canManageEnergy(ac authCtx) bool {
 	if a.isEnergyHouseAdmin(ac) {
 		return true
 	}
+	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	if err != nil {
+		return false
+	}
 	person := a.profileForTenant(ac.email, ac.tenant.Slug)
-	if person.HasPermission(permissionEnergyConfigure) || person.HasPermission(permissionEnergyCaretaker) {
+	if exists && !energyProfileUnclaimed(profile) &&
+		(person.HasPermission(permissionEnergyConfigure) || person.HasPermission(permissionEnergyCaretaker)) {
 		return true
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
-	return err == nil && a.ownerCanAccessEnergyProfile(ac, profile, exists)
+	return a.ownerCanAccessEnergyProfile(ac, profile, exists)
 }
 
 func (a *app) canManageHomeIdentity(ac authCtx) bool {
@@ -392,7 +397,7 @@ func (a *app) actorBelongsToEnergyUnit(ac authCtx, unitID string, ownerOnly bool
 
 func (a *app) ownerCanAccessEnergyProfile(ac authCtx, profile energy.HomeProfile, exists bool) bool {
 	units := a.energyResidentialUnits(ac.tenant.Slug)
-	if !exists {
+	if !exists || energyProfileUnclaimed(profile) {
 		if len(units) == 0 {
 			return normalizeRole(ac.role) == roleOwner
 		}
@@ -416,6 +421,13 @@ func (a *app) ownerCanAccessEnergyProfile(ac authCtx, profile energy.HomeProfile
 	return normalizeRole(ac.role) == roleOwner &&
 		len(units) == 0 &&
 		strings.TrimSpace(profile.UnitID) == ""
+}
+
+func energyProfileUnclaimed(profile energy.HomeProfile) bool {
+	return !profile.OnboardingComplete &&
+		profile.OnboardingStep <= 1 &&
+		strings.TrimSpace(profile.UnitID) == "" &&
+		strings.TrimSpace(profile.HouseholdName) == ""
 }
 
 func (a *app) canManageHomeIdentityProfile(ac authCtx, profile energy.HomeProfile, exists bool) bool {
@@ -496,11 +508,14 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.Error(w, "Hausprofil konnte nicht geladen werden.", http.StatusInternalServerError)
 		return
 	}
-	if !exists {
-		profile = energy.DefaultProfile(ac.tenant.Slug, time.Now())
+	if !exists || energyProfileUnclaimed(profile) {
+		if !exists {
+			profile = energy.DefaultProfile(ac.tenant.Slug, time.Now())
+		}
 		profile.HouseholdName = houseDisplayName(ac.tenant)
-		// A brand-new profile has no history that could be exposed. Preselect the
-		// sole official apartment; the first POST persists this exact relation.
+		// A brand-new or deliberately reset profile has no history that could be
+		// exposed. Preselect the sole official apartment; the first POST persists
+		// this exact relation while preserving contract metadata on a reset marker.
 		if units := a.energyResidentialUnits(ac.tenant.Slug); len(units) == 1 {
 			profile.UnitID = units[0].ID
 		}
@@ -579,6 +594,7 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		"HomeIdentity":          onboardingIdentity,
 		"IsObserveMode":         profile.OperatingMode == energy.ModeObserve,
 		"OnboardingComplete":    profile.OnboardingComplete,
+		"ProfileReset":          r.URL.Query().Get("reset") == "1",
 	}))
 }
 
@@ -596,11 +612,13 @@ func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac au
 		http.Error(w, "Hausprofil konnte nicht geladen werden.", http.StatusInternalServerError)
 		return
 	}
-	if !exists {
-		profile = energy.DefaultProfile(ac.tenant.Slug, time.Now())
+	if !exists || energyProfileUnclaimed(profile) {
+		if !exists {
+			profile = energy.DefaultProfile(ac.tenant.Slug, time.Now())
+		}
 		profile.HouseholdName = houseDisplayName(ac.tenant)
-		// Persist the sole official apartment with the new profile so step two
-		// remains reachable without a runtime "last apartment wins" heuristic.
+		// Persist the sole official apartment with a fresh or reset profile so
+		// step two remains reachable. A retained free-period start stays intact.
 		// The unfinished profile may still deliberately choose another type.
 		if units := a.energyResidentialUnits(ac.tenant.Slug); len(units) == 1 {
 			profile.UnitID = units[0].ID
@@ -798,7 +816,7 @@ func (a *app) updateHomeIdentity(w http.ResponseWriter, r *http.Request, ac auth
 			TenantSlug: ac.tenant.Slug,
 			ActorEmail: ac.email,
 			ActorRole:  ac.role,
-			Action:     "energy.profile.identity.update",
+			Action:     store.AuditActionEnergyIdentity,
 			TargetType: "home-profile",
 			TargetID:   ac.tenant.Slug,
 			Summary:    "Darstellung von Mein Zuhause geändert",
@@ -916,7 +934,11 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	live := buildEnergyLiveView(metrics)
 	chart := a.energy24HourChart(r.Context(), ac.tenant, mappings, profile, time.Now(), r.URL.Query().Get("zeitraum"))
 	coverage, coverageSummary := buildEnergyCoverageViews(assets, mappings)
-	imports, _ := a.energyStore.ListImports(ac.tenant.Slug)
+	canManageEnergyData := a.canManageHomeIdentity(ac)
+	imports := []energy.ImportRecord{}
+	if canManageEnergyData {
+		imports, _ = a.energyStore.ListImports(ac.tenant.Slug)
+	}
 	importViews := make([]energyImportView, 0, len(imports))
 	for _, item := range imports {
 		importViews = append(importViews, energyImportView{
@@ -981,7 +1003,8 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"HomeTypeLabel":           energyHomeTypeLabel(profile.HomeType),
 		"HomeUnitLabel":           homeUnitLabel,
 		"HasHomeUnit":             hasHomeUnit,
-		"CanManageHomeIdentity":   a.canManageHomeIdentity(ac),
+		"CanManageHomeIdentity":   canManageEnergyData,
+		"CanManageEnergyData":     canManageEnergyData,
 		"Imports":                 importViews,
 		"HasImports":              len(importViews) > 0,
 		"Peaks":                   peakViews,
@@ -1493,7 +1516,8 @@ func (a *app) importSmartMeter(w http.ResponseWriter, r *http.Request, ac authCt
 		TargetID:   record.ID,
 		Summary:    "Smart-Meter-Referenz importiert",
 		Details: map[string]string{
-			"filename":  record.Filename,
+			"format":    record.Format,
+			"digest":    shortImportDigest(record.SHA256),
 			"intervals": strconv.Itoa(len(intervals)),
 			"result":    status,
 		},
@@ -2916,9 +2940,9 @@ func (a *app) cachedEnergyChart(key string, now time.Time) (energyChartView, boo
 	if a.energyChartCache == nil {
 		return energyChartView{}, false
 	}
+	a.pruneEnergyChartCacheLocked(now)
 	item, ok := a.energyChartCache[key]
-	if !ok || !item.ExpiresAt.After(now) {
-		delete(a.energyChartCache, key)
+	if !ok {
 		return energyChartView{}, false
 	}
 	return item.View, true
@@ -2930,7 +2954,27 @@ func (a *app) cacheEnergyChart(key string, view energyChartView, expiresAt time.
 	if a.energyChartCache == nil {
 		a.energyChartCache = map[string]energyChartCacheEntry{}
 	}
+	a.pruneEnergyChartCacheLocked(time.Now())
 	a.energyChartCache[key] = energyChartCacheEntry{View: view, ExpiresAt: expiresAt}
+}
+
+func (a *app) clearEnergyChartCache(tenantSlug string) {
+	a.energyChartMu.Lock()
+	defer a.energyChartMu.Unlock()
+	prefix := strings.TrimSpace(tenantSlug) + "|"
+	for key := range a.energyChartCache {
+		if strings.HasPrefix(key, prefix) {
+			delete(a.energyChartCache, key)
+		}
+	}
+}
+
+func (a *app) pruneEnergyChartCacheLocked(now time.Time) {
+	for key, item := range a.energyChartCache {
+		if !item.ExpiresAt.After(now) {
+			delete(a.energyChartCache, key)
+		}
+	}
 }
 
 func energyHistoryBuckets(items []homeassistant.HistoryState, unit string, start, end, availableUntil time.Time, points int) ([]float64, []bool) {

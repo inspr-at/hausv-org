@@ -1211,6 +1211,14 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 func TestTenantHomeUsesHouseLanguageAndPrivateMapLink(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	a.mailer = &recordingMailer{}
+	profile := energy.DefaultProfile("jhw22", time.Now())
+	profile.HomeType = energy.HomeCommunity
+	profile.HouseholdName = "Janischhofweg 22"
+	profile.OnboardingComplete = true
+	profile.OnboardingStep = 5
+	if err := a.energyStore.SaveProfile(profile); err != nil {
+		t.Fatal(err)
+	}
 
 	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
 	rr := httptest.NewRecorder()
@@ -1225,7 +1233,7 @@ func TestTenantHomeUsesHouseLanguageAndPrivateMapLink(t *testing.T) {
 		"Willkommen zurück",
 		"Anmeldelink senden",
 		"Auf OpenStreetMap ansehen",
-		"Privat für die Hausgemeinschaft",
+		"Privat für eingeladene Personen",
 		"Impressum",
 	} {
 		if !strings.Contains(body, want) {
@@ -1288,7 +1296,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"kein Unternehmen",
 		"Nicht anwendbar",
 		"kein öffentlicher Online-Vertragsabschluss",
-		"Betreiber-Selbstprüfung vom 26. Juli 2026",
+		"Betreiber-Selbstprüfung vom 29. Juli 2026",
 		"§ 5 ECG",
 		"§ 24 MedienG",
 		"Keine externe Zertifizierung",
@@ -4409,7 +4417,7 @@ func TestPublicPrivacyNoticeMatchesActualDependencies(t *testing.T) {
 		"Cloudflare",
 		"Hetzner",
 		"auch in den USA verarbeitet",
-		"Audit-Archive: höchstens drei Jahre",
+		"Auditdaten werden nach drei Jahren zur Löschung fällig",
 		"Österreichische Datenschutzbehörde",
 		"§ 5 ECG",
 		"§ 24 MedienG",

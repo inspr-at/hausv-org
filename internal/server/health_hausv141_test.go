@@ -41,6 +41,16 @@ func TestHealthRejectsMissingDependency(t *testing.T) {
 	}
 }
 
+func TestHealthRejectsFailedRetentionSweep(t *testing.T) {
+	a := &app{db: mustTestDB(t), dataDir: t.TempDir()}
+	a.retentionFailure.Store(true)
+	rr := httptest.NewRecorder()
+	a.health(rr, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if rr.Code != http.StatusServiceUnavailable || rr.Body.String() != `{"service":"hausv-org","status":"unhealthy"}` {
+		t.Fatalf("retention failure response = %d %q", rr.Code, rr.Body.String())
+	}
+}
+
 func mustTestDB(t *testing.T) *sql.DB {
 	t.Helper()
 	database, err := appdb.Open(filepath.Join(t.TempDir(), "hausv.db"))

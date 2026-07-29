@@ -1,6 +1,6 @@
 # JHW22: Art.-28-/TOM-Freigabepaket
 
-Stand: 26. Juli 2026  
+Stand: 29. Juli 2026
 Status: **Entwurf – nicht durch die verantwortliche Stelle freigegeben**
 
 Dieses Dokument ergänzt die unveränderten
@@ -70,14 +70,20 @@ Prüfrevision und Ergebnis werden im PPM-Ticket dokumentiert.
 | Gegenstand | Technischer Betrieb des privaten Hausportals hausv.org für JHW22 |
 | Dauer | Ab dokumentierter Freigabe bis Beendigung des Betriebsauftrags; Löschung oder Rückgabe nach Abschnitt 6 |
 | Art | Erheben durch Eingaben, Speichern, Anzeigen, Ordnen, Übermitteln an berechtigte Empfänger, Sichern, Exportieren und Löschen |
-| Zweck | Hauskommunikation, Dokumente, Termine, Anliegenbearbeitung, Abstimmungen, Parkplatz-/Ladeverwaltung, Zugriffsschutz und Sicherheitsnachweis |
+| Zweck | Hauskommunikation, Dokumente, Termine, Anliegenbearbeitung, Abstimmungen, Parkplatz-/Ladeverwaltung, Zugriffsschutz und Sicherheitsnachweis; Erfassen des Energie-Inventars, lesende Visualisierung bestätigter Messpunkte, Viertelstunden-/Spitzenplanung sowie nachvollziehbare Energie-, Optimierungs- und Wartungsempfehlungen |
 | Betroffene | Eigentümer, Bewohner, Beirat, Hausverwaltung, eingeladene Dienstleister und technische Administratoren |
-| Datenarten | Name, E-Mail, Telefon, Einheit und Hauszugehörigkeit; Rollen/Rechte; Anmelde- und Auditdaten; Aushänge, Termine, Anliegen, Kommentare, Abstimmungen; Dokumente und Anhänge; Parkplatz-/Lademesswerte |
+| Datenarten | Name, E-Mail, Telefon, Einheit und Hauszugehörigkeit; Rollen/Rechte; Anmelde- und Auditdaten; Aushänge, Termine, Anliegen, Kommentare, Abstimmungen; Dokumente und Anhänge; Parkplatz-/Lademesswerte; Zuhause-/Energieprofil, Anlagen und bestätigte Home-Assistant-Zuordnungen; Smart-Meter-Originale und Viertelstundenwerte; daraus abgeleitete Spitzen, Tarifstände, Empfehlungen und Maßnahmen |
 | Besondere Daten | Nicht beabsichtigt. Freitext und Bilder dürfen keine Gesundheitsdaten, Ausweiskopien oder sonstigen Art.-9-/10-Daten enthalten. Versehentliche Inhalte werden nach Meldung eingeschränkt und gelöscht. |
 | Weisungen | Dieses Paket, die sichtbare Datenschutzinformation, dokumentierte spätere Weisungen der verantwortlichen Stelle und zwingendes EU-/österreichisches Recht |
 
 Der vollständige technische Feld- und Datenfluss steht in
 [`datenfluss-dienstleister.md`](datenfluss-dienstleister.md).
+
+Die Energieverarbeitung bleibt in diesem Paket ausschließlich lesend und
+empfehlend. Sie schaltet keine Geräte und trifft keine ausschließlich
+automatisierte Entscheidung mit rechtlicher oder ähnlich erheblicher Wirkung.
+Eine spätere aktive Steuerung benötigt eine neue, ausdrückliche Freigabe und
+Datenschutzprüfung.
 
 ## 3. Pflichten und Zusammenarbeit
 
@@ -200,7 +206,20 @@ jeweils in den USA. Maßgeblich ist die
   drei Jahre nach Abschluss; länger nur mit dokumentierter offener
   Gewährleistungs-, Rechts- oder Nachweispflicht.
 - Gelöschte Anhangdateien: sofort; verbleibende Löschmarkierung nach einem Jahr.
-- Auditarchive: höchstens drei Jahre.
+- Smart-Meter-Originaldateien werden nach 30 Tagen, normalisierte
+  Viertelstundenwerte nach 13 Monaten und gespeicherte Tarifbewertungen nach
+  drei Jahren zur Löschung fällig. Die technische Bereinigung läuft beim Start
+  und anschließend alle sechs Stunden; die tatsächliche Löschung erfolgt damit
+  spätestens sechs Stunden nach dem jeweiligen Fristablauf.
+- Energieprofil, Anlagen und bestätigte Zuordnungen: bis zur Korrektur, Trennung
+  oder ausdrücklichen Löschung. Home-Assistant-Zustände und -Verläufe werden
+  nur transient für die Anzeige gelesen.
+- Der einmalige Beginn des dreijährigen kostenlosen Nutzungszeitraums bleibt
+  auch nach Löschung des Energieprofils bis zum Ende des Anspruchs- oder
+  Portalverhältnisses erhalten. Er verhindert einen Neustart des Zeitraums und
+  enthält keine Messwerte.
+- Auditdaten werden nach drei Jahren zur Löschung fällig und spätestens beim
+  nächsten sechsstündlichen Bereinigungslauf entfernt.
 - Resend hält reguläre E-Mail-Inhalte laut Anbieter 30 Tage. Nach
   Vertragsbeendigung löscht Resend verbleibende Kunden-/Nutzerdaten laut DPA
   innerhalb von 90 Tagen.

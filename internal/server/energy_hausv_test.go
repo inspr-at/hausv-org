@@ -722,6 +722,7 @@ func TestOwnerCanGrantAndImmediatelyRevokeScopedEnergyAccessWithoutDelegatingHou
 		Tenants:     []string{"jhw22"},
 		AuthMethods: defaultAuthMethods(),
 	})
+	saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 	added, err := a.inviteStore.Add(userProfile{
 		Email:       "helper@example.com",
 		FirstName:   "Technische",
@@ -785,6 +786,7 @@ func TestEnergyCaretakerGrantRejectsForeignHouseMember(t *testing.T) {
 		Tenants:     []string{"jhw22"},
 		AuthMethods: defaultAuthMethods(),
 	})
+	saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 	_, err := a.inviteStore.Add(userProfile{
 		Email:       "foreign@example.com",
 		Role:        roleResident,
@@ -807,6 +809,7 @@ func TestOwnerCanInviteEnergyCaretakerButResidentCannot(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
 	})
+	saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 	mailer := &recordingMailer{}
 	a.mailer = mailer
 	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/caretaker/invite", url.Values{
@@ -863,6 +866,7 @@ func TestEnergyActionHandlersDoNotCrossTenantBoundary(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
 	})
+	saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 	if err := a.energyStore.SaveProfile(energy.DefaultProfile("other-house", time.Now())); err != nil {
 		t.Fatal(err)
 	}

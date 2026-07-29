@@ -41,7 +41,9 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	if got["IsAdmin"] != false || got["CanSeeParking"] != true {
 		t.Fatalf("baseContext capabilities = %#v", got)
 	}
-	if got["CanViewEnergy"] != true || got["CanManageEnergy"] != false || got["CanManageHomeIdentity"] != false || got["CanControlEnergy"] != false {
+	// An unclaimed/deleted energy profile is owner/admin-only. Delegated or
+	// resident access begins only after the owner has completed onboarding.
+	if got["CanViewEnergy"] != false || got["CanManageEnergy"] != false || got["CanManageHomeIdentity"] != false || got["CanControlEnergy"] != false {
 		t.Fatalf("baseContext energy capabilities = %#v", got)
 	}
 	homeIdentity, ok := got["HomeIdentity"].(homeIdentityView)

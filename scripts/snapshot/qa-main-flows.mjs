@@ -1110,6 +1110,67 @@ async function assertEnergySafetyAndFlow(viewport) {
   await ownerContext.close();
 }
 
+async function assertEnergyDataControl(viewport) {
+  const ownerContext = await newContext(viewport.size);
+  const page = await localLogin(ownerContext, 'owner@example.com');
+  const response = await page.goto(`${baseURL}/app/settings/energy-data`, { waitUntil: 'networkidle' });
+  if (!response || response.status() !== 200 ||
+      !(await page.getByRole('heading', { name: 'Energiedaten & Datenschutz' }).count())) {
+    fail(`Energiedaten ${viewport.name}: Eigentümerseite nicht erreichbar`);
+  }
+  for (const text of ['30 Tage', '13 Monate', '3 Jahre', 'Smart-Meter-Originale', 'Ganzes Energieprofil löschen']) {
+    if (!(await page.getByText(text, { exact: true }).count())) {
+      fail(`Energiedaten ${viewport.name}: „${text}“ fehlt`);
+    }
+  }
+  const deletionDetails = page.locator('details.energy-delete-action');
+  if ((await deletionDetails.count()) !== 2 ||
+      await deletionDetails.evaluateAll((nodes) => nodes.some((node) => node.open))) {
+    fail(`Energiedaten ${viewport.name}: Löschwege sind nicht sicher eingeklappt`);
+  }
+  const undersized = await page.locator(
+    '.energy-data-page button, .energy-data-page details.energy-delete-action > summary'
+  ).evaluateAll((nodes) => nodes.filter((node) => {
+    const rect = node.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.height < 44;
+  }).map((node) => (node.textContent || '').trim()));
+  if (undersized.length) {
+    fail(`Energiedaten ${viewport.name}: Touch-Ziele unter 44px: ${undersized.join(', ')}`);
+  }
+  if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)) {
+    fail(`Energiedaten ${viewport.name}: horizontaler Überlauf`);
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, `energy-data-${viewport.name.toLowerCase()}.png`),
+      fullPage: true,
+    });
+  }
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Energiedaten exportieren' }).click(),
+  ]);
+  if (!/^hausv-energiedaten-jhw22-\d{8}\.zip$/.test(download.suggestedFilename())) {
+    fail(`Energiedaten ${viewport.name}: unerwarteter Exportname ${download.suggestedFilename()}`);
+  }
+  await page.waitForTimeout(2700);
+  const exportButton = page.getByRole('button', { name: 'Energiedaten exportieren' });
+  if (!(await exportButton.isEnabled())) {
+    fail(`Energiedaten ${viewport.name}: Exportknopf bleibt nach dem Download gesperrt`);
+  }
+  await ownerContext.close();
+
+  const deniedContext = await newContext(viewport.size);
+  const deniedPage = await localLogin(deniedContext, 'resident@example.com');
+  const denied = await deniedPage.goto(`${baseURL}/app/settings/energy-data`, { waitUntil: 'networkidle' });
+  if (!denied || denied.status() !== 403) {
+    fail(`Energiedaten ${viewport.name}: Bewohnerzugriff ist nicht mit 403 geschützt`);
+  }
+  await deniedContext.close();
+  process.stdout.write(`  ✓ Energiedaten & Datenschutz · ${viewport.name}\n`);
+}
+
 try {
   for (const viewport of [
     { name: 'Desktop', size: { width: 1440, height: 900 } },
@@ -1147,6 +1208,7 @@ try {
       { name: 'Mobil', size: { width: 390, height: 844 } },
     ]) {
       await assertEnergySafetyAndFlow(viewport);
+      await assertEnergyDataControl(viewport);
       for (const persona of personas) {
         const context = await newContext(viewport.size);
         const page = await localLogin(context, persona.email);

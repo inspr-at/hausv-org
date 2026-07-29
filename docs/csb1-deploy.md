@@ -42,6 +42,7 @@ Portalnavigation ohne Laufzeit-Geocoding exakt verorten:
   "slug": "jhw22",
   "name": "Hausportal",
   "address": "Janischhofweg 22, 8043 Graz",
+  "portal_type": "community",
   "host": "jhw22.hausv.org",
   "brand_icon": "community",
   "map_latitude": 47.1008592,
@@ -49,6 +50,11 @@ Portalnavigation ohne Laufzeit-Geocoding exakt verorten:
   "map_zoom": 17
 }
 ```
+
+`portal_type` beschreibt unabhängig vom Energieprofil die Portalform:
+`community` für eine Hausgemeinschaft, `apartment` für eine einzelne Wohnung
+oder `house` für ein privates Haus. JHW22 bleibt `community`, auch wenn „Mein
+Zuhause“ darin als Wohnung eingerichtet ist.
 
 `brand_icon` bleibt über die Gebäudeeinstellungen änderbar und erscheint im
 Karten-Pin. Für neue Häuser werden Breiten- und Längengrad deklarativ gesetzt;
@@ -166,8 +172,10 @@ back to stale JSON.
 The database contains identities and house memberships, login activity,
 preferences, tenants and units, payment-status markers, contacts,
 announcements/read state, events, handovers, ballots, issues/comments/history,
-Telegram state, and document/attachment **metadata**. Schema migrations run
-transactionally and idempotently at boot.
+Telegram state, home-energy profiles/assets/entity mappings, retained
+Smart-Meter source files and normalized quarter-hour values, tariff snapshots,
+maintenance/measure metadata, and document/attachment **metadata**. Schema
+migrations run transactionally and idempotently at boot.
 
 Files remain outside SQLite:
 
@@ -183,6 +191,22 @@ Downloads always use authenticated, object-scoped routes. Stored filenames are
 server-generated and files use restrictive modes. Superseded document versions
 are retained deliberately as house-document history. Deleted attachment files
 are removed immediately and their tombstones after one year.
+
+Energy retention is enforced at startup and every six hours while the process
+is running:
+
+- uploaded Smart-Meter originals: maximum 30 days;
+- normalized quarter-hour values: maximum 13 months;
+- persisted tariff assessments: maximum three years.
+
+Selected Home Assistant live/history values are fetched transiently for the
+cockpit and are not mirrored into SQLite. Only confirmed entity mappings are
+stored. Home Assistant URLs and tokens stay in agenix/host configuration and
+are excluded from the application database and energy export. Deleting an
+energy profile removes its energy data and delegated energy grants, while a
+non-personal empty marker prevents declarative profile seeds from resurrecting
+deleted household data. The commercial free-period start remains separate
+contract metadata so re-onboarding cannot restart it.
 
 The old `*_DATA_PATH` JSON values may still be present in nixcfg so a fresh
 database can perform the idempotent historical import. They are not runtime

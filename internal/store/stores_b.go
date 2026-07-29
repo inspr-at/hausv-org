@@ -24,56 +24,60 @@ const (
 )
 
 const (
-	AuditActionLogin              = "login"
-	AuditActionInviteCreate       = "invite.create"
-	AuditActionInviteUpdate       = "invite.update"
-	AuditActionInviteDelete       = "invite.delete"
-	AuditActionBuildingUpdate     = "building.update"
-	AuditActionHeroUpdate         = "building.hero"
-	AuditActionUnitSave           = "building.unit.save"
-	AuditActionUnitDelete         = "building.unit.delete"
-	AuditActionUnitPayment        = "building.unit.payment"
-	AuditActionParkingSettings    = "parking.settings"
-	AuditActionParkingMonth       = "parking.month"
-	AuditActionParkingReminder    = "parking.reminder"
-	AuditActionChargingSettings   = "charging.settings"
-	AuditActionChargingManual     = "charging.manual"
-	AuditActionChargingSession    = "charging.session"
-	AuditActionIssueWorkflow      = "issue.workflow"
-	AuditActionIssueEstimate      = "issue.estimate"
-	AuditActionIssueServiceAdd    = "issue.service.add"
-	AuditActionIssueServiceDrop   = "issue.service.drop"
-	AuditActionIssueComment       = "issue.comment"
-	AuditActionIssueCommentDelete = "issue.comment.delete"
-	AuditActionEventCreate        = "event.create"
-	AuditActionEventUpdate        = "event.update"
-	AuditActionEventDelete        = "event.delete"
-	AuditActionContactSave        = "contact.save"
-	AuditActionContactDelete      = "contact.delete"
-	AuditActionDocumentUpload     = "document.upload"
-	AuditActionDocumentDownload   = "document.download"
-	AuditActionDocumentReplace    = "document.replace"
-	AuditActionAttachmentView     = "attachment.view"
-	AuditActionAttachmentDelete   = "attachment.delete"
-	AuditActionIntegrationImport  = "integration.import"
-	AuditActionIntegrationExport  = "integration.export"
-	AuditActionVoteCreate         = "vote.create"
-	AuditActionVoteOpen           = "vote.open"
-	AuditActionVoteClose          = "vote.close"
-	AuditActionVoteCast           = "vote.cast"
-	AuditActionVoteReminder       = "vote.reminder"
-	AuditActionEnergyOnboarding   = "energy.onboarding.update"
-	AuditActionEnergyMode         = "energy.mode.change"
-	AuditActionEnergyImport       = "energy.smart-meter.import"
-	AuditActionEnergyTarget       = "energy.target.change"
-	AuditActionEnergyRecommend    = "energy.recommendation.update"
-	AuditActionEnergyMeasureAdd   = "energy.measure.create"
-	AuditActionEnergyMeasureEdit  = "energy.measure.update"
-	AuditActionEnergyCaretaker    = "energy.caretaker.scope"
-	AuditActionEnergyInvite       = "energy.caretaker.invite"
-	AuditActionEnergyMaintSave    = "energy.maintenance.save"
-	AuditActionEnergyMaintDone    = "energy.maintenance.complete"
-	AuditActionEnergyTariff       = "energy.tariff.assessment"
+	AuditActionLogin               = "login"
+	AuditActionInviteCreate        = "invite.create"
+	AuditActionInviteUpdate        = "invite.update"
+	AuditActionInviteDelete        = "invite.delete"
+	AuditActionBuildingUpdate      = "building.update"
+	AuditActionHeroUpdate          = "building.hero"
+	AuditActionUnitSave            = "building.unit.save"
+	AuditActionUnitDelete          = "building.unit.delete"
+	AuditActionUnitPayment         = "building.unit.payment"
+	AuditActionParkingSettings     = "parking.settings"
+	AuditActionParkingMonth        = "parking.month"
+	AuditActionParkingReminder     = "parking.reminder"
+	AuditActionChargingSettings    = "charging.settings"
+	AuditActionChargingManual      = "charging.manual"
+	AuditActionChargingSession     = "charging.session"
+	AuditActionIssueWorkflow       = "issue.workflow"
+	AuditActionIssueEstimate       = "issue.estimate"
+	AuditActionIssueServiceAdd     = "issue.service.add"
+	AuditActionIssueServiceDrop    = "issue.service.drop"
+	AuditActionIssueComment        = "issue.comment"
+	AuditActionIssueCommentDelete  = "issue.comment.delete"
+	AuditActionEventCreate         = "event.create"
+	AuditActionEventUpdate         = "event.update"
+	AuditActionEventDelete         = "event.delete"
+	AuditActionContactSave         = "contact.save"
+	AuditActionContactDelete       = "contact.delete"
+	AuditActionDocumentUpload      = "document.upload"
+	AuditActionDocumentDownload    = "document.download"
+	AuditActionDocumentReplace     = "document.replace"
+	AuditActionAttachmentView      = "attachment.view"
+	AuditActionAttachmentDelete    = "attachment.delete"
+	AuditActionIntegrationImport   = "integration.import"
+	AuditActionIntegrationExport   = "integration.export"
+	AuditActionVoteCreate          = "vote.create"
+	AuditActionVoteOpen            = "vote.open"
+	AuditActionVoteClose           = "vote.close"
+	AuditActionVoteCast            = "vote.cast"
+	AuditActionVoteReminder        = "vote.reminder"
+	AuditActionEnergyOnboarding    = "energy.onboarding.update"
+	AuditActionEnergyIdentity      = "energy.profile.identity.update"
+	AuditActionEnergyMode          = "energy.mode.change"
+	AuditActionEnergyImport        = "energy.smart-meter.import"
+	AuditActionEnergyTarget        = "energy.target.change"
+	AuditActionEnergyRecommend     = "energy.recommendation.update"
+	AuditActionEnergyMeasureAdd    = "energy.measure.create"
+	AuditActionEnergyMeasureEdit   = "energy.measure.update"
+	AuditActionEnergyCaretaker     = "energy.caretaker.scope"
+	AuditActionEnergyInvite        = "energy.caretaker.invite"
+	AuditActionEnergyMaintSave     = "energy.maintenance.save"
+	AuditActionEnergyMaintDone     = "energy.maintenance.complete"
+	AuditActionEnergyTariff        = "energy.tariff.assessment"
+	AuditActionEnergyExport        = "energy.data.export"
+	AuditActionEnergyHistoryDelete = "energy.history.delete"
+	AuditActionEnergyProfileDelete = "energy.profile.delete"
 )
 
 const (
@@ -1383,7 +1387,7 @@ func NewAuditStore(path string) (*AuditStore, error) {
 		return store, nil
 	}
 	if err := store.pruneArchivesLocked(time.Now()); err != nil {
-		slog.Error("audit archive retention cleanup failed", "error", err)
+		return nil, fmt.Errorf("audit archive retention cleanup failed")
 	}
 	raw, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -1392,6 +1396,12 @@ func NewAuditStore(path string) (*AuditStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not read audit data")
 	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("could not inspect audit data")
+	}
+	legacyFallback := info.ModTime().UTC().Truncate(time.Second)
+	legacyTimestampMigrated := false
 	trimmed := strings.TrimSpace(string(raw))
 	if trimmed == "" {
 		return store, nil
@@ -1401,7 +1411,20 @@ func NewAuditStore(path string) (*AuditStore, error) {
 			return nil, fmt.Errorf("invalid audit data")
 		}
 		for i := range store.entries {
+			missingTimestamp := store.entries[i].At.IsZero()
 			store.entries[i] = NormalizeAuditEvent(store.entries[i])
+			if missingTimestamp {
+				store.entries[i].At = legacyFallback
+				legacyTimestampMigrated = true
+			}
+		}
+		if legacyTimestampMigrated {
+			if err := rewriteAuditEventFile(path, store.entries); err != nil {
+				return nil, fmt.Errorf("could not migrate audit timestamps")
+			}
+		}
+		if err := store.PurgeExpired(time.Now()); err != nil {
+			return nil, fmt.Errorf("audit retention cleanup failed")
 		}
 		return store, nil
 	}
@@ -1424,7 +1447,21 @@ func NewAuditStore(path string) (*AuditStore, error) {
 			}
 			return nil, fmt.Errorf("invalid audit data on line %d", i+1)
 		}
-		store.entries = append(store.entries, NormalizeAuditEvent(event))
+		missingTimestamp := event.At.IsZero()
+		event = NormalizeAuditEvent(event)
+		if missingTimestamp {
+			event.At = legacyFallback
+			legacyTimestampMigrated = true
+		}
+		store.entries = append(store.entries, event)
+	}
+	if legacyTimestampMigrated {
+		if err := rewriteAuditEventFile(path, store.entries); err != nil {
+			return nil, fmt.Errorf("could not migrate audit timestamps")
+		}
+	}
+	if err := store.PurgeExpired(time.Now()); err != nil {
+		return nil, fmt.Errorf("audit retention cleanup failed")
 	}
 	return store, nil
 }
@@ -1555,22 +1592,127 @@ func (s *AuditStore) pruneArchivesLocked(now time.Time) error {
 		return err
 	}
 	prefix := filepath.Base(s.path) + "."
+	cutoff := now.Add(-auditArchiveRetention)
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasPrefix(entry.Name(), prefix) {
 			continue
 		}
+		path := filepath.Join(filepath.Dir(s.path), entry.Name())
 		info, err := entry.Info()
 		if err != nil {
 			return err
 		}
-		if now.Sub(info.ModTime()) < auditArchiveRetention {
+		items, err := readRawAuditEventFile(path)
+		if err != nil {
+			return err
+		}
+		retained := make([]AuditEvent, 0, len(items))
+		changed := false
+		for _, rawEvent := range items {
+			eventTime := rawEvent.At
+			event := NormalizeAuditEvent(rawEvent)
+			if eventTime.IsZero() {
+				// Timestamp-less legacy entries use the archive mtime as their
+				// conservative retention clock. Persist that fallback when a
+				// mixed archive is rewritten so the rewrite itself cannot
+				// restart another full retention period.
+				event.At = info.ModTime().UTC().Truncate(time.Second)
+				changed = true
+			}
+			if event.At.Before(cutoff) {
+				changed = true
+				continue
+			}
+			retained = append(retained, event)
+		}
+		if len(retained) == 0 {
+			if err := os.Remove(path); err != nil {
+				return err
+			}
 			continue
 		}
-		if err := os.Remove(filepath.Join(filepath.Dir(s.path), entry.Name())); err != nil {
+		if !changed && len(retained) == len(items) {
+			continue
+		}
+		if err := rewriteAuditEventFile(path, retained); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// PurgeExpired physically removes expired events from the live ledger and all
+// rotated archives. It is safe to run repeatedly.
+func (s *AuditStore) PurgeExpired(now time.Time) error {
+	if s == nil || auditArchiveRetention <= 0 {
+		return nil
+	}
+	if now.IsZero() {
+		now = time.Now()
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	cutoff := now.Add(-auditArchiveRetention)
+	retained := retainAuditEventsSince(s.entries, cutoff)
+	if len(retained) != len(s.entries) {
+		if s.path != "" {
+			if err := rewriteAuditEventFile(s.path, retained); err != nil {
+				return err
+			}
+		}
+		// Only advance in-memory state after the durable ledger is reconciled.
+		// Otherwise a transient write failure would make the next sweep believe
+		// there is nothing left to purge from disk.
+		s.entries = retained
+	}
+	return s.pruneArchivesLocked(now)
+}
+
+func retainAuditEventsSince(items []AuditEvent, cutoff time.Time) []AuditEvent {
+	retained := make([]AuditEvent, 0, len(items))
+	for _, event := range items {
+		if event.At.IsZero() || event.At.Before(cutoff) {
+			continue
+		}
+		retained = append(retained, event)
+	}
+	return retained
+}
+
+func rewriteAuditEventFile(path string, items []AuditEvent) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	temp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".retention-*")
+	if err != nil {
+		return err
+	}
+	tempPath := temp.Name()
+	defer os.Remove(tempPath)
+	if err := temp.Chmod(0o600); err != nil {
+		_ = temp.Close()
+		return err
+	}
+	for _, event := range items {
+		raw, err := json.Marshal(event)
+		if err != nil {
+			_ = temp.Close()
+			return err
+		}
+		if _, err := temp.Write(append(raw, '\n')); err != nil {
+			_ = temp.Close()
+			return err
+		}
+	}
+	if err := temp.Sync(); err != nil {
+		_ = temp.Close()
+		return err
+	}
+	if err := temp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tempPath, path)
 }
 
 func (s *AuditStore) List(filter AuditFilter) []AuditEvent {
@@ -1600,6 +1742,140 @@ func (s *AuditStore) List(filter AuditFilter) []AuditEvent {
 		out = append(out, CopyAuditEvent(event))
 	}
 	return out
+}
+
+// ListRetained returns the complete retained ledger for one tenant, including
+// rotated archives. It is intended for data-access exports, not paginated UI.
+// Rotation keeps an overlapping tail, so source boundaries are de-duplicated
+// without collapsing legitimate repeated events inside one source.
+func (s *AuditStore) ListRetained(tenantSlug string) ([]AuditEvent, error) {
+	if s == nil {
+		return nil, nil
+	}
+	tenantSlug = textutil.Slug(tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	sources := make([][]AuditEvent, 0, 2)
+	if s.path != "" {
+		entries, err := os.ReadDir(filepath.Dir(s.path))
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
+		prefix := filepath.Base(s.path) + "."
+		archivePaths := []string{}
+		for _, entry := range entries {
+			suffix := strings.TrimPrefix(entry.Name(), prefix)
+			if entry.IsDir() || suffix == entry.Name() || suffix == "" || !digitsOnly(suffix) {
+				continue
+			}
+			archivePaths = append(archivePaths, filepath.Join(filepath.Dir(s.path), entry.Name()))
+		}
+		sort.Strings(archivePaths)
+		for _, path := range archivePaths {
+			items, err := readAuditEventFile(path)
+			if err != nil {
+				return nil, err
+			}
+			sources = append(sources, items)
+		}
+	}
+	sources = append(sources, append([]AuditEvent(nil), s.entries...))
+
+	all := []AuditEvent{}
+	for _, source := range sources {
+		overlap := auditSourceOverlap(all, source)
+		all = append(all, source[overlap:]...)
+	}
+	out := make([]AuditEvent, 0, len(all))
+	cutoff := time.Time{}
+	if auditArchiveRetention > 0 {
+		cutoff = time.Now().Add(-auditArchiveRetention)
+	}
+	for _, event := range all {
+		if !cutoff.IsZero() && (event.At.IsZero() || event.At.Before(cutoff)) {
+			continue
+		}
+		if tenantSlug != "" && textutil.Slug(event.TenantSlug) != tenantSlug {
+			continue
+		}
+		out = append(out, CopyAuditEvent(event))
+	}
+	return out, nil
+}
+
+func readRawAuditEventFile(path string) ([]AuditEvent, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" {
+		return nil, nil
+	}
+	if strings.HasPrefix(trimmed, "[") {
+		var items []AuditEvent
+		if err := json.Unmarshal([]byte(trimmed), &items); err != nil {
+			return nil, fmt.Errorf("invalid retained audit archive")
+		}
+		return items, nil
+	}
+	lines := strings.Split(trimmed, "\n")
+	items := make([]AuditEvent, 0, len(lines))
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var event AuditEvent
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			if i == len(lines)-1 {
+				break
+			}
+			return nil, fmt.Errorf("invalid retained audit archive")
+		}
+		items = append(items, event)
+	}
+	return items, nil
+}
+
+func readAuditEventFile(path string) ([]AuditEvent, error) {
+	items, err := readRawAuditEventFile(path)
+	if err != nil {
+		return nil, err
+	}
+	for index := range items {
+		items[index] = NormalizeAuditEvent(items[index])
+	}
+	return items, nil
+}
+
+func auditSourceOverlap(existing, next []AuditEvent) int {
+	maxOverlap := min(len(existing), len(next))
+	for overlap := maxOverlap; overlap > 0; overlap-- {
+		matches := true
+		for index := 0; index < overlap; index++ {
+			left, _ := json.Marshal(existing[len(existing)-overlap+index])
+			right, _ := json.Marshal(next[index])
+			if string(left) != string(right) {
+				matches = false
+				break
+			}
+		}
+		if matches {
+			return overlap
+		}
+	}
+	return 0
+}
+
+func digitsOnly(value string) bool {
+	for _, char := range value {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
+	return value != ""
 }
 
 // HasTarget checks the complete live audit ledger rather than the paginated
@@ -1660,10 +1936,11 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionIssueComment, AuditActionIssueCommentDelete,
 		AuditActionEventCreate, AuditActionEventUpdate, AuditActionEventDelete,
 		AuditActionContactSave, AuditActionContactDelete,
-		AuditActionEnergyOnboarding, AuditActionEnergyMode, AuditActionEnergyImport, AuditActionEnergyTarget,
+		AuditActionEnergyOnboarding, AuditActionEnergyIdentity, AuditActionEnergyMode, AuditActionEnergyImport, AuditActionEnergyTarget,
 		AuditActionEnergyRecommend, AuditActionEnergyMeasureAdd, AuditActionEnergyMeasureEdit,
 		AuditActionEnergyCaretaker, AuditActionEnergyInvite, AuditActionEnergyMaintSave,
-		AuditActionEnergyMaintDone, AuditActionEnergyTariff:
+		AuditActionEnergyMaintDone, AuditActionEnergyTariff, AuditActionEnergyExport,
+		AuditActionEnergyHistoryDelete, AuditActionEnergyProfileDelete:
 		return raw
 	default:
 		return ""

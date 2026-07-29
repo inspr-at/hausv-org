@@ -3,6 +3,7 @@ package energy
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -23,6 +24,10 @@ type Storage interface {
 	ListIntervals(tenantSlug string, from, to time.Time) ([]Interval, error)
 	PutImport(record ImportRecord, intervals []Interval) (bool, error)
 	ListImports(tenantSlug string) ([]ImportRecord, error)
+	ListImportsForExport(tenantSlug string) ([]ImportRecord, error)
+	DeleteMeasurementData(tenantSlug string) (DeleteSummary, error)
+	DeleteProfile(tenantSlug string) (DeleteSummary, error)
+	PurgeExpired(rawImportBefore, intervalBefore, assessmentBefore time.Time) (DeleteSummary, error)
 	ListMaintenance(tenantSlug string) ([]MaintenancePlan, error)
 	UpsertMaintenance(plan MaintenancePlan) error
 	DeleteMaintenance(tenantSlug, id string) (bool, error)
@@ -31,6 +36,19 @@ type Storage interface {
 	UpsertMeasure(item Measure) error
 	GetMeasure(tenantSlug, id string) (Measure, bool, error)
 	ListMeasures(tenantSlug string) ([]Measure, error)
+}
+
+// DeleteSummary makes destructive and automatic lifecycle operations
+// inspectable without exposing the deleted values themselves.
+type DeleteSummary struct {
+	Profiles          int
+	Assets            int
+	Mappings          int
+	Intervals         int
+	Imports           int
+	Maintenance       int
+	TariffAssessments int
+	Measures          int
 }
 
 type MemoryStore struct {
@@ -71,6 +89,13 @@ func (s *MemoryStore) SaveProfile(profile HomeProfile) error {
 	profile = NormalizeProfile(profile, time.Now())
 	if profile.TenantSlug == "" {
 		return fmt.Errorf("energy: tenant required")
+	}
+	// The free-period start is an entitlement marker, not editable profile
+	// content. Once set, re-onboarding or a stale client must not clear or
+	// restart it. SQLStore enforces the same rule with COALESCE.
+	if existing, ok := s.profiles[profile.TenantSlug]; ok && existing.FreeStartedAt != nil {
+		preserved := existing.FreeStartedAt.UTC()
+		profile.FreeStartedAt = &preserved
 	}
 	s.profiles[profile.TenantSlug] = profile
 	return nil
@@ -277,6 +302,162 @@ func (s *MemoryStore) ListImports(tenantSlug string) ([]ImportRecord, error) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ImportedAt.After(out[j].ImportedAt) })
 	return out, nil
+}
+
+func (s *MemoryStore) ListImportsForExport(tenantSlug string) ([]ImportRecord, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tenantSlug = normalizeSlug(tenantSlug)
+	out := []ImportRecord{}
+	for _, record := range s.imports {
+		if record.TenantSlug == tenantSlug {
+			record.Payload = append([]byte(nil), record.Payload...)
+			out = append(out, record)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ImportedAt.After(out[j].ImportedAt) })
+	return out, nil
+}
+
+func (s *MemoryStore) DeleteMeasurementData(tenantSlug string) (DeleteSummary, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tenantSlug = normalizeSlug(tenantSlug)
+	var summary DeleteSummary
+	for key, item := range s.imports {
+		if item.TenantSlug == tenantSlug {
+			delete(s.imports, key)
+			summary.Imports++
+		}
+	}
+	for key, item := range s.intervals {
+		if item.TenantSlug == tenantSlug {
+			delete(s.intervals, key)
+			summary.Intervals++
+		}
+	}
+	for key, item := range s.assessments {
+		if item.TenantSlug == tenantSlug {
+			delete(s.assessments, key)
+			summary.TariffAssessments++
+		}
+	}
+	for key, item := range s.measures {
+		if item.TenantSlug != tenantSlug {
+			continue
+		}
+		if item.BeforeFrom == nil && item.BeforeTo == nil && item.AfterFrom == nil && item.AfterTo == nil &&
+			item.BeforePeakKW == nil && item.AfterPeakKW == nil && item.BeforeQuality == "" && item.AfterQuality == "" {
+			continue
+		}
+		item.BeforeFrom = nil
+		item.BeforeTo = nil
+		item.AfterFrom = nil
+		item.AfterTo = nil
+		item.BeforePeakKW = nil
+		item.AfterPeakKW = nil
+		item.BeforeQuality = ""
+		item.AfterQuality = ""
+		item.UpdatedAt = time.Now().UTC()
+		s.measures[key] = item
+		summary.Measures++
+	}
+	if profile, ok := s.profiles[tenantSlug]; ok {
+		if profile.RecommendationID != "" || profile.RecommendationStatus != "" {
+			profile.RecommendationID = ""
+			profile.RecommendationStatus = ""
+			profile.UpdatedAt = time.Now().UTC()
+			s.profiles[tenantSlug] = profile
+		}
+	}
+	return summary, nil
+}
+
+func (s *MemoryStore) DeleteProfile(tenantSlug string) (DeleteSummary, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tenantSlug = normalizeSlug(tenantSlug)
+	var summary DeleteSummary
+	if current, ok := s.profiles[tenantSlug]; ok {
+		freeStartedAt := current.FreeStartedAt
+		delete(s.profiles, tenantSlug)
+		// Keep an empty technical placeholder so a declarative pilot seed cannot
+		// silently recreate user-deleted home data on the next restart.
+		placeholder := DefaultProfile(tenantSlug, time.Now())
+		// The commercial entitlement is contract metadata, not energy content.
+		// Deleting and re-onboarding must not restart the three-year free period.
+		placeholder.FreeStartedAt = freeStartedAt
+		s.profiles[tenantSlug] = placeholder
+		summary.Profiles = 1
+	}
+	for key, item := range s.assets {
+		if item.TenantSlug == tenantSlug {
+			delete(s.assets, key)
+			summary.Assets++
+		}
+	}
+	for key, item := range s.mappings {
+		if item.TenantSlug == tenantSlug {
+			delete(s.mappings, key)
+			summary.Mappings++
+		}
+	}
+	for key, item := range s.intervals {
+		if item.TenantSlug == tenantSlug {
+			delete(s.intervals, key)
+			summary.Intervals++
+		}
+	}
+	for key, item := range s.imports {
+		if item.TenantSlug == tenantSlug {
+			delete(s.imports, key)
+			summary.Imports++
+		}
+	}
+	for key, item := range s.maintenance {
+		if item.TenantSlug == tenantSlug {
+			delete(s.maintenance, key)
+			summary.Maintenance++
+		}
+	}
+	for key, item := range s.assessments {
+		if item.TenantSlug == tenantSlug {
+			delete(s.assessments, key)
+			summary.TariffAssessments++
+		}
+	}
+	for key, item := range s.measures {
+		if item.TenantSlug == tenantSlug {
+			delete(s.measures, key)
+			summary.Measures++
+		}
+	}
+	return summary, nil
+}
+
+func (s *MemoryStore) PurgeExpired(rawImportBefore, intervalBefore, assessmentBefore time.Time) (DeleteSummary, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var summary DeleteSummary
+	for key, item := range s.imports {
+		if !rawImportBefore.IsZero() && item.ImportedAt.Before(rawImportBefore) {
+			delete(s.imports, key)
+			summary.Imports++
+		}
+	}
+	for key, item := range s.intervals {
+		if !intervalBefore.IsZero() && item.StartsAt.Before(intervalBefore) {
+			delete(s.intervals, key)
+			summary.Intervals++
+		}
+	}
+	for key, item := range s.assessments {
+		if !assessmentBefore.IsZero() && item.CreatedAt.Before(assessmentBefore) {
+			delete(s.assessments, key)
+			summary.TariffAssessments++
+		}
+	}
+	return summary, nil
 }
 
 func (s *MemoryStore) ListMaintenance(tenantSlug string) ([]MaintenancePlan, error) {
@@ -766,6 +947,160 @@ func (s *SQLStore) ListImports(tenantSlug string) ([]ImportRecord, error) {
 		out = append(out, record)
 	}
 	return out, rows.Err()
+}
+
+func (s *SQLStore) ListImportsForExport(tenantSlug string) ([]ImportRecord, error) {
+	rows, err := s.db.Query(`SELECT id,tenant_slug,filename,sha256,format,payload,imported_at
+		FROM energy_imports WHERE tenant_slug=? ORDER BY imported_at DESC,id`, normalizeSlug(tenantSlug))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []ImportRecord{}
+	for rows.Next() {
+		var record ImportRecord
+		var imported string
+		if err := rows.Scan(&record.ID, &record.TenantSlug, &record.Filename, &record.SHA256, &record.Format, &record.Payload, &imported); err != nil {
+			return nil, err
+		}
+		record.ImportedAt, _ = time.Parse(time.RFC3339Nano, imported)
+		out = append(out, record)
+	}
+	return out, rows.Err()
+}
+
+func (s *SQLStore) DeleteMeasurementData(tenantSlug string) (DeleteSummary, error) {
+	tenantSlug = normalizeSlug(tenantSlug)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return DeleteSummary{}, err
+	}
+	defer tx.Rollback()
+	var summary DeleteSummary
+	for _, item := range []struct {
+		query  string
+		target *int
+	}{
+		{`DELETE FROM energy_imports WHERE tenant_slug=?`, &summary.Imports},
+		{`DELETE FROM energy_intervals WHERE tenant_slug=?`, &summary.Intervals},
+		{`DELETE FROM energy_tariff_assessments WHERE tenant_slug=?`, &summary.TariffAssessments},
+		{`UPDATE energy_measures SET before_from=NULL,before_to=NULL,after_from=NULL,after_to=NULL,
+			before_peak_kw=NULL,after_peak_kw=NULL,before_quality='',after_quality='',updated_at=?
+			WHERE tenant_slug=? AND (before_from IS NOT NULL OR before_to IS NOT NULL OR after_from IS NOT NULL OR after_to IS NOT NULL
+				OR before_peak_kw IS NOT NULL OR after_peak_kw IS NOT NULL OR before_quality<>'' OR after_quality<>'')`, &summary.Measures},
+	} {
+		var result sql.Result
+		if strings.HasPrefix(strings.TrimSpace(item.query), "UPDATE") {
+			result, err = tx.Exec(item.query, time.Now().UTC().Format(time.RFC3339Nano), tenantSlug)
+		} else {
+			result, err = tx.Exec(item.query, tenantSlug)
+		}
+		if err != nil {
+			return DeleteSummary{}, err
+		}
+		n, _ := result.RowsAffected()
+		*item.target = int(n)
+	}
+	if _, err := tx.Exec(`UPDATE home_profiles
+		SET recommendation_id='',recommendation_status='',updated_at=?
+		WHERE tenant_slug=? AND (recommendation_id<>'' OR recommendation_status<>'')`,
+		time.Now().UTC().Format(time.RFC3339Nano), tenantSlug); err != nil {
+		return DeleteSummary{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return DeleteSummary{}, err
+	}
+	return summary, nil
+}
+
+func (s *SQLStore) DeleteProfile(tenantSlug string) (DeleteSummary, error) {
+	tenantSlug = normalizeSlug(tenantSlug)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return DeleteSummary{}, err
+	}
+	defer tx.Rollback()
+	var summary DeleteSummary
+	var retainedFreeStartedAt sql.NullString
+	if err := tx.QueryRow(`SELECT free_started_at FROM home_profiles WHERE tenant_slug=?`, tenantSlug).Scan(&retainedFreeStartedAt); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return DeleteSummary{}, err
+	}
+	for _, item := range []struct {
+		table  string
+		target *int
+	}{
+		{"energy_assets", &summary.Assets},
+		{"energy_entity_mappings", &summary.Mappings},
+		{"energy_intervals", &summary.Intervals},
+		{"energy_imports", &summary.Imports},
+		{"energy_maintenance_plans", &summary.Maintenance},
+		{"energy_tariff_assessments", &summary.TariffAssessments},
+		{"energy_measures", &summary.Measures},
+	} {
+		if err := tx.QueryRow(`SELECT COUNT(*) FROM `+item.table+` WHERE tenant_slug=?`, tenantSlug).Scan(item.target); err != nil {
+			return DeleteSummary{}, err
+		}
+	}
+	result, err := tx.Exec(`DELETE FROM home_profiles WHERE tenant_slug=?`, tenantSlug)
+	if err != nil {
+		return DeleteSummary{}, err
+	}
+	n, _ := result.RowsAffected()
+	summary.Profiles = int(n)
+	if summary.Profiles > 0 {
+		// A deliberately empty row is the durable deletion marker. Profile seeds
+		// only create missing rows, so they cannot resurrect a deleted household
+		// name, inventory or history after restart.
+		now := time.Now().UTC()
+		var freeStartedAt any
+		if retainedFreeStartedAt.Valid {
+			freeStartedAt = retainedFreeStartedAt.String
+		}
+		if _, err := tx.Exec(`INSERT INTO home_profiles
+			(tenant_slug,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,
+			 target_peak_kw,recommendation_id,recommendation_status,free_started_at,created_at,updated_at)
+			VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			tenantSlug, "", HomeApartment, "", ModeObserve, StageObserve, 1, 0,
+			nil, "", "", freeStartedAt, now.Format(time.RFC3339Nano), now.Format(time.RFC3339Nano)); err != nil {
+			return DeleteSummary{}, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return DeleteSummary{}, err
+	}
+	return summary, nil
+}
+
+func (s *SQLStore) PurgeExpired(rawImportBefore, intervalBefore, assessmentBefore time.Time) (DeleteSummary, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return DeleteSummary{}, err
+	}
+	defer tx.Rollback()
+	var summary DeleteSummary
+	for _, item := range []struct {
+		query  string
+		before time.Time
+		target *int
+	}{
+		{`DELETE FROM energy_imports WHERE imported_at<?`, rawImportBefore, &summary.Imports},
+		{`DELETE FROM energy_intervals WHERE starts_at<?`, intervalBefore, &summary.Intervals},
+		{`DELETE FROM energy_tariff_assessments WHERE created_at<?`, assessmentBefore, &summary.TariffAssessments},
+	} {
+		if item.before.IsZero() {
+			continue
+		}
+		result, err := tx.Exec(item.query, item.before.UTC().Format(time.RFC3339Nano))
+		if err != nil {
+			return DeleteSummary{}, err
+		}
+		n, _ := result.RowsAffected()
+		*item.target = int(n)
+	}
+	if err := tx.Commit(); err != nil {
+		return DeleteSummary{}, err
+	}
+	return summary, nil
 }
 
 func (s *SQLStore) ListMaintenance(tenantSlug string) ([]MaintenancePlan, error) {

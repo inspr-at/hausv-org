@@ -28,6 +28,7 @@ type TenantConfig struct {
 	Slug              string               `json:"slug"`
 	Name              string               `json:"name"`
 	Address           string               `json:"address"`
+	PortalType        string               `json:"portal_type,omitempty"`
 	BrandIcon         string               `json:"brand_icon,omitempty"`
 	BrandAbbreviation string               `json:"brand_abbreviation,omitempty"`
 	MapLatitude       float64              `json:"map_latitude,omitempty"`
@@ -46,6 +47,12 @@ type TenantConfig struct {
 	Host              string               `json:"host"`
 	HA                homeassistant.Config `json:"-"`
 }
+
+const (
+	PortalTypeCommunity = "community"
+	PortalTypeApartment = "apartment"
+	PortalTypeHouse     = "house"
+)
 
 // HomeAssistantConnector is the non-secret, tenant-scoped connector
 // declaration. Tokens are referenced by file or environment-variable name;
@@ -194,6 +201,15 @@ func ParseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 			if tenant.Address == "" {
 				tenant.Address = tenant.Slug
 			}
+			tenant.PortalType = strings.ToLower(strings.TrimSpace(tenant.PortalType))
+			if tenant.PortalType == "" {
+				tenant.PortalType = PortalTypeCommunity
+			}
+			switch tenant.PortalType {
+			case PortalTypeCommunity, PortalTypeApartment, PortalTypeHouse:
+			default:
+				return nil, fmt.Errorf("tenant %s has invalid portal_type", tenant.Slug)
+			}
 			tenant.ContactName = strings.TrimSpace(tenant.ContactName)
 			tenant.ContactAddress = strings.TrimSpace(tenant.ContactAddress)
 			tenant.ContactEmail = textutil.Email(tenant.ContactEmail)
@@ -227,6 +243,7 @@ func ParseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 			Slug:         defaultTenant,
 			Name:         "WEG Portal",
 			Address:      "Janischhofweg 22",
+			PortalType:   PortalTypeCommunity,
 			MapLatitude:  47.1008592,
 			MapLongitude: 15.4717681,
 			MapZoom:      17,

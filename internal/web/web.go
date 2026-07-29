@@ -44,6 +44,8 @@ const PageTemplates = `
       --shadow-panel:0 12px 30px rgba(32,37,31,.04);
       --shadow-dialog:0 28px 70px rgba(0,0,0,.34);
       --shadow-login:0 28px 70px rgba(0,0,0,.42);
+      --surface:var(--panel); --shadow-sm:var(--shadow-panel);
+      --shadow-md:0 18px 44px rgba(32,37,31,.08); --shadow-lg:0 24px 62px rgba(0,0,0,.2);
       font-family: var(--font-sans);
 {{end}}
 {{define "hausvLandingMark"}}
@@ -232,13 +234,13 @@ const PageTemplates = `
     </header>
     <main>
       <div class="copy">
-        <div class="eyebrow">Ihr Hausportal</div>
-        <h1>Alles Wichtige rund um unser Haus.</h1>
-        <p class="lead">Aushänge, Termine, Dokumente und Anliegen – privat für unsere Hausgemeinschaft.</p>
+        <div class="eyebrow">{{.HomeCopy.Eyebrow}}</div>
+        <h1>{{.HomeCopy.Headline}}</h1>
+        <p class="lead">{{.HomeCopy.Lead}}</p>
         <div class="meta" aria-label="Portalüberblick">
-          <div><strong>Informiert</strong><span>Wichtige Aushänge und Neuigkeiten.</span></div>
-          <div><strong>Organisiert</strong><span>Termine und Aufgaben im Blick.</span></div>
-          <div><strong>Privat</strong><span>Nur für unsere Hausgemeinschaft.</span></div>
+          <div><strong>Informiert</strong><span>{{.HomeCopy.FirstDetail}}</span></div>
+          <div><strong>Organisiert</strong><span>{{.HomeCopy.SecondDetail}}</span></div>
+          <div><strong>Privat</strong><span>{{.HomeCopy.PrivacyDetail}}</span></div>
         </div>
       </div>
       <div class="side-stack">
@@ -277,7 +279,7 @@ const PageTemplates = `
       </div>
     </main>
     <footer>
-      <span>{{.Tenant.Address}} · Privat für die Hausgemeinschaft</span>
+      <span>{{.Tenant.Address}} · Privat für eingeladene Personen</span>
       <span class="footer-links"><a href="/datenschutz">Datenschutz</a><a href="https://hausv.org/#impressum">Impressum</a><span class="version">{{.AppVersion}}</span></span>
     </footer>
   </section>
@@ -681,11 +683,19 @@ const PageTemplates = `
       {{if .ServiceProviderEnabled}}Die Betreiberprüfung {{.ServiceProviderAssessment}} wurde ausdrücklich aktiviert. Dienstleister sehen ausschließlich offene, ihnen zugewiesene Anliegen.{{else}}Ohne ausdrücklich versionierte Betreiberfreigabe können keine Dienstleister eingeladen, zugeordnet oder angemeldet werden.{{end}}
     </div>
 
-    <h2>Wer ist Ansprechpartner?</h2>
-    <p>Über Zwecke und Inhalte des Hausbetriebs entscheidet die jeweilige Eigentümergemeinschaft beziehungsweise die beauftragte Hausverwaltung. hausv.org stellt den technischen, weisungsgebundenen Portalbetrieb bereit.</p>
+    <h2>Wer entscheidet worüber?</h2>
+    {{if .PortalClassified}}
+      {{if .IsPrivateHome}}
+      <p>Bei einem privaten Zuhause entscheidet die Eigentümerin oder der Eigentümer über die eigenen Hausinhalte, Energie-Zuordnungen und ausdrücklich freigegebene Vertrauenspersonen. hausv.org verantwortet den sicheren technischen Portalbetrieb, Konten, Zugriffsschutz und die im Produkt angeforderten Auswertungen. Eine technische Vertrauensperson erhält nur den widerrufbaren, hausbezogenen Zugriff, der im Portal sichtbar freigegeben wurde.</p>
+      {{else}}
+      <p>Bei einer Hausgemeinschaft entscheidet die Eigentümergemeinschaft beziehungsweise die beauftragte Hausverwaltung über gemeinschaftliche Inhalte und Zwecke. hausv.org verantwortet den sicheren technischen Portalbetrieb, Konten und Zugriffsschutz und verarbeitet Hausinhalte weisungsgebunden, soweit dies für den konkreten Zweck vereinbart ist. Die datenschutzrechtliche Rolle wird deshalb je Zweck bestimmt und nicht pauschal aus einer Produktbezeichnung abgeleitet.</p>
+      {{end}}
+    {{else}}
+    <p>Solange noch keine Wohnform gewählt wurde oder das Energieprofil zurückgesetzt ist, weist hausv.org hier keine Eigentümer- oder Hausgemeinschaftsrolle pauschal zu. Über konkrete Hausinhalte entscheidet die tatsächlich zuständige Eigentümerin, Eigentümergemeinschaft oder beauftragte Verwaltung; hausv.org verantwortet Konten, Zugriffsschutz und den technischen Portalbetrieb jeweils für den konkreten Zweck.</p>
+    {{end}}
     <dl>
-      <dt>Verantwortlicher Hausbetrieb</dt><dd>{{.HouseContactName}}{{if .HouseContactAddress}}, {{.HouseContactAddress}}{{end}}</dd>
-      <dt>Betroffenes Haus</dt><dd>{{.Tenant.Address}}</dd>
+      <dt>{{if .PortalClassified}}{{if .IsPrivateHome}}Hauskontakt{{else}}Verantwortlicher Hausbetrieb{{end}}{{else}}Hauskontakt{{end}}</dt><dd>{{.HouseContactName}}{{if .HouseContactAddress}}, {{.HouseContactAddress}}{{end}}</dd>
+      <dt>{{if .PortalClassified}}{{if .IsPrivateHome}}Betroffenes Zuhause{{else}}Betroffenes Haus{{end}}{{else}}Betroffene Adresse{{end}}</dt><dd>{{.Tenant.Address}}</dd>
       <dt>Kontakt</dt><dd><a href="mailto:{{.HouseContactEmail}}">{{.HouseContactEmail}}</a>{{if .HouseContactPhone}} · {{.HouseContactPhone}}{{end}}</dd>
       <dt>Technischer Betrieb</dt><dd>{{.TechnicalOperatorName}}, {{.TechnicalOperatorAddress}} · <a href="mailto:{{.TechnicalContactEmail}}">{{.TechnicalContactEmail}}</a></dd>
     </dl>
@@ -696,17 +706,25 @@ const PageTemplates = `
       <li>Aushänge, Termine, Dokumente, Anliegen, Kommentare, Anhänge und Abstimmungen für Kommunikation und Verwaltung des Hauses.</li>
       <li>Anmelde- und Auditdaten für Sicherheit, Fehlerklärung und nachvollziehbare Änderungen.</li>
       <li>Parkplatz- und Ladedaten nur für berechtigte Personen des jeweiligen Hauses.</li>
+      <li>Der einmalige Beginn des dreijährigen kostenlosen Nutzungszeitraums bleibt als Vertrags- und Anspruchsmerkmal erhalten, damit eine Neueinrichtung den Zeitraum nicht neu startet. Dieses Datum enthält keine Messwerte.</li>
+      {{if .EnergyProfileExists}}<li>Energieprofil mit Wohnform, Anzeigename, verknüpfter Einheit, Anlagen, Wartungsplänen und bestätigten Messwert-Zuordnungen.</li>
+      <li>Aus Home Assistant werden bei der Einrichtung kurzzeitig verfügbare Entitäten zur Auswahl gelesen. Dauerhaft gespeichert werden nur bestätigte Zuordnungen; ausgewählte Live-Werte und Verläufe werden für die Anzeige abgerufen, aber nicht als eigene Home-Assistant-Kopie gespeichert.</li>
+      <li>Hochgeladene Smart-Meter-Originaldateien, daraus normalisierte Viertelstundenwerte sowie daraus abgeleitete Spitzen, Tarifstände, Empfehlungen und Vorher-/Nachher-Vergleiche.</li>{{end}}
     </ul>
-    <p>Die interne Betreiberbewertung stützt diese Verarbeitung – abhängig vom konkreten Vorgang – auf Vertragserfüllung, rechtliche Verwaltungspflichten oder berechtigte Interessen an sicherer, nachvollziehbarer Hausverwaltung (Art. 6 Abs. 1 lit. b, c oder f DSGVO). Freitext und Fotos sollen keine Gesundheitsdaten oder andere besonders geschützte Angaben enthalten.</p>
+    <p>Die Rechtsgrundlage wird je Zweck gewählt: objektiv notwendige Kernfunktionen auf Grundlage des angeforderten Portalvertrags (Art. 6 Abs. 1 lit. b DSGVO), Zugriffsschutz und eng begrenzte Sicherheitsnachweise auf Grundlage berechtigter Interessen (Art. 6 Abs. 1 lit. f DSGVO) und gesetzliche Pflichten nur, wenn sie im Einzelfall tatsächlich anwendbar und dokumentiert sind (Art. 6 Abs. 1 lit. c DSGVO). Freiwillige Zusatzfreigaben können widerrufen werden. Nicht erforderliche Zweitnutzungen für Werbung, Training oder allgemeine Produktanalyse finden ohne eigene Rechtsgrundlage und ausdrückliche Aktivierung nicht statt. Freitext und Fotos sollen keine Gesundheitsdaten, Ausweiskopien oder andere besonders geschützte Angaben enthalten.</p>
+    {{if .EnergyProfileExists}}<p>Die Energieansicht ist zunächst <strong>nur lesend</strong>. Empfehlungen sind nachvollziehbare Hinweise; HAUSV trifft keine ausschließlich automatisierte Entscheidung mit rechtlicher oder ähnlich erheblicher Wirkung. Eine spätere aktive Steuerung bleibt gesondert geschlossen, bis sie bewusst freigegeben und datenschutzrechtlich neu geprüft wurde.</p>{{end}}
 
-    <h2>Empfänger und Speicherorte</h2>
+    <h2>Quellen, Empfänger und Speicherorte</h2>
     <ul>
+      <li>Daten stammen von eingeladenen Personen, der Hausadministration, ausdrücklich verbundenen Home-Assistant-Instanzen und bewusst hochgeladenen Smart-Meter-Dateien.</li>
+      <li>Innerhalb eines Hauses sehen nur die jeweils berechtigten Rollen die für ihre Aufgabe notwendigen Bereiche. Technische Vertrauenspersonen sehen oder konfigurieren Energie nur im sichtbar erteilten Umfang und dürfen den Haus-Schalter nicht umlegen. Der Zugriff ist widerrufbar.</li>
       <li>Die Fachdaten und das selbst betriebene Zitadel für SSO liegen auf dem Netcup-Server <code>csb1</code> in Wien und sind je Haus und Rolle getrennt.</li>
       <li>Cloudflare schützt und vermittelt den öffentlichen Webzugriff. Dabei fallen technisch notwendige Verbindungsdaten an.</li>
       <li>Verschlüsselte Sicherungen werden in einem Hetzner Storage Box Konto innerhalb der EU gespeichert.</li>
       <li>Resend versendet Transaktionsmails über die Region Irland. E-Mail-Adresse, Betreff und Inhalt sowie Kontodaten, Metadaten, Logs und API-Aufzeichnungen werden dabei auch in den USA verarbeitet. Resend stellt eine Vereinbarung zur Auftragsverarbeitung einschließlich Standardvertragsklauseln bereit und hält reguläre E-Mail-Inhalte 30 Tage vor.</li>
       <li>Es gibt keine Werbung, keine Analyse-Skripte und keine extern geladenen Web-Schriften.</li>
       <li>Der feste Kartenausschnitt in der Portalnavigation nutzt OpenStreetMap-Kartenkacheln. hausv.org ruft ausschließlich die für das konfigurierte Haus benötigten Kacheln serverseitig ab und speichert sie mindestens sieben Tage zwischen; OpenStreetMap erhält dabei keine Daten zum angemeldeten Portalnutzer.</li>
+      {{if .EnergyProfileExists}}<li>Home-Assistant-Endpunkt und Zugangstoken bleiben in der verschlüsselten Host-Konfiguration. Sie werden weder in der Fachdatenbank noch im Energieexport gespeichert oder angezeigt.</li>{{end}}
     </ul>
 
     <h2>Aufbewahrung</h2>
@@ -716,14 +734,19 @@ const PageTemplates = `
       <li>Hauszugehörigkeit und Dienstleister-Zugriff: bis zum Entzug; der Zugriff endet sofort.</li>
       <li>Gelöschte Anhangdateien: sofort entfernt; leere Löschmarkierung nach einem Jahr.</li>
       <li>Geschlossene Anliegen samt Kommentaren und Anhängen: jährliche Prüfung, regulär Löschung nach {{.ServiceProviderRetentionYears}} Jahren, sofern keine offene Gewährleistungs-, Rechts- oder Dokumentationspflicht entgegensteht.</li>
-      <li>Audit-Archive: höchstens drei Jahre; das laufende Protokoll rotiert zusätzlich nach Größe oder Alter.</li>
+      {{if .EnergyProfileExists}}<li>Smart-Meter-Originaldateien werden nach 30 Tagen, normalisierte Viertelstundenwerte nach 13 Monaten und festgehaltene Tarifbewertungen nach drei Jahren zur Löschung fällig. Die technische Löschung erfolgt beim Start und danach alle sechs Stunden, also spätestens innerhalb weiterer sechs Stunden.</li>
+      <li>Energieprofil, Anlagen und bestätigte Zuordnungen: bis zur Korrektur, Trennung oder ausdrücklichen Löschung des Energieprofils. Nur transient gelesene Home-Assistant-Zustände und -Historien werden nicht dauerhaft als eigene Kopie gespeichert.</li>{{end}}
+      <li>Der Beginn des kostenlosen Anspruchs bleibt bis zum Ende des Anspruchs- beziehungsweise Portalverhältnisses erhalten, auch wenn das übrige Energieprofil gelöscht wird.</li>
+      <li>Auditdaten werden nach drei Jahren zur Löschung fällig und spätestens beim nächsten sechsstündlichen Bereinigungslauf entfernt; das laufende Protokoll rotiert zusätzlich nach Größe oder Alter.</li>
+      <li>Gelöschte Daten können bis zum Ablauf des dokumentierten betrieblichen Backup-Zyklus noch in verschlüsselten Sicherungskopien enthalten sein. Diese Kopien bleiben gesperrt und werden ausschließlich für eine kontrollierte Wiederherstellung verwendet.</li>
     </ul>
 
-    <h2>Ihre Rechte</h2>
-    <p>Betroffene Personen können Information, Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit oder Widerspruch verlangen. Anfragen gehen an den oben genannten Hauskontakt; technisch notwendige Unterstützung leistet hausv.org. Beschwerden können an die Österreichische Datenschutzbehörde gerichtet werden.</p>
+    <h2>Ihre Kontrolle und Rechte</h2>
+    <p>Betroffene Personen können Information, Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit oder Widerspruch verlangen. Eigentümer und Hausadministration können unter <a href="/app/settings/energy-data">Energiedaten &amp; Datenschutz</a> ein maschinenlesbares ZIP-Paket anfordern, den gesamten Messverlauf löschen oder das Energieprofil zurücksetzen. Unabhängige Anliegen, Dokumente und Sicherheitsnachweise folgen ihren eigenen Fristen und werden dort klar getrennt ausgewiesen.</p>
+    <p>Anfragen gehen an den oben genannten Hauskontakt; technisch notwendige Unterstützung leistet hausv.org. Eine erteilte Vertrauenspersonen-Freigabe kann in der Personenverwaltung jederzeit entzogen werden. Beschwerden können an die <a href="https://dsb.gv.at/" rel="noopener noreferrer">Österreichische Datenschutzbehörde</a> gerichtet werden.</p>
 
     <h2>Stand und Überprüfung</h2>
-    <p>Stand: {{.LegalReviewDate}}. Die Selbstprüfung stützt sich auf die DSGVO, die Informationen und Entscheidungen der <a href="https://www.dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>, <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a> und <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a>. Sie ist eine interne Betreiberbewertung, keine externe Zertifizierung oder Rechtsberatung. Sie wird mindestens jährlich sowie bei neuen Empfängern, Datenarten, Rechtsgrundlagen, Speicherorten oder wesentlichen Produktänderungen erneut durchgeführt. Wenn sich ein hohes, nicht ausreichend gemindertes Risiko zeigt, bleibt die Funktion geschlossen und die Datenschutzbehörde wird nach Art. 36 DSGVO konsultiert.</p>
+    <p>Stand: {{.LegalReviewDate}}. Die Selbstprüfung stützt sich auf die <a href="https://eur-lex.europa.eu/eli/reg/2016/679/oj" rel="noopener noreferrer">DSGVO</a>, Leitlinien des <a href="https://www.edpb.europa.eu/documents/guideline/guidelines-072020-on-the-concepts-of-controller-and-processor-in-the-gdpr_en" rel="noopener noreferrer">Europäischen Datenschutzausschusses zu Verantwortlichen und Auftragsverarbeitern</a>, Informationen der <a href="https://dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>, <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a> und <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a>. Sie ist eine interne Betreiberbewertung anhand verfügbarer Primärquellen – ausdrücklich keine externe Zertifizierung oder Rechtsberatung. Solange kein externer Auditor verfügbar ist, bleibt diese dokumentierte Selbstprüfung der Freigabeweg. Sie wird mindestens jährlich sowie bei neuen Empfängern, Datenarten, Rechtsgrundlagen, Speicherorten oder wesentlichen Produktänderungen erneut durchgeführt. Wenn sich ein hohes, nicht ausreichend gemindertes Risiko zeigt, bleibt die Funktion geschlossen und die Datenschutzbehörde wird nach Art. 36 DSGVO konsultiert.</p>
   </main>
   <footer>hausv.org · Datenschutzinformation für den Pilotbetrieb</footer>
 </body>
@@ -1030,8 +1053,55 @@ const PageTemplates = `
     .energy-import-form { display: grid; gap: 12px; margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px; }
     .energy-import-form input[type="file"] { min-height: 48px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px; background: #fff; }
     .energy-import-form small { color: var(--muted); line-height: 1.4; }
-    .energy-import-history { margin-top: 14px; }
-    .energy-quality { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: #fff; }
+	    .energy-import-history { margin-top: 14px; }
+	    .energy-data-page { width: min(1040px,100%); gap: 22px; }
+	    .energy-data-heading { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 24px; align-items: end; }
+	    .energy-data-heading .lede { max-width: 700px; margin-top: 10px; }
+	    .energy-data-trust { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px 18px; color: var(--muted); font-size: 12px; }
+	    .energy-data-trust span { display: inline-flex; gap: 7px; align-items: center; }
+	    .energy-data-trust span::before { content: "✓"; width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid rgba(47,107,74,.28); border-radius: 50%; color: #2f6b4a; font-size: 11px; font-weight: 900; }
+	    .energy-lifecycle { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(255,255,255,.54); }
+	    .energy-lifecycle-step { position: relative; min-height: 92px; display: grid; align-content: center; gap: 4px; padding: 18px 42px 18px 20px; }
+	    .energy-lifecycle-step + .energy-lifecycle-step { border-left: 1px solid var(--line); }
+	    .energy-lifecycle-step:not(:last-child)::after { content: "→"; position: absolute; right: -10px; top: 50%; z-index: 1; width: 20px; color: var(--gold-ink); background: var(--paper); text-align: center; transform: translateY(-50%); }
+	    .energy-lifecycle-step strong { font-family: var(--font-serif); font-size: 18px; }
+	    .energy-lifecycle-step span { color: var(--muted); font-size: 12px; line-height: 1.35; }
+	    .energy-data-section { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-sm); }
+	    .energy-data-section-head { display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 24px; }
+	    .energy-data-section-head h2 { font-size: 25px; }
+	    .energy-data-section-head p { max-width: 620px; margin-top: 5px; color: var(--muted); font-size: 13.5px; line-height: 1.48; }
+	    .energy-data-export .button { flex: 0 0 auto; min-height: 48px; }
+	    .energy-data-inventory { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-top: 1px solid var(--line); }
+	    .energy-data-inventory div { min-height: 82px; display: grid; align-content: center; gap: 3px; padding: 14px 20px; border-right: 1px solid var(--line); }
+	    .energy-data-inventory div:last-child { border-right: 0; }
+	    .energy-data-inventory strong { font-family: var(--font-serif); font-size: 22px; }
+	    .energy-data-inventory span { color: var(--muted); font-size: 11.5px; }
+	    .energy-data-imports { border-top: 1px solid var(--line); }
+	    .energy-data-import { min-height: 64px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: center; padding: 12px 24px; border-bottom: 1px solid var(--line); }
+	    .energy-data-import:last-child { border-bottom: 0; }
+	    .energy-data-import div { min-width: 0; display: grid; gap: 3px; }
+	    .energy-data-import strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+	    .energy-data-import span, .energy-data-import small { color: var(--muted); font-size: 11.5px; }
+	    .energy-data-empty { border-top: 1px solid var(--line); padding: 20px 24px; color: var(--muted); font-size: 13px; }
+	    .energy-data-danger { border-color: rgba(140,52,52,.2); box-shadow: none; }
+	    .energy-data-danger > header { padding: 24px; }
+	    .energy-data-danger > header h2 { color: #7f3434; font-size: 24px; }
+	    .energy-data-danger > header p { margin-top: 5px; color: var(--muted); font-size: 13px; }
+	    .energy-delete-action { border-top: 1px solid rgba(140,52,52,.16); }
+	    .energy-delete-action > summary { min-height: 66px; display: flex; justify-content: space-between; gap: 18px; align-items: center; padding: 14px 24px; list-style: none; cursor: pointer; }
+	    .energy-delete-action > summary::-webkit-details-marker { display: none; }
+	    .energy-delete-action > summary::after { content: "+"; color: #8c3434; font-size: 21px; }
+	    .energy-delete-action[open] > summary::after { content: "−"; }
+	    .energy-delete-action > summary span { display: grid; gap: 3px; }
+	    .energy-delete-action > summary strong { font-size: 14px; }
+	    .energy-delete-action > summary small { color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.4; }
+	    .energy-delete-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: end; border-top: 1px solid rgba(140,52,52,.12); padding: 18px 24px 22px; background: rgba(140,52,52,.025); }
+	    .energy-delete-form label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
+	    .energy-delete-form input { min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 12px; color: var(--ink); background: #fff; font: inherit; }
+	    .energy-delete-button { min-height: 44px; border: 1px solid rgba(140,52,52,.38); border-radius: var(--radius-xs); padding: 10px 15px; color: #8c3434; background: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+	    .energy-delete-button:hover { background: rgba(140,52,52,.07); }
+	    .energy-data-note { color: var(--muted); font-size: 12px; line-height: 1.5; }
+	    .energy-quality { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: #fff; }
     .energy-quality > span:first-child { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: #edf4ed; color: #2e6842; font-weight: 900; }
     .energy-quality strong { display: block; }
     .energy-quality p { margin-top: 3px; color: var(--muted); font-size: 13px; }
@@ -2266,8 +2336,21 @@ const PageTemplates = `
 	      .onboarding-candidate-value, .onboarding-readonly { grid-column: 2; justify-self: start; }
 	      .onboarding-disclosure .optional-grid { grid-template-columns: 1fr; }
 	      .onboarding-skip { margin-left: 0; }
-	      .energy-reference-grid { grid-template-columns: 1fr; }
-	      .energy-quality, .energy-scenario, .energy-tariff-grid { grid-template-columns: 1fr; }
+		      .energy-reference-grid { grid-template-columns: 1fr; }
+		      .energy-data-heading { grid-template-columns: 1fr; }
+		      .energy-data-trust { justify-content: flex-start; }
+		      .energy-lifecycle, .energy-data-inventory { grid-template-columns: 1fr; }
+		      .energy-lifecycle-step + .energy-lifecycle-step, .energy-data-inventory div + div { border-top: 1px solid var(--line); border-left: 0; }
+		      .energy-lifecycle-step:not(:last-child)::after { content: "↓"; right: 20px; top: auto; bottom: -11px; transform: none; }
+		      .energy-data-section-head { align-items: stretch; flex-direction: column; }
+		      .energy-data-export .button { width: 100%; }
+		      .energy-data-inventory div { min-height: 68px; border-right: 0; }
+		      .energy-data-import { grid-template-columns: 1fr; gap: 5px; align-items: start; }
+		      .energy-data-import strong { overflow-wrap: anywhere; text-overflow: clip; white-space: normal; }
+		      .energy-data-import small { justify-self: start; }
+		      .energy-delete-form { grid-template-columns: 1fr; }
+		      .energy-delete-button { width: 100%; }
+		      .energy-quality, .energy-scenario, .energy-tariff-grid { grid-template-columns: 1fr; }
 	      .energy-coverage-head { align-items: flex-start; flex-direction: column; gap: 2px; }
 	      .energy-coverage-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
 	      .energy-coverage-row { min-height: 70px; border-bottom: 1px solid var(--line); }
@@ -5020,6 +5103,10 @@ const PageTemplates = `
                 <span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/></svg></span>
                 <span class="settings-link-copy">{{if .HomeIdentity.HasDisplayName}}<strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<span class="settings-home-unit" data-home-unit-label>{{.HomeIdentity.UnitLabel}}</span>{{end}}<span class="settings-home-purpose">Anzeigename und Zuordnung bearbeiten</span>{{else}}<strong>Mein Zuhause einrichten</strong><span>Name, Art und Zuordnung festlegen</span>{{end}}</span><span class="settings-link-arrow">›</span>
               </a>
+              {{if .SettingsCanManageEnergyData}}<a class="settings-link secondary" href="/app/settings/energy-data">
+                <span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M7 7h8.5a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h8"/></svg></span>
+                <span class="settings-link-copy"><strong>Energiedaten &amp; Datenschutz</strong><span>Gespeicherte Daten ansehen, exportieren oder löschen</span></span><span class="settings-link-arrow">›</span>
+              </a>{{end}}
             </div>
           </section>{{end}}
           <section class="panel settings-section">
@@ -7169,9 +7256,10 @@ const PageTemplates = `
 {{define "homeOnboarding"}}
 {{template "appOpen" .}}
   <main class="app-main">
-    {{template "energyModeStrip" .}}
-    <div class="page onboarding-page">
-      <div class="onboarding-progress" aria-label="Einrichtungsfortschritt">
+	    {{template "energyModeStrip" .}}
+	    <div class="page onboarding-page">
+	      {{if .ProfileReset}}<div class="message success"><strong>Das Energieprofil wurde gelöscht.</strong> Hausname, Anlagen, Zuordnungen, Messverlauf und Auswertungen sind entfernt. Unabhängige Anliegen und das Sicherheitsprotokoll bleiben nach ihren eigenen Fristen bestehen.</div>{{end}}
+	      <div class="onboarding-progress" aria-label="Einrichtungsfortschritt">
         <div class="onboarding-progress-head"><span>Einrichtung Ihres Zuhauses</span><span>Schritt {{.Step}} von 5</span></div>
         <div class="onboarding-progress-track"><span style="width:{{.Progress}}%"></span></div>
       </div>
@@ -7454,14 +7542,15 @@ const PageTemplates = `
         {{if eq .ImportStatus "added"}}<div class="message success">Smart-Meter-Datei übernommen. Ein erneuter Import derselben Datei erzeugt keine Duplikate.</div>{{else if eq .ImportStatus "duplicate"}}<div class="message">Diese Datei war bereits vorhanden; es wurde nichts doppelt gespeichert.</div>{{else if eq .ImportStatus "invalid"}}<div class="message error">Datei nicht erkannt. Erwartet werden 15-Minuten-Zeilen mit <strong>timestamp</strong> und <strong>import_kwh</strong>.</div>{{end}}
         {{if .HasPeaks}}<div class="energy-reference-grid">{{range .Peaks}}<article class="energy-reference-item"><span>Monatsspitze · {{.Source}}</span><strong>{{.Value}}</strong><span>höchstes abgeschlossenes 15-Minuten-Fenster</span></article>{{end}}</div>{{else}}<p class="muted">Noch keine abgeschlossenen Viertelstunden vorhanden.</p>{{end}}
         {{if .HasComparison}}<div class="energy-quality {{.Comparison.Tone}}"><span aria-hidden="true">{{if eq .Comparison.Tone "good"}}✓{{else}}!{{end}}</span><div><strong>{{.Comparison.Title}}</strong><p>{{.Comparison.Details}}</p></div></div>{{end}}
-        {{if .HasImports}}<div class="energy-assets energy-import-history">{{range .Imports}}<span class="energy-asset">{{.Filename}} · {{.Date}}</span>{{end}}</div>{{end}}
-        {{if .CanManageEnergy}}<form class="energy-import-form" method="post" action="/app/energie/smart-meter" enctype="multipart/form-data">
-          <label><span class="onboarding-legend">Smart-Meter-CSV auswählen</span><input type="file" name="smart_meter_file" accept=".csv,text/csv" required></label>
-          <small>Unterstütztes Profil: <strong>timestamp;import_kwh</strong>, exakt um Minute 00, 15, 30 oder 45. Originaldatei und Auswertung bleiben diesem Haus zugeordnet.</small>
-          <button class="button" type="submit">Als Referenz importieren</button>
-        </form>{{end}}
-        </div>
-      </details>
+	        {{if .HasImports}}<div class="energy-assets energy-import-history">{{range .Imports}}<span class="energy-asset">{{.Filename}} · {{.Date}}</span>{{end}}</div>{{end}}
+	        {{if .CanManageEnergy}}<form class="energy-import-form" method="post" action="/app/energie/smart-meter" enctype="multipart/form-data">
+	          <label><span class="onboarding-legend">Smart-Meter-CSV auswählen</span><input type="file" name="smart_meter_file" accept=".csv,text/csv" required></label>
+	          <small>Unterstütztes Profil: <strong>timestamp;import_kwh</strong>, exakt um Minute 00, 15, 30 oder 45. Originaldateien werden nach 30 Tagen, Viertelstundenwerte nach 13 Monaten zur Löschung fällig und spätestens sechs Stunden später entfernt.</small>
+	          <button class="button" type="submit">Als Referenz importieren</button>
+	        </form>{{end}}
+	        {{if .CanManageEnergyData}}<nav class="energy-related-links"><a href="/app/settings/energy-data">Energiedaten ansehen, exportieren oder löschen →</a></nav>{{end}}
+	        </div>
+	      </details>
       <details class="energy-card energy-collapsible" id="betreuung">
         <summary class="energy-card-head"><div><h2>Technische Betreuung</h2><p>{{if .HasCaretakers}}Hausbezogene Hilfe ist eingerichtet.{{else}}Optional eine Vertrauensperson einladen.{{end}}</p></div></summary>
         <div class="energy-collapsible-body">
@@ -7512,6 +7601,98 @@ const PageTemplates = `
         <div class="energy-marketplace-gate"><strong>Marktplatz geschlossen</strong><span>Kein Zahlungsfluss, keine Provision und keine öffentliche Anbieterreihung vor belastbaren Pilotdaten.</span></div>
         </div>
       </details>
+    </div>
+  </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "energyData"}}
+{{template "appOpen" .}}
+  <main class="app-main">
+    {{template "energyModeStrip" .}}
+    <div class="page energy-data-page">
+      <header class="energy-data-heading">
+        <div>
+          <p class="home-eyebrow">Mein Zuhause · Datenkontrolle</p>
+          <h1>Energiedaten &amp; Datenschutz</h1>
+          <p class="lede">Hier sehen Sie verständlich, was gespeichert ist. Sie können Ihre Energiedaten vollständig mitnehmen oder bewusst löschen.</p>
+        </div>
+        <div class="energy-data-trust" aria-label="Datenschutz-Grundsätze">
+          <span>Home Assistant nur gelesen</span>
+          <span>Keine Werbung oder Analyse</span>
+          <span>Keine automatische Entscheidung</span>
+        </div>
+      </header>
+
+      {{if .HistoryDeleted}}<div class="message success"><strong>Der Messverlauf wurde gelöscht.</strong> Smart-Meter-Originale, Viertelstundenwerte, Tarifstände und Messvergleiche sind entfernt. Anlagen und Zuordnungen bleiben erhalten.</div>{{end}}
+      {{if .ExportUnavailable}}<div class="message error"><strong>Der direkte Export ist derzeit zu groß.</strong> Bitte wenden Sie sich an den technischen Kontakt; die Daten werden dann sicher bereitgestellt.</div>{{end}}
+
+      <section class="energy-lifecycle" aria-label="Aufbewahrungsfristen">
+        <div class="energy-lifecycle-step"><strong>30 Tage</strong><span>Smart-Meter-Originale; Löschung beim nächsten 6-Stunden-Lauf</span></div>
+        <div class="energy-lifecycle-step"><strong>13 Monate</strong><span>Viertelstundenwerte; Löschung beim nächsten 6-Stunden-Lauf</span></div>
+        <div class="energy-lifecycle-step"><strong>3 Jahre</strong><span>Tarifbewertungen und Energie-Audit; Löschung beim nächsten 6-Stunden-Lauf</span></div>
+      </section>
+
+      <section class="energy-data-section energy-data-export">
+        <header class="energy-data-section-head">
+          <div>
+            <h2>Alles mitnehmen</h2>
+            <p>Ein ZIP-Paket mit Profil, Anlagen, bestätigten Messwert-Zuordnungen, Viertelstundenwerten, noch vorhandenen Originaldateien, Auswertungen und Energieprotokoll. Home-Assistant-Adresse und Zugangstoken sind ausdrücklich nicht enthalten.</p>
+          </div>
+          <form method="post" action="/app/settings/energy-data/export" data-download-form>
+            <button class="button primary" type="submit" data-busy-label="Export wird erstellt...">Energiedaten exportieren</button>
+          </form>
+        </header>
+        <div class="energy-data-inventory" aria-label="Gespeicherte Energiedaten">
+          <div><strong>{{.AssetCount}}</strong><span>Anlagen und Verbraucher</span></div>
+          <div><strong>{{.MappingCount}}</strong><span>bestätigte Zuordnungen</span></div>
+          <div><strong>{{.IntervalCount}}</strong><span>Viertelstundenwerte</span></div>
+          <div><strong>{{.AssessmentCount}}</strong><span>Tarifbewertungen</span></div>
+        </div>
+      </section>
+
+      <section class="energy-data-section">
+        <header class="energy-data-section-head">
+          <div>
+            <h2>Smart-Meter-Originale</h2>
+            <p>Diese Dateien werden nach 30 Tagen, die daraus berechneten Viertelstundenwerte nach 13 Monaten zur Löschung fällig. Der automatische Lauf entfernt sie spätestens sechs Stunden später. Ist ein Import falsch, löschen Sie den Messverlauf und importieren anschließend die korrigierte Datei erneut.</p>
+          </div>
+          <span class="pill">{{.ImportCount}} vorhanden</span>
+        </header>
+        {{if .HasImports}}<div class="energy-data-imports">
+          {{range .Imports}}<article class="energy-data-import">
+            <div><strong>{{.Filename}}</strong><span>{{.Format}} · importiert am {{.Date}}</span></div>
+            <small>{{.Size}}</small>
+          </article>{{end}}
+        </div>{{else}}<p class="energy-data-empty">Keine Smart-Meter-Originaldatei gespeichert.</p>{{end}}
+      </section>
+
+      <section class="energy-data-section energy-data-danger">
+        <header>
+          <h2>Daten löschen</h2>
+          <p>Die zwei Stufen trennen Messhistorie von der vollständigen Energie-Einrichtung. Beide Aktionen sind sofort wirksam. Vorgang, ausführende Person, Zeitpunkt und nur betroffene Anzahlen werden protokolliert; gelöschte Inhalte nicht.</p>
+        </header>
+        <details class="energy-delete-action">
+          <summary><span><strong>Nur Messverlauf löschen</strong><small>Originaldateien, Viertelstundenwerte, Tarifstände und Vorher-/Nachher-Messvergleiche. Anlagen und Zuordnungen bleiben.</small></span></summary>
+          <form class="energy-delete-form" method="post" action="/app/settings/energy-data/history/delete">
+            <label>Zur Bestätigung <strong>MESSVERLAUF LÖSCHEN</strong> eingeben
+              <input name="confirmation" autocomplete="off" spellcheck="false" required>
+            </label>
+            <button class="energy-delete-button" type="submit">Messverlauf löschen</button>
+          </form>
+        </details>
+        <details class="energy-delete-action">
+          <summary><span><strong>Ganzes Energieprofil löschen</strong><small>Zusätzlich Haus-Anzeigename, Wohnform, verknüpfte Einheit, Anlagen, Zuordnungen, Wartungspläne und Maßnahmen-Metadaten. Nur der Beginn des kostenlosen Anspruchs bleibt erhalten, damit eine Neueinrichtung die drei Jahre nicht neu startet.</small></span></summary>
+          <form class="energy-delete-form" method="post" action="/app/settings/energy-data/profile/delete">
+            <label>Zur Bestätigung <strong>ENERGIEPROFIL LÖSCHEN</strong> eingeben
+              <input name="confirmation" autocomplete="off" spellcheck="false" required>
+            </label>
+            <button class="energy-delete-button" type="submit">Energieprofil löschen</button>
+          </form>
+        </details>
+      </section>
+
+      <p class="energy-data-note">Unabhängige Anliegen, Dokumente und Sicherheitsnachweise haben eigene Aufbewahrungsregeln und werden durch diese Energie-Löschung nicht entfernt. Der einmalige Beginn des kostenlosen Anspruchs ist Vertragsmetadatum des Zuhauses und bleibt bis zum Ende dieses Anspruchsverhältnisses erhalten; er enthält keine Messwerte. Verschlüsselte Sicherungskopien bleiben gesperrt und laufen nach dem betrieblichen Backup-Zyklus aus. Details, Empfänger und Ihre Rechte stehen in der <a href="/datenschutz">Datenschutzinformation</a>.</p>
     </div>
   </main>
 {{template "appClose" .}}
