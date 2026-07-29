@@ -2,6 +2,21 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.56.0] - 2026-07-29
+
+### Neu
+
+- **„Mein Zuhause“ hat einen eigenen, auffindbaren Einstellungsweg.** Anzeigename, Zuhause-Art und zugeordnete Wohnung lassen sich direkt vom Energieüberblick, vom Einstellungs-Hub und aus „Gebäude & Einheiten“ öffnen und ändern.
+- **Anzeigename und offizielle Wohnung gehören nachvollziehbar zusammen.** Ein freundlicher Name wie „Penthouse“ wird sichtbar mit der offiziellen Einheit „Top 11“ verbunden, ohne deren Stammdaten umzubenennen.
+
+### Verbessert
+
+- **Offizielle Einheiten bleiben verlässlich unverändert.** Eine Umbenennung von „Mein Zuhause“ verändert weder Adresse noch Gebäudename oder Einheitsbezeichnung.
+- **Zugriff folgt der zugeordneten Wohnung.** Nur deren Eigentümer sowie Hausverwaltung oder Administration können das Hausprofil ändern; Bewohner der Wohnung können den zugehörigen Überblick sehen.
+- **Bestehende Energiehistorie bleibt sicher zugeordnet.** Eine alte, eindeutig erkennbare Wohnung wird beim Update einmalig verbunden; mehrdeutige Fälle bleiben für die Hausverwaltung sichtbar, ohne Daten still einer Wohnung freizugeben.
+- **Technische Hilfe bleibt technisch begrenzt.** Delegierte Energiebetreuer können weiterhin Messwerte einrichten, aber weder die Identität des Zuhauses umbenennen noch dessen Betriebsmodus freigeben.
+- **Die Herkunft des Cockpitnamens ist sichtbar.** Energieübersicht und Einheitenverwaltung zeigen Anzeigename und offizielle Wohnung gemeinsam und führen direkt zur passenden Einstellung.
+
 ## [0.55.0] - 2026-07-29
 
 ### Neu

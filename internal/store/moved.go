@@ -903,10 +903,7 @@ func (s *ActivityStore) saveLocked() error {
 }
 
 func NormalizeUnitID(raw string) string {
-	raw = textutil.Slug(raw)
-	raw = strings.Join(strings.Fields(raw), "-")
-	raw = strings.ReplaceAll(raw, "/", "-")
-	return raw
+	return textutil.UnitID(raw)
 }
 
 // randomToken mints contact-book IDs. A package-local copy (identical to the

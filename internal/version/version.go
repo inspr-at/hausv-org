@@ -91,6 +91,20 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.56.0",
+			Date:     "29. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Hausprofil und offizielle Wohnung sind jetzt klar verbunden und leicht bearbeitbar.",
+			Intro:    "Der freundliche Cockpitname bleibt von den Stammdaten getrennt und gehört zugleich eindeutig zur richtigen Wohnung.",
+			Items: []NoteItem{
+				{Label: "Namen einordnen", Text: "Ein Anzeigename wie „Penthouse“ steht sichtbar neben seiner offiziellen Wohnung, zum Beispiel „Top 11“."},
+				{Label: "Direkt bearbeiten", Text: "Energieüberblick, Einstellungen und Einheitenverwaltung führen ohne erneutes Onboarding zu Name, Art und Wohnungszuordnung."},
+				{Label: "Stammdaten bewahren", Text: "Eine Änderung am Hausprofil lässt Adresse, Gebäudename und offizielle Einheitsbezeichnungen unverändert."},
+				{Label: "Historie schützen", Text: "Mehrdeutige Altbestände bleiben ungeöffnet, bis die Hausverwaltung die richtige Wohnung bewusst zuordnet."},
+				{Label: "Verantwortung begrenzen", Text: "Zugriff folgt der Wohnung; delegierte technische Betreuung bleibt auf Messwerte und Einrichtung beschränkt."},
+			},
+		},
+		{
 			Version:  "0.55.0",
 			Date:     "29. Juli 2026",
 			Kind:     "Mein Zuhause",

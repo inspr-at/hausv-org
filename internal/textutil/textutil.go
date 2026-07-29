@@ -14,6 +14,14 @@ func Slug(raw string) string {
 	return raw
 }
 
+// UnitID applies the canonical, deliberately Unicode-preserving unit key
+// normalization shared by the administrative and energy stores.
+func UnitID(raw string) string {
+	raw = Slug(raw)
+	raw = strings.Join(strings.Fields(raw), "-")
+	return strings.ReplaceAll(raw, "/", "-")
+}
+
 // FirstNonEmpty returns the first value that is not blank after trimming.
 // Note it returns the ORIGINAL value, not the trimmed one.
 func FirstNonEmpty(values ...string) string {

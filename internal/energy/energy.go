@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/markus-barta/hausv-org/internal/textutil"
 )
 
 const (
@@ -45,6 +47,7 @@ const (
 
 type HomeProfile struct {
 	TenantSlug           string
+	UnitID               string
 	HomeType             string
 	HouseholdName        string
 	OperatingMode        string
@@ -141,6 +144,7 @@ func NormalizeProfile(profile HomeProfile, now time.Time) HomeProfile {
 		now = time.Now()
 	}
 	profile.TenantSlug = normalizeSlug(profile.TenantSlug)
+	profile.UnitID = textutil.UnitID(profile.UnitID)
 	profile.HouseholdName = strings.TrimSpace(profile.HouseholdName)
 	profile.RecommendationID = normalizeToken(profile.RecommendationID, "")
 	switch strings.ToLower(strings.TrimSpace(profile.RecommendationStatus)) {

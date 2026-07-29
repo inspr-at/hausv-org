@@ -301,16 +301,21 @@
   });
 
   Array.prototype.forEach.call(document.querySelectorAll("[data-home-type-select]"), function (select) {
-    var explanation = document.querySelector("[data-home-type-explanation]");
+    var scope = select.closest("form") || document;
+    var explanation = scope.querySelector("[data-home-type-explanation]");
     if (!explanation) return;
     var label = explanation.querySelector("[data-home-type-label]");
     var copy = explanation.querySelector("[data-home-type-copy]");
+    var unitField = scope.querySelector("[data-home-unit-field]");
+    var unitSelect = unitField ? unitField.querySelector("select[name='unit_id']") : null;
 
     function updateHomeTypeExplanation() {
       var option = select.options[select.selectedIndex];
       if (!option) return;
       if (label) label.textContent = option.dataset.label || option.textContent || "";
       if (copy) copy.textContent = option.dataset.description || "";
+      if (unitField) unitField.hidden = select.value !== "apartment";
+      if (unitSelect) unitSelect.disabled = select.value !== "apartment";
     }
 
     select.addEventListener("change", updateHomeTypeExplanation);

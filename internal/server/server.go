@@ -949,6 +949,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/parking/charging/telegram/unlink", a.authedAction(capabilityManageParking, a.unlinkTelegramChat))
 	mux.HandleFunc("GET /app/audit", a.page(a.auditLog))
 	mux.HandleFunc("GET /app/settings", a.page(a.settingsHub))
+	mux.HandleFunc("GET /app/settings/home", a.page(a.homeIdentitySettings))
+	mux.HandleFunc("POST /app/settings/home", a.action(a.updateHomeIdentity))
 	mux.HandleFunc("GET /app/settings/building", a.page(a.buildingSettings))
 	mux.HandleFunc("POST /app/settings/building", a.action(a.updateBuildingSettings))
 	mux.HandleFunc("POST /app/settings/building/hero", a.action(a.updateBuildingHero))
@@ -2732,6 +2734,12 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if prefs.Unsubscribed {
 		notificationSummary = "E-Mails pausiert"
 	}
+	homeName := "Mein Zuhause einrichten"
+	homeURL := "/app/zuhause/onboarding"
+	if homeProfile, exists, profileErr := a.energyStore.Profile(tenant.Slug); profileErr == nil && exists && homeProfile.OnboardingComplete {
+		homeName = homeProfile.HouseholdName
+		homeURL = "/app/settings/home"
+	}
 	a.render(w, "settingsHub", a.withBase(ac, map[string]any{
 		"Title":                       "Einstellungen",
 		"ActivePage":                  "settings",
@@ -2739,6 +2747,8 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"HasCalendarFeedURL":          calendarFeedURL != "",
 		"SettingsDisplayName":         profile.DisplayName(),
 		"SettingsNotificationSummary": notificationSummary,
+		"SettingsHomeName":            homeName,
+		"SettingsHomeURL":             homeURL,
 	}))
 }
 
@@ -2754,27 +2764,46 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 	units := a.unitStore.ListTenant(tenant.Slug)
 	billableWeight := billableUnitWeight(units)
 	fairUseExceeded := billableWeight > fairUseFreeUnits*unitBillableFullPPM
+	homeProfile, hasHomeProfile, profileErr := a.energyStore.Profile(tenant.Slug)
+	if profileErr != nil || !homeProfile.OnboardingComplete {
+		hasHomeProfile = false
+	}
+	homeProfileUnitLabel, hasHomeProfileUnit := a.energyHomeUnitLabel(homeProfile)
+	homeProfileScopeLabel := "gesamte Liegenschaft"
+	if homeProfile.HomeType == energy.HomeApartment {
+		homeProfileScopeLabel = "noch nicht zugeordnet"
+		if hasHomeProfileUnit {
+			homeProfileScopeLabel = homeProfileUnitLabel
+		}
+	}
 	a.render(w, "buildingSettings", a.withBase(ac, map[string]any{
-		"Title":            "Gebäude & Einheiten",
-		"ActivePage":       "settings",
-		"BuildingMsg":      buildingMsg,
-		"BuildingOK":       buildingOK,
-		"BrandIconOptions": tenantBrandIconOptions(tenant.BrandIcon),
-		"BrandIconLabel":   tenantBrandIconLabel(tenant.BrandIcon),
-		"HeroMsg":          heroMsg,
-		"HeroOK":           heroOK,
-		"HasCustomHero":    a.hasTenantHero(tenant.Slug),
-		"UnitMsg":          unitMsg,
-		"UnitOK":           unitOK,
-		"Units":            a.buildingUnitViewsWithPayments(tenant.Slug, units),
-		"UnitTotal":        len(units),
-		"BillableUnits":    formatBillableUnitWeight(billableWeight),
-		"BillableLabel":    billableUnitCountLabel(billableWeight),
-		"FairUseFreeUnits": fairUseFreeUnits,
-		"FairUseExceeded":  fairUseExceeded,
-		"UnitsEmpty":       emptyState("Noch keine Einheiten", "Angelegte Einheiten erscheinen hier mit Anteil und Kontaktlinks."),
-		"PaymentMsg":       paymentMsg,
-		"PaymentOK":        paymentOK,
+		"Title":                 "Gebäude & Einheiten",
+		"ActivePage":            "settings",
+		"BuildingMsg":           buildingMsg,
+		"BuildingOK":            buildingOK,
+		"BrandIconOptions":      tenantBrandIconOptions(tenant.BrandIcon),
+		"BrandIconLabel":        tenantBrandIconLabel(tenant.BrandIcon),
+		"HeroMsg":               heroMsg,
+		"HeroOK":                heroOK,
+		"HasCustomHero":         a.hasTenantHero(tenant.Slug),
+		"UnitMsg":               unitMsg,
+		"UnitOK":                unitOK,
+		"Units":                 a.buildingUnitViewsWithPayments(tenant.Slug, units),
+		"UnitTotal":             len(units),
+		"BillableUnits":         formatBillableUnitWeight(billableWeight),
+		"BillableLabel":         billableUnitCountLabel(billableWeight),
+		"FairUseFreeUnits":      fairUseFreeUnits,
+		"FairUseExceeded":       fairUseExceeded,
+		"UnitsEmpty":            emptyState("Noch keine Einheiten", "Angelegte Einheiten erscheinen hier mit Anteil und Kontaktlinks."),
+		"PaymentMsg":            paymentMsg,
+		"PaymentOK":             paymentOK,
+		"HomeProfile":           homeProfile,
+		"HasHomeProfile":        hasHomeProfile,
+		"HomeTypeLabel":         energyHomeTypeLabel(homeProfile.HomeType),
+		"HomeProfileUnitLabel":  homeProfileUnitLabel,
+		"HasHomeProfileUnit":    hasHomeProfileUnit,
+		"HomeProfileScopeLabel": homeProfileScopeLabel,
+		"HomeProfileSaved":      r.URL.Query().Get("home") == "saved",
 	}))
 }
 
@@ -3158,6 +3187,20 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 		return
 	}
 	origID := normalizeUnitID(r.FormValue("orig_id"))
+	if profile, exists, profileErr := a.energyStore.Profile(tenant.Slug); profileErr != nil {
+		http.Redirect(w, r, "/app/settings/building?unit=error#units", http.StatusSeeOther)
+		return
+	} else if exists && profile.HomeType == energy.HomeApartment {
+		linkedID := normalizeUnitID(profile.UnitID)
+		itemID := normalizeUnitID(item.ID)
+		changesLinkedIdentity := linkedID != "" &&
+			((origID == linkedID && (itemID != linkedID || normalizeUnitType(item.UnitType) != unitTypeResidential)) ||
+				(itemID == linkedID && normalizeUnitType(item.UnitType) != unitTypeResidential))
+		if changesLinkedIdentity {
+			http.Redirect(w, r, "/app/settings/building?unit=home-linked#units", http.StatusSeeOther)
+			return
+		}
+	}
 	// Add/replace under one lock so a concurrent unit add/delete isn't lost to a
 	// whole-slice overwrite (HAUSV-145).
 	duplicate, err := a.unitStore.UpsertUnit(tenant.Slug, origID, item)
@@ -3201,6 +3244,21 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 	if deleteID == "" {
 		http.Redirect(w, r, "/app/settings/building?unit=invalid#units", http.StatusSeeOther)
 		return
+	}
+	if profile, exists, profileErr := a.energyStore.Profile(tenant.Slug); profileErr != nil {
+		http.Redirect(w, r, "/app/settings/building?unit=error#units", http.StatusSeeOther)
+		return
+	} else if exists && profile.HomeType == energy.HomeApartment {
+		linkedID := normalizeUnitID(profile.UnitID)
+		if linkedID == "" {
+			if linked, ok := a.effectiveEnergyUnit(profile); ok {
+				linkedID = normalizeUnitID(linked.ID)
+			}
+		}
+		if linkedID == deleteID {
+			http.Redirect(w, r, "/app/settings/building?unit=home-linked#units", http.StatusSeeOther)
+			return
+		}
 	}
 	// Remove under one lock (HAUSV-145).
 	removed, removedUnit, err := a.unitStore.DeleteUnit(tenant.Slug, deleteID)
@@ -3503,6 +3561,8 @@ func buildingUnitMessage(status string) (string, bool) {
 		return "Diese Einheit existiert bereits.", false
 	case "missing":
 		return "Diese Einheit wurde nicht gefunden.", false
+	case "home-linked":
+		return "Diese Einheit gehört zu „Mein Zuhause“. Kennung und Art bleiben deshalb geschützt; auch Entfernen ist erst nach einer bewussten Neuordnung möglich.", false
 	case "error":
 		return "Die Einheiten konnten nicht gespeichert werden.", false
 	default:
@@ -4235,28 +4295,20 @@ func (a *app) baseContext(ac authCtx) map[string]any {
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
 	isAdmin := hasCapability(ac.role, capabilityPlatformAdmin)
 	return map[string]any{
-		"Tenant":        ac.tenant,
-		"HouseName":     houseDisplayName(ac.tenant),
-		"MapURL":        tenantMapURL(ac.tenant.Address),
-		"SidebarMap":    sidebarMapForTenant(ac.tenant),
-		"Email":         ac.email,
-		"Role":          ac.role,
-		"IsAdmin":       isAdmin,
-		"DisplayName":   profile.DisplayName(),
-		"Initials":      profile.Initials(),
-		"CanSeeParking": isAdmin || profile.HasPermission(permissionParking),
-		"CanViewEnergy": canUseResidentAreas(ac.role) &&
-			(hasCapability(ac.role, capabilityManageEnergy) ||
-				profile.HasPermission(permissionEnergyView) ||
-				profile.HasPermission(permissionEnergyConfigure) ||
-				profile.HasPermission(permissionEnergyControl) ||
-				profile.HasPermission(permissionEnergyCaretaker) ||
-				ac.role == roleRenter || ac.role == roleResident || ac.role == roleBeirat),
-		"CanManageEnergy": hasCapability(ac.role, capabilityManageEnergy) ||
-			profile.HasPermission(permissionEnergyConfigure) ||
-			profile.HasPermission(permissionEnergyCaretaker),
-		"CanControlEnergy": hasCapability(ac.role, capabilityControlEnergy) ||
-			profile.HasPermission(permissionEnergyControl),
+		"Tenant":                ac.tenant,
+		"HouseName":             houseDisplayName(ac.tenant),
+		"MapURL":                tenantMapURL(ac.tenant.Address),
+		"SidebarMap":            sidebarMapForTenant(ac.tenant),
+		"Email":                 ac.email,
+		"Role":                  ac.role,
+		"IsAdmin":               isAdmin,
+		"DisplayName":           profile.DisplayName(),
+		"Initials":              profile.Initials(),
+		"CanSeeParking":         isAdmin || profile.HasPermission(permissionParking),
+		"CanViewEnergy":         a.canViewEnergy(ac),
+		"CanManageEnergy":       a.canManageEnergy(ac),
+		"CanManageHomeIdentity": a.canManageHomeIdentity(ac),
+		"CanControlEnergy":      a.canControlEnergy(ac),
 	}
 }
 

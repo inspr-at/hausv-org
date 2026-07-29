@@ -9,6 +9,51 @@ import (
 	"github.com/markus-barta/hausv-org/internal/energy"
 )
 
+func TestHomeProfileUnitScopeStorageParity(t *testing.T) {
+	now := time.Date(2026, 7, 29, 15, 0, 0, 0, time.UTC)
+	factories := map[string]func(*testing.T) energy.Storage{
+		"memory": func(t *testing.T) energy.Storage {
+			return energy.NewMemoryStore()
+		},
+		"sqlite": func(t *testing.T) energy.Storage {
+			database, err := appdb.Open(filepath.Join(t.TempDir(), "energy-profile.db"))
+			if err != nil {
+				t.Fatalf("open database: %v", err)
+			}
+			t.Cleanup(func() { _ = database.Close() })
+			return energy.NewSQLStore(database)
+		},
+	}
+	for name, factory := range factories {
+		t.Run(name, func(t *testing.T) {
+			storage := factory(t)
+			profile := energy.DefaultProfile("home-a", now)
+			profile.HouseholdName = "Penthouse"
+			profile.UnitID = " Wohnung Günter/1.2 "
+			if err := storage.SaveProfile(profile); err != nil {
+				t.Fatalf("save profile: %v", err)
+			}
+
+			stored, ok, err := storage.Profile("home-a")
+			if err != nil || !ok {
+				t.Fatalf("load profile: ok=%v err=%v", ok, err)
+			}
+			if stored.UnitID != "wohnung-günter-1.2" || stored.HouseholdName != "Penthouse" {
+				t.Fatalf("stored profile = %+v", stored)
+			}
+
+			stored.UnitID = ""
+			if err := storage.SaveProfile(stored); err != nil {
+				t.Fatalf("clear unit scope: %v", err)
+			}
+			cleared, ok, err := storage.Profile("home-a")
+			if err != nil || !ok || cleared.UnitID != "" {
+				t.Fatalf("cleared profile = %+v ok=%v err=%v", cleared, ok, err)
+			}
+		})
+	}
+}
+
 func TestEnergyActionStorageParityAndHistory(t *testing.T) {
 	now := time.Date(2026, 7, 28, 8, 0, 0, 0, time.UTC)
 	factories := map[string]func(*testing.T) energy.Storage{

@@ -198,6 +198,25 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 	}
 }
 
+func TestHomeIdentityUXSeparatesFriendlyNameFromOfficialUnits(t *testing.T) {
+	for _, want := range []string{
+		`{{define "homeIdentitySettings"}}`,
+		`href="/app/settings/home?from=energy"`,
+		`href="/app/settings/home?from=building"`,
+		`Anzeigename für „Mein Zuhause“`,
+		`Offizielle Bezeichnung`,
+		`Zugeordnete offizielle Wohnung`,
+		`Die Sichtbarkeit folgt dieser Wohnung`,
+		`aria-describedby="home-settings-unit-help"`,
+		`{{if .HasHomeUnit}} · {{.HomeUnitLabel}}`,
+		`{{if .CanManageHomeIdentity}}`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("home identity UX missing %q", want)
+		}
+	}
+}
+
 func TestHomeTypeGuidanceAndSidebarBrandHierarchy(t *testing.T) {
 	for _, want := range []string{
 		`data-home-type-select`,
@@ -205,7 +224,8 @@ func TestHomeTypeGuidanceAndSidebarBrandHierarchy(t *testing.T) {
 		`data-description="Ein einzelner Haushalt in einem Mehrparteienhaus.`,
 		`data-description="Ein Haushalt mit eigenem Gebäude.`,
 		`data-description="Mehrere Parteien und gemeinsam genutzte Anlagen.`,
-		`Rechte und „Nur beobachten“ bleiben unverändert.`,
+		`Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern.`,
+		`„Nur beobachten“ bleibt unverändert.`,
 		`.side-map { position: relative; width: 100%; height: 210px;`,
 		`.side-map-pin-mark svg { width: 25px; height: 21px;`,
 		`Kartendaten © OpenStreetMap`,

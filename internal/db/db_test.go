@@ -122,6 +122,70 @@ func TestForeignKeysEnforced(t *testing.T) {
 	}
 }
 
+func TestHomeProfileUnitMigrationPreservesExistingRows(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "home-profile-unit.db")
+	database, err := Open(path)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	now := "2026-07-29T15:00:00Z"
+	if _, err := database.Exec(`INSERT INTO home_profiles(tenant_slug,household_name,created_at,updated_at)
+		VALUES
+			('legacy-home','Bestehendes Zuhause',?,?),
+			('ambiguous-home','Mehrdeutiges Zuhause',?,?)`,
+		now, now, now, now,
+	); err != nil {
+		t.Fatalf("insert existing profiles: %v", err)
+	}
+	if _, err := database.Exec(`INSERT INTO units(tenant_slug,id,data) VALUES
+		('legacy-home','top-11','{"id":"top-11","tenant":"legacy-home","label":"Top 11","unit_type":"residential","miteigentumsanteil":10}'),
+		('ambiguous-home','top-1','{"id":"top-1","tenant":"ambiguous-home","label":"Top 1","unit_type":"residential","miteigentumsanteil":10}'),
+		('ambiguous-home','top-2','{"id":"top-2","tenant":"ambiguous-home","label":"Top 2","unit_type":"residential","miteigentumsanteil":10}')`); err != nil {
+		t.Fatalf("insert existing units: %v", err)
+	}
+	if _, err := database.Exec(`ALTER TABLE home_profiles DROP COLUMN unit_id`); err != nil {
+		t.Fatalf("restore pre-migration schema: %v", err)
+	}
+	if _, err := database.Exec(`DELETE FROM schema_migrations WHERE version='0024_home_profile_unit.sql'`); err != nil {
+		t.Fatalf("reset migration marker: %v", err)
+	}
+	if err := database.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+
+	database, err = Open(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	defer database.Close()
+
+	var householdName, unitID string
+	if err := database.QueryRow(`SELECT household_name,unit_id FROM home_profiles WHERE tenant_slug='legacy-home'`).
+		Scan(&householdName, &unitID); err != nil {
+		t.Fatalf("load migrated profile: %v", err)
+	}
+	if householdName != "Bestehendes Zuhause" || unitID != "top-11" {
+		t.Fatalf("migrated profile: household_name=%q unit_id=%q", householdName, unitID)
+	}
+	if err := database.QueryRow(`SELECT unit_id FROM home_profiles WHERE tenant_slug='ambiguous-home'`).
+		Scan(&unitID); err != nil {
+		t.Fatalf("load ambiguous migrated profile: %v", err)
+	}
+	if unitID != "" {
+		t.Fatalf("ambiguous migrated profile was silently linked to %q", unitID)
+	}
+
+	var notNull int
+	var defaultValue string
+	if err := database.QueryRow(`SELECT "notnull",dflt_value FROM pragma_table_info('home_profiles') WHERE name='unit_id'`).
+		Scan(&notNull, &defaultValue); err != nil {
+		t.Fatalf("inspect unit_id column: %v", err)
+	}
+	if notNull != 1 || defaultValue != "''" {
+		t.Fatalf("unit_id schema: notnull=%d default=%q", notNull, defaultValue)
+	}
+}
+
 func TestConsumptionMappingMigrationOnlyCorrectsLegacyBatteryHeuristic(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "energy-mapping.db")
 	database, err := Open(path)

@@ -5,6 +5,9 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/markus-barta/hausv-org/internal/energy"
 )
 
 func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) {
@@ -34,6 +37,14 @@ func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) 
 	}); err != nil {
 		t.Fatalf("seed payment: %v", err)
 	}
+	profile := energy.DefaultProfile("jhw22", time.Now())
+	profile.HouseholdName = "Penthouse"
+	profile.HomeType = energy.HomeApartment
+	profile.UnitID = "top-1"
+	profile.OnboardingComplete = true
+	if err := a.energyStore.SaveProfile(profile); err != nil {
+		t.Fatalf("seed home profile: %v", err)
+	}
 
 	page := authedRequest(t, a, "manager@example.com", "/app/settings/building")
 	if page.Code != http.StatusOK {
@@ -52,6 +63,12 @@ func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) 
 		`<span class="pill dringend">Überfällig</span>`,
 		`<h3>Zahlungsstatus</h3>`,
 		`form="building-meta-form"`,
+		`aria-label="Abgrenzung zum Hausprofil"`,
+		`<strong>Penthouse</strong>`,
+		`Wohnung · Top 1`,
+		`Hausprofil der offiziellen Einheit „Top 1“`,
+		`href="/app/settings/home?from=building"`,
+		`Offizielle Bezeichnung`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("building page should contain %q", want)

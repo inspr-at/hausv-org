@@ -809,7 +809,12 @@ const PageTemplates = `
     .energy-page { width: min(1160px,100%); gap: 22px; }
     .energy-page .button { min-height: 44px; }
     .energy-heading { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 24px; align-items: end; }
+    .energy-heading-copy { min-width: 0; }
     .energy-heading .eyebrow { margin-bottom: 10px; }
+    .energy-heading-context { margin: 7px 0 0; color: var(--muted); font-size: 12.5px; font-weight: 700; }
+    .energy-heading .lede { margin-top: 10px; }
+    .energy-heading-action { align-self: center; gap: 7px; }
+    .energy-heading-action svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .energy-source { color: var(--muted); font-size: 13px; }
     .energy-health { display: grid; grid-template-columns: minmax(0,1.18fr) minmax(330px,.82fr); gap: 18px; align-items: start; }
     .energy-hero-card, .energy-card { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-sm); }
@@ -1099,6 +1104,10 @@ const PageTemplates = `
     .home-type-explanation strong { display: block; font-size: 14px; line-height: 1.3; }
     .home-type-explanation p { margin: 3px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; text-wrap: pretty; }
     .home-type-explanation small { display: block; margin-top: 6px; color: #77786f; font-size: 11.5px; line-height: 1.4; }
+    .onboarding-form .home-identity-field > span, .onboarding-form .home-identity-field > label > span { display: block; margin-bottom: 7px; color: #75652d; font-size: 11px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+    .onboarding-form .home-identity-readonly { min-height: 50px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 12px 14px; background: var(--panel-soft); }
+    .onboarding-form .home-identity-readonly small { color: var(--muted); font-size: 12px; }
+    .onboarding-form .home-identity-field-help { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1.45; letter-spacing: normal; text-transform: none; }
     .onboarding-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .onboarding-choice-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
     .onboarding-choice { min-height: 64px; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: #fff; cursor: pointer; }
@@ -2208,6 +2217,7 @@ const PageTemplates = `
 	      .energy-mode-action { width: 100%; }
 	      .energy-mode-popover { position: static; width: 100%; margin-top: 8px; }
 	      .energy-heading, .energy-health { grid-template-columns: 1fr; }
+	      .energy-heading-action { justify-self: start; }
 	      .energy-measure-form { grid-template-columns: 1fr; }
 	      .energy-live-tools { max-width: 126px; }
 	      .energy-chart { scroll-margin-top: 230px; }
@@ -4960,6 +4970,7 @@ const PageTemplates = `
       .settings-link.secondary { min-height: 64px; }
       .settings-link.secondary .settings-link-icon { width: 36px; height: 36px; background: var(--panel-soft); }
       .settings-management { grid-column: 1 / -1; }
+      .settings-home-profile { grid-column: 1 / -1; }
       .settings-management .settings-links { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .settings-management .settings-link:nth-child(even) { border-left: 1px solid var(--line); }
       @media (max-width: 760px) {
@@ -4989,6 +5000,15 @@ const PageTemplates = `
           <span class="pill">{{.Role}}</span>
         </section>
         <div class="settings-layout">
+          {{if .CanManageHomeIdentity}}<section class="panel settings-section settings-home-profile">
+            <div class="settings-section-head"><h2>Mein Zuhause</h2><p>Anzeigename, Art und zugeordnete Wohnung.</p></div>
+            <div class="settings-links">
+              <a class="settings-link" href="{{.SettingsHomeURL}}">
+                <span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/></svg></span>
+                <span class="settings-link-copy"><strong>{{.SettingsHomeName}}</strong><span>Name und offizielle Einheit für „Mein Zuhause“ festlegen</span></span><span class="settings-link-arrow">›</span>
+              </a>
+            </div>
+          </section>{{end}}
           <section class="panel settings-section">
             <div class="settings-section-head"><h2>Mein Konto</h2><p>Persönliche Angaben und Erreichbarkeit.</p></div>
             <div class="settings-links">
@@ -5027,6 +5047,100 @@ const PageTemplates = `
           </section>
           {{end}}
         </div>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "homeIdentitySettings"}}
+{{template "appOpen" .}}
+    <style>
+      .home-identity-page { width: min(920px,100%); gap: 18px; }
+      .home-identity-head { display: grid; gap: 6px; max-width: 760px; }
+      .home-identity-head .lede { max-width: 680px; }
+      .home-identity-map { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); overflow: hidden; padding: 0; }
+      .home-identity-scope { min-height: 116px; display: grid; align-content: center; gap: 5px; padding: 18px 20px; border-right: 1px solid var(--line); }
+      .home-identity-scope:last-child { border-right: 0; }
+      .home-identity-scope.current { background: var(--panel-soft); }
+      .home-identity-scope span { color: var(--gold-ink); font-size: 10.5px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+      .home-identity-scope strong { font-family: var(--font-serif); font-size: 21px; line-height: 1.2; overflow-wrap: anywhere; }
+      .home-identity-scope small { color: var(--muted); font-size: 12px; line-height: 1.4; }
+      .home-identity-form-card { display: grid; gap: 18px; padding: clamp(20px,3vw,30px); }
+      .home-identity-form-head { display: grid; gap: 5px; }
+      .home-identity-form-head h2 { font-size: 28px; }
+      .home-identity-form-head p { color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+      .home-identity-form { display: grid; gap: 17px; }
+      .home-identity-form > label > span { display: block; margin-bottom: 7px; color: #75652d; font-size: 11px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+      .home-identity-field > span, .home-identity-field > label > span { display: block; margin-bottom: 7px; color: #75652d; font-size: 11px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+      .home-identity-form input, .home-identity-form select { width: 100%; min-height: 50px; }
+      .home-identity-readonly { min-height: 50px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 12px 14px; background: var(--panel-soft); }
+      .home-identity-readonly strong { font-size: 15px; }
+      .home-identity-readonly small, .home-identity-field-help { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1.45; letter-spacing: normal; text-transform: none; }
+      .home-identity-note { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 11px; align-items: start; border-top: 1px solid var(--line); padding-top: 17px; }
+      .home-identity-note svg { width: 32px; height: 32px; padding: 7px; border-radius: 50%; color: var(--leaf); background: rgba(47,107,74,.1); fill: none; stroke: currentColor; stroke-width: 1.8; }
+      .home-identity-note strong { display: block; font-size: 13.5px; }
+      .home-identity-note p { margin-top: 3px; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+      .home-identity-actions { display: flex; justify-content: flex-end; gap: 9px; }
+      @media (max-width: 720px) {
+        .home-identity-map { grid-template-columns: 1fr; }
+        .home-identity-scope { min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); padding: 15px 17px; }
+        .home-identity-scope:last-child { border-bottom: 0; }
+        .home-identity-actions { display: grid; grid-template-columns: 1fr; }
+        .home-identity-actions .button { width: 100%; }
+      }
+    </style>
+    <main class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Mein Zuhause</span></span>
+        <div class="page-actions"><a class="button" href="{{.BackURL}}">{{.BackLabel}}</a></div>
+      </div>
+      <section class="page home-identity-page">
+        <header class="home-identity-head">
+          <span class="eyebrow">Einstellungen</span>
+          <h1>Mein Zuhause</h1>
+          <p class="lede">Hier ändern Sie den freundlichen Namen im Energie- und Wartungsbereich.</p>
+        </header>
+        {{if .Saved}}<div class="message success">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</div>{{end}}
+        {{if .Invalid}}<div class="message error">Bitte einen Namen und eine gültige Zuhause-Art auswählen.</div>{{end}}
+        <section class="panel home-identity-map" aria-label="Namensbereiche">
+          <div class="home-identity-scope"><span>Liegenschaft</span><strong>{{.HouseName}}</strong><small>{{if eq .HouseName .Tenant.Address}}Name und Adresse der Liegenschaft{{else}}{{.Tenant.Address}}{{end}}</small></div>
+          <div class="home-identity-scope current"><span>Mein Zuhause</span><strong>{{.Profile.HouseholdName}}</strong><small>{{.HomeTypeLabel}}{{if .HasHomeUnit}} · {{.HomeUnitLabel}}{{else}} · Hausprofil{{end}}</small></div>
+          <div class="home-identity-scope"><span>{{.OfficialUnitTitle}}</span><strong>{{.OfficialUnitSummary}}</strong><small>{{if .HasHomeUnit}}Diesem Hausprofil zugeordnet.{{else}}Legt fest, wem dieses Hausprofil gehört.{{end}}</small></div>
+        </section>
+        <section class="panel home-identity-form-card">
+          <header class="home-identity-form-head"><h2>Anzeigename festlegen</h2><p>{{if .HasHomeUnit}}„{{.Profile.HouseholdName}}“ ist der freundliche Name. „{{.HomeUnitLabel}}“ bleibt die offizielle Einheit und wird hier eindeutig zugeordnet.{{else}}Der freundliche Name erscheint im Energie- und Wartungsbereich; die Stammdaten der Liegenschaft bleiben unverändert.{{end}}</p></header>
+          <form class="home-identity-form" method="post" action="/app/settings/home">
+            <input type="hidden" name="from" value="{{.From}}">
+            <label><span>Anzeigename für „Mein Zuhause“</span><input type="text" name="household_name" value="{{.Profile.HouseholdName}}" placeholder="z. B. Penthouse" required maxlength="100"></label>
+            {{if .HomeTypeLocked}}
+              <div class="home-identity-field"><span>Art des Zuhauses</span><input type="hidden" name="home_type" value="{{.Profile.HomeType}}"><div class="home-identity-readonly"><strong>{{.HomeTypeLabel}}</strong><small>Durch die zugeordnete Wohneinheit festgelegt</small></div></div>
+            {{else}}
+              <label><span>Art des Zuhauses</span><select name="home_type" data-home-type-select aria-describedby="home-settings-type-explanation">
+              <option value="apartment" data-label="Wohnung" data-description="Ein einzelner Haushalt in einem Mehrparteienhaus. Der Überblick konzentriert sich auf die Wohnung und ihre eigenen Geräte."{{if eq .Profile.HomeType "apartment"}} selected{{end}}>Wohnung</option>
+              <option value="house" data-label="Einfamilienhaus" data-description="Ein Haushalt mit eigenem Gebäude. Haus-, Heiz- und Energietechnik können gemeinsam betrachtet werden."{{if eq .Profile.HomeType "house"}} selected{{end}}>Einfamilienhaus</option>
+              <option value="community" data-label="Hausgemeinschaft" data-description="Mehrere Parteien und gemeinsam genutzte Anlagen. Der Überblick richtet sich an Eigentümergemeinschaft oder Hausverwaltung."{{if eq .Profile.HomeType "community"}} selected{{end}}>Hausgemeinschaft</option>
+              </select></label>
+            {{end}}
+            {{if .HasHomeUnit}}
+              <div class="home-identity-field"><span>Zugeordnete offizielle Wohnung</span><input type="hidden" name="unit_id" value="{{.HomeUnitID}}"><div class="home-identity-readonly"><strong>{{.HomeUnitLabel}}</strong><small>Diesem Hausprofil zugeordnet</small></div><small class="home-identity-field-help">Die Sichtbarkeit folgt dieser Wohnung; ausdrücklich freigeschaltete technische Betreuung bleibt möglich.</small></div>
+            {{else if .HasUnitOptions}}<div class="home-identity-field" data-home-unit-field><label><span>Zugeordnete offizielle Wohnung</span><select name="unit_id" required aria-describedby="home-settings-unit-help">
+              {{range .UnitOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+            </select></label><small class="home-identity-field-help" id="home-settings-unit-help">Die Auswahl legt fest, welche Wohnung den Überblick sieht. Technische Freigaben bleiben separat.</small></div>{{else}}<input type="hidden" name="unit_id" value="">{{end}}
+            <div class="home-type-explanation" id="home-settings-type-explanation" data-home-type-explanation role="status" aria-live="polite">
+              <span class="home-type-explanation-icon" aria-hidden="true">⌂</span>
+              <div>
+                <strong data-home-type-label>{{.HomeTypeLabel}}</strong>
+                <p data-home-type-copy>{{.HomeTypeDescription}}</p>
+                <small>{{if .HomeTypeLocked}}Die Art ist mit der Wohnung verbunden.{{else}}Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern.{{end}} „Nur beobachten“ bleibt unverändert.</small>
+              </div>
+            </div>
+            <div class="home-identity-note">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>
+              <div><strong>Was bleibt gleich?</strong><p>Name und Adresse der Liegenschaft{{if .HasHomeUnit}} sowie die offizielle Bezeichnung „{{.HomeUnitLabel}}“{{end}} werden hier nicht umbenannt.</p></div>
+            </div>
+            <div class="home-identity-actions"><a class="button quiet" href="{{.BackURL}}">Abbrechen</a><button class="button primary" type="submit">Änderungen speichern</button></div>
+          </form>
+        </section>
       </section>
     </main>
 {{template "appClose" .}}
@@ -5547,6 +5661,14 @@ const PageTemplates = `
       .building .unit-metrics { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
       .building .unit-metric { display: inline-flex; gap: 6px; align-items: baseline; border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; background: var(--panel-soft); color: #6f6a5c; font-size: 12.5px; font-weight: 750; }
       .building .unit-metric strong { color: var(--ink); font-size: 15px; }
+      .building .home-profile-context { display: grid; grid-template-columns: 48px minmax(150px,.7fr) minmax(260px,1.25fr) auto; gap: 15px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: var(--panel-soft); }
+      .building .home-profile-context-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; color: var(--gold-ink); background: #fffefb; }
+      .building .home-profile-context-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .building .home-profile-context-name { min-width: 0; display: grid; gap: 2px; }
+      .building .home-profile-context-name span { color: var(--gold-ink); font-size: 10.5px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+      .building .home-profile-context-name strong { font-family: var(--font-serif); font-size: 21px; line-height: 1.15; overflow-wrap: anywhere; }
+      .building .home-profile-context-name small, .building .home-profile-context > p { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .building .home-profile-context > p { margin: 0; }
       .building .unit-add { border: 1px solid var(--ink); border-radius: 9px; background: var(--ink); color: #fff; }
       .building .unit-add > summary { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 15px; cursor: pointer; list-style: none; font-weight: 800; }
       .building .unit-add > summary::before { content: "+"; width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.55); border-radius: 50%; font-size: 18px; line-height: 1; }
@@ -5607,6 +5729,9 @@ const PageTemplates = `
         .building .unit-head { grid-template-columns: 1fr; gap: 13px; }
         .building .unit-head-actions { display: grid; grid-template-columns: 1fr; justify-content: stretch; }
         .building .unit-head-actions > .button { width: 100%; min-height: 44px; }
+        .building .home-profile-context { grid-template-columns: 46px minmax(0,1fr); gap: 11px; padding: 14px; }
+        .building .home-profile-context > p, .building .home-profile-context > .button { grid-column: 1 / -1; }
+        .building .home-profile-context > .button { width: 100%; }
         .building .unit-add { width: 100%; }
         .building .unit-editor > summary { min-height: 96px; grid-template-columns: minmax(0,1fr) auto; gap: 9px; padding: 13px; }
         .building .unit-editor > summary .unit-share { display: grid; grid-column: 1 / -1; grid-row: 2; }
@@ -5722,7 +5847,7 @@ const PageTemplates = `
               <details class="unit-add" id="unit-add">
                 <summary>Einheit hinzufügen</summary>
                 <form class="unit-form" method="post" action="/app/settings/building/units">
-                <label class="f-label">Einheit
+                <label class="f-label">Offizielle Bezeichnung
                   <input type="text" name="label" maxlength="120" required placeholder="Top 1">
                 </label>
                 <label class="f-type">Typ
@@ -5748,6 +5873,15 @@ const PageTemplates = `
               </details>
             </div>
           </div>
+          {{if .HasHomeProfile}}
+            {{if .HomeProfileSaved}}<p class="flash ok">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</p>{{end}}
+            <aside class="home-profile-context" aria-label="Abgrenzung zum Hausprofil">
+              <span class="home-profile-context-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 11 8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-6h4v6"/></svg></span>
+              <span class="home-profile-context-name"><span>Mein Zuhause</span><strong>{{.HomeProfile.HouseholdName}}</strong><small>{{.HomeTypeLabel}} · {{.HomeProfileScopeLabel}}</small></span>
+              <p>{{if .HasHomeProfileUnit}}Freundlicher Name für das Hausprofil der offiziellen Einheit „{{.HomeProfileUnitLabel}}“.{{else if eq .HomeProfile.HomeType "apartment"}}Dieses Wohnungsprofil ist noch keiner offiziellen Einheit zugeordnet.{{else}}Anzeigename für Energie, Wartung und Empfehlungen der Liegenschaft.{{end}}</p>
+              <a class="button" href="/app/settings/home?from=building">Zuhause bearbeiten</a>
+            </aside>
+          {{end}}
           {{if .UnitMsg}}<p class="flash {{if .UnitOK}}ok{{end}}">{{.UnitMsg}}</p>{{end}}
           {{if .PaymentMsg}}<p class="flash {{if .PaymentOK}}ok{{end}}">{{.PaymentMsg}}</p>{{end}}
           {{if .Units}}
@@ -5764,7 +5898,7 @@ const PageTemplates = `
                     <form class="unit-form" method="post" action="/app/settings/building/units">
                       <input type="hidden" name="orig_id" value="{{.ID}}">
                       <input type="hidden" name="id" value="{{.ID}}">
-                      <label class="f-label">Einheit
+                      <label class="f-label">Offizielle Bezeichnung
                         <input type="text" name="label" value="{{.Label}}" maxlength="120" required>
                       </label>
                       <label class="f-type">Typ
@@ -7039,18 +7173,27 @@ const PageTemplates = `
         {{else if eq .Step 2}}
           <header class="onboarding-card-head"><span class="eyebrow">Ihr Zuhause</span><h1>Was richten wir gemeinsam ein?</h1><p>Ein Name und die Art des Zuhauses genügen. Technische Details kommen erst, wenn sie wirklich helfen.</p></header>
           <form class="onboarding-body onboarding-form" method="post" action="/app/zuhause/onboarding">
-            <label><span>Name des Zuhauses</span><input type="text" name="household_name" value="{{.Profile.HouseholdName}}" placeholder="z. B. Zuhause Barta" required maxlength="100"></label>
-            <label><span>Art</span><select name="home_type" data-home-type-select aria-describedby="home-type-explanation">
+            <label><span>Anzeigename für „Mein Zuhause“</span><input type="text" name="household_name" value="{{.Profile.HouseholdName}}" placeholder="z. B. Penthouse oder Zuhause Barta" required maxlength="100"></label>
+            {{if .HomeTypeLocked}}
+              <div class="home-identity-field"><span>Art</span><input type="hidden" name="home_type" value="{{.Profile.HomeType}}"><div class="home-identity-readonly"><strong>{{.HomeTypeLabel}}</strong><small>Durch die zugeordnete Wohneinheit festgelegt</small></div></div>
+            {{else}}
+              <label><span>Art</span><select name="home_type" data-home-type-select aria-describedby="home-type-explanation">
               <option value="apartment" data-label="Wohnung" data-description="Ein einzelner Haushalt in einem Mehrparteienhaus. Der Überblick konzentriert sich auf Ihre Wohnung und Ihre eigenen Geräte."{{if eq .Profile.HomeType "apartment"}} selected{{end}}>Wohnung</option>
               <option value="house" data-label="Einfamilienhaus" data-description="Ein Haushalt mit eigenem Gebäude. Haus-, Heiz- und Energietechnik können gemeinsam betrachtet werden."{{if eq .Profile.HomeType "house"}} selected{{end}}>Einfamilienhaus</option>
               <option value="community" data-label="Hausgemeinschaft" data-description="Mehrere Parteien und gemeinsam genutzte Anlagen. Der Überblick richtet sich an Eigentümergemeinschaft oder Hausverwaltung."{{if eq .Profile.HomeType "community"}} selected{{end}}>Hausgemeinschaft</option>
-            </select></label>
+              </select></label>
+            {{end}}
+            {{if .HasHomeUnit}}
+              <div class="home-identity-field"><span>Zugeordnete offizielle Wohnung</span><input type="hidden" name="unit_id" value="{{.HomeUnitID}}"><div class="home-identity-readonly"><strong>{{.HomeUnitLabel}}</strong><small>Diesem Hausprofil zugeordnet</small></div><small class="home-identity-field-help">Die Sichtbarkeit folgt dieser Wohnung; technische Freigaben bleiben separat.</small></div>
+            {{else if .HasUnitOptions}}<div class="home-identity-field" data-home-unit-field><label><span>Zugeordnete offizielle Wohnung</span><select name="unit_id" required aria-describedby="home-onboarding-unit-help">
+              {{range .UnitOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+            </select></label><small class="home-identity-field-help" id="home-onboarding-unit-help">Die Auswahl legt fest, welche Wohnung den Überblick sieht. Technische Freigaben bleiben separat.</small></div>{{else}}<input type="hidden" name="unit_id" value="">{{end}}
             <div class="home-type-explanation" id="home-type-explanation" data-home-type-explanation role="status" aria-live="polite">
               <span class="home-type-explanation-icon" aria-hidden="true">⌂</span>
               <div>
                 <strong data-home-type-label>{{if eq .Profile.HomeType "house"}}Einfamilienhaus{{else if eq .Profile.HomeType "community"}}Hausgemeinschaft{{else}}Wohnung{{end}}</strong>
-                <p data-home-type-copy>{{if eq .Profile.HomeType "house"}}Ein Haushalt mit eigenem Gebäude. Haus-, Heiz- und Energietechnik können gemeinsam betrachtet werden.{{else if eq .Profile.HomeType "community"}}Mehrere Parteien und gemeinsam genutzte Anlagen. Der Überblick richtet sich an Eigentümergemeinschaft oder Hausverwaltung.{{else}}Ein einzelner Haushalt in einem Mehrparteienhaus. Der Überblick konzentriert sich auf Ihre Wohnung und Ihre eigenen Geräte.{{end}}</p>
-                <small>Die Auswahl legt den Umfang des Überblicks fest. Rechte und „Nur beobachten“ bleiben unverändert.</small>
+                <p data-home-type-copy>{{.HomeTypeDescription}}</p>
+                <small>{{if .HomeTypeLocked}}Die Art ist mit der Wohnung verbunden.{{else}}Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern.{{end}} „Nur beobachten“ bleibt unverändert.</small>
               </div>
             </div>
             <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button><button class="button primary" type="submit" name="action" value="profile">Weiter zu den Verbrauchern</button></div>
@@ -7146,9 +7289,18 @@ const PageTemplates = `
   <main class="app-main">
     {{template "energyModeStrip" .}}
     <div class="page energy-page">
-      <header class="energy-heading"><div><span class="eyebrow">Mein Zuhause</span><h1>{{.Profile.HouseholdName}}</h1><p class="lede">Was jetzt wichtig ist – ohne Technik-Überladung.</p></div></header>
+      <header class="energy-heading">
+        <div class="energy-heading-copy">
+          <span class="eyebrow">Mein Zuhause</span>
+          <h1>{{.Profile.HouseholdName}}</h1>
+          <p class="energy-heading-context">{{.HomeTypeLabel}}{{if .HasHomeUnit}} · {{.HomeUnitLabel}}{{else}} · Hausprofil{{end}} · {{.Tenant.Address}}</p>
+          <p class="lede">Was jetzt wichtig ist – ohne Technik-Überladung.</p>
+        </div>
+        {{if .CanManageHomeIdentity}}<a class="button energy-heading-action" href="/app/settings/home?from=energy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16-.7 4.7L8 20l10.8-10.8a2.3 2.3 0 0 0-3.2-3.2Z"/><path d="m14.5 7.1 3.2 3.2"/></svg>Zuhause bearbeiten</a>{{end}}
+      </header>
       {{if .Welcome}}<div class="message success">Ihr Hausprofil ist bereit. Der sichere Beobachtungsmodus bleibt aktiv.</div>{{end}}
       {{if .ModeChanged}}<div class="message success">Der Energiemodus wurde nachvollziehbar geändert.</div>{{end}}
+      {{if .ProfileChanged}}<div class="message success">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</div>{{end}}
       <section class="energy-health">
         <article class="energy-hero-card" id="naechster-schritt">
           <span class="eyebrow">Als Nächstes</span>

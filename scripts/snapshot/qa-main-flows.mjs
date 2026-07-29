@@ -231,6 +231,38 @@ async function seedManagedContent() {
   await documentForm.locator('button[type="submit"]').click();
   await page.waitForURL(/\/app\/dokumente/);
 
+  await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
+  if (!(await page.getByText('Top 11', { exact: true }).count())) {
+    const unitPanel = page.locator('#unit-add');
+    if (!(await unitPanel.evaluate((element) => element.open))) {
+      await unitPanel.locator('summary').click();
+    }
+    const unitForm = unitPanel.locator('form');
+    await unitForm.locator('input[name="label"]').fill('Top 11');
+    await unitForm.locator('input[name="owner_emails"]').fill('owner@example.com');
+    await unitForm.locator('input[name="renter_emails"]').fill('resident@example.com');
+    await unitForm.getByRole('button', { name: 'Einheit anlegen' }).click();
+    await page.waitForURL(/\/app\/settings\/building/);
+  }
+  await page.goto(`${baseURL}/app/settings/home?from=building`, { waitUntil: 'networkidle' });
+  const officialUnit = page.locator('select[name="unit_id"]');
+  if (await officialUnit.count()) {
+    await officialUnit.selectOption('top-11');
+    await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await page.waitForURL(/\/app\/settings\/building\?home=saved/);
+  }
+  await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
+  if (!(await page.locator('[aria-label="Abgrenzung zum Hausprofil"]').getByText('QA Zuhause', { exact: true }).count()) ||
+      !(await page.getByText('Offizielle Bezeichnung', { exact: true }).count())) {
+    fail('Gebäude-Einstellungen: „Mein Zuhause“ und offizielle Einheit werden nicht klar getrennt');
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await page.locator('#units').screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, 'home-identity-building-desktop.png'),
+    });
+  }
+
   await context.close();
 }
 
@@ -290,8 +322,9 @@ async function assertHomeOnboarding() {
       fail(`Onboarding: Wirkung der Zuhause-Art „${label}“ wird nicht direkt erklärt`);
     }
   }
-  if (!(await page.getByText('Rechte und „Nur beobachten“ bleiben unverändert.', { exact: false }).count())) {
-    fail('Onboarding: Auswahlwirkung grenzt Rechte und Sicherheitsmodus nicht ehrlich ab');
+  if (!(await page.getByText('Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern.', { exact: false }).count()) ||
+      !(await page.getByText('„Nur beobachten“ bleibt unverändert.', { exact: false }).count())) {
+    fail('Onboarding: Auswahlwirkung grenzt Sichtbarkeit und Sicherheitsmodus nicht ehrlich ab');
   }
   await homeType.selectOption('apartment');
   await page.locator('input[name="household_name"]').fill('QA Zuhause');
@@ -602,6 +635,32 @@ async function assertEnergySafetyAndFlow(viewport) {
   const ownerContext = await newContext(viewport.size);
   const page = await localLogin(ownerContext, 'owner@example.com');
   await page.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
+  if (!(await page.locator('.energy-heading-context').getByText('Wohnung · Top 11 ·', { exact: false }).count()) ||
+      !(await page.getByRole('link', { name: 'Zuhause bearbeiten' }).count())) {
+    fail(`Energie ${viewport.name}: Name, offizielle Wohnung oder sichtbarer Bearbeitungsweg fehlt`);
+  }
+  await page.getByRole('link', { name: 'Zuhause bearbeiten' }).click();
+  await page.waitForURL(/\/app\/settings\/home/);
+  if (!(await page.getByRole('heading', { name: 'Mein Zuhause', exact: true }).count()) ||
+      (await page.locator('input[name="household_name"]').inputValue()) !== 'QA Zuhause' ||
+      !(await page.getByText('Top 11', { exact: true }).count()) ||
+      (await page.locator('[name="unit_id"]').inputValue()) !== 'top-11' ||
+      !(await page.getByText('Diesem Hausprofil zugeordnet.', { exact: true }).count()) ||
+      !(await page.locator('[data-home-type-explanation]').count())) {
+    fail(`Energie ${viewport.name}: Hausname ist nicht verständlich mit „Top 11“ verknüpft`);
+  }
+  if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)) {
+    fail(`Energie ${viewport.name}: Hausname-Einstellungen laufen horizontal über`);
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, `home-identity-${viewport.name.toLowerCase()}.png`),
+      fullPage: true,
+    });
+  }
+  await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+  await page.waitForURL(/\/app\/energie/);
   const live = page.locator('.energy-live');
   const readingCount = Number(await live.getAttribute('data-energy-reading-count'));
   if (readingCount < 8) {
@@ -870,6 +929,13 @@ async function assertEnergySafetyAndFlow(viewport) {
     }
     if (await helper.getByText('Steuerung bewusst freigeben', { exact: true }).count()) {
       fail('Energie Desktop: technische Vertrauensperson sieht die Eigentümer-/Admin-Freigabe');
+    }
+    if (await helper.getByRole('link', { name: 'Zuhause bearbeiten' }).count()) {
+      fail('Energie Desktop: technische Vertrauensperson kann die gemeinsame Hausidentität bearbeiten');
+    }
+    const helperIdentity = await helper.goto(`${baseURL}/app/settings/home`, { waitUntil: 'networkidle' });
+    if (!helperIdentity || helperIdentity.status() !== 403) {
+      fail('Energie Desktop: Hausidentität ist für technische Vertrauensperson nicht mit 403 geschützt');
     }
     await helperContext.close();
 

@@ -42,7 +42,8 @@ func TestHomeOnboardingCompletesInObserveMode(t *testing.T) {
 		"Ein einzelner Haushalt in einem Mehrparteienhaus.",
 		"Ein Haushalt mit eigenem Gebäude.",
 		"Mehrere Parteien und gemeinsam genutzte Anlagen.",
-		"Rechte und „Nur beobachten“ bleiben unverändert.",
+		"Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern.",
+		"„Nur beobachten“ bleibt unverändert.",
 	} {
 		if !strings.Contains(profilePage.Body.String(), want) {
 			t.Fatalf("profile step missing home-type guidance %q", want)
@@ -75,6 +76,495 @@ func TestHomeOnboardingCompletesInObserveMode(t *testing.T) {
 	cockpit := authedRequest(t, a, "owner@example.com", "/app/energie")
 	if cockpit.Code != http.StatusOK || !strings.Contains(cockpit.Body.String(), "drei Jahre") {
 		t.Fatalf("cockpit pricing missing: status=%d", cockpit.Code)
+	}
+}
+
+func TestOfficialUnitOwnerCanContinueFreshOnboardingAfterFirstStep(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{
+		Email:       "owner@example.com",
+		Role:        roleResident,
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	})
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{
+		ID:           "top-1",
+		TenantSlug:   "jhw22",
+		Label:        "Top 1",
+		UnitType:     unitTypeResidential,
+		OwnerEmails:  []string{"owner@example.com"},
+		RenterEmails: []string{"resident@example.com"},
+	}}); err != nil {
+		t.Fatalf("seed unit: %v", err)
+	}
+
+	if response := authedRequest(t, a, "owner@example.com", "/app/zuhause/onboarding"); response.Code != http.StatusOK {
+		t.Fatalf("fresh onboarding GET status = %d", response.Code)
+	}
+	response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", url.Values{"action": {"understand"}})
+	if response.Code != http.StatusSeeOther ||
+		response.Header().Get("Location") != "/app/zuhause/onboarding?step=2" {
+		t.Fatalf("fresh onboarding first step status=%d location=%q", response.Code, response.Header().Get("Location"))
+	}
+	profile, exists, err := a.energyStore.Profile("jhw22")
+	if err != nil || !exists || profile.UnitID != "top-1" || profile.OnboardingComplete {
+		t.Fatalf("fresh onboarding profile=%+v exists=%v err=%v", profile, exists, err)
+	}
+	if response := authedRequest(t, a, "owner@example.com", "/app/zuhause/onboarding?step=2"); response.Code != http.StatusOK {
+		t.Fatalf("fresh onboarding second step status = %d body=%s", response.Code, response.Body.String())
+	}
+
+	// The early relation only keeps the flow authorized; it does not force an
+	// unfinished profile to stay an apartment if the owner deliberately chooses
+	// a different setup on the actual profile step.
+	response = authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", url.Values{
+		"action":         {"profile"},
+		"household_name": {"Haus Test"},
+		"home_type":      {"house"},
+	})
+	if response.Code != http.StatusSeeOther {
+		t.Fatalf("fresh onboarding profile step status = %d body=%s", response.Code, response.Body.String())
+	}
+	profile, _, _ = a.energyStore.Profile("jhw22")
+	if profile.HomeType != energy.HomeHouse || profile.UnitID != "" {
+		t.Fatalf("fresh onboarding could not choose a different home type: %+v", profile)
+	}
+}
+
+func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{
+		Email:       "owner@example.com",
+		Role:        roleOwner,
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	})
+	profile := energy.DefaultProfile("jhw22", time.Now())
+	profile.HouseholdName = "Penthouse"
+	profile.HomeType = energy.HomeApartment
+	profile.UnitID = "top-11"
+	profile.OnboardingComplete = true
+	if err := a.energyStore.SaveProfile(profile); err != nil {
+		t.Fatalf("SaveProfile: %v", err)
+	}
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{
+		ID:           "top-11",
+		TenantSlug:   "jhw22",
+		Label:        "Top 11",
+		UnitType:     unitTypeResidential,
+		OwnerEmails:  []string{"owner@example.com"},
+		RenterEmails: []string{"resident@example.com"},
+	}}); err != nil {
+		t.Fatalf("seed unit: %v", err)
+	}
+	a.profiles["resident@example.com"] = userProfile{
+		Email:       "resident@example.com",
+		Role:        roleResident,
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	}
+	a.profiles["other@example.com"] = userProfile{
+		Email:       "other@example.com",
+		Role:        roleOwner,
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	}
+	residentPage := authedRequest(t, a, "resident@example.com", "/app/energie")
+	if residentPage.Code != http.StatusOK || strings.Contains(residentPage.Body.String(), `href="/app/settings/home?from=energy"`) {
+		t.Fatalf("resident of linked unit energy status=%d or editor exposed", residentPage.Code)
+	}
+	if response := authedRequest(t, a, "resident@example.com", "/app/settings/home"); response.Code != http.StatusForbidden {
+		t.Fatalf("resident linked unit settings status = %d", response.Code)
+	}
+	for _, path := range []string{"/app/energie", "/app/settings/home"} {
+		if response := authedRequest(t, a, "other@example.com", path); response.Code != http.StatusForbidden {
+			t.Fatalf("foreign owner against linked unit GET %s status = %d", path, response.Code)
+		}
+	}
+	if response := authedFormRequest(t, a, "other@example.com", "/app/zuhause/onboarding", url.Values{
+		"action":         {"profile"},
+		"household_name": {"Fremdes Zuhause"},
+		"home_type":      {"apartment"},
+		"unit_id":        {"top-11"},
+	}); response.Code != http.StatusForbidden {
+		t.Fatalf("foreign owner against linked unit onboarding status = %d", response.Code)
+	}
+	legacy, _, _ := a.energyStore.Profile("jhw22")
+	if legacy.UnitID != "top-11" || legacy.HouseholdName != "Penthouse" {
+		t.Fatalf("foreign owner changed linked profile: %+v", legacy)
+	}
+
+	settings := authedRequest(t, a, "owner@example.com", "/app/settings/home?from=energy")
+	if settings.Code != http.StatusOK {
+		t.Fatalf("GET home settings status = %d body=%s", settings.Code, settings.Body.String())
+	}
+	for _, want := range []string{
+		`<h1>Mein Zuhause</h1>`,
+		`value="Penthouse"`,
+		`Top 11`,
+		`name="unit_id" value="top-11"`,
+		`Diesem Hausprofil zugeordnet.`,
+		`„Penthouse“ ist der freundliche Name. „Top 11“ bleibt die offizielle Einheit`,
+	} {
+		if !strings.Contains(settings.Body.String(), want) {
+			t.Fatalf("home settings missing %q", want)
+		}
+	}
+	hub := authedRequest(t, a, "owner@example.com", "/app/settings")
+	if hub.Code != http.StatusOK || !strings.Contains(hub.Body.String(), `href="/app/settings/home"`) || !strings.Contains(hub.Body.String(), `<strong>Penthouse</strong>`) {
+		t.Fatalf("owner settings hub does not expose home identity: status=%d", hub.Code)
+	}
+
+	response := authedFormRequest(t, a, "owner@example.com", "/app/settings/home", url.Values{
+		"from":           {"energy"},
+		"household_name": {"Sonnendeck"},
+		"home_type":      {"apartment"},
+		"unit_id":        {"top-11"},
+	})
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?profile=1" {
+		t.Fatalf("POST home settings status=%d location=%q body=%s", response.Code, response.Header().Get("Location"), response.Body.String())
+	}
+	updated, ok, err := a.energyStore.Profile("jhw22")
+	if err != nil || !ok || updated.HouseholdName != "Sonnendeck" || updated.HomeType != energy.HomeApartment || updated.UnitID != "top-11" {
+		t.Fatalf("updated profile = %+v ok=%v err=%v", updated, ok, err)
+	}
+	units := a.unitStore.ListTenant("jhw22")
+	if len(units) != 1 || units[0].Label != "Top 11" {
+		t.Fatalf("official unit changed with home identity: %+v", units)
+	}
+	cockpit := authedRequest(t, a, "owner@example.com", "/app/energie?profile=1")
+	for _, want := range []string{
+		`<h1>Sonnendeck</h1>`,
+		`Wohnung · Top 11 ·`,
+		`href="/app/settings/home?from=energy"`,
+		`Der Anzeigename von „Mein Zuhause“ wurde gespeichert.`,
+	} {
+		if !strings.Contains(cockpit.Body.String(), want) {
+			t.Fatalf("energy cockpit missing %q", want)
+		}
+	}
+	response = authedFormRequest(t, a, "owner@example.com", "/app/settings/home", url.Values{
+		"from":           {"energy"},
+		"household_name": {"Falscher Bereich"},
+		"home_type":      {"house"},
+		"unit_id":        {"top-11"},
+	})
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("linked owner changed home type status = %d", response.Code)
+	}
+	unchanged, _, _ := a.energyStore.Profile("jhw22")
+	if unchanged.HouseholdName != "Sonnendeck" || unchanged.HomeType != energy.HomeApartment || unchanged.UnitID != "top-11" {
+		t.Fatalf("linked owner changed locked profile: %+v", unchanged)
+	}
+
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
+		{
+			ID:           "top-11",
+			TenantSlug:   "jhw22",
+			Label:        "Top 11",
+			UnitType:     unitTypeResidential,
+			OwnerEmails:  []string{"owner@example.com"},
+			RenterEmails: []string{"resident@example.com"},
+		},
+		{
+			ID:          "top-12",
+			TenantSlug:  "jhw22",
+			Label:       "Top 12",
+			UnitType:    unitTypeResidential,
+			OwnerEmails: []string{"other@example.com"},
+		},
+	}); err != nil {
+		t.Fatalf("seed second unit: %v", err)
+	}
+	if response := authedRequest(t, a, "resident@example.com", "/app/energie"); response.Code != http.StatusOK || strings.Contains(response.Body.String(), `href="/app/settings/home?from=energy"`) {
+		t.Fatalf("resident of linked unit energy status = %d or editor exposed", response.Code)
+	}
+	for _, path := range []string{"/app/energie", "/app/settings/home"} {
+		if response := authedRequest(t, a, "other@example.com", path); response.Code != http.StatusForbidden {
+			t.Fatalf("owner of another unit GET %s status = %d", path, response.Code)
+		}
+	}
+	if response := authedFormRequest(t, a, "other@example.com", "/app/settings/home", url.Values{
+		"household_name": {"Fremdes Zuhause"},
+		"home_type":      {"apartment"},
+		"unit_id":        {"top-12"},
+	}); response.Code != http.StatusForbidden {
+		t.Fatalf("owner of another unit POST home identity status = %d", response.Code)
+	}
+}
+
+func TestDelegatedEnergyCaretakerCannotRenameSharedHome(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{
+		Email:       "helper@example.com",
+		Role:        roleResident,
+		Permissions: []string{permissionEnergyCaretaker},
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	})
+	profile := energy.DefaultProfile("jhw22", time.Now())
+	profile.HouseholdName = "Penthouse"
+	profile.OnboardingComplete = true
+	if err := a.energyStore.SaveProfile(profile); err != nil {
+		t.Fatalf("SaveProfile: %v", err)
+	}
+
+	if response := authedRequest(t, a, "helper@example.com", "/app/settings/home"); response.Code != http.StatusForbidden {
+		t.Fatalf("caretaker GET home identity status = %d", response.Code)
+	}
+	if response := authedFormRequest(t, a, "helper@example.com", "/app/settings/home", url.Values{
+		"household_name": {"Umbenannt"},
+		"home_type":      {"house"},
+	}); response.Code != http.StatusForbidden {
+		t.Fatalf("caretaker POST home identity status = %d", response.Code)
+	}
+	if response := authedRequest(t, a, "helper@example.com", "/app/zuhause/onboarding?step=2"); response.Code != http.StatusForbidden {
+		t.Fatalf("caretaker GET identity onboarding status = %d", response.Code)
+	}
+	if response := authedFormRequest(t, a, "helper@example.com", "/app/zuhause/onboarding", url.Values{
+		"action":         {"profile"},
+		"household_name": {"Umbenannt im Onboarding"},
+		"home_type":      {"house"},
+	}); response.Code != http.StatusForbidden {
+		t.Fatalf("caretaker POST identity onboarding status = %d", response.Code)
+	}
+	if response := authedFormRequest(t, a, "helper@example.com", "/app/zuhause/onboarding", url.Values{
+		"action": {"understand"},
+	}); response.Code != http.StatusForbidden {
+		t.Fatalf("caretaker POST shared onboarding lifecycle status = %d", response.Code)
+	}
+	settings := authedRequest(t, a, "helper@example.com", "/app/settings")
+	if strings.Contains(settings.Body.String(), `href="/app/settings/home"`) {
+		t.Fatal("caretaker settings hub exposes home identity editor")
+	}
+	unchanged, _, _ := a.energyStore.Profile("jhw22")
+	if unchanged.HouseholdName != "Penthouse" || unchanged.HomeType != energy.HomeApartment || unchanged.UnitID != "" {
+		t.Fatalf("caretaker changed home identity: %+v", unchanged)
+	}
+}
+
+func TestManagerResolvesAmbiguousLegacyHomeWithoutTransferringIt(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{
+		Email:       "manager@example.com",
+		Role:        roleManager,
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	})
+	a.profiles["first@example.com"] = userProfile{
+		Email: "first@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+	}
+	// The official unit inventory is the ownership source even if the separate
+	// portal role has not yet been synchronized.
+	a.profiles["second@example.com"] = userProfile{
+		Email: "second@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+	}
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
+		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", UnitType: unitTypeResidential, OwnerEmails: []string{"first@example.com"}},
+		{ID: "top-2", TenantSlug: "jhw22", Label: "Top 2", UnitType: unitTypeResidential, OwnerEmails: []string{"second@example.com"}},
+	}); err != nil {
+		t.Fatalf("seed units: %v", err)
+	}
+	if response := authedRequest(t, a, "first@example.com", "/app/energie"); response.Code != http.StatusForbidden {
+		t.Fatalf("owner must not claim empty multi-unit profile through onboarding, status = %d", response.Code)
+	}
+	if response := authedFormRequest(t, a, "first@example.com", "/app/zuhause/onboarding", url.Values{
+		"action":         {"profile"},
+		"household_name": {"Beanspruchtes Zuhause"},
+		"home_type":      {"apartment"},
+		"unit_id":        {"top-1"},
+	}); response.Code != http.StatusForbidden {
+		t.Fatalf("owner direct multi-unit onboarding claim status = %d", response.Code)
+	}
+	if _, exists, err := a.energyStore.Profile("jhw22"); err != nil || exists {
+		t.Fatalf("owner created multi-unit singleton: exists=%v err=%v", exists, err)
+	}
+	profile := energy.DefaultProfile("jhw22", time.Now())
+	profile.HouseholdName = "Ungeklärtes Zuhause"
+	profile.HomeType = energy.HomeApartment
+	profile.OnboardingComplete = true
+	if err := a.energyStore.SaveProfile(profile); err != nil {
+		t.Fatalf("seed ambiguous profile: %v", err)
+	}
+
+	for _, email := range []string{"first@example.com", "second@example.com"} {
+		for _, path := range []string{"/app/energie", "/app/settings/home"} {
+			if response := authedRequest(t, a, email, path); response.Code != http.StatusForbidden {
+				t.Fatalf("ambiguous profile %s GET %s status = %d", email, path, response.Code)
+			}
+		}
+	}
+	settings := authedRequest(t, a, "manager@example.com", "/app/settings/home")
+	if settings.Code != http.StatusOK ||
+		!strings.Contains(settings.Body.String(), `value="top-1"`) ||
+		!strings.Contains(settings.Body.String(), `value="top-2"`) ||
+		!strings.Contains(settings.Body.String(), `Noch nicht zugeordnet`) {
+		t.Fatalf("manager recovery UI missing: status=%d body=%s", settings.Code, settings.Body.String())
+	}
+	response := authedFormRequest(t, a, "manager@example.com", "/app/settings/home", url.Values{
+		"household_name": {"Zuhause Zwei"},
+		"home_type":      {"apartment"},
+		"unit_id":        {"top-2"},
+	})
+	if response.Code != http.StatusSeeOther {
+		t.Fatalf("manager binding status = %d body=%s", response.Code, response.Body.String())
+	}
+	linked, _, _ := a.energyStore.Profile("jhw22")
+	if linked.UnitID != "top-2" || linked.HouseholdName != "Zuhause Zwei" {
+		t.Fatalf("manager binding = %+v", linked)
+	}
+	if response := authedRequest(t, a, "second@example.com", "/app/settings/home"); response.Code != http.StatusOK {
+		t.Fatalf("official owner with unsynchronized resident role settings status = %d", response.Code)
+	}
+	if response := authedRequest(t, a, "first@example.com", "/app/energie"); response.Code != http.StatusForbidden {
+		t.Fatalf("owner of other unit after recovery energy status = %d", response.Code)
+	}
+
+	response = authedFormRequest(t, a, "manager@example.com", "/app/settings/home", url.Values{
+		"household_name": {"Unzulässiger Umzug"},
+		"home_type":      {"apartment"},
+		"unit_id":        {"top-1"},
+	})
+	if response.Code != http.StatusSeeOther || !strings.Contains(response.Header().Get("Location"), "invalid=1") {
+		t.Fatalf("bound profile reassignment status=%d location=%q", response.Code, response.Header().Get("Location"))
+	}
+	stillLinked, _, _ := a.energyStore.Profile("jhw22")
+	if stillLinked.UnitID != "top-2" || stillLinked.HouseholdName != "Zuhause Zwei" {
+		t.Fatalf("bound profile was transferred: %+v", stillLinked)
+	}
+
+	response = authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units/delete", url.Values{"id": {"top-2"}})
+	if response.Code != http.StatusSeeOther || !strings.Contains(response.Header().Get("Location"), "unit=home-linked") {
+		t.Fatalf("linked unit delete status=%d location=%q", response.Code, response.Header().Get("Location"))
+	}
+	if len(a.unitStore.ListTenant("jhw22")) != 2 {
+		t.Fatal("linked official unit was deleted")
+	}
+}
+
+func TestLinkedHomeUnitKeepsItsResidentialIdentityInBuildingEditor(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{
+		Email:       "manager@example.com",
+		Role:        roleManager,
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	})
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{
+		ID:                    "top-1",
+		TenantSlug:            "jhw22",
+		Label:                 "Top 1",
+		UnitType:              unitTypeResidential,
+		MiteigentumsanteilPPM: 10,
+	}}); err != nil {
+		t.Fatalf("seed unit: %v", err)
+	}
+	profile := energy.DefaultProfile("jhw22", time.Now())
+	profile.HouseholdName = "Penthouse"
+	profile.UnitID = "top-1"
+	profile.OnboardingComplete = true
+	if err := a.energyStore.SaveProfile(profile); err != nil {
+		t.Fatalf("seed profile: %v", err)
+	}
+
+	for name, form := range map[string]url.Values{
+		"type": {
+			"orig_id":            {"top-1"},
+			"id":                 {"top-1"},
+			"label":              {"Top 1"},
+			"unit_type":          {"parking"},
+			"miteigentumsanteil": {"10"},
+		},
+		"id": {
+			"orig_id":            {"top-1"},
+			"id":                 {"top-1-neu"},
+			"label":              {"Top 1"},
+			"unit_type":          {"residential"},
+			"miteigentumsanteil": {"10"},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			response := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units", form)
+			if response.Code != http.StatusSeeOther ||
+				response.Header().Get("Location") != "/app/settings/building?unit=home-linked#units" {
+				t.Fatalf("linked unit mutation status=%d location=%q", response.Code, response.Header().Get("Location"))
+			}
+			units := a.unitStore.ListTenant("jhw22")
+			if len(units) != 1 || units[0].ID != "top-1" || units[0].UnitType != unitTypeResidential {
+				t.Fatalf("linked unit identity changed: %+v", units)
+			}
+			stored, _, _ := a.energyStore.Profile("jhw22")
+			if stored.UnitID != "top-1" {
+				t.Fatalf("profile link changed: %+v", stored)
+			}
+		})
+	}
+
+	response := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units", url.Values{
+		"orig_id":            {"top-1"},
+		"id":                 {"top-1"},
+		"label":              {"Top 1 – Süd"},
+		"unit_type":          {"residential"},
+		"miteigentumsanteil": {"25"},
+		"owner_emails":       {"owner@example.com"},
+	})
+	if response.Code != http.StatusSeeOther ||
+		response.Header().Get("Location") != "/app/settings/building?unit=saved#units" {
+		t.Fatalf("safe linked unit edit status=%d location=%q", response.Code, response.Header().Get("Location"))
+	}
+	units := a.unitStore.ListTenant("jhw22")
+	if len(units) != 1 || units[0].Label != "Top 1 – Süd" || units[0].MiteigentumsanteilPPM != 25 {
+		t.Fatalf("safe linked unit fields were not saved: %+v", units)
+	}
+}
+
+func TestAmbiguousLegacyApartmentStaysUnboundAfterUnitInventoryChanges(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{
+		Email:       "manager@example.com",
+		Role:        roleManager,
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	})
+	a.profiles["first@example.com"] = userProfile{
+		Email: "first@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+	}
+	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
+		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", UnitType: unitTypeResidential, OwnerEmails: []string{"first@example.com"}},
+		{ID: "top-2", TenantSlug: "jhw22", Label: "Top 2", UnitType: unitTypeResidential},
+	}); err != nil {
+		t.Fatalf("seed units: %v", err)
+	}
+	profile := energy.DefaultProfile("jhw22", time.Now())
+	profile.HouseholdName = "Noch nicht zugeordnet"
+	profile.OnboardingComplete = true
+	if err := a.energyStore.SaveProfile(profile); err != nil {
+		t.Fatalf("seed profile: %v", err)
+	}
+
+	response := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units/delete", url.Values{"id": {"top-2"}})
+	if response.Code != http.StatusSeeOther ||
+		response.Header().Get("Location") != "/app/settings/building?unit=deleted#units" {
+		t.Fatalf("ambiguous unit delete status=%d location=%q", response.Code, response.Header().Get("Location"))
+	}
+	if response := authedRequest(t, a, "first@example.com", "/app/energie"); response.Code != http.StatusForbidden {
+		t.Fatalf("inventory reduction silently exposed historical energy data, status=%d", response.Code)
+	}
+	stored, _, _ := a.energyStore.Profile("jhw22")
+	if stored.UnitID != "" {
+		t.Fatalf("inventory reduction silently linked profile: %+v", stored)
+	}
+
+	response = authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units", url.Values{
+		"label":              {"Top 3"},
+		"unit_type":          {"residential"},
+		"miteigentumsanteil": {"10"},
+		"owner_emails":       {"first@example.com"},
+	})
+	if response.Code != http.StatusSeeOther ||
+		response.Header().Get("Location") != "/app/settings/building?unit=saved#units" {
+		t.Fatalf("ambiguous unit add status=%d location=%q", response.Code, response.Header().Get("Location"))
+	}
+	if response := authedRequest(t, a, "first@example.com", "/app/energie"); response.Code != http.StatusForbidden {
+		t.Fatalf("inventory expansion silently exposed historical energy data, status=%d", response.Code)
+	}
+	stored, _, _ = a.energyStore.Profile("jhw22")
+	if stored.UnitID != "" {
+		t.Fatalf("inventory expansion silently linked profile: %+v", stored)
 	}
 }
 
