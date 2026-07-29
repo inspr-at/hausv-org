@@ -29,9 +29,25 @@ func TestHomeOnboardingCompletesInObserveMode(t *testing.T) {
 			t.Fatalf("onboarding missing %q", want)
 		}
 	}
+	response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", url.Values{"action": {"understand"}})
+	if response.Code != http.StatusSeeOther {
+		t.Fatalf("understand status = %d", response.Code)
+	}
+	profilePage := authedRequest(t, a, "owner@example.com", "/app/zuhause/onboarding")
+	for _, want := range []string{
+		`data-home-type-select`,
+		`aria-describedby="home-type-explanation"`,
+		"Ein einzelner Haushalt in einem Mehrparteienhaus.",
+		"Ein Haushalt mit eigenem Gebäude.",
+		"Mehrere Parteien und gemeinsam genutzte Anlagen.",
+		"Rechte und „Nur beobachten“ bleiben unverändert.",
+	} {
+		if !strings.Contains(profilePage.Body.String(), want) {
+			t.Fatalf("profile step missing home-type guidance %q", want)
+		}
+	}
 
 	steps := []url.Values{
-		{"action": {"understand"}},
 		{"action": {"profile"}, "household_name": {"Zuhause Test"}, "home_type": {"house"}},
 		{"action": {"assets"}, "assets": {"pv", "ev", "heat-pump"}},
 		{"action": {"mappings"}},
@@ -40,7 +56,7 @@ func TestHomeOnboardingCompletesInObserveMode(t *testing.T) {
 	for i, form := range steps {
 		response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", form)
 		if response.Code != http.StatusSeeOther {
-			t.Fatalf("step %d status = %d body=%s", i+1, response.Code, response.Body.String())
+			t.Fatalf("step %d status = %d body=%s", i+2, response.Code, response.Body.String())
 		}
 	}
 	profile, ok, err := a.energyStore.Profile("jhw22")

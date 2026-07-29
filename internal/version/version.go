@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.49.1",
+			Date:     "29. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Zuhause-Art und Hauszeichen sind jetzt auf den ersten Blick verständlicher.",
+			Intro:    "Das Onboarding erklärt die Wirkung jeder Auswahl direkt; die Seitenleiste gibt dem bestehenden Drei-Häuser-Zeichen deutlich mehr Raum.",
+			Items: []NoteItem{
+				{Label: "Auswahl verstehen", Text: "Wohnung, Einfamilienhaus und Hausgemeinschaft beschreiben sofort, welchen Bereich der spätere Überblick umfasst."},
+				{Label: "Sicherheitsgrenze kennen", Text: "Die Auswahl verändert weder Zugriffsrechte noch den dauerhaft sichtbaren Modus „Nur beobachten“."},
+				{Label: "Haus wiedererkennen", Text: "Das vertraute Drei-Häuser-Zeichen steht größer und ruhiger neben Adresse und Portalbezeichnung."},
+			},
+		},
+		{
 			Version:  "0.49.0",
 			Date:     "28. Juli 2026",
 			Kind:     "Mein Zuhause",

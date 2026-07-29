@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.49.1] - 2026-07-29
+
+### Verbessert
+
+- **Die Art des Zuhauses erklärt ihre Wirkung sofort.** Wohnung, Einfamilienhaus und Hausgemeinschaft beschreiben direkt nach der Auswahl, welchen Bereich der spätere Überblick umfasst; Rechte und der sichere Beobachtungsmodus bleiben davon unberührt.
+- **Das Hauszeichen erhält mehr Präsenz.** Das bestehende Drei-Häuser-Zeichen ist in der Desktop-Seitenleiste deutlich größer und mit Adresse und Portalbezeichnung ruhiger ausbalanciert.
+- **Desktop und Mobil bleiben gemeinsam abgesichert.** Playwright wechselt alle drei Zuhause-Arten, prüft die verständliche Erklärung und kontrolliert Zeichen, Touch-Ziele sowie seitlichen Überlauf auf beiden Größen.
+
 ## [0.49.0] - 2026-07-28
 
 ### Neu

@@ -153,7 +153,7 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		t.Fatalf("read submit guard: %v", err)
 	}
 	text := string(body)
-	for _, want := range []string{`dataset.submitting`, `Bitte warten`, `dataset.confirm`, `setTimeout`, `data-notification-form`, `email-paused`, `data-notification-count`} {
+	for _, want := range []string{`dataset.submitting`, `Bitte warten`, `dataset.confirm`, `setTimeout`, `data-notification-form`, `email-paused`, `data-notification-count`, `data-home-type-select`, `data-home-type-explanation`, `dataset.description`} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("submit guard missing %q", want)
 		}
@@ -187,6 +187,23 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 	for _, want := range []string{`data-issue-step`, `reportValidity`, `suggestedTitle`, `data-issue-summary`, `scrollIntoView`} {
 		if !strings.Contains(issueText, want) {
 			t.Fatalf("issue wizard script missing %q", want)
+		}
+	}
+}
+
+func TestHomeTypeGuidanceAndSidebarBrandHierarchy(t *testing.T) {
+	for _, want := range []string{
+		`data-home-type-select`,
+		`id="home-type-explanation"`,
+		`data-description="Ein einzelner Haushalt in einem Mehrparteienhaus.`,
+		`data-description="Ein Haushalt mit eigenem Gebäude.`,
+		`data-description="Mehrere Parteien und gemeinsam genutzte Anlagen.`,
+		`Rechte und „Nur beobachten“ bleiben unverändert.`,
+		`.side-brand { flex: 0 0 auto; display: grid; grid-template-columns: 76px minmax(0,1fr);`,
+		`.side-mark svg { width: 70px; height: 56px;`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("home-type/sidebar polish missing %q", want)
 		}
 	}
 }

@@ -76,6 +76,23 @@
     updateNotificationState();
   });
 
+  Array.prototype.forEach.call(document.querySelectorAll("[data-home-type-select]"), function (select) {
+    var explanation = document.querySelector("[data-home-type-explanation]");
+    if (!explanation) return;
+    var label = explanation.querySelector("[data-home-type-label]");
+    var copy = explanation.querySelector("[data-home-type-copy]");
+
+    function updateHomeTypeExplanation() {
+      var option = select.options[select.selectedIndex];
+      if (!option) return;
+      if (label) label.textContent = option.dataset.label || option.textContent || "";
+      if (copy) copy.textContent = option.dataset.description || "";
+    }
+
+    select.addEventListener("change", updateHomeTypeExplanation);
+    updateHomeTypeExplanation();
+  });
+
   function submitButtons(form, submitter) {
     var buttons = Array.prototype.slice.call(
       form.querySelectorAll("button[type='submit'], input[type='submit']")

@@ -743,12 +743,12 @@ const PageTemplates = `
     :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
     .app-shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0,1fr); background: var(--paper); }
     .sidebar { position: sticky; top: 0; height: 100vh; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 22px 16px 18px; color: rgba(255,255,255,.86); background: radial-gradient(circle at 20% 0%, rgba(255,255,255,.08), transparent 28%), var(--nav); border-right: 1px solid rgba(255,255,255,.08); }
-    .side-brand { flex: 0 0 auto; display: grid; grid-template-columns: 50px 1fr; gap: 14px; align-items: center; padding: 0 8px 12px; }
-    .side-mark { width: 48px; height: 48px; display: grid; place-items: center; color: var(--gold-light); text-decoration: none; }
+    .side-brand { flex: 0 0 auto; display: grid; grid-template-columns: 76px minmax(0,1fr); gap: 14px; align-items: center; padding: 0 6px 14px; }
+    .side-mark { width: 76px; height: 70px; display: grid; place-items: center; color: var(--gold-light); text-decoration: none; }
 	    .side-mark:hover { color: #f0d58c; }
-	    .side-mark svg { width: 38px; height: 34px; display: block; stroke: currentColor; stroke-width: 2.3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+	    .side-mark svg { width: 70px; height: 56px; display: block; stroke: currentColor; stroke-width: 2.15; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 	    .side-brand-copy { min-width: 0; color: inherit; text-decoration: none; }
-	    .side-title { display: block; font-family: var(--font-serif); font-size: 18px; font-weight: 600; line-height: 1.1; color: #fff; text-decoration: none; }
+	    .side-title { display: block; font-family: var(--font-serif); font-size: 19px; font-weight: 600; line-height: 1.12; color: #fff; text-decoration: none; text-wrap: balance; }
 	    .side-sub { display: block; margin-top: 5px; font-size: 14px; color: rgba(255,255,255,.72); }
     .side-nav { flex: 1 1 auto; min-height: 0; display: grid; align-content: start; gap: 5px; overflow-y: auto; overflow-x: hidden; padding-right: 3px; }
     .side-nav::-webkit-scrollbar { width: 7px; }
@@ -932,6 +932,11 @@ const PageTemplates = `
     .onboarding-form { display: grid; gap: 18px; }
     .onboarding-form label > span, .onboarding-legend { display: block; margin-bottom: 7px; color: #75652d; font-size: 11px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
     .onboarding-form input[type="text"], .onboarding-form select { width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 12px; color: var(--ink); background: #fff; }
+    .home-type-explanation { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 12px; align-items: start; margin-top: -6px; border-radius: var(--radius-sm); padding: 13px 14px; color: var(--ink); background: var(--panel-soft); }
+    .home-type-explanation-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; color: var(--leaf); background: rgba(47,107,74,.11); font-size: 18px; line-height: 1; }
+    .home-type-explanation strong { display: block; font-size: 14px; line-height: 1.3; }
+    .home-type-explanation p { margin: 3px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; text-wrap: pretty; }
+    .home-type-explanation small { display: block; margin-top: 6px; color: #77786f; font-size: 11.5px; line-height: 1.4; }
     .onboarding-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .onboarding-choice-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
     .onboarding-choice { min-height: 64px; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: #fff; cursor: pointer; }
@@ -1974,10 +1979,11 @@ const PageTemplates = `
     .bar-cell { min-width: 150px; }
     @media (min-width: 901px) and (max-height: 800px) {
       .sidebar { gap: 10px; padding-top: 14px; padding-bottom: 12px; }
-      .side-brand { grid-template-columns: 40px 1fr; gap: 10px; padding-bottom: 4px; }
-      .side-mark { width: 40px; height: 40px; }
-      .side-mark svg { width: 32px; height: 28px; }
-      .side-sub { display: none; }
+      .side-brand { grid-template-columns: 58px minmax(0,1fr); gap: 10px; padding-bottom: 6px; }
+      .side-mark { width: 58px; height: 52px; }
+      .side-mark svg { width: 54px; height: 44px; }
+      .side-title { font-size: 16.5px; }
+      .side-sub { margin-top: 2px; font-size: 12px; }
       .side-nav { gap: 2px; scrollbar-gutter: stable; }
       .nav-item { min-height: 36px; padding-top: 6px; padding-bottom: 6px; font-size: 13.5px; }
       .nav-icon { width: 19px; height: 19px; }
@@ -6804,11 +6810,19 @@ const PageTemplates = `
           <header class="onboarding-card-head"><span class="eyebrow">Ihr Zuhause</span><h1>Was richten wir gemeinsam ein?</h1><p>Ein Name und die Art des Zuhauses genügen. Technische Details kommen erst, wenn sie wirklich helfen.</p></header>
           <form class="onboarding-body onboarding-form" method="post" action="/app/zuhause/onboarding">
             <label><span>Name des Zuhauses</span><input type="text" name="household_name" value="{{.Profile.HouseholdName}}" placeholder="z. B. Zuhause Barta" required maxlength="100"></label>
-            <label><span>Art</span><select name="home_type">
-              <option value="apartment"{{if eq .Profile.HomeType "apartment"}} selected{{end}}>Wohnung</option>
-              <option value="house"{{if eq .Profile.HomeType "house"}} selected{{end}}>Einfamilienhaus</option>
-              <option value="community"{{if eq .Profile.HomeType "community"}} selected{{end}}>Hausgemeinschaft</option>
+            <label><span>Art</span><select name="home_type" data-home-type-select aria-describedby="home-type-explanation">
+              <option value="apartment" data-label="Wohnung" data-description="Ein einzelner Haushalt in einem Mehrparteienhaus. Der Überblick konzentriert sich auf Ihre Wohnung und Ihre eigenen Geräte."{{if eq .Profile.HomeType "apartment"}} selected{{end}}>Wohnung</option>
+              <option value="house" data-label="Einfamilienhaus" data-description="Ein Haushalt mit eigenem Gebäude. Haus-, Heiz- und Energietechnik können gemeinsam betrachtet werden."{{if eq .Profile.HomeType "house"}} selected{{end}}>Einfamilienhaus</option>
+              <option value="community" data-label="Hausgemeinschaft" data-description="Mehrere Parteien und gemeinsam genutzte Anlagen. Der Überblick richtet sich an Eigentümergemeinschaft oder Hausverwaltung."{{if eq .Profile.HomeType "community"}} selected{{end}}>Hausgemeinschaft</option>
             </select></label>
+            <div class="home-type-explanation" id="home-type-explanation" data-home-type-explanation role="status" aria-live="polite">
+              <span class="home-type-explanation-icon" aria-hidden="true">⌂</span>
+              <div>
+                <strong data-home-type-label>{{if eq .Profile.HomeType "house"}}Einfamilienhaus{{else if eq .Profile.HomeType "community"}}Hausgemeinschaft{{else}}Wohnung{{end}}</strong>
+                <p data-home-type-copy>{{if eq .Profile.HomeType "house"}}Ein Haushalt mit eigenem Gebäude. Haus-, Heiz- und Energietechnik können gemeinsam betrachtet werden.{{else if eq .Profile.HomeType "community"}}Mehrere Parteien und gemeinsam genutzte Anlagen. Der Überblick richtet sich an Eigentümergemeinschaft oder Hausverwaltung.{{else}}Ein einzelner Haushalt in einem Mehrparteienhaus. Der Überblick konzentriert sich auf Ihre Wohnung und Ihre eigenen Geräte.{{end}}</p>
+                <small>Die Auswahl legt den Umfang des Überblicks fest. Rechte und „Nur beobachten“ bleiben unverändert.</small>
+              </div>
+            </div>
             <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Zurück</button><button class="button primary" type="submit" name="action" value="profile">Weiter zu den Verbrauchern</button></div>
           </form>
         {{else if eq .Step 3}}

@@ -275,8 +275,47 @@ async function assertHomeOnboarding() {
   ) {
     fail('Onboarding: verständliche Pflichtfeldprüfung greift nicht');
   }
+  const homeType = page.locator('select[name="home_type"]');
+  const homeTypeLabel = page.locator('[data-home-type-label]');
+  const homeTypeCopy = page.locator('[data-home-type-copy]');
+  const homeTypeCases = [
+    ['apartment', 'Wohnung', 'Ein einzelner Haushalt in einem Mehrparteienhaus.'],
+    ['house', 'Einfamilienhaus', 'Ein Haushalt mit eigenem Gebäude.'],
+    ['community', 'Hausgemeinschaft', 'Mehrere Parteien und gemeinsam genutzte Anlagen.'],
+  ];
+  for (const [value, label, copy] of homeTypeCases) {
+    await homeType.selectOption(value);
+    if ((await homeTypeLabel.innerText()).trim() !== label ||
+        !(await homeTypeCopy.innerText()).includes(copy)) {
+      fail(`Onboarding: Wirkung der Zuhause-Art „${label}“ wird nicht direkt erklärt`);
+    }
+  }
+  if (!(await page.getByText('Rechte und „Nur beobachten“ bleiben unverändert.', { exact: false }).count())) {
+    fail('Onboarding: Auswahlwirkung grenzt Rechte und Sicherheitsmodus nicht ehrlich ab');
+  }
+  await homeType.selectOption('apartment');
   await page.locator('input[name="household_name"]').fill('QA Zuhause');
-  await page.locator('select[name="home_type"]').selectOption('apartment');
+
+  const mobileContext = await newContext({ width: 390, height: 844 });
+  const mobilePage = await localLogin(mobileContext, 'owner@example.com');
+  await mobilePage.goto(`${baseURL}/app/zuhause/onboarding`, { waitUntil: 'networkidle' });
+  if (!(await mobilePage.locator('[data-home-type-explanation]').count()) ||
+      await mobilePage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)) {
+    fail('Onboarding Mobil: Erklärung der Zuhause-Art fehlt oder läuft horizontal über');
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await mobilePage.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, 'energy-home-type-mobile.png'),
+      fullPage: true,
+    });
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, 'energy-home-type-desktop.png'),
+      fullPage: true,
+    });
+  }
+  await mobileContext.close();
+
   await page.getByRole('button', { name: 'Weiter zu den Verbrauchern' }).press('Enter');
   await page.waitForURL(/step=3/);
   await page.locator('input[name="assets"][value="pv"]').check();
@@ -491,6 +530,22 @@ async function assertPage(page, persona, route, viewportName) {
   if (route.path === '/app') {
     const focusCount = await page.locator('.home-primary-task, .home-calm').count();
     if (focusCount !== 1) fail(`${persona.name} ${viewportName}: Hausüberblick hat ${focusCount} Hauptzustände`);
+    const mark = await page.locator('.side-mark svg').boundingBox();
+    if (!mark) fail(`${persona.name} ${viewportName}: Hauszeichen fehlt`);
+    if (viewportName === 'Desktop' && mark.width < 64) {
+      fail(`${persona.name} Desktop: Hauszeichen ist mit ${mark.width}px nicht deutlich größer`);
+    }
+    if (viewportName === 'Mobil' && mark.width > 42) {
+      fail(`${persona.name} Mobil: Hauszeichen verdrängt mit ${mark.width}px die Navigation`);
+    }
+    if (persona.name === 'Eigentümer' && process.env.HV_QA_SCREENSHOT_DIR) {
+      mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, `sidebar-${viewportName.toLowerCase()}.png`),
+        fullPage: false,
+      });
+    }
   }
 }
 

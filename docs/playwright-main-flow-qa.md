@@ -20,12 +20,15 @@ Der Lauf:
 - spielt die Eltern-Konstellation mit PV, E-Auto, Warmwasser-Wärmepumpe und
   bewusst fehlendem Speicher sowie die Schwiegereltern-Konstellation mit PV,
   Speicher, E-Auto und eigener technischer Vertrauensperson durch;
+- wechselt im Onboarding zwischen Wohnung, Einfamilienhaus und
+  Hausgemeinschaft und prüft, dass Umfang, unveränderte Rechte und der
+  Beobachtungsmodus direkt verständlich bleiben;
 - prüft an drei simulierten, ausschließlich lesenden Home-Assistant-Instanzen,
   dass Messwerte hausbezogen bleiben, höchstens fünf ruhige Vorschläge
   erscheinen und Messlücken ohne Entity-IDs erklärt werden;
 - öffnet die Hauptwege auf 1440 × 900 und 390 × 844;
-- prüft Überschriften, zentrale Aktionen, Rollenverbote und horizontalen
-  Überlauf;
+- prüft Überschriften, zentrale Aktionen, Rollenverbote, die Größenhierarchie
+  des Hauszeichens und horizontalen Überlauf;
 - baut und speichert alles in einem temporären Verzeichnis und räumt es beim
   Beenden wieder auf.
 
