@@ -91,6 +91,20 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.52.0",
+			Date:     "29. Juli 2026",
+			Kind:     "Mein Zuhause",
+			Headline: "Verbrauch, Planungsgrenze und Speicher sind jetzt auf einen Blick verständlich.",
+			Intro:    "Der Tagesverlauf erhält eine ruhige, symmetrische Skala; der Live-Bereich zeigt den Speicher wie eine Batterie und führt dauerhaft zum Messwert-Setup.",
+			Items: []NoteItem{
+				{Label: "Verbrauch erkennen", Text: "Eine gedämpfte rote Linie mit leichter Fläche hebt den Hausverbrauch von PV, Netz und Speicher ab."},
+				{Label: "Skala vergleichen", Text: "25 Prozent Luft und runde 5-kW-Grenzen halten Bezug, Einspeisung, Laden und Entladen gemeinsam lesbar."},
+				{Label: "Planungswert einordnen", Text: "Die 10-kW-Linie ist ausdrücklich konfigurierbar und bleibt eine Modellannahme statt eines Tarifversprechens."},
+				{Label: "Speicher verstehen", Text: "Batterie-Füllstand und aktuelle Lade- oder Entladeleistung stehen kompakt zusammen."},
+				{Label: "Messwerte zuordnen", Text: "Sechs verständliche Rollen erklären, welche Sensoren benötigt und welche Spitzen daraus automatisch berechnet werden."},
+			},
+		},
+		{
 			Version:  "0.51.0",
 			Date:     "29. Juli 2026",
 			Kind:     "Mein Zuhause",

@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.52.0] - 2026-07-29
+
+### Verbessert
+
+- **Verbrauch und Energiequellen lassen sich schneller unterscheiden.** Hausverbrauch erscheint als ruhige rote Linie mit leichter Fläche; PV, Netz und Speicher behalten eigene, zurückhaltende Farben.
+- **Die Leistungsskala bleibt vergleichbar.** Positive und negative Werte erhalten gemeinsam 25 % Luft und werden nach außen auf volle 5 kW gerundet – einschließlich Einspeisung und Speicherladung.
+- **10 kW bleiben eine sichtbare Planungsannahme.** Eine gestrichelte, ausdrücklich konfigurierbare Linie hilft bei der Orientierung, ohne sie als geltenden Tarif oder technische Grenze darzustellen.
+- **Der Speicher ist wie eine Batterie lesbar.** „Energie gerade jetzt“ verbindet den aktuellen Füllstand mit Lade- oder Entladeleistung in einer kompakten Batterieanzeige.
+- **Messwerte bekommen verständliche Rollen.** Ein dauerhaft erreichbares Setup erklärt Hausverbrauch, Netz, PV, Speicherleistung, Speicherfüllstand und die daraus berechneten Viertelstunden-Spitzen.
+
 ## [0.51.0] - 2026-07-29
 
 ### Neu

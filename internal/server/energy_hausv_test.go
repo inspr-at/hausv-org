@@ -658,7 +658,10 @@ func TestEnergyLiveViewCondensesManyReadingsIntoHouseFlow(t *testing.T) {
 	if !view.HasBattery || view.Battery.Value != "701 W" || view.Battery.Detail != "liefert Energie" {
 		t.Fatalf("battery = %+v", view.Battery)
 	}
-	if len(view.Flows) != 4 {
+	if !view.HasBatterySOC || view.BatterySOC.Value != "50 %" || view.BatteryFill != "50.0" {
+		t.Fatalf("battery SOC = %+v fill=%q", view.BatterySOC, view.BatteryFill)
+	}
+	if len(view.Flows) != 3 {
 		t.Fatalf("flows = %+v", view.Flows)
 	}
 	if !view.HasAdditional || view.AdditionalCount != 1 ||
@@ -727,6 +730,69 @@ func TestEnergyChartSummarisesPeakWithoutPromise(t *testing.T) {
 	}
 	if detail != "PV und Speicher deckten zu diesem Zeitpunkt den größten Teil." {
 		t.Fatalf("detail = %q", detail)
+	}
+}
+
+func TestEnergyChartUsesSymmetricFiveKWScaleWithHeadroom(t *testing.T) {
+	for _, test := range []struct {
+		peak float64
+		want float64
+	}{
+		{0, 5},
+		{4, 5},
+		{5, 10},
+		{8.9, 15},
+		{10, 15},
+		{15.1, 20},
+	} {
+		if got := energyChartRoundedLimit(test.peak); got != test.want {
+			t.Fatalf("energyChartRoundedLimit(%v) = %v, want %v", test.peak, got, test.want)
+		}
+	}
+	ticks := energyChartValueTicks(15)
+	labels := make([]string, 0, len(ticks))
+	for _, tick := range ticks {
+		labels = append(labels, tick.Label)
+	}
+	if strings.Join(labels, ",") != "15 kW,10 kW,5 kW,0 kW,-5 kW,-10 kW,-15 kW" {
+		t.Fatalf("ticks = %v", labels)
+	}
+	path := energyChartAreaPath(
+		[]float64{1, 5, 10}, []bool{true, true, true}, -15, 15, 52, 788,
+		energyChartValuePosition(0, -15, 15),
+	)
+	if !strings.HasSuffix(path, "Z") || !strings.Contains(path, "M52.0 110.0L52.0") {
+		t.Fatalf("load area path = %q", path)
+	}
+}
+
+func TestEnergyMappingSlotsExplainRequiredAndDerivedValues(t *testing.T) {
+	assets := []energy.Asset{
+		{Kind: "pv", Confirmed: true},
+		{Kind: "battery", Confirmed: true},
+	}
+	mappings := []energy.EntityMapping{
+		{Metric: energy.MetricLoadPower, Confirmed: true},
+		{Metric: energy.MetricGridImportPower, Confirmed: true},
+		{Metric: energy.MetricPVPower, Confirmed: true},
+		{Metric: energy.MetricBatteryPower, Confirmed: true},
+	}
+	slots := buildEnergyMappingSlots(assets, mappings)
+	byKey := map[string]energyMappingSlotView{}
+	for _, slot := range slots {
+		byKey[slot.Key] = slot
+	}
+	if byKey["load"].Status != "Zugeordnet" || byKey["pv"].Status != "Zugeordnet" ||
+		byKey["battery-soc"].Status != "Noch zuordnen" ||
+		byKey["peaks"].Status != "Wird berechnet" {
+		t.Fatalf("mapping slots = %+v", slots)
+	}
+	withoutAssets := buildEnergyMappingSlots(nil, nil)
+	for _, slot := range withoutAssets {
+		if (slot.Key == "pv" || slot.Key == "battery-power" || slot.Key == "battery-soc") &&
+			slot.Status != "Derzeit nicht benötigt" {
+			t.Fatalf("optional slot %q = %+v", slot.Key, slot)
+		}
 	}
 }
 

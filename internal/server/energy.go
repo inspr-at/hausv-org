@@ -55,6 +55,9 @@ type energyLiveView struct {
 	Flows            []energyMetricView
 	Battery          energyMetricView
 	HasBattery       bool
+	BatterySOC       energyMetricView
+	HasBatterySOC    bool
+	BatteryFill      string
 	Additional       []energyMetricView
 	HasAdditional    bool
 	AdditionalCount  int
@@ -62,11 +65,13 @@ type energyLiveView struct {
 }
 
 type energyChartSeriesView struct {
-	Key        string
-	Label      string
-	Path       string
-	MobilePath string
-	Latest     string
+	Key            string
+	Label          string
+	Path           string
+	MobilePath     string
+	AreaPath       string
+	MobileAreaPath string
+	Latest         string
 }
 
 type energyChartTickView struct {
@@ -76,15 +81,20 @@ type energyChartTickView struct {
 }
 
 type energyChartView struct {
-	HasData  bool
-	Series   []energyChartSeriesView
-	XTicks   []energyChartTickView
-	YTicks   []energyChartTickView
-	Summary  string
-	Detail   string
-	Status   string
-	Range    string
-	PointSet int
+	HasData                 bool
+	Series                  []energyChartSeriesView
+	XTicks                  []energyChartTickView
+	YTicks                  []energyChartTickView
+	Summary                 string
+	Detail                  string
+	Status                  string
+	Range                   string
+	PointSet                int
+	ThresholdLabel          string
+	ThresholdPosition       string
+	ThresholdMobilePosition string
+	ThresholdValue          string
+	HasThreshold            bool
 }
 
 type energyChartData struct {
@@ -97,6 +107,17 @@ type energyChartData struct {
 type energyChartCacheEntry struct {
 	View      energyChartView
 	ExpiresAt time.Time
+}
+
+type energyMappingSlotView struct {
+	Key      string
+	Label    string
+	Purpose  string
+	Status   string
+	Detail   string
+	Tone     string
+	Required bool
+	Derived  bool
 }
 
 type energyCoverageView struct {
@@ -266,6 +287,7 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 	}
 	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
 	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
+	mappingSlots := buildEnergyMappingSlots(assets, mappings)
 	intervals, _ := a.energyStore.ListIntervals(ac.tenant.Slug, time.Now().AddDate(0, -1, 0), time.Time{})
 	finishRecommendation := energy.NextRecommendation(profile, assets, mappings, intervals)
 	step := profile.OnboardingStep
@@ -300,6 +322,7 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		"Progress":             step * 20,
 		"AssetOptions":         buildEnergyAssetOptions(assets),
 		"MappingAssetOptions":  buildEnergyMappingAssetOptions(assets),
+		"MappingSlots":         mappingSlots,
 		"Candidates":           discovery.Recommended,
 		"HasCandidates":        len(discovery.Recommended) > 0,
 		"RecommendedCount":     len(discovery.Recommended),
@@ -421,7 +444,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
 	metrics, sourceStatus, liveLastSeen := a.currentEnergyMetrics(r.Context(), ac.tenant, mappings, profile)
 	live := buildEnergyLiveView(metrics)
-	chart := a.energy24HourChart(r.Context(), ac.tenant, mappings, time.Now())
+	chart := a.energy24HourChart(r.Context(), ac.tenant, mappings, profile, time.Now())
 	coverage, coverageSummary := buildEnergyCoverageViews(assets, mappings)
 	imports, _ := a.energyStore.ListImports(ac.tenant.Slug)
 	importViews := make([]energyImportView, 0, len(imports))
@@ -2069,8 +2092,11 @@ func buildEnergyLiveView(metrics []energyMetricView) energyLiveView {
 
 	view.Battery, view.HasBattery = combineBatteryMetrics(metrics, selected)
 	if item, index, ok := first(energy.MetricBatterySOC); ok {
+		item.Label = "Speicher"
 		item.Detail = "Ladestand"
-		view.Flows = append(view.Flows, item)
+		view.BatterySOC = item
+		view.HasBatterySOC = true
+		view.BatteryFill = formatEnergySVGNumber(math.Max(0, math.Min(100, item.Numeric)))
 		selected[index] = true
 	}
 
@@ -2189,7 +2215,7 @@ func energyFlowDetail(metric string) string {
 	}
 }
 
-func (a *app) energy24HourChart(ctx context.Context, tenant tenantConfig, mappings []energy.EntityMapping, now time.Time) energyChartView {
+func (a *app) energy24HourChart(ctx context.Context, tenant tenantConfig, mappings []energy.EntityMapping, profile energy.HomeProfile, now time.Time) energyChartView {
 	view := energyChartView{
 		Status: "Für den 24-Stunden-Verlauf fehlen noch ausreichend aufgezeichnete Leistungswerte.",
 		Range:  "Letzte 24 Stunden",
@@ -2229,7 +2255,14 @@ func (a *app) energy24HourChart(ctx context.Context, tenant tenantConfig, mappin
 	if len(entityIDs) == 0 {
 		return view
 	}
-	cacheKey := tenant.Slug + "|" + strings.Join(entityIDs, ",")
+	threshold := energy.AustrianDraft2027().ReferenceKW
+	view.ThresholdLabel = "Planungsgrenze"
+	if profile.TargetPeakKW != nil && *profile.TargetPeakKW > 0 {
+		threshold = *profile.TargetPeakKW
+		view.ThresholdLabel = "Persönliches Ziel"
+	}
+	view.ThresholdValue = formatEnergyCompact(threshold, 1) + " kW"
+	cacheKey := tenant.Slug + "|" + strings.Join(entityIDs, ",") + "|" + formatEnergySVGNumber(threshold)
 	if cached, ok := a.cachedEnergyChart(cacheKey, now); ok {
 		return cached
 	}
@@ -2273,7 +2306,7 @@ func (a *app) energy24HourChart(ctx context.Context, tenant tenantConfig, mappin
 		{Key: "grid", Label: "Netz", Values: gridValues, Present: gridPresent},
 		{Key: "battery", Label: "Speicher", Values: batteryValues, Present: batteryPresent},
 	}
-	minValue, maxValue := 0.0, 0.0
+	maxAbsolute := threshold
 	for _, series := range data {
 		if countPresent(series.Present) < 2 {
 			continue
@@ -2282,33 +2315,34 @@ func (a *app) energy24HourChart(ctx context.Context, tenant tenantConfig, mappin
 			if !series.Present[index] {
 				continue
 			}
-			minValue = math.Min(minValue, value)
-			maxValue = math.Max(maxValue, value)
+			maxAbsolute = math.Max(maxAbsolute, math.Abs(value))
 		}
 	}
-	if maxValue == 0 && minValue == 0 {
+	if maxAbsolute == 0 {
 		a.cacheEnergyChart(cacheKey, view, now.Add(30*time.Second))
 		return view
 	}
-	span := maxValue - minValue
-	if span < 1 {
-		span = 1
-	}
-	maxValue += span * 0.08
-	if minValue < 0 {
-		minValue -= span * 0.08
-	}
+	limit := energyChartRoundedLimit(maxAbsolute)
+	minValue, maxValue := -limit, limit
+	zeroY := energyChartValuePosition(0, minValue, maxValue)
 
 	for _, series := range data {
 		if countPresent(series.Present) < 2 {
 			continue
 		}
+		areaPath, mobileAreaPath := "", ""
+		if series.Key == "load" {
+			areaPath = energyChartAreaPath(series.Values, series.Present, minValue, maxValue, 52, 788, zeroY)
+			mobileAreaPath = energyChartAreaPath(series.Values, series.Present, minValue, maxValue, 44, 388, zeroY)
+		}
 		view.Series = append(view.Series, energyChartSeriesView{
-			Key:        series.Key,
-			Label:      series.Label,
-			Path:       energyChartPath(series.Values, series.Present, minValue, maxValue, 52, 788),
-			MobilePath: energyChartPath(series.Values, series.Present, minValue, maxValue, 44, 388),
-			Latest:     latestEnergyChartValue(series.Values, series.Present),
+			Key:            series.Key,
+			Label:          series.Label,
+			Path:           energyChartPath(series.Values, series.Present, minValue, maxValue, 52, 788),
+			MobilePath:     energyChartPath(series.Values, series.Present, minValue, maxValue, 44, 388),
+			AreaPath:       areaPath,
+			MobileAreaPath: mobileAreaPath,
+			Latest:         latestEnergyChartValue(series.Values, series.Present),
 		})
 		view.PointSet += countPresent(series.Present)
 	}
@@ -2319,7 +2353,13 @@ func (a *app) energy24HourChart(ctx context.Context, tenant tenantConfig, mappin
 
 	location := time.Local
 	view.XTicks = energyChartTimeTicks(start, end, location)
-	view.YTicks = energyChartValueTicks(minValue, maxValue)
+	view.YTicks = energyChartValueTicks(limit)
+	if threshold > 0 && threshold <= maxValue {
+		position := energyChartValuePosition(threshold, minValue, maxValue)
+		view.ThresholdPosition = formatEnergySVGNumber(position)
+		view.ThresholdMobilePosition = view.ThresholdPosition
+		view.HasThreshold = true
+	}
 	view.Range = start.In(location).Format("02.01. · 15:04") + " bis " + end.In(location).Format("02.01. · 15:04")
 	view.Summary, view.Detail = energyChartSummary(
 		start, loadValues, loadPresent, pvValues, pvPresent, gridValues, gridPresent, batteryValues, batteryPresent, location,
@@ -2443,10 +2483,6 @@ func countPresent(items []bool) int {
 }
 
 func energyChartPath(values []float64, present []bool, minValue, maxValue, left, right float64) string {
-	const (
-		top    = 16.0
-		bottom = 204.0
-	)
 	if len(values) < 2 || maxValue <= minValue {
 		return ""
 	}
@@ -2458,7 +2494,7 @@ func energyChartPath(values []float64, present []bool, minValue, maxValue, left,
 			continue
 		}
 		x := left + (right-left)*float64(index)/float64(len(values)-1)
-		y := bottom - (value-minValue)/(maxValue-minValue)*(bottom-top)
+		y := energyChartValuePosition(value, minValue, maxValue)
 		command := "L"
 		if !drawing {
 			command = "M"
@@ -2467,6 +2503,55 @@ func energyChartPath(values []float64, present []bool, minValue, maxValue, left,
 		fmt.Fprintf(&path, "%s%.1f %.1f", command, x, y)
 	}
 	return path.String()
+}
+
+func energyChartAreaPath(values []float64, present []bool, minValue, maxValue, left, right, baseline float64) string {
+	if len(values) < 2 || maxValue <= minValue {
+		return ""
+	}
+	var path strings.Builder
+	drawing := false
+	lastX := 0.0
+	closeSegment := func() {
+		if !drawing {
+			return
+		}
+		fmt.Fprintf(&path, "L%.1f %.1fZ", lastX, baseline)
+		drawing = false
+	}
+	for index, value := range values {
+		if index >= len(present) || !present[index] {
+			closeSegment()
+			continue
+		}
+		x := left + (right-left)*float64(index)/float64(len(values)-1)
+		y := energyChartValuePosition(value, minValue, maxValue)
+		if !drawing {
+			fmt.Fprintf(&path, "M%.1f %.1fL%.1f %.1f", x, baseline, x, y)
+			drawing = true
+		} else {
+			fmt.Fprintf(&path, "L%.1f %.1f", x, y)
+		}
+		lastX = x
+	}
+	closeSegment()
+	return path.String()
+}
+
+func energyChartRoundedLimit(maxAbsolute float64) float64 {
+	wholeKW := math.Ceil(math.Max(0, maxAbsolute))
+	return math.Max(5, math.Ceil((wholeKW*1.25)/5)*5)
+}
+
+func energyChartValuePosition(value, minValue, maxValue float64) float64 {
+	const (
+		top    = 16.0
+		bottom = 204.0
+	)
+	if maxValue <= minValue {
+		return bottom
+	}
+	return bottom - (value-minValue)/(maxValue-minValue)*(bottom-top)
 }
 
 func latestEnergyChartValue(values []float64, present []bool) string {
@@ -2492,18 +2577,30 @@ func energyChartTimeTicks(start, end time.Time, location *time.Location) []energ
 	return out
 }
 
-func energyChartValueTicks(minValue, maxValue float64) []energyChartTickView {
-	values := []float64{maxValue, maxValue / 2, 0}
-	if minValue < 0 {
-		values = []float64{maxValue, 0, minValue}
+func energyChartValueTicks(limit float64) []energyChartTickView {
+	if limit <= 0 {
+		return nil
 	}
+	step := 5.0
+	if limit > 15 {
+		step = math.Ceil((limit/3)/5) * 5
+	}
+	values := []float64{limit}
+	for value := limit - step; value > 0; value -= step {
+		values = append(values, value)
+	}
+	values = append(values, 0)
+	for value := step; value < limit; value += step {
+		values = append(values, -value)
+	}
+	values = append(values, -limit)
 	out := make([]energyChartTickView, 0, len(values))
 	for _, value := range values {
-		y := 204 - (value-minValue)/(maxValue-minValue)*(204-16)
+		y := energyChartValuePosition(value, -limit, limit)
 		out = append(out, energyChartTickView{
 			Position:       formatEnergySVGNumber(y),
 			MobilePosition: formatEnergySVGNumber(y),
-			Label:          formatEnergyCompact(value, 1) + " kW",
+			Label:          formatEnergyCompact(value, 0) + " kW",
 		})
 	}
 	return out
@@ -2569,6 +2666,92 @@ func buildEnergyMappingAssetOptions(assets []energy.Asset) []energyOption {
 	sort.Slice(out, func(i, j int) bool {
 		return strings.ToLower(out[i].Label) < strings.ToLower(out[j].Label)
 	})
+	return out
+}
+
+func buildEnergyMappingSlots(assets []energy.Asset, mappings []energy.EntityMapping) []energyMappingSlotView {
+	hasAsset := map[string]bool{}
+	for _, asset := range assets {
+		if asset.Confirmed {
+			hasAsset[asset.Kind] = true
+		}
+	}
+	hasMetric := map[string]bool{}
+	for _, mapping := range mappings {
+		if !mapping.Confirmed {
+			continue
+		}
+		hasMetric[energyMetricForMapping(mapping)] = true
+	}
+	hasPowerForPeak := hasMetric[energy.MetricGridImportPower] || hasMetric[energy.MetricLoadPower]
+	type slot struct {
+		key      string
+		label    string
+		purpose  string
+		metrics  []string
+		required bool
+		derived  bool
+	}
+	slots := []slot{
+		{
+			key: "load", label: "Hausverbrauch", purpose: "Zeigt, wie viel das Zuhause insgesamt gerade benötigt.",
+			metrics: []string{energy.MetricLoadPower}, required: true,
+		},
+		{
+			key: "grid", label: "Netzleistung", purpose: "Trennt aktuellen Bezug und Einspeisung am Hausanschluss.",
+			metrics: []string{energy.MetricGridImportPower, energy.MetricGridExportPower}, required: true,
+		},
+		{
+			key: "pv", label: "PV-Erzeugung", purpose: "Macht Eigenversorgung und Überschüsse sichtbar.",
+			metrics: []string{energy.MetricPVPower}, required: hasAsset["pv"] || hasMetric[energy.MetricPVPower],
+		},
+		{
+			key: "battery-power", label: "Speicherleistung", purpose: "Zeigt Laden negativ und Entladen positiv.",
+			metrics: []string{energy.MetricBatteryPower}, required: hasAsset["battery"] || hasMetric[energy.MetricBatteryPower],
+		},
+		{
+			key: "battery-soc", label: "Speicherfüllstand", purpose: "Zeigt, wie viel Energie relativ zur Kapazität verfügbar ist.",
+			metrics: []string{energy.MetricBatterySOC}, required: hasAsset["battery"] || hasMetric[energy.MetricBatterySOC],
+		},
+		{
+			key: "peaks", label: "Viertelstunden-Spitzen", purpose: "Wird aus dem Leistungsverlauf berechnet; kein eigener Sensor nötig.",
+			required: true, derived: true,
+		},
+	}
+	out := make([]energyMappingSlotView, 0, len(slots))
+	for _, item := range slots {
+		found := false
+		count := 0
+		for _, metric := range item.metrics {
+			if hasMetric[metric] {
+				found = true
+				count++
+			}
+		}
+		view := energyMappingSlotView{
+			Key: item.key, Label: item.label, Purpose: item.purpose, Required: item.required, Derived: item.derived,
+		}
+		switch {
+		case item.derived && hasPowerForPeak:
+			view.Status, view.Detail, view.Tone = "Wird berechnet", "Aus den zugeordneten Leistungswerten", "good"
+		case item.derived:
+			view.Status, view.Detail, view.Tone = "Noch nicht möglich", "Hausverbrauch oder Netzbezug zuordnen", "warning"
+		case found:
+			view.Status, view.Tone = "Zugeordnet", "good"
+			if item.key == "grid" && count == 1 {
+				view.Detail = "Bezug oder Einspeisung vorhanden; die zweite Richtung ist optional."
+			} else if item.key == "battery-power" {
+				view.Detail = "Ein vorzeichenbehafteter Sensor oder getrennte Lade-/Entladewerte."
+			} else {
+				view.Detail = "Bereit für Übersicht und Verlauf."
+			}
+		case item.required:
+			view.Status, view.Detail, view.Tone = "Noch zuordnen", "Einen passenden Home-Assistant-Sensor auswählen.", "warning"
+		default:
+			view.Status, view.Detail, view.Tone = "Derzeit nicht benötigt", "Kann später ergänzt werden.", "quiet"
+		}
+		out = append(out, view)
+	}
 	return out
 }
 

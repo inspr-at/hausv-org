@@ -611,6 +611,15 @@ async function assertEnergySafetyAndFlow(viewport) {
   if (!(await live.locator('details.energy-live-more').count())) {
     fail(`Energie ${viewport.name}: weitere Messwerte sind nicht progressiv erreichbar`);
   }
+  const batteryGauge = live.locator('.energy-battery-gauge');
+  if (!(await batteryGauge.count()) ||
+      !((await batteryGauge.getAttribute('aria-label')) || '').includes('78 %') ||
+      !(await live.getByText('lädt · 600 W', { exact: true }).count())) {
+    fail(`Energie ${viewport.name}: Batterie-Füllstand und aktuelle Speicherleistung fehlen`);
+  }
+  if (!(await live.getByRole('link', { name: 'Messwerte zuordnen' }).count())) {
+    fail(`Energie ${viewport.name}: dauerhafter Einstieg ins Messwert-Setup fehlt`);
+  }
   if (await page.getByText('Home Current Consumption', { exact: true }).isVisible().catch(() => false)) {
     fail(`Energie ${viewport.name}: technische Home-Assistant-Rohbezeichnung konkurriert mit der Übersicht`);
   }
@@ -620,10 +629,24 @@ async function assertEnergySafetyAndFlow(viewport) {
       !(await chart.getByText('Die höchste Last lag um', { exact: false }).count())) {
     fail(`Energie ${viewport.name}: verständlicher 24-Stunden-Verlauf fehlt`);
   }
+  const visibleChart = chart.locator('svg:visible');
+  if (!(await visibleChart.locator('path.energy-chart-area.load').count()) ||
+      !(await visibleChart.locator('line.energy-chart-threshold').count()) ||
+      !(await chart.getByText('Planungsgrenze 10 kW', { exact: false }).count())) {
+    fail(`Energie ${viewport.name}: Verbrauchsfläche oder konfigurierbare 10-kW-Planungsgrenze fehlt`);
+  }
+  const scaleLabels = await visibleChart.locator('text.energy-chart-axis-label').allTextContents();
+  if (!scaleLabels.includes('15 kW') || !scaleLabels.includes('-15 kW')) {
+    fail(`Energie ${viewport.name}: symmetrische ±15-kW-Skala mit Headroom fehlt (${scaleLabels.join(', ')})`);
+  }
+  const loadStyle = await visibleChart.locator('path.energy-chart-line.load').evaluate((node) => getComputedStyle(node).stroke);
+  if (!loadStyle || loadStyle === 'none' || loadStyle === 'rgb(27, 32, 26)') {
+    fail(`Energie ${viewport.name}: Hausverbrauch ist nicht eigenständig rot ausgezeichnet`);
+  }
   if (!(await page.getByText('Messwerte aktuell', { exact: true }).count())) {
     fail(`Energie ${viewport.name}: Live-Aktualität verwendet nicht den aktuellen Home-Assistant-Zeitpunkt`);
   }
-  const chartBox = await chart.locator('svg:visible').boundingBox();
+  const chartBox = await visibleChart.boundingBox();
   if (!chartBox || chartBox.width > viewport.size.width + 1) {
     fail(`Energie ${viewport.name}: 24-Stunden-Diagramm läuft aus dem sichtbaren Bereich`);
   }
@@ -771,6 +794,24 @@ async function assertEnergySafetyAndFlow(viewport) {
         path: join(process.env.HV_QA_SCREENSHOT_DIR, 'energy-24h-mobile.png'),
       });
     }
+  }
+  await live.getByRole('link', { name: 'Messwerte zuordnen' }).click();
+  await page.waitForLoadState('networkidle');
+  const setup = page.locator('.energy-mapping-guide');
+  if ((await setup.locator('[data-mapping-slot]').count()) !== 6 ||
+      !(await setup.getByText('Viertelstunden-Spitzen', { exact: true }).count()) ||
+      !(await setup.getByText('Speicherfüllstand', { exact: true }).count()) ||
+      !(await setup.getByText('Alles bleibt nur gelesen.', { exact: true }).count())) {
+    fail(`Energie ${viewport.name}: verständliches Messwert-Rollen-Setup fehlt`);
+  }
+  if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)) {
+    fail(`Energie ${viewport.name}: Messwert-Setup läuft horizontal über`);
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    await page.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, `energy-mapping-${viewport.name.toLowerCase()}.png`),
+      fullPage: true,
+    });
   }
   await ownerContext.close();
 }
