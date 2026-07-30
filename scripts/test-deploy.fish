@@ -21,6 +21,19 @@ end
 
 set -g deploy_fixture_passed 0
 
+function contains_fail_fast_remote_command --argument-names output
+    set -l escaped_commands (string match -rg \
+        '(?:mandatory recovery command|image rollback command): ssh -p [^[:space:]]+ [^[:space:]]+ (.+)' \
+        -- "$output")
+    for escaped_command in $escaped_commands
+        set -l decoded_command (string unescape --style=script -- "$escaped_command")
+        if string match -q '/bin/sh -eu -c *' -- "$decoded_command"
+            return 0
+        end
+    end
+    return 1
+end
+
 function fixture --argument-names case_name expected_status expected_text mode
     set -l state $deploy_fixture_root/$case_name
     mkdir -p $state
@@ -94,7 +107,7 @@ if string match -q "*docker build*" -- $snapshot_failure_log
 end
 fixture schema_snapshot_recovery_fail 1 "mandatory recovery command:" release
 set -l recovery_failure_output (string collect <$deploy_fixture_root/schema_snapshot_recovery_fail/output.txt)
-if not string match -q "*/bin/sh -eu -c*" -- $recovery_failure_output
+if not contains_fail_fast_remote_command "$recovery_failure_output"
     echo "FAIL schema_snapshot_recovery_fail: recovery command is not fail-fast" >&2
     exit 1
 end
@@ -103,7 +116,7 @@ fixture preserve_fail 1 "could not preserve the currently running image" release
 fixture build_fail 1 "release image build failed" release
 fixture activation_fail 1 "image rollback command:" release
 set -l activation_failure_output (string collect <$deploy_fixture_root/activation_fail/output.txt)
-if not string match -q "*/bin/sh -eu -c*" -- $activation_failure_output
+if not contains_fail_fast_remote_command "$activation_failure_output"
     echo "FAIL activation_fail: rollback command is not fail-fast" >&2
     exit 1
 end
@@ -119,7 +132,7 @@ end
 
 fixture success 0 "critical start logs: clean" release
 set -l success_output (string collect <$deploy_fixture_root/success/output.txt)
-if not string match -q "*/bin/sh -eu -c*" -- $success_output
+if not contains_fail_fast_remote_command "$success_output"
     echo "FAIL success: printed rollback command is not fail-fast" >&2
     exit 1
 end

@@ -187,6 +187,16 @@ def unwrap_remote_sh(remote: str) -> tuple[str, bool]:
         # fish single-quoted argument, backslash only needs to preserve a
         # literal backslash or quote for the subsequent /bin/sh invocation.
         return escaped[1:-1].replace("\\'", "'").replace("\\\\", "\\"), True
+    try:
+        # Fish 3.7 prefers a backslash-escaped script argument while Fish 4.x
+        # commonly emits the single-quoted form above. Both represent one
+        # argument to `/bin/sh -c`; decode and validate that contract instead
+        # of coupling the fixture to one Fish formatter version.
+        fields = shlex.split(escaped, posix=True)
+    except ValueError:
+        return escaped, True
+    if len(fields) == 1:
+        return fields[0], True
     return escaped, True
 
 
