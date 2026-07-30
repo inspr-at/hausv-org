@@ -27,8 +27,17 @@ Request-Feldern, konkreten Pfaden, Klartext-E-Mail-Adressen, sensitiven
 Query-Parametern sowie Feldern für Token, Passwörter, Chat-IDs oder
 Request-Bodies. Sie gibt ausschließlich Zähler aus.
 
-Es gibt derzeit kein externes Logbackend und keine automatische Alarmierung.
-Der Deploy-Runner prüft die frischen Containerlogs auf Start-, Import-, Panic-
-und Fatalfehler; tiefergehende Filter werden bei Bedarf direkt auf den
-JSON-Feldern `level`, `msg`, `route`, `tenant`, `status` und `request_id`
-ausgeführt.
+Ein deklarativer csb1-Wächter prüft zusätzlich alle fünf Minuten das öffentliche
+`/healthz`, den Containerzustand sowie neue strukturierte Fehlerklassen. Das
+Healthsignal umfasst auch einen fehlgeschlagenen laufenden
+Energie-Aufbewahrungslauf; der Wächter baut dafür keine zweite
+Aufbewahrungslogik. Alle `ERROR`-Ereignisse und ausgewählte betriebsrelevante
+`WARN`-Ereignisse werden ausschließlich in stabile Kategorien und Zähler
+übersetzt. Rohe Logtexte, Fehlerwerte, Bewohnerdaten, Objektkennungen, URLs und
+Secrets werden weder in den Alarm noch in dessen Zustand übernommen.
+
+Alarm und Entwarnung werden nur bei einem Zustandswechsel über den bestehenden
+csb1-Betriebskanal zugestellt. Ein Zustellfehler bleibt ausstehend und wird
+erneut versucht. Der Deploy-Runner prüft weiterhin die frischen Containerlogs
+auf Start-, Import-, Panic- und Fatalfehler; Ad-hoc-Filter verwenden die
+JSON-Felder `level`, `msg`, `route`, `tenant`, `status` und `request_id`.

@@ -349,6 +349,24 @@ or schema was activated; when unhealthy, it reports affected availability and
 the mandatory recovery command. After activation, failures print schema-aware
 containment and rollback guidance.
 
+### Recurring operations alarm
+
+The release checks above cover the deployment itself. Between releases,
+`hausv-alerts.timer` on csb1 checks the daily snapshot timer and service result,
+the timestamp of the latest coherent recovery point, the existing sanitized
+Restic status, the container, the exact public `/healthz` contract and
+privacy-safe categories of new critical application logs. Snapshot and Restic
+success may be at most 30 hours old. The Restic signal remains owned by the
+Pharos backup observation; the HAUSV watcher does not run a second backup or
+retention process.
+
+Alerts and recoveries are transition-based and use the existing declarative
+csb1 operator channel. Raw log values, resident or object identifiers, URLs,
+tokens and recipient identifiers are never copied into alert state or text.
+The executable configuration and operator commands live in nixcfg under
+`hosts/csb1`; the canonical operational procedure is the
+`HAUSV Snapshot, Health And Application Alerts` section of its host runbook.
+
 The visible app version is `SEMVER (git-hash)`. Semver is sourced from
 `VERSION`; bump it before every production deployment and keep
 `docs/CHANGELOG.md` in German, newest entry first.
