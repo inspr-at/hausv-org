@@ -112,6 +112,19 @@ func (s *TokenStore) Consume(token string) (string, string, string, bool) {
 	return item.email, item.tenantSlug, item.redirectPath, true
 }
 
+// Invalidate removes a one-time login token without revealing whether it was
+// present. Delivery failures and bounded queue shutdown use it so a link that
+// was never safely delivered cannot become usable later.
+func (s *TokenStore) Invalidate(token string) {
+	if s == nil || token == "" {
+		return
+	}
+	key := s.digest(token)
+	s.mu.Lock()
+	delete(s.items, key)
+	s.mu.Unlock()
+}
+
 // Peek returns the login identity without marking the one-time token used. It
 // exists so request/account admission checks can run before Consume; callers
 // must still call Consume immediately afterwards and treat its result as the

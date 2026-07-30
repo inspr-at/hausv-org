@@ -438,7 +438,10 @@ func (a *app) notifyHandoverParticipants(r *http.Request, tenant tenantConfig, i
 			"Dieser Link ist nur für dieses Protokoll bestimmt.",
 		}, "\n")
 		if err := a.mailer.SendNotification(delivery.Email, subject, body); err != nil {
-			logError("handover notification failed", err, "tenant", tenant.Slug, "recipient", redactedEmail(delivery.Email))
+			logWarn("handover notification failed",
+				"tenant", tenant.Slug,
+				"error_type", fmt.Sprintf("%T", err),
+			)
 		}
 	}
 }

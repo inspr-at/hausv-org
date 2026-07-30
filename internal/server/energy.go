@@ -1759,7 +1759,10 @@ func (a *app) inviteEnergyCaretaker(w http.ResponseWriter, r *http.Request, ac a
 	mailStatus := "verschickt"
 	if err := a.mailer.SendInvite(email, a.publicBaseURL(r, ac.tenant)+"/", ac.tenant.Address); err != nil {
 		mailStatus = "nicht zugestellt"
-		logError("energy caretaker invite delivery failed", err, "recipient", redactedEmail(email), "tenant", ac.tenant.Slug)
+		logWarn("energy caretaker invite delivery failed",
+			"tenant", ac.tenant.Slug,
+			"error_type", fmt.Sprintf("%T", err),
+		)
 	}
 	a.recordAudit(auditEvent{
 		TenantSlug: ac.tenant.Slug,

@@ -1,6 +1,6 @@
 # Login- und HTTP-Schutzkette
 
-Stand: 30.07.2026 · HAUSV-407
+Stand: 30.07.2026 · HAUSV-407 + HAUSV-418
 
 Dieses Dokument beschreibt den konkreten Vertrag zwischen Cloudflare,
 Traefik/cloudflarewarp und der HAUSV-Anwendung. Es ist die code-nahe,
@@ -62,11 +62,35 @@ höchstens 32 wartende Sendungen, und genau ein Worker stellt jeweils eine
 weitere zu. Eine volle oder bereits geschlossene Queue sowie Erzeugungs- und
 Versandfehler
 bleiben bei derselben generischen Weiterleitung; ein nicht eingereihter Token
-wird sofort entwertet. Fehlerlogs enthalten weder Empfänger, Link/Token noch
-SMTP-Antworttext. Beim geordneten Prozessende wird die Queue geschlossen,
-vollständig abgearbeitet und erst danach die Datenbank geschlossen. Damit
-lässt sich aus Status, Ziel, Antworttext oder grober SMTP-Laufzeit nicht
-ablesen, ob eine Adresse existiert.
+wird sofort entwertet.
+
+Der SMTP-Transport besitzt zwei feste Grenzen:
+
+| Grenze | Wert | Wirkung |
+| --- | ---: | --- |
+| Verbindungsaufbau einschließlich Namensauflösung | 5 Sekunden | ein nicht erreichbarer Relay hält keinen Worker fest |
+| gesamter SMTP-Dialog nach dem Verbinden | 15 Sekunden | dieselbe absolute Lese- und Schreibfrist umfasst Begrüßung, STARTTLS, Anmeldung, Absender, Empfänger, Nachricht und Abschluss |
+
+Ein Abbruch des aufrufenden Kontexts schließt zusätzlich die aktive Verbindung.
+Transportfehler verlassen das Mail-Paket nur als stabile Stufe wie
+„connect“, „greeting“ oder „accept“; die originale Netzwerk- oder
+Relay-Antwort wird weder zurückgegeben noch geloggt. Operative Fehlerlogs
+enthalten außerdem weder Empfänger noch Link/Token.
+
+Beim geordneten Prozessende nimmt die Queue keine neuen Aufträge an. Bereits
+angenommene Sendungen erhalten insgesamt fünf Sekunden zum Abschluss. Danach
+wird der aktive Transport abgebrochen, wartende Aufträge werden verworfen und
+ihre Einmal-Tokens entfernt; für den Abbruch des festen Workers bleibt noch
+höchstens eine Sekunde. Auch ein nicht kooperierender Transport kann
+`app.Close` deshalb nicht unbegrenzt blockieren und höchstens den einen festen
+Worker bis zum Prozessende binden. Ein Transportfehler oder Panic entwertet
+den betroffenen Token ebenfalls. Unabhängig davon verfallen alle
+Magic-Link-Tokens weiterhin nach 15 Minuten.
+
+Die deklarative Container-Stopfrist auf csb1 beträgt 30 Sekunden. Sie deckt
+15 Sekunden HTTP-Shutdown, 5+1 Sekunden Mailabschluss und 9 Sekunden
+Host-Sicherheitsmarge ab. Damit lässt sich aus Status, Ziel, Antworttext oder
+grober SMTP-Laufzeit nicht ablesen, ob eine Adresse existiert.
 
 ## HTTP- und Browsergrenzen
 
@@ -109,6 +133,8 @@ den Go-Handler nicht erreichen.
 Lokal beziehungsweise in CI:
 
 ```fish
+go test ./internal/mail -run 'TestSMTP'
+go test ./internal/auth -run 'TestTokenStoreInvalidate'
 go test ./internal/server -run 'Test(Auth|Magic|Security|Logout)'
 go test ./cmd/hausv-org -run 'TestHTTPServer'
 go test -race ./...
@@ -119,6 +145,12 @@ Die Tests belegen unter anderem:
 - Quell- und Kontenlimit inklusive `Retry-After`;
 - gleiche öffentliche Antwort für existierende und unbekannte Konten;
 - ein limitierter gültiger Magic Link bleibt unverbraucht;
+- ein blockierter SMTP-Verbindungsaufbau und ein Relay ohne Begrüßung enden
+  innerhalb der injizierten Testgrenzen; Lese- und Schreibfrist sind gesetzt;
+- ein hängender Magic-Link-Transport hält den Shutdown nicht fest, erzeugt
+  keine Auftrags-Goroutinen und hinterlässt keine verwendbaren Einmal-Tokens;
+- Relay-Antwort, Empfänger, Adresse und Link/Token erscheinen weder im
+  zurückgegebenen Transportfehler noch im operativen Log;
 - gespooftes `X-Forwarded-For`, öffentlich gespooftes `X-Real-IP` und Header
   eines fremden privaten Peers werden nicht vertraut;
 - kurze injizierte Read-Header-, Read-, Write- und Idle-Grenzen werden an

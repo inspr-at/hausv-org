@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -71,6 +72,42 @@ func (failingMagicLinkMailer) SendNotification(string, string, string) error {
 }
 
 func (failingMagicLinkMailer) Configured() bool {
+	return true
+}
+
+type contextBlockedMagicLinkMailer struct {
+	started  chan struct{}
+	canceled chan struct{}
+	once     sync.Once
+}
+
+func newContextBlockedMagicLinkMailer() *contextBlockedMagicLinkMailer {
+	return &contextBlockedMagicLinkMailer{
+		started:  make(chan struct{}),
+		canceled: make(chan struct{}),
+	}
+}
+
+func (*contextBlockedMagicLinkMailer) SendMagicLink(string, string, string) error {
+	return errors.New("context-aware path was not used")
+}
+
+func (m *contextBlockedMagicLinkMailer) SendMagicLinkContext(ctx context.Context, _, _, _ string) error {
+	m.once.Do(func() { close(m.started) })
+	<-ctx.Done()
+	close(m.canceled)
+	return ctx.Err()
+}
+
+func (*contextBlockedMagicLinkMailer) SendInvite(string, string, string) error {
+	return nil
+}
+
+func (*contextBlockedMagicLinkMailer) SendNotification(string, string, string) error {
+	return nil
+}
+
+func (*contextBlockedMagicLinkMailer) Configured() bool {
 	return true
 }
 
@@ -206,6 +243,79 @@ func TestMagicLinkDeliveryQueueIsBoundedAndDrainsOnClose(t *testing.T) {
 	}
 }
 
+func TestMagicLinkDeliveryShutdownIsBoundedAndInvalidatesUndeliveredTokens(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{
+		Email:       "owner@example.com",
+		Role:        roleOwner,
+		Tenants:     []string{"jhw22"},
+		AuthMethods: defaultAuthMethods(),
+	})
+	mailer := newContextBlockedMagicLinkMailer()
+	queue := newMagicLinkDeliveryQueue(2, 1)
+	a.magicLinkDelivery = queue
+
+	for _, token := range []string{"active-token", "pending-token"} {
+		a.tokens.Put(token, "owner@example.com", "jhw22", 15*time.Minute)
+		token := token
+		if !queue.enqueue(magicLinkDeliveryJob{
+			mailer:  mailer,
+			to:      "owner@example.com",
+			link:    "https://example.test/auth/verify?token=" + token,
+			address: "Private Address 7",
+			invalidate: func() {
+				a.tokens.Invalidate(token)
+			},
+		}) {
+			t.Fatalf("delivery for %q was not queued", token)
+		}
+	}
+
+	select {
+	case <-mailer.started:
+	case <-time.After(time.Second):
+		t.Fatal("hanging delivery did not reach the fixed worker")
+	}
+
+	started := time.Now()
+	drained := queue.close(40*time.Millisecond, 250*time.Millisecond)
+	elapsed := time.Since(started)
+	if drained {
+		t.Fatal("queue reported a graceful drain despite the hanging transport")
+	}
+	if elapsed > 500*time.Millisecond {
+		t.Fatalf("bounded queue shutdown took %s, want below 500ms", elapsed)
+	}
+	select {
+	case <-mailer.canceled:
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("queue shutdown did not cancel the active transport")
+	}
+	select {
+	case <-queue.workersDone:
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("fixed worker set did not exit after cancellation")
+	}
+	for _, token := range []string{"active-token", "pending-token"} {
+		if _, _, _, ok := a.tokens.Peek(token); ok {
+			t.Fatalf("undelivered token %q remained usable", token)
+		}
+	}
+	if queue.enqueue(magicLinkDeliveryJob{
+		mailer:  mailer,
+		to:      "after-close@example.com",
+		link:    "secret-after-close",
+		address: "after close",
+	}) {
+		t.Fatal("closed queue accepted another delivery")
+	}
+	// The queue was closed directly with test-sized limits. Keep the app's
+	// normal cleanup from closing the same deliberately non-graceful queue a
+	// second time and emitting the production deadline warning.
+	a.magicLinkDeliveryMu.Lock()
+	a.magicLinkDelivery = nil
+	a.magicLinkDeliveryMu.Unlock()
+}
+
 func TestMagicLinkDeliveryLogsDoNotContainMessageOrRecipientData(t *testing.T) {
 	previousLogger := slog.Default()
 	var output bytes.Buffer
@@ -214,7 +324,7 @@ func TestMagicLinkDeliveryLogsDoNotContainMessageOrRecipientData(t *testing.T) {
 		slog.SetDefault(previousLogger)
 	})
 
-	deliverMagicLink(magicLinkDeliveryJob{
+	deliverMagicLink(context.Background(), magicLinkDeliveryJob{
 		mailer: failingMagicLinkMailer{
 			err: errors.New("relay rejected owner@example.com token-secret"),
 		},

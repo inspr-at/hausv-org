@@ -92,6 +92,20 @@ API key only in agenix as `SMTP_PASS`. The production sender is:
 hausv.org <noreply@notify.hausv.org>
 ```
 
+HAUSV limits SMTP connection setup to five seconds and the complete exchange
+after connection to fifteen seconds. During shutdown, the login-mail queue gets
+five seconds to drain and one further second to cancel. The declarative csb1
+Compose service must therefore keep `stop_grace_period: 30s`: 15 seconds for
+HTTP, 5+1 seconds for mail, and 9 seconds of host margin. After a recreate,
+inspect only this non-secret lifecycle field:
+
+```bash
+docker inspect --format '{{.Config.StopTimeout}}' hausv-org
+```
+
+The expected value is `30`; do not print secret or environment values for this
+check.
+
 The service-provider access gate must stay closed until the controller has
 approved the concrete Art. 28/TOM package in
 [`jhw22-art28-tom-approval.md`](jhw22-art28-tom-approval.md). After approval,

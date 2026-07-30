@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.59.1] - 2026-07-30
+
+### Verbessert
+
+- **Anmeldemails bleiben auch bei einem trägen Mailserver beherrschbar.** Feste Verbindungs-, Lese- und Schreibgrenzen verhindern, dass der Versand einen Neustart unbegrenzt festhält.
+- **Nicht sicher zugestellte Anmeldelinks bleiben unbrauchbar.** Beim Versandfehler oder begrenzten Herunterfahren werden betroffene Einmal-Links entwertet; neue Anmeldungen können danach normal angefordert werden.
+- **Mailfehler bleiben datensparsam.** Betriebsprotokolle enthalten weder Empfänger noch Anmeldelink oder Antworttext des Mailservers.
+
 ## [0.59.0] - 2026-07-30
 
 ### Neu

@@ -168,10 +168,13 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 		to:      email,
 		link:    link,
 		address: tenant.Address,
+		invalidate: func() {
+			a.tokens.Invalidate(token)
+		},
 	}) {
 		// Do not retain a valid token that can never reach its intended
 		// recipient. Queue pressure stays invisible on the public response.
-		a.tokens.Consume(token)
+		a.tokens.Invalidate(token)
 		logWarn("magic link delivery not queued")
 	}
 

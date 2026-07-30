@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.59.1",
+			Date:     "30. Juli 2026",
+			Kind:     "Stabilität & Datenschutz",
+			Headline: "Anmeldemails bleiben auch bei einem trägen Mailserver verlässlich begrenzt.",
+			Intro:    "Feste Zeitgrenzen schützen Anmeldung und Neustart; nicht zugestellte Einmal-Links werden sicher verworfen.",
+			Items: []NoteItem{
+				{Label: "Begrenzt warten", Text: "Verbindungsaufbau und E-Mail-Übertragung besitzen klare Obergrenzen, damit ein Mailserver das Portal nicht festhält."},
+				{Label: "Links entwerten", Text: "Fehlgeschlagene oder beim Herunterfahren verworfene Anmeldelinks bleiben nicht weiter verwendbar."},
+				{Label: "Privat protokollieren", Text: "Betriebsprotokolle nennen bei Mailfehlern weder Empfänger noch Link, Token oder Antworttext des Mailservers."},
+				{Label: "Geordnet neu starten", Text: "Das Portal beendet angenommene Anmeldemails innerhalb eines festen Zeitfensters und bleibt danach sicher startbereit."},
+			},
+		},
+		{
 			Version:  "0.59.0",
 			Date:     "30. Juli 2026",
 			Kind:     "Sicherheit & Stabilität",

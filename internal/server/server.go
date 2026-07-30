@@ -2067,7 +2067,10 @@ func (a *app) handleIssueServiceAssignmentChange(r *http.Request, tenant tenantC
 	}
 	mailStatus := "verschickt"
 	if err := a.sendServiceProviderMagicLink(r, tenant, after, newAssignee); err != nil {
-		logError("service provider magic link failed", err, "tenant", tenant.Slug, "recipient", redactedEmail(newAssignee))
+		logWarn("service provider magic link delivery failed",
+			"tenant", tenant.Slug,
+			"error_type", fmt.Sprintf("%T", err),
+		)
 		mailStatus = "nicht zugestellt"
 	}
 	a.recordIssueServiceInviteAudit(tenant, after, actorEmail, actorRole, newAssignee, createdInvite, mailStatus)
@@ -2161,7 +2164,11 @@ func (a *app) sendServiceProviderMagicLink(r *http.Request, tenant tenantConfig,
 	redirectPath := "/app/anliegen#issue-" + url.PathEscape(issue.ID)
 	a.tokens.PutWithRedirect(token, email, tenant.Slug, 15*time.Minute, redirectPath)
 	link := a.publicBaseURL(r, tenant) + "/auth/verify?token=" + url.QueryEscape(token)
-	return a.mailer.SendMagicLink(email, link, tenant.Address)
+	if err := sendMagicLinkWithContext(r.Context(), a.mailer, email, link, tenant.Address); err != nil {
+		a.tokens.Invalidate(token)
+		return err
+	}
+	return nil
 }
 
 func (a *app) notifyIssueCreated(tenant tenantConfig, issue residentIssue) {
@@ -2244,7 +2251,10 @@ func (a *app) notify(event portalNotification) []string {
 	sent := []string{}
 	for _, recipient := range a.notificationRecipients(event) {
 		if err := a.mailer.SendNotification(recipient, event.Subject, body); err != nil {
-			logError("notification delivery failed", err, "recipient", redactedEmail(recipient))
+			logWarn("notification delivery failed",
+				"tenant", event.Tenant.Slug,
+				"error_type", fmt.Sprintf("%T", err),
+			)
 			continue
 		}
 		sent = append(sent, recipient)
@@ -3958,7 +3968,10 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 	loginURL := a.publicBaseURL(r, tenant) + "/"
 	if err := a.mailer.SendInvite(inviteEmail, loginURL, tenant.Address); err != nil {
-		logError("invite email delivery failed", err, "recipient", redactedEmail(inviteEmail), "tenant", tenant.Slug)
+		logWarn("invite email delivery failed",
+			"tenant", tenant.Slug,
+			"error_type", fmt.Sprintf("%T", err),
+		)
 		a.recordAudit(auditEvent{
 			TenantSlug: tenant.Slug,
 			ActorEmail: actorEmail,
@@ -5835,9 +5848,9 @@ func (a *app) Handler() http.Handler { return a.handler() }
 // Addr is the listen address.
 func (a *app) Addr() string { return a.addr }
 
-// Close releases process-lifetime resources. It first drains login mail
-// accepted before HTTP shutdown and only then closes SQLite; JSON stores hold
-// no OS handles between writes.
+// Close releases process-lifetime resources. Login mail receives a bounded
+// drain/cancellation window before SQLite closes; JSON stores hold no OS
+// handles between writes.
 func (a *app) Close() error {
 	a.closeMagicLinkDelivery()
 	if a.db != nil {

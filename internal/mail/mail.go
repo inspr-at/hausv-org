@@ -6,6 +6,8 @@
 package mail
 
 import (
+	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -14,8 +16,14 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/markus-barta/hausv-org/internal/config"
+)
+
+const (
+	defaultSMTPConnectTimeout     = 5 * time.Second
+	defaultSMTPTransactionTimeout = 15 * time.Second
 )
 
 type Mailer interface {
@@ -29,15 +37,37 @@ type Mailer interface {
 // cannot be half-constructed; main used to fill them directly, which only
 // worked while they shared a package.
 func NewSMTP(host, port, user, pass, from string) SmtpMailer {
-	return SmtpMailer{host: host, port: port, user: user, pass: pass, from: from}
+	return SmtpMailer{
+		host:               host,
+		port:               port,
+		user:               user,
+		pass:               pass,
+		from:               from,
+		connectTimeout:     defaultSMTPConnectTimeout,
+		transactionTimeout: defaultSMTPTransactionTimeout,
+	}
 }
 
 type SmtpMailer struct {
-	host string
-	port string
-	user string
-	pass string
-	from string
+	host               string
+	port               string
+	user               string
+	pass               string
+	from               string
+	connectTimeout     time.Duration
+	transactionTimeout time.Duration
+	dialContext        func(context.Context, string, string) (net.Conn, error)
+}
+
+// smtpTransportError deliberately carries no wrapped network or relay error.
+// SMTP replies can echo recipients or message content, so callers and logs get
+// only a stable stage owned by this package.
+type smtpTransportError struct {
+	stage string
+}
+
+func (e smtpTransportError) Error() string {
+	return "smtp transport failed: " + e.stage
 }
 
 type PortalNotification struct {
@@ -91,14 +121,15 @@ func (m SmtpMailer) auth() smtp.Auth {
 }
 
 func (m SmtpMailer) SendMagicLink(to string, link string, address string) error {
+	return m.SendMagicLinkContext(context.Background(), to, link, address)
+}
+
+// SendMagicLinkContext lets the bounded login queue cancel an in-flight SMTP
+// exchange during process shutdown. The transport also has its own absolute
+// deadlines, so callers that use SendMagicLink remain bounded.
+func (m SmtpMailer) SendMagicLinkContext(ctx context.Context, to string, link string, address string) error {
 	if !m.Configured() {
 		return errors.New("smtp not configured")
-	}
-
-	addr := net.JoinHostPort(m.host, m.port)
-	fromAddr, err := mail.ParseAddress(m.from)
-	if err != nil {
-		return fmt.Errorf("invalid MAIL_FROM")
 	}
 
 	address = strings.TrimSpace(address)
@@ -107,7 +138,7 @@ func (m SmtpMailer) SendMagicLink(to string, link string, address string) error 
 	}
 	msg := magicLinkMessage(m.from, to, link, address)
 
-	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
+	return m.send(ctx, to, []byte(msg))
 }
 
 func magicLinkMessage(from string, to string, link string, address string) string {
@@ -139,11 +170,6 @@ func (m SmtpMailer) SendInvite(to string, loginURL string, address string) error
 	if !m.Configured() {
 		return errors.New("smtp not configured")
 	}
-	addr := net.JoinHostPort(m.host, m.port)
-	fromAddr, err := mail.ParseAddress(m.from)
-	if err != nil {
-		return fmt.Errorf("invalid MAIL_FROM")
-	}
 	msg := strings.Join([]string{
 		"From: " + m.from,
 		"To: " + to,
@@ -164,7 +190,7 @@ func (m SmtpMailer) SendInvite(to string, loginURL string, address string) error
 		"Freundliche Grüße",
 		"Hausportal " + address,
 	}, "\r\n")
-	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
+	return m.send(context.Background(), to, []byte(msg))
 }
 
 func privacyURL(raw string) string {
@@ -182,11 +208,6 @@ func privacyURL(raw string) string {
 func (m SmtpMailer) SendNotification(to string, subject string, body string) error {
 	if !m.Configured() {
 		return errors.New("smtp not configured")
-	}
-	addr := net.JoinHostPort(m.host, m.port)
-	fromAddr, err := mail.ParseAddress(m.from)
-	if err != nil {
-		return fmt.Errorf("invalid MAIL_FROM")
 	}
 	subject = strings.TrimSpace(subject)
 	if subject == "" {
@@ -208,7 +229,100 @@ func (m SmtpMailer) SendNotification(to string, subject string, body string) err
 		"Freundliche Grüße",
 		"hausv.org",
 	}, "\r\n")
-	return smtp.SendMail(addr, m.auth(), fromAddr.Address, []string{to}, []byte(msg))
+	return m.send(context.Background(), to, []byte(msg))
+}
+
+func (m SmtpMailer) send(ctx context.Context, to string, message []byte) error {
+	if !m.Configured() {
+		return errors.New("smtp not configured")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	fromAddr, err := mail.ParseAddress(m.from)
+	if err != nil {
+		return fmt.Errorf("invalid MAIL_FROM")
+	}
+
+	connectTimeout := m.connectTimeout
+	if connectTimeout <= 0 {
+		connectTimeout = defaultSMTPConnectTimeout
+	}
+	transactionTimeout := m.transactionTimeout
+	if transactionTimeout <= 0 {
+		transactionTimeout = defaultSMTPTransactionTimeout
+	}
+	dialContext := m.dialContext
+	if dialContext == nil {
+		dialer := &net.Dialer{}
+		dialContext = dialer.DialContext
+	}
+
+	connectCtx, cancelConnect := context.WithTimeout(ctx, connectTimeout)
+	connection, err := dialContext(connectCtx, "tcp", net.JoinHostPort(m.host, m.port))
+	cancelConnect()
+	if err != nil {
+		return smtpTransportError{stage: "connect"}
+	}
+	defer connection.Close()
+
+	deadline := time.Now().Add(transactionTimeout)
+	if contextDeadline, ok := ctx.Deadline(); ok && contextDeadline.Before(deadline) {
+		deadline = contextDeadline
+	}
+	if err := connection.SetReadDeadline(deadline); err != nil {
+		return smtpTransportError{stage: "read deadline"}
+	}
+	if err := connection.SetWriteDeadline(deadline); err != nil {
+		return smtpTransportError{stage: "write deadline"}
+	}
+	stopCancellation := context.AfterFunc(ctx, func() {
+		_ = connection.Close()
+	})
+	defer stopCancellation()
+
+	client, err := smtp.NewClient(connection, m.host)
+	if err != nil {
+		return smtpTransportError{stage: "greeting"}
+	}
+	defer client.Close()
+
+	if ok, _ := client.Extension("STARTTLS"); ok {
+		if err := client.StartTLS(&tls.Config{
+			MinVersion: tls.VersionTLS12,
+			ServerName: m.host,
+		}); err != nil {
+			return smtpTransportError{stage: "starttls"}
+		}
+	}
+	if auth := m.auth(); auth != nil {
+		if err := client.Auth(auth); err != nil {
+			return smtpTransportError{stage: "auth"}
+		}
+	}
+	if err := client.Mail(fromAddr.Address); err != nil {
+		return smtpTransportError{stage: "sender"}
+	}
+	if err := client.Rcpt(to); err != nil {
+		return smtpTransportError{stage: "recipient"}
+	}
+	writer, err := client.Data()
+	if err != nil {
+		return smtpTransportError{stage: "data"}
+	}
+	if _, err := writer.Write(message); err != nil {
+		_ = writer.Close()
+		return smtpTransportError{stage: "write"}
+	}
+	if err := writer.Close(); err != nil {
+		return smtpTransportError{stage: "accept"}
+	}
+	// The relay's successful response to the final DATA terminator is the
+	// delivery commit point. A later QUIT/connection-teardown failure must not
+	// turn an already accepted Magic Link into a reported failure whose token
+	// is then invalidated. This transport is one-shot; the deferred close ends
+	// the SMTP session without waiting for a second server acknowledgement.
+	return nil
 }
 
 func RedactedEmail(email string) string {
