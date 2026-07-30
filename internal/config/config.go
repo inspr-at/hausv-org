@@ -195,11 +195,11 @@ func ParseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 			if tenant.Slug == "" {
 				return nil, fmt.Errorf("tenant is missing slug")
 			}
-			if tenant.Name == "" {
-				tenant.Name = "WEG Portal"
-			}
 			if tenant.Address == "" {
 				tenant.Address = tenant.Slug
+			}
+			if tenant.Name == "" {
+				tenant.Name = tenant.Address
 			}
 			tenant.PortalType = strings.ToLower(strings.TrimSpace(tenant.PortalType))
 			if tenant.PortalType == "" {
@@ -241,7 +241,7 @@ func ParseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 		}
 		out[defaultTenant] = TenantConfig{
 			Slug:         defaultTenant,
-			Name:         "WEG Portal",
+			Name:         "Janischhofweg 22",
 			Address:      "Janischhofweg 22",
 			PortalType:   PortalTypeCommunity,
 			MapLatitude:  47.1008592,

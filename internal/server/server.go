@@ -2304,11 +2304,16 @@ func (a *app) tenantNotificationEmails(tenantSlug string) []string {
 	return uniqueEmails(recipients)
 }
 
+const (
+	parkingStatementCSVTitle = "Parkplatzabrechnung"
+	parkingMonthCSVTitle     = "Parkplatzabrechnung – Monat"
+)
+
 func writeParkingStatementCSV(w io.Writer, statement parkingStatementView) error {
 	writer := csv.NewWriter(w)
 	writer.Comma = ';'
 	rows := [][]string{
-		{"WEG Portal Parkplatzabrechnung"},
+		{parkingStatementCSVTitle},
 		{"Gebäude", statement.Tenant.Name},
 		{"Adresse", statement.Tenant.Address},
 		{"Person", statement.User.DisplayName()},
@@ -2354,7 +2359,7 @@ func writeParkingMonthCSV(w io.Writer, tenant tenantConfig, view parkingMonthDet
 		}
 	}
 	rows := [][]string{
-		{"WEG Portal Parkplatzabrechnung – Monat"},
+		{parkingMonthCSVTitle},
 		{"Gebäude", tenant.Name},
 		{"Adresse", tenant.Address},
 		{"Monat", view.MonthLabel},

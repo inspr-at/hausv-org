@@ -385,6 +385,16 @@ The visible app version is `SEMVER (git-hash)`. Semver is sourced from
 `VERSION`; bump it before every production deployment and keep
 `docs/CHANGELOG.md` in German, newest entry first.
 
+### Git release tags
+
+Git source tags are immutable, post-deployment evidence. Only after
+`scripts/deploy.fish` has completed every production check, create an annotated
+`v<VERSION>` tag on the exact deployed commit and push that tag. Never tag a
+failed candidate, move or reuse an existing release tag, or backfill a
+historical gap without reliable deployment evidence. Git tags are
+authoritative; a GitHub Release is optional, and neither one triggers a
+deployment.
+
 ## Rollback boundaries
 
 The release output is authoritative for the exact previous image tag and, for

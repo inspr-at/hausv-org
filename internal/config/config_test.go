@@ -72,6 +72,9 @@ func TestParseTenantsKeepsDefaultConnectorFallback(t *testing.T) {
 	if tenants["home"].PortalType != PortalTypeCommunity {
 		t.Fatalf("default portal type = %q", tenants["home"].PortalType)
 	}
+	if tenants["home"].Name != "Janischhofweg 22" {
+		t.Fatalf("default tenant name = %q", tenants["home"].Name)
+	}
 }
 
 func TestParseTenantsValidatesIndependentPortalType(t *testing.T) {
@@ -94,6 +97,24 @@ func TestParseTenantsValidatesIndependentPortalType(t *testing.T) {
 		homeassistant.Config{},
 	); err == nil {
 		t.Fatal("expected invalid portal_type error")
+	}
+}
+
+func TestParseTenantsUsesAddressAsNeutralNameFallback(t *testing.T) {
+	tenants, err := ParseTenants(
+		`[{"slug":"private-home","address":"Musterweg 4","portal_type":"house"},{"slug":"slug-only","portal_type":"apartment"}]`,
+		"hausv.org",
+		"private-home",
+		homeassistant.Config{},
+	)
+	if err != nil {
+		t.Fatalf("ParseTenants: %v", err)
+	}
+	if got := tenants["private-home"].Name; got != "Musterweg 4" {
+		t.Fatalf("address-backed tenant name = %q", got)
+	}
+	if got := tenants["slug-only"].Name; got != "slug-only" {
+		t.Fatalf("slug-backed tenant name = %q", got)
 	}
 }
 

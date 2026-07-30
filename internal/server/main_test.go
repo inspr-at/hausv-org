@@ -6187,10 +6187,13 @@ func TestParkingStatementCSVAccessAndFigures(t *testing.T) {
 		t.Fatalf("content disposition = %q", got)
 	}
 	body := resident.Body.String()
-	for _, want := range []string{"WEG Portal Parkplatzabrechnung", "Pat Parker", "parker@example.com", "Juni 2026", "2,00 kWh", "0,60 €", "0,20 €", "0,00 €", "0,80 €", "BEZAHLT", "Gesamt"} {
+	for _, want := range []string{parkingStatementCSVTitle, "Pat Parker", "parker@example.com", "Juni 2026", "2,00 kWh", "0,60 €", "0,20 €", "0,00 €", "0,80 €", "BEZAHLT", "Gesamt"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("statement CSV missing %q:\n%s", want, body)
 		}
+	}
+	if strings.Contains(body, "WEG Portal Parkplatzabrechnung") {
+		t.Fatalf("statement CSV contains obsolete export title:\n%s", body)
 	}
 
 	manager := authedRequest(t, a, "manager@example.com", "/app/parking/export/2026?user=parker@example.com")

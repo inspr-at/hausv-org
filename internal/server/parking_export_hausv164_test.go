@@ -60,11 +60,17 @@ func TestParkingMonthCSVTotalsMatchView(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	tenant := tenantConfig{Slug: "jhw22", Name: "WEG Portal", Address: "Janischhofweg 22"}
+	tenant := tenantConfig{Slug: "jhw22", Name: "Janischhofweg 22", Address: "Janischhofweg 22"}
 	if err := writeParkingMonthCSV(&buf, tenant, view); err != nil {
 		t.Fatalf("csv: %v", err)
 	}
 	rows := readSemicolonCSV(t, buf.String())
+	if len(rows) == 0 || len(rows[0]) != 1 || rows[0][0] != parkingMonthCSVTitle {
+		t.Fatalf("CSV title row = %v, want %q", rows, parkingMonthCSVTitle)
+	}
+	if strings.Contains(buf.String(), "WEG Portal") {
+		t.Fatalf("CSV contains obsolete product wording:\n%s", buf.String())
+	}
 
 	// Monthly summary total in the CSV must equal the on-screen month total.
 	sumRow := csvRowAfter(t, rows, "Monatssumme")
@@ -96,7 +102,7 @@ func TestParkingMonthCSVWarnsOnPartialData(t *testing.T) {
 		t.Fatal("mid-month coverage should flag Partial")
 	}
 	var buf bytes.Buffer
-	if err := writeParkingMonthCSV(&buf, tenantConfig{Name: "WEG Portal", Address: "Janischhofweg 22"}, view); err != nil {
+	if err := writeParkingMonthCSV(&buf, tenantConfig{Name: "Janischhofweg 22", Address: "Janischhofweg 22"}, view); err != nil {
 		t.Fatalf("csv: %v", err)
 	}
 	if !strings.Contains(buf.String(), "unvollständig") {

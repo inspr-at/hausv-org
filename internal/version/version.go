@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.59.2",
+			Date:     "30. Juli 2026",
+			Kind:     "Klarheit & Stabilität",
+			Headline: "Exporte und Hausnamen bleiben klar und unabhängig von alten Portalbezeichnungen.",
+			Intro:    "Parkplatzabrechnungen benennen sich neutral; ohne eigenen Hausnamen führt stattdessen die vertraute Adresse.",
+			Items: []NoteItem{
+				{Label: "Dokumente erkennen", Text: "Jahres- und Monatsabrechnungen tragen einen kurzen, eindeutigen Titel ohne überholten Produktnamen."},
+				{Label: "Häuser zuordnen", Text: "Ist kein Anzeigename eingerichtet, verwendet das Portal die Adresse als verständliche Bezeichnung."},
+				{Label: "Geprüft freigeben", Text: "Der Sicherheitsprüfer läuft in einer bewusst festgelegten Version; erfolgreiche Produktionsstände bleiben eindeutig markiert."},
+			},
+		},
+		{
 			Version:  "0.59.1",
 			Date:     "30. Juli 2026",
 			Kind:     "Stabilität & Datenschutz",

@@ -50,7 +50,10 @@ jobs:
           check-latest: true
       - name: govulncheck
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          # Deliberately pinned: scanner upgrades are reviewed instead of
+          # changing underneath an otherwise identical commit.
+          go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+          govulncheck -version
           govulncheck ./...
 
   browser-role-qa:

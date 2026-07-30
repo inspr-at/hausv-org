@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.59.2] - 2026-07-30
+
+### Verbessert
+
+- **Parkplatzabrechnungen tragen einen klaren, neutralen Dokumenttitel.** Jahres- und Monatsexporte bleiben unabhängig von alten Portalbezeichnungen eindeutig verständlich.
+- **Fehlende Hausnamen werden sinnvoll ersetzt.** Wenn kein eigener Anzeigename gepflegt ist, verwendet das Portal die Adresse statt einer überholten Standardbezeichnung.
+- **Freigaben bleiben reproduzierbar.** Der Sicherheitsprüfer besitzt eine bewusst geprüfte Version, und erfolgreiche Produktionsstände erhalten einen unveränderlichen Versionsmarker.
+
 ## [0.59.1] - 2026-07-30
 
 ### Verbessert
