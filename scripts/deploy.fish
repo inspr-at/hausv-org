@@ -207,7 +207,7 @@ set -l ci_url $ci_fields[3]
 
 set -l live_page_lines (curl -fsS --max-time 10 $live_url)
 or fail_before_change "cannot read the current live build"
-set -l live_page (string join \n -- $live_page_lines)
+set -l live_page (string join \n -- $live_page_lines | string collect)
 set -l live_fields (string split \t -- (visible_build $live_page))
 if test (count $live_fields) -ne 2
     fail_before_change "the current live version and commit are not visible"
@@ -378,7 +378,7 @@ for attempt in (seq $verify_attempts)
     set container_health (ssh -p $ssh_port $ssh_host "docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $service" 2>/dev/null | string trim)
     set -l health_lines (curl -fsS --max-time 10 $health_url 2>/dev/null)
     set -l page_lines (curl -fsS --max-time 10 $live_url 2>/dev/null)
-    set -l page_text (string join \n -- $page_lines)
+    set -l page_text (string join \n -- $page_lines | string collect)
     set -l deployed_fields (string split \t -- (visible_build $page_text))
     if test (count $deployed_fields) -eq 2
         set deployed "$deployed_fields[1] ($deployed_fields[2])"

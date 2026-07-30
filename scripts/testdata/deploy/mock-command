@@ -154,7 +154,9 @@ def mock_curl(args: list[str]) -> int:
 
     call = count("page")
     if CASE == "live_unreadable" and call == 1:
-        print("<html>version unavailable</html>")
+        print("<html>")
+        print("<body>version unavailable</body>")
+        print("</html>")
         return 0
     if call == 1:
         live_version = (
@@ -162,11 +164,15 @@ def mock_curl(args: list[str]) -> int:
             if CASE == "same_version_different_commit"
             else "0.0.0"
         )
+        print("<html>")
         print(f"<footer>{live_version} ({LIVE[:7]})</footer>")
+        print("</html>")
         return 0
     version = (REPO / "VERSION").read_text(encoding="utf-8").strip()
     commit = "ddddddd" if CASE == "post_version_mismatch" else HEAD[:7]
+    print("<html>")
     print(f"<footer>{version} ({commit})</footer>")
+    print("</html>")
     return 0
 
 
