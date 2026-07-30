@@ -91,6 +91,20 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.59.0",
+			Date:     "30. Juli 2026",
+			Kind:     "Sicherheit & Stabilität",
+			Headline: "Anmeldung und Produktionsfreigabe haben jetzt einen zusätzlichen Sicherheitsgurt.",
+			Intro:    "Geschützte Ansichten bleiben nach dem Abmelden geschlossen, und nur ein vollständig geprüfter Programmstand darf live gehen.",
+			Items: []NoteItem{
+				{Label: "Ruhig anmelden", Text: "Anmeldeanfragen antworten einheitlich und warten nicht auf den E-Mail-Versand; begrenzte Wiederholungen schützen Zugang und Konten."},
+				{Label: "Sicher abmelden", Text: "Geschützte Seiten und Dateien werden nicht aus einem alten Browser-Zwischenspeicher wieder sichtbar."},
+				{Label: "Rollen prüfen", Text: "Bewohner- und Administrationswege laufen vor jeder Freigabe automatisch auf Desktop und Mobil durch."},
+				{Label: "Geprüft freigeben", Text: "Produktion akzeptiert nur genau den grünen Code-Stand und kontrolliert danach Zustand, sichtbare Version und Startprotokoll."},
+				{Label: "Daten bewahren", Text: "Vor Datenbankänderungen entsteht ein konsistenter Wiederherstellungspunkt; Rückkehrwege unterscheiden Programm und Daten bewusst."},
+			},
+		},
+		{
 			Version:  "0.58.0",
 			Date:     "29. Juli 2026",
 			Kind:     "Mein Zuhause",

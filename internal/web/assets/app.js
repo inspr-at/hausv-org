@@ -3,6 +3,18 @@
   var lockTimeoutMs = 15000;
   var dialogTriggers = Array.prototype.slice.call(document.querySelectorAll("[data-dialog]"));
 
+  // A browser may restore a protected page from its back/forward cache after
+  // logout without contacting the server. Force one network/session check
+  // whenever such an authenticated page is restored.
+  window.addEventListener("pageshow", function (event) {
+    if (!document.body || !document.body.hasAttribute("data-authenticated-app")) return;
+    var entries = window.performance && typeof window.performance.getEntriesByType === "function"
+      ? window.performance.getEntriesByType("navigation")
+      : [];
+    var restored = Boolean(event.persisted || (entries[0] && entries[0].type === "back_forward"));
+    if (restored) window.location.reload();
+  });
+
   function focusFirstDialogField(dialog) {
     var target = dialog.querySelector(
       "button[data-close-dialog], input:not([type='hidden']), select, textarea, button, a[href], [tabindex]:not([tabindex='-1'])"

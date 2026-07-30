@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Role-aware, stateful QA for the portal's most common paths.
 
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 
@@ -10,6 +10,13 @@ if (!baseURL) {
   console.error('usage: qa-main-flows.mjs <baseURL>');
   process.exit(1);
 }
+const artifactDir = process.env.HV_QA_ARTIFACT_DIR?.trim();
+const ciCore = process.env.HV_QA_CI_CORE === 'true';
+const activeContexts = new Set();
+const browserEvents = [];
+const loginStorageStates = new Map();
+let mapTileResponseVerified = false;
+if (artifactDir) mkdirSync(artifactDir, { recursive: true });
 
 const personas = [
   { name: 'Bewohner', email: 'resident@example.com', manages: false },
@@ -30,11 +37,13 @@ const routes = [
 
 const executableCandidates = [
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/Applications/Chromium.app/Contents/MacOS/Chromium',
-  '/usr/bin/chromium',
-  '/usr/bin/chromium-browser',
-  '/usr/bin/google-chrome',
+  ...(process.env.CI === 'true' ? [] : [
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/google-chrome',
+  ]),
 ].filter(Boolean);
 const executablePath = executableCandidates.find(existsSync);
 const launchOptions = {
@@ -42,8 +51,6 @@ const launchOptions = {
 };
 if (executablePath) {
   launchOptions.executablePath = executablePath;
-} else {
-  launchOptions.channel = 'chrome';
 }
 const browser = await chromium.launch(launchOptions);
 
@@ -92,6 +99,17 @@ function tenantOrigin(hostname) {
 }
 
 async function localLogin(context, email, origin = baseURL) {
+  const loginKey = `${origin}|${email}`;
+  const cachedState = loginStorageStates.get(loginKey);
+  if (cachedState) {
+    await context.addCookies(cachedState.cookies);
+    const cachedPage = await context.newPage();
+    await cachedPage.goto(`${origin}/app`, { waitUntil: 'networkidle' });
+    if (cachedPage.url().includes('/app')) return cachedPage;
+    await cachedPage.close();
+    loginStorageStates.delete(loginKey);
+  }
+
   const page = await context.newPage();
   await page.goto(`${origin}/`, { waitUntil: 'networkidle' });
   const emailDetails = page.locator('details:has(form[action="/auth/request"])');
@@ -112,11 +130,107 @@ async function localLogin(context, email, origin = baseURL) {
   target.port = localOrigin.port;
   await page.goto(target.href, { waitUntil: 'networkidle' });
   if (!page.url().includes('/app')) fail(`Lokale Anmeldung für ${email} endete auf ${page.url()}`);
+  loginStorageStates.set(loginKey, await context.storageState());
   return page;
 }
 
+function safePagePath(page) {
+  try {
+    const url = new URL(page.url());
+    return url.pathname;
+  } catch {
+    return '/unknown';
+  }
+}
+
+function recordBrowserEvent(kind, page, detail) {
+  browserEvents.push(JSON.stringify({
+    kind,
+    page: safePagePath(page),
+    detail: String(detail),
+  }));
+}
+
+function watchPage(page) {
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') {
+      recordBrowserEvent(`console.${message.type()}`, page, message.text());
+    }
+  });
+  page.on('pageerror', (error) => recordBrowserEvent('pageerror', page, error.message));
+  page.on('requestfailed', (request) => {
+    const url = new URL(request.url());
+    recordBrowserEvent('requestfailed', page, `${request.method()} ${url.pathname}: ${request.failure()?.errorText || 'unknown'}`);
+  });
+}
+
+async function trackedContext(options) {
+  const context = await browser.newContext(options);
+  activeContexts.add(context);
+  context.on('page', watchPage);
+  if (artifactDir) {
+    await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+  }
+  return context;
+}
+
+async function closeContext(context) {
+  activeContexts.delete(context);
+  await context.close();
+}
+
+function artifactLabel(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'page';
+}
+
+async function captureFailureArtifacts(error) {
+  if (!artifactDir) return;
+
+  const screenshotsDir = join(artifactDir, 'screenshots');
+  const tracesDir = join(artifactDir, 'traces');
+  mkdirSync(screenshotsDir, { recursive: true });
+  mkdirSync(tracesDir, { recursive: true });
+  writeFileSync(
+    join(artifactDir, 'failure.txt'),
+    `${error instanceof Error ? error.stack || error.message : String(error)}\n`,
+  );
+
+  let contextIndex = 0;
+  for (const context of [...activeContexts]) {
+    contextIndex += 1;
+    let pageIndex = 0;
+    for (const page of context.pages()) {
+      pageIndex += 1;
+      try {
+        await page.screenshot({
+          path: join(
+            screenshotsDir,
+            `${contextIndex}-${pageIndex}-${artifactLabel(safePagePath(page))}.png`,
+          ),
+          fullPage: true,
+        });
+      } catch (artifactError) {
+        recordBrowserEvent('artifact.screenshot', page, artifactError);
+      }
+    }
+    try {
+      await context.tracing.stop({
+        path: join(tracesDir, `context-${contextIndex}.zip`),
+      });
+    } catch (artifactError) {
+      const page = context.pages()[0];
+      if (page) recordBrowserEvent('artifact.trace', page, artifactError);
+    }
+  }
+
+  writeFileSync(
+    join(artifactDir, 'browser-console.log'),
+    `${browserEvents.length ? browserEvents.join('\n') : 'Keine Browserfehler oder -warnungen aufgezeichnet.'}\n`,
+  );
+}
+
 async function newContext(viewport) {
-  return browser.newContext({
+  return trackedContext({
     viewport,
     deviceScaleFactor: 1,
     locale: 'de-AT',
@@ -125,7 +239,7 @@ async function newContext(viewport) {
 }
 
 async function assertPublicLanding(viewport) {
-  const context = await browser.newContext({
+  const context = await trackedContext({
     viewport: viewport.size,
     deviceScaleFactor: 1,
     locale: 'de-AT',
@@ -182,7 +296,7 @@ async function assertPublicLanding(viewport) {
   if (metrics.height > maxHeight) {
     fail(`Öffentliche Startseite ${viewport.name}: mit ${metrics.height}px unnötig lang (maximal ${maxHeight}px)`);
   }
-  await context.close();
+  await closeContext(context);
   process.stdout.write(`  ✓ Öffentliche Startseite · ${viewport.name} · ${metrics.height}px\n`);
 }
 
@@ -203,7 +317,7 @@ async function createIssue(email, title) {
   await form.locator('button[type="submit"]').click();
   await page.waitForURL(/\/app\/anliegen/);
   if (!(await page.getByText(title, { exact: true }).count())) fail(`Anliegen „${title}“ wurde nicht sichtbar gespeichert`);
-  await context.close();
+  await closeContext(context);
 }
 
 function futureLocalInput(daysAhead, hour) {
@@ -299,7 +413,7 @@ async function seedManagedContent() {
     });
   }
 
-  await context.close();
+  await closeContext(context);
 }
 
 async function assertHomeOnboarding() {
@@ -320,7 +434,7 @@ async function assertHomeOnboarding() {
   }
   await firstNext.press('Enter');
   await page.waitForURL(/step=2/);
-  await context.close();
+  await closeContext(context);
 
   // A fresh browser context proves that the saved step survives an interruption.
   context = await newContext({ width: 1440, height: 900 });
@@ -383,7 +497,7 @@ async function assertHomeOnboarding() {
       fullPage: true,
     });
   }
-  await mobileContext.close();
+  await closeContext(mobileContext);
 
   await page.getByRole('button', { name: 'Weiter zu den Verbrauchern' }).press('Enter');
   await page.waitForURL(/step=3/);
@@ -441,7 +555,7 @@ async function assertHomeOnboarding() {
   }
   await page.getByRole('button', { name: 'Mein Zuhause öffnen' }).press('Enter');
   await page.waitForURL(/\/app\/energie/);
-  await context.close();
+  await closeContext(context);
 
   context = await newContext({ width: 390, height: 844 });
   page = await localLogin(context, 'owner@example.com');
@@ -458,7 +572,7 @@ async function assertHomeOnboarding() {
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   const box = await page.locator('.energy-mode-strip').boundingBox();
   if (!box || box.y > 65) fail(`Onboarding Mobil: Beobachtungsmodus nicht permanent sichtbar (${box?.y ?? 'fehlt'})`);
-  await context.close();
+  await closeContext(context);
   process.stdout.write('  ✓ Energie-Onboarding · Tastatur · Fortsetzen · Mobil\n');
 }
 
@@ -583,10 +697,10 @@ async function assertPilotHome({
     if (await helper.getByText('Testlauf bewusst starten', { exact: true }).count()) {
       fail(`${householdName}: technische Hilfe sieht den Eigentümer-Schalter`);
     }
-    await helperContext.close();
+    await closeContext(helperContext);
   }
 
-  await context.close();
+  await closeContext(context);
   process.stdout.write(`  ✓ Pilot ${householdName} · getrennt · read-only · Messlücken\n`);
 }
 
@@ -609,6 +723,30 @@ async function assertPage(page, persona, route, viewportName) {
     const map = await page.locator('.side-map').boundingBox();
     const pin = await page.locator('.side-map-pin-mark svg').boundingBox();
     if (!map || !pin) fail(`${persona.name} ${viewportName}: Karte oder Haus-Pin fehlt`);
+    const tile = page.locator('img.side-map-tile').first();
+    await tile.waitFor({ state: 'visible' });
+    const decodedTile = await tile.evaluate((image) => ({
+      complete: image.complete,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+    }));
+    if (!decodedTile.complete || decodedTile.width < 1 || decodedTile.height < 1) {
+      fail(`${persona.name} ${viewportName}: Kartenkachel ist keine dekodierbare Grafik`);
+    }
+    if (!mapTileResponseVerified) {
+      const tilePath = await tile.getAttribute('src');
+      if (!tilePath) fail(`${persona.name} ${viewportName}: Kartenkachel hat keine Quelle`);
+      const tileResponse = await page.context().request.get(new URL(tilePath, page.url()).href);
+      const tileBytes = await tileResponse.body();
+      const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+      if (!tileResponse.ok() ||
+          !tileResponse.headers()['content-type']?.startsWith('image/png') ||
+          tileBytes.length < pngSignature.length ||
+          !tileBytes.subarray(0, pngSignature.length).equals(pngSignature)) {
+        fail(`${persona.name} ${viewportName}: Kartenendpoint liefert keine gültige PNG-Kachel`);
+      }
+      mapTileResponseVerified = true;
+    }
     if (viewportName === 'Desktop' && (map.width < 250 || map.height < 190 || pin.width < 22)) {
       fail(`${persona.name} Desktop: Ortskopf ist mit ${map.width}×${map.height}px / Pin ${pin.width}px zu klein`);
     }
@@ -659,6 +797,39 @@ async function assertRoleActions(page, persona) {
   }
 }
 
+async function assertLogoutBackNavigation() {
+  const context = await newContext({ width: 1440, height: 900 });
+  const page = await localLogin(context, 'resident@example.com');
+  await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
+  const protectedHeading = page.getByRole('heading', { name: /Hallo Rita/ }).first();
+  if (!(await protectedHeading.isVisible())) {
+    fail('Abmelden/Zurück: geschützte Ausgangsseite fehlt');
+  }
+
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/'),
+    page.getByRole('button', { name: 'Abmelden' }).click(),
+  ]);
+  loginStorageStates.delete(`${baseURL}|resident@example.com`);
+  if (!(await page.getByRole('heading', { name: 'Willkommen zurück' }).isVisible())) {
+    fail('Abmelden/Zurück: Loginseite nach Abmeldung fehlt');
+  }
+
+  await page.goBack({ waitUntil: 'domcontentloaded' });
+  await page.waitForURL((url) => url.pathname === '/', { timeout: 10_000 });
+  await page.waitForLoadState('networkidle');
+  const authenticatedBody = await page.locator('body[data-authenticated-app]').count();
+  if (authenticatedBody || await protectedHeading.isVisible().catch(() => false)) {
+    fail('Abmelden/Zurück: geschützter Inhalt wurde aus dem Browsercache wieder sichtbar');
+  }
+  if (!(await page.getByRole('heading', { name: 'Willkommen zurück' }).isVisible())) {
+    fail('Abmelden/Zurück: unauthentifizierter Zustand fehlt nach Browser-Zurück');
+  }
+
+  await closeContext(context);
+  process.stdout.write('  ✓ Abmelden → Browser-Zurück bleibt unauthentifiziert\n');
+}
+
 async function assertEnergySafetyAndFlow(viewport) {
   const residentContext = await newContext(viewport.size);
   const resident = await localLogin(residentContext, 'resident@example.com');
@@ -666,7 +837,7 @@ async function assertEnergySafetyAndFlow(viewport) {
   if (await resident.getByText('Testlauf bewusst starten', { exact: true }).count()) {
     fail(`Bewohner ${viewport.name}: Steuerungsfreigabe sichtbar`);
   }
-  await residentContext.close();
+  await closeContext(residentContext);
 
   const ownerContext = await newContext(viewport.size);
   const page = await localLogin(ownerContext, 'owner@example.com');
@@ -1024,7 +1195,7 @@ async function assertEnergySafetyAndFlow(viewport) {
     if (!helperIdentity || helperIdentity.status() !== 403) {
       fail('Energie Desktop: Hausidentität ist für technische Vertrauensperson nicht mit 403 geschützt');
     }
-    await helperContext.close();
+    await closeContext(helperContext);
 
     const measureControl = page.locator('details.energy-measure-control');
     await measureControl.locator('summary').click();
@@ -1107,7 +1278,7 @@ async function assertEnergySafetyAndFlow(viewport) {
       fullPage: true,
     });
   }
-  await ownerContext.close();
+  await closeContext(ownerContext);
 }
 
 async function assertEnergyDataControl(viewport) {
@@ -1159,7 +1330,7 @@ async function assertEnergyDataControl(viewport) {
   if (!(await exportButton.isEnabled())) {
     fail(`Energiedaten ${viewport.name}: Exportknopf bleibt nach dem Download gesperrt`);
   }
-  await ownerContext.close();
+  await closeContext(ownerContext);
 
   const deniedContext = await newContext(viewport.size);
   const deniedPage = await localLogin(deniedContext, 'resident@example.com');
@@ -1167,60 +1338,84 @@ async function assertEnergyDataControl(viewport) {
   if (!denied || denied.status() !== 403) {
     fail(`Energiedaten ${viewport.name}: Bewohnerzugriff ist nicht mit 403 geschützt`);
   }
-  await deniedContext.close();
+  await closeContext(deniedContext);
   process.stdout.write(`  ✓ Energiedaten & Datenschutz · ${viewport.name}\n`);
 }
 
+const viewports = [
+  { name: 'Desktop', size: { width: 1440, height: 900 } },
+  { name: 'Mobil', size: { width: 390, height: 844 } },
+];
+const activePersonas = ciCore
+  ? personas.filter((persona) => persona.name === 'Bewohner' || persona.name === 'Admin')
+  : personas;
+const activeRoutes = ciCore
+  ? routes.filter((route) => route.path === '/app' || route.path === '/app/anliegen')
+  : routes;
+
 try {
-  for (const viewport of [
-    { name: 'Desktop', size: { width: 1440, height: 900 } },
-    { name: 'Mobil', size: { width: 390, height: 844 } },
-  ]) {
-    await assertPublicLanding(viewport);
+  if (process.env.HV_QA_FAILURE_PROBE === 'true') {
+    const failureContext = await newContext({ width: 390, height: 844 });
+    await localLogin(failureContext, 'resident@example.com');
+    fail('Erwarteter QA-Artefakt-Testfehler');
+  }
+
+  if (!ciCore) {
+    for (const viewport of viewports) {
+      await assertPublicLanding(viewport);
+    }
   }
 
   if (process.env.HV_QA_LANDING_ONLY !== 'true') {
     await assertHomeOnboarding();
-    await assertPilotHome({
-      slug: 'eltern',
-      email: 'parents-owner@example.com',
-      householdName: 'Haus Eltern',
-      expectedAssets: ['pv', 'ev', 'hot-water', 'heat-pump'],
-      absentAssets: ['battery'],
-      expectedMeasured: ['Hausanschluss', 'PV-Anlage'],
-      expectedCaptured: ['E-Auto', 'Warmwasser', 'Wärmepumpe'],
-    });
-    await assertPilotHome({
-      slug: 'schwiegereltern',
-      email: 'inlaws-owner@example.com',
-      householdName: 'Haus Schwiegereltern',
-      expectedAssets: ['pv', 'battery', 'ev'],
-      expectedMeasured: ['Hausanschluss', 'PV-Anlage', 'Batteriespeicher'],
-      expectedCaptured: ['E-Auto'],
-      inviteHelper: true,
-    });
+    if (!ciCore) {
+      await assertPilotHome({
+        slug: 'eltern',
+        email: 'parents-owner@example.com',
+        householdName: 'Haus Eltern',
+        expectedAssets: ['pv', 'ev', 'hot-water', 'heat-pump'],
+        absentAssets: ['battery'],
+        expectedMeasured: ['Hausanschluss', 'PV-Anlage'],
+        expectedCaptured: ['E-Auto', 'Warmwasser', 'Wärmepumpe'],
+      });
+      await assertPilotHome({
+        slug: 'schwiegereltern',
+        email: 'inlaws-owner@example.com',
+        householdName: 'Haus Schwiegereltern',
+        expectedAssets: ['pv', 'battery', 'ev'],
+        expectedMeasured: ['Hausanschluss', 'PV-Anlage', 'Batteriespeicher'],
+        expectedCaptured: ['E-Auto'],
+        inviteHelper: true,
+      });
+    }
     await createIssue('resident@example.com', 'QA Bewohneranliegen');
-    await createIssue('owner@example.com', 'QA Eigentümeranliegen');
-    await seedManagedContent();
+    if (!ciCore) {
+      await createIssue('owner@example.com', 'QA Eigentümeranliegen');
+      await seedManagedContent();
+    }
 
-    for (const viewport of [
-      { name: 'Desktop', size: { width: 1440, height: 900 } },
-      { name: 'Mobil', size: { width: 390, height: 844 } },
-    ]) {
-      await assertEnergySafetyAndFlow(viewport);
-      await assertEnergyDataControl(viewport);
-      for (const persona of personas) {
+    for (const viewport of viewports) {
+      if (!ciCore) {
+        await assertEnergySafetyAndFlow(viewport);
+        await assertEnergyDataControl(viewport);
+      }
+      for (const persona of activePersonas) {
         const context = await newContext(viewport.size);
         const page = await localLogin(context, persona.email);
-        for (const route of routes) {
+        for (const route of activeRoutes) {
           await assertPage(page, persona, route, viewport.name);
         }
         await assertRoleActions(page, persona);
-        await context.close();
+        await closeContext(context);
         process.stdout.write(`  ✓ ${persona.name} · ${viewport.name}\n`);
       }
     }
+    await assertLogoutBackNavigation();
   }
+} catch (error) {
+  await captureFailureArtifacts(error);
+  console.error(error instanceof Error ? error.stack || error.message : String(error));
+  process.exitCode = 1;
 } finally {
   await browser.close();
 }

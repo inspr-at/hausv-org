@@ -2,7 +2,7 @@
   "name": "hausv-snapshot",
   "private": true,
   "type": "module",
-  "description": "Visual + HTML regression harness. Uses the system Chromium; never downloads a browser.",
+  "description": "Visual + HTML regression harness. Uses system Chromium locally and pinned Playwright Chromium in CI.",
   "devDependencies": {
     "playwright": "1.62.0"
   }

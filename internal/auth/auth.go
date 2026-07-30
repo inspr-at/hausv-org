@@ -112,6 +112,25 @@ func (s *TokenStore) Consume(token string) (string, string, string, bool) {
 	return item.email, item.tenantSlug, item.redirectPath, true
 }
 
+// Peek returns the login identity without marking the one-time token used. It
+// exists so request/account admission checks can run before Consume; callers
+// must still call Consume immediately afterwards and treat its result as the
+// authoritative single-use decision.
+func (s *TokenStore) Peek(token string) (string, string, string, bool) {
+	if token == "" {
+		return "", "", "", false
+	}
+	key := s.digest(token)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	item, ok := s.items[key]
+	if !ok || item.used || time.Now().After(item.expiresAt) {
+		delete(s.items, key)
+		return "", "", "", false
+	}
+	return item.email, item.tenantSlug, item.redirectPath, true
+}
+
 func SafeInternalRedirectPath(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" || !strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") || strings.Contains(raw, "://") {

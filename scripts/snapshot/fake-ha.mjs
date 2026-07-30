@@ -5,6 +5,10 @@ import { createServer } from 'node:http';
 
 const port = Number(process.argv[2] || 8122);
 const updated = new Date().toISOString();
+const mapTilePNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
 const commonNoise = [
   state('sensor.iphone_battery', '81', 'iPhone Battery', 'battery', '%'),
   state('sensor.robot_battery', '64', 'Saugroboter Battery', 'battery', '%'),
@@ -61,8 +65,15 @@ function state(entity_id, value, friendly_name, device_class, unit_of_measuremen
 }
 
 createServer((request, response) => {
-  response.setHeader('Content-Type', 'application/json');
   const url = new URL(request.url || '/', 'http://127.0.0.1');
+  if (request.method === 'GET' && /^\/map-tiles\/\d+\/\d+\/\d+\.png$/.test(url.pathname)) {
+    response.setHeader('Content-Type', 'image/png');
+    response.setHeader('Cache-Control', 'no-store');
+    response.end(mapTilePNG);
+    process.stdout.write(`fake map tile served ${url.pathname}\n`);
+    return;
+  }
+  response.setHeader('Content-Type', 'application/json');
   const historyMatch = url.pathname.match(/^\/(jhw22|eltern|schwiegereltern)\/api\/history\/period(?:\/.*)?$/);
   if (request.method === 'GET' && historyMatch) {
     const states = homes[historyMatch[1]];

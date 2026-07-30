@@ -2728,7 +2728,7 @@ const PageTemplates = `
   <link rel="shortcut icon" href="/favicon.svg">
   {{template "appStyles" .}}
 </head>
-<body>
+<body data-authenticated-app>
   <div class="app-shell">
     {{template "sidebar" .}}
     {{template "releaseHistoryDialog" .}}

@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -40,23 +41,36 @@ type sentMagicLink struct {
 }
 
 type recordingMailer struct {
+	mu            sync.Mutex
 	magicLinks    []sentMagicLink
 	invites       []string
 	notifications []sentNotification
 }
 
 func (m *recordingMailer) SendMagicLink(to string, link string, _ string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.magicLinks = append(m.magicLinks, sentMagicLink{To: to, Link: link})
 	return nil
 }
 func (m *recordingMailer) SendInvite(to string, _ string, _ string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.invites = append(m.invites, to)
 	return nil
 }
 func (m *recordingMailer) Configured() bool { return true }
 func (m *recordingMailer) SendNotification(to string, subject string, body string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.notifications = append(m.notifications, sentNotification{To: to, Subject: subject, Body: body})
 	return nil
+}
+
+func (m *recordingMailer) recordedMagicLinks() []sentMagicLink {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]sentMagicLink(nil), m.magicLinks...)
 }
 
 func TestFaviconUsesStrippedLogo(t *testing.T) {
@@ -4471,7 +4485,7 @@ func TestClosedServiceProviderAuthenticationAndNotificationsAreRejected(t *testi
 	loginReq.Header.Set("Origin", "http://jhw22.hausv.org")
 	login := httptest.NewRecorder()
 	a.handler().ServeHTTP(login, loginReq)
-	if login.Code != http.StatusForbidden || !strings.Contains(login.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") || len(mailer.magicLinks) != 0 {
+	if login.Code != http.StatusSeeOther || login.Header().Get("Location") != "/?sent=1" || len(mailer.magicLinks) != 0 {
 		t.Fatalf("closed login request = %d %q magic=%+v", login.Code, login.Body.String(), mailer.magicLinks)
 	}
 
@@ -5626,7 +5640,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("vote store: %v", err)
 	}
-	return &app{
+	a := &app{
 		baseURL:       "http://localhost:8080",
 		rootDomain:    "hausv.org",
 		defaultTenant: "jhw22",
@@ -5665,6 +5679,8 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		parkingStore:          parkingStore,
 		energyStore:           energy.NewMemoryStore(),
 	}
+	t.Cleanup(a.closeMagicLinkDelivery)
+	return a
 }
 
 func userRowForEmail(t *testing.T, rows []userRow, email string) userRow {

@@ -107,32 +107,37 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusForbidden)
 		return
 	}
-	if !a.emailLoginAvailable() {
-		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
-		return
-	}
 	if err := parseMaybeMultipartForm(w, r, maxIssueAttachmentFormBytes, maxAttachmentBytes); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
 	email := normalizeEmail(r.FormValue("email"))
+	accountKey := tenant.Slug + "|" + firstNonEmpty(email, r.FormValue("email"))
+	if !a.allowAuthRequest(w, r, magicLinkSourcePolicy, magicLinkAccountPolicy, accountKey) {
+		return
+	}
+	if !a.emailLoginAvailable() {
+		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
+		return
+	}
 	if _, err := mail.ParseAddress(email); err != nil {
-		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
+		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
 		return
 	}
 	if a.serviceProviderAccessClosedFor(tenant.Slug, email) {
-		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
+		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
 		return
 	}
 	if !a.isAllowed(email, tenant.Slug) || !a.isAuthMethodAllowed(email, tenant.Slug, authMethodEmail) {
-		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
+		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
 		return
 	}
 
 	token, err := randomToken(32)
 	if err != nil {
-		http.Error(w, "Could not create login link", http.StatusInternalServerError)
+		logWarn("magic link creation failed", "error_type", "random_token")
+		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
 		return
 	}
 	a.tokens.Put(token, email, tenant.Slug, 15*time.Minute)
@@ -158,10 +163,16 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.mailer.SendMagicLink(email, link, tenant.Address); err != nil {
-		logError("magic link delivery failed", err, "recipient", redactedEmail(email))
-		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
-		return
+	if !a.enqueueMagicLinkDelivery(magicLinkDeliveryJob{
+		mailer:  a.mailer,
+		to:      email,
+		link:    link,
+		address: tenant.Address,
+	}) {
+		// Do not retain a valid token that can never reach its intended
+		// recipient. Queue pressure stays invisible on the public response.
+		a.tokens.Consume(token)
+		logWarn("magic link delivery not queued")
 	}
 
 	http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
@@ -238,7 +249,21 @@ func neutralPublicHomeCopy() publicHomeCopy {
 }
 
 func (a *app) verifyLogin(w http.ResponseWriter, r *http.Request) {
+	if !a.allowAuthRequest(w, r, loginCompletionSourcePolicy, authRatePolicy{}, "") {
+		return
+	}
 	token := r.URL.Query().Get("token")
+	if email, tenantSlug, _, ok := a.tokens.Peek(token); ok {
+		if !a.allowAuthRequest(
+			w,
+			r,
+			authRatePolicy{},
+			loginCompletionAccountPolicy,
+			tenantSlug+"|"+email,
+		) {
+			return
+		}
+	}
 	email, tenantSlug, redirectPath, ok := a.tokens.Consume(token)
 	if !ok {
 		http.Redirect(w, r, "/?login=expired#login", http.StatusSeeOther)
@@ -275,6 +300,9 @@ func houseDisplayName(tenant tenantConfig) string {
 func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	if !a.oidc.Configured() {
 		http.NotFound(w, r)
+		return
+	}
+	if !a.allowAuthRequest(w, r, oidcStartSourcePolicy, authRatePolicy{}, "") {
 		return
 	}
 	tenant := a.tenantForRequest(r)
@@ -314,6 +342,9 @@ func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
 func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	if !a.oidc.Configured() {
 		http.NotFound(w, r)
+		return
+	}
+	if !a.allowAuthRequest(w, r, loginCompletionSourcePolicy, authRatePolicy{}, "") {
 		return
 	}
 	if err := a.oidc.EnsureProvider(r.Context()); err != nil {
@@ -393,6 +424,15 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	email := normalizeEmail(claims.Email)
 	if email == "" || claims.EmailVerified == nil || !*claims.EmailVerified {
 		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
+		return
+	}
+	if !a.allowAuthRequest(
+		w,
+		r,
+		authRatePolicy{},
+		loginCompletionAccountPolicy,
+		tenant.Slug+"|"+email,
+	) {
 		return
 	}
 	if a.serviceProviderAccessClosedFor(tenant.Slug, email) {

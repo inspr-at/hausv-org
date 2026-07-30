@@ -32,9 +32,33 @@ set -gx HV_QA_JHW_HA_TOKEN "qa-read-only-jhw-fixture"
 set -gx HV_QA_PARENTS_HA_TOKEN "qa-read-only-parents-fixture"
 set -gx HV_QA_INLAWS_HA_TOKEN "qa-read-only-inlaws-fixture"
 set -gx HA_CONNECTORS_JSON "[{\"tenant_slug\":\"jhw22\",\"base_url\":\"http://127.0.0.1:$HV_QA_HA_PORT/jhw22\",\"token_env\":\"HV_QA_JHW_HA_TOKEN\"},{\"tenant_slug\":\"eltern\",\"base_url\":\"http://127.0.0.1:$HV_QA_HA_PORT/eltern\",\"token_env\":\"HV_QA_PARENTS_HA_TOKEN\"},{\"tenant_slug\":\"schwiegereltern\",\"base_url\":\"http://127.0.0.1:$HV_QA_HA_PORT/schwiegereltern\",\"token_env\":\"HV_QA_INLAWS_HA_TOKEN\"}]"
+# The same local fixture serves a valid PNG for the sidebar map. Browser QA
+# must never depend on or send traffic to the public OpenStreetMap tile service.
+set -gx MAP_TILE_BASE_URL "http://127.0.0.1:$HV_QA_HA_PORT/map-tiles"
+
+# Explicitly shadow every external integration and secret that may exist in a
+# developer's .env.local. Empty exported values are intentional: LoadLocalEnv
+# will not replace them, so this harness cannot contact real systems.
+set -gx HA_BASE_URL ""
+set -gx HA_TOKEN ""
 set -gx SMTP_HOST ""
+set -gx SMTP_PORT 587
+set -gx SMTP_USER ""
+set -gx SMTP_PASS ""
+set -gx MAIL_FROM "HAUSV QA <qa@example.invalid>"
+set -gx OIDC_ISSUER ""
+set -gx OIDC_CLIENT_ID ""
+set -gx OIDC_CLIENT_SECRET ""
+set -gx OIDC_REDIRECT_URL ""
+set -gx OIDC_PROVIDER_NAME "Lokaler QA-Zugang"
+set -gx TELEGRAM_API_BASE_URL ""
+set -gx TELEGRAM_BOT_TOKEN ""
+set -gx TELEGRAM_DATA_PATH "$HV_DATA/telegram.json"
+set -gx SERVICE_PROVIDER_ACCESS_ENABLED false
+set -gx SERVICE_PROVIDER_ASSESSMENT_VERSION ""
 
 # All state under one dir, seeded identically per run.
+set -gx DB_PATH "$HV_DATA/hausv.db"
 set -gx PARKING_DATA_PATH "$HV_DATA/parking.json"
 set -gx ANNOUNCE_DATA_PATH "$HV_DATA/announcements.json"
 set -gx ANNOUNCE_READ_DATA_PATH "$HV_DATA/announcement_reads.json"

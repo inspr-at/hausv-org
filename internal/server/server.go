@@ -717,33 +717,39 @@ const (
 var errServiceProviderAccessClosed = errors.New("service provider access is disabled")
 
 type app struct {
-	baseURL               string
-	addr                  string
-	rootDomain            string
-	defaultTenant         string
-	tenants               map[string]tenantConfig
-	sessionSecure         bool
-	allowed               map[string]struct{}
-	admins                map[string]struct{}
-	profiles              map[string]userProfile
-	localDevLogin         bool
-	serviceAccessEnabled  bool
-	sessionTTL            time.Duration
-	tokens                *tokenStore
-	sessions              *sessionStore
-	oidc                  *oidcLogin
-	oidcFlows             *oidcFlowStore
-	mailer                mailer
-	templates             *template.Template
-	db                    *sql.DB
-	dataDir               string
-	announcementStore     announcementStorage
-	announcementReadStore announcementReadStorage
-	eventStore            eventStorage
-	notificationPrefs     notificationPrefStorage
-	profileOverlays       profileOverlayStorage
-	tenantOverrides       *tenantOverrideStore
-	tenantHeroDir         string
+	baseURL                 string
+	addr                    string
+	rootDomain              string
+	defaultTenant           string
+	tenants                 map[string]tenantConfig
+	sessionSecure           bool
+	allowed                 map[string]struct{}
+	admins                  map[string]struct{}
+	profiles                map[string]userProfile
+	localDevLogin           bool
+	serviceAccessEnabled    bool
+	sessionTTL              time.Duration
+	tokens                  *tokenStore
+	sessions                *sessionStore
+	oidc                    *oidcLogin
+	oidcFlows               *oidcFlowStore
+	mailer                  mailer
+	trustedProxies          trustedProxyAllowlist
+	magicLinkDeliveryMu     sync.Mutex
+	magicLinkDelivery       *magicLinkDeliveryQueue
+	magicLinkDeliveryClosed bool
+	authLimiterMu           sync.Mutex
+	authLimiter             *authRateLimiter
+	templates               *template.Template
+	db                      *sql.DB
+	dataDir                 string
+	announcementStore       announcementStorage
+	announcementReadStore   announcementReadStorage
+	eventStore              eventStorage
+	notificationPrefs       notificationPrefStorage
+	profileOverlays         profileOverlayStorage
+	tenantOverrides         *tenantOverrideStore
+	tenantHeroDir           string
 	// inviteStore serves app-managed user records. Backed by the person/house
 	// N:N model when SQLite is available, otherwise by the JSON store
 	// (HAUSV-169).
@@ -992,7 +998,7 @@ func (a *app) routes() *http.ServeMux {
 func (a *app) handler() http.Handler {
 	// recoverAndLog is outermost so it captures panics and the final status from
 	// every inner layer, including securityHeaders (HAUSV-141).
-	return a.recoverAndLog(securityHeaders(a.routes()))
+	return a.recoverAndLog(a.securityHeaders(a.routes()))
 }
 
 func runHealthcheck(target string) error {
@@ -1037,6 +1043,10 @@ func newApp() (*app, error) {
 	}
 
 	publicURL := !isLocalHost(parsed.Hostname())
+	trustedProxies, err := parseTrustedProxyAllowlist(env("TRUSTED_PROXY_CIDRS", ""), publicURL)
+	if err != nil {
+		return nil, err
+	}
 	secret, err := sessionSecret(publicURL)
 	if err != nil {
 		return nil, err
@@ -1384,6 +1394,7 @@ func newApp() (*app, error) {
 		oidc:                  oidcLogin,
 		oidcFlows:             auth.NewOIDCFlowStore(),
 		mailer:                mailTransport,
+		trustedProxies:        trustedProxies,
 		templates:             tmpl,
 		db:                    database,
 		dataDir:               filepath.Dir(dbPath),
@@ -1412,6 +1423,7 @@ func newApp() (*app, error) {
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
 		energyStore:           energyBackend,
+		mapTileBaseURL:        env("MAP_TILE_BASE_URL", ""),
 
 		chargingTickInterval:   chargingTickInterval,
 		chargingStaleAfter:     chargingStaleAfter,
@@ -5730,15 +5742,6 @@ func boolFormValue(value bool) string {
 	return "false"
 }
 
-func securityHeaders(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'")
-		next.ServeHTTP(w, r)
-	})
-}
-
 func truncateRunes(value string, limit int) string { return textutil.Truncate(value, limit) }
 
 func normalizeSlug(raw string) string { return textutil.Slug(raw) }
@@ -5832,9 +5835,11 @@ func (a *app) Handler() http.Handler { return a.handler() }
 // Addr is the listen address.
 func (a *app) Addr() string { return a.addr }
 
-// Close releases process-lifetime resources. Currently the SQLite handle; the
-// JSON stores hold no OS handles between writes.
+// Close releases process-lifetime resources. It first drains login mail
+// accepted before HTTP shutdown and only then closes SQLite; JSON stores hold
+// no OS handles between writes.
 func (a *app) Close() error {
+	a.closeMagicLinkDelivery()
 	if a.db != nil {
 		return a.db.Close()
 	}

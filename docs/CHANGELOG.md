@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.59.0] - 2026-07-30
+
+### Neu
+
+- **Die wichtigsten Portalwege werden vor jeder Produktionsfreigabe automatisch im Browser geprüft.** Bewohner- und Administrationssicht laufen auf Desktop und Mobil durch Anmeldung, Überblick, Anliegen und Energie-Onboarding.
+- **Produktionsfreigaben besitzen einen eigenen Sicherheitsgurt.** Nur der exakt geprüfte Stand darf live gehen; vor Datenbankänderungen entsteht zusätzlich ein konsistenter Wiederherstellungspunkt.
+
+### Verbessert
+
+- **Anmeldung und geschützte Ansichten sind robuster abgesichert.** Verständliche, identische Antworten schützen eingeladene Adressen vor Rückschlüssen; begrenzte Wiederholungen, sichere Browser-Cache-Regeln und klare Transportgrenzen ergänzen den bestehenden Zugangsschutz.
+- **Abmelden bedeutet auch beim Browser-Zurück wirklich abgemeldet.** Geschützte Seiten und Dateien werden nicht aus einem alten Browser-Zwischenspeicher wieder sichtbar.
+- **Fehlgeschlagene Freigaben bleiben beherrschbar.** Gesundheitszustand, sichtbare Version, exakter Code-Stand und Startprotokoll werden geprüft; die Rückkehr unterscheidet bewusst zwischen Programm- und Datenänderungen.
+
 ## [0.58.0] - 2026-07-29
 
 ### Neu

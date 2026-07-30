@@ -2,11 +2,10 @@
 
 Der lokale QA-Lauf startet das aktuelle Arbeitsverzeichnis mit ausschließlich
 erfundenen Daten, mehreren Rollen und drei strikt getrennten Hausprofilen. Er
-sendet keine E-Mails und greift nicht auf Produktivdaten zu.
+sendet keine E-Mails, greift nicht auf Produktivdaten zu und lädt auch keine
+Kartenkacheln von einem öffentlichen Dienst.
 
-Dieser Lauf ist derzeit das umfassende lokale Browser-Regressionsgate. Er ist
-noch kein verpflichtender CI-Schritt; die CI-Integration und ihr Schutz für
-Änderungen auf `main` bleiben ausdrücklich in HAUSV-404 offen.
+Der vollständige lokale Lauf bleibt das umfassende Browser-Regressionsgate:
 
 ```fish
 scripts/qa-main-flows.fish
@@ -30,6 +29,8 @@ Der Lauf:
 - prüft an drei simulierten, ausschließlich lesenden Home-Assistant-Instanzen,
   dass Messwerte hausbezogen bleiben, höchstens fünf ruhige Vorschläge
   erscheinen und Messlücken ohne Entity-IDs erklärt werden;
+- bedient den festen Kartenausschnitt aus einer lokalen gültigen PNG-Fixture und
+  prüft sowohl Dekodierung als auch Content-Type/PNG-Signatur;
 - öffnet die Hauptwege auf 1440 × 900 und 390 × 844;
 - prüft Überschriften, zentrale Aktionen, Rollenverbote, die Größenhierarchie
   des Hauszeichens und horizontalen Überlauf;
@@ -39,7 +40,57 @@ Der Lauf:
 Voraussetzungen sind Go, Node.js, npm und ein lokales Chromium oder Google
 Chrome. Falls die Playwright-Abhängigkeiten fehlen, installiert der Runner die
 in `scripts/snapshot/package-lock.json` festgeschriebene Version ohne einen
-Browser herunterzuladen.
+Browser herunterzuladen. In CI wird das zur festgeschriebenen
+Playwright-Version gehörende Chromium installiert.
+
+## Verpflichtendes CI-Gate
+
+Der parallele Blacksmith-Job `Browser roles + mobile` führt bei jedem Push auf
+`main` und bei jedem Pull Request einen bewusst kompakten Kernlauf aus. Ein
+Fehler macht den Workflow rot. Der Kernlauf prüft mit vollständig erfundenen,
+lokalen Daten:
+
+- Anmeldung als Bewohner und Admin;
+- Hausüberblick und Anliegen auf Desktop und Mobil;
+- das geführte Energie-Onboarding auf Desktop und Mobil;
+- Abmelden mit anschließendem Browser-Zurück ohne wieder sichtbare
+  Portal-Inhalte;
+- Rollenverbote, primäre Aktionen, Touch-Ziele und horizontalen Überlauf.
+
+Das private Repository bietet im aktuellen GitHub-Tarif weder Branch Protection
+noch Rulesets; Push oder Merge werden daher nicht von GitHub selbst gesperrt.
+Verbindlich ist das Gate trotzdem für Produktion: `scripts/deploy.fish`
+akzeptiert ausschließlich einen vollständig grünen `CI`-Push-Lauf auf
+Blacksmith für exakt den auszurollenden Commit. Ein roter Browserjob verhindert
+damit fail-closed das Deployment. Der vollständige Releasevertrag steht in
+`docs/csb1-deploy.md`.
+
+Der gleiche Lauf lässt sich lokal so reproduzieren:
+
+```fish
+set -lx HV_QA_CI_CORE true
+set -lx HV_QA_ARTIFACT_DIR ./tmp/browser-role-qa
+scripts/qa-main-flows.fish
+```
+
+Das Artefaktverzeichnis enthält Build-, Fake-Home-Assistant-, App-,
+Playwright- und Strukturprüfungs-Logs. Bei einem Browserfehler kommen
+Vollseiten-Screenshots, Playwright-Traces, eine Fehlermeldung und relevante
+Browserkonsolen-Ereignisse hinzu. CI lädt diese Belege nur bei einem Fehlschlag
+für sieben Tage hoch. URLs in Browser-Logs werden auf ihren Pfad gekürzt; die
+Fixtures enthalten keine produktiven Geheimnisse oder Konten.
+
+Der Fehlerpfad der Artefakterzeugung kann lokal bewusst ausgelöst werden:
+
+```fish
+set -lx HV_QA_CI_CORE true
+set -lx HV_QA_FAILURE_PROBE true
+set -lx HV_QA_ARTIFACT_DIR ./tmp/browser-role-qa-failure
+scripts/qa-main-flows.fish
+```
+
+Dieser Prüflauf muss fehlschlagen. `HV_QA_FAILURE_PROBE` ist ausschließlich für
+die Wartung des QA-Harness gedacht und wird in CI nicht gesetzt.
 
 Die automatisierte UX-Selbstprüfung orientiert sich an WCAG 2.2: sichtbarer
 Tastaturfokus, sprechende Beschriftungen, kein horizontaler Überlauf und für

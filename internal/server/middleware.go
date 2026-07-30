@@ -28,6 +28,7 @@ func (a *app) recoverAndLog(next http.Handler) http.Handler {
 				// If nothing has been written yet, send a clean 500. If a partial
 				// response already went out, we can only log.
 				if !sw.wrote {
+					sw.Header().Set("Cache-Control", "no-store")
 					http.Error(sw, "Internal Server Error", http.StatusInternalServerError)
 				}
 				slog.Error("panic recovered",

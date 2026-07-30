@@ -3,6 +3,21 @@
 
 set -l repo (git rev-parse --show-toplevel)
 set -l tmp (mktemp -d /tmp/hausv-main-flow-qa.XXXXXX)
+set -l artifact_dir "$HV_QA_ARTIFACT_DIR"
+if test -n "$artifact_dir"
+    mkdir -p "$artifact_dir"; or exit 1
+    set artifact_dir (python3 -c 'import os, sys; print(os.path.abspath(sys.argv[1]))' "$artifact_dir")
+    set -gx HV_QA_ARTIFACT_DIR "$artifact_dir"
+end
+set -l log_dir "$tmp"
+if test -n "$artifact_dir"
+    set log_dir "$artifact_dir"
+end
+set -l build_log "$log_dir/build.log"
+set -l fake_ha_log "$log_dir/fake-ha.log"
+set -l app_log "$log_dir/app.log"
+set -l playwright_log "$log_dir/playwright.log"
+set -l structured_log "$log_dir/structured-log-check.log"
 set -l port $HV_QA_PORT
 test -n "$port"; or set port 8121
 set -l ha_port $HV_QA_HA_PORT
@@ -60,7 +75,7 @@ for checked_port in $port $ha_port
 end
 
 echo "── starting deterministic read-only Home Assistant fixture on :$ha_port"
-node "$repo/scripts/snapshot/fake-ha.mjs" "$ha_port" >"$tmp/fake-ha.log" 2>&1 &
+node "$repo/scripts/snapshot/fake-ha.mjs" "$ha_port" >"$fake_ha_log" 2>&1 &
 set -g HAUSV_QA_HA_PID $last_pid
 
 set -l ha_ready 0
@@ -73,15 +88,20 @@ for i in (seq 40)
 end
 if test $ha_ready -eq 0
     echo "Home-Assistant-Fixture wurde nicht bereit:" >&2
-    command tail -n 40 "$tmp/fake-ha.log" >&2
+    command tail -n 40 "$fake_ha_log" >&2
     exit 1
 end
 
 echo "── building current worktree"
-env -C "$repo" "$go_bin" build -o "$tmp/hausv-org" ./cmd/hausv-org; or exit 1
+env -C "$repo" "$go_bin" build -o "$tmp/hausv-org" ./cmd/hausv-org >"$build_log" 2>&1
+set -l build_status $status
+if test $build_status -ne 0
+    command tail -n 80 "$build_log" >&2
+    exit $build_status
+end
 
 echo "── starting isolated portal on :$port"
-env -C "$repo" "$tmp/hausv-org" >"$tmp/app.log" 2>&1 &
+env -C "$repo" "$tmp/hausv-org" >"$app_log" 2>&1 &
 set -g HAUSV_QA_PID $last_pid
 
 set -l ready 0
@@ -94,17 +114,44 @@ for i in (seq 60)
 end
 if test $ready -eq 0
     echo "Portal wurde nicht bereit:" >&2
-    command tail -n 80 "$tmp/app.log" >&2
+    command tail -n 80 "$app_log" >&2
     exit 1
 end
 
-echo "── running Playwright role flows"
-node "$repo/scripts/snapshot/qa-main-flows.mjs" "http://localhost:$port"; or exit 1
+if test "$HV_QA_CI_CORE" = true
+    echo "── running Playwright resident/admin CI core"
+else
+    echo "── running full Playwright role flows"
+end
+node "$repo/scripts/snapshot/qa-main-flows.mjs" "http://localhost:$port" 2>&1 | tee "$playwright_log"
+set -l qa_status $pipestatus[1]
+if test $qa_status -ne 0
+    if test -n "$artifact_dir"
+        echo "  Fehlerartefakte: $artifact_dir" >&2
+    end
+    exit $qa_status
+end
+if test "$HV_QA_LANDING_ONLY" != true
+    if not command grep -q '^fake map tile served /map-tiles/' "$fake_ha_log"
+        echo "Lokale Karten-Fixture wurde nicht verwendet; Browser-QA darf keine öffentliche Kachelquelle benötigen." >&2
+        exit 1
+    end
+    echo "  ✓ Kartenkacheln vollständig aus lokaler PNG-Fixture"
+end
 if test "$HV_QA_LANDING_ONLY" = true
     echo "  ✓ Startseiten-QA vollständig"
+else if test "$HV_QA_CI_CORE" = true
+    echo "  ✓ Bewohner/Admin-CI-Kernlauf vollständig"
 else
     echo "  ✓ Rollen-QA vollständig"
 end
 
 echo "── checking structured logs"
-python3 "$repo/scripts/check-structured-logs.py" < "$tmp/app.log"; or exit 1
+python3 "$repo/scripts/check-structured-logs.py" < "$app_log" 2>&1 | tee "$structured_log"
+set -l log_status $pipestatus[1]
+if test $log_status -ne 0
+    if test -n "$artifact_dir"
+        echo "  Fehlerartefakte: $artifact_dir" >&2
+    end
+    exit $log_status
+end

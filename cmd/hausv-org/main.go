@@ -18,6 +18,32 @@ import (
 	"github.com/markus-barta/hausv-org/internal/server"
 )
 
+const (
+	httpReadHeaderTimeout = 5 * time.Second
+	httpReadTimeout       = 60 * time.Second
+	httpWriteTimeout      = 120 * time.Second
+	httpIdleTimeout       = 90 * time.Second
+	httpMaxHeaderBytes    = 32 << 10
+)
+
+type httpServerLimits struct {
+	readHeaderTimeout time.Duration
+	readTimeout       time.Duration
+	writeTimeout      time.Duration
+	idleTimeout       time.Duration
+	maxHeaderBytes    int
+}
+
+func productionHTTPServerLimits() httpServerLimits {
+	return httpServerLimits{
+		readHeaderTimeout: httpReadHeaderTimeout,
+		readTimeout:       httpReadTimeout,
+		writeTimeout:      httpWriteTimeout,
+		idleTimeout:       httpIdleTimeout,
+		maxHeaderBytes:    httpMaxHeaderBytes,
+	}
+}
+
 func main() {
 	// Structured JSON logs to stderr; the request/panic middleware uses the
 	// default logger (HAUSV-141).
@@ -61,11 +87,7 @@ func main() {
 	stopEnergyRetention := app.StartEnergyRetentionWorker()
 	defer stopEnergyRetention()
 
-	srv := &http.Server{
-		Addr:              app.Addr(),
-		Handler:           app.Handler(),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
+	srv := newHTTPServer(app.Addr(), app.Handler())
 
 	// Graceful shutdown: SIGTERM arrives on every deploy. Without this, in-flight
 	// requests are killed mid-response — including a store write between its two
@@ -87,5 +109,21 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		slog.Error("graceful shutdown failed", "error", err)
+	}
+}
+
+func newHTTPServer(addr string, handler http.Handler) *http.Server {
+	return newHTTPServerWithLimits(addr, handler, productionHTTPServerLimits())
+}
+
+func newHTTPServerWithLimits(addr string, handler http.Handler, limits httpServerLimits) *http.Server {
+	return &http.Server{
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: limits.readHeaderTimeout,
+		ReadTimeout:       limits.readTimeout,
+		WriteTimeout:      limits.writeTimeout,
+		IdleTimeout:       limits.idleTimeout,
+		MaxHeaderBytes:    limits.maxHeaderBytes,
 	}
 }

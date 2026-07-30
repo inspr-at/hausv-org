@@ -1,0 +1,302 @@
+#!/usr/bin/env python3
+"""Deterministic command doubles for scripts/test-deploy.fish."""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+import re
+import shlex
+import sys
+
+
+HEAD = "a" * 40
+ORIGIN_MISMATCH = "c" * 40
+LIVE = "b" * 40
+
+
+def required(name: str) -> str:
+    value = os.environ.get(name, "")
+    if not value:
+        raise RuntimeError(f"{name} is required")
+    return value
+
+
+CASE = required("DEPLOY_FIXTURE_CASE")
+STATE = Path(required("DEPLOY_FIXTURE_STATE"))
+REPO = Path(required("DEPLOY_FIXTURE_REPO"))
+STATE.mkdir(parents=True, exist_ok=True)
+
+
+def log(command: str, args: list[str]) -> None:
+    with (STATE / "commands.log").open("a", encoding="utf-8") as handle:
+        handle.write(command + "\t" + shlex.join(args) + "\n")
+
+
+def count(name: str) -> int:
+    path = STATE / f"{name}.count"
+    current = int(path.read_text(encoding="utf-8")) if path.exists() else 0
+    current += 1
+    path.write_text(str(current), encoding="utf-8")
+    return current
+
+
+def mock_git(args: list[str]) -> int:
+    if args == ["rev-parse", "--show-toplevel"]:
+        print(REPO)
+    elif args == ["status", "--porcelain"]:
+        if CASE == "dirty":
+            print(" M VERSION")
+    elif args == ["status", "--short"]:
+        if CASE == "dirty":
+            print(" M VERSION")
+    elif args == ["fetch", "--quiet", "origin", "main"]:
+        return 1 if CASE == "fetch_fail" else 0
+    elif args == ["rev-parse", "HEAD"]:
+        print(HEAD)
+    elif args == ["rev-parse", "refs/remotes/origin/main"]:
+        print(ORIGIN_MISMATCH if CASE == "origin_mismatch" else HEAD)
+    elif args == ["rev-parse", "--short=7", "HEAD"]:
+        print(HEAD[:7])
+    elif args == ["show", "HEAD:.github/workflows/ci.yml"]:
+        if CASE == "reusable_job":
+            print(
+                "name: CI\n"
+                "jobs:\n"
+                "  test:\n"
+                "    runs-on: blacksmith-2vcpu-ubuntu-2404\n"
+                "  delegated:\n"
+                "    uses: ./.github/workflows/delegated.yml"
+            )
+            return 0
+        runner = (
+            "ubuntu-latest"
+            if CASE == "non_blacksmith"
+            else "blacksmith-2vcpu-ubuntu-2404"
+        )
+        print(
+            "name: CI\n"
+            "jobs:\n"
+            "  test:\n"
+            f"    runs-on: {runner}\n"
+            "  docker:\n"
+            "    runs-on: blacksmith-2vcpu-ubuntu-2404"
+        )
+    elif args == ["rev-parse", f"{LIVE[:7]}^{{commit}}"]:
+        print(LIVE)
+    elif len(args) >= 3 and args[:2] == ["diff", "--quiet"]:
+        return 1 if "schema" in CASE else 0
+    elif args == ["archive", "--format=tar", "HEAD"]:
+        sys.stdout.buffer.write(b"deterministic-fixture-archive")
+    else:
+        print(f"unexpected git fixture call: {args}", file=sys.stderr)
+        return 64
+    return 0
+
+
+def mock_gh(args: list[str]) -> int:
+    if args[:2] != ["run", "list"]:
+        print(f"unexpected gh fixture call: {args}", file=sys.stderr)
+        return 64
+    expected = {
+        "--repo": "inspr-at/hausv-org",
+        "--workflow": "CI",
+        "--branch": "main",
+        "--commit": HEAD,
+        "--event": "push",
+        "--limit": "10",
+        "--json": "databaseId,headSha,headBranch,status,conclusion,url",
+    }
+    for flag, value in expected.items():
+        if args.count(flag) != 1:
+            print(f"gh fixture requires exactly one {flag}", file=sys.stderr)
+            return 64
+        index = args.index(flag)
+        if index + 1 >= len(args) or args[index + 1] != value:
+            print(f"gh fixture expected {flag} {value}", file=sys.stderr)
+            return 64
+    if args.count("--jq") != 1:
+        print("gh fixture requires one --jq filter", file=sys.stderr)
+        return 64
+    jq_filter = args[args.index("--jq") + 1]
+    for proof in (
+        '.headBranch == "main"',
+        '.status == "completed"',
+        '.conclusion == "success"',
+        ".headSha",
+        "@tsv",
+    ):
+        if proof not in jq_filter:
+            print(f"gh fixture filter is missing {proof}", file=sys.stderr)
+            return 64
+    if CASE == "ci_query_fail":
+        return 1
+    if CASE == "ci_missing":
+        return 0
+    result_head = "e" * 40 if CASE == "ci_wrong_head" else HEAD
+    print(
+        f"30485824014\t{result_head}\t"
+        "https://example.invalid/actions/runs/30485824014"
+    )
+    return 0
+
+
+def mock_curl(args: list[str]) -> int:
+    url = args[-1]
+    if url.endswith("/healthz"):
+        call = count("health")
+        if CASE == "live_health_fail" and call == 1:
+            return 22
+        if CASE == "post_health_fail" and call > 1:
+            return 22
+        print('{"service":"hausv-org","status":"ok"}')
+        return 0
+
+    call = count("page")
+    if CASE == "live_unreadable" and call == 1:
+        print("<html>version unavailable</html>")
+        return 0
+    if call == 1:
+        live_version = (
+            (REPO / "VERSION").read_text(encoding="utf-8").strip()
+            if CASE == "same_version_different_commit"
+            else "0.0.0"
+        )
+        print(f"<footer>{live_version} ({LIVE[:7]})</footer>")
+        return 0
+    version = (REPO / "VERSION").read_text(encoding="utf-8").strip()
+    commit = "ddddddd" if CASE == "post_version_mismatch" else HEAD[:7]
+    print(f"<footer>{version} ({commit})</footer>")
+    return 0
+
+
+def snapshot_path(remote: str) -> str:
+    match = re.search(r"--snapshot[ \t]+([^ \t]+)", remote)
+    if match is None:
+        raise RuntimeError("snapshot path missing from remote command")
+    return match.group(1)
+
+
+def unwrap_remote_sh(remote: str) -> tuple[str, bool]:
+    prefix = "/bin/sh -eu -c "
+    if not remote.startswith(prefix):
+        return remote, False
+    escaped = remote[len(prefix) :]
+    if len(escaped) >= 2 and escaped.startswith("'") and escaped.endswith("'"):
+        # `scripts/deploy.fish` escapes for csb1's fish login shell. Within a
+        # fish single-quoted argument, backslash only needs to preserve a
+        # literal backslash or quote for the subsequent /bin/sh invocation.
+        return escaped[1:-1].replace("\\'", "'").replace("\\\\", "\\"), True
+    return escaped, True
+
+
+def require_remote_sh(wrapped: bool, operation: str) -> bool:
+    if wrapped:
+        return True
+    print(f"{operation} did not use /bin/sh -eu -c", file=sys.stderr)
+    return False
+
+
+def mock_ssh(args: list[str]) -> int:
+    remote = args[-1]
+    script, wrapped = unwrap_remote_sh(remote)
+
+    if "--source /var/lib/csb1-docker/hausv-org" in script:
+        if not require_remote_sh(wrapped, "snapshot"):
+            return 64
+        sys.stdin.buffer.read()
+        if CASE in {"schema_snapshot_fail", "schema_snapshot_recovery_fail"}:
+            return 1
+        print(f"snapshot-path={snapshot_path(script)}")
+        print("snapshot-created=2026-07-30T12:00:00Z")
+        print("snapshot-integrity=ok")
+        print("service-health=healthy")
+        return 0
+
+    if "log_file=" in script:
+        if not require_remote_sh(wrapped, "start-log check"):
+            return 64
+        return 1 if CASE == "schema_startlog_fail" else 0
+
+    if remote.startswith("docker inspect --format"):
+        if CASE == "schema_snapshot_recovery_fail":
+            print("unhealthy")
+            return 0
+        print("healthy")
+        return 0
+
+    if "docker tag" in script and "prev-" in script:
+        if not require_remote_sh(wrapped, "rollback image preservation"):
+            return 64
+        required = (
+            "running_image_id=",
+            "latest_image_id=",
+            "previous_image_id=",
+            "docker tag",
+            "docker image inspect --format '{{.Id}}'",
+        )
+        if any(fragment not in script for fragment in required):
+            print("rollback image preservation is incomplete", file=sys.stderr)
+            return 64
+        return 1 if CASE == "preserve_fail" else 0
+
+    if "docker build" in script:
+        if not require_remote_sh(wrapped, "release build"):
+            return 64
+        sys.stdin.buffer.read()
+        return 1 if CASE == "build_fail" else 0
+
+    if "docker tag" in script and "release-" in script:
+        if not require_remote_sh(wrapped, "activation"):
+            return 64
+        return 1 if CASE == "activation_fail" else 0
+
+    if "docker image inspect" in script and "docker compose config" in script:
+        # Simulate the exact production failure mode: with csb1's fish login
+        # shell, an early failure followed by a successful final command can be
+        # reported as success. The explicit sh wrapper must preserve failure.
+        if CASE == "remote_early_failure_masked":
+            return 1 if wrapped else 0
+        if not require_remote_sh(wrapped, "remote preflight"):
+            return 64
+        required = (
+            "running_image_id=",
+            "latest_image_id=",
+            'test "$running_image_id" = "$latest_image_id"',
+            "previous_image_id=",
+            "docker image inspect --format '{{.Id}}'",
+        )
+        if any(fragment not in script for fragment in required):
+            print("remote image identity preflight is incomplete", file=sys.stderr)
+            return 64
+        if CASE in {
+            "remote_preflight_fail",
+            "retry_after_activation_fail",
+            "rollback_tag_conflict",
+        }:
+            return 1
+        return 0
+
+    print(f"unexpected ssh fixture call: {remote}", file=sys.stderr)
+    return 64
+
+
+def main() -> int:
+    command = Path(sys.argv[0]).name
+    args = sys.argv[1:]
+    log(command, args)
+    if command == "git":
+        return mock_git(args)
+    if command == "gh":
+        return mock_gh(args)
+    if command == "curl":
+        return mock_curl(args)
+    if command == "ssh":
+        return mock_ssh(args)
+    if command == "sleep":
+        return 0
+    print(f"unexpected fixture command: {command}", file=sys.stderr)
+    return 64
+
+
+raise SystemExit(main())
