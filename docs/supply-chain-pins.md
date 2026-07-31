@@ -5,9 +5,21 @@ ist nur so viel wert wie die Eingaben dahinter: ein bewegliches
 `actions/checkout@v6` oder ein `FROM golang:1.26.5-alpine` ohne Digest lässt
 denselben Commit morgen aus anderen Bytes bauen.
 
-Deshalb sind alle extern aufgelösten CI- und Build-Eingaben unveränderlich
-festgelegt. `scripts/check-supply-chain-pins.py` erzwingt das bei jedem CI-Lauf
-und lokal; es braucht kein Netz und meldet alle Funde auf einmal.
+Deshalb sind die extern aufgelösten CI- und Build-Eingaben festgelegt — bis auf
+eine bewusste Ausnahme, den Go-Patchstand (siehe unten).
+
+Durchgesetzt wird das an zwei Stellen, und es ist wichtig zu wissen, welche
+was abdeckt:
+
+- `scripts/check-supply-chain-pins.py` prüft textuell drei Dinge: Action-SHAs,
+  die exakte Node-Patchversion und `sha256`-Digests der Basisimages. Es braucht
+  kein Netz und meldet alle Funde auf einmal.
+- `scripts/snapshot/verify-versions.mjs` prüft zur Laufzeit, was tatsächlich
+  gestartet ist: Node, Playwright und Chromium.
+
+Nicht maschinell geprüft sind die govulncheck-Version, der lesbare
+`# <tag>`-Kommentar hinter einer Action-SHA und der Go-Pin. Wer diese ändert,
+muss selbst hinsehen.
 
 ## Was festgelegt ist
 
@@ -18,9 +30,16 @@ und lokal; es braucht kein Netz und meldet alle Funde auf einmal.
 | Playwright und Browser | exakte Version plus `package-lock.json`, Installation mit `npm ci` | `scripts/snapshot/` |
 | Docker-Basisimages | lesbarer Tag **und** `@sha256:`-Digest | `Dockerfile` |
 | govulncheck | exakte Version im `go install`-Aufruf | `.github/workflows/ci.yml` |
-| Go | `go-version-file: go.mod` | `.github/workflows/ci.yml` |
+| Go | Minor aus `go.mod`, Patch **bewusst beweglich** | `.github/workflows/ci.yml` |
 
 Ein kurzer SHA gilt nicht: er ist mehrdeutig und wird abgelehnt.
+
+Die Go-Zeile ist die eine bewusste Ausnahme: alle `setup-go`-Schritte setzen
+`check-latest: true` und holen damit den neuesten Patch der in `go.mod`
+festgelegten Minor-Version aus dem Netz. Das ist Absicht — so landen
+Stdlib-CVE-Fixes ohne Zutun im Build (HAUSV-139: der `crypto/tls`-Fix kam in
+einem Patch-Release). Der Preis ist, dass derselbe Commit morgen mit einem
+anderen Go-Patch gebaut werden kann.
 
 ## Aktualisieren
 
@@ -41,8 +60,12 @@ den Commit auflösen. Den lesbaren Tag als Kommentar hinter der SHA behalten.
 ### Node
 
 ```fish
-curl -s https://nodejs.org/dist/index.json | jq -r '[.[] | select(.version | startswith("v24."))][0].version'
+curl -s https://nodejs.org/dist/index.json \
+  | jq -r '[.[] | select(.version | startswith("v24."))][0].version | ltrimstr("v")'
 ```
+
+Das `ltrimstr("v")` gehört dazu: `node-version` muss `24.18.1` lauten. Mit dem
+führenden `v` schlägt `check-supply-chain-pins.py` fehl.
 
 ### Docker-Basisimage
 
@@ -106,4 +129,7 @@ Sinnvolle Wege, bewusst noch offen:
 
 Der zweite Weg nutzt, was das Repository ohnehin für die lokale Entwicklung
 mitbringt, kostet in CI aber die Installation von Nix. Die Entscheidung steht
-noch aus; bis dahin ist dies die einzige bewegliche Eingabe im Lauf.
+noch aus.
+
+Damit gibt es zwei bewegliche Eingaben: den Go-Patchstand — bewusst, für
+CVE-Fixes — und `fish` — unbewusst, offen.

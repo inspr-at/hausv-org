@@ -54,14 +54,39 @@ die Kurzform bleibt unverändert gültig.
 }
 ```
 
-`flexibility` akzeptiert `shift`, `throttle`, `fixed` oder `unknown`. Nur
-`shift` und `throttle` zählen zusammen mit `rated_power_kw` in die
-Peak-Wirkung; ohne beides erscheint der Verbraucher im Verbrauch, verspricht
-aber nichts. Fehlt `flexibility`, gilt die Vorbelegung der Art.
+`flexibility` akzeptiert `shift`, `throttle`, `fixed` oder `unknown`; alles
+andere wird stillschweigend zu `unknown`. Nur `shift` und `throttle` zählen in
+die Peak-Wirkung, `fixed` und `unknown` nicht.
+
+Fehlt eine Angabe, greift die Vorbelegung der Art — ein Seed ist eine Vorlage,
+keine Messung:
+
+| fehlendes Feld | Vorbelegung |
+|---|---|
+| `flexibility` | `ev`, `wallbox`, `hot-water`, `sauna` → `shift`; `heat-pump`, `battery`, `air-conditioning` → `throttle`; sonst `unknown` |
+| `rated_power_kw` | `ev`, `wallbox`, `battery` → 3 kW; `hot-water`, `heat-pump` → 1 kW; sonst 0 kW |
+
+Ein `{"kind":"ev","name":"Zweitauto"}` ohne weitere Felder wird also mit 3 kW
+als verschiebbar gerechnet. Wer das nicht will, setzt `flexibility` auf `fixed`.
+
+Zwei Dinge sind ausgenommen: eine PV-Anlage zählt nie in die Peak-Wirkung —
+Erzeugung verschiebt die Bezugsspitze nicht —, und `ev` und `wallbox` zählen
+zusammen nur einmal, weil sie dieselbe Ladelast beschreiben. Von beiden gewinnt
+der Eintrag mit erfasster `rated_power_kw`.
 
 Benannte Verbraucher erhalten eine aus Art und Name abgeleitete, stabile ID.
 Mehrere Verbraucher derselben Art bestehen damit nebeneinander, und ein
-Neustart verdoppelt sie nicht.
+Neustart verdoppelt sie nicht. Zwei Namen, die auf dieselbe ID normalisieren
+(`"Sauna Keller"` und `"sauna-keller"`), lassen den Start scheitern statt sich
+gegenseitig zu überschreiben — ebenso ein Eintrag ohne `kind` oder ein Name
+ganz ohne Buchstaben und Ziffern. Seeding läuft genau einmal pro Zuhause; ein
+still verworfener Eintrag käme nie wieder.
+
+`complete` ist optional und hat eine Nebenwirkung, die man kennen muss: es
+überspringt das Onboarding auf Schritt 5 **und startet die drei Jahre
+kostenfreie Nutzung**. Ohne das Feld beginnt der Haushalt regulär bei Schritt 1.
+Eine Betriebsart kann ein Seed nie setzen — er kann keine Steuerung
+freischalten.
 
 Die drei Slugs müssen zuvor jeweils als eigener Eintrag in `WEG_TENANTS_JSON`
 existieren. So bleiben Personen, Daten, Geräte und Berechtigungen strikt
@@ -126,8 +151,12 @@ timestamp;import_kwh
 2026-07-01T00:15:00+02:00;0,38
 ```
 
-- `timestamp` muss eine Zeitzone enthalten und exakt auf Minute 00, 15, 30 oder
-  45 liegen.
+- `timestamp` muss exakt auf Minute 00, 15, 30 oder 45 liegen. Mit Zeitzone
+  (`2026-07-01T00:15:00+02:00`) ist die Angabe eindeutig — das ist die
+  empfohlene Form. Ohne Zeitzone werden auch `2026-07-01 00:15:00`,
+  `2026-07-01 00:15` und `01.07.2026 00:15` gelesen und in der Zeitzone des
+  Hauses ausgelegt; bei der Umstellung auf Winterzeit ist eine solche Angabe
+  zweideutig.
 - `import_kwh` ist die in dieser Viertelstunde aus dem Netz bezogene Energie.
 - Dieselbe Datei kann wiederholt importiert werden, ohne doppelte Intervalle zu
   erzeugen.

@@ -7616,7 +7616,7 @@ const PageTemplates = `
               </select></label>
               <button class="button primary" type="submit">Verbraucher hinzufügen</button>
             </form>
-            <small class="muted">Nur Verbraucher mit Leistung und gesetzter Flexibilität zählen in die Peak-Wirkung. Ohne beides erscheinen sie im Verbrauch, versprechen aber nichts.</small>
+            <small class="muted">Ohne gesetzte Flexibilität zählt ein Verbraucher nur im Verbrauch, nicht in der Peak-Wirkung. Fehlt die Leistung, rechnen wir mit einem Richtwert der Art (E-Auto, Wallbox und Speicher 3 kW, Wärmepumpe und Warmwasser 1 kW) — Ihre eigene Angabe ist genauer. Eine PV-Anlage zählt nie in die Peak-Wirkung: Erzeugung verschiebt die Bezugsspitze nicht.</small>
           </details>{{end}}
         </div>
         <div class="energy-business-note"><span aria-hidden="true">◎</span><p><strong>Kostenmodell:</strong> voller Produktumfang drei Jahre kostenlos{{if .FreeUntil}} bis {{.FreeUntil}}{{end}}, danach nach heutigem Modell 12 € pro Jahr. Kein Zahlungszwang während des Piloten.</p></div>
