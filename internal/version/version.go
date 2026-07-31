@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.60.0",
+			Date:     "31. Juli 2026",
+			Kind:     "Auftritt & Orientierung",
+			Headline: "Die Startseite zeigt ein dreidimensionales Markenzeichen und behält die Kopfzeile im Blick.",
+			Intro:    "Das Markenzeichen empfängt Besucher groß über der Überschrift und wandert beim Scrollen ruhig in die feste Kopfzeile.",
+			Items: []NoteItem{
+				{Label: "Marke erleben", Text: "Das Markenzeichen steht als Glasobjekt über der Überschrift und lässt sich mit der Maus drehen."},
+				{Label: "Überall navigieren", Text: "Funktionen, Sicherheit, Preise, Impressum und Kontakt bleiben beim Scrollen erreichbar; die Marke führt zurück an den Seitenanfang."},
+				{Label: "Angebot benennen", Text: "Überschrift und Einleitung nennen transparentes Energiemanagement mit automatisierbarem Peak-Shaving für Eigentümer, Mieter, Beiräte und Hausverwaltungen."},
+			},
+		},
+		{
 			Version:  "0.59.2",
 			Date:     "30. Juli 2026",
 			Kind:     "Klarheit & Stabilität",
