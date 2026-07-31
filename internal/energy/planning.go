@@ -8,18 +8,25 @@ import (
 )
 
 type TariffRuleProfile struct {
-	ID                  string
-	Version             string
-	Status              string
-	SourceTitle         string
-	SourceURL           string
-	ValidFrom           time.Time
-	ValidUntil          *time.Time
-	QuarterMinutes      int
-	MonthlyMaximum      bool
-	MinimumKW           float64
-	MinimumShare        float64
-	ReferenceKW         float64
+	ID             string
+	Version        string
+	Status         string
+	SourceTitle    string
+	SourceURL      string
+	ValidFrom      time.Time
+	ValidUntil     *time.Time
+	QuarterMinutes int
+	MonthlyMaximum bool
+	MinimumKW      float64
+	MinimumShare   float64
+	// TierThresholdKW ist die laufende Tarifstaffel nach § 6 Abs. 2 des
+	// Entwurfs: bis hierher gilt der günstigere Satz, darüber der höhere.
+	//
+	// Bewusst NICHT "ReferenceKW": der 10-kW-Referenzwert nach § 18 ist eine
+	// einmalige Übergangsbestimmung für Bestandsanschlüsse und hat mit der
+	// laufenden Staffel nichts zu tun. Beide tragen denselben Zahlenwert, und
+	// sie zu verwechseln ist laut Quelle der häufigste Fehler im Thema.
+	TierThresholdKW     float64
 	AnnualBelowEURPerKW float64
 	AnnualAboveEURPerKW float64
 	Assumptions         []string
@@ -30,44 +37,70 @@ func AustrianDraft2027() TariffRuleProfile {
 		ID:                  "at-ne7-draft-2027-v1",
 		Version:             "2026-07-28",
 		Status:              "draft",
-		SourceTitle:         "Enercab: Leistungstarif 2027 – aktualisierte Einordnung",
-		SourceURL:           "https://www.enercab.eu/leistungstarif-video.html",
+		SourceTitle:         "E-Control, Begutachtungsentwurf SNE-G-V (V SNE 01_26); Einordnung enercab",
+		SourceURL:           "https://www.enercab.eu/leistungstarif-2027.html",
 		ValidFrom:           time.Date(2027, time.January, 1, 0, 0, 0, 0, time.Local),
 		QuarterMinutes:      15,
 		MonthlyMaximum:      true,
 		MinimumKW:           2,
 		MinimumShare:        0.20,
-		ReferenceKW:         10,
+		TierThresholdKW:     10,
 		AnnualBelowEURPerKW: 33.82,
 		AnnualAboveEURPerKW: 67.64,
 		Assumptions: []string{
 			"Höchste mittlere Bezugsleistung eines Kalendermonats.",
 			"Mindestbemessung: Entwurfsannahme 20 % der vereinbarten Leistung, mindestens 2 kW.",
-			"Preiswerte und 10-kW-Knick sind unverbindliche Modellannahmen, keine geltenden Tarife.",
-			"SNAP und WiNAP werden getrennt betrachtet und verändern die Peak-Messung nicht.",
+			"Preiswerte und die 10-kW-Staffel nach § 6 Abs. 2 sind unverbindliche Modellannahmen, keine geltenden Tarife.",
+			"Die Staffel ist nicht der 10-kW-Referenzwert nach § 18; dieser betrifft nur Bestandsanschlüsse einmalig.",
+			"SNAP und WiNAP wirken ausschließlich auf den Arbeitspreis und verändern die Monatsspitze nicht.",
+			"Energiegemeinschaften senken den Arbeitspreis, nicht die verrechnete Leistung.",
 		},
 	}
 }
 
 type TariffEstimate struct {
-	ProfileID       string
-	BilledKW        float64
-	AnnualPowerEUR  float64
+	ProfileID      string
+	BilledKW       float64
+	AnnualPowerEUR float64
+	// BelowKW und AboveKW teilen die verrechnete Leistung an der Staffel auf.
+	// Getrennt ausgewiesen, weil der Grenznutzen des Kappens oberhalb der
+	// Schwelle doppelt so hoch ist — das ist die eigentliche Handlungsaussage.
+	BelowKW float64
+	AboveKW float64
+	// MinimumReason benennt, warum die verrechnete Leistung über der gemessenen
+	// Spitze liegt. Leer, solange die Spitze selbst maßgeblich ist. Ohne das
+	// wirkt die Mindestbemessung wie ein Rechenfehler.
+	MinimumReason   string
 	AssumptionLabel string
 	Guaranteed      bool
 }
 
+// Estimate rechnet die Monatsspitze in die verrechnete Leistung um. agreedKW
+// ist die vereinbarte Anschlussleistung; 0 heißt "nicht erfasst", dann bleibt
+// die 20-%-Mindestbemessung außen vor und nur der 2-kW-Sockel greift.
 func (profile TariffRuleProfile) Estimate(monthlyPeakKW, agreedKW float64) TariffEstimate {
-	billed := math.Max(monthlyPeakKW, profile.MinimumKW)
-	if agreedKW > 0 {
-		billed = math.Max(billed, agreedKW*profile.MinimumShare)
+	billed := monthlyPeakKW
+	reason := ""
+	if billed < profile.MinimumKW {
+		billed = profile.MinimumKW
+		reason = "Sockel der Mindestbemessung"
 	}
-	below := math.Min(billed, profile.ReferenceKW)
-	above := math.Max(0, billed-profile.ReferenceKW)
+	if agreedKW > 0 {
+		share := agreedKW * profile.MinimumShare
+		if share > billed {
+			billed = share
+			reason = "Mindestbemessung aus der vereinbarten Leistung"
+		}
+	}
+	below := math.Min(billed, profile.TierThresholdKW)
+	above := math.Max(0, billed-profile.TierThresholdKW)
 	return TariffEstimate{
 		ProfileID:       profile.ID,
 		BilledKW:        round2(billed),
 		AnnualPowerEUR:  round2(below*profile.AnnualBelowEURPerKW + above*profile.AnnualAboveEURPerKW),
+		BelowKW:         round2(below),
+		AboveKW:         round2(above),
+		MinimumReason:   reason,
 		AssumptionLabel: "Unverbindliche Modellrechnung auf Basis eines Begutachtungsentwurfs",
 		Guaranteed:      false,
 	}

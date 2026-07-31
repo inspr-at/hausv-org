@@ -1198,6 +1198,12 @@ const PageTemplates = `
     .energy-tariff-copy p { color: var(--muted); font-size: 13px; line-height: 1.5; }
     .energy-tariff-copy a { color: #765f1d; font-weight: 750; }
     .energy-target-form { display: grid; align-content: start; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: #fff; }
+    .energy-billed { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 12px; margin: 14px 0 4px; }
+    .energy-billed > div { border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 12px; background: #fff; display: grid; gap: 2px; }
+    .energy-billed span { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+    .energy-billed strong { font-size: 22px; line-height: 1.1; }
+    .energy-billed small { color: var(--muted); font-size: 12px; }
+    .energy-billed-above { border-color: rgba(200,153,63,.42); background: rgba(200,153,63,.08); }
     .energy-target-form input { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 12px; }
     .energy-history { display: grid; gap: 8px; margin-top: 16px; }
     .energy-history-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 12px; font-size: 13px; }
@@ -7561,9 +7567,19 @@ const PageTemplates = `
       <section class="energy-card" id="tarif">
         <header class="energy-card-head"><div><h2>Tarif-Entwurf 2027</h2><p>Versioniert und jederzeit austauschbar.</p></div><span class="pill">{{.Tariff.Status}}</span></header>
         {{if .TargetChanged}}<div class="message success">Ihr persönliches Peak-Ziel wurde gespeichert.</div>{{end}}
+        {{if .AgreedPowerChanged}}<div class="message success">Die vereinbarte Anschlussleistung wurde gespeichert.</div>{{end}}
+        {{if .Tariff.HasEstimate}}<div class="energy-billed" aria-label="Verrechnete Leistung nach dem Entwurf">
+          <div><span>Höchste Viertelstunde</span><strong>{{.Tariff.PeakKW}}</strong></div>
+          <div><span>Verrechnet</span><strong>{{.Tariff.BilledKW}}</strong>{{if .Tariff.MinimumReason}}<small>{{.Tariff.MinimumReason}}</small>{{end}}</div>
+          {{if .Tariff.HasTier}}<div><span>Günstigere Stufe</span><strong>{{.Tariff.BelowKW}}</strong></div>
+          <div class="energy-billed-above"><span>Höhere Stufe</span><strong>{{.Tariff.AboveKW}}</strong></div>{{end}}
+        </div>
+        {{if .Tariff.HasTier}}<p class="energy-chart-hint">{{.Tariff.TierHint}}</p>{{end}}
+        <p class="energy-chart-hint">Niedertarif-Fenster (SNAP, WiNAP) und Energiegemeinschaften senken den Arbeitspreis, nicht die verrechnete Leistung.</p>{{end}}
         {{if eq .TariffAssessmentStatus "saved"}}<div class="message success">Diese Modellbewertung wurde mit ihrer damaligen Regelversion festgehalten.</div>{{else if eq .TariffAssessmentStatus "no_data"}}<div class="message">Für eine historische Bewertung fehlen noch abgeschlossene Viertelstunden.</div>{{end}}
         <div class="energy-tariff-grid"><div class="energy-tariff-copy"><strong>{{.Tariff.Rule}}</strong>{{if .Tariff.HasEstimate}}<p><strong>{{.Tariff.Estimate}}</strong></p>{{end}}<p>{{.Tariff.Disclaimer}}</p><p>Regelprofil {{.Tariff.ID}} · Stand {{.Tariff.Version}}</p><a href="{{.Tariff.SourceURL}}" target="_blank" rel="noopener noreferrer">Quelle: {{.Tariff.SourceTitle}} →</a></div>
-        {{if .CanManageEnergy}}<form class="energy-target-form" method="post" action="/app/energie/target"><label><span class="onboarding-legend">Persönliches Peak-Ziel in kW</span><input type="text" name="target_peak_kw" inputmode="decimal" value="{{.TargetPeakValue}}" placeholder="z. B. 8,0" required></label><small class="muted">Ein Planungsziel, keine technische Anschlussgrenze.</small><button class="button" type="submit">Ziel speichern</button></form>{{end}}</div>
+        {{if .CanManageEnergy}}<form class="energy-target-form" method="post" action="/app/energie/target"><label><span class="onboarding-legend">Persönliches Peak-Ziel in kW</span><input type="text" name="target_peak_kw" inputmode="decimal" value="{{.TargetPeakValue}}" placeholder="z. B. 8,0" required></label><small class="muted">Ein Planungsziel, keine technische Anschlussgrenze.</small><button class="button" type="submit">Ziel speichern</button></form>
+        <form class="energy-target-form" method="post" action="/app/energie/anschlussleistung"><label><span class="onboarding-legend">Vereinbarte Anschlussleistung in kW</span><input type="text" name="agreed_power_kw" inputmode="decimal" value="{{.AgreedPowerValue}}" placeholder="z. B. 14,0"></label><small class="muted">{{if .Tariff.HasAgreed}}Steht auf Ihrer Netzrechnung. Der Entwurf bemisst mindestens 20 % davon.{{else}}{{.Tariff.AgreedHint}}{{end}} Leer lassen, wenn unbekannt.</small><button class="button" type="submit">Anschlussleistung speichern</button></form>{{end}}</div>
         {{if and .CanManageEnergy .Tariff.HasEstimate}}<form method="post" action="/app/energie/tariff/assessment"><button class="button" type="submit">Diesen Stand festhalten</button></form>{{end}}
         {{if .HasTariffAssessments}}<div class="energy-history"><h4>Festgehaltene Bewertungen</h4><div aria-label="Historische Tarifbewertungen">{{range .TariffAssessments}}<article class="energy-history-row"><div><strong>{{.Month}} · {{.Peak}}</strong><span>{{.Profile}} · {{.Quality}}</span></div><strong>{{.Annual}}</strong><small>{{.Created}}</small></article>{{end}}</div></div>{{end}}
       </section>

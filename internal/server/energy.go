@@ -190,6 +190,18 @@ type energyTariffView struct {
 	Estimate    string
 	HasEstimate bool
 	Disclaimer  string
+	// Verrechnete Leistung und ihre Aufteilung an der Staffel. Getrennt
+	// ausgewiesen, damit sichtbar wird, wo Kappen doppelt so viel bringt.
+	PeakKW        string
+	BilledKW      string
+	BelowKW       string
+	AboveKW       string
+	HasTier       bool
+	MinimumReason string
+	AgreedKW      string
+	HasAgreed     bool
+	AgreedHint    string
+	TierHint      string
 }
 
 type energyScenarioView struct {
@@ -1022,7 +1034,9 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"Scenarios":               scenarioViews,
 		"HasScenarios":            len(scenarioViews) > 0,
 		"TargetChanged":           r.URL.Query().Get("target") == "1",
+		"AgreedPowerChanged":      r.URL.Query().Get("agreed") == "1",
 		"TargetPeakValue":         energyTargetValue(profile.TargetPeakKW),
+		"AgreedPowerValue":        energyTargetValue(profile.AgreedPowerKW),
 		"Caretakers":              caretakers,
 		"HasCaretakers":           len(caretakers) > 0,
 		"CaretakerChanged":        r.URL.Query().Get("caretaker") == "1",
@@ -1569,6 +1583,65 @@ func (a *app) updateEnergyTarget(w http.ResponseWriter, r *http.Request, ac auth
 	http.Redirect(w, r, "/app/energie?target=1#tarif", http.StatusSeeOther)
 }
 
+// updateEnergyAgreedPower speichert die mit dem Netzbetreiber vereinbarte
+// Anschlussleistung. Sie ist keine Zielgröße, sondern eine Vertragstatsache:
+// ab 2027 bemisst der Entwurf mindestens 20 % davon, auch in einem Monat ohne
+// jede Spitze.
+func (a *app) updateEnergyAgreedPower(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.canManageEnergy(ac) {
+		http.Error(w, "Kein Zugriff", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
+		return
+	}
+	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	if err != nil || !exists {
+		http.Error(w, "Hausprofil fehlt.", http.StatusBadRequest)
+		return
+	}
+	before := ""
+	if profile.AgreedPowerKW != nil {
+		before = formatEnergyNumber(*profile.AgreedPowerKW)
+	}
+	raw := strings.TrimSpace(r.FormValue("agreed_power_kw"))
+	if raw == "" {
+		// Leeren heißt "nicht erfasst" — die Mindestbemessung ruht dann wieder,
+		// statt gegen einen alten Wert weiterzurechnen.
+		profile.AgreedPowerKW = nil
+	} else {
+		value, parseErr := homeassistant.ParseFloat(raw)
+		if parseErr != nil || value <= 0 || value > 1000 {
+			http.Error(w, "Vereinbarte Anschlussleistung muss eine positive kW-Zahl sein.", http.StatusBadRequest)
+			return
+		}
+		profile.AgreedPowerKW = &value
+	}
+	if err := a.energyStore.SaveProfile(profile); err != nil {
+		http.Error(w, "Anschlussleistung konnte nicht gespeichert werden.", http.StatusInternalServerError)
+		return
+	}
+	after := ""
+	if profile.AgreedPowerKW != nil {
+		after = formatEnergyNumber(*profile.AgreedPowerKW)
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: ac.tenant.Slug,
+		ActorEmail: ac.email,
+		ActorRole:  ac.role,
+		Action:     "energy.agreed_power.change",
+		TargetType: "home-profile",
+		TargetID:   ac.tenant.Slug,
+		Summary:    "Vereinbarte Anschlussleistung geändert",
+		Details: map[string]string{
+			"agreed_from_kw": before,
+			"agreed_to_kw":   after,
+		},
+	})
+	http.Redirect(w, r, "/app/energie?agreed=1#tarif", http.StatusSeeOther)
+}
+
 func (a *app) updateEnergyRecommendation(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if !a.canViewEnergy(ac) {
 		http.Error(w, "Kein Zugriff", http.StatusForbidden)
@@ -1915,7 +1988,10 @@ func (a *app) saveEnergyTariffAssessment(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	rules := energy.AustrianDraft2027()
-	estimate := rules.Estimate(peak, 0)
+	// Die vereinbarte Anschlussleistung entscheidet über die Mindestbemessung.
+	// Fehlt das Profil, bleibt sie 0 und nur der 2-kW-Sockel greift.
+	assessedProfile, _, _ := a.energyStore.Profile(ac.tenant.Slug)
+	estimate := rules.Estimate(peak, agreedPowerKW(assessedProfile))
 	gaps, conflicts := intervalQualityCounts(intervals)
 	quality := energy.QualityMeasured
 	if gaps > 0 || conflicts > 0 {
@@ -2789,7 +2865,10 @@ func (a *app) energy24HourChart(ctx context.Context, tenant tenantConfig, mappin
 	if len(entityIDs) == 0 {
 		return view
 	}
-	threshold := energy.AustrianDraft2027().ReferenceKW
+	// Die Staffelschwelle dient hier nur als sinnvolle Vorbelegung der
+	// Planungsgrenze. Sie bleibt eine Produktannahme und wird als solche
+	// beschriftet — sie bildet weder die Tarifstaffel noch den § 18-Referenzwert ab.
+	threshold := energy.AustrianDraft2027().TierThresholdKW
 	view.ThresholdLabel = "Planungsgrenze"
 	if profile.TargetPeakKW != nil && *profile.TargetPeakKW > 0 {
 		threshold = *profile.TargetPeakKW
@@ -3613,10 +3692,35 @@ func buildEnergyTariffView(profile energy.HomeProfile, intervals []energy.Interv
 	if peak <= 0 {
 		return view
 	}
-	estimate := rules.Estimate(peak, 0)
+	estimate := rules.Estimate(peak, agreedPowerKW(profile))
 	view.Estimate = formatEnergyNumber(estimate.AnnualPowerEUR) + " € pro Jahr als reine Modellgröße"
 	view.HasEstimate = true
+	view.PeakKW = formatEnergyCompact(peak, 1) + " kW"
+	view.BilledKW = formatEnergyCompact(estimate.BilledKW, 1) + " kW"
+	view.MinimumReason = estimate.MinimumReason
+	if estimate.AboveKW > 0 {
+		view.HasTier = true
+		view.BelowKW = formatEnergyCompact(estimate.BelowKW, 1) + " kW"
+		view.AboveKW = formatEnergyCompact(estimate.AboveKW, 1) + " kW"
+		view.TierHint = "Der Anteil über " + formatEnergyCompact(rules.TierThresholdKW, 0) + " kW wird im Entwurf mit dem höheren Satz bemessen. Dort wirkt Kappen etwa doppelt so stark."
+	}
+	if agreed := agreedPowerKW(profile); agreed > 0 {
+		view.HasAgreed = true
+		view.AgreedKW = formatEnergyCompact(agreed, 1) + " kW"
+	} else {
+		view.AgreedHint = "Ohne vereinbarte Anschlussleistung rechnet die Schätzung nur mit dem 2-kW-Sockel. Der Wert steht auf Ihrer Netzrechnung."
+	}
 	return view
+}
+
+// agreedPowerKW liefert 0, solange die vereinbarte Anschlussleistung nicht
+// erfasst ist. Estimate lässt die 20-%-Mindestbemessung dann bewusst aus,
+// statt sie gegen einen geratenen Wert zu rechnen.
+func agreedPowerKW(profile energy.HomeProfile) float64 {
+	if profile.AgreedPowerKW == nil {
+		return 0
+	}
+	return *profile.AgreedPowerKW
 }
 
 func buildEnergyScenarioViews(assets []energy.Asset, intervals []energy.Interval) []energyScenarioView {

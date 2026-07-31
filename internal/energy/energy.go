@@ -46,15 +46,19 @@ const (
 )
 
 type HomeProfile struct {
-	TenantSlug           string
-	UnitID               string
-	HomeType             string
-	HouseholdName        string
-	OperatingMode        string
-	AutomationStage      string
-	OnboardingStep       int
-	OnboardingComplete   bool
-	TargetPeakKW         *float64
+	TenantSlug         string
+	UnitID             string
+	HomeType           string
+	HouseholdName      string
+	OperatingMode      string
+	AutomationStage    string
+	OnboardingStep     int
+	OnboardingComplete bool
+	TargetPeakKW       *float64
+	// AgreedPowerKW ist die mit dem Netzbetreiber vereinbarte Anschlussleistung.
+	// nil heißt "nicht erfasst": die Mindestbemessung bleibt dann stumm, statt
+	// stillschweigend mit 0 zu rechnen.
+	AgreedPowerKW        *float64
 	RecommendationID     string
 	RecommendationStatus string
 	FreeStartedAt        *time.Time
@@ -183,6 +187,17 @@ func NormalizeProfile(profile HomeProfile, now time.Time) HomeProfile {
 			profile.TargetPeakKW = nil
 		} else {
 			profile.TargetPeakKW = &value
+		}
+	}
+	if profile.AgreedPowerKW != nil {
+		value := math.Round(*profile.AgreedPowerKW*100) / 100
+		// Ein Hausanschluss auf Netzebene 7 liegt realistisch zwischen wenigen
+		// und einigen hundert kW. Unplausibles verwerfen statt zu speichern:
+		// der Wert steuert die Mindestbemessung und damit eine Geldgröße.
+		if value <= 0 || value > 1000 {
+			profile.AgreedPowerKW = nil
+		} else {
+			profile.AgreedPowerKW = &value
 		}
 	}
 	if profile.CreatedAt.IsZero() {

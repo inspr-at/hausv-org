@@ -592,11 +592,11 @@ func (s *SQLStore) Profile(tenantSlug string) (HomeProfile, bool, error) {
 	}
 	var item HomeProfile
 	var complete int
-	var target sql.NullFloat64
+	var target, agreed sql.NullFloat64
 	var free, created, updated sql.NullString
-	err := s.db.QueryRow(`SELECT tenant_slug,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,recommendation_id,recommendation_status,free_started_at,created_at,updated_at
+	err := s.db.QueryRow(`SELECT tenant_slug,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,created_at,updated_at
 		FROM home_profiles WHERE tenant_slug=?`, normalizeSlug(tenantSlug)).
-		Scan(&item.TenantSlug, &item.UnitID, &item.HomeType, &item.HouseholdName, &item.OperatingMode, &item.AutomationStage, &item.OnboardingStep, &complete, &target, &item.RecommendationID, &item.RecommendationStatus, &free, &created, &updated)
+		Scan(&item.TenantSlug, &item.UnitID, &item.HomeType, &item.HouseholdName, &item.OperatingMode, &item.AutomationStage, &item.OnboardingStep, &complete, &target, &agreed, &item.RecommendationID, &item.RecommendationStatus, &free, &created, &updated)
 	if err == sql.ErrNoRows {
 		return HomeProfile{}, false, nil
 	}
@@ -606,6 +606,9 @@ func (s *SQLStore) Profile(tenantSlug string) (HomeProfile, bool, error) {
 	item.OnboardingComplete = complete == 1
 	if target.Valid {
 		item.TargetPeakKW = &target.Float64
+	}
+	if agreed.Valid {
+		item.AgreedPowerKW = &agreed.Float64
 	}
 	if parsed, ok := parseTime(free.String); ok {
 		item.FreeStartedAt = &parsed
@@ -627,22 +630,27 @@ func (s *SQLStore) SaveProfile(profile HomeProfile) error {
 	if profile.TargetPeakKW != nil {
 		target = *profile.TargetPeakKW
 	}
+	var agreed any
+	if profile.AgreedPowerKW != nil {
+		agreed = *profile.AgreedPowerKW
+	}
 	var free any
 	if profile.FreeStartedAt != nil {
 		free = profile.FreeStartedAt.UTC().Format(time.RFC3339Nano)
 	}
 	_, err := s.db.Exec(`INSERT INTO home_profiles
-		(tenant_slug,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,recommendation_id,recommendation_status,free_started_at,created_at,updated_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+		(tenant_slug,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,created_at,updated_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(tenant_slug) DO UPDATE SET
 		unit_id=excluded.unit_id, home_type=excluded.home_type, household_name=excluded.household_name,
 		operating_mode=excluded.operating_mode, automation_stage=excluded.automation_stage, onboarding_step=excluded.onboarding_step,
 		onboarding_complete=excluded.onboarding_complete, target_peak_kw=excluded.target_peak_kw,
+		agreed_power_kw=excluded.agreed_power_kw,
 		recommendation_id=excluded.recommendation_id, recommendation_status=excluded.recommendation_status,
 		free_started_at=COALESCE(home_profiles.free_started_at,excluded.free_started_at),
 		updated_at=excluded.updated_at`,
 		profile.TenantSlug, profile.UnitID, profile.HomeType, profile.HouseholdName, profile.OperatingMode, profile.AutomationStage,
-		profile.OnboardingStep, boolInt(profile.OnboardingComplete), target, profile.RecommendationID, profile.RecommendationStatus, free,
+		profile.OnboardingStep, boolInt(profile.OnboardingComplete), target, agreed, profile.RecommendationID, profile.RecommendationStatus, free,
 		profile.CreatedAt.Format(time.RFC3339Nano), profile.UpdatedAt.Format(time.RFC3339Nano))
 	return err
 }
