@@ -997,6 +997,9 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"ActivePage":              "energy",
 		"Profile":                 profile,
 		"Assets":                  assets,
+		"CustomConsumers":         buildEnergyCustomConsumerViews(assets),
+		"ConsumerKindOptions":     buildEnergyConsumerKindOptions(),
+		"ConsumerNotice":          r.URL.Query().Get("verbraucher"),
 		"HasAssets":               len(assets) > 0,
 		"Mappings":                mappings,
 		"HasMappings":             len(mappings) > 0,
@@ -2226,6 +2229,199 @@ func (a *app) updateEnergyCaretaker(w http.ResponseWriter, r *http.Request, ac a
 		},
 	})
 	http.Redirect(w, r, "/app/energie?caretaker=1#betreuung", http.StatusSeeOther)
+}
+
+// energyCustomAssetSource markiert Verbraucher, die frei angelegt wurden.
+//
+// Die Unterscheidung trägt Gewicht: `saveOnboardingAssets` gleicht die
+// Vorlagen destruktiv nach Art ab und löscht dabei über die aus (Haus, Art)
+// abgeleitete ID. Ein frei angelegter Verbraucher hat eine zufällige ID und
+// wird davon nicht getroffen — deshalb darf umgekehrt auch nur dieser Pfad ihn
+// wieder entfernen.
+const energyCustomAssetSource = "custom"
+
+// addEnergyConsumer legt einen frei benannten Verbraucher an.
+//
+// Die Vorlagenliste bleibt unangetastet: sie deckt die häufigen Fälle ab, ist
+// aber keine Obergrenze. Sauna, Durchlauferhitzer, Whirlpool oder Werkstatt
+// treiben die Viertelstundenspitze genauso, und ohne eigene Entität wären sie
+// im Lastmanagement unsichtbar.
+
+type energyConsumerView struct {
+	ID          string
+	Name        string
+	KindLabel   string
+	Power       string
+	Flexibility string
+}
+
+// buildEnergyCustomConsumerViews listet nur frei angelegte Verbraucher: nur
+// sie dürfen hier wieder entfernt werden, Vorlagen gehören dem Onboarding.
+func buildEnergyCustomConsumerViews(assets []energy.Asset) []energyConsumerView {
+	out := []energyConsumerView{}
+	for _, asset := range assets {
+		if asset.Source != energyCustomAssetSource {
+			continue
+		}
+		view := energyConsumerView{
+			ID:          asset.ID,
+			Name:        asset.Name,
+			KindLabel:   energy.AssetKindLabel(asset.Kind),
+			Flexibility: energyFlexibilityLabel(asset.Flexibility),
+		}
+		if asset.RatedPowerKW != nil {
+			view.Power = formatEnergyCompact(*asset.RatedPowerKW, 1) + " kW"
+		}
+		out = append(out, view)
+	}
+	sort.Slice(out, func(i, j int) bool { return strings.ToLower(out[i].Name) < strings.ToLower(out[j].Name) })
+	return out
+}
+
+func energyFlexibilityLabel(flexibility string) string {
+	switch flexibility {
+	case energy.FlexShift:
+		return "zeitlich verschiebbar"
+	case energy.FlexThrottle:
+		return "kurz begrenzbar"
+	case energy.FlexFixed:
+		return "fest"
+	default:
+		return "Flexibilität offen"
+	}
+}
+
+func buildEnergyConsumerKindOptions() []energyOption {
+	kinds := []string{"other", "sauna", "instant-water-heater", "air-conditioning", "hot-water",
+		"heat-pump", "ev", "wallbox", "pv", "battery"}
+	out := make([]energyOption, 0, len(kinds))
+	for _, kind := range kinds {
+		out = append(out, energyOption{Value: kind, Label: energy.AssetKindLabel(kind)})
+	}
+	return out
+}
+
+func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.canManageEnergy(ac) {
+		http.Error(w, "Kein Zugriff", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
+		return
+	}
+	name := cleanEnergyText(r.FormValue("name"), 80)
+	if name == "" {
+		http.Redirect(w, r, "/app/energie?verbraucher=name#anlagen", http.StatusSeeOther)
+		return
+	}
+	kind := energyConsumerKind(r.FormValue("kind"))
+
+	asset := energy.Asset{
+		ID:          energy.NewID("asset"),
+		TenantSlug:  ac.tenant.Slug,
+		Kind:        kind,
+		Name:        name,
+		Flexibility: energyConsumerFlexibility(r.FormValue("flexibility")),
+		Source:      energyCustomAssetSource,
+		Confirmed:   true,
+	}
+	if raw := strings.TrimSpace(r.FormValue("rated_power_kw")); raw != "" {
+		value, err := homeassistant.ParseFloat(raw)
+		if err != nil || value <= 0 || value > 1000 {
+			http.Redirect(w, r, "/app/energie?verbraucher=leistung#anlagen", http.StatusSeeOther)
+			return
+		}
+		asset.RatedPowerKW = &value
+	}
+	if err := a.energyStore.UpsertAsset(asset); err != nil {
+		http.Error(w, "Verbraucher konnte nicht gespeichert werden.", http.StatusInternalServerError)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: ac.tenant.Slug,
+		ActorEmail: ac.email,
+		ActorRole:  ac.role,
+		Action:     "energy.consumer.add",
+		TargetType: "energy-asset",
+		TargetID:   asset.ID,
+		Summary:    "Verbraucher angelegt",
+		Details:    map[string]string{"kind": asset.Kind, "flexibility": asset.Flexibility},
+	})
+	http.Redirect(w, r, "/app/energie?verbraucher=1#anlagen", http.StatusSeeOther)
+}
+
+// deleteEnergyConsumer entfernt ausschließlich frei angelegte Verbraucher.
+// Vorlagen gehören dem Abgleich im Onboarding; sie hier zu löschen würde beim
+// nächsten Speichern ohnehin rückgängig gemacht.
+func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.canManageEnergy(ac) {
+		http.Error(w, "Kein Zugriff", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
+		return
+	}
+	assetID := strings.TrimSpace(r.FormValue("asset_id"))
+	assets, err := a.energyStore.ListAssets(ac.tenant.Slug)
+	if err != nil {
+		http.Error(w, "Verbraucher konnten nicht geladen werden.", http.StatusInternalServerError)
+		return
+	}
+	for _, asset := range assets {
+		if asset.ID != assetID {
+			continue
+		}
+		if asset.Source != energyCustomAssetSource {
+			http.Redirect(w, r, "/app/energie?verbraucher=vorlage#anlagen", http.StatusSeeOther)
+			return
+		}
+		if _, err := a.energyStore.DeleteAsset(ac.tenant.Slug, assetID); err != nil {
+			http.Error(w, "Verbraucher konnte nicht entfernt werden.", http.StatusInternalServerError)
+			return
+		}
+		a.recordAudit(auditEvent{
+			TenantSlug: ac.tenant.Slug,
+			ActorEmail: ac.email,
+			ActorRole:  ac.role,
+			Action:     "energy.consumer.remove",
+			TargetType: "energy-asset",
+			TargetID:   assetID,
+			Summary:    "Verbraucher entfernt",
+		})
+		http.Redirect(w, r, "/app/energie?verbraucher=weg#anlagen", http.StatusSeeOther)
+		return
+	}
+	// Unbekannte ID: nicht als Fehler behandeln, aber auch nichts löschen —
+	// die Liste gehört einem anderen Haus oder ist bereits entfernt.
+	http.Redirect(w, r, "/app/energie#anlagen", http.StatusSeeOther)
+}
+
+func energyConsumerKind(raw string) string {
+	kind := strings.ToLower(strings.TrimSpace(raw))
+	switch kind {
+	case "ev", "wallbox", "heat-pump", "hot-water", "pv", "battery",
+		"sauna", "air-conditioning", "instant-water-heater":
+		return kind
+	default:
+		return "other"
+	}
+}
+
+func energyConsumerFlexibility(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case energy.FlexShift:
+		return energy.FlexShift
+	case energy.FlexThrottle:
+		return energy.FlexThrottle
+	case energy.FlexFixed:
+		return energy.FlexFixed
+	default:
+		// Unbekannt heißt: zählt in den Verbrauch, aber nicht in die
+		// Flexibilität. Lieber nichts versprechen als zu viel.
+		return energy.FlexUnknown
+	}
 }
 
 func (a *app) saveOnboardingAssets(tenantSlug string, selected []string) error {
@@ -3754,6 +3950,24 @@ func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset,
 	if has["battery"] {
 		battery += 3
 		assumptions = append(assumptions, "Speicherleistung vorerst mit 3 kW modelliert")
+	}
+	// Frei angelegte Verbraucher zählen nach ihren eigenen Eigenschaften, nicht
+	// nach ihrer Kategorie. Genau dafür existieren sie: eine Sauna mit 8 kW und
+	// Komfortspielraum ist Flexibilität, die das Vorlagenraster nicht kennt.
+	// Ohne gesetzte Flexibilität bleibt ein Verbraucher bewusst außen vor — er
+	// zählt in den Verbrauch, aber nicht in die Peak-Wirkung.
+	for _, asset := range assets {
+		if asset.Source != energyCustomAssetSource || asset.RatedPowerKW == nil {
+			continue
+		}
+		switch asset.Flexibility {
+		case energy.FlexShift:
+			shiftable += *asset.RatedPowerKW
+			assumptions = append(assumptions, asset.Name+" zeitlich verschiebbar")
+		case energy.FlexThrottle:
+			throttle += *asset.RatedPowerKW
+			assumptions = append(assumptions, asset.Name+" kurz begrenzbar")
+		}
 	}
 	if shiftable+throttle+battery == 0 {
 		return nil

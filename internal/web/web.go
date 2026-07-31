@@ -1198,6 +1198,13 @@ const PageTemplates = `
     .energy-tariff-copy p { color: var(--muted); font-size: 13px; line-height: 1.5; }
     .energy-tariff-copy a { color: #765f1d; font-weight: 750; }
     .energy-target-form { display: grid; align-content: start; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: #fff; }
+    .energy-consumers { margin-top: 16px; display: grid; gap: 12px; }
+    .energy-consumer-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .energy-consumer-list li { display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 14px; background: #fff; }
+    .energy-consumer-list small { display: block; color: var(--muted); font-size: 13px; }
+    .energy-consumer-form { display: grid; gap: 12px; margin-top: 12px; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); align-items: end; }
+    .energy-consumer-form label { display: grid; gap: 6px; font-size: 13px; font-weight: 800; }
+    .energy-consumer-form input, .energy-consumer-form select { min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 8px 10px; }
     .energy-billed { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 12px; margin: 14px 0 4px; }
     .energy-billed > div { border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 12px; background: #fff; display: grid; gap: 2px; }
     .energy-billed span { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
@@ -7586,6 +7593,32 @@ const PageTemplates = `
       <section class="energy-card">
         <header class="energy-card-head"><div><h2>Was Ihr Zuhause mitbringt</h2><p>Die Grundlage für Empfehlungen – keine Einkaufsliste.</p></div>{{if .CanManageEnergy}}<a class="button" href="/app/zuhause/onboarding?step=3">Bearbeiten</a>{{end}}</header>
         {{if .HasAssets}}<div class="energy-assets">{{range .Assets}}<span class="energy-asset"><span aria-hidden="true">✓</span>{{.Name}}</span>{{end}}</div><nav class="energy-related-links" aria-label="Verknüpfte Hausbereiche"><a href="/app/dokumente">Unterlagen</a><a href="/app/events">Wartungstermine</a><a href="/app/anliegen?new=1">Aufgabe melden</a><a href="/app/kontakte">Fachkontakte</a></nav>{{else}}<p class="muted">Noch keine größeren Verbraucher erfasst.</p>{{end}}
+        <div id="anlagen" class="energy-consumers">
+          {{if eq .ConsumerNotice "1"}}<div class="message success">Der Verbraucher wurde angelegt.</div>{{end}}
+          {{if eq .ConsumerNotice "weg"}}<div class="message success">Der Verbraucher wurde entfernt.</div>{{end}}
+          {{if eq .ConsumerNotice "name"}}<div class="message">Bitte einen Namen angeben.</div>{{end}}
+          {{if eq .ConsumerNotice "leistung"}}<div class="message">Die Leistung muss eine positive kW-Zahl sein.</div>{{end}}
+          {{if eq .ConsumerNotice "vorlage"}}<div class="message">Vorlagen werden im Onboarding verwaltet, nicht hier.</div>{{end}}
+          {{if .CustomConsumers}}<ul class="energy-consumer-list">{{range .CustomConsumers}}<li>
+            <div><strong>{{.Name}}</strong><small>{{.KindLabel}}{{if .Power}} · {{.Power}}{{end}} · {{.Flexibility}}</small></div>
+            {{if $.CanManageEnergy}}<form method="post" action="/app/energie/verbraucher/entfernen"><input type="hidden" name="asset_id" value="{{.ID}}"><button class="button" type="submit">Entfernen</button></form>{{end}}
+          </li>{{end}}</ul>{{end}}
+          {{if .CanManageEnergy}}<details class="onboarding-disclosure"><summary>Eigenen Verbraucher hinzufügen <span>Sauna, Werkstatt, Pool …</span></summary>
+            <form class="energy-consumer-form" method="post" action="/app/energie/verbraucher">
+              <label>Name<input type="text" name="name" maxlength="80" required placeholder="z. B. Sauna"></label>
+              <label>Kategorie<select name="kind">{{range .ConsumerKindOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select></label>
+              <label>Leistung in kW<input type="text" name="rated_power_kw" inputmode="decimal" placeholder="z. B. 8,0"></label>
+              <label>Flexibilität<select name="flexibility">
+                <option value="unknown">noch offen</option>
+                <option value="shift">zeitlich verschiebbar</option>
+                <option value="throttle">kurz begrenzbar</option>
+                <option value="fixed">fest</option>
+              </select></label>
+              <button class="button primary" type="submit">Verbraucher hinzufügen</button>
+            </form>
+            <small class="muted">Nur Verbraucher mit Leistung und gesetzter Flexibilität zählen in die Peak-Wirkung. Ohne beides erscheinen sie im Verbrauch, versprechen aber nichts.</small>
+          </details>{{end}}
+        </div>
         <div class="energy-business-note"><span aria-hidden="true">◎</span><p><strong>Kostenmodell:</strong> voller Produktumfang drei Jahre kostenlos{{if .FreeUntil}} bis {{.FreeUntil}}{{end}}, danach nach heutigem Modell 12 € pro Jahr. Kein Zahlungszwang während des Piloten.</p></div>
       </section>
       <section class="energy-card" id="wartung">
