@@ -34,6 +34,35 @@ keinen Steuerungsmodus setzen: jedes Profil beginnt immer mit
 ]
 ```
 
+### Benannte Verbraucher
+
+Ein Eintrag in `assets` ist entweder eine Vorlagen-Art als Zeichenkette oder ein
+Objekt mit eigenen Eigenschaften. Beide Schreibweisen dürfen gemischt werden;
+die Kurzform bleibt unverändert gültig.
+
+```json
+{
+  "tenant_slug": "eltern",
+  "household_name": "Haus Eltern",
+  "home_type": "house",
+  "assets": [
+    "pv",
+    "ev",
+    { "kind": "sauna", "name": "Sauna Keller", "rated_power_kw": 8, "flexibility": "shift" },
+    { "kind": "other", "name": "Werkstatt", "rated_power_kw": 4, "flexibility": "throttle" }
+  ]
+}
+```
+
+`flexibility` akzeptiert `shift`, `throttle`, `fixed` oder `unknown`. Nur
+`shift` und `throttle` zählen zusammen mit `rated_power_kw` in die
+Peak-Wirkung; ohne beides erscheint der Verbraucher im Verbrauch, verspricht
+aber nichts. Fehlt `flexibility`, gilt die Vorbelegung der Art.
+
+Benannte Verbraucher erhalten eine aus Art und Name abgeleitete, stabile ID.
+Mehrere Verbraucher derselben Art bestehen damit nebeneinander, und ein
+Neustart verdoppelt sie nicht.
+
 Die drei Slugs müssen zuvor jeweils als eigener Eintrag in `WEG_TENANTS_JSON`
 existieren. So bleiben Personen, Daten, Geräte und Berechtigungen strikt
 hausbezogen.
