@@ -210,6 +210,11 @@ type energyScenarioView struct {
 	EffectBand  string
 	Uncertainty string
 	Assumptions string
+	// FloorNote warnt, wenn die optimistische Seite des Bandes unter die
+	// verrechenbare Untergrenze fällt. Die Spitze sinkt dort real weiter, der
+	// verrechnete Betrag aber nicht — ohne den Hinweis liest sich das Szenario
+	// als Ersparnis, die so nicht eintritt.
+	FloorNote string
 }
 
 type energyCaretakerView struct {
@@ -968,7 +973,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	lastSeen := latestEnergySeen(mappings, monthIntervals, liveLastSeen)
 	quality := energy.AssessQuality(time.Now(), lastSeen, gaps, conflicts)
 	tariffView := buildEnergyTariffView(profile, monthIntervals)
-	scenarioViews := buildEnergyScenarioViews(assets, monthIntervals)
+	scenarioViews := buildEnergyScenarioViews(profile, assets, monthIntervals)
 	caretakers := a.energyCaretakerViews(ac)
 	maintenance, _ := a.energyStore.ListMaintenance(ac.tenant.Slug)
 	if maintenanceRecommendation, ok := energy.MaintenanceRecommendation(time.Now(), maintenance); ok {
@@ -3723,7 +3728,7 @@ func agreedPowerKW(profile energy.HomeProfile) float64 {
 	return *profile.AgreedPowerKW
 }
 
-func buildEnergyScenarioViews(assets []energy.Asset, intervals []energy.Interval) []energyScenarioView {
+func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset, intervals []energy.Interval) []energyScenarioView {
 	baseline := energy.PeakForMonth(intervals, time.Now(), time.Local)
 	if baseline <= 0 {
 		return nil
@@ -3762,13 +3767,19 @@ func buildEnergyScenarioViews(assets []energy.Asset, intervals []energy.Interval
 		Name: "Bestehende Flexibilität nutzen", BaselinePeakKW: baseline,
 		ShiftableKW: shiftable, ThrottleKW: throttle, BatteryKW: battery, DataQuality: quality,
 	})
-	return []energyScenarioView{{
+	view := energyScenarioView{
 		Title:       result.Name,
 		PeakBand:    formatEnergyNumber(result.ExpectedPeakLowKW) + "–" + formatEnergyNumber(result.ExpectedPeakHighKW) + " kW",
 		EffectBand:  formatEnergyNumber(result.PeakEffectLowKW) + "–" + formatEnergyNumber(result.PeakEffectHighKW) + " kW mögliche Peak-Wirkung",
 		Uncertainty: result.Uncertainty,
 		Assumptions: strings.Join(assumptions, " · "),
-	}}
+	}
+	// Estimate(0, agreed) liefert genau die Untergrenze: den 2-kW-Sockel oder
+	// die 20 % der vereinbarten Leistung, je nachdem was höher ist.
+	if floor := energy.AustrianDraft2027().Estimate(0, agreedPowerKW(profile)).BilledKW; result.ExpectedPeakLowKW < floor {
+		view.FloorNote = "Unter " + formatEnergyCompact(floor, 1) + " kW sinkt der verrechnete Betrag nicht weiter: so weit reicht die Mindestbemessung. Weiteres Kappen senkt die Spitze, nicht die Rechnung."
+	}
+	return []energyScenarioView{view}
 }
 
 func defaultAssetFlexibility(kind string) string {

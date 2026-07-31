@@ -7562,7 +7562,7 @@ const PageTemplates = `
       </section>
       {{if .HasScenarios}}<section class="energy-card" id="szenarien">
         <header class="energy-card-head"><div><h2>Was-wäre-wenn</h2><p>Bandbreite statt Einsparversprechen.</p></div></header>
-        {{range .Scenarios}}<article class="energy-scenario"><div><strong>{{.Title}}</strong><p>{{.EffectBand}} · Unsicherheit: {{.Uncertainty}}</p><p>{{.Assumptions}}</p></div><div class="energy-scenario-result"><span>mögliche Spitze</span><strong>{{.PeakBand}}</strong></div></article>{{end}}
+        {{range .Scenarios}}<article class="energy-scenario"><div><strong>{{.Title}}</strong><p>{{.EffectBand}} · Unsicherheit: {{.Uncertainty}}</p><p>{{.Assumptions}}</p></div><div class="energy-scenario-result"><span>mögliche Spitze</span><strong>{{.PeakBand}}</strong></div></article>{{if .FloorNote}}<p class="energy-chart-hint">{{.FloorNote}}</p>{{end}}{{end}}
       </section>{{end}}
       <section class="energy-card" id="tarif">
         <header class="energy-card-head"><div><h2>Tarif-Entwurf 2027</h2><p>Versioniert und jederzeit austauschbar.</p></div><span class="pill">{{.Tariff.Status}}</span></header>
