@@ -11,3 +11,9 @@ tmp/
 
 # snapshot harness deps (system Chromium is used; no browser is downloaded)
 scripts/snapshot/node_modules/
+
+# 3D mark build deps (the bundle itself is committed)
+scripts/mark3d/node_modules/
+
+# direnv/nix dev shell cache
+.direnv/
