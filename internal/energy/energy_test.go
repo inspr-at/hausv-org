@@ -86,7 +86,9 @@ func TestMemoryStoreKeepsHousesSeparated(t *testing.T) {
 		if err := store.SaveProfile(DefaultProfile(tenant, time.Now())); err != nil {
 			t.Fatal(err)
 		}
-		if err := store.UpsertAsset(Asset{ID: "pv", TenantSlug: tenant, Kind: "pv", Confirmed: true}); err != nil {
+		// Eigene ID je Haus: Asset-IDs sind global eindeutig, dieselbe ID für
+		// zwei Häuser weist der Store bewusst ab (siehe Test unten).
+		if err := store.UpsertAsset(Asset{ID: "pv-" + tenant, TenantSlug: tenant, Kind: "pv", Confirmed: true}); err != nil {
 			t.Fatal(err)
 		}
 	}

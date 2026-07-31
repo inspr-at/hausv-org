@@ -127,6 +127,15 @@ func (s *MemoryStore) UpsertAsset(asset Asset) error {
 	if asset.TenantSlug == "" {
 		return fmt.Errorf("energy: tenant required")
 	}
+	// Asset-IDs sind global eindeutig, nicht nur je Haus: in SQLite ist `id`
+	// Primärschlüssel, und der Upsert dort weist eine fremde ID mit
+	// "asset id belongs to another tenant" ab. Ohne dieselbe Prüfung verhält
+	// sich der Memory-Store abweichend, und Tests grün, wo Produktion bricht.
+	for _, existing := range s.assets {
+		if existing.ID == asset.ID && existing.TenantSlug != asset.TenantSlug {
+			return fmt.Errorf("energy: asset id belongs to another tenant")
+		}
+	}
 	s.assets[asset.TenantSlug+"\x00"+asset.ID] = asset
 	return nil
 }
