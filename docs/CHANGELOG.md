@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.60.0] - 2026-07-31
+
+### Neu
+
+- **Die Startseite hat ein dreidimensionales Markenzeichen.** Es empfängt Besucher groß über der Überschrift, lässt sich mit der Maus drehen und wandert beim Scrollen als ruhige Marke in die Kopfzeile.
+- **Die Kopfzeile bleibt beim Scrollen sichtbar.** Funktionen, Sicherheit, Preise, Impressum und Kontakt sind auf der ganzen Seite erreichbar; die Marke dient dort zugleich als Sprung zum Seitenanfang.
+
+### Verbessert
+
+- **Die Startseite benennt das Angebot deutlicher.** Überschrift und Einleitung nennen nun ausdrücklich transparentes Energiemanagement mit automatisierbarem Peak-Shaving und sprechen Eigentümer, Mieter, Beiräte und Hausverwaltungen an.
+
 ## [0.59.2] - 2026-07-30
 
 ### Verbessert

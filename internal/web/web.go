@@ -297,7 +297,11 @@ const PageTemplates = `
   <meta name="description" content="Sicheres Kommunikations- und Transparenzportal für WEGs, Wohnungen und Mehrparteienhäuser. Aushänge, Termine, Dokumente, Anliegen, Abstimmungen und Schnittstellen ohne eigene Buchhaltung.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
+  {{if .OriginTrialToken}}<meta http-equiv="origin-trial" content="{{.OriginTrialToken}}">{{end}}
   <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
+  <!-- Rotating 3D brand mark. ESM (module scripts defer by default); it mounts
+       only when WebGL is present, so the inline SVG below stays the fallback. -->
+  <script type="module" src="/assets/hausv-mark-3d.js?v={{.AssetVersion}}"></script>
   <style>
     :root {
       color-scheme: light;
@@ -309,14 +313,46 @@ const PageTemplates = `
     body { max-width: 100%; overflow-x: clip; margin: 0; color: var(--ink); background: var(--cream); font-family: var(--font-sans); }
     a { color: inherit; }
     :where(a, button):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
-    .landing-hero { position: relative; min-height: 86svh; display: grid; grid-template-rows: auto minmax(0,1fr); overflow: hidden; color: #fff; background: #162018; }
+    /* The nav is fixed chrome now, so the hero no longer reserves a row for
+       it — only padding, to keep the copy clear of the bar. */
+    /* Full height, because the mark now shares the hero with the copy: at
+       86svh there was no band above the headline for it to occupy, and it
+       landed on the eyebrow. */
+    .landing-hero { position: relative; min-height: 100svh; display: grid; grid-template-rows: minmax(0,1fr); padding-top: 90px; overflow: hidden; color: #fff; background: #162018; }
     .landing-hero::before { content: ""; position: absolute; inset: 0; background: url('{{.LandingHeroURL}}') center 48% / cover no-repeat; transform: scale(1.01); }
     .landing-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(12,18,13,.86) 0%, rgba(12,18,13,.74) 34%, rgba(12,18,13,.32) 66%, rgba(12,18,13,.12) 100%); }
     .landing-nav, .landing-copy { position: relative; z-index: 1; width: min(1180px,100%); margin: 0 auto; padding-left: clamp(20px,4vw,42px); padding-right: clamp(20px,4vw,42px); }
     .landing-nav { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding-top: 26px; padding-bottom: 20px; }
     .landing-brand { display: inline-flex; align-items: center; text-decoration: none; color: #fff; font-weight: 800; }
-    .landing-mark { width: 72px; height: 44px; display: grid; place-items: center; color: var(--gold-light); }
+    .landing-mark { position: relative; width: 72px; height: 44px; display: grid; place-items: center; color: var(--gold-light); }
     .landing-mark .hausv-mark { width: 70px; height: 42px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    /* 7x the 72x44 logo slot. JS pins left/top onto the real logo position and
+       drives transform/opacity from scroll; transform-origin must stay top-left
+       so the shrink lands exactly on that slot. */
+    /* Page scroll moves into .bend-content, so the window itself must not
+       scroll as well or the two fight and produce a double scrollbar. */
+    html, body { height: 100%; overflow: hidden; }
+    .bend-frame { position: fixed; inset: 0; }
+    .bend-source, .bend-output { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .bend-source[hidden] { display: none; }
+    .bend-output { pointer-events: none; }
+    .bend-content { position: relative; width: 100%; height: 100%; overflow: auto; }
+    /* Sticky chrome, layered above the frame. */
+    .landing-navbar { position: fixed; z-index: 5; top: 0; left: 0; right: 0; }
+    .mark3d-veil { position: fixed; z-index: 2; top: 0; left: 0; right: 0; height: 84px; opacity: 0; pointer-events: none; background: linear-gradient(180deg, rgba(12,18,13,.82) 0%, rgba(12,18,13,.66) 34%, rgba(12,18,13,.34) 66%, rgba(12,18,13,.12) 85%, rgba(12,18,13,0) 100%); }
+    /* 14x the 72x44 logo slot, drawn at that size and scaled down so it stays
+       crisp. The start scale is capped by the space above the copy, so this is
+       the ceiling rather than a fixed size. */
+    .mark3d-stage { position: fixed; z-index: 3; width: 1008px; height: 616px; transform-origin: 0 0; pointer-events: none; will-change: transform, opacity, filter; }
+    .mark3d-stage canvas, .mark3d-flat { transition: opacity .45s ease; }
+    /* Parked, the glass is dropped for a flat white mark: at 72px the depth
+       reads as noise, and solid white stays legible on every section. */
+    .mark3d-flat { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .mark3d-stage[data-mark3d-frozen="true"] .mark3d-flat { opacity: 1; }
+    .mark3d-stage[data-mark3d-frozen="true"] canvas { opacity: 0; }
+    .mark3d-top { position: fixed; z-index: 6; width: 72px; height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
+    .mark3d-top[hidden] { display: none; }
+    @media (max-width: 900px) { .mark3d-veil, .mark3d-stage, .mark3d-top { display: none; } }
     .landing-links { display: flex; align-items: center; gap: 20px; font-size: 14px; font-weight: 700; }
     .landing-links a { text-decoration: none; color: rgba(255,255,255,.88); }
     .landing-links a:hover { color: #fff; }
@@ -516,9 +552,32 @@ const PageTemplates = `
   </style>
 </head>
 <body>
-  <section class="landing-hero">
-    <header class="landing-nav">
-      <a class="landing-brand" href="/" aria-label="hausv.org"><span class="landing-mark">{{template "hausvLandingMark" .}}</span></a>
+  <!-- Fixed chrome. All of it sits OUTSIDE the bend frame on purpose: the fold
+       must not touch the sticky header, the veil or the 3D mark. -->
+
+  <!-- Darkens the top strip once scrolled, so the header and mark keep contrast
+       over the cream sections. Separate from the stage so it is never scaled. -->
+  <div class="mark3d-veil" aria-hidden="true"></div>
+
+  <!-- Scroll-driven 3D mark. Rendered at 7x and scaled down, so it stays crisp
+       at every size. data-mark3d-mode="solid" switches back to the gold glass.
+       The flat SVG inside is what the mark becomes once parked. -->
+  <div class="mark3d-stage" data-hausv-mark-3d data-src="/assets/hausv-mark.svg?v={{.AssetVersion}}" data-glass-src="/assets/hausv-mark.glb?v={{.AssetVersion}}" data-start="center" data-min-width="900" aria-hidden="true">
+    <svg class="mark3d-flat" viewBox="0 0 72 42" focusable="false" aria-hidden="true">
+      <path d="M9 35h54"/><path d="M11 35V23l8-6 8 6v12"/>
+      <path d="M45 35V23l8-6 8 6v12"/><path d="M25 35V17.5L36 9l11 8.5V35"/>
+      <path d="M31.5 35v-9h9v9"/><path d="M15.5 27h5"/>
+      <path d="M51.5 27h5"/><path d="M31 21h10"/>
+    </svg>
+  </div>
+  <button class="mark3d-top" type="button" data-mark3d-top hidden aria-label="Zum Seitenanfang scrollen"></button>
+
+  <header class="landing-navbar">
+    <div class="landing-nav">
+      <!-- The flat mark is gone: the 3D one is the logo now. The empty span is
+           kept so the nav keeps its space-between layout and the home link
+           keeps a click target; the 3D stage measures its vertical position. -->
+      <a class="landing-brand" href="/" aria-label="hausv.org"><span class="landing-mark"></span></a>
       <nav class="landing-links" aria-label="Navigation">
         <a href="#funktionen">Funktionen</a>
         <a href="#sicherheit">Sicherheit</a>
@@ -526,11 +585,21 @@ const PageTemplates = `
         <a href="#impressum">Impressum</a>
         <a href="#kontakt" class="js-mail-link" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a>
       </nav>
-    </header>
+    </div>
+  </header>
+
+  <!-- Bend frame. The page scrolls INSIDE .bend-content rather than on the
+       window, because that is the element the effect folds. bend.js moves this
+       node into the canvas only where html-in-canvas exists; everywhere else it
+       stays exactly as served, so the page can never depend on that API. -->
+  <div class="bend-frame" data-bend>
+    <canvas class="bend-source" layoutsubtree="true" hidden></canvas>
+    <div class="bend-content" data-canvasui-content>
+  <section class="landing-hero">
     <div class="landing-copy">
-      <div class="landing-eyebrow">Hausverwaltung von und für Mehrparteien</div>
-      <h1>Ein Portal für alle, die ein Haus gemeinsam verwalten.</h1>
-      <p class="landing-lead">Aushänge, Termine, Dokumente, Anliegen und Beschlüsse an einem privaten Ort. Für Eigentümer, Mieter, Beiräte und kleine Verwaltungen.</p>
+      <div class="landing-eyebrow">Einfache Hausverwaltung und transparentes Energiemanagement</div>
+      <h1>Ein Portal für alles was Zuhause anfällt.</h1>
+      <p class="landing-lead">Aushänge, Termine, Dokumente, Anliegen und Beschlüsse an einem privaten Ort. Modernes, transparentes Energiemanagement mit automatisierbarem Peak-Shaving. Für Eigentümer, Mieter, Beiräte und Hausverwaltungen.</p>
       <div class="landing-actions">
         <a class="landing-button primary js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org Pilot anfragen" data-mail-reveal="false">Privaten Pilot anfragen</a>
         <a class="landing-button secondary" href="#funktionen">Funktionen ansehen</a>
@@ -635,6 +704,9 @@ const PageTemplates = `
   <footer>
     <div><span>hausv.org · sicher, fair und datensparsam</span><span><a href="/datenschutz">Datenschutz</a> · <a href="#impressum">Impressum</a> · <a class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a> · {{.AppVersion}}</span></div>
   </footer>
+    </div>
+    <canvas class="bend-output" aria-hidden="true"></canvas>
+  </div>
 </body>
 </html>
 {{end}}

@@ -1294,7 +1294,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 	}
 	body := rr.Body.String()
 	for _, want := range []string{
-		"Ein Portal für alle, die ein Haus gemeinsam verwalten.",
+		"Ein Portal für alles was Zuhause anfällt.",
 		"Mehrparteien",
 		"hello [at] hausv [dot] org",
 		"Privater Pilot · Zugang nach Abstimmung",

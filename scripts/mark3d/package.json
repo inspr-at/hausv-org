@@ -1,0 +1,10 @@
+{
+  "name": "hausv-mark3d",
+  "private": true,
+  "type": "module",
+  "description": "Builds the rotating 3D landing mark (Canvas UI AsciiObject core + three.js) into internal/web/assets.",
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "three": "^0.185.1"
+  }
+}
