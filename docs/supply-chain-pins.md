@@ -59,6 +59,29 @@ Version in `scripts/snapshot/package.json` ändern, `npm install` im selben
 Verzeichnis ausführen und `package-lock.json` mitcommitten. CI installiert mit
 `npm ci`, nimmt also ausschließlich den Lockfile-Stand.
 
+## Was tatsächlich gestartet wurde
+
+Ein Pin in einer Konfigurationsdatei sagt, was laufen *soll*.
+`scripts/snapshot/verify-versions.mjs` sagt, was tatsächlich lief: der Node-
+Interpreter des Laufs, das aus dem Lockfile aufgelöste Playwright und die
+Chromium-Version, die wirklich startet.
+
+Die Sollwerte liest das Skript aus den Dateien, die sie ohnehin deklarieren —
+`.github/workflows/ci.yml` für Node, `package.json` für Playwright. Es gibt
+also keine zweite Stelle, die gepflegt werden müsste.
+
+```fish
+cd scripts/snapshot
+node verify-versions.mjs            # nur Bericht
+node verify-versions.mjs --strict   # Abweichung lässt den Lauf scheitern
+```
+
+CI führt die strikte Variante aus. Lokal berichtet das Skript nur, denn die
+Node-Version der Entwicklungsumgebung stammt aus `flake.nix` (nixpkgs) und
+deckt sich nicht zwangsläufig mit der in CI gepinnten Patchversion. Diese
+Abweichung ist bekannt und bewusst: CI ist die maßgebliche Umgebung, und die
+lokale Meldung macht den Unterschied sichtbar, statt ihn zu verbergen.
+
 ## Regeln für die Aktualisierung
 
 1. Eine Änderung pro Commit-Absicht: Pins gemeinsam aktualisieren, nicht

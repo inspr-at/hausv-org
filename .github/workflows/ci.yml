@@ -94,6 +94,10 @@ jobs:
           npm --prefix scripts/snapshot ci --ignore-scripts --no-audit --no-fund
           npm --prefix scripts/snapshot exec -- playwright install --with-deps chromium
 
+      - name: Verify launched browser-QA versions
+        working-directory: scripts/snapshot
+        run: node verify-versions.mjs --strict
+
       - name: Run resident/admin browser gate
         env:
           CI: "true"
