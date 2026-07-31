@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.60.1",
+			Date:     "31. Juli 2026",
+			Kind:     "Feinschliff",
+			Headline: "Das Markenzeichen sitzt auf jeder Bildschirmgröße sauber zur Überschrift.",
+			Intro:    "Größe und Position richten sich automatisch nach dem freien Raum über dem Text.",
+			Items: []NoteItem{
+				{Label: "Ruhig ausrichten", Text: "Das Markenzeichen steht bündig zur Überschrift und wandert beim Verändern der Fenstergröße nicht mehr."},
+				{Label: "Einfach scrollen", Text: "Der gefaltete Seitenübergang entfällt; die Seite scrollt wieder ohne Sonderfreigabe des Browsers."},
+			},
+		},
+		{
 			Version:  "0.60.0",
 			Date:     "31. Juli 2026",
 			Kind:     "Auftritt & Orientierung",

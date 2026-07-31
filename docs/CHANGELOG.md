@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.60.1] - 2026-07-31
+
+### Verbessert
+
+- **Das Markenzeichen sitzt auf jeder Bildschirmgröße richtig.** Es steht bündig zur Überschrift, bleibt schmaler als diese und passt seine Größe an den freien Raum darüber an, statt beim Verändern der Fenstergröße zu wandern.
+
+### Entfernt
+
+- **Der gefaltete Seitenübergang entfällt.** Er hätte eine browserabhängige Sonderfreigabe gebraucht; die Seite scrollt wieder normal.
+
 ## [0.60.0] - 2026-07-31
 
 ### Neu

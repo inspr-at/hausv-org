@@ -31,7 +31,6 @@ const PATCHES = {
 const COMPONENTS = [
   { registry: "ascii-object-react", boundary: "export interface AsciiObjectProps", out: "asciiObjectCore.ts" },
   { registry: "glass-object-react", boundary: "export interface GlassObjectProps", out: "glassObjectCore.ts" },
-  { registry: "bend-react", boundary: "export interface BendProps", out: "bendCore.ts" },
 ];
 
 // Matches both the single-line react imports and Bend's multi-line one.

@@ -297,7 +297,6 @@ const PageTemplates = `
   <meta name="description" content="Sicheres Kommunikations- und Transparenzportal für WEGs, Wohnungen und Mehrparteienhäuser. Aushänge, Termine, Dokumente, Anliegen, Abstimmungen und Schnittstellen ohne eigene Buchhaltung.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
-  {{if .OriginTrialToken}}<meta http-equiv="origin-trial" content="{{.OriginTrialToken}}">{{end}}
   <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
   <!-- Rotating 3D brand mark. ESM (module scripts defer by default); it mounts
        only when WebGL is present, so the inline SVG below stays the fallback. -->
@@ -329,15 +328,7 @@ const PageTemplates = `
     /* 7x the 72x44 logo slot. JS pins left/top onto the real logo position and
        drives transform/opacity from scroll; transform-origin must stay top-left
        so the shrink lands exactly on that slot. */
-    /* Page scroll moves into .bend-content, so the window itself must not
-       scroll as well or the two fight and produce a double scrollbar. */
-    html, body { height: 100%; overflow: hidden; }
-    .bend-frame { position: fixed; inset: 0; }
-    .bend-source, .bend-output { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .bend-source[hidden] { display: none; }
-    .bend-output { pointer-events: none; }
-    .bend-content { position: relative; width: 100%; height: 100%; overflow: auto; }
-    /* Sticky chrome, layered above the frame. */
+    /* Sticky chrome, layered above the page. */
     .landing-navbar { position: fixed; z-index: 5; top: 0; left: 0; right: 0; }
     .mark3d-veil { position: fixed; z-index: 2; top: 0; left: 0; right: 0; height: 84px; opacity: 0; pointer-events: none; background: linear-gradient(180deg, rgba(12,18,13,.82) 0%, rgba(12,18,13,.66) 34%, rgba(12,18,13,.34) 66%, rgba(12,18,13,.12) 85%, rgba(12,18,13,0) 100%); }
     /* 14x the 72x44 logo slot, drawn at that size and scaled down so it stays
@@ -552,8 +543,7 @@ const PageTemplates = `
   </style>
 </head>
 <body>
-  <!-- Fixed chrome. All of it sits OUTSIDE the bend frame on purpose: the fold
-       must not touch the sticky header, the veil or the 3D mark. -->
+  <!-- Fixed chrome: sticky header, top veil and the 3D mark. -->
 
   <!-- Darkens the top strip once scrolled, so the header and mark keep contrast
        over the cream sections. Separate from the stage so it is never scaled. -->
@@ -588,13 +578,6 @@ const PageTemplates = `
     </div>
   </header>
 
-  <!-- Bend frame. The page scrolls INSIDE .bend-content rather than on the
-       window, because that is the element the effect folds. bend.js moves this
-       node into the canvas only where html-in-canvas exists; everywhere else it
-       stays exactly as served, so the page can never depend on that API. -->
-  <div class="bend-frame" data-bend>
-    <canvas class="bend-source" layoutsubtree="true" hidden></canvas>
-    <div class="bend-content" data-canvasui-content>
   <section class="landing-hero">
     <div class="landing-copy">
       <div class="landing-eyebrow">Einfache Hausverwaltung und transparentes Energiemanagement</div>
@@ -704,9 +687,6 @@ const PageTemplates = `
   <footer>
     <div><span>hausv.org · sicher, fair und datensparsam</span><span><a href="/datenschutz">Datenschutz</a> · <a href="#impressum">Impressum</a> · <a class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a> · {{.AppVersion}}</span></div>
   </footer>
-    </div>
-    <canvas class="bend-output" aria-hidden="true"></canvas>
-  </div>
 </body>
 </html>
 {{end}}

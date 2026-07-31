@@ -66,10 +66,6 @@ func (a *app) marketingLanding(w http.ResponseWriter, r *http.Request) {
 		"OperatorName":    platformOperatorName,
 		"OperatorAddress": platformOperatorAddress,
 		"LegalReviewDate": legalReviewDate,
-		// Chrome origin trial token for html-in-canvas, which the page-bend
-		// effect needs. Unset in every other environment, and the page renders
-		// identically without it — the effect simply stays off.
-		"OriginTrialToken": config.Env("ORIGIN_TRIAL_TOKEN", ""),
 	})
 }
 

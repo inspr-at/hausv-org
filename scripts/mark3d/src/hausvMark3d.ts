@@ -11,7 +11,6 @@
 
 import { createAsciiObject } from "./asciiObjectCore";
 import { createGlassObject } from "./glassObjectCore";
-import { initBend } from "./bend";
 
 type Mode = "solid" | "glass";
 type Instance = { destroy(): void; setOptions?(o: Record<string, unknown>): void };
@@ -171,6 +170,7 @@ class MarkStage {
   private anchor = { left: 0, top: 0 };
   private startScale = 1;
   private startTop = 90;
+  private startLeft = 24;
   private travel = 600;
   private ticking = false;
   private reduced: MediaQueryList;
@@ -180,9 +180,6 @@ class MarkStage {
     private button: HTMLElement | null,
     private navMark: HTMLElement | null,
     private veil: HTMLElement | null,
-    // Bend moves the page scroll off the window and into .bend-content, so the
-    // mark has to read whichever element actually scrolls.
-    private scroller: HTMLElement | null,
   ) {
     this.mode = (host.dataset.mark3dMode as Mode) || "glass";
     this.reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -206,7 +203,7 @@ class MarkStage {
       );
     });
 
-    (this.scroller ?? window).addEventListener("scroll", this.onScroll, { passive: true });
+    addEventListener("scroll", this.onScroll, { passive: true });
     addEventListener("resize", this.onResize, { passive: true });
 
     if (this.button) {
@@ -222,11 +219,10 @@ class MarkStage {
   // scrolling inside a container is distance-proportional and took ~4.5s from
   // the foot of this page, which is far too slow for a back-to-top.
   private scrollToTop() {
-    const target = this.scroller;
-    const from = target ? target.scrollTop : scrollY;
+    const from = scrollY;
     if (from <= 0) return;
     if (this.reduced.matches) {
-      target ? (target.scrollTop = 0) : scrollTo(0, 0);
+      scrollTo(0, 0);
       return;
     }
     const started = performance.now();
@@ -234,7 +230,7 @@ class MarkStage {
     const step = () => {
       const k = Math.min(1, (performance.now() - started) / duration);
       const y = from * (1 - ease(k));
-      target ? (target.scrollTop = y) : scrollTo(0, y);
+      scrollTo(0, y);
       if (k < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -363,17 +359,27 @@ class MarkStage {
   // A fixed 7x overlapped the eyebrow the moment the headline grew a line, and
   // would do so again on any short viewport.
   private fit() {
-    // Against the eyebrow, not .landing-copy: the copy box carries 48px of
-    // padding-top that is empty and usable.
-    const copy = (document.querySelector(".landing-eyebrow") ??
-      document.querySelector(".landing-copy"))?.getBoundingClientRect();
-    // Start at the very top, not below the header. The mark is on the left,
-    // where the bar holds nothing, and the links sit at a higher z-index, so
-    // it can rise behind them — which buys back ~100px of height for it.
+    // Anchored to the text column, not to the viewport centre. The old model
+    // was `innerWidth/2 - width/2 - 400`, so the mark slid horizontally at half
+    // the rate the window resized while its scale changed with height — two
+    // unrelated drifts at once, which is what read as "weird" on resize.
+    //
+    // Now: same left edge as the headline, width never exceeding it, and
+    // vertically centred in whatever band is left above the copy. Resizing
+    // rescales it in place instead of moving it.
+    const eyebrow = document.querySelector(".landing-eyebrow")?.getBoundingClientRect();
+    const heading = document.querySelector(".landing-copy h1")?.getBoundingClientRect();
+    const copy = document.querySelector(".landing-copy")?.getBoundingClientRect();
+
+    // Rise behind the header: the bar is empty on the left and its links sit at
+    // a higher z-index, so that band is free height.
     const top = num(this.host, "startTop", 8);
-    const available = Math.max(96, (copy?.top ?? innerHeight * 0.6) - top - 12);
-    this.startScale = Math.min(1, available / 616);
-    this.startTop = top;
+    const band = Math.max(96, (eyebrow?.top ?? innerHeight * 0.6) - top - 12);
+    const column = heading?.width ?? copy?.width ?? innerWidth * 0.5;
+
+    this.startScale = Math.min(1, band / 616, column / 1008);
+    this.startTop = top + (band - 616 * this.startScale) / 2;
+    this.startLeft = eyebrow?.left ?? heading?.left ?? 24;
   }
 
   private measure() {
@@ -400,8 +406,7 @@ class MarkStage {
   }
 
   private scrollProgress() {
-    const y = this.scroller ? this.scroller.scrollTop : scrollY;
-    return clamp01(y / this.travel);
+    return clamp01(scrollY / this.travel);
   }
 
   private onScroll = () => {
@@ -415,6 +420,10 @@ class MarkStage {
 
   private onResize = () => {
     this.measure();
+    // apply() bails when the scroll progress is unchanged, which on resize it
+    // always is — so the freshly measured size and position would be computed
+    // and then never written. Invalidate first to force the re-layout.
+    this.progress = -1;
     this.apply(this.reduced.matches ? 1 : this.scrollProgress());
   };
 
@@ -431,11 +440,8 @@ class MarkStage {
 
     const scale = lerp(this.startScale, 1 / START_SCALE, t);
     // Travel is expressed as "where it starts" minus "where it parks", so both
-    // ends are exact: the start clears the header, the end hits the inset.
-    const startLeft =
-      innerWidth / 2 - (this.host.offsetWidth * this.startScale) / 2 +
-      num(this.host, "startOffsetX", -400);
-    const dx = (startLeft - this.anchor.left) * (1 - t);
+    // ends are exact: the start sits on the text column, the end on the inset.
+    const dx = (this.startLeft - this.anchor.left) * (1 - t);
     const dy = (this.startTop - this.anchor.top) * (1 - t);
     this.host.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
     this.paintOpacity();
@@ -487,10 +493,6 @@ class MarkStage {
 }
 
 export function initHausvMark3d() {
-  // Bend first: it may re-parent .bend-content into the canvas, and the mark
-  // measures against the DOM that results.
-  initBend();
-
   const host = document.querySelector<HTMLElement>("[data-hausv-mark-3d]");
   if (!host || !host.dataset.src) return;
 
@@ -503,7 +505,6 @@ export function initHausvMark3d() {
     document.querySelector<HTMLElement>("[data-mark3d-top]"),
     document.querySelector<HTMLElement>(".landing-mark"),
     document.querySelector<HTMLElement>(".mark3d-veil"),
-    document.querySelector<HTMLElement>(".bend-content"),
   );
 }
 
