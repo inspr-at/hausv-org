@@ -3924,49 +3924,88 @@ func agreedPowerKW(profile energy.HomeProfile) float64 {
 	return *profile.AgreedPowerKW
 }
 
+// assetFlexContribution liefert Leistung und Flexibilität eines Verbrauchers.
+//
+// Reihenfolge ist Absicht: gesetzte Werte am Asset schlagen die Vorbelegung
+// aus der Kategorie. Damit bleibt die Kategorie eine Vorlage und wird nicht
+// zur Verhaltensregel — das ist der Kern von HAUSV-422.
+func assetFlexContribution(asset energy.Asset) (float64, string) {
+	kw := defaultAssetPowerKW(asset.Kind)
+	if asset.RatedPowerKW != nil {
+		kw = *asset.RatedPowerKW
+	}
+	flexibility := asset.Flexibility
+	if flexibility == "" || flexibility == energy.FlexUnknown {
+		if asset.Source == energyCustomAssetSource {
+			// Frei angelegt und ohne Angabe: nichts versprechen. Der
+			// Verbraucher zählt im Verbrauch, aber nicht in der Peak-Wirkung.
+			return 0, energy.FlexUnknown
+		}
+		flexibility = defaultAssetFlexibility(asset.Kind)
+	}
+	return kw, flexibility
+}
+
+// defaultAssetPowerKW ist die Vorbelegung einer Vorlage ohne eigene Angabe.
+// Bewusst zurückhaltend: es sind Modellannahmen, keine Messwerte. PV liefert
+// 0, weil Erzeugung die Bezugsspitze nicht verschiebt.
+func defaultAssetPowerKW(kind string) float64 {
+	switch kind {
+	case "ev", "wallbox", "battery":
+		return 3
+	case "hot-water", "heat-pump":
+		return 1
+	default:
+		return 0
+	}
+}
+
+func assetFlexAssumption(asset energy.Asset, suffix string) string {
+	name := strings.TrimSpace(asset.Name)
+	if name == "" {
+		name = energy.AssetKindLabel(asset.Kind)
+	}
+	return name + " " + suffix
+}
+
 func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset, intervals []energy.Interval) []energyScenarioView {
 	baseline := energy.PeakForMonth(intervals, time.Now(), time.Local)
 	if baseline <= 0 {
 		return nil
 	}
-	has := map[string]bool{}
-	for _, asset := range assets {
-		has[asset.Kind] = true
-	}
 	shiftable, throttle, battery := 0.0, 0.0, 0.0
 	assumptions := []string{}
-	if has["ev"] || has["wallbox"] {
-		shiftable += 3
-		assumptions = append(assumptions, "E-Auto zeitlich verschiebbar")
-	}
-	if has["hot-water"] {
-		shiftable += 1
-		assumptions = append(assumptions, "Warmwasser mit Komfortdeadline")
-	}
-	if has["heat-pump"] {
-		throttle += 1
-		assumptions = append(assumptions, "Wärmepumpe kurz begrenzbar")
-	}
-	if has["battery"] {
-		battery += 3
-		assumptions = append(assumptions, "Speicherleistung vorerst mit 3 kW modelliert")
-	}
-	// Frei angelegte Verbraucher zählen nach ihren eigenen Eigenschaften, nicht
-	// nach ihrer Kategorie. Genau dafür existieren sie: eine Sauna mit 8 kW und
-	// Komfortspielraum ist Flexibilität, die das Vorlagenraster nicht kennt.
-	// Ohne gesetzte Flexibilität bleibt ein Verbraucher bewusst außen vor — er
-	// zählt in den Verbrauch, aber nicht in die Peak-Wirkung.
+	// Je Asset gerechnet, nicht je Kategorie. Die Kategorie liefert nur
+	// Vorbelegungen; eine gesetzte Nennleistung und eine gesetzte Flexibilität
+	// gewinnen immer. Vorher verschmolz `has[kind]` zwei gleichartige
+	// Verbraucher zu einem — zwei Wallboxen ergaben dieselben 3 kW wie eine.
+	chargingCounted := false
 	for _, asset := range assets {
-		if asset.Source != energyCustomAssetSource || asset.RatedPowerKW == nil {
+		kw, flexibility := assetFlexContribution(asset)
+		if kw <= 0 {
 			continue
 		}
-		switch asset.Flexibility {
-		case energy.FlexShift:
-			shiftable += *asset.RatedPowerKW
-			assumptions = append(assumptions, asset.Name+" zeitlich verschiebbar")
-		case energy.FlexThrottle:
-			throttle += *asset.RatedPowerKW
-			assumptions = append(assumptions, asset.Name+" kurz begrenzbar")
+		// E-Auto und Wallbox beschreiben als Vorlagen dieselbe Ladelast; beide
+		// anzurechnen würde die Flexibilität erfinden. Frei angelegte
+		// Verbraucher zählen dagegen einzeln — sie wurden bewusst so benannt.
+		if asset.Source != energyCustomAssetSource && (asset.Kind == "ev" || asset.Kind == "wallbox") {
+			if chargingCounted {
+				continue
+			}
+			chargingCounted = true
+		}
+		switch {
+		case asset.Kind == "battery":
+			// Ein Speicher ist keine drosselbare Last, sondern eine eigene
+			// Rolle mit eigenem Gewicht in der Simulation.
+			battery += kw
+			assumptions = append(assumptions, assetFlexAssumption(asset, "Speicherleistung"))
+		case flexibility == energy.FlexShift:
+			shiftable += kw
+			assumptions = append(assumptions, assetFlexAssumption(asset, "zeitlich verschiebbar"))
+		case flexibility == energy.FlexThrottle:
+			throttle += kw
+			assumptions = append(assumptions, assetFlexAssumption(asset, "kurz begrenzbar"))
 		}
 	}
 	if shiftable+throttle+battery == 0 {
