@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.60.2] - 2026-07-31
+
+### Neu
+
+- **Auf schmalen Bildschirmen gibt es wieder ein Menü.** Funktionen, Sicherheit, Preise, Impressum und Kontakt öffnen sich über eine Schaltfläche in der Kopfzeile und schließen sich nach der Auswahl von selbst.
+
+### Verbessert
+
+- **Die Kopfzeile bleibt auf schmalen Bildschirmen lesbar.** Marke und Menü stehen auf einem eigenen, leicht abgedunkelten Streifen, auch wenn heller Inhalt darunter durchscrollt.
+
 ## [0.60.1] - 2026-07-31
 
 ### Verbessert

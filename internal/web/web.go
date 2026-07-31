@@ -324,7 +324,11 @@ const PageTemplates = `
     .landing-nav { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding-top: 26px; padding-bottom: 20px; }
     .landing-brand { display: inline-flex; align-items: center; text-decoration: none; color: #fff; font-weight: 800; }
     .landing-mark { position: relative; width: 72px; height: 44px; display: grid; place-items: center; color: var(--gold-light); }
-    .landing-mark .hausv-mark { width: 70px; height: 42px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    /* Hidden on desktop, where the 3D mark is the logo; shown below 900px,
+       where the 3D mark is not mounted at all and the bar would be empty. */
+    .landing-mark .hausv-mark { width: 70px; height: 42px; display: none; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .landing-nav-toggle { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none; }
+    .landing-menu-toggle { display: none; }
     /* 7x the 72x44 logo slot. JS pins left/top onto the real logo position and
        drives transform/opacity from scroll; transform-origin must stay top-left
        so the shrink lands exactly on that slot. */
@@ -498,6 +502,18 @@ const PageTemplates = `
     .landing-contact .landing-button { flex: 0 0 auto; background: #fff; color: var(--ink); }
     @media (max-width: 900px) {
       .landing-links { display: none; }
+      .landing-mark .hausv-mark { display: block; }
+      /* The scroll-driven veil is desktop-only, so below 900px the bar carries
+         its own backdrop — otherwise cream sections scroll straight under the
+         gold mark and the menu button with nothing behind them. */
+      .landing-navbar { background: rgba(12,18,13,.58); backdrop-filter: blur(12px); }
+      .landing-menu-toggle { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,.3); border-radius: 8px; padding: 8px 13px; color: #fff; background: rgba(12,18,13,.42); backdrop-filter: blur(6px); font-size: 13px; font-weight: 850; cursor: pointer; }
+      .landing-menu-toggle::before { content: ""; width: 15px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; box-shadow: 0 4px 0 currentColor inset; }
+      .landing-nav-toggle:focus-visible + .landing-menu-toggle { outline: 3px solid var(--gold-light); outline-offset: 3px; }
+      .landing-nav-toggle:checked + .landing-menu-toggle { border-color: rgba(231,197,116,.62); background: rgba(231,197,116,.16); }
+      /* Panel drops out of the bar; .landing-nav is already position:relative. */
+      .landing-nav-toggle:checked ~ .landing-links { display: grid; position: absolute; top: 100%; left: 0; right: 0; gap: 2px; padding: 8px clamp(20px,4vw,42px) 14px; border-radius: 0 0 12px 12px; background: #0f150f; box-shadow: 0 18px 40px rgba(0,0,0,.34); }
+      .landing-nav-toggle:checked ~ .landing-links a { min-height: 44px; display: flex; align-items: center; font-size: 15px; }
       .landing-hero { min-height: 88svh; }
       .landing-hero::after { background: linear-gradient(180deg, rgba(12,18,13,.78) 0%, rgba(12,18,13,.5) 46%, rgba(12,18,13,.88) 100%); }
       .landing-copy { padding-top: 64px; }
@@ -567,7 +583,12 @@ const PageTemplates = `
       <!-- The flat mark is gone: the 3D one is the logo now. The empty span is
            kept so the nav keeps its space-between layout and the home link
            keeps a click target; the 3D stage measures its vertical position. -->
-      <a class="landing-brand" href="/" aria-label="hausv.org"><span class="landing-mark"></span></a>
+      <a class="landing-brand" href="/" aria-label="hausv.org"><span class="landing-mark">{{template "hausvLandingMark" .}}</span></a>
+      <!-- CSS-only disclosure, same pattern as the app shell's nav-toggle: no
+           inline script, so it needs nothing from the CSP. Only shown below
+           900px, where the links themselves are collapsed. -->
+      <input class="landing-nav-toggle" id="landing-nav-toggle" type="checkbox" aria-label="Navigation anzeigen">
+      <label class="landing-menu-toggle" for="landing-nav-toggle">Menü</label>
       <nav class="landing-links" aria-label="Navigation">
         <a href="#funktionen">Funktionen</a>
         <a href="#sicherheit">Sicherheit</a>

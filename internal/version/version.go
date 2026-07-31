@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.60.2",
+			Date:     "31. Juli 2026",
+			Kind:     "Bedienbarkeit",
+			Headline: "Schmale Bildschirme haben wieder ein vollständiges Menü.",
+			Intro:    "Eine Schaltfläche in der Kopfzeile öffnet die Navigation; nach der Auswahl schließt sie sich von selbst.",
+			Items: []NoteItem{
+				{Label: "Überall navigieren", Text: "Funktionen, Sicherheit, Preise, Impressum und Kontakt sind auch auf dem Telefon erreichbar."},
+				{Label: "Klar lesen", Text: "Marke und Menü stehen auf einem eigenen Streifen und bleiben sichtbar, wenn heller Inhalt darunter scrollt."},
+			},
+		},
+		{
 			Version:  "0.60.1",
 			Date:     "31. Juli 2026",
 			Kind:     "Feinschliff",
