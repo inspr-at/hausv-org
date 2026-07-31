@@ -13,10 +13,10 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
           # Pull the newest patch of the go.mod minor so stdlib CVE fixes land
@@ -43,8 +43,8 @@ jobs:
   govulncheck:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
           check-latest: true
@@ -62,19 +62,19 @@ jobs:
     timeout-minutes: 8
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
           check-latest: true
           cache: true
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 24
+          node-version: 24.18.1 # exakte Patchversion, siehe docs/supply-chain-pins.md
           cache: npm
           cache-dependency-path: scripts/snapshot/package-lock.json
 
@@ -85,6 +85,9 @@ jobs:
 
       - name: Verify fail-closed release contract
         run: fish scripts/test-deploy.fish
+
+      - name: Check supply-chain pins
+        run: python3 scripts/check-supply-chain-pins.py
 
       - name: Install browser QA dependencies
         run: |
@@ -100,7 +103,7 @@ jobs:
 
       - name: Upload browser failure evidence
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: browser-role-qa-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/browser-role-qa
@@ -110,7 +113,7 @@ jobs:
   docker:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Build image
         # Never pushed — this only proves the Dockerfile still builds, which
         # `go test` cannot (HAUSV-139).
