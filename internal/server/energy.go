@@ -1557,7 +1557,7 @@ func (a *app) updateEnergyTarget(w http.ResponseWriter, r *http.Request, ac auth
 		return
 	}
 	value, err := homeassistant.ParseFloat(r.FormValue("target_peak_kw"))
-	if err != nil || value <= 0 || value > 1000 {
+	if err != nil || !energy.ValidPowerKW(value, 1000) {
 		http.Error(w, "Peak-Ziel muss eine positive kW-Zahl sein.", http.StatusBadRequest)
 		return
 	}
@@ -1620,7 +1620,7 @@ func (a *app) updateEnergyAgreedPower(w http.ResponseWriter, r *http.Request, ac
 		profile.AgreedPowerKW = nil
 	} else {
 		value, parseErr := homeassistant.ParseFloat(raw)
-		if parseErr != nil || value <= 0 || value > 1000 {
+		if parseErr != nil || !energy.ValidPowerKW(value, 1000) {
 			http.Error(w, "Vereinbarte Anschlussleistung muss eine positive kW-Zahl sein.", http.StatusBadRequest)
 			return
 		}
@@ -2328,7 +2328,7 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 	}
 	if raw := strings.TrimSpace(r.FormValue("rated_power_kw")); raw != "" {
 		value, err := homeassistant.ParseFloat(raw)
-		if err != nil || value <= 0 || value > 1000 {
+		if err != nil || !energy.ValidPowerKW(value, 1000) {
 			http.Redirect(w, r, "/app/energie?verbraucher=leistung#anlagen", http.StatusSeeOther)
 			return
 		}
@@ -2449,16 +2449,38 @@ func (a *app) saveOnboardingAssets(tenantSlug string, selected []string) error {
 			}
 		}
 	}
+	current, err := a.energyStore.ListAssets(tenantSlug)
+	if err != nil {
+		return err
+	}
+	existing := map[string]energy.Asset{}
+	for _, asset := range current {
+		existing[asset.ID] = asset
+	}
 	for kind := range selectedSet {
-		if err := a.energyStore.UpsertAsset(energy.Asset{
-			ID:          energy.StableAssetID(tenantSlug, kind),
+		id := energy.StableAssetID(tenantSlug, kind)
+		asset := energy.Asset{
+			ID:          id,
 			TenantSlug:  tenantSlug,
 			Kind:        kind,
 			Name:        energy.AssetKindLabel(kind),
 			Flexibility: defaultAssetFlexibility(kind),
 			Source:      "onboarding",
 			Confirmed:   true,
-		}); err != nil {
+		}
+		// Dieser Schritt wählt nur die Arten aus. Was darüber hinaus erfasst ist
+		// — Nennleistung, erklärte Flexibilität, Herkunft —, überlebt das
+		// erneute Speichern: ein Seed mit 9 kW verlor sie sonst stillschweigend
+		// und fiel auf die 1 kW der Vorbelegung zurück.
+		if previous, ok := existing[id]; ok {
+			asset.Name = previous.Name
+			asset.RatedPowerKW = previous.RatedPowerKW
+			asset.Source = previous.Source
+			if previous.Flexibility != "" && previous.Flexibility != energy.FlexUnknown {
+				asset.Flexibility = previous.Flexibility
+			}
+		}
+		if err := a.energyStore.UpsertAsset(asset); err != nil {
 			return err
 		}
 		// Pre-multi-home versions used asset-<kind>. The migration handles
@@ -3930,6 +3952,12 @@ func agreedPowerKW(profile energy.HomeProfile) float64 {
 // aus der Kategorie. Damit bleibt die Kategorie eine Vorlage und wird nicht
 // zur Verhaltensregel — das ist der Kern von HAUSV-422.
 func assetFlexContribution(asset energy.Asset) (float64, string) {
+	// Erzeugung verschiebt die Bezugsspitze nicht. Die Nennleistung einer
+	// PV-Anlage bleibt erfasst — sie beschreibt die Anlagengröße —, darf aber
+	// nicht als abschaltbare Last verrechnet werden.
+	if asset.Kind == "pv" {
+		return 0, energy.FlexUnknown
+	}
 	kw := defaultAssetPowerKW(asset.Kind)
 	if asset.RatedPowerKW != nil {
 		kw = *asset.RatedPowerKW
@@ -3968,6 +3996,41 @@ func assetFlexAssumption(asset energy.Asset, suffix string) string {
 	return name + " " + suffix
 }
 
+func isChargingPreset(asset energy.Asset) bool {
+	return asset.Source != energyCustomAssetSource && (asset.Kind == "ev" || asset.Kind == "wallbox")
+}
+
+// chargingPresetIndex wählt aus den Vorlagen für die Ladelast die
+// aussagekräftigste aus: eine erfasste Nennleistung schlägt die Vorbelegung,
+// sonst die höhere Leistung. Ohne diese Wahl entschiede die Sortierung — die
+// Liste kommt nach Art sortiert, also gewänne immer das E-Auto mit seinen
+// vorbelegten 3 kW, selbst neben einer erfassten 22-kW-Wallbox.
+func chargingPresetIndex(assets []energy.Asset) int {
+	best := -1
+	for index, asset := range assets {
+		if !isChargingPreset(asset) {
+			continue
+		}
+		if best < 0 {
+			best = index
+			continue
+		}
+		current, previous := assets[index], assets[best]
+		if (current.RatedPowerKW != nil) != (previous.RatedPowerKW != nil) {
+			if current.RatedPowerKW != nil {
+				best = index
+			}
+			continue
+		}
+		currentKW, _ := assetFlexContribution(current)
+		previousKW, _ := assetFlexContribution(previous)
+		if currentKW > previousKW {
+			best = index
+		}
+	}
+	return best
+}
+
 func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset, intervals []energy.Interval) []energyScenarioView {
 	baseline := energy.PeakForMonth(intervals, time.Now(), time.Local)
 	if baseline <= 0 {
@@ -3979,8 +4042,8 @@ func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset,
 	// Vorbelegungen; eine gesetzte Nennleistung und eine gesetzte Flexibilität
 	// gewinnen immer. Vorher verschmolz `has[kind]` zwei gleichartige
 	// Verbraucher zu einem — zwei Wallboxen ergaben dieselben 3 kW wie eine.
-	chargingCounted := false
-	for _, asset := range assets {
+	chargingPreset := chargingPresetIndex(assets)
+	for index, asset := range assets {
 		kw, flexibility := assetFlexContribution(asset)
 		if kw <= 0 {
 			continue
@@ -3988,16 +4051,14 @@ func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset,
 		// E-Auto und Wallbox beschreiben als Vorlagen dieselbe Ladelast; beide
 		// anzurechnen würde die Flexibilität erfinden. Frei angelegte
 		// Verbraucher zählen dagegen einzeln — sie wurden bewusst so benannt.
-		if asset.Source != energyCustomAssetSource && (asset.Kind == "ev" || asset.Kind == "wallbox") {
-			if chargingCounted {
-				continue
-			}
-			chargingCounted = true
+		if isChargingPreset(asset) && index != chargingPreset {
+			continue
 		}
 		switch {
-		case asset.Kind == "battery":
+		case asset.Kind == "battery" && flexibility != energy.FlexFixed:
 			// Ein Speicher ist keine drosselbare Last, sondern eine eigene
-			// Rolle mit eigenem Gewicht in der Simulation.
+			// Rolle mit eigenem Gewicht in der Simulation. Wer ihn ausdrücklich
+			// als fest erklärt, bekommt dieses Gewicht nicht.
 			battery += kw
 			assumptions = append(assumptions, assetFlexAssumption(asset, "Speicherleistung"))
 		case flexibility == energy.FlexShift:
@@ -4035,15 +4096,10 @@ func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset,
 	return []energyScenarioView{view}
 }
 
+// defaultAssetFlexibility hält die Vorbelegung an einer Stelle: im
+// energy-Paket, das sie auch beim Seeding speichert.
 func defaultAssetFlexibility(kind string) string {
-	switch kind {
-	case "ev", "wallbox", "hot-water", "sauna":
-		return energy.FlexShift
-	case "heat-pump", "battery", "air-conditioning":
-		return energy.FlexThrottle
-	default:
-		return energy.FlexUnknown
-	}
+	return energy.DefaultAssetFlexibility(kind)
 }
 
 func energyMetricLabel(metric string) string {

@@ -12,10 +12,23 @@ import (
 // Mindestbemessung gar nicht mehr eintritt: die Spitze sinkt dort real weiter,
 // der verrechnete Betrag nicht.
 
+// quarterHourThisMonth liefert eine Viertelstunde, die garantiert im laufenden
+// Kalendermonat liegt. Ein fester Rückversatz genügt nicht: in den ersten
+// Stunden des Monatsersten fiele er in den Vormonat, und PeakForMonth filtert
+// nach Kalendermonat — die Tests scheiterten dann jeden Monatswechsel.
+func quarterHourThisMonth() time.Time {
+	now := time.Now().In(time.Local)
+	slot := now.Truncate(15 * time.Minute).Add(-15 * time.Minute)
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	if slot.Before(monthStart) {
+		return monthStart
+	}
+	return slot
+}
+
 func scenarioIntervals(peakKW float64) []energy.Interval {
-	start := time.Now().Truncate(15 * time.Minute).Add(-time.Hour)
 	return []energy.Interval{{
-		StartsAt:  start,
+		StartsAt:  quarterHourThisMonth(),
 		Duration:  15 * time.Minute,
 		AverageKW: peakKW,
 		Quality:   energy.QualityMeasured,

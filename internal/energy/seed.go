@@ -87,17 +87,21 @@ func ApplyProfileSeeds(storage Storage, raw string, knownTenants map[string]stru
 		if err := storage.SaveProfile(profile); err != nil {
 			return err
 		}
+		// Seeding läuft genau einmal: sobald das Profil existiert, wird es
+		// übersprungen. Ein stillschweigend verworfener Eintrag käme deshalb nie
+		// wieder — Tippfehler müssen beim Start auffallen, nicht im Pilotbetrieb.
+		assetIDs := map[string]struct{}{}
 		for _, item := range seed.Assets {
 			kind := normalizeToken(item.Kind, "")
 			if kind == "" {
-				continue
+				return fmt.Errorf("home profile seed for tenant %s has an asset without kind", slug)
 			}
 			asset := Asset{
 				ID:          StableAssetID(slug, kind),
 				TenantSlug:  slug,
 				Kind:        kind,
 				Name:        AssetKindLabel(kind),
-				Flexibility: seedAssetFlexibility(kind),
+				Flexibility: DefaultAssetFlexibility(kind),
 				Source:      "profile-seed",
 				Confirmed:   true,
 			}
@@ -106,8 +110,19 @@ func ApplyProfileSeeds(storage Storage, raw string, knownTenants map[string]stru
 				// Eigene, aber weiterhin deterministische ID: mehrere benannte
 				// Verbraucher derselben Art dürfen sich nicht überschreiben,
 				// und ein Neustart darf sie nicht verdoppeln.
-				asset.ID = StableAssetID(slug, kind) + "-" + normalizeSlug(name)
+				discriminator := normalizeSlug(name)
+				if discriminator == "" {
+					return fmt.Errorf("home profile seed for tenant %s has an asset name without usable characters: %q", slug, name)
+				}
+				asset.ID = StableAssetID(slug, kind) + "-" + discriminator
 			}
+			// Zwei Namen können auf dieselbe ID normalisieren ("Sauna Keller" und
+			// "sauna-keller"). Ohne diese Prüfung überschriebe der zweite Eintrag
+			// den ersten, und der Haushalt hätte einen Verbraucher weniger.
+			if _, duplicate := assetIDs[asset.ID]; duplicate {
+				return fmt.Errorf("home profile seed for tenant %s has two assets with the same id %s", slug, asset.ID)
+			}
+			assetIDs[asset.ID] = struct{}{}
 			if item.RatedPowerKW != nil {
 				value := *item.RatedPowerKW
 				asset.RatedPowerKW = &value
@@ -123,9 +138,16 @@ func ApplyProfileSeeds(storage Storage, raw string, knownTenants map[string]stru
 	return nil
 }
 
-func seedAssetFlexibility(kind string) string {
+// DefaultAssetFlexibility ist die Vorbelegung einer Kategorie: was ein
+// Verbraucher dieser Art üblicherweise kann, solange der Haushalt nichts
+// anderes erklärt hat.
+//
+// Diese Tabelle ist die einzige Quelle. Sie lag früher zusätzlich im
+// Server-Paket, und die beiden Fassungen liefen auseinander — eine Sauna wurde
+// als "Flexibilität offen" gespeichert, aber als verschiebbar verrechnet.
+func DefaultAssetFlexibility(kind string) string {
 	switch kind {
-	case "ev", "wallbox", "hot-water":
+	case "ev", "wallbox", "hot-water", "sauna":
 		return FlexShift
 	case "heat-pump", "battery", "air-conditioning":
 		return FlexThrottle

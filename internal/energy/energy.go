@@ -183,7 +183,7 @@ func NormalizeProfile(profile HomeProfile, now time.Time) HomeProfile {
 	}
 	if profile.TargetPeakKW != nil {
 		value := math.Round(*profile.TargetPeakKW*100) / 100
-		if value <= 0 || value > 10000 {
+		if !ValidPowerKW(value, 10000) {
 			profile.TargetPeakKW = nil
 		} else {
 			profile.TargetPeakKW = &value
@@ -194,7 +194,7 @@ func NormalizeProfile(profile HomeProfile, now time.Time) HomeProfile {
 		// Ein Hausanschluss auf Netzebene 7 liegt realistisch zwischen wenigen
 		// und einigen hundert kW. Unplausibles verwerfen statt zu speichern:
 		// der Wert steuert die Mindestbemessung und damit eine Geldgröße.
-		if value <= 0 || value > 1000 {
+		if !ValidPowerKW(value, 1000) {
 			profile.AgreedPowerKW = nil
 		} else {
 			profile.AgreedPowerKW = &value
@@ -231,7 +231,7 @@ func NormalizeAsset(asset Asset, now time.Time) Asset {
 	asset.Source = normalizeToken(asset.Source, "manual")
 	if asset.RatedPowerKW != nil {
 		value := math.Round(*asset.RatedPowerKW*100) / 100
-		if value <= 0 || value > 10000 {
+		if !ValidPowerKW(value, 10000) {
 			asset.RatedPowerKW = nil
 		} else {
 			asset.RatedPowerKW = &value
@@ -481,6 +481,19 @@ func AveragePowerKW(energyKWh float64, duration time.Duration) float64 {
 		return 0
 	}
 	return energyKWh / hours
+}
+
+// ValidPowerKW prüft eine Leistungsangabe in kW.
+//
+// NaN und ±Inf müssen ausdrücklich abgefangen werden: jeder Vergleich mit NaN
+// ist falsch, ein bloßes "value <= 0 || value > max" ließe sie also durch.
+// "NaN" ist eine gültige Eingabe für strconv.ParseFloat, und ein NaN im Modell
+// macht aus jeder Kennzahl "NaN kW".
+func ValidPowerKW(value, max float64) bool {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return false
+	}
+	return value > 0 && value <= max
 }
 
 func PeakForMonth(intervals []Interval, at time.Time, location *time.Location) float64 {

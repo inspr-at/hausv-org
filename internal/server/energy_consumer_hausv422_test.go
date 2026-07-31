@@ -100,6 +100,42 @@ func TestPresetResaveKeepsCustomConsumersHAUSV422(t *testing.T) {
 	}
 }
 
+// Der Onboarding-Schritt wählt nur die Arten aus. Eine erfasste Nennleistung
+// — etwa aus einem Pilot-Seed — darf er nicht mit der Vorbelegung überschreiben:
+// aus 9 kW wurde sonst stillschweigend wieder 1 kW.
+func TestPresetResaveKeepsRecordedPowerHAUSV422(t *testing.T) {
+	a := consumerAppHAUSV422(t)
+	rated := 9.0
+	id := energy.StableAssetID("jhw22", "heat-pump")
+	if err := a.energyStore.UpsertAsset(energy.Asset{
+		ID: id, TenantSlug: "jhw22", Kind: "heat-pump", Name: "Wärmepumpe",
+		RatedPowerKW: &rated, Flexibility: energy.FlexThrottle,
+		Source: "profile-seed", Confirmed: true,
+	}); err != nil {
+		t.Fatalf("Seed-Asset speichern: %v", err)
+	}
+
+	if response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding",
+		url.Values{"action": {"assets"}, "assets": {"pv", "sauna", "heat-pump"}}); response.Code != http.StatusSeeOther {
+		t.Fatalf("Vorlagen erneut speichern: status=%d", response.Code)
+	}
+
+	assets, _ := a.energyStore.ListAssets("jhw22")
+	for _, asset := range assets {
+		if asset.ID != id {
+			continue
+		}
+		if asset.RatedPowerKW == nil || *asset.RatedPowerKW != 9 {
+			t.Fatalf("die erfasste Nennleistung ging verloren: %+v", asset)
+		}
+		if asset.Flexibility != energy.FlexThrottle {
+			t.Fatalf("die erklärte Flexibilität ging verloren: %+v", asset)
+		}
+		return
+	}
+	t.Fatalf("die Vorlage wurde nicht gefunden: %+v", assets)
+}
+
 // Ein freier Verbraucher muss im Lastmanagement ankommen — sonst ist er
 // Dekoration. Das ist der eigentliche Zweck im Sinne von Peak Shaving.
 func TestCustomConsumerCountsTowardsPeakShavingHAUSV422(t *testing.T) {

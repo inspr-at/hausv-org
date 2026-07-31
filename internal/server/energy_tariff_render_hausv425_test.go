@@ -50,9 +50,9 @@ func energyCockpitAppHAUSV425(t *testing.T, peakKW float64, agreedKW string) *ap
 		}
 	}
 
-	// Eine abgeschlossene Viertelstunde im laufenden Monat, damit PeakForMonth
-	// überhaupt einen Wert liefert.
-	start := time.Now().In(time.Local).Truncate(15 * time.Minute).Add(-2 * time.Hour)
+	// Eine Viertelstunde im laufenden Monat, damit PeakForMonth überhaupt einen
+	// Wert liefert.
+	start := quarterHourThisMonth()
 	if err := a.energyStore.PutInterval(energy.Interval{
 		TenantSlug: "jhw22",
 		StartsAt:   start,
