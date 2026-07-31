@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.61.0",
+			Date:     "31. Juli 2026",
+			Kind:     "Energie & Transparenz",
+			Headline: "Das Energie-Cockpit zeigt, welche Leistung nach dem Tarifentwurf 2027 verrechnet würde.",
+			Intro:    "Neben der höchsten Viertelstunde des Monats steht jetzt die tatsächlich bemessene Leistung — mit Begründung, wenn beide auseinanderfallen.",
+			Items: []NoteItem{
+				{Label: "Anschlussleistung erfassen", Text: "Die auf der Netzrechnung vereinbarte Leistung bestimmt die Mindestbemessung und lässt sich im Hausprofil hinterlegen."},
+				{Label: "Wirksam kappen", Text: "Der Anteil oberhalb der Staffelschwelle wird getrennt ausgewiesen, weil er im Entwurf doppelt so hoch bemessen wird."},
+				{Label: "Ehrlich rechnen", Text: "Unterhalb der Mindestbemessung weist das Portal aus, dass der verrechnete Betrag nicht weiter sinkt."},
+			},
+		},
+		{
 			Version:  "0.60.2",
 			Date:     "31. Juli 2026",
 			Kind:     "Bedienbarkeit",

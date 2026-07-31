@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.61.0] - 2026-07-31
+
+### Neu
+
+- **Die verrechnete Leistung ist jetzt sichtbar.** Neben der höchsten Viertelstunde des Monats zeigt das Energie-Cockpit, welche Leistung nach dem Entwurf tatsächlich bemessen würde — und begründet es, wenn beide auseinanderfallen.
+- **Die vereinbarte Anschlussleistung lässt sich erfassen.** Sie steht auf der Netzrechnung und bestimmt die Mindestbemessung. Ohne sie rechnet die Schätzung weiterhin zurückhaltend mit dem niedrigsten Ansatz.
+
+### Verbessert
+
+- **Wo Lastspitzen kappen wirklich zählt, ist erkennbar.** Der Anteil oberhalb der Staffelschwelle wird getrennt ausgewiesen, weil er im Entwurf doppelt so hoch bemessen wird.
+- **Sparversprechen bleiben ehrlich.** Fällt ein Was-wäre-wenn-Szenario unter die Mindestbemessung, weist das Portal darauf hin, dass der Betrag dort nicht weiter sinkt.
+- **Niedertarif-Fenster und Energiegemeinschaften werden richtig eingeordnet.** Beide senken den Arbeitspreis, nicht die verrechnete Leistung — das steht jetzt ausdrücklich dabei.
+
 ## [0.60.2] - 2026-07-31
 
 ### Neu
