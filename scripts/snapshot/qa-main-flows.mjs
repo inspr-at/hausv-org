@@ -733,7 +733,10 @@ async function assertHomeOnboarding() {
   if (smallTargets.length) fail(`Onboarding Mobil: Touch-Ziele unter 44px: ${smallTargets.join(', ')}`);
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   const box = await page.locator('.energy-mode-strip').boundingBox();
-  if (!box || box.y > 65) fail(`Onboarding Mobil: Beobachtungsmodus nicht permanent sichtbar (${box?.y ?? 'fehlt'})`);
+  const mobileNav = await page.locator('.sidebar').boundingBox();
+  if (!box || !mobileNav || Math.abs(box.y - (mobileNav.y + mobileNav.height)) > 1) {
+    fail(`Onboarding Mobil: Beobachtungsmodus nicht sauber unter der Navigation (${JSON.stringify({ box, mobileNav })})`);
+  }
   await closeContext(context);
   process.stdout.write('  ✓ Energie-Onboarding · Tastatur · Fortsetzen · Mobil\n');
 }
@@ -1428,7 +1431,10 @@ async function assertEnergySafetyAndFlow(viewport) {
   if (viewport.name === 'Mobil') {
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
     const box = await strip.boundingBox();
-    if (!box || box.y > 65) fail(`Energie Mobil: Modus nicht permanent sichtbar (${box?.y ?? 'fehlt'})`);
+    const mobileNav = await page.locator('.sidebar').boundingBox();
+    if (!box || !mobileNav || Math.abs(box.y - (mobileNav.y + mobileNav.height)) > 1) {
+      fail(`Energie Mobil: Modus nicht sauber unter der Navigation (${JSON.stringify({ box, mobileNav })})`);
+    }
     const primaryTargets = await page.locator('.energy-page .button, .energy-mode-action').evaluateAll((nodes) =>
       nodes.filter((node) => {
         const rect = node.getBoundingClientRect();
@@ -1474,6 +1480,167 @@ async function assertEnergySafetyAndFlow(viewport) {
     });
   }
   await closeContext(ownerContext);
+}
+
+// Canonical viewport matrix for the energy lead. Horizontal document overflow
+// alone did not catch the 1121px tariff/live collision, so this also asserts
+// DOM order, sibling geometry, card scroll width and sticky-stack alignment.
+async function assertEnergyGeometryMatrix() {
+  const sizes = [
+    { name: '320x568', width: 320, height: 568 },
+    { name: '360x800', width: 360, height: 800 },
+    { name: '390x844', width: 390, height: 844 },
+    { name: '430x932', width: 430, height: 932 },
+    { name: '768x1024', width: 768, height: 1024 },
+    { name: '900x600', width: 900, height: 600 },
+    { name: '1024x768', width: 1024, height: 768 },
+    { name: '1120x640', width: 1120, height: 640 },
+    { name: '1280x720', width: 1280, height: 720 },
+    { name: '1440x900', width: 1440, height: 900 },
+    { name: '899x700', width: 899, height: 700 },
+    { name: '901x700', width: 901, height: 700 },
+    { name: '1119x700', width: 1119, height: 700 },
+    { name: '1121x700', width: 1121, height: 700 },
+  ];
+
+  for (const size of sizes) {
+    const context = await newContext({ width: size.width, height: size.height });
+    const page = await localLogin(context, 'owner@example.com');
+    const response = await page.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
+    if (!response || response.status() !== 200) {
+      fail(`Energie-Geometrie ${size.name}: Cockpit nicht erreichbar`);
+    }
+
+    const result = await page.evaluate(({ width, height }) => {
+      const rectOf = (node) => {
+        const rect = node?.getBoundingClientRect();
+        return rect ? {
+          top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left,
+          width: rect.width, height: rect.height,
+        } : null;
+      };
+      const intersects = (left, right) => Boolean(left && right &&
+        Math.min(left.right, right.right) - Math.max(left.left, right.left) > 1 &&
+        Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top) > 1);
+      const health = document.querySelector('.energy-health');
+      const lead = health?.querySelector(':scope > .energy-lead-side');
+      const tariff = health?.querySelector(':scope > .energy-tariff');
+      const live = lead?.querySelector('.energy-live');
+      const next = lead?.querySelector('.energy-nextstep');
+      const strip = document.querySelector('.energy-mode-strip');
+      const sidebar = document.querySelector('.sidebar');
+      const action = strip?.querySelector('.energy-mode-action');
+      const leadRect = rectOf(lead);
+      const tariffRect = rectOf(tariff);
+      const stripRect = rectOf(strip);
+      const sidebarRect = rectOf(sidebar);
+      const overflow = [health, lead, tariff, live, next]
+        .filter(Boolean)
+        .filter((node) => node.scrollWidth > node.clientWidth + 1)
+        .map((node) => node.className);
+      const stripStyle = strip ? getComputedStyle(strip) : null;
+      return {
+        width,
+        height,
+        missing: [health, lead, tariff, live, next, strip].some((node) => !node),
+        documentOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+        overflow,
+        siblingOverlap: intersects(leadRect, tariffRect),
+        sourceLeadFirst: Boolean(lead && tariff &&
+          (lead.compareDocumentPosition(tariff) & Node.DOCUMENT_POSITION_FOLLOWING)),
+        oneColumn: Boolean(leadRect && tariffRect && Math.abs(leadRect.left - tariffRect.left) <= 1),
+        leadBeforeTariff: Boolean(leadRect && tariffRect && leadRect.bottom <= tariffRect.top + 1),
+        leadLeftOfTariff: Boolean(leadRect && tariffRect && leadRect.right <= tariffRect.left + 1),
+        liveStartsInViewport: Boolean(live && live.getBoundingClientRect().top < height),
+        nextFollowsLive: Boolean(live && next && live.getBoundingClientRect().bottom <= next.getBoundingClientRect().top + 1),
+        stripRect,
+        sidebarRect,
+        mobileStackDelta: width <= 900 && stripRect && sidebarRect ? Math.abs(stripRect.top - sidebarRect.bottom) : 0,
+        actionHeight: action?.getBoundingClientRect().height || 0,
+        safetyTitle: strip?.querySelector('.energy-mode-copy strong')?.textContent?.trim() || '',
+        safetyCopyVisible: Boolean(strip?.querySelector('.energy-mode-copy span')?.getClientRects().length),
+        capabilityVisible: Boolean(strip?.querySelector('.energy-mode-control, .energy-mode-capability, form')?.getClientRects().length),
+        softToken: stripStyle?.getPropertyValue('--soft').trim() || '',
+        accentToken: stripStyle?.getPropertyValue('--gold-ink').trim() || '',
+        focusToken: stripStyle?.getPropertyValue('--energy-focus-ring').trim() || '',
+      };
+    }, size);
+
+    if (result.missing || result.documentOverflow || result.overflow.length ||
+        result.siblingOverlap || !result.sourceLeadFirst || !result.nextFollowsLive ||
+        !result.liveStartsInViewport) {
+      fail(`Energie-Geometrie ${size.name}: Grundlayout verletzt (${JSON.stringify(result)})`);
+    }
+    if (size.width < 1280 && (!result.oneColumn || !result.leadBeforeTariff)) {
+      fail(`Energie-Geometrie ${size.name}: Tablet/Mobil ist nicht live-zuerst gestapelt (${JSON.stringify(result)})`);
+    }
+    if (size.width >= 1280 && (result.oneColumn || !result.leadLeftOfTariff)) {
+      fail(`Energie-Geometrie ${size.name}: breite Ansicht trennt Live und Tarif nicht (${JSON.stringify(result)})`);
+    }
+    if (result.safetyTitle !== 'Nur beobachten' || !result.safetyCopyVisible ||
+        !result.capabilityVisible || result.actionHeight < 44) {
+      fail(`Energie-Geometrie ${size.name}: Sicherheitszustand oder Freigabe fehlt (${JSON.stringify(result)})`);
+    }
+    if (result.softToken !== '#716d62' || result.accentToken !== '#705c22' ||
+        result.focusToken !== '#ad862c') {
+      fail(`Energie-Geometrie ${size.name}: scoped AA-Tokens fehlen (${JSON.stringify(result)})`);
+    }
+    if (size.width <= 900 && (result.mobileStackDelta > 1 || !result.stripRect || result.stripRect.height > 60)) {
+      fail(`Energie-Geometrie ${size.name}: Navigation/Sicherheitsleiste kollidiert (${JSON.stringify(result)})`);
+    }
+    if (size.width > 900 && (!result.stripRect || result.stripRect.top > 1 || result.stripRect.height > 64)) {
+      fail(`Energie-Geometrie ${size.name}: Desktop-Sicherheitsleiste ist nicht kompakt (${JSON.stringify(result)})`);
+    }
+
+    if (size.name === '390x844') {
+      const stripHeight = result.stripRect.height;
+      const control = page.locator('.energy-mode-control > summary');
+      await control.focus();
+      await control.press('Enter');
+      const openState = await page.evaluate(() => {
+        const strip = document.querySelector('.energy-mode-strip');
+        const popover = document.querySelector('.energy-mode-popover');
+        const stripRect = strip?.getBoundingClientRect();
+        const popoverRect = popover?.getBoundingClientRect();
+        return {
+          open: Boolean(document.querySelector('.energy-mode-control[open]')),
+          stripHeight: stripRect?.height || 0,
+          popoverTop: popoverRect?.top || 0,
+          popoverRight: popoverRect?.right || 0,
+          popoverBottom: popoverRect?.bottom || 0,
+        };
+      });
+      if (!openState.open || Math.abs(openState.stripHeight - stripHeight) > 1 ||
+          openState.popoverTop < result.stripRect.bottom || openState.popoverRight > size.width + 1 ||
+          openState.popoverBottom > size.height + 1) {
+        fail(`Energie-Geometrie ${size.name}: Testlauf-Erklärung verdrängt oder verlässt den Viewport (${JSON.stringify(openState)})`);
+      }
+      await control.press('Enter');
+    }
+
+    if (process.env.HV_QA_SCREENSHOT_DIR) {
+      mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, `energy-geometry-${size.name}.png`),
+      });
+    }
+
+    await page.evaluate(() => window.scrollTo(0, Math.min(1200, document.documentElement.scrollHeight - window.innerHeight)));
+    const sticky = await page.evaluate((mobile) => {
+      const strip = document.querySelector('.energy-mode-strip')?.getBoundingClientRect();
+      const sidebar = document.querySelector('.sidebar')?.getBoundingClientRect();
+      return {
+        stripTop: strip?.top ?? -1,
+        sidebarBottom: sidebar?.bottom ?? -1,
+        delta: mobile && strip && sidebar ? Math.abs(strip.top - sidebar.bottom) : 0,
+      };
+    }, size.width <= 900);
+    if ((size.width <= 900 && sticky.delta > 1) || (size.width > 900 && sticky.stripTop > 1)) {
+      fail(`Energie-Geometrie ${size.name}: Sicherheitsleiste ist beim Scrollen nicht sauber gestapelt (${JSON.stringify(sticky)})`);
+    }
+    await closeContext(context);
+    process.stdout.write(`  ✓ Energie-Geometrie · ${size.name} · ${result.oneColumn ? 'gestapelt' : 'zweispaltig'} · ${Math.round(result.stripRect.height)}px Sicherheit\n`);
+  }
 }
 
 async function assertEnergyDataControl(viewport) {
@@ -1607,6 +1774,7 @@ try {
         process.stdout.write(`  ✓ ${persona.name} · ${viewport.name}\n`);
       }
     }
+    await assertEnergyGeometryMatrix();
     await assertLogoutBackNavigation();
   }
 } catch (error) {

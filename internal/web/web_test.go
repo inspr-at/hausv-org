@@ -268,6 +268,50 @@ func TestEnergyLiveCardUsesIndependentIconsAndAccessibleMotion(t *testing.T) {
 	}
 }
 
+func TestEnergyGeometryKeepsSafetyAndLiveFlowFirst(t *testing.T) {
+	for _, want := range []string{
+		`--soft:#716d62; --gold-ink:#705c22; --energy-focus-ring:#ad862c;`,
+		`.app-shell { --mobile-nav-height:68px; display: block; }`,
+		`top: var(--mobile-nav-height); grid-template-columns: 30px minmax(0,1fr) auto;`,
+		`@media (max-width: 1279px)`,
+		`grid-template-columns: minmax(0,1fr) minmax(440px,440px);`,
+		`Liest und empfiehlt. Keine Steuerung.`,
+		`Freigabe nur für Eigentümer oder Hausadministration`,
+		`action="/app/energie/mode"`,
+		`Sofort zurück zu „Nur beobachten“`,
+		`Testlauf bewusst starten`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("energy geometry/safety slice missing %q", want)
+		}
+	}
+
+	cockpitStart := strings.Index(PageTemplates, `{{define "energyCockpit"}}`)
+	if cockpitStart < 0 {
+		t.Fatal("energy cockpit template is missing")
+	}
+	cockpit := PageTemplates[cockpitStart:]
+	lead := strings.Index(cockpit, `{{template "energyLead" .}}`)
+	tariff := strings.Index(cockpit, `class="energy-card energy-tariff"`)
+	if lead < 0 || tariff < 0 || lead >= tariff {
+		t.Fatalf("energy cockpit source order is not live/next before tariff: lead=%d tariff=%d", lead, tariff)
+	}
+
+	// This slice changes hierarchy only; the legally/product-relevant tariff
+	// qualifications must remain in the rendered source until its focused route
+	// is implemented separately.
+	for _, caveat := range []string{
+		`Das ist nicht Ihre Stromrechnung.`,
+		`Arbeitspreis, Energiekosten, Abgaben und Steuern`,
+		`Niedertarif-Fenster (SNAP, WiNAP)`,
+		`Diesen Stand festhalten`,
+	} {
+		if !strings.Contains(cockpit, caveat) {
+			t.Fatalf("energy hierarchy slice removed tariff caveat %q", caveat)
+		}
+	}
+}
+
 func TestIssueCreationUsesTwoFocusedSteps(t *testing.T) {
 	for _, want := range []string{
 		`<script src="/assets/issues.js?v={{.AssetVersion}}" defer></script>`,
