@@ -974,17 +974,21 @@ const PageTemplates = `
     .energy-storage-live strong { font-family: var(--font-serif); font-size: 26px; line-height: 1.05; }
     .energy-battery-visual { min-width: 0; display: flex; gap: 11px; align-items: center; color: #5d7583; }
     .energy-battery-gauge { position: relative; box-sizing: border-box; width: 88px; height: 42px; display: flex; align-items: stretch; overflow: visible; border: 2px solid #6d706a; border-radius: 8px; padding: 4px; background: #fff; }
-    .energy-battery-gauge::after { content: ""; position: absolute; top: 12px; right: -7px; width: 5px; height: 14px; border: 2px solid #6d706a; border-left: 0; border-radius: 0 4px 4px 0; background: #fff; }
+    /* Mittig durch Konstruktion, nicht durch Rechnung: das Pseudoelement erbt
+       kein border-box, ein fester Randabstand hinge also an der Randbreite. */
+    .energy-battery-gauge::after { content: ""; position: absolute; top: 50%; right: -7px; width: 5px; height: 14px; transform: translateY(-50%); border: 2px solid #6d706a; border-left: 0; border-radius: 0 4px 4px 0; background: #fff; }
     .energy-battery-gauge i { height: 100%; max-width: 100%; display: block; border-radius: 4px; background: #607d8d; transition: width .35s ease; }
-    .energy-battery-direction { width: 18px; height: 48px; display: grid; grid-template-rows: repeat(3,1fr); place-items: center; overflow: hidden; }
-    .energy-battery-chevron { width: 13px; height: 9px; display: block; opacity: 0; animation: energy-flow-up 1.8s ease-in-out infinite; }
-    .energy-battery-chevron path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    /* Die Richtung gehört in den Speicher, nicht daneben: die Pfeile laufen auf
+       derselben Achse wie der Füllstand. Laden zeigt nach rechts, Entladen nach
+       links — gespiegelt wird der ganze Streifen, damit Form und Bewegung nie
+       auseinanderlaufen. Das gilt auch, wenn Bewegung abgeschaltet ist. */
+    .energy-battery-flow { position: absolute; inset: 2px 4px; display: flex; align-items: center; justify-content: center; gap: 2px; pointer-events: none; }
+    .energy-battery-chevron { width: 7px; height: 12px; display: block; opacity: 0; animation: energy-flow-forward 1.8s ease-in-out infinite; }
+    .energy-battery-chevron path { fill: none; stroke: #26312a; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
     .energy-battery-chevron:nth-child(2) { animation-delay: .25s; }
     .energy-battery-chevron:nth-child(3) { animation-delay: .5s; }
-    .energy-battery-visual.discharging .energy-battery-chevron { animation-name: energy-flow-down; }
-    .energy-battery-visual.discharging .energy-battery-chevron path { transform: rotate(180deg); transform-origin: center; }
-    @keyframes energy-flow-up { 0% { opacity: 0; transform: translateY(6px); } 38% { opacity: .82; } 100% { opacity: 0; transform: translateY(-6px); } }
-    @keyframes energy-flow-down { 0% { opacity: 0; transform: translateY(-6px); } 38% { opacity: .82; } 100% { opacity: 0; transform: translateY(6px); } }
+    .energy-battery-visual.discharging .energy-battery-flow { transform: scaleX(-1); }
+    @keyframes energy-flow-forward { 0% { opacity: 0; transform: translateX(-5px); } 38% { opacity: .85; } 100% { opacity: 0; transform: translateX(5px); } }
     @media (prefers-reduced-motion: reduce) {
       .energy-battery-gauge i { transition: none; }
       .energy-battery-chevron { opacity: .62; animation: none; }
@@ -8887,8 +8891,7 @@ const PageTemplates = `
             {{if .Live.HasMain}}<div class="energy-live-main">{{template "energyMetricIcon" .Live.Main}}<div><span>{{.Live.Main.Label}}</span><strong>{{.Live.Main.Value}}</strong><span>{{.Live.Main.Detail}}</span></div></div>{{end}}
             {{if .Live.HasBatterySOC}}<div class="energy-storage-live" data-energy-metric="battery-power">
               <span class="energy-battery-visual {{.Live.Battery.Direction}}" data-energy-direction="{{.Live.Battery.Direction}}" role="img" aria-label="Speicher zu {{.Live.BatterySOC.Value}} gefüllt{{if .Live.HasBattery}}, {{.Live.Battery.Detail}} mit {{.Live.Battery.Value}}{{end}}">
-                <span class="energy-battery-gauge" aria-hidden="true"><i style="width:{{.Live.BatteryFill}}%"></i></span>
-                {{if or (eq .Live.Battery.Direction "charging") (eq .Live.Battery.Direction "discharging")}}<span class="energy-battery-direction" aria-hidden="true"><svg class="energy-battery-chevron" viewBox="0 0 14 9"><path d="m2 7 5-5 5 5"/></svg><svg class="energy-battery-chevron" viewBox="0 0 14 9"><path d="m2 7 5-5 5 5"/></svg><svg class="energy-battery-chevron" viewBox="0 0 14 9"><path d="m2 7 5-5 5 5"/></svg></span>{{end}}
+                <span class="energy-battery-gauge" aria-hidden="true"><i style="width:{{.Live.BatteryFill}}%"></i>{{if or (eq .Live.Battery.Direction "charging") (eq .Live.Battery.Direction "discharging")}}<span class="energy-battery-flow"><svg class="energy-battery-chevron" viewBox="0 0 9 14"><path d="m2.5 2 4.5 5-4.5 5"/></svg><svg class="energy-battery-chevron" viewBox="0 0 9 14"><path d="m2.5 2 4.5 5-4.5 5"/></svg><svg class="energy-battery-chevron" viewBox="0 0 9 14"><path d="m2.5 2 4.5 5-4.5 5"/></svg></span>{{end}}</span>
               </span>
               <div><span>Speicher</span><strong>{{.Live.BatterySOC.Value}}</strong>{{if .Live.HasBattery}}<small>{{.Live.Battery.Detail}} · {{.Live.Battery.Value}}</small>{{else}}<small>Aktueller Ladestand</small>{{end}}</div>
             </div>{{end}}
