@@ -41,7 +41,11 @@ Voraussetzungen sind Go, Node.js, npm und ein lokales Chromium oder Google
 Chrome. Falls die Playwright-Abhängigkeiten fehlen, installiert der Runner die
 in `scripts/snapshot/package-lock.json` festgeschriebene Version ohne einen
 Browser herunterzuladen. In CI wird das zur festgeschriebenen
-Playwright-Version gehörende Chromium installiert.
+Playwright-Version gehörende Chromium installiert. Alle automatisierten Läufe
+starten Chromium ausdrücklich headless; das hängt nicht von Playwrights
+Standardwert ab. Nur zur lokalen Fehlersuche kann mit
+`HV_QA_HEADLESS=false` ein sichtbares Browserfenster angefordert werden. In CI
+bleibt der Lauf auch dann zwingend headless.
 
 ## Verpflichtendes CI-Gate
 

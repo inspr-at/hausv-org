@@ -87,7 +87,7 @@ Verzeichnis ausführen und `package-lock.json` mitcommitten. CI installiert mit
 Ein Pin in einer Konfigurationsdatei sagt, was laufen *soll*.
 `scripts/snapshot/verify-versions.mjs` sagt, was tatsächlich lief: der Node-
 Interpreter des Laufs, das aus dem Lockfile aufgelöste Playwright und die
-Chromium-Version, die wirklich startet.
+Chromium-Version, die wirklich headless startet.
 
 Die Sollwerte liest das Skript aus den Dateien, die sie ohnehin deklarieren —
 `.github/workflows/ci.yml` für Node, `package.json` für Playwright. Es gibt

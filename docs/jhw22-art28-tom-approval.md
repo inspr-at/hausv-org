@@ -212,8 +212,11 @@ jeweils in den USA. Maßgeblich ist die
   und anschließend alle sechs Stunden; die tatsächliche Löschung erfolgt damit
   spätestens sechs Stunden nach dem jeweiligen Fristablauf.
 - Energieprofil, Anlagen und bestätigte Zuordnungen: bis zur Korrektur, Trennung
-  oder ausdrücklichen Löschung. Home-Assistant-Zustände und -Verläufe werden
-  nur transient für die Anzeige gelesen.
+  oder ausdrücklichen Löschung. Einzelne Home-Assistant-Zustände und -Verläufe
+  werden nur transient für die Anzeige gelesen. Bei bestätigtem Netzbezug wird
+  je abgeschlossener Viertelstunde ein abgeleiteter Mittelwert mit Quelle und
+  Güte gespeichert; dafür gilt dieselbe Frist von 13 Monaten wie für
+  importierte Viertelstundenwerte.
 - Der einmalige Beginn des dreijährigen kostenlosen Nutzungszeitraums bleibt
   auch nach Löschung des Energieprofils bis zum Ende des Anspruchs- oder
   Portalverhältnisses erhalten. Er verhindert einen Neustart des Zeitraums und

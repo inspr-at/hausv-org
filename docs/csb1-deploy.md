@@ -218,8 +218,11 @@ is running:
 - persisted tariff assessments: maximum three years.
 
 Selected Home Assistant live/history values are fetched transiently for the
-cockpit and are not mirrored into SQLite. Only confirmed entity mappings are
-stored. Home Assistant URLs and tokens stay in agenix/host configuration and
+cockpit and are not mirrored into SQLite as individual states. Confirmed entity
+mappings are stored. When grid import is confirmed, the read-only sampler also
+stores one completed quarter-hour average with source and quality; those
+derived intervals follow the same 13-month retention as imported quarter-hour
+values. Home Assistant URLs and tokens stay in agenix/host configuration and
 are excluded from the application database and energy export. Deleting an
 energy profile removes its energy data and delegated energy grants, while a
 non-personal empty marker prevents declarative profile seeds from resurrecting

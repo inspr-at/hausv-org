@@ -89,13 +89,14 @@ jobs:
           npm --prefix scripts/snapshot ci --ignore-scripts --no-audit --no-fund
           npm --prefix scripts/snapshot exec -- playwright install --with-deps chromium
 
-      - name: Verify launched browser-QA versions
+      - name: Verify launched headless browser-QA versions
         working-directory: scripts/snapshot
         run: node verify-versions.mjs --strict
 
-      - name: Run resident/admin browser gate
+      - name: Run headless resident/admin browser gate
         env:
           CI: "true"
+          HV_QA_HEADLESS: "true"
           HV_QA_CI_CORE: "true"
           HV_QA_ARTIFACT_DIR: ${{ github.workspace }}/artifacts/browser-role-qa
         run: bash scripts/qa-main-flows.sh

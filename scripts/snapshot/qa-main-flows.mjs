@@ -46,7 +46,12 @@ const executableCandidates = [
   ]),
 ].filter(Boolean);
 const executablePath = executableCandidates.find(existsSync);
+// Headless is the test contract, not merely Playwright's current default.
+// Local debugging may opt into a visible browser, but CI stays headless even
+// if a surrounding environment happens to set HV_QA_HEADLESS=false.
+const headless = process.env.CI === 'true' || process.env.HV_QA_HEADLESS !== 'false';
 const launchOptions = {
+  headless,
   args: ['--host-resolver-rules=MAP hausv.test 127.0.0.1, MAP *.hausv.test 127.0.0.1', '--no-proxy-server'],
 };
 if (executablePath) {

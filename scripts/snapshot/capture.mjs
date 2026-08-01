@@ -69,7 +69,11 @@ function normalise(html) {
 }
 
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-const browser = await chromium.launch(executablePath ? { executablePath } : {});
+const headless = process.env.CI === 'true' || process.env.HV_QA_HEADLESS !== 'false';
+const browser = await chromium.launch({
+  headless,
+  ...(executablePath ? { executablePath } : {}),
+});
 
 let captured = 0;
 for (const persona of PERSONAS) {

@@ -93,10 +93,11 @@ mit `complete: true`. Die drei anderen QA-Mandanten fahren im Prüflauf den
 Einrichtungsassistenten durch und dürfen deshalb nicht vorab abgeschlossen sein
 — ohne diesen vierten zeigte jede Aufnahme von `/app/energie` den Assistenten
 statt des Cockpits. Der Mandant liest bewusst dieselbe Home-Assistant-Fixture
-wie `jhw22` und braucht keine eigene Kopie. Wer das Cockpit ansieht, sollte ihm
-zusätzlich eine Viertelstunden-CSV **des laufenden Kalendermonats** importieren:
-`PeakForMonth` filtert nach Kalendermonat, ältere Zeitstempel lassen jede
-Kennzahl auf null stehen.
+wie `jhw22` und braucht keine eigene Kopie. Für eine sofort reproduzierbare
+Momentaufnahme importiert der Prüflauf weiterhin eine Viertelstunden-CSV **des
+laufenden Kalendermonats**: Der Home-Assistant-Sampler schreibt erst nach einer
+vollständig abgelaufenen Viertelstunde. `PeakForMonth` filtert außerdem nach
+Kalendermonat; ältere Zeitstempel lassen jede Kennzahl auf null stehen.
 
 Die drei Slugs müssen zuvor jeweils als eigener Eintrag in `WEG_TENANTS_JSON`
 existieren. So bleiben Personen, Daten, Geräte und Berechtigungen strikt

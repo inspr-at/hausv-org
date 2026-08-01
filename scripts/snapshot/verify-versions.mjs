@@ -62,8 +62,8 @@ if (wantPlaywright !== gotPlaywright) {
 // lockfile fixes. Recording the launched build makes a silent swap visible.
 let browser;
 try {
-  browser = await chromium.launch();
-  report.push(`chromium    launched ${browser.version()} (bundled with playwright ${gotPlaywright})`);
+  browser = await chromium.launch({ headless: true });
+  report.push(`chromium    launched headless ${browser.version()} (bundled with playwright ${gotPlaywright})`);
 } catch (error) {
   findings.push(`chromium failed to launch: ${error.message}`);
 } finally {
