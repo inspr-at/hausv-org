@@ -3285,10 +3285,123 @@ const PageTemplates = `
   </div>
 {{end}}
 
+{{define "issueCreateForm"}}
+              <form class="issue-form" method="post" action="/app/anliegen" enctype="multipart/form-data" data-issue-wizard>
+                <fieldset class="issue-wizard-step" data-issue-step="1">
+                  <div class="issue-wizard-heading">
+                    <span class="issue-wizard-progress">Schritt 1 von 3</span>
+                    <h3>Was ist passiert?</h3>
+                    <p>Beschreiben Sie kurz, worum es geht.</p>
+                  </div>
+                  <div class="issue-category">
+                    <span id="issue-category-label">Art des Anliegens</span>
+                    <div class="issue-category-options" role="radiogroup" aria-labelledby="issue-category-label">
+                      <label class="issue-category-choice"><input type="radio" name="category" value="Reparatur" required checked><span>Reparatur</span></label>
+                      <label class="issue-category-choice"><input type="radio" name="category" value="Frage" required><span>Frage</span></label>
+                      <label class="issue-category-choice"><input type="radio" name="category" value="Vorschlag" required><span>Vorschlag</span></label>
+                      <label class="issue-category-choice"><input type="radio" name="category" value="Sonstiges" required><span>Sonstiges</span></label>
+                    </div>
+                  </div>
+                  <label>Kurze Beschreibung
+                    <textarea name="body" maxlength="4000" required placeholder="Zum Beispiel: Das Licht im Keller funktioniert nicht mehr."></textarea>
+                  </label>
+                  <div class="issue-file-row">
+                    <label>
+                      <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Foto hinzufügen</span></span>
+                    </label>
+                    <span class="hint">Optional · höchstens 10 MB je Datei</span>
+                  </div>
+                  <p class="hint">Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen.</p>
+                  <div class="issue-wizard-actions">
+                    {{if .HasIssues}}<button class="wizard-cancel wizard-only" type="button">Abbrechen</button>{{else}}<span class="issue-wizard-spacer" aria-hidden="true"></span>{{end}}
+                    <button class="wizard-next wizard-only" type="button" data-issue-next>Weiter</button>
+                  </div>
+                </fieldset>
+
+                <fieldset class="issue-wizard-step" data-issue-step="2">
+                  <div class="issue-wizard-heading">
+                    <span class="issue-wizard-progress">Schritt 2 von 3</span>
+                    <h3>Wo ist es?</h3>
+                    <p>Eine grobe Angabe genügt.</p>
+                  </div>
+                  <div class="issue-location-options" role="radiogroup" aria-label="Bereich">
+                    <label class="issue-location-choice">
+                      <input type="radio" name="location_type" value="common" required checked>
+                      <strong>Im Gemeinschaftsbereich</strong>
+                      <span>Zum Beispiel Stiegenhaus, Keller oder Garage</span>
+                    </label>
+                    <label class="issue-location-choice">
+                      <input type="radio" name="location_type" value="own-unit" required>
+                      <strong>In meiner Einheit</strong>
+                      <span>In der eigenen Wohnung oder im eigenen Nebenraum</span>
+                    </label>
+                  </div>
+                  <label>Ort genauer beschreiben <span class="hint">Optional</span>
+                    <input type="text" name="location_detail" maxlength="160" placeholder="Zum Beispiel: Keller, neben dem Fahrradraum">
+                  </label>
+                  <div class="issue-wizard-actions">
+                    <button class="wizard-back wizard-only" type="button" data-issue-back>Zurück</button>
+                    <button class="wizard-next wizard-only" type="button" data-issue-next>Weiter</button>
+                  </div>
+                </fieldset>
+
+                <fieldset class="issue-wizard-step" data-issue-step="3">
+                  <div class="issue-wizard-heading">
+                    <span class="issue-wizard-progress">Schritt 3 von 3</span>
+                    <h3>Stimmt alles?</h3>
+                    <p>Prüfen Sie die Meldung vor dem Senden.</p>
+                  </div>
+                  <dl class="issue-review" aria-label="Zusammenfassung">
+                    <div class="issue-review-row"><dt>Art</dt><dd data-issue-summary="category">Reparatur</dd></div>
+                    <div class="issue-review-row"><dt>Beschreibung</dt><dd data-issue-summary="body">—</dd></div>
+                    <div class="issue-review-row"><dt>Ort</dt><dd data-issue-summary="location">Gemeinschaftsbereich</dd></div>
+                    <div class="issue-review-row"><dt>Dateien</dt><dd data-issue-summary="files">Keine</dd></div>
+                  </dl>
+                  <label>Titel
+                    <input type="text" name="title" maxlength="140" required placeholder="Kurzer, passender Titel">
+                    <span class="hint">Wird aus Ihrer Beschreibung vorgeschlagen und kann geändert werden.</span>
+                  </label>
+                  <div class="issue-wizard-actions">
+                    <button class="wizard-back wizard-only" type="button" data-issue-back>Zurück</button>
+                    <button class="wizard-submit" type="submit">Anliegen melden</button>
+                  </div>
+                </fieldset>
+              </form>
+{{end}}
+
 {{define "issues"}}
 {{template "appOpen" .}}
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <script src="/assets/issues.js?v={{.AssetVersion}}" defer></script>
+    <style>
+      /* Anliegen: solange nichts gemeldet ist, steht das Formular offen neben
+         der Erklärung, was nach dem Senden passiert. */
+      .app-main .content-top .page-actions .button { min-height: 44px; }
+      .issue-start { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(264px,.8fr); gap: 18px; align-items: start; }
+      .issue-create-static { padding: 0; overflow: hidden; }
+      .issue-create-head { border-bottom: 1px solid var(--line); padding: 17px 20px; background: var(--panel-soft); }
+      .issue-create-head h2 { font-size: 22px; }
+      .issue-create-head p { margin-top: 4px; color: var(--muted); font-size: 14px; line-height: 1.4; }
+      .issue-start .issue-form { max-width: none; }
+      .issue-wizard-spacer { display: block; }
+      .issue-start-side { display: grid; align-content: start; gap: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 20px; box-shadow: var(--shadow-panel); }
+      .issue-start-side h2 { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-ink); font-family: var(--font-sans); }
+      .issue-start-steps { display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; counter-reset: issue-step; }
+      .issue-start-steps li { display: grid; grid-template-columns: 26px minmax(0,1fr); gap: 2px 11px; align-items: start; counter-increment: issue-step; }
+      .issue-start-steps li::before { content: counter(issue-step); grid-row: 1 / span 2; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 850; }
+      .issue-start-steps strong { grid-column: 2; font-size: 13.5px; }
+      .issue-start-steps span { grid-column: 2; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .issue-start-note { border-top: 1px solid var(--line); padding-top: 13px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+      .issue-start-link { min-height: 40px; display: inline-flex; align-items: center; gap: 6px; color: var(--gold-ink); font-size: 13px; font-weight: 850; text-decoration: none; }
+      .issue-start-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+      @media (max-width: 1120px) {
+        .issue-start { grid-template-columns: minmax(0,1fr); }
+      }
+      @media (max-width: 900px) {
+        .issue-create-head { padding: 15px 16px; }
+        .issue-start { gap: 14px; }
+      }
+    </style>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><span>/</span><span>Anliegen</span></span>
@@ -3376,97 +3489,37 @@ const PageTemplates = `
           {{end}}
 
           {{if .CanCreateIssue}}
+          {{if .HasIssues}}
           <details class="panel issue-create-panel" id="issue-new"{{if .OpenIssueCreate}} open{{end}}>
             <summary>
               <div>
-                <h2>{{if .HasIssues}}Neues Anliegen{{else}}Erstes Anliegen melden{{end}}</h2>
+                <h2>Neues Anliegen</h2>
                 <p>In drei kurzen Schritten verständlich melden.</p>
               </div>
             </summary>
-            <div class="issue-create-body">
-              <form class="issue-form" method="post" action="/app/anliegen" enctype="multipart/form-data" data-issue-wizard>
-                <fieldset class="issue-wizard-step" data-issue-step="1">
-                  <div class="issue-wizard-heading">
-                    <span class="issue-wizard-progress">Schritt 1 von 3</span>
-                    <h3>Was ist passiert?</h3>
-                    <p>Beschreiben Sie kurz, worum es geht.</p>
-                  </div>
-                  <div class="issue-category">
-                    <span id="issue-category-label">Art des Anliegens</span>
-                    <div class="issue-category-options" role="radiogroup" aria-labelledby="issue-category-label">
-                      <label class="issue-category-choice"><input type="radio" name="category" value="Reparatur" required checked><span>Reparatur</span></label>
-                      <label class="issue-category-choice"><input type="radio" name="category" value="Frage" required><span>Frage</span></label>
-                      <label class="issue-category-choice"><input type="radio" name="category" value="Vorschlag" required><span>Vorschlag</span></label>
-                      <label class="issue-category-choice"><input type="radio" name="category" value="Sonstiges" required><span>Sonstiges</span></label>
-                    </div>
-                  </div>
-                  <label>Kurze Beschreibung
-                    <textarea name="body" maxlength="4000" required placeholder="Zum Beispiel: Das Licht im Keller funktioniert nicht mehr."></textarea>
-                  </label>
-                  <div class="issue-file-row">
-                    <label>
-                      <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Foto hinzufügen</span></span>
-                    </label>
-                    <span class="hint">Optional · höchstens 10 MB je Datei</span>
-                  </div>
-                  <p class="hint">Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen.</p>
-                  <div class="issue-wizard-actions">
-                    <button class="wizard-cancel wizard-only" type="button">Abbrechen</button>
-                    <button class="wizard-next wizard-only" type="button" data-issue-next>Weiter</button>
-                  </div>
-                </fieldset>
-
-                <fieldset class="issue-wizard-step" data-issue-step="2">
-                  <div class="issue-wizard-heading">
-                    <span class="issue-wizard-progress">Schritt 2 von 3</span>
-                    <h3>Wo ist es?</h3>
-                    <p>Eine grobe Angabe genügt.</p>
-                  </div>
-                  <div class="issue-location-options" role="radiogroup" aria-label="Bereich">
-                    <label class="issue-location-choice">
-                      <input type="radio" name="location_type" value="common" required checked>
-                      <strong>Im Gemeinschaftsbereich</strong>
-                      <span>Zum Beispiel Stiegenhaus, Keller oder Garage</span>
-                    </label>
-                    <label class="issue-location-choice">
-                      <input type="radio" name="location_type" value="own-unit" required>
-                      <strong>In meiner Einheit</strong>
-                      <span>In der eigenen Wohnung oder im eigenen Nebenraum</span>
-                    </label>
-                  </div>
-                  <label>Ort genauer beschreiben <span class="hint">Optional</span>
-                    <input type="text" name="location_detail" maxlength="160" placeholder="Zum Beispiel: Keller, neben dem Fahrradraum">
-                  </label>
-                  <div class="issue-wizard-actions">
-                    <button class="wizard-back wizard-only" type="button" data-issue-back>Zurück</button>
-                    <button class="wizard-next wizard-only" type="button" data-issue-next>Weiter</button>
-                  </div>
-                </fieldset>
-
-                <fieldset class="issue-wizard-step" data-issue-step="3">
-                  <div class="issue-wizard-heading">
-                    <span class="issue-wizard-progress">Schritt 3 von 3</span>
-                    <h3>Stimmt alles?</h3>
-                    <p>Prüfen Sie die Meldung vor dem Senden.</p>
-                  </div>
-                  <dl class="issue-review" aria-label="Zusammenfassung">
-                    <div class="issue-review-row"><dt>Art</dt><dd data-issue-summary="category">Reparatur</dd></div>
-                    <div class="issue-review-row"><dt>Beschreibung</dt><dd data-issue-summary="body">—</dd></div>
-                    <div class="issue-review-row"><dt>Ort</dt><dd data-issue-summary="location">Gemeinschaftsbereich</dd></div>
-                    <div class="issue-review-row"><dt>Dateien</dt><dd data-issue-summary="files">Keine</dd></div>
-                  </dl>
-                  <label>Titel
-                    <input type="text" name="title" maxlength="140" required placeholder="Kurzer, passender Titel">
-                    <span class="hint">Wird aus Ihrer Beschreibung vorgeschlagen und kann geändert werden.</span>
-                  </label>
-                  <div class="issue-wizard-actions">
-                    <button class="wizard-back wizard-only" type="button" data-issue-back>Zurück</button>
-                    <button class="wizard-submit" type="submit">Anliegen melden</button>
-                  </div>
-                </fieldset>
-              </form>
-            </div>
+            <div class="issue-create-body">{{template "issueCreateForm" .}}</div>
           </details>
+          {{else}}
+          <div class="issue-start">
+            <section class="panel issue-create-panel issue-create-static" id="issue-new">
+              <div class="issue-create-head">
+                <h2>Erstes Anliegen melden</h2>
+                <p>In drei kurzen Schritten verständlich melden.</p>
+              </div>
+              <div class="issue-create-body">{{template "issueCreateForm" .}}</div>
+            </section>
+            <aside class="issue-start-side">
+              <h2>Nach dem Senden</h2>
+              <ol class="issue-start-steps">
+                <li><strong>Eingegangen</strong><span>Das Anliegen erscheint sofort auf dieser Seite, die Verwaltung wird benachrichtigt.</span></li>
+                <li><strong>In Bearbeitung</strong><span>Die Verwaltung prüft, setzt eine Priorität und beauftragt bei Bedarf einen Dienstleister.</span></li>
+                <li><strong>Erledigt</strong><span>Status, Termine und Rückfragen stehen beim Anliegen. Dort bestätigen Sie auch, wenn es erledigt ist.</span></li>
+              </ol>
+              <p class="issue-start-note">Bei Gefahr im Verzug – etwa Wasseraustritt, Gasgeruch oder Feuer – zuerst die Notrufnummern wählen und erst danach hier melden.</p>
+              <a class="issue-start-link" href="/app/kontakte">Kontakte des Hauses ansehen<span aria-hidden="true">›</span></a>
+            </aside>
+          </div>
+          {{end}}
           {{else if not .HasIssues}}
             {{template "emptyState" .IssuesEmpty}}
           {{end}}
@@ -4116,14 +4169,65 @@ const PageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
+{{define "documentUploadTrigger"}}<button class="button primary" type="button" data-dialog="document-upload" aria-haspopup="dialog" aria-controls="document-upload"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Dokument hochladen</button>{{end}}
+
 {{define "documents"}}
 {{template "appOpen" .}}
     <script src="/assets/announcements.js?v={{.AssetVersion}}" defer></script>
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
+    <style>
+      /* Dokumente: der leere Zustand ist der Normalfall eines neuen Hauses und
+         steht deshalb als eigener Bereich – ohne Karte in der Karte. */
+      .documents-screen .documents-page { gap: 20px; }
+      .documents-screen .document-library-head { align-items: flex-end; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+      .documents-screen .document-library-head .kicker { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
+      .documents-screen .document-library-head .mini { margin-top: 5px; color: var(--muted); font-size: 12.5px; }
+      .documents-screen .document-library { gap: 18px; }
+      .documents-screen .document-sections { gap: 18px; }
+      .documents-screen .document-section { gap: 8px; }
+      .documents-screen .document-section h3 { font-size: 18px; }
+      .documents-screen .document-list { gap: 8px; }
+      .documents-screen .document-row { padding: 13px 15px; gap: 10px 14px; }
+      .documents-screen .document-copy > strong { font-size: 17.5px; }
+      .documents-screen .document-file-details { margin-top: 4px; }
+      .doc-blank { display: grid; grid-template-columns: minmax(0,1.42fr) minmax(272px,.88fr); gap: 16px; }
+      .doc-blank-main { display: grid; align-content: center; gap: 20px; border: 1px dashed rgba(200,153,63,.45); border-radius: var(--radius-sm); background: rgba(255,254,251,.7); padding: clamp(22px,3.2vw,36px); }
+      .doc-blank-lead { display: grid; justify-items: start; gap: 13px; }
+      .doc-blank-icon { width: 52px; height: 52px; display: grid; place-items: center; border: 1px solid rgba(200,153,63,.3); border-radius: 12px; background: rgba(200,153,63,.1); color: var(--gold-ink); }
+      .doc-blank-icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+      .doc-blank-main h2 { font-size: clamp(25px,3vw,31px); }
+      .doc-blank-main p { max-width: 54ch; color: var(--muted); font-size: 15px; line-height: 1.55; }
+      .doc-blank-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 3px; }
+      .doc-blank-actions .button { min-height: 44px; }
+      .doc-blank-side { display: grid; align-content: start; gap: 11px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 20px; box-shadow: var(--shadow-panel); }
+      .doc-blank-side h2 { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-ink); font-family: var(--font-sans); }
+      .doc-blank-list { display: grid; margin: 0; padding: 0; list-style: none; }
+      .doc-blank-list li { display: grid; gap: 2px; border-top: 1px solid var(--line); padding: 9px 0; }
+      .doc-blank-list li:first-child { border-top: 0; padding-top: 0; }
+      .doc-blank-list li:last-child { padding-bottom: 0; }
+      .doc-blank-list strong { font-size: 13.5px; }
+      .doc-blank-list span { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .doc-blank-facts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+      .doc-blank-facts li { display: grid; gap: 5px; border-top: 2px solid var(--ink); padding-top: 11px; }
+      .doc-blank-facts strong { font-size: 13.5px; }
+      .doc-blank-facts span { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+      @media (min-width: 901px) {
+        .doc-blank { min-height: max(420px, calc(100vh - 348px)); grid-template-rows: minmax(0,1fr) auto; }
+      }
+      @media (max-width: 900px) {
+        .doc-blank { grid-template-columns: minmax(0,1fr); gap: 14px; }
+        .doc-blank-main { padding: 22px 18px; }
+        .doc-blank-facts { grid-template-columns: minmax(0,1fr); gap: 12px; }
+      }
+      @media (max-width: 560px) {
+        .doc-blank-actions { display: grid; }
+        .doc-blank-actions .button { width: 100%; justify-content: center; }
+      }
+    </style>
     <main class="app-main documents-screen">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><span>/</span><span>Dokumente</span></span>
-        {{if .CanManageDocuments}}<div class="page-actions"><a class="button" href="/app/dokumente/rechnungen/import">E-Rechnung einlesen</a><button class="button primary" type="button" data-dialog="document-upload" aria-haspopup="dialog" aria-controls="document-upload"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Dokument hochladen</button></div>{{end}}
+        {{if and .CanManageDocuments (or .HasAnyDocuments .HasSearchQuery)}}<div class="page-actions"><a class="button" href="/app/dokumente/rechnungen/import">E-Rechnung einlesen</a>{{template "documentUploadTrigger" .}}</div>{{end}}
       </div>
       <section class="page documents-page">
         <div class="document-page-head">
@@ -4131,17 +4235,18 @@ const PageTemplates = `
             <h1>Dokumente</h1>
             <p class="lede">Die freigegebenen Unterlagen des Hauses – schnell finden, ansehen und herunterladen.</p>
           </div>
-          {{if .HasAnyDocuments}}<span class="pill">{{.DocumentCountLabel}}</span>{{end}}
         </div>
         {{if .DocumentMsg}}<p class="flash {{if .DocumentOK}}ok{{end}}">{{.DocumentMsg}}</p>{{end}}
+        {{if or .HasAnyDocuments .HasSearchQuery}}
         <section class="panel document-library">
           <div class="document-library-head">
             <div>
               <div class="kicker">Hausablage</div>
               {{if .HasSearchQuery}}<p class="mini">Ergebnis für „{{.SearchQuery}}“</p>{{end}}
             </div>
+            {{if .HasAnyDocuments}}<span class="pill">{{.DocumentCountLabel}}</span>{{end}}
           </div>
-          {{if or .HasAnyDocuments .HasSearchQuery}}<form class="document-toolbar" method="get" action="/app/dokumente" role="search">
+          <form class="document-toolbar" method="get" action="/app/dokumente" role="search">
               <label class="document-search" for="document-search">
                 <span class="sr-only">Dokumente durchsuchen</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -4155,7 +4260,7 @@ const PageTemplates = `
               </label>
               <button class="button" type="submit">Anzeigen</button>
               {{if .HasSearchQuery}}<a class="document-reset" href="/app/dokumente">Zurücksetzen</a>{{end}}
-          </form>{{end}}
+          </form>
           {{if .HasDocuments}}
             <div class="document-sections">
               {{range .DocumentSections}}
@@ -4239,18 +4344,44 @@ const PageTemplates = `
             <div class="document-empty">
               <div>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><circle cx="10" cy="14" r="3.5"/><path d="m12.5 16.5 3 3"/></svg>
-                {{if .HasSearchQuery}}
-                  <h3>Keine Dokumente gefunden</h3>
-                  <p>Versuchen Sie einen anderen Suchbegriff oder zeigen Sie wieder alle Dokumente.</p>
-                  <a class="button" href="/app/dokumente">Alle Dokumente zeigen</a>
-                {{else}}
-                  <h3>{{.DocumentsEmpty.Title}}</h3>
-                  <p>{{.DocumentsEmpty.Message}}</p>
-                {{end}}
+                <h3>Keine Dokumente gefunden</h3>
+                <p>Versuchen Sie einen anderen Suchbegriff oder zeigen Sie wieder alle Dokumente.</p>
+                <a class="button" href="/app/dokumente">Alle Dokumente zeigen</a>
               </div>
             </div>
           {{end}}
         </section>
+        {{else}}
+        <section class="doc-blank" aria-labelledby="doc-blank-title">
+          <div class="doc-blank-main">
+            <div class="doc-blank-lead">
+              <span class="doc-blank-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><circle cx="10" cy="14" r="3.5"/><path d="m12.5 16.5 3 3"/></svg></span>
+              <h2 id="doc-blank-title">{{.DocumentsEmpty.Title}}</h2>
+              {{if .CanManageDocuments}}<p>Legen Sie die erste Unterlage ab. Titel, Kategorie und Sichtbarkeit genügen – danach ist die Datei für die gewählte Gruppe im Portal auffindbar.</p>{{else}}<p>{{.DocumentsEmpty.Message}}</p>{{end}}
+            </div>
+            <div class="doc-blank-actions">
+              {{if .CanManageDocuments}}
+                {{template "documentUploadTrigger" .}}
+                <a class="button" href="/app/dokumente/rechnungen/import">E-Rechnung einlesen</a>
+              {{else}}
+                <a class="button primary" href="/app/anliegen?new=1">Unterlage anfragen</a>
+                <a class="button" href="/app/kontakte">Verwaltung im Kontaktverzeichnis</a>
+              {{end}}
+            </div>
+          </div>
+          <aside class="doc-blank-side">
+            <h2>Was hier abgelegt wird</h2>
+            <ul class="doc-blank-list">
+              {{range .DocumentGuide}}<li><strong>{{.Category}}</strong><span>{{.Detail}}</span></li>{{end}}
+            </ul>
+          </aside>
+          <ul class="doc-blank-facts">
+            <li><strong>Sichtbarkeit</strong><span>Jede Unterlage ist für alle Bewohner, nur für Eigentümer oder nur für eine Einheit freigegeben. Sie sehen ausschließlich Ihren Teil der Ablage.</span></li>
+            <li><strong>Versionen</strong><span>Wird eine Unterlage ersetzt, bleibt die frühere Fassung im Versionsverlauf abrufbar.</span></li>
+            <li><strong>Suche</strong><span>Ab dem ersten Dokument stehen Suche nach Titel, Kategorie und Datei sowie die Sortierung bereit.</span></li>
+          </ul>
+        </section>
+        {{end}}
       </section>
 
       {{with $}}{{if .CanManageDocuments}}
@@ -4402,14 +4533,57 @@ const PageTemplates = `
   </section>
 {{end}}
 
+{{define "ballotCreateTrigger"}}<button class="button primary" type="button" data-dialog="ballot-create" aria-haspopup="dialog" aria-controls="ballot-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Abstimmung anlegen</button>{{end}}
+
 {{define "ballots"}}
 {{template "appOpen" .}}
     <script src="/assets/announcements.js?v={{.AssetVersion}}" defer></script>
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
+    <style>
+      /* Abstimmungen: ohne laufende Abstimmung erklärt die Seite den Ablauf,
+         statt eine leere Fläche unter einem Hinweisstreifen zu lassen. */
+      .vote-page { gap: 20px; }
+      .vote-blank { display: grid; grid-template-columns: minmax(0,1.42fr) minmax(272px,.88fr); gap: 16px; }
+      .vote-blank-main { display: grid; align-content: center; gap: 20px; border: 1px dashed rgba(200,153,63,.45); border-radius: var(--radius-sm); background: rgba(255,254,251,.7); padding: clamp(22px,3.2vw,36px); }
+      .vote-blank-lead { display: grid; justify-items: start; gap: 13px; }
+      .vote-blank.ok .vote-blank-main { border-color: rgba(47,107,74,.3); }
+      .vote-blank-icon { width: 52px; height: 52px; display: grid; place-items: center; border: 1px solid rgba(200,153,63,.3); border-radius: 12px; background: rgba(200,153,63,.1); color: var(--gold-ink); }
+      .vote-blank.ok .vote-blank-icon { border-color: rgba(47,107,74,.24); background: rgba(47,107,74,.1); color: var(--leaf); }
+      .vote-blank-icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+      .vote-blank-main h2 { font-size: clamp(25px,3vw,31px); }
+      .vote-blank-main p { max-width: 54ch; color: var(--muted); font-size: 15px; line-height: 1.55; }
+      .vote-blank-note { border-left: 3px solid var(--line); padding-left: 12px; font-size: 13.5px; }
+      .vote-blank-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 3px; }
+      .vote-blank-actions .button { min-height: 44px; }
+      .vote-blank-side { display: grid; align-content: start; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 20px; box-shadow: var(--shadow-panel); }
+      .vote-blank-side h2 { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-ink); font-family: var(--font-sans); }
+      .vote-blank-steps { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; counter-reset: vote-step; }
+      .vote-blank-steps li { display: grid; grid-template-columns: 26px minmax(0,1fr); gap: 2px 11px; align-items: start; counter-increment: vote-step; }
+      .vote-blank-steps li::before { content: counter(vote-step); grid-row: 1 / span 2; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 850; }
+      .vote-blank-steps strong { grid-column: 2; font-size: 13.5px; }
+      .vote-blank-steps span { grid-column: 2; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .vote-blank-facts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+      .vote-blank-facts li { display: grid; gap: 5px; border-top: 2px solid var(--ink); padding-top: 11px; }
+      .vote-blank-facts strong { font-size: 13.5px; }
+      .vote-blank-facts span { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+      @media (min-width: 901px) {
+        .vote-blank { min-height: max(420px, calc(100vh - 348px)); grid-template-rows: minmax(0,1fr) auto; }
+      }
+      @media (max-width: 900px) {
+        .vote-page .vote-page-head .lede { display: block; margin-top: 10px; font-size: 14.5px; }
+        .vote-blank { grid-template-columns: minmax(0,1fr); gap: 14px; }
+        .vote-blank-main { padding: 22px 18px; }
+        .vote-blank-facts { grid-template-columns: minmax(0,1fr); gap: 12px; }
+      }
+      @media (max-width: 560px) {
+        .vote-blank-actions { display: grid; }
+        .vote-blank-actions .button { width: 100%; justify-content: center; }
+      }
+    </style>
     <main class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg><span>/</span><span>Abstimmungen</span></span>
-        {{if .CanManageVotes}}<div class="page-actions"><button class="button primary" type="button" data-dialog="ballot-create" aria-haspopup="dialog" aria-controls="ballot-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Abstimmung anlegen</button></div>{{end}}
+        {{if and .CanManageVotes .HasBallots}}<div class="page-actions">{{template "ballotCreateTrigger" .}}</div>{{end}}
       </div>
       <section class="page vote-page">
         <div class="vote-page-head">
@@ -4420,11 +4594,44 @@ const PageTemplates = `
           {{if .HasBallots}}<span class="pill">{{.BallotCountLabel}}</span>{{end}}
         </div>
         {{if .VoteMsg}}<p class="flash {{if .VoteOK}}ok{{end}}">{{.VoteMsg}}</p>{{end}}
-        <div class="vote-overview {{.VoteOverviewClass}}">
+        {{if not .HasBallots}}
+        <section class="vote-blank {{.VoteOverviewClass}}" aria-labelledby="vote-blank-title">
+          <div class="vote-blank-main">
+            <div class="vote-blank-lead">
+              <span class="vote-blank-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h14v12H5z"/><path d="M9 4h6v4H9z"/><path d="m9 14 2 2 4-4"/></svg></span>
+              <h2 id="vote-blank-title">{{.VoteOverviewTitle}}</h2>
+              <p>{{.VoteOverviewText}}</p>
+              {{if and (not .CanVote) (not .CanManageVotes)}}<p class="vote-blank-note">Ihr Zugang hat kein Stimmrecht. Ergebnisse und Protokolle bleiben einsehbar.</p>{{end}}
+            </div>
+            <div class="vote-blank-actions">
+              {{if .CanManageVotes}}
+                {{template "ballotCreateTrigger" .}}
+              {{else}}
+                <a class="button primary" href="/app/anliegen?new=1">Thema vorschlagen</a>
+                <a class="button" href="/app/kontakte">Verwaltung im Kontaktverzeichnis</a>
+              {{end}}
+            </div>
+          </div>
+          <aside class="vote-blank-side">
+            <h2>So läuft eine Abstimmung</h2>
+            <ol class="vote-blank-steps">
+              <li><strong>Entwurf</strong><span>Die Verwaltung legt Frage, Antwortmöglichkeiten und Frist an.</span></li>
+              <li><strong>Offen</strong><span>Stimmberechtigte Eigentümer stimmen ab und können ihre Stimme bis zur Frist ändern.</span></li>
+              <li><strong>Ergebnis</strong><span>Nach dem Schließen sind Ergebnis, Beteiligung und Protokoll abrufbar.</span></li>
+            </ol>
+          </aside>
+          <ul class="vote-blank-facts">
+            <li><strong>Gewichtung</strong><span>Je nach Abstimmung zählt der Miteigentumsanteil oder eine Stimme pro Kopf.</span></li>
+            <li><strong>Frist</strong><span>Ist eine Frist gesetzt, erinnert das Portal vor Ablauf alle, die noch nicht abgestimmt haben.</span></li>
+            <li><strong>Nachvollziehbar</strong><span>Abgeschlossene Abstimmungen bleiben mit Ergebnis und Protokoll dauerhaft erreichbar.</span></li>
+          </ul>
+        </section>
+        {{end}}
+        {{if .HasBallots}}<div class="vote-overview {{.VoteOverviewClass}}">
           <span class="vote-overview-icon" aria-hidden="true">{{if eq .VoteOverviewClass "action"}}!{{else}}✓{{end}}</span>
           <div><strong>{{.VoteOverviewTitle}}</strong><p>{{.VoteOverviewText}}</p></div>
         </div>
-        {{if .HasBallots}}<section class="panel vote-library">
+        <section class="panel vote-library">
           <div class="kicker">{{if .CanManageVotes}}Abstimmungsübersicht{{else}}Ihre Abstimmungen{{end}}</div>
           <div class="vote-list">
             {{range .Ballots}}
