@@ -189,6 +189,20 @@ func TestAdminDialogsKeepActionsVisibleAtShortHeights(t *testing.T) {
 	}
 }
 
+func TestAdminPagesConstrainKnownResponsiveMinContent(t *testing.T) {
+	for _, want := range []string{
+		`.announce .announce-feed { grid-template-columns: minmax(0,1fr); gap: 14px; }`,
+		`.announce .entry-head { display: grid; grid-template-columns: minmax(0,1fr); }`,
+		`@media (min-width: 761px) and (max-width: 1120px)`,
+		`.building .home-profile-context > p, .building .home-profile-context > .button { grid-column: 2; }`,
+		`.building .home-profile-context > .button { justify-self: start; }`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("responsive admin-page constraint missing %q", want)
+		}
+	}
+}
+
 func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 	if !strings.Contains(PageTemplates, `<script src="/assets/app.js?v={{.AssetVersion}}" defer></script>`) {
 		t.Fatal("app shell must load the shared submit guard")

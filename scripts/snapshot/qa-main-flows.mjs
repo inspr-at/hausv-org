@@ -573,6 +573,128 @@ async function assertBoundedAdminDialogs() {
   process.stdout.write('  ✓ Admin-Dialoge · feste Aktionen, Scrollkörper & Fokus · 320x568–1024x600\n');
 }
 
+async function ensureResponsiveAnnouncement() {
+  const context = await newContext({ width: 1440, height: 900 });
+  const page = await localLogin(context, 'admin@example.com');
+  await page.goto(`${baseURL}/app/announcements`, { waitUntil: 'networkidle' });
+  if (!(await page.getByText('QA Responsive Aushang', { exact: true }).count())) {
+    await page.getByRole('button', { name: 'Aushang erstellen' }).first().click();
+    const form = page.locator('#announcement-create form');
+    await form.locator('input[name="title"]').fill('QA Responsive Aushang');
+    await form.locator('textarea[name="body"]').fill('Dieser Aushang prüft Aktionszeile und Inhaltsbreite ohne abgeschnittene Bedienelemente.');
+    await form.getByRole('button', { name: 'Aushang veröffentlichen' }).click();
+    await page.waitForURL(/\/app\/announcements/);
+  }
+  await closeContext(context);
+}
+
+async function assertResponsiveAdminWidths() {
+  await ensureResponsiveAnnouncement();
+  const context = await newContext({ width: 1440, height: 900 });
+  const page = await localLogin(context, 'admin@example.com');
+  await page.goto(`${baseURL}/app/announcements`, { waitUntil: 'networkidle' });
+
+  for (const width of [320, 390, 430, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const result = await page.evaluate(async (phone) => {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const feed = document.querySelector('.announce-feed');
+      if (!feed) return { missing: true };
+      const style = getComputedStyle(feed);
+      const feedBox = feed.getBoundingClientRect();
+      const contentLeft = feedBox.left + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.paddingLeft);
+      const contentRight = feedBox.right - Number.parseFloat(style.borderRightWidth) - Number.parseFloat(style.paddingRight);
+      const clipped = [...feed.querySelectorAll(':scope > .section-head, :scope > .archive-tools, :scope > .announce-group, .announcement-entry')]
+        .filter((element) => element.getClientRects().length)
+        .filter((element) => {
+          const box = element.getBoundingClientRect();
+          return box.left < contentLeft - 1 || box.right > contentRight + 1;
+        })
+        .map((element) => `${element.tagName.toLowerCase()}.${element.className}`);
+      const badHeads = [...feed.querySelectorAll('.announcement-entry .entry-head')]
+        .filter((head) => {
+          const entry = head.closest('.announcement-entry');
+          const entryStyle = getComputedStyle(entry);
+          const entryBox = entry.getBoundingClientRect();
+          const headBox = head.getBoundingClientRect();
+          const left = entryBox.left + Number.parseFloat(entryStyle.borderLeftWidth) + Number.parseFloat(entryStyle.paddingLeft);
+          const right = entryBox.right - Number.parseFloat(entryStyle.borderRightWidth) - Number.parseFloat(entryStyle.paddingRight);
+          return headBox.left < left - 1 || headBox.right > right + 1;
+        }).length;
+      const offscreenControls = [...document.querySelectorAll('a, button, input, select, textarea, summary')]
+        .filter((element) => element.getClientRects().length)
+        .filter((element) => {
+          const box = element.getBoundingClientRect();
+          return box.left < -1 || box.right > window.innerWidth + 1;
+        })
+        .map((element) => (element.textContent || element.getAttribute('aria-label') || element.tagName).trim().slice(0, 50));
+      const headDisplays = [...feed.querySelectorAll('.announcement-entry .entry-head')]
+        .map((head) => getComputedStyle(head).display);
+      return {
+        missing: false,
+        documentWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth,
+        feedColumns: style.gridTemplateColumns.trim().split(/\s+/).length,
+        clipped,
+        badHeads,
+        offscreenControls,
+        phone,
+        headsAreGrid: headDisplays.length > 0 && headDisplays.every((display) => display === 'grid'),
+      };
+    }, width <= 720);
+    if (result.missing || result.documentWidth > result.viewportWidth + 1 ||
+        result.clipped.length || result.badHeads || result.offscreenControls.length ||
+        (result.phone && (result.feedColumns !== 1 || !result.headsAreGrid))) {
+      fail(`Aushang ${width}px: Inhalt oder Aktionen werden abgeschnitten (${JSON.stringify(result)})`);
+    }
+    if (width === 390 && process.env.HV_QA_SCREENSHOT_DIR) {
+      mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, 'announcements-mobile-contained.png'),
+        fullPage: true,
+      });
+    }
+  }
+
+  await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
+  for (const width of [901, 920, 959, 1024, 1050, 1075, 1100, 1120, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const result = await page.evaluate(async (compact) => {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const pageBox = document.querySelector('.building .page')?.getBoundingClientRect();
+      const unitsBox = document.querySelector('#units')?.getBoundingClientRect();
+      const context = document.querySelector('.home-profile-context');
+      const contextBox = context?.getBoundingClientRect();
+      const nameBox = context?.querySelector('.home-profile-context-name')?.getBoundingClientRect();
+      const copyBox = context?.querySelector(':scope > p')?.getBoundingClientRect();
+      const buttonBox = context?.querySelector(':scope > .button')?.getBoundingClientRect();
+      const columns = context ? getComputedStyle(context).gridTemplateColumns.trim().split(/\s+/).length : 0;
+      return {
+        missing: !pageBox || !unitsBox || !contextBox || !nameBox || !copyBox || !buttonBox,
+        documentWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth,
+        rightEdges: [pageBox?.right || 0, unitsBox?.right || 0, contextBox?.right || 0],
+        columns,
+        aligned: Boolean(nameBox && copyBox && buttonBox && copyBox.left >= nameBox.left - 1 && buttonBox.left >= nameBox.left - 1),
+        compact,
+      };
+    }, width <= 1120);
+    if (result.missing || result.documentWidth > result.viewportWidth + 1 ||
+        result.rightEdges.some((right) => right > result.viewportWidth + 1) ||
+        (result.compact && (result.columns !== 2 || !result.aligned)) ||
+        (!result.compact && result.columns !== 4)) {
+      fail(`Gebäude-Kontext ${width}px: Desktop-Shell-Naht läuft über (${JSON.stringify(result)})`);
+    }
+    if ((width === 1024 || width === 1440) && process.env.HV_QA_SCREENSHOT_DIR) {
+      await page.locator('#units').screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, `building-context-${width}.png`),
+      });
+    }
+  }
+  await closeContext(context);
+  process.stdout.write('  ✓ Responsive Verwaltung · Aushang 320–1440px · Gebäude 901–1440px\n');
+}
+
 async function assertPublicLanding(viewport) {
   const context = await trackedContext({
     viewport: viewport.size,
@@ -2033,6 +2155,7 @@ try {
     await assertSharedAppShellNavigation();
     await assertHomeOnboarding();
     await assertBoundedAdminDialogs();
+    await assertResponsiveAdminWidths();
     if (!ciCore) {
       await assertPilotHome({
         slug: 'eltern',

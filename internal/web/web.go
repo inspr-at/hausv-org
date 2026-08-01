@@ -4540,7 +4540,8 @@ const PageTemplates = `
         .announce .announce-blank-actions { width: 100%; }
         .announce .announce-blank-actions .button { width: 100%; }
         .announce .announce-aside-panel { padding: 16px; }
-        .announce .announce-feed { gap: 14px; }
+        .announce .announce-feed { grid-template-columns: minmax(0,1fr); gap: 14px; }
+        .announce .entry-head { display: grid; grid-template-columns: minmax(0,1fr); }
         .announce .page-actions .button { min-height: 44px; }
         .announce .filter-form .button { min-height: 44px; }
         .announce .filter-tab { min-height: 42px; padding: 6px 14px; }
@@ -7172,6 +7173,11 @@ const PageTemplates = `
         .building .contact-groups, .building .brand-grid { grid-template-columns: 1fr; }
         .building .unit-editor > summary { grid-template-columns: minmax(140px,1fr) minmax(120px,.8fr) auto; }
         .building .unit-editor > summary .unit-share { display: none; }
+      }
+      @media (min-width: 761px) and (max-width: 1120px) {
+        .building .home-profile-context { grid-template-columns: 48px minmax(0,1fr); }
+        .building .home-profile-context > p, .building .home-profile-context > .button { grid-column: 2; }
+        .building .home-profile-context > .button { justify-self: start; }
       }
       @media (max-width: 760px) {
         .building .page { gap: 14px; }
