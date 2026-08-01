@@ -2388,7 +2388,8 @@ const PageTemplates = `
     .documents-page { gap: 20px; }
     .documents-screen .content-top .page-actions .button,
     .documents-screen .document-actions .button,
-    .documents-screen .document-admin-tools-body .button { min-height: 44px; }
+    .documents-screen .document-admin-tools-body .button,
+    .documents-screen .version-row .button { min-height: 44px; }
     .documents-screen .document-file-details summary,
     .documents-screen .document-admin-tools > summary,
     .documents-screen .document-versions summary { min-height: 44px; display: flex; align-items: center; }
@@ -5074,7 +5075,7 @@ const PageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
-{{define "documentUploadTrigger"}}<button class="button primary" type="button" data-dialog="document-upload" aria-haspopup="dialog" aria-controls="document-upload"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Dokument hochladen</button>{{end}}
+{{define "documentUploadTrigger"}}<button class="button primary" type="button" data-dialog="document-upload" aria-haspopup="dialog" aria-controls="document-upload" aria-label="Dokument hochladen"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Hochladen</button>{{end}}
 
 {{define "documents"}}
 {{template "appOpen" .}}
@@ -5095,6 +5096,14 @@ const PageTemplates = `
       .documents-screen .document-row { padding: 13px 15px; gap: 10px 14px; }
       .documents-screen .document-copy > strong { font-size: 17.5px; }
       .documents-screen .document-file-details { margin-top: 4px; }
+      .documents-screen .page-actions .button.ghost,
+      .documents-screen .document-actions .button.ghost,
+      .documents-screen .document-admin-tools-body .button.ghost,
+      .documents-screen .version-row .button.ghost { border-color: rgba(32,37,31,.14); color: var(--muted); background: transparent; }
+      .documents-screen .page-actions .button.ghost:hover,
+      .documents-screen .page-actions .button.ghost:focus-visible,
+      .documents-screen .document-actions .button.ghost:hover,
+      .documents-screen .document-actions .button.ghost:focus-visible { border-color: rgba(200,153,63,.52); color: var(--ink); background: var(--panel); }
       .doc-blank { display: grid; grid-template-columns: minmax(0,1.42fr) minmax(272px,.88fr); gap: 16px; }
       .doc-blank-main { display: grid; align-content: center; gap: 20px; border: 1px dashed rgba(200,153,63,.45); border-radius: var(--radius-sm); background: rgba(255,254,251,.7); padding: clamp(22px,3.2vw,36px); }
       .doc-blank-lead { display: grid; justify-items: start; gap: 13px; }
@@ -5104,35 +5113,57 @@ const PageTemplates = `
       .doc-blank-main p { max-width: 54ch; color: var(--muted); font-size: 15px; line-height: 1.55; }
       .doc-blank-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 3px; }
       .doc-blank-actions .button { min-height: 44px; }
-      .doc-blank-side { display: grid; align-content: start; gap: 11px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 20px; box-shadow: var(--shadow-panel); }
-      .doc-blank-side h2 { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-ink); font-family: var(--font-sans); }
+      .doc-blank-side { align-self: start; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
+      .doc-blank-side > summary { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 15px 18px; cursor: pointer; list-style: none; }
+      .doc-blank-side > summary::-webkit-details-marker { display: none; }
+      .doc-blank-side > summary::after { content: "+"; color: var(--gold-ink); font-size: 20px; font-weight: 500; }
+      .doc-blank-side[open] > summary { border-bottom: 1px solid var(--line); }
+      .doc-blank-side[open] > summary::after { content: "−"; }
+      .doc-blank-side > summary span { display: grid; gap: 2px; }
+      .doc-blank-side > summary small { color: var(--gold-ink); font-size: 10.5px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+      .doc-blank-side > summary strong { font-size: 14px; }
+      .doc-blank-guide { display: grid; gap: 13px; padding: 15px 18px 18px; }
       .doc-blank-list { display: grid; margin: 0; padding: 0; list-style: none; }
       .doc-blank-list li { display: grid; gap: 2px; border-top: 1px solid var(--line); padding: 9px 0; }
       .doc-blank-list li:first-child { border-top: 0; padding-top: 0; }
       .doc-blank-list li:last-child { padding-bottom: 0; }
       .doc-blank-list strong { font-size: 13.5px; }
       .doc-blank-list span { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
-      .doc-blank-facts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
-      .doc-blank-facts li { display: grid; gap: 5px; border-top: 2px solid var(--ink); padding-top: 11px; }
-      .doc-blank-facts strong { font-size: 13.5px; }
-      .doc-blank-facts span { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+      .doc-blank-notes { display: grid; gap: 9px; border-top: 1px solid var(--line); padding-top: 12px; }
+      .doc-blank-notes p { display: grid; gap: 2px; }
+      .doc-blank-notes strong { font-size: 12.5px; }
+      .doc-blank-notes span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+      #document-upload .dialog-close, dialog[id^="document-replace-"] .dialog-close { width: 44px; height: 44px; flex: 0 0 auto; }
+      #document-upload .dialog-footer .button, dialog[id^="document-replace-"] .dialog-footer .button { min-height: 44px; }
+      .attachment-lightbox .lightbox-close { width: 44px; height: 44px; }
+      #document-upload :is(input,select), #document-upload .dialog-optional > summary,
+      dialog[id^="document-replace-"] :is(input,select) { min-height: 44px; }
       @media (min-width: 901px) {
-        .doc-blank { min-height: max(420px, calc(100vh - 348px)); grid-template-rows: minmax(0,1fr) auto; }
+        .doc-blank { min-height: max(360px, calc(100vh - 348px)); align-items: center; }
       }
       @media (max-width: 900px) {
         .doc-blank { grid-template-columns: minmax(0,1fr); gap: 14px; }
         .doc-blank-main { padding: 22px 18px; }
-        .doc-blank-facts { grid-template-columns: minmax(0,1fr); gap: 12px; }
+        .documents-screen .document-actions .primary { grid-column: auto; }
       }
       @media (max-width: 560px) {
         .doc-blank-actions { display: grid; }
         .doc-blank-actions .button { width: 100%; justify-content: center; }
+        .documents-screen .content-top .page-actions { gap: 8px; }
+        .documents-screen .content-top .page-actions .button { padding-inline: 10px; }
+        .documents-screen .document-library { padding: 14px; }
+        .documents-screen .document-row { grid-template-columns: minmax(0,1fr); padding: 13px; }
+        .documents-screen .document-icon { display: none; }
+        .documents-screen .document-copy > strong { font-size: 18px; }
+        .documents-screen .document-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        .documents-screen .document-actions .button { min-width: 0; padding-inline: 8px; }
+        .documents-screen .document-admin-tools, .documents-screen .document-versions { grid-column: 1; }
       }
     </style>
     <main id="main-content" tabindex="-1" class="app-main documents-screen">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><span>/</span><span>Dokumente</span></span>
-        {{if and .CanManageDocuments (or .HasAnyDocuments .HasSearchQuery)}}<div class="page-actions"><a class="button" href="/app/dokumente/rechnungen/import">E-Rechnung einlesen</a>{{template "documentUploadTrigger" .}}</div>{{end}}
+        {{if and .CanManageDocuments (or .HasAnyDocuments .HasSearchQuery)}}<div class="page-actions"><a class="button ghost" href="/app/dokumente/rechnungen/import" aria-label="E-Rechnung einlesen">E-Rechnung</a>{{template "documentUploadTrigger" .}}</div>{{end}}
       </div>
       <section class="page documents-page">
         <div class="document-page-head">
@@ -5155,7 +5186,7 @@ const PageTemplates = `
               <label class="document-search" for="document-search">
                 <span class="sr-only">Dokumente durchsuchen</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-                <input id="document-search" name="q" value="{{.SearchQuery}}" placeholder="Titel, Kategorie oder Datei">
+                <input id="document-search" name="q" value="{{.SearchQuery}}" placeholder="Dokument suchen">
               </label>
               <label class="document-sort" for="document-sort">
                 <span class="sr-only">Sortierung</span>
@@ -5191,7 +5222,7 @@ const PageTemplates = `
                           <div class="document-actions">
                             {{if .CanPreview}}
                               {{if .IsImage}}<button class="button primary" type="button" data-lightbox-src="{{.PreviewURL}}" data-lightbox-caption="{{.Filename}}">Vorschau</button>{{else}}<a class="button primary" href="{{.PreviewURL}}" target="_blank" rel="noopener">Vorschau</a>{{end}}
-                              <a class="button small" href="{{.DownloadURL}}">Herunterladen</a>
+                              <a class="button small ghost" href="{{.DownloadURL}}">Herunterladen</a>
                             {{else}}
                               <a class="button primary" href="{{.DownloadURL}}">Herunterladen</a>
                             {{end}}
@@ -5200,7 +5231,7 @@ const PageTemplates = `
                             <details class="document-admin-tools">
                               <summary>Dokument verwalten</summary>
                               <div class="document-admin-tools-body">
-                                <button class="button small" type="button" data-dialog="{{.ReplaceDialogID}}" aria-haspopup="dialog" aria-controls="{{.ReplaceDialogID}}">Neue Version hochladen</button>
+                                <button class="button small ghost" type="button" data-dialog="{{.ReplaceDialogID}}" aria-haspopup="dialog" aria-controls="{{.ReplaceDialogID}}">Neue Version hochladen</button>
                                 <span class="mini">Kategorie, Sichtbarkeit und Einheit bleiben dabei erhalten.</span>
                               </div>
                             </details>
@@ -5212,7 +5243,7 @@ const PageTemplates = `
                                 {{range .Versions}}
                                   <div class="version-row">
                                     <span>{{.Version}} · {{.UploadedAt}} · {{.Size}} · {{.Filename}}</span>
-                                    <a class="button small" href="{{.DownloadURL}}">Herunterladen</a>
+                                    <a class="button small ghost" href="{{.DownloadURL}}">Herunterladen</a>
                                   </div>
                                 {{end}}
                               </div>
@@ -5235,8 +5266,8 @@ const PageTemplates = `
                               <div class="dialog-grid">
                                 <label class="full" for="{{.ReplaceDialogID}}-file">Neue Datei<span class="file-control"><input id="{{.ReplaceDialogID}}-file" type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required><span>PDF oder Bild auswählen</span></span></label>
                               </div>
-                              <button class="button primary" type="submit">Neue Version speichern</button>
                             </div>
+                            <div class="dialog-footer"><button class="button primary" type="submit">Neue Version speichern</button></div>
                           </form>
                         </dialog>
                         {{end}}
@@ -5262,29 +5293,30 @@ const PageTemplates = `
             <div class="doc-blank-lead">
               <span class="doc-blank-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><circle cx="10" cy="14" r="3.5"/><path d="m12.5 16.5 3 3"/></svg></span>
               <h2 id="doc-blank-title">{{.DocumentsEmpty.Title}}</h2>
-              {{if .CanManageDocuments}}<p>Legen Sie die erste Unterlage ab. Titel, Kategorie und Sichtbarkeit genügen – danach ist die Datei für die gewählte Gruppe im Portal auffindbar.</p>{{else}}<p>{{.DocumentsEmpty.Message}}</p>{{end}}
+              {{if .CanManageDocuments}}<p>Erste Unterlage hochladen, einordnen und für die passende Gruppe freigeben.</p>{{else}}<p>{{.DocumentsEmpty.Message}}</p>{{end}}
             </div>
             <div class="doc-blank-actions">
               {{if .CanManageDocuments}}
                 {{template "documentUploadTrigger" .}}
-                <a class="button" href="/app/dokumente/rechnungen/import">E-Rechnung einlesen</a>
+                <a class="button ghost" href="/app/dokumente/rechnungen/import" aria-label="E-Rechnung einlesen">E-Rechnung</a>
               {{else}}
                 <a class="button primary" href="/app/anliegen?new=1">Unterlage anfragen</a>
                 <a class="button ghost" href="/app/kontakte">Verwaltung im Kontaktverzeichnis</a>
               {{end}}
             </div>
           </div>
-          <aside class="doc-blank-side">
-            <h2>Was hier abgelegt wird</h2>
-            <ul class="doc-blank-list">
-              {{range .DocumentGuide}}<li><strong>{{.Category}}</strong><span>{{.Detail}}</span></li>{{end}}
-            </ul>
-          </aside>
-          <ul class="doc-blank-facts">
-            <li><strong>Sichtbarkeit</strong><span>Jede Unterlage ist für alle Bewohner, nur für Eigentümer oder nur für eine Einheit freigegeben. Sie sehen ausschließlich Ihren Teil der Ablage.</span></li>
-            <li><strong>Versionen</strong><span>Wird eine Unterlage ersetzt, bleibt die frühere Fassung im Versionsverlauf abrufbar.</span></li>
-            <li><strong>Suche</strong><span>Ab dem ersten Dokument stehen Suche nach Titel, Kategorie und Datei sowie die Sortierung bereit.</span></li>
-          </ul>
+          <details class="doc-blank-side">
+            <summary><span><small>Orientierung</small><strong>Was hier abgelegt wird</strong></span></summary>
+            <div class="doc-blank-guide">
+              <ul class="doc-blank-list">
+                {{range .DocumentGuide}}<li><strong>{{.Category}}</strong><span>{{.Detail}}</span></li>{{end}}
+              </ul>
+              <div class="doc-blank-notes">
+                <p><strong>Freigaben</strong><span>Jede Person sieht nur die für sie bestimmten Unterlagen.</span></p>
+                <p><strong>Versionen</strong><span>Frühere Fassungen bleiben im Verlauf abrufbar.</span></p>
+              </div>
+            </div>
+          </details>
         </section>
         {{end}}
       </section>
@@ -5293,11 +5325,11 @@ const PageTemplates = `
       <dialog id="document-upload" class="dialog" aria-labelledby="document-upload-title">
         <form method="post" action="/app/dokumente" enctype="multipart/form-data">
           <div class="dialog-head">
-            <h2 id="document-upload-title">Dokument veröffentlichen</h2>
+            <h2 id="document-upload-title">Dokument hochladen</h2>
             <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
           </div>
           <div class="dialog-body">
-            <p class="document-dialog-intro">Titel, Einordnung und Datei genügen. Die Sichtbarkeit bestimmt, wer das Dokument im Portal findet.</p>
+            <p class="document-dialog-intro">Die Freigabe legt fest, wer die Unterlage sieht.</p>
             <div class="dialog-grid">
               <label class="full" for="document-title">Titel<input id="document-title" name="title" required maxlength="160" autocomplete="off" placeholder="Zum Beispiel Hausordnung 2026"></label>
               <label for="document-category">Kategorie<select id="document-category" name="category" required>
@@ -5308,16 +5340,16 @@ const PageTemplates = `
               </select></label>
               <label class="full" for="document-file">Datei<span class="file-control"><input id="document-file" type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required><span>PDF oder Bild auswählen</span></span></label>
               <details class="dialog-optional full">
-                <summary>Auf eine Einheit begrenzen</summary>
+                <summary>Optional: bestimmte Einheit</summary>
                 <div class="dialog-optional-grid">
-                  <label class="full" for="document-unit">Einheit<select id="document-unit" name="unit_id">
+                  <label class="full" for="document-unit">Einheit <span class="mini">gilt bei „Nur Eigentümer“</span><select id="document-unit" name="unit_id">
                     {{range .UnitOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
                   </select></label>
                 </div>
               </details>
             </div>
-            <button class="button primary" type="submit">Dokument veröffentlichen</button>
           </div>
+          <div class="dialog-footer"><button class="button primary" type="submit">Hochladen</button></div>
         </form>
       </dialog>
       {{end}}{{end}}
@@ -6856,6 +6888,7 @@ const PageTemplates = `
 
 {{define "ebInterfaceImport"}}
 {{template "appOpen" .}}
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <style>
       .invoice-import .page { gap: 18px; }
       .invoice-import .content-top .button { min-height: 44px; }
@@ -6864,6 +6897,8 @@ const PageTemplates = `
       .invoice-import .flow-strip { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
       .invoice-import .flow-step { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 10px; align-items: center; min-height: 64px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel-soft); }
       .invoice-import .flow-step > span { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 850; }
+      .invoice-import .flow-step.done > span { background: var(--leaf); }
+      .invoice-import .flow-step.active { border-color: rgba(200,153,63,.52); background: rgba(200,153,63,.08); }
       .invoice-import .flow-step strong, .invoice-import .flow-step small { display: block; }
       .invoice-import .flow-step small { margin-top: 2px; color: var(--muted); line-height: 1.35; }
       .invoice-import .import-panel { display: grid; gap: 15px; }
@@ -6873,11 +6908,15 @@ const PageTemplates = `
       .invoice-import .upload-copy { display: grid; gap: 7px; }
       .invoice-import .upload-copy label { font-weight: 850; }
       .invoice-import .upload-copy input[type=file] { width: 100%; min-height: 46px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+      .invoice-import .invoice-file-control { min-height: 48px; }
+      .invoice-import .invoice-file-control > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .invoice-import .upload-form .button, .invoice-import .store-bar .button { min-height: 44px; }
       .invoice-import .privacy-note { display: flex; gap: 8px; align-items: start; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
       .invoice-import .privacy-note::before { content: "✓"; flex: 0 0 auto; color: var(--gold-ink); font-weight: 900; }
       .invoice-import .profile-chip { display: inline-flex; min-height: 34px; align-items: center; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-soft); color: var(--gold-ink); font-size: 12px; font-weight: 850; white-space: nowrap; }
       .invoice-import .preview-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
       .invoice-import .preview-actions .button { min-height: 44px; }
+      .invoice-import .preview-actions .ghost { border-color: rgba(32,37,31,.14); color: var(--muted); background: transparent; }
       .invoice-import .invoice-hero { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: end; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(135deg,#fffefb,var(--panel-soft)); }
       .invoice-import .invoice-hero .kicker { margin-bottom: 5px; }
       .invoice-import .invoice-number { margin: 0; font-family: var(--font-serif); font-size: clamp(25px,4vw,38px); line-height: 1.05; overflow-wrap: anywhere; }
@@ -6893,29 +6932,45 @@ const PageTemplates = `
       .invoice-import .store-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 2px; }
       .invoice-import .store-bar .mini { max-width: 650px; }
       @media (max-width: 720px) {
-        .invoice-import .flow-strip, .invoice-import .invoice-parties { grid-template-columns: 1fr; }
+        .invoice-import .flow-strip { gap: 6px; }
+        .invoice-import .flow-step { grid-template-columns: 28px minmax(0,1fr); gap: 8px; min-height: 52px; padding: 8px; }
+        .invoice-import .flow-step > span { width: 28px; height: 28px; }
+        .invoice-import .flow-step small { display: none; }
         .invoice-import .upload-form { grid-template-columns: 1fr; }
         .invoice-import .upload-form .button { width: 100%; min-height: 48px; }
         .invoice-import .import-panel-head, .invoice-import .store-bar { align-items: stretch; flex-direction: column; }
         .invoice-import .invoice-hero { grid-template-columns: 1fr; align-items: start; }
         .invoice-import .invoice-amount { white-space: normal; }
-        .invoice-import .invoice-dates { grid-template-columns: 1fr; }
+        .invoice-import .invoice-parties, .invoice-import .invoice-dates { display: grid; grid-template-columns: 1fr; gap: 0; border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow: hidden; }
+        .invoice-import .party-card { grid-template-columns: minmax(82px,.45fr) minmax(0,1fr); }
+        .invoice-import .date-card { grid-template-columns: minmax(116px,.55fr) minmax(0,1fr); }
+        .invoice-import .party-card, .invoice-import .date-card { align-items: baseline; gap: 10px; border: 0; border-radius: 0; padding: 10px 12px; }
+        .invoice-import .party-card + .party-card, .invoice-import .date-card + .date-card { border-top: 1px solid var(--line); }
         .invoice-import .store-bar .button { width: 100%; min-height: 48px; }
+      }
+      @media (max-width: 420px) {
+        .invoice-import .page { gap: 14px; }
+        .invoice-import .import-panel { gap: 12px; padding: 16px; }
+        .invoice-import .page-intro .lede { font-size: 14px; }
+        .invoice-import .preview-actions { justify-content: flex-start; flex-wrap: wrap; }
+      }
+      @media (max-width: 360px) {
+        .invoice-import .date-card:last-child { grid-template-columns: minmax(0,1fr); gap: 2px; }
       }
     </style>
     <main id="main-content" tabindex="-1" class="app-main invoice-import">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><span>/</span><span>Dokumente</span><span>/</span><span>E-Rechnung</span></span>
-        <div class="page-actions"><a class="button" href="/app/dokumente">Zur Ablage</a></div>
+        <div class="page-actions"><a class="button ghost" href="/app/dokumente">Dokumente</a></div>
       </div>
       <section class="page">
         <div class="page-intro">
-          <h1>E-Rechnung einlesen</h1>
-          <p class="lede">Rechnung zuerst prüfen, dann unverändert und nur für die Verwaltung ablegen.</p>
+          <h1>E-Rechnung ablegen</h1>
+          <p class="lede">XML prüfen und geschützt für die Verwaltung speichern.</p>
         </div>
         <div class="flow-strip" aria-label="Ablauf">
-          <div class="flow-step"><span>1</span><div><strong>Prüfen</strong><small>Profil und wichtigste Rechnungsdaten ansehen</small></div></div>
-          <div class="flow-step"><span>2</span><div><strong>Ablegen</strong><small>Original-XML geschützt in Dokumente speichern</small></div></div>
+          <div class="flow-step {{if .EBInterfacePreview}}done{{else}}active{{end}}"{{if not .EBInterfacePreview}} aria-current="step"{{end}}><span>1</span><div><strong>Prüfen</strong><small>XML &amp; Rechnungsdaten</small></div></div>
+          <div class="flow-step {{if .EBInterfacePreview}}active{{end}}"{{if .EBInterfacePreview}} aria-current="step"{{end}}><span>2</span><div><strong>Ablegen</strong><small>Original geschützt speichern</small></div></div>
         </div>
         {{if .EBInterfaceImportMsg}}<p class="flash {{if .EBInterfaceImportOK}}ok{{end}}">{{.EBInterfaceImportMsg}}</p>{{end}}
         {{if not .EBInterfacePreview}}<section class="panel import-panel">
@@ -6925,19 +6980,19 @@ const PageTemplates = `
           <form class="upload-form" method="post" action="/app/dokumente/rechnungen/import/preview" enctype="multipart/form-data">
             <div class="upload-copy">
               <label for="invoice-file">ebInterface-Datei</label>
-              <input id="invoice-file" type="file" name="invoice_file" accept=".xml,application/xml,text/xml" required>
+              <span class="file-control invoice-file-control"><input id="invoice-file" type="file" name="invoice_file" accept=".xml,application/xml,text/xml" data-simple-file data-default-file-label="XML auswählen" required><span>XML auswählen</span></span>
               <span class="mini">XML bis {{.MaxEBInterfaceImportSize}}</span>
             </div>
             <button class="button primary" type="submit">Vorschau erstellen</button>
           </form>
-          <p class="privacy-note">Die Vorschau bleibt höchstens 15 Minuten im Arbeitsspeicher und wird nicht an externe Prüfdienste gesendet.</p>
+          <p class="privacy-note">Lokal geprüft · nicht extern gesendet · nach 15 Minuten gelöscht.</p>
         </section>{{end}}
 
         {{with .EBInterfacePreview}}
           <section class="panel import-panel" id="preview">
             <div class="import-panel-head">
               <div><div class="kicker">Vorschau</div><h2>{{.Filename}}</h2><p class="muted">Geprüft {{.CreatedAt}} · noch nicht abgelegt</p></div>
-              <div class="preview-actions"><span class="profile-chip">ebInterface {{.SourceVersion}}</span><a class="button small" href="/app/dokumente/rechnungen/import">Andere Datei</a></div>
+              <div class="preview-actions"><span class="profile-chip">ebInterface {{.SourceVersion}}</span><a class="button small ghost" href="/app/dokumente/rechnungen/import">Andere Datei</a></div>
             </div>
             {{if .AlreadyStored}}<p class="flash ok">Diese Datei wurde bereits abgelegt. Ein zweites Dokument ist gesperrt.</p>{{end}}
             {{if .ErrorLabels}}
@@ -6961,7 +7016,7 @@ const PageTemplates = `
             {{end}}
             <form class="store-bar" method="post" action="/app/dokumente/rechnungen/import/store">
               <input type="hidden" name="preview_token" value="{{.Token}}">
-              <span class="mini">Gespeichert wird die unveränderte XML als „Abrechnung“. Sie bleibt ausschließlich für die Verwaltung sichtbar; es wird nichts gebucht oder bezahlt.</span>
+              <span class="mini">Nur Verwaltung · keine Buchung oder Zahlung.</span>
               {{if .CanStore}}<button class="button primary" type="submit">Geschützt ablegen</button>{{else}}<button class="button" type="button" disabled>Ablage nicht möglich</button>{{end}}
             </form>
           </section>

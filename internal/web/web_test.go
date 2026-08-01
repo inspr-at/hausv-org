@@ -102,7 +102,7 @@ func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
 	if got := strings.Count(PageTemplates, `data-dialog="document-upload"`); got != 1 {
 		t.Fatalf("document upload should have one entry point, got %d", got)
 	}
-	for _, want := range []string{`class="document-toolbar"`, `class="document-actions"`, `class="document-admin-tools"`, `Dokument veröffentlichen`, `Auf eine Einheit begrenzen`, `Keine Dokumente gefunden`} {
+	for _, want := range []string{`class="document-toolbar"`, `class="document-actions"`, `class="document-admin-tools"`, `class="dialog-footer"><button class="button primary" type="submit">Hochladen`, `Optional: bestimmte Einheit`, `Keine Dokumente gefunden`} {
 		if !strings.Contains(PageTemplates, want) {
 			t.Fatalf("document flow missing hierarchy/progressive-disclosure marker %q", want)
 		}

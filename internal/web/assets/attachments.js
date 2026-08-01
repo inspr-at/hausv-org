@@ -129,6 +129,18 @@
 
   function ensurePicker(input) {
     if (input._attachmentPicker) return;
+    if (input.hasAttribute("data-simple-file")) {
+      var simpleControl = input.closest(".file-control");
+      var simpleLabel = simpleControl && simpleControl.querySelector("span");
+      var defaultLabel = input.dataset.defaultFileLabel || (simpleLabel && simpleLabel.textContent.trim()) || "Datei auswählen";
+      input.addEventListener("change", function () {
+        var files = fileArray(input);
+        if (simpleLabel) simpleLabel.textContent = files.length === 1 ? files[0].name : (files.length ? files.length + " Dateien ausgewählt" : defaultLabel);
+        if (simpleControl) simpleControl.classList.toggle("is-filled", files.length > 0);
+      });
+      input._attachmentPicker = true;
+      return;
+    }
     input.dataset.attachmentPicker = "true";
     var control = input.closest(".file-control");
     var label = control && control.querySelector("span");
@@ -245,7 +257,7 @@
     if (!form) return;
     Array.prototype.forEach.call(form.querySelectorAll('input[type="file"]'), function (input) {
       var picker = input._attachmentPicker;
-      if (!picker || !fileArray(input).length) return;
+      if (!picker || !picker.classList || !fileArray(input).length) return;
       picker.classList.add("is-uploading");
       var status = picker.querySelector(".attachment-picker-status");
       if (status) status.textContent = "Wird beim Speichern hochgeladen...";

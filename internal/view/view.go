@@ -1822,9 +1822,9 @@ func DocumentVersionLabel(version int) string {
 func DocumentSortOptions(selected string) []SelectOption {
 	selected = SelectedDocumentSort(selected)
 	options := []SelectOption{
-		{Value: "newest", Label: "Neueste zuerst", Selected: selected == "newest"},
-		{Value: "oldest", Label: "Älteste zuerst", Selected: selected == "oldest"},
-		{Value: "title", Label: "Titel A-Z", Selected: selected == "title"},
+		{Value: "newest", Label: "Neueste", Selected: selected == "newest"},
+		{Value: "oldest", Label: "Älteste", Selected: selected == "oldest"},
+		{Value: "title", Label: "Titel A–Z", Selected: selected == "title"},
 	}
 	return options
 }

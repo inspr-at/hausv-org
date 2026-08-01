@@ -34,7 +34,7 @@ func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
 	if page.Code != http.StatusOK {
 		t.Fatalf("import page status = %d", page.Code)
 	}
-	for _, want := range []string{"E-Rechnung einlesen", "ebInterface 5.0 und 6.0", "Vorschau erstellen", "nicht an externe Prüfdienste"} {
+	for _, want := range []string{"E-Rechnung ablegen", "ebInterface 5.0 und 6.0", "Vorschau erstellen", "nicht extern gesendet"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("import page missing %q:\n%s", want, page.Body.String())
 		}
@@ -50,7 +50,7 @@ func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
 	for _, want := range []string{
 		"rechnung.xml", "ebInterface 6.0", "RE-2026-0006", "Hausservice Beispiel e.U.",
 		"jhw22", "99,90 €", "09.07.2026", "23.07.2026", "02.07.2026 – 09.07.2026",
-		"Geschützt ablegen", "es wird nichts gebucht oder bezahlt",
+		"Geschützt ablegen", "keine Buchung oder Zahlung",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("preview missing %q:\n%s", want, body)
