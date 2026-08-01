@@ -238,6 +238,36 @@ async function newContext(viewport) {
   });
 }
 
+// Eine überlaufende Seitenleiste ist auf einem Screenshot unsichtbar: die Seite
+// sieht richtig aus, der Eintrag fehlt einfach. Genau das war der Fall — bei
+// 900 Pixel Fensterhöhe, der verbreitetsten Notebook-Größe, waren "Verlauf" und
+// "Einstellungen" für Eigentümer nicht erreichbar, ohne jeden Hinweis darauf.
+async function assertSidebarNavReachable() {
+  for (const height of [720, 800, 900, 1000, 1080]) {
+    const context = await trackedContext({ viewport: { width: 1440, height }, locale: 'de-AT' });
+    const page = await localLogin(context, 'owner@example.com');
+    await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
+    const result = await page.evaluate(() => {
+      const nav = document.querySelector('.side-nav');
+      if (!nav) return { missing: true };
+      const box = nav.getBoundingClientRect();
+      const hidden = [...nav.querySelectorAll('.nav-item')]
+        .filter((el) => {
+          const r = el.getBoundingClientRect();
+          return r.bottom > box.bottom + 1 || r.top < box.top - 1;
+        })
+        .map((el) => (el.textContent || '').trim());
+      return { missing: false, hidden };
+    });
+    if (result.missing) fail(`Seitenleiste bei ${height}px: .side-nav fehlt`);
+    if (result.hidden.length) {
+      fail(`Seitenleiste bei 1440x${height}: nicht erreichbar — ${result.hidden.join(', ')}`);
+    }
+    await closeContext(context);
+  }
+  process.stdout.write('  ✓ Seitenleiste · alle Einträge erreichbar · 720–1080px\n');
+}
+
 async function assertPublicLanding(viewport) {
   const context = await trackedContext({
     viewport: viewport.size,
@@ -1381,6 +1411,7 @@ try {
   }
 
   if (process.env.HV_QA_LANDING_ONLY !== 'true') {
+    await assertSidebarNavReachable();
     await assertHomeOnboarding();
     if (!ciCore) {
       await assertPilotHome({

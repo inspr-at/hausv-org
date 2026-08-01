@@ -2379,7 +2379,12 @@ const PageTemplates = `
     .legend strong { display: block; font-family: var(--font-serif); margin-bottom: 3px; }
     .legend span { display: block; color: var(--muted); font-size: 13px; line-height: 1.4; }
     .bar-cell { min-width: 150px; }
-    @media (min-width: 901px) and (max-height: 800px) {
+    /* Die volle Seitenleiste braucht rund 1020 Pixel Hoehe. Auf einem
+       Bildschirm mit 900 Pixel Fensterhoehe — dem verbreitetsten Notebook —
+       lief die Navigation deshalb still ueber: "Einstellungen" war fuer
+       Eigentuemer gar nicht erreichbar, ohne dass etwas darauf hindeutete.
+       Die kompakte Fassung greift jetzt frueh genug. */
+    @media (min-width: 901px) and (max-height: 1040px) {
       .sidebar { gap: 10px; padding-top: 14px; padding-bottom: 12px; }
       .side-brand { margin-top: -14px; padding-bottom: 3px; }
       .side-map { height: 144px; }
