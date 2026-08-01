@@ -30,11 +30,20 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		}
 		filtered = filterAnnouncements(archive, selectedCategory, searchQuery)
 	}
+	views := a.announcementViewsWithReadState(tenant.Slug, filtered, now, true, lastSeen, email, role)
+	pinned, latest := splitPinnedAnnouncements(views)
+	newCount := unreadAnnouncementViewCount(views)
 	a.render(w, "announcements", a.withBase(ac, map[string]any{
 		"Title":                  "Aushang",
 		"CanManageAnnouncements": canManage,
 		"ActivePage":             "announcements",
-		"Announcements":          a.announcementViewsWithReadState(tenant.Slug, filtered, now, true, lastSeen, email, role),
+		"Announcements":          views,
+		"PinnedAnnouncements":    pinned,
+		"HasPinnedAnnouncements": len(pinned) > 0,
+		"LatestAnnouncements":    latest,
+		"HasLatestAnnouncements": len(latest) > 0,
+		"NewAnnouncements":       newCount,
+		"HasNewAnnouncements":    newCount > 0,
 		"HasAnnouncements":       len(filtered) > 0,
 		"HasAnyAnnouncements":    len(archive) > 0,
 		"AnnouncementsEmpty":     emptyState("Keine Beiträge", "Für diese Suche oder Kategorie gibt es keinen Aushang."),
@@ -259,6 +268,31 @@ func announcementFilterViews(query string, selectedCategory string) []announceme
 	return out
 }
 
+// splitPinnedAnnouncements separates the board into the notices the management
+// deliberately kept on top and the ordinary chronological feed below.
+func splitPinnedAnnouncements(items []announcementView) ([]announcementView, []announcementView) {
+	pinned := make([]announcementView, 0, len(items))
+	latest := make([]announcementView, 0, len(items))
+	for _, item := range items {
+		if item.Pinned {
+			pinned = append(pinned, item)
+			continue
+		}
+		latest = append(latest, item)
+	}
+	return pinned, latest
+}
+
+func unreadAnnouncementViewCount(items []announcementView) int {
+	count := 0
+	for _, item := range items {
+		if item.Unread {
+			count++
+		}
+	}
+	return count
+}
+
 func announcementViews(items []announcement, now time.Time, includeStatus bool) []announcementView {
 	return announcementViewsWithReadState(items, now, includeStatus, time.Time{})
 }
@@ -273,6 +307,9 @@ func announcementViewsWithReadState(items []announcement, now time.Time, include
 
 func (a *app) announcementViewsWithReadState(tenantSlug string, items []announcement, now time.Time, includeStatus bool, lastSeen time.Time, actorEmail string, role string) []announcementView {
 	views := announcementViewsWithReadState(items, now, includeStatus, lastSeen)
+	for i := range views {
+		views[i].CanManage = canManageAnnouncements(role)
+	}
 	if a == nil || a.attachmentStore == nil {
 		return views
 	}

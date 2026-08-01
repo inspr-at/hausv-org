@@ -63,6 +63,7 @@ type AnnouncementView struct {
 	Published          bool
 	Expired            bool
 	Unread             bool
+	CanManage          bool
 	Attachments        []AttachmentView
 	HasAttachments     bool
 	EditDialogID       string

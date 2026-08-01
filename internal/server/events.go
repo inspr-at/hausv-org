@@ -35,17 +35,19 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if len(upcomingViews) > 0 {
 		upcomingViews[0].IsNext = true
 	}
+	pastViews := a.eventViews(tenant.Slug, past, now, email, role)
 	a.render(w, "events", a.withBase(ac, map[string]any{
 		"Title":                  "Termine",
 		"CanManageAnnouncements": canManageAnnouncements(role),
 		"CanManageEvents":        canManage,
 		"ActivePage":             "events",
 		"Events":                 upcomingViews,
+		"EventMonths":            eventMonthGroups(upcoming, upcomingViews, time.Local),
 		"HasEvents":              len(upcoming) > 0,
 		"EventsEmpty":            emptyState("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier."),
 		"CalendarFeedURL":        calendarFeedURL,
 		"HasCalendarFeedURL":     calendarFeedURL != "",
-		"PastEvents":             a.eventViews(tenant.Slug, past, now, email, role),
+		"PastEvents":             pastViews,
 		"HasPastEvents":          len(past) > 0,
 		"EventMsg":               msg,
 		"EventOK":                msgOK,
@@ -258,6 +260,37 @@ func eventFromForm(r *http.Request, tenantSlug string, author userProfile) (hous
 		return houseEvent{}, fmt.Errorf("tenant is required")
 	}
 	return item, nil
+}
+
+// eventMonthGroup breaks the agenda at month boundaries. A calendar is read by
+// time, so the list keeps its chronological order and only gains a heading
+// whenever the month changes.
+type eventMonthGroup struct {
+	Label  string
+	Count  int
+	Events []houseEventView
+}
+
+func eventMonthGroups(items []houseEvent, views []houseEventView, loc *time.Location) []eventMonthGroup {
+	if loc == nil {
+		loc = time.Local
+	}
+	groups := []eventMonthGroup{}
+	current := ""
+	for i := range views {
+		if i >= len(items) {
+			break
+		}
+		month := items[i].StartsAt.In(loc).Format("2006-01")
+		if month != current {
+			groups = append(groups, eventMonthGroup{Label: formatMonthLabel(month, loc)})
+			current = month
+		}
+		group := &groups[len(groups)-1]
+		group.Events = append(group.Events, views[i])
+		group.Count = len(group.Events)
+	}
+	return groups
 }
 
 func eventViews(items []houseEvent, now time.Time) []houseEventView {

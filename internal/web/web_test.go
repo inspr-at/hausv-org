@@ -78,18 +78,23 @@ func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
 			}
 		}
 	}
-	if got := strings.Count(PageTemplates, `data-dialog="announcement-create"`); got != 1 {
-		t.Fatalf("announcement create should have one entry point, got %d", got)
+	// Two deliberate triggers: the toolbar button that is present in every state
+	// and the primary action inside the empty state, so a house without a single
+	// notice is not a dead end. More than that would be an accidental duplicate.
+	if got := strings.Count(PageTemplates, `data-dialog="announcement-create"`); got != 2 {
+		t.Fatalf("announcement create should have the toolbar and empty-state entry point, got %d", got)
 	}
 	for _, want := range []string{`class="announcement-body"`, `class="dialog-optional full"`, `Aushang veröffentlichen`} {
 		if !strings.Contains(PageTemplates, want) {
 			t.Fatalf("announcement flow missing progressive-disclosure marker %q", want)
 		}
 	}
-	if got := strings.Count(PageTemplates, `data-dialog="event-create"`); got != 1 {
-		t.Fatalf("event create should have one entry point, got %d", got)
+	if got := strings.Count(PageTemplates, `data-dialog="event-create"`); got != 2 {
+		t.Fatalf("event create should have the toolbar and empty-state entry point, got %d", got)
 	}
-	for _, want := range []string{`class="calendar-subscription"`, `class="event-history"`, `Termin veröffentlichen`, `Ende, Details oder Anhang`} {
+	// The calendar feed is a one-click action, so it stays visible in the side
+	// column instead of hiding behind a collapsed disclosure.
+	for _, want := range []string{`class="events-aside"`, `Kalender abonnieren`, `class="event-history"`, `Termin veröffentlichen`, `Ende, Details oder Anhang`} {
 		if !strings.Contains(PageTemplates, want) {
 			t.Fatalf("event flow missing progressive-disclosure marker %q", want)
 		}
