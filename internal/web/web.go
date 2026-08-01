@@ -305,11 +305,13 @@ const PageTemplates = `
     :root {
       color-scheme: light;
 {{template "designTokens" .}}
-      --sky:#6f9ab3; --mint:#dfeee5; --rose:#f0d7d0; --cream:#faf6ed;
     }
     * { box-sizing: border-box; }
     html { max-width: 100%; overflow-x: clip; scroll-behavior: smooth; }
-    body { max-width: 100%; overflow-x: clip; margin: 0; color: var(--ink); background: var(--cream); font-family: var(--font-sans); }
+    body { max-width: 100%; overflow-x: clip; margin: 0; color: var(--ink); background: var(--panel); font-family: var(--font-sans); }
+    /* The header is fixed chrome, so an anchor jump would otherwise park the
+       section headline underneath it. */
+    section[id] { scroll-margin-top: 92px; }
     a { color: inherit; }
     :where(a, button):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
     /* The nav is fixed chrome now, so the hero no longer reserves a row for
@@ -361,145 +363,126 @@ const PageTemplates = `
     .landing-button.secondary { border: 1px solid rgba(255,255,255,.48); color: #fff; background: rgba(255,255,255,.08); backdrop-filter: blur(8px); }
     .landing-access { display: flex; align-items: center; gap: 9px; margin: 26px 0 0; color: rgba(255,255,255,.82); font-size: 14px; font-weight: 750; }
     .landing-access svg { width: 18px; height: 18px; flex: 0 0 auto; stroke: var(--gold-light); stroke-width: 1.9; fill: none; }
-    .section { padding: clamp(48px,8vw,86px) clamp(20px,4vw,42px); }
-    .section-inner { position: relative; z-index: 1; width: min(1180px,100%); margin: 0 auto; }
-    .section h2 { margin: 0; font-family: var(--font-serif); font-size: clamp(34px,4.6vw,56px); line-height: 1.02; font-weight: 500; max-width: 820px; }
-    .section-kicker { color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 14px; }
-    .section-lead { max-width: 760px; margin-top: 18px; color: var(--muted); font-size: 18px; line-height: 1.55; }
-    .feature-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 0; margin-top: 34px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .feature { min-width: 0; border-right: 1px solid var(--line); padding: 24px 18px; display: grid; gap: 14px; align-content: start; }
+    /* ---- Section rhythm -------------------------------------------------
+       Every section is built the same way: a head (kicker + headline on the
+       left, lead bottom-aligned on the right) followed by full-width content
+       rows. The single grid gap on .section-inner is what keeps the vertical
+       rhythm identical from section to section, and the two-column head keeps
+       the measure short without leaving an empty gutter beside it. */
+    .section { padding: clamp(50px,5.6vw,80px) clamp(20px,4vw,42px); }
+    .section-inner { position: relative; z-index: 1; width: min(1180px,100%); margin: 0 auto; display: grid; gap: clamp(22px,2.3vw,30px); }
+    .section-head { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,400px); gap: clamp(18px,3.2vw,56px); align-items: end; }
+    .section h2 { margin: 0; max-width: 20ch; font-family: var(--font-serif); font-weight: 500; font-size: clamp(34px,4.2vw,54px); line-height: 1.04; text-wrap: balance; }
+    .section-kicker { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+    .section-kicker::before { content: ""; width: 26px; height: 2px; flex: 0 0 auto; background: var(--gold); }
+    .section-lead { margin: 0; color: var(--muted); font-size: 17px; line-height: 1.6; text-wrap: pretty; }
+    /* Alternating surfaces carry the rhythm; no ghosted photography behind
+       content, so the cards keep full contrast. */
+    .features-section, .cost-section { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .trust-section, .imprint-section { background: var(--panel); }
+
+    /* ---- Panels ---------------------------------------------------------
+       One panel language for the whole page: hairline border, 12px radius,
+       hairline dividers instead of gaps, so every row shares an edge. */
+    .feature-grid, .product-state, .price-panel { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
+    .feature-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); }
+    /* auto/auto/1fr with a reserved two-line title row: whatever the headline
+       length, every description starts on the same baseline. */
+    .feature { min-width: 0; display: grid; grid-template-rows: auto auto 1fr; align-content: start; padding: 24px 20px 26px; border-right: 1px solid var(--line); }
     .feature:last-child { border-right: 0; }
-    .feature-icon { width: 42px; height: 42px; display: grid; place-items: center; color: var(--gold-ink); }
-    .feature-icon svg { width: 25px; height: 25px; display: block; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .feature strong { display: block; font-family: var(--font-serif); font-size: 22px; line-height: 1.15; }
-    .feature p { margin: 7px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
-    .positioning-strip { margin-top: 30px; display: grid; grid-template-columns: 68px minmax(0,1fr) auto; gap: 18px; align-items: center; border: 1px solid rgba(47,107,74,.2); border-radius: 10px; background: rgba(47,107,74,.06); padding: 20px 22px; }
-    .positioning-mark { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: rgba(47,107,74,.12); color: var(--leaf); }
-    .positioning-mark svg { width: 26px; height: 26px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .positioning-strip strong { display: block; font-family: var(--font-serif); font-size: clamp(24px,2.4vw,32px); line-height: 1.08; }
-    .positioning-strip p { margin: 6px 0 0; color: var(--muted); line-height: 1.5; }
-    .positioning-tag { justify-self: end; border: 1px solid rgba(200,153,63,.28); border-radius: 999px; padding: 8px 12px; background: rgba(200,153,63,.12); color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
-    .roadmap-section { background: #fffefb; }
-    .roadmap-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin-top: 30px; }
-    .roadmap-card { min-height: 216px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 20px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; box-shadow: 0 16px 34px rgba(32,37,31,.035); }
-    .roadmap-card .feature-icon { background: rgba(47,107,74,.09); color: var(--leaf); }
-    .roadmap-card strong { display: block; font-family: var(--font-serif); font-size: 25px; line-height: 1.12; }
-    .roadmap-card p { margin: 0; color: var(--muted); line-height: 1.5; }
-    .roadmap-status { width: max-content; max-width: 100%; align-self: end; border: 1px solid var(--line); border-radius: 999px; padding: 6px 9px; font-size: 11px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
-    .roadmap-status.status-available { border-color: rgba(47,107,74,.22); background: rgba(47,107,74,.08); color: var(--leaf); }
-    .roadmap-status.status-in-progress { border-color: rgba(200,153,63,.28); background: rgba(200,153,63,.1); color: var(--gold-ink); }
-    .roadmap-status.status-planned { background: #f5f2ea; color: var(--muted); }
-    @media (min-width: 901px) {
-      .roadmap-card:last-child:nth-child(3n+1) { grid-column: 2; }
-    }
-    .band { background: #fffefb; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .visual-section { position: relative; overflow: hidden; }
-    .visual-section::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-repeat: no-repeat; background-size: cover; background-position: center; filter: saturate(.86); }
-    .features-section::before { background-image: url('/assets/landing-features.jpg'); opacity: .12; }
-    .features-section .feature { background: rgba(255,254,251,.92); backdrop-filter: blur(2px); }
-    .roles-section { background: #f7f3ea; }
-    .roles-section::before { background-image: linear-gradient(90deg, rgba(247,243,234,.96) 0%, rgba(247,243,234,.86) 52%, rgba(247,243,234,.76) 100%), url('/assets/landing-roles.jpg'); opacity: 1; background-position: center; }
-    .roles-section .section-inner { display: grid; gap: 28px; }
-    .use-grid { counter-reset: role-card; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; margin-top: 4px; }
-    .use { counter-increment: role-card; min-height: 258px; padding: 22px; border: 1px solid rgba(231,224,210,.92); border-radius: 8px; background: rgba(255,254,251,.9); backdrop-filter: blur(3px); box-shadow: 0 18px 44px rgba(32,37,31,.045); display: grid; grid-template-columns: minmax(0,1fr) 42px; grid-template-rows: 42px minmax(74px,auto) minmax(0,1fr); gap: 16px 18px; align-items: start; }
-    .use::before { content: "0" counter(role-card); grid-column: 2; grid-row: 1; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: rgba(200,153,63,.12); color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .04em; }
-    .use span { grid-column: 1; grid-row: 1; align-self: center; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
-    .use strong { grid-column: 1 / -1; grid-row: 2; align-self: start; max-width: 260px; font-family: var(--font-serif); font-size: clamp(25px,2.2vw,31px); line-height: 1.12; }
-    .use p { grid-column: 1 / -1; grid-row: 3; align-self: start; max-width: 280px; color: var(--muted); line-height: 1.45; }
-    .trust-section { background: #fffefb; }
-    .trust-layout { display: grid; grid-template-columns: minmax(300px,.78fr) minmax(560px,1.22fr); gap: clamp(32px,5vw,72px); align-items: start; }
-    .trust-copy { display: grid; gap: 24px; align-content: start; }
-    .trust-copy h2 { max-width: 560px; font-size: clamp(42px,5vw,66px); }
-    .trust-copy .section-lead { margin-top: 0; max-width: 520px; }
-    .trust-summary { display: grid; border-top: 1px solid var(--line); }
-    .trust-line { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
-    .trust-number { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: rgba(200,153,63,.11); color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .08em; }
-    .trust-line strong { display: block; font-size: 17px; line-height: 1.25; }
-    .trust-line p { margin: 5px 0 0; color: var(--muted); line-height: 1.48; }
-    .trust-board { border: 1px solid rgba(47,107,74,.22); border-radius: 10px; background: var(--panel); box-shadow: 0 22px 54px rgba(32,37,31,.055); overflow: hidden; }
-    .trust-board-head { display: grid; grid-template-columns: 72px minmax(0,1fr); gap: 18px; align-items: center; padding: 26px; border-bottom: 1px solid var(--line); background: rgba(47,107,74,.045); }
-    .trust-seal { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; background: rgba(47,107,74,.11); color: var(--leaf); }
-    .trust-seal svg, .trust-proof svg, .cost-note svg { width: 28px; height: 28px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .trust-board-head strong { display: block; font-family: var(--font-serif); font-size: clamp(28px,3vw,40px); line-height: 1.05; }
-    .trust-board-head p { margin: 8px 0 0; max-width: 520px; color: var(--muted); line-height: 1.45; }
-    .trust-proof-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); padding: 6px 26px 10px; }
-    .trust-proof { min-height: 138px; display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 14px; align-content: start; border-bottom: 1px solid var(--line); padding: 20px 0; }
-    .trust-proof:nth-child(odd) { padding-right: 24px; border-right: 1px solid var(--line); }
-    .trust-proof:nth-child(even) { padding-left: 24px; }
-    .trust-proof:nth-last-child(-n+2) { border-bottom: 0; }
-    .trust-proof svg { width: 23px; height: 23px; margin-top: 1px; color: var(--leaf); }
-    .trust-proof strong { display: block; font-size: 16px; line-height: 1.25; }
-    .trust-proof p { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
-    .cost-section { background: #f7f3ea; }
-    .cost-layout { display: grid; grid-template-columns: minmax(300px,.72fr) minmax(560px,1.28fr); gap: clamp(30px,5vw,68px); align-items: start; }
-    .cost-copy h2 { max-width: 520px; font-size: clamp(40px,4.7vw,62px); }
-    .cost-copy .section-lead { max-width: 500px; }
-    .cost-panel { border: 1px solid rgba(138,123,63,.26); border-radius: 10px; background: var(--panel); box-shadow: 0 22px 54px rgba(32,37,31,.055); padding: 8px 28px; }
-    .cost-row { display: grid; grid-template-columns: 118px minmax(0,1fr); gap: 22px; align-items: center; border-bottom: 1px solid var(--line); padding: 24px 0; }
-    .cost-row:last-child { border-bottom: 0; }
-    .cost-value { min-height: 82px; display: grid; place-items: center; border: 1px solid rgba(47,107,74,.15); border-radius: 10px; background: #fffaf0; color: var(--leaf); font-family: var(--font-serif); font-size: 36px; font-weight: 700; line-height: 1; text-align: center; }
-    .cost-row:nth-child(2) .cost-value { color: var(--gold-ink); border-color: rgba(200,153,63,.22); }
-    .cost-row:nth-child(3) .cost-value { color: #8b5a52; border-color: rgba(139,90,82,.15); background: #fff6f2; font-size: 25px; }
-    .cost-row strong { display: block; font-family: var(--font-serif); font-size: clamp(25px,2.5vw,36px); line-height: 1.05; }
-    .cost-row p { margin: 8px 0 0; color: var(--muted); line-height: 1.48; }
-    .cost-note { display: grid; grid-template-columns: 32px minmax(0,1fr); gap: 13px; align-items: start; border: 1px solid rgba(200,153,63,.28); border-radius: 10px; background: rgba(255,254,251,.76); margin-top: 16px; padding: 17px 18px; color: var(--muted); line-height: 1.5; }
-    .cost-note svg { width: 25px; height: 25px; color: var(--gold-ink); }
-    .cost-note strong { display: block; color: var(--ink); }
-    .imprint-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin-top: 28px; }
-    .imprint-card { border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: var(--panel); }
-    .imprint-card strong { display: block; font-size: 15px; }
-    .imprint-card p { margin: 7px 0 0; color: var(--muted); line-height: 1.5; }
-    .final-cta { position: relative; overflow: hidden; background: #172019; color: #fff; }
-    .final-cta::before { content: ""; position: absolute; inset: 0; background: url('/assets/landing-closing.jpg') center center / cover no-repeat; opacity: .32; pointer-events: none; }
-    .final-cta::after { content: ""; position: absolute; inset: 0; background: rgba(23,32,25,.72); pointer-events: none; }
-    .final-cta .section-inner { position: relative; z-index: 1; }
-    .final-cta .section-lead { color: rgba(255,255,255,.78); }
-    .final-cta .landing-actions { margin-top: 28px; }
-    .final-cta .landing-button.secondary { color: #fff; }
-    footer { padding: 24px clamp(20px,4vw,42px); color: #6b6f63; background: #fffefb; border-top: 1px solid var(--line); }
-    footer div { width: min(1180px,100%); margin: 0 auto; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 14px; }
-    .product-state { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0; margin-top: 28px; border: 1px solid rgba(47,107,74,.2); border-radius: 10px; background: rgba(47,107,74,.045); overflow: hidden; }
-    .product-state > div { padding: 20px 22px; }
-    .product-state > div + div { border-left: 1px solid rgba(47,107,74,.16); }
-    .product-state span { display: block; margin-bottom: 7px; color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
-    .product-state strong { font-family: var(--font-serif); font-size: 24px; line-height: 1.12; }
-    .product-state p { margin: 7px 0 0; color: var(--muted); line-height: 1.45; }
-    .landing-more { margin-top: 14px; border-bottom: 1px solid var(--line); }
-    .landing-more summary { min-height: 50px; display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; color: var(--ink); font-weight: 850; list-style: none; }
-    .landing-more summary::-webkit-details-marker { display: none; }
-    .landing-more summary::after { content: "+"; color: var(--gold-ink); font-size: 24px; font-weight: 500; }
-    .landing-more[open] summary::after { content: "−"; }
-    .landing-more-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; padding: 4px 0 22px; }
-    .landing-more-grid h3 { margin: 0 0 10px; font-family: var(--font-serif); font-size: 24px; }
-    .landing-more-grid ul { margin: 0; padding-left: 20px; color: var(--muted); line-height: 1.65; }
+    .feature-icon { width: 40px; height: 40px; margin-bottom: 18px; display: grid; place-items: center; border-radius: var(--radius-md); background: rgba(200,153,63,.1); color: var(--gold-ink); }
+    .feature-icon svg { width: 22px; height: 22px; display: block; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .feature strong { display: block; min-height: 2.3em; margin-bottom: 9px; font-family: var(--font-serif); font-weight: 600; font-size: 21px; line-height: 1.15; }
+    .feature p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; text-wrap: pretty; }
+    /* Subgrid keeps the eyebrow, the headline and the body of both halves on
+       the same three baselines, whatever the headline wraps to. */
+    .product-state { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: auto auto auto; }
+    .product-state > div { grid-row: span 3; display: grid; grid-template-rows: subgrid; align-content: start; padding: 24px 26px 26px; }
+    .product-state > div + div { border-left: 1px solid var(--line); }
+    .product-state span { margin-bottom: 11px; font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .product-state > div:first-child span { color: var(--leaf); }
+    .product-state > div:last-child span { color: var(--gold-ink); }
+    .product-state strong { font-family: var(--font-serif); font-weight: 600; font-size: 24px; line-height: 1.15; }
+    .product-state p { margin: 9px 0 0; max-width: 42ch; color: var(--muted); line-height: 1.55; text-wrap: pretty; }
+
+    /* ---- Disclosures ----------------------------------------------------- */
+    .landing-more, .legal-details { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .landing-more summary, .legal-details summary { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; color: var(--ink); font-weight: 850; list-style: none; }
+    .landing-more summary::-webkit-details-marker, .legal-details summary::-webkit-details-marker { display: none; }
+    .landing-more summary::after, .legal-details summary::after { content: "+"; color: var(--gold-ink); font-size: 24px; font-weight: 500; }
+    .landing-more[open] summary::after, .legal-details[open] summary::after { content: "−"; }
+    .landing-more-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: clamp(20px,3vw,48px); padding: 2px 0 26px; }
+    .landing-more-grid h3 { margin: 0 0 10px; font-family: var(--font-serif); font-weight: 600; font-size: 21px; }
+    .landing-more-grid ul { margin: 0; padding-left: 20px; color: var(--muted); line-height: 1.7; }
     .landing-more-grid small { color: var(--gold-ink); font-weight: 800; }
-    .trust-layout { grid-template-columns: minmax(280px,.82fr) minmax(0,1.18fr); align-items: center; }
-    .trust-copy { gap: 16px; }
-    .trust-summary { grid-template-columns: repeat(2,minmax(0,1fr)); border-top: 0; gap: 0 28px; }
-    .trust-line { grid-template-columns: 34px minmax(0,1fr); gap: 12px; padding: 17px 0; }
-    .trust-number { width: 26px; height: 26px; }
-    .price-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); border: 1px solid rgba(138,123,63,.24); border-radius: 10px; background: var(--panel); overflow: hidden; }
-    .price-summary > div { padding: 24px; }
+
+    /* ---- Trust ----------------------------------------------------------
+       Four principles across, hairline above, no boxes: a lighter texture than
+       the panels so two consecutive sections do not read as the same object. */
+    .trust-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0 clamp(24px,3vw,48px); border-top: 1px solid var(--line); }
+    .trust-line { display: grid; align-content: start; padding-top: 26px; }
+    .trust-number { width: 30px; height: 30px; margin-bottom: 16px; display: grid; place-items: center; border-radius: 50%; background: rgba(200,153,63,.12); color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .06em; }
+    .trust-line strong { font-size: 17px; line-height: 1.3; }
+    .trust-line p { margin: 7px 0 0; color: var(--muted); font-size: 15px; line-height: 1.55; text-wrap: pretty; }
+
+    /* ---- Price -----------------------------------------------------------
+       The two positions and the three worked examples live inside one panel:
+       the examples are a labelled footer band, not a second floating strip
+       that has to line up with the columns above it. */
+    .price-panel { border-color: rgba(138,123,63,.24); box-shadow: var(--shadow-md); }
+    .price-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: auto auto auto; }
+    .price-summary > div { grid-row: span 3; display: grid; grid-template-rows: subgrid; align-content: start; padding: 26px 28px 28px; }
     .price-summary > div + div { border-left: 1px solid var(--line); }
-    .price-summary strong { display: block; font-family: var(--font-serif); font-size: clamp(27px,2.2vw,32px); line-height: 1.05; }
-    .price-summary p { margin: 9px 0 0; color: var(--muted); line-height: 1.48; }
-    .price-examples { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 14px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .price-example { padding: 16px; text-align: center; border-right: 1px solid var(--line); }
-    .price-example:last-child { border-right: 0; }
-    .price-example b { display: block; font-family: var(--font-serif); color: var(--gold-ink); font-size: 26px; }
-    .price-example span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
-    .price-footnote { margin: 14px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
-    .imprint-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
-    .legal-details { margin-top: 14px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .legal-details summary { min-height: 52px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 800; list-style: none; }
-    .legal-details summary::-webkit-details-marker { display: none; }
-    .legal-details summary::after { content: "+"; color: var(--gold-ink); font-size: 24px; font-weight: 500; }
-    .legal-details[open] summary::after { content: "−"; }
-    .legal-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; padding-bottom: 18px; }
-    .landing-contact { display: flex; align-items: center; justify-content: space-between; gap: 22px; margin-top: 28px; padding: 22px 24px; border-radius: 10px; background: var(--nav); color: #fff; }
-    .landing-contact strong { display: block; font-family: var(--font-serif); font-size: 28px; }
-    .landing-contact p { margin: 5px 0 0; color: rgba(255,255,255,.72); }
+    .price-summary span { margin-bottom: 12px; color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .price-summary > div:first-child span { color: var(--leaf); }
+    .price-summary strong { font-family: var(--font-serif); font-weight: 600; font-size: clamp(23px,1.9vw,27px); line-height: 1.14; text-wrap: balance; }
+    .price-summary p { margin: 11px 0 0; color: var(--muted); line-height: 1.55; text-wrap: pretty; }
+    /* Label plus three examples in four equal columns: the middle divider then
+       lands exactly under the divider of the two positions above it. */
+    .price-examples { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-top: 1px solid var(--line); background: var(--panel-soft); }
+    .price-examples-label { margin: 0; display: grid; align-content: center; padding: 20px 22px 22px 28px; border-right: 1px solid var(--line); color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .12em; line-height: 1.5; text-transform: uppercase; }
+    .price-example { display: grid; align-content: start; gap: 5px; padding: 20px 20px 22px; }
+    .price-example + .price-example { border-left: 1px solid var(--line); }
+    .price-example:last-child { padding-right: 28px; }
+    .price-example b { font-family: var(--font-serif); font-weight: 600; font-size: 26px; line-height: 1; color: var(--gold-ink); }
+    .price-example span { color: var(--muted); font-size: 13px; line-height: 1.45; text-wrap: balance; }
+    .price-footnote { margin: 0; max-width: 78ch; color: var(--muted); font-size: 14px; line-height: 1.6; text-wrap: pretty; }
+
+    /* ---- Imprint and closing --------------------------------------------- */
+    .imprint-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+    .imprint-card { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; background: var(--panel-soft); }
+    .imprint-card strong { display: block; font-size: 15px; }
+    .imprint-card p { margin: 8px 0 0; color: var(--muted); line-height: 1.55; }
+    .legal-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; padding: 2px 0 16px; }
+    .legal-details .mini { margin: 0 0 22px; max-width: 88ch; color: var(--soft); font-size: 13px; line-height: 1.6; }
+    .landing-contact { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 26px 28px; border-radius: var(--radius-lg); background: var(--nav); color: #fff; }
+    .landing-contact strong { display: block; font-family: var(--font-serif); font-weight: 600; font-size: 27px; line-height: 1.15; }
+    .landing-contact p { margin: 7px 0 0; color: rgba(255,255,255,.74); }
     .landing-contact .landing-button { flex: 0 0 auto; background: #fff; color: var(--ink); }
+    footer { padding: 26px clamp(20px,4vw,42px); color: var(--muted); background: var(--paper); border-top: 1px solid var(--line); }
+    footer div { width: min(1180px,100%); margin: 0 auto; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+
+    /* ---- Responsive -------------------------------------------------------
+       1100: the five-across strip gets too narrow to read, so it becomes a
+       two-across list. 900: the nav collapses. 640: everything stacks. */
+    @media (max-width: 1100px) {
+      .section-head { grid-template-columns: minmax(0,1fr) minmax(0,320px); }
+      .feature-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .feature { grid-template-columns: 40px minmax(0,1fr); grid-template-rows: auto auto; column-gap: 16px; padding: 22px 24px; border-bottom: 1px solid var(--line); }
+      .feature:nth-child(2n), .feature:last-child { border-right: 0; }
+      .feature-icon { grid-row: 1 / span 2; margin-bottom: 0; }
+      .feature strong { grid-column: 2; min-height: 0; margin-bottom: 6px; }
+      .feature p { grid-column: 2; }
+      /* Five cards in two columns leave the fifth alone on its row: it spans
+         and turns into one line, so the row is filled rather than half empty. */
+      .feature:last-child { grid-column: 1 / -1; grid-template-columns: 40px auto minmax(0,1fr); align-items: center; border-bottom: 0; }
+      .feature:last-child .feature-icon { grid-row: 1; }
+      .feature:last-child strong { grid-row: 1; margin-bottom: 0; }
+      .feature:last-child p { grid-column: 3; grid-row: 1; }
+      .trust-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .trust-line { padding-top: 24px; }
+      .trust-line:nth-child(-n+2) { padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+    }
     @media (max-width: 900px) {
       .landing-links { display: none; }
       .landing-mark .hausv-mark { display: block; }
@@ -507,7 +490,7 @@ const PageTemplates = `
          its own backdrop — otherwise cream sections scroll straight under the
          gold mark and the menu button with nothing behind them. */
       .landing-navbar { background: rgba(12,18,13,.58); backdrop-filter: blur(12px); }
-      .landing-menu-toggle { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,.3); border-radius: 8px; padding: 8px 13px; color: #fff; background: rgba(12,18,13,.42); backdrop-filter: blur(6px); font-size: 13px; font-weight: 850; cursor: pointer; }
+      .landing-menu-toggle { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,.3); border-radius: var(--radius-sm); padding: 8px 13px; color: #fff; background: rgba(12,18,13,.42); backdrop-filter: blur(6px); font-size: 13px; font-weight: 850; cursor: pointer; }
       .landing-menu-toggle::before { content: ""; width: 15px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; box-shadow: 0 4px 0 currentColor inset; }
       .landing-nav-toggle:focus-visible + .landing-menu-toggle { outline: 3px solid var(--gold-light); outline-offset: 3px; }
       .landing-nav-toggle:checked + .landing-menu-toggle { border-color: rgba(231,197,116,.62); background: rgba(231,197,116,.16); }
@@ -517,28 +500,37 @@ const PageTemplates = `
       .landing-hero { min-height: 88svh; }
       .landing-hero::after { background: linear-gradient(180deg, rgba(12,18,13,.78) 0%, rgba(12,18,13,.5) 46%, rgba(12,18,13,.88) 100%); }
       .landing-copy { padding-top: 64px; }
-      .feature-grid, .use-grid, .trust-layout, .cost-layout, .imprint-grid, .roadmap-grid, .positioning-strip, .product-state, .landing-more-grid, .price-summary, .legal-grid { grid-template-columns: 1fr; }
-      .feature-grid { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-      .feature { grid-template-columns: 42px minmax(0,1fr); gap: 14px; padding: 16px; border-right: 0; border-bottom: 1px solid var(--line); background: rgba(255,254,251,.88); }
-      .feature:last-child { border-bottom: 0; }
-      .feature-icon { grid-row: 1; }
-      .feature > div { grid-column: 2; }
-      .feature strong { font-size: 20px; }
+      .section-head { grid-template-columns: minmax(0,1fr); gap: 16px; align-items: start; }
+      .section h2 { max-width: 24ch; }
+      .imprint-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      /* Three cards in two columns would leave a half-width orphan. */
+      .imprint-card:last-child { grid-column: 1 / -1; }
+      .price-examples { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .price-examples-label { grid-column: 1 / -1; padding: 18px 20px 0; border-right: 0; }
+      .price-example { padding: 16px 20px 20px; }
+      .price-example:last-child { padding-right: 20px; }
+    }
+    @media (max-width: 640px) {
+      .feature-grid, .product-state, .price-summary, .price-examples, .imprint-grid, .landing-more-grid, .legal-grid { grid-template-columns: minmax(0,1fr); }
+      .feature:nth-child(2n) { border-bottom: 1px solid var(--line); }
+      .feature, .feature:last-child { grid-column: auto; grid-template-columns: 40px minmax(0,1fr); align-items: start; padding: 18px 20px; }
+      .feature:last-child .feature-icon { grid-row: 1 / span 2; }
+      .feature:last-child strong { margin-bottom: 6px; }
+      .feature:last-child p { grid-column: 2; grid-row: 2; }
+      /* Stacked, the number belongs beside the line rather than above it —
+         four full-width blocks otherwise cost a screen of scrolling. */
+      .trust-summary { grid-template-columns: minmax(0,1fr); }
+      .trust-line { grid-template-columns: 30px minmax(0,1fr); column-gap: 14px; padding-top: 20px; }
+      .trust-line:nth-child(-n+3) { padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+      .trust-number { grid-row: 1 / span 2; margin-bottom: 0; }
+      .trust-line strong, .trust-line p { grid-column: 2; }
       .product-state > div + div, .price-summary > div + div { border-left: 0; border-top: 1px solid var(--line); }
-      .trust-summary { grid-template-columns: 1fr; }
-      .imprint-grid { gap: 10px; }
+      .product-state > div, .price-summary > div { padding: 22px 20px; }
+      .price-examples-label { padding: 18px 20px 0; }
+      .price-example { gap: 3px; padding: 14px 20px 16px; }
+      .price-example:last-child { padding-right: 20px; }
+      .price-example + .price-example { border-left: 0; border-top: 1px solid var(--line); }
       .landing-contact { align-items: flex-start; flex-direction: column; }
-      .roadmap-card:last-child { grid-column: auto; }
-      .positioning-tag { justify-self: start; }
-      .trust-proof-grid { grid-template-columns: 1fr; }
-      .trust-proof:nth-child(odd), .trust-proof:nth-child(even) { padding-left: 0; padding-right: 0; border-right: 0; }
-      .trust-proof:nth-last-child(2) { border-bottom: 1px solid var(--line); }
-      .cost-row { grid-template-columns: 92px minmax(0,1fr); gap: 16px; }
-      .cost-value { min-height: 70px; font-size: 29px; }
-      .cost-row strong { font-size: clamp(24px,7vw,30px); line-height: 1.08; }
-      .cost-row p { font-size: 16px; line-height: 1.45; }
-      .use { min-height: 0; grid-template-rows: 42px auto auto; }
-      .use strong, .use p { max-width: none; }
     }
     @media (max-width: 520px) {
       .landing-hero { min-height: 780px; }
@@ -548,12 +540,9 @@ const PageTemplates = `
       .landing-lead { font-size: 17px; line-height: 1.46; }
       .landing-actions { display: grid; }
       .landing-button { width: 100%; }
-      .section { padding: 46px 20px; }
-      .section h2 { font-size: 37px; }
-      .section-lead { font-size: 17px; }
-      .price-examples { grid-template-columns: 1fr; }
-      .price-example { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; border-right: 0; border-bottom: 1px solid var(--line); text-align: left; }
-      .price-example:last-child { border-bottom: 0; }
+      .section { padding: 44px 20px; }
+      .section h2 { font-size: 36px; }
+      .landing-contact strong { font-size: 24px; }
       footer div { display: grid; }
     }
   </style>
@@ -612,17 +601,21 @@ const PageTemplates = `
     </div>
   </section>
 
-  <section id="funktionen" class="section band visual-section features-section">
+  <section id="funktionen" class="section features-section">
     <div class="section-inner">
-      <div class="section-kicker">Der gemeinsame Arbeitsbereich</div>
-      <h2>Was Sie damit tun können.</h2>
-      <p class="section-lead">Fünf klare Aufgaben statt vieler einzelner Werkzeuge.</p>
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Der gemeinsame Arbeitsbereich</p>
+          <h2>Was Sie damit tun können.</h2>
+        </div>
+        <p class="section-lead">Fünf klare Aufgaben statt vieler einzelner Werkzeuge.</p>
+      </div>
       <div class="feature-grid">
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 3z"/><path d="M8 9h8M8 13h6"/></svg></span><div><strong>Informieren</strong><p>Aushänge, Termine und Hinweise erreichen alle am richtigen Ort.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H10z"/><path d="M8.5 8.5h7"/></svg></span><div><strong>Anliegen klären</strong><p>Melden, nachfragen und den nächsten Schritt nachvollziehen.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><div><strong>Unterlagen ordnen</strong><p>Dokumente, Protokolle und Nachweise passend freigeben.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 18V9M12 18V5M18 18v-6"/><path d="M4 18h16"/></svg></span><div><strong>Entscheiden</strong><p>Abstimmungen und Übergaben verständlich dokumentieren.</p></div></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.7 2.9 8.4 7 10 4.1-1.6 7-5.3 7-10V6z"/><path d="m8.8 12.2 2.1 2.1 4.3-4.6"/></svg></span><div><strong>Rechte schützen</strong><p>Jede Rolle sieht nur die für sie bestimmten Inhalte.</p></div></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 3z"/><path d="M8 9h8M8 13h6"/></svg></span><strong>Informieren</strong><p>Aushänge, Termine und Hinweise erreichen alle am richtigen Ort.</p></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H10z"/><path d="M8.5 8.5h7"/></svg></span><strong>Anliegen klären</strong><p>Melden, nachfragen und den nächsten Schritt nachvollziehen.</p></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><strong>Unterlagen ordnen</strong><p>Dokumente, Protokolle und Nachweise passend freigeben.</p></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 18V9M12 18V5M18 18v-6"/><path d="M4 18h16"/></svg></span><strong>Entscheiden</strong><p>Abstimmungen und Übergaben verständlich dokumentieren.</p></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.7 2.9 8.4 7 10 4.1-1.6 7-5.3 7-10V6z"/><path d="m8.8 12.2 2.1 2.1 4.3-4.6"/></svg></span><strong>Rechte schützen</strong><p>Jede Rolle sieht nur die für sie bestimmten Inhalte.</p></div>
       </div>
       <div class="product-state" aria-label="Produktstand">
         <div><span>Heute im privaten Pilot</span><strong>Hausalltag an einem Ort</strong><p>Aushänge, Termine, Anliegen, Dokumente, Abstimmungen, Übergaben und ein verständlicher Verlauf.</p></div>
@@ -638,51 +631,58 @@ const PageTemplates = `
     </div>
   </section>
 
-  <section id="sicherheit" class="section band trust-section">
-    <div class="section-inner trust-layout">
-      <div class="trust-copy">
+  <section id="sicherheit" class="section trust-section">
+    <div class="section-inner">
+      <div class="section-head">
         <div>
-          <div class="section-kicker">Sicherheit & Datenschutz</div>
+          <p class="section-kicker">Sicherheit & Datenschutz</p>
           <h2>Vertrauen zuerst.</h2>
         </div>
         <p class="section-lead">Einfach für die Hausgemeinschaft, nachvollziehbar für den Betrieb.</p>
       </div>
       <div class="trust-summary" aria-label="Sicherheitsprinzipien">
-        <div class="trust-line"><span class="trust-number">01</span><div><strong>Getrennte Häuser</strong><p>Eigene Domain, Rollen und Sichtbarkeit.</p></div></div>
-        <div class="trust-line"><span class="trust-number">02</span><div><strong>Geschützte Dateien</strong><p>Downloads nur über geprüfte App-Wege.</p></div></div>
-        <div class="trust-line"><span class="trust-number">03</span><div><strong>Datensparsam</strong><p>Nur Angaben, die der Betrieb braucht.</p></div></div>
-        <div class="trust-line"><span class="trust-number">04</span><div><strong>KI nur mit Opt-in</strong><p>Keine automatische Auswertung ohne Zustimmung.</p></div></div>
+        <div class="trust-line"><span class="trust-number">01</span><strong>Getrennte Häuser</strong><p>Eigene Domain, eigene Rollen, eigene Sichtbarkeit.</p></div>
+        <div class="trust-line"><span class="trust-number">02</span><strong>Geschützte Dateien</strong><p>Downloads nur über geprüfte App-Wege.</p></div>
+        <div class="trust-line"><span class="trust-number">03</span><strong>Datensparsam</strong><p>Nur Angaben, die der Betrieb wirklich braucht.</p></div>
+        <div class="trust-line"><span class="trust-number">04</span><strong>KI nur mit Opt-in</strong><p>Keine automatische Auswertung ohne Zustimmung.</p></div>
       </div>
     </div>
   </section>
 
   <section id="preise" class="section cost-section">
-    <div class="section-inner cost-layout">
-      <div class="cost-copy">
-        <div class="section-kicker">Fair geregelt</div>
-        <h2>Einfach gerechnet.</h2>
+    <div class="section-inner">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Fair geregelt</p>
+          <h2>Einfach gerechnet.</h2>
+        </div>
         <p class="section-lead">Der Pilot ist persönlich abgestimmt. Für später gilt eine klare Richtung pro Wohnungseinheit – nicht pro Haus und nicht pro Zubehör.</p>
       </div>
-      <div>
+      <div class="price-panel">
         <div class="price-summary" aria-label="Faire Nutzung und Preise">
-          <div><strong>Bis 25 Einheiten im Pilot kostenlos</strong><p>Zugang und Umfang werden persönlich abgestimmt.</p></div>
-          <div><strong>1 € je Einheit und Monat</strong><p>Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit. Unverbindlicher Zukunftsrichtwert, noch kein öffentliches Vertragsangebot.</p></div>
+          <div><span>Heute im Pilot</span><strong>Bis 25 Einheiten im Pilot kostenlos</strong><p>Zugang und Umfang werden persönlich abgestimmt.</p></div>
+          <div><span>Richtwert für später</span><strong>1 € je Einheit und Monat</strong><p>Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit. Unverbindlicher Zukunftsrichtwert, noch kein öffentliches Vertragsangebot.</p></div>
         </div>
         <div class="price-examples" aria-label="Preisbeispiele für den Zukunftsrichtwert">
+          <p class="price-examples-label">Rechenbeispiele zum Richtwert</p>
           <div class="price-example"><b>8 €</b><span>Kleines Haus · 8 Wohnungen / Monat</span></div>
           <div class="price-example"><b>25 €</b><span>Kleine Verwaltung · 25 Wohnungen / Monat</span></div>
           <div class="price-example"><b>100 €</b><span>Größere Verwaltung · 100 Wohnungen / Monat</span></div>
         </div>
-        <p class="price-footnote">Wohnungen und vergleichbare Nutzungseinheiten zählen. Zubehör wie Keller oder Stellplätze zählt nicht automatisch. Spenden bleiben freiwillig.</p>
       </div>
+      <p class="price-footnote">Wohnungen und vergleichbare Nutzungseinheiten zählen. Zubehör wie Keller oder Stellplätze zählt nicht automatisch. Spenden bleiben freiwillig.</p>
     </div>
   </section>
 
-  <section id="impressum" class="section">
+  <section id="impressum" class="section imprint-section">
     <div class="section-inner">
-      <div class="section-kicker">Impressum</div>
-      <h2>Impressum & Kontakt</h2>
-      <p class="section-lead">Direkter Kontakt statt anonymer Hotline.</p>
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Impressum</p>
+          <h2>Impressum & Kontakt</h2>
+        </div>
+        <p class="section-lead">Direkter Kontakt statt anonymer Hotline.</p>
+      </div>
       <div class="imprint-grid">
         <div class="imprint-card"><strong>Medieninhaber / Betreiber</strong><p>{{.OperatorName}} · natürliche Person</p></div>
         <div class="imprint-card"><strong>Ladungsfähige Anschrift</strong><p>{{.OperatorAddress}}</p></div>
