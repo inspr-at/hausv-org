@@ -240,6 +240,7 @@ func TestSettingsAndParkingKeepReducedMobileInteractionContracts(t *testing.T) {
 		`side-address-short`,
 		`@media (max-width: 350px)`,
 		`.side-address-label { font-size: 9px; }`,
+		`.content-top .crumb { max-width: 100%; gap: 6px; flex-wrap: wrap; font-size: 13px; }`,
 		`min-height: 44px !important;`,
 		`.payment-import .apply-bar { position: static;`,
 		`settings-guide-details`,

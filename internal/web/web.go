@@ -3110,6 +3110,7 @@ const PageTemplates = `
     @media (max-width: 350px) {
       .side-address-locality { display: none; }
       .side-address-label { font-size: 9px; }
+      .content-top .crumb { max-width: 100%; gap: 6px; flex-wrap: wrap; font-size: 13px; }
       .mobile-menu-prefix { display: none; }
       .settings-hub .settings-section-head { grid-template-columns: minmax(0,1fr); align-items: start; }
       .settings-hub .settings-section-head .settings-tag { justify-self: start; }
