@@ -1547,7 +1547,9 @@ func TestCurrentEnergyMetricsUsesLiveTimestampAndCorrectsLegacyConsumptionDispla
 	if !latest.Equal(updated) {
 		t.Fatalf("latest = %s, want %s", latest, updated)
 	}
-	if quality := energy.AssessQuality(time.Now(), latestEnergySeen(nil, nil, latest), 0, 0); quality.Status != energy.QualityMeasured {
+	// Hier geht es um die Aktualität der Live-Werte, nicht um die
+	// Monatsgrundlage — die wird deshalb als vorhanden übergeben.
+	if quality := energy.AssessQuality(time.Now(), latestEnergySeen(nil, nil, latest), 0, 0, 1); quality.Status != energy.QualityMeasured {
 		t.Fatalf("quality = %+v", quality)
 	}
 }

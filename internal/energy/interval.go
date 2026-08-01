@@ -204,7 +204,20 @@ func ProjectQuarterAverage(start, now time.Time, energySoFarKWh, currentPowerKW 
 	return AveragePowerKW(projectedEnergy, 15*time.Minute), true
 }
 
-func AssessQuality(now, lastSeen time.Time, gaps, conflicts int) QualityAssessment {
+// AssessQuality beurteilt die Datenlage aus zwei verschiedenen Blickwinkeln, die
+// nicht zusammenfallen dürfen:
+//
+//   - lastSeen sagt, wie frisch die zuletzt gelesenen Werte sind. Das ist eine
+//     Aussage über die Verbindung.
+//   - monthIntervals sagt, auf wie vielen Viertelstunden des laufenden Monats
+//     eine Bemessung überhaupt beruhen kann. Das ist die Aussage, die für den
+//     Leistungstarif zählt.
+//
+// Beides in ein Urteil zu ziehen war falsch: ein Zuhause mit frischer
+// Home-Assistant-Verbindung und ohne eine einzige Viertelstunde des Monats las
+// „Keine Aktion nötig", während die Tarifkarte darunter sagte, dass für diesen
+// Monat nichts gemessen ist. Handeln wäre genau dann nötig gewesen.
+func AssessQuality(now, lastSeen time.Time, gaps, conflicts, monthIntervals int) QualityAssessment {
 	switch {
 	case conflicts > 0:
 		return QualityAssessment{Status: QualityConflict, Label: "Werte widersprechen sich", Effect: "Empfehlungen sind vorerst unklar.", NextAction: "Messpunkt und Einheit prüfen."}
@@ -214,6 +227,9 @@ func AssessQuality(now, lastSeen time.Time, gaps, conflicts int) QualityAssessme
 		return QualityAssessment{Status: QualityUnavailable, Label: "Noch kein Messwert", Effect: "Es wird keine Spitze geschätzt.", NextAction: "Einen Netzbezugswert verbinden."}
 	case now.Sub(lastSeen) > 10*time.Minute:
 		return QualityAssessment{Status: QualityStale, Label: "Messwert nicht aktuell", Effect: "HAUSV bleibt im Beobachtungsmodus.", NextAction: "Home Assistant prüfen."}
+	case monthIntervals <= 0:
+		// Die Verbindung steht, die Bemessungsgrundlage fehlt trotzdem.
+		return QualityAssessment{Status: QualityGap, Label: "Keine Viertelstunde in diesem Monat", Effect: "Für den laufenden Monat lässt sich keine Leistung bemessen.", NextAction: "Viertelstundenwerte importieren."}
 	default:
 		return QualityAssessment{Status: QualityMeasured, Label: "Messwerte aktuell", Effect: "Auswertung ist nachvollziehbar.", NextAction: "Keine Aktion nötig."}
 	}

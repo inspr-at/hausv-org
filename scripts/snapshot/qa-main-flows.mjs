@@ -1159,7 +1159,19 @@ async function assertEnergySafetyAndFlow(viewport) {
   if (!(await zoomButton.evaluate((node) => document.activeElement === node))) {
     fail(`Energie ${viewport.name}: Fokus kehrt nach dem Schließen nicht zum Vergrößern-Knopf zurück`);
   }
-  if (!(await page.getByText('Messwerte aktuell', { exact: true }).count())) {
+  // Der Desktop-Durchlauf läuft zuerst und importiert erst weiter unten eine
+  // Viertelstunden-Datei; hier ist der Monat also noch ohne Grundlage. Eine
+  // frische Home-Assistant-Verbindung darf dann NICHT beruhigen — der
+  // Leistungstarif bemisst die Monatsspitze (HAUSV-430). Im Mobil-Durchlauf
+  // liegt der Import des Desktop-Laufs bereits vor, dort gilt das Gegenteil.
+  if (viewport.name === 'Desktop') {
+    if (await page.getByText('Keine Aktion nötig.', { exact: true }).count()) {
+      fail(`Energie ${viewport.name}: Datenlage beruhigt, obwohl für den Monat nichts gemessen ist`);
+    }
+    if (!(await page.getByText('Keine Viertelstunde in diesem Monat', { exact: true }).count())) {
+      fail(`Energie ${viewport.name}: fehlende Monatsgrundlage wird nicht benannt`);
+    }
+  } else if (!(await page.getByText('Messwerte aktuell', { exact: true }).count())) {
     fail(`Energie ${viewport.name}: Live-Aktualität verwendet nicht den aktuellen Home-Assistant-Zeitpunkt`);
   }
   const chartBox = await visibleChart.boundingBox();
@@ -1205,6 +1217,13 @@ async function assertEnergySafetyAndFlow(viewport) {
     await page.waitForLoadState('networkidle');
     if (!(await page.getByText('bereits vorhanden', { exact: false }).count())) {
       fail('Energie Desktop: doppelter Import nicht erkannt');
+    }
+
+    // Jetzt gibt es Viertelstunden im laufenden Monat UND frische Live-Werte.
+    // Erst hier ist die ruhige Aussage berechtigt — sie belegt zugleich, dass
+    // die Live-Aktualität den Home-Assistant-Zeitpunkt verwendet.
+    if (!(await page.getByText('Messwerte aktuell', { exact: true }).count())) {
+      fail('Energie Desktop: mit Monatsgrundlage und frischen Werten fehlt die ruhige Datenlage');
     }
 
     await page.getByRole('button', { name: 'Diesen Stand festhalten' }).click();
