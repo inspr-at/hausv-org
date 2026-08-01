@@ -334,8 +334,12 @@ async function createIssue(email, title) {
   const context = await newContext({ width: 1440, height: 900 });
   const page = await localLogin(context, email);
   await page.goto(`${baseURL}/app/anliegen`, { waitUntil: 'networkidle' });
+  // Auf einer leeren Anliegen-Seite ist das Formular eine feste Karte, damit die
+  // Hauptaktion nicht hinter einem Aufklapper liegt; sobald Anliegen bestehen,
+  // ist es ein details-Element. Nur letzteres muss geöffnet werden — element.open
+  // ist auf einer section undefined und liefe sonst in einen Klick ins Leere.
   const panel = page.locator('#issue-new');
-  if (!(await panel.evaluate((element) => element.open))) {
+  if (await panel.evaluate((element) => element.tagName === 'DETAILS' && !element.open)) {
     await panel.locator('summary').click();
   }
   const form = page.locator('form[data-issue-wizard]');
@@ -363,7 +367,9 @@ async function seedManagedContent() {
   const page = await localLogin(context, 'admin@example.com');
 
   await page.goto(`${baseURL}/app/announcements`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Aushang erstellen' }).click();
+  // Die Hauptaktion steht in der Werkzeugleiste UND im Leerzustand, damit sie
+  // auf einer leeren Seite erreichbar ist. Beide öffnen denselben Dialog.
+  await page.getByRole('button', { name: 'Aushang erstellen' }).first().click();
   const announcement = page.locator('#announcement-create form');
   await announcement.locator('input[name="title"]').fill('QA Hausinformation');
   await announcement.locator('textarea[name="body"]').fill('Der gemeinsame Playwright-Lauf prüft diesen Aushang.');
@@ -371,7 +377,7 @@ async function seedManagedContent() {
   await page.waitForURL(/\/app\/announcements/);
 
   await page.goto(`${baseURL}/app/events`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Termin erstellen' }).click();
+  await page.getByRole('button', { name: 'Termin erstellen' }).first().click();
   const event = page.locator('#event-create form');
   await event.locator('input[name="title"]').fill('QA Hausbegehung');
   await event.locator('input[name="starts_at"]').fill(futureLocalInput(14, 18));
@@ -388,6 +394,14 @@ async function seedManagedContent() {
   await contact.locator('select[name="kind"]').selectOption({ label: 'Energie-Fachbetrieb' });
   await contact.locator('input[name="name"]').fill('QA Energiehilfe');
   await contact.locator('input[name="phone"]').fill('+43 316 000000');
+  // Region, Qualifikation und Energie-Fähigkeiten liegen bewusst hinter einer
+  // Zusatzangaben-Klappe, damit das Pflichtfeld-Formular kurz bleibt.
+  const optional = contact.locator('details.contact-add-optional');
+  if (await optional.count()) {
+    await optional.evaluate((element) => {
+      element.open = true;
+    });
+  }
   await contact.locator('input[name="service_region"]').fill('Graz und Umgebung');
   await contact.locator('input[name="qualification"]').fill('Elektrotechnik');
   await contact.locator('input[name="energy_capabilities"][value="metering"]').check();

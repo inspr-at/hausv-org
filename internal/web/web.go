@@ -2381,14 +2381,20 @@ const PageTemplates = `
        lief die Navigation deshalb still ueber: "Einstellungen" war fuer
        Eigentuemer gar nicht erreichbar, ohne dass etwas darauf hindeutete.
        Die kompakte Fassung greift jetzt frueh genug. */
-    @media (min-width: 901px) and (max-height: 1040px) {
-      .sidebar { gap: 10px; padding-top: 14px; padding-bottom: 12px; }
-      .side-brand { margin-top: -14px; padding-bottom: 3px; }
+    /* Erst bei wirklich kurzen Fenstern schrumpft auch der Ortskopf. Er
+       identifiziert das Haus; die Browser-QA verlangt auf dem Desktop
+       mindestens 190 Pixel Höhe und einen 22-Pixel-Pin. */
+    @media (min-width: 901px) and (max-height: 800px) {
       .side-map { height: 144px; }
       .side-map-pin { width: 35px; height: 45px; }
       .side-map-pin-mark { top: 7px; width: 20px; height: 18px; }
       .side-map-pin-mark svg { width: 20px; height: 17px; }
-      .side-place-copy { gap: 5px; margin-top: -42px; padding-bottom: 8px; }
+      .side-place-copy { margin-top: -42px; }
+    }
+    @media (min-width: 901px) and (max-height: 1040px) {
+      .sidebar { gap: 10px; padding-top: 14px; padding-bottom: 12px; }
+      .side-brand { margin-top: -14px; padding-bottom: 3px; }
+      .side-place-copy { gap: 5px; padding-bottom: 8px; }
       .side-address { font-size: 10.5px; }
       .side-ruler { height: 8px; background-size: 1px 4px,1px 7px,1px 4px; }
       .side-portal strong { font-size: 14.5px; }
