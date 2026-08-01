@@ -1057,7 +1057,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		"bad.png",
 		"data-lightbox-src",
 		"PDF exportieren",
-		"Kaution, Schadenabrechnung und Buchhaltung bleiben bewusst außerhalb",
+		"ohne Kautions- oder Schadenabrechnung",
 		`name="redirect" value="/app/uebergaben#handover-` + item.ID + `"`,
 	} {
 		if !strings.Contains(page.Body.String(), want) {
@@ -1104,6 +1104,47 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	addedAttachments := a.attachmentStore.ListEntity("jhw22", "handover", item.ID)
 	if len(addedAttachments) != 1 {
 		t.Fatalf("handover attachments after add = %+v, want one", addedAttachments)
+	}
+	publicReview := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/handover/"+tokens[0], nil)
+	publicReview.SetPathValue("token", tokens[0])
+	publicReviewRR := httptest.NewRecorder()
+	a.handoverConfirmPage(publicReviewRR, publicReview)
+	publicAttachmentURL := "/handover/" + tokens[0] + "/attachments/" + addedAttachments[0].ID
+	if publicReviewRR.Code != http.StatusOK ||
+		!strings.Contains(publicReviewRR.Body.String(), "nachtrag.png") ||
+		!strings.Contains(publicReviewRR.Body.String(), publicAttachmentURL) {
+		t.Fatalf("public handover review does not expose its token-scoped evidence: %d/%s", publicReviewRR.Code, publicReviewRR.Body.String())
+	}
+	publicAttachment := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org"+publicAttachmentURL, nil)
+	publicAttachment.SetPathValue("token", tokens[0])
+	publicAttachment.SetPathValue("id", addedAttachments[0].ID)
+	publicAttachmentRR := httptest.NewRecorder()
+	a.handoverAttachment(publicAttachmentRR, publicAttachment)
+	if publicAttachmentRR.Code != http.StatusOK || publicAttachmentRR.Header().Get("Content-Type") != "image/png" ||
+		publicAttachmentRR.Header().Get("Cache-Control") != "private, no-store" {
+		t.Fatalf("public handover attachment = %d %q %q", publicAttachmentRR.Code, publicAttachmentRR.Header().Get("Content-Type"), publicAttachmentRR.Header().Get("Cache-Control"))
+	}
+	wrongTokenAttachment := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/handover/wrong/attachments/"+addedAttachments[0].ID, nil)
+	wrongTokenAttachment.SetPathValue("token", "wrong")
+	wrongTokenAttachment.SetPathValue("id", addedAttachments[0].ID)
+	wrongTokenAttachmentRR := httptest.NewRecorder()
+	a.handoverAttachment(wrongTokenAttachmentRR, wrongTokenAttachment)
+	if wrongTokenAttachmentRR.Code != http.StatusNotFound {
+		t.Fatalf("wrong handover token opened attachment: %d", wrongTokenAttachmentRR.Code)
+	}
+	unrelatedAttachments, err := a.attachmentStore.CreateUploaded("jhw22", "handover", "another-handover", "manager@example.com", []uploadedFile{
+		testMultipartHeader(t, "attachments", "fremd.png", minimalPNG()),
+	}, time.Now())
+	if err != nil || len(unrelatedAttachments) != 1 {
+		t.Fatalf("unrelated handover attachment = %+v err=%v", unrelatedAttachments, err)
+	}
+	unrelated := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/handover/"+tokens[0]+"/attachments/"+unrelatedAttachments[0].ID, nil)
+	unrelated.SetPathValue("token", tokens[0])
+	unrelated.SetPathValue("id", unrelatedAttachments[0].ID)
+	unrelatedRR := httptest.NewRecorder()
+	a.handoverAttachment(unrelatedRR, unrelated)
+	if unrelatedRR.Code != http.StatusNotFound {
+		t.Fatalf("handover token opened unrelated attachment: %d", unrelatedRR.Code)
 	}
 	prematureFile := authedFormRequest(t, a, "manager@example.com", "/app/uebergaben/file", url.Values{"id": {item.ID}})
 	if prematureFile.Code != http.StatusSeeOther || !strings.Contains(prematureFile.Header().Get("Location"), "handover=pending") {
@@ -1202,7 +1243,7 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 		!strings.Contains(getRR.Body.String(), "keine Kautions-, Schaden- oder sonstige Abrechnung") ||
 		!strings.Contains(getRR.Body.String(), "Wohnzimmer") ||
 		!strings.Contains(getRR.Body.String(), `type="checkbox" name="confirm" value="yes" required`) ||
-		!strings.Contains(getRR.Body.String(), "Verbindlich bestätigen") {
+		!strings.Contains(getRR.Body.String(), "Protokoll bestätigen") {
 		t.Fatalf("confirm page status/body = %d/%s", getRR.Code, getRR.Body.String())
 	}
 
@@ -1219,6 +1260,28 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 	updated, found := a.handoverStore.Get("jhw22", item.ID)
 	if !found || len(updated.Confirmations) != 1 || updated.Confirmations[0].ConfirmedAt.IsZero() || updated.Confirmations[0].Note != "geprüft" {
 		t.Fatalf("updated confirmation = found %v item %+v", found, updated)
+	}
+	confirmEventsBefore := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionHandoverConfirm, Limit: 20})
+	repeatForm := url.Values{"confirm": {"yes"}, "name": {"Andere Person"}, "note": {"darf nicht ändern"}}
+	repeat := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/handover/"+token, strings.NewReader(repeatForm.Encode()))
+	repeat.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	repeat.Header.Set("Origin", "http://jhw22.hausv.org")
+	repeat.SetPathValue("token", token)
+	repeatRR := httptest.NewRecorder()
+	a.confirmHandover(repeatRR, repeat)
+	afterRepeat, _ := a.handoverStore.Get("jhw22", item.ID)
+	confirmEventsAfter := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionHandoverConfirm, Limit: 20})
+	if repeatRR.Code != http.StatusSeeOther || afterRepeat.Confirmations[0].Note != "geprüft" ||
+		len(confirmEventsAfter) != len(confirmEventsBefore) {
+		t.Fatalf("repeated confirmation changed state: status=%d confirmation=%+v audit=%d→%d", repeatRR.Code, afterRepeat.Confirmations[0], len(confirmEventsBefore), len(confirmEventsAfter))
+	}
+	revisit := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/handover/"+token, nil)
+	revisit.SetPathValue("token", token)
+	revisitRR := httptest.NewRecorder()
+	a.handoverConfirmPage(revisitRR, revisit)
+	if revisitRR.Code != http.StatusOK || !strings.Contains(revisitRR.Body.String(), "Protokoll bestätigt") ||
+		strings.Contains(revisitRR.Body.String(), `class="handover-confirm-form"`) {
+		t.Fatalf("confirmed token is not an understandable read-only view: %d/%s", revisitRR.Code, revisitRR.Body.String())
 	}
 }
 

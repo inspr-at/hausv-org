@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/mail"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -463,12 +464,22 @@ func (a *app) handoverConfirmPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	confirmation := item.Confirmations[idx]
+	handover := a.handoverViewForActor(item.TenantSlug, "", roleManager, item)
+	for attachmentIndex := range handover.Attachments {
+		attachment := &handover.Attachments[attachmentIndex]
+		base := "/handover/" + url.PathEscape(token) + "/attachments/" + url.PathEscape(attachment.ID)
+		attachment.URL = base
+		attachment.PreviewURL = base + "/preview"
+		attachment.ThumbURL = base + "/thumb"
+		attachment.CanDelete = false
+	}
+	handover.AttachmentGroup = attachmentGroup{Attachments: handover.Attachments, HasAttachments: len(handover.Attachments) > 0}
 	msg, okMsg := handoverMessage(r.URL.Query().Get("handover"))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := a.templates.ExecuteTemplate(w, "handoverConfirm", map[string]any{
 		"Title":        "Übergabe bestätigen",
 		"Tenant":       tenant,
-		"Handover":     a.handoverViewForActor(item.TenantSlug, "", roleManager, item),
+		"Handover":     handover,
 		"Confirmation": handoverConfirmationViewFrom(confirmation),
 		"Token":        token,
 		"Msg":          msg,
@@ -477,6 +488,67 @@ func (a *app) handoverConfirmPage(w http.ResponseWriter, r *http.Request) {
 	}); err != nil {
 		logError("handover confirmation render failed", err)
 	}
+}
+
+// handoverAttachment lets a participant inspect exactly the evidence attached
+// to the handover addressed by their personal confirmation token. The token is
+// checked again for every request and can never open another handover's file.
+func (a *app) handoverAttachment(w http.ResponseWriter, r *http.Request) {
+	token := strings.TrimSpace(r.PathValue("token"))
+	if a == nil || a.handoverStore == nil || a.attachmentStore == nil {
+		http.NotFound(w, r)
+		return
+	}
+	handover, confirmationIndex, found := a.handoverStore.GetByToken(token)
+	if !found || confirmationIndex < 0 || confirmationIndex >= len(handover.Confirmations) {
+		http.NotFound(w, r)
+		return
+	}
+	attachment, found := a.attachmentStore.Get(handover.TenantSlug, strings.TrimSpace(r.PathValue("id")))
+	if !found || normalizeAttachmentEntity(attachment.EntityType) != "handover" || attachment.EntityID != handover.ID {
+		http.NotFound(w, r)
+		return
+	}
+	variant := strings.ToLower(strings.TrimSpace(r.PathValue("variant")))
+	if variant != "" && variant != "preview" && variant != "thumb" && variant != "thumbnail" {
+		http.NotFound(w, r)
+		return
+	}
+	path, contentType, _, ok := a.attachmentStore.FilePath(attachment, variant)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	if _, err := os.Stat(path); err != nil {
+		logError("handover attachment file open failed", err, "tenant", handover.TenantSlug, "attachment_id", attachment.ID)
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox")
+	w.Header().Set("Cache-Control", "private, no-store")
+	if contentType != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
+	w.Header().Set("Content-Disposition", mime.FormatMediaType(attachmentDisposition(contentType), map[string]string{"filename": attachment.Filename}))
+	if (variant == "" || variant == "preview") && strings.TrimSpace(r.Header.Get("Range")) == "" {
+		confirmation := handover.Confirmations[confirmationIndex]
+		a.recordAudit(auditEvent{
+			TenantSlug: handover.TenantSlug,
+			ActorEmail: confirmation.Email,
+			ActorRole:  confirmation.Role,
+			Action:     auditActionAttachmentView,
+			TargetType: "attachment",
+			TargetID:   attachment.ID,
+			Summary:    "Übergabeanhang angezeigt",
+			Details: map[string]string{
+				"entity_type": "handover",
+				"entity_id":   handover.ID,
+				"access":      "Bestätigungslink",
+			},
+		})
+	}
+	http.ServeFile(w, r, path)
 }
 
 func (a *app) confirmHandover(w http.ResponseWriter, r *http.Request) {
@@ -497,7 +569,8 @@ func (a *app) confirmHandover(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/handover/"+url.PathEscape(token)+"?handover=invalid", http.StatusSeeOther)
 		return
 	}
-	item, confirmation, found, err := a.handoverStore.ConfirmByToken(token, r.FormValue("name"), r.FormValue("note"), time.Now())
+	confirmationTime := time.Now()
+	item, confirmation, found, err := a.handoverStore.ConfirmByToken(token, r.FormValue("name"), r.FormValue("note"), confirmationTime)
 	if err != nil {
 		logHandoverError("confirm", "", "", err)
 		http.Redirect(w, r, "/handover/"+url.PathEscape(token)+"?handover=error", http.StatusSeeOther)
@@ -505,6 +578,13 @@ func (a *app) confirmHandover(w http.ResponseWriter, r *http.Request) {
 	}
 	if !found {
 		http.NotFound(w, r)
+		return
+	}
+	// ConfirmByToken intentionally returns the original confirmation on a
+	// repeated submit. Only the request whose exact timestamp was persisted may
+	// add an audit event; refreshing or re-posting an old token stays read-only.
+	if !confirmation.ConfirmedAt.Equal(confirmationTime.UTC()) {
+		http.Redirect(w, r, "/handover/"+url.PathEscape(token)+"?handover=confirmed", http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{

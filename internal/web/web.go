@@ -2516,6 +2516,7 @@ const PageTemplates = `
     .handover-scope { border-left: 3px solid rgba(47,107,74,.35); padding: 9px 12px; background: rgba(47,107,74,.06); color: var(--muted); font-size: 13px; line-height: 1.45; }
     .handover-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding-top: 4px; color: var(--soft); font-size: 12px; }
     .handover-dialog textarea { min-height: 94px; }
+    .handover-dialog #handover-rooms { min-height: 82px; }
     .handover-confirm-body { min-height: 100vh; background: radial-gradient(circle at top left, rgba(47,107,74,.12), transparent 34%), var(--paper); }
     .handover-confirm-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
     .handover-confirm-card { width: min(760px, 100%); }
@@ -2543,40 +2544,23 @@ const PageTemplates = `
     .handover-section > summary strong { font-family: var(--font-serif); font-size: 21px; }
     .handover-section > summary small { color: var(--muted); font-size: 12.5px; }
     .handover-section-count { min-width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--panel-soft); color: var(--gold-ink); font-weight: 900; }
-    /* Leere Abschnitte bleiben ruhig stehen und lassen sich nicht aufklappen:
-       ein Aufklapper ohne Inhalt ist ein Klick ins Leere. */
-    .handover-section.is-empty { min-height: 56px; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 12px; }
-    .handover-section.is-empty > span:first-child { display: grid; gap: 3px; }
-    .handover-section.is-empty strong { font-family: var(--font-serif); font-size: 21px; color: var(--muted); }
-    .handover-section.is-empty small { color: var(--soft); font-size: 12.5px; }
-    .handover-section.is-empty .handover-section-count { border-style: dashed; color: var(--soft); }
     @media (max-width: 1120px) { .handover-page-head { grid-template-columns: minmax(0,1fr); } }
-    /* Uebergaben-Leerzustand: erklaert Zweck und Ablauf eines Protokolls,
-       statt nur zu melden, dass noch keines existiert. */
-    .handover-blank { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(286px,.9fr); gap: 16px; }
-    .handover-blank-main { display: grid; align-content: center; gap: 20px; border: 1px dashed rgba(200,153,63,.45); border-radius: var(--radius-sm); background: rgba(255,254,251,.7); padding: clamp(22px,3.2vw,36px); }
+    .handover-blank { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(286px,.75fr); gap: 16px; }
+    .handover-blank-main { display: grid; align-content: center; gap: 18px; border: 1px dashed rgba(200,153,63,.45); border-radius: var(--radius-sm); background: rgba(255,254,251,.7); padding: clamp(22px,3.2vw,36px); }
     .handover-blank-lead { display: grid; justify-items: start; gap: 13px; }
     .handover-blank-icon { width: 52px; height: 52px; display: grid; place-items: center; border: 1px solid rgba(200,153,63,.3); border-radius: 12px; background: rgba(200,153,63,.1); color: var(--gold-ink); }
     .handover-blank-icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
     .handover-blank-main h2 { font-size: clamp(25px,3vw,31px); }
-    .handover-blank-main p { max-width: 58ch; color: var(--muted); font-size: 15px; line-height: 1.55; }
+    .handover-blank-main p { max-width: 50ch; color: var(--muted); font-size: 15px; line-height: 1.5; }
     .handover-blank-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 3px; }
     .handover-blank-actions .button { min-height: 44px; }
-    .handover-blank-side { display: grid; align-content: start; gap: 13px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 20px; box-shadow: var(--shadow-panel); }
+    .handover-blank-side { align-self: start; display: grid; align-content: start; gap: 13px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 20px; box-shadow: var(--shadow-panel); }
     .handover-blank-side h2 { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-ink); font-family: var(--font-sans); }
     .handover-blank-steps { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; counter-reset: handover-step; }
     .handover-blank-steps li { display: grid; grid-template-columns: 24px minmax(0,1fr); gap: 2px 11px; align-items: start; counter-increment: handover-step; }
     .handover-blank-steps li::before { content: counter(handover-step); grid-row: 1 / span 2; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; font-size: 12px; font-weight: 850; }
     .handover-blank-steps strong { grid-column: 2; font-size: 13.5px; }
     .handover-blank-steps span { grid-column: 2; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
-    .handover-blank-note { border-top: 1px solid var(--line); padding-top: 12px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
-    .handover-blank-facts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
-    .handover-blank-facts li { display: grid; gap: 5px; border-top: 2px solid var(--ink); padding-top: 11px; }
-    .handover-blank-facts strong { font-size: 13.5px; }
-    .handover-blank-facts span { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
-    @media (min-width: 901px) {
-      .handover-blank { min-height: max(430px, calc(100vh - 336px)); grid-template-rows: minmax(0,1fr) auto; }
-    }
     .handover-card { gap: 13px; padding: 18px; }
     .handover-card .handover-head { grid-template-columns: minmax(0,1fr) auto; align-items: center; }
     .handover-card .handover-meta { margin-bottom: 5px; }
@@ -2593,8 +2577,10 @@ const PageTemplates = `
     .handover-next span { color: var(--gold-ink); font-size: 10.5px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
     .handover-next strong { font-size: 14px; }
     .handover-next small { color: var(--muted); font-size: 12px; }
+    .handover-next .button { min-height: 44px; }
     .handover-details { border-top: 1px solid var(--line); padding-top: 10px; }
-    .handover-details > summary { cursor: pointer; color: var(--gold-ink); font-size: 13px; font-weight: 850; }
+    .handover-details > summary { min-height: 44px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--gold-ink); font-size: 13px; font-weight: 850; }
+    .handover-details > summary small { color: var(--muted); font-size: 11.5px; font-weight: 650; }
     .handover-details[open] > summary { margin-bottom: 13px; }
     .handover-parties { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-bottom: 10px; }
     .handover-parties div { border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 12px; background: var(--panel-soft); min-width: 0; }
@@ -2632,16 +2618,26 @@ const PageTemplates = `
     .handover-review details li { display: grid; grid-template-columns: minmax(100px,.45fr) minmax(0,1fr); gap: 10px; color: var(--muted); font-size: 12.5px; }
     .handover-review details li strong { color: var(--ink); }
     .handover-review details > p { margin: 0; padding: 0 14px 14px; color: var(--muted); line-height: 1.45; }
-    .handover-review-files { display: flex; justify-content: space-between; gap: 12px; padding: 13px 14px; color: var(--muted); font-size: 12.5px; }
-    .handover-review-files strong { color: var(--ink); }
+    .handover-public-files { display: grid; gap: 7px; padding: 0 14px 14px; }
+    .handover-public-file { min-height: 58px; display: grid; grid-template-columns: 48px minmax(0,1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 7px; background: var(--panel); color: var(--ink); text-decoration: none; }
+    .handover-public-file:hover, .handover-public-file:focus-visible { border-color: var(--gold); }
+    .handover-public-file img, .handover-public-file-icon { width: 48px; height: 42px; display: grid; place-items: center; border-radius: 6px; object-fit: cover; background: rgba(200,153,63,.14); color: var(--gold-ink); font-size: 10px; font-weight: 900; }
+    .handover-public-file-copy { min-width: 0; display: grid; gap: 2px; }
+    .handover-public-file-copy strong { overflow-wrap: anywhere; }
+    .handover-public-file-copy small { color: var(--muted); font-size: 11.5px; }
+    .handover-public-file-arrow { color: var(--gold-ink); font-size: 20px; }
     .handover-confirm-note { border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 11px 12px; background: var(--panel-soft); }
-    .handover-confirm-note > summary { cursor: pointer; color: var(--gold-ink); font-size: 12px; font-weight: 850; }
+    .handover-confirm-note > summary { min-height: 44px; display: flex; align-items: center; margin: -11px -12px; padding: 11px 12px; cursor: pointer; color: var(--gold-ink); font-size: 12px; font-weight: 850; }
     .handover-confirm-note label { margin-top: 11px; }
     .handover-confirm-consent { grid-template-columns: 24px minmax(0,1fr); align-items: start; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px; background: #fffefb; color: var(--ink); font-size: 13px; line-height: 1.45; letter-spacing: 0; text-transform: none; cursor: pointer; }
     .handover-confirm-consent input { width: 22px; height: 22px; min-height: 0; margin: 0; accent-color: var(--leaf); }
     .handover-confirm-submit { display: grid; gap: 7px; }
     .handover-confirm-submit .button { width: 100%; min-height: 50px; }
     .handover-confirm-submit small { color: var(--muted); font-size: 11.5px; text-align: center; }
+    .handover-confirmed { min-height: 76px; display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 12px; align-items: center; border: 1px solid rgba(47,107,74,.24); border-radius: var(--radius-sm); padding: 14px; background: rgba(47,107,74,.08); }
+    .handover-confirmed-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: var(--leaf); color: #fff; font-size: 18px; font-weight: 900; }
+    .handover-confirmed strong { font-size: 15px; }
+    .handover-confirmed p { margin-top: 2px; color: var(--muted); font-size: 12.5px; }
     .empty { border: 1px solid var(--line); background: var(--panel-soft); color: #5c5f54; border-radius: var(--radius-sm); padding: 14px; line-height: 1.5; }
     .empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); padding: 16px 18px; display: grid; grid-template-columns: 52px minmax(0,1fr) auto; gap: 16px; align-items: center; color: var(--ink); }
     .empty-state-icon { width: 52px; height: 52px; border-radius: var(--radius-sm); display: inline-grid; place-items: center; line-height: 0; background: rgba(200,153,63,.16); color: var(--gold-ink); }
@@ -2887,7 +2883,6 @@ const PageTemplates = `
 	      .handover-blank { grid-template-columns: minmax(0,1fr); gap: 14px; }
 	      .handover-blank-main { padding: 22px 18px; }
 	      .handover-blank-side { padding: 17px; }
-	      .handover-blank-facts { grid-template-columns: minmax(0,1fr); gap: 12px; }
 	      .handover-page-head, .handover-metrics { grid-template-columns: 1fr; }
 	      .handover-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
 	      .handover-metrics > div { padding: 11px 7px 11px 19px; }
@@ -2913,7 +2908,6 @@ const PageTemplates = `
 	      .handover-confirm-head > p span { flex-basis: 100%; }
 	      .handover-confirm-head > p span::before { display: none; }
 	      .handover-review details li { grid-template-columns: 1fr; gap: 2px; }
-	      .handover-review-files { display: grid; gap: 3px; }
 	      .handover-confirm-submit { position: static; padding-top: 2px; margin: 0; background: transparent; }
 	      .parking-page-head, .parking-page-head > *, .parking-primary-actions, .parking-page .panel { min-width: 0; max-width: 100%; }
 	      .parking-page-head { grid-template-columns: minmax(0,1fr) auto; }
@@ -5704,7 +5698,7 @@ const PageTemplates = `
       {{end}}
     </div>
     <details class="handover-details">
-      <summary>Protokolldetails anzeigen{{if .HasRooms}} · {{len .Rooms}} {{if eq (len .Rooms) 1}}Raum{{else}}Räume{{end}}{{end}}{{if .HasMeters}} · {{len .Meters}} {{if eq (len .Meters) 1}}Zählerstand{{else}}Zählerstände{{end}}{{end}}{{if .HasKeys}} · {{len .Keys}} {{if eq (len .Keys) 1}}Schlüsselposition{{else}}Schlüsselpositionen{{end}}{{end}}{{if .HasAttachments}} · {{len .Attachments}} {{if eq (len .Attachments) 1}}Datei{{else}}Dateien{{end}}{{end}}</summary>
+      <summary><strong>Details</strong><small>{{if .HasRooms}}{{len .Rooms}} {{if eq (len .Rooms) 1}}Raum{{else}}Räume{{end}}{{end}}{{if .HasMeters}} · {{len .Meters}} Zähler{{end}}{{if .HasKeys}} · {{len .Keys}} Schlüssel{{end}}{{if .HasAttachments}} · {{len .Attachments}} {{if eq (len .Attachments) 1}}Datei{{else}}Dateien{{end}}{{end}}</small></summary>
       <div class="handover-parties">
         <div><span>Ausziehend</span><strong>{{.Outgoing}}</strong></div>
         <div><span>Einziehend</span><strong>{{.Incoming}}</strong></div>
@@ -5737,7 +5731,7 @@ const PageTemplates = `
         </form>
       {{end}}
       <div class="handover-detail-actions">
-        <a class="button small" href="{{.ProtocolURL}}">PDF exportieren</a>
+        <a class="button small ghost" href="{{.ProtocolURL}}">PDF exportieren</a>
         <span>Angelegt {{.CreatedAt}} · Aktualisiert {{.UpdatedAt}}</span>
       </div>
     </details>
@@ -5751,7 +5745,9 @@ const PageTemplates = `
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg><span>/</span><span>Übergaben</span></span>
         <div class="page-actions">
+          {{if .HasHandovers}}
           <button class="button primary" type="button" data-dialog="handover-create" aria-haspopup="dialog" aria-controls="handover-create">Übergabe anlegen</button>
+          {{end}}
         </div>
       </div>
       <section class="page wide handover-page">
@@ -5760,14 +5756,14 @@ const PageTemplates = `
             <h1>Übergaben</h1>
             <p class="lede">Überblick und nächste Schritte.</p>
           </div>
-          <p class="handover-scope">Zustand dokumentieren – Kaution, Schadenabrechnung und Buchhaltung bleiben bewusst außerhalb.</p>
+          <p class="handover-scope">Zustand und Bestätigungen – ohne Kautions- oder Schadenabrechnung.</p>
         </div>
         {{if .HandoverMsg}}<div class="flash {{if .HandoverOK}}ok{{end}}">{{.HandoverMsg}}</div>{{end}}
         {{if .HasHandovers}}
           <div class="handover-metrics" aria-label="Übergabeübersicht">
-            <div><strong>{{.HandoverOpenCount}}</strong><span>Jetzt offen</span></div>
-            <div class="ready"><strong>{{.HandoverReadyCount}}</strong><span>Bereit zur Ablage</span></div>
-            <div class="done"><strong>{{.HandoverFiledCount}}</strong><span>Abgeschlossen</span></div>
+            <div><strong>{{.HandoverOpenCount}}</strong><span>Offen</span></div>
+            <div class="ready"><strong>{{.HandoverReadyCount}}</strong><span>Ablagebereit</span></div>
+            <div class="done"><strong>{{.HandoverFiledCount}}</strong><span>Abgelegt</span></div>
           </div>
           <div class="handover-sections">
             {{range .HandoverSections}}
@@ -5776,11 +5772,6 @@ const PageTemplates = `
                   <summary><span><strong>{{.Title}}</strong><small>{{.Description}}</small></span><span class="handover-section-count">{{.Count}}</span></summary>
                   <div class="handover-list">{{range .Items}}{{template "handoverCard" .}}{{end}}</div>
                 </details>
-              {{else}}
-                <div class="handover-section is-empty">
-                  <span><strong>{{.Title}}</strong><small>{{.Description}}</small></span>
-                  <span class="handover-section-count">0</span>
-                </div>
               {{end}}
             {{end}}
           </div>
@@ -5790,28 +5781,21 @@ const PageTemplates = `
               <div class="handover-blank-lead">
                 <span class="handover-blank-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg></span>
                 <h2 id="handover-blank-title">{{.HandoversEmpty.Title}}</h2>
-                <p>Ein Übergabeprotokoll hält fest, in welchem Zustand eine Einheit übergeben wurde: Räume, Zählerstände, Schlüssel, Fotos und die Bestätigung von ausziehender und einziehender Partei. Genau das ist später der Nachweis, wenn jemand nachfragt.</p>
+                <p>Räume, Zählerstände, Schlüssel und Fotos an einem Ort. Beide Parteien bestätigen über ihren persönlichen Link.</p>
               </div>
               <div class="handover-blank-actions">
                 <button class="button primary" type="button" data-dialog="handover-create" aria-haspopup="dialog" aria-controls="handover-create">Erste Übergabe anlegen</button>
-                {{if .CanManageBuilding}}<a class="button" href="/app/settings/building#units">Einheiten prüfen</a>{{end}}
+                {{if .CanManageBuilding}}<a class="button ghost" href="/app/settings/building#units" title="Einheiten in den Gebäude-Einstellungen öffnen">Einheiten prüfen</a>{{end}}
               </div>
             </div>
             <aside class="handover-blank-side">
-              <h2>So entsteht ein Protokoll</h2>
+              <h2>In drei Schritten</h2>
               <ol class="handover-blank-steps">
-                <li><strong>Anlegen</strong><span>Einheit, Anlass und Termin. Für den Start genügt eine Zeile je Raum.</span></li>
-                <li><strong>Ergänzen</strong><span>Zählerstände, Schlüssel, Notiz sowie Fotos und PDF kommen danach dazu.</span></li>
-                <li><strong>Bestätigen</strong><span>Beide Parteien bestätigen über einen persönlichen Link. Ab der ersten Bestätigung bleibt das Protokoll unverändert.</span></li>
-                <li><strong>Ablegen</strong><span>Vollständig bestätigt wandert es als Dokument in die Ablage des Hauses.</span></li>
+                <li><strong>Erfassen</strong><span>Einheit und Zustand festhalten.</span></li>
+                <li><strong>Bestätigen</strong><span>Persönliche Links an beide Parteien senden.</span></li>
+                <li><strong>Ablegen</strong><span>Als PDF in den Dokumenten sichern.</span></li>
               </ol>
-              <p class="handover-blank-note">Ohne Einheit lässt sich kein Protokoll anlegen. Einheiten pflegen Sie in den Gebäude-Einstellungen.</p>
             </aside>
-            <ul class="handover-blank-facts">
-              <li><strong>Jetzt offen</strong><span>Angelegte Protokolle, die noch auf eine Bestätigung warten. Diese Liste steht hier zuerst.</span></li>
-              <li><strong>Bereit zur Ablage</strong><span>Vollständig bestätigt. Ein Klick legt daraus das Dokument im Dokumentenbereich an.</span></li>
-              <li><strong>Abgeschlossen</strong><span>Abgelegte Protokolle bleiben mit allen Anhängen als PDF abrufbar.</span></li>
-            </ul>
           </section>
         {{end}}
       </section>
@@ -5823,19 +5807,19 @@ const PageTemplates = `
             <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
           </div>
           <div class="dialog-body">
-            <p class="document-dialog-intro">Die drei Pflichtangaben zuerst; Personen, Messwerte und Fotos lassen sich danach gezielt ergänzen.</p>
+            <p class="document-dialog-intro">Für den Start reichen Einheit und ein Raum. Alles Weitere ist optional.</p>
             <div class="handover-form-step"><span>1</span><div><strong>Übergabe</strong><small>Einheit, Anlass und Termin</small></div></div>
             <div class="dialog-grid">
-              <label class="full" for="handover-title">Kurzer Titel<input id="handover-title" name="title" required maxlength="160" placeholder="Nutzerwechsel Top 11"></label>
               <label for="handover-unit">Einheit<select id="handover-unit" name="unit_id" required>{{range .UnitOptions}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>{{end}}</select></label>
               <label for="handover-type">Anlass<select id="handover-type" name="handover_type"><option>Nutzerwechsel</option><option>Einzug</option><option>Auszug</option></select></label>
+              <label class="full" for="handover-title">Titel<input id="handover-title" name="title" required maxlength="160" placeholder="Nutzerwechsel Top 11"></label>
               <label class="full" for="handover-time">Termin<input id="handover-time" type="datetime-local" name="scheduled_at" value="{{.NowInput}}"></label>
             </div>
-            <div class="handover-form-step"><span>2</span><div><strong>Zustand</strong><small>Eine Zeile je Raum: Raum | Zustand | Mangel</small></div></div>
-            <label for="handover-rooms">Räume<input id="handover-rooms" name="rooms_text" required placeholder="Wohnzimmer | gut | keine Mängel"></label>
+            <div class="handover-form-step"><span>2</span><div><strong>Zustand</strong><small>Raum | Zustand | Mangel · eine Zeile pro Raum</small></div></div>
+            <label for="handover-rooms">Räume<textarea id="handover-rooms" name="rooms_text" required placeholder="Wohnzimmer | gut | keine Mängel"></textarea></label>
             <details class="dialog-optional">
               <summary>Personen für Bestätigung</summary>
-              <p class="dialog-optional-copy">Nur mit E-Mail wird ein persönlicher Bestätigungslink vorbereitet.</p>
+              <p class="dialog-optional-copy">Eine E-Mail-Adresse erzeugt den persönlichen Bestätigungslink.</p>
               <div class="dialog-optional-grid">
                 <label for="handover-out-name">Ausziehend – Name<input id="handover-out-name" name="outgoing_name" autocomplete="name"></label>
                 <label for="handover-out-email">Ausziehend – E-Mail<input id="handover-out-email" type="email" name="outgoing_email" autocomplete="email"></label>
@@ -5856,7 +5840,7 @@ const PageTemplates = `
               <div class="dialog-optional-grid"><label class="full" for="handover-attachments">Dateien<span class="file-control"><input id="handover-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label></div>
             </details>
           </div>
-          <div class="dialog-footer handover-dialog-submit"><span>Links werden nach dem Speichern versendet.</span><button class="button primary" type="submit">Übergabe anlegen</button></div>
+          <div class="dialog-footer handover-dialog-submit"><span>Bestätigungslinks entstehen nur für angegebene E-Mail-Adressen.</span><button class="button primary" type="submit">Übergabe anlegen</button></div>
         </form>
       </dialog>
     </main>
@@ -5881,24 +5865,24 @@ const PageTemplates = `
         <h1>{{.Handover.Title}}</h1>
         <p>{{.Tenant.Address}}{{if .Handover.HasScheduledAt}}<span>{{.Handover.ScheduledAt}}</span>{{end}}</p>
       </header>
-      {{if .Msg}}<div class="flash {{if .MsgOK}}ok{{end}}">{{.Msg}}</div>{{end}}
+      {{if and .Msg (not .Confirmation.HasConfirmed)}}<div class="flash {{if .MsgOK}}ok{{end}}">{{.Msg}}</div>{{end}}
       <section class="handover-review" aria-labelledby="handover-review-title">
-        <div class="handover-review-head"><div><span>Vor der Bestätigung</span><h2 id="handover-review-title">Protokoll prüfen</h2></div><span class="pill {{.Confirmation.StatusClass}}">{{.Confirmation.Status}}</span></div>
+        <div class="handover-review-head"><div><span>{{if .Confirmation.HasConfirmed}}Bestätigung abgeschlossen{{else}}Vor der Bestätigung{{end}}</span><h2 id="handover-review-title">Protokoll prüfen</h2></div><span class="pill {{.Confirmation.StatusClass}}">{{.Confirmation.Status}}</span></div>
         {{if .Handover.HasRooms}}<details open><summary><span><strong>Räume</strong><small>{{len .Handover.Rooms}} Einträge</small></span></summary><ul>{{range .Handover.Rooms}}<li><strong>{{.Name}}</strong><span>{{if .Condition}}{{.Condition}}{{else}}–{{end}}{{if .Defects}} · {{.Defects}}{{end}}</span></li>{{end}}</ul></details>{{end}}
-        {{if .Handover.HasMeters}}<details><summary><span><strong>Zählerstände</strong><small>{{len .Handover.Meters}} Einträge</small></span></summary><ul>{{range .Handover.Meters}}<li><strong>{{.Label}}</strong><span>{{.Value}}{{if .Unit}} {{.Unit}}{{end}}</span></li>{{end}}</ul></details>{{end}}
-        {{if .Handover.HasKeys}}<details><summary><span><strong>Schlüssel</strong><small>{{len .Handover.Keys}} Positionen</small></span></summary><ul>{{range .Handover.Keys}}<li><strong>{{.Label}}</strong><span>{{.Count}} Stk.</span></li>{{end}}</ul></details>{{end}}
-        {{if .Handover.HasNotes}}<details><summary><span><strong>Notiz</strong><small>1 Eintrag</small></span></summary><p>{{.Handover.Notes}}</p></details>{{end}}
-        {{if .Handover.HasAttachments}}<div class="handover-review-files"><strong>Fotos &amp; Dateien</strong><span>{{len .Handover.Attachments}} zum Protokoll gespeichert</span></div>{{end}}
+        {{if .Handover.HasMeters}}<details open><summary><span><strong>Zählerstände</strong><small>{{len .Handover.Meters}} Einträge</small></span></summary><ul>{{range .Handover.Meters}}<li><strong>{{.Label}}</strong><span>{{.Value}}{{if .Unit}} {{.Unit}}{{end}}</span></li>{{end}}</ul></details>{{end}}
+        {{if .Handover.HasKeys}}<details open><summary><span><strong>Schlüssel</strong><small>{{len .Handover.Keys}} Positionen</small></span></summary><ul>{{range .Handover.Keys}}<li><strong>{{.Label}}</strong><span>{{.Count}} Stk.</span></li>{{end}}</ul></details>{{end}}
+        {{if .Handover.HasNotes}}<details open><summary><span><strong>Notiz</strong><small>1 Eintrag</small></span></summary><p>{{.Handover.Notes}}</p></details>{{end}}
+        {{if .Handover.HasAttachments}}<details open><summary><span><strong>Fotos &amp; Dateien</strong><small>{{len .Handover.Attachments}} {{if eq (len .Handover.Attachments) 1}}Datei{{else}}Dateien{{end}}</small></span></summary><div class="handover-public-files">{{range .Handover.Attachments}}<a class="handover-public-file" href="{{.URL}}" target="_blank" rel="noopener">{{if .IsImage}}<img src="{{.ThumbURL}}" alt="">{{else}}<span class="handover-public-file-icon">{{if .IsPDF}}PDF{{else}}DATEI{{end}}</span>{{end}}<span class="handover-public-file-copy"><strong>{{.Filename}}</strong><small>{{.Size}} · öffnen</small></span><span class="handover-public-file-arrow" aria-hidden="true">↗</span></a>{{end}}</div></details>{{end}}
       </section>
       <p class="handover-scope">Dieses Protokoll dokumentiert den Zustand bei der Übergabe. Es ist keine Kautions-, Schaden- oder sonstige Abrechnung.</p>
       {{if .Confirmation.HasConfirmed}}
-        <p class="empty">Bestätigt{{if .Confirmation.HasConfirmed}} am {{.Confirmation.ConfirmedAt}}{{end}}. Es ist nichts mehr zu tun.</p>
+        <section class="handover-confirmed" aria-label="Bestätigung abgeschlossen"><span class="handover-confirmed-icon" aria-hidden="true">✓</span><div><strong>Protokoll bestätigt</strong><p>{{if .Confirmation.HasConfirmed}}Am {{.Confirmation.ConfirmedAt}} · {{end}}nichts weiter zu tun.</p></div></section>
       {{else}}
         <form method="post" action="/handover/{{.Token}}" class="handover-confirm-form">
           <label>Name für die Bestätigung<input name="name" value="{{.Confirmation.Name}}" autocomplete="name"></label>
           <details class="handover-confirm-note"><summary>Notiz ergänzen (optional)</summary><label>Notiz<textarea name="note" placeholder="Falls etwas ergänzt werden soll"></textarea></label></details>
-          <label class="handover-confirm-consent"><input type="checkbox" name="confirm" value="yes" required><span>Ich habe das Protokoll vollständig geprüft und bestätige den dokumentierten Stand.</span></label>
-          <div class="handover-confirm-submit"><button class="button primary" type="submit">Verbindlich bestätigen</button><small>Die Bestätigung wird mit Zeitpunkt und Rolle protokolliert.</small></div>
+          <label class="handover-confirm-consent"><input type="checkbox" name="confirm" value="yes" required><span>Die oben angezeigten Angaben entsprechen dem gemeinsam festgehaltenen Stand.</span></label>
+          <div class="handover-confirm-submit"><button class="button primary" type="submit">Protokoll bestätigen</button><small>Zeitpunkt und Rolle werden protokolliert.</small></div>
         </form>
       {{end}}
     </section>

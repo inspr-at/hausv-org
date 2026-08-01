@@ -940,6 +940,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/uebergaben/file", a.action(a.fileHandoverProtocol))
 	mux.HandleFunc("GET /app/uebergaben/{id}/protokoll", a.page(a.handoverProtocol))
 	mux.HandleFunc("GET /handover/{token}", a.publicPage(a.handoverConfirmPage))
+	mux.HandleFunc("GET /handover/{token}/attachments/{id}", a.publicPage(a.handoverAttachment))
+	mux.HandleFunc("GET /handover/{token}/attachments/{id}/{variant}", a.publicPage(a.handoverAttachment))
 	mux.HandleFunc("POST /handover/{token}", a.confirmHandover)
 	mux.HandleFunc("GET /app/kontakte", a.page(a.contacts))
 	mux.HandleFunc("POST /app/kontakte", a.action(a.upsertManagedContact))
