@@ -48,7 +48,7 @@ Datei-Link.
 ## Reproduzierbarer Betreibercheck
 
 Die synthetischen Repository-Fixtures werden mit
-`scripts/validate-ebinterface-fixtures.fish` gegen den offiziellen
+`scripts/validate-ebinterface-fixtures.sh` gegen den offiziellen
 ebInterface-Validator geprüft. Das Skript akzeptiert absichtlich keine
 Dateiangaben und kann daher keine echte Rechnung versehentlich an den externen
 Dienst übertragen. Produktive Uploads werden niemals an diesen Validator

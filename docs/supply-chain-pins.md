@@ -114,22 +114,26 @@ lokale Meldung macht den Unterschied sichtbar, statt ihn zu verbergen.
 3. Im Commit festhalten, *warum* aktualisiert wurde (Sicherheitsupdate,
    Funktionsbedarf, Routinepflege).
 
-## Bekannte Lücke
+## Geschlossene Lücke: fish
 
-`fish` wird in CI weiterhin über `apt-get install` aus dem Ubuntu-Repository des
-Runner-Images bezogen und ist damit nicht festgelegt. Eine Versionsangabe an
-`apt-get` hilft nicht dauerhaft: Ubuntu entfernt alte Paketstände, der Lauf
-würde später brechen statt reproduzierbar zu bleiben.
+`fish` wurde in CI über `apt-get install` aus dem Ubuntu-Repository des
+Runner-Images bezogen und war damit die einzige unbewusst bewegliche Eingabe.
+Statt sie festzulegen, ist sie entfallen: alle Skripte laufen seit HAUSV-427
+unter bash (`scripts/*.sh`).
 
-Sinnvolle Wege, bewusst noch offen:
+Zielstand ist bewusst bash 3.2 — die Fassung, die macOS als `/bin/bash`
+mitliefert. Nur damit verschwindet die Abhängigkeit wirklich. Gegen eine
+neuere bash aus nix zu schreiben hätte fish nur gegen eine andere
+Voraussetzung getauscht, und ein versehentlich genutztes bash-4-Merkmal wäre
+in CI (Ubuntu, bash 5) und lokal (nix, bash 5) durchgelaufen und ausgerechnet
+auf dem Mac gebrochen, der das Produktions-Deployment ausführt.
 
-- Die Fish-Jobs in einem digest-gepinnten Container ausführen.
-- `fish` über das bereits vorhandene `flake.nix` beziehen; `flake.lock` legt
-  nixpkgs auf einen Commit fest und wäre damit die unveränderliche Quelle.
+Wer die Skripte ändert, prüft sie deshalb gegen `/bin/bash` und `shellcheck`:
 
-Der zweite Weg nutzt, was das Repository ohnehin für die lokale Entwicklung
-mitbringt, kostet in CI aber die Installation von Nix. Die Entscheidung steht
-noch aus.
+```fish
+/bin/bash -n scripts/deploy.sh
+nix run nixpkgs#shellcheck -- -x --shell=bash scripts/*.sh scripts/snapshot/*.sh
+```
 
-Damit gibt es zwei bewegliche Eingaben: den Go-Patchstand — bewusst, für
-CVE-Fixes — und `fish` — unbewusst, offen.
+Damit bleibt genau eine bewegliche Eingabe im Lauf: der Go-Patchstand, und der
+ist Absicht.

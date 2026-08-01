@@ -13,7 +13,8 @@
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
           # Mirrors the CI toolchain in .github/workflows/ci.yml: Go from
-          # go.mod, Node 24, and fish for scripts/*.fish.
+          # go.mod and Node 24. Kein fish mehr — scripts/*.sh laufen unter der
+          # bash, die jedes System ohnehin mitbringt (HAUSV-427).
           #
           # nixpkgs-unstable currently ships the exact Go in go.mod (1.26.5).
           # If the two ever drift, Go's own GOTOOLCHAIN fetches the pinned
@@ -21,7 +22,6 @@
           packages = with pkgs; [
             go
             nodejs_24
-            fish
 
             # Linters kept alongside the toolchain so they are versioned with it
             # rather than living only in a hand-managed ~/go/bin.

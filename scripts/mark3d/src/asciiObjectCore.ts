@@ -4,7 +4,7 @@
 //
 // Upstream: https://canvasui.dev/docs/components/ascii-object
 // Registry:  https://canvasui.dev/r/ascii-object-react.json
-// Re-vendor by re-running scripts/mark3d/build.fish --vendor; do not hand-edit.
+// Re-vendor by re-running scripts/mark3d/build.sh --vendor; do not hand-edit.
 
 
 import * as THREE from "three";

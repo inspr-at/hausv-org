@@ -41,7 +41,7 @@ Feldlimits und fachliche Richtung automatisiert.
 Fuer ebInterface ist labs.ebinterface.at der offizielle Online-Gegencheck: dort
 koennen ebInterface 5.0, 6.0 und 6.1 gegen das XML Schema geprueft werden. Die
 App unterstuetzt derzeit 5.0 und 6.0; 6.1 bleibt ein eigenes Folgeprofil. Der
-reproduzierbare Check `scripts/validate-ebinterface-fixtures.fish` sendet
+reproduzierbare Check `scripts/validate-ebinterface-fixtures.sh` sendet
 ausschließlich die synthetischen Repository-Fixtures. Echte Rechnungen werden
 weder im Produkt noch im Betreibercheck an den externen Validator übertragen.
 

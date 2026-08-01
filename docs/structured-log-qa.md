@@ -10,7 +10,7 @@ Der normale Playwright-Hauptlauf prüft die dabei entstehenden lokalen Logs
 automatisch mit erfundenen Daten:
 
 ```fish
-scripts/qa-main-flows.fish
+scripts/qa-main-flows.sh
 ```
 
 Eine Produktionsstichprobe kann geprüft werden, ohne Logwerte auf dem lokalen

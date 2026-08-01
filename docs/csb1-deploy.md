@@ -257,7 +257,7 @@ Before a release, run the deterministic local release fixtures:
 
 ```fish
 cd ~/Code/hausv-org
-scripts/test-deploy.fish
+scripts/test-deploy.sh
 ```
 
 The fixtures replace `git`, `gh`, `curl`, `ssh`, and `sleep` with local command
@@ -276,8 +276,8 @@ Commit and push the release. Then run the read-only preflight before the actual
 release:
 
 ```fish
-scripts/deploy.fish --dry-run
-scripts/deploy.fish
+scripts/deploy.sh --dry-run
+scripts/deploy.sh
 ```
 
 Both commands fail closed unless all of these statements are true:
@@ -388,7 +388,7 @@ The visible app version is `SEMVER (git-hash)`. Semver is sourced from
 ### Git release tags
 
 Git source tags are immutable, post-deployment evidence. Only after
-`scripts/deploy.fish` has completed every production check, create an annotated
+`scripts/deploy.sh` has completed every production check, create an annotated
 `v<VERSION>` tag on the exact deployed commit and push that tag. Never tag a
 failed candidate, move or reuse an existing release tag, or backfill a
 historical gap without reliable deployment evidence. Git tags are

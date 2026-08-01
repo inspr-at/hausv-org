@@ -8,7 +8,7 @@ Kartenkacheln von einem öffentlichen Dienst.
 Der vollständige lokale Lauf bleibt das umfassende Browser-Regressionsgate:
 
 ```fish
-scripts/qa-main-flows.fish
+scripts/qa-main-flows.sh
 ```
 
 Der Lauf:
@@ -59,7 +59,7 @@ lokalen Daten:
 
 Das private Repository bietet im aktuellen GitHub-Tarif weder Branch Protection
 noch Rulesets; Push oder Merge werden daher nicht von GitHub selbst gesperrt.
-Verbindlich ist das Gate trotzdem für Produktion: `scripts/deploy.fish`
+Verbindlich ist das Gate trotzdem für Produktion: `scripts/deploy.sh`
 akzeptiert ausschließlich einen vollständig grünen `CI`-Push-Lauf auf
 Blacksmith für exakt den auszurollenden Commit. Ein roter Browserjob verhindert
 damit fail-closed das Deployment. Der vollständige Releasevertrag steht in
@@ -70,7 +70,7 @@ Der gleiche Lauf lässt sich lokal so reproduzieren:
 ```fish
 set -lx HV_QA_CI_CORE true
 set -lx HV_QA_ARTIFACT_DIR ./tmp/browser-role-qa
-scripts/qa-main-flows.fish
+scripts/qa-main-flows.sh
 ```
 
 Das Artefaktverzeichnis enthält Build-, Fake-Home-Assistant-, App-,
@@ -86,7 +86,7 @@ Der Fehlerpfad der Artefakterzeugung kann lokal bewusst ausgelöst werden:
 set -lx HV_QA_CI_CORE true
 set -lx HV_QA_FAILURE_PROBE true
 set -lx HV_QA_ARTIFACT_DIR ./tmp/browser-role-qa-failure
-scripts/qa-main-flows.fish
+scripts/qa-main-flows.sh
 ```
 
 Dieser Prüflauf muss fehlschlagen. `HV_QA_FAILURE_PROBE` ist ausschließlich für
@@ -115,7 +115,7 @@ Für einen abweichenden Port:
 
 ```fish
 set -lx HV_QA_PORT 8125
-scripts/qa-main-flows.fish
+scripts/qa-main-flows.sh
 ```
 
 Wenn Go nicht im `PATH` liegt, findet der Runner unter Nix automatisch die in

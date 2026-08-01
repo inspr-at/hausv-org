@@ -78,13 +78,8 @@ jobs:
           cache: npm
           cache-dependency-path: scripts/snapshot/package-lock.json
 
-      - name: Install fish
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends fish
-
       - name: Verify fail-closed release contract
-        run: fish scripts/test-deploy.fish
+        run: bash scripts/test-deploy.sh
 
       - name: Check supply-chain pins
         run: python3 scripts/check-supply-chain-pins.py
@@ -103,7 +98,7 @@ jobs:
           CI: "true"
           HV_QA_CI_CORE: "true"
           HV_QA_ARTIFACT_DIR: ${{ github.workspace }}/artifacts/browser-role-qa
-        run: fish scripts/qa-main-flows.fish
+        run: bash scripts/qa-main-flows.sh
 
       - name: Upload browser failure evidence
         if: failure()

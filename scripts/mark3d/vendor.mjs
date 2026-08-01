@@ -77,7 +77,7 @@ for (const { registry, boundary, out } of COMPONENTS) {
 //
 // Upstream: https://canvasui.dev/docs/components/${registry.replace("-react", "")}
 // Registry:  ${url}
-// Re-vendor by re-running scripts/mark3d/build.fish --vendor; do not hand-edit.
+// Re-vendor by re-running scripts/mark3d/build.sh --vendor; do not hand-edit.
 
 `;
   writeFileSync(new URL(`./src/${out}`, import.meta.url), header + body);
