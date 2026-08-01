@@ -1,7 +1,7 @@
-#!/usr/bin/env fish
+#!/usr/bin/env bash
 # Build the rotating 3D landing mark into internal/web/assets/hausv-mark-3d.js.
 #
-#   build.fish [--vendor]
+#   build.sh [--vendor]
 #
 # --vendor refetches the Canvas UI AsciiObject component from its registry and
 # re-strips the React wrapper before bundling. Without it, the vendored copy in
@@ -14,24 +14,28 @@
 # Output is ESM, NOT IIFE. three.js reads import.meta.url at module scope to
 # resolve its Draco decoder; bundled as IIFE that becomes `new URL(path,
 # undefined)`, which throws "Invalid URL" before any of our code runs.
+#
+# Targets bash 3.2 so it runs on a stock macOS /bin/bash as well as on CI.
 
-set -l here (dirname (status --current-filename))
-set -l repo (git -C $here rev-parse --show-toplevel)
-set -l out $repo/internal/web/assets/hausv-mark-3d.js
+set -u
 
-# `builtin cd`, because an interactive fish config may shadow cd with zoxide,
-# which does not exist inside a script.
-builtin cd $here; or exit 1
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repo=$(git -C "$here" rev-parse --show-toplevel)
+out=$repo/internal/web/assets/hausv-mark-3d.js
 
-if not test -d node_modules
+cd "$here" || exit 1
+
+if [ ! -d node_modules ]; then
     echo "==> installing build deps"
-    npm install --no-audit --no-fund; or exit 1
-end
+    npm install --no-audit --no-fund || exit 1
+fi
 
-if contains -- --vendor $argv
-    echo "==> refetching Canvas UI AsciiObject"
-    node vendor.mjs; or exit 1
-end
+case " ${*:-} " in
+    *" --vendor "*)
+        echo "==> refetching Canvas UI AsciiObject"
+        node vendor.mjs || exit 1
+        ;;
+esac
 
 echo "==> bundling"
 npx esbuild src/hausvMark3d.ts \
@@ -39,9 +43,11 @@ npx esbuild src/hausvMark3d.ts \
     --format=esm \
     --minify \
     --target=es2020 \
-    --outfile=$out \
-    --log-level=warning; or exit 1
+    --outfile="$out" \
+    --log-level=warning || exit 1
 
-set -l raw (stat -f %z $out)
-set -l gz (gzip -c $out | wc -c | string trim)
-printf "==> %s\n    %s KB raw, %s KB gzipped\n" $out (math "round($raw / 1024)") (math "round($gz / 1024)")
+# wc rather than `stat -f %z`: the BSD form is macOS-only and would break the
+# moment this runs on a Linux runner.
+raw=$(wc -c < "$out" | tr -d ' ')
+gz=$(gzip -c "$out" | wc -c | tr -d ' ')
+printf "==> %s\n    %s KB raw, %s KB gzipped\n" "$out" "$(( (raw + 512) / 1024 ))" "$(( (gz + 512) / 1024 ))"

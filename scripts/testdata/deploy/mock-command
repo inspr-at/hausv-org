@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic command doubles for scripts/test-deploy.fish."""
+"""Deterministic command doubles for scripts/test-deploy.sh."""
 
 from __future__ import annotations
 
@@ -188,16 +188,12 @@ def unwrap_remote_sh(remote: str) -> tuple[str, bool]:
     if not remote.startswith(prefix):
         return remote, False
     escaped = remote[len(prefix) :]
-    if len(escaped) >= 2 and escaped.startswith("'") and escaped.endswith("'"):
-        # `scripts/deploy.fish` escapes for csb1's fish login shell. Within a
-        # fish single-quoted argument, backslash only needs to preserve a
-        # literal backslash or quote for the subsequent /bin/sh invocation.
-        return escaped[1:-1].replace("\\'", "'").replace("\\\\", "\\"), True
     try:
-        # Fish 3.7 prefers a backslash-escaped script argument while Fish 4.x
-        # commonly emits the single-quoted form above. Both represent one
-        # argument to `/bin/sh -c`; decode and validate that contract instead
-        # of coupling the fixture to one Fish formatter version.
+        # `scripts/deploy.sh` quotes the script POSIX-style, including the
+        # '\'' idiom for an embedded quote. csb1's login shell is fish, which
+        # decodes that identically. shlex is the exact inverse; what matters is
+        # the contract — the script must arrive as exactly ONE argument to
+        # `/bin/sh -c` — not which shell formatted it.
         fields = shlex.split(escaped, posix=True)
     except ValueError:
         return escaped, True
