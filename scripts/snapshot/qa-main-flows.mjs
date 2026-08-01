@@ -335,7 +335,7 @@ async function assertPublicLanding(viewport) {
   process.stdout.write(`  ✓ Öffentliche Startseite · ${viewport.name} · ${metrics.height}px\n`);
 }
 
-async function createIssue(email, title) {
+async function createIssue(email, title, { verifyResidentAttachmentTarget = false } = {}) {
   const context = await newContext({ width: 1440, height: 900 });
   const page = await localLogin(context, email);
   await page.goto(`${baseURL}/app/anliegen`, { waitUntil: 'networkidle' });
@@ -345,18 +345,131 @@ async function createIssue(email, title) {
   // ist auf einer section undefined und liefe sonst in einen Klick ins Leere.
   const panel = page.locator('#issue-new');
   if (await panel.evaluate((element) => element.tagName === 'DETAILS' && !element.open)) {
-    await panel.locator('summary').click();
+    await panel.locator(':scope > summary').click();
   }
   const form = page.locator('form[data-issue-wizard]');
   await form.locator('textarea[name="body"]').fill(`${title}. Bitte im Haus prüfen.`);
-  await form.locator('[data-issue-step="1"] [data-issue-next]').click();
   await form.locator('input[name="location_detail"]').fill('Keller, neben dem Fahrradraum');
-  await form.locator('[data-issue-step="2"] [data-issue-next]').click();
-  await form.locator('input[name="title"]').fill(title);
+  if (verifyResidentAttachmentTarget) {
+    await form.locator('input[type="file"][name="attachments"]').setInputFiles({
+      name: 'qa-anliegen.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4\n% headless resident attachment target\n'),
+    });
+  }
+  await form.locator('[data-issue-step="describe"] [data-issue-next]').click();
   await form.locator('button[type="submit"]').click();
-  await page.waitForURL(/\/app\/anliegen/);
+  await page.waitForURL(/\/app\/anliegen\/.+\?created=1$/);
   if (!(await page.getByText(title, { exact: true }).count())) fail(`Anliegen „${title}“ wurde nicht sichtbar gespeichert`);
+  if (verifyResidentAttachmentTarget) {
+    const deleteTargets = page.locator('.issue-resident-report .attachment-delete button');
+    if (await deleteTargets.count() !== 1) {
+      fail(`Bewohner-Anhang: genau ein Entfernen-Ziel erwartet, gefunden ${await deleteTargets.count()}`);
+    }
+    const target = await deleteTargets.first().boundingBox();
+    if (!target || target.width < 44 || target.height < 44) {
+      fail(`Bewohner-Anhang: Entfernen-Ziel ist ${target ? `${target.width}×${target.height}px` : 'nicht sichtbar'} statt mindestens 44×44px`);
+    }
+  }
   await closeContext(context);
+}
+
+async function assertResidentIssueProgressiveEnhancement() {
+  const authContext = await newContext({ width: 390, height: 844 });
+  await localLogin(authContext, 'resident@example.com');
+  const storageState = await authContext.storageState();
+  await closeContext(authContext);
+
+  const noJSContext = await trackedContext({
+    storageState,
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 1,
+    locale: 'de-AT',
+    timezoneId: 'Europe/Vienna',
+    javaScriptEnabled: false,
+  });
+  const noJS = await noJSContext.newPage();
+  await noJS.goto(`${baseURL}/app/anliegen?new=1#issue-new`, { waitUntil: 'domcontentloaded' });
+  const fallback = await noJS.locator('form[data-issue-wizard]').evaluate((form) => ({
+    noValidate: form.noValidate,
+    visibleSteps: [...form.querySelectorAll('[data-issue-step]')].filter((step) => step.getClientRects().length).length,
+    reviewVisible: Boolean(form.querySelector('.issue-review-enhanced')?.getClientRects().length),
+    nextVisible: Boolean(form.querySelector('[data-issue-next]')?.getClientRects().length),
+    submitVisible: Boolean(form.querySelector('.wizard-submit')?.getClientRects().length),
+    exitVisible: Boolean(form.querySelector('.wizard-exit')?.getClientRects().length),
+    titleRequired: form.elements.title.required,
+  }));
+  if (fallback.noValidate || fallback.visibleSteps !== 2 || fallback.reviewVisible || fallback.nextVisible ||
+      !fallback.submitVisible || !fallback.exitVisible || fallback.titleRequired) {
+    fail(`Anliegen ohne JavaScript ist nicht der vollständige Formular-Fallback: ${JSON.stringify(fallback)}`);
+  }
+  await noJS.locator('textarea[name="body"]').fill('JS-freier Meldeweg funktioniert ohne Skript. Bitte prüfen.');
+  await Promise.all([
+    noJS.waitForURL(/\/app\/anliegen\/.+\?created=1$/),
+    noJS.locator('.wizard-submit').click(),
+  ]);
+  if (!(await noJS.getByRole('heading', { name: 'JS-freier Meldeweg funktioniert ohne Skript' }).count()) ||
+      !(await noJS.getByText('Anliegen gemeldet', { exact: true }).count())) {
+    fail('Anliegen ohne JavaScript wurde nicht mit Server-Titel direkt bestätigt');
+  }
+  await closeContext(noJSContext);
+
+  const enhancedContext = await trackedContext({
+    storageState,
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 1,
+    locale: 'de-AT',
+    timezoneId: 'Europe/Vienna',
+    reducedMotion: 'reduce',
+  });
+  await enhancedContext.addInitScript(() => {
+    window.__issueScrollCalls = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (options) {
+      window.__issueScrollCalls.push(options || null);
+      return original.call(this, options);
+    };
+  });
+  const enhanced = await enhancedContext.newPage();
+  await enhanced.goto(`${baseURL}/app/anliegen?new=1#issue-new`, { waitUntil: 'networkidle' });
+  const form = enhanced.locator('form[data-issue-wizard]');
+  await form.locator('[data-issue-next]').click();
+  const error = form.locator('#issue-body-error');
+  if (!(await error.isVisible()) || await error.textContent() !== 'Bitte beschreiben Sie kurz, worum es geht.' ||
+      await form.locator('textarea[name="body"]').getAttribute('aria-invalid') !== 'true') {
+    fail('Anliegen zeigt die deutsche Inline-Validierung nicht eindeutig');
+  }
+  await form.locator('textarea[name="body"]').fill('z. B. flackert das Licht im Keller. Bitte prüfen.');
+  await form.locator('[data-issue-next]').click();
+  await enhanced.waitForURL((url) => url.searchParams.get('step') === 'review');
+  const suggestedTitle = await form.locator('input[name="title"]').getAttribute('placeholder');
+  if (suggestedTitle !== 'z. B. flackert das Licht im Keller') {
+    fail(`Anliegen kürzt eine deutsche Abkürzung falsch: ${JSON.stringify(suggestedTitle)}`);
+  }
+  await form.locator('[data-issue-back]').click();
+  await enhanced.waitForURL((url) => url.searchParams.get('step') === 'describe');
+  await form.locator('textarea[name="body"]').fill('Browser-Verlauf bewahrt diesen Entwurf. Bitte prüfen.');
+  await form.locator('input[name="location_detail"]').fill('Keller');
+  await form.locator('[data-issue-next]').click();
+  await enhanced.waitForURL((url) => url.searchParams.get('step') === 'review');
+  if (!(await form.locator('[data-issue-step="review"]').isVisible())) fail('Anliegen-Prüfschritt fehlt');
+  await enhanced.goBack();
+  if (!(await form.locator('[data-issue-step="describe"]').isVisible()) ||
+      await form.locator('textarea[name="body"]').inputValue() !== 'Browser-Verlauf bewahrt diesen Entwurf. Bitte prüfen.' ||
+      await form.locator('input[name="location_detail"]').inputValue() !== 'Keller') {
+    fail('Browser-Zurück verliert den Anliegen-Entwurf');
+  }
+  await enhanced.goForward();
+  if (!(await form.locator('[data-issue-step="review"]').isVisible()) ||
+      await form.locator('textarea[name="body"]').inputValue() !== 'Browser-Verlauf bewahrt diesen Entwurf. Bitte prüfen.') {
+    fail('Browser-Vorwärts stellt den Anliegen-Prüfschritt nicht wieder her');
+  }
+  const motionCalls = await enhanced.evaluate(() => window.__issueScrollCalls || []);
+  if (!motionCalls.length || motionCalls.some((call) => call && call.behavior === 'smooth')) {
+    fail(`Anliegen ignoriert reduzierte Bewegung: ${JSON.stringify(motionCalls)}`);
+  }
+  await closeContext(enhancedContext);
+  process.stdout.write('  ✓ Anliegen · zwei Schritte, Browser-Verlauf und vollständiger No-JS-Fallback\n');
 }
 
 function futureLocalInput(daysAhead, hour) {
@@ -1471,7 +1584,8 @@ try {
         inviteHelper: true,
       });
     }
-    await createIssue('resident@example.com', 'QA Bewohneranliegen');
+    await assertResidentIssueProgressiveEnhancement();
+    await createIssue('resident@example.com', 'QA Bewohneranliegen', { verifyResidentAttachmentTarget: true });
     if (!ciCore) {
       await createIssue('owner@example.com', 'QA Eigentümeranliegen');
       await seedManagedContent();

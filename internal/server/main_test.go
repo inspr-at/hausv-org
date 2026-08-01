@@ -3100,7 +3100,7 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 			t.Fatalf("portal must not contain placeholder copy %q", forbidden)
 		}
 	}
-	for _, want := range []string{"Was ist als Nächstes zu tun?", "Heute ist nichts zu erledigen", "Alles im Blick", germanDateLong(time.Now().In(time.Local))} {
+	for _, want := range []string{"Was ist als Nächstes zu tun?", "Heute ist nichts zu erledigen", "Alles im Blick", `class="portal-quiet-action"`, `aria-label="Neues Anliegen melden"`, germanDateLong(time.Now().In(time.Local))} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("calm portal should contain %q", want)
 		}
@@ -3116,6 +3116,9 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 	}
 	if !strings.Contains(body, `class="home-hero"`) || strings.Contains(body, `class="banner"`) {
 		t.Fatal("portal should use the integrated home hero instead of the old banner")
+	}
+	if got := strings.Count(body, `href="/app/anliegen?new=1#issue-new"`); got != 1 {
+		t.Fatalf("calm portal should expose one quiet create path, got %d", got)
 	}
 	for _, want := range []string{`.home-primary-task {`, `.home-follow-row {`, `.home-utilities {`} {
 		if !strings.Contains(body, want) {
@@ -3460,6 +3463,80 @@ func TestIssuesPageRendersResidentFormAndNav(t *testing.T) {
 	}
 }
 
+func TestIssueTitleFallbackIsServerOwnedAndBounded(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want string
+	}{
+		{name: "first sentence", body: "  Licht im Keller defekt. Bitte prüfen.  ", want: "Licht im Keller defekt"},
+		{name: "question", body: "Warum läuft die Lüftung? Bitte um Rückmeldung.", want: "Warum läuft die Lüftung"},
+		{name: "spaced abbreviation", body: "z. B. flackert das Licht im Keller. Bitte prüfen.", want: "z. B. flackert das Licht im Keller"},
+		{name: "compact abbreviation", body: "z.B. bleibt das Licht im Keller an. Bitte prüfen.", want: "z.B. bleibt das Licht im Keller an"},
+		{name: "normalised whitespace", body: "Tür\n  im   Hof klemmt", want: "Tür im Hof klemmt"},
+		{name: "unicode hard cut", body: strings.Repeat("ä", 90), want: strings.Repeat("ä", 75) + "…"},
+		{name: "empty", body: " \n\t ", want: ""},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := issueTitleFromBody(test.body); got != test.want {
+				t.Fatalf("issueTitleFromBody() = %q, want %q", got, test.want)
+			}
+			if got := len([]rune(issueTitleFromBody(test.body))); got > 76 {
+				t.Fatalf("derived title has %d runes, want at most 76", got)
+			}
+		})
+	}
+
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	created := authedMultipartFilesRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+		"category":        "Frage",
+		"location_type":   issueLocationUnit,
+		"location_detail": "Vorraum",
+		"body":            "Warum läuft die Lüftung? Bitte um Rückmeldung.",
+	}, nil)
+	if created.Code != http.StatusSeeOther {
+		t.Fatalf("create without title status = %d", created.Code)
+	}
+	issues := a.issueStore.ListAuthor("jhw22", "resident@example.com")
+	if len(issues) != 1 || issues[0].Title != "Warum läuft die Lüftung" {
+		t.Fatalf("server-derived issue = %+v", issues)
+	}
+	if loc := created.Header().Get("Location"); loc != "/app/anliegen/"+issues[0].ID+"?created=1" {
+		t.Fatalf("direct detail redirect = %q", loc)
+	}
+
+	limitTitle := strings.Repeat("T", 140)
+	limits := authedMultipartFilesRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+		"category":      "Vorschlag",
+		"location_type": issueLocationUnit,
+		"title":         limitTitle,
+		"body":          strings.Repeat("B", 4000),
+	}, nil)
+	if limits.Code != http.StatusSeeOther {
+		t.Fatalf("exact issue limits status = %d", limits.Code)
+	}
+	foundLimit := false
+	for _, issue := range a.issueStore.ListAuthor("jhw22", "resident@example.com") {
+		if issue.Title == limitTitle && len([]rune(issue.Body)) == 4000 {
+			foundLimit = true
+			break
+		}
+	}
+	if !foundLimit {
+		t.Fatal("exact 140-rune title and 4000-rune body were not preserved")
+	}
+
+	invalid := authedMultipartFilesRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+		"category":      "Frage",
+		"location_type": issueLocationUnit,
+		"body":          strings.Repeat("x", 4001),
+	}, nil)
+	if invalid.Code != http.StatusSeeOther || invalid.Header().Get("Location") != "/app/anliegen?issue=invalid" {
+		t.Fatalf("overlong body response = %d %q", invalid.Code, invalid.Header().Get("Location"))
+	}
+}
+
 func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	attachmentDir := filepath.Join(t.TempDir(), "issue-attachments")
@@ -3485,7 +3562,7 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	if rr.Code != http.StatusSeeOther {
 		t.Fatalf("submit issue status = %d, want redirect", rr.Code)
 	}
-	if loc := rr.Header().Get("Location"); !strings.HasPrefix(loc, "/app/anliegen?issue=created#issue-") {
+	if loc := rr.Header().Get("Location"); !strings.HasPrefix(loc, "/app/anliegen/") || !strings.HasSuffix(loc, "?created=1") {
 		t.Fatalf("redirect = %q", loc)
 	}
 	issues := store.ListAuthor("jhw22", "resident@example.com")
@@ -3493,6 +3570,9 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 		t.Fatalf("stored issues = %+v", issues)
 	}
 	issue := issues[0]
+	if loc := rr.Header().Get("Location"); loc != "/app/anliegen/"+issue.ID+"?created=1" {
+		t.Fatalf("redirect = %q, want direct resident detail", loc)
+	}
 	if issue.Category != "Reparatur" || issue.LocationType != issueLocationCommon || issue.LocationDetail != "Stiegenhaus" || issue.Status != issueStatusOpen {
 		t.Fatalf("stored issue fields = %+v", issue)
 	}
@@ -3532,9 +3612,12 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 		t.Fatalf("thumbnail content type = %q", ct)
 	}
 
-	page := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issue.ID)
-	if !strings.Contains(page.Body.String(), "Licht flackert") || !strings.Contains(page.Body.String(), "1 Foto") || !strings.Contains(page.Body.String(), `data-lightbox-src`) {
+	page := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issue.ID+"?created=1")
+	if !strings.Contains(page.Body.String(), "Anliegen gemeldet") || !strings.Contains(page.Body.String(), "Ihre Meldung") || !strings.Contains(page.Body.String(), "Licht flackert") || !strings.Contains(page.Body.String(), "1 Foto") || !strings.Contains(page.Body.String(), `data-lightbox-src`) {
 		t.Fatalf("issues page should show submitted issue with photo count:\n%s", page.Body.String())
+	}
+	if strings.Contains(page.Body.String(), "Neuigkeiten zum Anliegen") {
+		t.Fatal("a new issue must not render an empty updates disclosure")
 	}
 }
 
@@ -3921,7 +4004,7 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 	}
 	detailURL := "/app/anliegen/" + issue.ID
 	detail := authedRequest(t, a, "resident@example.com", detailURL).Body.String()
-	for _, want := range []string{"Rückfrage der Verwaltung", "In welchem Stockwerk ist das Licht ausgefallen?", `aria-label="Ihre Antwort"`, "Antwort senden", "Bisheriger Verlauf"} {
+	for _, want := range []string{"Rückfrage der Verwaltung", "In welchem Stockwerk ist das Licht ausgefallen?", `aria-label="Ihre Antwort"`, "Antwort senden", "Neuigkeiten zum Anliegen"} {
 		if !strings.Contains(detail, want) {
 			t.Fatalf("resident answer task missing %q", want)
 		}

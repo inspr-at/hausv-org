@@ -102,6 +102,7 @@
       var name = document.createElement("span");
       name.className = "attachment-picker-name";
       name.textContent = file.name || "Datei";
+      name.title = file.name || "Datei";
       var meta = document.createElement("span");
       meta.className = "attachment-picker-meta";
       meta.textContent = shortFileType(file) + " · " + formatBytes(file.size || 0);

@@ -1412,7 +1412,15 @@ const PageTemplates = `
     .home-eyebrow { color: var(--gold-ink); font-size: 11px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
     .portal-section { min-width: 0; display: grid; gap: 14px; }
     .portal-section-head { min-width: 0; display: grid; gap: 6px; align-items: end; border-bottom: 1px solid var(--line); padding-bottom: 11px; }
+    .portal-section-head.has-action { grid-template-columns: minmax(0,1fr) auto; column-gap: 6px; }
     .portal-section-head h2 { margin-top: 4px; font-size: 22px; }
+    .portal-quiet-action { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; align-self: end; border: 1px solid rgba(32,37,31,.14); border-radius: var(--radius-pill); padding: 7px 12px 7px 8px; color: var(--muted); background: rgba(255,254,251,.46); font-size: 11px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+    .portal-quiet-action > span { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; color: var(--gold-ink); background: rgba(200,153,63,.13); font-size: 18px; line-height: 1; }
+    .portal-quiet-action:hover, .portal-quiet-action:focus-visible { border-color: rgba(200,153,63,.52); color: var(--ink); background: var(--panel); }
+    @media (max-width: 430px) {
+      .portal-section-head.has-action { grid-template-columns: minmax(0,1fr); }
+      .portal-quiet-action { justify-self: end; }
+    }
     .home-primary-task { min-width: 0; display: grid; grid-template-columns: 48px minmax(0,1fr) auto; gap: 18px; align-items: center; border: 1px solid rgba(47,107,74,.34); border-radius: var(--radius-sm); padding: 22px 24px; background: linear-gradient(135deg, rgba(47,107,74,.09), rgba(255,254,251,.98) 62%); box-shadow: var(--shadow-panel); }
     .home-task-number { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--ink); font-family: var(--font-serif); font-size: 22px; font-weight: 700; }
     .home-task-copy { min-width: 0; }
@@ -1687,6 +1695,7 @@ const PageTemplates = `
     .attachment-picker-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .attachment-picker-copy { min-width: 0; display: grid; gap: 3px; }
     .attachment-picker-name { min-width: 0; color: var(--ink); font-size: 13px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+    .issue-form .attachment-picker-name { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
     .attachment-picker-meta { color: var(--soft); font-size: 11.5px; font-weight: 700; }
     .attachment-picker-remove { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(32,37,31,.16); border-radius: var(--radius-xs); background: var(--panel); color: var(--ink); font: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
     .attachment-picker-remove:hover { border-color: #9e2a2b; color: #9e2a2b; }
@@ -1695,12 +1704,19 @@ const PageTemplates = `
     .attachment-picker.is-uploading .attachment-picker-progress { display: block; }
     @keyframes upload-progress { 0% { transform: translateX(-120%); } 100% { transform: translateX(260%); } }
     .issue-form .hint { margin-top: 2px; color: var(--soft); font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+    .issue-create-panel { scroll-margin-top: 80px; }
     .issue-wizard-step { display: grid; gap: 18px; min-width: 0; border: 0; padding: 0; }
     .issue-wizard-step[hidden] { display: none; }
     .issue-wizard-heading { display: grid; gap: 6px; }
     .issue-wizard-progress { color: var(--gold-ink); font-size: 12px; font-weight: 850; letter-spacing: .06em; }
     .issue-wizard-heading h3 { font-family: var(--font-serif); font-size: clamp(30px,4vw,42px); line-height: 1.04; }
     .issue-wizard-heading p { color: var(--muted); font-size: 15px; line-height: 1.45; }
+    .issue-safety-note { display: block; border-left: 3px solid var(--gold); border-radius: 0 var(--radius-xs) var(--radius-xs) 0; padding: 10px 12px; background: rgba(200,153,63,.08); color: var(--muted); font-size: 12.5px; font-weight: 650; line-height: 1.45; }
+    .issue-safety-note a { min-height: 44px; display: inline-flex; align-items: center; margin-block: -10px; color: var(--ink); font-weight: 850; text-underline-offset: 3px; }
+    .issue-field-error { color: #8f2a2b; font-size: 12.5px; font-weight: 750; letter-spacing: 0; line-height: 1.4; text-transform: none; }
+    .issue-field-error[hidden] { display: none; }
+    .issue-form [aria-invalid="true"] { border-color: #a43a3b; box-shadow: 0 0 0 2px rgba(164,58,59,.11); }
+    .issue-category-options[aria-invalid="true"], .issue-location-options[aria-invalid="true"] { border-color: #a43a3b; box-shadow: 0 0 0 2px rgba(164,58,59,.11); }
     .issue-category { display: grid; gap: 8px; }
     .issue-category > span { color: var(--ink); font-size: 13px; font-weight: 800; }
     .issue-category-options { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border: 1px solid #e2dac9; border-radius: var(--radius-sm); overflow: hidden; }
@@ -1720,12 +1736,24 @@ const PageTemplates = `
     .issue-location-choice:has(input:checked) { border-color: rgba(200,153,63,.72); background: rgba(200,153,63,.08); box-shadow: inset 0 0 0 1px rgba(200,153,63,.46); }
     .issue-location-choice:has(input:focus-visible) { outline: 3px solid rgba(200,153,63,.42); outline-offset: 2px; }
     .issue-review { display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); }
+    .issue-review-enhanced { display: none; }
+    .issue-form.is-enhanced .issue-review-enhanced { display: grid; }
     .issue-review-row { display: grid; grid-template-columns: 132px minmax(0,1fr); gap: 16px; padding: 13px 15px; }
     .issue-review-row + .issue-review-row { border-top: 1px solid var(--line); }
     .issue-review-row dt { color: var(--muted); font-size: 12px; font-weight: 750; }
     .issue-review-row dd { min-width: 0; color: var(--ink); font-size: 13px; font-weight: 750; line-height: 1.45; overflow-wrap: anywhere; }
+    .issue-review-copy { display: grid; gap: 8px; }
+    .issue-review-copy-text.is-collapsed { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 5; }
+    .issue-review-expand { width: max-content; min-height: 44px !important; border: 0 !important; padding: 0 !important; background: transparent !important; color: var(--gold-ink) !important; font-size: 12px !important; text-decoration: underline; text-underline-offset: 3px; }
+    .issue-review-expand[hidden] { display: none !important; }
+    .issue-title-option { border-top: 1px solid var(--line); padding-top: 2px; }
+    .issue-title-option > summary { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; color: var(--ink); font-size: 13px; font-weight: 800; }
+    .issue-title-option > summary::-webkit-details-marker { display: none; }
+    .issue-title-option > summary::after { content: "+"; color: var(--gold-ink); font-size: 18px; }
+    .issue-title-option[open] > summary::after { content: "−"; }
+    .issue-title-option > label { margin-top: 10px; }
     .issue-wizard-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 2px; }
-    .issue-wizard-actions .wizard-back, .issue-wizard-actions .wizard-cancel { min-height: 46px; border-color: transparent; background: transparent; color: var(--ink); padding-inline: 2px; text-decoration: underline; text-underline-offset: 4px; }
+    .issue-wizard-actions .wizard-back, .issue-wizard-actions .wizard-cancel, .issue-wizard-actions .wizard-exit { min-height: 46px; display: inline-flex; align-items: center; border-color: transparent; background: transparent; color: var(--ink); padding-inline: 2px; text-decoration: underline; text-underline-offset: 4px; }
     .issue-wizard-actions .wizard-next, .issue-wizard-actions .wizard-submit { min-width: 220px; padding-inline: 28px; }
     .issue-form button { min-height: 46px; border: 1px solid var(--ink); border-radius: var(--radius-sm); background: var(--ink); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
     .issue-form button:hover { background: #2c3329; }
@@ -1895,7 +1923,7 @@ const PageTemplates = `
     .issue-triage-context { display: grid; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 24px; }
     .issue-triage-context h1 { font-size: clamp(38px,5vw,58px); }
     .issue-triage-context > p { max-width: 720px; color: var(--muted); font-size: 16px; line-height: 1.6; }
-    .issue-triage-back { width: max-content; color: var(--muted); font-size: 13px; font-weight: 800; text-decoration: none; }
+    .issue-triage-back { width: max-content; min-height: 44px; display: inline-flex; align-items: center; color: var(--muted); font-size: 13px; font-weight: 800; text-decoration: none; }
     .issue-triage-back:hover { color: var(--ink); }
     .issue-triage-facts { display: flex; flex-wrap: wrap; gap: 7px 22px; color: var(--muted); font-size: 13.5px; font-weight: 700; }
     .issue-triage-facts span { position: relative; }
@@ -1943,9 +1971,13 @@ const PageTemplates = `
     .issue-resolution-propose small { color: var(--muted); }
     .issue-resolution-propose button { min-height: 44px; }
     .issue-resident-page { width: min(980px,100%); gap: 28px; padding-bottom: 48px; }
+    .issue-created-note { width: min(780px,100%); justify-self: center; display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 3px 11px; align-items: center; border: 1px solid rgba(47,107,74,.26); border-radius: var(--radius-sm); padding: 13px 16px; background: rgba(47,107,74,.07); color: var(--leaf); }
+    .issue-created-note > span { grid-row: 1 / span 2; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--leaf); color: #fff; font-weight: 900; }
+    .issue-created-note strong { font-size: 14px; }
+    .issue-created-note small { color: var(--muted); font-size: 12.5px; }
     .issue-resident-context { display: grid; gap: 14px; border-bottom: 1px solid var(--line); padding-bottom: 24px; }
     .issue-resident-title-row { display: flex; align-items: end; justify-content: space-between; gap: 22px; }
-    .issue-resident-title-row h1 { font-size: clamp(38px,5vw,58px); }
+    .issue-resident-title-row h1 { font-size: clamp(38px,5vw,58px); text-wrap: balance; overflow-wrap: anywhere; }
     .issue-resident-title-row p { margin-top: 8px; color: var(--muted); font-weight: 650; }
     .issue-resident-task { width: min(780px,100%); justify-self: center; display: grid; gap: 22px; border: 1px solid rgba(32,37,31,.13); border-radius: 16px; padding: clamp(24px,4vw,40px); background: var(--panel); box-shadow: 0 18px 50px rgba(38,34,25,.08); }
     .issue-resident-task h2 { max-width: 680px; font-size: clamp(26px,3.4vw,38px); line-height: 1.2; }
@@ -1954,12 +1986,22 @@ const PageTemplates = `
     .issue-answer-form > label:first-of-type { display: grid; gap: 8px; color: var(--ink); font-size: 14px; font-weight: 800; }
     .issue-answer-form textarea { min-height: 150px; resize: vertical; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 14px; background: #fffefb; color: var(--ink); font: 500 15px/1.5 var(--font-sans); }
     .issue-answer-form > button { min-height: 48px; border: 1px solid var(--ink); border-radius: var(--radius-xs); background: var(--ink); color: white; font: inherit; font-weight: 850; cursor: pointer; }
-    .issue-resident-task.waiting { grid-template-columns: auto minmax(0,1fr); align-items: start; }
-    .issue-resident-task.waiting > .kicker { grid-column: 1 / -1; }
+    .issue-resident-task.waiting { grid-template-columns: minmax(0,1fr); align-items: start; }
+    .issue-resident-task.done { grid-template-columns: auto minmax(0,1fr); align-items: start; }
     .issue-resolution-actions { display: flex; align-items: center; gap: 12px; }
     .issue-resolution-actions form { margin: 0; }
     .issue-resolution-actions button { min-height: 46px; border: 1px solid var(--ink); border-radius: var(--radius-xs); padding: 10px 20px; background: var(--ink); color: white; font: inherit; font-weight: 850; cursor: pointer; }
     .issue-resolution-actions button.ghost { background: transparent; color: var(--ink); }
+    .issue-resident-report { width: min(780px,100%); justify-self: center; display: grid; gap: 15px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 20px; background: var(--panel); box-shadow: var(--shadow-panel); }
+    .issue-resident-report-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .issue-resident-report-head h2 { font-size: 22px; }
+    .issue-resident-report-meta { display: flex; flex-wrap: wrap; gap: 7px; }
+    .issue-resident-report .issue-description p { color: var(--ink); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .issue-resident-report .attachment-delete { top: 2px; right: 2px; }
+    .issue-resident-report .attachment-delete button { position: relative; width: 44px; height: 44px; border-color: transparent; background: transparent; color: transparent; opacity: .7; }
+    .issue-resident-report .attachment-delete button::before { content: "\00d7"; position: absolute; top: 50%; left: 50%; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 999px; background: rgba(255,254,251,.82); color: var(--muted); font-size: 17px; line-height: 1; transform: translate(-50%,-50%); }
+    .issue-resident-report .attachment-delete button:hover, .issue-resident-report .attachment-delete button:focus-visible { border-color: transparent; background: transparent; color: transparent; opacity: 1; }
+    .issue-resident-report .attachment-delete button:hover::before, .issue-resident-report .attachment-delete button:focus-visible::before { background: var(--panel); box-shadow: 0 0 0 1px rgba(158,42,43,.28); color: #9e2a2b; }
     .issue-resident-history { width: min(780px,100%); justify-self: center; border-top: 1px solid var(--line); }
     .issue-resident-history > summary { cursor: pointer; list-style: none; padding: 17px 2px; color: var(--ink); font-size: 14px; font-weight: 850; }
     .issue-resident-history > summary::-webkit-details-marker { display: none; }
@@ -2877,10 +2919,12 @@ const PageTemplates = `
       .issue-resident-page { gap: 20px; padding: 22px 16px 36px; }
       .issue-resident-context { gap: 10px; padding-bottom: 18px; }
       .issue-resident-title-row { align-items: start; flex-direction: column; gap: 12px; }
-      .issue-resident-title-row h1 { font-size: 36px; }
+      .issue-resident-title-row h1 { font-size: clamp(30px,8vw,34px); line-height: 1.05; text-wrap: balance; }
       .issue-resident-task { gap: 19px; border-radius: var(--radius-sm); padding: 22px 16px; }
       .issue-resident-task h2 { font-size: 27px; }
-      .issue-resident-task.waiting { grid-template-columns: 1fr; }
+      .issue-resident-task.waiting, .issue-resident-task.done { grid-template-columns: 1fr; }
+      .issue-resident-report { padding: 17px 15px; }
+      .issue-resident-report-head { align-items: flex-start; flex-direction: column; }
       .issue-resolution-actions { align-items: stretch; flex-direction: column; }
       .issue-resolution-actions form, .issue-resolution-actions button { width: 100%; }
       .event-card { grid-template-columns: 1fr; gap: 11px; padding: 13px; }
@@ -3149,11 +3193,12 @@ const PageTemplates = `
         </section>
 
         <section class="portal-section" aria-labelledby="portal-board-title">
-          <header class="portal-section-head">
+          <header class="portal-section-head{{if .CanCreateResidentIssue}} has-action{{end}}">
             <div>
               <p class="home-eyebrow">Im Haus</p>
               <h2 id="portal-board-title">Der aktuelle Stand</h2>
             </div>
+            {{if .CanCreateResidentIssue}}<a class="portal-quiet-action" href="/app/anliegen?new=1#issue-new" aria-label="Neues Anliegen melden" title="Mangel, Frage oder Vorschlag melden"><span aria-hidden="true">+</span>Anliegen melden</a>{{end}}
           </header>
           <div class="portal-board-grid">
             <article class="portal-card">
@@ -3239,8 +3284,8 @@ const PageTemplates = `
               </div>
               {{end}}
               {{if .CanManageIssues}}<a class="portal-card-action" href="{{.PortalIssuesURL}}">Anliegen bearbeiten <span aria-hidden="true">→</span></a>
-              {{else if .CanCreateResidentIssue}}<a class="portal-card-action" href="/app/anliegen?new=1#issue-new">Anliegen melden <span aria-hidden="true">→</span></a>
-              {{else}}<a class="portal-card-action" href="{{.PortalIssuesURL}}">Anliegen ansehen <span aria-hidden="true">→</span></a>{{end}}
+              {{else if and .CanCreateResidentIssue (or .HasPortalIssues .PortalIssuesInFocus)}}<a class="portal-card-action" href="/app/anliegen">Anliegen ansehen <span aria-hidden="true">→</span></a>
+              {{else if not .CanCreateResidentIssue}}<a class="portal-card-action" href="{{.PortalIssuesURL}}">Anliegen ansehen <span aria-hidden="true">→</span></a>{{end}}
             </article>
           </div>
 
@@ -3785,84 +3830,79 @@ const PageTemplates = `
 {{end}}
 
 {{define "issueCreateForm"}}
-              <form class="issue-form" method="post" action="/app/anliegen" enctype="multipart/form-data" data-issue-wizard>
-                <fieldset class="issue-wizard-step" data-issue-step="1">
+              <form class="issue-form" id="issue-create-form" method="post" action="/app/anliegen" enctype="multipart/form-data" data-issue-wizard>
+                <fieldset class="issue-wizard-step" data-issue-step="describe">
                   <div class="issue-wizard-heading">
-                    <span class="issue-wizard-progress">Schritt 1 von 3</span>
+                    <span class="issue-wizard-progress" data-issue-progress>Schritt 1 von 2</span>
                     <h3>Was ist passiert?</h3>
-                    <p>Beschreiben Sie kurz, worum es geht.</p>
+                    <p>Kurz beschreiben, einordnen und bei Bedarf ein Foto ergänzen.</p>
                   </div>
+                  <p class="issue-safety-note">Akute Gefahr? 112 anrufen. Bei Wasseraustritt zuerst die <a href="/app/kontakte">Hauskontakte</a> öffnen. Erst danach hier melden.</p>
+                  <label for="issue-body">Kurze Beschreibung
+                    <textarea id="issue-body" name="body" maxlength="4000" required aria-describedby="issue-body-error" placeholder="Zum Beispiel: Das Licht im Keller funktioniert nicht mehr."></textarea>
+                    <span class="issue-field-error" id="issue-body-error" role="alert" hidden></span>
+                  </label>
                   <div class="issue-category">
                     <span id="issue-category-label">Art des Anliegens</span>
-                    <div class="issue-category-options" role="radiogroup" aria-labelledby="issue-category-label">
+                    <div class="issue-category-options" role="radiogroup" aria-labelledby="issue-category-label" aria-describedby="issue-category-error">
                       <label class="issue-category-choice"><input type="radio" name="category" value="Reparatur" required checked><span>Reparatur</span></label>
                       <label class="issue-category-choice"><input type="radio" name="category" value="Frage" required><span>Frage</span></label>
                       <label class="issue-category-choice"><input type="radio" name="category" value="Vorschlag" required><span>Vorschlag</span></label>
                       <label class="issue-category-choice"><input type="radio" name="category" value="Sonstiges" required><span>Sonstiges</span></label>
                     </div>
+                    <p class="issue-field-error" id="issue-category-error" role="alert" hidden></p>
                   </div>
-                  <label>Kurze Beschreibung
-                    <textarea name="body" maxlength="4000" required placeholder="Zum Beispiel: Das Licht im Keller funktioniert nicht mehr."></textarea>
-                  </label>
-                  <div class="issue-file-row">
-                    <label>
-                      <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Foto hinzufügen</span></span>
-                    </label>
-                    <span class="hint">Optional · höchstens 10 MB je Datei</span>
-                  </div>
-                  <p class="hint">Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen.</p>
-                  <div class="issue-wizard-actions">
-                    {{if .HasIssues}}<button class="wizard-cancel wizard-only" type="button">Abbrechen</button>{{else}}<span class="issue-wizard-spacer" aria-hidden="true"></span>{{end}}
-                    <button class="wizard-next wizard-only" type="button" data-issue-next>Weiter</button>
-                  </div>
-                </fieldset>
-
-                <fieldset class="issue-wizard-step" data-issue-step="2">
-                  <div class="issue-wizard-heading">
-                    <span class="issue-wizard-progress">Schritt 2 von 3</span>
-                    <h3>Wo ist es?</h3>
-                    <p>Eine grobe Angabe genügt.</p>
-                  </div>
-                  <div class="issue-location-options" role="radiogroup" aria-label="Bereich">
+                  <div class="issue-location-options" role="radiogroup" aria-label="Bereich" aria-describedby="issue-location-error">
                     <label class="issue-location-choice">
                       <input type="radio" name="location_type" value="common" required checked>
-                      <strong>Im Gemeinschaftsbereich</strong>
-                      <span>Zum Beispiel Stiegenhaus, Keller oder Garage</span>
+                      <strong>Gemeinschaftsbereich</strong>
+                      <span>Stiegenhaus, Keller oder Garage</span>
                     </label>
                     <label class="issue-location-choice">
                       <input type="radio" name="location_type" value="own-unit" required>
-                      <strong>In meiner Einheit</strong>
-                      <span>In der eigenen Wohnung oder im eigenen Nebenraum</span>
+                      <strong>Eigene Einheit</strong>
+                      <span>Wohnung oder eigener Nebenraum</span>
                     </label>
                   </div>
-                  <label>Ort genauer beschreiben <span class="hint">Optional</span>
-                    <input type="text" name="location_detail" maxlength="160" placeholder="Zum Beispiel: Keller, neben dem Fahrradraum">
+                  <p class="issue-field-error" id="issue-location-error" role="alert" hidden></p>
+                  <label for="issue-location-detail">Wo genau? <span class="hint">Optional</span>
+                    <input id="issue-location-detail" type="text" name="location_detail" maxlength="160" placeholder="Zum Beispiel: Vorraum oder neben dem Fahrradraum">
                   </label>
+                  <div class="issue-file-row">
+                    <label>
+                      <span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Foto oder Datei hinzufügen</span></span>
+                    </label>
+                    <span class="hint">Optional · bis zu 10 Dateien, jeweils 10 MB</span>
+                  </div>
+                  <p class="hint">Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen.</p>
                   <div class="issue-wizard-actions">
-                    <button class="wizard-back wizard-only" type="button" data-issue-back>Zurück</button>
+                    {{if .HasIssues}}<button class="wizard-cancel wizard-only" type="button">Abbrechen</button>{{else}}<a class="wizard-exit" href="/app">Abbrechen</a>{{end}}
                     <button class="wizard-next wizard-only" type="button" data-issue-next>Weiter</button>
                   </div>
                 </fieldset>
 
-                <fieldset class="issue-wizard-step" data-issue-step="3">
+                <fieldset class="issue-wizard-step" data-issue-step="review">
                   <div class="issue-wizard-heading">
-                    <span class="issue-wizard-progress">Schritt 3 von 3</span>
-                    <h3>Stimmt alles?</h3>
-                    <p>Prüfen Sie die Meldung vor dem Senden.</p>
+                    <span class="issue-wizard-progress" data-issue-progress>Schritt 2 von 2</span>
+                    <h3>Prüfen &amp; senden</h3>
+                    <p>Ein kurzer Blick, dann ist die Verwaltung informiert.</p>
                   </div>
-                  <dl class="issue-review" aria-label="Zusammenfassung">
+                  <dl class="issue-review issue-review-enhanced" aria-label="Zusammenfassung">
                     <div class="issue-review-row"><dt>Art</dt><dd data-issue-summary="category">Reparatur</dd></div>
-                    <div class="issue-review-row"><dt>Beschreibung</dt><dd data-issue-summary="body">—</dd></div>
+                    <div class="issue-review-row"><dt>Beschreibung</dt><dd class="issue-review-copy"><span class="issue-review-copy-text" data-issue-summary="body">—</span><button class="issue-review-expand" type="button" data-issue-review-expand aria-expanded="false" hidden>Vollständig lesen</button></dd></div>
                     <div class="issue-review-row"><dt>Ort</dt><dd data-issue-summary="location">Gemeinschaftsbereich</dd></div>
                     <div class="issue-review-row"><dt>Dateien</dt><dd data-issue-summary="files">Keine</dd></div>
                   </dl>
-                  <label>Titel
-                    <input type="text" name="title" maxlength="140" required placeholder="Kurzer, passender Titel">
-                    <span class="hint">Wird aus Ihrer Beschreibung vorgeschlagen und kann geändert werden.</span>
-                  </label>
+                  <details class="issue-title-option">
+                    <summary>Titel ändern <span class="hint">Optional</span></summary>
+                    <label for="issue-title">Eigener Titel
+                      <input id="issue-title" type="text" name="title" maxlength="140" placeholder="Kurzer, passender Titel">
+                      <span class="hint">Ohne Eingabe wird ein kurzer Titel aus der Beschreibung gebildet.</span>
+                    </label>
+                  </details>
                   <div class="issue-wizard-actions">
                     <button class="wizard-back wizard-only" type="button" data-issue-back>Zurück</button>
-                    <button class="wizard-submit" type="submit">Anliegen melden</button>
+                    <button class="wizard-submit" type="submit" data-busy-label="Meldung wird gesendet…">Anliegen melden</button>
                   </div>
                 </fieldset>
               </form>
@@ -3873,29 +3913,15 @@ const PageTemplates = `
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <script src="/assets/issues.js?v={{.AssetVersion}}" defer></script>
     <style>
-      /* Anliegen: solange nichts gemeldet ist, steht das Formular offen neben
-         der Erklärung, was nach dem Senden passiert. */
+      /* Ohne bestehendes Anliegen steht der kurze Meldeweg direkt offen. */
       .app-main .content-top .page-actions .button { min-height: 44px; }
-      .issue-start { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(264px,.8fr); gap: 18px; align-items: start; }
+      .issue-start { display: grid; grid-template-columns: minmax(0,1fr); justify-items: center; }
+      .issue-start > .issue-create-panel { width: min(860px,100%); }
       .issue-create-static { padding: 0; overflow: hidden; }
       .issue-create-head { border-bottom: 1px solid var(--line); padding: 17px 20px; background: var(--panel-soft); }
       .issue-create-head h2 { font-size: 22px; }
       .issue-create-head p { margin-top: 4px; color: var(--muted); font-size: 14px; line-height: 1.4; }
       .issue-start .issue-form { max-width: none; }
-      .issue-wizard-spacer { display: block; }
-      .issue-start-side { display: grid; align-content: start; gap: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 20px; box-shadow: var(--shadow-panel); }
-      .issue-start-side h2 { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-ink); font-family: var(--font-sans); }
-      .issue-start-steps { display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; counter-reset: issue-step; }
-      .issue-start-steps li { display: grid; grid-template-columns: 26px minmax(0,1fr); gap: 2px 11px; align-items: start; counter-increment: issue-step; }
-      .issue-start-steps li::before { content: counter(issue-step); grid-row: 1 / span 2; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 850; }
-      .issue-start-steps strong { grid-column: 2; font-size: 13.5px; }
-      .issue-start-steps span { grid-column: 2; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
-      .issue-start-note { border-top: 1px solid var(--line); padding-top: 13px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
-      .issue-start-link { min-height: 40px; display: inline-flex; align-items: center; gap: 6px; color: var(--gold-ink); font-size: 13px; font-weight: 850; text-decoration: none; }
-      .issue-start-link:hover { text-decoration: underline; text-underline-offset: 4px; }
-      @media (max-width: 1120px) {
-        .issue-start { grid-template-columns: minmax(0,1fr); }
-      }
       @media (max-width: 900px) {
         .issue-create-head { padding: 15px 16px; }
         .issue-start { gap: 14px; }
@@ -3993,7 +4019,7 @@ const PageTemplates = `
             <summary>
               <div>
                 <h2>Neues Anliegen</h2>
-                <p>In drei kurzen Schritten verständlich melden.</p>
+                <p>In zwei kurzen Schritten verständlich melden.</p>
               </div>
             </summary>
             <div class="issue-create-body">{{template "issueCreateForm" .}}</div>
@@ -4003,20 +4029,10 @@ const PageTemplates = `
             <section class="panel issue-create-panel issue-create-static" id="issue-new">
               <div class="issue-create-head">
                 <h2>Erstes Anliegen melden</h2>
-                <p>In drei kurzen Schritten verständlich melden.</p>
+                <p>In zwei kurzen Schritten verständlich melden.</p>
               </div>
               <div class="issue-create-body">{{template "issueCreateForm" .}}</div>
             </section>
-            <aside class="issue-start-side">
-              <h2>Nach dem Senden</h2>
-              <ol class="issue-start-steps">
-                <li><strong>Eingegangen</strong><span>Das Anliegen erscheint sofort auf dieser Seite, die Verwaltung wird benachrichtigt.</span></li>
-                <li><strong>In Bearbeitung</strong><span>Die Verwaltung prüft, setzt eine Priorität und beauftragt bei Bedarf einen Dienstleister.</span></li>
-                <li><strong>Erledigt</strong><span>Status, Termine und Rückfragen stehen beim Anliegen. Dort bestätigen Sie auch, wenn es erledigt ist.</span></li>
-              </ol>
-              <p class="issue-start-note">Bei Gefahr im Verzug – etwa Wasseraustritt, Gasgeruch oder Feuer – zuerst die Notrufnummern wählen und erst danach hier melden.</p>
-              <a class="issue-start-link" href="/app/kontakte">Kontakte des Hauses ansehen<span aria-hidden="true">›</span></a>
-            </aside>
           </div>
           {{end}}
           {{else if not .HasIssues}}
@@ -4351,6 +4367,13 @@ const PageTemplates = `
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><a href="/app/anliegen">Anliegen</a><span>/</span><span>{{.Issue.Title}}</span></span>
       </div>
       <section class="page issue-resident-page" id="issue-{{.Issue.ID}}">
+        {{if .IssueCreated}}
+          <div class="issue-created-note" role="status">
+            <span aria-hidden="true">✓</span>
+            <strong>Anliegen gemeldet</strong>
+            <small>Die Verwaltung wurde informiert.</small>
+          </div>
+        {{end}}
         <header class="issue-resident-context">
           <a class="issue-triage-back" href="/app/anliegen">← Zurück zu Anliegen</a>
           <div class="issue-resident-title-row">
@@ -4397,7 +4420,7 @@ const PageTemplates = `
             </div>
           </section>
         {{else if eq .Issue.ResidentState "done"}}
-          <section class="issue-resident-task waiting">
+          <section class="issue-resident-task done">
             <div class="issue-triage-done-mark" aria-hidden="true">✓</div>
             <div><span class="kicker">Erledigt</span><h2>Sie haben die Lösung bestätigt.</h2><p>Für Sie ist nichts mehr zu tun.</p></div>
           </section>
@@ -4409,17 +4432,26 @@ const PageTemplates = `
           </section>
         {{end}}
 
+        <section class="issue-resident-report" aria-labelledby="issue-resident-report-title">
+          <div class="issue-resident-report-head">
+            <h2 id="issue-resident-report-title">Ihre Meldung</h2>
+            <div class="issue-resident-report-meta"><span class="pill">{{.Issue.Category}}</span><span class="pill">{{.Issue.Location}}</span>{{if .Issue.HasPhotos}}<span class="pill">{{.Issue.PhotoCount}} Foto{{if ne .Issue.PhotoCount 1}}s{{end}}</span>{{else if .Issue.HasAttachments}}<span class="pill">Anhänge</span>{{end}}</div>
+          </div>
+          <div class="issue-description"><p>{{.Issue.Body}}</p></div>
+          {{template "attachmentStrip" .Issue}}
+        </section>
+
+        {{if or .Issue.HasComments .Issue.HasServiceAppointment .Issue.HasServiceProposal .Issue.HasEstimate .Issue.HasEstimateAttachments}}
         <details class="issue-resident-history">
-          <summary>Bisheriger Verlauf{{if .Issue.HasComments}} · {{len .Issue.Comments}} {{if eq (len .Issue.Comments) 1}}Beitrag{{else}}Beiträge{{end}}{{end}}{{if .Issue.HasPhotos}} · {{.Issue.PhotoCount}} Foto{{if ne .Issue.PhotoCount 1}}s{{end}}{{end}}</summary>
+          <summary>Neuigkeiten zum Anliegen{{if .Issue.HasComments}} · {{len .Issue.Comments}} {{if eq (len .Issue.Comments) 1}}Beitrag{{else}}Beiträge{{end}}{{end}}</summary>
           <div class="issue-resident-history-body">
-            <div class="issue-description"><strong>Ihre Meldung</strong><p>{{.Issue.Body}}</p></div>
             {{if .Issue.HasServiceAppointment}}<p class="issue-proposal"><strong>Termin:</strong> {{.Issue.ServiceAppointment}}</p>{{end}}
             {{if .Issue.HasServiceProposal}}<p class="issue-proposal"><strong>Hinweis:</strong> {{.Issue.ServiceProposal}}</p>{{end}}
-            {{template "attachmentStrip" .Issue}}
             {{if .Issue.HasComments}}<div class="comment-thread">{{range .Issue.Comments}}{{template "issueComment" .}}{{end}}</div>{{end}}
             {{template "issueEstimate" .Issue}}
           </div>
         </details>
+        {{end}}
       </section>
     </main>
 {{template "appClose" .}}

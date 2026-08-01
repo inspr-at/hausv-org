@@ -185,7 +185,7 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		t.Fatalf("read attachment script: %v", err)
 	}
 	attachmentText := string(attachmentJS)
-	for _, want := range []string{`DataTransfer`, `attachment-picker-item`, `Datei entfernen`, `Wird beim Speichern hochgeladen`} {
+	for _, want := range []string{`DataTransfer`, `attachment-picker-item`, `Datei entfernen`, `Wird beim Speichern hochgeladen`, `name.title`} {
 		if !strings.Contains(attachmentText, want) {
 			t.Fatalf("attachment picker script missing %q", want)
 		}
@@ -196,7 +196,7 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		t.Fatalf("read issue wizard script: %v", err)
 	}
 	issueText := string(issueJS)
-	for _, want := range []string{`data-issue-step`, `reportValidity`, `suggestedTitle`, `data-issue-summary`, `scrollIntoView`} {
+	for _, want := range []string{`data-issue-step`, `form.noValidate`, `suggestedTitle`, `data-issue-summary`, `scrollIntoView`, `popstate`, `prefers-reduced-motion`, `Bitte beschreiben Sie kurz`} {
 		if !strings.Contains(issueText, want) {
 			t.Fatalf("issue wizard script missing %q", want)
 		}
@@ -268,22 +268,27 @@ func TestEnergyLiveCardUsesIndependentIconsAndAccessibleMotion(t *testing.T) {
 	}
 }
 
-func TestIssueCreationUsesThreeFocusedSteps(t *testing.T) {
+func TestIssueCreationUsesTwoFocusedSteps(t *testing.T) {
 	for _, want := range []string{
 		`<script src="/assets/issues.js?v={{.AssetVersion}}" defer></script>`,
 		`data-issue-wizard`,
-		`data-issue-step="1"`,
-		`Schritt 1 von 3`,
+		`data-issue-step="describe"`,
+		`Schritt 1 von 2`,
 		`Was ist passiert?`,
-		`Foto hinzufügen`,
-		`data-issue-step="2"`,
-		`Schritt 2 von 3`,
-		`Wo ist es?`,
-		`data-issue-step="3"`,
-		`Schritt 3 von 3`,
-		`Stimmt alles?`,
+		`Foto oder Datei hinzufügen`,
+		`data-issue-step="review"`,
+		`Schritt 2 von 2`,
+		`Prüfen &amp; senden`,
 		`data-issue-summary="body"`,
-		`Wird aus Ihrer Beschreibung vorgeschlagen und kann geändert werden.`,
+		`data-issue-review-expand`,
+		`Titel ändern`,
+		`data-busy-label="Meldung wird gesendet…"`,
+		`class="wizard-exit" href="/app">Abbrechen</a>`,
+		`Akute Gefahr? 112 anrufen.`,
+		`href="/app/kontakte">Hauskontakte</a>`,
+		`class="issue-resident-report"`,
+		`.issue-resident-report .attachment-delete button { position: relative; width: 44px; height: 44px;`,
+		`Neuigkeiten zum Anliegen`,
 	} {
 		if !strings.Contains(PageTemplates, want) {
 			t.Fatalf("issue creation flow missing %q", want)
@@ -291,5 +296,8 @@ func TestIssueCreationUsesThreeFocusedSteps(t *testing.T) {
 	}
 	if strings.Contains(PageTemplates, `Ort genauer angeben oder Datei anhängen`) {
 		t.Fatal("issue creation should not mix location and attachments in one disclosure")
+	}
+	if strings.Contains(PageTemplates, `name="title" maxlength="140" required`) || strings.Contains(PageTemplates, `Schritt 3 von 3`) {
+		t.Fatal("issue creation must keep the title optional and stop after two focused steps")
 	}
 }

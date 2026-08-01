@@ -75,9 +75,10 @@ func (a *app) issueResidentDetail(w http.ResponseWriter, r *http.Request, ac aut
 		return
 	}
 	a.render(w, "issueResidentDetail", a.withBase(ac, map[string]any{
-		"Title":      item.Title,
-		"ActivePage": "issues",
-		"Issue":      views[0],
+		"Title":        item.Title,
+		"ActivePage":   "issues",
+		"Issue":        views[0],
+		"IssueCreated": r.URL.Query().Get("created") == "1" && normalizeEmail(item.AuthorEmail) == normalizeEmail(ac.email),
 	}))
 }
 
@@ -229,7 +230,7 @@ func (a *app) createIssue(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		createdID = created.ID
 		a.notifyIssueCreated(tenant, created)
 	}
-	http.Redirect(w, r, "/app/anliegen?issue=created#issue-"+url.PathEscape(createdID), http.StatusSeeOther)
+	http.Redirect(w, r, "/app/anliegen/"+url.PathEscape(createdID)+"?created=1", http.StatusSeeOther)
 }
 
 func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -680,9 +681,15 @@ func issueFromForm(r *http.Request, tenantSlug string, author userProfile, now t
 	if err != nil {
 		return residentIssue{}, err
 	}
-	title := strings.TrimSpace(r.FormValue("title"))
 	body := strings.TrimSpace(r.FormValue("body"))
-	if title == "" || body == "" || len([]rune(title)) > 140 || len([]rune(body)) > 4000 {
+	if body == "" || len([]rune(body)) > 4000 {
+		return residentIssue{}, fmt.Errorf("invalid issue text")
+	}
+	title := strings.Join(strings.Fields(r.FormValue("title")), " ")
+	if title == "" {
+		title = issueTitleFromBody(body)
+	}
+	if title == "" || len([]rune(title)) > 140 {
 		return residentIssue{}, fmt.Errorf("invalid issue text")
 	}
 	locationType := normalizeIssueLocation(r.FormValue("location_type"))
@@ -712,6 +719,55 @@ func issueFromForm(r *http.Request, tenantSlug string, author userProfile, now t
 		CreatedAt:      now.UTC(),
 		UpdatedAt:      now.UTC(),
 	}, nil
+}
+
+// issueTitleFromBody derives the compact, canonical title used when the
+// resident leaves the optional title untouched. The server owns this fallback
+// so the form remains fully usable without JavaScript.
+func issueTitleFromBody(body string) string {
+	clean := strings.Join(strings.Fields(body), " ")
+	if clean == "" {
+		return ""
+	}
+
+	runes := []rune(clean)
+	end := len(runes)
+	for index, char := range runes {
+		if char != '.' && char != '!' && char != '?' {
+			continue
+		}
+		if index == len(runes)-1 || runes[index+1] == ' ' {
+			// A period near the start is commonly part of a German abbreviation
+			// (for example "z. B." or "z.B."). It is only a sentence boundary
+			// once the prefix carries enough meaning, unless it ends the input.
+			prefix := strings.TrimSpace(string(runes[:index]))
+			if index < len(runes)-1 && len([]rune(prefix)) < 8 {
+				continue
+			}
+			end = index
+			break
+		}
+	}
+	title := strings.TrimSpace(string(runes[:end]))
+	if title == "" {
+		title = clean
+	}
+
+	runes = []rune(title)
+	if len(runes) <= 76 {
+		return title
+	}
+	cut := 75
+	for index := cut - 1; index >= 0; index-- {
+		if runes[index] != ' ' {
+			continue
+		}
+		if index >= 38 {
+			cut = index
+		}
+		break
+	}
+	return strings.TrimSpace(string(runes[:cut])) + "…"
 }
 
 type serviceProposalInput struct {
