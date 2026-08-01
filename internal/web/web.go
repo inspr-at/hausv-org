@@ -2063,12 +2063,14 @@ const PageTemplates = `
     .lightbox-prev { grid-column: 1; grid-row: 2; }
     .lightbox-next { grid-column: 3; grid-row: 2; }
     .dialog { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 0; width: min(680px, calc(100vw - 28px)); max-height: min(860px, calc(100dvh - 28px)); overflow: hidden; color: var(--ink); background: var(--panel); box-shadow: var(--shadow-dialog); }
+    .dialog[open] { display: grid; grid-template-rows: auto minmax(0,1fr) auto; }
     .dialog::backdrop { background: rgba(23,32,25,.42); }
-    .dialog form { margin: 0; display: grid; grid-template-rows: auto minmax(0,1fr); max-height: inherit; }
+    .dialog > form { min-width: 0; min-height: 0; grid-column: 1; grid-row: 1 / -1; margin: 0; display: grid; grid-template-rows: auto minmax(0,1fr) auto; max-height: inherit; overflow: hidden; }
     .dialog-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
     .dialog-head h2 { font-size: 25px; }
     .dialog-close { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; }
-    .dialog-body { display: grid; gap: 14px; padding: 20px 22px 22px; overflow: auto; overscroll-behavior: contain; }
+    .dialog-body { min-width: 0; min-height: 0; display: grid; gap: 14px; padding: 20px 22px 22px; overflow: auto; overscroll-behavior: contain; }
+    .dialog-footer { position: relative; z-index: 2; display: flex; align-items: center; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--line); padding: 14px 22px max(14px,env(safe-area-inset-bottom)); background: rgba(255,254,251,.98); }
     .dialog-body > button:last-child { position: sticky; bottom: -1px; z-index: 2; box-shadow: 0 -12px 0 12px var(--panel), 0 -10px 18px rgba(255,254,251,.92); }
     .dialog-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
     .dialog-grid .full { grid-column: 1 / -1; }
@@ -2080,6 +2082,13 @@ const PageTemplates = `
     .dialog-optional[open] > summary::after { transform: rotate(90deg); }
     .dialog-optional-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 12px 13px 14px; }
     .dialog-optional-grid .full { grid-column: 1 / -1; }
+    @media (max-width: 600px) {
+      .dialog-head { padding: 14px; }
+      .dialog-close { width: 44px; height: 44px; flex: 0 0 auto; }
+      .dialog-body { padding: 16px 14px 18px; }
+      .dialog-footer { padding: 12px 14px max(12px,env(safe-area-inset-bottom)); }
+      .dialog-footer .button { width: 100%; min-height: 44px; }
+    }
     .release-dialog { width: min(920px, calc(100vw - 28px)); }
     .release-history { display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 20px; max-height: min(72vh, 720px); }
     .release-rail { display: grid; align-content: start; gap: 8px; border-right: 1px solid var(--line); padding-right: 16px; overflow: auto; }
@@ -2546,7 +2555,7 @@ const PageTemplates = `
     .handover-form-step small, .dialog-optional-copy { color: var(--muted); font-size: 12px; }
     .handover-dialog .dialog-body { grid-auto-rows: max-content; }
     .handover-dialog .dialog-optional { min-height: 42px; }
-    .handover-dialog-submit { position: sticky; bottom: -18px; z-index: 2; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; margin: 4px -18px -18px; padding: 13px 18px; border-top: 1px solid var(--line); background: rgba(255,254,251,.96); backdrop-filter: blur(8px); }
+    .handover-dialog-submit { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; }
     .handover-dialog-submit span { color: var(--muted); font-size: 12px; }
     .handover-confirm-page { align-items: start; }
     .handover-confirm-card { width: min(780px, 100%); gap: 16px; }
@@ -2836,7 +2845,7 @@ const PageTemplates = `
 	      .handover-next .button, .handover-next form, .handover-next form button { width: 100%; }
 	      .handover-parties, .handover-add-files { grid-template-columns: 1fr; }
 	      .handover-add-files .button { width: 100%; }
-	      .handover-dialog-submit { position: static; grid-template-columns: 1fr; margin-top: 2px; }
+	      .handover-dialog-submit { grid-template-columns: 1fr; }
 	      .handover-dialog-submit span { display: none; }
 	      .handover-dialog-submit .button { width: 100%; }
 	      .handover-confirm-page { padding: 14px; }
@@ -3410,7 +3419,7 @@ const PageTemplates = `
           <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
         </div>
         <div class="dialog-body">
-          <form method="post" action="/app/kontakte">
+          <form id="{{.EditDialogID}}-form" method="post" action="/app/kontakte">
             <input type="hidden" name="id" value="{{.ID}}">
             <input type="hidden" name="active" value="{{if .Active}}true{{else}}false{{end}}">
             <div class="contact-form">
@@ -3432,7 +3441,6 @@ const PageTemplates = `
                 <label><input type="checkbox" name="energy_capabilities" value="heat-pump"{{range .EnergyCapabilities}}{{if eq . "heat-pump"}} checked{{end}}{{end}}> Wärmepumpe</label>
                 <label><input type="checkbox" name="energy_capabilities" value="electrical"{{range .EnergyCapabilities}}{{if eq . "electrical"}} checked{{end}}{{end}}> Elektro-Fachnachweis</label>
               </div></fieldset>
-              <div class="f-actions"><button class="button primary" type="submit">Änderungen speichern</button></div>
             </div>
           </form>
           {{if .Active}}
@@ -3446,6 +3454,9 @@ const PageTemplates = `
               <p>Dieser Kontakt ist derzeit nur für die Verwaltung sichtbar.</p><button class="button primary" type="submit">Wieder aktivieren</button>
             </form>
           {{end}}
+        </div>
+        <div class="dialog-footer contact-dialog-footer">
+          <button class="button primary" type="submit" form="{{.EditDialogID}}-form">Änderungen speichern</button>
         </div>
       </dialog>
     {{end}}
@@ -5762,8 +5773,8 @@ const PageTemplates = `
               <summary>Fotos und PDF</summary>
               <div class="dialog-optional-grid"><label class="full" for="handover-attachments">Dateien<span class="file-control"><input id="handover-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Bis zu 10 Dateien auswählen</span></span></label></div>
             </details>
-            <div class="handover-dialog-submit"><span>Links werden nach dem Speichern versendet.</span><button class="button primary" type="submit">Übergabe anlegen</button></div>
           </div>
+          <div class="dialog-footer handover-dialog-submit"><span>Links werden nach dem Speichern versendet.</span><button class="button primary" type="submit">Übergabe anlegen</button></div>
         </form>
       </dialog>
     </main>

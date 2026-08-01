@@ -162,6 +162,33 @@ func TestAuthenticatedAppShellIsKeyboardOperable(t *testing.T) {
 	}
 }
 
+func TestAdminDialogsKeepActionsVisibleAtShortHeights(t *testing.T) {
+	for _, want := range []string{
+		`.dialog[open] { display: grid; grid-template-rows: auto minmax(0,1fr) auto; }`,
+		`.dialog > form { min-width: 0; min-height: 0; grid-column: 1; grid-row: 1 / -1;`,
+		`.dialog-body { min-width: 0; min-height: 0;`,
+		`.dialog-footer { position: relative; z-index: 2;`,
+		`.dialog-close { width: 44px; height: 44px;`,
+		`<form id="{{.EditDialogID}}-form" method="post" action="/app/kontakte">`,
+		`class="dialog-footer contact-dialog-footer"`,
+		`form="{{.EditDialogID}}-form">Änderungen speichern`,
+		`class="dialog-footer handover-dialog-submit"`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("bounded admin-dialog contract missing %q", want)
+		}
+	}
+	if strings.Contains(PageTemplates, `.dialog form {`) {
+		t.Fatal("shared dialog layout must not turn nested action forms into dialog shells")
+	}
+	handoverBody := strings.Index(PageTemplates, `<div class="dialog-body">
+            <p class="document-dialog-intro">`)
+	handoverFooter := strings.Index(PageTemplates, `<div class="dialog-footer handover-dialog-submit">`)
+	if handoverBody < 0 || handoverFooter < handoverBody {
+		t.Fatal("handover submit footer must follow its independently scrolling dialog body")
+	}
+}
+
 func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 	if !strings.Contains(PageTemplates, `<script src="/assets/app.js?v={{.AssetVersion}}" defer></script>`) {
 		t.Fatal("app shell must load the shared submit guard")

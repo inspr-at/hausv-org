@@ -399,6 +399,180 @@ async function assertSharedAppShellNavigation() {
   process.stdout.write('  ✓ App-Shell · Sprunglink, Tastaturmenü, Escape & No-JS · 320–1440px\n');
 }
 
+async function ensureDialogContact() {
+  const context = await newContext({ width: 1440, height: 900 });
+  const page = await localLogin(context, 'admin@example.com');
+  await page.goto(`${baseURL}/app/kontakte`, { waitUntil: 'networkidle' });
+  if (!(await page.getByText('QA Dialogkontakt', { exact: true }).count())) {
+    const contactPanel = page.locator('#contact-add');
+    if (!(await contactPanel.evaluate((element) => element.open))) {
+      await contactPanel.locator(':scope > summary').click();
+    }
+    const form = contactPanel.locator('form');
+    await form.locator('select[name="kind"]').selectOption({ index: 1 });
+    await form.locator('input[name="name"]').fill('QA Dialogkontakt');
+    await form.locator('input[name="phone"]').fill('+43 316 111111');
+    await form.getByRole('button', { name: 'Kontakt anlegen' }).click();
+    await page.waitForURL(/\/app\/kontakte/);
+  }
+  await closeContext(context);
+}
+
+async function assertBoundedAdminDialogs() {
+  await ensureDialogContact();
+  const viewports = [
+    { width: 320, height: 568 },
+    { width: 390, height: 667 },
+    { width: 430, height: 844 },
+    { width: 1024, height: 600 },
+  ];
+
+  for (const viewport of viewports) {
+    const label = `${viewport.width}x${viewport.height}`;
+    const context = await newContext(viewport);
+    const page = await localLogin(context, 'admin@example.com');
+
+    await page.goto(`${baseURL}/app/kontakte`, { waitUntil: 'networkidle' });
+    const contactRow = page.locator('.contact-row').filter({ hasText: 'QA Dialogkontakt' }).first();
+    const contactTrigger = contactRow.getByRole('button', { name: 'Bearbeiten' });
+    await contactTrigger.click();
+    const contactDialog = page.locator('.contact-edit-dialog[open]');
+    await contactDialog.waitFor({ state: 'visible' });
+    const contactGeometry = await contactDialog.evaluate(async (dialog, mobile) => {
+      const head = dialog.querySelector(':scope > .dialog-head');
+      const body = dialog.querySelector(':scope > .dialog-body');
+      const footer = dialog.querySelector(':scope > .dialog-footer');
+      const form = body?.querySelector('form[id$="-form"]');
+      const submit = footer?.querySelector('button[type="submit"]');
+      const close = head?.querySelector('.dialog-close');
+      const before = footer?.getBoundingClientRect();
+      if (body) body.scrollTop = body.scrollHeight;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const outer = dialog.getBoundingClientRect();
+      const headBox = head?.getBoundingClientRect();
+      const bodyBox = body?.getBoundingClientRect();
+      const footerBox = footer?.getBoundingClientRect();
+      const submitBox = submit?.getBoundingClientRect();
+      const closeBox = close?.getBoundingClientRect();
+      return {
+        outerClient: dialog.clientHeight,
+        outerScroll: dialog.scrollHeight,
+        bodyClient: body?.clientHeight || 0,
+        bodyScroll: body?.scrollHeight || 0,
+        direct: head?.parentElement === dialog && body?.parentElement === dialog && footer?.parentElement === dialog,
+        rowsMeet: Boolean(headBox && bodyBox && footerBox &&
+          headBox.top >= outer.top - 1 && bodyBox.top >= headBox.bottom - 1 && footerBox.top >= bodyBox.bottom - 1 &&
+          footerBox.bottom <= outer.bottom + 1),
+        footerShift: before && footerBox ? Math.abs(before.top - footerBox.top) : 999,
+        submitHeight: submitBox?.height || 0,
+        submitInside: Boolean(submitBox && footerBox && submitBox.bottom <= footerBox.bottom + 1),
+        closeHeight: closeBox?.height || 0,
+        formAssociation: Boolean(form && submit && submit.form === form &&
+          submit.getAttribute('form') === form.getAttribute('id')),
+        mobile,
+      };
+    }, viewport.width <= 600);
+    if (contactGeometry.outerScroll > contactGeometry.outerClient + 1 ||
+        contactGeometry.bodyScroll <= contactGeometry.bodyClient + 1 ||
+        !contactGeometry.direct || !contactGeometry.rowsMeet || contactGeometry.footerShift > 1 ||
+        !contactGeometry.submitInside || !contactGeometry.formAssociation ||
+        (contactGeometry.mobile && (contactGeometry.submitHeight < 43.5 || contactGeometry.closeHeight < 43.5))) {
+      fail(`Kontaktdialog ${label}: Kopf, Scrollkörper oder Aktion ist nicht stabil (${JSON.stringify(contactGeometry)})`);
+    }
+    if (viewport.width === 390 && process.env.HV_QA_SCREENSHOT_DIR) {
+      mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, 'contact-dialog-bounded-mobile.png'),
+        fullPage: false,
+      });
+    }
+    await page.keyboard.press('Escape');
+    await contactDialog.waitFor({ state: 'hidden' });
+    if (!(await contactTrigger.evaluate((trigger) => trigger === document.activeElement))) {
+      fail(`Kontaktdialog ${label}: Escape gibt den Fokus nicht an den Auslöser zurück`);
+    }
+
+    await page.goto(`${baseURL}/app/uebergaben`, { waitUntil: 'networkidle' });
+    const handoverTrigger = page.getByRole('button', { name: 'Übergabe anlegen' }).first();
+    await handoverTrigger.click();
+    const handoverDialog = page.locator('#handover-create[open]');
+    await handoverDialog.waitFor({ state: 'visible' });
+    const handoverGeometry = await handoverDialog.evaluate(async (dialog, mobile) => {
+      const shell = dialog.querySelector(':scope > form');
+      const head = shell?.querySelector(':scope > .dialog-head');
+      const body = shell?.querySelector(':scope > .dialog-body');
+      const footer = shell?.querySelector(':scope > .dialog-footer');
+      const submit = footer?.querySelector('button[type="submit"]');
+      const close = head?.querySelector('.dialog-close');
+      const before = footer?.getBoundingClientRect();
+      if (body) body.scrollTop = body.scrollHeight;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const outer = dialog.getBoundingClientRect();
+      const headBox = head?.getBoundingClientRect();
+      const bodyBox = body?.getBoundingClientRect();
+      const footerBox = footer?.getBoundingClientRect();
+      const submitBox = submit?.getBoundingClientRect();
+      const closeBox = close?.getBoundingClientRect();
+      return {
+        outerClient: dialog.clientHeight,
+        outerScroll: dialog.scrollHeight,
+        bodyClient: body?.clientHeight || 0,
+        bodyScroll: body?.scrollHeight || 0,
+        direct: shell?.parentElement === dialog && head?.parentElement === shell && body?.parentElement === shell && footer?.parentElement === shell,
+        rowsMeet: Boolean(headBox && bodyBox && footerBox &&
+          headBox.top >= outer.top - 1 && bodyBox.top >= headBox.bottom - 1 && footerBox.top >= bodyBox.bottom - 1 &&
+          footerBox.bottom <= outer.bottom + 1),
+        footerShift: before && footerBox ? Math.abs(before.top - footerBox.top) : 999,
+        submitHeight: submitBox?.height || 0,
+        submitInside: Boolean(submitBox && footerBox && submitBox.bottom <= footerBox.bottom + 1),
+        closeHeight: closeBox?.height || 0,
+        mobile,
+      };
+    }, viewport.width <= 600);
+    if (handoverGeometry.outerScroll > handoverGeometry.outerClient + 1 ||
+        handoverGeometry.bodyScroll <= handoverGeometry.bodyClient + 1 ||
+        !handoverGeometry.direct || !handoverGeometry.rowsMeet || handoverGeometry.footerShift > 1 ||
+        !handoverGeometry.submitInside ||
+        (handoverGeometry.mobile && (handoverGeometry.submitHeight < 43.5 || handoverGeometry.closeHeight < 43.5))) {
+      fail(`Übergabedialog ${label}: Kopf, Scrollkörper oder Aktion ist nicht stabil (${JSON.stringify(handoverGeometry)})`);
+    }
+
+    const files = handoverDialog.locator('details.dialog-optional').filter({ hasText: 'Fotos und PDF' });
+    await files.evaluate((details) => { details.open = true; });
+    await handoverDialog.locator('#handover-attachments').focus();
+    const fileFocus = await handoverDialog.evaluate((dialog) => {
+      const body = dialog.querySelector(':scope > form > .dialog-body');
+      const footer = dialog.querySelector(':scope > form > .dialog-footer');
+      const input = dialog.querySelector('#handover-attachments');
+      const control = input?.closest('.file-control');
+      const bodyBox = body?.getBoundingClientRect();
+      const footerBox = footer?.getBoundingClientRect();
+      const controlBox = control?.getBoundingClientRect();
+      return {
+        active: input === document.activeElement,
+        visible: Boolean(bodyBox && footerBox && controlBox && controlBox.top >= bodyBox.top - 1 &&
+          controlBox.bottom <= bodyBox.bottom + 1 && controlBox.bottom <= footerBox.top + 1),
+      };
+    });
+    if (!fileFocus.active || !fileFocus.visible) {
+      fail(`Übergabedialog ${label}: fokussierte Dateiauswahl liegt unter der festen Aktion (${JSON.stringify(fileFocus)})`);
+    }
+    if (viewport.width === 390 && process.env.HV_QA_SCREENSHOT_DIR) {
+      await page.screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, 'handover-dialog-bounded-mobile.png'),
+        fullPage: false,
+      });
+    }
+    await page.keyboard.press('Escape');
+    await handoverDialog.waitFor({ state: 'hidden' });
+    if (!(await handoverTrigger.evaluate((trigger) => trigger === document.activeElement))) {
+      fail(`Übergabedialog ${label}: Escape gibt den Fokus nicht an den Auslöser zurück`);
+    }
+    await closeContext(context);
+  }
+  process.stdout.write('  ✓ Admin-Dialoge · feste Aktionen, Scrollkörper & Fokus · 320x568–1024x600\n');
+}
+
 async function assertPublicLanding(viewport) {
   const context = await trackedContext({
     viewport: viewport.size,
@@ -632,7 +806,7 @@ async function seedManagedContent() {
   await page.goto(`${baseURL}/app/kontakte`, { waitUntil: 'networkidle' });
   const contactPanel = page.locator('#contact-add');
   if (!(await contactPanel.evaluate((element) => element.open))) {
-    await contactPanel.locator('summary').click();
+    await contactPanel.locator(':scope > summary').click();
   }
   const contact = contactPanel.locator('form');
   await contact.locator('select[name="kind"]').selectOption({ label: 'Energie-Fachbetrieb' });
@@ -1858,6 +2032,7 @@ try {
     await assertSidebarNavReachable();
     await assertSharedAppShellNavigation();
     await assertHomeOnboarding();
+    await assertBoundedAdminDialogs();
     if (!ciCore) {
       await assertPilotHome({
         slug: 'eltern',
