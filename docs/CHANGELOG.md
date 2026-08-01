@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.62.0] - 2026-08-01
+
+### Neu
+
+- **Jeder Verbraucher zählt, nicht nur die vorgesehenen Arten.** Sauna, Werkstatt, Infrarotkabine — was Strom braucht, lässt sich mit eigenem Namen, eigener Leistung und eigener Flexibilität anlegen. Auch mehrere derselben Art nebeneinander.
+- **Die vereinbarte Anschlussleistung steht im Datenexport.** Sie bestimmt inzwischen den verrechneten Betrag und gehört damit in die Auskunft über die eigenen Daten.
+
+### Verbessert
+
+- **Sparversprechen halten, was sie sagen.** Ein Gerät, das ausdrücklich als "fest" erklärt wurde, wird nicht mehr als Flexibilität gerechnet. Eine PV-Anlage zählt nicht mehr als abschaltbare Last — Erzeugung verschiebt die Bezugsspitze nicht.
+- **Erfasste Leistungen werden ernst genommen.** Sind E-Auto und Wallbox beide hinterlegt, zählt die Angabe mit der tatsächlichen Nennleistung statt eines Richtwerts.
+- **Einmal erfasste Angaben bleiben erhalten.** Das erneute Speichern der Geräteauswahl im Onboarding überschreibt Nennleistung und Flexibilität nicht mehr.
+
 ## [0.61.0] - 2026-07-31
 
 ### Neu

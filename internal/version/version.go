@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.62.0",
+			Date:     "1. August 2026",
+			Kind:     "Energie & Transparenz",
+			Headline: "Jeder Verbraucher zählt — und das Modell verspricht nur, was Sie erklärt haben.",
+			Intro:    "Was Strom braucht, lässt sich jetzt einzeln erfassen: mit eigenem Namen, eigener Leistung und eigener Flexibilität. Auch mehrere Geräte derselben Art.",
+			Items: []NoteItem{
+				{Label: "Eigene Verbraucher anlegen", Text: "Sauna, Werkstatt oder Infrarotkabine sind keine Sonderfälle mehr — sie zählen im Energie-Cockpit wie jedes andere Gerät."},
+				{Label: "Ehrlich rechnen", Text: "Ein ausdrücklich als fest erklärtes Gerät zählt nicht mehr als Flexibilität, und eine PV-Anlage nicht mehr als abschaltbare Last."},
+				{Label: "Angaben bleiben erhalten", Text: "Erfasste Nennleistungen überstehen das erneute Speichern der Geräteauswahl im Onboarding."},
+			},
+		},
+		{
 			Version:  "0.61.0",
 			Date:     "31. Juli 2026",
 			Kind:     "Energie & Transparenz",
