@@ -361,7 +361,10 @@ def mock_ssh(args: list[str]) -> int:
             "com.docker.compose.project",
             "com.docker.compose.service",
             "curl -fsS --max-time 10 https://jhw22.hausv.org/",
-            '<span class="version">0.0.0 (bbbbbbb)</span>',
+            'locked_open="$(printf "\\050")"',
+            'locked_close="$(printf "\\051")"',
+            'locked_build_marker="0.0.0 ${locked_open}bbbbbbb${locked_close}"',
+            'grep -F "$locked_build_marker"',
         )
         missing = [fragment for fragment in required if fragment not in script]
         if missing:

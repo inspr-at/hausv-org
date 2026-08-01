@@ -307,7 +307,10 @@ if [ "$schema_changed" -eq 1 ]; then
 fi
 preflight_body="\
     locked_live_page=\"\$(curl -fsS --max-time 10 $live_url)\"; \
-    printf '%s' \"\$locked_live_page\" | grep -F '<span class=\"version\">$live_version ($live_commit)</span>' >/dev/null; \
+    locked_open=\"\$(printf \"\\050\")\"; \
+    locked_close=\"\$(printf \"\\051\")\"; \
+    locked_build_marker=\"$live_version \${locked_open}$live_commit\${locked_close}\"; \
+    printf \"%s\" \"\$locked_live_page\" | grep -F \"\$locked_build_marker\" >/dev/null; \
     test \"\$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $service)\" = healthy; \
     running_image_id=\"\$(docker inspect --format '{{.Image}}' $service)\"; \
     latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\"; \
