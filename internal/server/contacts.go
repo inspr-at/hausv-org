@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 )
@@ -12,6 +13,7 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if denyServiceProviderArea(w, role) {
 		return
 	}
+	profile := a.profileForTenant(ac.email, tenant.Slug)
 	canManageContacts := canManageContacts(role)
 	managerContacts := managerContactViews(tenant)
 	emergencyContacts := emergencyContactViews(tenant)
@@ -26,8 +28,9 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	if !canManageContacts {
 		managedEmptyTitle = "Noch keine Kontakte hinterlegt"
-		managedEmptyMessage = "Die Hausverwaltung hat für dieses Haus noch keine allgemeinen Kontakte hinterlegt."
+		managedEmptyMessage = "Die Hausverwaltung hat für dieses Haus noch keine allgemeinen Kontakte hinterlegt. Verwaltung, Notdienst und Hausmeister trägt die Verwaltung ein."
 	}
+	managedEmpty := emptyState(managedEmptyTitle, managedEmptyMessage)
 	contactMsg, contactOK := contactMessage(r.URL.Query().Get("contact"))
 	hasQuickContacts := len(managerContacts)+len(emergencyContacts)+len(boardContacts) > 0
 	hasAnyContacts := hasQuickContacts || len(activeManagedContacts)+len(residentContacts) > 0
@@ -47,10 +50,11 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"HasEmergencyContacts": len(emergencyContacts) > 0,
 		"EmergencyEmpty":       emptyState("Kein Notdienst hinterlegt", "Notdienst und Hausmeister werden in den Gebäude-Einstellungen gepflegt."),
 		"ManagedContacts":      activeManagedContacts,
+		"ManagedGroups":        groupManagedContactsByKind(activeManagedContacts),
 		"HasManagedContacts":   len(activeManagedContacts) > 0,
 		"InactiveContacts":     inactiveManagedContacts,
 		"HasInactiveContacts":  len(inactiveManagedContacts) > 0,
-		"ManagedEmpty":         emptyState(managedEmptyTitle, managedEmptyMessage),
+		"ManagedEmpty":         managedEmpty,
 		"ContactKindOptions":   contactKindOptionsForServiceProviderAccess("", a.serviceAccessEnabled),
 		"BoardContacts":        boardContacts,
 		"HasBoardContacts":     len(boardContacts) > 0,
@@ -60,6 +64,8 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"ResidentEmpty":        emptyState("Keine freigegebenen Kontakte", "Kontakte aus der Hausgemeinschaft erscheinen nur nach ausdrücklicher Freigabe im Profil."),
 		"HasQuickContacts":     hasQuickContacts,
 		"HasAnyContacts":       hasAnyContacts,
+		"CanJoinDirectory":     residentDirectoryRole(role),
+		"DirectoryOptIn":       profile.DirectoryOptIn,
 		"ContactFormOpen":      r.URL.Query().Get("contact") == "invalid" || r.URL.Query().Get("contact") == "error",
 	}))
 }
@@ -183,6 +189,51 @@ func (a *app) managedContactViews(tenantSlug string, includeInactive bool) []man
 		views = append(views, itemView)
 	}
 	return views
+}
+
+// contactKindGroup turns the address book into a directory: entries are read by
+// function ("who repairs the lift?"), so they are grouped by contact kind in a
+// fixed urgency-first order instead of one undifferentiated list.
+type contactKindGroup struct {
+	Kind     string
+	Count    int
+	Contacts []managedContactView
+}
+
+func groupManagedContactsByKind(items []managedContactView) []contactKindGroup {
+	order := []string{"Notdienst", "Hausmeister", "Verwaltung", "Energie-Fachbetrieb", "Dienstleister", "Sonstiges"}
+	rank := map[string]int{}
+	for index, kind := range order {
+		rank[kind] = index
+	}
+	groups := make([]contactKindGroup, 0, len(order))
+	index := map[string]int{}
+	for _, item := range items {
+		kind := strings.TrimSpace(item.Kind)
+		if kind == "" {
+			kind = "Sonstiges"
+		}
+		position, ok := index[kind]
+		if !ok {
+			groups = append(groups, contactKindGroup{Kind: kind})
+			position = len(groups) - 1
+			index[kind] = position
+		}
+		groups[position].Contacts = append(groups[position].Contacts, item)
+		groups[position].Count = len(groups[position].Contacts)
+	}
+	sort.SliceStable(groups, func(i, j int) bool {
+		left, leftKnown := rank[groups[i].Kind]
+		right, rightKnown := rank[groups[j].Kind]
+		if leftKnown != rightKnown {
+			return leftKnown
+		}
+		if leftKnown {
+			return left < right
+		}
+		return groups[i].Kind < groups[j].Kind
+	})
+	return groups
 }
 
 func splitManagedContactViews(items []managedContactView) ([]managedContactView, []managedContactView) {

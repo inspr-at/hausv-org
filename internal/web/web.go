@@ -1470,7 +1470,6 @@ const PageTemplates = `
     .digest-panel .quick-list { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
     .digest-panel .quick-row { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px; background: var(--panel-soft); }
     .digest-panel .quick-row:last-child { border-bottom: 1px solid var(--line); }
-    .events-page { width: min(1080px,100%); }
     .events-panel { display: grid; gap: 18px; }
     .agenda-list { display: grid; gap: 11px; }
     .event-card { display: grid; grid-template-columns: 62px minmax(0,1fr); gap: 15px; align-items: start; border: 1px solid var(--line); border-radius: 14px; padding: 16px; color: inherit; background: #fffefb; text-decoration: none; }
@@ -1494,14 +1493,12 @@ const PageTemplates = `
     .event-details-body { display: grid; gap: 10px; padding-top: 10px; }
     .event-actions { display: flex; flex-wrap: wrap; gap: 7px; padding-top: 2px; }
     .event-actions form { margin: 0; }
-    .calendar-subscription, .event-history { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
-    .calendar-subscription > summary, .event-history > summary { cursor: pointer; list-style: none; padding: 12px 14px; color: var(--ink); font-size: 13.5px; font-weight: 850; }
-    .calendar-subscription > summary::-webkit-details-marker, .event-history > summary::-webkit-details-marker { display: none; }
-    .calendar-subscription > summary::after, .event-history > summary::after { content: "›"; float: right; color: var(--gold-ink); font-size: 20px; line-height: .8; }
-    .calendar-subscription[open] > summary, .event-history[open] > summary { border-bottom: 1px solid var(--line); }
-    .calendar-subscription[open] > summary::after, .event-history[open] > summary::after { transform: rotate(90deg); }
-    .calendar-subscription-body { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 14px 14px; }
-    .calendar-subscription-body p { max-width: 680px; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+    .event-history { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
+    .event-history > summary { cursor: pointer; list-style: none; padding: 12px 14px; color: var(--ink); font-size: 13.5px; font-weight: 850; }
+    .event-history > summary::-webkit-details-marker { display: none; }
+    .event-history > summary::after { content: "›"; float: right; color: var(--gold-ink); font-size: 20px; line-height: .8; }
+    .event-history[open] > summary { border-bottom: 1px solid var(--line); }
+    .event-history[open] > summary::after { transform: rotate(90deg); }
     .event-history > .agenda-list { padding: 12px; }
     .status-strip { display: grid; gap: 14px; }
     .rule { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; color: var(--ink); line-height: 1.5; }
@@ -2635,8 +2632,6 @@ const PageTemplates = `
       .event-info h3 { font-size: 18px; }
       .event-actions .button, .event-actions form { flex: 1 1 100px; }
       .event-actions form .button { width: 100%; }
-      .calendar-subscription-body { display: grid; grid-template-columns: 1fr; }
-      .calendar-subscription-body .button { width: 100%; }
       .quick-row { grid-template-columns: 28px minmax(0,1fr); }
 	      .quick-row .entry-actions { grid-column: 2; justify-self: stretch; justify-content: flex-start; margin-top: 5px; }
 	      .quick-row .entry-actions .button, .quick-row .entry-actions form { flex: 1 1 112px; min-width: 0; }
@@ -2908,7 +2903,7 @@ const PageTemplates = `
 {{define "managedContactPublic"}}
   <article class="contact-row">
     <div class="contact-row-copy">
-      <span class="contact-row-title"><strong>{{.DisplayName}}</strong><span class="pill">{{.Kind}}</span></span>
+      <span class="contact-row-title"><strong>{{.DisplayName}}</strong><span class="pill contact-kind">{{.Kind}}</span></span>
       {{if .Description}}<span class="contact-description">{{.Description}}</span>{{end}}
       {{if .HasEnergyProfile}}<span class="contact-description"><strong>Energie-Fachhilfe:</strong> {{.EnergySummary}}{{if .Qualification}} · {{.Qualification}}{{end}}</span>{{end}}
       <span class="contact-meta">{{if .HasPhone}}<span>{{.Phone}}</span>{{end}}{{if .HasEmail}}<span>{{.Email}}</span>{{end}}</span>
@@ -2931,7 +2926,7 @@ const PageTemplates = `
 {{define "managedContactAdmin"}}
   <article class="contact-row {{if not .Active}}inactive{{end}}">
     <div class="contact-row-copy">
-      <span class="contact-row-title"><strong>{{.DisplayName}}</strong><span class="pill">{{.Kind}}</span>{{if not .Active}}<span class="pill quiet">Inaktiv</span>{{end}}</span>
+      <span class="contact-row-title"><strong>{{.DisplayName}}</strong><span class="pill contact-kind">{{.Kind}}</span>{{if not .Active}}<span class="pill quiet">Inaktiv</span>{{end}}</span>
       {{if .Description}}<span class="contact-description">{{.Description}}</span>{{end}}
       {{if .HasEnergyProfile}}<span class="contact-description"><strong>Energie-Fachhilfe:</strong> {{.EnergySummary}}{{if .Qualification}} · {{.Qualification}}{{end}}</span>{{end}}
       <span class="contact-meta">{{if .HasPhone}}<span>{{.Phone}}</span>{{end}}{{if .HasEmail}}<span>{{.Email}}</span>{{end}}</span>
@@ -2996,14 +2991,16 @@ const PageTemplates = `
 {{define "contacts"}}
 {{template "appOpen" .}}
     <style>
-      .contacts .contacts-stack { display: grid; gap: 18px; }
+      .contacts .contacts-layout { display: grid; gap: 20px; }
+      .contacts .contacts-main, .contacts .contacts-aside { min-width: 0; display: grid; gap: 16px; align-content: start; }
+      .contacts .contacts-main.is-blank { align-content: stretch; }
       .contacts .contact-section { display: grid; gap: 16px; }
       .contacts .contact-section .section-head { align-items: flex-end; }
       .contacts .section-copy { max-width: 720px; }
       .contacts .section-copy h2 { margin-bottom: 4px; }
       .contacts .section-copy p { margin: 0; }
       .contacts .quick-panel { border-top: 3px solid var(--gold); }
-      .contacts .quick-list { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+      .contacts .quick-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(258px,1fr)); gap: 12px; }
       .contacts .quick-card { border: 1px solid var(--line); border-radius: 10px; padding: 16px; background: var(--panel-soft); display: grid; gap: 12px; align-content: start; }
       .contacts .quick-card.urgent { border-color: rgba(172,72,42,.4); background: #fff9f5; }
       .contacts .quick-label { display: flex; justify-content: space-between; gap: 8px; align-items: center; color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
@@ -3026,6 +3023,20 @@ const PageTemplates = `
       .contacts .contact-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; align-items: end; }
       .contacts .contact-form .f-wide, .contacts .contact-form .f-actions { grid-column: 1 / -1; }
       .contacts .contact-form .f-actions { display: flex; justify-content: flex-end; }
+      .contacts .contact-form fieldset { min-width: 0; margin: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 14px 14px; }
+      .contacts .contact-form legend { padding: 0 6px; color: var(--gold-ink); font-size: 11.5px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+      .contacts .contact-form legend .muted { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: none; }
+      .contacts .contact-form .permission-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(184px,1fr)); gap: 6px 18px; }
+      .contacts .contact-form .permission-grid label { min-height: 34px; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: 9px; color: var(--ink); font-size: 13.5px; font-weight: 650; letter-spacing: 0; text-transform: none; }
+      .contacts .contact-form .permission-grid input { width: 17px; height: 17px; min-height: 0; margin: 0; }
+      .contacts .contact-add-optional { grid-column: 1 / -1; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fffefb; }
+      .contacts .contact-add-optional > summary { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 14px; cursor: pointer; list-style: none; color: var(--ink); font-size: 13.5px; font-weight: 850; }
+      .contacts .contact-add-optional > summary::-webkit-details-marker { display: none; }
+      .contacts .contact-add-optional > summary::after { content: "\203A"; color: var(--gold-ink); font-size: 20px; line-height: .8; }
+      .contacts .contact-add-optional[open] > summary { border-bottom: 1px solid var(--line); }
+      .contacts .contact-add-optional[open] > summary::after { transform: rotate(90deg); }
+      .contacts .contact-add-optional-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 14px; }
+      .contacts .contact-add-optional-grid fieldset { grid-column: 1 / -1; }
       .contacts .contact-list { display: grid; gap: 8px; }
       .contacts .contact-row { border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px; background: var(--panel-soft); display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; }
       .contacts .contact-row-copy { min-width: 0; display: grid; gap: 4px; }
@@ -3039,6 +3050,37 @@ const PageTemplates = `
       .contacts .inactive-contacts > summary { cursor: pointer; color: var(--muted); font-size: 13.5px; font-weight: 800; }
       .contacts .inactive-contacts .contact-list { margin-top: 10px; }
       .contacts .contact-empty-line { margin: 0; padding: 14px; border-radius: 8px; background: var(--panel-soft); color: var(--muted); }
+      .contacts .contact-groups { display: grid; gap: 18px; }
+      .contacts .contact-group .contact-kind { display: none; }
+      .contacts .contact-group.is-urgent .contact-group-head h3 { color: #a4422b; }
+      .contacts .contact-group.is-urgent .contact-group-head { border-bottom-color: rgba(172,72,42,.34); }
+      .contacts .contact-group.is-urgent .contact-row { border-color: rgba(172,72,42,.34); background: #fff9f5; }
+      .contacts .contact-group { display: grid; gap: 9px; }
+      .contacts .contact-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 7px; }
+      .contacts .contact-group-head h3 { color: var(--gold-ink); font-family: var(--font-sans); font-size: 11.5px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+      .contacts .contact-group-head span { color: var(--soft); font-size: 12px; font-weight: 750; white-space: nowrap; }
+      .contacts .contacts-blank { min-height: 44vh; display: grid; align-content: center; justify-items: center; gap: 15px; border: 1px dashed rgba(200,153,63,.42); border-radius: var(--radius-sm); background: rgba(255,254,251,.68); padding: 32px 26px; text-align: center; }
+      .contacts .contacts-blank .empty-state { width: 100%; border: 0; background: transparent; padding: 0; grid-template-columns: minmax(0,1fr); justify-items: center; gap: 13px; text-align: center; }
+      .contacts .contacts-blank .empty-state p { max-width: 48ch; }
+      .contacts .contacts-blank-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+      .contacts .contacts-blank-actions .button { min-height: 44px; }
+      .contacts .contacts-aside-panel { display: grid; gap: 14px; padding: 20px; align-content: start; }
+      .contacts .contacts-aside-panel .kicker { margin-bottom: 0; }
+      .contacts .contacts-aside-panel h2 { font-size: 20px; }
+      .contacts .contacts-aside-panel > p { color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+      .contacts .contacts-guide { margin: 0; padding: 0; list-style: none; display: grid; gap: 13px; }
+      .contacts .contacts-guide li { display: grid; grid-template-columns: 9px minmax(0,1fr); gap: 11px; align-items: start; }
+      .contacts .contacts-guide i { margin-top: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--gold); }
+      .contacts .contacts-guide i.urgent { background: #a4422b; }
+      .contacts .contacts-guide strong { display: block; font-size: 14px; line-height: 1.25; }
+      .contacts .contacts-guide span { display: block; color: var(--muted); font-size: 12.8px; line-height: 1.42; }
+      .contacts .contacts-links { display: grid; }
+      .contacts .contacts-link { min-height: 48px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding: 11px 0; color: inherit; text-decoration: none; }
+      .contacts .contacts-link:first-child { border-top: 0; padding-top: 0; }
+      .contacts .contacts-link strong { display: block; font-size: 14px; }
+      .contacts .contacts-link small { display: block; margin-top: 2px; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+      .contacts .contacts-link::after { content: "\203A"; color: var(--gold-ink); font-size: 21px; line-height: 1; }
+      .contacts .contacts-link:hover strong { color: var(--gold-ink); }
       .contacts .directory-panel { background: rgba(255,255,255,.72); }
       .contacts .directory-note { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
       .contacts .directory-note svg { width: 17px; height: 17px; fill: none; stroke: var(--gold-ink); stroke-width: 1.8; }
@@ -3046,10 +3088,16 @@ const PageTemplates = `
       .contacts .contact-edit-dialog .dialog-head h2 { margin: 2px 0 0; }
       .contacts .contact-danger, .contacts .contact-reactivate { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(158,70,48,.3); display: flex; gap: 14px; align-items: center; justify-content: space-between; }
       .contacts .contact-danger p, .contacts .contact-reactivate p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
-      @media (max-width: 1040px) { .contacts .quick-list { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+      @media (min-width: 1181px) { .contacts .contacts-layout { grid-template-columns: minmax(0,1fr) 320px; } }
+      @media (max-width: 1180px) and (min-width: 721px) { .contacts .contacts-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; } }
       @media (max-width: 720px) {
-        .contacts .contacts-stack { gap: 12px; }
+        .contacts .contacts-layout { gap: 12px; }
+        .contacts .contacts-main, .contacts .contacts-aside { gap: 12px; }
         .contacts .contact-section { gap: 12px; }
+        .contacts .contacts-blank { min-height: 0; padding: 26px 18px; }
+        .contacts .contacts-blank-actions { width: 100%; }
+        .contacts .contacts-blank-actions .button { width: 100%; }
+        .contacts .contacts-aside-panel { padding: 16px; }
         .contacts .quick-list { grid-template-columns: 1fr; gap: 8px; }
         .contacts .quick-card { padding: 14px; gap: 9px; }
         .contacts .quick-card h3 { font-size: 20px; }
@@ -3060,6 +3108,7 @@ const PageTemplates = `
         .contacts .contact-form { grid-template-columns: 1fr; }
         .contacts .contact-form > *, .contacts .contact-form .f-wide, .contacts .contact-form .f-actions { grid-column: 1; }
         .contacts .contact-form .f-actions .button { width: 100%; }
+        .contacts .contact-add-optional-grid { grid-template-columns: 1fr; }
         .contacts .contact-row { grid-template-columns: 1fr; padding: 12px; gap: 10px; }
         .contacts .contact-row-actions { display: grid; grid-template-columns: 1fr; justify-content: stretch; }
         .contacts .contact-row-actions > .button, .contacts .contact-row-actions > form, .contacts .contact-row-actions > form .button { width: 100%; }
@@ -3067,11 +3116,16 @@ const PageTemplates = `
         .contacts .contact-danger, .contacts .contact-reactivate { align-items: stretch; flex-direction: column; }
         .contacts .contact-danger .button, .contacts .contact-reactivate .button { width: 100%; }
         .contacts .section-head { align-items: flex-start; }
+        .contacts .page-actions .button { min-height: 44px; }
+        .contacts .contact-row-actions .button { min-height: 42px; }
+        .contacts .contact-form .permission-grid label { min-height: 44px; }
+        .contacts .inactive-contacts > summary { min-height: 44px; display: flex; align-items: center; }
       }
     </style>
     <main class="app-main contacts">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg><span>/</span><span>Kontakte</span></span>
+        {{if .CanManageContacts}}<div class="page-actions"><a class="button primary" href="#contact-add"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Kontakt hinzufügen</a></div>{{end}}
       </div>
       <section class="page wide">
         <div>
@@ -3079,7 +3133,8 @@ const PageTemplates = `
           <p class="lede">Schnell die richtige Ansprechperson für {{.Tenant.Address}} erreichen.</p>
         </div>
         {{if .ContactMsg}}<p class="flash {{if .ContactOK}}ok{{end}}">{{.ContactMsg}}</p>{{end}}
-        <div class="contacts-stack">
+        <div class="contacts-layout">
+        <div class="contacts-main{{if and (not .HasAnyContacts) (not .CanManageContacts)}} is-blank{{end}}">
           {{if .HasQuickContacts}}
             <section class="panel contact-section quick-panel" aria-labelledby="quick-contacts-title">
               <div class="section-head">
@@ -3139,9 +3194,10 @@ const PageTemplates = `
                   <h2 id="managed-contacts-title">Weitere wichtige Kontakte</h2>
                   <p class="muted">Firmen, Dienste und wiederkehrende Ansprechpartner für das Haus.</p>
                 </div>
+                {{if .HasManagedContacts}}<span class="pill">{{len .ManagedContacts}} im Adressbuch</span>{{end}}
               </div>
               {{if .CanManageContacts}}
-                <details class="contact-add" id="contact-add" {{if .ContactFormOpen}}open{{end}}>
+                <details class="contact-add" id="contact-add" {{if or .ContactFormOpen (not .HasManagedContacts)}}open{{end}}>
                   <summary>Kontakt hinzufügen</summary>
                   <div class="contact-add-body">
                     <p class="contact-add-hint">Name oder Firma und mindestens Telefon oder E-Mail angeben. {{if not .ServiceProviderAccessEnabled}}Dienstleister-Zugänge sind derzeit nicht verfügbar.{{end}}</p>
@@ -3153,29 +3209,41 @@ const PageTemplates = `
                       <label>Telefon<input name="phone" maxlength="80" placeholder="+43 ..."></label>
                       <label>E-Mail<input type="email" name="email" placeholder="kontakt@example.com"></label>
                       <label class="f-wide">Notiz<input name="notes" maxlength="300" placeholder="z. B. Lift, Elektrik oder Erreichbarkeit"></label>
-                      <label>Region <span class="muted">(optional)</span><input name="service_region" maxlength="120" placeholder="z. B. Graz und Umgebung"></label>
-                      <label>Qualifikation <span class="muted">(optional)</span><input name="qualification" maxlength="240" placeholder="z. B. konzessionierter Elektrobetrieb"></label>
-                      <fieldset class="f-wide"><legend>Energie-Fähigkeiten <span class="muted">(optional, kein Portalzugang)</span></legend><div class="permission-grid">
-                        <label><input type="checkbox" name="energy_capabilities" value="metering"> Leistungsmessung</label>
-                        <label><input type="checkbox" name="energy_capabilities" value="smart-meter"> Smart Meter</label>
-                        <label><input type="checkbox" name="energy_capabilities" value="home-assistant"> Home Assistant</label>
-                        <label><input type="checkbox" name="energy_capabilities" value="pv"> PV</label>
-                        <label><input type="checkbox" name="energy_capabilities" value="battery"> Speicher</label>
-                        <label><input type="checkbox" name="energy_capabilities" value="wallbox"> Wallbox</label>
-                        <label><input type="checkbox" name="energy_capabilities" value="heat-pump"> Wärmepumpe</label>
-                        <label><input type="checkbox" name="energy_capabilities" value="electrical"> Elektro-Fachnachweis</label>
-                      </div></fieldset>
+                      <details class="contact-add-optional">
+                        <summary>Region, Qualifikation und Energie-Fähigkeiten</summary>
+                        <div class="contact-add-optional-grid">
+                          <label>Region <span class="muted">(optional)</span><input name="service_region" maxlength="120" placeholder="z. B. Graz und Umgebung"></label>
+                          <label>Qualifikation <span class="muted">(optional)</span><input name="qualification" maxlength="240" placeholder="z. B. konzessionierter Elektrobetrieb"></label>
+                          <fieldset><legend>Energie-Fähigkeiten <span class="muted">(optional, kein Portalzugang)</span></legend><div class="permission-grid">
+                            <label><input type="checkbox" name="energy_capabilities" value="metering"> Leistungsmessung</label>
+                            <label><input type="checkbox" name="energy_capabilities" value="smart-meter"> Smart Meter</label>
+                            <label><input type="checkbox" name="energy_capabilities" value="home-assistant"> Home Assistant</label>
+                            <label><input type="checkbox" name="energy_capabilities" value="pv"> PV</label>
+                            <label><input type="checkbox" name="energy_capabilities" value="battery"> Speicher</label>
+                            <label><input type="checkbox" name="energy_capabilities" value="wallbox"> Wallbox</label>
+                            <label><input type="checkbox" name="energy_capabilities" value="heat-pump"> Wärmepumpe</label>
+                            <label><input type="checkbox" name="energy_capabilities" value="electrical"> Elektro-Fachnachweis</label>
+                          </div></fieldset>
+                        </div>
+                      </details>
                       <div class="f-actions"><button class="button primary" type="submit">Kontakt anlegen</button></div>
                     </form>
                   </div>
                 </details>
               {{end}}
               {{if .HasManagedContacts}}
-                <div class="contact-list">
-                  {{range .ManagedContacts}}{{if $.CanManageContacts}}{{template "managedContactAdmin" .}}{{else}}{{template "managedContactPublic" .}}{{end}}{{end}}
+                <div class="contact-groups">
+                  {{range .ManagedGroups}}
+                    <section class="contact-group{{if eq .Kind "Notdienst"}} is-urgent{{end}}">
+                      <div class="contact-group-head"><h3>{{.Kind}}</h3><span>{{.Count}}</span></div>
+                      <div class="contact-list">
+                        {{range .Contacts}}{{if $.CanManageContacts}}{{template "managedContactAdmin" .}}{{else}}{{template "managedContactPublic" .}}{{end}}{{end}}
+                      </div>
+                    </section>
+                  {{end}}
                 </div>
               {{else if .CanManageContacts}}
-                <p class="contact-empty-line">Noch keine weiteren Kontakte. Bei Bedarf über „Kontakt hinzufügen“ anlegen.</p>
+                <p class="contact-empty-line">Noch keine weiteren Kontakte. Das Formular oben legt den ersten an – etwa Lift, Heizung oder Elektrik.</p>
               {{end}}
               {{if and .CanManageContacts .HasInactiveContacts}}
                 <details class="inactive-contacts">
@@ -3201,8 +3269,42 @@ const PageTemplates = `
           {{end}}
 
           {{if and (not .HasAnyContacts) (not .CanManageContacts)}}
-            <section class="panel contact-section">{{template "emptyState" .ManagedEmpty}}</section>
+            <section class="contacts-blank" aria-label="Kontakte des Hauses">
+              {{template "emptyState" .ManagedEmpty}}
+              <div class="contacts-blank-actions">
+                <a class="button primary" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}">Anliegen melden</a>
+                <a class="button" href="/app/announcements">Aushang ansehen</a>
+              </div>
+            </section>
           {{end}}
+        </div>
+
+        <aside class="contacts-aside" aria-label="Hilfe zu Kontakten">
+          <section class="panel compact contacts-aside-panel" aria-labelledby="contacts-guide-title">
+            <div>
+              <div class="kicker">Wegweiser</div>
+              <h2 id="contacts-guide-title">Wer ist wofür zuständig?</h2>
+            </div>
+            <ul class="contacts-guide">
+              <li><i class="urgent" aria-hidden="true"></i><div><strong>Notdienst</strong><span>Gefahr im Verzug, Wasserschaden, Stromausfall oder Personen im Lift.</span></div></li>
+              <li><i aria-hidden="true"></i><div><strong>Hausverwaltung</strong><span>Verträge, Abrechnung, Beschlüsse und alles Kaufmännische.</span></div></li>
+              <li><i aria-hidden="true"></i><div><strong>Hausmeister</strong><span>Schlüssel, Reinigung, Grünflächen und kleine Reparaturen.</span></div></li>
+              <li><i aria-hidden="true"></i><div><strong>Beirat</strong><span>Vertritt die Eigentümergemeinschaft gegenüber der Verwaltung.</span></div></li>
+              <li><i aria-hidden="true"></i><div><strong>Dienstleister</strong><span>Firmen für Lift, Heizung, Elektrik oder Energiethemen im Haus.</span></div></li>
+            </ul>
+          </section>
+          <section class="panel compact contacts-aside-panel" aria-labelledby="contacts-next-title">
+            <div>
+              <div class="kicker">Auch hilfreich</div>
+              <h2 id="contacts-next-title">Weiter im Portal</h2>
+            </div>
+            <div class="contacts-links">
+              <a class="contacts-link" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}"><span><strong>Anliegen melden</strong><small>Bleibt dokumentiert und geht nicht verloren – anders als ein Anruf.</small></span></a>
+              {{if .CanManageContacts}}<a class="contacts-link" href="/app/settings/building#building-contact"><span><strong>Hauskontakte pflegen</strong><small>Verwaltung, Notdienst und Hausmeister stehen in den Gebäude-Einstellungen.</small></span></a>{{end}}
+              {{if .CanJoinDirectory}}<a class="contacts-link" href="/app/settings/profile"><span><strong>Eigener Verzeichniseintrag</strong><small>{{if .DirectoryOptIn}}Ihr Kontakt ist für die Hausgemeinschaft sichtbar.{{else}}Ihr Kontakt ist derzeit nicht sichtbar.{{end}}</small></span></a>{{end}}
+            </div>
+          </section>
+        </aside>
         </div>
       </section>
     </main>
@@ -3813,7 +3915,61 @@ const PageTemplates = `
 {{template "appOpen" .}}
     <script src="/assets/announcements.js?v={{.AssetVersion}}" defer></script>
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
-    <main class="app-main">
+    <style>
+      .announce .announce-layout { display: grid; gap: 20px; }
+      .announce .announce-main, .announce .announce-aside { min-width: 0; display: grid; gap: 16px; align-content: start; }
+      .announce .announce-main.is-blank { align-content: stretch; }
+      .announce .announce-feed { display: grid; gap: 18px; }
+      .announce .announce-feed .kicker { margin-bottom: 0; }
+      .announce .section-copy h2 { margin-top: 5px; }
+      .announce .announce-counts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .announce .archive-tools { margin: 0; }
+      .announce .announce-group { display: grid; gap: 13px; }
+      .announce .announce-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 7px; }
+      .announce .announce-group-head h3 { color: var(--gold-ink); font-family: var(--font-sans); font-size: 11.5px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+      .announce .announce-group-head span { color: var(--soft); font-size: 12px; font-weight: 750; white-space: nowrap; }
+      .announce .announce-group .entries { gap: 16px; }
+      .announce .announce-group .entry + .entry { padding-top: 16px; }
+      .announce .entry-head { gap: 12px; }
+      .announce .entry-actions { flex-wrap: nowrap; flex: 0 0 auto; }
+      .announce .announce-filtered-empty { display: grid; gap: 13px; justify-items: start; }
+      .announce .announce-blank { min-height: 44vh; display: grid; align-content: center; justify-items: center; gap: 15px; border: 1px dashed rgba(200,153,63,.42); border-radius: var(--radius-sm); background: rgba(255,254,251,.68); padding: 32px 26px; text-align: center; }
+      .announce .announce-blank .empty-state { width: 100%; border: 0; background: transparent; padding: 0; grid-template-columns: minmax(0,1fr); justify-items: center; gap: 13px; text-align: center; }
+      .announce .announce-blank .empty-state p { max-width: 48ch; }
+      .announce .announce-blank-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+      .announce .announce-blank-actions .button { min-height: 44px; }
+      .announce .announce-aside-panel { display: grid; gap: 14px; padding: 20px; align-content: start; }
+      .announce .announce-aside-panel .kicker { margin-bottom: 0; }
+      .announce .announce-aside-panel h2 { font-size: 20px; }
+      .announce .announce-aside-panel > p { color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+      .announce .announce-legend { margin: 0; padding: 0; list-style: none; display: grid; gap: 13px; }
+      .announce .announce-legend li { display: grid; gap: 5px; justify-items: start; }
+      .announce .announce-legend span { color: var(--muted); font-size: 12.8px; line-height: 1.42; }
+      .announce .announce-links { display: grid; }
+      .announce .announce-link { min-height: 48px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding: 11px 0; color: inherit; text-decoration: none; }
+      .announce .announce-link:first-child { border-top: 0; padding-top: 0; }
+      .announce .announce-link strong { display: block; font-size: 14px; }
+      .announce .announce-link small { display: block; margin-top: 2px; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+      .announce .announce-link::after { content: "\203A"; color: var(--gold-ink); font-size: 21px; line-height: 1; }
+      .announce .announce-link:hover strong { color: var(--gold-ink); }
+      @media (min-width: 1181px) { .announce .announce-layout { grid-template-columns: minmax(0,1fr) 320px; } }
+      @media (max-width: 1180px) and (min-width: 721px) { .announce .announce-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; } }
+      @media (max-width: 720px) {
+        .announce .announce-layout { gap: 12px; }
+        .announce .announce-main, .announce .announce-aside { gap: 12px; }
+        .announce .announce-blank { min-height: 0; padding: 26px 18px; }
+        .announce .announce-blank-actions { width: 100%; }
+        .announce .announce-blank-actions .button { width: 100%; }
+        .announce .announce-aside-panel { padding: 16px; }
+        .announce .announce-feed { gap: 14px; }
+        .announce .page-actions .button { min-height: 44px; }
+        .announce .filter-form .button { min-height: 44px; }
+        .announce .filter-tab { min-height: 42px; padding: 6px 14px; }
+        .announce .entry-actions .button { min-height: 42px; }
+        .announce .announcement-body > summary { min-height: 42px; display: flex; align-items: center; }
+      }
+    </style>
+    <main class="app-main announce">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><span>/</span><span>Aushang</span></span>
         {{if .CanManageAnnouncements}}<div class="page-actions"><button class="button primary" type="button" data-dialog="announcement-create" aria-haspopup="dialog" aria-controls="announcement-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Aushang erstellen</button></div>{{end}}
@@ -3824,13 +3980,21 @@ const PageTemplates = `
           <p class="lede">Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft.</p>
         </div>
         {{if .AnnounceMsg}}<p class="flash ok">{{.AnnounceMsg}}</p>{{end}}
-        <div class="home-grid">
-          <section class="panel">
+        <div class="announce-layout">
+          <div class="announce-main{{if not .HasAnyAnnouncements}} is-blank{{end}}">
+          {{if .HasAnyAnnouncements}}
+          <section class="panel announce-feed" aria-labelledby="announce-feed-title">
             <div class="section-head">
-              <div class="kicker">Archiv</div>
-              {{if .HasAnnouncements}}<span class="pill">{{len .Announcements}} Treffer</span>{{end}}
+              <div class="section-copy">
+                <div class="kicker">Archiv</div>
+                <h2 id="announce-feed-title">Alle Aushänge</h2>
+              </div>
+              <div class="announce-counts">
+                {{if .HasNewAnnouncements}}<span class="pill unread">{{.NewAnnouncements}} neu</span>{{end}}
+                <span class="pill">{{len .Announcements}} Treffer</span>
+              </div>
             </div>
-            {{if .HasAnyAnnouncements}}<div class="archive-tools">
+            <div class="archive-tools">
               <form class="filter-form" method="get" action="/app/announcements">
                 {{if .SelectedCategory}}<input type="hidden" name="category" value="{{.SelectedCategory}}">{{end}}
                 <label for="announcement-search">Suche<input id="announcement-search" name="q" value="{{.SearchQuery}}" placeholder="Titel, Text oder Kategorie"></label>
@@ -3839,78 +4003,71 @@ const PageTemplates = `
               <div class="filter-tabs" aria-label="Aushang-Kategorien">
                 {{range .CategoryFilters}}<a class="filter-tab {{if .Active}}active{{end}}" href="{{.URL}}">{{.Label}}</a>{{end}}
               </div>
-            </div>{{end}}
+            </div>
             {{if .HasAnnouncements}}
-              <div class="entries">
-                {{range .Announcements}}
-                  <article class="entry announcement-entry{{if .Unread}} is-unread{{end}}{{if .Pinned}} is-pinned{{end}}" id="announcement-{{.ID}}">
-                    <div class="entry-head">
-                      <div>
-                        <h3>{{.Title}}</h3>
-                        <div class="entry-meta">
-                          <span class="pill {{.CategoryClass}}">{{.Category}}</span>
-                          {{if .Unread}}<span class="pill unread">neu</span>{{end}}
-                          {{if .Pinned}}<span class="pill">Fixiert</span>{{end}}
-                          {{if .Status}}<span class="pill">{{.Status}}</span>{{end}}
-                          <span>{{.PublishedAt}}</span>
-                          {{if .HasExpiresAt}}<span>bis {{.ExpiresAt}}</span>{{end}}
-                        </div>
-                      </div>
-                      {{if $.CanManageAnnouncements}}<div class="entry-actions">
-                        <button class="button small" type="button" data-dialog="{{.EditDialogID}}" aria-haspopup="dialog" aria-controls="{{.EditDialogID}}">Bearbeiten</button>
-                        <form method="post" action="/app/announcements/delete" data-confirm="{{.DeleteConfirmLabel}}">
-                          <input type="hidden" name="id" value="{{.ID}}">
-                          <button class="button small ghost" type="submit">Löschen</button>
-                        </form>
-                      </div>{{end}}
-                    </div>
-                    <details class="announcement-body"{{if .Unread}} open{{end}}>
-                      <summary>{{if .Unread}}Neuen Aushang lesen{{else}}Aushang lesen{{end}}</summary>
-                      <div class="announcement-body-content">
-                        <div class="entry-body">{{.BodyHTML}}</div>
-                        {{template "attachmentStrip" .}}
-                      </div>
-                    </details>
-                  </article>
-                  {{if $.CanManageAnnouncements}}
-                  <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
-                    <form method="post" action="/app/announcements/edit" enctype="multipart/form-data">
-                      <input type="hidden" name="id" value="{{.ID}}">
-                      <div class="dialog-head">
-                        <h2 id="{{.EditDialogID}}-title">Aushang bearbeiten</h2>
-                        <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
-                      </div>
-                      <div class="dialog-body">
-                        <div class="dialog-grid">
-                          <label class="full" for="title-{{.ID}}">Titel<input id="title-{{.ID}}" name="title" value="{{.Title}}" required maxlength="140"></label>
-                          <label class="full" for="body-{{.ID}}">Text<textarea id="body-{{.ID}}" name="body" required>{{.Body}}</textarea></label>
-                          <label for="category-{{.ID}}">Kategorie<select id="category-{{.ID}}" name="category">
-                            <option value="Info"{{if eq .Category "Info"}} selected{{end}}>Info</option>
-                            <option value="Termin"{{if eq .Category "Termin"}} selected{{end}}>Termin</option>
-                            <option value="Wartung"{{if eq .Category "Wartung"}} selected{{end}}>Wartung</option>
-                            <option value="Dringend"{{if eq .Category "Dringend"}} selected{{end}}>Dringend</option>
-                          </select></label>
-                          <label for="published-{{.ID}}">Veröffentlichen<input id="published-{{.ID}}" type="datetime-local" name="published_at" value="{{.PublishedAtInput}}"></label>
-                          <label for="expires-{{.ID}}">Ablauf optional<input id="expires-{{.ID}}" type="datetime-local" name="expires_at" value="{{.ExpiresAtInput}}"></label>
-                          <label class="check-row"><input type="checkbox" name="pinned" value="true"{{if .PinnedChecked}} checked{{end}}> oben fixieren</label>
-                          <label class="full" for="attachments-{{.ID}}">Anhänge ergänzen<span class="file-control"><input id="attachments-{{.ID}}" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Fotos oder PDF auswählen</span></span></label>
-                        </div>
-                        <button class="button primary" type="submit">Änderungen speichern</button>
-                      </div>
-                    </form>
-                  </dialog>
-                  {{end}}
-                {{end}}
-              </div>
-            {{else}}
-              {{if .HasAnyAnnouncements}}
-                {{template "emptyState" .AnnouncementsEmpty}}
-              {{else}}
-                {{template "emptyState" .AnnouncementsBlank}}
+              {{if .HasPinnedAnnouncements}}
+              <section class="announce-group" aria-labelledby="announce-pinned-title">
+                <div class="announce-group-head"><h3 id="announce-pinned-title">Oben fixiert</h3><span>{{len .PinnedAnnouncements}}</span></div>
+                <div class="entries">
+                  {{range .PinnedAnnouncements}}{{template "announcementEntry" .}}{{end}}
+                </div>
+              </section>
               {{end}}
+              {{if .HasLatestAnnouncements}}
+              <section class="announce-group" aria-labelledby="announce-latest-title">
+                <div class="announce-group-head"><h3 id="announce-latest-title">{{if .HasPinnedAnnouncements}}Weitere Beiträge{{else}}Neueste zuerst{{end}}</h3><span>{{len .LatestAnnouncements}}</span></div>
+                <div class="entries">
+                  {{range .LatestAnnouncements}}{{template "announcementEntry" .}}{{end}}
+                </div>
+              </section>
+              {{end}}
+            {{else}}
+              <div class="announce-filtered-empty">
+                {{template "emptyState" .AnnouncementsEmpty}}
+                <a class="button" href="/app/announcements">Filter zurücksetzen</a>
+              </div>
             {{end}}
           </section>
+          {{else}}
+          <section class="announce-blank" aria-label="Aushang des Hauses">
+            {{template "emptyState" .AnnouncementsBlank}}
+            <div class="announce-blank-actions">
+              {{if .CanManageAnnouncements}}
+                <button class="button primary" type="button" data-dialog="announcement-create" aria-haspopup="dialog" aria-controls="announcement-create">Ersten Aushang erstellen</button>
+              {{else}}
+                <a class="button primary" href="/app/events">Termine ansehen</a>
+                <a class="button" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}">Anliegen melden</a>
+              {{end}}
+            </div>
+          </section>
+          {{end}}
+          </div>
 
+          <aside class="announce-aside" aria-label="Hinweise zum Aushang">
+            <section class="panel compact announce-aside-panel" aria-labelledby="announce-legend-title">
+              <div>
+                <div class="kicker">Kategorien</div>
+                <h2 id="announce-legend-title">Was die Farben bedeuten</h2>
+              </div>
+              <ul class="announce-legend">
+                <li><span class="pill dringend">Dringend</span><span>Betrifft Sicherheit oder Versorgung und duldet keinen Aufschub.</span></li>
+                <li><span class="pill wartung">Wartung</span><span>Arbeiten am Haus mit möglicher Einschränkung, etwa Lift oder Wasser.</span></li>
+                <li><span class="pill termin">Termin</span><span>Zeitpunkt, den Sie sich vormerken sollten.</span></li>
+                <li><span class="pill info">Info</span><span>Allgemeine Mitteilung ohne nötige Reaktion.</span></li>
+              </ul>
+            </section>
+            <section class="panel compact announce-aside-panel" aria-labelledby="announce-next-title">
+              <div>
+                <div class="kicker">Auch hilfreich</div>
+                <h2 id="announce-next-title">Weiter im Portal</h2>
+              </div>
+              <div class="announce-links">
+                <a class="announce-link" href="/app/events"><span><strong>Termine</strong><small>Versammlungen, Wartungen und Fristen mit Datum.</small></span></a>
+                <a class="announce-link" href="/app/dokumente"><span><strong>Dokumente</strong><small>Protokolle, Abrechnungen und Hausordnung.</small></span></a>
+                <a class="announce-link" href="/app/settings/notifications"><span><strong>Benachrichtigungen</strong><small>Neue Aushänge zusätzlich per E-Mail erhalten.</small></span></a>
+              </div>
+            </section>
+          </aside>
         </div>
       </section>
 
@@ -3948,6 +4105,65 @@ const PageTemplates = `
       {{end}}
     </main>
 {{template "appClose" .}}
+{{end}}
+
+{{define "announcementEntry"}}
+                  <article class="entry announcement-entry{{if .Unread}} is-unread{{end}}{{if .Pinned}} is-pinned{{end}}" id="announcement-{{.ID}}">
+                    <div class="entry-head">
+                      <div>
+                        <h3>{{.Title}}</h3>
+                        <div class="entry-meta">
+                          <span class="pill {{.CategoryClass}}">{{.Category}}</span>
+                          {{if .Unread}}<span class="pill unread">neu</span>{{end}}
+                          {{if and .Status (ne .Status "Veröffentlicht") (ne .Status "Fixiert")}}<span class="pill">{{.Status}}</span>{{end}}
+                          <span>{{.PublishedAt}}</span>
+                          {{if .HasExpiresAt}}<span>bis {{.ExpiresAt}}</span>{{end}}
+                        </div>
+                      </div>
+                      {{if .CanManage}}<div class="entry-actions">
+                        <button class="button small" type="button" data-dialog="{{.EditDialogID}}" aria-haspopup="dialog" aria-controls="{{.EditDialogID}}">Bearbeiten</button>
+                        <form method="post" action="/app/announcements/delete" data-confirm="{{.DeleteConfirmLabel}}">
+                          <input type="hidden" name="id" value="{{.ID}}">
+                          <button class="button small ghost" type="submit">Löschen</button>
+                        </form>
+                      </div>{{end}}
+                    </div>
+                    <details class="announcement-body"{{if .Unread}} open{{end}}>
+                      <summary>{{if .Unread}}Neuen Aushang lesen{{else}}Aushang lesen{{end}}</summary>
+                      <div class="announcement-body-content">
+                        <div class="entry-body">{{.BodyHTML}}</div>
+                        {{template "attachmentStrip" .}}
+                      </div>
+                    </details>
+                  </article>
+                  {{if .CanManage}}
+                  <dialog id="{{.EditDialogID}}" class="dialog" aria-labelledby="{{.EditDialogID}}-title">
+                    <form method="post" action="/app/announcements/edit" enctype="multipart/form-data">
+                      <input type="hidden" name="id" value="{{.ID}}">
+                      <div class="dialog-head">
+                        <h2 id="{{.EditDialogID}}-title">Aushang bearbeiten</h2>
+                        <button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button>
+                      </div>
+                      <div class="dialog-body">
+                        <div class="dialog-grid">
+                          <label class="full" for="title-{{.ID}}">Titel<input id="title-{{.ID}}" name="title" value="{{.Title}}" required maxlength="140"></label>
+                          <label class="full" for="body-{{.ID}}">Text<textarea id="body-{{.ID}}" name="body" required>{{.Body}}</textarea></label>
+                          <label for="category-{{.ID}}">Kategorie<select id="category-{{.ID}}" name="category">
+                            <option value="Info"{{if eq .Category "Info"}} selected{{end}}>Info</option>
+                            <option value="Termin"{{if eq .Category "Termin"}} selected{{end}}>Termin</option>
+                            <option value="Wartung"{{if eq .Category "Wartung"}} selected{{end}}>Wartung</option>
+                            <option value="Dringend"{{if eq .Category "Dringend"}} selected{{end}}>Dringend</option>
+                          </select></label>
+                          <label for="published-{{.ID}}">Veröffentlichen<input id="published-{{.ID}}" type="datetime-local" name="published_at" value="{{.PublishedAtInput}}"></label>
+                          <label for="expires-{{.ID}}">Ablauf optional<input id="expires-{{.ID}}" type="datetime-local" name="expires_at" value="{{.ExpiresAtInput}}"></label>
+                          <label class="check-row"><input type="checkbox" name="pinned" value="true"{{if .PinnedChecked}} checked{{end}}> oben fixieren</label>
+                          <label class="full" for="attachments-{{.ID}}">Anhänge ergänzen<span class="file-control"><input id="attachments-{{.ID}}" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple><span>Fotos oder PDF auswählen</span></span></label>
+                        </div>
+                        <button class="button primary" type="submit">Änderungen speichern</button>
+                      </div>
+                    </form>
+                  </dialog>
+                  {{end}}
 {{end}}
 
 {{define "eventEditDialog"}}
@@ -3995,7 +4211,7 @@ const PageTemplates = `
           {{if .IsNext}}<span class="event-next-label">Als Nächstes</span>{{end}}
           <h3>{{.Title}}</h3>
         </div>
-        {{if .Status}}<span class="pill {{if .Past}}muted{{else}}ok{{end}}">{{.Status}}</span>{{end}}
+        {{if and .Status (ne .Status "Geplant")}}<span class="pill {{if .Past}}muted{{else}}ok{{end}}">{{.Status}}</span>{{end}}
       </div>
       <div class="event-meta">
         <span class="pill {{.CategoryClass}}">{{.Category}}</span>
@@ -4030,7 +4246,52 @@ const PageTemplates = `
 {{template "appOpen" .}}
     <script src="/assets/announcements.js?v={{.AssetVersion}}" defer></script>
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
-    <main class="app-main">
+    <style>
+      .events-page .events-layout { display: grid; gap: 20px; }
+      .events-page .events-main, .events-page .events-aside { min-width: 0; display: grid; gap: 16px; align-content: start; }
+      .events-page .events-main.is-blank { align-content: stretch; }
+      .events-page .events-panel { display: grid; gap: 18px; }
+      .events-page .events-panel .kicker { margin-bottom: 0; }
+      .events-page .events-head-copy h2 { margin-top: 5px; }
+      .events-page .events-head-copy p { margin-top: 5px; color: var(--muted); font-size: 13.5px; }
+      .events-page .events-month { display: grid; gap: 11px; }
+      .events-page .events-month + .events-month { margin-top: 4px; }
+      .events-page .events-month-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 7px; }
+      .events-page .events-month-head h3 { color: var(--gold-ink); font-family: var(--font-sans); font-size: 11.5px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+      .events-page .events-month-head span { color: var(--soft); font-size: 12px; font-weight: 750; white-space: nowrap; }
+      .events-page .events-blank { min-height: 44vh; display: grid; align-content: center; justify-items: center; gap: 15px; border: 1px dashed rgba(200,153,63,.42); border-radius: var(--radius-sm); background: rgba(255,254,251,.68); padding: 32px 26px; text-align: center; }
+      .events-page .events-blank .empty-state { width: 100%; border: 0; background: transparent; padding: 0; grid-template-columns: minmax(0,1fr); justify-items: center; gap: 13px; text-align: center; }
+      .events-page .events-blank .empty-state p { max-width: 48ch; }
+      .events-page .events-blank-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+      .events-page .events-blank-actions .button { min-height: 44px; }
+      .events-page .events-aside-panel { display: grid; gap: 14px; padding: 20px; align-content: start; }
+      .events-page .events-aside-panel .kicker { margin-bottom: 0; }
+      .events-page .events-aside-panel h2 { font-size: 20px; }
+      .events-page .events-aside-panel > p { color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+      .events-page .events-aside-panel .button { min-height: 44px; }
+      .events-page .events-legend { margin: 0; padding: 0; list-style: none; display: grid; gap: 13px; }
+      .events-page .events-legend li { display: grid; gap: 5px; justify-items: start; }
+      .events-page .events-legend span { color: var(--muted); font-size: 12.8px; line-height: 1.42; }
+      .events-page .events-aside-note { border-top: 1px solid var(--line); padding-top: 12px; color: var(--soft); font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
+      .events-page .event-history { margin-top: 2px; }
+      @media (min-width: 1181px) { .events-page .events-layout { grid-template-columns: minmax(0,1fr) 320px; } }
+      @media (max-width: 1180px) and (min-width: 721px) { .events-page .events-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; } }
+      @media (max-width: 720px) {
+        .events-page .events-layout { gap: 12px; }
+        .events-page .events-main, .events-page .events-aside { gap: 12px; }
+        .events-page .events-panel { gap: 14px; }
+        .events-page .events-blank { min-height: 0; padding: 26px 18px; }
+        .events-page .events-blank-actions { width: 100%; }
+        .events-page .events-blank-actions .button { width: 100%; }
+        .events-page .events-aside-panel { padding: 16px; }
+        .events-page .events-aside-panel .button { width: 100%; }
+        .events-shell .page-actions .button { min-height: 44px; }
+        .events-page .event-actions .button { min-height: 42px; }
+        .events-page .event-details > summary { min-height: 42px; display: flex; align-items: center; }
+        .events-page .event-history > summary { min-height: 46px; display: flex; align-items: center; }
+      }
+    </style>
+    <main class="app-main events-shell">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg><span>/</span><span>Termine</span></span>
         {{if .CanManageEvents}}<div class="page-actions"><button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Termin erstellen</button></div>{{end}}
@@ -4041,41 +4302,85 @@ const PageTemplates = `
           <p class="lede">Was als Nächstes im Haus ansteht – mit Zeitpunkt, Ort und allen nötigen Details.</p>
         </div>
         {{if .EventMsg}}<p class="flash {{if .EventOK}}ok{{end}}">{{.EventMsg}}</p>{{end}}
-        <section class="panel events-panel">
-          <div class="section-head">
-            <div>
-              <div class="kicker">Kommende Termine</div>
-              <p class="muted">{{if .HasEvents}}Der nächste Termin steht zuerst.{{else}}Sobald etwas geplant ist, erscheint es hier.{{end}}</p>
-            </div>
-            {{if .HasEvents}}<span class="pill">{{len .Events}} geplant</span>{{end}}
+        <div class="events-layout">
+          <div class="events-main{{if and (not .HasEvents) (not .HasPastEvents)}} is-blank{{end}}">
+            {{if .HasEvents}}
+            <section class="panel events-panel" aria-labelledby="events-upcoming-title">
+              <div class="section-head">
+                <div class="events-head-copy">
+                  <div class="kicker">Kommende Termine</div>
+                  <h2 id="events-upcoming-title">Was als Nächstes ansteht</h2>
+                  <p>Nach Monat geordnet, der nächste Termin steht zuerst.</p>
+                </div>
+                <span class="pill">{{len .Events}} geplant</span>
+              </div>
+              {{range .EventMonths}}
+                <section class="events-month">
+                  <div class="events-month-head"><h3>{{.Label}}</h3><span>{{.Count}} {{if eq .Count 1}}Termin{{else}}Termine{{end}}</span></div>
+                  <div class="agenda-list">
+                    {{range .Events}}{{template "eventCard" .}}{{end}}
+                  </div>
+                </section>
+              {{end}}
+              {{if .HasPastEvents}}
+                <details class="event-history">
+                  <summary>Vergangene Termine · {{len .PastEvents}}</summary>
+                  <div class="agenda-list">
+                    {{range .PastEvents}}{{template "eventCard" .}}{{end}}
+                  </div>
+                </details>
+              {{end}}
+            </section>
+            {{else}}
+            <section class="events-blank" aria-label="Termine des Hauses">
+              {{template "emptyState" .EventsEmpty}}
+              <div class="events-blank-actions">
+                {{if .CanManageEvents}}
+                  <button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create">Ersten Termin erstellen</button>
+                {{else}}
+                  <a class="button primary" href="/app/announcements">Aushang ansehen</a>
+                  <a class="button" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}">Anliegen melden</a>
+                {{end}}
+              </div>
+            </section>
+            {{if .HasPastEvents}}
+              <details class="event-history">
+                <summary>Vergangene Termine · {{len .PastEvents}}</summary>
+                <div class="agenda-list">
+                  {{range .PastEvents}}{{template "eventCard" .}}{{end}}
+                </div>
+              </details>
+            {{end}}
+            {{end}}
           </div>
-          {{if .HasEvents}}
-            <div class="agenda-list">
-              {{range .Events}}{{template "eventCard" .}}{{end}}
-            </div>
-          {{else}}
-            {{template "emptyState" .EventsEmpty}}
-          {{end}}
 
-          {{if .HasCalendarFeedURL}}
-            <details class="calendar-subscription">
-              <summary>Termine automatisch im eigenen Kalender anzeigen</summary>
-              <div class="calendar-subscription-body">
-                <p>Einmal abonnieren – neue und geänderte Haustermine erscheinen danach automatisch im Kalender.</p>
-                <a class="button" href="{{.CalendarFeedURL}}">Kalender abonnieren</a>
+          <aside class="events-aside" aria-label="Hinweise zu Terminen">
+            {{if .HasCalendarFeedURL}}
+            <section class="panel compact events-aside-panel" aria-labelledby="events-feed-title">
+              <div>
+                <div class="kicker">Eigener Kalender</div>
+                <h2 id="events-feed-title">Einmal abonnieren</h2>
               </div>
-            </details>
-          {{end}}
-
-          {{if .HasPastEvents}}
-            <details class="event-history">
-              <summary>Vergangene Termine · {{len .PastEvents}}</summary>
-              <div class="agenda-list">
-                {{range .PastEvents}}{{template "eventCard" .}}{{end}}
+              <p>Neue und geänderte Haustermine erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p>
+              <a class="button primary" href="{{.CalendarFeedURL}}">Kalender abonnieren</a>
+              <p class="events-aside-note">Der Link ist persönlich. Bitte nicht weitergeben.</p>
+            </section>
+            {{end}}
+            <section class="panel compact events-aside-panel" aria-labelledby="events-legend-title">
+              <div>
+                <div class="kicker">Was hier erscheint</div>
+                <h2 id="events-legend-title">Termine im Haus</h2>
               </div>
-            </details>
-          {{end}}
-        </section>
+              <ul class="events-legend">
+                <li><span class="pill versammlung">Eigentümerversammlung</span><span>Beschlüsse der Gemeinschaft. Teilnahme oder Vollmacht einplanen.</span></li>
+                <li><span class="pill wartung">Wartung</span><span>Lift, Heizung oder Technik. Zugang kann kurz eingeschränkt sein.</span></li>
+                <li><span class="pill ablesung">Ablesung</span><span>Zählerstände. Meist ist Zutritt zur Wohnung nötig.</span></li>
+                <li><span class="pill frist">Frist</span><span>Letzter Tag für eine Rückmeldung oder Zahlung.</span></li>
+                <li><span class="pill reinigung">Reinigung</span><span>Wiederkehrende Arbeiten in Haus, Hof und Grünflächen.</span></li>
+              </ul>
+            </section>
+          </aside>
+        </div>
       </section>
 
       {{if .CanManageEvents}}
