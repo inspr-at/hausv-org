@@ -709,7 +709,7 @@ async function assertPublicLanding(viewport) {
   if (!response || response.status() !== 200) {
     fail(`Öffentliche Startseite ${viewport.name}: Status ${response?.status() ?? 0}`);
   }
-  if (!(await page.getByRole('heading', { name: 'Ein Portal für alles was Zuhause anfällt.' }).count())) {
+  if (!(await page.getByRole('heading', { name: 'Alles, was Zuhause anfällt.' }).count())) {
     fail(`Öffentliche Startseite ${viewport.name}: Hauptaussage fehlt`);
   }
   const features = await page.locator('.feature').count();
@@ -1412,7 +1412,7 @@ async function assertLogoutBackNavigation() {
     page.getByRole('button', { name: 'Abmelden' }).click(),
   ]);
   loginStorageStates.delete(`${baseURL}|resident@example.com`);
-  if (!(await page.getByRole('heading', { name: 'Willkommen zurück' }).isVisible())) {
+  if (!(await page.getByRole('heading', { name: 'Anmelden' }).isVisible())) {
     fail('Abmelden/Zurück: Loginseite nach Abmeldung fehlt');
   }
 
@@ -1423,7 +1423,7 @@ async function assertLogoutBackNavigation() {
   if (authenticatedBody || await protectedHeading.isVisible().catch(() => false)) {
     fail('Abmelden/Zurück: geschützter Inhalt wurde aus dem Browsercache wieder sichtbar');
   }
-  if (!(await page.getByRole('heading', { name: 'Willkommen zurück' }).isVisible())) {
+  if (!(await page.getByRole('heading', { name: 'Anmelden' }).isVisible())) {
     fail('Abmelden/Zurück: unauthentifizierter Zustand fehlt nach Browser-Zurück');
   }
 

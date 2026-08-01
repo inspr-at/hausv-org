@@ -1244,9 +1244,11 @@ func TestTenantHomeUsesHouseLanguageAndPrivateMapLink(t *testing.T) {
 	for _, want := range []string{
 		"Ihr Hausportal",
 		"Alles Wichtige rund um unser Haus.",
-		"Willkommen zurück",
+		"Anmelden",
 		"Anmeldelink senden",
-		"Auf OpenStreetMap ansehen",
+		"Karte öffnen",
+		"© OpenStreetMap",
+		`class="location-map-tile" data-map-tile="/map-tiles/17/`,
 		"Privat für eingeladene Personen",
 		"Impressum",
 	} {
@@ -1276,7 +1278,7 @@ func TestExpiredMagicLinkReturnsToFriendlyLoginWithoutToken(t *testing.T) {
 
 	page := httptest.NewRecorder()
 	a.home(page, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/?login=expired", nil))
-	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Dieser Anmeldelink ist nicht mehr gültig") {
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Der bisherige Link ist abgelaufen") {
 		t.Fatalf("friendly expired page = %d %q", page.Code, page.Body.String())
 	}
 	if strings.Contains(page.Body.String(), "expired-secret") {
@@ -1294,10 +1296,10 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 	}
 	body := rr.Body.String()
 	for _, want := range []string{
-		"Ein Portal für alles was Zuhause anfällt.",
+		"Alles, was Zuhause anfällt.",
 		"Mehrparteien",
 		"hello [at] hausv [dot] org",
-		"Privater Pilot · Zugang nach Abstimmung",
+		"Privat · Zugang nach Abstimmung",
 		"1 € je Einheit und Monat",
 		"Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit.",
 		"Kleines Haus · 8 Wohnungen / Monat",

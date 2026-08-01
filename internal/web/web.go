@@ -132,6 +132,7 @@ const PageTemplates = `
   <title>{{.Title}}</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
+  <script src="/assets/home.js?v={{.AssetVersion}}" defer></script>
   <style>
     :root {
       color-scheme: light;
@@ -169,10 +170,10 @@ const PageTemplates = `
     .meta div { border-left: 1px solid rgba(231,197,116,.58); padding-left: 15px; min-width: 0; }
     .meta strong { display: block; font-weight: 760; font-size: 14px; color: #fff; margin-bottom: 4px; }
     .meta span { color: rgba(255,255,255,.8); font-size: 12.5px; line-height: 1.4; }
-    .side-stack { display: grid; gap: 16px; }
+    .side-stack { width: min(100%,420px); justify-self: end; display: grid; gap: 16px; }
     .login, .location-card { background: var(--paper); border-radius: var(--radius-xl); box-shadow: var(--shadow-login); }
     .login { padding: 28px; }
-    .login h2 { margin: 0; font-family: var(--font-serif); font-weight: 600; font-size: 26px; }
+    .login h2 { margin: 0; font-family: var(--font-serif); font-weight: 600; font-size: 28px; line-height: 1.08; }
     .login p { color: var(--muted); line-height: 1.5; margin: 9px 0 18px; font-size: 14.5px; }
     .login-email { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
     .login-email summary { min-height: 42px; display: flex; align-items: center; cursor: pointer; color: var(--ink); font-size: 13.5px; font-weight: 750; }
@@ -184,19 +185,32 @@ const PageTemplates = `
     button:hover { background: #000; }
     .notice { border: 1px solid rgba(32,37,31,.16); background: rgba(200,153,63,.1); color: #6a5320; border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.4; margin-bottom: 16px; }
     .notice.warn { border-color: rgba(173,92,27,.22); background: rgba(231,197,116,.2); color: #6c491a; }
-    .dev-link { display: block; border: 1px solid var(--line); background: #fffefb; color: var(--ink); border-radius: 10px; padding: 12px 14px; margin: -4px 0 16px; text-align: center; text-decoration: none; font-size: 14px; font-weight: 700; }
-    .dev-link:hover { border-color: var(--gold); }
+    .dev-link { min-height: 48px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 10px; padding: 12px 14px; margin: 0 0 12px; text-align: center; text-decoration: none; font-size: 14px; font-weight: 760; }
+    .dev-link:hover { background: #000; }
+    .login-retry { margin-top: 10px; border-top: 1px solid var(--line); }
+    .login-retry summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 720; }
+    .login-retry summary::marker { color: var(--gold); }
+    .login-retry form { margin-top: 8px; }
+    .login-retry .foot-note { margin-bottom: 0; }
     .sso-button { display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 10px; background: var(--ink); color: #fff; text-decoration: none; font-weight: 700; margin-bottom: 14px; }
     .sso-button:hover { background: #000; }
     .foot-note { margin: 16px 0 0; font-size: 13px; line-height: 1.4; color: var(--soft); }
     .location-card { overflow: hidden; }
     .location-head { display: flex; align-items: center; gap: 9px; padding: 14px 17px; color: var(--ink); font-size: 13.5px; font-weight: 760; }
     .location-head svg { width: 18px; height: 18px; flex: 0 0 auto; stroke: var(--leaf); stroke-width: 2; fill: none; }
-    .location-map { position: relative; height: 92px; overflow: hidden; background: #ebe8de; }
-    .location-map svg { width: 100%; height: 100%; display: block; stroke: rgba(138,123,63,.25); stroke-width: 3; fill: none; }
-    .location-pin { position: absolute; left: 58%; top: 46%; width: 19px; height: 19px; border-radius: 50% 50% 50% 0; background: var(--nav); transform: translate(-50%,-50%) rotate(-45deg); box-shadow: 0 2px 6px rgba(0,0,0,.22); }
+    .location-map { position: relative; height: 92px; overflow: hidden; isolation: isolate; background: #e8ebe1; }
+    .location-map-fallback { position: absolute; inset: 0; display: grid; place-items: end start; padding: 10px; background: linear-gradient(135deg,#e5eadf,#f2eee4); color: var(--muted); font-size: 11.5px; font-weight: 700; }
+    .location-map-configured.map-tile-failed .location-map-fallback { z-index: 3; }
+    .location-map-configured.map-tile-failed .location-map-tiles, .location-map-configured.map-tile-failed .location-pin { display: none; }
+    .location-map-fallback span { padding: 7px 10px; border-radius: 999px; background: rgba(255,254,251,.86); box-shadow: 0 1px 8px rgba(32,37,31,.08); }
+    .location-map-tiles { position: absolute; inset: 0; z-index: 1; pointer-events: none; filter: saturate(.72) contrast(.94) brightness(1.02); }
+    .location-map-tile { position: absolute; width: 256px; height: 256px; display: block; background-position: center; background-repeat: no-repeat; background-size: 256px 256px; user-select: none; pointer-events: none; }
+    .location-pin { position: absolute; z-index: 2; left: 50%; top: 50%; width: 19px; height: 19px; border: 1px solid rgba(255,255,255,.72); border-radius: 50% 50% 50% 0; background: var(--nav); transform: translate(-50%,-50%) rotate(-45deg); box-shadow: 0 3px 9px rgba(0,0,0,.28); }
     .location-pin::after { content: ""; position: absolute; width: 7px; height: 7px; left: 6px; top: 6px; border-radius: 50%; background: var(--paper); }
-    .location-link { min-height: 44px; display: flex; align-items: center; padding: 10px 17px; color: var(--ink); font-size: 12.5px; font-weight: 700; text-underline-offset: 3px; }
+    .location-foot { min-height: 44px; display: flex; align-items: stretch; justify-content: space-between; padding-inline: 11px 8px; }
+    .location-link, .location-credit { min-height: 44px; display: flex; align-items: center; color: var(--ink); text-underline-offset: 3px; }
+    .location-link { padding: 8px 6px; font-size: 12.5px; font-weight: 700; }
+    .location-credit { padding: 8px; color: var(--soft); font-size: 10.5px; font-weight: 650; }
     footer { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px clamp(20px,5vw,72px); color: var(--muted); background: rgba(255,254,251,.97); border-top: 1px solid rgba(231,224,210,.78); font-weight: 550; font-size: 13px; }
     .footer-links { display: flex; align-items: center; gap: 16px; }
     footer a { color: var(--ink); text-underline-offset: 3px; }
@@ -212,19 +226,27 @@ const PageTemplates = `
       .meta div { padding-left: 9px; }
       .meta span { display: none; }
       h1 { font-size: clamp(38px,11vw,52px); }
+      .side-stack { justify-self: start; }
       footer { align-items: flex-start; }
     }
     @media (max-width: 520px) {
       .brand .name { font-size: 16px; }
       .mark { width: 52px; }
       .mark .hausv-mark { width: 52px; }
-      .login { padding: 23px 20px; }
+      main { gap: 18px; padding-block: 22px; }
+      .eyebrow { margin-bottom: 9px; }
+      h1 { font-size: 34px; line-height: 1.02; }
+      .lead { margin-top: 12px; font-size: 15.5px; line-height: 1.48; }
+      .meta { display: none; }
+      .login { padding: 20px; }
+      .auth-sent .side-stack { grid-row: 1; }
+      .auth-sent .copy { grid-row: 2; }
       footer { display: grid; }
       .footer-links { gap: 13px; flex-wrap: wrap; }
     }
   </style>
 </head>
-<body>
+<body{{if .Sent}} class="auth-sent"{{else if .Expired}} class="auth-expired"{{else if .Denied}} class="auth-denied"{{end}}>
   <section class="hero">
     <header>
       <a class="brand" href="/" aria-label="Hausportal {{.HouseName}}"><span class="mark">{{template "tenantBrandMark" .}}</span><span class="name">{{.HouseName}}</span></a>
@@ -245,36 +267,50 @@ const PageTemplates = `
       </div>
       <div class="side-stack">
         <section id="login" class="login" aria-label="Anmeldung">
-          <h2>Willkommen zurück</h2>
-          <p>{{if .OIDCConfigured}}Sicher und ohne eigenes Passwort anmelden.{{else}}Wir senden Ihnen einen einmaligen Anmeldelink.{{end}}</p>
-          {{if .OIDCConfigured}}<a class="sso-button" href="/auth/oidc/start">Anmelden</a>{{end}}
-          {{if .Expired}}<div class="notice warn">Dieser Anmeldelink ist nicht mehr gültig. Fordern Sie einfach einen neuen an.</div>{{end}}
+          <h2>{{if .Sent}}E-Mail prüfen{{else if .Expired}}Neuen Link anfordern{{else if .Denied}}Zugang prüfen{{else}}Anmelden{{end}}</h2>
+          {{if not .Sent}}<p>{{if .Expired}}Der bisherige Link ist abgelaufen.{{else if .Denied}}Für diese Adresse besteht noch kein Zugang.{{else if .OIDCConfigured}}Sicher und ohne eigenes Passwort.{{else}}Sicher per E-Mail-Link – ohne Passwort.{{end}}</p>{{end}}
+          {{if and .OIDCConfigured (not .Sent)}}<a class="sso-button" href="/auth/oidc/start">Anmelden</a>{{end}}
           {{if .Sent}}
-            <div class="notice">Wenn die Adresse eingeladen ist, wurde ein Link verschickt. Bitte Posteingang prüfen.</div>
-            {{if not .MailConfigured}}<div class="notice warn">Der lokale Mailversand ist nicht eingerichtet.</div>{{end}}
-            {{if .DevLoginLink}}<a class="dev-link" href="{{.DevLoginLink}}">Lokalen Testzugang öffnen</a>{{end}}
+            <div class="notice" role="status">Wenn die Adresse eingeladen ist, ist der Anmeldelink unterwegs. Er gilt 15 Minuten.</div>
+            {{if .DevLoginLink}}<a class="dev-link" href="{{.DevLoginLink}}">Weiter zum Portal</a>{{end}}
           {{end}}
-          {{if .Denied}}<div class="notice warn">Diese Adresse ist noch nicht eingeladen.</div>{{end}}
-          {{if and .EmailLoginAvailable .OIDCConfigured}}<details class="login-email" {{if or .Sent .Denied .Expired}}open{{end}}><summary>Anmeldelink per E-Mail erhalten</summary>{{end}}
-          {{if .EmailLoginAvailable}}
+          {{if .Denied}}<div class="notice warn" role="status">Bitte wenden Sie sich an Ihre Hausverwaltung.</div>{{end}}
+          {{if and .EmailLoginAvailable .OIDCConfigured (not .Sent)}}<details class="login-email" {{if or .Denied .Expired}}open{{end}}><summary>Anmeldelink per E-Mail erhalten</summary>{{end}}
+          {{if and .EmailLoginAvailable (not .Sent)}}
             <form method="post" action="/auth/request">
               <label for="email">E-Mail-Adresse</label>
               <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="name@example.com">
               <button type="submit">Anmeldelink senden</button>
             </form>
             <p class="foot-note">15 Minuten gültig · nur für eingeladene Personen</p>
-          {{else if not .OIDCConfigured}}
+          {{else if and (not .Sent) (not .OIDCConfigured)}}
             <div class="notice">Die Anmeldung ist gerade nicht verfügbar.</div>
           {{end}}
-          {{if and .EmailLoginAvailable .OIDCConfigured}}</details>{{end}}
+          {{if and .EmailLoginAvailable .OIDCConfigured (not .Sent)}}</details>{{end}}
+          {{if and .Sent .EmailLoginAvailable}}
+            <details class="login-retry">
+              <summary>Andere Adresse verwenden</summary>
+              <form method="post" action="/auth/request">
+                <label for="email-retry">E-Mail-Adresse</label>
+                <input id="email-retry" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="name@example.com">
+                <button type="submit">Neuen Link senden</button>
+              </form>
+              <p class="foot-note">Nur für eingeladene Personen</p>
+            </details>
+          {{end}}
         </section>
         <section class="location-card" aria-label="Hausstandort">
           <div class="location-head"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg><span>{{.Tenant.Address}}</span></div>
-          <div class="location-map" aria-hidden="true">
-            <svg viewBox="0 0 420 92" preserveAspectRatio="none"><path d="M-10 70 105 22 205 58 300 10 435 48"/><path d="M32 -12 95 106M175 -12 232 104M350 -12 318 104"/><path d="M-20 26 118 55 230 20 442 78"/></svg>
-            <span class="location-pin"></span>
+          <div class="location-map{{if .LocationMap.Configured}} location-map-configured{{end}}" role="img" aria-label="Fester Kartenausschnitt rund um {{.Tenant.Address}}">
+            <div class="location-map-fallback"><span>Karte nicht verfügbar</span></div>
+            {{if .LocationMap.Configured}}
+            <div class="location-map-tiles" aria-hidden="true">
+              {{range .LocationMap.Tiles}}<span class="location-map-tile" data-map-tile="{{.URL}}" style="{{.Style}};background-image:url('{{.URL}}')"></span>{{end}}
+            </div>
+            <span class="location-pin" aria-hidden="true"></span>
+            {{end}}
           </div>
-          <a class="location-link" href="{{.MapURL}}" rel="noopener noreferrer" target="_blank">Auf OpenStreetMap ansehen</a>
+          <div class="location-foot"><a class="location-link" href="{{.MapURL}}" rel="noopener noreferrer" target="_blank" aria-label="{{.Tenant.Address}} in OpenStreetMap öffnen">Karte öffnen</a><a class="location-credit" href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">© OpenStreetMap</a></div>
         </section>
       </div>
     </main>
@@ -329,7 +365,6 @@ const PageTemplates = `
     /* Hidden on desktop, where the 3D mark is the logo; shown below 900px,
        where the 3D mark is not mounted at all and the bar would be empty. */
     .landing-mark .hausv-mark { width: 70px; height: 42px; display: none; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .landing-nav-toggle { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none; }
     .landing-menu-toggle { display: none; }
     /* 7x the 72x44 logo slot. JS pins left/top onto the real logo position and
        drives transform/opacity from scroll; transform-origin must stay top-left
@@ -492,11 +527,10 @@ const PageTemplates = `
       .landing-navbar { background: rgba(12,18,13,.58); backdrop-filter: blur(12px); }
       .landing-menu-toggle { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,.3); border-radius: var(--radius-sm); padding: 8px 13px; color: #fff; background: rgba(12,18,13,.42); backdrop-filter: blur(6px); font-size: 13px; font-weight: 850; cursor: pointer; }
       .landing-menu-toggle::before { content: ""; width: 15px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; box-shadow: 0 4px 0 currentColor inset; }
-      .landing-nav-toggle:focus-visible + .landing-menu-toggle { outline: 3px solid var(--gold-light); outline-offset: 3px; }
-      .landing-nav-toggle:checked + .landing-menu-toggle { border-color: rgba(231,197,116,.62); background: rgba(231,197,116,.16); }
+      .landing-menu-toggle[aria-expanded="true"] { border-color: rgba(231,197,116,.62); background: rgba(231,197,116,.16); }
       /* Panel drops out of the bar; .landing-nav is already position:relative. */
-      .landing-nav-toggle:checked ~ .landing-links { display: grid; position: absolute; top: 100%; left: 0; right: 0; gap: 2px; padding: 8px clamp(20px,4vw,42px) 14px; border-radius: 0 0 12px 12px; background: #0f150f; box-shadow: 0 18px 40px rgba(0,0,0,.34); }
-      .landing-nav-toggle:checked ~ .landing-links a { min-height: 44px; display: flex; align-items: center; font-size: 15px; }
+      .landing-nav[data-menu-open="true"] .landing-links { display: grid; position: absolute; top: 100%; left: 0; right: 0; gap: 2px; padding: 8px clamp(20px,4vw,42px) 14px; border-radius: 0 0 12px 12px; background: #0f150f; box-shadow: 0 18px 40px rgba(0,0,0,.34); }
+      .landing-nav[data-menu-open="true"] .landing-links a { min-height: 44px; display: flex; align-items: center; font-size: 15px; }
       .landing-hero { min-height: 88svh; }
       .landing-hero::after { background: linear-gradient(180deg, rgba(12,18,13,.78) 0%, rgba(12,18,13,.5) 46%, rgba(12,18,13,.88) 100%); }
       .landing-copy { padding-top: 64px; }
@@ -533,19 +567,36 @@ const PageTemplates = `
       .landing-contact { align-items: flex-start; flex-direction: column; }
     }
     @media (max-width: 520px) {
-      .landing-hero { min-height: 780px; }
+      .landing-hero { min-height: max(100svh,650px); }
       .landing-nav { padding-top: 20px; }
-      .landing-copy { align-self: center; padding-top: 54px; padding-bottom: 42px; }
-      .landing-copy h1 { font-size: clamp(43px,13vw,56px); line-height: .94; }
+      .landing-copy { align-self: center; padding-top: 40px; padding-bottom: 30px; }
+      .landing-copy h1 { font-size: clamp(39px,12vw,48px); line-height: .96; }
       .landing-lead { font-size: 17px; line-height: 1.46; }
       .landing-actions { display: grid; }
       .landing-button { width: 100%; }
+      .landing-button.secondary { width: auto; min-height: 44px; justify-self: start; border-color: transparent; padding-inline: 2px; background: transparent; backdrop-filter: none; }
+      .landing-access { display: none; }
       .section { padding: 44px 20px; }
       .section h2 { font-size: 36px; }
       .landing-contact strong { font-size: 24px; }
       footer div { display: grid; }
     }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
   </style>
+  <noscript><style>
+    @media (max-width: 900px) {
+      .landing-navbar { position: absolute; }
+      .landing-nav { flex-wrap: wrap; }
+      .landing-menu-toggle { display: none; }
+      .landing-links { flex: 1 0 100%; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 2px 14px; padding-top: 8px; }
+      .landing-links a { min-height: 44px; display: flex; align-items: center; }
+      .landing-links .js-mail-link { display: none; }
+      .landing-hero { padding-top: 176px; }
+    }
+  </style></noscript>
 </head>
 <body>
   <!-- Fixed chrome: sticky header, top veil and the 3D mark. -->
@@ -573,12 +624,8 @@ const PageTemplates = `
            kept so the nav keeps its space-between layout and the home link
            keeps a click target; the 3D stage measures its vertical position. -->
       <a class="landing-brand" href="/" aria-label="hausv.org"><span class="landing-mark">{{template "hausvLandingMark" .}}</span></a>
-      <!-- CSS-only disclosure, same pattern as the app shell's nav-toggle: no
-           inline script, so it needs nothing from the CSP. Only shown below
-           900px, where the links themselves are collapsed. -->
-      <input class="landing-nav-toggle" id="landing-nav-toggle" type="checkbox" aria-label="Navigation anzeigen">
-      <label class="landing-menu-toggle" for="landing-nav-toggle">Menü</label>
-      <nav class="landing-links" aria-label="Navigation">
+      <button class="landing-menu-toggle" type="button" data-landing-menu-toggle aria-expanded="false" aria-controls="landing-navigation">Menü</button>
+      <nav id="landing-navigation" class="landing-links" aria-label="Navigation">
         <a href="#funktionen">Funktionen</a>
         <a href="#sicherheit">Sicherheit</a>
         <a href="#preise">Preise</a>
@@ -590,14 +637,14 @@ const PageTemplates = `
 
   <section class="landing-hero">
     <div class="landing-copy">
-      <div class="landing-eyebrow">Einfache Hausverwaltung und transparentes Energiemanagement</div>
-      <h1>Ein Portal für alles was Zuhause anfällt.</h1>
-      <p class="landing-lead">Aushänge, Termine, Dokumente, Anliegen und Beschlüsse an einem privaten Ort. Modernes, transparentes Energiemanagement mit automatisierbarem Peak-Shaving. Für Eigentümer, Mieter, Beiräte und Hausverwaltungen.</p>
+      <div class="landing-eyebrow">Hausverwaltung &amp; Energiemanagement</div>
+      <h1>Alles, was Zuhause anfällt.</h1>
+      <p class="landing-lead">Aushänge, Termine, Dokumente und Anliegen – privat an einem Ort. Energie transparent verstehen und Spitzen gezielt vermeiden.</p>
       <div class="landing-actions">
-        <a class="landing-button primary js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org Pilot anfragen" data-mail-reveal="false">Privaten Pilot anfragen</a>
+        <a class="landing-button primary js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org Pilot anfragen" data-mail-reveal="false">Pilot anfragen</a>
         <a class="landing-button secondary" href="#funktionen">Funktionen ansehen</a>
       </div>
-      <p class="landing-access"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Privater Pilot · Zugang nach Abstimmung</p>
+      <p class="landing-access"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Privat · Zugang nach Abstimmung</p>
     </div>
   </section>
 
@@ -615,7 +662,7 @@ const PageTemplates = `
         <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H10z"/><path d="M8.5 8.5h7"/></svg></span><strong>Anliegen klären</strong><p>Melden, nachfragen und den nächsten Schritt nachvollziehen.</p></div>
         <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><strong>Unterlagen ordnen</strong><p>Dokumente, Protokolle und Nachweise passend freigeben.</p></div>
         <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 18V9M12 18V5M18 18v-6"/><path d="M4 18h16"/></svg></span><strong>Entscheiden</strong><p>Abstimmungen und Übergaben verständlich dokumentieren.</p></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.7 2.9 8.4 7 10 4.1-1.6 7-5.3 7-10V6z"/><path d="m8.8 12.2 2.1 2.1 4.3-4.6"/></svg></span><strong>Rechte schützen</strong><p>Jede Rolle sieht nur die für sie bestimmten Inhalte.</p></div>
+        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 13h5l2-7 3 12 2-5h4"/><path d="M5 20h14"/></svg></span><strong>Energie verstehen</strong><p>Verbrauch und Spitzen beobachten. Aktive Steuerung bleibt bewusst geschlossen.</p></div>
       </div>
       <div class="product-state" aria-label="Produktstand">
         <div><span>Heute im privaten Pilot</span><strong>Hausalltag an einem Ort</strong><p>Aushänge, Termine, Anliegen, Dokumente, Abstimmungen, Übergaben und ein verständlicher Verlauf.</p></div>
@@ -746,7 +793,7 @@ const PageTemplates = `
   </style>
 </head>
 <body>
-  <header><a href="/">← Zurück zu hausv.org</a><span>{{.AppVersion}}</span></header>
+  <header><a href="/">← Zurück zur Startseite</a><span>{{.AppVersion}}</span></header>
   <main>
     <h1>Datenschutz</h1>
     <p class="lead">Diese Information beschreibt den tatsächlichen Pilotbetrieb von hausv.org. Sie ist eine dokumentierte Betreiber-Selbstprüfung nach den Grundsätzen der DSGVO, kein Zertifikat und keine unabhängige Rechtsberatung.</p>
@@ -797,7 +844,7 @@ const PageTemplates = `
       <li>Verschlüsselte Sicherungen werden in einem Hetzner Storage Box Konto innerhalb der EU gespeichert.</li>
       <li>Resend versendet Transaktionsmails über die Region Irland. E-Mail-Adresse, Betreff und Inhalt sowie Kontodaten, Metadaten, Logs und API-Aufzeichnungen werden dabei auch in den USA verarbeitet. Resend stellt eine Vereinbarung zur Auftragsverarbeitung einschließlich Standardvertragsklauseln bereit und hält reguläre E-Mail-Inhalte 30 Tage vor.</li>
       <li>Es gibt keine Werbung, keine Analyse-Skripte und keine extern geladenen Web-Schriften.</li>
-      <li>Der feste Kartenausschnitt in der Portalnavigation nutzt OpenStreetMap-Kartenkacheln. hausv.org ruft ausschließlich die für das konfigurierte Haus benötigten Kacheln serverseitig ab und speichert sie mindestens sieben Tage zwischen; OpenStreetMap erhält dabei keine Daten zum angemeldeten Portalnutzer.</li>
+      <li>Die festen Kartenausschnitte auf der Anmeldeseite und in der Portalnavigation nutzen OpenStreetMap-Kartenkacheln. hausv.org ruft ausschließlich die für das konfigurierte Haus benötigten Kacheln serverseitig ab und speichert sie mindestens sieben Tage zwischen; OpenStreetMap erhält dabei weder die IP-Adresse noch Anmelde- oder Kontodaten der Portalbesuchenden. Erst beim bewussten Öffnen des Kartenlinks baut der Browser eine direkte Verbindung zu OpenStreetMap auf.</li>
       {{if .EnergyProfileExists}}<li>Home-Assistant-Endpunkt und Zugangstoken bleiben in der verschlüsselten Host-Konfiguration. Sie werden weder in der Fachdatenbank noch im Energieexport gespeichert oder angezeigt.</li>{{end}}
     </ul>
 

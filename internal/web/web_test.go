@@ -261,10 +261,46 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		t.Fatalf("read landing script: %v", err)
 	}
 	landingText := string(landingJS)
-	for _, want := range []string{`data-mail-local`, `mailto:`, `encodeURIComponent`} {
+	for _, want := range []string{`data-mail-local`, `mailto:`, `encodeURIComponent`, `data-landing-menu-toggle`, `aria-expanded`, `closeMenu`, `matchMedia`} {
 		if !strings.Contains(landingText, want) {
 			t.Fatalf("landing contact script missing %q", want)
 		}
+	}
+	for _, want := range []string{
+		`data-landing-menu-toggle aria-expanded="false" aria-controls="landing-navigation"`,
+		`<noscript><style>`,
+		`@media (prefers-reduced-motion: reduce)`,
+		`<h1>Alles, was Zuhause anfällt.</h1>`,
+		`<strong>Energie verstehen</strong>`,
+		`<h2>{{if .Sent}}E-Mail prüfen`,
+		`<details class="login-retry">`,
+		`>Weiter zum Portal</a>`,
+		`<script src="/assets/home.js?v={{.AssetVersion}}" defer></script>`,
+		`class="location-map-tile" data-map-tile="{{.URL}}"`,
+		`Fester Kartenausschnitt rund um {{.Tenant.Address}}`,
+		`© OpenStreetMap`,
+		`Anmeldeseite und in der Portalnavigation`,
+		`Erst beim bewussten Öffnen des Kartenlinks`,
+		`← Zurück zur Startseite`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("public/auth flow missing %q", want)
+		}
+	}
+	if strings.Contains(PageTemplates, `class="landing-nav-toggle"`) || strings.Contains(PageTemplates, `Lokalen Testzugang öffnen`) {
+		t.Fatal("public/auth flow should not retain the checkbox menu or development-heavy action copy")
+	}
+	homeJS, err := os.ReadFile("assets/home.js")
+	if err != nil {
+		t.Fatalf("read public home script: %v", err)
+	}
+	for _, want := range []string{`location-map-configured`, `data-map-tile`, `map-tile-failed`, `new Image()`} {
+		if !strings.Contains(string(homeJS), want) {
+			t.Fatalf("public location fallback script missing %q", want)
+		}
+	}
+	if strings.Contains(PageTemplates, `onerror=`) {
+		t.Fatal("public map fallback must not depend on CSP-blocked inline handlers")
 	}
 	attachmentJS, err := os.ReadFile("assets/attachments.js")
 	if err != nil {

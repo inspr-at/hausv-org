@@ -26,6 +26,25 @@ func TestSidebarMapUsesOnlyVisibleTilesAndExactHouseCentre(t *testing.T) {
 	}
 }
 
+func TestPublicMapCoversTheWidestLoggedOutCard(t *testing.T) {
+	view := publicMapForTenant(tenantConfig{
+		Slug:         "home",
+		Address:      "Testweg 1",
+		MapLatitude:  47.1008592,
+		MapLongitude: 15.4717681,
+		MapZoom:      17,
+	})
+	if !view.Configured || len(view.Tiles) != 2 {
+		t.Fatalf("public map = %#v", view)
+	}
+	if got := string(view.Tiles[0].Style); !strings.Contains(got, "left:calc(50% + -281.31px)") {
+		t.Fatalf("left public tile style = %q", got)
+	}
+	if got := string(view.Tiles[1].Style); !strings.Contains(got, "left:calc(50% + -25.31px)") {
+		t.Fatalf("right public tile style = %q", got)
+	}
+}
+
 func TestMapTileProxyRestrictsTilesAndCachesUpstreamResponse(t *testing.T) {
 	var requests atomic.Int32
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -21,6 +21,8 @@ const (
 	mapTileSize          = 256
 	sidebarMapWidth      = 264
 	sidebarMapHeight     = 210
+	publicMapWidth       = 420
+	publicMapHeight      = 92
 	mapTileCacheMaxAge   = 30 * 24 * time.Hour
 	mapTileResponseBytes = 1 << 20
 	osmTileBaseURL       = "https://tile.openstreetmap.org"
@@ -40,6 +42,14 @@ type sidebarMapView struct {
 }
 
 func sidebarMapForTenant(tenant tenantConfig) sidebarMapView {
+	return mapViewForTenant(tenant, sidebarMapWidth, sidebarMapHeight)
+}
+
+func publicMapForTenant(tenant tenantConfig) sidebarMapView {
+	return mapViewForTenant(tenant, publicMapWidth, publicMapHeight)
+}
+
+func mapViewForTenant(tenant tenantConfig, width, height int) sidebarMapView {
 	latitude, longitude, zoom, ok := tenantMapCoordinates(tenant)
 	if !ok {
 		return sidebarMapView{}
@@ -50,10 +60,10 @@ func sidebarMapForTenant(tenant tenantConfig) sidebarMapView {
 	latitudeRadians := latitude * math.Pi / 180
 	y := (1 - math.Asinh(math.Tan(latitudeRadians))/math.Pi) / 2 * n
 	globalX, globalY := x*mapTileSize, y*mapTileSize
-	startX := int(math.Floor((globalX - sidebarMapWidth/2) / mapTileSize))
-	endX := int(math.Floor((globalX + sidebarMapWidth/2 - 0.01) / mapTileSize))
-	startY := int(math.Floor((globalY - sidebarMapHeight/2) / mapTileSize))
-	endY := int(math.Floor((globalY + sidebarMapHeight/2 - 0.01) / mapTileSize))
+	startX := int(math.Floor((globalX - float64(width)/2) / mapTileSize))
+	endX := int(math.Floor((globalX + float64(width)/2 - 0.01) / mapTileSize))
+	startY := int(math.Floor((globalY - float64(height)/2) / mapTileSize))
+	endY := int(math.Floor((globalY + float64(height)/2 - 0.01) / mapTileSize))
 
 	tiles := make([]sidebarMapTileView, 0, 4)
 	for tileY := startY; tileY <= endY; tileY++ {
@@ -104,7 +114,8 @@ func (a *app) mapTile(w http.ResponseWriter, r *http.Request) {
 
 	tenant := a.tenantForRequest(r)
 	allowed := false
-	for _, tile := range sidebarMapForTenant(tenant).Tiles {
+	allowedTiles := append(sidebarMapForTenant(tenant).Tiles, publicMapForTenant(tenant).Tiles...)
+	for _, tile := range allowedTiles {
 		if tile.Z == z && tile.X == x && tile.Y == y {
 			allowed = true
 			break

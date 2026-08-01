@@ -50,6 +50,7 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 		"OIDCConfigured":      a.oidc.Configured(),
 		"EmailLoginAvailable": a.emailLoginAvailable(),
 		"MapURL":              tenantMapURL(tenant.Address),
+		"LocationMap":         publicMapForTenant(tenant),
 		"HomeCopy":            copy,
 	})
 }
@@ -158,6 +159,7 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 			"OIDCConfigured":      a.oidc.Configured(),
 			"EmailLoginAvailable": a.emailLoginAvailable(),
 			"MapURL":              tenantMapURL(tenant.Address),
+			"LocationMap":         publicMapForTenant(tenant),
 			"HomeCopy":            copy,
 		})
 		return
@@ -213,7 +215,7 @@ func (a *app) publicHomeCopy(tenantSlug string) publicHomeCopy {
 		return publicHomeCopy{
 			Eyebrow:       "Ihr Hausportal",
 			Headline:      "Alles Wichtige rund um unser Haus.",
-			Lead:          "Aushänge, Termine, Dokumente und Anliegen – privat für unsere Hausgemeinschaft.",
+			Lead:          "Aushänge, Termine, Dokumente und Anliegen – privat an einem Ort.",
 			FirstDetail:   "Wichtige Aushänge und Neuigkeiten.",
 			SecondDetail:  "Termine und Aufgaben im Blick.",
 			PrivacyDetail: "Nur für unsere Hausgemeinschaft.",

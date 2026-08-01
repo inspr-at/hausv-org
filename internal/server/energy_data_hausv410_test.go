@@ -44,13 +44,13 @@ func TestPublicHomeCopyFollowsPortalTypeNotEnergyProfile(t *testing.T) {
 			portalType:     config.PortalTypeCommunity,
 			energyHomeType: energy.HomeApartment,
 			headline:       "Alles Wichtige rund um unser Haus.",
-			lead:           "Aushänge, Termine, Dokumente und Anliegen – privat für unsere Hausgemeinschaft.",
+			lead:           "Aushänge, Termine, Dokumente und Anliegen – privat an einem Ort.",
 		},
 		{
 			name:           "legacy tenant defaults to community",
 			energyHomeType: "unclaimed",
 			headline:       "Alles Wichtige rund um unser Haus.",
-			lead:           "Aushänge, Termine, Dokumente und Anliegen – privat für unsere Hausgemeinschaft.",
+			lead:           "Aushänge, Termine, Dokumente und Anliegen – privat an einem Ort.",
 		},
 		{
 			name:       "invalid direct tenant stays neutral",
@@ -108,9 +108,17 @@ func TestLocalDevLoginRerenderUsesHomeTypeAwareCopy(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("local dev login status = %d body=%s", rr.Code, rr.Body.String())
 	}
-	for _, want := range []string{"Alles Wichtige für Ihr Zuhause.", "Lokalen Testzugang öffnen"} {
+	for _, want := range []string{"Alles Wichtige für Ihr Zuhause.", "E-Mail prüfen", "Weiter zum Portal", "Andere Adresse verwenden"} {
 		if !strings.Contains(rr.Body.String(), want) {
 			t.Fatalf("local dev login page missing %q:\n%s", want, rr.Body.String())
+		}
+	}
+	if got := strings.Count(rr.Body.String(), `action="/auth/request"`); got != 1 {
+		t.Fatalf("prepared login renders %d competing request forms, want one collapsed retry form", got)
+	}
+	for _, forbidden := range []string{"Lokalen Testzugang", "lokale Mailversand", "Magic-Link", "SSO", "Zitadel"} {
+		if strings.Contains(rr.Body.String(), forbidden) {
+			t.Fatalf("prepared login page exposes implementation wording %q", forbidden)
 		}
 	}
 }
