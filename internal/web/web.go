@@ -8864,11 +8864,10 @@ const PageTemplates = `
             <li>Niedertarif-Fenster (SNAP, WiNAP) und Energiegemeinschaften senken den Arbeitspreis, nicht die verrechnete Leistung.</li>
             <li>{{.Tariff.Disclaimer}}</li>
           </ul>
-          {{else}}<div class="energy-tariff-empty">
-            <strong>Noch keine Monatsspitze für {{.Tariff.MonthLabel}}</strong>
+          {{else}}<div class="energy-tariff-empty{{if .Tariff.MissingIsWaiting}} waiting{{end}}">
+            <strong>{{if .Tariff.MissingIsWaiting}}Noch keine volle Viertelstunde{{else}}Netzbezug noch nicht zugeordnet{{end}}</strong>
             <p>{{.Tariff.MissingReason}}</p>
-            <p class="energy-tariff-empty-rule">{{.Tariff.Rule}}</p>
-            <a class="button" href="#messwerte">Messwerte hinterlegen</a>
+            {{if not .Tariff.MissingIsWaiting}}<a class="button" href="#messwerte">Netzbezug zuordnen</a>{{end}}
           </div>{{end}}
           {{if eq .TariffAssessmentStatus "saved"}}<div class="message success">Diese Modellbewertung wurde mit ihrer damaligen Regelversion festgehalten.</div>{{else if eq .TariffAssessmentStatus "no_data"}}<div class="message">Für eine historische Bewertung fehlen noch abgeschlossene Viertelstunden.</div>{{end}}
           {{if .CanManageEnergy}}<details class="energy-tariff-settings">

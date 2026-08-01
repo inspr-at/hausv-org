@@ -222,6 +222,9 @@ type energyTariffView struct {
 	BelowRateEUR string
 	AboveRateEUR string
 	ThresholdKW  string
+	// MissingIsWaiting unterscheidet Warten von Handeln: liegt der Netzbezug
+	// zugeordnet vor, kommt die Zahl von selbst.
+	MissingIsWaiting bool
 	// MissingReason erklärt im Leerzustand, warum keine Spitze dasteht. Eine
 	// leere Kachel oder eine 0 wäre beides falsch.
 	MissingReason string
@@ -1004,7 +1007,8 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	gaps, conflicts := intervalQualityCounts(monthIntervals)
 	lastSeen := latestEnergySeen(mappings, monthIntervals, liveLastSeen)
 	quality := energy.AssessQuality(time.Now(), lastSeen, gaps, conflicts, len(monthIntervals))
-	tariffView := buildEnergyTariffView(profile, monthIntervals)
+	_, recordsItself := a.confirmedGridImportMapping(ac.tenant.Slug)
+	tariffView := buildEnergyTariffView(profile, monthIntervals, recordsItself)
 	scenarioViews := buildEnergyScenarioViews(profile, assets, monthIntervals)
 	caretakers := a.energyCaretakerViews(ac)
 	maintenance, _ := a.energyStore.ListMaintenance(ac.tenant.Slug)
@@ -3932,7 +3936,10 @@ func latestEnergySeen(mappings []energy.EntityMapping, intervals []energy.Interv
 	return latest
 }
 
-func buildEnergyTariffView(profile energy.HomeProfile, intervals []energy.Interval) energyTariffView {
+// recordsItself sagt, ob ein bestaetigter Netzbezug vorliegt. Nur dann fuellt
+// sich die Karte von selbst — der Leerzustand ist dann eine Wartezeit und
+// keine Aufforderung, eine Datei zu suchen.
+func buildEnergyTariffView(profile energy.HomeProfile, intervals []energy.Interval, recordsItself bool) energyTariffView {
 	now := time.Now()
 	rules := energy.AustrianDraft2027()
 	view := energyTariffView{
@@ -3951,8 +3958,12 @@ func buildEnergyTariffView(profile energy.HomeProfile, intervals []energy.Interv
 	}
 	peak := energy.PeakForMonth(intervals, now, time.Local)
 	if peak <= 0 {
-		view.MissingReason = "Für " + view.MonthLabel + " liegt noch keine abgeschlossene Viertelstunde vor. " +
-			"Die Spitze entsteht aus einem Smart-Meter-Export oder aus laufend gelesenen Messwerten — vorher zeigt HAUSV hier bewusst nichts an."
+		if recordsItself {
+			view.MissingReason = "Die erste vollständige Viertelstunde wird gerade aufgezeichnet und erscheint hier, sobald sie zu Ende ist."
+			view.MissingIsWaiting = true
+		} else {
+			view.MissingReason = "Sobald der Netzbezug einem Messwert zugeordnet ist, zeichnet HAUSV die Viertelstunden selbst auf."
+		}
 		return view
 	}
 	estimate := rules.Estimate(peak, agreedPowerKW(profile))

@@ -473,7 +473,8 @@ func (a *app) buildEnergyDataPackage(ac authCtx, generatedAt time.Time) ([]byte,
 	if maintenanceRecommendation, ok := energy.MaintenanceRecommendation(generatedAt, maintenance); ok {
 		recommendation = maintenanceRecommendation
 	}
-	tariff := buildEnergyTariffView(profile, intervals)
+	_, recordsItself := a.confirmedGridImportMapping(ac.tenant.Slug)
+	tariff := buildEnergyTariffView(profile, intervals, recordsItself)
 	metadata := map[string]any{
 		"schema":       "https://hausv.org/schemas/energy-export/v1",
 		"generated_at": generatedAt.Format(time.RFC3339),

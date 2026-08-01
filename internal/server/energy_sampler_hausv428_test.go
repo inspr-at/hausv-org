@@ -543,7 +543,9 @@ func TestCockpitStopsBeingEmptyAfterSamplingHAUSV428(t *testing.T) {
 
 	// Vor dem Messen ist die Tarifkarte leer — genau der gemeldete Zustand.
 	before := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
-	if !strings.Contains(before, "liegt noch keine abgeschlossene Viertelstunde vor") {
+	// Mit zugeordnetem Netzbezug ist der Leerzustand eine Wartezeit, keine
+	// Aufforderung, eine Datei zu suchen — die Karte fuellt sich von selbst.
+	if !strings.Contains(before, "Noch keine volle Viertelstunde") {
 		t.Fatal("Ausgangslage verfehlt: die Tarifkarte war schon vorher gefüllt")
 	}
 
@@ -551,7 +553,7 @@ func TestCockpitStopsBeingEmptyAfterSamplingHAUSV428(t *testing.T) {
 	runQuarterHAUSV428(t, a, tenant, fake, quarterAnchorHAUSV428(), 16)
 
 	after := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
-	if strings.Contains(after, "liegt noch keine abgeschlossene Viertelstunde vor") {
+	if strings.Contains(after, "Noch keine volle Viertelstunde") {
 		t.Fatal("die Tarifkarte ist nach dem Messen immer noch leer")
 	}
 	block := billedBlockHAUSV425(t, after)
