@@ -239,6 +239,7 @@ func TestSettingsAndParkingKeepReducedMobileInteractionContracts(t *testing.T) {
 		`<a class="side-place-copy" href="/app" aria-label="Hausportal für {{.SidebarAddress.Full}} öffnen">`,
 		`side-address-short`,
 		`@media (max-width: 350px)`,
+		`.side-address-label { font-size: 9px; }`,
 		`min-height: 44px !important;`,
 		`.payment-import .apply-bar { position: static;`,
 		`settings-guide-details`,
