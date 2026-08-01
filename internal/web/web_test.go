@@ -233,6 +233,34 @@ func TestResidentContentFlowsStayCompactAndProgressivelyDisclosed(t *testing.T) 
 	}
 }
 
+func TestSettingsAndParkingKeepReducedMobileInteractionContracts(t *testing.T) {
+	for _, want := range []string{
+		`<a class="side-map side-address" href="{{.MapURL}}"`,
+		`<a class="side-place-copy" href="/app" aria-label="Hausportal für {{.SidebarAddress.Full}} öffnen">`,
+		`side-address-short`,
+		`@media (max-width: 350px)`,
+		`min-height: 44px !important;`,
+		`.payment-import .apply-bar { position: static;`,
+		`settings-guide-details`,
+		`<details class="account-details profile-visibility-details">`,
+		`<details class="notification-details">`,
+		`Tarif, zwei Zählerstände und ein Preis genügen.`,
+		`<strong>Messwerte</strong>`,
+		`<strong>Nur Nachweis.</strong>`,
+		`access-fixed`,
+		`data-help="Fest vergeben · hier nicht änderbar"`,
+		`min-width: 44px; min-height: 44px;`,
+		`<span class="file-control"><span>Datei auswählen</span><input id="camt-file"`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("settings/parking mobile contract missing %q", want)
+		}
+	}
+	if strings.Contains(PageTemplates, `<details class="account-details" open>`) {
+		t.Fatal("profile account metadata should use progressive disclosure")
+	}
+}
+
 func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 	if !strings.Contains(PageTemplates, `<script src="/assets/app.js?v={{.AssetVersion}}" defer></script>`) {
 		t.Fatal("app shell must load the shared submit guard")
@@ -241,7 +269,7 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		t.Fatal("app shell should not use the old WEG/HV text or dot placeholder logo")
 	}
 	for _, want := range []string{
-		`<div class="side-map" role="group" aria-label="Fester Kartenausschnitt für {{.Tenant.Address}}">`,
+		`<a class="side-map side-address" href="{{.MapURL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.Tenant.Address}} in OpenStreetMap öffnen"`,
 		`<svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false">`,
 		`<span class="side-map-pin-mark">{{template "tenantBrandMark" .}}</span>`,
 		`{{define "hausvLandingMark"}}`,

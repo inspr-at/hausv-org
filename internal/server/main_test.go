@@ -2234,6 +2234,29 @@ func TestParkingAccessPageGrantsAndRevokesInvitePermission(t *testing.T) {
 	}
 }
 
+func TestParkingAccessCandidatesStayTenantScopedAndPreferNames(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["local@example.com"] = userProfile{Email: "local@example.com", FirstName: "Lina", LastName: "Lokal", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", FirstName: "Oskar", LastName: "Anderes Haus", Role: roleOwner, Tenants: []string{"other-house"}, AuthMethods: defaultAuthMethods()}
+	a.allowed["local@example.com"] = struct{}{}
+	a.allowed["other@example.com"] = struct{}{}
+
+	page := authedRequest(t, a, "manager@example.com", "/app/settings/parking-access")
+	if page.Code != http.StatusOK {
+		t.Fatalf("parking access status = %d, want 200", page.Code)
+	}
+	body := page.Body.String()
+	if strings.Contains(body, "other@example.com") || strings.Contains(body, "Oskar") {
+		t.Fatalf("parking access leaked another tenant's candidate:\n%s", body)
+	}
+	if !strings.Contains(body, `<strong>Lina Lokal</strong><span>local@example.com</span>`) {
+		t.Fatalf("parking access must render a real name as the primary label:\n%s", body)
+	}
+	if strings.Contains(body, `<strong>local@example.com</strong>`) {
+		t.Fatalf("parking access rendered email as the primary label despite a real name:\n%s", body)
+	}
+}
+
 func TestClosedServiceProviderParkingAccessIsReadOnlyForEffectiveTenantRole(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	if _, err := a.inviteStore.Add(userProfile{
@@ -6089,7 +6112,7 @@ func TestParkingEmptyStateGuidesSetupWithoutPaymentControls(t *testing.T) {
 
 	adminPage := authedRequest(t, a, "admin@example.com", "/app/parking")
 	adminBody := adminPage.Body.String()
-	for _, want := range []string{"parking-empty", "Bereit für die erste Abrechnung", "Noch keine Monatswerte", "Abrechnung konfigurieren", "Zugriff verwalten", "Transparenz statt Buchhaltung", "Zeitraum konfigurieren"} {
+	for _, want := range []string{"parking-empty", "Bereit für die erste Abrechnung", "Noch keine Monatswerte", "Abrechnung konfigurieren", "Zugriff verwalten", "Tarif", "Messwerte", "Nur Nachweis", "Keine Buchung"} {
 		if !strings.Contains(adminBody, want) {
 			t.Fatalf("admin empty parking page missing %q:\n%s", want, adminBody)
 		}
@@ -6102,7 +6125,7 @@ func TestParkingEmptyStateGuidesSetupWithoutPaymentControls(t *testing.T) {
 
 	residentPage := authedRequest(t, a, "parker@example.com", "/app/parking")
 	residentBody := residentPage.Body.String()
-	for _, want := range []string{"parking-empty", "Hausüberblick öffnen", "Keine Sollstellung"} {
+	for _, want := range []string{"parking-empty", "Hausüberblick öffnen", "Nur Nachweis", "Keine Buchung"} {
 		if !strings.Contains(residentBody, want) {
 			t.Fatalf("resident empty parking page missing %q:\n%s", want, residentBody)
 		}

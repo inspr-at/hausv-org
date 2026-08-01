@@ -302,6 +302,70 @@ func houseDisplayName(tenant tenantConfig) string {
 	return name
 }
 
+type sidebarAddressView struct {
+	Full        string
+	Primary     string
+	Locality    string
+	HasLocality bool
+}
+
+// sidebarAddressForTenant keeps the mobile house identity recognisable instead
+// of clipping an arbitrary part of the postal address. The full address stays
+// available to assistive technology and on wider screens.
+func sidebarAddressForTenant(tenant tenantConfig) sidebarAddressView {
+	full := strings.TrimSpace(tenant.Address)
+	primary := ""
+	if full != "" && !strings.HasPrefix(strings.ToLower(full), "pilot ") {
+		primary = strings.TrimSpace(strings.Split(full, ",")[0])
+	}
+	if primary == "" {
+		primary = strings.TrimSpace(tenant.Name)
+		lower := strings.ToLower(primary)
+		switch {
+		case strings.HasSuffix(lower, "-portal"):
+			primary = strings.TrimSpace(primary[:len(primary)-len("-portal")])
+		case strings.HasSuffix(lower, " portal"):
+			primary = strings.TrimSpace(primary[:len(primary)-len(" portal")])
+		}
+	}
+	primary = firstNonEmpty(primary, "Hausportal")
+
+	parts := strings.Split(full, ",")
+	locality := ""
+	if len(parts) > 1 {
+		candidate := strings.TrimSpace(parts[len(parts)-1])
+		if strings.EqualFold(candidate, "Österreich") && len(parts) > 2 {
+			candidate = strings.TrimSpace(parts[len(parts)-2])
+		}
+		fields := strings.Fields(candidate)
+		if len(fields) > 1 && allASCIIDigits(fields[0]) {
+			candidate = strings.Join(fields[1:], " ")
+		}
+		if !strings.EqualFold(candidate, primary) {
+			locality = candidate
+		}
+	}
+
+	return sidebarAddressView{
+		Full:        firstNonEmpty(full, primary),
+		Primary:     primary,
+		Locality:    locality,
+		HasLocality: locality != "",
+	}
+}
+
+func allASCIIDigits(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, char := range value {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	if !a.oidc.Configured() {
 		http.NotFound(w, r)

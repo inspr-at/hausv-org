@@ -890,7 +890,7 @@ const PageTemplates = `
     .app-shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0,1fr); background: var(--paper); }
     .sidebar { position: sticky; top: 0; height: 100vh; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 22px 16px 18px; color: rgba(255,255,255,.86); background: radial-gradient(circle at 20% 0%, rgba(255,255,255,.08), transparent 28%), var(--nav); border-right: 1px solid rgba(255,255,255,.08); }
     .side-brand { flex: 0 0 auto; display: grid; gap: 0; margin: -22px -16px 0; padding: 0 0 10px; }
-    .side-map { position: relative; width: 100%; height: 210px; overflow: hidden; border: 0; border-radius: 0; background: #d8d2c4; isolation: isolate; }
+    .side-map { position: relative; width: 100%; height: 210px; overflow: hidden; border: 0; border-radius: 0; background: #d8d2c4; color: inherit; isolation: isolate; }
     .side-map::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(247,243,234,.08) 0%, rgba(23,32,25,.06) 48%, rgba(23,32,25,.48) 73%, rgba(23,32,25,.93) 94%, var(--nav) 100%); box-shadow: inset 0 -18px 28px rgba(23,32,25,.42); }
     .side-map-tiles { position: absolute; inset: 0; z-index: 1; pointer-events: none; filter: saturate(.54) sepia(.1) contrast(.86) brightness(.97); }
     .side-map-tile { position: absolute; width: 256px; height: 256px; max-width: none; display: block; user-select: none; pointer-events: none; }
@@ -899,19 +899,20 @@ const PageTemplates = `
     .side-map-pin-shape { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; fill: var(--nav); stroke: rgba(231,216,177,.88); stroke-width: 1.25; stroke-linejoin: round; }
     .side-map-pin-mark { position: absolute; left: 50%; top: 9px; width: 25px; height: 22px; display: grid; place-items: center; transform: translateX(-50%); }
     .side-map-pin-mark svg { width: 25px; height: 21px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .side-place-copy { position: relative; z-index: 6; min-width: 0; display: grid; gap: 12px; margin-top: -54px; padding: 0 22px 15px; }
-    .side-address { min-width: 0; justify-self: start; color: rgba(255,255,255,.7); font-family: var(--font-sans); font-size: 12.5px; font-weight: 500; line-height: 1.3; text-decoration: none; }
-    .side-address:hover { color: rgba(255,255,255,.92); text-decoration: none; }
+    .side-place-copy { position: relative; z-index: 6; min-width: 0; display: grid; gap: 12px; margin-top: -54px; padding: 0 22px 15px; color: inherit; text-decoration: none; }
+    .side-address-label { min-width: 0; justify-self: start; color: rgba(255,255,255,.7); font-family: var(--font-sans); font-size: 12.5px; font-weight: 500; line-height: 1.3; }
+    .side-address-short { display: none; }
+    .side-place-copy:hover .side-address-label { color: rgba(255,255,255,.92); }
     .side-ruler { height: 12px; border-top: 1px solid rgba(207,171,83,.72); background: linear-gradient(rgba(207,171,83,.72),rgba(207,171,83,.72)) 25% 0/1px 6px no-repeat, linear-gradient(rgba(207,171,83,.82),rgba(207,171,83,.82)) 50% 0/1px 11px no-repeat, linear-gradient(rgba(207,171,83,.72),rgba(207,171,83,.72)) 75% 0/1px 6px no-repeat; }
-    .side-portal { min-width: 0; display: flex; align-items: baseline; gap: 4px; justify-self: start; color: inherit; text-decoration: none; }
+    .side-portal { min-width: 0; display: flex; align-items: baseline; gap: 4px; justify-self: start; color: inherit; }
     .side-portal strong { font-family: var(--font-sans); color: rgba(255,255,255,.9); font-size: 15px; font-weight: 600; line-height: 1; }
     .side-portal span { color: rgba(255,255,255,.48); font-family: var(--font-sans); font-size: 12px; font-weight: 450; }
-    .side-portal:hover span { color: rgba(255,255,255,.82); }
+    .side-place-copy:hover .side-portal span { color: rgba(255,255,255,.82); }
     .side-nav { flex: 1 1 auto; min-height: 0; display: grid; align-content: start; gap: 5px; overflow-y: auto; overflow-x: hidden; padding-right: 3px; }
     .side-nav::-webkit-scrollbar { width: 7px; }
     .side-nav::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: rgba(255,255,255,.16); }
     .mobile-menu-toggle { display: none; }
-    .skip-link { position: fixed; left: 12px; top: 10px; z-index: 1000; transform: translateY(calc(-100% - 16px)); border: 2px solid var(--gold); border-radius: var(--radius-xs); padding: 10px 14px; color: var(--ink); background: var(--panel); box-shadow: var(--shadow-dialog); font-weight: 850; text-decoration: none; transition: transform .16s ease; }
+    .skip-link { position: fixed; left: 12px; top: 10px; z-index: 1000; min-height: 44px; display: flex; align-items: center; transform: translateY(calc(-100% - 16px)); border: 2px solid var(--gold); border-radius: var(--radius-xs); padding: 10px 14px; color: var(--ink); background: var(--panel); box-shadow: var(--shadow-dialog); font-weight: 850; text-decoration: none; transition: transform .16s ease; }
     .skip-link:focus { transform: none; }
     .nav-item { position: relative; min-height: 44px; display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: var(--radius-xs); color: rgba(255,255,255,.78); text-decoration: none; font-size: 15px; font-weight: 600; }
     .nav-item:hover { color: #fff; background: rgba(255,255,255,.06); }
@@ -2185,21 +2186,18 @@ const PageTemplates = `
     .parking-guide h2 { font-size: 22px; }
     .parking-guide p { margin-top: 4px; }
     .parking-guide-status { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-    .parking-empty { display: grid; grid-template-columns: 220px minmax(0,1fr) auto; gap: 24px 30px; align-items: center; }
-    .parking-empty-art { width: min(220px,100%); aspect-ratio: 1.25; justify-self: center; color: var(--gold); opacity: .92; }
+    .parking-empty { display: grid; grid-template-columns: 190px minmax(0,1fr) auto; gap: 20px 26px; align-items: center; }
+    .parking-empty-art { width: min(190px,100%); aspect-ratio: 1.25; justify-self: center; color: var(--gold); opacity: .92; }
     .parking-empty-art svg { width: 100%; height: 100%; display: block; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
     .parking-empty-art .soft-fill { fill: rgba(200,153,63,.11); stroke: none; }
     .parking-empty-copy { display: grid; gap: 8px; min-width: 0; }
-    .parking-empty-copy h2 { font-size: clamp(28px,3.4vw,40px); }
+    .parking-empty-copy h2 { font-size: clamp(28px,3.4vw,38px); }
     .parking-empty-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; align-self: center; }
-    .parking-empty-steps { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0; border-top: 1px solid var(--line); padding-top: 20px; }
-    .parking-empty-step { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 13px; align-items: start; min-width: 0; padding: 0 22px; border-left: 1px solid var(--line); }
-    .parking-empty-step:first-child { border-left: 0; padding-left: 0; }
-    .parking-empty-step:last-child { padding-right: 0; }
-    .parking-empty-step-number { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: rgba(200,153,63,.13); color: var(--gold-ink); font-weight: 900; }
-    .parking-empty-step strong { display: block; font-family: var(--font-serif); font-size: 18px; line-height: 1.15; }
-    .parking-empty-step p { margin-top: 5px; color: var(--muted); font-size: 13px; line-height: 1.42; }
-    .parking-empty-note { grid-column: 1 / -1; display: grid; grid-template-columns: 40px minmax(0,1fr) auto; gap: 14px; align-items: center; border: 1px solid rgba(47,107,74,.18); border-radius: var(--radius-sm); background: rgba(47,107,74,.06); padding: 13px 15px; color: var(--muted); }
+    .parking-empty-steps { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+    .parking-empty-step { min-width: 0; min-height: 58px; display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 12px; background: var(--panel-soft); }
+    .parking-empty-step-number { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgba(200,153,63,.13); color: var(--gold-ink); font-weight: 900; }
+    .parking-empty-step strong { display: block; font-family: var(--font-serif); font-size: 17px; line-height: 1.15; }
+    .parking-empty-note { grid-column: 1 / -1; display: grid; grid-template-columns: 40px minmax(0,1fr); gap: 14px; align-items: center; border: 1px solid rgba(47,107,74,.18); border-radius: var(--radius-sm); background: rgba(47,107,74,.06); padding: 11px 14px; color: var(--muted); }
     .parking-empty-note-icon { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: rgba(47,107,74,.11); color: var(--leaf); }
     .parking-empty-note-icon svg { width: 19px; height: 19px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .parking-empty-note strong { display: block; color: var(--ink); }
@@ -2679,7 +2677,7 @@ const PageTemplates = `
       .sidebar { gap: 10px; padding-top: 14px; padding-bottom: 12px; }
       .side-brand { margin-top: -14px; padding-bottom: 3px; }
       .side-place-copy { gap: 5px; padding-bottom: 8px; }
-      .side-address { font-size: 10.5px; }
+      .side-address-label { font-size: 10.5px; }
       .side-ruler { height: 8px; background-size: 1px 4px,1px 7px,1px 4px; }
       .side-portal strong { font-size: 14.5px; }
       .side-portal span { font-size: 10px; }
@@ -2708,12 +2706,10 @@ const PageTemplates = `
       .parking-primary-actions { justify-content: flex-start; }
       .parking-guide-status { justify-content: flex-start; }
       .parking-empty { grid-template-columns: minmax(0,1fr); align-items: start; }
-      .parking-empty-art { width: min(260px,72vw); justify-self: start; }
+      .parking-empty-art { width: min(190px,54vw); justify-self: start; }
       .parking-empty-actions { justify-content: flex-start; }
-      .parking-empty-steps { grid-template-columns: 1fr; gap: 14px; }
-      .parking-empty-step, .parking-empty-step:first-child, .parking-empty-step:last-child { padding: 0; border-left: 0; }
-      .parking-empty-note { grid-template-columns: 40px minmax(0,1fr); }
-      .parking-empty-note .button { grid-column: 1 / -1; justify-self: start; }
+      .parking-empty-steps { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+      .parking-empty-step { grid-template-columns: 32px minmax(0,1fr); gap: 7px; padding: 9px; }
       .parking-detail-stack { position: static; }
       .digest-panel .quick-list { grid-template-columns: 1fr; }
       /* Two columns keep the board cards readable; the third one takes the
@@ -2813,14 +2809,15 @@ const PageTemplates = `
 	      .energy-mode-action-full { display: none; }
 	      .energy-mode-action-compact { display: inline; }
 	      .sidebar { position: sticky; top: 0; z-index: 50; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; height: auto; padding: 10px 14px; box-shadow: 0 10px 28px rgba(23,32,25,.18); }
-	      .side-brand { grid-template-columns: 58px minmax(0,1fr); gap: 10px; align-items: center; margin: 0; padding: 0; min-width: 0; }
-	      .side-map { width: 58px; height: 48px; }
+	      .side-brand { grid-template-columns: 52px minmax(0,1fr); gap: 7px; align-items: center; margin: 0; padding: 0; min-width: 0; }
+	      .side-map { width: 52px; height: 48px; }
 	      .side-map-pin { width: 24px; height: 31px; }
 	      .side-map-pin-mark { top: 5px; width: 14px; height: 13px; }
 	      .side-map-pin-mark svg { width: 14px; height: 12px; stroke-width: 2.5; }
-	      .side-place-copy { position: static; min-width: 0; gap: 3px; margin: 0; padding: 0; }
-	      .side-address { max-width: 100%; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	      .side-address span { overflow: hidden; text-overflow: ellipsis; }
+	      .side-place-copy { position: static; min-width: 0; min-height: 44px; align-content: center; gap: 3px; margin: 0; padding: 0; }
+	      .side-address-label { max-width: 100%; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	      .side-address-full { display: none; }
+	      .side-address-short { display: inline; overflow: hidden; text-overflow: ellipsis; }
 	      .side-ruler { display: none; }
 	      .side-portal strong { font-size: 15px; }
 	      .side-portal span { display: none; }
@@ -2848,8 +2845,11 @@ const PageTemplates = `
 	      .side-user strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	      .side-user span { font-size: 12px; }
 	      .side-version { justify-self: end; min-height: 44px; }
+	      .side-map-attribution { min-height: 44px; display: inline-flex; align-items: center; }
 	      .logout-form { grid-column: 1 / -1; justify-self: stretch; min-width: 0; }
 	      .logout-button { min-height: 44px; }
+      .app-main .content-top .button, .energy-mode-popover .button { min-height: 44px !important; }
+      :where(.settings-hub,.profile,.notifications,.parking-page,.parking-month-page,.parking-access,.pk-set,.users,.building,.payment-import,.raw-export,.audit-page) :where(.button,button.action,button[type="submit"],button[type="button"],input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,summary) { min-height: 44px !important; }
       .content-top { height: auto; min-height: 58px; flex-direction: column; align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
       .content-top .crumb a { min-height: 44px; display: inline-flex; align-items: center; }
       .home-hero { min-height: 108px; align-items: center; padding: 22px 18px; }
@@ -3100,11 +3100,22 @@ const PageTemplates = `
     /* Auf schmalen Geräten steht die Aktion einer Danach-Zeile unter dem Text.
        Daneben bliebe für die Beschreibung nur eine schmale, zerrissene Spalte. */
     @media (max-width: 600px) {
+      .parking-empty-step { min-height: 76px; grid-template-columns: minmax(0,1fr); justify-items: center; gap: 5px; text-align: center; }
+      .parking-empty-step-number { width: 28px; height: 28px; }
+      .parking-empty-step strong { font-size: 15px; }
       .home-follow-row { grid-template-columns: minmax(0,1fr); gap: 4px; padding: 14px 2px 15px; }
       .home-follow-action { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 5px; }
       .board-blank-actions, .handover-blank-actions { display: grid; }
       .board-blank-actions .button, .handover-blank-actions .button { width: 100%; justify-content: center; }
       .board-filter-blank .button { width: 100%; }
+    }
+    @media (max-width: 350px) {
+      .side-address-locality { display: none; }
+      .mobile-menu-prefix { display: none; }
+      .settings-hub .settings-section-head { grid-template-columns: minmax(0,1fr); align-items: start; }
+      .settings-hub .settings-section-head .settings-tag { justify-self: start; }
+      .parking-month-essential > div { padding-inline: 6px; }
+      .parking-month-essential dt { font-size: 9px; letter-spacing: 0; }
     }
   </style>
 {{end}}
@@ -3112,7 +3123,7 @@ const PageTemplates = `
 {{define "sidebar"}}
   <aside class="sidebar" aria-label="Portalnavigation">
     <div class="side-brand">
-      <div class="side-map" role="group" aria-label="Fester Kartenausschnitt für {{.Tenant.Address}}">
+      <a class="side-map side-address" href="{{.MapURL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.Tenant.Address}} in OpenStreetMap öffnen" title="In OpenStreetMap öffnen">
         {{if .SidebarMap.Configured}}
         <div class="side-map-tiles" aria-hidden="true">
           {{range .SidebarMap.Tiles}}<img class="side-map-tile" src="{{.URL}}" style="{{.Style}}" width="256" height="256" alt="" draggable="false">{{end}}
@@ -3122,14 +3133,12 @@ const PageTemplates = `
           <svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false"><path d="M22 55C18.7 49.2 4.5 36.7 4.5 22.2A17.5 17.5 0 1 1 39.5 22.2C39.5 36.7 25.3 49.2 22 55Z"/></svg>
           <span class="side-map-pin-mark">{{template "tenantBrandMark" .}}</span>
         </span>
-      </div>
-      <div class="side-place-copy">
-        <a class="side-address" href="{{.MapURL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.Tenant.Address}} in OpenStreetMap öffnen">
-          <span>{{.Tenant.Address}}</span>
-        </a>
+      </a>
+      <a class="side-place-copy" href="/app" aria-label="Hausportal für {{.SidebarAddress.Full}} öffnen">
+        <span class="side-address-label"><span class="side-address-full">{{.SidebarAddress.Full}}</span><span class="side-address-short">{{.SidebarAddress.Primary}}{{if .SidebarAddress.HasLocality}}<span class="side-address-locality"> · {{.SidebarAddress.Locality}}</span>{{end}}</span></span>
         <span class="side-ruler" aria-hidden="true"></span>
-        <a class="side-portal" href="/app"><strong>Hausportal</strong><span>· hausv.org</span></a>
-      </div>
+        <span class="side-portal"><strong>Hausportal</strong><span>· hausv.org</span></span>
+      </a>
 	    </div>
 	    <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-controls="portal-navigation portal-account" aria-expanded="false" aria-label="Navigation öffnen"><span class="mobile-menu-prefix">Menü</span>{{if eq .ActivePage "energy"}}<span class="mobile-home-identity" data-home-identity="mobile-menu" aria-label="{{.HomeIdentity.AriaLabel}}"><strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<small data-home-unit-label>{{.HomeIdentity.UnitLabel}}</small>{{end}}</span>{{else}}<span>{{if eq .ActivePage "home"}}Überblick{{else if eq .ActivePage "announcements"}}Aushang{{else if eq .ActivePage "events"}}Termine{{else if eq .ActivePage "contacts"}}Kontakte{{else if eq .ActivePage "parking"}}Parkplatz{{else if eq .ActivePage "documents"}}Dokumente{{else if eq .ActivePage "handovers"}}Übergaben{{else if eq .ActivePage "issues"}}Anliegen{{else if eq .ActivePage "abstimmungen"}}Abstimmung{{else if eq .ActivePage "users"}}Benutzer{{else if eq .ActivePage "audit"}}Audit{{else}}Einstellungen{{end}}</span>{{end}}</button>
 	    <nav id="portal-navigation" class="side-nav">
@@ -5918,8 +5927,8 @@ const PageTemplates = `
               <div class="parking-more-menu">
                 <a class="button" href="/app/parking"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 4v6h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 20v-6h-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10a7 7 0 0 1 12-3M19 14a7 7 0 0 1-12 3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Aktualisieren</a>
                 <a class="button" href="/app/parking/export/{{.StatementYear}}">CSV exportieren</a>
-                {{if .CanManageParkingPayments}}<form method="post" action="/app/parking/reminders"><button class="button" type="submit">Erinnerungen senden</button></form>{{end}}
-                {{if .IsAdmin}}<a class="button" href="/app/parking/settings"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>Abrechnung konfigurieren</a>{{end}}
+                {{if .CanManageParkingPayments}}<form method="post" action="/app/parking/reminders"><button class="button ghost" type="submit" title="Nur fällige, noch nicht erinnerte Monate benachrichtigen">Erinnerungen senden</button></form>{{end}}
+                {{if .IsAdmin}}<a class="button ghost" href="/app/parking/settings"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>Abrechnung konfigurieren</a>{{end}}
               </div>
             </details>
           </div>
@@ -6010,31 +6019,30 @@ const PageTemplates = `
             <div class="parking-empty-copy">
               <div class="kicker">Bereit für die erste Abrechnung</div>
               <h2>Noch keine Monatswerte</h2>
-              <p class="muted">Sobald zwei Zählerstände und mindestens ein aWATTar-Preis vorliegen, berechnet das Portal den ersten Monat automatisch. Bis dahin bleiben Konfiguration und Zugriff im Vordergrund.</p>
+              <p class="muted">Tarif, zwei Zählerstände und ein Preis genügen. Danach rechnet das Portal automatisch.</p>
             </div>
             <div class="parking-empty-actions">
               {{if .IsAdmin}}<a class="button primary" href="/app/parking/settings"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>Abrechnung konfigurieren</a>{{end}}
-              {{if .CanManageParkingPayments}}<a class="button" href="/app/settings/parking-access"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 20a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M17 8v8M13 12h8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Zugriff verwalten</a>{{end}}
-              {{if and (not .IsAdmin) (not .CanManageParkingPayments)}}<a class="button" href="/app">Hausüberblick öffnen</a>{{end}}
+              {{if .CanManageParkingPayments}}<a class="button ghost" href="/app/settings/parking-access" title="Festlegen, wer den Parkplatz nutzen darf"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 20a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M17 8v8M13 12h8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Zugriff verwalten</a>{{end}}
+              {{if and (not .IsAdmin) (not .CanManageParkingPayments)}}<a class="button ghost" href="/app">Hausüberblick öffnen</a>{{end}}
             </div>
             <div class="parking-empty-steps">
               <div class="parking-empty-step">
                 <span class="parking-empty-step-number">1</span>
-                <div><strong>Abrechnung konfigurieren</strong><p>Tarif, Netzgebühr und Basiswerte einmal sauber festlegen.</p></div>
+                <strong>Tarif</strong>
               </div>
               <div class="parking-empty-step">
                 <span class="parking-empty-step-number">2</span>
-                <div><strong>Monatswerte prüfen</strong><p>Neue Zähler- und Preisdaten werden automatisch zu Monatswerten.</p></div>
+                <strong>Messwerte</strong>
               </div>
               <div class="parking-empty-step">
                 <span class="parking-empty-step-number">3</span>
-                <div><strong>Zahlung markieren</strong><p>Offene Monate werden nach Prüfung als erledigt markiert.</p></div>
+                <strong>Monat</strong>
               </div>
             </div>
             <div class="parking-empty-note">
               <span class="parking-empty-note-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg></span>
-              <span><strong>Transparenz statt Buchhaltung.</strong> Keine Sollstellung, kein Mahnwesen und keine Zahlungsaufträge. Hier geht es nur um nachvollziehbare private Stellplatznutzung.</span>
-              {{if .IsAdmin}}<a class="button" href="/app/parking/settings">Zeitraum konfigurieren</a>{{end}}
+              <span><strong>Nur Nachweis.</strong> Keine Buchung, kein Mahnwesen, kein Zahlungsauftrag.</span>
             </div>
           </section>
         {{end}}
@@ -6268,9 +6276,8 @@ const PageTemplates = `
 {{define "settingsHub"}}
 {{template "appOpen" .}}
     <style>
-      /* Einstellungen sind eine Wegweiserfläche. Jeder Bereich sagt deshalb
-         nicht nur, was er tut, sondern auch, wer ihn ändern darf – dafür die
-         Marker rechts oben in jeder Sektion und die Legende in der Randspalte. */
+      /* Die Bereiche bleiben sofort scannbar; die bereits sichtbaren Marker
+         werden nur auf Wunsch in einer kurzen Legende erklärt. */
       .settings-hub { display: grid; gap: 18px; }
       .settings-hub-head { display: grid; gap: 5px; }
       .settings-hub-head .lede { max-width: 620px; }
@@ -6283,7 +6290,7 @@ const PageTemplates = `
       .settings-account .pill { justify-self: end; }
       .settings-layout { display: grid; gap: 16px; align-items: start; }
       .settings-sections { min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; align-items: stretch; }
-      .settings-aside { min-width: 0; display: grid; gap: 14px; align-content: start; }
+      .settings-aside { min-width: 0; }
       .settings-section { padding: 0; overflow: hidden; }
       .settings-section-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 12px; align-items: baseline; padding: 15px 18px 11px; }
       .settings-section-head h2 { font-size: 21px; }
@@ -6309,20 +6316,18 @@ const PageTemplates = `
       .settings-home-profile { grid-column: 1 / -1; }
       .settings-management .settings-links { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .settings-management .settings-link:nth-child(even) { border-left: 1px solid var(--line); }
-      .settings-note { display: grid; gap: 13px; padding: 20px; align-content: start; }
-      .settings-note .kicker { margin-bottom: 0; }
-      .settings-note h2 { font-size: 19px; }
-      .settings-note p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+      .settings-guide-details { padding: 0; overflow: hidden; }
+      .settings-guide-details > summary { min-height: 54px; display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: var(--ink); cursor: pointer; list-style: none; font-weight: 800; }
+      .settings-guide-details > summary::-webkit-details-marker { display: none; }
+      .settings-guide-details > summary span { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 650; }
+      .settings-guide-details > summary::after { content: "›"; color: var(--gold-ink); font-size: 22px; line-height: 1; transform: rotate(90deg); }
+      .settings-guide-details[open] > summary::after { transform: rotate(-90deg); }
+      .settings-guide-details[open] > summary { border-bottom: 1px solid var(--line); }
+      .settings-guide-body { padding: 15px 16px 16px; }
       .settings-guide { display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; }
       .settings-guide li { display: grid; gap: 5px; }
       .settings-guide .settings-tag { justify-self: start; }
       .settings-guide span { color: var(--muted); font-size: 12.6px; line-height: 1.45; }
-      @media (min-width: 1181px) {
-        .settings-layout { grid-template-columns: minmax(0,1fr) 316px; }
-      }
-      @media (max-width: 1180px) and (min-width: 761px) {
-        .settings-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; }
-      }
       @media (max-width: 760px) {
         .settings-hub { gap: 14px; }
         .settings-hub-head .lede { font-size: 15px; }
@@ -6333,7 +6338,6 @@ const PageTemplates = `
         .settings-management { grid-column: 1; }
         .settings-management .settings-links { grid-template-columns: 1fr; }
         .settings-management .settings-link:nth-child(even) { border-left: 0; }
-        .settings-note { padding: 16px; }
       }
     </style>
     <main id="main-content" tabindex="-1" class="app-main">
@@ -6405,25 +6409,16 @@ const PageTemplates = `
           {{end}}
         </div>
         <aside class="settings-aside" aria-label="Hinweise zu den Einstellungen">
-          <section class="panel compact settings-note" aria-labelledby="settings-guide-title">
-            <div>
-              <div class="kicker">Wegweiser</div>
-              <h2 id="settings-guide-title">Wer darf was ändern?</h2>
-            </div>
+          <details class="panel compact settings-guide-details">
+            <summary id="settings-guide-title">Berechtigungen erklärt <span>Bei Bedarf</span></summary>
+            <div class="settings-guide-body">
             <ul class="settings-guide">
               <li><span class="settings-tag">Nur Sie</span><span>Wirkt allein auf Ihren Zugang. Andere im Haus merken davon nichts, solange Sie nichts freigeben.</span></li>
               {{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .IsAdmin}}<li><span class="settings-tag house">Verwaltungsrechte</span><span>Gilt für die ganze Liegenschaft. Jede Änderung wird im Verlauf festgehalten.</span></li>{{end}}
               {{if and .CanViewAudit (not (or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .IsAdmin))}}<li><span class="settings-tag read">Nur lesen</span><span>Reine Ansicht zum Nachvollziehen. Hier lässt sich nichts verändern.</span></li>{{end}}
             </ul>
-          </section>
-          <section class="panel compact settings-note" aria-labelledby="settings-role-title">
-            <div>
-              <div class="kicker">Ihr Zugang</div>
-              <h2 id="settings-role-title">Rolle: {{.Role}}</h2>
             </div>
-            <p>Diese Übersicht zeigt ausschließlich Bereiche, für die Ihr Zugang berechtigt ist. Fehlt ein Bereich, fehlt die Berechtigung – nicht die Funktion.</p>
-            <p>Rollen und Zugänge vergibt die Hausverwaltung.</p>
-          </section>
+          </details>
         </aside>
         </div>
       </section>
@@ -7018,7 +7013,7 @@ const PageTemplates = `
       .payment-import .upload-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: end; padding: 15px; border: 1px dashed var(--gold); border-radius: 11px; background: #fffefb; }
       .payment-import .upload-copy { display: grid; gap: 7px; }
       .payment-import .upload-copy label { font-weight: 850; }
-      .payment-import .upload-copy input[type=file] { width: 100%; min-height: 46px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+      .payment-import .upload-copy .file-control { min-height: 46px; border-style: dashed; }
       .payment-import .privacy-note { display: flex; gap: 8px; align-items: start; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
       .payment-import .privacy-note::before { content: "✓"; flex: 0 0 auto; color: var(--gold-ink); font-weight: 900; }
       .payment-import .preview-head { display: flex; gap: 14px; justify-content: space-between; align-items: start; }
@@ -7063,15 +7058,16 @@ const PageTemplates = `
         .payment-import .row-amount { grid-column: 2; grid-row: 1; }
         .payment-import .row-reference, .payment-import .row-unit, .payment-import .row-reason { grid-column: 1 / -1; }
         .payment-import .row-unit { display: flex; gap: 8px; align-items: baseline; }
-        .payment-import .apply-bar { position: sticky; bottom: 8px; z-index: 5; display: grid; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,254,251,.97); box-shadow: 0 8px 24px rgba(37,45,38,.16); }
+        .payment-import .apply-bar { position: static; display: grid; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-soft); }
         .payment-import .apply-bar .mini { margin: 0; }
         .payment-import .apply-bar .button { width: 100%; min-height: 46px; }
       }
     </style>
+    <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
     <main id="main-content" tabindex="-1" class="app-main payment-import">
       <div class="content-top">
-        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><a href="/app/settings/building#units">Einheiten</a><span>/</span><span>Bankdatei</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings/building#units">Zu den Einheiten</a></div>
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Bankdatei</span></span>
+        <div class="page-actions"><a class="button ghost" href="/app/settings/building#units">Zu den Einheiten</a></div>
       </div>
       <section class="page wide">
         <div class="page-intro">
@@ -7108,7 +7104,7 @@ const PageTemplates = `
             <input type="hidden" name="period" value="{{.PaymentImportPeriod}}">
             <div class="upload-copy">
               <label for="camt-file">2. camt.053-Datei auswählen</label>
-              <input id="camt-file" type="file" name="camt_file" accept=".xml,application/xml,text/xml" required>
+              <span class="file-control"><span>Datei auswählen</span><input id="camt-file" type="file" name="camt_file" accept=".xml,application/xml,text/xml" required></span>
               <span class="mini">XML bis {{.MaxCAMTImportSize}} · unterstützt: camt.053.001.02 und .001.08</span>
             </div>
             <button class="button primary" type="submit"{{if not .HasPaymentImportUnits}} disabled{{end}}>Vorschau erstellen</button>
@@ -7543,9 +7539,8 @@ const PageTemplates = `
 {{define "profileSettings"}}
 {{template "appOpen" .}}
     <style>
-      /* Profil: links das Formular, rechts die Folgen. Was gespeichert wird und
-         wer es zu sehen bekommt, steht dadurch neben dem Feld – nicht hinter
-         einem zugeklappten Abschnitt am Seitenende. */
+      /* Das Formular bleibt primär. Erklärungen und unveränderliche Kontodaten
+         sind als kurze, zugängliche Details verfügbar, ohne den Weg zu bremsen. */
       .profile { display: grid; gap: 18px; }
       .profile .profile-head { display: flex; justify-content: space-between; gap: 18px; align-items: end; }
       .profile .profile-head .lede { margin-top: 4px; max-width: 640px; }
@@ -7579,6 +7574,7 @@ const PageTemplates = `
       .profile .account-details > summary::after { content: "\203A"; grid-column: 2; grid-row: 1; justify-self: end; color: var(--gold-ink); font-size: 21px; line-height: 1; transform: rotate(90deg); }
       .profile .account-details:not([open]) > summary::after { transform: none; }
       .profile .account-details > summary span { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; font-weight: 500; line-height: 1.4; }
+      .profile .profile-visibility-body { display: grid; gap: 13px; border-top: 1px solid var(--line); padding: 15px 18px 18px; }
       .profile .readonly-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px 18px; padding: 0 18px 18px; }
       .profile .readonly-box { display: grid; align-content: start; gap: 6px; min-width: 0; border-top: 1px solid var(--line); padding-top: 11px; }
       .profile .readonly-box strong { font-family: var(--font-serif); font-size: 17px; overflow-wrap: anywhere; }
@@ -7588,10 +7584,6 @@ const PageTemplates = `
       .profile .unit-list { display: grid; gap: 8px; }
       .profile .unit-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding-top: 8px; }
       .profile .unit-row:first-child { border-top: 0; padding-top: 0; }
-      .profile .profile-note { display: grid; gap: 13px; padding: 20px; align-content: start; }
-      .profile .profile-note .kicker { margin-bottom: 0; }
-      .profile .profile-note h2 { font-size: 19px; }
-      .profile .profile-note p { color: var(--muted); font-size: 13px; line-height: 1.5; }
       .profile .profile-visibility { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; }
       .profile .profile-visibility li { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 10px; }
       .profile .profile-visibility li:first-child { border-top: 0; padding-top: 0; }
@@ -7615,14 +7607,12 @@ const PageTemplates = `
         .profile .profile-actions { display: grid; grid-template-columns: 1fr; gap: 6px; padding: 12px 18px; }
         .profile .profile-actions .button { width: 100%; min-height: 46px; }
         .profile .profile-cancel { min-height: 44px; display: grid; place-items: center; text-align: center; }
-        .profile .profile-note { padding: 16px; }
         .app-main .content-top .page-actions .button { min-height: 44px; }
       }
     </style>
     <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Profil</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>
       </div>
       <section class="page profile">
         <div class="profile-head">
@@ -7657,11 +7647,9 @@ const PageTemplates = `
         </section>
         </div>
         <aside class="profile-aside" aria-label="Wirkung Ihrer Angaben">
-          <section class="panel compact profile-note" aria-labelledby="profile-visibility-title">
-            <div>
-              <div class="kicker">Sichtbarkeit</div>
-              <h2 id="profile-visibility-title">Wer sieht welche Angabe?</h2>
-            </div>
+          <details class="account-details profile-visibility-details">
+            <summary><strong id="profile-visibility-title">Was andere sehen</strong><span>Name ist sichtbar; Kontaktangaben nur nach Ihrer Freigabe.</span></summary>
+            <div class="profile-visibility-body">
             <ul class="profile-visibility">
               <li><strong>Name</strong><span>Steht an Ihren Beiträgen, Anliegen und Stimmabgaben. Für die Hausgemeinschaft immer sichtbar.</span></li>
               <li><strong>E-Mail-Adresse</strong><span>Ihre Anmeldung. Sie bleibt unverändert und ist außerhalb der Verwaltung nur sichtbar, wenn Sie das Verzeichnis freigeben.</span></li>
@@ -7669,8 +7657,9 @@ const PageTemplates = `
               <li><strong>Verzeichniseintrag</strong><span>{{if .Profile.DirectoryOptIn}}Derzeit freigegeben – Ihr Eintrag steht unter Kontakte.{{else}}Derzeit nicht freigegeben – Ihr Eintrag fehlt unter Kontakte.{{end}} Sie können das jederzeit zurücknehmen.</span></li>
             </ul>
             <a class="profile-note-link" href="/app/kontakte">Kontakte ansehen</a>
-          </section>
-          <details class="account-details" open>
+            </div>
+          </details>
+          <details class="account-details">
             <summary><strong>Konto &amp; Berechtigungen</strong><span>Rolle, Anmeldung und Einheiten. Diese Angaben vergibt die Hausverwaltung.</span></summary>
             <div class="readonly-grid">
               <div class="readonly-box">
@@ -7745,10 +7734,15 @@ const PageTemplates = `
       .notifications .email-paused .notification-paused-note { display: block; }
       .notifications .actions { display: flex; justify-content: flex-end; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 14px; }
       .notifications .actions a { color: var(--muted); font-size: 13px; font-weight: 750; }
-      .notifications .notification-note { display: grid; gap: 13px; padding: 20px; align-content: start; }
-      .notifications .notification-note .kicker { margin-bottom: 0; }
-      .notifications .notification-note h2 { font-size: 19px; }
-      .notifications .notification-note p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+      .notifications .notification-details { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
+      .notifications .notification-details > summary { min-height: 56px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 12px; align-items: baseline; padding: 15px 18px 11px; color: var(--ink); cursor: pointer; list-style: none; }
+      .notifications .notification-details > summary::-webkit-details-marker { display: none; }
+      .notifications .notification-details > summary strong { font-family: var(--font-serif); font-size: 19px; }
+      .notifications .notification-details > summary span { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; font-weight: 500; line-height: 1.4; }
+      .notifications .notification-details > summary::after { content: "›"; grid-column: 2; grid-row: 1; color: var(--gold-ink); font-size: 21px; line-height: 1; }
+      .notifications .notification-details[open] > summary::after { transform: rotate(90deg); }
+      .notifications .notification-details-body { display: grid; gap: 13px; border-top: 1px solid var(--line); padding: 15px 18px 18px; }
+      .notifications .notification-details-body p { color: var(--muted); font-size: 13px; line-height: 1.5; }
       .notifications .notification-address { display: grid; gap: 3px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 11px 13px; background: var(--panel-soft); }
       .notifications .notification-address span { color: var(--gold-ink); font-size: 10.5px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
       .notifications .notification-address strong { font-size: 14px; overflow-wrap: anywhere; }
@@ -7766,7 +7760,6 @@ const PageTemplates = `
         .notifications .notification-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; }
       }
       @media (max-width: 680px) {
-        .notifications .notification-note { padding: 16px; }
         .notifications .settings-card { padding: 14px; }
         .notifications .notification-master { grid-template-columns: 42px minmax(0,1fr) auto; padding: 12px; }
         .notifications .notification-master-icon { width: 42px; height: 42px; }
@@ -7781,7 +7774,6 @@ const PageTemplates = `
     <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Benachrichtigungen</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>
       </div>
       <section class="page notifications">
         <div class="notification-head">
@@ -7822,27 +7814,25 @@ const PageTemplates = `
         </section>
         </div>
         <aside class="notification-aside" aria-label="Hinweise zur Zustellung">
-          <section class="panel compact notification-note" aria-labelledby="notification-delivery-title">
-            <div>
-              <div class="kicker">Zustellung</div>
-              <h2 id="notification-delivery-title">Wohin die E-Mails gehen</h2>
-            </div>
+          <details class="notification-details">
+            <summary><strong id="notification-delivery-title">Empfängeradresse</strong><span>Ihre unveränderliche Anmeldeadresse</span></summary>
+            <div class="notification-details-body">
             <div class="notification-address"><span>Empfängeradresse</span><strong>{{.Email}}</strong></div>
             <p>Die Adresse ist zugleich Ihre Anmeldung und lässt sich hier nicht ändern. Eine Änderung veranlasst die Hausverwaltung.</p>
             <a class="notification-note-link" href="/app/settings/profile">Profil ansehen</a>
-          </section>
-          <section class="panel compact notification-note" aria-labelledby="notification-rules-title">
-            <div>
-              <div class="kicker">Grundregeln</div>
-              <h2 id="notification-rules-title">Was unabhängig davon gilt</h2>
             </div>
+          </details>
+          <details class="notification-details">
+            <summary><strong id="notification-rules-title">Grundregeln</strong><span>Was unabhängig von Ihrer Auswahl gilt</span></summary>
+            <div class="notification-details-body">
             <ul class="notification-rules">
               <li><strong>Anmeldelinks</strong><span>Einen Link, den Sie selbst anfordern, erhalten Sie immer – auch bei pausiertem Versand.</span></li>
               <li><strong>Keine Werbung</strong><span>Versendet wird ausschließlich, was dieses Haus betrifft.</span></li>
               <li><strong>Jederzeit änderbar</strong><span>Ihre Themenauswahl bleibt gespeichert und gilt wieder, sobald Sie den Versand aktivieren.</span></li>
               <li><strong>Im Portal vollständig</strong><span>Alles bleibt im Portal sichtbar, unabhängig davon, was per E-Mail hinausgeht.</span></li>
             </ul>
-          </section>
+            </div>
+          </details>
         </aside>
         </div>
       </section>
@@ -7875,7 +7865,7 @@ const PageTemplates = `
       .pk-nav-item > span:last-child { color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
       .pk-nav-icon { width: 22px; height: 22px; margin-bottom: 4px; color: var(--gold-ink); }
       .pk-nav-icon svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-      .parking-access .panel { padding: 0; overflow: hidden; }
+      .parking-access .panel { padding: 0; overflow: visible; }
       .access-head { padding: 18px 20px 14px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
       .access-head h2 { margin: 0; font-size: 20px; }
       .access-head span { color: var(--muted); font-size: 12.5px; }
@@ -7890,7 +7880,10 @@ const PageTemplates = `
       .access-person-copy span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
       .access-action { justify-self: end; margin: 0; }
       .access-action .button { min-width: 102px; min-height: 42px; margin: 0; }
-      .access-locked { justify-self: end; color: var(--soft); font-size: 12px; line-height: 1.35; text-align: right; }
+      .access-fixed { position: relative; min-height: 44px; cursor: help; }
+      .access-fixed svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .access-fixed::after { content: attr(data-help); position: absolute; right: 0; bottom: calc(100% + 7px); z-index: 10; width: max-content; max-width: 230px; border-radius: 8px; padding: 8px 10px; color: #fff; background: var(--ink); box-shadow: var(--shadow-dialog); font-size: 11.5px; font-weight: 650; line-height: 1.35; text-align: left; opacity: 0; visibility: hidden; transform: translateY(4px); transition: opacity .14s ease, transform .14s ease; pointer-events: none; }
+      .access-fixed:hover::after, .access-fixed:focus-visible::after { opacity: 1; visibility: visible; transform: none; }
       .access-flash { margin: 0; padding: 11px 15px; border-radius: 9px; font-size: 13.5px; font-weight: 650; border: 1px solid transparent; }
       .access-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
       .access-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
@@ -7909,14 +7902,15 @@ const PageTemplates = `
         .access-person { grid-column: 1 / -1; }
         .access-row > .role-pill { justify-self: start; }
         .access-row > .pill { justify-self: end; }
-        .access-action, .access-locked { grid-column: 1 / -1; justify-self: stretch; text-align: left; }
+        .access-action { grid-column: 1 / -1; justify-self: stretch; text-align: left; }
+        .access-fixed::after { right: 0; }
         .access-action .button { width: 100%; min-height: 44px; }
       }
     </style>
     <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a><a class="button" href="/app/parking">Parkplatz öffnen</a></div>
+        <div class="page-actions"><a class="button ghost" href="/app/parking">Parkplatz öffnen</a></div>
       </div>
       <section class="page parking-access">
         <div>
@@ -7933,15 +7927,15 @@ const PageTemplates = `
                 <article class="access-row">
                   <span class="access-person"><span class="access-avatar">{{.Initials}}</span><span class="access-person-copy"><strong>{{.DisplayName}}</strong><span>{{.Email}}</span></span></span>
                   <span class="role-pill {{.RoleClass}}">{{.Role}}</span>
-                  {{if .ParkingChecked}}<span class="pill ok">Freigegeben</span>{{else}}<span class="pill">Kein Zugriff</span>{{end}}
                   {{if and .Editable (or $.ServiceProviderAccessEnabled (ne .Role "Dienstleister")) (or $.IsAdmin (ne .Role "Admin"))}}
+                    {{if .ParkingChecked}}<span class="pill ok">Freigegeben</span>{{else}}<span class="pill">Kein Zugriff</span>{{end}}
                     <form class="access-action" method="post" action="/app/settings/parking-access">
                       <input type="hidden" name="email" value="{{.Email}}">
                       <input type="hidden" name="parking" value="{{if .ParkingChecked}}0{{else}}1{{end}}">
                       <button class="button small{{if not .ParkingChecked}} primary{{end}}" type="submit">{{if .ParkingChecked}}Entziehen{{else}}Freigeben{{end}}</button>
                     </form>
                   {{else}}
-                    <span class="access-locked">Aus Konfiguration<br>Schreibgeschützt</span>
+                    <span class="pill{{if .ParkingChecked}} ok{{end}} access-fixed" tabindex="0" role="note" aria-label="{{if .ParkingChecked}}Freigegeben{{else}}Kein Zugriff{{end}}. Fest vergeben und hier nicht änderbar." data-help="Fest vergeben · hier nicht änderbar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>{{if .ParkingChecked}}Freigegeben{{else}}Kein Zugriff{{end}}<span class="sr-only">. Aus Konfiguration. Schreibgeschützt.</span></span>
                   {{end}}
                 </article>
               {{end}}
@@ -8073,7 +8067,7 @@ const PageTemplates = `
     <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz</span></span>
-        <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a><a class="button" href="/app/parking">Parkplatz öffnen</a></div>
+        <div class="page-actions"><a class="button ghost" href="/app/parking">Parkplatz öffnen</a></div>
       </div>
       <section class="page pk-set">
         <div>
@@ -8137,7 +8131,7 @@ const PageTemplates = `
             <summary><span>Offene Zahlungen erinnern</span><span class="pk-disclosure-note">nur überfällige Monate</span></summary>
             <div class="pk-disclosure-body">
               <p class="muted">Es erhält nur eine Person eine Nachricht, wenn ein überfälliger Betrag offen ist und noch keine Erinnerung für diesen Monat versandt wurde.</p>
-              <form method="post" action="/app/parking/reminders"><button class="button" type="submit">Erinnerungen jetzt senden</button></form>
+              <form method="post" action="/app/parking/reminders"><button class="button ghost" type="submit">Erinnerungen jetzt senden</button></form>
             </div>
           </details>
         </section>
@@ -8387,7 +8381,7 @@ const PageTemplates = `
       .users .rdot.right { background: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold); }
       .users .col-actions { width: 44px; }
       .users td.col-actions { text-align: right; }
-      .users .row-edit { border: 1px solid transparent; background: transparent; border-radius: 8px; width: 32px; height: 32px; display: inline-grid; place-items: center; color: var(--soft); cursor: pointer; padding: 0; }
+      .users .row-edit { border: 1px solid transparent; background: transparent; border-radius: 8px; width: 44px; height: 44px; display: inline-grid; place-items: center; color: var(--soft); cursor: pointer; padding: 0; }
       .users .row-edit:hover { border-color: var(--line); background: var(--panel-soft); color: var(--gold-ink); }
       .users .row-edit svg { stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
       .users .edit-dialog { position: relative; width: min(440px, 92vw); border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--panel); color: var(--ink); box-shadow: 0 30px 80px rgba(32,37,31,.32); }
@@ -8499,7 +8493,7 @@ const PageTemplates = `
       .users .optional-stack { display: grid; gap: 10px; padding: 0 12px 12px; }
       .users .invite-form .f-submit { grid-column: 1 / -1; justify-self: start; min-width: 220px; }
       .users .unit-link-note { grid-column: 1 / -1; margin: -2px 0 0; color: var(--muted); font-size: 12.5px; }
-      .users .unit-link-note a, .users .unit-context a { color: var(--gold-ink); font-weight: 750; }
+      .users .unit-link-note a, .users .unit-context a { min-height: 44px; display: inline-flex; align-items: center; color: var(--gold-ink); font-weight: 750; }
       .users .list-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 8px 2px 0; }
       .users .list-heading strong { font-family: var(--font-serif); font-size: 20px; font-weight: 600; }
       .users .list-heading span { color: var(--soft); font-size: 12px; font-weight: 650; }
@@ -8510,7 +8504,7 @@ const PageTemplates = `
       .users tbody tr.needs-attention { background: rgba(200,153,63,.045); }
       .users tbody tr.needs-attention.disabled { background: rgba(150,40,40,.035); }
       .users .col-actions { width: 112px; }
-      .users .row-edit { width: auto; min-height: 38px; gap: 7px; padding: 0 10px; border-color: var(--line); background: var(--panel-soft); color: var(--gold-ink); font-weight: 750; }
+      .users .row-edit { width: auto; min-width: 44px; min-height: 44px; gap: 7px; padding: 0 10px; border-color: var(--line); background: var(--panel-soft); color: var(--gold-ink); font-weight: 750; }
       .users .edit-label { font-size: 12px; }
       .users .edit-dialog { width: min(520px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 24px; }
       .users .edit-dialog h2 { font-size: 25px; }
@@ -8571,13 +8565,23 @@ const PageTemplates = `
         .users .pill { min-height: 26px; padding: 3px 9px; font-size: 12px; }
         .users .last-seen { display: none; }
         .users td.col-actions { position: static; grid-column: 2; grid-row: 1; align-self: center; width: auto; }
-        .users .row-edit { min-height: 40px; padding-inline: 9px; }
+        .users .row-edit { min-height: 44px; padding-inline: 9px; }
         .users .edit-label { display: none; }
         .users .edit-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 18px; border-radius: 16px; }
         .users .edit-dialog h2 { padding-right: 24px; font-size: 23px; }
         .users .dialog-disclosure .optional-grid, .users .optional-stack { padding-inline: 10px; }
         .users .dlg-delete { display: grid; align-items: start; }
         .users .dlg-delete span { max-width: none; }
+      }
+      @media (max-width: 350px) {
+        .users tbody tr { position: relative; }
+        .users tbody td.col-person { grid-column: 1 / -1; }
+        .users .person { display: grid; grid-template-columns: 38px minmax(0,1fr); column-gap: 10px; row-gap: 4px; }
+        .users .person > div { display: contents; }
+        .users .avatar { grid-column: 1; grid-row: 1; }
+        .users .person-name { grid-column: 2; grid-row: 1; align-self: center; padding-right: 48px; }
+        .users .person-mail, .users .person-units { grid-column: 1 / -1; min-width: 0; margin-top: 0; word-break: normal; overflow-wrap: anywhere; }
+        .users td.col-actions { position: absolute; top: 11px; right: 11px; }
       }
     </style>
     <script src="/assets/users.js?v={{.AssetVersion}}" defer></script>

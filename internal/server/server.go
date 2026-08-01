@@ -4665,6 +4665,7 @@ func (a *app) baseContext(ac authCtx) map[string]any {
 	return map[string]any{
 		"Tenant":                ac.tenant,
 		"HouseName":             houseDisplayName(ac.tenant),
+		"SidebarAddress":        sidebarAddressForTenant(ac.tenant),
 		"MapURL":                tenantMapURL(ac.tenant.Address),
 		"SidebarMap":            sidebarMapForTenant(ac.tenant),
 		"Email":                 ac.email,
@@ -5153,6 +5154,12 @@ func (a *app) userRows(tenantSlug string) []userRow {
 		if _, ok := seen[email]; ok {
 			continue
 		}
+		// A directory profile is authoritative for house membership. Do not
+		// synthesize a row for the active house merely because the same address is
+		// also present in a process-wide bootstrap allowlist.
+		if _, known := a.directoryProfile(email); known {
+			continue
+		}
 		row := userRowFrom(userProfile{Email: email, Role: roleAdmin, Status: "Aktiv", Tenants: []string{tenantSlug}})
 		row.IsConfig = true
 		row.Protected = true
@@ -5161,6 +5168,9 @@ func (a *app) userRows(tenantSlug string) []userRow {
 	}
 	for email := range a.allowed {
 		if _, ok := seen[email]; ok {
+			continue
+		}
+		if _, known := a.directoryProfile(email); known {
 			continue
 		}
 		row := userRowFrom(userProfile{Email: email, Role: roleResident, Status: "Eingeladen", Tenants: []string{tenantSlug}})

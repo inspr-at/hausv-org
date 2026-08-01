@@ -19,8 +19,8 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	}
 
 	got := a.baseContext(ac)
-	if len(got) != 15 {
-		t.Fatalf("baseContext keys = %d, want 15: %#v", len(got), got)
+	if len(got) != 16 {
+		t.Fatalf("baseContext keys = %d, want 16: %#v", len(got), got)
 	}
 	if got["Tenant"] != ac.tenant || got["Email"] != ac.email || got["Role"] != ac.role {
 		t.Fatalf("baseContext identity = %#v", got)
@@ -33,6 +33,10 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	}
 	if got["MapURL"] != "https://www.openstreetmap.org/search?query=Janischhofweg+22" {
 		t.Fatalf("baseContext map URL = %#v", got["MapURL"])
+	}
+	sidebarAddress, ok := got["SidebarAddress"].(sidebarAddressView)
+	if !ok || sidebarAddress.Full != "Janischhofweg 22" || sidebarAddress.Primary != "Janischhofweg 22" || sidebarAddress.HasLocality {
+		t.Fatalf("baseContext sidebar address = %#v", got["SidebarAddress"])
 	}
 	sidebarMap, ok := got["SidebarMap"].(sidebarMapView)
 	if !ok || !sidebarMap.Configured || len(sidebarMap.Tiles) == 0 || len(sidebarMap.Tiles) > 4 {
@@ -49,6 +53,51 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	homeIdentity, ok := got["HomeIdentity"].(homeIdentityView)
 	if !ok || homeIdentity.DisplayName != "Mein Zuhause" || homeIdentity.HasDisplayName || homeIdentity.HasUnit {
 		t.Fatalf("baseContext default home identity = %#v", got["HomeIdentity"])
+	}
+}
+
+func TestSidebarAddressKeepsAStableMobileHouseIdentity(t *testing.T) {
+	tests := []struct {
+		name     string
+		tenant   tenantConfig
+		primary  string
+		locality string
+	}{
+		{
+			name:     "portal abbreviation and postcode",
+			tenant:   tenantConfig{Name: "JHW22-Portal", Address: "Janischhofweg 22, 8043 Graz"},
+			primary:  "Janischhofweg 22",
+			locality: "Graz",
+		},
+		{
+			name:     "named house",
+			tenant:   tenantConfig{Name: "Haus Kirchweg", Address: "Kirchweg 8, 8043 Graz, Österreich"},
+			primary:  "Kirchweg 8",
+			locality: "Graz",
+		},
+		{
+			name:    "generic portal falls back to street",
+			tenant:  tenantConfig{Name: "WEG Portal", Address: "Sonnenweg 4"},
+			primary: "Sonnenweg 4",
+		},
+		{
+			name:    "missing address falls back to portal name",
+			tenant:  tenantConfig{Name: "Haus am Park"},
+			primary: "Haus am Park",
+		},
+		{
+			name:    "generic pilot address falls back to house name",
+			tenant:  tenantConfig{Name: "Haus Eltern", Address: "Pilot Eltern"},
+			primary: "Haus Eltern",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sidebarAddressForTenant(tt.tenant)
+			if got.Primary != tt.primary || got.Locality != tt.locality || got.HasLocality != (tt.locality != "") {
+				t.Fatalf("sidebarAddressForTenant(%#v) = %#v", tt.tenant, got)
+			}
+		})
 	}
 }
 
