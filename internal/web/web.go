@@ -1803,15 +1803,18 @@ const PageTemplates = `
     .issue-board-tools[open] > summary::after { content: "Filter schließen"; }
     .issue-board-tools .issue-board-filter { margin: 0; padding: 14px; }
     .issue-board-tools[open] { grid-column: 1 / -1; }
-    .issue-work-card { position: relative; gap: 14px; border-color: rgba(32,37,31,.13); border-radius: 14px; padding: 22px 22px 20px 28px; background: var(--panel); box-shadow: 0 14px 38px rgba(38,34,25,.07); overflow: hidden; }
+    /* Sonst bliebe neben der Zaehlung eine leere Zelle stehen, sobald der
+       Filterbereich in eine eigene Zeile rutscht. */
+    .issue-board-toolbar:has(.issue-board-tools[open]) .issue-board-summary { grid-column: 1 / -1; border-right: 0; border-bottom: 1px solid var(--line); }
+    .issue-work-card { position: relative; gap: 11px; border-color: rgba(32,37,31,.13); border-radius: 14px; padding: 17px 18px 15px 24px; background: var(--panel); box-shadow: 0 10px 28px rgba(38,34,25,.055); overflow: hidden; }
     .issue-work-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; background: var(--gold); }
     .issue-work-card.status-progress::before, .issue-work-card.status-done::before, .issue-work-card.status-closed::before { background: var(--leaf); }
     .issue-work-card .issue-card-head { align-items: center; }
-    .issue-work-card h3 { font-size: 22px; line-height: 1.15; }
-    .issue-work-card .issue-location { margin-top: 5px; font-size: 13.5px; }
-    .issue-work-card .issue-next-step { position: relative; border-left: 0; border-radius: var(--radius-xs); padding: 12px 14px 12px 44px; background: rgba(200,153,63,.085); }
-    .issue-work-card .issue-next-step::before { content: "✓"; position: absolute; left: 13px; top: 50%; width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid rgba(200,153,63,.32); border-radius: 50%; background: var(--panel); color: var(--gold-ink); font-size: 12px; transform: translateY(-50%); }
-    .issue-card-foot { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: center; border-top: 1px dashed var(--line); padding-top: 14px; }
+    .issue-work-card h3 { font-size: 20px; line-height: 1.15; }
+    .issue-work-card .issue-location { margin-top: 4px; font-size: 13px; }
+    .issue-work-card .issue-next-step { position: relative; border-left: 0; border-radius: var(--radius-xs); padding: 9px 13px 9px 40px; background: rgba(200,153,63,.085); font-size: 13px; }
+    .issue-work-card .issue-next-step::before { content: "→"; position: absolute; left: 12px; top: 50%; width: 21px; height: 21px; display: grid; place-items: center; border: 1px solid rgba(200,153,63,.32); border-radius: 50%; background: var(--panel); color: var(--gold-ink); font-size: 12px; transform: translateY(-50%); }
+    .issue-card-foot { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: center; border-top: 1px dashed var(--line); padding-top: 11px; }
     .issue-card-foot .issue-description-preview p { color: var(--muted); font-size: 14px; }
     .issue-card-foot .issue-card-tools { min-width: 0; border: 0; background: transparent; overflow: visible; }
     .issue-card-foot .issue-card-tools > summary { width: max-content; min-height: 44px; margin-left: auto; border-radius: var(--radius-xs); padding: 10px 15px; background: var(--ink); color: #fff; font-size: 13.5px; }
@@ -1822,7 +1825,68 @@ const PageTemplates = `
     .issue-card-foot .issue-card-tools[open] > summary { border-bottom: 0; }
     .issue-card-foot .issue-card-tools-body { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); }
     .issue-triage-link { min-width: 118px; }
-    .issue-triage-page { width: min(980px,100%); gap: 28px; padding-bottom: 48px; }
+    /* Triage-Board: Schnellfilter, Leerzustand und Filter-Leerzustand. Der
+       Leerzustand erklaert Reihenfolge und Statusweg, statt nur zu melden,
+       dass nichts da ist. */
+    .issue-board-quick { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; border-top: 1px solid var(--line); padding: 10px 16px; background: var(--panel-soft); }
+    .issue-board-quick > span { margin-right: 3px; color: var(--gold-ink); font-size: 10.5px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+    .issue-board-quick a { min-height: 32px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 0 13px; background: var(--panel); color: var(--muted); font-size: 12.5px; font-weight: 800; text-decoration: none; }
+    .issue-board-quick a:hover { border-color: var(--gold); color: var(--gold-ink); }
+    .issue-board-quick a[aria-current="true"] { border-color: var(--ink); background: var(--ink); color: #fff; }
+    .board-blank { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(286px,.9fr); gap: 16px; }
+    .board-blank-main { display: grid; align-content: center; gap: 20px; border: 1px dashed rgba(200,153,63,.45); border-radius: var(--radius-sm); background: rgba(255,254,251,.7); padding: clamp(22px,3.2vw,36px); }
+    .board-blank-lead { display: grid; justify-items: start; gap: 13px; }
+    .board-blank-icon { width: 52px; height: 52px; display: grid; place-items: center; border: 1px solid rgba(200,153,63,.3); border-radius: 12px; background: rgba(200,153,63,.1); color: var(--gold-ink); }
+    .board-blank-icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .board-blank-main h2 { font-size: clamp(25px,3vw,31px); }
+    .board-blank-main p { max-width: 56ch; color: var(--muted); font-size: 15px; line-height: 1.55; }
+    .board-blank-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 3px; }
+    .board-blank-actions .button { min-height: 44px; }
+    .board-blank-side { display: grid; align-content: start; gap: 13px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 20px; box-shadow: var(--shadow-panel); }
+    .board-blank-side h2 { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-ink); font-family: var(--font-sans); }
+    .board-blank-steps { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; counter-reset: board-step; }
+    .board-blank-steps li { display: grid; grid-template-columns: 24px minmax(0,1fr); gap: 2px 11px; align-items: start; counter-increment: board-step; }
+    .board-blank-steps li::before { content: counter(board-step); grid-row: 1 / span 2; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; font-size: 12px; font-weight: 850; }
+    .board-blank-steps strong { grid-column: 2; font-size: 13.5px; }
+    .board-blank-steps span { grid-column: 2; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+    .board-blank-note { border-top: 1px solid var(--line); padding-top: 12px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+    .board-blank-facts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+    .board-blank-facts li { display: grid; gap: 5px; border-top: 2px solid var(--ink); padding-top: 11px; }
+    .board-blank-facts strong { font-size: 13.5px; }
+    .board-blank-facts span { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+    .board-filter-blank { min-height: max(200px, 28vh); display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 18px; align-items: center; align-content: center; border: 1px dashed rgba(200,153,63,.45); border-radius: var(--radius-sm); background: rgba(255,254,251,.7); padding: 24px; }
+    .board-filter-blank h2 { font-size: 21px; }
+    .board-filter-blank p { margin-top: 4px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+    .board-filter-blank .button { min-height: 44px; }
+    @media (min-width: 901px) {
+      .board-blank { min-height: max(430px, calc(100vh - 356px)); grid-template-rows: minmax(0,1fr) auto; }
+    }
+    .issue-triage-page { width: min(1180px,100%); gap: 24px; padding-bottom: 48px; }
+    /* Triage-Ansicht: Entscheidung links, Fallstand rechts. Die Fakten bleiben
+       waehrend der Entscheidung sichtbar, statt hinter einer Klappe zu liegen. */
+    .issue-triage-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(286px,330px); gap: 20px; align-items: start; }
+    .issue-triage-main { min-width: 0; display: grid; gap: 20px; }
+    .issue-triage-main .issue-triage-card { width: 100%; justify-self: stretch; }
+    .issue-triage-aside { min-width: 0; display: grid; align-content: start; gap: 13px; }
+    .issue-triage-state { display: grid; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 18px; box-shadow: var(--shadow-panel); }
+    .issue-triage-state h2 { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-ink); font-family: var(--font-sans); }
+    .issue-triage-state dl { display: grid; margin: 0; }
+    .issue-triage-state dl > div { min-width: 0; display: grid; grid-template-columns: 84px minmax(0,1fr); gap: 10px; align-items: baseline; border-top: 1px solid var(--line); padding: 8px 0; }
+    .issue-triage-state dl > div:first-child { border-top: 0; padding-top: 0; align-items: center; }
+    .issue-triage-state dt { color: var(--muted); font-size: 12px; font-weight: 750; }
+    .issue-triage-state dd { min-width: 0; margin: 0; font-size: 13.5px; font-weight: 750; overflow-wrap: anywhere; }
+    .issue-triage-state-line { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+    .issue-triage-state-line strong { color: var(--ink); }
+    .issue-triage-state-next { border-top: 1px solid var(--line); padding-top: 12px; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+    .issue-triage-aside .issue-triage-more { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); }
+    .issue-triage-aside .issue-triage-more > summary { padding: 14px 16px; }
+    .issue-triage-aside .issue-triage-more-body { border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+    @media (max-width: 1080px) {
+      .issue-triage-layout { grid-template-columns: minmax(0,1fr); }
+      .issue-triage-state dl { grid-template-columns: repeat(auto-fit,minmax(164px,1fr)); gap: 0 18px; }
+      .issue-triage-state dl > div { grid-template-columns: minmax(0,1fr); gap: 2px; align-items: start; border-top: 0; border-bottom: 1px solid var(--line); padding: 8px 0; }
+      .issue-triage-state dl > div:first-child { align-items: start; padding-top: 8px; }
+    }
     .issue-triage-context { display: grid; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 24px; }
     .issue-triage-context h1 { font-size: clamp(38px,5vw,58px); }
     .issue-triage-context > p { max-width: 720px; color: var(--muted); font-size: 16px; line-height: 1.6; }
@@ -2351,7 +2415,40 @@ const PageTemplates = `
     .handover-section > summary strong { font-family: var(--font-serif); font-size: 21px; }
     .handover-section > summary small { color: var(--muted); font-size: 12.5px; }
     .handover-section-count { min-width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--panel-soft); color: var(--gold-ink); font-weight: 900; }
-    .handover-section-empty { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+    /* Leere Abschnitte bleiben ruhig stehen und lassen sich nicht aufklappen:
+       ein Aufklapper ohne Inhalt ist ein Klick ins Leere. */
+    .handover-section.is-empty { min-height: 56px; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 12px; }
+    .handover-section.is-empty > span:first-child { display: grid; gap: 3px; }
+    .handover-section.is-empty strong { font-family: var(--font-serif); font-size: 21px; color: var(--muted); }
+    .handover-section.is-empty small { color: var(--soft); font-size: 12.5px; }
+    .handover-section.is-empty .handover-section-count { border-style: dashed; color: var(--soft); }
+    @media (max-width: 1120px) { .handover-page-head { grid-template-columns: minmax(0,1fr); } }
+    /* Uebergaben-Leerzustand: erklaert Zweck und Ablauf eines Protokolls,
+       statt nur zu melden, dass noch keines existiert. */
+    .handover-blank { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(286px,.9fr); gap: 16px; }
+    .handover-blank-main { display: grid; align-content: center; gap: 20px; border: 1px dashed rgba(200,153,63,.45); border-radius: var(--radius-sm); background: rgba(255,254,251,.7); padding: clamp(22px,3.2vw,36px); }
+    .handover-blank-lead { display: grid; justify-items: start; gap: 13px; }
+    .handover-blank-icon { width: 52px; height: 52px; display: grid; place-items: center; border: 1px solid rgba(200,153,63,.3); border-radius: 12px; background: rgba(200,153,63,.1); color: var(--gold-ink); }
+    .handover-blank-icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .handover-blank-main h2 { font-size: clamp(25px,3vw,31px); }
+    .handover-blank-main p { max-width: 58ch; color: var(--muted); font-size: 15px; line-height: 1.55; }
+    .handover-blank-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 3px; }
+    .handover-blank-actions .button { min-height: 44px; }
+    .handover-blank-side { display: grid; align-content: start; gap: 13px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 20px; box-shadow: var(--shadow-panel); }
+    .handover-blank-side h2 { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-ink); font-family: var(--font-sans); }
+    .handover-blank-steps { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; counter-reset: handover-step; }
+    .handover-blank-steps li { display: grid; grid-template-columns: 24px minmax(0,1fr); gap: 2px 11px; align-items: start; counter-increment: handover-step; }
+    .handover-blank-steps li::before { content: counter(handover-step); grid-row: 1 / span 2; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; font-size: 12px; font-weight: 850; }
+    .handover-blank-steps strong { grid-column: 2; font-size: 13.5px; }
+    .handover-blank-steps span { grid-column: 2; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+    .handover-blank-note { border-top: 1px solid var(--line); padding-top: 12px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+    .handover-blank-facts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+    .handover-blank-facts li { display: grid; gap: 5px; border-top: 2px solid var(--ink); padding-top: 11px; }
+    .handover-blank-facts strong { font-size: 13.5px; }
+    .handover-blank-facts span { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+    @media (min-width: 901px) {
+      .handover-blank { min-height: max(430px, calc(100vh - 336px)); grid-template-rows: minmax(0,1fr) auto; }
+    }
     .handover-card { gap: 13px; padding: 18px; }
     .handover-card .handover-head { grid-template-columns: minmax(0,1fr) auto; align-items: center; }
     .handover-card .handover-meta { margin-bottom: 5px; }
@@ -2652,6 +2749,10 @@ const PageTemplates = `
 	      .metric-grid { grid-template-columns: 1fr; }
 	      .payment-fields, .parking-breakdown { grid-template-columns: 1fr; }
 	      .handover-detail-grid, .handover-confirm-summary { grid-template-columns: 1fr; }
+	      .handover-blank { grid-template-columns: minmax(0,1fr); gap: 14px; }
+	      .handover-blank-main { padding: 22px 18px; }
+	      .handover-blank-side { padding: 17px; }
+	      .handover-blank-facts { grid-template-columns: minmax(0,1fr); gap: 12px; }
 	      .handover-page-head, .handover-metrics { grid-template-columns: 1fr; }
 	      .handover-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
 	      .handover-metrics > div { padding: 11px 7px 11px 19px; }
@@ -2743,9 +2844,15 @@ const PageTemplates = `
       .issue-board-tools > summary { grid-template-columns: 32px minmax(0,1fr) auto; gap: 9px; }
       .issue-board-tools > summary > span:not(.issue-filter-icon) { grid-column: 2 / -1; justify-self: start; }
       .issue-board-tools > summary::after { grid-column: 3; grid-row: 1; justify-self: end; }
-      .issue-work-card { padding: 18px 17px 17px 23px; }
+      .issue-board-quick { padding: 10px 14px; }
+      .issue-work-card { padding: 15px 15px 14px 21px; }
       .issue-card-foot { grid-template-columns: 1fr; gap: 12px; }
       .issue-card-foot .issue-card-tools > summary { width: 100%; margin-left: 0; justify-content: center; }
+      .board-blank { grid-template-columns: minmax(0,1fr); gap: 14px; }
+      .board-blank-main { padding: 22px 18px; }
+      .board-blank-side { padding: 17px; }
+      .board-blank-facts { grid-template-columns: minmax(0,1fr); gap: 12px; }
+      .board-filter-blank { grid-template-columns: minmax(0,1fr); justify-items: start; gap: 13px; padding: 20px 18px; }
       .issue-triage-page { gap: 20px; padding: 22px 16px 36px; }
       .issue-triage-context { gap: 9px; padding-bottom: 18px; }
       .issue-triage-context h1 { font-size: 36px; }
@@ -2858,6 +2965,9 @@ const PageTemplates = `
     @media (max-width: 600px) {
       .home-follow-row { grid-template-columns: minmax(0,1fr); gap: 4px; padding: 14px 2px 15px; }
       .home-follow-action { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 5px; }
+      .board-blank-actions, .handover-blank-actions { display: grid; }
+      .board-blank-actions .button, .handover-blank-actions .button { width: 100%; justify-content: center; }
+      .board-filter-blank .button { width: 100%; }
     }
   </style>
 {{end}}
@@ -3952,6 +4062,15 @@ const PageTemplates = `
                   </div>
                 </form>
               </details>
+              <nav class="issue-board-quick" aria-label="Schnellauswahl">
+                <span>Ansicht</span>
+                <a href="{{.BoardAction}}"{{if not .BoardFilters.HasActive}} aria-current="true"{{end}}>Alle</a>
+                <a href="{{.BoardAction}}?status=Neu"{{if eq .BoardFilters.Status "Neu"}} aria-current="true"{{end}}>Neu</a>
+                <a href="{{.BoardAction}}?status=In+Bearbeitung"{{if eq .BoardFilters.Status "In Bearbeitung"}} aria-current="true"{{end}}>In Bearbeitung</a>
+                <a href="{{.BoardAction}}?priority=Dringend"{{if eq .BoardFilters.Priority "Dringend"}} aria-current="true"{{end}}>Dringend</a>
+                <a href="{{.BoardAction}}?assignee={{.Email}}"{{if eq .BoardFilters.Assignee .Email}} aria-current="true"{{end}}>Mir zugewiesen</a>
+                <a href="{{.BoardAction}}?sort=age"{{if eq .BoardFilters.Sort "age"}} aria-current="true"{{end}}>Älteste zuerst</a>
+              </nav>
             </div>{{end}}
             {{if .HasManageIssues}}
               <div class="issue-list">
@@ -3979,8 +4098,45 @@ const PageTemplates = `
                   </article>
                 {{end}}
               </div>
+            {{else if .TotalIssueCount}}
+              <div class="board-filter-blank">
+                <span class="board-blank-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg></span>
+                <div>
+                  <h2>Kein Anliegen passt zu dieser Auswahl</h2>
+                  <p>Im Haus sind {{.TotalIssueCount}} Anliegen erfasst, davon {{.OpenIssueCount}} offen. Setzen Sie die Auswahl zurück oder wählen Sie einen anderen Filter.</p>
+                </div>
+                <a class="button primary" href="{{.BoardAction}}">Auswahl zurücksetzen</a>
+              </div>
             {{else}}
-              {{template "emptyState" .ManageIssuesEmpty}}
+              <section class="board-blank" aria-labelledby="board-blank-title">
+                <div class="board-blank-main">
+                  <div class="board-blank-lead">
+                    <span class="board-blank-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/><path d="M9 8h6M9 11h4"/></svg></span>
+                    <h2 id="board-blank-title">{{.ManageIssuesEmpty.Title}}</h2>
+                    <p>Sobald jemand im Haus etwas meldet, steht es hier: Titel, meldende Person, Ort, Status, Priorität und der nächste Schritt. Zuletzt aktualisierte Anliegen stehen oben; die Bearbeitung öffnen Sie direkt aus der Zeile.</p>
+                  </div>
+                  {{if or .CanCreateIssue .CanManageAnnouncements}}<div class="board-blank-actions">
+                    {{if .CanCreateIssue}}<a class="button primary" href="/app/anliegen?new=1">Anliegen selbst anlegen</a>{{end}}
+                    {{if .CanManageAnnouncements}}<a class="button" href="/app/announcements">Meldeweg am Aushang erklären</a>{{end}}
+                  </div>{{end}}
+                </div>
+                <aside class="board-blank-side">
+                  <h2>Der Weg eines Anliegens</h2>
+                  <ol class="board-blank-steps">
+                    <li><strong>Neu</strong><span>Die Meldung ist eingegangen. Erster Schritt: Dringlichkeit festlegen.</span></li>
+                    <li><strong>Angenommen</strong><span>Die Zuständigkeit ist vergeben, die Bearbeitung übernommen.</span></li>
+                    <li><strong>Termin vereinbart</strong><span>Ein Termin mit Bewohnerschaft oder Dienstleister steht fest.</span></li>
+                    <li><strong>In Bearbeitung</strong><span>Die Arbeit läuft. Informationen und Rückfragen gehen von hier an die meldende Person.</span></li>
+                    <li><strong>Erledigt</strong><span>Die Lösung geht zur Prüfung; bestätigt wird von der meldenden Person.</span></li>
+                  </ol>
+                  <p class="board-blank-note">Meldungen, die nicht bearbeitet werden, schließen Sie als „Abgelehnt“ oder „Duplikat“.</p>
+                </aside>
+                <ul class="board-blank-facts">
+                  <li><strong>Reihenfolge</strong><span>Standard ist „zuletzt aktualisiert“. Ab dem ersten Anliegen stehen zusätzlich Älteste zuerst, Priorität, Status, Kategorie und Zuständigkeit als Sortierung bereit.</span></li>
+                  <li><strong>Priorität</strong><span>Dringend, Hoch, Mittel und Niedrig. Der erste Triage-Schritt setzt sie; die Zählung über der Liste zeigt offene und dringende Anliegen.</span></li>
+                  <li><strong>Zuständigkeit</strong><span>Der zweite Schritt ordnet das Anliegen Ihnen zu oder lässt es offen. Danach lässt sich die Liste auf Ihre eigenen Fälle einschränken.</span></li>
+                </ul>
+              </section>
             {{end}}
           </section>
         {{end}}
@@ -4009,6 +4165,8 @@ const PageTemplates = `
           <p>{{.Issue.Body}}</p>
         </header>
 
+        <div class="issue-triage-layout">
+          <div class="issue-triage-main">
         {{if eq .TriageStep "1"}}
           <form class="issue-triage-card" method="post" action="/app/anliegen/workflow">
             <input type="hidden" name="id" value="{{.Issue.ID}}">
@@ -4150,15 +4308,31 @@ const PageTemplates = `
             </div>
           </section>
         {{end}}
-
-        <details class="issue-triage-more">
-          <summary>Verlauf und Unterlagen{{if .Issue.HasComments}} · {{len .Issue.Comments}} {{if eq (len .Issue.Comments) 1}}Beitrag{{else}}Beiträge{{end}}{{end}}{{if .Issue.HasPhotos}} · {{.Issue.PhotoCount}} Foto{{if ne .Issue.PhotoCount 1}}s{{end}}{{end}}</summary>
-          <div class="issue-triage-more-body">
-            {{template "attachmentStrip" .Issue}}
-            {{if .Issue.HasComments}}<div class="comment-thread">{{range .Issue.Comments}}{{template "issueComment" .}}{{end}}</div>{{else}}<p class="muted">Noch keine Rückmeldung.</p>{{end}}
-            {{template "issueEstimate" .Issue}}
           </div>
-        </details>
+          <aside class="issue-triage-aside">
+            <section class="issue-triage-state">
+              <h2>Stand des Anliegens</h2>
+              <dl>
+                <div><dt>Status</dt><dd><span class="pill {{.Issue.StatusClass}}">{{.Issue.Status}}</span></dd></div>
+                <div><dt>Priorität</dt><dd>{{.Issue.Priority}}</dd></div>
+                <div><dt>Zuständig</dt><dd>{{if .Issue.HasAssignee}}{{.Issue.AssigneeEmail}}{{else}}noch offen{{end}}</dd></div>
+                <div><dt>Kategorie</dt><dd>{{.Issue.Category}}</dd></div>
+                <div><dt>Gemeldet</dt><dd>{{.Issue.CreatedAt}}</dd></div>
+              </dl>
+              {{if .Issue.HasServiceAppointment}}<p class="issue-triage-state-line"><strong>Termin:</strong> {{.Issue.ServiceAppointment}}</p>{{end}}
+              {{if .Issue.HasServiceProposal}}<p class="issue-triage-state-line"><strong>Hinweis:</strong> {{.Issue.ServiceProposal}}</p>{{end}}
+              <p class="issue-triage-state-next">{{.Issue.NextStep}}</p>
+            </section>
+            <details class="issue-triage-more">
+              <summary>Verlauf und Unterlagen{{if .Issue.HasComments}} · {{len .Issue.Comments}} {{if eq (len .Issue.Comments) 1}}Beitrag{{else}}Beiträge{{end}}{{end}}{{if .Issue.HasPhotos}} · {{.Issue.PhotoCount}} Foto{{if ne .Issue.PhotoCount 1}}s{{end}}{{end}}</summary>
+              <div class="issue-triage-more-body">
+                {{template "attachmentStrip" .Issue}}
+                {{if .Issue.HasComments}}<div class="comment-thread">{{range .Issue.Comments}}{{template "issueComment" .}}{{end}}</div>{{else}}<p class="muted">Noch keine Rückmeldung.</p>{{end}}
+                {{template "issueEstimate" .Issue}}
+              </div>
+            </details>
+          </aside>
+        </div>
       </section>
     </main>
 {{template "appClose" .}}
@@ -5378,7 +5552,7 @@ const PageTemplates = `
       {{end}}
     </div>
     <details class="handover-details">
-      <summary>Protokolldetails anzeigen</summary>
+      <summary>Protokolldetails anzeigen{{if .HasRooms}} · {{len .Rooms}} {{if eq (len .Rooms) 1}}Raum{{else}}Räume{{end}}{{end}}{{if .HasMeters}} · {{len .Meters}} {{if eq (len .Meters) 1}}Zählerstand{{else}}Zählerstände{{end}}{{end}}{{if .HasKeys}} · {{len .Keys}} {{if eq (len .Keys) 1}}Schlüsselposition{{else}}Schlüsselpositionen{{end}}{{end}}{{if .HasAttachments}} · {{len .Attachments}} {{if eq (len .Attachments) 1}}Datei{{else}}Dateien{{end}}{{end}}</summary>
       <div class="handover-parties">
         <div><span>Ausziehend</span><strong>{{.Outgoing}}</strong></div>
         <div><span>Einziehend</span><strong>{{.Incoming}}</strong></div>
@@ -5445,14 +5619,48 @@ const PageTemplates = `
           </div>
           <div class="handover-sections">
             {{range .HandoverSections}}
-              <details class="handover-section" {{if .Open}}open{{end}}>
-                <summary><span><strong>{{.Title}}</strong><small>{{.Description}}</small></span><span class="handover-section-count">{{.Count}}</span></summary>
-                {{if .HasItems}}<div class="handover-list">{{range .Items}}{{template "handoverCard" .}}{{end}}</div>{{else}}<p class="handover-section-empty">Hier ist gerade nichts zu tun.</p>{{end}}
-              </details>
+              {{if .HasItems}}
+                <details class="handover-section" {{if .Open}}open{{end}}>
+                  <summary><span><strong>{{.Title}}</strong><small>{{.Description}}</small></span><span class="handover-section-count">{{.Count}}</span></summary>
+                  <div class="handover-list">{{range .Items}}{{template "handoverCard" .}}{{end}}</div>
+                </details>
+              {{else}}
+                <div class="handover-section is-empty">
+                  <span><strong>{{.Title}}</strong><small>{{.Description}}</small></span>
+                  <span class="handover-section-count">0</span>
+                </div>
+              {{end}}
             {{end}}
           </div>
         {{else}}
-          {{template "emptyState" .HandoversEmpty}}
+          <section class="handover-blank" aria-labelledby="handover-blank-title">
+            <div class="handover-blank-main">
+              <div class="handover-blank-lead">
+                <span class="handover-blank-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg></span>
+                <h2 id="handover-blank-title">{{.HandoversEmpty.Title}}</h2>
+                <p>Ein Übergabeprotokoll hält fest, in welchem Zustand eine Einheit übergeben wurde: Räume, Zählerstände, Schlüssel, Fotos und die Bestätigung von ausziehender und einziehender Partei. Genau das ist später der Nachweis, wenn jemand nachfragt.</p>
+              </div>
+              <div class="handover-blank-actions">
+                <button class="button primary" type="button" data-dialog="handover-create" aria-haspopup="dialog" aria-controls="handover-create">Erste Übergabe anlegen</button>
+                {{if .CanManageBuilding}}<a class="button" href="/app/settings/building#units">Einheiten prüfen</a>{{end}}
+              </div>
+            </div>
+            <aside class="handover-blank-side">
+              <h2>So entsteht ein Protokoll</h2>
+              <ol class="handover-blank-steps">
+                <li><strong>Anlegen</strong><span>Einheit, Anlass und Termin. Für den Start genügt eine Zeile je Raum.</span></li>
+                <li><strong>Ergänzen</strong><span>Zählerstände, Schlüssel, Notiz sowie Fotos und PDF kommen danach dazu.</span></li>
+                <li><strong>Bestätigen</strong><span>Beide Parteien bestätigen über einen persönlichen Link. Ab der ersten Bestätigung bleibt das Protokoll unverändert.</span></li>
+                <li><strong>Ablegen</strong><span>Vollständig bestätigt wandert es als Dokument in die Ablage des Hauses.</span></li>
+              </ol>
+              <p class="handover-blank-note">Ohne Einheit lässt sich kein Protokoll anlegen. Einheiten pflegen Sie in den Gebäude-Einstellungen.</p>
+            </aside>
+            <ul class="handover-blank-facts">
+              <li><strong>Jetzt offen</strong><span>Angelegte Protokolle, die noch auf eine Bestätigung warten. Diese Liste steht hier zuerst.</span></li>
+              <li><strong>Bereit zur Ablage</strong><span>Vollständig bestätigt. Ein Klick legt daraus das Dokument im Dokumentenbereich an.</span></li>
+              <li><strong>Abgeschlossen</strong><span>Abgelegte Protokolle bleiben mit allen Anhängen als PDF abrufbar.</span></li>
+            </ul>
+          </section>
         {{end}}
       </section>
 
