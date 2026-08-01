@@ -252,7 +252,7 @@ async function assertPublicLanding(viewport) {
   if (!response || response.status() !== 200) {
     fail(`Öffentliche Startseite ${viewport.name}: Status ${response?.status() ?? 0}`);
   }
-  if (!(await page.getByRole('heading', { name: 'Ein Portal für alle, die ein Haus gemeinsam verwalten.' }).count())) {
+  if (!(await page.getByRole('heading', { name: 'Ein Portal für alles was Zuhause anfällt.' }).count())) {
     fail(`Öffentliche Startseite ${viewport.name}: Hauptaussage fehlt`);
   }
   const features = await page.locator('.feature').count();
@@ -576,13 +576,27 @@ async function assertHomeOnboarding() {
   process.stdout.write('  ✓ Energie-Onboarding · Tastatur · Fortsetzen · Mobil\n');
 }
 
+// Viertelstunden im laufenden Kalendermonat. Ein fest verdrahtetes Datum
+// funktioniert genau so lange, bis der Monat wechselt: die Tarifkarte liest über
+// PeakForMonth und findet dann nichts mehr, worauf der Prüflauf mit einem
+// scheinbar unzusammenhängenden Timeout stirbt.
+function currentMonthQuarterHourCSV() {
+  const now = new Date();
+  const day = String(Math.min(now.getDate(), 28)).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const date = `${now.getFullYear()}-${month}-${day}`;
+  return Buffer.from(
+    `timestamp;import_kwh\n${date} 00:00;0,42\n${date} 00:15;0,38\n`,
+  );
+}
+
 async function importPilotReference(page) {
   const measurementPanel = page.locator('details.energy-collapsible').filter({ hasText: 'Messwerte & Referenz' });
   await measurementPanel.locator(':scope > summary').click();
   await page.locator('input[name="smart_meter_file"]').setInputFiles({
     name: 'smart-meter-pilot.csv',
     mimeType: 'text/csv',
-    buffer: Buffer.from('timestamp;import_kwh\n2026-07-01T00:00:00+02:00;0,42\n2026-07-01T00:15:00+02:00;0,38\n'),
+    buffer: currentMonthQuarterHourCSV(),
   });
   await page.getByRole('button', { name: 'Als Referenz importieren' }).click();
   await page.waitForLoadState('networkidle');
@@ -1133,7 +1147,7 @@ async function assertEnergySafetyAndFlow(viewport) {
   if (viewport.name === 'Desktop') {
     const measurementPanel = page.locator('details.energy-collapsible').filter({ hasText: 'Messwerte & Referenz' });
     await measurementPanel.locator(':scope > summary').click();
-    const csv = Buffer.from('timestamp;import_kwh\n2026-07-01T00:00:00+02:00;0,42\n2026-07-01T00:15:00+02:00;0,38\n');
+    const csv = currentMonthQuarterHourCSV();
     const file = { name: 'smart-meter.csv', mimeType: 'text/csv', buffer: csv };
     await page.locator('input[name="smart_meter_file"]').setInputFiles(file);
     await page.getByRole('button', { name: 'Als Referenz importieren' }).click();
