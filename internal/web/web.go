@@ -863,7 +863,9 @@ const PageTemplates = `
     .side-nav { flex: 1 1 auto; min-height: 0; display: grid; align-content: start; gap: 5px; overflow-y: auto; overflow-x: hidden; padding-right: 3px; }
     .side-nav::-webkit-scrollbar { width: 7px; }
     .side-nav::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: rgba(255,255,255,.16); }
-    .nav-toggle, .mobile-menu-toggle { display: none; }
+    .mobile-menu-toggle { display: none; }
+    .skip-link { position: fixed; left: 12px; top: 10px; z-index: 1000; transform: translateY(calc(-100% - 16px)); border: 2px solid var(--gold); border-radius: var(--radius-xs); padding: 10px 14px; color: var(--ink); background: var(--panel); box-shadow: var(--shadow-dialog); font-weight: 850; text-decoration: none; transition: transform .16s ease; }
+    .skip-link:focus { transform: none; }
     .nav-item { position: relative; min-height: 44px; display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: var(--radius-xs); color: rgba(255,255,255,.78); text-decoration: none; font-size: 15px; font-weight: 600; }
     .nav-item:hover { color: #fff; background: rgba(255,255,255,.06); }
     .nav-item.active { color: #fff; background: rgba(255,255,255,.08); }
@@ -2753,7 +2755,6 @@ const PageTemplates = `
 	      .side-ruler { display: none; }
 	      .side-portal strong { font-size: 15px; }
 	      .side-portal span { display: none; }
-	      .nav-toggle { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none; }
 	      .mobile-menu-toggle { min-height: 44px; max-width: min(230px,44vw); align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); padding: 7px 10px; color: rgba(255,255,255,.92); background: rgba(255,255,255,.07); font-size: 12px; font-weight: 850; letter-spacing: .01em; cursor: pointer; }
 	      .mobile-menu-toggle::before { content: ""; width: 14px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; box-shadow: 0 4px 0 currentColor inset; }
 	      .mobile-menu-prefix { color: rgba(255,255,255,.58); font-size: 10px; font-weight: 650; }
@@ -2761,10 +2762,9 @@ const PageTemplates = `
 	      .mobile-home-identity strong, .mobile-home-identity small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	      .mobile-home-identity strong { color: #fff; font-size: 12px; }
 	      .mobile-home-identity small { color: rgba(255,255,255,.52); font-size: 10px; font-weight: 550; }
-	      .nav-toggle:focus-visible + .mobile-menu-toggle { outline: 3px solid var(--gold); outline-offset: 3px; }
-	      .nav-toggle:checked + .mobile-menu-toggle { border-color: rgba(231,197,116,.62); color: #fff; background: rgba(231,197,116,.13); }
+	      .mobile-menu-toggle[aria-expanded="true"] { border-color: rgba(231,197,116,.62); color: #fff; background: rgba(231,197,116,.13); }
 	      .side-nav, .side-foot { grid-column: 1 / -1; display: none; }
-	      .nav-toggle:checked ~ .side-nav, .nav-toggle:checked ~ .side-foot { display: grid; }
+	      .sidebar.nav-open .side-nav, .sidebar.nav-open .side-foot { display: grid; }
 	      .side-nav { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.14); }
 	      .nav-item { min-height: 44px; padding: 8px 9px; gap: 8px; font-size: 12.5px; }
 	      .nav-item.active::before { left: -14px; width: 3px; }
@@ -3062,9 +3062,8 @@ const PageTemplates = `
         <a class="side-portal" href="/app"><strong>Hausportal</strong><span>· hausv.org</span></a>
       </div>
 	    </div>
-	    <input class="nav-toggle" id="portal-nav-toggle" type="checkbox" aria-label="Navigation anzeigen">
-	    <label class="mobile-menu-toggle" for="portal-nav-toggle"><span class="mobile-menu-prefix">Menü</span>{{if eq .ActivePage "energy"}}<span class="mobile-home-identity" data-home-identity="mobile-menu" aria-label="{{.HomeIdentity.AriaLabel}}"><strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<small data-home-unit-label>{{.HomeIdentity.UnitLabel}}</small>{{end}}</span>{{else}}<span>{{if eq .ActivePage "home"}}Überblick{{else if eq .ActivePage "announcements"}}Aushang{{else if eq .ActivePage "events"}}Termine{{else if eq .ActivePage "contacts"}}Kontakte{{else if eq .ActivePage "parking"}}Parkplatz{{else if eq .ActivePage "documents"}}Dokumente{{else if eq .ActivePage "handovers"}}Übergaben{{else if eq .ActivePage "issues"}}Anliegen{{else if eq .ActivePage "abstimmungen"}}Abstimmung{{else if eq .ActivePage "users"}}Benutzer{{else if eq .ActivePage "audit"}}Audit{{else}}Einstellungen{{end}}</span>{{end}}</label>
-	    <nav class="side-nav">
+	    <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-controls="portal-navigation portal-account" aria-expanded="false" aria-label="Navigation öffnen"><span class="mobile-menu-prefix">Menü</span>{{if eq .ActivePage "energy"}}<span class="mobile-home-identity" data-home-identity="mobile-menu" aria-label="{{.HomeIdentity.AriaLabel}}"><strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<small data-home-unit-label>{{.HomeIdentity.UnitLabel}}</small>{{end}}</span>{{else}}<span>{{if eq .ActivePage "home"}}Überblick{{else if eq .ActivePage "announcements"}}Aushang{{else if eq .ActivePage "events"}}Termine{{else if eq .ActivePage "contacts"}}Kontakte{{else if eq .ActivePage "parking"}}Parkplatz{{else if eq .ActivePage "documents"}}Dokumente{{else if eq .ActivePage "handovers"}}Übergaben{{else if eq .ActivePage "issues"}}Anliegen{{else if eq .ActivePage "abstimmungen"}}Abstimmung{{else if eq .ActivePage "users"}}Benutzer{{else if eq .ActivePage "audit"}}Audit{{else}}Einstellungen{{end}}</span>{{end}}</button>
+	    <nav id="portal-navigation" class="side-nav">
 	      {{if .CanUseResidentAreas}}
 	      <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="nav-label">Hausüberblick</span></a>
 	      {{if .CanViewEnergy}}<a class="nav-item {{if eq .ActivePage "energy"}}active{{end}}" href="/app/energie" data-home-identity="nav" aria-label="{{.HomeIdentity.AriaLabel}}"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 13h5l2-7 3 12 2-5h4"/><path d="M5 20h14"/></svg></span><span class="nav-label"><span class="nav-home-identity"><strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<small data-home-unit-label>{{.HomeIdentity.UnitLabel}}</small>{{end}}</span></span></a>{{end}}
@@ -3084,7 +3083,7 @@ const PageTemplates = `
 	      <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span><span class="nav-label">Einstellungen</span></a>
 	      {{end}}
 	    </nav>
-    <div class="side-foot">
+    <div id="portal-account" class="side-foot">
       <a class="side-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Kartendaten © OpenStreetMap</a>
       <div class="side-user">
         <span class="avatar">{{.Initials}}</span>
@@ -3136,8 +3135,12 @@ const PageTemplates = `
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
   {{template "appStyles" .}}
+  <noscript><style>
+    @media (max-width: 900px) { .mobile-menu-toggle { display: none; } .side-nav, .side-foot { display: grid; } }
+  </style></noscript>
 </head>
 <body data-authenticated-app>
+  <a class="skip-link" href="#main-content">Zum Inhalt springen</a>
   <div class="app-shell">
     {{template "sidebar" .}}
     {{template "releaseHistoryDialog" .}}
@@ -3162,7 +3165,7 @@ const PageTemplates = `
 
 {{define "portal"}}
 {{template "appOpen" .}}
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <section class="home-hero">
         <div class="home-hero-copy">
           <h1>Hallo {{.GreetingName}}.</h1>
@@ -3583,7 +3586,7 @@ const PageTemplates = `
         .contacts .inactive-contacts > summary { min-height: 44px; display: flex; align-items: center; }
       }
     </style>
-    <main class="app-main contacts">
+    <main id="main-content" tabindex="-1" class="app-main contacts">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg><span>/</span><span>Kontakte</span></span>
         {{if .CanManageContacts}}<div class="page-actions"><a class="button primary" href="#contact-add"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Kontakt hinzufügen</a></div>{{end}}
@@ -3946,7 +3949,7 @@ const PageTemplates = `
         .issue-start { gap: 14px; }
       }
     </style>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><span>/</span><span>Anliegen</span></span>
         {{if or .CanManageIssues (and .IsServiceProvider .HasCalendarFeedURL)}}<div class="page-actions">
@@ -4188,7 +4191,7 @@ const PageTemplates = `
 {{define "issueTriage"}}
 {{template "appOpen" .}}
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><a href="/app/anliegen/board">Anliegen</a><span>/</span><span>{{.Issue.Title}}</span></span>
       </div>
@@ -4381,7 +4384,7 @@ const PageTemplates = `
 {{define "issueResidentDetail"}}
 {{template "appOpen" .}}
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg><a href="/app/anliegen">Anliegen</a><span>/</span><span>{{.Issue.Title}}</span></span>
       </div>
@@ -4534,7 +4537,7 @@ const PageTemplates = `
         .announce .announcement-body > summary { min-height: 42px; display: flex; align-items: center; }
       }
     </style>
-    <main class="app-main announce">
+    <main id="main-content" tabindex="-1" class="app-main announce">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg><span>/</span><span>Aushang</span></span>
         {{if .CanManageAnnouncements}}<div class="page-actions"><button class="button primary" type="button" data-dialog="announcement-create" aria-haspopup="dialog" aria-controls="announcement-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Aushang erstellen</button></div>{{end}}
@@ -4856,7 +4859,7 @@ const PageTemplates = `
         .events-page .event-history > summary { min-height: 46px; display: flex; align-items: center; }
       }
     </style>
-    <main class="app-main events-shell">
+    <main id="main-content" tabindex="-1" class="app-main events-shell">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg><span>/</span><span>Termine</span></span>
         {{if .CanManageEvents}}<div class="page-actions"><button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Termin erstellen</button></div>{{end}}
@@ -5041,7 +5044,7 @@ const PageTemplates = `
         .doc-blank-actions .button { width: 100%; justify-content: center; }
       }
     </style>
-    <main class="app-main documents-screen">
+    <main id="main-content" tabindex="-1" class="app-main documents-screen">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><span>/</span><span>Dokumente</span></span>
         {{if and .CanManageDocuments (or .HasAnyDocuments .HasSearchQuery)}}<div class="page-actions"><a class="button" href="/app/dokumente/rechnungen/import">E-Rechnung einlesen</a>{{template "documentUploadTrigger" .}}</div>{{end}}
@@ -5397,7 +5400,7 @@ const PageTemplates = `
         .vote-blank-actions .button { width: 100%; justify-content: center; }
       }
     </style>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg><span>/</span><span>Abstimmungen</span></span>
         {{if and .CanManageVotes .HasBallots}}<div class="page-actions">{{template "ballotCreateTrigger" .}}</div>{{end}}
@@ -5651,7 +5654,7 @@ const PageTemplates = `
 {{define "handovers"}}
 {{template "appOpen" .}}
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg><span>/</span><span>Übergaben</span></span>
         <div class="page-actions">
@@ -5814,7 +5817,7 @@ const PageTemplates = `
 {{define "parking"}}
 {{template "appOpen" .}}
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><span>Parkplatznutzung</span></span>
         <div class="page-actions"></div>
@@ -6051,7 +6054,7 @@ const PageTemplates = `
         @page { margin: 1.4cm; }
       }
     </style>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/parking">Parkplatznutzung</a><span>/</span><span>{{.Detail.MonthLabel}}</span></span>
         <div class="page-actions"><a class="button" href="{{.Detail.BackPath}}#parking-months">Zurück zu Monaten</a></div>
@@ -6249,7 +6252,7 @@ const PageTemplates = `
         .settings-note { padding: 16px; }
       }
     </style>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><span>Einstellungen</span></span>
       </div>
@@ -6384,7 +6387,7 @@ const PageTemplates = `
         .home-identity-actions .button { width: 100%; }
       }
     </style>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Mein Zuhause</span></span>
         <div class="page-actions"><a class="button" href="{{.BackURL}}">{{.BackLabel}}</a></div>
@@ -6497,7 +6500,7 @@ const PageTemplates = `
         .raw-export-download .button { width: 100%; }
       }
     </style>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Datenübergabe</span></span>
       </div>
@@ -6634,7 +6637,7 @@ const PageTemplates = `
         .audit-screen .audit-blank-actions .button { width: 100%; justify-content: center; }
       }
     </style>
-    <main class="app-main audit-screen">
+    <main id="main-content" tabindex="-1" class="app-main audit-screen">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>/</span><span>Verlauf</span></span>
         {{if .CanUseResidentAreas}}<div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>{{end}}
@@ -6831,7 +6834,7 @@ const PageTemplates = `
         .invoice-import .store-bar .button { width: 100%; min-height: 48px; }
       }
     </style>
-    <main class="app-main invoice-import">
+    <main id="main-content" tabindex="-1" class="app-main invoice-import">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg><span>/</span><span>Dokumente</span><span>/</span><span>E-Rechnung</span></span>
         <div class="page-actions"><a class="button" href="/app/dokumente">Zur Ablage</a></div>
@@ -6975,7 +6978,7 @@ const PageTemplates = `
         .payment-import .apply-bar .button { width: 100%; min-height: 46px; }
       }
     </style>
-    <main class="app-main payment-import">
+    <main id="main-content" tabindex="-1" class="app-main payment-import">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><a href="/app/settings/building#units">Einheiten</a><span>/</span><span>Bankdatei</span></span>
         <div class="page-actions"><a class="button" href="/app/settings/building#units">Zu den Einheiten</a></div>
@@ -7196,7 +7199,7 @@ const PageTemplates = `
       }
     </style>
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
-    <main class="app-main building">
+    <main id="main-content" tabindex="-1" class="app-main building">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Gebäude &amp; Einheiten</span></span>
         <div class="page-actions"><a class="button" href="/app/settings">Zurück zu Einstellungen</a></div>
@@ -7521,7 +7524,7 @@ const PageTemplates = `
         .app-main .content-top .page-actions .button { min-height: 44px; }
       }
     </style>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Profil</span></span>
         <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>
@@ -7680,7 +7683,7 @@ const PageTemplates = `
         .app-main .content-top .page-actions .button { min-height: 44px; }
       }
     </style>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Benachrichtigungen</span></span>
         <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>
@@ -7815,7 +7818,7 @@ const PageTemplates = `
         .access-action .button { width: 100%; min-height: 44px; }
       }
     </style>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz</span></span>
         <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a><a class="button" href="/app/parking">Parkplatz öffnen</a></div>
@@ -7972,7 +7975,7 @@ const PageTemplates = `
         .pk-chat form { width: 100%; margin-left: 48px; }
       }
     </style>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Parkplatz</span></span>
         <div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a><a class="button" href="/app/parking">Parkplatz öffnen</a></div>
@@ -8483,7 +8486,7 @@ const PageTemplates = `
       }
     </style>
     <script src="/assets/users.js?v={{.AssetVersion}}" defer></script>
-    <main class="app-main">
+    <main id="main-content" tabindex="-1" class="app-main">
       <div class="content-top"><span class="crumb"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg>Benutzer &amp; Rechte</span></div>
       <section class="page users">
 	        <div class="users-heading">
@@ -8733,7 +8736,7 @@ const PageTemplates = `
 
 {{define "homeOnboarding"}}
 {{template "appOpen" .}}
-  <main class="app-main">
+  <main id="main-content" tabindex="-1" class="app-main">
 	    {{template "energyModeStrip" .}}
 	    <div class="page onboarding-page">
 	      {{if .ProfileReset}}<div class="message success"><strong>Das Energieprofil wurde gelöscht.</strong> Hausname, Anlagen, Zuordnungen, Messverlauf und Auswertungen sind entfernt. Unabhängige Anliegen und das Sicherheitsprotokoll bleiben nach ihren eigenen Fristen bestehen.</div>{{end}}
@@ -8921,7 +8924,7 @@ const PageTemplates = `
 
 {{define "energyCockpit"}}
 {{template "appOpen" .}}
-  <main class="app-main">
+  <main id="main-content" tabindex="-1" class="app-main">
     {{template "energyModeStrip" .}}
     <div class="page energy-page">
       <header class="energy-heading">
@@ -9167,7 +9170,7 @@ const PageTemplates = `
 
 {{define "energyData"}}
 {{template "appOpen" .}}
-  <main class="app-main">
+  <main id="main-content" tabindex="-1" class="app-main">
     {{template "energyModeStrip" .}}
     <div class="page energy-data-page">
       <header class="energy-data-heading">

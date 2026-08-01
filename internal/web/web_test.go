@@ -117,6 +117,51 @@ func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
 	}
 }
 
+func TestAuthenticatedAppShellIsKeyboardOperable(t *testing.T) {
+	for _, want := range []string{
+		`<a class="skip-link" href="#main-content">Zum Inhalt springen</a>`,
+		`<button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle`,
+		`aria-controls="portal-navigation portal-account"`,
+		`aria-expanded="false" aria-label="Navigation öffnen"`,
+		`<nav id="portal-navigation" class="side-nav">`,
+		`<div id="portal-account" class="side-foot">`,
+		`<noscript><style>`,
+		`.sidebar.nav-open .side-nav, .sidebar.nav-open .side-foot { display: grid; }`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("authenticated app shell missing keyboard convention %q", want)
+		}
+	}
+	if strings.Contains(PageTemplates, `class="nav-toggle"`) {
+		t.Fatal("authenticated app shell must not use a hidden checkbox as its menu control")
+	}
+	appOpens := strings.Count(PageTemplates, `{{template "appOpen" .}}`)
+	mainTargets := strings.Count(PageTemplates, `id="main-content" tabindex="-1" class="app-main`)
+	appCloses := strings.Count(PageTemplates, `{{template "appClose" .}}`)
+	if appOpens != 27 || mainTargets != appOpens || appCloses != appOpens {
+		t.Fatalf("authenticated templates must each have one skip target: opens=%d targets=%d closes=%d", appOpens, mainTargets, appCloses)
+	}
+
+	body, err := os.ReadFile("assets/app.js")
+	if err != nil {
+		t.Fatalf("read app shell behavior: %v", err)
+	}
+	text := string(body)
+	for _, want := range []string{
+		`function setMobileMenuOpen(open, options)`,
+		`mobileMenuToggle.setAttribute("aria-expanded"`,
+		`mobileNavigation.hidden`,
+		`mobileAccount.hidden`,
+		`event.key !== "Escape"`,
+		`setMobileMenuOpen(false, { returnFocus: true })`,
+		`mobileMenuQuery.addEventListener("change"`,
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("shared app behavior missing mobile-menu convention %q", want)
+		}
+	}
+}
+
 func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 	if !strings.Contains(PageTemplates, `<script src="/assets/app.js?v={{.AssetVersion}}" defer></script>`) {
 		t.Fatal("app shell must load the shared submit guard")

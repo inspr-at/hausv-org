@@ -2,6 +2,52 @@
 (function () {
   var lockTimeoutMs = 15000;
   var dialogTriggers = Array.prototype.slice.call(document.querySelectorAll("[data-dialog]"));
+  var sidebar = document.querySelector(".sidebar");
+  var mobileMenuToggle = sidebar ? sidebar.querySelector("[data-mobile-menu-toggle]") : null;
+  var mobileNavigation = document.getElementById("portal-navigation");
+  var mobileAccount = document.getElementById("portal-account");
+  var mobileMenuQuery = window.matchMedia("(max-width: 900px)");
+
+  function setMobileMenuOpen(open, options) {
+    if (!sidebar || !mobileMenuToggle || !mobileNavigation || !mobileAccount) return;
+    var expanded = Boolean(open && mobileMenuQuery.matches);
+    sidebar.classList.toggle("nav-open", expanded);
+    mobileMenuToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+    mobileMenuToggle.setAttribute("aria-label", expanded ? "Navigation schließen" : "Navigation öffnen");
+    mobileNavigation.hidden = Boolean(mobileMenuQuery.matches && !expanded);
+    mobileAccount.hidden = Boolean(mobileMenuQuery.matches && !expanded);
+    if (options && options.returnFocus) {
+      mobileMenuToggle.focus({ preventScroll: true });
+    }
+  }
+
+  if (sidebar && mobileMenuToggle && mobileNavigation && mobileAccount) {
+    setMobileMenuOpen(false);
+    mobileMenuToggle.addEventListener("click", function () {
+      setMobileMenuOpen(mobileMenuToggle.getAttribute("aria-expanded") !== "true");
+    });
+    sidebar.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape" || mobileMenuToggle.getAttribute("aria-expanded") !== "true") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setMobileMenuOpen(false, { returnFocus: true });
+    });
+    document.addEventListener("click", function (event) {
+      if (mobileMenuToggle.getAttribute("aria-expanded") !== "true") return;
+      if (!sidebar.contains(event.target)) {
+        setMobileMenuOpen(false);
+        return;
+      }
+      var action = event.target.closest("a, button, input[type='submit']");
+      if (action && action !== mobileMenuToggle) setMobileMenuOpen(false);
+    });
+    var syncMobileMenu = function () { setMobileMenuOpen(false); };
+    if (typeof mobileMenuQuery.addEventListener === "function") {
+      mobileMenuQuery.addEventListener("change", syncMobileMenu);
+    } else if (typeof mobileMenuQuery.addListener === "function") {
+      mobileMenuQuery.addListener(syncMobileMenu);
+    }
+  }
 
   // A browser may restore a protected page from its back/forward cache after
   // logout without contacting the server. Force one network/session check

@@ -273,6 +273,132 @@ async function assertSidebarNavReachable() {
   process.stdout.write('  ✓ Seitenleiste · alle Einträge erreichbar · 720–1080px\n');
 }
 
+async function assertSharedAppShellNavigation() {
+  let adminStorageState;
+  for (const width of [320, 390, 430]) {
+    const context = await trackedContext({ viewport: { width, height: 844 }, locale: 'de-AT' });
+    const page = await localLogin(context, 'admin@example.com');
+    await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
+    adminStorageState = await context.storageState();
+
+    if (await page.locator('.nav-toggle').count()) {
+      fail(`App-Shell ${width}px: versteckte Checkbox-Navigation ist noch vorhanden`);
+    }
+    await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
+    await page.keyboard.press('Tab');
+    if (!(await page.locator('.skip-link').evaluate((link) => link === document.activeElement))) {
+      fail(`App-Shell ${width}px: Sprunglink ist nicht das erste Tastaturziel`);
+    }
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => window.location.hash === '#main-content');
+    const skipResult = await page.evaluate(() => ({
+      hash: window.location.hash,
+      active: document.activeElement?.id || '',
+    }));
+    if (skipResult.active !== 'main-content') {
+      fail(`App-Shell ${width}px: Sprunglink fokussiert den Inhalt nicht (${JSON.stringify(skipResult)})`);
+    }
+
+    await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
+    const toggle = page.locator('[data-mobile-menu-toggle]');
+    const navigation = page.locator('#portal-navigation');
+    const account = page.locator('#portal-account');
+    if (!(await toggle.isVisible()) || await toggle.getAttribute('aria-expanded') !== 'false' ||
+        !(await navigation.evaluate((element) => element.hidden)) ||
+        !(await account.evaluate((element) => element.hidden))) {
+      fail(`App-Shell ${width}px: mobiles Menü startet nicht semantisch geschlossen`);
+    }
+
+    await toggle.focus();
+    await page.keyboard.press('Enter');
+    if (await toggle.getAttribute('aria-expanded') !== 'true' ||
+        !(await navigation.isVisible()) || !(await account.isVisible())) {
+      fail(`App-Shell ${width}px: Enter öffnet Navigation und Konto nicht`);
+    }
+    await page.keyboard.press('Tab');
+    const tabReachedNavigation = await navigation.evaluate((nav) => nav.contains(document.activeElement));
+    if (!tabReachedNavigation) fail(`App-Shell ${width}px: Tab erreicht nach dem Menüknopf nicht die Navigation`);
+    await page.keyboard.press('Escape');
+    const escapeResult = await page.evaluate(() => {
+      const button = document.querySelector('[data-mobile-menu-toggle]');
+      return {
+        expanded: button?.getAttribute('aria-expanded'),
+        focused: button === document.activeElement,
+        navigationHidden: document.querySelector('#portal-navigation')?.hidden,
+        accountHidden: document.querySelector('#portal-account')?.hidden,
+      };
+    });
+    if (escapeResult.expanded !== 'false' || !escapeResult.focused ||
+        !escapeResult.navigationHidden || !escapeResult.accountHidden) {
+      fail(`App-Shell ${width}px: Escape schließt/fokussiert nicht sauber (${JSON.stringify(escapeResult)})`);
+    }
+
+    await toggle.click();
+    await page.evaluate(() => {
+      const main = document.querySelector('#main-content');
+      main.focus();
+      main.click();
+    });
+    const outsideResult = await page.evaluate(() => ({
+      expanded: document.querySelector('[data-mobile-menu-toggle]')?.getAttribute('aria-expanded'),
+      active: document.activeElement?.id || '',
+    }));
+    if (outsideResult.expanded !== 'false' || outsideResult.active !== 'main-content') {
+      fail(`App-Shell ${width}px: Außenklick schließt nicht ohne Fokusdiebstahl (${JSON.stringify(outsideResult)})`);
+    }
+
+    if (width === 390 && process.env.HV_QA_SCREENSHOT_DIR) {
+      mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+      await toggle.click();
+      await page.screenshot({
+        path: join(process.env.HV_QA_SCREENSHOT_DIR, 'app-shell-mobile-semantic-menu.png'),
+        fullPage: false,
+      });
+    }
+    await closeContext(context);
+  }
+
+  for (const width of [901, 1024, 1440]) {
+    const context = await trackedContext({ viewport: { width, height: 844 }, locale: 'de-AT' });
+    const page = await localLogin(context, 'admin@example.com');
+    await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
+    const desktopState = await page.evaluate(() => ({
+      toggleVisible: Boolean(document.querySelector('[data-mobile-menu-toggle]')?.getClientRects().length),
+      navigationVisible: Boolean(document.querySelector('#portal-navigation')?.getClientRects().length),
+      accountVisible: Boolean(document.querySelector('#portal-account')?.getClientRects().length),
+      navigationHidden: document.querySelector('#portal-navigation')?.hidden,
+      accountHidden: document.querySelector('#portal-account')?.hidden,
+    }));
+    if (desktopState.toggleVisible || !desktopState.navigationVisible || !desktopState.accountVisible ||
+        desktopState.navigationHidden || desktopState.accountHidden) {
+      fail(`App-Shell ${width}px: Desktop-Navigation ist nicht vollständig sichtbar (${JSON.stringify(desktopState)})`);
+    }
+    await closeContext(context);
+  }
+
+  const noScriptContext = await trackedContext({
+    viewport: { width: 390, height: 844 },
+    locale: 'de-AT',
+    javaScriptEnabled: false,
+    storageState: adminStorageState,
+  });
+  const noScriptPage = await noScriptContext.newPage();
+  const noScriptResponse = await noScriptPage.goto(`${baseURL}/app`, { waitUntil: 'domcontentloaded' });
+  if (!noScriptResponse || noScriptResponse.status() !== 200) {
+    fail(`App-Shell ohne JavaScript: Status ${noScriptResponse?.status() ?? 0}`);
+  }
+  const noScriptState = await noScriptPage.evaluate(() => ({
+    toggleVisible: Boolean(document.querySelector('[data-mobile-menu-toggle]')?.getClientRects().length),
+    navigationVisible: Boolean(document.querySelector('#portal-navigation')?.getClientRects().length),
+    accountVisible: Boolean(document.querySelector('#portal-account')?.getClientRects().length),
+  }));
+  if (noScriptState.toggleVisible || !noScriptState.navigationVisible || !noScriptState.accountVisible) {
+    fail(`App-Shell ohne JavaScript: Navigation ist nicht als Fallback offen (${JSON.stringify(noScriptState)})`);
+  }
+  await closeContext(noScriptContext);
+  process.stdout.write('  ✓ App-Shell · Sprunglink, Tastaturmenü, Escape & No-JS · 320–1440px\n');
+}
+
 async function assertPublicLanding(viewport) {
   const context = await trackedContext({
     viewport: viewport.size,
@@ -1730,6 +1856,7 @@ try {
 
   if (process.env.HV_QA_LANDING_ONLY !== 'true') {
     await assertSidebarNavReachable();
+    await assertSharedAppShellNavigation();
     await assertHomeOnboarding();
     if (!ciCore) {
       await assertPilotHome({

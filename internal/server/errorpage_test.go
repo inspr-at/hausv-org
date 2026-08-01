@@ -162,7 +162,7 @@ func TestErrorPageWrapperLeavesSuccessfulPagesAlone(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", response.Code)
 	}
-	if !strings.Contains(response.Body.String(), `<main class="app-main documents-screen">`) {
+	if !strings.Contains(response.Body.String(), `<main id="main-content" tabindex="-1" class="app-main documents-screen">`) {
 		t.Fatal("the documents page no longer renders itself")
 	}
 }
