@@ -24,7 +24,7 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 		`.access-row { display: grid; grid-template-columns: minmax(220px, 1fr) 126px 132px minmax(106px, auto);`,
 		`aria-label="Parkplatz-Verwaltung"`,
 		`.mobile-menu-toggle { min-height: 44px;`,
-		`.side-version { justify-self: end; min-height: 44px; }`,
+		`.side-version { justify-self: end; min-width: 44px; min-height: 44px; display: grid; place-items: center; }`,
 		`.logout-button { min-height: 44px; }`,
 	}
 	for _, want := range wants {
@@ -251,6 +251,7 @@ func TestSettingsAndParkingKeepReducedMobileInteractionContracts(t *testing.T) {
 		`data-help="Fest vergeben · hier nicht änderbar"`,
 		`min-width: 44px; min-height: 44px;`,
 		`.users .dlg-x button { width: 44px; height: 44px;`,
+		`.users .edit-dialog h2 { padding-right: 48px; font-size: 23px; }`,
 		`<span class="file-control"><span>Datei auswählen</span><input id="camt-file"`,
 	} {
 		if !strings.Contains(PageTemplates, want) {

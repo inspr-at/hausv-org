@@ -2844,7 +2844,7 @@ const PageTemplates = `
 	      .avatar { width: 34px; height: 34px; font-size: 12px; }
 	      .side-user strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	      .side-user span { font-size: 12px; }
-	      .side-version { justify-self: end; min-height: 44px; }
+	      .side-version { justify-self: end; min-width: 44px; min-height: 44px; display: grid; place-items: center; }
 	      .side-map-attribution { min-height: 44px; display: inline-flex; align-items: center; }
 	      .logout-form { grid-column: 1 / -1; justify-self: stretch; min-width: 0; }
 	      .logout-button { min-height: 44px; }
@@ -8611,7 +8611,7 @@ const PageTemplates = `
         .users .row-edit { min-height: 44px; padding-inline: 9px; }
         .users .edit-label { display: none; }
         .users .edit-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 18px; border-radius: 16px; }
-        .users .edit-dialog h2 { padding-right: 24px; font-size: 23px; }
+        .users .edit-dialog h2 { padding-right: 48px; font-size: 23px; }
         .users .dialog-disclosure .optional-grid, .users .optional-stack { padding-inline: 10px; }
         .users .dlg-delete { display: grid; align-items: start; }
         .users .dlg-delete span { max-width: none; }
