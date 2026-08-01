@@ -903,6 +903,7 @@ const PageTemplates = `
     .energy-mode-copy strong { font-family: var(--font-serif); font-size: 18px; line-height: 1.05; }
     .energy-mode-copy span { color: rgba(255,255,255,.82); font-size: 12px; line-height: 1.3; }
     .energy-mode-action { min-height: 44px; border: 1px solid rgba(255,255,255,.42); border-radius: var(--radius-xs); padding: 8px 12px; color: #fff; background: rgba(255,255,255,.08); font-weight: 800; line-height: 1.2; cursor: pointer; }
+    .energy-mode-action-compact { display: none; }
     .energy-mode-action:hover { border-color: var(--gold-light); background: rgba(255,255,255,.14); }
     .energy-mode-capability { max-width: 220px; color: rgba(255,255,255,.82); font-size: 11.5px; font-weight: 750; line-height: 1.3; text-align: right; }
     .energy-mode-control { position: relative; justify-self: end; }
@@ -928,7 +929,10 @@ const PageTemplates = `
        tariff keeps a protected 440px column only when the content area can
        actually provide it; narrower desktop/tablet layouts stack safely. */
     .energy-health { display: grid; grid-template-columns: minmax(0,1fr) minmax(440px,440px); gap: 18px; align-items: start; }
-    .energy-lead-side { display: grid; align-content: start; gap: 18px; min-width: 0; }
+    /* An explicit zero-minimum track keeps Linux font metrics or a translated
+       button label from widening the live column beyond its mobile viewport. */
+    .energy-lead-side { display: grid; grid-template-columns: minmax(0,1fr); align-content: start; gap: 18px; min-width: 0; }
+    .energy-health > *, .energy-lead-side > * { min-width: 0; max-width: 100%; }
     .energy-pair { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(380px,100%),1fr)); gap: 18px; align-items: start; }
     .energy-card { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-sm); }
     .energy-nextstep { display: grid; align-content: start; gap: 13px; padding: 20px 22px; }
@@ -2674,8 +2678,8 @@ const PageTemplates = `
 	      .energy-mode-strip.active .energy-mode-copy strong { font-size: 13.5px; line-height: 1.1; white-space: normal; }
 	      .energy-mode-copy span { font-size: 10.5px; line-height: 1.2; }
 	      .energy-mode-control, .energy-mode-strip > form { grid-column: 3; min-width: 0; justify-self: end; }
-	      .energy-mode-action { width: min(150px,36vw); min-height: 44px; padding: 5px 7px; font-size: 11px; line-height: 1.15; white-space: normal; }
-	      .energy-mode-capability { width: min(150px,36vw); font-size: 10px; line-height: 1.15; }
+	      .energy-mode-action { width: min(132px,34vw); min-height: 44px; padding: 4px 6px; font-size: 11px; line-height: 1.15; white-space: normal; }
+	      .energy-mode-capability { width: min(132px,34vw); font-size: 10px; line-height: 1.15; }
 	      .energy-mode-popover { position: fixed; right: 12px; top: calc(var(--mobile-nav-height) + 60px); width: calc(100vw - 24px); max-height: calc(100dvh - var(--mobile-nav-height) - 72px); margin: 0; }
 	      .energy-heading, .energy-health { grid-template-columns: 1fr; }
 	      .energy-heading-action { justify-self: start; }
@@ -2752,6 +2756,8 @@ const PageTemplates = `
 	      .energy-inline-form .wide, .energy-inline-form .actions { grid-column: 1; }
 	      .energy-comparison { grid-template-columns: 1fr; }
 	      .energy-maintenance-summary, .energy-measure-summary { min-height: 72px; }
+	      .energy-mode-action-full { display: none; }
+	      .energy-mode-action-compact { display: inline; }
 	      .sidebar { position: sticky; top: 0; z-index: 50; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; height: auto; padding: 10px 14px; box-shadow: 0 10px 28px rgba(23,32,25,.18); }
 	      .side-brand { grid-template-columns: 58px minmax(0,1fr); gap: 10px; align-items: center; margin: 0; padding: 0; min-width: 0; }
 	      .side-map { width: 58px; height: 48px; }
@@ -8732,11 +8738,11 @@ const PageTemplates = `
     {{if .IsActiveMode}}
       {{if .CanControlEnergy}}<form method="post" action="/app/energie/mode">
         <input type="hidden" name="mode" value="observe">
-        <button class="energy-mode-action" type="submit">Sofort zurück zu „Nur beobachten“</button>
+        <button class="energy-mode-action" type="submit" aria-label="Sofort zurück zu Nur beobachten"><span class="energy-mode-action-full">Sofort zurück zu „Nur beobachten“</span><span class="energy-mode-action-compact" aria-hidden="true">Nur beobachten</span></button>
       </form>{{end}}
     {{else}}
       {{if .CanControlEnergy}}<details class="energy-mode-control">
-        <summary class="energy-mode-action">Testlauf bewusst starten</summary>
+        <summary class="energy-mode-action" aria-label="Wirkungslosen Testlauf bewusst starten"><span class="energy-mode-action-full">Testlauf bewusst starten</span><span class="energy-mode-action-compact" aria-hidden="true">Testlauf starten</span></summary>
         <form class="energy-mode-popover" method="post" action="/app/energie/mode">
           <h3>Wirkungslosen Testlauf starten?</h3>
           <p>HAUSV protokolliert nur, welche Entscheidungen seine Regeln treffen würden. Es wird kein Gerät geschaltet. Aktive Steuerung ist erst nach einer späteren, gerätespezifischen Freigabe möglich.</p>

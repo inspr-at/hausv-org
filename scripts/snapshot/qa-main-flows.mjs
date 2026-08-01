@@ -1725,7 +1725,7 @@ async function assertEnergySafetyAndFlow(viewport) {
   if ((await strip.locator('strong').first().innerText()).trim() !== 'Nur beobachten') {
     fail(`Energie ${viewport.name}: startet nicht in Nur beobachten`);
   }
-  await page.getByText('Testlauf bewusst starten', { exact: true }).click();
+  await page.getByRole('button', { name: 'Wirkungslosen Testlauf bewusst starten' }).click();
   const modeForm = page.locator('.energy-mode-popover');
   await modeForm.locator('input[type="checkbox"]').check();
   await modeForm.locator('input[name="confirmation_text"]').fill('TESTLAUF');
@@ -1960,6 +1960,15 @@ async function assertEnergyGeometryMatrix() {
         .filter(Boolean)
         .filter((node) => node.scrollWidth > node.clientWidth + 1)
         .map((node) => node.className);
+      const overflowDetails = [...(health?.querySelectorAll('*') || [])]
+        .filter((node) => node.scrollWidth > node.clientWidth + 1)
+        .slice(0, 12)
+        .map((node) => ({
+          node: `${node.tagName.toLowerCase()}.${String(node.className || '').trim().replace(/\s+/g, '.')}`,
+          client: node.clientWidth,
+          scroll: node.scrollWidth,
+          text: (node.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
+        }));
       const stripStyle = strip ? getComputedStyle(strip) : null;
       return {
         width,
@@ -1967,6 +1976,7 @@ async function assertEnergyGeometryMatrix() {
         missing: [health, lead, tariff, live, next, strip].some((node) => !node),
         documentOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
         overflow,
+        overflowDetails,
         siblingOverlap: intersects(leadRect, tariffRect),
         sourceLeadFirst: Boolean(lead && tariff &&
           (lead.compareDocumentPosition(tariff) & Node.DOCUMENT_POSITION_FOLLOWING)),
@@ -1979,6 +1989,7 @@ async function assertEnergyGeometryMatrix() {
         sidebarRect,
         mobileStackDelta: width <= 900 && stripRect && sidebarRect ? Math.abs(stripRect.top - sidebarRect.bottom) : 0,
         actionHeight: action?.getBoundingClientRect().height || 0,
+        actionLabel: action?.innerText.trim() || '',
         safetyTitle: strip?.querySelector('.energy-mode-copy strong')?.textContent?.trim() || '',
         safetyCopyVisible: Boolean(strip?.querySelector('.energy-mode-copy span')?.getClientRects().length),
         capabilityVisible: Boolean(strip?.querySelector('.energy-mode-control, .energy-mode-capability, form')?.getClientRects().length),
@@ -2009,6 +2020,9 @@ async function assertEnergyGeometryMatrix() {
     }
     if (size.width <= 900 && (result.mobileStackDelta > 1 || !result.stripRect || result.stripRect.height > 60)) {
       fail(`Energie-Geometrie ${size.name}: Navigation/Sicherheitsleiste kollidiert (${JSON.stringify(result)})`);
+    }
+    if (size.width <= 560 && (result.actionLabel !== 'Testlauf starten' || result.actionHeight > 46)) {
+      fail(`Energie-Geometrie ${size.name}: mobile Freigabe ist nicht kompakt (${JSON.stringify(result)})`);
     }
     if (size.width > 900 && (!result.stripRect || result.stripRect.top > 1 || result.stripRect.height > 64)) {
       fail(`Energie-Geometrie ${size.name}: Desktop-Sicherheitsleiste ist nicht kompakt (${JSON.stringify(result)})`);

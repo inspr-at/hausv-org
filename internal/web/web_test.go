@@ -359,6 +359,8 @@ func TestEnergyGeometryKeepsSafetyAndLiveFlowFirst(t *testing.T) {
 		`--soft:#716d62; --gold-ink:#705c22; --energy-focus-ring:#ad862c;`,
 		`.app-shell { --mobile-nav-height:68px; display: block; }`,
 		`top: var(--mobile-nav-height); grid-template-columns: 30px minmax(0,1fr) auto;`,
+		`grid-template-columns: minmax(0,1fr); align-content: start;`,
+		`energy-mode-action-compact`,
 		`@media (max-width: 1279px)`,
 		`grid-template-columns: minmax(0,1fr) minmax(440px,440px);`,
 		`Liest und empfiehlt. Keine Steuerung.`,
