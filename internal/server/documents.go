@@ -37,7 +37,8 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"DocumentSections":   a.documentCategorySectionsForActor(tenant.Slug, email, role, documents, false),
 		"HasDocuments":       len(documents) > 0,
 		"HasAnyDocuments":    len(visible) > 0,
-		"DocumentsEmpty":     emptyState("Noch keine Dokumente", "Sobald die Verwaltung ein Dokument freigibt, erscheint es hier."),
+		"DocumentsEmpty":     emptyState("Noch keine Dokumente", "Sobald die Verwaltung eine Unterlage freigibt, erscheint sie hier – mit Kategorie, Datum und Download."),
+		"DocumentGuide":      documentCategoryGuide(),
 		"DocumentCountLabel": documentCountLabel,
 		"DocumentMsg":        documentMsg,
 		"DocumentOK":         documentOK,
@@ -609,6 +610,40 @@ func (a *app) documentCategorySectionsForActor(tenantSlug string, email string, 
 		})
 	}
 	return sections
+}
+
+// documentGuideEntry erklärt eine Kategorie der Hausablage. Die leere Ablage
+// ist der Normalfall eines neuen Hauses: dort erklärt der Leitfaden, was hier
+// erwartet wird, statt nur festzustellen, dass nichts da ist.
+type documentGuideEntry struct {
+	Category string
+	Detail   string
+}
+
+func documentCategoryGuide() []documentGuideEntry {
+	categories := documentCategories()
+	guide := make([]documentGuideEntry, 0, len(categories))
+	for _, category := range categories {
+		guide = append(guide, documentGuideEntry{Category: category, Detail: documentCategoryDetail(category)})
+	}
+	return guide
+}
+
+func documentCategoryDetail(category string) string {
+	switch category {
+	case documentCategoryProtocol:
+		return "Beschlüsse und Mitschriften der Eigentümerversammlungen."
+	case documentCategoryBilling:
+		return "Jahresabrechnung, Wirtschaftsplan und Betriebskosten."
+	case documentCategoryRules:
+		return "Regeln für das Zusammenleben im Haus."
+	case documentCategoryContract:
+		return "Vereinbarungen mit Dienstleistern und Versorgern."
+	case documentCategoryPlan:
+		return "Grundrisse, Leitungspläne und technische Zeichnungen."
+	default:
+		return "Unterlagen, die in keine der übrigen Kategorien passen."
+	}
 }
 
 func documentCategorySections(items []documentRecord, includeEmpty bool) []documentCategoryView {
