@@ -187,7 +187,6 @@ type energyTariffView struct {
 	SourceTitle string
 	SourceURL   string
 	Rule        string
-	Estimate    string
 	HasEstimate bool
 	Disclaimer  string
 	// Verrechnete Leistung und ihre Aufteilung an der Staffel. Getrennt
@@ -202,6 +201,30 @@ type energyTariffView struct {
 	HasAgreed     bool
 	AgreedHint    string
 	TierHint      string
+	// MonthLabel und Basis benennen, woraus die Spitze stammt. Eine Kennzahl
+	// ohne ihre Grundlage ist auf diesem Bildschirm wertlos: der Leistungstarif
+	// bemisst je Kalendermonat, und ein halber Monat sieht aus wie ein ganzer.
+	MonthLabel string
+	Basis      string
+	// PeakTime nennt den Zeitpunkt der teuersten Viertelstunde. Ohne ihn bleibt
+	// die Spitze eine Zahl, mit ihm wird sie ein Ereignis, das man wiedererkennt.
+	PeakTime    string
+	HasPeakTime bool
+	// AnnualPowerEUR ist ausschließlich der Leistungsanteil des Netztarifs.
+	// Getrennt von einem Label geführt, weil genau diese Zahl unter einer
+	// Überschrift über den Tarif 2027 als ganze Jahresrechnung missverstanden
+	// wird — und ein Haushalt, dem eine Ersparnis versprochen wird, die nie
+	// eintritt, ist dauerhaft verloren.
+	AnnualPowerEUR string
+	// Die Sätze der Modellrechnung kommen aus dem Regelprofil und nicht aus der
+	// Vorlage: sonst behauptet die Oberfläche weiter 33,82 €, wenn im Profil
+	// längst ein anderer Satz steht.
+	BelowRateEUR string
+	AboveRateEUR string
+	ThresholdKW  string
+	// MissingReason erklärt im Leerzustand, warum keine Spitze dasteht. Eine
+	// leere Kachel oder eine 0 wäre beides falsch.
+	MissingReason string
 }
 
 type energyScenarioView struct {
@@ -210,6 +233,15 @@ type energyScenarioView struct {
 	EffectBand  string
 	Uncertainty string
 	Assumptions string
+	// BilledBand übersetzt das Spitzenband in die verrechnete Leistung. Nur sie
+	// steht auf der Rechnung: unterhalb der Mindestbemessung senkt eine
+	// niedrigere Spitze nichts mehr, und genau dort entstünde sonst ein
+	// Einsparversprechen, das nie eintritt.
+	BilledBand    string
+	HasBilledBand bool
+	// BaselineNote nennt den Ausgangswert. Ein Band ohne seinen Ausgangspunkt
+	// lädt dazu ein, die Differenz zu irgendeiner Zahl im Kopf zu bilden.
+	BaselineNote string
 	// FloorNote warnt, wenn die optimistische Seite des Bandes unter die
 	// verrechenbare Untergrenze fällt. Die Spitze sinkt dort real weiter, der
 	// verrechnete Betrag aber nicht — ohne den Hinweis liest sich das Szenario
@@ -3901,6 +3933,7 @@ func latestEnergySeen(mappings []energy.EntityMapping, intervals []energy.Interv
 }
 
 func buildEnergyTariffView(profile energy.HomeProfile, intervals []energy.Interval) energyTariffView {
+	now := time.Now()
 	rules := energy.AustrianDraft2027()
 	view := energyTariffView{
 		ID:          rules.ID,
@@ -3910,14 +3943,26 @@ func buildEnergyTariffView(profile energy.HomeProfile, intervals []energy.Interv
 		SourceURL:   rules.SourceURL,
 		Rule:        "Höchste abgeschlossene Viertelstunde des Monats; Entwurfsannahme mindestens 2 kW und 20 % der vereinbarten Leistung.",
 		Disclaimer:  "Keine Tarif- oder Einspargarantie. Neue Verordnungsversionen können ausgetauscht werden, ohne Messdaten zu verändern.",
+		MonthLabel:  energyMonthLabel(now),
+
+		BelowRateEUR: formatEnergyCompact(rules.AnnualBelowEURPerKW, 2) + " €",
+		AboveRateEUR: formatEnergyCompact(rules.AnnualAboveEURPerKW, 2) + " €",
+		ThresholdKW:  formatEnergyCompact(rules.TierThresholdKW, 0) + " kW",
 	}
-	peak := energy.PeakForMonth(intervals, time.Now(), time.Local)
+	peak := energy.PeakForMonth(intervals, now, time.Local)
 	if peak <= 0 {
+		view.MissingReason = "Für " + view.MonthLabel + " liegt noch keine abgeschlossene Viertelstunde vor. " +
+			"Die Spitze entsteht aus einem Smart-Meter-Export oder aus laufend gelesenen Messwerten — vorher zeigt HAUSV hier bewusst nichts an."
 		return view
 	}
 	estimate := rules.Estimate(peak, agreedPowerKW(profile))
-	view.Estimate = formatEnergyNumber(estimate.AnnualPowerEUR) + " € pro Jahr als reine Modellgröße"
+	view.AnnualPowerEUR = formatEnergyNumber(estimate.AnnualPowerEUR) + " €"
 	view.HasEstimate = true
+	view.Basis = energyTariffBasis(intervals, now)
+	if at, ok := peakQuarterOfMonth(intervals, now); ok {
+		view.PeakTime = at.In(time.Local).Format("02.01. um 15:04")
+		view.HasPeakTime = true
+	}
 	view.PeakKW = formatEnergyCompact(peak, 1) + " kW"
 	view.BilledKW = formatEnergyCompact(estimate.BilledKW, 1) + " kW"
 	view.MinimumReason = estimate.MinimumReason
@@ -3934,6 +3979,99 @@ func buildEnergyTariffView(profile energy.HomeProfile, intervals []energy.Interv
 		view.AgreedHint = "Ohne vereinbarte Anschlussleistung rechnet die Schätzung nur mit dem 2-kW-Sockel. Der Wert steht auf Ihrer Netzrechnung."
 	}
 	return view
+}
+
+// energyMonthLabel schreibt den Kalendermonat aus. Der Leistungstarif bemisst
+// je Kalendermonat; „08/2026“ oder gar nichts wäre auf diesem Bildschirm die
+// schlechtere Antwort.
+func energyMonthLabel(at time.Time) string {
+	names := []string{"Jänner", "Februar", "März", "April", "Mai", "Juni",
+		"Juli", "August", "September", "Oktober", "November", "Dezember"}
+	local := at.In(time.Local)
+	return names[int(local.Month())-1] + " " + strconv.Itoa(local.Year())
+}
+
+// energyTariffBasis benennt, worauf die Monatsspitze beruht: wie viele
+// abgeschlossene Viertelstunden aus welcher Quelle und wie viel des Monats
+// damit abgedeckt ist. Ohne diesen Satz sieht eine Spitze aus drei Tagen
+// genauso belastbar aus wie eine aus dreißig.
+func energyTariffBasis(intervals []energy.Interval, at time.Time) string {
+	local := at.In(time.Local)
+	monthStart := time.Date(local.Year(), local.Month(), 1, 0, 0, 0, 0, time.Local)
+	counted := 0
+	sources := map[string]struct{}{}
+	for _, interval := range intervals {
+		if interval.Quality != energy.QualityMeasured && interval.Quality != energy.QualityEstimated {
+			continue
+		}
+		start := interval.StartsAt.In(time.Local)
+		if start.Before(monthStart) || !start.Before(monthStart.AddDate(0, 1, 0)) {
+			continue
+		}
+		counted++
+		sources[interval.Source] = struct{}{}
+	}
+	if counted == 0 {
+		return ""
+	}
+	elapsed := int(local.Sub(monthStart) / (15 * time.Minute))
+	if elapsed < counted {
+		elapsed = counted
+	}
+	basis := strconv.Itoa(counted) + " von " + strconv.Itoa(elapsed) +
+		" bisherigen Viertelstunden im " + energyMonthLabel(local)
+	if names := energySourceLabels(sources); names != "" {
+		basis += " · Quelle: " + names
+	}
+	return basis
+}
+
+// energySourceLabels übersetzt die internen Quellenschlüssel in Klartext und
+// hält die Reihenfolge stabil, damit zwei Aufrufe nicht unterschiedlich lauten.
+func energySourceLabels(sources map[string]struct{}) string {
+	keys := make([]string, 0, len(sources))
+	for key := range sources {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	labels := make([]string, 0, len(keys))
+	for _, key := range keys {
+		switch key {
+		case "smart-meter":
+			labels = append(labels, "Smart-Meter-Export")
+		case "home-assistant":
+			labels = append(labels, "Home Assistant")
+		default:
+			labels = append(labels, key)
+		}
+	}
+	return strings.Join(labels, " und ")
+}
+
+// peakQuarterOfMonth liefert den Beginn der teuersten Viertelstunde des
+// laufenden Monats. PeakForMonth gibt nur den Wert zurück; für die Oberfläche
+// zählt aber, wann er entstanden ist — daran erkennt ein Haushalt die eigene
+// Gewohnheit wieder.
+func peakQuarterOfMonth(intervals []energy.Interval, at time.Time) (time.Time, bool) {
+	local := at.In(time.Local)
+	monthStart := time.Date(local.Year(), local.Month(), 1, 0, 0, 0, 0, time.Local)
+	monthEnd := monthStart.AddDate(0, 1, 0)
+	best := time.Time{}
+	bestKW := 0.0
+	found := false
+	for _, interval := range intervals {
+		if interval.Quality != energy.QualityMeasured && interval.Quality != energy.QualityEstimated {
+			continue
+		}
+		start := interval.StartsAt.In(time.Local)
+		if start.Before(monthStart) || !start.Before(monthEnd) {
+			continue
+		}
+		if !found || interval.AverageKW > bestKW {
+			best, bestKW, found = start, interval.AverageKW, true
+		}
+	}
+	return best, found
 }
 
 // agreedPowerKW liefert 0, solange die vereinbarte Anschlussleistung nicht
@@ -4082,7 +4220,9 @@ func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset,
 		ShiftableKW: shiftable, ThrottleKW: throttle, BatteryKW: battery, DataQuality: quality,
 	})
 	view := energyScenarioView{
-		Title:       result.Name,
+		Title: result.Name,
+		BaselineNote: "Ausgangswert: die gemessene Monatsspitze von " +
+			formatEnergyCompact(baseline, 1) + " kW im " + energyMonthLabel(time.Now()) + ".",
 		PeakBand:    formatEnergyNumber(result.ExpectedPeakLowKW) + "–" + formatEnergyNumber(result.ExpectedPeakHighKW) + " kW",
 		EffectBand:  formatEnergyNumber(result.PeakEffectLowKW) + "–" + formatEnergyNumber(result.PeakEffectHighKW) + " kW mögliche Peak-Wirkung",
 		Uncertainty: result.Uncertainty,
@@ -4090,7 +4230,20 @@ func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset,
 	}
 	// Estimate(0, agreed) liefert genau die Untergrenze: den 2-kW-Sockel oder
 	// die 20 % der vereinbarten Leistung, je nachdem was höher ist.
-	if floor := energy.AustrianDraft2027().Estimate(0, agreedPowerKW(profile)).BilledKW; result.ExpectedPeakLowKW < floor {
+	rules := energy.AustrianDraft2027()
+	agreed := agreedPowerKW(profile)
+	billedLow := rules.Estimate(result.ExpectedPeakLowKW, agreed).BilledKW
+	billedHigh := rules.Estimate(result.ExpectedPeakHighKW, agreed).BilledKW
+	// Nur zeigen, wenn die Mindestbemessung das Band tatsächlich anhebt. Sonst
+	// stünde zweimal dieselbe Zahl da und die Aussage ginge im Rauschen unter.
+	if billedLow > result.ExpectedPeakLowKW+0.05 || billedHigh > result.ExpectedPeakHighKW+0.05 {
+		view.BilledBand = formatEnergyCompact(billedLow, 1) + "–" + formatEnergyCompact(billedHigh, 1) + " kW"
+		if billedLow == billedHigh {
+			view.BilledBand = formatEnergyCompact(billedLow, 1) + " kW"
+		}
+		view.HasBilledBand = true
+	}
+	if floor := rules.Estimate(0, agreed).BilledKW; result.ExpectedPeakLowKW < floor {
 		view.FloorNote = "Unter " + formatEnergyCompact(floor, 1) + " kW sinkt der verrechnete Betrag nicht weiter: so weit reicht die Mindestbemessung. Weiteres Kappen senkt die Spitze, nicht die Rechnung."
 	}
 	return []energyScenarioView{view}

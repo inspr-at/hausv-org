@@ -88,6 +88,16 @@ kostenfreie Nutzung**. Ohne das Feld beginnt der Haushalt regulär bei Schritt 1
 Eine Betriebsart kann ein Seed nie setzen — er kann keine Steuerung
 freischalten.
 
+Genau dafür führt `scripts/snapshot/env.sh` einen vierten Mandanten `cockpit`
+mit `complete: true`. Die drei anderen QA-Mandanten fahren im Prüflauf den
+Einrichtungsassistenten durch und dürfen deshalb nicht vorab abgeschlossen sein
+— ohne diesen vierten zeigte jede Aufnahme von `/app/energie` den Assistenten
+statt des Cockpits. Der Mandant liest bewusst dieselbe Home-Assistant-Fixture
+wie `jhw22` und braucht keine eigene Kopie. Wer das Cockpit ansieht, sollte ihm
+zusätzlich eine Viertelstunden-CSV **des laufenden Kalendermonats** importieren:
+`PeakForMonth` filtert nach Kalendermonat, ältere Zeitstempel lassen jede
+Kennzahl auf null stehen.
+
 Die drei Slugs müssen zuvor jeweils als eigener Eintrag in `WEG_TENANTS_JSON`
 existieren. So bleiben Personen, Daten, Geräte und Berechtigungen strikt
 hausbezogen.
