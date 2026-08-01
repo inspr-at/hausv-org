@@ -48,26 +48,52 @@ remote_sh_command() {
     printf '/bin/sh -eu -c %s' "$(shell_quote "$1")"
 }
 
+locked_remote_script() {
+    # Hold the csb1 project lock across the complete transition, not merely
+    # one compose subprocess. This keeps retag + recreate and
+    # stop + snapshot + restart atomic against declarative reconcile jobs.
+    printf '%s -w 300 %s /bin/sh -eu -c %s' \
+        "$flock_bin" "$compose_lock" "$(shell_quote "$1")"
+}
+
+activation_locked_remote_script() {
+    # Activation needs a unique lock-conflict status. Validation and every
+    # post-retag operation use different statuses below, so the caller never
+    # recommends a rollback for a transition that did not acquire the lock.
+    printf '%s -E 41 -w 300 %s /bin/sh -eu -c %s' \
+        "$flock_bin" "$compose_lock" "$(shell_quote "$1")"
+}
+
 printable_remote_ssh() {
     # $1 ssh_port, $2 ssh_host, $3 script
     printf 'ssh -p %s %s %s' "$1" "$2" "$(shell_quote "$(remote_sh_command "$3")")"
 }
 
+printable_locked_recovery_ssh() {
+    # Schema recovery is an attended, multi-step operation. The interactive
+    # shell keeps the same project lock from containment through data restore
+    # and image recreation, so reconcile cannot restart the old image midway.
+    printf 'ssh -tt -p %s %s %s' "$1" "$2" \
+        "$(shell_quote "$flock_bin -w 300 $compose_lock /bin/sh -eu")"
+}
+
 print_rollback() {
     # $1 schema_changed, $2 previous_tag, $3 ssh_host, $4 ssh_port, $5 image,
-    # $6 compose_dir, $7 service, $8 snapshot_dir
-    local image_script image_command containment_script
-    image_script="docker tag $2 $5; cd $6; docker compose up -d --force-recreate --no-deps $7"
-    image_command=$(printable_remote_ssh "$4" "$3" "$image_script")
+    # $6 compose_command, $7 service, $8 snapshot_dir
+    local image_body image_script image_command containment_body
+    image_body="docker tag $2 $5; $6 up -d --force-recreate --no-deps $7"
     if [ "$1" = 1 ]; then
-        containment_script="cd $6; docker compose stop -t 30 $7"
-        echo "containment command: $(printable_remote_ssh "$4" "$3" "$containment_script")"
+        containment_body="$6 stop -t 30 $7"
         echo "data/schema restore required: do NOT run an image-only rollback against a possibly migrated database."
         echo "restore source: $8 (root-only, pre-deploy SQLite + blobs)."
+        echo "locked schema recovery shell: $(printable_locked_recovery_ssh "$4" "$3")"
+        echo "inside that same locked shell, containment command: $containment_body"
         # shellcheck disable=SC1111 # German typographic quotes, intentional
-        echo "restore procedure: hausv-org docs/csb1-deploy.md → “Schema rollback procedure”; verify an isolated copy with system Python before replacing live data."
-        echo "image command after the matching data restore: $image_command"
+        echo "restore procedure: hausv-org docs/csb1-deploy.md → “Schema rollback procedure”; keep the locked shell open through verification, data replacement and recreation."
+        echo "inside that same locked shell after the matching data restore: $image_body"
     else
+        image_script=$(locked_remote_script "$image_body")
+        image_command=$(printable_remote_ssh "$4" "$3" "$image_script")
         echo "image rollback command: $image_command"
         echo "data/schema restore: not required; this release contains no migration change."
     fi
@@ -99,6 +125,12 @@ github_repo=inspr-at/hausv-org
 workflow=CI
 image=ghcr.io/markus-barta/hausv-org:latest
 compose_dir=/home/mba/Code/nixcfg/hosts/csb1/docker
+compose_file=/etc/compose/csb1/docker-compose.yml
+compose_project=csb1
+compose_lock=/run/lock/compose-csb1.lock
+compose_lock_dir=/run/lock
+flock_bin=/run/current-system/sw/bin/flock
+compose_command="docker compose --project-directory $compose_dir -p $compose_project -f $compose_file"
 service=hausv-org
 build_dir=/tmp/hausv-build
 data_dir=/var/lib/csb1-docker/hausv-org
@@ -273,22 +305,42 @@ sudo_probe=""
 if [ "$schema_changed" -eq 1 ]; then
     sudo_probe="sudo -n /run/current-system/sw/bin/python3 -c 'import sqlite3' >/dev/null;"
 fi
-preflight_script="\
+preflight_body="\
+    locked_live_page=\"\$(curl -fsS --max-time 10 $live_url)\"; \
+    printf '%s' \"\$locked_live_page\" | grep -F '<span class=\"version\">$live_version ($live_commit)</span>' >/dev/null; \
     test \"\$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $service)\" = healthy; \
     running_image_id=\"\$(docker inspect --format '{{.Image}}' $service)\"; \
     latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\"; \
+    compose_project_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.project\"}}' $service)\"; \
+    compose_service_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.service\"}}' $service)\"; \
     test -n \"\$running_image_id\"; \
     test \"\$running_image_id\" = \"\$latest_image_id\"; \
+    test \"\$compose_project_label\" = $compose_project; \
+    test \"\$compose_service_label\" = $service; \
     if docker image inspect $previous_tag >/dev/null 2>&1; then \
         previous_image_id=\"\$(docker image inspect --format '{{.Id}}' $previous_tag)\"; \
         test \"\$previous_image_id\" = \"\$running_image_id\"; \
     fi; \
+    test -x $flock_bin; \
+    test -d $compose_lock_dir; \
     test -d $compose_dir; \
-    cd $compose_dir; \
-    docker compose config --services | grep -Fx $service >/dev/null; \
+    test -f $compose_file; \
+    compose_services=\"\$($compose_command config --services)\"; \
+    printf '%s\n' \"\$compose_services\" | grep -Fx $service >/dev/null; \
     $sudo_probe"
-ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$preflight_script")" \
+preflight_body="$preflight_body \
+    printf 'running-image-id=%s\n' \"\$running_image_id\""
+preflight_script=$(locked_remote_script "$preflight_body")
+preflight_proof=$(ssh -p "$ssh_port" "$ssh_host" \
+    "$(remote_sh_command "$preflight_script")") \
     || fail_before_change "remote preflight failed"
+expected_running_image_id=${preflight_proof#running-image-id=}
+if [ "$preflight_proof" != "running-image-id=$expected_running_image_id" ] \
+    || [ "${#expected_running_image_id}" -ne 71 ] \
+    || ! printf '%s' "$expected_running_image_id" \
+        | grep -qE '^sha256:[0-9a-f]{64}$'; then
+    fail_before_change "remote preflight returned invalid image identity proof"
+fi
 
 echo "release candidate: $app_version ($commit)"
 echo "origin/main: $head_sha ✓"
@@ -310,16 +362,21 @@ if [ "$dry_run" -eq 1 ]; then
 fi
 
 if [ "$schema_changed" -eq 1 ]; then
-    snapshot_script="\
+    snapshot_body="\
+        test \"\$(docker inspect --format '{{.Image}}' $service)\" = $expected_running_image_id; \
+        test \"\$(docker image inspect --format '{{.Id}}' $image)\" = $expected_running_image_id; \
         sudo -n /run/current-system/sw/bin/python3 - \
         --source $data_dir \
         --snapshot $snapshot_dir \
         --compose-dir $compose_dir \
+        --compose-file $compose_file \
+        --compose-project $compose_project \
         --service $service \
         --source-version $live_version \
         --source-commit $live_sha \
         --target-version $app_version \
         --target-commit $head_sha"
+    snapshot_script=$(locked_remote_script "$snapshot_body")
     if ! snapshot_proof=$(ssh -p "$ssh_port" "$ssh_host" \
         "$(remote_sh_command "$snapshot_script")" \
         < "$repo/scripts/create-predeploy-snapshot.py"); then
@@ -330,7 +387,8 @@ if [ "$schema_changed" -eq 1 ]; then
             echo "recovery verified: the current production service is healthy; no new image or schema was activated." >&2
         else
             echo "release FAILED: pre-deploy snapshot recovery did not return HAUSV to healthy state (container=$current_health)." >&2
-            recovery_script="cd $compose_dir; docker compose up -d --force-recreate --no-deps $service"
+            recovery_body="$compose_command up -d --force-recreate --no-deps $service"
+            recovery_script=$(locked_remote_script "$recovery_body")
             echo "mandatory recovery command: $(printable_remote_ssh "$ssh_port" "$ssh_host" "$recovery_script")" >&2
             echo "after recovery, require Docker health=healthy before any retry; do not activate the new image." >&2
         fi
@@ -347,10 +405,12 @@ if [ "$schema_changed" -eq 1 ]; then
     echo "pre-deploy recovery point: fresh, consistent and healthy ✓"
 fi
 
-preserve_script="\
+preserve_body="\
     running_image_id=\"\$(docker inspect --format '{{.Image}}' $service)\"; \
     latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\"; \
     test -n \"\$running_image_id\"; \
+    test \"\$running_image_id\" = $expected_running_image_id; \
+    test \"\$latest_image_id\" = $expected_running_image_id; \
     test \"\$running_image_id\" = \"\$latest_image_id\"; \
     if docker image inspect $previous_tag >/dev/null 2>&1; then \
         previous_image_id=\"\$(docker image inspect --format '{{.Id}}' $previous_tag)\"; \
@@ -359,6 +419,7 @@ preserve_script="\
         docker tag \"\$running_image_id\" $previous_tag; \
     fi; \
     test \"\$(docker image inspect --format '{{.Id}}' $previous_tag)\" = \"\$running_image_id\""
+preserve_script=$(locked_remote_script "$preserve_body")
 ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$preserve_script")" \
     || fail_before_change "could not preserve the currently running image"
 echo "preserved previous image: $previous_tag"
@@ -384,12 +445,36 @@ for command_status in "${PIPESTATUS[@]}"; do
 done
 
 echo "replacing the production container…"
-activate_script="\
-    docker tag $release_tag $image; \
-    cd $compose_dir; \
-    docker compose up -d --force-recreate --no-deps $service"
-ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$activate_script")" \
-    || fail_after_change "container replacement failed" "$schema_changed" "$previous_tag" "$ssh_host" "$ssh_port" "$image" "$compose_dir" "$service" "$snapshot_dir"
+activate_body="\
+    running_image_id=\"\$(docker inspect --format '{{.Image}}' $service)\" || exit 42; \
+    latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\" || exit 42; \
+    previous_image_id=\"\$(docker image inspect --format '{{.Id}}' $previous_tag)\" || exit 42; \
+    release_image_id=\"\$(docker image inspect --format '{{.Id}}' $release_tag)\" || exit 42; \
+    compose_project_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.project\"}}' $service)\" || exit 42; \
+    compose_service_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.service\"}}' $service)\" || exit 42; \
+    if [ -z \"\$running_image_id\" ] \
+        || [ -z \"\$release_image_id\" ] \
+        || [ \"\$running_image_id\" != $expected_running_image_id ] \
+        || [ \"\$latest_image_id\" != $expected_running_image_id ] \
+        || [ \"\$previous_image_id\" != $expected_running_image_id ] \
+        || [ \"\$running_image_id\" != \"\$latest_image_id\" ] \
+        || [ \"\$running_image_id\" != \"\$previous_image_id\" ] \
+        || [ \"\$compose_project_label\" != $compose_project ] \
+        || [ \"\$compose_service_label\" != $service ]; then \
+        exit 42; \
+    fi; \
+    docker tag $release_tag $image || exit 43; \
+    test \"\$(docker image inspect --format '{{.Id}}' $image)\" = \"\$release_image_id\" || exit 43; \
+    $compose_command up -d --force-recreate --no-deps $service || exit 43"
+activate_script=$(activation_locked_remote_script "$activate_body")
+ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$activate_script")"
+activation_status=$?
+case $activation_status in
+    0) ;;
+    41) fail_before_change "activation lock was unavailable before retag; production was not changed by this release" ;;
+    42) fail_before_change "activation identity changed before retag; production was not changed by this release" ;;
+    *) fail_after_change "container replacement failed" "$schema_changed" "$previous_tag" "$ssh_host" "$ssh_port" "$image" "$compose_command" "$service" "$snapshot_dir" ;;
+esac
 
 post_ok=0
 deployed=""
@@ -413,7 +498,7 @@ for _ in $(seq "$verify_attempts"); do
     sleep "$verify_sleep"
 done
 if [ "$post_ok" -ne 1 ]; then
-    fail_after_change "post-deploy health/version verification failed (container=$container_health, visible='$deployed')" "$schema_changed" "$previous_tag" "$ssh_host" "$ssh_port" "$image" "$compose_dir" "$service" "$snapshot_dir"
+    fail_after_change "post-deploy health/version verification failed (container=$container_health, visible='$deployed')" "$schema_changed" "$previous_tag" "$ssh_host" "$ssh_port" "$image" "$compose_command" "$service" "$snapshot_dir"
 fi
 
 # Inspect only the current container's start window. Logs are evaluated on the
@@ -427,10 +512,10 @@ startlog_script="\
     grep -F '\"msg\":\"listening\"' \"\$log_file\" >/dev/null; \
     if grep -qiE '$critical_pattern' \"\$log_file\"; then exit 1; fi"
 ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$startlog_script")" \
-    || fail_after_change "critical start-log check failed or the listening marker is missing" "$schema_changed" "$previous_tag" "$ssh_host" "$ssh_port" "$image" "$compose_dir" "$service" "$snapshot_dir"
+    || fail_after_change "critical start-log check failed or the listening marker is missing" "$schema_changed" "$previous_tag" "$ssh_host" "$ssh_port" "$image" "$compose_command" "$service" "$snapshot_dir"
 
 echo "live version: $deployed ✓"
 echo "container health: $container_health ✓"
 echo "public health: ok ✓"
 echo "critical start logs: clean ✓"
-print_rollback "$schema_changed" "$previous_tag" "$ssh_host" "$ssh_port" "$image" "$compose_dir" "$service" "$snapshot_dir"
+print_rollback "$schema_changed" "$previous_tag" "$ssh_host" "$ssh_port" "$image" "$compose_command" "$service" "$snapshot_dir"

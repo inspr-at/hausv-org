@@ -13,6 +13,20 @@ import sys
 HEAD = "a" * 40
 ORIGIN_MISMATCH = "c" * 40
 LIVE = "b" * 40
+IMAGE_ID = "sha256:" + ("1" * 64)
+LOCK_PREFIX = (
+    "/run/current-system/sw/bin/flock -w 300 "
+    "/run/lock/compose-csb1.lock /bin/sh -eu -c"
+)
+ACTIVATION_LOCK_PREFIX = (
+    "/run/current-system/sw/bin/flock -E 41 -w 300 "
+    "/run/lock/compose-csb1.lock /bin/sh -eu -c"
+)
+CANONICAL_COMPOSE = (
+    "docker compose --project-directory "
+    "/home/mba/Code/nixcfg/hosts/csb1/docker -p csb1 "
+    "-f /etc/compose/csb1/docker-compose.yml"
+)
 
 
 def required(name: str) -> str:
@@ -216,8 +230,29 @@ def mock_ssh(args: list[str]) -> int:
     if "--source /var/lib/csb1-docker/hausv-org" in script:
         if not require_remote_sh(wrapped, "snapshot"):
             return 64
+        if LOCK_PREFIX not in script:
+            print("snapshot helper is not held under the csb1 lock", file=sys.stderr)
+            return 64
+        if script.index(LOCK_PREFIX) >= script.index("sudo -n"):
+            print("snapshot lock is acquired after the helper starts", file=sys.stderr)
+            return 64
+        for fragment in (
+            "--compose-dir /home/mba/Code/nixcfg/hosts/csb1/docker",
+            "--compose-file /etc/compose/csb1/docker-compose.yml",
+            "--compose-project csb1",
+        ):
+            if fragment not in script:
+                print(f"snapshot command is missing {fragment}", file=sys.stderr)
+                return 64
+        if script.count(IMAGE_ID) < 2 or script.index(IMAGE_ID) >= script.index("sudo -n"):
+            print("snapshot did not revalidate the preflight image identity", file=sys.stderr)
+            return 64
         sys.stdin.buffer.read()
-        if CASE in {"schema_snapshot_fail", "schema_snapshot_recovery_fail"}:
+        if CASE in {
+            "schema_snapshot_fail",
+            "schema_snapshot_recovery_fail",
+            "schema_snapshot_identity_drift",
+        }:
             return 1
         print(f"snapshot-path={snapshot_path(script)}")
         print("snapshot-created=2026-07-30T12:00:00Z")
@@ -237,7 +272,7 @@ def mock_ssh(args: list[str]) -> int:
         print("healthy")
         return 0
 
-    if "docker tag" in script and "prev-" in script:
+    if "docker tag" in script and "prev-" in script and "release-" not in script:
         if not require_remote_sh(wrapped, "rollback image preservation"):
             return 64
         required = (
@@ -245,12 +280,21 @@ def mock_ssh(args: list[str]) -> int:
             "latest_image_id=",
             "previous_image_id=",
             "docker tag",
-            "docker image inspect --format '{{.Id}}'",
+            "docker image inspect --format",
+            LOCK_PREFIX,
+            IMAGE_ID,
         )
         if any(fragment not in script for fragment in required):
             print("rollback image preservation is incomplete", file=sys.stderr)
             return 64
-        return 1 if CASE == "preserve_fail" else 0
+        if not (
+            script.index(LOCK_PREFIX)
+            < script.index("running_image_id=")
+            < script.index("docker tag")
+        ):
+            print("rollback image preservation is not one locked transition", file=sys.stderr)
+            return 64
+        return 1 if CASE in {"preserve_fail", "preserve_identity_drift"} else 0
 
     if "docker build" in script:
         if not require_remote_sh(wrapped, "release build"):
@@ -261,9 +305,42 @@ def mock_ssh(args: list[str]) -> int:
     if "docker tag" in script and "release-" in script:
         if not require_remote_sh(wrapped, "activation"):
             return 64
+        required = (
+            ACTIVATION_LOCK_PREFIX,
+            f"{CANONICAL_COMPOSE} up -d --force-recreate --no-deps hausv-org",
+            "running_image_id=",
+            "latest_image_id=",
+            "previous_image_id=",
+            "release_image_id=",
+            '"$running_image_id" != "$latest_image_id"',
+            '"$running_image_id" != "$previous_image_id"',
+            "com.docker.compose.project",
+            "com.docker.compose.service",
+            "exit 42",
+            IMAGE_ID,
+            "docker tag ghcr.io/markus-barta/hausv-org:release-0.65.0-aaaaaaa ghcr.io/markus-barta/hausv-org:latest || exit 43",
+            f"{CANONICAL_COMPOSE} up -d --force-recreate --no-deps hausv-org || exit 43",
+        )
+        if any(fragment not in script for fragment in required):
+            print("activation is not one locked, revalidated transition", file=sys.stderr)
+            return 64
+        if not (
+            script.index(ACTIVATION_LOCK_PREFIX)
+            < script.index("running_image_id=")
+            < script.index("docker tag")
+            < script.index(f"{CANONICAL_COMPOSE} up")
+        ):
+            print("activation lock does not span revalidation, tag and up", file=sys.stderr)
+            return 64
+        if CASE == "activation_lock_timeout":
+            return 41
+        if CASE == "activation_identity_drift":
+            return 42
+        if CASE == "activation_post_tag_raw_42":
+            return 43
         return 1 if CASE == "activation_fail" else 0
 
-    if "docker image inspect" in script and "docker compose config" in script:
+    if "docker image inspect" in script and "config --services" in script:
         # Simulate the exact production failure mode: with csb1's fish login
         # shell, an early failure followed by a successful final command can be
         # reported as success. The explicit sh wrapper must preserve failure.
@@ -276,17 +353,41 @@ def mock_ssh(args: list[str]) -> int:
             "latest_image_id=",
             'test "$running_image_id" = "$latest_image_id"',
             "previous_image_id=",
-            "docker image inspect --format '{{.Id}}'",
+            "docker image inspect --format",
+            LOCK_PREFIX,
+            f"{CANONICAL_COMPOSE} config --services",
+            "test -d /run/lock",
+            "test -f /etc/compose/csb1/docker-compose.yml",
+            "com.docker.compose.project",
+            "com.docker.compose.service",
+            "curl -fsS --max-time 10 https://jhw22.hausv.org/",
+            '<span class="version">0.0.0 (bbbbbbb)</span>',
         )
-        if any(fragment not in script for fragment in required):
-            print("remote image identity preflight is incomplete", file=sys.stderr)
+        missing = [fragment for fragment in required if fragment not in script]
+        if missing:
+            print(
+                f"remote image identity preflight is incomplete: {missing}",
+                file=sys.stderr,
+            )
+            return 64
+        if not (
+            script.index(LOCK_PREFIX)
+            < script.index("running_image_id=")
+            < script.index(f"{CANONICAL_COMPOSE} config --services")
+        ):
+            print("preflight identity and compose resolution do not share one lock", file=sys.stderr)
             return 64
         if CASE in {
             "remote_preflight_fail",
             "retry_after_activation_fail",
             "rollback_tag_conflict",
+            "lock_timeout",
+            "missing_rendered_compose",
+            "wrong_compose_identity",
+            "preflight_visible_drift",
         }:
             return 1
+        print(f"running-image-id={IMAGE_ID}")
         return 0
 
     print(f"unexpected ssh fixture call: {remote}", file=sys.stderr)

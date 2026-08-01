@@ -33,8 +33,10 @@ def run_snapshot(
     source: Path,
     snapshot: Path,
     compose: Path,
+    compose_file: Path,
     target: str,
     *,
+    compose_project: str = "csb1",
     backup_error: bool = False,
     stop_error: bool = False,
     recovery_error: bool = False,
@@ -48,6 +50,10 @@ def run_snapshot(
         str(snapshot),
         "--compose-dir",
         str(compose),
+        "--compose-file",
+        str(compose_file),
+        "--compose-project",
+        compose_project,
         "--service",
         "hausv-org",
         "--source-version",
@@ -61,12 +67,27 @@ def run_snapshot(
     ]
     commands: list[tuple[str, ...]] = []
     real_sqlite_backup = module.sqlite_backup
+    compose_prefix = (
+        "docker",
+        "compose",
+        "--project-directory",
+        str(compose),
+        "-p",
+        compose_project,
+        "-f",
+        str(compose_file),
+    )
 
     def fake_run(*args: str, **_kwargs) -> str:
+        if _kwargs.get("cwd") is not None:
+            raise AssertionError(f"compose mutation relied on cwd: {args}")
         commands.append(args)
-        if stop_error and args[:3] == ("docker", "compose", "stop"):
+        if args[: len(compose_prefix)] != compose_prefix:
+            raise AssertionError(f"compose mutation is not canonical: {args}")
+        mutation = args[len(compose_prefix) :]
+        if stop_error and mutation[:1] == ("stop",):
             raise subprocess.CalledProcessError(1, args)
-        if recovery_error and args[:3] == ("docker", "compose", "up"):
+        if recovery_error and mutation[:1] == ("up",):
             raise subprocess.CalledProcessError(1, args)
         return ""
 
@@ -104,9 +125,12 @@ def main() -> int:
         base = Path(raw)
         source = base / "live" / "hausv-org"
         compose = base / "config" / "docker"
+        compose_file = base / "rendered" / "csb1" / "docker-compose.yml"
         snapshot_root = base / "recovery" / "hausv-org-predeploy"
         source.mkdir(parents=True)
         compose.mkdir(parents=True)
+        compose_file.parent.mkdir(parents=True)
+        compose_file.write_text("services: {}\n", encoding="utf-8")
         (source / "uploads").mkdir()
         (source / "uploads" / "fixture.txt").write_text(
             "blob fixture\n", encoding="utf-8"
@@ -117,7 +141,14 @@ def main() -> int:
             database.commit()
 
         first = snapshot_root / "0.58.0-aaaaaaa"
-        output, commands = run_snapshot(module, source, first, compose, "0.58.0")
+        output, commands = run_snapshot(
+            module,
+            source,
+            first,
+            compose,
+            compose_file,
+            "0.58.0",
+        )
         expected = {
             f"snapshot-path={first}",
             "snapshot-created=",  # checked by prefix below
@@ -157,6 +188,7 @@ def main() -> int:
             source,
             first,
             compose,
+            compose_file,
             "0.58.0",
             expected_error="already exists",
         )
@@ -170,7 +202,14 @@ def main() -> int:
             raise AssertionError("same-path retry overwrote the recovery point")
 
         second = snapshot_root / "0.59.0-aaaaaaa"
-        run_snapshot(module, source, second, compose, "0.59.0")
+        run_snapshot(
+            module,
+            source,
+            second,
+            compose,
+            compose_file,
+            "0.59.0",
+        )
         if not first.is_dir() or not second.is_dir():
             raise AssertionError("a later release overwrote an older recovery point")
 
@@ -180,12 +219,17 @@ def main() -> int:
             source,
             failed,
             compose,
+            compose_file,
             "0.60.0",
             backup_error=True,
             recovery_error=True,
             expected_error="production service may be unavailable",
         )
-        if not any(command[:3] == ("docker", "compose", "up") for command in failed_commands):
+        if not any(
+            command[-5:]
+            == ("up", "-d", "--force-recreate", "--no-deps", "hausv-org")
+            for command in failed_commands
+        ):
             raise AssertionError("failed snapshot did not attempt service recovery")
         if failed.exists() or failed.with_name(f".{failed.name}.staging").exists():
             raise AssertionError("failed snapshot left a publishable recovery directory")
@@ -196,17 +240,59 @@ def main() -> int:
             source,
             partial_stop,
             compose,
+            compose_file,
             "0.61.0",
             stop_error=True,
             expected_error="docker",
         )
         if not any(
-            command[:3] == ("docker", "compose", "up")
+            command[-5:]
+            == ("up", "-d", "--force-recreate", "--no-deps", "hausv-org")
             for command in partial_stop_commands
         ):
             raise AssertionError(
                 "failed stop did not enter the automatic service recovery path"
             )
+
+        invalid_project = snapshot_root / "0.62.0-aaaaaaa"
+        _, invalid_project_commands = run_snapshot(
+            module,
+            source,
+            invalid_project,
+            compose,
+            compose_file,
+            "0.62.0",
+            compose_project="csb1; docker compose down",
+            expected_error="unsafe compose project",
+        )
+        if invalid_project_commands:
+            raise AssertionError("invalid compose project touched the service")
+
+        missing_compose_file = snapshot_root / "0.63.0-aaaaaaa"
+        _, missing_file_commands = run_snapshot(
+            module,
+            source,
+            missing_compose_file,
+            compose,
+            base / "rendered" / "csb1" / "missing-compose.yml",
+            "0.63.0",
+            expected_error="required compose file is unavailable",
+        )
+        if missing_file_commands:
+            raise AssertionError("missing rendered compose file touched the service")
+
+        missing_compose_dir = snapshot_root / "0.64.0-aaaaaaa"
+        _, missing_dir_commands = run_snapshot(
+            module,
+            source,
+            missing_compose_dir,
+            base / "missing" / "compose" / "directory",
+            compose_file,
+            "0.64.0",
+            expected_error="required compose directory is unavailable",
+        )
+        if missing_dir_commands:
+            raise AssertionError("missing compose project directory touched the service")
 
     print("pre-deploy snapshot fixture: ok")
     return 0

@@ -256,6 +256,13 @@ After the secret exists, rebuild or switch csb1 so agenix materializes
 
 ## Guarded production release
 
+Die Compose-Spezifikation wird seit OPS-127 deklarativ aus nixcfg gerendert.
+Zur Laufzeit ist ausschließlich
+`/etc/compose/csb1/docker-compose.yml` maßgeblich; im Git-Checkout liegt bewusst
+keine zweite YAML-Kopie. Jeder schreibende Aufruf für das Projekt `csb1` wird
+über `/run/lock/compose-csb1.lock` serialisiert, damit Deployment, deklarativer
+Reconcile und andere Betriebsjobs keine parallelen Containerübergänge starten.
+
 Before a release, run the deterministic local release fixtures:
 
 ```fish
@@ -298,6 +305,9 @@ Both commands fail closed unless all of these statements are true:
 - csb1 reports the current container healthy, proves that its exact image ID is
   the image currently named by `:latest`, has the expected Compose service, and
   (for a schema release) non-interactive system-Python capability;
+- the rendered runtime stack exists at
+  `/etc/compose/csb1/docker-compose.yml`, resolves `hausv-org` in project
+  `csb1`, and can be read while holding the shared Compose lock;
 - an already existing rollback tag either names that exact running image or the
   release is refused. It is never silently retargeted.
 
@@ -306,8 +316,9 @@ tag or build an image, or recreate a container.
 
 The actual release ships only `git archive HEAD`, builds a release-specific
 image on csb1, preserves the current image under an immutable rollback tag, and
-only then retags/recreates the Compose service. It never pushes an image to
-GHCR. A retry after a partial activation is therefore rejected while
+only then retags/recreates the Compose service from the rendered runtime stack
+while holding the shared project lock. It never pushes an image to GHCR. A
+retry after a partial activation is therefore rejected while
 `:latest`, the running container and the immutable rollback tag disagree.
 Because csb1 uses fish as its SSH login shell, every compound remote operation
 is explicitly executed through `/bin/sh -eu -c`. The printed recovery,
@@ -406,15 +417,20 @@ a schema release, the exact matching recovery directory.
 | Release type | Safe rollback |
 |---|---|
 | No migration change | Run the printed image rollback command. No data restore is required. |
-| Migration change | Run the printed containment command first. Do **not** run an old image against a possibly migrated database. Restore the printed pre-deploy data/schema recovery point, verify it, then run the printed image command. |
+| Migration change | Open the printed locked recovery shell and keep it open through containment, verified data restore and image recreation. Do **not** run an old image against a possibly migrated database. |
 
 ### Schema rollback procedure
 
 This procedure is self-contained and uses tools that are present on csb1.
 There is no dependency on a `sqlite3` CLI.
 
-1. Run the containment command printed by the failed release.
-2. Log in to csb1 and set the following three values from that same output.
+1. Run the **locked schema recovery shell** command printed by the failed
+   release. It opens one attended shell while holding
+   `/run/lock/compose-csb1.lock`. Keep that shell open until the old image and
+   matching data are healthy again; do not start a second Compose command in
+   another terminal.
+2. In that locked shell, set the following three values from the same release
+   output.
    `snapshot_dir` must be the exact versioned recovery point, `restore_check`
    must be a new path, and `failed_live` must not already exist:
 
@@ -454,12 +470,15 @@ PY
 The expected value-free output is only `ok`. Any other output or non-zero exit
 stops the rollback; the live directory has not been touched.
 
-4. With `hausv-org` still stopped, atomically preserve the failed live tree and
-   install the already checked copy:
+4. Still inside the same locked shell, run the exact **inside that same locked
+   shell, containment command** printed by the release. It uses the canonical
+   rendered stack without trying to acquire the already-held lock. Then
+   atomically preserve the failed live tree and install the checked copy:
 
 ```bash
-cd /home/mba/Code/nixcfg/hosts/csb1/docker
-docker compose stop -t 30 hausv-org
+# Paste the exact printed containment command here. Its shape is:
+docker compose --project-directory /home/mba/Code/nixcfg/hosts/csb1/docker \
+  -p csb1 -f /etc/compose/csb1/docker-compose.yml stop -t 30 hausv-org
 sudo test -d /var/lib/csb1-docker/hausv-org
 sudo test ! -e "$failed_live"
 sudo mv /var/lib/csb1-docker/hausv-org "$failed_live"
@@ -470,8 +489,11 @@ sudo chown -R 65532:65532 /var/lib/csb1-docker/hausv-org
 The original versioned snapshot remains untouched. The failed data also
 remains preserved at the explicit `failed_live` path.
 
-5. Run the **image command after the matching data restore** printed by the
-   release. Require all of the following before declaring recovery complete:
+5. Without leaving the locked shell, run the exact **inside that same locked
+   shell after the matching data restore** command printed by the release. It
+   retags the preserved image and recreates `hausv-org` from the rendered
+   stack. Require all of the following before leaving the shell and declaring
+   recovery complete:
 
 ```bash
 docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' hausv-org

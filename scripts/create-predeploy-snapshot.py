@@ -2,7 +2,9 @@
 """Create one atomic, root-only HAUSV pre-schema recovery point.
 
 The caller streams this committed file to csb1 and runs it with the system
-Python as root. It never prints database rows, filenames from user content, or
+Python as root while holding the host's compose lock for the helper's complete
+lifetime. Compose mutations deliberately do not reacquire that non-reentrant
+lock. The helper never prints database rows, filenames from user content, or
 secret/config values. The application is stopped while SQLite and blob files
 are captured as one recovery point.
 """
@@ -14,6 +16,7 @@ import datetime as dt
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -26,6 +29,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--source", required=True)
     parser.add_argument("--snapshot", required=True)
     parser.add_argument("--compose-dir", required=True)
+    parser.add_argument("--compose-file", required=True)
+    parser.add_argument("--compose-project", required=True)
     parser.add_argument("--service", required=True)
     parser.add_argument("--source-version", required=True)
     parser.add_argument("--source-commit", required=True)
@@ -34,23 +39,61 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def checked_directory(raw: str, *, forbidden: set[Path]) -> Path:
+def checked_directory(raw: str, *, forbidden: set[Path], label: str) -> Path:
     path = Path(raw)
-    if not path.is_absolute() or path in forbidden or len(path.parts) < 4:
-        raise RuntimeError("unsafe snapshot path")
+    if (
+        not path.is_absolute()
+        or path in forbidden
+        or len(path.parts) < 4
+        or ".." in path.parts
+    ):
+        raise RuntimeError(f"unsafe {label} path")
     return path
 
 
-def run(*args: str, cwd: Path | None = None, capture: bool = False) -> str:
+def checked_file(raw: str, *, label: str) -> Path:
+    path = Path(raw)
+    if not path.is_absolute() or len(path.parts) < 4 or ".." in path.parts:
+        raise RuntimeError(f"unsafe {label} path")
+    if not path.is_file():
+        raise RuntimeError(f"required {label} is unavailable")
+    return path
+
+
+def checked_compose_project(raw: str) -> str:
+    if re.fullmatch(r"[a-z0-9][a-z0-9_-]*", raw) is None:
+        raise RuntimeError("unsafe compose project")
+    return raw
+
+
+def run(*args: str, capture: bool = False) -> str:
     result = subprocess.run(
         args,
-        cwd=cwd,
         check=True,
         text=True,
         stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
     return result.stdout.strip() if capture else ""
+
+
+def run_compose_mutation(
+    compose_dir: Path,
+    compose_project: str,
+    compose_file: Path,
+    *mutation: str,
+) -> None:
+    run(
+        "docker",
+        "compose",
+        "--project-directory",
+        str(compose_dir),
+        "-p",
+        compose_project,
+        "-f",
+        str(compose_file),
+        *mutation,
+    )
 
 
 def container_health(service: str) -> str:
@@ -87,15 +130,25 @@ def sqlite_backup(source: Path, destination: Path) -> None:
 
 def main() -> int:
     args = parse_args()
-    source = checked_directory(args.source, forbidden={Path("/")})
-    snapshot = checked_directory(args.snapshot, forbidden={Path("/"), source})
-    compose_dir = checked_directory(args.compose_dir, forbidden={Path("/")})
+    source = checked_directory(
+        args.source, forbidden={Path("/")}, label="source directory"
+    )
+    snapshot = checked_directory(
+        args.snapshot, forbidden={Path("/"), source}, label="snapshot"
+    )
+    compose_dir = checked_directory(
+        args.compose_dir, forbidden={Path("/")}, label="compose directory"
+    )
+    compose_file = checked_file(args.compose_file, label="compose file")
+    compose_project = checked_compose_project(args.compose_project)
     if snapshot.is_relative_to(source) or source.is_relative_to(snapshot):
         raise RuntimeError("source and snapshot paths must be separate")
     staging = snapshot.with_name(f".{snapshot.name}.staging")
     database = source / "hausv.db"
-    if not source.is_dir() or not database.is_file() or not compose_dir.is_dir():
+    if not source.is_dir() or not database.is_file():
         raise RuntimeError("required HAUSV source is unavailable")
+    if not compose_dir.is_dir():
+        raise RuntimeError("required compose directory is unavailable")
     if os.geteuid() != 0:
         raise RuntimeError("snapshot helper requires root")
     if snapshot.exists():
@@ -115,7 +168,15 @@ def main() -> int:
         # Arm recovery before invoking it so every attempted quiesce has the
         # same automatic fail-closed recovery path.
         needs_service_recovery = True
-        run("docker", "compose", "stop", "-t", "30", args.service, cwd=compose_dir)
+        run_compose_mutation(
+            compose_dir,
+            compose_project,
+            compose_file,
+            "stop",
+            "-t",
+            "30",
+            args.service,
+        )
 
         shutil.rmtree(staging, ignore_errors=True)
         staging.mkdir(mode=0o700, parents=False)
@@ -146,7 +207,13 @@ def main() -> int:
         os.rename(staging, snapshot)
         published = True
 
-        run("docker", "compose", "start", args.service, cwd=compose_dir)
+        run_compose_mutation(
+            compose_dir,
+            compose_project,
+            compose_file,
+            "start",
+            args.service,
+        )
         if not wait_healthy(args.service):
             raise RuntimeError("HAUSV did not become healthy after snapshot")
         needs_service_recovery = False
@@ -154,15 +221,15 @@ def main() -> int:
         recovery_cause: Exception | None = None
         if needs_service_recovery:
             try:
-                run(
-                    "docker",
-                    "compose",
+                run_compose_mutation(
+                    compose_dir,
+                    compose_project,
+                    compose_file,
                     "up",
                     "-d",
                     "--force-recreate",
                     "--no-deps",
                     args.service,
-                    cwd=compose_dir,
                 )
                 if not wait_healthy(args.service):
                     raise RuntimeError(

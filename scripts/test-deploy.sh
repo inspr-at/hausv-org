@@ -8,6 +8,8 @@ set -u
 deploy_fixture_repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 deploy_fixture_mock=$deploy_fixture_repo/scripts/testdata/deploy/mock-command
 deploy_fixture_root=$(mktemp -d -t hausv-deploy-fixture.XXXXXX) || exit 1
+deploy_fixture_lock_prefix="/run/current-system/sw/bin/flock -w 300 /run/lock/compose-csb1.lock /bin/sh -eu -c"
+deploy_fixture_compose_command="docker compose --project-directory /home/mba/Code/nixcfg/hosts/csb1/docker -p csb1 -f /etc/compose/csb1/docker-compose.yml"
 
 cleanup() {
     case $deploy_fixture_root in
@@ -37,8 +39,17 @@ contains_fail_fast_remote_command() {
         # The value was produced by our own shell_quote; eval is the exact
         # inverse and the input is not attacker-controlled in a fixture run.
         decoded=$(eval "printf '%s' $escaped" 2>/dev/null) || continue
-        case $decoded in
-            "/bin/sh -eu -c "*) return 0 ;;
+        case $line in
+            *"image rollback command: ssh -p "*)
+                case $decoded in
+                    "/bin/sh -eu -c "*"$deploy_fixture_lock_prefix"*"docker tag"*"$deploy_fixture_compose_command up"*) return 0 ;;
+                esac
+                ;;
+            *"mandatory recovery command: ssh -p "*)
+                case $decoded in
+                    "/bin/sh -eu -c "*"$deploy_fixture_lock_prefix"*"$deploy_fixture_compose_command up"*) return 0 ;;
+                esac
+                ;;
         esac
     done <<EOF
 $output
@@ -90,6 +101,13 @@ fixture() {
 }
 
 fixture no_schema 0 "all fail-closed preconditions passed" dry-run
+if ! grep -qF -- "$deploy_fixture_lock_prefix" \
+    "$deploy_fixture_root/no_schema/commands.log" \
+    || ! grep -qF -- "$deploy_fixture_compose_command config --services" \
+    "$deploy_fixture_root/no_schema/commands.log"; then
+    echo "FAIL no_schema: preflight did not use the locked rendered compose stack" >&2
+    exit 1
+fi
 for forbidden in "docker build" "docker tag" "--source /var/lib/csb1-docker/hausv-org"; do
     if grep -qF -- "$forbidden" "$deploy_fixture_root/no_schema/commands.log"; then
         echo "FAIL no_schema: dry-run invoked mutating command '$forbidden'" >&2
@@ -118,6 +136,15 @@ for forbidden in "docker build" "docker tag"; do
     fi
 done
 fixture rollback_tag_conflict 1 "remote preflight failed" dry-run
+fixture lock_timeout 1 "remote preflight failed" dry-run
+fixture missing_rendered_compose 1 "remote preflight failed" dry-run
+fixture wrong_compose_identity 1 "remote preflight failed" dry-run
+fixture preflight_visible_drift 1 "remote preflight failed" dry-run
+fixture schema_snapshot_identity_drift 1 "fresh consistent pre-deploy snapshot failed" release
+if grep -qF -- "docker build" "$deploy_fixture_root/schema_snapshot_identity_drift/commands.log"; then
+    echo "FAIL schema_snapshot_identity_drift: build ran after snapshot identity changed" >&2
+    exit 1
+fi
 fixture schema_snapshot_fail 1 "fresh consistent pre-deploy snapshot failed" release
 if grep -qF -- "docker build" "$deploy_fixture_root/schema_snapshot_fail/commands.log"; then
     echo "FAIL schema_snapshot_fail: build ran without a recovery point" >&2
@@ -130,10 +157,32 @@ if ! contains_fail_fast_remote_command "$(cat "$deploy_fixture_root/schema_snaps
 fi
 
 fixture preserve_fail 1 "could not preserve the currently running image" release
+fixture preserve_identity_drift 1 "could not preserve the currently running image" release
+if grep -qF -- "docker build" "$deploy_fixture_root/preserve_identity_drift/commands.log"; then
+    echo "FAIL preserve_identity_drift: build ran after preflight image identity changed" >&2
+    exit 1
+fi
 fixture build_fail 1 "release image build failed" release
 fixture activation_fail 1 "image rollback command:" release
 if ! contains_fail_fast_remote_command "$(cat "$deploy_fixture_root/activation_fail/output.txt")"; then
     echo "FAIL activation_fail: rollback command is not fail-fast" >&2
+    exit 1
+fi
+fixture activation_lock_timeout 1 "activation lock was unavailable before retag" release
+if grep -qF -- "image rollback command:" \
+    "$deploy_fixture_root/activation_lock_timeout/output.txt"; then
+    echo "FAIL activation_lock_timeout: pre-mutation lock conflict suggested a rollback" >&2
+    exit 1
+fi
+fixture activation_identity_drift 1 "activation identity changed before retag" release
+if grep -qF -- "image rollback command:" \
+    "$deploy_fixture_root/activation_identity_drift/output.txt"; then
+    echo "FAIL activation_identity_drift: pre-mutation drift suggested a rollback" >&2
+    exit 1
+fi
+fixture activation_post_tag_raw_42 1 "image rollback command:" release
+if ! contains_fail_fast_remote_command "$(cat "$deploy_fixture_root/activation_post_tag_raw_42/output.txt")"; then
+    echo "FAIL activation_post_tag_raw_42: remapped post-tag failure omitted rollback" >&2
     exit 1
 fi
 fixture post_health_fail 1 "image rollback command:" release
