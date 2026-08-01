@@ -2465,6 +2465,16 @@ func TestAuditLogRecordsInviteAndGatesAccess(t *testing.T) {
 	if !strings.Contains(residentBody, "Interne Verwaltungsdetails bleiben geschützt") {
 		t.Fatalf("resident audit scope explanation missing:\n%s", residentBody)
 	}
+	// Ohne sichtbaren Vorgang trägt die Seite den gestalteten Leerzustand: er
+	// erklärt, was später hier steht, statt eine leere Fläche zu zeigen.
+	for _, want := range []string{"audit-blank", "Noch nichts im Verlauf", "Was festgehalten wird", "Ihre Anmeldungen"} {
+		if !strings.Contains(residentBody, want) {
+			t.Fatalf("resident audit empty state missing %q:\n%s", want, residentBody)
+		}
+	}
+	if strings.Contains(residentBody, "Zugänge &amp; Rollen") {
+		t.Fatalf("resident audit empty state must not describe management scope:\n%s", residentBody)
+	}
 }
 
 func TestDocumentUploadRecordsMetadataAndAudit(t *testing.T) {

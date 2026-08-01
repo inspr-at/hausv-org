@@ -1511,8 +1511,8 @@ const PageTemplates = `
     .filter-form label { margin: 0; }
     .audit-page { display: grid; gap: 18px; }
     .audit-page-head { display: grid; gap: 5px; max-width: 720px; }
-    .audit-panel { display: grid; gap: 14px; }
-    .audit-filter-panel { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); overflow: hidden; }
+    .audit-stream { min-width: 0; display: grid; gap: 14px; align-content: start; }
+    .audit-filter-panel { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
     .audit-filter-panel > summary { list-style: none; cursor: pointer; min-height: 54px; display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 10px 13px 10px 16px; color: var(--muted); }
     .audit-filter-panel > summary::-webkit-details-marker { display: none; }
     .audit-filter-panel > summary:hover, .audit-filter-panel > summary:focus-visible { background: var(--panel-soft); outline: 2px solid var(--gold); outline-offset: -2px; }
@@ -1530,27 +1530,31 @@ const PageTemplates = `
     .audit-filter-actions { display: flex; gap: 8px; align-items: center; }
     .audit-filter-actions .button { min-height: 42px; }
     .audit-active-filters { display: flex; gap: 8px; flex-wrap: wrap; }
-    .audit-timeline { display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); overflow: hidden; }
+    .audit-timeline { --audit-cols: 62px 14px minmax(0,1.35fr) minmax(0,.92fr) minmax(0,1.05fr) 18px; display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
+    .audit-columns { display: grid; grid-template-columns: var(--audit-cols); gap: 12px; padding: 9px 16px; border-bottom: 1px solid var(--line); background: rgba(251,248,240,.9); color: var(--soft); font-size: 10.5px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+    .audit-columns span:first-child { text-align: right; }
     .audit-day { margin: 0; padding: 12px 16px 9px; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .04em; background: rgba(251,248,240,.82); border-bottom: 1px solid var(--line); }
     .audit-event { border-bottom: 1px solid var(--line); }
     .audit-event:last-child { border-bottom: 0; }
     details.audit-event > summary { list-style: none; cursor: pointer; }
     details.audit-event > summary::-webkit-details-marker { display: none; }
     details.audit-event > summary:hover, details.audit-event > summary:focus-visible { background: var(--panel-soft); outline: 2px solid var(--gold); outline-offset: -2px; }
-    .audit-row { display: grid; grid-template-columns: 64px 14px minmax(0,1fr); gap: 12px; align-items: start; min-height: 72px; padding: 14px 16px; }
-    details.audit-event .audit-row { grid-template-columns: 64px 14px minmax(0,1fr) 18px; }
+    .audit-row { display: grid; grid-template-columns: var(--audit-cols); gap: 12px; align-items: start; min-height: 64px; padding: 13px 16px; }
     .audit-marker { position: relative; width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; background: var(--gold); box-shadow: 0 0 0 4px rgba(200,153,63,.13); }
     .audit-marker::after { content: ""; position: absolute; top: 14px; bottom: -65px; left: 4px; width: 1px; background: var(--line); }
     .audit-row.audit-add .audit-marker, .audit-event.audit-add .audit-marker { background: var(--leaf); box-shadow: 0 0 0 4px rgba(47,107,74,.11); }
     .audit-row.audit-danger .audit-marker, .audit-event.audit-danger .audit-marker { background: #9e2a2b; box-shadow: 0 0 0 4px rgba(158,42,43,.1); }
     .audit-time { color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
-    .audit-time strong { font-family: var(--font-serif); font-size: 17px; line-height: 1.1; }
-    .audit-main { min-width: 0; display: grid; gap: 5px; }
-    .audit-title { min-width: 0; font-size: 15px; line-height: 1.35; overflow-wrap: anywhere; }
-    .audit-context { color: var(--muted); font-size: 12.5px; line-height: 1.4; overflow-wrap: anywhere; }
+    .audit-time strong { font-family: var(--font-serif); font-size: 16px; line-height: 1.15; }
+    .audit-main { min-width: 0; display: grid; gap: 4px; }
+    .audit-title { min-width: 0; font-size: 14.5px; line-height: 1.35; overflow-wrap: anywhere; }
+    .audit-context { display: none; color: var(--muted); font-size: 12.5px; line-height: 1.4; overflow-wrap: anywhere; }
+    .audit-actor, .audit-object { min-width: 0; color: var(--muted); font-size: 12.5px; line-height: 1.4; overflow-wrap: anywhere; }
+    .audit-actor { color: var(--ink); font-weight: 650; }
+    .audit-empty-cell { color: var(--soft); }
     .audit-row-chevron { align-self: center; color: var(--gold-ink); font-size: 23px; line-height: 1; transition: transform .16s ease; }
     details.audit-event[open] .audit-row-chevron { transform: rotate(90deg); }
-    .audit-detail-list { display: grid; margin: -3px 16px 14px 106px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); overflow: hidden; }
+    .audit-detail-list { display: grid; margin: -3px 16px 14px 88px; border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--panel-soft); overflow: hidden; }
     .audit-detail-row { display: grid; grid-template-columns: minmax(110px,.42fr) minmax(0,1fr); gap: 12px; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 12px; }
     .audit-detail-row:last-child { border-bottom: 0; }
     .audit-detail-row dt { color: var(--muted); }
@@ -2780,23 +2784,23 @@ const PageTemplates = `
 	      .quick-row .entry-actions form .button { width: 100%; }
 	      .filter-form.audit-filter { grid-template-columns: 1fr; align-items: stretch; }
       .filter-form.audit-filter button, .filter-form.audit-filter .button { width: 100%; min-height: 42px; }
-      .audit-panel { padding: 14px; }
       .audit-filter-panel > summary { padding-left: 13px; }
       .audit-overview { gap: 6px; font-size: 12.5px; }
       .audit-overview strong { font-size: 13px; }
       .audit-filter-content-head { align-items: start; }
       .audit-filter-actions { display: grid; grid-template-columns: 1fr; }
       .audit-filter-actions .button { width: 100%; }
-      .audit-timeline { width: 100%; }
+      .audit-timeline { --audit-cols: 48px 10px minmax(0,1fr) 16px; width: 100%; }
+      .audit-columns { display: none; }
       .audit-day { padding: 11px 12px 8px; }
-      .audit-row { grid-template-columns: 48px 10px minmax(0,1fr); gap: 9px; min-height: 68px; padding: 12px; }
-      details.audit-event .audit-row { grid-template-columns: 48px 10px minmax(0,1fr) 16px; }
+      .audit-row { gap: 9px; min-height: 68px; padding: 12px; }
+      .audit-actor, .audit-object { display: none; }
       .audit-time { text-align: left; }
       .audit-time strong { font-size: 15.5px; }
       .audit-marker { width: 8px; height: 8px; margin-top: 5px; box-shadow: 0 0 0 3px rgba(200,153,63,.13); }
       .audit-marker::after { top: 11px; bottom: -64px; left: 3px; }
       .audit-title { font-size: 14px; }
-      .audit-context { font-size: 12px; }
+      .audit-context { display: block; font-size: 12px; }
       .audit-detail-list { margin: -2px 12px 12px 79px; }
       .audit-detail-row { grid-template-columns: 1fr; gap: 3px; }
 	      .document-page-head { align-items: flex-start; }
@@ -5913,6 +5917,9 @@ const PageTemplates = `
 {{define "settingsHub"}}
 {{template "appOpen" .}}
     <style>
+      /* Einstellungen sind eine Wegweiserfläche. Jeder Bereich sagt deshalb
+         nicht nur, was er tut, sondern auch, wer ihn ändern darf – dafür die
+         Marker rechts oben in jeder Sektion und die Legende in der Randspalte. */
       .settings-hub { display: grid; gap: 18px; }
       .settings-hub-head { display: grid; gap: 5px; }
       .settings-hub-head .lede { max-width: 620px; }
@@ -5923,11 +5930,17 @@ const PageTemplates = `
       .settings-account-copy h2 { font-size: 23px; overflow-wrap: anywhere; }
       .settings-account-copy p { margin-top: 3px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
       .settings-account .pill { justify-self: end; }
-      .settings-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; align-items: start; }
+      .settings-layout { display: grid; gap: 16px; align-items: start; }
+      .settings-sections { min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; align-items: stretch; }
+      .settings-aside { min-width: 0; display: grid; gap: 14px; align-content: start; }
       .settings-section { padding: 0; overflow: hidden; }
-      .settings-section-head { padding: 16px 18px 10px; }
+      .settings-section-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 12px; align-items: baseline; padding: 15px 18px 11px; }
       .settings-section-head h2 { font-size: 21px; }
-      .settings-section-head p { margin-top: 3px; color: var(--muted); font-size: 12.5px; }
+      .settings-section-head p { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .settings-tag { justify-self: end; display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 9px; background: rgba(47,107,74,.1); color: var(--leaf); font-size: 10.5px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
+      .settings-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+      .settings-tag.house { background: rgba(200,153,63,.16); color: var(--gold-ink); }
+      .settings-tag.read { background: #ece8de; color: var(--muted); }
       .settings-links { display: grid; }
       .settings-link { min-height: 76px; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding: 12px 17px; color: var(--ink); text-decoration: none; }
       .settings-link:hover { background: var(--panel-soft); }
@@ -5945,16 +5958,31 @@ const PageTemplates = `
       .settings-home-profile { grid-column: 1 / -1; }
       .settings-management .settings-links { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .settings-management .settings-link:nth-child(even) { border-left: 1px solid var(--line); }
+      .settings-note { display: grid; gap: 13px; padding: 20px; align-content: start; }
+      .settings-note .kicker { margin-bottom: 0; }
+      .settings-note h2 { font-size: 19px; }
+      .settings-note p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+      .settings-guide { display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; }
+      .settings-guide li { display: grid; gap: 5px; }
+      .settings-guide .settings-tag { justify-self: start; }
+      .settings-guide span { color: var(--muted); font-size: 12.6px; line-height: 1.45; }
+      @media (min-width: 1181px) {
+        .settings-layout { grid-template-columns: minmax(0,1fr) 316px; }
+      }
+      @media (max-width: 1180px) and (min-width: 761px) {
+        .settings-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; }
+      }
       @media (max-width: 760px) {
         .settings-hub { gap: 14px; }
         .settings-hub-head .lede { font-size: 15px; }
         .settings-account { grid-template-columns: 48px minmax(0,1fr); padding: 15px; }
         .settings-account-icon { width: 48px; height: 48px; }
         .settings-account .pill { grid-column: 2; justify-self: start; }
-        .settings-layout { grid-template-columns: 1fr; }
+        .settings-layout, .settings-sections { grid-template-columns: 1fr; gap: 13px; }
         .settings-management { grid-column: 1; }
         .settings-management .settings-links { grid-template-columns: 1fr; }
         .settings-management .settings-link:nth-child(even) { border-left: 0; }
+        .settings-note { padding: 16px; }
       }
     </style>
     <main class="app-main">
@@ -5971,9 +5999,11 @@ const PageTemplates = `
           <div class="settings-account-copy"><h2>{{.SettingsDisplayName}}</h2><p>{{.Email}}</p></div>
           <span class="pill">{{.Role}}</span>
         </section>
+        {{$mgmt := ""}}{{if .CanManageBuilding}}{{$mgmt = print $mgmt "bb"}}{{end}}{{if .CanManageUsers}}{{$mgmt = print $mgmt "uu"}}{{end}}{{if .CanManageDocuments}}{{$mgmt = print $mgmt "d"}}{{end}}{{if .CanManageHandovers}}{{$mgmt = print $mgmt "h"}}{{end}}{{if .CanViewAudit}}{{$mgmt = print $mgmt "a"}}{{end}}{{if .IsAdmin}}{{$mgmt = print $mgmt "p"}}{{end}}
         <div class="settings-layout">
+        <div class="settings-sections">
           {{if .CanManageHomeIdentity}}<section class="panel settings-section settings-home-profile">
-            <div class="settings-section-head"><h2>Mein Zuhause</h2><p>Anzeigename, Art und zugeordnete Wohnung.</p></div>
+            <div class="settings-section-head"><h2>Mein Zuhause</h2><span class="settings-tag">Nur Sie</span><p>Anzeigename, Art und zugeordnete Wohnung.</p></div>
             <div class="settings-links">
               <a class="settings-link" href="{{.SettingsHomeURL}}"{{if .HomeIdentity.HasDisplayName}} data-home-identity="settings" aria-label="{{.HomeIdentity.AriaLabel}} bearbeiten"{{end}}>
                 <span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/></svg></span>
@@ -5986,7 +6016,7 @@ const PageTemplates = `
             </div>
           </section>{{end}}
           <section class="panel settings-section">
-            <div class="settings-section-head"><h2>Mein Konto</h2><p>Persönliche Angaben und Erreichbarkeit.</p></div>
+            <div class="settings-section-head"><h2>Mein Konto</h2><span class="settings-tag">Nur Sie</span><p>Persönliche Angaben und Erreichbarkeit. Sichtbar wird davon nur, was Sie freigeben.</p></div>
             <div class="settings-links">
               <a class="settings-link" href="/app/settings/profile">
                 <span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg></span>
@@ -5995,7 +6025,7 @@ const PageTemplates = `
             </div>
           </section>
           <section class="panel settings-section">
-            <div class="settings-section-head"><h2>Kommunikation</h2><p>Was automatisch bei Ihnen ankommt.</p></div>
+            <div class="settings-section-head"><h2>Kommunikation</h2><span class="settings-tag">Nur Sie</span><p>Was automatisch bei Ihnen ankommt. Gilt allein für Ihr Postfach.</p></div>
             <div class="settings-links">
               <a class="settings-link" href="/app/settings/notifications">
                 <span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span>
@@ -6008,8 +6038,8 @@ const PageTemplates = `
             </div>
           </section>
           {{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .CanViewAudit .IsAdmin}}
-          <section class="panel settings-section settings-management">
-            <div class="settings-section-head">{{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .IsAdmin}}<h2>Verwaltung</h2><p>Nur Bereiche, für die Sie berechtigt sind.</p>{{else}}<h2>Verlauf</h2><p>Eigene Änderungen nachvollziehen.</p>{{end}}</div>
+          <section class="panel settings-section{{if gt (len $mgmt) 1}} settings-management{{end}}">
+            <div class="settings-section-head">{{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .IsAdmin}}<h2>Verwaltung</h2><span class="settings-tag house">Verwaltungsrechte</span><p>Nur Bereiche, für die Sie berechtigt sind. Änderungen wirken für das ganze Haus.</p>{{else}}<h2>Verlauf</h2><span class="settings-tag read">Nur lesen</span><p>Eigene Änderungen nachvollziehen. Es wird nichts verändert.</p>{{end}}</div>
             <div class="settings-links">
               {{if .CanManageBuilding}}<a class="settings-link" href="/app/settings/building"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/></svg></span><span class="settings-link-copy"><strong>Gebäude &amp; Einheiten</strong><span>Hausdaten und Einheiten pflegen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
               {{if .CanManageUsers}}<a class="settings-link" href="/app/settings/users"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/></svg></span><span class="settings-link-copy"><strong>Benutzer &amp; Rechte</strong><span>Einladungen und Rollen verwalten</span></span><span class="settings-link-arrow">›</span></a>
@@ -6022,6 +6052,28 @@ const PageTemplates = `
             </div>
           </section>
           {{end}}
+        </div>
+        <aside class="settings-aside" aria-label="Hinweise zu den Einstellungen">
+          <section class="panel compact settings-note" aria-labelledby="settings-guide-title">
+            <div>
+              <div class="kicker">Wegweiser</div>
+              <h2 id="settings-guide-title">Wer darf was ändern?</h2>
+            </div>
+            <ul class="settings-guide">
+              <li><span class="settings-tag">Nur Sie</span><span>Wirkt allein auf Ihren Zugang. Andere im Haus merken davon nichts, solange Sie nichts freigeben.</span></li>
+              {{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .IsAdmin}}<li><span class="settings-tag house">Verwaltungsrechte</span><span>Gilt für die ganze Liegenschaft. Jede Änderung wird im Verlauf festgehalten.</span></li>{{end}}
+              {{if and .CanViewAudit (not (or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .IsAdmin))}}<li><span class="settings-tag read">Nur lesen</span><span>Reine Ansicht zum Nachvollziehen. Hier lässt sich nichts verändern.</span></li>{{end}}
+            </ul>
+          </section>
+          <section class="panel compact settings-note" aria-labelledby="settings-role-title">
+            <div>
+              <div class="kicker">Ihr Zugang</div>
+              <h2 id="settings-role-title">Rolle: {{.Role}}</h2>
+            </div>
+            <p>Diese Übersicht zeigt ausschließlich Bereiche, für die Ihr Zugang berechtigt ist. Fehlt ein Bereich, fehlt die Berechtigung – nicht die Funktion.</p>
+            <p>Rollen und Zugänge vergibt die Hausverwaltung.</p>
+          </section>
+        </aside>
         </div>
       </section>
     </main>
@@ -6244,7 +6296,81 @@ const PageTemplates = `
 
 {{define "auditLog"}}
 {{template "appOpen" .}}
-    <main class="app-main">
+    <style>
+      /* Der Verlauf ist eine Nachweisfläche: Dichte und Lesbarkeit gehen vor
+         Gestaltung. Auf breiten Schirmen stehen Zeit, Vorgang, Person und Objekt
+         in eigenen Spalten; darunter fällt die Zeile auf eine Kompaktform mit
+         einer Kontextzeile zurück. Der leere Zustand ist der Normalfall eines
+         neuen Hauses und deshalb ein eigener Bereich statt eines Kastens. */
+      .audit-screen .audit-notes { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px 26px; margin: 4px 0 0; padding: 0; list-style: none; }
+      .audit-screen .audit-notes > li { display: grid; gap: 9px; align-content: start; border-top: 2px solid var(--ink); padding-top: 12px; }
+      .audit-screen .audit-notes h2 { font-family: var(--font-sans); font-size: 11.5px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; color: var(--gold-ink); }
+      .audit-screen .audit-notes p { color: var(--muted); font-size: 12.6px; line-height: 1.5; }
+      .audit-screen .audit-legend { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; }
+      .audit-screen .audit-legend li { display: grid; grid-template-columns: 10px minmax(0,1fr); gap: 11px; align-items: start; }
+      .audit-screen .audit-legend i { margin-top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); }
+      .audit-screen .audit-legend i.add { background: var(--leaf); }
+      .audit-screen .audit-legend i.danger { background: #9e2a2b; }
+      .audit-screen .audit-legend strong { display: block; font-size: 13.5px; line-height: 1.25; }
+      .audit-screen .audit-legend span { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.42; }
+      .audit-screen .audit-facts { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+      .audit-screen .audit-facts li { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 9px; }
+      .audit-screen .audit-facts li:first-child { border-top: 0; padding-top: 0; }
+      .audit-screen .audit-facts strong { font-size: 13.5px; }
+      .audit-screen .audit-facts span { color: var(--muted); font-size: 12.5px; line-height: 1.42; }
+      .audit-screen .audit-links { display: grid; }
+      .audit-screen .audit-link { min-height: 44px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding: 9px 0; color: inherit; text-decoration: none; }
+      .audit-screen .audit-link:first-child { border-top: 0; padding-top: 0; }
+      .audit-screen .audit-link strong { display: block; font-size: 13.5px; }
+      .audit-screen .audit-link small { display: block; margin-top: 2px; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+      .audit-screen .audit-link::after { content: "\203A"; color: var(--gold-ink); font-size: 21px; line-height: 1; }
+      .audit-screen .audit-link:hover strong { color: var(--gold-ink); }
+      .audit-screen .audit-blank { display: grid; grid-template-columns: minmax(0,1.42fr) minmax(272px,.88fr); gap: 16px; }
+      .audit-screen .audit-blank-main { display: grid; align-content: center; gap: 20px; border: 1px dashed rgba(200,153,63,.45); border-radius: var(--radius-sm); background: rgba(255,254,251,.7); padding: clamp(22px,3.2vw,36px); }
+      .audit-screen .audit-blank-lead { display: grid; justify-items: start; gap: 13px; }
+      .audit-screen .audit-blank-icon { width: 52px; height: 52px; display: grid; place-items: center; border: 1px solid rgba(200,153,63,.3); border-radius: 12px; background: rgba(200,153,63,.1); color: var(--gold-ink); }
+      .audit-screen .audit-blank-icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+      .audit-screen .audit-blank-main h2 { font-size: clamp(25px,3vw,31px); }
+      .audit-screen .audit-blank-main p { max-width: 54ch; color: var(--muted); font-size: 15px; line-height: 1.55; }
+      .audit-screen .audit-blank-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 3px; }
+      .audit-screen .audit-blank-actions .button { min-height: 44px; }
+      .audit-screen .audit-blank-side { display: grid; align-content: start; gap: 13px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); padding: 20px; box-shadow: var(--shadow-panel); }
+      .audit-screen .audit-blank-side h2 { font-family: var(--font-sans); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-ink); }
+      .audit-screen .audit-blank-notes { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+      .audit-screen .audit-blank-notes li { display: grid; gap: 5px; border-top: 2px solid var(--ink); padding-top: 11px; }
+      .audit-screen .audit-blank-notes strong { font-size: 13.5px; }
+      .audit-screen .audit-blank-notes span { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+      .audit-screen .audit-no-result { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: center; border: 1px dashed rgba(200,153,63,.45); border-radius: var(--radius-sm); background: rgba(255,254,251,.7); padding: 26px 22px; }
+      .audit-screen .audit-no-result h3 { font-size: 19px; }
+      .audit-screen .audit-no-result .button { min-height: 44px; }
+      .audit-screen .audit-result-note { margin-top: 5px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+      @media (min-width: 901px) {
+        .audit-screen .audit-blank { min-height: max(420px, calc(100vh - 348px)); grid-template-rows: minmax(0,1fr) auto; }
+      }
+      /* Tablet: die Seitenleiste ist eingeklappt, die volle Breite steht der
+         Tabelle zur Verfügung – Spalten bleiben deshalb bis 620px erhalten. */
+      @media (min-width: 621px) and (max-width: 900px) {
+        .audit-screen .audit-timeline { --audit-cols: 56px 12px minmax(0,1.3fr) minmax(0,.95fr) minmax(0,1fr) 16px; }
+        .audit-screen .audit-columns { display: grid; }
+        .audit-screen .audit-actor, .audit-screen .audit-object { display: block; }
+        .audit-screen .audit-context { display: none; }
+      }
+      @media (max-width: 900px) {
+        .audit-screen .audit-notes, .audit-screen .audit-blank { grid-template-columns: minmax(0,1fr); gap: 13px; }
+        .audit-screen .audit-notes > li { padding-top: 11px; }
+        .audit-screen .audit-blank-main { padding: 24px 18px; }
+        .audit-screen .audit-blank-notes { grid-template-columns: minmax(0,1fr); gap: 12px; }
+        .audit-screen .audit-blank-side { padding: 16px; }
+        .audit-screen .audit-no-result { grid-template-columns: minmax(0,1fr); padding: 22px 16px; }
+        .audit-screen .audit-no-result .button { width: 100%; justify-content: center; }
+        .audit-screen .content-top .page-actions .button { min-height: 44px; }
+      }
+      @media (max-width: 560px) {
+        .audit-screen .audit-blank-actions { display: grid; }
+        .audit-screen .audit-blank-actions .button { width: 100%; justify-content: center; }
+      }
+    </style>
+    <main class="app-main audit-screen">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>/</span><span>Verlauf</span></span>
         {{if .CanUseResidentAreas}}<div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>{{end}}
@@ -6254,8 +6380,9 @@ const PageTemplates = `
           <h1>{{.AuditPageTitle}}</h1>
           <p class="lede">{{.AuditLede}}</p>
         </div>
-        <section class="panel audit-panel">
-          {{if .HasAnyEvents}}<details class="audit-filter-panel"{{if .AuditStats.HasActiveFilters}} open{{end}}>
+        {{if .HasAnyEvents}}
+        <div class="audit-stream">
+          <details class="audit-filter-panel"{{if .AuditStats.HasActiveFilters}} open{{end}}>
             <summary>
               <span class="audit-overview"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/><path d="M2.5 7h.01M2.5 12h.01M2.5 17h.01"/></svg><strong>{{.AuditStats.TotalEvents}} {{if eq .AuditStats.TotalEvents 1}}Eintrag{{else}}Einträge{{end}}</strong><span>· {{.AuditStats.TodayCount}} heute</span></span>
               <span class="audit-filter-trigger"><svg viewBox="0 0 24 24"><path d="M4 5h16l-6 7v6l-4 2v-8z"/></svg>Filtern{{if .AuditStats.HasActiveFilters}} <span class="chip">{{len .AuditStats.ActiveFilters}}</span>{{end}}</span>
@@ -6280,9 +6407,10 @@ const PageTemplates = `
                 <div class="audit-filter-actions"><a class="button ghost" href="/app/audit">Filter zurücksetzen</a></div>
               {{end}}
             </div>
-          </details>{{end}}
+          </details>
           {{if .HasEvents}}
             <div class="audit-timeline" aria-label="Aktivitätsverlauf">
+              <div class="audit-columns" aria-hidden="true"><span>Zeit</span><span></span><span>Vorgang</span><span>Person</span><span>Objekt</span><span></span></div>
               {{range .Events}}
                 {{if .ShowDateHeader}}<h2 class="audit-day">{{.DateHeader}}</h2>{{end}}
                 {{if .HasDetails}}
@@ -6291,6 +6419,8 @@ const PageTemplates = `
                       <time class="audit-time" datetime="{{.AtISO}}" aria-label="{{.At}}"><strong>{{.AtTime}}</strong></time>
                       <span class="audit-marker" aria-label="{{.ToneLabel}}"></span>
                       <span class="audit-main"><strong class="audit-title">{{.DisplayTitle}}</strong>{{if .HasContext}}<span class="audit-context">{{.Context}}</span>{{end}}</span>
+                      <span class="audit-actor">{{if .ActorLabel}}{{.ActorLabel}}{{else}}<span class="audit-empty-cell">–</span>{{end}}</span>
+                      <span class="audit-object">{{if .HasObject}}{{.ObjectLabel}}{{else}}<span class="audit-empty-cell">–</span>{{end}}</span>
                       <span class="audit-row-chevron" aria-hidden="true">›</span><span class="sr-only">Details zu {{.DisplayTitle}}</span>
                     </summary>
                     <dl class="audit-detail-list">{{range .Details}}<div class="audit-detail-row"><dt>{{.Key}}</dt><dd>{{.Value}}</dd></div>{{end}}</dl>
@@ -6300,14 +6430,89 @@ const PageTemplates = `
                     <time class="audit-time" datetime="{{.AtISO}}" aria-label="{{.At}}"><strong>{{.AtTime}}</strong></time>
                     <span class="audit-marker" aria-label="{{.ToneLabel}}"></span>
                     <span class="audit-main"><strong class="audit-title">{{.DisplayTitle}}</strong>{{if .HasContext}}<span class="audit-context">{{.Context}}</span>{{end}}</span>
+                    <span class="audit-actor">{{if .ActorLabel}}{{.ActorLabel}}{{else}}<span class="audit-empty-cell">–</span>{{end}}</span>
+                    <span class="audit-object">{{if .HasObject}}{{.ObjectLabel}}{{else}}<span class="audit-empty-cell">–</span>{{end}}</span>
                   </article>
                 {{end}}
               {{end}}
             </div>
           {{else}}
-            {{template "emptyState" .EventsEmpty}}
+            <div class="audit-no-result">
+              <div>
+                <h3>Kein Eintrag passt zu dieser Auswahl</h3>
+                <p class="audit-result-note">Wählen Sie eine andere Art der Änderung oder einen anderen Suchbegriff.</p>
+              </div>
+              <a class="button" href="/app/audit">Filter zurücksetzen</a>
+            </div>
           {{end}}
+        </div>
+        <ul class="audit-notes">
+          <li>
+            <h2>Lesehilfe</h2>
+            <ul class="audit-legend">
+              <li><i class="add" aria-hidden="true"></i><div><strong>Angelegt</strong><span>Ein Eintrag, eine Freigabe oder ein Zugang ist neu entstanden.</span></div></li>
+              <li><i aria-hidden="true"></i><div><strong>Geändert oder angesehen</strong><span>Bestehendes wurde bearbeitet, geöffnet oder heruntergeladen.</span></div></li>
+              <li><i class="danger" aria-hidden="true"></i><div><strong>Entfernt</strong><span>Etwas wurde gelöscht oder ein Zugriff wurde entzogen.</span></div></li>
+            </ul>
+            <p>Zeitangaben in Ortszeit. Zeilen mit Pfeil lassen sich für die technischen Details aufklappen.</p>
+          </li>
+          <li>
+            <h2>Umfang</h2>
+            <ul class="audit-facts">
+              {{if .AuditIsFull}}
+                <li><strong>Ganzes Haus</strong><span>Änderungen und Zugriffe aller Zugänge dieser Liegenschaft.</span></li>
+                <li><strong>Bis zu 500 Einträge</strong><span>Angezeigt werden die jüngsten Vorgänge, neueste zuerst.</span></li>
+              {{else}}
+                <li><strong>Ihr Ausschnitt</strong><span>Eigene Vorgänge und alles, worauf Sie aktuell Zugriff haben.</span></li>
+                <li><strong>Folgt der Berechtigung</strong><span>Endet ein Zugriff, verschwindet der zugehörige Verlauf hier ebenfalls.</span></li>
+              {{end}}
+              <li><strong>Unveränderlich</strong><span>Einträge lassen sich hier weder bearbeiten noch löschen.</span></li>
+            </ul>
+          </li>
+          {{if .CanUseResidentAreas}}<li>
+            <h2>Weiter im Portal</h2>
+            <div class="audit-links">
+              {{if .CanManageUsers}}<a class="audit-link" href="/app/settings/users"><span><strong>Benutzer &amp; Rechte</strong><small>Rollen prüfen und Zugänge deaktivieren.</small></span></a>{{end}}
+              <a class="audit-link" href="/app/settings"><span><strong>Einstellungen</strong><small>Konto, Kommunikation und Verwaltungsbereiche.</small></span></a>
+            </div>
+          </li>{{end}}
+        </ul>
+        {{else}}
+        <section class="audit-blank" aria-labelledby="audit-blank-title">
+          <div class="audit-blank-main">
+            <div class="audit-blank-lead">
+              <span class="audit-blank-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h5"/><circle cx="14.5" cy="15.5" r="3"/><path d="m16.8 17.8 2.4 2.4"/></svg></span>
+              <h2 id="audit-blank-title">{{.EventsEmpty.Title}}</h2>
+              {{if .AuditIsFull}}<p>Sobald jemand sich anmeldet, eine Unterlage öffnet, eine Rolle ändert oder ein Anliegen bearbeitet, steht der Vorgang hier mit Zeitpunkt, Person und Objekt. Der Verlauf ist die Nachweisspur des Hauses und lässt sich nicht nachträglich ändern.</p>{{else}}<p>Sobald Sie sich anmelden, eine Unterlage öffnen oder ein Anliegen bearbeiten, steht der Vorgang hier mit Zeitpunkt und Objekt. Sie sehen ausschließlich Ihren eigenen Ausschnitt.</p>{{end}}
+            </div>
+            {{if .CanUseResidentAreas}}<div class="audit-blank-actions">
+              {{if .CanManageUsers}}<a class="button primary" href="/app/settings/users">Benutzer &amp; Rechte</a>{{end}}
+              <a class="button" href="/app/settings">Zu den Einstellungen</a>
+            </div>{{end}}
+          </div>
+          <aside class="audit-blank-side" aria-labelledby="audit-blank-side-title">
+            <h2 id="audit-blank-side-title">Was festgehalten wird</h2>
+            <ul class="audit-facts">
+              {{if .AuditIsFull}}
+                <li><strong>Anmeldungen</strong><span>Wer sich wann und mit welchem Verfahren angemeldet hat.</span></li>
+                <li><strong>Zugänge &amp; Rollen</strong><span>Einladungen, Rollenwechsel und entzogene Berechtigungen.</span></li>
+                <li><strong>Unterlagen</strong><span>Hochladen, Ersetzen, Ansehen und Herunterladen von Dokumenten.</span></li>
+                <li><strong>Entscheidungen</strong><span>Abstimmungen, Anliegen, Termine und Übergaben.</span></li>
+                <li><strong>Hausdaten</strong><span>Änderungen an Gebäude, Einheiten und Zahlungsstatus.</span></li>
+              {{else}}
+                <li><strong>Ihre Anmeldungen</strong><span>Zeitpunkt und Verfahren jeder Anmeldung mit Ihrem Zugang.</span></li>
+                <li><strong>Ihre Vorgänge</strong><span>Anliegen, Nachrichten und Unterlagen, die Sie betreffen.</span></li>
+                <li><strong>Freigaben</strong><span>Was für Sie freigegeben oder wieder entzogen wurde.</span></li>
+              {{end}}
+            </ul>
+          </aside>
+          <ul class="audit-blank-notes">
+            <li><strong>Unveränderlich</strong><span>Einträge werden angehängt, nie überschrieben. Auch die Verwaltung kann sie hier nicht entfernen.</span></li>
+            <li><strong>Sparsam</strong><span>Festgehalten wird der Vorgang selbst – Zeitpunkt, Person, Objekt –, nicht der Inhalt.</span></li>
+            <li><strong>Durchsuchbar</strong><span>Ab dem ersten Eintrag stehen Filter nach Art der Änderung und die Suche bereit.</span></li>
+          </ul>
         </section>
+        {{end}}
       </section>
     </main>
 {{template "appClose" .}}
@@ -6976,10 +7181,15 @@ const PageTemplates = `
 {{define "profileSettings"}}
 {{template "appOpen" .}}
     <style>
+      /* Profil: links das Formular, rechts die Folgen. Was gespeichert wird und
+         wer es zu sehen bekommt, steht dadurch neben dem Feld – nicht hinter
+         einem zugeklappten Abschnitt am Seitenende. */
       .profile { display: grid; gap: 18px; }
       .profile .profile-head { display: flex; justify-content: space-between; gap: 18px; align-items: end; }
-      .profile .profile-head .lede { margin-top: 4px; }
-      .profile .settings-card { max-width: 820px; display: grid; gap: 0; padding: 0; overflow: hidden; }
+      .profile .profile-head .lede { margin-top: 4px; max-width: 640px; }
+      .profile .profile-layout { display: grid; gap: 16px; align-items: start; }
+      .profile .profile-col, .profile .profile-aside { min-width: 0; display: grid; gap: 14px; align-content: start; }
+      .profile .settings-card { display: grid; gap: 0; padding: 0; overflow: hidden; }
       .profile .profile-flash { margin: 0; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
       .profile .profile-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
       .profile .profile-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
@@ -7000,23 +7210,51 @@ const PageTemplates = `
       .profile .directory-check small { color: var(--muted); font-size: 12.5px; font-weight: 500; line-height: 1.4; }
       .profile .profile-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 15px 18px; background: rgba(247,243,234,.55); }
       .profile .profile-cancel { color: var(--muted); font-size: 13px; font-weight: 750; }
-      .profile .account-details { max-width: 820px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); overflow: hidden; }
-      .profile .account-details > summary { min-height: 56px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 16px; cursor: pointer; color: var(--ink); font-weight: 850; }
-      .profile .account-details > summary span { color: var(--muted); font-size: 12px; font-weight: 600; }
-      .profile .readonly-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; padding: 0 16px 16px; }
-      .profile .readonly-box { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--panel-soft); display: grid; align-content: start; gap: 7px; min-width: 0; }
+      .profile .account-details { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
+      .profile .account-details > summary { min-height: 56px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 12px; align-items: baseline; padding: 15px 18px 11px; cursor: pointer; color: var(--ink); list-style: none; }
+      .profile .account-details > summary::-webkit-details-marker { display: none; }
+      .profile .account-details > summary strong { font-family: var(--font-serif); font-size: 19px; font-weight: 700; }
+      .profile .account-details > summary::after { content: "\203A"; grid-column: 2; grid-row: 1; justify-self: end; color: var(--gold-ink); font-size: 21px; line-height: 1; transform: rotate(90deg); }
+      .profile .account-details:not([open]) > summary::after { transform: none; }
+      .profile .account-details > summary span { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; font-weight: 500; line-height: 1.4; }
+      .profile .readonly-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px 18px; padding: 0 18px 18px; }
+      .profile .readonly-box { display: grid; align-content: start; gap: 6px; min-width: 0; border-top: 1px solid var(--line); padding-top: 11px; }
       .profile .readonly-box strong { font-family: var(--font-serif); font-size: 17px; overflow-wrap: anywhere; }
+      .profile .readonly-box .muted { font-size: 13px; }
       .profile .chips { display: flex; flex-wrap: wrap; gap: 6px; }
       .profile .chip { display: inline-flex; align-items: center; border: 1px solid var(--line); background: var(--panel); color: #6f6a5c; border-radius: 8px; padding: 4px 10px; font-size: 12.5px; font-weight: 700; }
       .profile .unit-list { display: grid; gap: 8px; }
       .profile .unit-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding-top: 8px; }
       .profile .unit-row:first-child { border-top: 0; padding-top: 0; }
+      .profile .profile-note { display: grid; gap: 13px; padding: 20px; align-content: start; }
+      .profile .profile-note .kicker { margin-bottom: 0; }
+      .profile .profile-note h2 { font-size: 19px; }
+      .profile .profile-note p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+      .profile .profile-visibility { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; }
+      .profile .profile-visibility li { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 10px; }
+      .profile .profile-visibility li:first-child { border-top: 0; padding-top: 0; }
+      .profile .profile-visibility strong { font-size: 13.5px; }
+      .profile .profile-visibility span { color: var(--muted); font-size: 12.6px; line-height: 1.45; }
+      .profile .profile-note-link { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; color: var(--gold-ink); font-size: 13.5px; font-weight: 800; }
+      .profile .profile-note-link::after { content: "\203A"; font-size: 19px; line-height: 1; }
+      @media (min-width: 1181px) {
+        .profile .profile-layout { grid-template-columns: minmax(0,1fr) 336px; }
+        .profile .readonly-grid { grid-template-columns: minmax(0,1fr); }
+      }
+      @media (max-width: 1180px) and (min-width: 861px) {
+        .profile .profile-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; }
+      }
+      @media (max-width: 860px) {
+        .profile .readonly-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      }
       @media (max-width: 680px) {
         .profile .profile-head { display: grid; gap: 8px; }
         .profile .profile-fields, .profile .profile-contact-fields, .profile .readonly-grid { grid-template-columns: 1fr; }
-        .profile .profile-actions { display: grid; grid-template-columns: 1fr; padding: 12px 18px; }
-        .profile .profile-actions .button { width: 100%; }
-        .profile .profile-cancel { text-align: center; }
+        .profile .profile-actions { display: grid; grid-template-columns: 1fr; gap: 6px; padding: 12px 18px; }
+        .profile .profile-actions .button { width: 100%; min-height: 46px; }
+        .profile .profile-cancel { min-height: 44px; display: grid; place-items: center; text-align: center; }
+        .profile .profile-note { padding: 16px; }
+        .app-main .content-top .page-actions .button { min-height: 44px; }
       }
     </style>
     <main class="app-main">
@@ -7026,8 +7264,10 @@ const PageTemplates = `
       </div>
       <section class="page profile">
         <div class="profile-head">
-          <div><h1>Profil</h1><p class="lede">Ihre Angaben und Sichtbarkeit.</p></div>
+          <div><h1>Profil</h1><p class="lede">Ihre Angaben und Sichtbarkeit. Änderungen gelten nur für Ihren Zugang.</p></div>
         </div>
+        <div class="profile-layout">
+        <div class="profile-col">
         <section class="panel settings-card">
           {{if .ProfileMsg}}<p class="profile-flash{{if .ProfileOK}} ok{{else}} warn{{end}}">{{.ProfileMsg}}</p>{{end}}
           <form class="profile-form" method="post" action="/app/settings/profile">
@@ -7053,32 +7293,49 @@ const PageTemplates = `
             </div>
           </form>
         </section>
-        <details class="account-details">
-          <summary>Konto &amp; Berechtigungen <span>Rolle, Anmeldung und Einheiten</span></summary>
-          <div class="readonly-grid">
-            <div class="readonly-box">
-              <span class="field-label">Rolle</span>
-              <strong>{{.Role}}</strong>
-              <div class="chips">{{range .PermissionList}}<span class="chip">{{.}}</span>{{end}}</div>
+        </div>
+        <aside class="profile-aside" aria-label="Wirkung Ihrer Angaben">
+          <section class="panel compact profile-note" aria-labelledby="profile-visibility-title">
+            <div>
+              <div class="kicker">Sichtbarkeit</div>
+              <h2 id="profile-visibility-title">Wer sieht welche Angabe?</h2>
             </div>
-            <div class="readonly-box">
-              <span class="field-label">Anmeldung</span>
-              <div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div>
+            <ul class="profile-visibility">
+              <li><strong>Name</strong><span>Steht an Ihren Beiträgen, Anliegen und Stimmabgaben. Für die Hausgemeinschaft immer sichtbar.</span></li>
+              <li><strong>E-Mail-Adresse</strong><span>Ihre Anmeldung. Sie bleibt unverändert und ist außerhalb der Verwaltung nur sichtbar, wenn Sie das Verzeichnis freigeben.</span></li>
+              <li><strong>Telefon</strong><span>Freiwillig. Wird ausschließlich mit der Freigabe für das Kontakte-Verzeichnis sichtbar.</span></li>
+              <li><strong>Verzeichniseintrag</strong><span>{{if .Profile.DirectoryOptIn}}Derzeit freigegeben – Ihr Eintrag steht unter Kontakte.{{else}}Derzeit nicht freigegeben – Ihr Eintrag fehlt unter Kontakte.{{end}} Sie können das jederzeit zurücknehmen.</span></li>
+            </ul>
+            <a class="profile-note-link" href="/app/kontakte">Kontakte ansehen</a>
+          </section>
+          <details class="account-details" open>
+            <summary><strong>Konto &amp; Berechtigungen</strong><span>Rolle, Anmeldung und Einheiten. Diese Angaben vergibt die Hausverwaltung.</span></summary>
+            <div class="readonly-grid">
+              <div class="readonly-box">
+                <span class="field-label">Rolle</span>
+                <strong>{{.Role}}</strong>
+                <div class="chips">{{range .PermissionList}}<span class="chip">{{.}}</span>{{end}}</div>
+              </div>
+              <div class="readonly-box">
+                <span class="field-label">Anmeldung</span>
+                <div class="chips">{{range .AuthList}}<span class="chip">{{.}}</span>{{end}}</div>
+              </div>
+              <div class="readonly-box">
+                <span class="field-label">Einheiten</span>
+                {{if .HasUnits}}
+                  <div class="unit-list">
+                    {{range .Units}}
+                      <div class="unit-row"><span><strong>{{.Label}}</strong><span class="mini">{{.Relation}}</span></span><span class="chip">{{.Share}}</span></div>
+                    {{end}}
+                  </div>
+                {{else}}
+                  <p class="muted">Keine Einheit verknüpft.</p>
+                {{end}}
+              </div>
             </div>
-            <div class="readonly-box">
-              <span class="field-label">Einheiten</span>
-              {{if .HasUnits}}
-                <div class="unit-list">
-                  {{range .Units}}
-                    <div class="unit-row"><span><strong>{{.Label}}</strong><span class="mini">{{.Relation}}</span></span><span class="chip">{{.Share}}</span></div>
-                  {{end}}
-                </div>
-              {{else}}
-                <p class="muted">Keine Einheit verknüpft.</p>
-              {{end}}
-            </div>
-          </div>
-        </details>
+          </details>
+        </aside>
+        </div>
       </section>
     </main>
 {{template "appClose" .}}
@@ -7089,7 +7346,10 @@ const PageTemplates = `
     <style>
       .notifications { display: grid; gap: 18px; }
       .notifications .notification-head { display: grid; gap: 5px; }
-      .notifications .settings-card { max-width: 820px; display: grid; gap: 14px; }
+      .notifications .notification-head .lede { max-width: 640px; }
+      .notifications .notification-layout { display: grid; gap: 16px; align-items: start; }
+      .notifications .notification-col, .notifications .notification-aside { min-width: 0; display: grid; gap: 14px; align-content: start; }
+      .notifications .settings-card { display: grid; gap: 14px; }
       .notifications .notify-flash { margin: 0; padding: 10px 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
       .notifications .notify-flash.ok { background: rgba(47,107,74,.12); color: var(--leaf); border-color: rgba(47,107,74,.25); }
       .notifications .notify-flash.warn { background: rgba(150,40,40,.08); color: #9a2b2b; border-color: rgba(150,40,40,.22); }
@@ -7123,15 +7383,37 @@ const PageTemplates = `
       .notifications .email-paused .notification-paused-note { display: block; }
       .notifications .actions { display: flex; justify-content: flex-end; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 14px; }
       .notifications .actions a { color: var(--muted); font-size: 13px; font-weight: 750; }
+      .notifications .notification-note { display: grid; gap: 13px; padding: 20px; align-content: start; }
+      .notifications .notification-note .kicker { margin-bottom: 0; }
+      .notifications .notification-note h2 { font-size: 19px; }
+      .notifications .notification-note p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+      .notifications .notification-address { display: grid; gap: 3px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 11px 13px; background: var(--panel-soft); }
+      .notifications .notification-address span { color: var(--gold-ink); font-size: 10.5px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+      .notifications .notification-address strong { font-size: 14px; overflow-wrap: anywhere; }
+      .notifications .notification-rules { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; }
+      .notifications .notification-rules li { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 10px; }
+      .notifications .notification-rules li:first-child { border-top: 0; padding-top: 0; }
+      .notifications .notification-rules strong { font-size: 13.5px; }
+      .notifications .notification-rules span { color: var(--muted); font-size: 12.6px; line-height: 1.45; }
+      .notifications .notification-note-link { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; color: var(--gold-ink); font-size: 13.5px; font-weight: 800; }
+      .notifications .notification-note-link::after { content: "\203A"; font-size: 19px; line-height: 1; }
+      @media (min-width: 1181px) {
+        .notifications .notification-layout { grid-template-columns: minmax(0,1fr) 336px; }
+      }
+      @media (max-width: 1180px) and (min-width: 861px) {
+        .notifications .notification-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; }
+      }
       @media (max-width: 680px) {
+        .notifications .notification-note { padding: 16px; }
         .notifications .settings-card { padding: 14px; }
         .notifications .notification-master { grid-template-columns: 42px minmax(0,1fr) auto; padding: 12px; }
         .notifications .notification-master-icon { width: 42px; height: 42px; }
         .notifications .notification-master-copy strong { font-size: 17px; }
         .notifications .notification-topics-head { align-items: start; }
-        .notifications .actions { display: grid; grid-template-columns: 1fr; padding: 12px 0 0; }
-        .notifications .actions .button { width: 100%; }
-        .notifications .actions a { text-align: center; }
+        .notifications .actions { display: grid; grid-template-columns: 1fr; gap: 6px; padding: 12px 0 0; }
+        .notifications .actions .button { width: 100%; min-height: 46px; }
+        .notifications .actions a { min-height: 44px; display: grid; place-items: center; text-align: center; }
+        .app-main .content-top .page-actions .button { min-height: 44px; }
       }
     </style>
     <main class="app-main">
@@ -7142,8 +7424,10 @@ const PageTemplates = `
       <section class="page notifications">
         <div class="notification-head">
           <h1>Benachrichtigungen</h1>
-          <p class="lede">Festlegen, welche E-Mails Sie erhalten möchten.</p>
+          <p class="lede">Festlegen, welche E-Mails Sie erhalten möchten. Die Auswahl gilt nur für Ihr Postfach.</p>
         </div>
+        <div class="notification-layout">
+        <div class="notification-col">
         <section class="panel settings-card">
           {{if .NotifyMsg}}<p class="notify-flash{{if .NotifyOK}} ok{{else}} warn{{end}}">{{.NotifyMsg}}</p>{{end}}
           <form class="notification-form{{if not .EmailNotificationsEnabled}} email-paused{{end}}" method="post" action="/app/settings/notifications" data-notification-form>
@@ -7174,6 +7458,31 @@ const PageTemplates = `
             </div>
           </form>
         </section>
+        </div>
+        <aside class="notification-aside" aria-label="Hinweise zur Zustellung">
+          <section class="panel compact notification-note" aria-labelledby="notification-delivery-title">
+            <div>
+              <div class="kicker">Zustellung</div>
+              <h2 id="notification-delivery-title">Wohin die E-Mails gehen</h2>
+            </div>
+            <div class="notification-address"><span>Empfängeradresse</span><strong>{{.Email}}</strong></div>
+            <p>Die Adresse ist zugleich Ihre Anmeldung und lässt sich hier nicht ändern. Eine Änderung veranlasst die Hausverwaltung.</p>
+            <a class="notification-note-link" href="/app/settings/profile">Profil ansehen</a>
+          </section>
+          <section class="panel compact notification-note" aria-labelledby="notification-rules-title">
+            <div>
+              <div class="kicker">Grundregeln</div>
+              <h2 id="notification-rules-title">Was unabhängig davon gilt</h2>
+            </div>
+            <ul class="notification-rules">
+              <li><strong>Anmeldelinks</strong><span>Einen Link, den Sie selbst anfordern, erhalten Sie immer – auch bei pausiertem Versand.</span></li>
+              <li><strong>Keine Werbung</strong><span>Versendet wird ausschließlich, was dieses Haus betrifft.</span></li>
+              <li><strong>Jederzeit änderbar</strong><span>Ihre Themenauswahl bleibt gespeichert und gilt wieder, sobald Sie den Versand aktivieren.</span></li>
+              <li><strong>Im Portal vollständig</strong><span>Alles bleibt im Portal sichtbar, unabhängig davon, was per E-Mail hinausgeht.</span></li>
+            </ul>
+          </section>
+        </aside>
+        </div>
       </section>
     </main>
 {{template "appClose" .}}
@@ -7735,7 +8044,7 @@ const PageTemplates = `
       .users .dlg-delete span { color: var(--muted); font-size: 12.5px; }
       .users .dlg-delete .danger { border: 1px solid rgba(150,40,40,.32); background: rgba(150,40,40,.07); color: #9a2b2b; border-radius: 10px; min-height: 40px; padding: 8px 15px; font: inherit; font-weight: 700; cursor: pointer; }
 	      .users .dlg-delete .danger:hover { background: rgba(150,40,40,.14); }
-	      @media (max-width: 760px) {
+	      @media (max-width: 1340px) {
 	        .users, .users .panel, .users .stack, .users .disclosure, .users .disclosure-body, .users .invite-form, .users .table-wrap { min-width: 0; max-width: 100%; }
 	        .users .panel { padding: 18px; }
 	        .users .panel-head { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: 10px; }
@@ -7764,7 +8073,36 @@ const PageTemplates = `
 	        .users .row-edit { border-color: var(--line); background: var(--panel-soft); color: var(--gold-ink); }
 	        .users .invite-form > * { grid-column: 1 / -1 !important; }
       }
-      @media (max-width: 760px) { .users .popup { left: -96px; width: min(620px, calc(100vw - 32px)); } .users .popup-grid { grid-template-columns: 1fr; } .users .popup-grid .permission { border-top: 1px solid var(--line); } .users .popup-grid .permission:first-child { border-top: 0; } }
+      @media (max-width: 1340px) { .users .popup { left: -96px; width: min(620px, calc(100vw - 32px)); } .users .popup-grid { grid-template-columns: 1fr; } .users .popup-grid .permission { border-top: 1px solid var(--line); } .users .popup-grid .permission:first-child { border-top: 0; } }
+      /* Ab Tabellenbreite hängt die Rollen-Erklärung an der Tabelle statt am
+         Info-Knopf. Mit fester Breite ragte sie bei 1024px über den rechten
+         Rand hinaus und erzeugte einen horizontalen Seitenlauf. */
+      @media (min-width: 1121px) {
+        .users .table-wrap { position: relative; }
+        .users .info { position: static; }
+        .users .popup { top: auto; left: 0; right: 0; width: auto; margin-top: 26px; }
+        .users .popup::before { display: none; }
+      }
+      /* Zwischen Tabelle und Handy: die Zeile wird zur Karte, die Felder stehen
+         aber weiter nebeneinander – sonst würde die Liste sechs Bildschirme lang. */
+      @media (max-width: 1120px) {
+        /* Ein beschriftetes, aber leeres Feld liest sich wie ein Fehler. Der
+           Standard-Chip ist ausgeblendet, deshalb entfällt in der Karte auch
+           seine Beschriftung. */
+        .users tbody td.col-secondary:not(:has(.chip:not(.plain))) { display: none; }
+        .users tbody td.col-auth:not(:has(.chip)) { display: none; }
+      }
+      @media (min-width: 761px) and (max-width: 1340px) {
+        .users tbody tr { display: grid; grid-template-columns: minmax(0,2.1fr) minmax(0,1fr) minmax(0,1.1fr) auto; gap: 10px 16px; align-items: start; padding: 15px 16px; }
+        .users tbody td.col-person { grid-column: 1; grid-row: 1 / span 2; margin-bottom: 0; }
+        .users .person { padding-right: 0; }
+        .users tbody td[data-label]:not(.col-person):not(.col-actions) { margin-top: 0; padding-top: 0; border-top: 0; }
+        .users tbody td.col-role { grid-column: 2; grid-row: 1; }
+        .users tbody td.col-status { grid-column: 3; grid-row: 1; }
+        .users tbody td.col-secondary { grid-column: 2; grid-row: 2; }
+        .users tbody td.col-auth { grid-column: 3; grid-row: 2; }
+        .users td.col-actions { position: static; grid-column: 4; grid-row: 1; align-self: center; width: auto; }
+      }
       .users .users-heading .lede { max-width: 680px; margin-bottom: 0; }
       .users .panel { border-radius: 16px; padding: 24px; box-shadow: var(--shadow-panel); }
       .users .panel-head { margin: 0; padding: 0 0 12px; border-bottom: 1px solid var(--line); }
