@@ -1466,6 +1466,13 @@ const PageTemplates = `
     .button.primary, button.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
     .button.small, button.small { min-height: 31px; padding: 6px 10px; font-size: 12px; }
     .button.ghost { background: transparent; }
+    .guide-disclosure > summary { min-height: 44px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; cursor: pointer; list-style: none; }
+    .guide-disclosure > summary::-webkit-details-marker { display: none; }
+    .guide-disclosure > summary::after { content: "\203A"; color: var(--gold-ink); font-size: 22px; line-height: 1; transition: transform .16s ease; }
+    .guide-disclosure[open] > summary::after { transform: rotate(90deg); }
+    .guide-disclosure[open] > summary { padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+    .guide-disclosure > :not(summary) { margin-top: 14px; }
+    @media (prefers-reduced-motion: reduce) { .guide-disclosure > summary::after { transition: none; } }
     .issue-card, .entry, .event-card, .document-row, .vote-card, tr[id^="parking-month-"] { scroll-margin-top: 82px; }
     .home-hero { position: relative; min-height: 118px; display: flex; align-items: center; overflow: hidden; border-bottom: 1px solid var(--line); background: #f7f3ea; padding: 25px clamp(28px,4vw,58px); isolation: isolate; }
     .home-hero::before { content: ""; position: absolute; z-index: -2; inset: 0; background: url('{{.Tenant.HeroImageURL}}') center 47% / cover no-repeat; filter: saturate(.72); opacity: .46; }
@@ -2464,7 +2471,7 @@ const PageTemplates = `
     .vote-option input { width: 18px; height: 18px; min-height: 0; accent-color: var(--leaf); }
     .vote-option-static { cursor: default; }
     .vote-actions { display: grid; grid-template-columns: minmax(0,1fr) minmax(210px,auto); gap: 12px; align-items: center; padding-top: 2px; }
-    .vote-actions .button { justify-content: center; }
+    .vote-actions .button, .vote-management-actions .button, .vote-result-actions .button { min-height: 44px; justify-content: center; }
     .vote-current { color: var(--muted); font-size: 12.5px; }
     .vote-management { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding-top: 14px; }
     .vote-management-copy strong { display: block; font-size: 13.5px; }
@@ -3521,7 +3528,7 @@ const PageTemplates = `
     <style>
       .contacts .contacts-layout { display: grid; gap: 20px; }
       .contacts .contacts-main, .contacts .contacts-aside { min-width: 0; display: grid; gap: 16px; align-content: start; }
-      .contacts .contacts-main.is-blank { align-content: stretch; }
+      .contacts .contacts-main.is-blank { align-content: start; }
       .contacts .contact-section { display: grid; gap: 16px; }
       .contacts .contact-section .section-head { align-items: flex-end; }
       .contacts .section-copy { max-width: 720px; }
@@ -3587,7 +3594,7 @@ const PageTemplates = `
       .contacts .contact-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 7px; }
       .contacts .contact-group-head h3 { color: var(--gold-ink); font-family: var(--font-sans); font-size: 11.5px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
       .contacts .contact-group-head span { color: var(--soft); font-size: 12px; font-weight: 750; white-space: nowrap; }
-      .contacts .contacts-blank { min-height: 44vh; display: grid; align-content: center; justify-items: center; gap: 15px; border: 1px dashed rgba(200,153,63,.42); border-radius: var(--radius-sm); background: rgba(255,254,251,.68); padding: 32px 26px; text-align: center; }
+      .contacts .contacts-blank { min-height: clamp(280px,34vh,360px); display: grid; align-content: center; justify-items: center; gap: 15px; border: 1px dashed rgba(200,153,63,.42); border-radius: var(--radius-sm); background: rgba(255,254,251,.68); padding: 32px 26px; text-align: center; }
       .contacts .contacts-blank .empty-state { width: 100%; border: 0; background: transparent; padding: 0; grid-template-columns: minmax(0,1fr); justify-items: center; gap: 13px; text-align: center; }
       .contacts .contacts-blank .empty-state p { max-width: 48ch; }
       .contacts .contacts-blank-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
@@ -3617,7 +3624,7 @@ const PageTemplates = `
       .contacts .contact-danger, .contacts .contact-reactivate { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(158,70,48,.3); display: flex; gap: 14px; align-items: center; justify-content: space-between; }
       .contacts .contact-danger p, .contacts .contact-reactivate p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
       @media (min-width: 1181px) { .contacts .contacts-layout { grid-template-columns: minmax(0,1fr) 320px; } }
-      @media (max-width: 1180px) and (min-width: 721px) { .contacts .contacts-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; } }
+      @media (max-width: 1180px) and (min-width: 721px) { .contacts .contacts-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; } }
       @media (max-width: 720px) {
         .contacts .contacts-layout { gap: 12px; }
         .contacts .contacts-main, .contacts .contacts-aside { gap: 12px; }
@@ -3801,18 +3808,18 @@ const PageTemplates = `
               {{template "emptyState" .ManagedEmpty}}
               <div class="contacts-blank-actions">
                 <a class="button primary" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}">Anliegen melden</a>
-                <a class="button" href="/app/announcements">Aushang ansehen</a>
+                <a class="button ghost" href="/app/announcements">Aushang ansehen</a>
               </div>
             </section>
           {{end}}
         </div>
 
         <aside class="contacts-aside" aria-label="Hilfe zu Kontakten">
-          <section class="panel compact contacts-aside-panel" aria-labelledby="contacts-guide-title">
-            <div>
+          <details class="panel compact contacts-aside-panel guide-disclosure" aria-labelledby="contacts-guide-title">
+            <summary><div>
               <div class="kicker">Wegweiser</div>
               <h2 id="contacts-guide-title">Wer ist wofür zuständig?</h2>
-            </div>
+            </div></summary>
             <ul class="contacts-guide">
               <li><i class="urgent" aria-hidden="true"></i><div><strong>Notdienst</strong><span>Gefahr im Verzug, Wasserschaden, Stromausfall oder Personen im Lift.</span></div></li>
               <li><i aria-hidden="true"></i><div><strong>Hausverwaltung</strong><span>Verträge, Abrechnung, Beschlüsse und alles Kaufmännische.</span></div></li>
@@ -3820,7 +3827,7 @@ const PageTemplates = `
               <li><i aria-hidden="true"></i><div><strong>Beirat</strong><span>Vertritt die Eigentümergemeinschaft gegenüber der Verwaltung.</span></div></li>
               <li><i aria-hidden="true"></i><div><strong>Dienstleister</strong><span>Firmen für Lift, Heizung, Elektrik oder Energiethemen im Haus.</span></div></li>
             </ul>
-          </section>
+          </details>
           <section class="panel compact contacts-aside-panel" aria-labelledby="contacts-next-title">
             <div>
               <div class="kicker">Auch hilfreich</div>
@@ -4550,7 +4557,7 @@ const PageTemplates = `
     <style>
       .announce .announce-layout { display: grid; gap: 20px; }
       .announce .announce-main, .announce .announce-aside { min-width: 0; display: grid; gap: 16px; align-content: start; }
-      .announce .announce-main.is-blank { align-content: stretch; }
+      .announce .announce-main.is-blank { align-content: start; }
       .announce .announce-feed { display: grid; gap: 18px; }
       .announce .announce-feed .kicker { margin-bottom: 0; }
       .announce .section-copy h2 { margin-top: 5px; }
@@ -4563,9 +4570,11 @@ const PageTemplates = `
       .announce .announce-group .entries { gap: 16px; }
       .announce .announce-group .entry + .entry { padding-top: 16px; }
       .announce .entry-head { gap: 12px; }
+      .announce .entry-head > :first-child { min-width: 0; }
+      .announce .announcement-entry h3 { overflow-wrap: anywhere; }
       .announce .entry-actions { flex-wrap: nowrap; flex: 0 0 auto; }
       .announce .announce-filtered-empty { display: grid; gap: 13px; justify-items: start; }
-      .announce .announce-blank { min-height: 44vh; display: grid; align-content: center; justify-items: center; gap: 15px; border: 1px dashed rgba(200,153,63,.42); border-radius: var(--radius-sm); background: rgba(255,254,251,.68); padding: 32px 26px; text-align: center; }
+      .announce .announce-blank { min-height: clamp(280px,34vh,360px); display: grid; align-content: center; justify-items: center; gap: 15px; border: 1px dashed rgba(200,153,63,.42); border-radius: var(--radius-sm); background: rgba(255,254,251,.68); padding: 32px 26px; text-align: center; }
       .announce .announce-blank .empty-state { width: 100%; border: 0; background: transparent; padding: 0; grid-template-columns: minmax(0,1fr); justify-items: center; gap: 13px; text-align: center; }
       .announce .announce-blank .empty-state p { max-width: 48ch; }
       .announce .announce-blank-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
@@ -4585,7 +4594,16 @@ const PageTemplates = `
       .announce .announce-link::after { content: "\203A"; color: var(--gold-ink); font-size: 21px; line-height: 1; }
       .announce .announce-link:hover strong { color: var(--gold-ink); }
       @media (min-width: 1181px) { .announce .announce-layout { grid-template-columns: minmax(0,1fr) 320px; } }
-      @media (max-width: 1180px) and (min-width: 721px) { .announce .announce-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; } }
+      @media (max-width: 1180px) and (min-width: 721px) {
+        .announce .announce-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
+        .announce .entry-head { display: grid; grid-template-columns: minmax(0,1fr); }
+        .announce .entry-actions { justify-content: flex-start; }
+      }
+      @media (max-width: 900px) and (min-width: 721px) {
+        .announce .filter-form { grid-template-columns: minmax(0,1fr) auto; align-items: end; }
+      }
+      .announce .filter-form .button, .announce .filter-tab, .announce .announcement-body > summary, .announce .entry-actions .button { min-height: 44px; }
+      .announce .filter-tab, .announce .announcement-body > summary { display: inline-flex; align-items: center; }
       @media (max-width: 720px) {
         .announce .announce-layout { gap: 12px; }
         .announce .announce-main, .announce .announce-aside { gap: 12px; }
@@ -4595,11 +4613,10 @@ const PageTemplates = `
         .announce .announce-aside-panel { padding: 16px; }
         .announce .announce-feed { grid-template-columns: minmax(0,1fr); gap: 14px; }
         .announce .entry-head { display: grid; grid-template-columns: minmax(0,1fr); }
+        .announce .announcement-entry h3 { font-size: 18px; line-height: 1.18; }
         .announce .page-actions .button { min-height: 44px; }
         .announce .filter-form .button { min-height: 44px; }
-        .announce .filter-tab { min-height: 42px; padding: 6px 14px; }
-        .announce .entry-actions .button { min-height: 42px; }
-        .announce .announcement-body > summary { min-height: 42px; display: flex; align-items: center; }
+        .announce .filter-tab { padding: 6px 14px; }
       }
     </style>
     <main id="main-content" tabindex="-1" class="app-main announce">
@@ -4669,7 +4686,7 @@ const PageTemplates = `
                 <button class="button primary" type="button" data-dialog="announcement-create" aria-haspopup="dialog" aria-controls="announcement-create">Ersten Aushang erstellen</button>
               {{else}}
                 <a class="button primary" href="/app/events">Termine ansehen</a>
-                <a class="button" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}">Anliegen melden</a>
+                <a class="button ghost" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}">Anliegen melden</a>
               {{end}}
             </div>
           </section>
@@ -4677,18 +4694,18 @@ const PageTemplates = `
           </div>
 
           <aside class="announce-aside" aria-label="Hinweise zum Aushang">
-            <section class="panel compact announce-aside-panel" aria-labelledby="announce-legend-title">
-              <div>
+            <details class="panel compact announce-aside-panel guide-disclosure" aria-labelledby="announce-legend-title">
+              <summary><div>
                 <div class="kicker">Kategorien</div>
                 <h2 id="announce-legend-title">Was die Farben bedeuten</h2>
-              </div>
+              </div></summary>
               <ul class="announce-legend">
                 <li><span class="pill dringend">Dringend</span><span>Betrifft Sicherheit oder Versorgung und duldet keinen Aufschub.</span></li>
                 <li><span class="pill wartung">Wartung</span><span>Arbeiten am Haus mit möglicher Einschränkung, etwa Lift oder Wasser.</span></li>
                 <li><span class="pill termin">Termin</span><span>Zeitpunkt, den Sie sich vormerken sollten.</span></li>
                 <li><span class="pill info">Info</span><span>Allgemeine Mitteilung ohne nötige Reaktion.</span></li>
               </ul>
-            </section>
+            </details>
             <section class="panel compact announce-aside-panel" aria-labelledby="announce-next-title">
               <div>
                 <div class="kicker">Auch hilfreich</div>
@@ -4882,7 +4899,7 @@ const PageTemplates = `
     <style>
       .events-page .events-layout { display: grid; gap: 20px; }
       .events-page .events-main, .events-page .events-aside { min-width: 0; display: grid; gap: 16px; align-content: start; }
-      .events-page .events-main.is-blank { align-content: stretch; }
+      .events-page .events-main.is-blank { align-content: start; }
       .events-page .events-panel { display: grid; gap: 18px; }
       .events-page .events-panel .kicker { margin-bottom: 0; }
       .events-page .events-head-copy h2 { margin-top: 5px; }
@@ -4892,7 +4909,7 @@ const PageTemplates = `
       .events-page .events-month-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 7px; }
       .events-page .events-month-head h3 { color: var(--gold-ink); font-family: var(--font-sans); font-size: 11.5px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
       .events-page .events-month-head span { color: var(--soft); font-size: 12px; font-weight: 750; white-space: nowrap; }
-      .events-page .events-blank { min-height: 44vh; display: grid; align-content: center; justify-items: center; gap: 15px; border: 1px dashed rgba(200,153,63,.42); border-radius: var(--radius-sm); background: rgba(255,254,251,.68); padding: 32px 26px; text-align: center; }
+      .events-page .events-blank { min-height: clamp(280px,34vh,360px); display: grid; align-content: center; justify-items: center; gap: 15px; border: 1px dashed rgba(200,153,63,.42); border-radius: var(--radius-sm); background: rgba(255,254,251,.68); padding: 32px 26px; text-align: center; }
       .events-page .events-blank .empty-state { width: 100%; border: 0; background: transparent; padding: 0; grid-template-columns: minmax(0,1fr); justify-items: center; gap: 13px; text-align: center; }
       .events-page .events-blank .empty-state p { max-width: 48ch; }
       .events-page .events-blank-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
@@ -4907,8 +4924,9 @@ const PageTemplates = `
       .events-page .events-legend span { color: var(--muted); font-size: 12.8px; line-height: 1.42; }
       .events-page .events-aside-note { border-top: 1px solid var(--line); padding-top: 12px; color: var(--soft); font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
       .events-page .event-history { margin-top: 2px; }
+      .events-page .event-details > summary, .events-page .event-history > summary { min-height: 44px; display: flex; align-items: center; }
       @media (min-width: 1181px) { .events-page .events-layout { grid-template-columns: minmax(0,1fr) 320px; } }
-      @media (max-width: 1180px) and (min-width: 721px) { .events-page .events-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; } }
+      @media (max-width: 1180px) and (min-width: 721px) { .events-page .events-aside { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; } }
       @media (max-width: 720px) {
         .events-page .events-layout { gap: 12px; }
         .events-page .events-main, .events-page .events-aside { gap: 12px; }
@@ -4920,8 +4938,7 @@ const PageTemplates = `
         .events-page .events-aside-panel .button { width: 100%; }
         .events-shell .page-actions .button { min-height: 44px; }
         .events-page .event-actions .button { min-height: 42px; }
-        .events-page .event-details > summary { min-height: 42px; display: flex; align-items: center; }
-        .events-page .event-history > summary { min-height: 46px; display: flex; align-items: center; }
+        .events-page .event-history > summary { min-height: 46px; }
       }
     </style>
     <main id="main-content" tabindex="-1" class="app-main events-shell">
@@ -4972,7 +4989,7 @@ const PageTemplates = `
                   <button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create">Ersten Termin erstellen</button>
                 {{else}}
                   <a class="button primary" href="/app/announcements">Aushang ansehen</a>
-                  <a class="button" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}">Anliegen melden</a>
+                  <a class="button ghost" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}">Anliegen melden</a>
                 {{end}}
               </div>
             </section>
@@ -4999,11 +5016,11 @@ const PageTemplates = `
               <p class="events-aside-note">Der Link ist persönlich. Bitte nicht weitergeben.</p>
             </section>
             {{end}}
-            <section class="panel compact events-aside-panel" aria-labelledby="events-legend-title">
-              <div>
+            <details class="panel compact events-aside-panel guide-disclosure" aria-labelledby="events-legend-title">
+              <summary><div>
                 <div class="kicker">Was hier erscheint</div>
                 <h2 id="events-legend-title">Termine im Haus</h2>
-              </div>
+              </div></summary>
               <ul class="events-legend">
                 <li><span class="pill versammlung">Eigentümerversammlung</span><span>Beschlüsse der Gemeinschaft. Teilnahme oder Vollmacht einplanen.</span></li>
                 <li><span class="pill wartung">Wartung</span><span>Lift, Heizung oder Technik. Zugang kann kurz eingeschränkt sein.</span></li>
@@ -5011,7 +5028,7 @@ const PageTemplates = `
                 <li><span class="pill frist">Frist</span><span>Letzter Tag für eine Rückmeldung oder Zahlung.</span></li>
                 <li><span class="pill reinigung">Reinigung</span><span>Wiederkehrende Arbeiten in Haus, Hof und Grünflächen.</span></li>
               </ul>
-            </section>
+            </details>
           </aside>
         </div>
       </section>
@@ -5250,7 +5267,7 @@ const PageTemplates = `
                 <a class="button" href="/app/dokumente/rechnungen/import">E-Rechnung einlesen</a>
               {{else}}
                 <a class="button primary" href="/app/anliegen?new=1">Unterlage anfragen</a>
-                <a class="button" href="/app/kontakte">Verwaltung im Kontaktverzeichnis</a>
+                <a class="button ghost" href="/app/kontakte">Verwaltung im Kontaktverzeichnis</a>
               {{end}}
             </div>
           </div>
@@ -5451,6 +5468,8 @@ const PageTemplates = `
       .vote-blank-facts li { display: grid; gap: 5px; border-top: 2px solid var(--ink); padding-top: 11px; }
       .vote-blank-facts strong { font-size: 13.5px; }
       .vote-blank-facts span { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+      .vote-page .vote-details > summary, .vote-page .vote-live-result > summary { min-height: 44px; display: flex; align-items: center; }
+      .vote-readonly-note { margin: 0; border-left: 3px solid var(--line); padding: 10px 12px; color: var(--muted); background: var(--panel-soft); font-size: 13.5px; line-height: 1.45; }
       @media (min-width: 901px) {
         .vote-blank { min-height: max(420px, calc(100vh - 348px)); grid-template-rows: minmax(0,1fr) auto; }
       }
@@ -5493,7 +5512,7 @@ const PageTemplates = `
                 {{template "ballotCreateTrigger" .}}
               {{else}}
                 <a class="button primary" href="/app/anliegen?new=1">Thema vorschlagen</a>
-                <a class="button" href="/app/kontakte">Verwaltung im Kontaktverzeichnis</a>
+                <a class="button ghost" href="/app/kontakte">Verwaltung im Kontaktverzeichnis</a>
               {{end}}
             </div>
           </div>
@@ -5562,7 +5581,7 @@ const PageTemplates = `
                     <div class="vote-options">
                       {{range .Options}}<div class="vote-option vote-option-static"><span></span><span>{{.Label}}</span></div>{{end}}
                     </div>
-                    {{if .ReadOnlyMessage}}<p class="empty">{{.ReadOnlyMessage}}</p>{{end}}
+                    {{if .ReadOnlyMessage}}<p class="vote-readonly-note">{{.ReadOnlyMessage}}</p>{{end}}
                   {{else if and .IsOpen .ReadOnlyMessage (not .CanManage)}}
                     <p class="mini">{{.ReadOnlyMessage}}</p>
                   {{end}}
@@ -6634,6 +6653,9 @@ const PageTemplates = `
          in eigenen Spalten; darunter fällt die Zeile auf eine Kompaktform mit
          einer Kontextzeile zurück. Der leere Zustand ist der Normalfall eines
          neuen Hauses und deshalb ein eigener Bereich statt eines Kastens. */
+      .audit-screen .audit-help-disclosure { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-panel); padding: 0 16px; }
+      .audit-screen .audit-help-disclosure > summary { color: var(--ink); font-size: 14px; font-weight: 850; }
+      .audit-screen .audit-help-disclosure .audit-notes { padding-bottom: 16px; }
       .audit-screen .audit-notes { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px 26px; margin: 4px 0 0; padding: 0; list-style: none; }
       .audit-screen .audit-notes > li { display: grid; gap: 9px; align-content: start; border-top: 2px solid var(--ink); padding-top: 12px; }
       .audit-screen .audit-notes h2 { font-family: var(--font-sans); font-size: 11.5px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; color: var(--gold-ink); }
@@ -6705,7 +6727,7 @@ const PageTemplates = `
     <main id="main-content" tabindex="-1" class="app-main audit-screen">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>/</span><span>Verlauf</span></span>
-        {{if .CanUseResidentAreas}}<div class="page-actions"><a class="button" href="/app/settings">Einstellungen</a></div>{{end}}
+        {{if .CanUseResidentAreas}}<div class="page-actions"><a class="button ghost" href="/app/settings">Einstellungen</a></div>{{end}}
       </div>
       <section class="page wide audit-page">
         <div class="audit-page-head">
@@ -6778,7 +6800,9 @@ const PageTemplates = `
             </div>
           {{end}}
         </div>
-        <ul class="audit-notes">
+        <details class="audit-help-disclosure guide-disclosure">
+          <summary><strong>Einträge verstehen</strong></summary>
+          <ul class="audit-notes">
           <li>
             <h2>Lesehilfe</h2>
             <ul class="audit-legend">
@@ -6808,7 +6832,8 @@ const PageTemplates = `
               <a class="audit-link" href="/app/settings"><span><strong>Einstellungen</strong><small>Konto, Kommunikation und Verwaltungsbereiche.</small></span></a>
             </div>
           </li>{{end}}
-        </ul>
+          </ul>
+        </details>
         {{else}}
         <section class="audit-blank" aria-labelledby="audit-blank-title">
           <div class="audit-blank-main">

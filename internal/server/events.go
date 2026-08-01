@@ -277,14 +277,21 @@ func eventMonthGroups(items []houseEvent, views []houseEventView, loc *time.Loca
 	}
 	groups := []eventMonthGroup{}
 	current := ""
+	currentYear := ""
 	for i := range views {
 		if i >= len(items) {
 			break
 		}
 		month := items[i].StartsAt.In(loc).Format("2006-01")
 		if month != current {
-			groups = append(groups, eventMonthGroup{Label: formatMonthLabel(month, loc)})
+			year := items[i].StartsAt.In(loc).Format("2006")
+			label := formatMonthLabel(month, loc)
+			if year == currentYear {
+				label = strings.TrimSuffix(label, " "+year)
+			}
+			groups = append(groups, eventMonthGroup{Label: label})
 			current = month
+			currentYear = year
 		}
 		group := &groups[len(groups)-1]
 		group.Events = append(group.Events, views[i])

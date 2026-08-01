@@ -577,10 +577,11 @@ async function ensureResponsiveAnnouncement() {
   const context = await newContext({ width: 1440, height: 900 });
   const page = await localLogin(context, 'admin@example.com');
   await page.goto(`${baseURL}/app/announcements`, { waitUntil: 'networkidle' });
-  if (!(await page.getByText('QA Responsive Aushang', { exact: true }).count())) {
+  const title = 'QA Responsive Aushang mit einem absichtlich sehr langen Titel für die gesamte Hausgemeinschaft';
+  if (!(await page.getByText(title, { exact: true }).count())) {
     await page.getByRole('button', { name: 'Aushang erstellen' }).first().click();
     const form = page.locator('#announcement-create form');
-    await form.locator('input[name="title"]').fill('QA Responsive Aushang');
+    await form.locator('input[name="title"]').fill(title);
     await form.locator('textarea[name="body"]').fill('Dieser Aushang prüft Aktionszeile und Inhaltsbreite ohne abgeschnittene Bedienelemente.');
     await form.getByRole('button', { name: 'Aushang veröffentlichen' }).click();
     await page.waitForURL(/\/app\/announcements/);
@@ -594,7 +595,7 @@ async function assertResponsiveAdminWidths() {
   const page = await localLogin(context, 'admin@example.com');
   await page.goto(`${baseURL}/app/announcements`, { waitUntil: 'networkidle' });
 
-  for (const width of [320, 390, 430, 1440]) {
+  for (const width of [320, 390, 430, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const result = await page.evaluate(async (phone) => {
       await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -641,7 +642,7 @@ async function assertResponsiveAdminWidths() {
         phone,
         headsAreGrid: headDisplays.length > 0 && headDisplays.every((display) => display === 'grid'),
       };
-    }, width <= 720);
+    }, width <= 1180);
     if (result.missing || result.documentWidth > result.viewportWidth + 1 ||
         result.clipped.length || result.badHeads || result.offscreenControls.length ||
         (result.phone && (result.feedColumns !== 1 || !result.headsAreGrid))) {
@@ -902,6 +903,25 @@ function futureLocalInput(daysAhead, hour) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
+function nextYearLocalInput(month, day, hour) {
+  const date = new Date(new Date().getFullYear() + 1, month - 1, day, hour, 0, 0, 0);
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+async function createManagedEvent(page, title, startsAt) {
+  await page.goto(`${baseURL}/app/events`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Termin erstellen' }).first().click();
+  const form = page.locator('#event-create form');
+  await form.locator('input[name="title"]').fill(title);
+  await form.locator('input[name="starts_at"]').fill(startsAt);
+  await form.locator('input[name="location"]').fill('Gemeinschaftsraum');
+  await form.locator('details.dialog-optional').evaluate((node) => { node.open = true; });
+  await form.locator('textarea[name="body"]').fill('Kurzer, klarer Hinweis für die Hausgemeinschaft.');
+  await form.locator('button[type="submit"]').click();
+  await page.waitForURL(/\/app\/events/);
+}
+
 async function seedManagedContent() {
   const context = await newContext({ width: 1440, height: 900 });
   const page = await localLogin(context, 'admin@example.com');
@@ -911,7 +931,7 @@ async function seedManagedContent() {
   // auf einer leeren Seite erreichbar ist. Beide öffnen denselben Dialog.
   await page.getByRole('button', { name: 'Aushang erstellen' }).first().click();
   const announcement = page.locator('#announcement-create form');
-  await announcement.locator('input[name="title"]').fill('QA Hausinformation');
+  await announcement.locator('input[name="title"]').fill('QA Hausinformation zur Trinkwasserwartung');
   await announcement.locator('textarea[name="body"]').fill('Der gemeinsame Playwright-Lauf prüft diesen Aushang.');
   await announcement.locator('button[type="submit"]').click();
   await page.waitForURL(/\/app\/announcements/);
@@ -922,8 +942,15 @@ async function seedManagedContent() {
   await event.locator('input[name="title"]').fill('QA Hausbegehung');
   await event.locator('input[name="starts_at"]').fill(futureLocalInput(14, 18));
   await event.locator('input[name="location"]').fill('Innenhof');
+  await event.locator('details.dialog-optional').evaluate((node) => { node.open = true; });
+  await event.locator('textarea[name="body"]').fill('Der Treffpunkt und die wichtigsten Hinweise stehen direkt beim Termin.');
   await event.locator('button[type="submit"]').click();
   await page.waitForURL(/\/app\/events/);
+
+  // Zwei Folgemonate desselben künftigen Jahres machen die reduzierte
+  // Jahresbeschriftung im echten Browser deterministisch prüfbar.
+  await createManagedEvent(page, 'QA Jännertermin', nextYearLocalInput(1, 12, 18));
+  await createManagedEvent(page, 'QA Februartermin', nextYearLocalInput(2, 9, 9));
 
   await page.goto(`${baseURL}/app/kontakte`, { waitUntil: 'networkidle' });
   const contactPanel = page.locator('#contact-add');
@@ -997,7 +1024,333 @@ async function seedManagedContent() {
     });
   }
 
+  await page.goto(`${baseURL}/app/abstimmungen`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Abstimmung anlegen' }).first().click();
+  const ballot = page.locator('#ballot-create form');
+  await ballot.locator('input[name="title"]').fill('QA Bewohnerabstimmung Innenhof');
+  await ballot.locator('textarea[name="description"]').fill('Soll der Innenhof mit heimischen Pflanzen begrünt werden?');
+  await ballot.locator('textarea[name="options_text"]').fill('Ja, begrünen\nNein, unverändert lassen\nEnthaltung');
+  await ballot.locator('input[name="closes_at"]').fill(futureLocalInput(60, 18));
+  await ballot.locator('details.dialog-optional').filter({ hasText: 'Abstimmungsregeln' }).evaluate((node) => { node.open = true; });
+  await ballot.locator('select[name="weighting"]').selectOption('per-head');
+  await ballot.getByRole('button', { name: 'Entwurf anlegen' }).click();
+  await page.waitForURL(/\/app\/abstimmungen/);
+  const ballotCard = page.locator('.vote-card').filter({ hasText: 'QA Bewohnerabstimmung Innenhof' });
+  await ballotCard.getByRole('button', { name: 'Abstimmung öffnen' }).click();
+  await page.waitForURL(/vote=opened/);
+
   await closeContext(context);
+}
+
+async function toggleNativeDisclosure(details, label) {
+  if (!(await details.count())) fail(`${label}: native Aufklappfläche fehlt`);
+  const summary = details.locator(':scope > summary');
+  const before = await details.evaluate((node) => node.open);
+  await summary.focus();
+  if (!(await summary.evaluate((node) => node === document.activeElement))) {
+    fail(`${label}: Aufklappfläche erhält keinen Tastaturfokus`);
+  }
+  await summary.press('Enter');
+  const after = await details.evaluate((node) => node.open);
+  if (after === before) fail(`${label}: Enter ändert den nativen Zustand nicht`);
+  await summary.press('Enter');
+  if (await details.evaluate((node) => node.open) !== before) {
+    fail(`${label}: Ausgangszustand lässt sich nicht wiederherstellen`);
+  }
+}
+
+async function assertResidentContentResponsiveMatrix(sizes = [
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+    { width: 430, height: 932 },
+    { width: 768, height: 1024 },
+    { width: 1024, height: 768 },
+    { width: 1440, height: 900 },
+  ]) {
+  const routeChecks = [
+    { name: 'aushang', path: '/app/announcements', email: 'resident@example.com', details: '.announcement-body', guide: '.announce-aside .guide-disclosure' },
+    { name: 'termine', path: '/app/events', email: 'resident@example.com', details: '.event-details', guide: '.events-aside .guide-disclosure' },
+    { name: 'kontakte', path: '/app/kontakte', email: 'resident@example.com', details: '.contacts-aside .guide-disclosure', guide: '.contacts-aside .guide-disclosure' },
+    { name: 'dokumente', path: '/app/dokumente', email: 'resident@example.com', details: '.document-file-details' },
+    { name: 'abstimmungen', path: '/app/abstimmungen', email: 'owner@example.com', details: '.vote-details' },
+    { name: 'verlauf', path: '/app/audit', email: 'resident@example.com', details: '.audit-filter-panel', guide: '.audit-help-disclosure' },
+  ];
+  const nextYear = new Date().getFullYear() + 1;
+
+  for (const size of sizes) {
+    const contexts = new Map();
+    for (const route of routeChecks) {
+      let state = contexts.get(route.email);
+      if (!state) {
+        const context = await trackedContext({
+          viewport: size,
+          deviceScaleFactor: 1,
+          locale: 'de-AT',
+          timezoneId: 'Europe/Vienna',
+          reducedMotion: 'reduce',
+        });
+        const page = await localLogin(context, route.email);
+        state = { context, page };
+        contexts.set(route.email, state);
+      }
+      const { page } = state;
+      const response = await page.goto(`${baseURL}${route.path}`, { waitUntil: 'networkidle' });
+      if (!response || response.status() !== 200) {
+        fail(`${route.name} ${size.width}px: Status ${response?.status() ?? 0}`);
+      }
+      const geometry = await page.evaluate((checkTargets) => {
+        const main = document.querySelector('main');
+        const visible = (node) => Boolean(node.getClientRects().length);
+        const controls = [...(main?.querySelectorAll('button, a.button, summary, .contact-route') || [])].filter(visible);
+        const offscreen = controls.filter((node) => {
+          const box = node.getBoundingClientRect();
+          return box.left < -1 || box.right > window.innerWidth + 1;
+        }).map((node) => (node.getAttribute('aria-label') || node.textContent || node.tagName).trim().slice(0, 60));
+        const short = checkTargets ? controls.filter((node) => {
+          const box = node.getBoundingClientRect();
+          return box.width > 0 && box.height > 0 && box.height < 39.5;
+        }).map((node) => ({
+          label: (node.getAttribute('aria-label') || node.textContent || node.tagName).trim().replace(/\s+/g, ' ').slice(0, 60),
+          height: Math.round(node.getBoundingClientRect().height * 10) / 10,
+        })) : [];
+        return {
+          overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+          mainRight: main?.getBoundingClientRect().right || 0,
+          offscreen,
+          short,
+        };
+      }, size.width <= 430);
+      if (geometry.overflow || geometry.mainRight > size.width + 1 || geometry.offscreen.length || geometry.short.length) {
+        fail(`${route.name} ${size.width}px: Geometrie oder mobile Ziele sind instabil (${JSON.stringify(geometry)})`);
+      }
+
+      if (route.guide) {
+        const guide = page.locator(route.guide).first();
+        if (await guide.evaluate((node) => node.open)) fail(`${route.name} ${size.width}px: Lesehilfe verdrängt den Hauptinhalt`);
+        const guideBox = await guide.boundingBox();
+        if (size.width >= 721 && size.width <= 1180 && (!guideBox || guideBox.height > 110)) {
+          fail(`${route.name} ${size.width}px: geschlossene Lesehilfe wird auf ${guideBox?.height || 0}px gestreckt`);
+        }
+        await toggleNativeDisclosure(guide, `${route.name} ${size.width}px Lesehilfe`);
+      }
+      await toggleNativeDisclosure(page.locator(route.details).first(), `${route.name} ${size.width}px Inhalt`);
+
+      if (route.name === 'aushang' && size.width === 768) {
+        const search = await page.locator('.announce .filter-form').evaluate((form) => {
+          const input = form.querySelector('input')?.getBoundingClientRect();
+          const button = form.querySelector('button')?.getBoundingClientRect();
+          return {
+            sideBySide: Boolean(input && button && button.left >= input.right - 1),
+            aligned: Boolean(input && button && Math.abs(input.bottom - button.bottom) <= 2),
+            inputHeight: input?.height || 0,
+            buttonHeight: button?.height || 0,
+          };
+        });
+        if (!search.sideBySide || !search.aligned || search.inputHeight < 40 || search.buttonHeight < 43.5) {
+          fail(`Aushang 768px: Suche und Aktion bilden keine ruhige Zeile (${JSON.stringify(search)})`);
+        }
+      }
+      if (route.name === 'termine') {
+        const headings = await page.locator('.events-month-head h3').allTextContents();
+        if (!headings.includes(`Jänner ${nextYear}`) || !headings.includes('Februar')) {
+          fail(`Termine ${size.width}px: Jahr wird in Folgemonaten nicht reduziert (${JSON.stringify(headings)})`);
+        }
+      }
+      if (route.name === 'aushang' && size.width === 390) {
+        await page.evaluate(() => window.scrollTo(0, Math.min(500, document.documentElement.scrollHeight - window.innerHeight)));
+        const sticky = await page.locator('.sidebar').evaluate((node) => {
+          const box = node.getBoundingClientRect();
+          return { top: box.top, bottom: box.bottom, height: box.height };
+        });
+        if (Math.abs(sticky.top) > 1 || sticky.height > 72 || sticky.bottom > 73) {
+          fail(`Mobile Navigation überdeckt beim Scrollen zu viel Inhalt (${JSON.stringify(sticky)})`);
+        }
+        await page.evaluate(() => window.scrollTo(0, 0));
+        if (process.env.HV_QA_SCREENSHOT_DIR) {
+          mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+          await page.locator('#announcement-search').focus();
+          await page.screenshot({
+            path: join(process.env.HV_QA_SCREENSHOT_DIR, 'resident-content-keyboard-focus-aushang-390.png'),
+            fullPage: false,
+          });
+        }
+      }
+      if ((size.width === 390 || size.width === 768 || size.width === 1440) && process.env.HV_QA_SCREENSHOT_DIR) {
+        mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+        await page.evaluate(() => {
+          if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+          window.scrollTo(0, 0);
+        });
+        await page.screenshot({
+          path: join(process.env.HV_QA_SCREENSHOT_DIR, `resident-content-${route.name}-${size.width}.png`),
+          fullPage: true,
+        });
+      }
+    }
+    for (const { context } of contexts.values()) await closeContext(context);
+  }
+  process.stdout.write(`  ✓ Bewohner-Inhalte · 6 Wege · ${sizes.map((size) => size.width).join('/')}px · Tastatur · reduzierte Bewegung\n`);
+}
+
+async function assertResidentContentClickFlows() {
+  const context = await newContext({ width: 768, height: 1024 });
+  const page = await localLogin(context, 'resident@example.com');
+
+  await page.goto(`${baseURL}/app/announcements`, { waitUntil: 'networkidle' });
+  await page.locator('#announcement-search').fill('nicht vorhandener QA Aushang');
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/app/announcements' && url.searchParams.has('q')),
+    page.getByRole('button', { name: 'Suchen' }).click(),
+  ]);
+  if (!(await page.locator('.announce-filtered-empty').isVisible())) fail('Aushang-Suche: verständlicher Kein-Treffer-Zustand fehlt');
+  await page.getByRole('link', { name: 'Filter zurücksetzen' }).click();
+  await page.waitForURL((url) => url.pathname === '/app/announcements' && !url.search);
+  const announcement = page.locator('.announcement-entry').filter({ hasText: 'QA Hausinformation' }).first();
+  const announcementBody = announcement.locator('.announcement-body');
+  if (!(await announcementBody.evaluate((node) => node.open))) await announcementBody.locator('summary').click();
+  if (!(await announcementBody.locator('.announcement-body-content').isVisible())) fail('Aushang lesen: Inhalt bleibt verborgen');
+
+  await page.goto(`${baseURL}/app/events`, { waitUntil: 'networkidle' });
+  const calendar = page.getByRole('link', { name: 'Kalender abonnieren' });
+  const calendarHref = await calendar.getAttribute('href');
+  if (!calendarHref) fail('Termine: persönlicher Kalenderlink fehlt');
+  const calendarResponse = await context.request.get(new URL(calendarHref, baseURL).href);
+  if (!calendarResponse.ok() || !calendarResponse.headers()['content-type']?.includes('text/calendar')) {
+    fail(`Termine: Kalenderfeed antwortet nicht korrekt (${calendarResponse.status()})`);
+  }
+
+  await page.goto(`${baseURL}/app/kontakte`, { waitUntil: 'networkidle' });
+  const contact = page.locator('.contact-row, .quick-card').filter({ hasText: 'QA Energiehilfe' }).first();
+  const phoneHref = await contact.locator('a[href^="tel:"]').getAttribute('href');
+  if (!phoneHref || decodeURIComponent(phoneHref).replace(/\D/g, '') !== '43316000000') {
+    fail(`Kontakte: direkte Telefonroute fehlt (${phoneHref || 'kein Link'})`);
+  }
+
+  await page.goto(`${baseURL}/app/dokumente`, { waitUntil: 'networkidle' });
+  await page.locator('#document-search').fill('QA Hausordnung');
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/app/dokumente' && url.searchParams.get('q') === 'QA Hausordnung'),
+    page.getByRole('button', { name: 'Anzeigen' }).click(),
+  ]);
+  const document = page.locator('.document-row').filter({ hasText: 'QA Hausordnung' }).first();
+  if (!(await document.isVisible())) fail('Dokumente: Suche findet die freigegebene Unterlage nicht');
+  const downloadPromise = page.waitForEvent('download');
+  await document.getByRole('link', { name: 'Herunterladen' }).first().click();
+  const download = await downloadPromise;
+  if (download.suggestedFilename() !== 'qa-hausordnung.pdf') {
+    fail(`Dokumente: unerwarteter Downloadname ${download.suggestedFilename()}`);
+  }
+
+  await page.goto(`${baseURL}/app/audit`, { waitUntil: 'networkidle' });
+  const auditFilter = page.locator('.audit-filter-panel');
+  if (!(await auditFilter.evaluate((node) => node.open))) await auditFilter.locator(':scope > summary').click();
+  await page.locator('#audit-search').fill('nicht vorhandener QA Vorgang');
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/app/audit' && url.searchParams.has('q')),
+    page.getByRole('button', { name: 'Ergebnisse zeigen' }).click(),
+  ]);
+  if (!(await page.getByRole('heading', { name: 'Kein Eintrag passt zu dieser Auswahl' }).isVisible())) {
+    fail('Verlauf: Kein-Treffer-Zustand fehlt');
+  }
+  await page.getByRole('link', { name: 'Filter zurücksetzen' }).first().click();
+  await page.waitForURL((url) => url.pathname === '/app/audit' && !url.search);
+  const auditHelp = page.locator('.audit-help-disclosure');
+  const auditHelpSummary = await auditHelp.locator(':scope > summary').boundingBox();
+  if (await auditHelp.evaluate((node) => node.open) || !auditHelpSummary || auditHelpSummary.height < 43.5) {
+    fail(`Verlauf: Erklärungen sind nicht kompakt hinter einem 44px-Auslöser (${JSON.stringify(auditHelpSummary)})`);
+  }
+  await closeContext(context);
+
+  const noJS = await trackedContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 1,
+    locale: 'de-AT',
+    timezoneId: 'Europe/Vienna',
+    javaScriptEnabled: false,
+    reducedMotion: 'reduce',
+  });
+  const noJSPage = await localLogin(noJS, 'resident@example.com');
+  for (const route of [
+    { path: '/app/announcements', details: '.announcement-body' },
+    { path: '/app/events', details: '.event-details' },
+    { path: '/app/kontakte', details: '.guide-disclosure' },
+    { path: '/app/dokumente', details: '.document-file-details' },
+    { path: '/app/audit', details: '.audit-help-disclosure' },
+  ]) {
+    const response = await noJSPage.goto(`${baseURL}${route.path}`, { waitUntil: 'networkidle' });
+    if (!response || response.status() !== 200) fail(`No-JS ${route.path}: Status ${response?.status() ?? 0}`);
+    const details = noJSPage.locator(route.details).first();
+    const before = await details.evaluate((node) => node.open);
+    await details.locator(':scope > summary').click();
+    if (await details.evaluate((node) => node.open) === before) fail(`No-JS ${route.path}: native Aufklappfläche reagiert nicht`);
+    if (await noJSPage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)) {
+      fail(`No-JS ${route.path}: horizontaler Überlauf`);
+    }
+  }
+  await closeContext(noJS);
+  process.stdout.write('  ✓ Bewohner-Klickwege · Suche · Kalender · Kontakt · Download · Verlauf · No-JS\n');
+}
+
+async function assertResidentBallotFlow() {
+  const title = 'QA Bewohnerabstimmung Innenhof';
+  const ownerContext = await trackedContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 1,
+    locale: 'de-AT',
+    timezoneId: 'Europe/Vienna',
+    reducedMotion: 'reduce',
+  });
+  const owner = await localLogin(ownerContext, 'owner@example.com');
+  await owner.goto(`${baseURL}/app/abstimmungen`, { waitUntil: 'networkidle' });
+  let card = owner.locator('.vote-card').filter({ hasText: title });
+  const option = card.locator('input[name="option"]').first();
+  if (!(await option.count())) fail('Abstimmung: stimmberechtigter Eigentümer erhält keine Auswahl');
+  await option.check();
+  await Promise.all([
+    owner.waitForURL(/vote=cast/),
+    card.getByRole('button', { name: 'Stimme speichern' }).click(),
+  ]);
+  card = owner.locator('.vote-card').filter({ hasText: title });
+  if (!(await card.getByText('Stimme gespeichert', { exact: true }).count()) ||
+      !(await card.getByRole('button', { name: 'Stimme ändern' }).count())) {
+    fail('Abstimmung: gespeicherte Stimme oder Änderungsweg fehlt');
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    await owner.evaluate(() => window.scrollTo(0, 0));
+    await owner.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, 'resident-content-abstimmung-stimme-390.png'),
+      fullPage: true,
+    });
+  }
+
+  const adminContext = await newContext({ width: 768, height: 1024 });
+  const admin = await localLogin(adminContext, 'admin@example.com');
+  await admin.goto(`${baseURL}/app/abstimmungen`, { waitUntil: 'networkidle' });
+  const adminCard = admin.locator('.vote-card').filter({ hasText: title });
+  await Promise.all([
+    admin.waitForURL(/vote=closed/),
+    adminCard.getByRole('button', { name: 'Abstimmung schließen' }).click(),
+  ]);
+  await closeContext(adminContext);
+
+  await owner.goto(`${baseURL}/app/abstimmungen`, { waitUntil: 'networkidle' });
+  card = owner.locator('.vote-card').filter({ hasText: title });
+  if (!(await card.getByLabel('Abstimmungsergebnis').count())) fail('Abstimmung: Ergebnis fehlt nach dem Schließen');
+  const protocolPromise = owner.waitForEvent('download');
+  await card.getByRole('link', { name: 'Protokoll herunterladen' }).click();
+  const protocol = await protocolPromise;
+  if (!protocol.suggestedFilename().endsWith('-protokoll.html')) {
+    fail(`Abstimmung: unerwarteter Protokollname ${protocol.suggestedFilename()}`);
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    await owner.evaluate(() => window.scrollTo(0, 0));
+    await owner.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, 'resident-content-abstimmung-ergebnis-390.png'),
+      fullPage: true,
+    });
+  }
+  await closeContext(ownerContext);
+  process.stdout.write('  ✓ Abstimmung · Eigentümerstimme · Änderung · Ergebnis · Protokoll\n');
 }
 
 async function assertHomeOnboarding() {
@@ -2194,8 +2547,14 @@ try {
     await createIssue('resident@example.com', 'QA Bewohneranliegen', { verifyResidentAttachmentTarget: true });
     if (!ciCore) {
       await createIssue('owner@example.com', 'QA Eigentümeranliegen');
-      await seedManagedContent();
     }
+    await seedManagedContent();
+    await assertResidentContentResponsiveMatrix(ciCore ? [
+      { width: 390, height: 844 },
+      { width: 768, height: 1024 },
+    ] : undefined);
+    await assertResidentContentClickFlows();
+    await assertResidentBallotFlow();
 
     for (const viewport of viewports) {
       if (!ciCore) {

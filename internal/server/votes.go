@@ -228,6 +228,8 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	pendingCount := 0
 	draftCount := 0
 	openCount := 0
+	openWithVoteCount := 0
+	openReadOnlyCount := 0
 	for _, view := range views {
 		if view.NeedsVote {
 			pendingCount++
@@ -237,6 +239,11 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		}
 		if view.IsOpen {
 			openCount++
+			if view.HasVote {
+				openWithVoteCount++
+			} else if !view.CanVote {
+				openReadOnlyCount++
+			}
 		}
 	}
 	overviewTitle := "Gerade nichts zu tun"
@@ -278,9 +285,12 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			overviewTitle = "Ihre Stimme ist gefragt"
 			overviewText = fmt.Sprintf("%d offene Abstimmungen warten auf Ihre Entscheidung.", pendingCount)
 			overviewClass = "action"
-		case openCount > 0:
+		case openCount > 0 && openWithVoteCount == openCount:
 			overviewTitle = "Alles erledigt"
 			overviewText = "Ihre Stimme ist gespeichert und kann bis zur Schließung geändert werden."
+		case openReadOnlyCount > 0:
+			overviewTitle = "Offene Abstimmung zur Information"
+			overviewText = "Für diesen Zugang ist keine Stimmabgabe hinterlegt. Sie können die Abstimmung und später das Ergebnis verfolgen."
 		case len(views) > 0:
 			overviewTitle = "Ergebnisse verfügbar"
 			overviewText = "Abgeschlossene Abstimmungen und Protokolle finden Sie direkt darunter."

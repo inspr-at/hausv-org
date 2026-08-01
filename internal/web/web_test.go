@@ -203,6 +203,36 @@ func TestAdminPagesConstrainKnownResponsiveMinContent(t *testing.T) {
 	}
 }
 
+func TestResidentContentFlowsStayCompactAndProgressivelyDisclosed(t *testing.T) {
+	for _, want := range []string{
+		`.guide-disclosure > summary { min-height: 44px;`,
+		`.guide-disclosure[open] > summary::after { transform: rotate(90deg); }`,
+		`@media (prefers-reduced-motion: reduce) { .guide-disclosure > summary::after { transition: none; } }`,
+		`class="panel compact announce-aside-panel guide-disclosure"`,
+		`class="panel compact events-aside-panel guide-disclosure"`,
+		`class="panel compact contacts-aside-panel guide-disclosure"`,
+		`@media (max-width: 900px) and (min-width: 721px)`,
+		`.announce .filter-form { grid-template-columns: minmax(0,1fr) auto; align-items: end; }`,
+		`.announce .announcement-entry h3 { overflow-wrap: anywhere; }`,
+		`.announce .announcement-entry h3 { font-size: 18px; line-height: 1.18; }`,
+		`.announce .filter-form .button, .announce .filter-tab, .announce .announcement-body > summary, .announce .entry-actions .button { min-height: 44px; }`,
+		`.events-page .event-details > summary, .events-page .event-history > summary { min-height: 44px;`,
+		`.vote-actions .button, .vote-management-actions .button, .vote-result-actions .button { min-height: 44px;`,
+		`class="audit-help-disclosure guide-disclosure"`,
+		`<summary><strong>Einträge verstehen</strong></summary>`,
+		`min-height: clamp(280px,34vh,360px)`,
+		`class="vote-readonly-note"`,
+		`class="button ghost" href="/app/settings">Einstellungen`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("resident content UX contract missing %q", want)
+		}
+	}
+	if got := strings.Count(PageTemplates, `min-height: clamp(280px,34vh,360px)`); got != 3 {
+		t.Fatalf("resident empty-state height is constrained %d times, want announcements, events and contacts", got)
+	}
+}
+
 func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 	if !strings.Contains(PageTemplates, `<script src="/assets/app.js?v={{.AssetVersion}}" defer></script>`) {
 		t.Fatal("app shell must load the shared submit guard")
