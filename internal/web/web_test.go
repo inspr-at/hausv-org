@@ -243,6 +243,8 @@ func TestSettingsAndParkingKeepReducedMobileInteractionContracts(t *testing.T) {
 		`.content-top .crumb { max-width: 100%; gap: 6px; flex-wrap: wrap; font-size: 13px; }`,
 		`min-height: 44px !important;`,
 		`.payment-import .apply-bar { position: static;`,
+		`.payment-import .import-panel { min-width: 0; grid-template-columns: minmax(0,1fr); }`,
+		`.payment-import .upload-form { min-width: 0; width: 100%; max-width: 100%; grid-template-columns: 1fr; }`,
 		`settings-guide-details`,
 		`<details class="account-details profile-visibility-details">`,
 		`<details class="notification-details">`,

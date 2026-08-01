@@ -7087,12 +7087,15 @@ const PageTemplates = `
         .payment-import .page-intro h1 { font-size: clamp(38px,10vw,46px); line-height: .98; }
         .payment-import .import-steps { grid-template-columns: 1fr; }
         .payment-import .import-step { min-height: 64px; }
+        .payment-import .import-panel { min-width: 0; grid-template-columns: minmax(0,1fr); }
+        .payment-import .import-panel > * { min-width: 0; max-width: 100%; }
         .payment-import .import-panel-head, .payment-import .preview-head { display: grid; }
         .payment-import .period-form { width: 100%; display: grid; grid-template-columns: minmax(0,1fr) auto; }
         .payment-import .period-form label { min-width: 0; }
         .payment-import .period-form input, .payment-import .period-form .button, .payment-import .content-top .page-actions .button { min-height: 44px; }
         .payment-import .reference-row { grid-template-columns: 1fr; gap: 3px; }
-        .payment-import .upload-form { grid-template-columns: 1fr; }
+        .payment-import .upload-form { min-width: 0; width: 100%; max-width: 100%; grid-template-columns: 1fr; }
+        .payment-import .upload-copy, .payment-import .upload-copy > * { min-width: 0; max-width: 100%; }
         .payment-import .upload-form .button { width: 100%; min-height: 46px; }
         .payment-import .preview-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); }
         .payment-import .preview-metric { padding: 9px; }
