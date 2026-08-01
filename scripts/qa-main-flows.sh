@@ -23,6 +23,7 @@ build_log="$log_dir/build.log"
 fake_ha_log="$log_dir/fake-ha.log"
 app_log="$log_dir/app.log"
 playwright_log="$log_dir/playwright.log"
+public_auth_log="$log_dir/public-auth.log"
 structured_log="$log_dir/structured-log-check.log"
 port=${HV_QA_PORT:-8121}
 ha_port=${HV_QA_HA_PORT:-8122}
@@ -141,6 +142,17 @@ if [ "$qa_status" -ne 0 ]; then
         echo "  Fehlerartefakte: $artifact_dir" >&2
     fi
     exit "$qa_status"
+fi
+if [ "${HV_QA_LANDING_ONLY:-}" != true ]; then
+    echo "── running public landing/auth/map flows"
+    node "$repo/scripts/snapshot/qa-public-auth.mjs" "http://localhost:$port" 2>&1 | tee "$public_auth_log"
+    public_auth_status=${PIPESTATUS[0]}
+    if [ "$public_auth_status" -ne 0 ]; then
+        if [ -n "$artifact_dir" ]; then
+            echo "  Fehlerartefakte: $artifact_dir" >&2
+        fi
+        exit "$public_auth_status"
+    fi
 fi
 if [ "${HV_QA_LANDING_ONLY:-}" != true ]; then
     if ! command grep -q '^fake map tile served /map-tiles/' "$fake_ha_log"; then
