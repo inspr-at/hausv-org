@@ -255,10 +255,16 @@ async function assertAccess(page, label, viewport) {
     name: node.querySelector('.access-person-copy strong')?.textContent?.trim() || '',
     email: node.querySelector('.access-person-copy span')?.textContent?.trim() || '',
   })));
-  const expectedEmails = ['admin@example.com', 'owner@example.com', 'resident@example.com', 'verwalter@example.com'];
+  const requiredEmails = ['admin@example.com', 'owner@example.com', 'resident@example.com', 'verwalter@example.com'];
+  // The unified browser gate deliberately keeps its fake data between
+  // lifecycles. The base flow may therefore have created this valid JHW22
+  // technical helper before the settings flow starts. Prove the stable
+  // principals and tenant boundary without treating legitimate prior state as
+  // a leak from another house.
+  const allowedEmails = new Set([...requiredEmails, 'qa-helper@example.com']);
   const emails = rows.map((row) => row.email).sort();
-  if (JSON.stringify(emails) !== JSON.stringify(expectedEmails)) {
-    fail(`${label}: Zugriffsliste ist nicht mandantenscharf (${JSON.stringify(rows)})`);
+  if (requiredEmails.some((email) => !emails.includes(email)) || emails.some((email) => !allowedEmails.has(email))) {
+    fail(`${label}: Zugriffsliste verletzt den erwarteten Hausumfang (${JSON.stringify(rows)})`);
   }
   if (rows.some((row) => !row.name || row.name === row.email)) fail(`${label}: E-Mail wird trotz Name als Primärlabel gezeigt`);
   if (rows.some((row) => /parents|inlaws|cockpit/i.test(row.email))) fail(`${label}: fremder Mandant in Zugriffsliste`);

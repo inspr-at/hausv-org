@@ -24,6 +24,10 @@ fake_ha_log="$log_dir/fake-ha.log"
 app_log="$log_dir/app.log"
 playwright_log="$log_dir/playwright.log"
 public_auth_log="$log_dir/public-auth.log"
+handover_log="$log_dir/handover.log"
+document_log="$log_dir/document.log"
+settings_empty_log="$log_dir/settings-parking-empty.log"
+settings_populated_log="$log_dir/settings-parking-populated.log"
 structured_log="$log_dir/structured-log-check.log"
 port=${HV_QA_PORT:-8121}
 ha_port=${HV_QA_HA_PORT:-8122}
@@ -48,10 +52,16 @@ if [ -z "$go_bin" ] || [ ! -x "$go_bin" ]; then
     exit 1
 fi
 
-cleanup_main_flow_qa() {
+stop_portal() {
     if [ -n "${HAUSV_QA_PID:-}" ]; then
         kill "$HAUSV_QA_PID" 2>/dev/null
+        wait "$HAUSV_QA_PID" 2>/dev/null || true
+        HAUSV_QA_PID=""
     fi
+}
+
+cleanup_main_flow_qa() {
+    stop_portal
     if [ -n "${HAUSV_QA_HA_PID:-}" ]; then
         kill "$HAUSV_QA_HA_PID" 2>/dev/null
     fi
@@ -60,6 +70,35 @@ cleanup_main_flow_qa() {
     fi
 }
 trap cleanup_main_flow_qa EXIT
+
+start_portal() {
+    echo "── starting isolated portal on :$port"
+    # Append so the structured-log gate covers both the empty and populated
+    # parking-store processes used by this one deterministic run.
+    ( cd "$repo" && exec "$tmp/hausv-org" ) >>"$app_log" 2>&1 &
+    HAUSV_QA_PID=$!
+    disown %% 2>/dev/null || true
+
+    ready=0
+    for _ in $(seq 60); do
+        if curl -sf "http://localhost:$port/healthz" >/dev/null 2>&1; then
+            ready=1
+            break
+        fi
+        sleep 0.25
+    done
+    if [ "$ready" -eq 0 ]; then
+        echo "Portal wurde nicht bereit:" >&2
+        command tail -n 80 "$app_log" >&2
+        exit 1
+    fi
+}
+
+restart_portal() {
+    echo "── restarting isolated portal to reset in-memory QA limits"
+    stop_portal
+    start_portal
+}
 
 if [ ! -d "$repo/scripts/snapshot/node_modules/playwright" ]; then
     echo "── installing pinned Playwright package (without browser download)"
@@ -110,25 +149,8 @@ if [ "$build_status" -ne 0 ]; then
     exit "$build_status"
 fi
 
-echo "── starting isolated portal on :$port"
-# `exec` so $! is the portal itself and the trap can kill it.
-( cd "$repo" && exec "$tmp/hausv-org" ) >"$app_log" 2>&1 &
-HAUSV_QA_PID=$!
-disown %% 2>/dev/null || true
-
-ready=0
-for _ in $(seq 60); do
-    if curl -sf "http://localhost:$port/healthz" >/dev/null 2>&1; then
-        ready=1
-        break
-    fi
-    sleep 0.25
-done
-if [ "$ready" -eq 0 ]; then
-    echo "Portal wurde nicht bereit:" >&2
-    command tail -n 80 "$app_log" >&2
-    exit 1
-fi
+: >"$app_log"
+start_portal
 
 if [ "${HV_QA_CI_CORE:-}" = true ]; then
     echo "── running Playwright resident/admin CI core"
@@ -144,6 +166,10 @@ if [ "$qa_status" -ne 0 ]; then
     exit "$qa_status"
 fi
 if [ "${HV_QA_LANDING_ONLY:-}" != true ]; then
+    # Every specialist uses the same persistent fake dataset, but an
+    # independent process. Production-like auth throttling therefore remains
+    # enabled without one harness consuming the next harness's allowance.
+    restart_portal
     echo "── running public landing/auth/map flows"
     node "$repo/scripts/snapshot/qa-public-auth.mjs" "http://localhost:$port" 2>&1 | tee "$public_auth_log"
     public_auth_status=${PIPESTATUS[0]}
@@ -152,6 +178,77 @@ if [ "${HV_QA_LANDING_ONLY:-}" != true ]; then
             echo "  Fehlerartefakte: $artifact_dir" >&2
         fi
         exit "$public_auth_status"
+    fi
+fi
+if [ "${HV_QA_LANDING_ONLY:-}" != true ]; then
+    restart_portal
+    handover_artifacts=""
+    if [ -n "$artifact_dir" ]; then
+        handover_artifacts="$artifact_dir/handover"
+        mkdir -p "$handover_artifacts" || exit 1
+    fi
+    echo "── running complete handover lifecycle"
+    HV_QA_ARTIFACT_DIR="$handover_artifacts" \
+        node "$repo/scripts/snapshot/qa-handover-flow.mjs" "http://localhost:$port" 2>&1 | tee "$handover_log"
+    handover_status=${PIPESTATUS[0]}
+    if [ "$handover_status" -ne 0 ]; then
+        if [ -n "$artifact_dir" ]; then
+            echo "  Fehlerartefakte: $handover_artifacts" >&2
+        fi
+        exit "$handover_status"
+    fi
+
+    restart_portal
+    document_artifacts=""
+    if [ -n "$artifact_dir" ]; then
+        document_artifacts="$artifact_dir/document"
+        mkdir -p "$document_artifacts" || exit 1
+    fi
+    echo "── running complete document/e-invoice lifecycle"
+    HV_QA_ARTIFACT_DIR="$document_artifacts" \
+        node "$repo/scripts/snapshot/qa-document-flow.mjs" "http://localhost:$port" 2>&1 | tee "$document_log"
+    document_status=${PIPESTATUS[0]}
+    if [ "$document_status" -ne 0 ]; then
+        if [ -n "$artifact_dir" ]; then
+            echo "  Fehlerartefakte: $document_artifacts" >&2
+        fi
+        exit "$document_status"
+    fi
+
+    restart_portal
+    echo "── running settings/parking empty-state lifecycle"
+    HV_QA_PARKING_STATE=empty \
+        node "$repo/scripts/snapshot/qa-settings-parking.mjs" "http://localhost:$port" 2>&1 | tee "$settings_empty_log"
+    settings_empty_status=${PIPESTATUS[0]}
+    if [ "$settings_empty_status" -ne 0 ]; then
+        if [ -n "$artifact_dir" ]; then
+            echo "  Fehlerartefakte: $artifact_dir/settings-parking-empty" >&2
+        fi
+        exit "$settings_empty_status"
+    fi
+
+    # ParkingStore is intentionally loaded once. Restart the same isolated
+    # binary after writing the rolling two-month fixture so both an honest
+    # empty state and a populated month lifecycle are proven in one gate.
+    echo "── restarting portal with populated parking fixture"
+    stop_portal
+    node "$repo/scripts/snapshot/qa-settings-parking.mjs" \
+        --write-populated-fixture "$PARKING_DATA_PATH" 2>&1 | tee -a "$settings_populated_log"
+    settings_fixture_status=${PIPESTATUS[0]}
+    if [ "$settings_fixture_status" -ne 0 ]; then
+        exit "$settings_fixture_status"
+    fi
+    start_portal
+
+    echo "── running settings/parking populated lifecycle"
+    HV_QA_PARKING_STATE=populated \
+        node "$repo/scripts/snapshot/qa-settings-parking.mjs" "http://localhost:$port" 2>&1 | tee -a "$settings_populated_log"
+    settings_populated_status=${PIPESTATUS[0]}
+    if [ "$settings_populated_status" -ne 0 ]; then
+        if [ -n "$artifact_dir" ]; then
+            echo "  Fehlerartefakte: $artifact_dir/settings-parking-populated" >&2
+        fi
+        exit "$settings_populated_status"
     fi
 fi
 if [ "${HV_QA_LANDING_ONLY:-}" != true ]; then
@@ -164,7 +261,7 @@ fi
 if [ "${HV_QA_LANDING_ONLY:-}" = true ]; then
     echo "  ✓ Startseiten-QA vollständig"
 elif [ "${HV_QA_CI_CORE:-}" = true ]; then
-    echo "  ✓ Bewohner/Admin-CI-Kernlauf vollständig"
+    echo "  ✓ Bewohner/Admin-CI-Kern plus Fachlebenszyklen vollständig"
 else
     echo "  ✓ Rollen-QA vollständig"
 fi

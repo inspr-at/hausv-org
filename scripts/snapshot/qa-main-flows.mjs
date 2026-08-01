@@ -2078,8 +2078,19 @@ async function assertEnergySafetyAndFlow(viewport) {
   if ((await strip.locator('strong').first().innerText()).trim() !== 'Nur beobachten') {
     fail(`Energie ${viewport.name}: startet nicht in Nur beobachten`);
   }
-  await page.getByRole('button', { name: 'Wirkungslosen Testlauf bewusst starten' }).click();
+  // <summary> is the native disclosure control for <details>; user agents do
+  // not expose one uniform ARIA role for it. Target the native control and use
+  // the keyboard so this assertion follows the real interaction contract.
+  const modeDisclosure = page.locator('summary.energy-mode-action');
+  if ((await modeDisclosure.count()) !== 1 ||
+      (await modeDisclosure.getAttribute('aria-label')) !== 'Wirkungslosen Testlauf bewusst starten' ||
+      !(await modeDisclosure.getByText('Testlauf bewusst starten', { exact: true }).count())) {
+    fail(`Energie ${viewport.name}: Testlauf-Offenlegung ist nicht eindeutig beschriftet`);
+  }
+  await modeDisclosure.focus();
+  await page.keyboard.press('Enter');
   const modeForm = page.locator('.energy-mode-popover');
+  await modeForm.waitFor({ state: 'visible' });
   await modeForm.locator('input[type="checkbox"]').check();
   await modeForm.locator('input[name="confirmation_text"]').fill('TESTLAUF');
   await modeForm.getByRole('button', { name: 'Testlauf starten' }).click();
