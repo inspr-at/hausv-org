@@ -3090,10 +3090,16 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 			t.Fatalf("portal must not contain placeholder copy %q", forbidden)
 		}
 	}
-	for _, want := range []string{"Was ist als Nächstes zu tun?", "Heute ist nichts zu erledigen", "Alles im Blick", "Hier steht, was jetzt wichtig ist"} {
+	for _, want := range []string{"Was ist als Nächstes zu tun?", "Heute ist nichts zu erledigen", "Alles im Blick", germanDateLong(time.Now().In(time.Local))} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("calm portal should contain %q", want)
 		}
+	}
+	// Die Begrüßung trägt jetzt das Datum. Der frühere Untertitel stand direkt
+	// über der Überschrift "Was ist als Nächstes zu tun?" und sagte dasselbe
+	// noch einmal, nur unschärfer.
+	if strings.Contains(body, "Hier steht, was jetzt wichtig ist") {
+		t.Fatal("portal hero should carry the date instead of a filler subtitle")
 	}
 	if strings.Contains(body, `class="empty-state"`) || strings.Contains(body, "Noch keine Beiträge") {
 		t.Fatal("calm portal should not stack empty states")
@@ -3141,6 +3147,41 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 	}
 	if issueIndex, announcementIndex := strings.Index(manager, "Priorisieren"), strings.Index(manager, "Neuen Aushang lesen"); issueIndex < 0 || announcementIndex < 0 || issueIndex > announcementIndex {
 		t.Fatalf("manager digest should put triage before announcements")
+	}
+}
+
+// Der Tagesfokus und die Karten darunter zeigen denselben Eintrag nicht zweimal.
+// Bleibt danach eine Karte ohne Zeile, sagt sie, wo der Eintrag steht, und der
+// Kartenkopf nennt weiterhin die echte Gesamtzahl.
+func TestPortalDoesNotRepeatFocusItemsInBoardCards(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	now := time.Now()
+	if _, err := a.eventStore.Create(houseEvent{TenantSlug: "jhw22", Title: "Dachbegehung", Category: "Sonstiges", StartsAt: now.Add(48 * time.Hour)}); err != nil {
+		t.Fatalf("create event: %v", err)
+	}
+	if _, err := a.issueStore.Create(residentIssue{TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Wasserdruck im Bad zu niedrig", Body: "Kaum Druck", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm}); err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+
+	body := authedRequest(t, a, "resident@example.com", "/app").Body.String()
+	for _, once := range []string{"Wasserdruck im Bad zu niedrig", "Dachbegehung"} {
+		if count := strings.Count(body, once); count != 1 {
+			t.Fatalf("portal should name %q exactly once, got %d:\n%s", once, count, body)
+		}
+	}
+	for _, want := range []string{
+		"Kein weiterer Termin", "Der nächste Termin steht bereits oben unter Heute.",
+		"Nichts weiter offen", "Das offene Anliegen steht bereits oben unter Heute.",
+		"1 offenes Anliegen insgesamt",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("portal card should degrade to its explained empty state and contain %q:\n%s", want, body)
+		}
+	}
+	for _, forbidden := range []string{"Kein Termin eingetragen", "Mängel, Fragen und Vorschläge gehen hier direkt an die Verwaltung."} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("portal must not claim the house is empty while the item stands above: %q", forbidden)
+		}
 	}
 }
 
@@ -3255,7 +3296,7 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	}
 }
 
-func TestEventsPageKeepsPastEventsProgressiveAndDashboardShowsNearestOnly(t *testing.T) {
+func TestEventsPageKeepsPastEventsProgressiveAndDashboardPreviewsUpcomingOnly(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now()
 	pastEnd := now.Add(-47 * time.Hour)
@@ -3277,9 +3318,17 @@ func TestEventsPageKeepsPastEventsProgressiveAndDashboardShowsNearestOnly(t *tes
 		}
 	}
 
+	// Der Hausüberblick zeigt die nächsten Termine als kurze Vorschau. Sie ist
+	// bewusst auf die kommenden Einträge begrenzt: Vergangenes gehört in den
+	// Verlauf der Terminseite und nicht auf den Einstieg.
 	dashboard := authedRequest(t, a, "resident@example.com", "/app").Body.String()
-	if !strings.Contains(dashboard, "Nächste Ablesung") || strings.Contains(dashboard, "Spätere Wartung") {
-		t.Fatalf("dashboard should preview only the nearest event:\n%s", dashboard)
+	for _, want := range []string{"Nächste Termine", "Nächste Ablesung", "Spätere Wartung"} {
+		if !strings.Contains(dashboard, want) {
+			t.Fatalf("dashboard should preview upcoming events and contain %q:\n%s", want, dashboard)
+		}
+	}
+	if strings.Contains(dashboard, "Vergangene Begehung") {
+		t.Fatalf("dashboard must not preview past events:\n%s", dashboard)
 	}
 }
 
@@ -3328,8 +3377,18 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 		t.Fatalf("portal status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	if strings.Contains(body, "Fixierter Hinweis") || strings.Contains(body, "Normaler Hinweis") {
-		t.Fatalf("portal should point to unread announcements without duplicating their content:\n%s", body)
+	// Der Überblick nennt die aktuellen Aushänge beim Namen, fixierte zuerst.
+	// Das ist der Zweck der Vorschau: erkennen, worum es geht, ohne den
+	// Beitragstext zu wiederholen.
+	pinnedIndex, regularIndex := strings.Index(body, "Fixierter Hinweis"), strings.Index(body, "Normaler Hinweis")
+	if pinnedIndex < 0 || regularIndex < 0 {
+		t.Fatalf("portal should preview the visible announcements:\n%s", body)
+	}
+	if pinnedIndex > regularIndex {
+		t.Fatalf("portal should list pinned announcements first:\n%s", body)
+	}
+	if strings.Contains(body, "Aktuell") || strings.Contains(body, "Wichtig") {
+		t.Fatalf("portal should preview titles without repeating announcement bodies:\n%s", body)
 	}
 	for _, forbidden := range []string{"Alter Hinweis", "Geplanter Hinweis", "info-card", `class="quick-row disabled"`, "Schnellzugriff", `class="quick-row" href="/app/announcements"`} {
 		if strings.Contains(body, forbidden) {

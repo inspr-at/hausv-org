@@ -414,6 +414,11 @@ type DashboardDigestItem struct {
 	URL         string
 	ActionLabel string
 	Actionable  bool
+	// SourceKind and SourceID name the record this item was built from
+	// ("event", "issue"). The overview uses them to keep the cards below the
+	// daily focus from repeating an entry that already stands at the top.
+	SourceKind string
+	SourceID   string
 }
 
 type AuditEventView struct {
@@ -2075,6 +2080,19 @@ func GermanMonthShort(t time.Time) string {
 		return ""
 	}
 	return months[month-1]
+}
+
+// GermanDateLong renders a spoken-language date such as
+// "Freitag, 1. August 2026". The portal uses it to date the daily focus, so it
+// stays in the presentation layer next to the other German labels.
+func GermanDateLong(t time.Time) string {
+	weekdays := [...]string{"Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"}
+	months := [...]string{"Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
+	month := int(t.Month())
+	if month < 1 || month > len(months) {
+		return ""
+	}
+	return weekdays[int(t.Weekday())%len(weekdays)] + ", " + strconv.Itoa(t.Day()) + ". " + months[month-1] + " " + strconv.Itoa(t.Year())
 }
 
 func IssueStatuses() []string {

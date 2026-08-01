@@ -189,6 +189,7 @@ var unitPaymentStatusDetail = view.UnitPaymentStatusDetail
 // ── extracted to view ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 var eventTimeRange = view.EventTimeRange
+var germanDateLong = view.GermanDateLong
 var germanMonthShort = view.GermanMonthShort
 var issueCategories = view.IssueCategories
 var issuePriorities = view.IssuePriorities
@@ -1795,7 +1796,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if a.announcementReadStore != nil {
 		lastSeen = a.announcementReadStore.LastSeen(tenant.Slug, email)
 	}
-	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen)
+	signals := a.portalSignals(tenant.Slug, email, role, now, lastSeen)
+	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen, signals)
 	var primary dashboardDigestItem
 	hasPrimary := false
 	followUps := make([]dashboardDigestItem, 0, 3)
@@ -1811,20 +1813,301 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	canSeeParking := hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking)
 	hasHomeUtilities := canSeeParking || canManageHandovers(role) || hasCapability(role, capabilityManageUsers)
-	a.render(w, "portal", a.withBase(ac, map[string]any{
-		"Title":                 houseDisplayName(tenant),
-		"GreetingName":          firstNonEmpty(profile.FirstName, profile.DisplayName()),
-		"CanSeeParking":         canSeeParking,
-		"ActivePage":            "home",
-		"DashboardPrimary":      primary,
-		"HasDashboardPrimary":   hasPrimary,
-		"DashboardFollowUps":    followUps,
-		"HasDashboardFollowUps": len(followUps) > 0,
-		"HasHomeUtilities":      hasHomeUtilities,
-	}))
+	canResidentAreas := canUseResidentAreas(role)
+	canManageIssueBoard := hasCapability(role, capabilityManageIssues)
+	// Ein Eintrag, ein Platz: was der Tagesfokus schon beim Namen nennt, lassen
+	// die Karten darunter weg. Die Zahlen in den Kartenköpfen bleiben trotzdem
+	// die echten Gesamtwerte und sagen das auch.
+	surfaced := map[string]bool{}
+	if hasPrimary {
+		markDigestSource(surfaced, primary)
+	}
+	for _, item := range followUps {
+		markDigestSource(surfaced, item)
+	}
+	remainingEvents := make([]houseEvent, 0, len(signals.events))
+	for _, item := range signals.events {
+		if !surfaced["event:"+item.ID] {
+			remainingEvents = append(remainingEvents, item)
+		}
+	}
+	remainingIssues := make([]residentIssue, 0, len(signals.openIssues))
+	for _, item := range signals.openIssues {
+		if !surfaced["issue:"+item.ID] {
+			remainingIssues = append(remainingIssues, item)
+		}
+	}
+	boardEvents := eventViews(firstN(remainingEvents, 3), now)
+	boardAnnouncements := announcementViewsWithReadState(firstN(signals.announcements, 3), now, false, lastSeen)
+	boardIssues := issueViewsForActor(firstN(remainingIssues, 3), role, email)
+	energyCard, hasEnergyCard := a.portalEnergyCard(ac, now)
+	openBallots := 0
+	if canResidentAreas {
+		openBallots = a.openBallotCount(tenant.Slug, now)
+	}
+	issuesURL := "/app/anliegen"
+	if canManageIssueBoard {
+		issuesURL = "/app/anliegen/board"
+	}
+	data := map[string]any{
+		"Title":                  houseDisplayName(tenant),
+		"GreetingName":           firstNonEmpty(profile.FirstName, profile.DisplayName()),
+		"CanSeeParking":          canSeeParking,
+		"ActivePage":             "home",
+		"PortalToday":            germanDateLong(now.In(time.Local)),
+		"DashboardPrimary":       primary,
+		"HasDashboardPrimary":    hasPrimary,
+		"DashboardFollowUps":     followUps,
+		"HasDashboardFollowUps":  len(followUps) > 0,
+		"HasHomeUtilities":       hasHomeUtilities,
+		"PortalEvents":           boardEvents,
+		"HasPortalEvents":        len(boardEvents) > 0,
+		"PortalEventTotalLabel":  portalEventTotalLabel(len(signals.events), len(boardEvents)),
+		"PortalEventsInFocus":    len(boardEvents) == 0 && len(signals.events) > 0,
+		"PortalAnnouncements":    boardAnnouncements,
+		"HasPortalAnnouncements": len(boardAnnouncements) > 0,
+		"PortalUnreadLabel":      portalUnreadLabel(signals.unreadAnnouncements),
+		"PortalIssues":           boardIssues,
+		"HasPortalIssues":        len(boardIssues) > 0,
+		"HasPortalOpenIssues":    len(signals.openIssues) > 0,
+		"PortalOpenIssueLabel":   portalOpenIssueLabel(len(signals.openIssues), len(boardIssues)),
+		"PortalIssuesInFocus":    len(boardIssues) == 0 && len(signals.openIssues) > 0,
+		"PortalIssuesURL":        issuesURL,
+		"CanCreateResidentIssue": canCreateResidentIssue(role),
+		"CanManageEvents":        canManageEvents(role),
+		"CanManageAnnouncements": hasCapability(role, capabilityManageAnnouncements),
+		"PortalEnergy":           energyCard,
+		"HasPortalEnergy":        hasEnergyCard,
+		"PortalAreas":            portalAreaViews(canResidentAreas, canSeeParking, canManageHandovers(role), hasCapability(role, capabilityManageUsers), openBallots),
+	}
+	// The sidebar badges read the same numbers. Passing them explicitly keeps
+	// render() from re-reading announcements and issues for this page.
+	if a.announcementStore != nil && a.announcementReadStore != nil && strings.TrimSpace(email) != "" {
+		data["UnreadAnnouncements"] = signals.unreadAnnouncements
+		data["HasUnreadAnnouncements"] = signals.unreadAnnouncements > 0
+	}
+	if a.issueStore != nil {
+		data["OpenIssues"] = len(signals.openIssues)
+		data["HasOpenIssues"] = len(signals.openIssues) > 0
+	}
+	a.render(w, "portal", a.withBase(ac, data))
 }
 
-func (a *app) dashboardDigestItems(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time) []dashboardDigestItem {
+// portalAreaView is one entry-point tile on the overview. Detail says what the
+// area is for; Note carries a live number only when there is one.
+type portalAreaView struct {
+	Icon       string
+	Label      string
+	Detail     string
+	URL        string
+	Note       string
+	HasNote    bool
+	Management bool
+}
+
+type portalEnergyStat struct {
+	Label string
+	Value string
+	Muted bool
+}
+
+type portalEnergyView struct {
+	Ready       bool
+	HomeName    string
+	ModeLabel   string
+	ModeActive  bool
+	Message     string
+	Stats       []portalEnergyStat
+	ActionLabel string
+	ActionURL   string
+	Footnote    string
+}
+
+// portalSignals is the tenant state the overview screen works from: the visible
+// announcements, the upcoming events and the issues this actor may see. It is
+// read once per request and then shared by the daily focus, the board cards and
+// the sidebar badges, so opening the portal stays a single pass per store.
+type portalSignals struct {
+	announcements       []announcement
+	unreadAnnouncements int
+	events              []houseEvent
+	issues              []residentIssue
+	openIssues          []residentIssue
+}
+
+func (a *app) portalSignals(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time) portalSignals {
+	signals := portalSignals{}
+	if a.announcementStore != nil {
+		signals.announcements = a.announcementStore.Visible(tenantSlug, now)
+		signals.unreadAnnouncements = unreadAnnouncementCount(signals.announcements, lastSeen, now)
+	}
+	if a.eventStore != nil {
+		signals.events = a.eventStore.Upcoming(tenantSlug, now)
+	}
+	if a.issueStore != nil {
+		signals.issues = a.visibleIssuesForActor(tenantSlug, email, role)
+		signals.openIssues = make([]residentIssue, 0, len(signals.issues))
+		for _, item := range signals.issues {
+			if issueIsOpen(item) {
+				signals.openIssues = append(signals.openIssues, item)
+			}
+		}
+	}
+	return signals
+}
+
+func firstN[T any](items []T, limit int) []T {
+	if limit < 0 || len(items) <= limit {
+		return items
+	}
+	return items[:limit]
+}
+
+// portalUnreadLabel is the short badge on the Aushang card. The daily focus
+// already spells the count out, so the card stays terse.
+func portalUnreadLabel(unread int) string {
+	if unread <= 0 {
+		return ""
+	}
+	return strconv.Itoa(unread) + " ungelesen"
+}
+
+// markDigestSource remembers which record a focus item was built from so the
+// board cards can leave it out instead of saying the same thing twice.
+func markDigestSource(surfaced map[string]bool, item dashboardDigestItem) {
+	if item.SourceKind == "" || item.SourceID == "" {
+		return
+	}
+	surfaced[item.SourceKind+":"+item.SourceID] = true
+}
+
+// portalEventTotalLabel explains a shortened list: it only appears when the
+// card shows fewer rows than the house actually has ahead, and then it names
+// the real total.
+func portalEventTotalLabel(total int, shown int) string {
+	if shown == 0 || total <= shown {
+		return ""
+	}
+	return pluralizeCount(total, "Termin insgesamt", "Termine insgesamt")
+}
+
+// portalOpenIssueLabel keeps the Anliegen card honest: the number is always the
+// full count of open items, and it says "insgesamt" as soon as one of them is
+// already shown in the daily focus above.
+func portalOpenIssueLabel(total int, shown int) string {
+	if total <= 0 {
+		return ""
+	}
+	if shown < total {
+		return pluralizeCount(total, "offenes Anliegen insgesamt", "offene Anliegen insgesamt")
+	}
+	return pluralizeCount(total, "offenes Anliegen", "offene Anliegen")
+}
+
+func (a *app) openBallotCount(tenantSlug string, now time.Time) int {
+	if a.voteStore == nil {
+		return 0
+	}
+	count := 0
+	for _, item := range a.voteStore.ListTenant(tenantSlug) {
+		if _, _, active := ballotStatusForView(item, now); active {
+			count++
+		}
+	}
+	return count
+}
+
+// portalAreaViews lists the areas that do not already have their own card on
+// the overview — the energy card links to "Mein Zuhause", so that area is
+// deliberately absent here. Each entry is role-scoped: a tile only appears when
+// the actor may actually open it.
+func portalAreaViews(canResidentAreas bool, canSeeParking bool, canManageHandovers bool, canManageUsers bool, openBallots int) []portalAreaView {
+	areas := make([]portalAreaView, 0, 7)
+	if canResidentAreas {
+		areas = append(areas, portalAreaView{Icon: "document", Label: "Dokumente", Detail: "Protokolle, Verträge und Nachweise.", URL: "/app/dokumente"})
+		ballots := portalAreaView{Icon: "vote", Label: "Abstimmungen", Detail: "Beschlüsse und laufende Entscheidungen.", URL: "/app/abstimmungen"}
+		if openBallots > 0 {
+			ballots.Note = pluralizeCount(openBallots, "Abstimmung läuft", "Abstimmungen laufen")
+			ballots.HasNote = true
+		}
+		areas = append(areas, ballots)
+		areas = append(areas, portalAreaView{Icon: "contact", Label: "Kontakte", Detail: "Verwaltung, Beirat und Dienstleister.", URL: "/app/kontakte"})
+	}
+	if canSeeParking {
+		areas = append(areas, portalAreaView{Icon: "parking", Label: "Parkplatznutzung", Detail: "Verbrauch und Abrechnung.", URL: "/app/parking", Management: true})
+	}
+	if canManageHandovers {
+		areas = append(areas, portalAreaView{Icon: "handover", Label: "Übergaben", Detail: "Termine und Protokolle.", URL: "/app/uebergaben", Management: true})
+	}
+	if canManageUsers {
+		areas = append(areas, portalAreaView{Icon: "users", Label: "Benutzer & Rechte", Detail: "Zugänge verwalten.", URL: "/app/settings/users", Management: true})
+	}
+	if canResidentAreas {
+		areas = append(areas, portalAreaView{Icon: "settings", Label: "Einstellungen", Detail: "Profil, Haus und Benachrichtigungen.", URL: "/app/settings"})
+	}
+	return areas
+}
+
+// portalEnergyCard is the compact energy signal on the overview. It never
+// invents a number: without a completed setup it offers the setup, and without
+// measured intervals it says so plainly instead of showing a zero.
+func (a *app) portalEnergyCard(ac authCtx, now time.Time) (portalEnergyView, bool) {
+	if a.energyStore == nil || !a.canViewEnergy(ac) {
+		return portalEnergyView{}, false
+	}
+	card := portalEnergyView{
+		HomeName:    "Mein Zuhause",
+		ActionLabel: "Einrichtung starten",
+		ActionURL:   "/app/zuhause/onboarding",
+		Footnote:    "Im geplanten Leistungstarif zählt die höchste Viertelstunde eines Monats.",
+	}
+	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	if err != nil {
+		card.Message = "Die Energiedaten sind gerade nicht abrufbar. Bitte später erneut ansehen."
+		card.ActionLabel = "Zuhause öffnen"
+		card.ActionURL = "/app/energie"
+		return card, true
+	}
+	if !exists || !profile.OnboardingComplete {
+		card.Message = "HAUSV liest zuerst nur mit und schaltet nichts. Die Einrichtung erfasst, welche Verbraucher es gibt und welche Messwerte bereits vorliegen."
+		return card, true
+	}
+	card.Ready = true
+	card.ActionLabel = "Zuhause öffnen"
+	card.ActionURL = "/app/energie"
+	if name := strings.TrimSpace(profile.HouseholdName); name != "" {
+		card.HomeName = name
+	}
+	card.ModeActive = profile.OperatingMode != energy.ModeObserve
+	card.ModeLabel = "Nur beobachten"
+	if card.ModeActive {
+		card.ModeLabel = "Aktive Steuerung"
+	}
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
+	intervals, _ := a.energyStore.ListIntervals(ac.tenant.Slug, monthStart.UTC(), time.Time{})
+	peak := energy.PeakForMonth(intervals, now, time.Local)
+	peakStat := portalEnergyStat{Label: "Spitze diesen Monat", Value: "Noch nicht gemessen", Muted: true}
+	if peak > 0 {
+		peakStat = portalEnergyStat{Label: "Spitze diesen Monat", Value: formatEnergyCompact(peak, 1) + " kW"}
+	} else {
+		card.Message = "Für diesen Monat liegen noch keine Messwerte vor. Solange nichts gemessen ist, nennt HAUSV keine Spitze."
+	}
+	card.Stats = []portalEnergyStat{
+		peakStat,
+		portalEnergyStatValue("Zielwert", profile.TargetPeakKW, "Nicht gesetzt"),
+		portalEnergyStatValue("Vereinbarte Leistung", profile.AgreedPowerKW, "Nicht erfasst"),
+	}
+	return card, true
+}
+
+func portalEnergyStatValue(label string, value *float64, fallback string) portalEnergyStat {
+	if value == nil || *value <= 0 {
+		return portalEnergyStat{Label: label, Value: fallback, Muted: true}
+	}
+	return portalEnergyStat{Label: label, Value: formatEnergyCompact(*value, 1) + " kW"}
+}
+
+func (a *app) dashboardDigestItems(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time, signals portalSignals) []dashboardDigestItem {
 	var paymentItem *dashboardDigestItem
 	var announcementItem *dashboardDigestItem
 	var issueItem *dashboardDigestItem
@@ -1849,7 +2132,7 @@ func (a *app) dashboardDigestItems(tenantSlug string, email string, role string,
 		break
 	}
 	if a.announcementStore != nil {
-		unread := unreadAnnouncementCount(a.announcementStore.Visible(tenantSlug, now), lastSeen, now)
+		unread := signals.unreadAnnouncements
 		if unread > 0 {
 			title := "Neue Aushänge lesen"
 			if unread == 1 {
@@ -1867,28 +2150,24 @@ func (a *app) dashboardDigestItems(tenantSlug string, email string, role string,
 		}
 	}
 	if a.issueStore != nil {
-		visible := a.visibleIssuesForActor(tenantSlug, email, role)
+		visible := signals.issues
 		if hasCapability(role, capabilityManageIssues) {
-			openIssues := make([]residentIssue, 0, len(visible))
-			for _, issue := range visible {
-				if issueIsOpen(issue) {
-					openIssues = append(openIssues, issue)
-				}
-			}
+			openIssues := signals.openIssues
 			if len(openIssues) > 0 {
 				views := a.issueViewsForActor(tenantSlug, openIssues, role, email)
 				first := views[0]
-				detail := first.Title
-				if len(openIssues) > 1 {
-					detail += " · " + pluralizeCount(len(openIssues), "offenes Anliegen", "offene Anliegen")
-				}
+				// Der Fokus nennt den Fall beim Namen; die Gesamtzahl steht im
+				// Kopf der Anliegen-Karte. Sonst stünden dieselbe Zahl und
+				// dasselbe Verb zweimal auf dem Schirm.
 				item := dashboardDigestItem{
 					Kind:        "Anliegen",
-					Title:       first.DetailAction,
-					Detail:      detail,
+					Title:       first.Title,
+					Detail:      first.NextStep,
 					URL:         first.DetailURL,
 					ActionLabel: first.DetailAction,
 					Actionable:  true,
+					SourceKind:  "issue",
+					SourceID:    first.ID,
 				}
 				issueItem = &item
 			}
@@ -1906,6 +2185,8 @@ func (a *app) dashboardDigestItems(tenantSlug string, email string, role string,
 						URL:         item.DetailURL,
 						ActionLabel: item.DetailAction,
 						Actionable:  true,
+						SourceKind:  "issue",
+						SourceID:    item.ID,
 					}
 				case "resolution":
 					issueItem = &dashboardDigestItem{
@@ -1915,6 +2196,8 @@ func (a *app) dashboardDigestItems(tenantSlug string, email string, role string,
 						URL:         item.DetailURL,
 						ActionLabel: item.DetailAction,
 						Actionable:  true,
+						SourceKind:  "issue",
+						SourceID:    item.ID,
 					}
 				case "waiting":
 					if waiting == nil && issueIsOpen(visible[i]) {
@@ -1933,12 +2216,14 @@ func (a *app) dashboardDigestItems(tenantSlug string, email string, role string,
 					URL:         waiting.DetailURL,
 					ActionLabel: "Status ansehen",
 					Actionable:  false,
+					SourceKind:  "issue",
+					SourceID:    waiting.ID,
 				}
 			}
 		}
 	}
 	if a.eventStore != nil {
-		upcoming := a.eventStore.Upcoming(tenantSlug, now)
+		upcoming := signals.events
 		if len(upcoming) > 0 {
 			views := a.eventViews(tenantSlug, upcoming[:1], now, email, role)
 			if len(views) > 0 {
@@ -1949,6 +2234,8 @@ func (a *app) dashboardDigestItems(tenantSlug string, email string, role string,
 					URL:         "/app/events",
 					ActionLabel: "Termine ansehen",
 					Actionable:  false,
+					SourceKind:  "event",
+					SourceID:    views[0].ID,
 				}
 				eventItem = &item
 			}

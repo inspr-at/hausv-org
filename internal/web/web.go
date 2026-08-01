@@ -1348,11 +1348,13 @@ const PageTemplates = `
     .home-hero-copy { width: min(720px,100%); }
     .home-hero h1 { font-size: clamp(34px,4vw,44px); }
     .home-hero p { margin-top: 8px; color: var(--muted); font-size: 15px; line-height: 1.4; }
-    .home-page { width: min(1080px,100%); padding-top: 30px; gap: 30px; }
+    /* Hausüberblick: daily focus, house board, energy signal and area tiles. */
+    .home-page { width: min(1140px,100%); padding-top: 28px; padding-bottom: 10px; gap: 34px; }
     .home-focus, .home-follow, .home-utilities { display: grid; gap: 16px; }
-    .home-focus-head { display: grid; gap: 5px; }
     .home-eyebrow { color: var(--gold-ink); font-size: 11px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
-    .home-focus h2, .home-follow h2, .home-utilities h2 { font-size: 22px; }
+    .portal-section { min-width: 0; display: grid; gap: 14px; }
+    .portal-section-head { min-width: 0; display: grid; gap: 6px; align-items: end; border-bottom: 1px solid var(--line); padding-bottom: 11px; }
+    .portal-section-head h2 { margin-top: 4px; font-size: 22px; }
     .home-primary-task { min-width: 0; display: grid; grid-template-columns: 48px minmax(0,1fr) auto; gap: 18px; align-items: center; border: 1px solid rgba(47,107,74,.34); border-radius: var(--radius-sm); padding: 22px 24px; background: linear-gradient(135deg, rgba(47,107,74,.09), rgba(255,254,251,.98) 62%); box-shadow: var(--shadow-panel); }
     .home-task-number { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--ink); font-family: var(--font-serif); font-size: 22px; font-weight: 700; }
     .home-task-copy { min-width: 0; }
@@ -1360,10 +1362,12 @@ const PageTemplates = `
     .home-task-copy h3 { margin-top: 4px; font-size: 24px; overflow-wrap: anywhere; }
     .home-task-copy p { margin-top: 6px; color: var(--muted); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
     .home-task-action { min-height: 44px; padding-inline: 17px; }
-    .home-calm { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 13px; align-items: center; border: 1px solid rgba(47,107,74,.2); border-radius: var(--radius-sm); padding: 18px 20px; color: var(--leaf); background: rgba(47,107,74,.07); }
-    .home-calm-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--leaf); font-size: 20px; font-weight: 900; }
-    .home-calm-copy strong { display: block; font-family: var(--font-serif); font-size: 20px; }
-    .home-calm-copy > span { display: block; margin-top: 3px; color: var(--muted); font-size: 13.5px; }
+    .home-calm { display: grid; grid-template-columns: 46px minmax(0,1fr); gap: 16px; align-items: center; border: 1px solid rgba(47,107,74,.24); border-radius: var(--radius-sm); padding: 22px 24px; color: var(--leaf); background: linear-gradient(135deg, rgba(47,107,74,.1), rgba(255,254,251,.96) 68%); box-shadow: var(--shadow-panel); }
+    .home-calm-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--leaf); font-size: 21px; font-weight: 900; }
+    .home-calm-copy strong { display: block; font-family: var(--font-serif); font-size: 22px; }
+    .home-calm-copy > span { display: block; margin-top: 5px; max-width: 62ch; color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .home-follow { gap: 10px; }
+    .home-follow h3 { color: var(--soft); font-family: var(--font-sans); font-size: 11px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
     .home-follow-list { overflow: hidden; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
     .home-follow-row { min-width: 0; display: grid; grid-template-columns: 120px minmax(0,1fr) auto; gap: 18px; align-items: center; padding: 15px 2px; color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); }
     .home-follow-row:last-child { border-bottom: 0; }
@@ -1373,13 +1377,62 @@ const PageTemplates = `
     .home-follow-copy strong { display: block; font-size: 15px; line-height: 1.3; overflow-wrap: anywhere; }
     .home-follow-copy > span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
     .home-follow-action { color: var(--ink); font-size: 13px; font-weight: 750; white-space: nowrap; }
-    .home-utilities { border-top: 1px solid var(--line); padding-top: 22px; }
-    .home-utilities h2 { color: var(--muted); font-family: var(--font-sans); font-size: 14px; font-weight: 750; }
-    .home-utility-links { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
-    .home-utility-links a { min-width: 180px; display: grid; gap: 3px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 11px 13px; color: inherit; background: rgba(255,254,251,.68); text-decoration: none; }
+    /* Die Karten sind unterschiedlich voll. Sie wachsen mit ihrem Inhalt, statt
+       auf gleiche Höhe gezogen zu werden und über der Fußzeile eine Lücke zu
+       lassen. */
+    .portal-board-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(268px,1fr)); gap: 14px; align-items: start; }
+    .portal-card { min-width: 0; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 17px 18px 13px; background: var(--panel); box-shadow: var(--shadow-panel); }
+    .portal-card-head { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .portal-card-head h3 { font-size: 17px; }
+    .portal-card-tag { color: var(--soft); font-size: 11.5px; font-weight: 750; white-space: nowrap; }
+    .portal-list { min-width: 0; margin: 0; padding: 0; list-style: none; display: grid; }
+    .portal-list li { min-width: 0; border-top: 1px solid var(--line); }
+    .portal-list li:first-child { border-top: 0; }
+    .portal-row { min-width: 0; min-height: 44px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 10px; align-items: center; padding: 11px 0; color: inherit; text-decoration: none; }
+    .portal-row.has-date { grid-template-columns: 40px minmax(0,1fr); }
+    .portal-row:hover strong { color: var(--gold-ink); }
+    .portal-row-copy { min-width: 0; display: grid; gap: 2px; }
+    .portal-row-copy strong { display: block; font-size: 14.5px; font-weight: 700; line-height: 1.28; overflow-wrap: anywhere; }
+    .portal-row-copy span { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .portal-date { width: 40px; display: grid; justify-items: center; gap: 0; border-radius: var(--radius-xs); padding: 4px 0 5px; background: var(--panel-soft); border: 1px solid var(--line); }
+    .portal-date strong { font-family: var(--font-serif); font-size: 17px; line-height: 1; }
+    .portal-date span { color: var(--gold-ink); font-size: 9.5px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+    .portal-flag { width: 9px; height: 9px; border-radius: 50%; background: var(--gold); }
+    .portal-card-blank { flex: 1 1 auto; display: grid; gap: 6px; align-content: start; border-radius: var(--radius-xs); padding: 13px 14px; background: var(--panel-soft); }
+    .portal-card-blank strong { font-size: 13.5px; }
+    .portal-card-blank span { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+    .portal-card-action { margin-top: auto; min-height: 42px; display: inline-flex; align-items: center; gap: 7px; border-top: 1px solid var(--line); padding-top: 11px; color: var(--ink); font-size: 13px; font-weight: 750; text-decoration: none; }
+    .portal-card-action:hover { color: var(--gold-ink); }
+    .portal-energy { min-width: 0; display: grid; grid-template-columns: minmax(0,1.05fr) minmax(0,1.35fr) auto; gap: 18px 26px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 20px 22px; color: rgba(255,255,255,.9); background: linear-gradient(120deg, #17261d 0%, #20291f 62%, #2a3327 100%); border-color: rgba(255,255,255,.12); box-shadow: var(--shadow-panel); }
+    .portal-energy.setup { grid-template-columns: minmax(0,1fr) auto; }
+    .portal-energy-copy { min-width: 0; display: grid; gap: 6px; align-content: start; }
+    .portal-energy-kicker { color: var(--gold-light); font-size: 11px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+    .portal-energy-copy h3 { color: #fff; font-size: 21px; overflow-wrap: anywhere; }
+    .portal-energy-mode { justify-self: start; display: inline-flex; align-items: center; gap: 8px; border-radius: var(--radius-pill); padding: 3px 11px; background: rgba(255,255,255,.1); color: rgba(255,255,255,.86); font-size: 12px; font-weight: 750; }
+    .portal-energy-mode::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--gold-light); }
+    .portal-energy-mode.active::before { background: #e9b65a; }
+    .portal-energy-message { max-width: 60ch; color: rgba(255,255,255,.68); font-size: 13px; line-height: 1.45; }
+    .portal-energy-stats { min-width: 0; margin: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+    .portal-energy-stats > div { min-width: 0; display: grid; align-content: end; border-left: 1px solid rgba(255,255,255,.14); padding-left: 14px; }
+    .portal-energy-stats dt { color: rgba(255,255,255,.56); font-size: 11px; font-weight: 700; line-height: 1.3; }
+    .portal-energy-stats dd { margin: 4px 0 0; color: #fff; font-family: var(--font-serif); font-size: 23px; line-height: 1.1; overflow-wrap: anywhere; }
+    .portal-energy-stats dd.pending { color: rgba(255,255,255,.6); font-family: var(--font-sans); font-size: 13.5px; font-weight: 650; }
+    .portal-energy-foot { min-width: 0; display: grid; gap: 9px; justify-items: start; }
+    .portal-energy-foot .button { min-height: 42px; border-color: var(--gold-light); background: var(--gold-light); color: #17261d; }
+    .portal-energy-foot .button:hover { border-color: #fff; background: #fff; }
+    .portal-energy-foot p { max-width: 30ch; color: rgba(255,255,255,.5); font-size: 11.5px; line-height: 1.4; }
+    .home-utilities { display: grid; gap: 14px; }
+    .home-utilities h2 { font-size: 22px; }
+    .home-utility-links { display: grid; grid-template-columns: repeat(auto-fit,minmax(226px,1fr)); gap: 10px; }
+    .home-utility-links a { min-width: 0; min-height: 42px; display: grid; grid-template-columns: 30px minmax(0,1fr); gap: 12px; align-items: start; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 13px 14px; color: inherit; background: rgba(255,254,251,.68); text-decoration: none; }
     .home-utility-links a:hover { border-color: var(--gold); background: var(--panel); }
-    .home-utility-links strong { font-size: 13.5px; }
-    .home-utility-links span { color: var(--muted); font-size: 12px; }
+    .home-utility-links a:hover strong { color: var(--gold-ink); }
+    .portal-area-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: var(--radius-xs); background: var(--panel-soft); color: var(--gold-ink); }
+    .portal-area-icon svg { width: 19px; height: 19px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .portal-area-copy { min-width: 0; display: grid; gap: 3px; justify-items: start; }
+    .home-utility-links strong { min-width: 0; font-size: 13.5px; overflow-wrap: anywhere; }
+    .home-utility-links .portal-area-copy > span { min-width: 0; color: var(--muted); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+    .home-utility-links .portal-area-copy > em { display: inline-flex; align-items: center; margin-top: 3px; border-radius: var(--radius-pill); padding: 2px 9px; background: rgba(200,153,63,.16); color: #8a6a1f; font-size: 11px; font-style: normal; font-weight: 800; }
     .section-link { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; }
     .section-link::after { content: "›"; color: var(--gold-ink); font-size: 21px; line-height: 1; }
     .section-link:hover { color: var(--gold-ink); }
@@ -2368,6 +2421,12 @@ const PageTemplates = `
       .parking-empty-note .button { grid-column: 1 / -1; justify-self: start; }
       .parking-detail-stack { position: static; }
       .digest-panel .quick-list { grid-template-columns: 1fr; }
+      /* Two columns keep the board cards readable; the third one takes the
+         full width instead of sitting alone next to a gap. */
+      .portal-board-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .portal-board-grid > article:nth-child(3) { grid-column: 1 / -1; }
+      .portal-energy { grid-template-columns: minmax(0,1fr) auto; }
+      .portal-energy-stats { grid-column: 1 / -1; }
     }
 	    @media (max-width: 900px) {
 	      .app-shell { display: block; }
@@ -2496,13 +2555,27 @@ const PageTemplates = `
       .home-hero::after { background: linear-gradient(90deg, rgba(247,243,234,.98), rgba(247,243,234,.82)); }
       .home-hero h1 { font-size: clamp(32px,9vw,40px); }
       .home-hero p { font-size: 14px; }
-      .home-page { padding-top: 24px; gap: 26px; }
+      .home-page { padding-top: 22px; gap: 28px; }
       .home-primary-task { grid-template-columns: 42px minmax(0,1fr); gap: 14px; padding: 18px; }
       .home-task-action { grid-column: 1 / -1; width: 100%; }
+      .home-calm { grid-template-columns: 42px minmax(0,1fr); gap: 14px; padding: 18px; }
+      .home-calm-icon { width: 42px; height: 42px; font-size: 19px; }
+      .home-calm-copy strong { font-size: 20px; }
       .home-follow-row { grid-template-columns: minmax(0,1fr) auto; gap: 5px 12px; padding: 14px 2px; }
       .home-follow-kind { grid-column: 1; }
       .home-follow-copy { grid-column: 1; }
       .home-follow-action { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+      .portal-board-grid { grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); }
+      .portal-board-grid > article:nth-child(3) { grid-column: auto; }
+      .portal-energy, .portal-energy.setup { grid-template-columns: minmax(0,1fr); gap: 16px; padding: 18px; }
+      .portal-energy-stats { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+      .portal-energy-stats > div { border-left: 0; border-top: 1px solid rgba(255,255,255,.14); padding-left: 0; padding-top: 9px; }
+      .portal-energy-stats dd { font-size: 19px; }
+      .portal-energy-stats dd.pending { font-size: 12.5px; }
+      .portal-energy-foot { justify-items: stretch; }
+      .portal-energy-foot .button { width: 100%; }
+      .portal-energy-foot p { max-width: none; }
+      .home-utility-links { grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); }
 	      .page, .page.wide { width: 100vw; max-width: 100vw; padding-left: 18px; padding-right: 18px; overflow-x: clip; }
 	      .page > *, .panel, .audit-timeline, .filter-form.audit-filter { min-width: 0; max-width: 100%; }
 	      h1 { font-size: clamp(34px,10.5vw,42px); }
@@ -2710,9 +2783,13 @@ const PageTemplates = `
       .release-rail { grid-template-columns: repeat(auto-fit,minmax(132px,1fr)); border-right: 0; border-bottom: 1px solid var(--line); padding-right: 0; padding-bottom: 12px; }
       .release-item { grid-template-columns: 1fr; gap: 4px; }
       .empty-state { grid-template-columns: 1fr; }
-      .home-utility-links { display: grid; grid-template-columns: 1fr; }
-      .home-utility-links a { min-width: 0; }
       .quick-arrow { display: none; }
+    }
+    /* Auf schmalen Geräten steht die Aktion einer Danach-Zeile unter dem Text.
+       Daneben bliebe für die Beschreibung nur eine schmale, zerrissene Spalte. */
+    @media (max-width: 600px) {
+      .home-follow-row { grid-template-columns: minmax(0,1fr); gap: 4px; padding: 14px 2px 15px; }
+      .home-follow-action { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 5px; }
     }
   </style>
 {{end}}
@@ -2835,64 +2912,196 @@ const PageTemplates = `
   </div>
 {{end}}
 
+{{define "portalAreaIcon"}}<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{if eq . "energy"}}<path d="M4 13h5l2-7 3 12 2-5h4"/><path d="M5 20h14"/>{{else if eq . "document"}}<path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/>{{else if eq . "vote"}}<path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/>{{else if eq . "contact"}}<path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/>{{else if eq . "parking"}}<path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/>{{else if eq . "handover"}}<path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/>{{else if eq . "users"}}<path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/>{{else}}<path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/>{{end}}</svg>{{end}}
+
 {{define "portal"}}
 {{template "appOpen" .}}
     <main class="app-main">
       <section class="home-hero">
         <div class="home-hero-copy">
           <h1>Hallo {{.GreetingName}}.</h1>
-          <p>Hier steht, was jetzt wichtig ist.</p>
+          <p>{{.PortalToday}}</p>
         </div>
       </section>
       <section class="page home-page">
-        <section class="home-focus" aria-labelledby="home-focus-title">
-          <header class="home-focus-head">
-            <p class="home-eyebrow">Heute</p>
-            <h2 id="home-focus-title">Was ist als Nächstes zu tun?</h2>
-          </header>
-          {{if .HasDashboardPrimary}}
-            <article class="home-primary-task">
-              <div class="home-task-number" aria-hidden="true">1</div>
-              <div class="home-task-copy">
-                <span>{{.DashboardPrimary.Kind}}</span>
-                <h3>{{.DashboardPrimary.Title}}</h3>
-                <p>{{.DashboardPrimary.Detail}}</p>
-              </div>
-              <a class="button primary home-task-action" href="{{.DashboardPrimary.URL}}">{{.DashboardPrimary.ActionLabel}} <span aria-hidden="true">→</span></a>
-            </article>
-          {{else}}
-            <div class="home-calm">
-              <span class="home-calm-icon" aria-hidden="true">✓</span>
-              <span class="home-calm-copy"><strong>Alles im Blick</strong><span>Heute ist nichts zu erledigen.</span></span>
+        <section class="portal-section" aria-labelledby="home-focus-title">
+          <header class="portal-section-head">
+            <div>
+              <p class="home-eyebrow">Heute</p>
+              <h2 id="home-focus-title">Was ist als Nächstes zu tun?</h2>
             </div>
+          </header>
+          <div class="home-focus">
+            {{if .HasDashboardPrimary}}
+              <article class="home-primary-task">
+                <div class="home-task-number" aria-hidden="true">1</div>
+                <div class="home-task-copy">
+                  <span>{{.DashboardPrimary.Kind}}</span>
+                  <h3>{{.DashboardPrimary.Title}}</h3>
+                  <p>{{.DashboardPrimary.Detail}}</p>
+                </div>
+                <a class="button primary home-task-action" href="{{.DashboardPrimary.URL}}">{{.DashboardPrimary.ActionLabel}} <span aria-hidden="true">→</span></a>
+              </article>
+            {{else}}
+              <div class="home-calm">
+                <span class="home-calm-icon" aria-hidden="true">✓</span>
+                <span class="home-calm-copy"><strong>Alles im Blick</strong><span>Heute ist nichts zu erledigen. Sobald etwas ansteht, erscheint es hier an erster Stelle.</span></span>
+              </div>
+            {{end}}
+            {{if .HasDashboardFollowUps}}
+            <section class="home-follow" aria-labelledby="home-follow-title">
+              <h3 id="home-follow-title">{{if .HasDashboardPrimary}}Danach{{else}}Im Blick{{end}}</h3>
+              <div class="home-follow-list">
+                {{range .DashboardFollowUps}}
+                <a class="home-follow-row" href="{{.URL}}">
+                  <span class="home-follow-kind">{{.Kind}}</span>
+                  <span class="home-follow-copy"><strong>{{.Title}}</strong><span>{{.Detail}}</span></span>
+                  <span class="home-follow-action">{{.ActionLabel}} <span aria-hidden="true">→</span></span>
+                </a>
+                {{end}}
+              </div>
+            </section>
+            {{end}}
+          </div>
+        </section>
+
+        <section class="portal-section" aria-labelledby="portal-board-title">
+          <header class="portal-section-head">
+            <div>
+              <p class="home-eyebrow">Im Haus</p>
+              <h2 id="portal-board-title">Der aktuelle Stand</h2>
+            </div>
+          </header>
+          <div class="portal-board-grid">
+            <article class="portal-card">
+              <header class="portal-card-head">
+                <h3>Nächste Termine</h3>
+                {{if .PortalEventTotalLabel}}<span class="portal-card-tag">{{.PortalEventTotalLabel}}</span>{{end}}
+              </header>
+              {{if .HasPortalEvents}}
+              <ul class="portal-list">
+                {{range .PortalEvents}}
+                <li>
+                  <a class="portal-row has-date" href="/app/events">
+                    <span class="portal-date" aria-hidden="true"><strong>{{.DateBadgeDay}}</strong><span>{{.DateBadgeMonth}}</span></span>
+                    <span class="portal-row-copy"><strong>{{.Title}}</strong><span>{{.TimeRange}} · {{.Category}}{{if .HasLocation}} · {{.Location}}{{end}}</span></span>
+                  </a>
+                </li>
+                {{end}}
+              </ul>
+              {{else if .PortalEventsInFocus}}
+              <div class="portal-card-blank">
+                <strong>Kein weiterer Termin</strong>
+                <span>Der nächste Termin steht bereits oben unter Heute.</span>
+              </div>
+              {{else}}
+              <div class="portal-card-blank">
+                <strong>Kein Termin eingetragen</strong>
+                <span>Versammlungen, Wartungen und Ablesungen stehen hier, sobald sie feststehen.</span>
+              </div>
+              {{end}}
+              <a class="portal-card-action" href="/app/events">{{if .CanManageEvents}}Termin eintragen{{else}}Alle Termine ansehen{{end}} <span aria-hidden="true">→</span></a>
+            </article>
+
+            <article class="portal-card">
+              <header class="portal-card-head">
+                <h3>Am Aushang</h3>
+                {{if .PortalUnreadLabel}}<span class="portal-card-tag">{{.PortalUnreadLabel}}</span>{{end}}
+              </header>
+              {{if .HasPortalAnnouncements}}
+              <ul class="portal-list">
+                {{range .PortalAnnouncements}}
+                <li>
+                  <a class="portal-row" href="/app/announcements">
+                    <span class="portal-row-copy"><strong>{{.Title}}</strong><span>{{.Category}} · {{.PublishedAt}}</span></span>
+                    {{if .Unread}}<span class="portal-flag" aria-label="ungelesen"></span>{{end}}
+                  </a>
+                </li>
+                {{end}}
+              </ul>
+              {{else}}
+              <div class="portal-card-blank">
+                <strong>Der Aushang ist leer</strong>
+                <span>Hinweise der Verwaltung erscheinen hier und bleiben nachlesbar.</span>
+              </div>
+              {{end}}
+              <a class="portal-card-action" href="/app/announcements">{{if .CanManageAnnouncements}}Beitrag schreiben{{else}}Zum Aushang{{end}} <span aria-hidden="true">→</span></a>
+            </article>
+
+            <article class="portal-card">
+              <header class="portal-card-head">
+                <h3>Anliegen</h3>
+                {{if .HasPortalOpenIssues}}<span class="portal-card-tag">{{.PortalOpenIssueLabel}}</span>{{end}}
+              </header>
+              {{if .HasPortalIssues}}
+              <ul class="portal-list">
+                {{range .PortalIssues}}
+                <li>
+                  <a class="portal-row" href="{{.DetailURL}}">
+                    <span class="portal-row-copy"><strong>{{.Title}}</strong><span>{{.Category}} · {{.CreatedAt}}</span></span>
+                    <span class="pill {{.StatusClass}}">{{.Status}}</span>
+                  </a>
+                </li>
+                {{end}}
+              </ul>
+              {{else if .PortalIssuesInFocus}}
+              <div class="portal-card-blank">
+                <strong>Nichts weiter offen</strong>
+                <span>Das offene Anliegen steht bereits oben unter Heute.</span>
+              </div>
+              {{else}}
+              <div class="portal-card-blank">
+                <strong>Nichts offen</strong>
+                <span>Mängel, Fragen und Vorschläge gehen hier direkt an die Verwaltung.</span>
+              </div>
+              {{end}}
+              {{if .CanManageIssues}}<a class="portal-card-action" href="{{.PortalIssuesURL}}">Anliegen bearbeiten <span aria-hidden="true">→</span></a>
+              {{else if .CanCreateResidentIssue}}<a class="portal-card-action" href="/app/anliegen?new=1#issue-new">Anliegen melden <span aria-hidden="true">→</span></a>
+              {{else}}<a class="portal-card-action" href="{{.PortalIssuesURL}}">Anliegen ansehen <span aria-hidden="true">→</span></a>{{end}}
+            </article>
+          </div>
+
+          {{if .HasPortalEnergy}}
+          <article class="portal-energy{{if not .PortalEnergy.Stats}} setup{{end}}" aria-labelledby="portal-energy-title">
+            <div class="portal-energy-copy">
+              <p class="portal-energy-kicker">Zuhause und Energie</p>
+              <h3 id="portal-energy-title">{{.PortalEnergy.HomeName}}</h3>
+              {{if .PortalEnergy.Ready}}<span class="portal-energy-mode{{if .PortalEnergy.ModeActive}} active{{end}}">{{.PortalEnergy.ModeLabel}}</span>{{end}}
+              {{if .PortalEnergy.Message}}<p class="portal-energy-message">{{.PortalEnergy.Message}}</p>{{end}}
+            </div>
+            {{if .PortalEnergy.Stats}}
+            <dl class="portal-energy-stats">
+              {{range .PortalEnergy.Stats}}<div><dt>{{.Label}}</dt><dd{{if .Muted}} class="pending"{{end}}>{{.Value}}</dd></div>{{end}}
+            </dl>
+            {{end}}
+            <div class="portal-energy-foot">
+              <a class="button" href="{{.PortalEnergy.ActionURL}}">{{.PortalEnergy.ActionLabel}}</a>
+              <p>{{.PortalEnergy.Footnote}}</p>
+            </div>
+          </article>
           {{end}}
         </section>
 
-        {{if .HasDashboardFollowUps}}
-        <section class="home-follow" aria-labelledby="home-follow-title">
-          <h2 id="home-follow-title">{{if .HasDashboardPrimary}}Danach{{else}}Im Blick{{end}}</h2>
-          <div class="home-follow-list">
-            {{range .DashboardFollowUps}}
-            <a class="home-follow-row" href="{{.URL}}">
-              <span class="home-follow-kind">{{.Kind}}</span>
-              <span class="home-follow-copy"><strong>{{.Title}}</strong><span>{{.Detail}}</span></span>
-              <span class="home-follow-action">{{.ActionLabel}} <span aria-hidden="true">→</span></span>
+        <section class="home-utilities" aria-labelledby="home-utilities-title">
+          <header class="portal-section-head">
+            <div>
+              <p class="home-eyebrow">Bereiche</p>
+              <h2 id="home-utilities-title">{{if .HasHomeUtilities}}Weitere Bereiche und Verwaltung{{else}}Weitere Bereiche{{end}}</h2>
+            </div>
+          </header>
+          <div class="home-utility-links">
+            {{range .PortalAreas}}
+            <a href="{{.URL}}">
+              <span class="portal-area-icon">{{template "portalAreaIcon" .Icon}}</span>
+              <span class="portal-area-copy">
+                <strong>{{.Label}}</strong>
+                <span>{{.Detail}}</span>
+                {{if .HasNote}}<em>{{.Note}}</em>{{end}}
+              </span>
             </a>
             {{end}}
           </div>
         </section>
-        {{end}}
-
-        {{if .HasHomeUtilities}}
-        <section class="home-utilities" aria-labelledby="home-utilities-title">
-          <h2 id="home-utilities-title">{{if or .CanManageHandovers .CanManageUsers}}Verwaltung{{else}}Weitere Bereiche{{end}}</h2>
-          <div class="home-utility-links">
-            {{if .CanSeeParking}}<a href="/app/parking"><strong>Parkplatznutzung</strong><span>Verbrauch und Abrechnung</span></a>{{end}}
-            {{if .CanManageHandovers}}<a href="/app/uebergaben"><strong>Übergaben</strong><span>Termine und Protokolle</span></a>{{end}}
-            {{if .CanManageUsers}}<a href="/app/settings/users"><strong>Benutzer &amp; Rechte</strong><span>Zugänge verwalten</span></a>{{end}}
-          </div>
-        </section>
-        {{end}}
       </section>
     </main>
 {{template "appClose" .}}
