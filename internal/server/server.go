@@ -772,6 +772,9 @@ type app struct {
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
 	energyStore           energy.Storage
+	energySampleInterval  time.Duration
+	energySamplerMu       sync.Mutex
+	energySamplers        map[string]*energySamplerState
 	retentionFailure      atomic.Bool
 	energyLifecycleLocks  sync.Map
 	energyChartMu         sync.Mutex
@@ -1212,6 +1215,13 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid VOTE_REMINDER_INTERVAL")
 	}
+	// 30 s ergeben 30 Abtastungen je Viertelstunde. Dichter zu messen belastet
+	// Home Assistant ohne erkennbaren Gewinn, dünner zu messen macht jede
+	// ausgefallene Abtastung zu einem sichtbaren Loch in der Abdeckung.
+	energySampleInterval, err := parseDuration(env("ENERGY_SAMPLE_INTERVAL", "30s"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid ENERGY_SAMPLE_INTERVAL")
+	}
 	parkingHistoryStart, err := parseHistoryStart(env("PARKING_HISTORY_START", ""), time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("invalid PARKING_HISTORY_START")
@@ -1429,6 +1439,8 @@ func newApp() (*app, error) {
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
 		energyStore:           energyBackend,
+		energySampleInterval:  energySampleInterval,
+		energySamplers:        map[string]*energySamplerState{},
 		mapTileBaseURL:        env("MAP_TILE_BASE_URL", ""),
 
 		chargingTickInterval:   chargingTickInterval,

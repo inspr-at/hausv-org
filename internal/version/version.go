@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.64.0",
+			Date:     "1. August 2026",
+			Kind:     "Energie",
+			Headline: "Ihre Monatsspitze entsteht jetzt von selbst.",
+			Intro:    "Wer Home Assistant verbunden hat, musste bisher zusätzlich einen Smart-Meter-Export hochladen, damit im Energie-Cockpit überhaupt eine Viertelstunde erschien. HAUSV zeichnet die abgeschlossenen Viertelstunden ab sofort laufend selbst auf.",
+			Items: []NoteItem{
+				{Label: "Laufend aufgezeichnet", Text: "Der Netzbezug wird alle 30 Sekunden gelesen; jede vollständige Viertelstunde wird festgehalten, sobald sie vorbei ist."},
+				{Label: "Nur gelesen", Text: "Auch im Beobachtungsmodus: HAUSV liest Home Assistant und schaltet nichts."},
+				{Label: "Ehrlich beschriftet", Text: "Aus laufenden Messwerten verdichtete Viertelstunden heißen „teilweise geschätzt“, und eine Messlücke bleibt eine Messlücke statt eines erfundenen Werts."},
+				{Label: "Zwei Quellen im Vergleich", Text: "Liegt zusätzlich ein Smart-Meter-Export vor, stellt das Cockpit beide Monatsspitzen gegenüber."},
+			},
+		},
+		{
 			Version:  "0.63.0",
 			Date:     "1. August 2026",
 			Kind:     "Oberfläche",

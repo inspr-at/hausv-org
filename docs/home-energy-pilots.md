@@ -151,6 +151,36 @@ Zuordnungen bleiben eine bewusste Auswahl. Im Cockpit steht anschließend in
 Alltagssprache, welche Bereiche tatsächlich gemessen und welche lediglich
 erfasst sind; technische Entity-IDs bleiben in eingeklappten Einrichtungsdetails.
 
+## Viertelstunden aus Home Assistant
+
+Ist im Haus genau ein Messpunkt mit der Metrik `grid-import-power` **bestätigt**,
+zeichnet HAUSV die abgeschlossenen Viertelstunden selbst auf. Ohne diese
+Aufzeichnung entsteht auf einem Haus ohne Smart-Meter-Export nie eine
+Bemessungsgrundlage — die Tarifkarte bliebe dauerhaft leer.
+
+- Abtastung alle `ENERGY_SAMPLE_INTERVAL` (Vorgabe `30s`, also 30 Messwerte je
+  Viertelstunde). `0` schaltet die Aufzeichnung ab.
+- Gelesen wird ausschließlich `GET /api/states/<entity>`. Kein Dienstaufruf,
+  kein Schreibzugriff; die Aufzeichnung läuft daher auch in `observe`.
+- Geschrieben wird eine Viertelstunde erst, wenn sie vorbei ist, ausgerichtet
+  auf :00/:15/:30/:45 in der Zeitzone des Hauses.
+- Ein Messwert gilt höchstens zwei Abtastschritte lang weiter. Mindestens 90 %
+  der Viertelstunde müssen so belegt sein, sonst wird kein Wert geschrieben.
+- Die Güte ist höchstens `estimated`: zwischen zwei Abtastungen bleibt die
+  Leistung angenommen, nicht gemessen. `gap` steht für fehlende, `stale` für
+  eingefrorene Messwerte; beide werden ohne Wert festgehalten, statt über die
+  Lücke zu mitteln.
+- Quelle ist `home-assistant`. Sie bleibt neben `smart-meter` bestehen und wird
+  nie mit ihr verschmolzen; das Cockpit stellt beide Monatsspitzen gegenüber.
+- Aufbewahrung, Export und Löschung sind dieselben wie für importierte
+  Viertelstundenwerte.
+
+Gemessen wird die Momentanleistung und nicht der kumulative kWh-Zähler
+(`grid-import-energy`): Der Leistungstarif bemisst die mittlere Bezugsleistung
+einer Viertelstunde, und Zählerstände in Home Assistant sind typischerweise auf
+0,1 oder 1 kWh gerundet — über eine Viertelstunde wären das mehrere hundert Watt
+Unsicherheit auf einem verrechneten Wert.
+
 ## Smart-Meter-Referenz
 
 Unterstützt wird UTF-8-CSV mit Komma oder Semikolon:

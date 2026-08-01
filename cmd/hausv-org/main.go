@@ -86,6 +86,8 @@ func main() {
 	defer stopTelegram()
 	stopEnergyRetention := app.StartEnergyRetentionWorker()
 	defer stopEnergyRetention()
+	stopEnergySampler := app.StartEnergyIntervalSampler()
+	defer stopEnergySampler()
 
 	srv := newHTTPServer(app.Addr(), app.Handler())
 
