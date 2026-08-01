@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.63.0",
+			Date:     "1. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Jede Fläche zeigt jetzt den Stand — nicht nur eine Überschrift.",
+			Intro:    "Der Hausüberblick, das Energie-Cockpit und alle Listenseiten wurden neu aufgebaut: dichter, ruhiger und auf beiden Bildschirmgrößen ohne Brüche.",
+			Items: []NoteItem{
+				{Label: "Hausüberblick", Text: "Was heute ansteht, die nächsten Termine, der Aushang und offene Anliegen auf einen Blick — ohne Wiederholungen."},
+				{Label: "Monatsspitze zuerst", Text: "Das Energie-Cockpit beginnt mit der verrechneten Leistung und nennt, auf wie vielen Viertelstunden sie beruht."},
+				{Label: "Ehrlich beziffert", Text: "Der Betrag im Cockpit heißt Leistungsanteil des Netztarifs und nennt ausdrücklich, was er nicht enthält."},
+				{Label: "Nichts läuft mehr über", Text: "Alle Bereiche wurden über zehn Bildschirmbreiten von 360 bis 1440 Pixeln geprüft."},
+			},
+		},
+		{
 			Version:  "0.62.0",
 			Date:     "1. August 2026",
 			Kind:     "Energie & Transparenz",

@@ -2,6 +2,24 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.63.0] - 2026-08-01
+
+### Neu
+
+- **Der Hausüberblick zeigt wieder den Stand des Hauses.** Was heute ansteht, die nächsten Termine, der aktuelle Aushang, offene Anliegen und ein Blick auf Zuhause und Energie — statt einer einzelnen Karte auf leerer Fläche. Was oben unter „Heute" steht, wird darunter nicht wiederholt.
+- **Das Energie-Cockpit beginnt mit Ihrer Monatsspitze.** Gemessene Viertelstunde mit Zeitpunkt, verrechnete Leistung mit Begründung und beide Tarifstufen stehen jetzt oben — dazu, auf wie vielen Viertelstunden welchen Monats das beruht.
+- **Fehlerseiten führen weiter.** Wer einen Bereich ohne Berechtigung öffnet, sieht eine verständliche Seite mit dem Weg zurück statt einer nackten Fehlermeldung.
+
+### Verbessert
+
+- **Der Betrag im Cockpit ist nicht mehr misszuverstehen.** Er heißt jetzt Leistungsanteil des Netztarifs, zeigt seine Rechnung und sagt ausdrücklich, dass Arbeitspreis, Abgaben und Steuern nicht enthalten sind.
+- **Jede Fläche nutzt den Bildschirm.** Dokumente, Anliegen, Abstimmungen, Kontakte, Aushang, Termine, Einstellungen und Verlauf erklären im leeren Zustand, was dort erscheint und wer es anlegt.
+- **Kontakte, Aushang und Termine folgen ihrer eigenen Ordnung** — nach Funktion gruppiert, fixierte Beiträge zuerst, Termine nach Monat.
+- **Der Verlauf ist eine Tabelle** mit Zeit, Vorgang, Person und Objekt — die Form, in der man einen Nachweis liest.
+- **Die Verwaltung arbeitet schneller.** Das Anliegen-Board bietet Schnellsichten für neue, laufende und dringende Meldungen; die Triage zeigt den Stand des Anliegens neben der Entscheidung.
+- **Die Seitenleiste verschluckt keine Einträge mehr.** Auf verbreiteten Notebook-Größen waren „Verlauf" und „Einstellungen" nicht erreichbar.
+- **Keine Seite läuft mehr seitlich über** — geprüft über zehn Bildschirmbreiten von 360 bis 1440 Pixeln.
+
 ## [0.62.0] - 2026-08-01
 
 ### Neu
