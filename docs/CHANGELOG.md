@@ -2,6 +2,21 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.65.0] - 2026-08-01
+
+### Neu
+
+- **Vom Einstieg bis zum Abschluss führt ein ruhiger, klarer Weg.** Anliegen, Übergaben, Dokumente und E-Rechnungen zeigen jeweils die nächste sinnvolle Aktion und bestätigen sichtbar, wenn ein Schritt erledigt ist.
+- **Die Hausadresse bekommt eine echte Karte.** Schon vor der Anmeldung zeigt ein kompakter OpenStreetMap-Ausschnitt die vertraute Straße und Umgebung; ein direkter Link öffnet die große Karte.
+
+### Verbessert
+
+- **Wichtiges steht im Vordergrund.** Hauptaktionen sind eindeutig, seltene Funktionen treten als ruhige Nebenaktionen zurück und erklärende Texte bleiben kurz.
+- **Mobil fühlt sich nicht mehr wie eine verkleinerte Desktop-Seite an.** Adresse, Navigation, Dialoge, Tabellen, Energieansicht, Zahlungsimport und Parkplatz bleiben bis 320 Pixel Breite vollständig lesbar und bedienbar.
+- **Übergaben und Dokumente bleiben nachvollziehbar.** Zwei Bestätigungen, Dateivorschau, PDF-Ablage, Sichtbarkeit und Versionswechsel bilden einen durchgängigen Ablauf mit klarem Endzustand.
+- **Die Verwaltung arbeitet kompakter.** Benutzer, Einheiten, Benachrichtigungen, Exporte, Zahlungsimport und Parkplatz ordnen Inhalt und Aktionen auch bei langen Namen und kleinen Fenstern sauber.
+- **Tastatur und Touch funktionieren verlässlich.** Fokus, Menüs, Dialogaktionen und große Tippflächen wurden über die öffentlichen, Bewohner- und Verwaltungswege vereinheitlicht.
+
 ## [0.64.0] - 2026-08-01
 
 ### Neu

@@ -91,6 +91,20 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.65.0",
+			Date:     "1. August 2026",
+			Kind:     "Bedienung & Orientierung",
+			Headline: "Der Weg durchs Portal fühlt sich jetzt deutlich einfacher an.",
+			Intro:    "HAUSV führt vom Anmelden bis zum erledigten Anliegen, Dokument oder Übergabe mit weniger Ablenkung und klaren nächsten Schritten.",
+			Items: []NoteItem{
+				{Label: "Schneller ans Ziel", Text: "Hauptaktionen stehen im Vordergrund; seltene Funktionen und Erklärungen bleiben ruhig im Hintergrund."},
+				{Label: "Anmelden mit Orientierung", Text: "Unter der Anmeldung zeigt eine echte OpenStreetMap-Karte die vertraute Straße und Umgebung."},
+				{Label: "Mobil vollständig", Text: "Navigation, Dialoge, Energie, Zahlungsimport und Parkplatz bleiben bis 320 Pixel Breite lesbar und bedienbar."},
+				{Label: "Sauber abgeschlossen", Text: "Anliegen, Übergaben, Dokumente und E-Rechnungen führen verständlich bis zum sichtbaren Ergebnis."},
+				{Label: "Verlässlich bedienen", Text: "Tastaturfokus, Menüs, Dialogaktionen und große Tippflächen funktionieren über alle Hauptwege einheitlich."},
+			},
+		},
+		{
 			Version:  "0.64.0",
 			Date:     "1. August 2026",
 			Kind:     "Energie",
