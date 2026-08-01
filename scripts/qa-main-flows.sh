@@ -8,7 +8,7 @@
 set -u
 
 repo=$(git rev-parse --show-toplevel)
-tmp=$(mktemp -d /tmp/hausv-main-flow-qa.XXXXXX)
+tmp=$(mktemp -d /tmp/hausv-main-flow-qa.XXXXXX) || exit 1
 artifact_dir=${HV_QA_ARTIFACT_DIR:-}
 if [ -n "$artifact_dir" ]; then
     mkdir -p "$artifact_dir" || exit 1

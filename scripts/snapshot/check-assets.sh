@@ -13,7 +13,7 @@ set -u
 
 port=8097
 repo=$(git rev-parse --show-toplevel)
-tmp=$(mktemp -d /tmp/hv-assets.XXXXXX)
+tmp=$(mktemp -d /tmp/hv-assets.XXXXXX) || exit 1
 
 export HV_PORT=$port
 export HV_DATA=$tmp/data

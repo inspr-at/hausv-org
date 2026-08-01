@@ -23,7 +23,7 @@ if [ -z "$ref" ] || [ -z "$out" ]; then
 fi
 
 repo=$(git rev-parse --show-toplevel)
-tmp=$(mktemp -d /tmp/hv-snap.XXXXXX)
+tmp=$(mktemp -d /tmp/hv-snap.XXXXXX) || exit 1
 
 if [ "$ref" = WORKTREE ]; then
     src=$repo
