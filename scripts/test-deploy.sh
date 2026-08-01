@@ -8,7 +8,9 @@ set -u
 deploy_fixture_repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 deploy_fixture_mock=$deploy_fixture_repo/scripts/testdata/deploy/mock-command
 deploy_fixture_root=$(mktemp -d -t hausv-deploy-fixture.XXXXXX) || exit 1
-deploy_fixture_lock_prefix="/run/current-system/sw/bin/flock -w 300 /run/lock/compose-csb1.lock /bin/sh -eu -c"
+deploy_fixture_lock_prefix="/run/current-system/sw/bin/flock -w 300 /run/lock/compose-csb1.lock /bin/sh -eu"
+deploy_fixture_base64_bin="/run/current-system/sw/bin/base64"
+deploy_fixture_mktemp_bin="/run/current-system/sw/bin/mktemp"
 deploy_fixture_compose_command="docker compose --project-directory /home/mba/Code/nixcfg/hosts/csb1/docker -p csb1 -f /etc/compose/csb1/docker-compose.yml"
 
 cleanup() {
@@ -19,14 +21,14 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$deploy_fixture_root/bin" || exit 1
-for command_name in git gh curl ssh sleep; do
+for command_name in git gh curl ssh sleep base64; do
     ln -s "$deploy_fixture_mock" "$deploy_fixture_root/bin/$command_name" || exit 1
 done
 
 deploy_fixture_passed=0
 
 contains_fail_fast_remote_command() {
-    local output=$1 line escaped decoded
+    local output=$1 line escaped decoded inner transport encoded body
     while IFS= read -r line; do
         case $line in
             *"mandatory recovery command: ssh -p "*) ;;
@@ -39,15 +41,25 @@ contains_fail_fast_remote_command() {
         # The value was produced by our own shell_quote; eval is the exact
         # inverse and the input is not attacker-controlled in a fixture run.
         decoded=$(eval "printf '%s' $escaped" 2>/dev/null) || continue
+        inner=${decoded#"/bin/sh -eu -c "}
+        [ "$inner" != "$decoded" ] || continue
+        transport=$(eval "printf '%s' $inner" 2>/dev/null) || continue
+        case $transport in
+            "locked_script=\$("*"$deploy_fixture_mktemp_bin /tmp/hausv-locked.XXXXXX"*"; printf %s "*" | $deploy_fixture_base64_bin -d >\"\$locked_script\"; $deploy_fixture_lock_prefix \"\$locked_script\"") ;;
+            *) continue ;;
+        esac
+        encoded=${transport#*"; printf %s "}
+        encoded=${encoded%%" | "*}
+        body=$(printf '%s' "$encoded" | base64 -d 2>/dev/null) || continue
         case $line in
             *"image rollback command: ssh -p "*)
-                case $decoded in
-                    "/bin/sh -eu -c "*"$deploy_fixture_lock_prefix"*"docker tag"*"$deploy_fixture_compose_command up"*) return 0 ;;
+                case $body in
+                    *"docker tag"*" && $deploy_fixture_compose_command up"*) return 0 ;;
                 esac
                 ;;
             *"mandatory recovery command: ssh -p "*)
-                case $decoded in
-                    "/bin/sh -eu -c "*"$deploy_fixture_lock_prefix"*"$deploy_fixture_compose_command up"*) return 0 ;;
+                case $body in
+                    *"$deploy_fixture_compose_command up"*) return 0 ;;
                 esac
                 ;;
         esac
@@ -103,9 +115,9 @@ fixture() {
 fixture no_schema 0 "all fail-closed preconditions passed" dry-run
 if ! grep -qF -- "$deploy_fixture_lock_prefix" \
     "$deploy_fixture_root/no_schema/commands.log" \
-    || ! grep -qF -- "$deploy_fixture_compose_command config --services" \
+    || ! grep -qF -- "$deploy_fixture_base64_bin -d" \
     "$deploy_fixture_root/no_schema/commands.log"; then
-    echo "FAIL no_schema: preflight did not use the locked rendered compose stack" >&2
+    echo "FAIL no_schema: preflight did not use the encoded locked transport" >&2
     exit 1
 fi
 for forbidden in "docker build" "docker tag" "--source /var/lib/csb1-docker/hausv-org"; do
@@ -140,6 +152,7 @@ fixture lock_timeout 1 "remote preflight failed" dry-run
 fixture missing_rendered_compose 1 "remote preflight failed" dry-run
 fixture wrong_compose_identity 1 "remote preflight failed" dry-run
 fixture preflight_visible_drift 1 "remote preflight failed" dry-run
+fixture encoder_fail 1 "cannot encode the locked remote preflight" dry-run
 fixture schema_snapshot_identity_drift 1 "fresh consistent pre-deploy snapshot failed" release
 if grep -qF -- "docker build" "$deploy_fixture_root/schema_snapshot_identity_drift/commands.log"; then
     echo "FAIL schema_snapshot_identity_drift: build ran after snapshot identity changed" >&2
@@ -155,6 +168,16 @@ if ! contains_fail_fast_remote_command "$(cat "$deploy_fixture_root/schema_snaps
     echo "FAIL schema_snapshot_recovery_fail: recovery command is not fail-fast" >&2
     exit 1
 fi
+fixture schema_snapshot_recovery_encoder_fail 1 "locked mandatory recovery shell:" release
+if grep -qF -- "mandatory recovery command: ssh" \
+    "$deploy_fixture_root/schema_snapshot_recovery_encoder_fail/output.txt" \
+    || ! grep -qF -- "ssh -tt -p 2222 mba@cs1.barta.cm" \
+    "$deploy_fixture_root/schema_snapshot_recovery_encoder_fail/output.txt" \
+    || ! grep -qF -- "inside that locked shell, mandatory recovery command: $deploy_fixture_compose_command up" \
+    "$deploy_fixture_root/schema_snapshot_recovery_encoder_fail/output.txt"; then
+    echo "FAIL schema_snapshot_recovery_encoder_fail: attended recovery fallback is incomplete" >&2
+    exit 1
+fi
 
 fixture preserve_fail 1 "could not preserve the currently running image" release
 fixture preserve_identity_drift 1 "could not preserve the currently running image" release
@@ -166,6 +189,30 @@ fixture build_fail 1 "release image build failed" release
 fixture activation_fail 1 "image rollback command:" release
 if ! contains_fail_fast_remote_command "$(cat "$deploy_fixture_root/activation_fail/output.txt")"; then
     echo "FAIL activation_fail: rollback command is not fail-fast" >&2
+    exit 1
+fi
+fixture rollback_encoder_fail 1 "locked image rollback shell:" release
+if grep -qF -- "image rollback command: ssh" \
+    "$deploy_fixture_root/rollback_encoder_fail/output.txt" \
+    || ! grep -qF -- "ssh -tt -p 2222 mba@cs1.barta.cm" \
+    "$deploy_fixture_root/rollback_encoder_fail/output.txt" \
+    || ! grep -qF -- "inside that locked shell, image rollback command: docker tag" \
+    "$deploy_fixture_root/rollback_encoder_fail/output.txt" \
+    || ! grep -qF -- " && $deploy_fixture_compose_command up" \
+    "$deploy_fixture_root/rollback_encoder_fail/output.txt"; then
+    echo "FAIL rollback_encoder_fail: attended rollback fallback is incomplete" >&2
+    exit 1
+fi
+fixture activation_mktemp_fail 1 "activation transport setup failed before lock and retag" release
+if grep -qF -- "image rollback command:" \
+    "$deploy_fixture_root/activation_mktemp_fail/output.txt"; then
+    echo "FAIL activation_mktemp_fail: pre-mutation staging failure suggested a rollback" >&2
+    exit 1
+fi
+fixture activation_decode_fail 1 "activation transport setup failed before lock and retag" release
+if grep -qF -- "image rollback command:" \
+    "$deploy_fixture_root/activation_decode_fail/output.txt"; then
+    echo "FAIL activation_decode_fail: pre-mutation decode failure suggested a rollback" >&2
     exit 1
 fi
 fixture activation_lock_timeout 1 "activation lock was unavailable before retag" release

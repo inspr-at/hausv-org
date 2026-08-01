@@ -324,6 +324,13 @@ Because csb1 uses fish as its SSH login shell, every compound remote operation
 is explicitly executed through `/bin/sh -eu -c`. The printed recovery,
 containment, and image-rollback commands use the same fail-fast wrapper, so a
 failed first command cannot be masked by a successful final command.
+Locked transaction bodies are base64-transported as data, decoded into a
+mode-0600 `mktemp` file, executed by `/bin/sh -eu` while holding the project
+lock, and removed by a trap. This is quote-safe transport across fish, not
+encryption; setup or decode failure stops before the lock and before retagging.
+If local encoding becomes unavailable only while recovery output is being
+generated, the script prints an attended locked-shell command plus the exact
+command to run inside it instead of emitting a broken one-liner.
 
 ### Mandatory pre-schema recovery point
 

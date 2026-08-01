@@ -48,20 +48,38 @@ remote_sh_command() {
     printf '/bin/sh -eu -c %s' "$(shell_quote "$1")"
 }
 
+encode_locked_body() {
+    local raw encoded
+    raw=$(printf '%s' "$1" | base64) || return 1
+    encoded=${raw//$'\n'/}
+    encoded=${encoded//$'\r'/}
+    [ -n "$encoded" ] || return 1
+    case $encoded in
+        *[!A-Za-z0-9+/=]*) return 1 ;;
+    esac
+    printf '%s' "$encoded"
+}
+
 locked_remote_script() {
     # Hold the csb1 project lock across the complete transition, not merely
     # one compose subprocess. This keeps retag + recreate and
     # stop + snapshot + restart atomic against declarative reconcile jobs.
-    printf '%s -w 300 %s /bin/sh -eu -c %s' \
-        "$flock_bin" "$compose_lock" "$(shell_quote "$1")"
+    # The body travels as data so csb1's fish login shell never reparses its
+    # POSIX quotes, Docker templates, parentheses or redirections.
+    local encoded
+    encoded=$(encode_locked_body "$1") || return 1
+    printf 'locked_script=$(%s /tmp/hausv-locked.XXXXXX); trap "rm -f $locked_script" EXIT HUP INT TERM; printf %%s %s | %s -d >"$locked_script"; %s -w 300 %s /bin/sh -eu "$locked_script"' \
+        "$mktemp_bin" "$encoded" "$base64_bin" "$flock_bin" "$compose_lock"
 }
 
 activation_locked_remote_script() {
     # Activation needs a unique lock-conflict status. Validation and every
     # post-retag operation use different statuses below, so the caller never
     # recommends a rollback for a transition that did not acquire the lock.
-    printf '%s -E 41 -w 300 %s /bin/sh -eu -c %s' \
-        "$flock_bin" "$compose_lock" "$(shell_quote "$1")"
+    local encoded
+    encoded=$(encode_locked_body "$1") || return 1
+    printf 'locked_script=$(%s /tmp/hausv-locked.XXXXXX) || exit 40; trap "rm -f $locked_script" EXIT HUP INT TERM; printf %%s %s | %s -d >"$locked_script" || exit 40; %s -E 41 -w 300 %s /bin/sh -eu "$locked_script"' \
+        "$mktemp_bin" "$encoded" "$base64_bin" "$flock_bin" "$compose_lock"
 }
 
 printable_remote_ssh() {
@@ -81,7 +99,7 @@ print_rollback() {
     # $1 schema_changed, $2 previous_tag, $3 ssh_host, $4 ssh_port, $5 image,
     # $6 compose_command, $7 service, $8 snapshot_dir
     local image_body image_script image_command containment_body
-    image_body="docker tag $2 $5; $6 up -d --force-recreate --no-deps $7"
+    image_body="docker tag $2 $5 && $6 up -d --force-recreate --no-deps $7"
     if [ "$1" = 1 ]; then
         containment_body="$6 stop -t 30 $7"
         echo "data/schema restore required: do NOT run an image-only rollback against a possibly migrated database."
@@ -92,9 +110,14 @@ print_rollback() {
         echo "restore procedure: hausv-org docs/csb1-deploy.md → “Schema rollback procedure”; keep the locked shell open through verification, data replacement and recreation."
         echo "inside that same locked shell after the matching data restore: $image_body"
     else
-        image_script=$(locked_remote_script "$image_body")
-        image_command=$(printable_remote_ssh "$4" "$3" "$image_script")
-        echo "image rollback command: $image_command"
+        if image_script=$(locked_remote_script "$image_body"); then
+            image_command=$(printable_remote_ssh "$4" "$3" "$image_script")
+            echo "image rollback command: $image_command"
+        else
+            echo "automatic image rollback command unavailable: local transport encoding failed."
+            echo "locked image rollback shell: $(printable_locked_recovery_ssh "$4" "$3")"
+            echo "inside that locked shell, image rollback command: $image_body"
+        fi
         echo "data/schema restore: not required; this release contains no migration change."
     fi
 }
@@ -130,6 +153,8 @@ compose_project=csb1
 compose_lock=/run/lock/compose-csb1.lock
 compose_lock_dir=/run/lock
 flock_bin=/run/current-system/sw/bin/flock
+base64_bin=/run/current-system/sw/bin/base64
+mktemp_bin=/run/current-system/sw/bin/mktemp
 compose_command="docker compose --project-directory $compose_dir -p $compose_project -f $compose_file"
 service=hausv-org
 build_dir=/tmp/hausv-build
@@ -150,7 +175,7 @@ if [ -n "${HAUSV_DEPLOY_VERIFY_SLEEP+x}" ]; then
     verify_sleep=$HAUSV_DEPLOY_VERIFY_SLEEP
 fi
 
-for required in git gh curl ssh; do
+for required in git gh curl ssh base64; do
     command -v "$required" >/dev/null \
         || fail_before_change "required command '$required' is unavailable"
 done
@@ -333,7 +358,8 @@ preflight_body="\
     $sudo_probe"
 preflight_body="$preflight_body \
     printf 'running-image-id=%s\n' \"\$running_image_id\""
-preflight_script=$(locked_remote_script "$preflight_body")
+preflight_script=$(locked_remote_script "$preflight_body") \
+    || fail_before_change "cannot encode the locked remote preflight"
 preflight_proof=$(ssh -p "$ssh_port" "$ssh_host" \
     "$(remote_sh_command "$preflight_script")") \
     || fail_before_change "remote preflight failed"
@@ -365,6 +391,8 @@ if [ "$dry_run" -eq 1 ]; then
 fi
 
 if [ "$schema_changed" -eq 1 ]; then
+    snapshot_helper=$(< "$repo/scripts/create-predeploy-snapshot.py") \
+        || fail_before_change "cannot read the pre-deploy snapshot helper"
     snapshot_body="\
         test \"\$(docker inspect --format '{{.Image}}' $service)\" = $expected_running_image_id; \
         test \"\$(docker image inspect --format '{{.Id}}' $image)\" = $expected_running_image_id; \
@@ -378,11 +406,13 @@ if [ "$schema_changed" -eq 1 ]; then
         --source-version $live_version \
         --source-commit $live_sha \
         --target-version $app_version \
-        --target-commit $head_sha"
-    snapshot_script=$(locked_remote_script "$snapshot_body")
+        --target-commit $head_sha <<'HAUSV_PREDEPLOY_PY'
+$snapshot_helper
+HAUSV_PREDEPLOY_PY"
+    snapshot_script=$(locked_remote_script "$snapshot_body") \
+        || fail_before_change "cannot encode the locked pre-deploy snapshot"
     if ! snapshot_proof=$(ssh -p "$ssh_port" "$ssh_host" \
-        "$(remote_sh_command "$snapshot_script")" \
-        < "$repo/scripts/create-predeploy-snapshot.py"); then
+        "$(remote_sh_command "$snapshot_script")"); then
         current_health=$(ssh -p "$ssh_port" "$ssh_host" \
             "docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $service" 2>/dev/null | tr -d '[:space:]')
         if [ "$current_health" = healthy ]; then
@@ -391,8 +421,13 @@ if [ "$schema_changed" -eq 1 ]; then
         else
             echo "release FAILED: pre-deploy snapshot recovery did not return HAUSV to healthy state (container=$current_health)." >&2
             recovery_body="$compose_command up -d --force-recreate --no-deps $service"
-            recovery_script=$(locked_remote_script "$recovery_body")
-            echo "mandatory recovery command: $(printable_remote_ssh "$ssh_port" "$ssh_host" "$recovery_script")" >&2
+            if recovery_script=$(locked_remote_script "$recovery_body"); then
+                echo "mandatory recovery command: $(printable_remote_ssh "$ssh_port" "$ssh_host" "$recovery_script")" >&2
+            else
+                echo "automatic mandatory recovery command unavailable: local transport encoding failed." >&2
+                echo "locked mandatory recovery shell: $(printable_locked_recovery_ssh "$ssh_port" "$ssh_host")" >&2
+                echo "inside that locked shell, mandatory recovery command: $recovery_body" >&2
+            fi
             echo "after recovery, require Docker health=healthy before any retry; do not activate the new image." >&2
         fi
         exit 1
@@ -422,7 +457,8 @@ preserve_body="\
         docker tag \"\$running_image_id\" $previous_tag; \
     fi; \
     test \"\$(docker image inspect --format '{{.Id}}' $previous_tag)\" = \"\$running_image_id\""
-preserve_script=$(locked_remote_script "$preserve_body")
+preserve_script=$(locked_remote_script "$preserve_body") \
+    || fail_before_change "cannot encode rollback image preservation"
 ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$preserve_script")" \
     || fail_before_change "could not preserve the currently running image"
 echo "preserved previous image: $previous_tag"
@@ -469,11 +505,13 @@ activate_body="\
     docker tag $release_tag $image || exit 43; \
     test \"\$(docker image inspect --format '{{.Id}}' $image)\" = \"\$release_image_id\" || exit 43; \
     $compose_command up -d --force-recreate --no-deps $service || exit 43"
-activate_script=$(activation_locked_remote_script "$activate_body")
+activate_script=$(activation_locked_remote_script "$activate_body") \
+    || fail_before_change "cannot encode the locked activation transaction"
 ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$activate_script")"
 activation_status=$?
 case $activation_status in
     0) ;;
+    40) fail_before_change "activation transport setup failed before lock and retag; production was not changed by this release" ;;
     41) fail_before_change "activation lock was unavailable before retag; production was not changed by this release" ;;
     42) fail_before_change "activation identity changed before retag; production was not changed by this release" ;;
     *) fail_after_change "container replacement failed" "$schema_changed" "$previous_tag" "$ssh_host" "$ssh_port" "$image" "$compose_command" "$service" "$snapshot_dir" ;;

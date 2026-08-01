@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import os
 from pathlib import Path
 import re
@@ -16,11 +18,22 @@ LIVE = "b" * 40
 IMAGE_ID = "sha256:" + ("1" * 64)
 LOCK_PREFIX = (
     "/run/current-system/sw/bin/flock -w 300 "
-    "/run/lock/compose-csb1.lock /bin/sh -eu -c"
+    "/run/lock/compose-csb1.lock /bin/sh -eu"
 )
 ACTIVATION_LOCK_PREFIX = (
     "/run/current-system/sw/bin/flock -E 41 -w 300 "
-    "/run/lock/compose-csb1.lock /bin/sh -eu -c"
+    "/run/lock/compose-csb1.lock /bin/sh -eu"
+)
+LOCKED_TRANSPORT = re.compile(
+    r"^locked_script=\$\(/run/current-system/sw/bin/mktemp "
+    r"/tmp/hausv-locked\.XXXXXX\)(?P<mktemp_guard> \|\| exit 40)?; "
+    r"trap \"rm -f \$locked_script\" "
+    r"EXIT HUP INT TERM; printf %s (?P<payload>[A-Za-z0-9+/=]+) \| "
+    r"/run/current-system/sw/bin/base64 -d >\"\$locked_script\""
+    r"(?P<decode_guard> \|\| exit 40)?; "
+    r"(?P<lock>/run/current-system/sw/bin/flock "
+    r"(?:-E 41 )?-w 300 /run/lock/compose-csb1\.lock /bin/sh -eu) "
+    r"\"\$locked_script\"$"
 )
 CANONICAL_COMPOSE = (
     "docker compose --project-directory "
@@ -190,6 +203,28 @@ def mock_curl(args: list[str]) -> int:
     return 0
 
 
+def mock_base64(args: list[str]) -> int:
+    payload = sys.stdin.buffer.read()
+    if not args:
+        encode_call = count("base64_encode")
+        if CASE == "encoder_fail" and encode_call == 1:
+            return 1
+        if CASE == "schema_snapshot_recovery_encoder_fail" and encode_call == 3:
+            return 1
+        if CASE == "rollback_encoder_fail" and encode_call == 4:
+            return 1
+        sys.stdout.buffer.write(base64.encodebytes(payload))
+        return 0
+    if args == ["-d"]:
+        try:
+            sys.stdout.buffer.write(base64.b64decode(payload, validate=True))
+        except binascii.Error:
+            return 1
+        return 0
+    print(f"unexpected base64 fixture call: {args}", file=sys.stderr)
+    return 64
+
+
 def snapshot_path(remote: str) -> str:
     match = re.search(r"--snapshot[ \t]+([^ \t]+)", remote)
     if match is None:
@@ -223,9 +258,30 @@ def require_remote_sh(wrapped: bool, operation: str) -> bool:
     return False
 
 
+def unwrap_locked_transport(script: str) -> str:
+    match = LOCKED_TRANSPORT.fullmatch(script)
+    if match is None:
+        return script
+    try:
+        decoded = base64.b64decode(
+            match.group("payload"), validate=True
+        ).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError) as error:
+        raise RuntimeError("invalid locked-script transport") from error
+    guards = ""
+    if match.group("mktemp_guard") and match.group("decode_guard"):
+        guards = "activation-transport-setup-exit-40\n"
+    return f"{guards}{match.group('lock')}\n{decoded}"
+
+
 def mock_ssh(args: list[str]) -> int:
     remote = args[-1]
     script, wrapped = unwrap_remote_sh(remote)
+    try:
+        script = unwrap_locked_transport(script)
+    except RuntimeError as error:
+        print(str(error), file=sys.stderr)
+        return 64
 
     if "--source /var/lib/csb1-docker/hausv-org" in script:
         if not require_remote_sh(wrapped, "snapshot"):
@@ -244,13 +300,19 @@ def mock_ssh(args: list[str]) -> int:
             if fragment not in script:
                 print(f"snapshot command is missing {fragment}", file=sys.stderr)
                 return 64
+        if "def main() -> int:" not in script or "HAUSV_PREDEPLOY_PY" not in script:
+            print("snapshot helper is not embedded in the locked body", file=sys.stderr)
+            return 64
         if script.count(IMAGE_ID) < 2 or script.index(IMAGE_ID) >= script.index("sudo -n"):
             print("snapshot did not revalidate the preflight image identity", file=sys.stderr)
             return 64
-        sys.stdin.buffer.read()
+        if sys.stdin.buffer.read():
+            print("snapshot helper unexpectedly used SSH stdin", file=sys.stderr)
+            return 64
         if CASE in {
             "schema_snapshot_fail",
             "schema_snapshot_recovery_fail",
+            "schema_snapshot_recovery_encoder_fail",
             "schema_snapshot_identity_drift",
         }:
             return 1
@@ -266,7 +328,10 @@ def mock_ssh(args: list[str]) -> int:
         return 1 if CASE == "schema_startlog_fail" else 0
 
     if remote.startswith("docker inspect --format"):
-        if CASE == "schema_snapshot_recovery_fail":
+        if CASE in {
+            "schema_snapshot_recovery_fail",
+            "schema_snapshot_recovery_encoder_fail",
+        }:
             print("unhealthy")
             return 0
         print("healthy")
@@ -307,6 +372,7 @@ def mock_ssh(args: list[str]) -> int:
             return 64
         required = (
             ACTIVATION_LOCK_PREFIX,
+            "activation-transport-setup-exit-40",
             f"{CANONICAL_COMPOSE} up -d --force-recreate --no-deps hausv-org",
             "running_image_id=",
             "latest_image_id=",
@@ -334,11 +400,13 @@ def mock_ssh(args: list[str]) -> int:
             return 64
         if CASE == "activation_lock_timeout":
             return 41
+        if CASE in {"activation_mktemp_fail", "activation_decode_fail"}:
+            return 40
         if CASE == "activation_identity_drift":
             return 42
         if CASE == "activation_post_tag_raw_42":
             return 43
-        return 1 if CASE == "activation_fail" else 0
+        return 1 if CASE in {"activation_fail", "rollback_encoder_fail"} else 0
 
     if "docker image inspect" in script and "config --services" in script:
         # Simulate the exact production failure mode: with csb1's fish login
@@ -407,6 +475,8 @@ def main() -> int:
         return mock_gh(args)
     if command == "curl":
         return mock_curl(args)
+    if command == "base64":
+        return mock_base64(args)
     if command == "ssh":
         return mock_ssh(args)
     if command == "sleep":
