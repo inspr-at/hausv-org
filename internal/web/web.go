@@ -2108,9 +2108,11 @@ const PageTemplates = `
     .attachment-open img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-xs); background: #ede5d6; }
     .attachment-file-icon { width: 100%; aspect-ratio: 4 / 3; display: grid; place-items: center; border-radius: var(--radius-xs); background: rgba(200,153,63,.14); color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .08em; }
     .attachment-name { min-width: 0; color: var(--muted); font-size: 12px; font-weight: 700; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
-    .attachment-delete { position: absolute; top: 5px; right: 5px; margin: 0; }
-    .attachment-delete button { width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid rgba(32,37,31,.18); border-radius: var(--radius-xs); background: rgba(255,254,251,.94); color: var(--ink); font-size: 18px; line-height: 1; cursor: pointer; }
-    .attachment-delete button:hover { border-color: #9e2a2b; color: #9e2a2b; }
+    .attachment-delete { position: absolute; top: -3px; right: -3px; margin: 0; }
+    .attachment-delete button { position: relative; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid transparent; border-radius: var(--radius-xs); background: transparent; color: transparent; font-size: 18px; line-height: 1; cursor: pointer; }
+    .attachment-delete button::before { content: "\00d7"; position: absolute; top: 50%; left: 50%; width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid rgba(32,37,31,.18); border-radius: var(--radius-xs); background: rgba(255,254,251,.94); color: var(--ink); transform: translate(-50%,-50%); }
+    .attachment-delete button:hover, .attachment-delete button:focus-visible { border-color: transparent; background: transparent; color: transparent; }
+    .attachment-delete button:hover::before, .attachment-delete button:focus-visible::before { border-color: #9e2a2b; color: #9e2a2b; }
     .attachment-lightbox { position: fixed; inset: 0; z-index: 200; display: none; grid-template-columns: 56px minmax(0,1fr) 56px; grid-template-rows: 56px minmax(0,1fr) auto; align-items: center; gap: 12px; padding: 16px; background: rgba(23,32,25,.88); color: #fff; }
     .attachment-lightbox.open { display: grid; }
     .attachment-lightbox figure { grid-column: 2; grid-row: 2; display: grid; place-items: center; gap: 10px; min-width: 0; min-height: 0; margin: 0; }
@@ -2591,6 +2593,7 @@ const PageTemplates = `
     .handover-add-files { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: end; border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
     .handover-add-files label { min-width: 0; }
     .handover-detail-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 12px; color: var(--soft); font-size: 11.5px; }
+    .handover-add-files .button, .handover-detail-actions .button { min-height: 44px; justify-content: center; }
     .handover-form-step { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 10px; align-items: center; margin-top: 2px; }
     .handover-form-step > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 900; }
     .handover-form-step div { display: grid; gap: 1px; }
@@ -8425,11 +8428,12 @@ const PageTemplates = `
       .users .row-edit svg { stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
       .users .edit-dialog { position: relative; width: min(440px, 92vw); border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--panel); color: var(--ink); box-shadow: 0 30px 80px rgba(32,37,31,.32); }
       .users .edit-dialog::backdrop { background: rgba(32,37,31,.42); }
-      .users .edit-dialog h2 { margin: 0 0 4px; font-family: var(--font-serif); font-weight: 600; font-size: 19px; }
+      .users .edit-dialog h2 { margin: 0 0 4px; padding-right: 44px; font-family: var(--font-serif); font-weight: 600; font-size: 19px; }
       .users .edit-dialog .dlg-sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; word-break: break-word; }
-      .users .dlg-x { position: absolute; top: 12px; right: 12px; }
-      .users .dlg-x button { border: 0; background: transparent; font-size: 22px; line-height: 1; color: var(--soft); cursor: pointer; padding: 2px 6px; }
-      .users .dlg-x button:hover { color: var(--ink); }
+      .users .dlg-x { position: absolute; top: 4px; right: 4px; }
+      .users .dlg-x form { margin: 0; }
+      .users .dlg-x button { width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 10px; padding: 0; background: transparent; font-size: 22px; line-height: 1; color: var(--soft); cursor: pointer; }
+      .users .dlg-x button:hover, .users .dlg-x button:focus-visible { background: var(--panel-soft); color: var(--ink); }
       .users .dlg-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
       .users .dlg-form input, .users .dlg-form select, .users .dlg-form button { grid-column: 1 / -1; }
       .users .dlg-form .f-vorname, .users .dlg-form .f-nachname { grid-column: span 1; }

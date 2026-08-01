@@ -250,6 +250,7 @@ func TestSettingsAndParkingKeepReducedMobileInteractionContracts(t *testing.T) {
 		`access-fixed`,
 		`data-help="Fest vergeben · hier nicht änderbar"`,
 		`min-width: 44px; min-height: 44px;`,
+		`.users .dlg-x button { width: 44px; height: 44px;`,
 		`<span class="file-control"><span>Datei auswählen</span><input id="camt-file"`,
 	} {
 		if !strings.Contains(PageTemplates, want) {
@@ -258,6 +259,18 @@ func TestSettingsAndParkingKeepReducedMobileInteractionContracts(t *testing.T) {
 	}
 	if strings.Contains(PageTemplates, `<details class="account-details" open>`) {
 		t.Fatal("profile account metadata should use progressive disclosure")
+	}
+}
+
+func TestHandoverKeepsComfortableMobileTouchTargets(t *testing.T) {
+	for _, want := range []string{
+		`.attachment-delete button { position: relative; width: 44px; height: 44px;`,
+		`.attachment-delete button::before { content: "\00d7";`,
+		`.handover-add-files .button, .handover-detail-actions .button { min-height: 44px;`,
+	} {
+		if !strings.Contains(PageTemplates, want) {
+			t.Fatalf("handover touch-target contract missing %q", want)
+		}
 	}
 }
 
