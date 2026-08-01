@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.64.0] - 2026-08-01
+
+### Neu
+
+- **Ihre Monatsspitze entsteht jetzt von selbst.** Ist Home Assistant verbunden und der Netzbezug bestätigt, zeichnet HAUSV die abgeschlossenen Viertelstunden laufend selbst auf. Ein Smart-Meter-Export ist dafür nicht mehr nötig — Tarifkarte, verrechnete Leistung, Staffel und Szenarien füllen sich von allein.
+- **Zwei Messquellen im Vergleich.** Liegt zusätzlich ein Smart-Meter-Export vor, stellt das Cockpit beide Monatsspitzen gegenüber und meldet sichtbare Abweichungen.
+
+### Verbessert
+
+- **Ehrlich beschriftet statt geschönt.** Aus laufenden Messwerten verdichtete Viertelstunden heißen „teilweise geschätzt" und nicht „gemessen"; eine Messlücke bleibt als Lücke stehen, statt über das Loch zu mitteln.
+- **Messen bleibt Messen.** Die Aufzeichnung läuft auch im Beobachtungsmodus und liest Home Assistant ausschließlich — geschaltet wird nichts.
+
 ## [0.63.0] - 2026-08-01
 
 ### Neu
