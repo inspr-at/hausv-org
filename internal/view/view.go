@@ -442,8 +442,14 @@ type AuditEventView struct {
 	DisplayTitle   string
 	Context        string
 	HasContext     bool
-	Details        []AuditDetailView
-	HasDetails     bool
+	// ActorLabel and ObjectLabel carry the same two facts as Context, but kept
+	// apart so the audit table can align them in their own columns. Context
+	// stays the single-line fallback for narrow screens.
+	ActorLabel  string
+	ObjectLabel string
+	HasObject   bool
+	Details     []AuditDetailView
+	HasDetails  bool
 }
 
 type AuditDetailView struct {
@@ -1156,7 +1162,9 @@ func AuditEventViewFrom(event store.AuditEvent) AuditEventView {
 	if actor != "" {
 		contextParts = append(contextParts, actor)
 	}
+	object := ""
 	if target != "" && AuditTargetTypeLabel(event.TargetType) != "Sitzung" {
+		object = target
 		contextParts = append(contextParts, target)
 	}
 	context := strings.Join(contextParts, " · ")
@@ -1178,6 +1186,9 @@ func AuditEventViewFrom(event store.AuditEvent) AuditEventView {
 		DisplayTitle: displayTitle,
 		Context:      context,
 		HasContext:   context != "",
+		ActorLabel:   actor,
+		ObjectLabel:  object,
+		HasObject:    object != "",
 		Details:      details,
 		HasDetails:   len(details) > 0,
 	}
