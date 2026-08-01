@@ -877,9 +877,9 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /datenschutz", a.privacyNotice)
 	mux.HandleFunc("GET /", a.home)
 	mux.HandleFunc("POST /auth/request", a.requestLogin)
-	mux.HandleFunc("GET /auth/verify", a.verifyLogin)
-	mux.HandleFunc("GET /auth/oidc/start", a.startOIDCLogin)
-	mux.HandleFunc("GET /auth/oidc/callback", a.finishOIDCLogin)
+	mux.HandleFunc("GET /auth/verify", a.publicPage(a.verifyLogin))
+	mux.HandleFunc("GET /auth/oidc/start", a.publicPage(a.startOIDCLogin))
+	mux.HandleFunc("GET /auth/oidc/callback", a.publicPage(a.finishOIDCLogin))
 	mux.HandleFunc("POST /auth/logout", a.logout)
 	mux.HandleFunc("GET /calendar/{token}", a.calendarFeed)
 	mux.HandleFunc("GET /app", a.page(a.portal))
@@ -935,7 +935,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/uebergaben/attachments", a.action(a.addHandoverAttachments))
 	mux.HandleFunc("POST /app/uebergaben/file", a.action(a.fileHandoverProtocol))
 	mux.HandleFunc("GET /app/uebergaben/{id}/protokoll", a.page(a.handoverProtocol))
-	mux.HandleFunc("GET /handover/{token}", a.handoverConfirmPage)
+	mux.HandleFunc("GET /handover/{token}", a.publicPage(a.handoverConfirmPage))
 	mux.HandleFunc("POST /handover/{token}", a.confirmHandover)
 	mux.HandleFunc("GET /app/kontakte", a.page(a.contacts))
 	mux.HandleFunc("POST /app/kontakte", a.action(a.upsertManagedContact))
@@ -991,8 +991,10 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/users", a.authedAction(capabilityManageUsers, a.createInvite))
 	mux.HandleFunc("POST /app/settings/users/edit", a.authedAction(capabilityManageUsers, a.editInvite))
 	mux.HandleFunc("POST /app/settings/users/delete", a.authedAction(capabilityManageUsers, a.deleteInvite))
-	mux.HandleFunc("GET /{tenant}", a.tenantPathRedirect)
-	mux.HandleFunc("GET /{tenant}/{rest...}", a.tenantPathRedirect)
+	// Catch-all for every unmatched GET path, so a mistyped or stale URL ends on
+	// the branded 404 instead of the standard library's plain-text one.
+	mux.HandleFunc("GET /{tenant}", a.publicPage(a.tenantPathRedirect))
+	mux.HandleFunc("GET /{tenant}/{rest...}", a.publicPage(a.tenantPathRedirect))
 	return mux
 }
 

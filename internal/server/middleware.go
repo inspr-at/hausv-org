@@ -119,13 +119,38 @@ func (a *app) closedServiceProviderSession(r *http.Request) bool {
 // service-provider checks stay in the handler body: they are heterogeneous
 // (different messages, per-entity logic) and are genuine authorization, not the
 // uniform session boilerplate this hoists out.
+//
+// It is also where a refused page becomes a page. Those capability checks all
+// bail out with http.Error, which the browser renders as an unstyled <pre>;
+// interceptErrorPage catches that response and re-renders it with the house
+// branding, the handler's own wording and a way onward — once, here, instead of
+// at every call site. See errorpage.go for the mechanics.
 func (a *app) page(h authedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ac, ok := a.authenticate(w, r)
+		ew := a.interceptErrorPage(w, r)
+		ac, ok := a.authenticate(ew, r)
 		if !ok {
+			// A closed service-provider session is refused before there is an
+			// identity to build navigation from, so that page stays anonymous.
+			ew.finish(authCtx{}, false)
 			return
 		}
-		h(w, r, ac)
+		h(ew, r, ac)
+		ew.finish(ac, true)
+	}
+}
+
+// publicPage is page() without a session: the same branded error page for the
+// GET routes a person can reach while signed out — an expired handover link, a
+// mistyped address, a login callback that could not be completed. Machine
+// endpoints on the same mux (the calendar feed, map tiles, hero images, the
+// health probe, static assets) are deliberately NOT wrapped; their callers want
+// a status code, not a page.
+func (a *app) publicPage(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ew := a.interceptErrorPage(w, r)
+		h(ew, r)
+		ew.finishForVisitor()
 	}
 }
 

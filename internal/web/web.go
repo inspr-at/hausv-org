@@ -7819,4 +7819,84 @@ const PageTemplates = `
   </main>
 {{template "appClose" .}}
 {{end}}
+
+{{define "errorPage"}}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.svg">
+  <style>
+    /* Scoped to the error page: it is a standalone document (like the sign-in
+       and handover-confirmation screens) and loads none of the app shell. */
+    :root {
+      color-scheme: light;
+{{template "designTokens" .}}
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--paper); }
+    :where(a):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
+    .hv-error-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+    .hv-error-top { display: flex; align-items: center; gap: 12px; padding: 16px clamp(18px,5vw,64px); background: rgba(255,254,251,.97); border-bottom: 1px solid rgba(231,224,210,.78); }
+    .hv-error-mark { flex: 0 0 auto; width: 50px; height: 38px; display: grid; place-items: center; color: var(--gold); }
+    .hv-error-mark .hausv-mark { width: 50px; height: 38px; display: block; stroke: currentColor; stroke-width: 2.15; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .hv-error-place { min-width: 0; font-family: var(--font-serif); font-weight: 600; font-size: clamp(15px,3.6vw,18px); line-height: 1.25; overflow-wrap: anywhere; }
+    .hv-error-main { display: grid; place-items: center; padding: clamp(26px,7vh,64px) clamp(16px,5vw,64px); }
+    .hv-error-card { width: min(620px,100%); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-xl); box-shadow: var(--shadow-md); padding: clamp(22px,5.5vw,38px); }
+    .hv-error-code { display: inline-flex; align-items: center; gap: 9px; margin: 0; color: var(--gold-ink); font-size: 11.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .hv-error-code::before { content: ""; width: 24px; height: 2px; border-radius: 2px; background: var(--gold); }
+    .hv-error-card h1 { margin: 15px 0 0; font-family: var(--font-serif); font-weight: 500; font-size: clamp(31px,7vw,44px); line-height: 1.08; letter-spacing: -.01em; overflow-wrap: anywhere; }
+    .hv-error-message { margin: 16px 0 0; font-size: clamp(15.5px,3.8vw,17px); line-height: 1.55; color: var(--ink); overflow-wrap: anywhere; text-wrap: pretty; }
+    .hv-error-advice { margin: 9px 0 0; font-size: 14px; line-height: 1.55; color: var(--muted); overflow-wrap: anywhere; text-wrap: pretty; }
+    .hv-error-actions { margin-top: 24px; }
+    .hv-error-primary { display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 50px; padding: 12px 22px; border-radius: var(--radius-md); background: var(--ink); color: #fff; font-weight: 700; text-decoration: none; }
+    .hv-error-primary:hover { background: #000; }
+    .hv-error-primary svg { width: 17px; height: 17px; flex: 0 0 auto; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .hv-error-onward { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .hv-error-onward-title { margin: 0 0 12px; color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .hv-error-onward ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+    .hv-error-onward a { display: grid; gap: 2px; align-content: center; min-height: 50px; padding: 9px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); color: var(--ink); text-decoration: none; }
+    .hv-error-onward a:hover { border-color: var(--gold); }
+    .hv-error-onward strong { font-size: 14.5px; font-weight: 750; }
+    .hv-error-onward span { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+    .hv-error-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; padding: 15px clamp(18px,5vw,64px); background: rgba(255,254,251,.97); border-top: 1px solid rgba(231,224,210,.78); color: var(--muted); font-size: 12.5px; font-weight: 550; overflow-wrap: anywhere; }
+    @media (min-width: 620px) {
+      .hv-error-primary { width: auto; }
+      .hv-error-onward ul { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    }
+  </style>
+</head>
+<body class="hv-error-body">
+  <div class="hv-error-shell">
+    <header class="hv-error-top">
+      <span class="hv-error-mark">{{template "tenantBrandMark" .}}</span>
+      <span class="hv-error-place">{{.Tenant.Address}}</span>
+    </header>
+    <main class="hv-error-main">
+      <section class="hv-error-card" aria-labelledby="hv-error-title">
+        <p class="hv-error-code">Fehler {{.ErrorStatus}}</p>
+        <h1 id="hv-error-title">{{.ErrorHeadline}}</h1>
+        <p class="hv-error-message">{{.ErrorMessage}}</p>
+        {{if .ErrorAdvice}}<p class="hv-error-advice">{{.ErrorAdvice}}</p>{{end}}
+        <div class="hv-error-actions">
+          <a class="hv-error-primary" href="{{.ErrorPrimaryURL}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg>{{.ErrorPrimaryLabel}}</a>
+        </div>
+        {{if .HasErrorLinks}}
+        <nav class="hv-error-onward" aria-label="Weitere Bereiche">
+          <p class="hv-error-onward-title">Für Sie freigegeben</p>
+          <ul>
+            {{range .ErrorLinks}}<li><a href="{{.URL}}"><strong>{{.Label}}</strong><span>{{.Hint}}</span></a></li>{{end}}
+          </ul>
+        </nav>
+        {{end}}
+      </section>
+    </main>
+    <footer class="hv-error-foot"><span>{{.Tenant.Address}}</span><span>Hausportal · hausv.org</span></footer>
+  </div>
+</body>
+</html>
+{{end}}
 `

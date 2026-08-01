@@ -379,7 +379,12 @@ func assertGenericRateLimit(t *testing.T, response *httptest.ResponseRecorder, r
 	if response.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("rate limit cache control = %q", response.Header().Get("Cache-Control"))
 	}
-	if strings.TrimSpace(response.Body.String()) != genericAuthRateLimitMessage {
+	// The guarantee this asserts is that the wording stays generic: a throttled
+	// caller must not learn whether the account exists. POST /auth/request still
+	// answers in plain text; GET /auth/verify is a page a person navigates to and
+	// now renders the branded error page, which embeds this exact wording and
+	// adds nothing account-specific.
+	if !strings.Contains(response.Body.String(), genericAuthRateLimitMessage) {
 		t.Fatalf("rate limit body = %q", response.Body.String())
 	}
 }
