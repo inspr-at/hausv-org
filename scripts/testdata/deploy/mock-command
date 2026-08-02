@@ -52,6 +52,7 @@ def required(name: str) -> str:
 CASE = required("DEPLOY_FIXTURE_CASE")
 STATE = Path(required("DEPLOY_FIXTURE_STATE"))
 REPO = Path(required("DEPLOY_FIXTURE_REPO"))
+APP_VERSION = (REPO / "VERSION").read_text(encoding="utf-8").strip()
 STATE.mkdir(parents=True, exist_ok=True)
 
 
@@ -384,7 +385,7 @@ def mock_ssh(args: list[str]) -> int:
             "com.docker.compose.service",
             "exit 42",
             IMAGE_ID,
-            "docker tag ghcr.io/markus-barta/hausv-org:release-0.65.0-aaaaaaa ghcr.io/markus-barta/hausv-org:latest || exit 43",
+            f"docker tag ghcr.io/markus-barta/hausv-org:release-{APP_VERSION}-aaaaaaa ghcr.io/markus-barta/hausv-org:latest || exit 43",
             f"{CANONICAL_COMPOSE} up -d --force-recreate --no-deps hausv-org || exit 43",
         )
         if any(fragment not in script for fragment in required):
