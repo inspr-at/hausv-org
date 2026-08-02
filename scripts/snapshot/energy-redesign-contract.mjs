@@ -133,6 +133,13 @@ export async function assertEnergyTopContent(page, label) {
   if (await diagram.getByText('Home Current Consumption', { exact: true }).isVisible().catch(() => false)) {
     fail(label, 'technische Home-Assistant-Rohbezeichnung konkurriert mit dem Diagramm');
   }
+
+  const tariffStatus = page.locator('.energy-tariff > .energy-card-head .pill');
+  if ((await tariffStatus.count()) !== 1 || (await tariffStatus.innerText()).trim() !== 'Entwurf' ||
+      (await tariffStatus.getAttribute('aria-label')) !== 'Entwurf · nicht verbindlich' ||
+      (await tariffStatus.getAttribute('title')) !== 'Entwurf · nicht verbindlich') {
+    fail(label, 'Tarifstatus ist nicht kompakt sichtbar und vollständig als Hover-/Hilfetext erhalten');
+  }
 }
 
 async function disclosureState(root) {

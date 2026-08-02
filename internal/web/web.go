@@ -9348,7 +9348,7 @@ const PageTemplates = `
         <section class="energy-card energy-tariff" id="tarif" aria-labelledby="energy-tariff-title">
           <header class="energy-card-head">
             <div><h2 id="energy-tariff-title">Monatsspitze</h2><p>{{.Tariff.MonthLabel}}</p></div>
-            <span class="pill">{{.Tariff.Status}}</span>
+            <span class="pill" title="{{.Tariff.Status}}" aria-label="{{.Tariff.Status}}">Entwurf</span>
           </header>
           {{if .TargetChanged}}<div class="message success">Ihr persönliches Peak-Ziel wurde gespeichert.</div>{{end}}
           {{if .AgreedPowerChanged}}<div class="message success">Die vereinbarte Anschlussleistung wurde gespeichert.</div>{{end}}
