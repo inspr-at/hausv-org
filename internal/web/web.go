@@ -1463,7 +1463,8 @@ const PageTemplates = `
     .energy-tariff-disclosure > summary { min-height: 48px; display: flex; justify-content: space-between; gap: 12px; align-items: center; color: var(--ink); font-size: 12.5px; font-weight: 700; cursor: pointer; list-style: none; }
     .energy-tariff-disclosure > summary span:last-child { font-size: 22px; transition: transform .16s ease; }
     .energy-tariff-disclosure[open] > summary span:last-child { transform: rotate(90deg); }
-    .energy-tariff-disclosure > div { display: grid; gap: 14px; border-top: 1px solid var(--line); padding: 18px 0 8px; }
+    .energy-tariff-disclosure > div { min-width: 0; display: grid; grid-template-columns: minmax(0,1fr); gap: 14px; border-top: 1px solid var(--line); padding: 18px 0 8px; }
+    .energy-tariff-disclosure > div > * { min-width: 0; }
     .energy-tariff-method, .energy-tariff-detail-basis { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
     .energy-tariff-detail-basis { display: grid; gap: 3px; }
     .energy-tariff-detail-basis strong { color: var(--ink); }
@@ -1562,6 +1563,9 @@ const PageTemplates = `
       .energy-cockpit-top .energy-billed { grid-template-columns: 1fr; }
       .energy-cockpit-top .energy-billed > div { min-height: 138px; }
       .energy-tariff-tiers { grid-template-columns: 1fr; }
+      .energy-tariff-disclosure :where(p,li,a,span,small) { overflow-wrap: anywhere; }
+      .energy-tariff-settings > summary { flex-wrap: wrap; }
+      .energy-tariff-settings > summary span { min-width: 0; }
       .energy-cockpit-top .energy-nextstep-copy { grid-template-columns: minmax(0,1fr); gap: 4px; }
       .energy-cockpit-top .energy-nextstep-copy > * { grid-column: 1; }
       .energy-cockpit-top .energy-nextstep h2 { font-size: 21px; }
