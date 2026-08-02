@@ -63,6 +63,24 @@ func TestNextRecommendationDoesNotRequireNewHardware(t *testing.T) {
 	}
 }
 
+func TestNextRecommendationLetsEstimatedCompletedQuartersAdvanceReadiness(t *testing.T) {
+	profile := DefaultProfile("home", time.Now())
+	assets := []Asset{{Kind: "ev"}}
+	intervals := make([]Interval, 96)
+	for index := range intervals {
+		intervals[index].Quality = QualityEstimated
+	}
+
+	if got := NextRecommendation(profile, assets, nil, intervals); got.ID != "target" {
+		t.Fatalf("96 estimated completed quarters recommendation = %+v, want target", got)
+	}
+	intervals = intervals[:95]
+	intervals[0].Quality = QualityMeasured
+	if got := NextRecommendation(profile, assets, nil, intervals); got.ID != "observe" {
+		t.Fatalf("95 mixed usable quarters recommendation = %+v, want observe", got)
+	}
+}
+
 func TestPP20AdapterKeepsSpecificsOutsideCore(t *testing.T) {
 	capabilities := (PP20Adapter{PlugSwitchEntity: "switch.pp20"}).Capabilities()
 	if len(capabilities) != 3 || capabilities[2].Adapter != "pp20" || !capabilities[2].ManualOverride {

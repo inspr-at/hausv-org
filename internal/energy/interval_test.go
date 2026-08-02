@@ -115,6 +115,20 @@ func TestCompareMonthlyPeaksKeepsSourcesSeparateAndFlagsDifference(t *testing.T)
 	}
 }
 
+func TestCountUsableQuartersKeepsMeasuredAndEstimatedDistinct(t *testing.T) {
+	counts := CountUsableQuarters([]Interval{
+		{Quality: QualityMeasured},
+		{Quality: QualityEstimated},
+		{Quality: QualityEstimated},
+		{Quality: QualityGap},
+		{Quality: QualityConflict},
+		{Quality: QualityStale},
+	})
+	if counts.Total != 3 || counts.Measured != 1 || counts.Estimated != 2 {
+		t.Fatalf("usable quarter counts = %+v", counts)
+	}
+}
+
 func mustVienna(t *testing.T) *time.Location {
 	t.Helper()
 	location, err := time.LoadLocation("Europe/Vienna")

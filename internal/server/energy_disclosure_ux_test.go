@@ -3,11 +3,12 @@ package server
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/markus-barta/hausv-org/internal/energy"
 )
 
-func TestEnergyObservationProgressUsesMeasuredQuarterHours(t *testing.T) {
+func TestEnergyObservationProgressUsesMeasuredAndEstimatedQuarterHours(t *testing.T) {
 	intervals := make([]energy.Interval, 80)
 	for index := range intervals {
 		intervals[index].Quality = energy.QualityMeasured
@@ -15,16 +16,54 @@ func TestEnergyObservationProgressUsesMeasuredQuarterHours(t *testing.T) {
 	intervals[len(intervals)-1].Quality = energy.QualityEstimated
 
 	got := buildEnergyObservationProgressView(intervals)
-	if got.Completed != 79 || got.Target != 96 || got.Percent != 82 ||
-		got.Label != "79 von 96 Viertelstunden" ||
-		got.Title != "Noch 4 Std. 15 Min. beobachten" {
+	if got.Completed != 80 || got.Target != 96 || got.Percent != 83 ||
+		got.Label != "80 von 96 Viertelstunden" ||
+		got.Title != "Noch 4 Std. beobachten" || got.Measured != 79 || got.Estimated != 1 {
 		t.Fatalf("unexpected honest observation progress: %+v", got)
+	}
+
+	estimated := make([]energy.Interval, 79)
+	for index := range estimated {
+		estimated[index].Quality = energy.QualityEstimated
+	}
+	got = buildEnergyObservationProgressView(estimated)
+	if got.Completed != 79 || got.Percent != 82 || got.Measured != 0 || got.Estimated != 79 ||
+		got.Title != "Noch 4 Std. 15 Min. beobachten" {
+		t.Fatalf("Home Assistant observation must advance honestly: %+v", got)
 	}
 
 	empty := buildEnergyObservationProgressView(nil)
 	if empty.Completed != 0 || empty.Percent != 0 ||
-		empty.Title != "Einen vollständigen Tag beobachten" {
+		empty.Title != "Noch 1 Tag beobachten" {
 		t.Fatalf("unexpected empty observation progress: %+v", empty)
+	}
+}
+
+func TestEnergyTariffCoverageKeepsCompactAndDetailedQualityWording(t *testing.T) {
+	at := time.Date(2026, time.August, 2, 9, 0, 0, 0, time.Local)
+	monthStart := time.Date(2026, time.August, 1, 0, 0, 0, 0, time.Local)
+	intervals := make([]energy.Interval, 79)
+	for index := range intervals {
+		intervals[index] = energy.Interval{
+			StartsAt: monthStart.Add(time.Duration(index) * 15 * time.Minute),
+			Duration: 15 * time.Minute,
+			Quality:  energy.QualityEstimated,
+			Source:   energy.SourceHomeAssistant,
+		}
+	}
+
+	got := buildEnergyTariffCoverageView(intervals, at)
+	if got.Label != "79 von 132 Viertelstunden abgedeckt" || got.Measured != 0 || got.Estimated != 79 {
+		t.Fatalf("unexpected compact tariff coverage: %+v", got)
+	}
+	for _, want := range []string{
+		"79 von 132 bisherigen Viertelstunden im August 2026",
+		"79 aus Momentanwerten geschätzt",
+		"Quelle: Home Assistant",
+	} {
+		if !strings.Contains(got.Basis, want) {
+			t.Errorf("detailed tariff basis lost %q: %q", want, got.Basis)
+		}
 	}
 }
 
@@ -36,10 +75,9 @@ func TestEnergyFirstViewportDisclosuresRenderDynamicContextAndRealActions(t *tes
 		`Noch keine Live-Werte`,
 		`href="/app/zuhause/onboarding?step=4"`,
 		`data-energy-disclosure="tariff"`,
-		`data-energy-help="peak"`,
-		`data-energy-help="billed"`,
+		`data-energy-help="tariff"`,
 		`data-energy-help="annual"`,
-		`Höchste mittlere Bezugsleistung einer abgeschlossenen Viertelstunde dieses Kalendermonats.`,
+		`höchste mittlere Bezugsleistung einer abgeschlossenen Viertelstunde dieses Kalendermonats.`,
 		`16 kW`,
 		`Grundlage`,
 		`Quelle: test`,
@@ -78,17 +116,17 @@ func TestEnergyFirstViewportDisclosuresRenderDynamicContextAndRealActions(t *tes
 	}
 }
 
-func TestEnergyBilledHelpExplainsDynamicMinimumReason(t *testing.T) {
+func TestEnergyTariffHeaderHelpExplainsDynamicMinimumReason(t *testing.T) {
 	a := energyCockpitAppHAUSV425(t, 3, "40")
 	body := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
 
-	start := strings.Index(body, `data-energy-help="billed"`)
+	start := strings.Index(body, `data-energy-help="tariff"`)
 	if start < 0 {
-		t.Fatal("billed-power help is missing")
+		t.Fatal("tariff header help is missing")
 	}
 	endOffset := strings.Index(body[start:], `</details>`)
 	if endOffset < 0 {
-		t.Fatal("billed-power help is not a complete details element")
+		t.Fatal("tariff header help is not a complete details element")
 	}
 	help := body[start : start+endOffset]
 	for _, want := range []string{
@@ -97,7 +135,7 @@ func TestEnergyBilledHelpExplainsDynamicMinimumReason(t *testing.T) {
 		`Mindestbemessung aus der vereinbarten Leistung`,
 	} {
 		if !strings.Contains(help, want) {
-			t.Errorf("billed-power help lost %q", want)
+			t.Errorf("tariff header help lost %q", want)
 		}
 	}
 }

@@ -1,6 +1,9 @@
 package server
 
-import "testing"
+import (
+	"html/template"
+	"testing"
+)
 
 func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
@@ -124,5 +127,21 @@ func TestWithBaseKeepsPageOverridesExplicit(t *testing.T) {
 	}
 	if got["IsAdmin"] != true || got["CanSeeParking"] != true {
 		t.Fatalf("withBase overrides = %#v", got)
+	}
+}
+
+func TestTenantTemplateViewTrustsOnlyServerOwnedHeroRoute(t *testing.T) {
+	for _, raw := range []string{"/tenant-hero/jhw22", "/assets/jhw22-hero.jpg"} {
+		internal := tenantTemplateViewFrom(tenantConfig{Slug: "jhw22", HeroImageURL: raw})
+		if got, ok := internal.HeroImageURL.(template.URL); !ok || got != template.URL(raw) {
+			t.Fatalf("internal hero URL = %#v, want trusted same-origin route %q", internal.HeroImageURL, raw)
+		}
+	}
+
+	for _, raw := range []string{"javascript:alert(1)", "https://example.com/hero.jpg", "/assets/../private", "/assets/hero.jpg?variant=external"} {
+		configured := tenantTemplateViewFrom(tenantConfig{Slug: "jhw22", HeroImageURL: raw})
+		if got, ok := configured.HeroImageURL.(string); !ok || got != raw {
+			t.Fatalf("configured hero URL = %#v, want untrusted string %q", configured.HeroImageURL, raw)
+		}
 	}
 }

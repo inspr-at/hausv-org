@@ -101,6 +101,9 @@ func TestCockpitShowsBilledPowerAndTierSplitHAUSV425(t *testing.T) {
 	if !strings.Contains(body, "senken den Arbeitspreis, nicht die verrechnete Leistung") {
 		t.Fatal("Hinweis zu Arbeitspreis-Hebeln fehlt")
 	}
+	if !strings.Contains(block, `class="energy-tariff-meter peak" max="100" value="100"`) {
+		t.Fatal("bei identischer Spitze und Verrechnung muss der Vergleichsbalken vollständig gefüllt sein")
+	}
 }
 
 func TestCockpitExplainsMinimumChargeHAUSV425(t *testing.T) {
@@ -113,6 +116,9 @@ func TestCockpitExplainsMinimumChargeHAUSV425(t *testing.T) {
 	}
 	if block := billedBlockHAUSV425(t, body); !strings.Contains(block, "8 kW") {
 		t.Fatalf("verrechnete Leistung 8 kW fehlt im Kennzahlenblock, war:\n%s", block)
+	}
+	if block := billedBlockHAUSV425(t, body); !strings.Contains(block, `class="energy-tariff-meter peak" max="100" value="38"`) {
+		t.Fatalf("der Vergleichsbalken muss 3 kW relativ zu 8 kW als 38 Prozent darstellen, war:\n%s", block)
 	}
 	// Und das Szenario darf unterhalb davon keine weitere Ersparnis andeuten.
 	if !strings.Contains(body, "sinkt der verrechnete Betrag nicht weiter") {

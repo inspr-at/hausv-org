@@ -101,20 +101,15 @@ func TestEnergyFirstViewportDisclosuresKeepContextAndActionsReachable(t *testing
 		}
 	}
 
-	if got := strings.Count(PageTemplates, `class="energy-metric-info"`); got != 4 {
-		t.Errorf("metric help controls = %d, want consumption plus three tariff metrics", got)
-	}
-	if got := strings.Count(PageTemplates, `name="energy-metric-help"`); got != 4 {
-		t.Errorf("exclusive metric-help group members = %d, want all four popovers", got)
+	if got := strings.Count(PageTemplates, `name="energy-metric-help"`); got != 2 {
+		t.Errorf("exclusive metric-help group members = %d, want the two consolidated tariff explanations", got)
 	}
 	for _, item := range []struct {
 		key   string
 		label string
 		panel string
 	}{
-		{key: "consumption", label: "Hausverbrauch erklären", panel: "energy-help-consumption"},
-		{key: "peak", label: "Monatsspitze erklären", panel: "energy-help-peak"},
-		{key: "billed", label: "Verrechnete Leistung erklären", panel: "energy-help-billed"},
+		{key: "tariff", label: "Monatsspitze und Verrechnung erklären", panel: "energy-help-tariff"},
 		{key: "annual", label: "Jahreswert erklären", panel: "energy-help-annual"},
 	} {
 		marker := `data-energy-help="` + item.key + `"`
@@ -136,6 +131,11 @@ func TestEnergyFirstViewportDisclosuresKeepContextAndActionsReachable(t *testing
 			if !strings.Contains(control, want) {
 				t.Errorf("metric help %q lost accessible relationship %q", item.key, want)
 			}
+		}
+	}
+	for _, obsolete := range []string{`data-energy-help="consumption"`, `data-energy-help="peak"`, `data-energy-help="billed"`} {
+		if strings.Contains(PageTemplates, obsolete) {
+			t.Errorf("redundant metric help was not consolidated: %s", obsolete)
 		}
 	}
 }

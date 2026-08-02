@@ -567,6 +567,12 @@ func TestCockpitStopsBeingEmptyAfterSamplingHAUSV428(t *testing.T) {
 	if !strings.Contains(after, "Quelle: Home Assistant") {
 		t.Fatal("die Grundlage muss Home Assistant als Quelle benennen")
 	}
+	// Home-Assistant-Viertelstunden sind bewusst als geschätzt markiert. Sie
+	// bleiben dennoch abgeschlossene, fuer den automatischen Beobachtungsweg
+	// nutzbare Intervalle; sonst stünde dieser Haushalt dauerhaft bei 0 von 96.
+	if !strings.Contains(after, "1 von 96 Viertelstunden") {
+		t.Fatal("eine geschätzte Home-Assistant-Viertelstunde muss den Beobachtungsfortschritt erhöhen")
+	}
 }
 
 // TestSmartMeterComparisonCanFireAfterSamplingHAUSV428 belegt, dass der

@@ -138,6 +138,8 @@ type energyObservationProgressView struct {
 	Percent   int
 	Label     string
 	Title     string
+	Measured  int
+	Estimated int
 }
 
 type energyChartCacheEntry struct {
@@ -201,21 +203,29 @@ type energyTariffView struct {
 	Disclaimer  string
 	// Verrechnete Leistung und ihre Aufteilung an der Staffel. Getrennt
 	// ausgewiesen, damit sichtbar wird, wo Kappen doppelt so viel bringt.
-	PeakKW        string
-	BilledKW      string
-	BelowKW       string
-	AboveKW       string
-	HasTier       bool
-	MinimumReason string
-	AgreedKW      string
-	HasAgreed     bool
-	AgreedHint    string
-	TierHint      string
+	PeakKW   string
+	BilledKW string
+	// PeakMeterPercent visualisiert die gemessene Spitze relativ zur
+	// verrechneten Leistung. Der Wert ist serverseitig auf 0–100 begrenzt,
+	// damit die ruhige Vergleichsgrafik nie eine andere Aussage als die Zahlen
+	// daneben trifft.
+	PeakMeterPercent int
+	BelowKW          string
+	AboveKW          string
+	HasTier          bool
+	MinimumReason    string
+	AgreedKW         string
+	HasAgreed        bool
+	AgreedHint       string
+	TierHint         string
 	// MonthLabel und Basis benennen, woraus die Spitze stammt. Eine Kennzahl
 	// ohne ihre Grundlage ist auf diesem Bildschirm wertlos: der Leistungstarif
 	// bemisst je Kalendermonat, und ein halber Monat sieht aus wie ein ganzer.
 	MonthLabel string
-	Basis      string
+	// CoverageLabel is the compact visible statement. Basis keeps the full
+	// month, source and quality explanation for progressive disclosure.
+	CoverageLabel string
+	Basis         string
 	// PeakTime nennt den Zeitpunkt der teuersten Viertelstunde. Ohne ihn bleibt
 	// die Spitze eine Zahl, mit ihm wird sie ein Ereignis, das man wiedererkennt.
 	PeakTime    string
@@ -978,18 +988,14 @@ func (a *app) homeIdentityUnitContext(ac authCtx, profile energy.HomeProfile) (s
 
 func buildEnergyObservationProgressView(intervals []energy.Interval) energyObservationProgressView {
 	const target = 96
-	completed := 0
-	for _, interval := range intervals {
-		if interval.Quality == energy.QualityMeasured {
-			completed++
-		}
-	}
+	counts := energy.CountUsableQuarters(intervals)
+	completed := counts.Total
 	if completed > target {
 		completed = target
 	}
 	remaining := target - completed
 	remainingMinutes := remaining * 15
-	title := "Einen vollständigen Tag beobachten"
+	title := "Noch 1 Tag beobachten"
 	if remaining == 1 {
 		title = "Noch 1 Viertelstunde beobachten"
 	} else if remaining > 1 && remainingMinutes < 60 {
@@ -1009,6 +1015,8 @@ func buildEnergyObservationProgressView(intervals []energy.Interval) energyObser
 		Percent:   completed * 100 / target,
 		Label:     fmt.Sprintf("%d von %d Viertelstunden", completed, target),
 		Title:     title,
+		Measured:  counts.Measured,
+		Estimated: counts.Estimated,
 	}
 }
 
@@ -4027,13 +4035,18 @@ func buildEnergyTariffView(profile energy.HomeProfile, intervals []energy.Interv
 	estimate := rules.Estimate(peak, agreedPowerKW(profile))
 	view.AnnualPowerEUR = formatEnergyNumber(estimate.AnnualPowerEUR) + " €"
 	view.HasEstimate = true
-	view.Basis = energyTariffBasis(intervals, now)
+	coverage := buildEnergyTariffCoverageView(intervals, now)
+	view.CoverageLabel = coverage.Label
+	view.Basis = coverage.Basis
 	if at, ok := peakQuarterOfMonth(intervals, now); ok {
 		view.PeakTime = at.In(time.Local).Format("02.01. um 15:04")
 		view.HasPeakTime = true
 	}
 	view.PeakKW = formatEnergyCompact(peak, 1) + " kW"
 	view.BilledKW = formatEnergyCompact(estimate.BilledKW, 1) + " kW"
+	if estimate.BilledKW > 0 {
+		view.PeakMeterPercent = int(math.Round(math.Max(0, math.Min(1, peak/estimate.BilledKW)) * 100))
+	}
 	view.MinimumReason = estimate.MinimumReason
 	if estimate.AboveKW > 0 {
 		view.HasTier = true
@@ -4060,39 +4073,67 @@ func energyMonthLabel(at time.Time) string {
 	return names[int(local.Month())-1] + " " + strconv.Itoa(local.Year())
 }
 
-// energyTariffBasis benennt, worauf die Monatsspitze beruht: wie viele
-// abgeschlossene Viertelstunden aus welcher Quelle und wie viel des Monats
-// damit abgedeckt ist. Ohne diesen Satz sieht eine Spitze aus drei Tagen
-// genauso belastbar aus wie eine aus dreißig.
-func energyTariffBasis(intervals []energy.Interval, at time.Time) string {
+type energyTariffCoverageView struct {
+	Label     string
+	Basis     string
+	Measured  int
+	Estimated int
+}
+
+// buildEnergyTariffCoverageView benennt, worauf die Monatsspitze beruht: wie
+// viele abgeschlossene Viertelstunden aus welcher Quelle und wie viel des
+// Monats damit abgedeckt ist. Label bleibt kurz genug fuer die Karte; Basis
+// traegt Monat, Quelle und die gemessen/geschaetzt-Unterscheidung fuer die
+// progressive Offenlegung.
+func buildEnergyTariffCoverageView(intervals []energy.Interval, at time.Time) energyTariffCoverageView {
 	local := at.In(time.Local)
 	monthStart := time.Date(local.Year(), local.Month(), 1, 0, 0, 0, 0, time.Local)
-	counted := 0
+	monthIntervals := make([]energy.Interval, 0, len(intervals))
 	sources := map[string]struct{}{}
 	for _, interval := range intervals {
-		if interval.Quality != energy.QualityMeasured && interval.Quality != energy.QualityEstimated {
-			continue
-		}
 		start := interval.StartsAt.In(time.Local)
 		if start.Before(monthStart) || !start.Before(monthStart.AddDate(0, 1, 0)) {
 			continue
 		}
-		counted++
-		sources[interval.Source] = struct{}{}
+		monthIntervals = append(monthIntervals, interval)
+		if interval.Quality == energy.QualityMeasured || interval.Quality == energy.QualityEstimated {
+			sources[interval.Source] = struct{}{}
+		}
 	}
-	if counted == 0 {
-		return ""
+	counts := energy.CountUsableQuarters(monthIntervals)
+	if counts.Total == 0 {
+		return energyTariffCoverageView{}
 	}
 	elapsed := int(local.Sub(monthStart) / (15 * time.Minute))
-	if elapsed < counted {
-		elapsed = counted
+	if elapsed < counts.Total {
+		elapsed = counts.Total
 	}
-	basis := strconv.Itoa(counted) + " von " + strconv.Itoa(elapsed) +
+	label := strconv.Itoa(counts.Total) + " von " + strconv.Itoa(elapsed) + " Viertelstunden abgedeckt"
+	basis := strconv.Itoa(counts.Total) + " von " + strconv.Itoa(elapsed) +
 		" bisherigen Viertelstunden im " + energyMonthLabel(local)
+	quality := make([]string, 0, 2)
+	if counts.Measured > 0 {
+		quality = append(quality, strconv.Itoa(counts.Measured)+" direkt gemessen")
+	}
+	if counts.Estimated > 0 {
+		quality = append(quality, strconv.Itoa(counts.Estimated)+" aus Momentanwerten geschätzt")
+	}
+	if len(quality) > 0 {
+		basis += " · " + strings.Join(quality, ", ")
+	}
 	if names := energySourceLabels(sources); names != "" {
 		basis += " · Quelle: " + names
 	}
-	return basis
+	return energyTariffCoverageView{
+		Label:     label,
+		Basis:     basis,
+		Measured:  counts.Measured,
+		Estimated: counts.Estimated,
+	}
+}
+
+func energyTariffBasis(intervals []energy.Interval, at time.Time) string {
+	return buildEnergyTariffCoverageView(intervals, at).Basis
 }
 
 // energySourceLabels übersetzt die internen Quellenschlüssel in Klartext und
@@ -4279,7 +4320,16 @@ func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset,
 	if shiftable+throttle+battery == 0 {
 		return nil
 	}
-	quality := energy.QualityMeasured
+	counts := energy.CountUsableQuarters(intervals)
+	quality := energy.QualityUnavailable
+	if counts.Measured > 0 {
+		quality = energy.QualityMeasured
+	}
+	// A mixed basis stays conservative: one estimated quarter means the
+	// scenario must not present the complete baseline as directly measured.
+	if counts.Estimated > 0 {
+		quality = energy.QualityEstimated
+	}
 	gaps, conflicts := intervalQualityCounts(intervals)
 	if gaps > 0 || conflicts > 0 {
 		quality = energy.QualityGap

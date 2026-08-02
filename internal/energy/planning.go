@@ -256,13 +256,7 @@ func NextRecommendation(profile HomeProfile, assets []Asset, mappings []EntityMa
 	if len(mappings) == 0 && len(intervals) == 0 {
 		return Recommendation{ID: "measure", Title: "Netzbezug messen", Reason: "Ein einzelner Netzbezugswert reicht für den ersten echten Überblick.", Benefit: "15-Minuten-Spitze sichtbar machen", Prerequisite: "Smart Meter oder vorhandener Sensor", Effort: "10–30 Minuten", ImpactRange: "Messung statt Vermutung", State: "now"}
 	}
-	measured := 0
-	for _, interval := range intervals {
-		if interval.Quality == QualityMeasured {
-			measured++
-		}
-	}
-	if measured < 96 {
+	if CountUsableQuarters(intervals).Total < 96 {
 		return Recommendation{ID: "observe", Title: "Einen vollständigen Tag beobachten", Reason: "Für eine Empfehlung fehlen noch ausreichend abgeschlossene Viertelstunden.", Benefit: "Normale Schwankungen von echten Spitzen trennen", Prerequisite: "Aktuelle Messwerte", Effort: "Automatisch", ImpactRange: "Noch keine belastbare Wirkung", State: "now"}
 	}
 	if profile.TargetPeakKW == nil {

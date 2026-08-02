@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.66.1] - 2026-08-02
+
+### Verbessert
+
+- **Das Energie-Cockpit sitzt jetzt bis ins Detail.** Abstände, Größen, Flusslinien und etablierte Symbole bilden auf Desktop, Notebook, Tablet und Mobilgerät eine noch ruhigere, präzisere Einheit.
+- **Der Vergleich bleibt auch visuell ehrlich.** Der Balken der höchsten Viertelstunde zeigt ihr tatsächliches Verhältnis zur verrechneten Leistung.
+- **Hausbilder erscheinen verlässlich.** Eigene und mitgelieferte Titelbilder werden in allen angemeldeten Ansichten korrekt geladen.
+
 ## [0.66.0] - 2026-08-02
 
 ### Neu

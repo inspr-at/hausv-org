@@ -70,3 +70,16 @@ func TestScenarioStaysQuietAboveTheBillingFloorHAUSV425(t *testing.T) {
 		t.Fatalf("oberhalb der Mindestbemessung darf kein Hinweis erscheinen, war %q", views[0].FloorNote)
 	}
 }
+
+func TestScenarioKeepsEstimatedHomeAssistantBasisConservative(t *testing.T) {
+	intervals := scenarioIntervals(9)
+	intervals[0].Quality = energy.QualityEstimated
+
+	views := buildEnergyScenarioViews(energy.HomeProfile{TenantSlug: "haus"}, scenarioAssets(), intervals)
+	if len(views) == 0 {
+		t.Fatal("erwartet wurde ein Szenario")
+	}
+	if views[0].Uncertainty != "mittel" {
+		t.Fatalf("geschätzte Viertelstunde wurde als direkt gemessen behandelt: %+v", views[0])
+	}
+}

@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.66.1",
+			Date:     "2. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Das Energie-Cockpit sitzt jetzt bis ins Detail.",
+			Intro:    "Präzisere Proportionen, vertraute Symbole und belastbare Vergleiche machen die Energieansicht auf jedem Bildschirm noch ruhiger.",
+			Items: []NoteItem{
+				{Label: "Feinschliff", Text: "Abstände, Größen und gerade Flusslinien bilden vom Mobiltelefon bis zum großen Desktop eine klare Einheit."},
+				{Label: "Ehrlicher Vergleich", Text: "Der Balken der Monatsspitze entspricht jetzt exakt ihrem Verhältnis zur verrechneten Leistung."},
+				{Label: "Verlässliche Bilder", Text: "Eigene und mitgelieferte Hausbilder laden in allen angemeldeten Ansichten korrekt."},
+			},
+		},
+		{
 			Version:  "0.66.0",
 			Date:     "2. August 2026",
 			Kind:     "Energie-Cockpit",

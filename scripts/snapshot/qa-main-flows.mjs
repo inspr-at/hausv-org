@@ -17,6 +17,7 @@ if (!baseURL) {
 }
 const artifactDir = process.env.HV_QA_ARTIFACT_DIR?.trim();
 const ciCore = process.env.HV_QA_CI_CORE === 'true';
+const energyOnly = process.env.HV_QA_ENERGY_ONLY === 'true';
 const activeContexts = new Set();
 const browserEvents = [];
 const loginStorageStates = new Map();
@@ -1521,6 +1522,51 @@ async function assertHomeOnboarding() {
   process.stdout.write('  ✓ Energie-Onboarding · Tastatur · Fortsetzen · Mobil\n');
 }
 
+async function ensureFocusedEnergyUnit() {
+  const context = await newContext({ width: 1440, height: 900 });
+  const page = await localLogin(context, 'admin@example.com');
+  await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
+  if (!(await page.getByText('Top 11', { exact: true }).count())) {
+    const unitPanel = page.locator('#unit-add');
+    if (!(await unitPanel.evaluate((element) => element.open))) {
+      await unitPanel.locator('summary').click();
+    }
+    const unitForm = unitPanel.locator('form');
+    await unitForm.locator('input[name="label"]').fill('Top 11');
+    await unitForm.locator('input[name="owner_emails"]').fill('owner@example.com');
+    await unitForm.locator('input[name="renter_emails"]').fill('resident@example.com');
+    await unitForm.getByRole('button', { name: 'Einheit anlegen' }).click();
+    await page.waitForURL(/\/app\/settings\/building/);
+  }
+  await page.goto(`${baseURL}/app/settings/home?from=building`, { waitUntil: 'networkidle' });
+  const officialUnit = page.locator('select[name="unit_id"]');
+  if (await officialUnit.count()) {
+    await officialUnit.selectOption('top-11');
+    await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await page.waitForURL(/\/app\/settings\/building\?home=saved/);
+  }
+  await page.goto(`${baseURL}/app/kontakte`, { waitUntil: 'networkidle' });
+  if (!(await page.getByText('QA Energiehilfe', { exact: true }).count())) {
+    const contactPanel = page.locator('#contact-add');
+    if (!(await contactPanel.evaluate((element) => element.open))) {
+      await contactPanel.locator(':scope > summary').click();
+    }
+    const contact = contactPanel.locator('form');
+    await contact.locator('select[name="kind"]').selectOption({ label: 'Energie-Fachbetrieb' });
+    await contact.locator('input[name="name"]').fill('QA Energiehilfe');
+    await contact.locator('input[name="phone"]').fill('+43 316 000000');
+    const optional = contact.locator('details.contact-add-optional');
+    if (await optional.count()) await optional.evaluate((element) => { element.open = true; });
+    await contact.locator('input[name="service_region"]').fill('Graz und Umgebung');
+    await contact.locator('input[name="qualification"]').fill('Elektrotechnik');
+    await contact.locator('input[name="energy_capabilities"][value="metering"]').check();
+    await contact.locator('input[name="energy_capabilities"][value="home-assistant"]').check();
+    await contact.locator('button[type="submit"]').click();
+    await page.waitForURL(/\/app\/kontakte/);
+  }
+  await closeContext(context);
+}
+
 // Viertelstunden im laufenden Kalendermonat. Ein fest verdrahtetes Datum
 // funktioniert genau so lange, bis der Monat wechselt: die Tarifkarte liest über
 // PeakForMonth und findet dann nichts mehr, worauf der Prüflauf mit einem
@@ -1653,7 +1699,7 @@ async function assertPilotHome({
         !(await helper.getByText('Nur beobachten', { exact: true }).count())) {
       fail(`${householdName}: technische Hilfe erreicht das Haus nicht`);
     }
-    if (await helper.getByText('Testlauf bewusst starten', { exact: true }).count()) {
+    if (await helper.locator('summary.energy-mode-action').count()) {
       fail(`${householdName}: technische Hilfe sieht den Eigentümer-Schalter`);
     }
     await closeContext(helperContext);
@@ -1793,7 +1839,7 @@ async function assertEnergySafetyAndFlow(viewport) {
   const residentContext = await newContext(viewport.size);
   const resident = await localLogin(residentContext, 'resident@example.com');
   await resident.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
-  if (await resident.getByText('Testlauf bewusst starten', { exact: true }).count()) {
+  if (await resident.locator('summary.energy-mode-action').count()) {
     fail(`Bewohner ${viewport.name}: Steuerungsfreigabe sichtbar`);
   }
   await closeContext(residentContext);
@@ -1817,7 +1863,7 @@ async function assertEnergySafetyAndFlow(viewport) {
     await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Top 11', `Navigation ${viewport.name}`);
   }
   if (!(await page.locator('.energy-heading-breadcrumb').getByText('Janischhofweg 22, 8043 Graz', { exact: true }).count()) ||
-      !(await page.locator('.energy-heading-unit').getByText('Wohnung', { exact: false }).count()) ||
+      !(await page.locator('.energy-heading-unit-row').getByText('Wohnung', { exact: false }).count()) ||
       !(await page.getByRole('link', { name: 'Zuhause bearbeiten' }).count())) {
     fail(`Energie ${viewport.name}: Name, offizielle Wohnung oder sichtbarer Bearbeitungsweg fehlt`);
   }
@@ -1861,8 +1907,26 @@ async function assertEnergySafetyAndFlow(viewport) {
     await assertHomeIdentityPair(page, 'energy-heading', longDisplayName, 'Top 11', 'Langer Anzeigename Mobil');
     await page.locator('.mobile-menu-toggle').click();
     await assertHomeIdentityPair(page, 'nav', longDisplayName, 'Top 11', 'Langer Navigationsname Mobil');
-    if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)) {
-      fail('Langer Anzeigename Mobil: Darstellung läuft horizontal über');
+    const longNameOverflow = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      offenders: [...document.querySelectorAll('body *')].filter((node) => {
+        if (!node.getClientRects().length) return false;
+        const rect = node.getBoundingClientRect();
+        return rect.right > window.innerWidth + 1 || rect.left < -1 || node.scrollWidth > node.clientWidth + 1;
+      }).slice(0, 16).map((node) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          node: `${node.tagName.toLowerCase()}.${String(node.className || '').trim().replace(/\s+/g, '.')}`,
+          left: rect.left,
+          right: rect.right,
+          client: node.clientWidth,
+          scroll: node.scrollWidth,
+        };
+      }),
+    }));
+    if (longNameOverflow.documentWidth > longNameOverflow.viewport + 1) {
+      fail(`Langer Anzeigename Mobil: Darstellung läuft horizontal über (${JSON.stringify(longNameOverflow)})`);
     }
     await page.locator('.mobile-menu-toggle').click();
     await page.getByRole('link', { name: 'Zuhause bearbeiten' }).click();
@@ -2031,7 +2095,11 @@ async function assertEnergySafetyAndFlow(viewport) {
     if (await page.getByText('Keine Aktion nötig.', { exact: true }).count()) {
       fail(`Energie ${viewport.name}: Datenlage beruhigt, obwohl für den Monat nichts gemessen ist`);
     }
-    if (!(await page.getByText('Keine Viertelstunde in diesem Monat', { exact: true }).count())) {
+    const tariffWaiting = await page.locator('.energy-tariff-empty')
+      .getByText('Noch keine volle Viertelstunde', { exact: true }).count();
+    const monthlyWarning = (await page.getByText('Keine Viertelstunde in diesem Monat', { exact: true }).count()) ||
+      (await page.getByText('Messlücke erkannt', { exact: true }).count());
+    if (!tariffWaiting || !monthlyWarning) {
       fail(`Energie ${viewport.name}: fehlende Monatsgrundlage wird nicht benannt`);
     }
   } else if (!(await page.getByText('Messwerte aktuell', { exact: true }).count())) {
@@ -2051,7 +2119,7 @@ async function assertEnergySafetyAndFlow(viewport) {
   const modeDisclosure = page.locator('summary.energy-mode-action');
   if ((await modeDisclosure.count()) !== 1 ||
       (await modeDisclosure.getAttribute('aria-label')) !== 'Wirkungslosen Testlauf bewusst starten' ||
-      !(await modeDisclosure.getByText('Testlauf bewusst starten', { exact: true }).count())) {
+      (await modeDisclosure.innerText()).trim() !== 'Testlauf') {
     fail(`Energie ${viewport.name}: Testlauf-Offenlegung ist nicht eindeutig beschriftet`);
   }
   await modeDisclosure.focus();
@@ -2062,10 +2130,11 @@ async function assertEnergySafetyAndFlow(viewport) {
   await modeForm.locator('input[name="confirmation_text"]').fill('TESTLAUF');
   await modeForm.getByRole('button', { name: 'Testlauf starten' }).click();
   await page.waitForLoadState('networkidle');
-  if ((await strip.locator('strong').first().innerText()).trim() !== 'Testlauf aktiv · keine Gerätewirkung') {
+  if ((await strip.locator('.energy-mode-copy strong').innerText()).trim() !== 'Testlauf aktiv' ||
+      (await strip.locator('.energy-mode-copy span').innerText()).trim() !== 'Keine Gerätewirkung') {
     fail(`Energie ${viewport.name}: Freigabe startet nicht im Testlauf`);
   }
-  if (!(await page.getByText('Es schaltet kein Gerät.', { exact: false }).count())) {
+  if (!((await strip.locator('.energy-mode-copy span').getAttribute('title')) || '').includes('schaltet kein Gerät')) {
     fail(`Energie ${viewport.name}: Shadow-Mode-Erklärung fehlt`);
   }
   await page.getByRole('button', { name: /Sofort zurück/ }).click();
@@ -2100,7 +2169,9 @@ async function assertEnergySafetyAndFlow(viewport) {
       fail('Energie Desktop: mit Monatsgrundlage und frischen Werten fehlt die ruhige Datenlage');
     }
 
-    await page.getByRole('button', { name: 'Diesen Stand festhalten' }).click();
+    const tariffDetails = page.locator('details.energy-tariff-disclosure');
+    await tariffDetails.locator(':scope > summary').click();
+    await tariffDetails.getByRole('button', { name: 'Diesen Stand festhalten' }).click();
     await page.waitForLoadState('networkidle');
     if (!(await page.getByText('Festgehaltene Bewertungen', { exact: true }).count())) {
       fail('Energie Desktop: Tarifstand wurde nicht historisch sichtbar');
@@ -2140,7 +2211,7 @@ async function assertEnergySafetyAndFlow(viewport) {
         !(await helper.getByText('Nur beobachten', { exact: true }).count())) {
       fail('Energie Desktop: eingeladene Vertrauensperson kann den hausbezogenen Zugang nicht annehmen');
     }
-    if (await helper.getByText('Testlauf bewusst starten', { exact: true }).count()) {
+    if (await helper.locator('summary.energy-mode-action').count()) {
       fail('Energie Desktop: technische Vertrauensperson sieht die Eigentümer-/Admin-Freigabe');
     }
     if (await helper.getByRole('link', { name: 'Zuhause bearbeiten' }).count()) {
@@ -2247,23 +2318,32 @@ async function assertEnergySafetyAndFlow(viewport) {
 async function assertEnergyGeometryMatrix() {
   const sizes = [
     { name: '320x568', width: 320, height: 568 },
+    { name: '359x780', width: 359, height: 780 },
     { name: '360x800', width: 360, height: 800 },
+    { name: '361x800', width: 361, height: 800 },
     { name: '390x844', width: 390, height: 844 },
     { name: '430x932', width: 430, height: 932 },
+    { name: '559x900', width: 559, height: 900 },
+    { name: '560x900', width: 560, height: 900 },
+    { name: '561x900', width: 561, height: 900 },
+    { name: '619x900', width: 619, height: 900 },
+    { name: '620x900', width: 620, height: 900 },
+    { name: '621x900', width: 621, height: 900 },
     { name: '768x1024', width: 768, height: 1024 },
-    { name: '900x600', width: 900, height: 600 },
+    { name: '899x900', width: 899, height: 900 },
+    { name: '900x900', width: 900, height: 900 },
+    { name: '901x900', width: 901, height: 900 },
+    { name: '1023x768', width: 1023, height: 768 },
     { name: '1024x768', width: 1024, height: 768 },
-    { name: '1120x640', width: 1120, height: 640 },
-    { name: '1280x720', width: 1280, height: 720 },
+    { name: '1280x800', width: 1280, height: 800 },
+    { name: '1366x768', width: 1366, height: 768 },
+    { name: '1439x900', width: 1439, height: 900 },
     { name: '1440x900', width: 1440, height: 900 },
-    { name: '899x700', width: 899, height: 700 },
-    { name: '901x700', width: 901, height: 700 },
-    { name: '1119x700', width: 1119, height: 700 },
-    { name: '1121x700', width: 1121, height: 700 },
-    { name: '1199x700', width: 1199, height: 700 },
-    { name: '1200x700', width: 1200, height: 700 },
-    { name: '1201x700', width: 1201, height: 700 },
-    { name: '1279x700', width: 1279, height: 700 },
+    { name: '1441x900', width: 1441, height: 900 },
+    { name: '1600x900', width: 1600, height: 900 },
+    { name: '1672x941', width: 1672, height: 941 },
+    { name: '1920x1080', width: 1920, height: 1080 },
+    { name: '2048x1152', width: 2048, height: 1152 },
   ];
 
   for (const size of sizes) {
@@ -2298,12 +2378,23 @@ async function assertEnergyGeometryMatrix() {
       const next = lead?.querySelector('.energy-nextstep');
       const strip = document.querySelector('.energy-mode-strip');
       const sidebar = document.querySelector('.sidebar');
+      const heading = document.querySelector('.energy-heading');
       const action = strip?.querySelector('.energy-mode-action');
+      const modeState = strip?.querySelector('.energy-mode-state');
       const liveRect = rectOf(live);
       const tariffRect = rectOf(tariff);
+      const nextRect = rectOf(next);
+      const headingRect = rectOf(heading);
+      const healthRect = rectOf(health);
       const stripRect = rectOf(strip);
       const sidebarRect = rectOf(sidebar);
-      const overflow = [health, lead, tariff, live, next]
+      const actionRect = rectOf(action);
+      const modeStateRect = rectOf(modeState);
+      const tariffMetricRects = [...(tariff?.querySelectorAll('.energy-billed > div') || [])]
+        .filter((node) => node.getClientRects().length)
+        .map(rectOf);
+      const storage = live?.querySelector('.energy-storage-live');
+      const overflow = [health, lead, tariff, live, next, storage]
         .filter(Boolean)
         .filter((node) => node.scrollWidth > node.clientWidth + 1)
         .map((node) => node.className);
@@ -2325,6 +2416,8 @@ async function assertEnergyGeometryMatrix() {
         overflow,
         overflowDetails,
         siblingOverlap: intersects(liveRect, tariffRect),
+        headingBeforeHealth: Boolean(headingRect && healthRect && headingRect.bottom <= healthRect.top + 1),
+        modeControlOverlap: intersects(modeStateRect, actionRect),
         sourceLeadFirst: Boolean(lead && tariff &&
           (lead.compareDocumentPosition(tariff) & Node.DOCUMENT_POSITION_FOLLOWING)),
         oneColumn: Boolean(liveRect && tariffRect && Math.abs(liveRect.left - tariffRect.left) <= 1),
@@ -2332,6 +2425,12 @@ async function assertEnergyGeometryMatrix() {
         leadLeftOfTariff: Boolean(liveRect && tariffRect && liveRect.right <= tariffRect.left + 1),
         liveStartsInViewport: Boolean(live && live.getBoundingClientRect().top < height),
         nextFollowsLive: Boolean(live && next && live.getBoundingClientRect().bottom <= next.getBoundingClientRect().top + 1),
+        tariffBeforeNext: Boolean(tariffRect && nextRect && tariffRect.bottom <= nextRect.top + 1),
+        desktopCardsAligned: Boolean(liveRect && tariffRect &&
+          Math.abs(liveRect.top - tariffRect.top) <= 1 && Math.abs(liveRect.bottom - tariffRect.bottom) <= 1),
+        tariffMetricCount: tariffMetricRects.length,
+        tariffMetricsOverlap: tariffMetricRects.length === 2 && intersects(tariffMetricRects[0], tariffMetricRects[1]),
+        tariffMetricsOneColumn: tariffMetricRects.length !== 2 || Math.abs(tariffMetricRects[0].left - tariffMetricRects[1].left) <= 1,
         stripRect,
         sidebarRect,
         mobileStackDelta: width <= 900 && stripRect && sidebarRect ? Math.abs(stripRect.top - sidebarRect.bottom) : 0,
@@ -2347,19 +2446,25 @@ async function assertEnergyGeometryMatrix() {
     }, size);
 
     if (result.missing || result.documentOverflow || result.overflow.length ||
-        result.siblingOverlap || !result.sourceLeadFirst || !result.nextFollowsLive ||
+        result.siblingOverlap || result.modeControlOverlap || !result.headingBeforeHealth ||
+        !result.sourceLeadFirst || !result.nextFollowsLive || !result.tariffBeforeNext ||
+        result.tariffMetricsOverlap ||
         !result.liveStartsInViewport) {
       fail(`Energie-Geometrie ${size.name}: Grundlayout verletzt (${JSON.stringify(result)})`);
     }
-    if (size.width < 1280 && (!result.oneColumn || !result.leadBeforeTariff)) {
+    if (size.width < 1440 && (!result.oneColumn || !result.leadBeforeTariff)) {
       fail(`Energie-Geometrie ${size.name}: Tablet/Mobil ist nicht live-zuerst gestapelt (${JSON.stringify(result)})`);
     }
-    if (size.width >= 1280 && (result.oneColumn || !result.leadLeftOfTariff)) {
+    if (size.width >= 1440 && (result.oneColumn || !result.leadLeftOfTariff || !result.desktopCardsAligned)) {
       fail(`Energie-Geometrie ${size.name}: breite Ansicht trennt Live und Tarif nicht (${JSON.stringify(result)})`);
     }
+    if (result.tariffMetricCount === 2 &&
+        (size.width <= 379 ? !result.tariffMetricsOneColumn : result.tariffMetricsOneColumn)) {
+      fail(`Energie-Geometrie ${size.name}: Tarifkennzahlen brechen am 380px-Saum falsch um (${JSON.stringify(result)})`);
+    }
     if (result.safetyTitle !== 'Nur beobachten' ||
-        (size.width <= 900 ? result.safetyCopyVisible : !result.safetyCopyVisible) ||
-        !result.capabilityVisible || result.actionHeight < 44) {
+        (size.width <= 1023 ? result.safetyCopyVisible : !result.safetyCopyVisible) ||
+        !result.capabilityVisible || result.actionHeight < 44 || result.actionLabel !== 'Testlauf') {
       fail(`Energie-Geometrie ${size.name}: Sicherheitszustand oder Freigabe fehlt (${JSON.stringify(result)})`);
     }
     if (result.softToken !== '#716d62' || result.accentToken !== '#705c22' ||
@@ -2369,7 +2474,7 @@ async function assertEnergyGeometryMatrix() {
     if (size.width <= 900 && (result.mobileStackDelta > 1 || !result.stripRect || result.stripRect.height > 60)) {
       fail(`Energie-Geometrie ${size.name}: Navigation/Sicherheitsleiste kollidiert (${JSON.stringify(result)})`);
     }
-    if (size.width <= 560 && (result.actionLabel !== 'Testlauf starten' || result.actionHeight > 46)) {
+    if (size.width <= 560 && result.actionHeight > 46) {
       fail(`Energie-Geometrie ${size.name}: mobile Freigabe ist nicht kompakt (${JSON.stringify(result)})`);
     }
     if (size.width > 900 && (!result.stripRect || result.stripRect.top > 1 || result.stripRect.height > 68)) {
@@ -2506,69 +2611,79 @@ try {
     fail('Erwarteter QA-Artefakt-Testfehler');
   }
 
-  if (!ciCore) {
-    for (const viewport of viewports) {
-      await assertPublicLanding(viewport);
-    }
-  }
-
-  if (process.env.HV_QA_LANDING_ONLY !== 'true') {
-    await assertSidebarNavReachable();
-    await assertSharedAppShellNavigation();
+  if (energyOnly) {
     await assertHomeOnboarding();
-    await assertBoundedAdminDialogs();
-    await assertResponsiveAdminWidths();
-    if (!ciCore) {
-      await assertPilotHome({
-        slug: 'eltern',
-        email: 'parents-owner@example.com',
-        householdName: 'Haus Eltern',
-        expectedAssets: ['pv', 'ev', 'hot-water', 'heat-pump'],
-        absentAssets: ['battery'],
-        expectedMeasured: ['Hausanschluss', 'PV-Anlage'],
-        expectedCaptured: ['E-Auto', 'Warmwasser', 'Wärmepumpe'],
-      });
-      await assertPilotHome({
-        slug: 'schwiegereltern',
-        email: 'inlaws-owner@example.com',
-        householdName: 'Haus Schwiegereltern',
-        expectedAssets: ['pv', 'battery', 'ev'],
-        expectedMeasured: ['Hausanschluss', 'PV-Anlage', 'Batteriespeicher'],
-        expectedCaptured: ['E-Auto'],
-        inviteHelper: true,
-      });
-    }
-    await assertResidentIssueProgressiveEnhancement();
-    await createIssue('resident@example.com', 'QA Bewohneranliegen', { verifyResidentAttachmentTarget: true });
-    if (!ciCore) {
-      await createIssue('owner@example.com', 'QA Eigentümeranliegen');
-    }
-    await seedManagedContent();
-    await assertResidentContentResponsiveMatrix(ciCore ? [
-      { width: 390, height: 844 },
-      { width: 768, height: 1024 },
-    ] : undefined);
-    await assertResidentContentClickFlows();
-    await assertResidentBallotFlow();
-
+    await ensureFocusedEnergyUnit();
     for (const viewport of viewports) {
-      if (!ciCore) {
-        await assertEnergySafetyAndFlow(viewport);
-        await assertEnergyDataControl(viewport);
-      }
-      for (const persona of activePersonas) {
-        const context = await newContext(viewport.size);
-        const page = await localLogin(context, persona.email);
-        for (const route of activeRoutes) {
-          await assertPage(page, persona, route, viewport.name);
-        }
-        await assertRoleActions(page, persona);
-        await closeContext(context);
-        process.stdout.write(`  ✓ ${persona.name} · ${viewport.name}\n`);
-      }
+      await assertEnergySafetyAndFlow(viewport);
+      await assertEnergyDataControl(viewport);
     }
     await assertEnergyGeometryMatrix();
-    await assertLogoutBackNavigation();
+  } else {
+    if (!ciCore) {
+      for (const viewport of viewports) {
+        await assertPublicLanding(viewport);
+      }
+    }
+
+    if (process.env.HV_QA_LANDING_ONLY !== 'true') {
+      await assertSidebarNavReachable();
+      await assertSharedAppShellNavigation();
+      await assertHomeOnboarding();
+      await assertBoundedAdminDialogs();
+      await assertResponsiveAdminWidths();
+      if (!ciCore) {
+        await assertPilotHome({
+          slug: 'eltern',
+          email: 'parents-owner@example.com',
+          householdName: 'Haus Eltern',
+          expectedAssets: ['pv', 'ev', 'hot-water', 'heat-pump'],
+          absentAssets: ['battery'],
+          expectedMeasured: ['Hausanschluss', 'PV-Anlage'],
+          expectedCaptured: ['E-Auto', 'Warmwasser', 'Wärmepumpe'],
+        });
+        await assertPilotHome({
+          slug: 'schwiegereltern',
+          email: 'inlaws-owner@example.com',
+          householdName: 'Haus Schwiegereltern',
+          expectedAssets: ['pv', 'battery', 'ev'],
+          expectedMeasured: ['Hausanschluss', 'PV-Anlage', 'Batteriespeicher'],
+          expectedCaptured: ['E-Auto'],
+          inviteHelper: true,
+        });
+      }
+      await assertResidentIssueProgressiveEnhancement();
+      await createIssue('resident@example.com', 'QA Bewohneranliegen', { verifyResidentAttachmentTarget: true });
+      if (!ciCore) {
+        await createIssue('owner@example.com', 'QA Eigentümeranliegen');
+      }
+      await seedManagedContent();
+      await assertResidentContentResponsiveMatrix(ciCore ? [
+        { width: 390, height: 844 },
+        { width: 768, height: 1024 },
+      ] : undefined);
+      await assertResidentContentClickFlows();
+      await assertResidentBallotFlow();
+
+      for (const viewport of viewports) {
+        if (!ciCore) {
+          await assertEnergySafetyAndFlow(viewport);
+          await assertEnergyDataControl(viewport);
+        }
+        for (const persona of activePersonas) {
+          const context = await newContext(viewport.size);
+          const page = await localLogin(context, persona.email);
+          for (const route of activeRoutes) {
+            await assertPage(page, persona, route, viewport.name);
+          }
+          await assertRoleActions(page, persona);
+          await closeContext(context);
+          process.stdout.write(`  ✓ ${persona.name} · ${viewport.name}\n`);
+        }
+      }
+      await assertEnergyGeometryMatrix();
+      await assertLogoutBackNavigation();
+    }
   }
 } catch (error) {
   await captureFailureArtifacts(error);

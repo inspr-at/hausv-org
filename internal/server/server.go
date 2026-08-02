@@ -17,6 +17,7 @@ import (
 	"net/mail"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -4733,9 +4734,50 @@ func (a *app) withBase(ac authCtx, pageData map[string]any) map[string]any {
 // internal/web.Renderer.
 func (a *app) executeTemplate(w http.ResponseWriter, name string, data map[string]any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := a.templates.ExecuteTemplate(w, name, data); err != nil {
+	viewData := data
+	if tenant, ok := data["Tenant"].(tenantConfig); ok {
+		viewData = make(map[string]any, len(data))
+		for key, value := range data {
+			viewData[key] = value
+		}
+		viewData["Tenant"] = tenantTemplateViewFrom(tenant)
+	}
+	if err := a.templates.ExecuteTemplate(w, name, viewData); err != nil {
 		logError("template render failed", err, "template", name)
 	}
+}
+
+// tenantTemplateView keeps the configuration model free of html/template
+// types while allowing the server-owned hero route to remain an absolute URL
+// inside CSS url() values. html/template otherwise percent-encodes its slashes,
+// turning it into a different request path. Only same-origin server-owned
+// routes are trusted; other configured URLs retain the default escaping.
+type tenantTemplateView struct {
+	tenantConfig
+	HeroImageURL any
+}
+
+func tenantTemplateViewFrom(tenant tenantConfig) tenantTemplateView {
+	heroURL := any(tenant.HeroImageURL)
+	if tenantHeroURLIsServerOwned(tenant) {
+		heroURL = template.URL(tenant.HeroImageURL)
+	}
+	return tenantTemplateView{
+		tenantConfig: tenant,
+		HeroImageURL: heroURL,
+	}
+}
+
+func tenantHeroURLIsServerOwned(tenant tenantConfig) bool {
+	raw := strings.TrimSpace(tenant.HeroImageURL)
+	if raw == "/tenant-hero/"+normalizeSlug(tenant.Slug) {
+		return true
+	}
+	parsed, err := url.ParseRequestURI(raw)
+	if err != nil || parsed.Scheme != "" || parsed.Host != "" || parsed.RawQuery != "" || parsed.Fragment != "" || parsed.Path != raw {
+		return false
+	}
+	return strings.HasPrefix(parsed.Path, "/assets/") && path.Clean(parsed.Path) == parsed.Path
 }
 
 func enrichCapabilityData(data map[string]any) {

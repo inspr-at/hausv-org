@@ -15,6 +15,33 @@ const (
 	QualityUnavailable = "unavailable"
 )
 
+// UsableQuarterCounts keeps readiness and coverage decisions on the same
+// quality semantics. A completed quarter derived from instantaneous power is
+// estimated rather than directly measured, but it is still usable for the
+// observation/readiness flow. Keeping the two qualities separate lets the UI
+// disclose that distinction without making Home Assistant-only observation
+// appear permanently stuck.
+type UsableQuarterCounts struct {
+	Total     int
+	Measured  int
+	Estimated int
+}
+
+func CountUsableQuarters(intervals []Interval) UsableQuarterCounts {
+	counts := UsableQuarterCounts{}
+	for _, interval := range intervals {
+		switch interval.Quality {
+		case QualityMeasured:
+			counts.Measured++
+			counts.Total++
+		case QualityEstimated:
+			counts.Estimated++
+			counts.Total++
+		}
+	}
+	return counts
+}
+
 type PowerSample struct {
 	At time.Time
 	KW float64

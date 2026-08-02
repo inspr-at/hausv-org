@@ -3,7 +3,11 @@
 // Keep this module limited to the content above #energieverlauf. The chart and
 // every section after it retain their established checks in qa-main-flows.mjs.
 
-export const energyRedesignWidths = new Set([320, 390, 768, 1024, 1440]);
+export const energyRedesignWidths = new Set([
+  320, 359, 360, 361, 390, 430, 559, 560, 561, 619, 620, 621,
+  768, 899, 900, 901, 1023, 1024, 1280, 1366, 1439, 1440, 1441,
+  1600, 1672, 1920, 2048,
+]);
 
 const ownerSidebar = [
   { path: '/app', label: 'Hausüberblick' },
@@ -50,9 +54,7 @@ const disclosures = [
 ];
 
 const metricDisclosures = [
-  { id: 'consumption', patterns: [/Hausverbrauch/i, /Home Assistant|gelesen/i] },
-  { id: 'peak', patterns: [/Viertelstunde/i, /Kalendermonat/i] },
-  { id: 'billed', patterns: [/Verrechnete Leistung/i, /2-kW-Sockel/i] },
+  { id: 'tariff', patterns: [/Höchste Viertelstunde/i, /Verrechnet/i, /Kalendermonat/i, /2-kW-Sockel/i] },
   { id: 'annual', patterns: [/Jahreswert/i, /Netztarif|Stromrechnung/i] },
 ];
 
@@ -139,6 +141,26 @@ export async function assertEnergyTopContent(page, label) {
       (await tariffStatus.getAttribute('aria-label')) !== 'Entwurf · nicht verbindlich' ||
       (await tariffStatus.getAttribute('title')) !== 'Entwurf · nicht verbindlich') {
     fail(label, 'Tarifstatus ist nicht kompakt sichtbar und vollständig als Hover-/Hilfetext erhalten');
+  }
+
+  const iconContract = await page.evaluate(() => {
+    const scope = document.querySelector('.energy-cockpit-main');
+    const icons = [...(scope?.querySelectorAll('.energy-mode-strip .energy-ui-icon, .energy-cockpit-top .energy-ui-icon') || [])];
+    return {
+      count: icons.length,
+      inlineSVGs: scope?.querySelectorAll('.energy-mode-strip svg, .energy-cockpit-top svg').length || 0,
+      missingExternalAsset: icons.map((icon) => {
+        const style = getComputedStyle(icon);
+        const mask = style.maskImage || style.webkitMaskImage || '';
+        return {
+          className: icon.className,
+          mask,
+        };
+      }).filter(({ mask }) => !/\/assets\/icons\/lucide\/[a-z0-9-]+\.svg(?:\?|["')]|$)/i.test(mask)),
+    };
+  });
+  if (iconContract.count < 10 || iconContract.inlineSVGs || iconContract.missingExternalAsset.length) {
+    fail(label, 'Redesign verwendet nicht durchgängig die etablierten externen Lucide-SVGs', iconContract);
   }
 }
 
@@ -271,10 +293,18 @@ export async function assertEnergyMetricDisclosures(page, { label, width }) {
   const roots = page.locator('details.energy-metric-info[data-energy-help]');
   const actualIDs = await roots.evaluateAll((elements) => elements.map((element) => element.getAttribute('data-energy-help')));
   const hasEstimate = await page.locator('.energy-billed').isVisible().catch(() => false);
-  const requiredIDs = hasEstimate ? metricDisclosures.map((item) => item.id) : ['consumption'];
+  const requiredIDs = hasEstimate ? metricDisclosures.map((item) => item.id) : ['tariff'];
   const missing = requiredIDs.filter((id) => !actualIDs.includes(id));
-  if (missing.length) {
-    fail(label, 'erklärende Info-Knöpfe für Energiekennzahlen fehlen', { requiredIDs, actualIDs, missing });
+  const unexpected = actualIDs.filter((id) => !requiredIDs.includes(id));
+  const duplicated = actualIDs.filter((id, index) => actualIDs.indexOf(id) !== index);
+  if (missing.length || unexpected.length || duplicated.length || actualIDs.length !== requiredIDs.length) {
+    fail(label, 'Kennzahl-Infos sind nicht auf Tarif und Jahreswert reduziert', {
+      requiredIDs,
+      actualIDs,
+      missing,
+      unexpected,
+      duplicated,
+    });
   }
 
   const originalScroll = await page.evaluate(() => ({ x: window.scrollX, y: window.scrollY }));
@@ -467,7 +497,7 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
       const y = Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top);
       return x > 1 && y > 1 ? { width: x, height: y } : null;
     };
-    const groups = ['.energy-heading', '.energy-health', '.energy-lead-side', '.energy-nextstep', '.energy-tariff'];
+    const groups = ['.energy-heading', '.energy-health', '.energy-lead-side', '.energy-nextstep', '.energy-tariff', '.energy-billed'];
     const siblingOverlaps = [];
     for (const selector of groups) {
       const parent = document.querySelector(selector);
@@ -537,6 +567,29 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
         client: element.clientWidth,
         scroll: element.scrollWidth,
       }));
+    const flowNodeRects = [...(diagram?.querySelectorAll('[data-energy-node]') || [])]
+      .filter(visible)
+      .map((element) => ({
+        id: element.getAttribute('data-energy-node'),
+        box: rect(element),
+      }));
+    const flowNodeOverlaps = [];
+    for (let left = 0; left < flowNodeRects.length; left += 1) {
+      for (let right = left + 1; right < flowNodeRects.length; right += 1) {
+        const amount = overlap(flowNodeRects[left].box, flowNodeRects[right].box);
+        if (amount) flowNodeOverlaps.push({
+          left: flowNodeRects[left].id,
+          right: flowNodeRects[right].id,
+          amount,
+        });
+      }
+    }
+    const liveCard = document.querySelector('.energy-live');
+    const headingCopy = document.querySelector('.energy-heading-copy');
+    const headingAction = document.querySelector('.energy-heading-action');
+    const modeState = document.querySelector('.energy-mode-state');
+    const modeAction = document.querySelector('.energy-mode-action');
+    const next = document.querySelector('.energy-nextstep');
     return {
       viewport: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,
@@ -546,8 +599,20 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
       componentOverflow,
       diagramRect,
       flowOutliers,
+      flowNodeOverlaps,
       liveOutliers,
       overflowingDescendants,
+      layout: {
+        headingCopy: rect(headingCopy),
+        headingAction: rect(headingAction),
+        headingControlOverlap: headingCopy && headingAction && visible(headingAction)
+          ? overlap(rect(headingCopy), rect(headingAction)) : null,
+        modeControlOverlap: modeState && modeAction && visible(modeAction)
+          ? overlap(rect(modeState), rect(modeAction)) : null,
+        live: rect(liveCard),
+        tariff: rect(tariff),
+        next: rect(next),
+      },
       emptyTariffHeight: tariffEmpty && visible(tariffEmpty) ? rect(tariff)?.height || 0 : 0,
       nextOverflow: nextOverflow && visible(nextOverflow) ? {
         box: rect(nextOverflow),
@@ -556,10 +621,24 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
     };
   });
 
+  const cards = result.layout;
+  const missingCards = !cards.live || !cards.tariff || !cards.next;
+  const stackedWrong = width < 1440 && (!cards.live || !cards.tariff || !cards.next ||
+    Math.abs(cards.live.left - cards.tariff.left) > 1 ||
+    cards.live.bottom > cards.tariff.top + 1 ||
+    cards.tariff.bottom > cards.next.top + 1);
+  const columnsWrong = width >= 1440 && (!cards.live || !cards.tariff || !cards.next ||
+    cards.live.right > cards.tariff.left + 1 ||
+    Math.abs(cards.live.top - cards.tariff.top) > 1 ||
+    Math.abs(cards.live.bottom - cards.tariff.bottom) > 1 ||
+    Math.min(cards.live.bottom, cards.tariff.bottom) > cards.next.top + 1);
+
   if (result.documentWidth > width + 1 || result.bodyWidth > width + 1 ||
       result.siblingOverlaps.length || result.clippedControls.length || result.componentOverflow.length ||
       !result.diagramRect || result.diagramRect.left < -1 || result.diagramRect.right > width + 1 ||
-      result.flowOutliers.length || (width <= 1024 && result.emptyTariffHeight > 400) ||
+      result.flowOutliers.length || result.flowNodeOverlaps.length || result.layout.headingControlOverlap ||
+      result.layout.modeControlOverlap || missingCards || stackedWrong || columnsWrong ||
+      (width <= 1024 && result.emptyTariffHeight > 400) ||
       (width <= 390 && result.nextOverflow &&
         (result.nextOverflow.name !== 'Weitere Optionen' ||
          result.nextOverflow.box.width < 43.5 || result.nextOverflow.box.width > 54 ||

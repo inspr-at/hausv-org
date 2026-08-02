@@ -152,7 +152,9 @@ fi
 : >"$app_log"
 start_portal
 
-if [ "${HV_QA_CI_CORE:-}" = true ]; then
+if [ "${HV_QA_ENERGY_ONLY:-}" = true ]; then
+    echo "── running focused Playwright energy and breakpoint flows"
+elif [ "${HV_QA_CI_CORE:-}" = true ]; then
     echo "── running Playwright resident/admin CI core"
 else
     echo "── running full Playwright role flows"
