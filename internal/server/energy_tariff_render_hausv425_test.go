@@ -10,19 +10,21 @@ import (
 	"github.com/markus-barta/hausv-org/internal/energy"
 )
 
-// billedBlockHAUSV425 schneidet den Kennzahlenblock heraus. Ohne das würde
-// etwa "10 kW" auch von der Planungsgrenze erfüllt und der Test wäre wertlos.
+// billedBlockHAUSV425 schneidet die Tarifkarte heraus. Kennzahlen und ihre
+// Begründungen dürfen zugunsten einer ruhigen Erstansicht auf sichtbare Werte
+// und die Offenlegung "Mehr erfahren" verteilt sein; außerhalb der Karte darf
+// etwa die 10-kW-Planungsgrenze den Nachweis weiterhin nicht zufällig erfüllen.
 func billedBlockHAUSV425(t *testing.T, body string) string {
 	t.Helper()
-	start := strings.Index(body, `<div class="energy-billed"`)
+	start := strings.Index(body, `<section class="energy-card energy-tariff"`)
 	if start < 0 {
-		t.Fatal("Kennzahlenblock energy-billed fehlt im Cockpit")
+		t.Fatal("Tarifkarte fehlt im Cockpit")
 	}
-	end := strings.Index(body[start:], "</div>\n        ")
+	end := strings.Index(body[start:], "</section>")
 	if end < 0 {
-		end = 1200
+		t.Fatal("Tarifkarte ist nicht vollständig geschlossen")
 	}
-	return body[start : start+end+400]
+	return body[start : start+end+len("</section>")]
 }
 
 // Ende-zu-Ende-Nachweis für den Tarifblock aus HAUSV-425: die verrechnete

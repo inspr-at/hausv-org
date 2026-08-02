@@ -1243,10 +1243,26 @@ func TestEnergyLiveViewCondensesManyReadingsIntoHouseFlow(t *testing.T) {
 	if len(view.Flows) != 3 {
 		t.Fatalf("flows = %+v", view.Flows)
 	}
+	if !view.HasGrid || view.Grid.Metric != energy.MetricGridImportPower || view.Grid.Value != "50 W" {
+		t.Fatalf("primary grid flow = %+v", view.Grid)
+	}
 	if !view.HasAdditional || view.AdditionalCount != 1 ||
 		view.Additional[0].Metric != energy.MetricGridImportEnergy ||
 		view.Additional[0].Detail != "" {
 		t.Fatalf("additional = %+v", view.Additional)
+	}
+}
+
+func TestEnergyLiveViewShowsOnlyTheStrongerGridDirection(t *testing.T) {
+	view := buildEnergyLiveView([]energyMetricView{
+		{Metric: energy.MetricGridImportPower, Label: "Netzbezug", Value: "0,4 kW", Numeric: 0.4, Unit: "kW"},
+		{Metric: energy.MetricGridExportPower, Label: "Einspeisung", Value: "2,4 kW", Numeric: 2.4, Unit: "kW"},
+	})
+	if !view.HasGrid || view.Grid.Metric != energy.MetricGridExportPower || view.Grid.Value != "2,4 kW" {
+		t.Fatalf("primary grid flow = %+v", view.Grid)
+	}
+	if len(view.Flows) != 2 {
+		t.Fatalf("both grid readings must remain available in the disclosure: %+v", view.Flows)
 	}
 }
 

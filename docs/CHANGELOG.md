@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.66.0] - 2026-08-02
+
+### Neu
+
+- **Der Energiefluss ist auf einen Blick verständlich.** Erzeugung, Hausverbrauch, Netz und Speicher stehen in einer ruhigen Live-Ansicht mit klaren, geraden Flussrichtungen.
+
+### Verbessert
+
+- **Die Monatsspitze kommt ohne Textwand aus.** Die entscheidenden Werte stehen zuerst; Herleitung, Tarifdetails und Quellen öffnen sich bei Bedarf über „Mehr erfahren“.
+- **Erklärungen bleiben genau dort erreichbar, wo Fragen entstehen.** Dezente Info-Schaltflächen erläutern Kennzahlen und Energiefluss, ohne die Übersicht zu überladen.
+- **Der Beobachtungsfortschritt bleibt ehrlich.** Das Cockpit zeigt die tatsächlich erfassten Viertelstunden und den verbleibenden Zeitraum bis zur ersten belastbaren Empfehlung.
+- **Auf jedem Bildschirm bleibt der Fluss sauber.** Die neue Ansicht wurde von 320 bis 1440 Pixel geprüft; Seitenleiste, Energieverlauf und alle nachfolgenden Bereiche bleiben vertraut.
+
 ## [0.65.0] - 2026-08-01
 
 ### Neu

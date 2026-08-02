@@ -55,6 +55,8 @@ type energyLiveView struct {
 	Main             energyMetricView
 	HasMain          bool
 	Flows            []energyMetricView
+	Grid             energyMetricView
+	HasGrid          bool
 	Battery          energyMetricView
 	HasBattery       bool
 	BatterySOC       energyMetricView
@@ -128,6 +130,14 @@ type energyChartData struct {
 	Label   string
 	Values  []float64
 	Present []bool
+}
+
+type energyObservationProgressView struct {
+	Completed int
+	Target    int
+	Percent   int
+	Label     string
+	Title     string
 }
 
 type energyChartCacheEntry struct {
@@ -966,6 +976,42 @@ func (a *app) homeIdentityUnitContext(ac authCtx, profile energy.HomeProfile) (s
 	return "Offizielle Einheit", "Noch keine Wohnung angelegt"
 }
 
+func buildEnergyObservationProgressView(intervals []energy.Interval) energyObservationProgressView {
+	const target = 96
+	completed := 0
+	for _, interval := range intervals {
+		if interval.Quality == energy.QualityMeasured {
+			completed++
+		}
+	}
+	if completed > target {
+		completed = target
+	}
+	remaining := target - completed
+	remainingMinutes := remaining * 15
+	title := "Einen vollständigen Tag beobachten"
+	if remaining == 1 {
+		title = "Noch 1 Viertelstunde beobachten"
+	} else if remaining > 1 && remainingMinutes < 60 {
+		title = fmt.Sprintf("Noch %d Viertelstunden beobachten", remaining)
+	} else if remainingMinutes > 0 && remainingMinutes < 24*60 {
+		hours := remainingMinutes / 60
+		minutes := remainingMinutes % 60
+		if minutes == 0 {
+			title = fmt.Sprintf("Noch %d Std. beobachten", hours)
+		} else {
+			title = fmt.Sprintf("Noch %d Std. %d Min. beobachten", hours, minutes)
+		}
+	}
+	return energyObservationProgressView{
+		Completed: completed,
+		Target:    target,
+		Percent:   completed * 100 / target,
+		Label:     fmt.Sprintf("%d von %d Viertelstunden", completed, target),
+		Title:     title,
+	}
+}
+
 func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if !a.canViewEnergy(ac) {
 		http.Error(w, "Kein Zugriff", http.StatusForbidden)
@@ -1004,6 +1050,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	peakViews := energyPeakViews(monthIntervals, time.Now())
 	comparisonView, hasComparison := energyComparisonForView(monthIntervals, time.Now())
 	recommendation := energy.NextRecommendation(profile, assets, mappings, monthIntervals)
+	observationProgress := buildEnergyObservationProgressView(monthIntervals)
 	gaps, conflicts := intervalQualityCounts(monthIntervals)
 	lastSeen := latestEnergySeen(mappings, monthIntervals, liveLastSeen)
 	quality := energy.AssessQuality(time.Now(), lastSeen, gaps, conflicts, len(monthIntervals))
@@ -1069,6 +1116,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"HasComparison":           hasComparison,
 		"ImportStatus":            r.URL.Query().Get("import"),
 		"Recommendation":          recommendation,
+		"ObservationProgress":     observationProgress,
 		"RecommendationURL":       recommendationURL(recommendation.ID),
 		"RecommendationDeferred":  profile.RecommendationID == recommendation.ID && profile.RecommendationStatus == "deferred",
 		"RecommendationDismissed": profile.RecommendationID == recommendation.ID && profile.RecommendationStatus == "dismissed",
@@ -2925,6 +2973,16 @@ func buildEnergyLiveView(metrics []energyMetricView) energyLiveView {
 			item.Detail = energyFlowDetail(metric)
 			view.Flows = append(view.Flows, item)
 			selected[index] = true
+		}
+	}
+	for index := range view.Flows {
+		item := view.Flows[index]
+		if item.Metric != energy.MetricGridImportPower && item.Metric != energy.MetricGridExportPower {
+			continue
+		}
+		if !view.HasGrid || math.Abs(energyPowerWatts(&item)) > math.Abs(energyPowerWatts(&view.Grid)) {
+			view.Grid = item
+			view.HasGrid = true
 		}
 	}
 

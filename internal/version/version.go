@@ -91,6 +91,20 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.66.0",
+			Date:     "2. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Energie wird auf einen Blick verständlich.",
+			Intro:    "Das Energie-Cockpit zeigt den aktuellen Fluss, die Monatsspitze und den nächsten Schritt in einer ruhigen, klaren Ansicht.",
+			Items: []NoteItem{
+				{Label: "Energiefluss", Text: "Erzeugung, Hausverbrauch, Netz und Speicher sind mit geraden, eindeutigen Flussrichtungen verbunden."},
+				{Label: "Wissen bei Bedarf", Text: "Kennzahlen, Herleitung, Tarifdetails und Quellen bleiben über dezente Info-Schaltflächen erreichbar."},
+				{Label: "Monatsspitze", Text: "Die wichtigsten Werte stehen zuerst; alles Weitere öffnet sich kompakt über „Mehr erfahren“."},
+				{Label: "Ehrlicher Fortschritt", Text: "Das Cockpit zählt tatsächlich erfasste Viertelstunden und zeigt, wie lange es bis zur ersten Empfehlung noch dauert."},
+				{Label: "Überall sauber", Text: "Die Ansicht bleibt von 320 bis 1440 Pixel klar; Seitenleiste und Energieverlauf bleiben unverändert vertraut."},
+			},
+		},
+		{
 			Version:  "0.65.0",
 			Date:     "1. August 2026",
 			Kind:     "Bedienung & Orientierung",

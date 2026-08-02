@@ -4,6 +4,11 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
+import {
+  assertEnergyMetricDisclosures,
+  assertEnergyRedesignViewport,
+  energyRedesignWidths,
+} from './energy-redesign-contract.mjs';
 
 const baseURL = process.argv[2];
 if (!baseURL) {
@@ -1811,7 +1816,8 @@ async function assertEnergySafetyAndFlow(viewport) {
   } else {
     await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Top 11', `Navigation ${viewport.name}`);
   }
-  if (!(await page.locator('.energy-heading-context').getByText('Wohnung ·', { exact: false }).count()) ||
+  if (!(await page.locator('.energy-heading-breadcrumb').getByText('Janischhofweg 22, 8043 Graz', { exact: true }).count()) ||
+      !(await page.locator('.energy-heading-unit').getByText('Wohnung', { exact: false }).count()) ||
       !(await page.getByRole('link', { name: 'Zuhause bearbeiten' }).count())) {
     fail(`Energie ${viewport.name}: Name, offizielle Wohnung oder sichtbarer Bearbeitungsweg fehlt`);
   }
@@ -1873,50 +1879,11 @@ async function assertEnergySafetyAndFlow(viewport) {
     });
   }
   await page.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
-  const live = page.locator('.energy-live');
-  const readingCount = Number(await live.getAttribute('data-energy-reading-count'));
-  if (readingCount < 8) {
-    fail(`Energie ${viewport.name}: Mehr-Messwerte-QA hat nur ${readingCount || 0} Live-Werte`);
-  }
-  if (!(await live.getByText('Hausverbrauch', { exact: true }).count()) ||
-      !(await live.locator('[data-energy-metric="pv-power"]').count()) ||
-      !(await live.locator('[data-energy-metric="grid-import-power"]').count()) ||
-      !(await live.locator('[data-energy-metric="battery-power"]').count())) {
-    fail(`Energie ${viewport.name}: verständliche Energiefluss-Zusammenfassung fehlt`);
-  }
-  if (!(await live.locator('details.energy-live-more').count())) {
-    fail(`Energie ${viewport.name}: weitere Messwerte sind nicht progressiv erreichbar`);
-  }
-  const batteryGauge = live.locator('.energy-battery-gauge');
-  const batteryVisual = live.locator('.energy-battery-visual');
-  if (!(await batteryGauge.count()) ||
-      !((await batteryVisual.getAttribute('aria-label')) || '').includes('78 %') ||
-      !(await live.getByText('lädt · 600 W', { exact: true }).count())) {
-    fail(`Energie ${viewport.name}: Batterie-Füllstand und aktuelle Speicherleistung fehlen`);
-  }
-  const batteryFill = batteryGauge.locator('i');
-  const gaugeBox = await batteryGauge.boundingBox();
-  const fillBox = await batteryFill.boundingBox();
-  if (!gaugeBox || !fillBox || fillBox.width / gaugeBox.width < 0.62 || fillBox.width / gaugeBox.width > 0.75 ||
-      (await batteryVisual.getAttribute('data-energy-direction')) !== 'charging' ||
-      (await batteryVisual.locator('.energy-battery-chevron').count()) !== 3 ||
-      (await live.locator('.energy-metric-icon').count()) < 4) {
-    fail(`Energie ${viewport.name}: proportionaler Batteriestand, Laderichtung oder Energie-Icons fehlen`);
-  }
-  const flowGrid = live.locator('.energy-flow-grid');
-  const lastFlow = flowGrid.locator('.energy-flow-item').last();
-  const flowGridBox = await flowGrid.boundingBox();
-  const lastFlowBox = await lastFlow.boundingBox();
-  if (!flowGridBox || !lastFlowBox ||
-      (viewport.name === 'Desktop' && lastFlowBox.width < flowGridBox.width - 2)) {
-    fail(`Energie ${viewport.name}: ungerader Energiefluss lässt eine unbeabsichtigte Leerzelle zurück`);
-  }
-  if (!(await live.getByRole('link', { name: 'Messwerte zuordnen' }).count())) {
-    fail(`Energie ${viewport.name}: dauerhafter Einstieg ins Messwert-Setup fehlt`);
-  }
-  if (await page.getByText('Home Current Consumption', { exact: true }).isVisible().catch(() => false)) {
-    fail(`Energie ${viewport.name}: technische Home-Assistant-Rohbezeichnung konkurriert mit der Übersicht`);
-  }
+  await assertEnergyRedesignViewport(page, {
+    label: `Energie ${viewport.name}`,
+    width: viewport.size.width,
+  });
+  const live = page.locator('[data-energy-flow-diagram]');
   const chart = page.locator('.energy-chart');
   if (!(await chart.getByRole('heading', { name: 'Letzte 24 Stunden' }).count()) ||
       (await chart.locator('path.energy-chart-line').count()) < 3 ||
@@ -2138,6 +2105,10 @@ async function assertEnergySafetyAndFlow(viewport) {
     if (!(await page.getByText('Festgehaltene Bewertungen', { exact: true }).count())) {
       fail('Energie Desktop: Tarifstand wurde nicht historisch sichtbar');
     }
+    await assertEnergyMetricDisclosures(page, {
+      label: 'Energie Desktop nach Messimport',
+      width: viewport.size.width,
+    });
 
     const maintenance = page.locator('details.energy-compact-create').filter({ hasText: 'Wartung an einer Anlage vormerken' });
     await maintenance.locator('summary').click();
@@ -2247,7 +2218,9 @@ async function assertEnergySafetyAndFlow(viewport) {
       });
     }
   }
-  await live.getByRole('link', { name: 'Messwerte zuordnen' }).click();
+  const liveInfo = live.locator('.energy-info-disclosure');
+  await liveInfo.locator(':scope > summary').click();
+  await liveInfo.getByRole('link', { name: 'Messwerte zuordnen' }).click();
   await page.waitForLoadState('networkidle');
   const setup = page.locator('.energy-mapping-guide');
   if ((await setup.locator('[data-mapping-slot]').count()) !== 6 ||
@@ -2269,7 +2242,7 @@ async function assertEnergySafetyAndFlow(viewport) {
 }
 
 // Canonical viewport matrix for the energy lead. Horizontal document overflow
-// alone did not catch the 1121px tariff/live collision, so this also asserts
+// alone did not catch the former tariff/live breakpoint collision, so this also asserts
 // DOM order, sibling geometry, card scroll width and sticky-stack alignment.
 async function assertEnergyGeometryMatrix() {
   const sizes = [
@@ -2287,6 +2260,10 @@ async function assertEnergyGeometryMatrix() {
     { name: '901x700', width: 901, height: 700 },
     { name: '1119x700', width: 1119, height: 700 },
     { name: '1121x700', width: 1121, height: 700 },
+    { name: '1199x700', width: 1199, height: 700 },
+    { name: '1200x700', width: 1200, height: 700 },
+    { name: '1201x700', width: 1201, height: 700 },
+    { name: '1279x700', width: 1279, height: 700 },
   ];
 
   for (const size of sizes) {
@@ -2295,6 +2272,12 @@ async function assertEnergyGeometryMatrix() {
     const response = await page.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
     if (!response || response.status() !== 200) {
       fail(`Energie-Geometrie ${size.name}: Cockpit nicht erreichbar`);
+    }
+    if (energyRedesignWidths.has(size.width)) {
+      await assertEnergyRedesignViewport(page, {
+        label: `Energie-Redesign ${size.name}`,
+        width: size.width,
+      });
     }
 
     const result = await page.evaluate(({ width, height }) => {
@@ -2316,7 +2299,7 @@ async function assertEnergyGeometryMatrix() {
       const strip = document.querySelector('.energy-mode-strip');
       const sidebar = document.querySelector('.sidebar');
       const action = strip?.querySelector('.energy-mode-action');
-      const leadRect = rectOf(lead);
+      const liveRect = rectOf(live);
       const tariffRect = rectOf(tariff);
       const stripRect = rectOf(strip);
       const sidebarRect = rectOf(sidebar);
@@ -2341,12 +2324,12 @@ async function assertEnergyGeometryMatrix() {
         documentOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
         overflow,
         overflowDetails,
-        siblingOverlap: intersects(leadRect, tariffRect),
+        siblingOverlap: intersects(liveRect, tariffRect),
         sourceLeadFirst: Boolean(lead && tariff &&
           (lead.compareDocumentPosition(tariff) & Node.DOCUMENT_POSITION_FOLLOWING)),
-        oneColumn: Boolean(leadRect && tariffRect && Math.abs(leadRect.left - tariffRect.left) <= 1),
-        leadBeforeTariff: Boolean(leadRect && tariffRect && leadRect.bottom <= tariffRect.top + 1),
-        leadLeftOfTariff: Boolean(leadRect && tariffRect && leadRect.right <= tariffRect.left + 1),
+        oneColumn: Boolean(liveRect && tariffRect && Math.abs(liveRect.left - tariffRect.left) <= 1),
+        leadBeforeTariff: Boolean(liveRect && tariffRect && liveRect.bottom <= tariffRect.top + 1),
+        leadLeftOfTariff: Boolean(liveRect && tariffRect && liveRect.right <= tariffRect.left + 1),
         liveStartsInViewport: Boolean(live && live.getBoundingClientRect().top < height),
         nextFollowsLive: Boolean(live && next && live.getBoundingClientRect().bottom <= next.getBoundingClientRect().top + 1),
         stripRect,
@@ -2374,7 +2357,8 @@ async function assertEnergyGeometryMatrix() {
     if (size.width >= 1280 && (result.oneColumn || !result.leadLeftOfTariff)) {
       fail(`Energie-Geometrie ${size.name}: breite Ansicht trennt Live und Tarif nicht (${JSON.stringify(result)})`);
     }
-    if (result.safetyTitle !== 'Nur beobachten' || !result.safetyCopyVisible ||
+    if (result.safetyTitle !== 'Nur beobachten' ||
+        (size.width <= 900 ? result.safetyCopyVisible : !result.safetyCopyVisible) ||
         !result.capabilityVisible || result.actionHeight < 44) {
       fail(`Energie-Geometrie ${size.name}: Sicherheitszustand oder Freigabe fehlt (${JSON.stringify(result)})`);
     }
@@ -2388,7 +2372,7 @@ async function assertEnergyGeometryMatrix() {
     if (size.width <= 560 && (result.actionLabel !== 'Testlauf starten' || result.actionHeight > 46)) {
       fail(`Energie-Geometrie ${size.name}: mobile Freigabe ist nicht kompakt (${JSON.stringify(result)})`);
     }
-    if (size.width > 900 && (!result.stripRect || result.stripRect.top > 1 || result.stripRect.height > 64)) {
+    if (size.width > 900 && (!result.stripRect || result.stripRect.top > 1 || result.stripRect.height > 68)) {
       fail(`Energie-Geometrie ${size.name}: Desktop-Sicherheitsleiste ist nicht kompakt (${JSON.stringify(result)})`);
     }
 
