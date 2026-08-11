@@ -461,19 +461,19 @@ const PageTemplates = `
     .trust-line p { margin: 7px 0 0; color: var(--muted); font-size: 15px; line-height: 1.55; text-wrap: pretty; }
 
     /* ---- Price -----------------------------------------------------------
-       The two positions and the three worked examples live inside one panel:
+       The three positions and the three worked examples live inside one panel:
        the examples are a labelled footer band, not a second floating strip
        that has to line up with the columns above it. */
     .price-panel { border-color: rgba(138,123,63,.24); box-shadow: var(--shadow-md); }
-    .price-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: auto auto auto; }
+    .price-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-rows: auto auto auto; }
     .price-summary > div { grid-row: span 3; display: grid; grid-template-rows: subgrid; align-content: start; padding: 26px 28px 28px; }
     .price-summary > div + div { border-left: 1px solid var(--line); }
     .price-summary span { margin-bottom: 12px; color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
     .price-summary > div:first-child span { color: var(--leaf); }
     .price-summary strong { font-family: var(--font-serif); font-weight: 600; font-size: clamp(23px,1.9vw,27px); line-height: 1.14; text-wrap: balance; }
     .price-summary p { margin: 11px 0 0; color: var(--muted); line-height: 1.55; text-wrap: pretty; }
-    /* Label plus three examples in four equal columns: the middle divider then
-       lands exactly under the divider of the two positions above it. */
+    /* Label plus three examples in four equal columns as a labelled footer
+       band under the three positions. */
     .price-examples { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-top: 1px solid var(--line); background: var(--panel-soft); }
     .price-examples-label { margin: 0; display: grid; align-content: center; padding: 20px 22px 22px 28px; border-right: 1px solid var(--line); color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .12em; line-height: 1.5; text-transform: uppercase; }
     .price-example { display: grid; align-content: start; gap: 5px; padding: 20px 20px 22px; }
@@ -543,9 +543,14 @@ const PageTemplates = `
       .price-examples-label { grid-column: 1 / -1; padding: 18px 20px 0; border-right: 0; }
       .price-example { padding: 16px 20px 20px; }
       .price-example:last-child { padding-right: 20px; }
+      /* Three positions side by side get too narrow below 900px: stack them. */
+      .price-summary { grid-template-columns: minmax(0,1fr); }
+      .price-summary > div + div { border-left: 0; border-top: 1px solid var(--line); }
+      .price-summary > div { padding: 22px 20px; }
     }
     @media (max-width: 640px) {
-      .feature-grid, .product-state, .price-summary, .price-examples, .imprint-grid, .landing-more-grid, .legal-grid { grid-template-columns: minmax(0,1fr); }
+      /* .price-summary stacks at 900px already. */
+      .feature-grid, .product-state, .price-examples, .imprint-grid, .landing-more-grid, .legal-grid { grid-template-columns: minmax(0,1fr); }
       .feature:nth-child(2n) { border-bottom: 1px solid var(--line); }
       .feature, .feature:last-child { grid-column: auto; grid-template-columns: 40px minmax(0,1fr); align-items: start; padding: 18px 20px; }
       .feature:last-child .feature-icon { grid-row: 1 / span 2; }
@@ -558,8 +563,8 @@ const PageTemplates = `
       .trust-line:nth-child(-n+3) { padding-bottom: 20px; border-bottom: 1px solid var(--line); }
       .trust-number { grid-row: 1 / span 2; margin-bottom: 0; }
       .trust-line strong, .trust-line p { grid-column: 2; }
-      .product-state > div + div, .price-summary > div + div { border-left: 0; border-top: 1px solid var(--line); }
-      .product-state > div, .price-summary > div { padding: 22px 20px; }
+      .product-state > div + div { border-left: 0; border-top: 1px solid var(--line); }
+      .product-state > div { padding: 22px 20px; }
       .price-examples-label { padding: 18px 20px 0; }
       .price-example { gap: 3px; padding: 14px 20px 16px; }
       .price-example:last-child { padding-right: 20px; }
@@ -703,21 +708,22 @@ const PageTemplates = `
           <p class="section-kicker">Fair geregelt</p>
           <h2>Einfach gerechnet.</h2>
         </div>
-        <p class="section-lead">Der Pilot ist persönlich abgestimmt. Für später gilt eine klare Richtung pro Wohnungseinheit – nicht pro Haus und nicht pro Zubehör.</p>
+        <p class="section-lead">Der Kern von hausv.org ist Open Source und bleibt kostenlos. Für Hausverwaltungen gibt es den betreuten Betrieb über Augmentoring – klare Basis, klarer Preis je Wohneinheit.</p>
       </div>
       <div class="price-panel">
-        <div class="price-summary" aria-label="Faire Nutzung und Preise">
-          <div><span>Heute im Pilot</span><strong>Bis 25 Einheiten im Pilot kostenlos</strong><p>Zugang und Umfang werden persönlich abgestimmt.</p></div>
-          <div><span>Richtwert für später</span><strong>1 € je Einheit und Monat</strong><p>Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit. Unverbindlicher Zukunftsrichtwert, noch kein öffentliches Vertragsangebot.</p></div>
+        <div class="price-summary" aria-label="Servicemodell und Preise">
+          <div><span>Open-Source-Kern</span><strong>Kostenlos</strong><p>Der Kern der Lösung ist quelloffen und bleibt frei nutzbar – für Hausgemeinschaften heute wie morgen.</p></div>
+          <div><span>Service für Hausverwaltungen</span><strong>500 € oder 900 € je Monat</strong><p>Betreuter Betrieb über Augmentoring: 500 € für kleinere, 900 € für größere Hausverwaltungen.</p></div>
+          <div><span>Je Wohneinheit</span><strong>+ 1 € je Einheit und Monat</strong><p>Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit.</p></div>
         </div>
-        <div class="price-examples" aria-label="Preisbeispiele für den Zukunftsrichtwert">
-          <p class="price-examples-label">Rechenbeispiele zum Richtwert</p>
-          <div class="price-example"><b>8 €</b><span>Kleines Haus · 8 Wohnungen / Monat</span></div>
-          <div class="price-example"><b>25 €</b><span>Kleine Verwaltung · 25 Wohnungen / Monat</span></div>
-          <div class="price-example"><b>100 €</b><span>Größere Verwaltung · 100 Wohnungen / Monat</span></div>
+        <div class="price-examples" aria-label="Preisbeispiele für das Servicemodell">
+          <p class="price-examples-label">Rechenbeispiele</p>
+          <div class="price-example"><b>525 €</b><span>Kleinere Verwaltung · 25 Einheiten / Monat</span></div>
+          <div class="price-example"><b>600 €</b><span>Kleinere Verwaltung · 100 Einheiten / Monat</span></div>
+          <div class="price-example"><b>1.400 €</b><span>Größere Verwaltung · 500 Einheiten / Monat</span></div>
         </div>
       </div>
-      <p class="price-footnote">Wohnungen und vergleichbare Nutzungseinheiten zählen. Zubehör wie Keller oder Stellplätze zählt nicht automatisch. Spenden bleiben freiwillig.</p>
+      <p class="price-footnote">Wohnungen und vergleichbare Nutzungseinheiten zählen. Zubehör wie Keller oder Stellplätze zählt nicht automatisch. Angebot und Vertrag entstehen persönlich – es gibt keinen öffentlichen Online-Vertragsabschluss.</p>
     </div>
   </section>
 
@@ -740,7 +746,7 @@ const PageTemplates = `
         <div class="legal-grid">
           <div class="imprint-card"><strong>Zweck des Angebots</strong><p>Information und technischer Pilot einer Kommunikations- und Transparenzplattform für Hausgemeinschaften.</p></div>
           <div class="imprint-card"><strong>Firmenbuch / UID</strong><p>Nicht anwendbar: privates Projekt einer natürlichen Person, kein Unternehmen und derzeit kein öffentlicher Online-Vertragsabschluss.</p></div>
-          <div class="imprint-card"><strong>Gewerbebehörde / Kammer</strong><p>Nicht anwendbar: der aktuelle persönliche Pilot wird nicht gewerblich angeboten.</p></div>
+          <div class="imprint-card"><strong>Gewerbebehörde / Kammer</strong><p>Nicht anwendbar: der aktuelle persönliche Pilot wird nicht gewerblich angeboten. Der betreute Betrieb für Hausverwaltungen wird über Augmentoring als Anbieter abgewickelt; die Unternehmensangaben nennt das persönliche Angebot.</p></div>
           <div class="imprint-card"><strong>Blattlinie</strong><p>Information über hausv.org und digitale Selbstverwaltung für Mehrparteienhäuser.</p></div>
         </div>
         <p class="mini">Betreiber-Selbstprüfung vom {{.LegalReviewDate}} anhand von <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a>, <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a> und der <a href="https://www.dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>. Keine externe Zertifizierung oder Rechtsberatung.</p>

@@ -993,8 +993,10 @@ func TestReleaseNotesMentionWohneinheitenPricing(t *testing.T) {
 	if !strings.Contains(joined, "Wohneinheiten") {
 		t.Fatal("release notes should mention Wohneinheiten pricing")
 	}
-	if !strings.Contains(joined, "25 Wohneinheiten") {
-		t.Fatal("release notes should mention the current 25-unit Fair-Use threshold")
+	// Since 0.67.0 the public model is: open-source core stays free, managed
+	// service via Augmentoring at 500/900 € base plus 1 € per unit (HAUSV-435).
+	if !strings.Contains(joined, "500 €") || !strings.Contains(joined, "900 €") || !strings.Contains(joined, "Augmentoring") {
+		t.Fatal("release notes should mention the Augmentoring service-fee model (500 €/900 € base)")
 	}
 	if strings.Contains(joined, "1 € pro Haus") || strings.Contains(joined, "pro Hausadresse") {
 		t.Fatalf("release notes contain old house-based pricing wording: %s", joined)
@@ -1353,7 +1355,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 
 	rr := httptest.NewRecorder()
-	a.home(rr, httptest.NewRequest(http.MethodGet, "http://www.hausv.org/", nil))
+	a.home(rr, httptest.NewRequest(http.MethodGet, "http://hausv.org/", nil))
 	if rr.Code != http.StatusOK {
 		t.Fatalf("landing status = %d", rr.Code)
 	}
@@ -1363,11 +1365,18 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Mehrparteien",
 		"hello [at] hausv [dot] org",
 		"Privat · Zugang nach Abstimmung",
+		"Open-Source-Kern",
+		"quelloffen",
+		"Service für Hausverwaltungen",
+		"Betreuter Betrieb über Augmentoring: 500 € für kleinere, 900 € für größere Hausverwaltungen.",
 		"1 € je Einheit und Monat",
 		"Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit.",
-		"Kleines Haus · 8 Wohnungen / Monat",
-		"Kleine Verwaltung · 25 Wohnungen / Monat",
-		"Größere Verwaltung · 100 Wohnungen / Monat",
+		"Kleinere Verwaltung · 25 Einheiten / Monat",
+		"Kleinere Verwaltung · 100 Einheiten / Monat",
+		"Größere Verwaltung · 500 Einheiten / Monat",
+		"525 €",
+		"600 €",
+		"1.400 €",
 		"Impressum",
 		"Ing. Markus Barta",
 		"Janischhofweg 22/11, 8043 Graz, Österreich",
@@ -1394,11 +1403,9 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Zahlungsstatus geschützt anzeigen",
 		`/assets/landing.js`,
 		"/assets/hausv-landing-hero.png",
-		"Bis 25 Einheiten im Pilot kostenlos",
 		"Sicherheit & Datenschutz",
 		"Einfach gerechnet.",
 		"Zubehör wie Keller oder Stellplätze",
-		"Spenden",
 		"Rechtliche Details",
 		"Passt das zu Ihrem Haus?",
 	} {
@@ -1406,7 +1413,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
 		}
 	}
-	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "ebInterface", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
+	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "ebInterface", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
@@ -1422,6 +1429,32 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 	}
 	if strings.Contains(body, `action="/auth/request"`) {
 		t.Fatal("root-domain landing should not render the tenant login form")
+	}
+}
+
+func TestWwwHostRedirectsPermanentlyToApex(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	handler := a.handler()
+
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://www.hausv.org/datenschutz?from=demo", nil))
+	if rr.Code != http.StatusMovedPermanently {
+		t.Fatalf("www redirect status = %d, want %d", rr.Code, http.StatusMovedPermanently)
+	}
+	if got, want := rr.Header().Get("Location"), "https://hausv.org/datenschutz?from=demo"; got != want {
+		t.Fatalf("www redirect location = %q, want %q", got, want)
+	}
+
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://hausv.org/", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("apex landing status = %d, want 200", rr.Code)
+	}
+
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("tenant host status = %d, want 200 (must not be redirected)", rr.Code)
 	}
 }
 

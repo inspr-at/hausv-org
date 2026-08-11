@@ -724,8 +724,8 @@ async function assertPublicLanding(viewport) {
   for (const text of [
     'Heute im privaten Pilot',
     'Nächste Ausbaustufe',
-    'Bis 25 Einheiten im Pilot kostenlos',
-    '1 € je Einheit und Monat',
+    '500 € oder 900 € je Monat',
+    '+ 1 € je Einheit und Monat',
   ]) {
     if (!(await page.getByText(text, { exact: true }).count())) {
       fail(`Öffentliche Startseite ${viewport.name}: „${text}“ fehlt`);

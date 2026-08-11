@@ -1010,7 +1010,21 @@ func (a *app) routes() *http.ServeMux {
 func (a *app) handler() http.Handler {
 	// recoverAndLog is outermost so it captures panics and the final status from
 	// every inner layer, including securityHeaders (HAUSV-141).
-	return a.recoverAndLog(a.securityHeaders(a.routes()))
+	return a.recoverAndLog(a.securityHeaders(a.canonicalHost(a.routes())))
+}
+
+// canonicalHost permanently redirects the www alias to the bare root domain so
+// the public site has exactly one canonical address (HAUSV-435). The target is
+// always https: the app is only publicly reachable behind TLS.
+func (a *app) canonicalHost(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		root := normalizeHost(a.rootDomain)
+		if root != "" && normalizeHost(r.Host) == "www."+root {
+			http.Redirect(w, r, "https://"+root+r.URL.RequestURI(), http.StatusMovedPermanently)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func runHealthcheck(target string) error {

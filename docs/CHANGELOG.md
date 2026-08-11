@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.67.0] - 2026-08-11
+
+### Neu
+
+- **Ein klarer Weg für Hausverwaltungen.** Die öffentliche Seite zeigt das neue Servicemodell: Der Kern von hausv.org ist Open Source und bleibt kostenlos; der betreute Betrieb über Augmentoring kostet 500 € je Monat für kleinere und 900 € je Monat für größere Hausverwaltungen, zuzüglich 1 € je Wohneinheit und Monat.
+
+### Verbessert
+
+- **Eine Adresse für alles.** www.hausv.org führt jetzt direkt auf hausv.org – ein Lesezeichen, keine Duplikate.
+
 ## [0.66.1] - 2026-08-02
 
 ### Verbessert

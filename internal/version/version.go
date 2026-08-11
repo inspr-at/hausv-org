@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.67.0",
+			Date:     "11. August 2026",
+			Kind:     "Produkt & Preise",
+			Headline: "Ein klarer Weg für Hausverwaltungen.",
+			Intro:    "Die öffentliche Seite zeigt jetzt, wie es weitergeht: Der Kern von hausv.org ist Open Source und bleibt kostenlos, der betreute Betrieb für Hausverwaltungen bekommt eine klare Preisbasis.",
+			Items: []NoteItem{
+				{Label: "Open-Source-Kern", Text: "Der Kern der Lösung ist quelloffen und bleibt für Hausgemeinschaften dauerhaft frei nutzbar."},
+				{Label: "Service für Hausverwaltungen", Text: "Betreuter Betrieb über Augmentoring: 500 € je Monat für kleinere, 900 € je Monat für größere Hausverwaltungen, zuzüglich 1 € je Wohneinheit und Monat."},
+				{Label: "Eine Adresse", Text: "www.hausv.org führt jetzt direkt auf hausv.org – eine Adresse, ein Lesezeichen, keine Duplikate."},
+			},
+		},
+		{
 			Version:  "0.66.1",
 			Date:     "2. August 2026",
 			Kind:     "Energie-Cockpit",
