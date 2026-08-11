@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.70.0",
+			Date:     "11. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Großverbraucher lassen sich jetzt wirklich umsortieren.",
+			Intro:    "Die Prioritätenliste im Energiefluss ist bedienbar: Kacheln lassen sich ziehen oder per Pfeiltasten verschieben, die Reihenfolge bleibt gespeichert.",
+			Items: []NoteItem{
+				{Label: "Ziehen oder Tasten", Text: "Der Griff rechts an jeder Kachel nimmt Maus wie Tastatur an; die Nummern folgen sofort."},
+				{Label: "Nachvollziehbar", Text: "Jede Änderung der Reihenfolge landet im Verlauf des Hauses."},
+			},
+		},
+		{
 			Version:  "0.69.0",
 			Date:     "11. August 2026",
 			Kind:     "Energie-Cockpit",

@@ -1429,6 +1429,9 @@ const PageTemplates = `
     .energy-flow-big .rcol { display: grid; justify-items: center; gap: 5px; align-self: center; }
     .energy-flow-big .prio { width: 13px; height: 13px; border-radius: 50%; border: 1px solid #8a7b3f; color: #705c22; font-size: 8.5px; font-weight: 800; display: grid; place-items: center; font-variant-numeric: tabular-nums; margin-top: 0; }
     .energy-flow-big .drag { color: #b5b0a2; cursor: grab; margin-top: 0; }
+    .energy-flow-big button.drag { border: 0; background: none; padding: 5px; margin: -5px; display: grid; place-items: center; }
+    .energy-flow-big .drag-static { cursor: default; opacity: .55; }
+    .energy-flow-big.dragging { opacity: .55; }
     .energy-flow-big .drag svg { width: 10px; height: 16px; display: block; }
     .energy-flow-big.ghost { border: 1.5px dashed #c9c2b2; background: transparent; color: var(--muted); grid-template-columns: 34px minmax(0,1fr); min-height: 44px; cursor: pointer; }
     .energy-flow-big.ghost .plus { width: 21px; height: 21px; border-radius: 50%; border: 1.5px dashed #a89f8a; display: grid; place-items: center; font-size: 14px; color: #8a7b3f; margin: 0 auto; }

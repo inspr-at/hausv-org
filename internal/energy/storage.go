@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +17,10 @@ type Storage interface {
 	SaveProfile(profile HomeProfile) error
 	ListAssets(tenantSlug string) ([]Asset, error)
 	UpsertAsset(asset Asset) error
+	// UpdateAssetPriorities writes the rail order (metadata key "priority",
+	// 1-based) in one atomic step. It returns false without writing when any
+	// id no longer belongs to this tenant's assets.
+	UpdateAssetPriorities(tenantSlug string, order []string) (bool, error)
 	DeleteAsset(tenantSlug, id string) (bool, error)
 	ListMappings(tenantSlug string) ([]EntityMapping, error)
 	UpsertMapping(mapping EntityMapping) error
@@ -138,6 +143,32 @@ func (s *MemoryStore) UpsertAsset(asset Asset) error {
 	}
 	s.assets[asset.TenantSlug+"\x00"+asset.ID] = asset
 	return nil
+}
+
+func (s *MemoryStore) UpdateAssetPriorities(tenantSlug string, order []string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tenantSlug = normalizeSlug(tenantSlug)
+	keys := make([]string, 0, len(order))
+	for _, id := range order {
+		key := tenantSlug + "\x00" + id
+		if _, ok := s.assets[key]; !ok {
+			return false, nil
+		}
+		keys = append(keys, key)
+	}
+	for position, key := range keys {
+		asset := s.assets[key]
+		metadata := map[string]string{}
+		for name, value := range asset.Metadata {
+			metadata[name] = value
+		}
+		metadata["priority"] = strconv.Itoa(position + 1)
+		asset.Metadata = metadata
+		asset.UpdatedAt = time.Now().UTC()
+		s.assets[key] = asset
+	}
+	return true, nil
 }
 
 func (s *MemoryStore) DeleteAsset(tenantSlug, id string) (bool, error) {
@@ -735,6 +766,41 @@ func (s *SQLStore) UpsertAsset(asset Asset) error {
 		return fmt.Errorf("energy: asset id belongs to another tenant")
 	}
 	return nil
+}
+
+func (s *SQLStore) UpdateAssetPriorities(tenantSlug string, order []string) (bool, error) {
+	if s == nil || s.db == nil {
+		return false, fmt.Errorf("energy: sql store unavailable")
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	for position, id := range order {
+		var raw string
+		row := tx.QueryRow(`SELECT metadata_json FROM energy_assets WHERE tenant_slug=? AND id=?`, tenantSlug, id)
+		if err := row.Scan(&raw); err != nil {
+			if err == sql.ErrNoRows {
+				return false, nil
+			}
+			return false, err
+		}
+		metadata := map[string]string{}
+		_ = json.Unmarshal([]byte(raw), &metadata)
+		metadata["priority"] = strconv.Itoa(position + 1)
+		encoded, _ := json.Marshal(metadata)
+		if _, err := tx.Exec(`UPDATE energy_assets SET metadata_json=?, updated_at=? WHERE tenant_slug=? AND id=?`,
+			string(encoded), now, tenantSlug, id); err != nil {
+			return false, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (s *SQLStore) DeleteAsset(tenantSlug, id string) (bool, error) {

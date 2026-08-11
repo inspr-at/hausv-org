@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.70.0] - 2026-08-11
+
+### Neu
+
+- **Die Großverbraucher-Prioritäten sind jetzt bedienbar.** Kacheln im Energiefluss lassen sich mit der Maus ziehen oder am Griff per Pfeiltasten verschieben; die Reihenfolge bleibt gespeichert und jede Änderung ist im Verlauf nachvollziehbar.
+
 ## [0.69.0] - 2026-08-11
 
 ### Neu

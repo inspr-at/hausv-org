@@ -900,6 +900,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/energie/anschlussleistung", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyAgreedPower)))
 	mux.HandleFunc("POST /app/energie/verbraucher", a.action(a.withClaimedEnergyLifecycleOperation(a.addEnergyConsumer)))
 	mux.HandleFunc("POST /app/energie/verbraucher/entfernen", a.action(a.withClaimedEnergyLifecycleOperation(a.deleteEnergyConsumer)))
+	mux.HandleFunc("POST /app/energie/verbraucher/reihenfolge", a.action(a.withClaimedEnergyLifecycleOperation(a.reorderEnergyConsumers)))
 	mux.HandleFunc("POST /app/energie/recommendation", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyRecommendation)))
 	mux.HandleFunc("POST /app/energie/measure", a.action(a.withClaimedEnergyLifecycleOperation(a.createEnergyMeasure)))
 	mux.HandleFunc("POST /app/energie/measure/update", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyMeasure)))

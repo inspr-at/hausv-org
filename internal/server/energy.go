@@ -2579,6 +2579,9 @@ func (a *app) saveOnboardingAssets(tenantSlug string, selected []string) error {
 			asset.Name = previous.Name
 			asset.RatedPowerKW = previous.RatedPowerKW
 			asset.Source = previous.Source
+			// Metadata trägt u.a. die Rail-Priorität (HAUSV-441) und darf ein
+			// erneutes Speichern der Geräteauswahl nicht verlieren.
+			asset.Metadata = previous.Metadata
 			if previous.Flexibility != "" && previous.Flexibility != energy.FlexUnknown {
 				asset.Flexibility = previous.Flexibility
 			}
@@ -3063,6 +3066,7 @@ type energyFlowNodeConfig struct {
 }
 
 type energyFlowConsumerConfig struct {
+	ID     string  `json:"id,omitempty"`
 	Icon   string  `json:"icon,omitempty"`
 	Title  string  `json:"title"`
 	Sub    string  `json:"sub,omitempty"`
@@ -3107,6 +3111,89 @@ func energyFlowConsumerIcon(kind string) string {
 	default:
 		return "device"
 	}
+}
+
+// energyConsumerPriority reads the stored rail position of an asset (kept in
+// the metadata map so no schema change was needed, HAUSV-441). Entries without
+// one sort behind every prioritised entry in their existing stable order.
+func energyConsumerPriority(asset energy.Asset) int {
+	value, err := strconv.Atoi(asset.Metadata["priority"])
+	if err != nil || value <= 0 {
+		return math.MaxInt32
+	}
+	return value
+}
+
+func sortEnergyConsumers(assets []energy.Asset) []energy.Asset {
+	out := append([]energy.Asset(nil), assets...)
+	sort.SliceStable(out, func(i, j int) bool {
+		return energyConsumerPriority(out[i]) < energyConsumerPriority(out[j])
+	})
+	return out
+}
+
+// reorderEnergyConsumers persists the rail order chosen by dragging or the
+// keyboard (HAUSV-441). The client posts every consumer asset id in its new
+// order. Parkplatz 20 is not an asset and keeps its anchored place after the
+// assets.
+func (a *app) reorderEnergyConsumers(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.canManageEnergy(ac) {
+		http.Error(w, "Kein Zugriff", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
+		return
+	}
+	order := r.Form["order"]
+	assets, err := a.energyStore.ListAssets(ac.tenant.Slug)
+	if err != nil {
+		http.Error(w, "Energiedaten konnten nicht geladen werden.", http.StatusInternalServerError)
+		return
+	}
+	byID := map[string]energy.Asset{}
+	for _, asset := range assets {
+		switch asset.Kind {
+		case "pv", "battery":
+			continue
+		}
+		byID[asset.ID] = asset
+	}
+	if len(order) != len(byID) {
+		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
+		return
+	}
+	seen := map[string]bool{}
+	for _, id := range order {
+		if _, ok := byID[id]; !ok || seen[id] {
+			http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
+			return
+		}
+		seen[id] = true
+	}
+	// Ein atomarer Schreibschritt: verschwindet ein Verbraucher zwischen
+	// Validierung und Schreiben (paralleles Löschen), wird nichts geändert —
+	// und ein Upsert könnte ihn auch nicht wieder auferstehen lassen.
+	written, err := a.energyStore.UpdateAssetPriorities(ac.tenant.Slug, order)
+	if err != nil {
+		http.Error(w, "Reihenfolge konnte nicht gespeichert werden.", http.StatusInternalServerError)
+		return
+	}
+	if !written {
+		http.Error(w, "Ungültige Eingabe", http.StatusConflict)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: ac.tenant.Slug,
+		ActorEmail: ac.email,
+		ActorRole:  ac.role,
+		Action:     "energy.consumer.reorder",
+		TargetType: "energy-asset",
+		TargetID:   strings.Join(order, ","),
+		Summary:    "Großverbraucher-Priorität geändert",
+		Details:    map[string]string{"count": strconv.Itoa(len(order))},
+	})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging parkingLiveView, canManage bool) energyFlowConfig {
@@ -3165,7 +3252,7 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging 
 			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000, Dir: dir,
 		}
 	}
-	for _, asset := range assets {
+	for _, asset := range sortEnergyConsumers(assets) {
 		switch asset.Kind {
 		case "pv", "battery":
 			continue
@@ -3181,7 +3268,7 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging 
 			sub = ""
 		}
 		cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
-			Icon: energyFlowConsumerIcon(asset.Kind), Title: title,
+			ID: asset.ID, Icon: energyFlowConsumerIcon(asset.Kind), Title: title,
 			Sub: sub, State: "Bereit · " + energyFlexibilityLabel(asset.Flexibility),
 		})
 	}

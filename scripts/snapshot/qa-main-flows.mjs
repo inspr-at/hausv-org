@@ -2115,8 +2115,14 @@ async function assertEnergySafetyAndFlow(viewport) {
     if (!tariffWaiting || !monthlyWarning) {
       fail(`Energie ${viewport.name}: fehlende Monatsgrundlage wird nicht benannt`);
     }
-  } else if (!(await page.getByText('Messwerte aktuell', { exact: true }).count())) {
+  } else if (!(await page.getByText('Messwerte aktuell', { exact: true }).count()) &&
+      // Der Sampler darf für sein angebrochenes Start-Viertel bewusst eine
+      // Gap-Zeile schreiben (HAUSV-428); ein veralteter Live-Zeitpunkt bleibt
+      // dagegen ein Fehler.
+      !(await page.getByText('Messlücke erkannt', { exact: true }).count())) {
     fail(`Energie ${viewport.name}: Live-Aktualität verwendet nicht den aktuellen Home-Assistant-Zeitpunkt`);
+  } else if (await page.getByText('Messwert nicht aktuell', { exact: true }).count()) {
+    fail(`Energie ${viewport.name}: frische Live-Werte werden als veraltet ausgewiesen`);
   }
   const chartBox = await visibleChart.boundingBox();
   if (!chartBox || chartBox.width > viewport.size.width + 1) {
@@ -2205,6 +2211,32 @@ async function assertEnergySafetyAndFlow(viewport) {
           (await chip.getAttribute('href')) !== '#tarif') {
         fail('Energie Desktop: Monatsspitzen-Chip fehlt oder verlinkt nicht auf die Detailkarte');
       }
+    }
+
+    // 0.70.0: Prioritäten sind bedienbar — Pfeiltaste ordnet um, die
+    // Reihenfolge überlebt das Neuladen und wird danach zurückgestellt.
+    const railTiles = page.locator('.energy-flow-rail .energy-flow-big:not(.ghost)');
+    if ((await railTiles.count()) >= 2) {
+      const titlesBefore = await railTiles.locator('b').allTextContents();
+      await railTiles.first().locator('button.drag').focus();
+      const orderSaved = page.waitForResponse((response) =>
+        response.url().includes('/app/energie/verbraucher/reihenfolge') && response.status() === 204);
+      await page.keyboard.press('ArrowDown');
+      await orderSaved;
+      const titlesAfter = await page.locator('.energy-flow-rail .energy-flow-big:not(.ghost) b').allTextContents();
+      if (titlesAfter[0] !== titlesBefore[1] || titlesAfter[1] !== titlesBefore[0]) {
+        fail(`Energie Desktop: Prioritäten-Umsortierung greift nicht (${titlesBefore} -> ${titlesAfter})`);
+      }
+      await page.reload({ waitUntil: 'networkidle' });
+      const titlesReloaded = await page.locator('.energy-flow-rail .energy-flow-big:not(.ghost) b').allTextContents();
+      if (titlesReloaded[0] !== titlesAfter[0]) {
+        fail(`Energie Desktop: Prioritäten-Reihenfolge überlebt das Neuladen nicht (${titlesReloaded})`);
+      }
+      await page.locator('.energy-flow-rail .energy-flow-big:not(.ghost)').nth(1).locator('button.drag').focus();
+      const restoreSaved = page.waitForResponse((response) =>
+        response.url().includes('/app/energie/verbraucher/reihenfolge') && response.status() === 204);
+      await page.keyboard.press('ArrowUp');
+      await restoreSaved;
     }
     await assertEnergyMetricDisclosures(page, {
       label: 'Energie Desktop nach Messimport',
