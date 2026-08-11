@@ -3063,6 +3063,7 @@ type energyFlowNodeConfig struct {
 	Mode  string  `json:"mode,omitempty"`
 	Sub   string  `json:"sub,omitempty"`
 	Flow  float64 `json:"flow,omitempty"`
+	Hover string  `json:"hover,omitempty"`
 }
 
 type energyFlowConsumerConfig struct {
@@ -3073,6 +3074,7 @@ type energyFlowConsumerConfig struct {
 	State  string  `json:"state,omitempty"`
 	KW     float64 `json:"kw"`
 	Active bool    `json:"active,omitempty"`
+	Custom bool    `json:"custom,omitempty"`
 }
 
 type energyFlowConfig struct {
@@ -3190,7 +3192,7 @@ func (a *app) reorderEnergyConsumers(w http.ResponseWriter, r *http.Request, ac 
 		Action:     "energy.consumer.reorder",
 		TargetType: "energy-asset",
 		TargetID:   strings.Join(order, ","),
-		Summary:    "Großverbraucher-Priorität geändert",
+		Summary:    "Verbraucher-Priorität geändert",
 		Details:    map[string]string{"count": strconv.Itoa(len(order))},
 	})
 	w.WriteHeader(http.StatusNoContent)
@@ -3270,6 +3272,7 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging 
 		cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
 			ID: asset.ID, Icon: energyFlowConsumerIcon(asset.Kind), Title: title,
 			Sub: sub, State: "Bereit · " + energyFlexibilityLabel(asset.Flexibility),
+			Custom: asset.Source == energyCustomAssetSource,
 		})
 	}
 	if charging.Available {
@@ -3283,7 +3286,117 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging 
 			Icon: "parking", Title: "Parkplatz 20", State: state, KW: kw, Active: kw > 0,
 		})
 	}
+	applyEnergyFlowHovers(&cfg, live)
 	return cfg
+}
+
+// applyEnergyFlowHovers erklärt jede Kachel per Hover und macht die Bilanz
+// mathematisch schlüssig: Hausverbrauch = Quellen − Speicherladung −
+// Einspeisung ± einer ausgewiesenen Differenz (Messabweichung oder nicht
+// einzeln erfasste Quellen). Nichts wird stillschweigend passend gemacht.
+func applyEnergyFlowHovers(cfg *energyFlowConfig, live energyLiveView) {
+	if !live.HasMain {
+		return
+	}
+	loadW := math.Abs(energyPowerWatts(&live.Main))
+	if math.IsNaN(loadW) || math.IsInf(loadW, 0) {
+		// Ein transienter "NaN"/"Inf"-Sensorwert darf keine Bilanz behaupten.
+		return
+	}
+	finite := func(watts float64) float64 {
+		if math.IsNaN(watts) || math.IsInf(watts, 0) {
+			return 0
+		}
+		return watts
+	}
+	pvW := 0.0
+	for index := range live.Flows {
+		item := live.Flows[index]
+		if item.Metric == energy.MetricPVPower {
+			pvW += math.Max(0, finite(energyPowerWatts(&item)))
+		}
+	}
+	importW, exportW := 0.0, 0.0
+	for index := range live.Flows {
+		item := live.Flows[index]
+		switch item.Metric {
+		case energy.MetricGridImportPower:
+			importW = finite(math.Abs(energyPowerWatts(&item)))
+		case energy.MetricGridExportPower:
+			exportW = finite(math.Abs(energyPowerWatts(&item)))
+		}
+	}
+	dischargeW, chargeW := 0.0, 0.0
+	if live.HasBattery {
+		watts := finite(math.Abs(energyPowerWatts(&live.Battery)))
+		if watts >= 1 {
+			switch live.Battery.Direction {
+			case "discharging":
+				dischargeW = watts
+			case "charging":
+				chargeW = watts
+			}
+		}
+	}
+	k := func(watts float64) string { return formatEnergyFlowKW(watts) + " kW" }
+	terms := []string{}
+	if pvW > 0 {
+		terms = append(terms, "PV "+k(pvW))
+	}
+	if dischargeW > 0 {
+		terms = append(terms, "Speicher "+k(dischargeW))
+	}
+	if importW > 0 {
+		terms = append(terms, "Netzbezug "+k(importW))
+	}
+	uses := []string{}
+	if chargeW > 0 {
+		uses = append(uses, "Speicherladung "+k(chargeW))
+	}
+	if exportW > 0 {
+		uses = append(uses, "Einspeisung "+k(exportW))
+	}
+	available := pvW + dischargeW + importW - chargeW - exportW
+	residual := loadW - available
+	equation := "Hausverbrauch " + k(loadW)
+	if len(terms) > 0 {
+		equation += " · gedeckt aus " + strings.Join(terms, " + ")
+		if len(uses) > 0 {
+			equation += " − " + strings.Join(uses, " − ")
+		}
+	} else if len(uses) > 0 {
+		equation += " · abzüglich " + strings.Join(uses, " − ")
+	}
+	if math.Abs(residual) >= 15 {
+		if residual > 0 {
+			equation += " · Differenz " + k(residual) + " nicht einzeln erfasst (Messung oder weitere Quellen)"
+		} else {
+			equation += " · Differenz " + k(-residual) + " nicht in der Hausverbrauch-Messung enthalten (separate Verbraucher oder Messabweichung)"
+		}
+	} else {
+		equation += " · Bilanz geht auf"
+	}
+	cfg.Home.Hover = equation
+	for index := range cfg.Producers {
+		cfg.Producers[index].Hover = "PV erzeugt gerade " + k(pvW) + " für Haus, Speicher und Netz."
+	}
+	if cfg.Storage != nil {
+		switch {
+		case dischargeW > 0:
+			cfg.Storage.Hover = "Der Speicher entlädt " + k(dischargeW) + " und deckt damit einen Teil des Hausverbrauchs."
+		case chargeW > 0:
+			cfg.Storage.Hover = "Der Speicher lädt gerade mit " + k(chargeW) + "."
+		default:
+			cfg.Storage.Hover = "Der Speicher wartet – kein nennenswerter Lade- oder Entladefluss."
+		}
+	}
+	if cfg.Grid != nil {
+		if cfg.Grid.Dir == "import" {
+			cfg.Grid.Hover = "Aus dem Netz kommen gerade " + k(importW) + "."
+		} else {
+			cfg.Grid.Hover = "Überschuss von " + k(exportW) + " geht ins Netz."
+		}
+	}
 }
 
 func combineBatteryMetrics(metrics []energyMetricView, selected map[int]bool) (energyMetricView, bool) {

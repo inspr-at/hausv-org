@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.71.0] - 2026-08-11
+
+### Neu
+
+- **Der Energiefluss rechnet vor.** Jedes Element im Fluss zeigt beim Überfahren seine Teilleistungen – etwa wie sich der Hausverbrauch aus PV, Speicher und Netzbezug zusammensetzt; geht die Bilanz nicht exakt auf, wird der Rest ausgewiesen statt verschwiegen.
+- **Verbraucher lassen sich bearbeiten und entfernen.** Jede Kachel bietet beim Überfahren die Aktionen dafür an; selbst angelegte Geräte verschwinden auf Wunsch direkt aus der Liste.
+
+### Verbessert
+
+- **Verschieben fühlt sich echt an.** Beim Ziehen macht die Zielposition sichtbar Platz, die Liste sortiert live mit; Abbrechen stellt die alte Reihenfolge wieder her.
+- **Die Flusslinien sind klarer.** Sie sind durchgängig breiter (mindestens ~20 Pixel), tragen ausschließlich die Farben ihrer Ziele, und Symbole wie Prioritätsnummern sitzen exakt mittig in ihren Kreisen.
+- **Einheitlicher Name.** Aus „Großverbraucher" wird überall schlicht „Verbraucher".
+
 ## [0.70.0] - 2026-08-11
 
 ### Neu

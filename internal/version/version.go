@@ -91,10 +91,22 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.71.0",
+			Date:     "11. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Der Energiefluss rechnet vor.",
+			Intro:    "Jedes Element zeigt beim Überfahren seine Teilleistungen, die Flusslinien sind breiter und tragen nur noch Zielfarben, und Verbraucher lassen sich bearbeiten, entfernen und flüssiger verschieben.",
+			Items: []NoteItem{
+				{Label: "Schlüssige Bilanz", Text: "Der Hausverbrauch rechnet sich sichtbar aus PV, Speicher und Netzbezug zusammen; ein Rest wird als solcher ausgewiesen."},
+				{Label: "Bearbeiten & Entfernen", Text: "Jede Verbraucher-Kachel bietet die Aktionen beim Überfahren an; eigene Geräte lassen sich direkt entfernen."},
+				{Label: "Flüssiges Verschieben", Text: "Beim Ziehen macht die Zielposition Platz und die Liste sortiert live mit."},
+			},
+		},
+		{
 			Version:  "0.70.0",
 			Date:     "11. August 2026",
 			Kind:     "Energie-Cockpit",
-			Headline: "Großverbraucher lassen sich jetzt wirklich umsortieren.",
+			Headline: "Verbraucher lassen sich jetzt wirklich umsortieren.",
 			Intro:    "Die Prioritätenliste im Energiefluss ist bedienbar: Kacheln lassen sich ziehen oder per Pfeiltasten verschieben, die Reihenfolge bleibt gespeichert.",
 			Items: []NoteItem{
 				{Label: "Ziehen oder Tasten", Text: "Der Griff rechts an jeder Kachel nimmt Maus wie Tastatur an; die Nummern folgen sofort."},
@@ -106,10 +118,10 @@ func Notes() []Note {
 			Date:     "11. August 2026",
 			Kind:     "Energie-Cockpit",
 			Headline: "Der Energiefluss zeigt jetzt, woher der Strom kommt und wohin er geht.",
-			Intro:    "Das Cockpit ordnet sich neu: PV oben, das Zuhause in der Mitte, Netz unten, Speicher links – und rechts die Großverbraucher nach Priorität. Die Flusslinien tragen Richtungspfeile und Farbverläufe, die die Zielanteile zeigen.",
+			Intro:    "Das Cockpit ordnet sich neu: PV oben, das Zuhause in der Mitte, Netz unten, Speicher links – und rechts die Verbraucher nach Priorität. Die Flusslinien tragen Richtungspfeile und Farbverläufe, die die Zielanteile zeigen.",
 			Items: []NoteItem{
 				{Label: "Lebendiger Energiefluss", Text: "Die Linienbreite entspricht der Leistung, weiche Farbbänder zeigen anteilig, wie viel in Haus, Speicher, Netz und Verbraucher fließt."},
-				{Label: "Großverbraucher im Blick", Text: "E-Auto, Boiler, Wärmepumpe und weitere Geräte stehen als Prioritätenliste rechts im Fluss – mit Messwert-Zeile, sobald ein Wert vorliegt."},
+				{Label: "Verbraucher im Blick", Text: "E-Auto, Boiler, Wärmepumpe und weitere Geräte stehen als Prioritätenliste rechts im Fluss – mit Messwert-Zeile, sobald ein Wert vorliegt."},
 				{Label: "Ruhiger Kopf", Text: "Die Monatsspitze wandert als kompakte Zeile in die Sicherheitsleiste; der Seitenkopf braucht nur noch eine Zeile."},
 				{Label: "Eine Breite, eine Schrift", Text: "Alle Karten teilen dieselbe Spaltenbreite und dieselbe Titel-Typografie; Leistungswerte stehen durchgängig in kW."},
 			},

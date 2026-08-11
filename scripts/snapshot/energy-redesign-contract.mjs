@@ -116,7 +116,7 @@ export async function assertEnergyTopContent(page, label) {
   const railPrios = await diagram.locator('.energy-flow-rail .energy-flow-big .prio').allTextContents();
   const priosSequential = railPrios.every((text, index) => text.trim() === String(index + 1));
   if (!railTiles || railGhost !== 1 || !priosSequential) {
-    fail(label, 'Großverbraucher-Spalte fehlt, hat keine fortlaufenden Prioritäten oder keine Hinzufügen-Kachel', { railTiles, railGhost, railPrios });
+    fail(label, 'Verbraucher-Spalte fehlt, hat keine fortlaufenden Prioritäten oder keine Hinzufügen-Kachel', { railTiles, railGhost, railPrios });
   }
 
   const mapping = diagram.locator('a[href^="/app/zuhause/onboarding"]').filter({ hasText: 'Messwerte zuordnen' });

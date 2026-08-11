@@ -76,13 +76,15 @@
     return bands;
   }
 
-  function bandStops(srcColor, bands) {
+  // The ribbon shows only DESTINATION shares: soft bands sized by kW, no
+  // source colour (the tile itself already names the source).
+  function bandStops(bands) {
     var total = 0;
     bands.forEach(function (b) { total += b.kw; });
-    var stops = [{ at: 0, c: srcColor }, { at: 0.14, c: srcColor }];
+    var stops = [{ at: 0, c: bands[0].c }];
     var acc = 0;
     bands.forEach(function (b) {
-      stops.push({ at: 0.2 + 0.8 * ((acc + b.kw / 2) / total), c: b.c });
+      stops.push({ at: (acc + b.kw / 2) / total, c: b.c });
       acc += b.kw;
     });
     stops.push({ at: 1, c: bands[bands.length - 1].c });
@@ -185,26 +187,29 @@
       var top = el("div", "energy-flow-slot-top", flow);
       (cfg.producers || []).forEach(function (p, i) {
         var node = tile("pv", p.icon || "pv", top);
+        if (p.hover) node.title = p.hover;
         node.dataset.edge = "producer-" + i;
         valueLine(node.lastChild, p.value, p.unit);
         el("span", "", node.lastChild).textContent = p.label;
-        if (p.kw > 0) edges.push({ from: "producer-" + i, to: "hub", kw: p.kw, src: PV });
+        if (p.kw > 0) edges.push({ from: "producer-" + i, to: "hub", kw: p.kw, banded: true });
       });
 
       if (cfg.storage) {
         var leftSlot = el("div", "energy-flow-slot-left", flow);
         var st = tile("batt", "battery", leftSlot);
+        if (cfg.storage.hover) st.title = cfg.storage.hover;
         st.dataset.edge = "storage";
         valueLine(st.lastChild, cfg.storage.value, cfg.storage.unit);
         el("span", "", st.lastChild).textContent = cfg.storage.sub;
         if (cfg.storage.flow > 0) {
-          if (cfg.storage.mode === "entlädt") edges.push({ from: "storage", to: "hub", kw: cfg.storage.flow, src: BATT });
-          else edges.push({ from: "hub", to: "storage", kw: cfg.storage.flow, stops: [{ at: 0, c: PV }, { at: 1, c: BATT }] });
+          if (cfg.storage.mode === "entlädt") edges.push({ from: "storage", to: "hub", kw: cfg.storage.flow, banded: true });
+          else edges.push({ from: "hub", to: "storage", kw: cfg.storage.flow, stops: [{ at: 0, c: BATT }, { at: 1, c: BATT }] });
         }
       }
 
       var hub = tile("hub", "house", flow);
       hub.classList.add("energy-flow-hub2");
+      if (cfg.home.hover) hub.title = cfg.home.hover;
       hub.dataset.edge = "hub";
       valueLine(hub.lastChild, cfg.home.value, cfg.home.unit);
       el("span", "", hub.lastChild).textContent = cfg.home.label || "Hausverbrauch";
@@ -212,12 +217,13 @@
       if (cfg.grid) {
         var bottom = el("div", "energy-flow-slot-bottom", flow);
         var gr = tile("grid", "grid", bottom);
+        if (cfg.grid.hover) gr.title = cfg.grid.hover;
         gr.dataset.edge = "grid";
         valueLine(gr.lastChild, cfg.grid.value, cfg.grid.unit);
         el("span", "", gr.lastChild).textContent = cfg.grid.label;
         if (cfg.grid.kw > 0) {
-          if (cfg.grid.dir === "import") edges.push({ from: "grid", to: "hub", kw: cfg.grid.kw, src: GRID });
-          else edges.push({ from: "hub", to: "grid", kw: cfg.grid.kw, stops: [{ at: 0, c: PV }, { at: 1, c: GRID }] });
+          if (cfg.grid.dir === "import") edges.push({ from: "grid", to: "hub", kw: cfg.grid.kw, banded: true });
+          else edges.push({ from: "hub", to: "grid", kw: cfg.grid.kw, stops: [{ at: 0, c: GRID }, { at: 1, c: GRID }] });
         }
       }
 
@@ -225,7 +231,54 @@
         wrap.classList.add("has-rail");
         var rail = el("div", "energy-flow-rail", wrap);
         built.push(rail);
-        el("span", "microlabel", rail).textContent = "Großverbraucher · Priorität";
+        el("span", "microlabel", rail).textContent = "Verbraucher · Priorität";
+        var draggingTile = null;
+        function renumberRail() {
+          [].forEach.call(rail.querySelectorAll("[data-consumer-id]"), function (node, index) {
+            var prio = node.querySelector(".prio");
+            if (prio) prio.textContent = String(index + 1);
+          });
+        }
+        function commitDomOrder(focusID) {
+          var domIDs = [].map.call(rail.querySelectorAll("[data-consumer-id]"), function (node) {
+            return node.dataset.consumerId;
+          });
+          var current = cfg.consumers.filter(function (item) { return item.id; }).map(function (item) { return item.id; });
+          if (domIDs.join(",") === current.join(",")) { rebuild(focusID); return; }
+          var previous = cfg.consumers.slice();
+          var byID = {};
+          cfg.consumers.forEach(function (item) { if (item.id) byID[item.id] = item; });
+          cfg.consumers = domIDs.map(function (id) { return byID[id]; })
+            .concat(cfg.consumers.filter(function (item) { return !item.id; }));
+          rebuild(focusID || domIDs[0]);
+          persist(previous, focusID || domIDs[0]);
+        }
+        rail.addEventListener("dragover", function (event) {
+          if (!draggingTile) return;
+          event.preventDefault();
+          var tiles = [].filter.call(rail.querySelectorAll("[data-consumer-id]"), function (node) {
+            return node !== draggingTile;
+          });
+          var after = null;
+          for (var index = 0; index < tiles.length; index += 1) {
+            var box = tiles[index].getBoundingClientRect();
+            if (event.clientY < box.top + box.height / 2) { after = tiles[index]; break; }
+          }
+          if (after) rail.insertBefore(draggingTile, after);
+          else {
+            // Ans Ende der verschiebbaren Kacheln — vor verankerte und Ghost.
+            var anchor = rail.querySelector(".energy-flow-big:not([data-consumer-id])");
+            rail.insertBefore(draggingTile, anchor);
+          }
+          renumberRail();
+        });
+        rail.addEventListener("drop", function (event) {
+          if (!draggingTile) return;
+          event.preventDefault();
+          var droppedID = draggingTile.dataset.consumerId;
+          draggingTile = null;
+          commitDomOrder(droppedID);
+        });
         var movableIndex = -1;
         (cfg.consumers || []).forEach(function (c, i) {
           var t = el("div", "energy-flow-big" + (c.active ? " active" : ""), rail);
@@ -236,7 +289,35 @@
           el("b", "", text).textContent = c.title;
           if (c.sub) el("span", "sub", text).textContent = c.sub;
           if (c.state) el("span", "state", text).textContent = c.state;
-          if (c.kw > 0) edges.push({ from: "hub", to: "consumer-" + i, kw: c.kw, stops: [{ at: 0, c: PV }, { at: 1, c: LOAD }] });
+          if (c.id && cfg.addHint) {
+            var actions = el("span", "tile-actions", text);
+            var edit = el("button", "tile-action", actions);
+            edit.type = "button";
+            edit.textContent = "Bearbeiten";
+            edit.addEventListener("click", function () {
+              var section = document.getElementById("anlagen");
+              if (section && section.scrollIntoView) section.scrollIntoView({ behavior: "smooth", block: "start" });
+              location.hash = "anlagen";
+            });
+            if (c.custom) {
+              var remove = el("button", "tile-action", actions);
+              remove.type = "button";
+              remove.textContent = "Entfernen";
+              remove.addEventListener("click", function () {
+                var form = document.createElement("form");
+                form.method = "post";
+                form.action = "/app/energie/verbraucher/entfernen";
+                var field = document.createElement("input");
+                field.type = "hidden";
+                field.name = "asset_id";
+                field.value = c.id;
+                form.appendChild(field);
+                document.body.appendChild(form);
+                form.submit();
+              });
+            }
+          }
+          if (c.kw > 0) edges.push({ from: "hub", to: "consumer-" + i, kw: c.kw, stops: [{ at: 0, c: LOAD }, { at: 1, c: LOAD }] });
           var rcol = el("span", "rcol", t);
           el("span", "prio", rcol).textContent = String(i + 1);
           var canReorder = Boolean(c.id && cfg.addHint);
@@ -266,21 +347,14 @@
                 event.dataTransfer.effectAllowed = "move";
                 event.dataTransfer.setData("text/plain", c.id);
                 t.classList.add("dragging");
+                draggingTile = t;
               });
-              t.addEventListener("dragend", function () { t.classList.remove("dragging"); t.draggable = false; });
-              t.addEventListener("dragover", function (event) { event.preventDefault(); });
-              t.addEventListener("drop", function (event) {
-                event.preventDefault();
-                var draggedID = event.dataTransfer.getData("text/plain");
-                if (!draggedID || draggedID === c.id) return;
-                var movable = cfg.consumers.filter(function (item) { return item.id; });
-                var fromIndex = movable.findIndex(function (item) { return item.id === draggedID; });
-                if (fromIndex < 0) return;
-                var previous = cfg.consumers.slice();
-                if (reorderConsumers(cfg, fromIndex, myIndex)) {
-                  rebuild(draggedID);
-                  persist(previous, draggedID);
-                }
+              t.addEventListener("dragend", function () {
+                t.classList.remove("dragging");
+                t.draggable = false;
+                if (!draggingTile) return; // Drop auf der Rail hat bereits übernommen
+                draggingTile = null;
+                rebuild(c.id); // kein Rail-Drop: Vorschau verwerfen
               });
             })(movableIndex);
           } else {
@@ -292,7 +366,7 @@
           var plus = el("span", "plus", ghost);
           plus.textContent = "+";
           var gtext = el("div", "", ghost);
-          el("b", "", gtext).textContent = "Großverbraucher hinzufügen";
+          el("b", "", gtext).textContent = "Verbraucher hinzufügen";
           el("span", "", gtext).textContent = "steuern oder nur beobachten";
           ghost.setAttribute("role", "link");
           ghost.tabIndex = 0;
@@ -304,7 +378,7 @@
 
       var bands = sinkBands(cfg);
       edges.forEach(function (e) {
-        if (!e.stops) e.stops = bandStops(e.src, bands);
+        if (!e.stops) e.stops = bandStops(bands);
       });
 
       function draw() {
@@ -330,7 +404,7 @@
             var right = a.cx < b.cx;
             x1 = right ? a.r : a.l; y1 = a.cy; x2 = right ? b.l : b.r; y2 = b.cy; dir = [right ? 1 : -1, 0];
           }
-          var w = 3 + 11 * Math.sqrt(e.kw / maxKw);
+          var w = 20 + 22 * Math.sqrt(e.kw / maxKw);
           var h = w / 2;
           // One closed polygon per ribbon: sides offset by half the width,
           // ending in a chisel tip exactly as wide as the line (no lateral

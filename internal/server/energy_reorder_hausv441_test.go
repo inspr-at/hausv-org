@@ -47,7 +47,7 @@ func consumerIDsHAUSV441(t *testing.T, a *app) []string {
 }
 
 // HAUSV-441: die per Drag oder Pfeiltasten gewählte Reihenfolge der
-// Großverbraucher wird in den Asset-Metadaten festgehalten und bestimmt die
+// Verbraucher wird in den Asset-Metadaten festgehalten und bestimmt die
 // Rail- und Flow-Config-Reihenfolge dauerhaft.
 func TestConsumerReorderPersistsPrioritiesHAUSV441(t *testing.T) {
 	a := reorderAppHAUSV441(t)

@@ -1403,7 +1403,7 @@ const PageTemplates = `
     .energy-flow-slot-top .energy-flow-tile, .energy-flow-slot-bottom .energy-flow-tile { width: 200px; }
     .energy-flow-tile { position: relative; z-index: 1; border: 1px solid #d8d2c7; border-radius: 12px; background: #fffefa; padding: 13px 14px; display: grid; grid-template-columns: 38px minmax(0,1fr); align-items: center; gap: 10px; }
     .energy-flow-tile .ico { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #4a5a4e; background: #f0f2ec; }
-    .energy-flow-tile .ico svg { width: 21px; height: 21px; }
+    .energy-flow-tile .ico svg { width: 21px; height: 21px; display: block; }
     .energy-flow-tile strong { font-family: var(--font-serif); font-weight: 550; font-size: 17px; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .energy-flow-tile > div { min-width: 0; }
     .energy-flow-tile > div > span { display: block; margin-top: 5px; font-size: 11px; line-height: 1.4; color: var(--muted); }
@@ -1420,22 +1420,25 @@ const PageTemplates = `
     .energy-flow-rail > .microlabel { position: absolute; top: -22px; left: 2px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
     .energy-flow-big { border: 1px solid #d8d2c7; border-radius: 11px; background: #fffefa; padding: 12px 12px; display: grid; grid-template-columns: 34px minmax(0,1fr) 16px; align-items: center; gap: 9px; }
     .energy-flow-big .ico { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #4a5a4e; background: #f0f2ec; }
-    .energy-flow-big .ico svg { width: 19px; height: 19px; }
+    .energy-flow-big .ico svg { width: 19px; height: 19px; display: block; }
     .energy-flow-big b { display: block; font-size: 12.5px; line-height: 1.35; }
     .energy-flow-big span { display: block; margin-top: 3px; font-size: 11px; line-height: 1.4; color: var(--muted); }
     .energy-flow-big .sub { color: #40443c; font-variant-numeric: tabular-nums; }
     .energy-flow-big.active { border-color: rgba(91,130,82,.44); background: #f7faf3; }
     .energy-flow-big.active .state { color: #3e704c; font-weight: 700; }
     .energy-flow-big .rcol { display: grid; justify-items: center; gap: 5px; align-self: center; }
-    .energy-flow-big .prio { width: 13px; height: 13px; border-radius: 50%; border: 1px solid #8a7b3f; color: #705c22; font-size: 8.5px; font-weight: 800; display: grid; place-items: center; font-variant-numeric: tabular-nums; margin-top: 0; }
+    .energy-flow-big .prio { width: 13px; height: 13px; border-radius: 50%; border: 1px solid #8a7b3f; color: #705c22; font-size: 8.5px; font-weight: 800; line-height: 1; display: grid; place-items: center; font-variant-numeric: tabular-nums; margin-top: 0; }
     .energy-flow-big .drag { color: #b5b0a2; cursor: grab; margin-top: 0; }
     .energy-flow-big button.drag { border: 0; background: none; padding: 5px; margin: -5px; display: grid; place-items: center; }
     .energy-flow-big .drag-static { cursor: default; opacity: .55; }
     .energy-flow-big.dragging { opacity: .55; }
-    .energy-flow-big .drag svg { width: 10px; height: 16px; display: block; }
+    .energy-flow-big .drag svg { width: 10px; height: 16px; display: block; margin: 0 auto; }
     .energy-flow-big.ghost { border: 1.5px dashed #c9c2b2; background: transparent; color: var(--muted); grid-template-columns: 34px minmax(0,1fr); min-height: 44px; cursor: pointer; }
     .energy-flow-big.ghost .plus { width: 21px; height: 21px; border-radius: 50%; border: 1.5px dashed #a89f8a; display: grid; place-items: center; font-size: 14px; color: #8a7b3f; margin: 0 auto; }
     .energy-flow-big.ghost b { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .energy-flow-big .tile-actions { display: none; gap: 10px; margin-top: 4px; }
+    .energy-flow-big:hover .tile-actions, .energy-flow-big:focus-within .tile-actions { display: flex; }
+    .energy-flow-big .tile-action { border: 0; background: none; padding: 2px 0; margin: 0; font-size: 11px; font-weight: 800; color: #765f1d; cursor: pointer; }
     .energy-flow-hint { position: absolute; left: 26px; bottom: 10px; }
     .energy-peak-chip { display: inline-flex; align-items: baseline; gap: 9px; margin-inline: auto; justify-self: center; font-size: 12.5px; color: var(--muted); white-space: nowrap; text-decoration: none; }
     .energy-peak-chip b { font-family: var(--font-serif); font-weight: 600; font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
