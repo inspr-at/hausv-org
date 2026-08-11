@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.68.0] - 2026-08-11
+
+### Neu
+
+- **Die Servicepauschale macht Preise einfach.** Für Hausverwaltungen sind bis 25 Wohneinheiten in der Pauschale inkludiert, darüber gilt 1 € je Einheit und Monat; die Höhe der Pauschale klärt das persönliche Gespräch.
+- **Impressum & Infos haben eine eigene Seite.** Anschrift, rechtliche Details, die AGPL-3.0-Lizenz des quelloffenen Kerns und der Hinweis auf professionelle Services durch die Augmentoring GmbH stehen ruhig gebündelt auf einer Unterseite.
+
+### Verbessert
+
+- **Die Startseite spricht Hausverwaltungen direkt an.** Der Abschluss lädt zum persönlichen Gespräch über den betreuten Betrieb ein.
+- **Das Logo verhält sich ruhig und vorhersehbar.** Das drehende Zeichen steht fest über der Überschrift; beim Scrollen erscheint schlicht die kleine Wortmarke oben links.
+
 ## [0.67.0] - 2026-08-11
 
 ### Neu

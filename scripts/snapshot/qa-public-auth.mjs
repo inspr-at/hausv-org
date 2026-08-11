@@ -252,11 +252,14 @@ async function captureViewport(viewport) {
     throw new Error(`Landing ${viewport.name}: product disclosure does not open`);
   }
   await productDetails.locator('summary').click();
-  const legalDetails = page.locator('details.legal-details');
-  await legalDetails.locator('summary').click();
-  await screenshot(page, `${screenshotPrefix}-landing-legal-details-${viewport.name}`);
-  if (!(await legalDetails.getByText('Keine externe Zertifizierung', { exact: false }).isVisible())) {
-    throw new Error(`Landing ${viewport.name}: legal disclosure does not open`);
+  // The legal details moved to their own /impressum page (0.68.0).
+  await page.goto(new URL('/impressum', publicOrigin()).href, { waitUntil: 'networkidle' });
+  await screenshot(page, `${screenshotPrefix}-imprint-${viewport.name}`);
+  if (!(await page.getByText('Keine externe Zertifizierung', { exact: false }).isVisible())) {
+    throw new Error(`Impressum ${viewport.name}: legal self-assessment is missing`);
+  }
+  if (!(await page.getByText('Ladungsfähige Anschrift', { exact: false }).isVisible())) {
+    throw new Error(`Impressum ${viewport.name}: address is missing`);
   }
 
   await page.goto(tenantOrigin(), { waitUntil: 'networkidle' });

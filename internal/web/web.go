@@ -362,29 +362,24 @@ const PageTemplates = `
     .landing-nav { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding-top: 26px; padding-bottom: 20px; }
     .landing-brand { display: inline-flex; align-items: center; text-decoration: none; color: #fff; font-weight: 800; }
     .landing-mark { position: relative; width: 72px; height: 44px; display: grid; place-items: center; color: var(--gold-light); }
-    /* Hidden on desktop, where the 3D mark is the logo; shown below 900px,
-       where the 3D mark is not mounted at all and the bar would be empty. */
+    /* Hidden on desktop while the hero shows the rotating mark; shown below
+       900px, where the 3D mark is not mounted and the bar would be empty. */
     .landing-mark .hausv-mark { width: 70px; height: 42px; display: none; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .landing-menu-toggle { display: none; }
-    /* 7x the 72x44 logo slot. JS pins left/top onto the real logo position and
-       drives transform/opacity from scroll; transform-origin must stay top-left
-       so the shrink lands exactly on that slot. */
     /* Sticky chrome, layered above the page. */
     .landing-navbar { position: fixed; z-index: 5; top: 0; left: 0; right: 0; }
-    .mark3d-veil { position: fixed; z-index: 2; top: 0; left: 0; right: 0; height: 84px; opacity: 0; pointer-events: none; background: linear-gradient(180deg, rgba(12,18,13,.82) 0%, rgba(12,18,13,.66) 34%, rgba(12,18,13,.34) 66%, rgba(12,18,13,.12) 85%, rgba(12,18,13,0) 100%); }
-    /* 14x the 72x44 logo slot, drawn at that size and scaled down so it stays
-       crisp. The start scale is capped by the space above the copy, so this is
-       the ceiling rather than a fixed size. */
-    .mark3d-stage { position: fixed; z-index: 3; width: 1008px; height: 616px; transform-origin: 0 0; pointer-events: none; will-change: transform, opacity, filter; }
-    .mark3d-stage canvas, .mark3d-flat { transition: opacity .45s ease; }
-    /* Parked, the glass is dropped for a flat white mark: at 72px the depth
-       reads as noise, and solid white stays legible on every section. */
-    .mark3d-flat { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-    .mark3d-stage[data-mark3d-frozen="true"] .mark3d-flat { opacity: 1; }
-    .mark3d-stage[data-mark3d-frozen="true"] canvas { opacity: 0; }
-    .mark3d-top { position: fixed; z-index: 6; width: 72px; height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
-    .mark3d-top[hidden] { display: none; }
-    @media (max-width: 900px) { .mark3d-veil, .mark3d-stage, .mark3d-top { display: none; } }
+    .mark3d-veil { position: fixed; z-index: 2; top: 0; left: 0; right: 0; height: 84px; opacity: 0; transition: opacity .35s ease; pointer-events: none; background: linear-gradient(180deg, rgba(12,18,13,.82) 0%, rgba(12,18,13,.66) 34%, rgba(12,18,13,.34) 66%, rgba(12,18,13,.12) 85%, rgba(12,18,13,0) 100%); }
+    body[data-hero-mark="out"] .mark3d-veil { opacity: 1; }
+    /* The rotating mark is a static block above the hero eyebrow. The inline
+       fallback SVG shows until the renderer is ready, then cross-fades away. */
+    .mark3d-stage { position: relative; width: min(540px,100%); aspect-ratio: 1008 / 616; margin: 0 0 10px; filter: drop-shadow(0 0 .8px rgba(24,28,22,.06)) drop-shadow(0 3px 9px rgba(24,28,22,.1)); }
+    .mark3d-stage canvas, .mark3d-fallback { transition: opacity .45s ease; }
+    .mark3d-fallback { position: absolute; inset: 12% 18%; width: 64%; height: 76%; fill: none; stroke: var(--gold-light); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .mark3d-stage[data-mark3d-state="ready"] .mark3d-fallback { opacity: 0; }
+    @media (min-width: 901px) {
+      body[data-hero-mark="out"] .landing-mark .hausv-mark { display: block; color: #fff; }
+    }
+    @media (max-width: 900px) { .mark3d-veil, .mark3d-stage { display: none; } }
     .landing-links { display: flex; align-items: center; gap: 20px; font-size: 14px; font-weight: 700; }
     .landing-links a { text-decoration: none; color: rgba(255,255,255,.88); }
     .landing-links a:hover { color: #fff; }
@@ -441,11 +436,11 @@ const PageTemplates = `
     .product-state p { margin: 9px 0 0; max-width: 42ch; color: var(--muted); line-height: 1.55; text-wrap: pretty; }
 
     /* ---- Disclosures ----------------------------------------------------- */
-    .landing-more, .legal-details { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .landing-more summary, .legal-details summary { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; color: var(--ink); font-weight: 850; list-style: none; }
-    .landing-more summary::-webkit-details-marker, .legal-details summary::-webkit-details-marker { display: none; }
-    .landing-more summary::after, .legal-details summary::after { content: "+"; color: var(--gold-ink); font-size: 24px; font-weight: 500; }
-    .landing-more[open] summary::after, .legal-details[open] summary::after { content: "−"; }
+    .landing-more { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .landing-more summary { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; color: var(--ink); font-weight: 850; list-style: none; }
+    .landing-more summary::-webkit-details-marker { display: none; }
+    .landing-more summary::after { content: "+"; color: var(--gold-ink); font-size: 24px; font-weight: 500; }
+    .landing-more[open] summary::after { content: "−"; }
     .landing-more-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: clamp(20px,3vw,48px); padding: 2px 0 26px; }
     .landing-more-grid h3 { margin: 0 0 10px; font-family: var(--font-serif); font-weight: 600; font-size: 21px; }
     .landing-more-grid ul { margin: 0; padding-left: 20px; color: var(--muted); line-height: 1.7; }
@@ -488,8 +483,7 @@ const PageTemplates = `
     .imprint-card { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; background: var(--panel-soft); }
     .imprint-card strong { display: block; font-size: 15px; }
     .imprint-card p { margin: 8px 0 0; color: var(--muted); line-height: 1.55; }
-    .legal-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; padding: 2px 0 16px; }
-    .legal-details .mini { margin: 0 0 22px; max-width: 88ch; color: var(--soft); font-size: 13px; line-height: 1.6; }
+    .imprint-card .landing-button.imprint-more { min-height: 42px; margin-top: 2px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 16px; background: var(--paper); color: var(--ink); }
     .landing-contact { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 26px 28px; border-radius: var(--radius-lg); background: var(--nav); color: #fff; }
     .landing-contact strong { display: block; font-family: var(--font-serif); font-weight: 600; font-size: 27px; line-height: 1.15; }
     .landing-contact p { margin: 7px 0 0; color: rgba(255,255,255,.74); }
@@ -550,7 +544,7 @@ const PageTemplates = `
     }
     @media (max-width: 640px) {
       /* .price-summary stacks at 900px already. */
-      .feature-grid, .product-state, .price-examples, .imprint-grid, .landing-more-grid, .legal-grid { grid-template-columns: minmax(0,1fr); }
+      .feature-grid, .product-state, .price-examples, .imprint-grid, .landing-more-grid { grid-template-columns: minmax(0,1fr); }
       .feature:nth-child(2n) { border-bottom: 1px solid var(--line); }
       .feature, .feature:last-child { grid-column: auto; grid-template-columns: 40px minmax(0,1fr); align-items: start; padding: 18px 20px; }
       .feature:last-child .feature-icon { grid-row: 1 / span 2; }
@@ -604,30 +598,15 @@ const PageTemplates = `
   </style></noscript>
 </head>
 <body>
-  <!-- Fixed chrome: sticky header, top veil and the 3D mark. -->
-
-  <!-- Darkens the top strip once scrolled, so the header and mark keep contrast
-       over the cream sections. Separate from the stage so it is never scaled. -->
+  <!-- Darkens the top strip once the hero mark has scrolled away, so the header
+       keeps contrast over the cream sections. landing.js drives it via
+       body[data-hero-mark]. -->
   <div class="mark3d-veil" aria-hidden="true"></div>
-
-  <!-- Scroll-driven 3D mark. Rendered at 7x and scaled down, so it stays crisp
-       at every size. data-mark3d-mode="solid" switches back to the gold glass.
-       The flat SVG inside is what the mark becomes once parked. -->
-  <div class="mark3d-stage" data-hausv-mark-3d data-src="/assets/hausv-mark.svg?v={{.AssetVersion}}" data-glass-src="/assets/hausv-mark.glb?v={{.AssetVersion}}" data-start="center" data-min-width="900" aria-hidden="true">
-    <svg class="mark3d-flat" viewBox="0 0 72 42" focusable="false" aria-hidden="true">
-      <path d="M9 35h54"/><path d="M11 35V23l8-6 8 6v12"/>
-      <path d="M45 35V23l8-6 8 6v12"/><path d="M25 35V17.5L36 9l11 8.5V35"/>
-      <path d="M31.5 35v-9h9v9"/><path d="M15.5 27h5"/>
-      <path d="M51.5 27h5"/><path d="M31 21h10"/>
-    </svg>
-  </div>
-  <button class="mark3d-top" type="button" data-mark3d-top hidden aria-label="Zum Seitenanfang scrollen"></button>
 
   <header class="landing-navbar">
     <div class="landing-nav">
-      <!-- The flat mark is gone: the 3D one is the logo now. The empty span is
-           kept so the nav keeps its space-between layout and the home link
-           keeps a click target; the 3D stage measures its vertical position. -->
+      <!-- Empty on desktop while the hero shows the rotating mark; landing.js
+           reveals the flat white mark once the hero mark scrolls out of view. -->
       <a class="landing-brand" href="/" aria-label="hausv.org"><span class="landing-mark">{{template "hausvLandingMark" .}}</span></a>
       <button class="landing-menu-toggle" type="button" data-landing-menu-toggle aria-expanded="false" aria-controls="landing-navigation">Menü</button>
       <nav id="landing-navigation" class="landing-links" aria-label="Navigation">
@@ -642,6 +621,17 @@ const PageTemplates = `
 
   <section class="landing-hero">
     <div class="landing-copy">
+      <!-- The rotating 3D mark sits statically above the eyebrow — no scroll
+           animation. data-mark3d-mode="solid" switches back to the gold glass.
+           The inline SVG is the visible fallback until WebGL has rendered. -->
+      <div class="mark3d-stage" data-hausv-mark-3d data-src="/assets/hausv-mark.svg?v={{.AssetVersion}}" data-glass-src="/assets/hausv-mark.glb?v={{.AssetVersion}}" data-min-width="901" aria-hidden="true">
+        <svg class="mark3d-fallback" viewBox="0 0 72 42" focusable="false" aria-hidden="true">
+          <path d="M9 35h54"/><path d="M11 35V23l8-6 8 6v12"/>
+          <path d="M45 35V23l8-6 8 6v12"/><path d="M25 35V17.5L36 9l11 8.5V35"/>
+          <path d="M31.5 35v-9h9v9"/><path d="M15.5 27h5"/>
+          <path d="M51.5 27h5"/><path d="M31 21h10"/>
+        </svg>
+      </div>
       <div class="landing-eyebrow">Hausverwaltung &amp; Energiemanagement</div>
       <h1>Alles, was Zuhause anfällt.</h1>
       <p class="landing-lead">Aushänge, Termine, Dokumente und Anliegen – privat an einem Ort. Energie transparent verstehen und Spitzen gezielt vermeiden.</p>
@@ -708,19 +698,19 @@ const PageTemplates = `
           <p class="section-kicker">Fair geregelt</p>
           <h2>Einfach gerechnet.</h2>
         </div>
-        <p class="section-lead">Der Kern von hausv.org ist Open Source und bleibt kostenlos. Für Hausverwaltungen gibt es den betreuten Betrieb über Augmentoring – klare Basis, klarer Preis je Wohneinheit.</p>
+        <p class="section-lead">Der Kern von hausv.org ist Open Source und bleibt kostenlos. Für Hausverwaltungen gibt es den betreuten Betrieb über Augmentoring – mit Servicepauschale und klarem Preis je weiterer Wohneinheit.</p>
       </div>
       <div class="price-panel">
         <div class="price-summary" aria-label="Servicemodell und Preise">
-          <div><span>Open-Source-Kern</span><strong>Kostenlos</strong><p>Der Kern der Lösung ist quelloffen und bleibt frei nutzbar – für Hausgemeinschaften heute wie morgen.</p></div>
-          <div><span>Service für Hausverwaltungen</span><strong>500 € oder 900 € je Monat</strong><p>Betreuter Betrieb über Augmentoring: 500 € für kleinere, 900 € für größere Hausverwaltungen.</p></div>
-          <div><span>Je Wohneinheit</span><strong>+ 1 € je Einheit und Monat</strong><p>Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit.</p></div>
+          <div><span>Open-Source-Kern</span><strong>Kostenlos</strong><p>Der Kern der Lösung ist quelloffen (<a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener noreferrer">AGPL-3.0</a>) und bleibt frei nutzbar – heute wie morgen.</p></div>
+          <div><span>Service für Hausverwaltungen</span><strong>Servicepauschale</strong><p>Betreuter Betrieb über Augmentoring. Die Höhe richtet sich nach der Größe der Hausverwaltung und wird im persönlichen Angebot festgelegt – bis 25 Einheiten inkludiert.</p></div>
+          <div><span>Je weitere Wohneinheit</span><strong>+ 1 € je Einheit und Monat</strong><p>Ab der 26. Einheit. Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit.</p></div>
         </div>
         <div class="price-examples" aria-label="Preisbeispiele für das Servicemodell">
           <p class="price-examples-label">Rechenbeispiele</p>
-          <div class="price-example"><b>525 €</b><span>Kleinere Verwaltung · 25 Einheiten / Monat</span></div>
-          <div class="price-example"><b>600 €</b><span>Kleinere Verwaltung · 100 Einheiten / Monat</span></div>
-          <div class="price-example"><b>1.400 €</b><span>Größere Verwaltung · 500 Einheiten / Monat</span></div>
+          <div class="price-example"><b>Inkludiert</b><span>Kleinere Verwaltung · bis 25 Einheiten</span></div>
+          <div class="price-example"><b>+ 75 €</b><span>Verwaltung · 100 Einheiten / Monat</span></div>
+          <div class="price-example"><b>+ 475 €</b><span>Größere Verwaltung · 500 Einheiten / Monat</span></div>
         </div>
       </div>
       <p class="price-footnote">Wohnungen und vergleichbare Nutzungseinheiten zählen. Zubehör wie Keller oder Stellplätze zählt nicht automatisch. Angebot und Vertrag entstehen persönlich – es gibt keinen öffentlichen Online-Vertragsabschluss.</p>
@@ -737,23 +727,13 @@ const PageTemplates = `
         <p class="section-lead">Direkter Kontakt statt anonymer Hotline.</p>
       </div>
       <div class="imprint-grid">
-        <div class="imprint-card"><strong>Medieninhaber / Betreiber</strong><p>{{.OperatorName}} · natürliche Person</p></div>
-        <div class="imprint-card"><strong>Ladungsfähige Anschrift</strong><p>{{.OperatorAddress}}</p></div>
+        <div class="imprint-card"><strong>Medieninhaber / Betreiber</strong><p><a href="/impressum">{{.OperatorName}}</a> · natürliche Person</p></div>
         <div class="imprint-card"><strong>Kontakt</strong><p><a id="kontakt" class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a></p></div>
+        <div class="imprint-card"><strong>Rechtliches im Detail</strong><p><a class="landing-button imprint-more" href="/impressum">Impressum &amp; Infos</a></p></div>
       </div>
-      <details class="legal-details">
-        <summary>Rechtliche Details</summary>
-        <div class="legal-grid">
-          <div class="imprint-card"><strong>Zweck des Angebots</strong><p>Information und technischer Pilot einer Kommunikations- und Transparenzplattform für Hausgemeinschaften.</p></div>
-          <div class="imprint-card"><strong>Firmenbuch / UID</strong><p>Nicht anwendbar: privates Projekt einer natürlichen Person, kein Unternehmen und derzeit kein öffentlicher Online-Vertragsabschluss.</p></div>
-          <div class="imprint-card"><strong>Gewerbebehörde / Kammer</strong><p>Nicht anwendbar: der aktuelle persönliche Pilot wird nicht gewerblich angeboten. Der betreute Betrieb für Hausverwaltungen wird über Augmentoring als Anbieter abgewickelt; die Unternehmensangaben nennt das persönliche Angebot.</p></div>
-          <div class="imprint-card"><strong>Blattlinie</strong><p>Information über hausv.org und digitale Selbstverwaltung für Mehrparteienhäuser.</p></div>
-        </div>
-        <p class="mini">Betreiber-Selbstprüfung vom {{.LegalReviewDate}} anhand von <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a>, <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a> und der <a href="https://www.dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>. Keine externe Zertifizierung oder Rechtsberatung.</p>
-      </details>
       <div class="landing-contact">
-        <div><strong>Passt das zu Ihrem Haus?</strong><p>Wir klären persönlich, ob der private Pilot sinnvoll ist.</p></div>
-        <a class="landing-button js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org Pilotzugang" data-mail-reveal="false">Pilot anfragen</a>
+        <div><strong>Passt das zu Ihrer Hausverwaltung?</strong><p>Wir zeigen hausv.org persönlich und klären, wie der betreute Betrieb zu Ihrem Bestand passt.</p></div>
+        <a class="landing-button js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org für Hausverwaltungen" data-mail-reveal="false">Gespräch anfragen</a>
       </div>
     </div>
   </section>
@@ -765,6 +745,67 @@ const PageTemplates = `
 </html>
 {{end}}
 
+{{define "imprint"}}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <meta name="description" content="Impressum und Informationen zu hausv.org">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    :root { color-scheme: light; {{template "designTokens" .}} }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-sans); }
+    a { color: var(--leaf); }
+    :where(a):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
+    header, main, footer { width: min(820px, calc(100% - 40px)); margin: 0 auto; }
+    header { padding: 34px 0 22px; display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+    header a { font-weight: 800; text-decoration: none; }
+    main { padding-bottom: 56px; }
+    h1, h2 { font-family: var(--font-serif); }
+    h1 { margin: 20px 0 12px; font-size: clamp(38px, 7vw, 58px); line-height: 1; }
+    h2 { margin: 34px 0 10px; font-size: 25px; }
+    p, dd { line-height: 1.62; }
+    .lead { color: var(--muted); font-size: 18px; }
+    dl { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 10px 18px; margin: 26px 0 0; }
+    dt { font-weight: 800; }
+    dd { margin: 0; color: var(--muted); }
+    .mini { margin-top: 34px; max-width: 88ch; color: var(--soft); font-size: 13px; line-height: 1.6; }
+    footer { border-top: 1px solid var(--line); padding: 22px 0 36px; color: var(--muted); font-size: 14px; }
+    @media (max-width: 620px) { dl { grid-template-columns: 1fr; } dt { margin-top: 8px; } }
+  </style>
+</head>
+<body>
+  <header><a href="/">← Zurück zur Startseite</a><span>{{.AppVersion}}</span></header>
+  <main>
+    <h1>Impressum &amp; Infos</h1>
+    <p class="lead">Direkter Kontakt statt anonymer Hotline – und die rechtlichen Angaben zu hausv.org an einem Ort.</p>
+
+    <dl>
+      <dt>Medieninhaber / Betreiber</dt><dd>{{.OperatorName}} · natürliche Person</dd>
+      <dt>Ladungsfähige Anschrift</dt><dd>{{.OperatorAddress}}</dd>
+      <dt>Kontakt</dt><dd><a class="js-mail-link" href="/#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a></dd>
+      <dt>Zweck des Angebots</dt><dd>Information und technischer Pilot einer Kommunikations- und Transparenzplattform für Hausgemeinschaften.</dd>
+      <dt>Firmenbuch / UID</dt><dd>Nicht anwendbar: privates Projekt einer natürlichen Person, kein Unternehmen und derzeit kein öffentlicher Online-Vertragsabschluss.</dd>
+      <dt>Gewerbebehörde / Kammer</dt><dd>Nicht anwendbar: der aktuelle persönliche Pilot wird nicht gewerblich angeboten.</dd>
+      <dt>Blattlinie</dt><dd>Information über hausv.org und digitale Selbstverwaltung für Mehrparteienhäuser.</dd>
+    </dl>
+
+    <h2>Professionelle Services</h2>
+    <p>Einrichtung, betreuten Betrieb und Betreuung von hausv.org für Hausverwaltungen erbringt die Augmentoring GmbH. Die Unternehmensangaben nennt das persönliche Angebot.</p>
+
+    <h2>Open Source</h2>
+    <p>Der Kern von hausv.org ist quelloffen und steht unter der <a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener noreferrer">GNU AGPL-3.0</a>.</p>
+
+    <p class="mini">Betreiber-Selbstprüfung vom {{.LegalReviewDate}} anhand von <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a>, <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a> und der <a href="https://www.dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>. Keine externe Zertifizierung oder Rechtsberatung. Details zum Datenschutz in der <a href="/datenschutz">Datenschutzinformation</a>.</p>
+  </main>
+  <footer>hausv.org · <a href="/datenschutz">Datenschutz</a> · <a href="/">Startseite</a></footer>
+  <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
+</body>
+</html>
+{{end}}
 {{define "privacy"}}
 <!doctype html>
 <html lang="de">
@@ -7751,7 +7792,7 @@ const PageTemplates = `
                 <span class="unit-metric"><strong>{{.UnitTotal}}</strong> Einträge</span>
                 <span class="unit-metric"><strong>{{.BillableUnits}}</strong> von {{.FairUseFreeUnits}} {{.BillableLabel}} (Fair Use)</span>
               </div>
-              {{if .FairUseExceeded}}<p class="muted">Über dem kostenlosen Rahmen von {{.FairUseFreeUnits}} Wohneinheiten — Richtwert 1 € pro Einheit und Monat.</p>{{end}}
+              {{if .FairUseExceeded}}<p class="muted">Über dem inkludierten Rahmen von {{.FairUseFreeUnits}} Wohneinheiten — Richtwert 1 € pro Einheit und Monat.</p>{{end}}
             </div>
             <div class="unit-head-actions">
               <a class="button" href="/app/settings/payments/import">Bankdatei einlesen</a>

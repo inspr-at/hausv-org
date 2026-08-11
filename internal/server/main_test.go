@@ -1367,27 +1367,25 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Privat · Zugang nach Abstimmung",
 		"Open-Source-Kern",
 		"quelloffen",
+		"AGPL-3.0",
 		"Service für Hausverwaltungen",
-		"Betreuter Betrieb über Augmentoring: 500 € für kleinere, 900 € für größere Hausverwaltungen.",
+		"Servicepauschale",
+		"bis 25 Einheiten inkludiert",
+		"Ab der 26. Einheit.",
 		"1 € je Einheit und Monat",
 		"Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit.",
-		"Kleinere Verwaltung · 25 Einheiten / Monat",
-		"Kleinere Verwaltung · 100 Einheiten / Monat",
+		"Kleinere Verwaltung · bis 25 Einheiten",
+		"Verwaltung · 100 Einheiten / Monat",
 		"Größere Verwaltung · 500 Einheiten / Monat",
-		"525 €",
-		"600 €",
-		"1.400 €",
+		"Inkludiert",
+		"+ 75 €",
+		"+ 475 €",
 		"Impressum",
 		"Ing. Markus Barta",
-		"Janischhofweg 22/11, 8043 Graz, Österreich",
 		"natürliche Person",
-		"kein Unternehmen",
-		"Nicht anwendbar",
-		"kein öffentlicher Online-Vertragsabschluss",
-		"Betreiber-Selbstprüfung vom 29. Juli 2026",
-		"§ 5 ECG",
-		"§ 24 MedienG",
-		"Keine externe Zertifizierung",
+		`href="/impressum"`,
+		"Rechtliches im Detail",
+		"Impressum &amp; Infos",
 		"Datensparsam",
 		"KI nur mit Opt-in",
 		"Keine eigene Buchhaltung",
@@ -1403,17 +1401,19 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Zahlungsstatus geschützt anzeigen",
 		`/assets/landing.js`,
 		"/assets/hausv-landing-hero.png",
+		"mark3d-stage",
+		"mark3d-fallback",
 		"Sicherheit & Datenschutz",
 		"Einfach gerechnet.",
 		"Zubehör wie Keller oder Stellplätze",
-		"Rechtliche Details",
-		"Passt das zu Ihrem Haus?",
+		"Passt das zu Ihrer Hausverwaltung?",
+		"Gespräch anfragen",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
 		}
 	}
-	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "ebInterface", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
+	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "500 €", "900 €", "Ladungsfähige Anschrift", "Janischhofweg 22/11", "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "ebInterface", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
@@ -1455,6 +1455,42 @@ func TestWwwHostRedirectsPermanentlyToApex(t *testing.T) {
 	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil))
 	if rr.Code != http.StatusOK {
 		t.Fatalf("tenant host status = %d, want 200 (must not be redirected)", rr.Code)
+	}
+}
+
+func TestImprintPageCarriesLegalDetails(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+
+	rr := httptest.NewRecorder()
+	a.handler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://hausv.org/impressum", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("imprint status = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	for _, want := range []string{
+		"Impressum &amp; Infos",
+		"Medieninhaber / Betreiber",
+		"Ing. Markus Barta",
+		"Ladungsfähige Anschrift",
+		"Janischhofweg 22/11, 8043 Graz, Österreich",
+		"natürliche Person",
+		"kein Unternehmen",
+		"Nicht anwendbar",
+		"kein öffentlicher Online-Vertragsabschluss",
+		"Blattlinie",
+		"Professionelle Services",
+		"Augmentoring GmbH",
+		"GNU AGPL-3.0",
+		"Betreiber-Selbstprüfung vom 29. Juli 2026",
+		"§ 5 ECG",
+		"§ 24 MedienG",
+		"Keine externe Zertifizierung",
+		"Datenschutzinformation",
+		"Zurück zur Startseite",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("imprint page missing %q:\n%s", want, body)
+		}
 	}
 }
 
@@ -5186,7 +5222,7 @@ func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
 	if !strings.Contains(page, "von 25") {
 		t.Fatalf("building settings should show 'von 25':\n%s", page)
 	}
-	if strings.Contains(page, "Über dem kostenlosen Rahmen") {
+	if strings.Contains(page, "Über dem inkludierten Rahmen") {
 		t.Fatal("25 billable units must not trigger the over-limit hint")
 	}
 
@@ -5194,14 +5230,14 @@ func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
 	if err := a.unitStore.SetTenantUnits("jhw22", withParking); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	if page = authedRequest(t, a, "admin@example.com", "/app/settings/building").Body.String(); strings.Contains(page, "Über dem kostenlosen Rahmen") {
+	if page = authedRequest(t, a, "admin@example.com", "/app/settings/building").Body.String(); strings.Contains(page, "Über dem inkludierten Rahmen") {
 		t.Fatal("a Stellplatz must not push the billable count over the fair-use limit")
 	}
 
 	if err := a.unitStore.SetTenantUnits("jhw22", mkUnits(26)); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	if page = authedRequest(t, a, "admin@example.com", "/app/settings/building").Body.String(); !strings.Contains(page, "Über dem kostenlosen Rahmen") {
+	if page = authedRequest(t, a, "admin@example.com", "/app/settings/building").Body.String(); !strings.Contains(page, "Über dem inkludierten Rahmen") {
 		t.Fatalf("26 billable units should trigger the over-limit hint:\n%s", page)
 	}
 }

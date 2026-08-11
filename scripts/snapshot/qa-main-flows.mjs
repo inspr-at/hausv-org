@@ -724,7 +724,7 @@ async function assertPublicLanding(viewport) {
   for (const text of [
     'Heute im privaten Pilot',
     'Nächste Ausbaustufe',
-    '500 € oder 900 € je Monat',
+    'Servicepauschale',
     '+ 1 € je Einheit und Monat',
   ]) {
     if (!(await page.getByText(text, { exact: true }).count())) {
@@ -746,11 +746,6 @@ async function assertPublicLanding(viewport) {
   if (!(await page.getByRole('heading', { name: 'Heute nutzbar' }).count())) {
     fail(`Öffentliche Startseite ${viewport.name}: Produktdetails lassen sich nicht öffnen`);
   }
-  const legalDetails = page.locator('details.legal-details');
-  await legalDetails.locator('summary').click();
-  if (!(await page.getByText('Datenschutz', { exact: true }).count())) {
-    fail(`Öffentliche Startseite ${viewport.name}: Datenschutz ist nicht erreichbar`);
-  }
   const metrics = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
     height: document.documentElement.scrollHeight,
@@ -759,6 +754,20 @@ async function assertPublicLanding(viewport) {
   const maxHeight = viewport.name === 'Mobil' ? 7_200 : 5_200;
   if (metrics.height > maxHeight) {
     fail(`Öffentliche Startseite ${viewport.name}: mit ${metrics.height}px unnötig lang (maximal ${maxHeight}px)`);
+  }
+  // The legal details moved to their own /impressum page (0.68.0); the landing
+  // links there instead of holding an inline disclosure.
+  const imprintResponse = await page.goto(new URL('/impressum', publicURL).href, { waitUntil: 'networkidle' });
+  if (!imprintResponse || imprintResponse.status() !== 200) {
+    fail(`Impressum ${viewport.name}: Status ${imprintResponse?.status() ?? 0}`);
+  }
+  for (const text of ['Ladungsfähige Anschrift', 'Augmentoring GmbH']) {
+    if (!(await page.getByText(text).count())) {
+      fail(`Impressum ${viewport.name}: „${text}“ fehlt`);
+    }
+  }
+  if (!(await page.locator('a[href="/datenschutz"]').count())) {
+    fail(`Impressum ${viewport.name}: Datenschutz ist nicht erreichbar`);
   }
   await closeContext(context);
   process.stdout.write(`  ✓ Öffentliche Startseite · ${viewport.name} · ${metrics.height}px\n`);

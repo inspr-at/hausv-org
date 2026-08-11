@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.68.0",
+			Date:     "11. August 2026",
+			Kind:     "Auftritt & Klarheit",
+			Headline: "Die öffentliche Seite spricht Hausverwaltungen direkt an.",
+			Intro:    "Preise erscheinen jetzt als klare Servicepauschale mit inkludierten Einheiten, die rechtlichen Angaben haben eine eigene, ruhige Seite, und das Logo verhält sich einfach und vorhersehbar.",
+			Items: []NoteItem{
+				{Label: "Servicepauschale", Text: "Bis 25 Wohneinheiten inkludiert, darüber 1 € je Einheit und Monat – die Höhe der Pauschale klärt das persönliche Gespräch."},
+				{Label: "Impressum & Infos", Text: "Anschrift, rechtliche Details und der Hinweis auf professionelle Services haben eine eigene Unterseite."},
+				{Label: "Offener Kern", Text: "Die AGPL-3.0-Lizenz des quelloffenen Kerns ist direkt von der Startseite verlinkt."},
+				{Label: "Ruhiges Logo", Text: "Das drehende Zeichen steht fest über der Überschrift; beim Scrollen erscheint schlicht die kleine Wortmarke oben links."},
+			},
+		},
+		{
 			Version:  "0.67.0",
 			Date:     "11. August 2026",
 			Kind:     "Produkt & Preise",

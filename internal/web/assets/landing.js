@@ -49,4 +49,14 @@ document.addEventListener("DOMContentLoaded", function () {
       if (event.matches) closeMenu(false);
     });
   }
+
+  // Reveal the flat white nav mark and the dark top veil once the hero's
+  // rotating mark has scrolled out of view. CSS keys off body[data-hero-mark];
+  // the 3D module itself never touches scroll state.
+  var heroMark = document.querySelector("[data-hausv-mark-3d]");
+  if (heroMark && "IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries) {
+      document.body.setAttribute("data-hero-mark", entries[entries.length - 1].isIntersecting ? "in" : "out");
+    }).observe(heroMark);
+  }
 });

@@ -57,13 +57,23 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) marketingLanding(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "landing", map[string]any{
-		"Title":           "hausv.org - privater Hausverwaltungs-Pilot",
+		"Title":          "hausv.org - privater Hausverwaltungs-Pilot",
+		"ContactLocal":   "hello",
+		"ContactDomain":  "hausv.org",
+		"ContactDisplay": "hello [at] hausv [dot] org",
+		"PrimaryAppURL":  "https://jhw22.hausv.org/",
+		"RequestedHost":  normalizeHost(r.Host),
+		"LandingHeroURL": "/assets/hausv-landing-hero.png",
+		"OperatorName":   platformOperatorName,
+	})
+}
+
+func (a *app) imprintPage(w http.ResponseWriter, r *http.Request) {
+	a.render(w, "imprint", map[string]any{
+		"Title":           "Impressum & Infos · hausv.org",
 		"ContactLocal":    "hello",
 		"ContactDomain":   "hausv.org",
 		"ContactDisplay":  "hello [at] hausv [dot] org",
-		"PrimaryAppURL":   "https://jhw22.hausv.org/",
-		"RequestedHost":   normalizeHost(r.Host),
-		"LandingHeroURL":  "/assets/hausv-landing-hero.png",
 		"OperatorName":    platformOperatorName,
 		"OperatorAddress": platformOperatorAddress,
 		"LegalReviewDate": legalReviewDate,

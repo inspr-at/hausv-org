@@ -1,6 +1,8 @@
 # hausv.org
 
-Private multi-tenant platform with two product surfaces on one secure core:
+Multi-tenant platform with two product surfaces on one secure core; the core is
+open source under the GNU AGPL-3.0 (see [LICENSE](LICENSE)), while production
+deployments and tenant data remain private:
 
 - **HAUSV Gemeinschaft** supports communication, transparency, and self-service
   for WEGs and other multi-unit buildings.

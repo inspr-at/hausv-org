@@ -880,6 +880,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /map-tiles/{z}/{x}/{tile}", a.mapTile)
 	mux.HandleFunc("GET /healthz", a.health)
 	mux.HandleFunc("GET /datenschutz", a.privacyNotice)
+	mux.HandleFunc("GET /impressum", a.imprintPage)
 	mux.HandleFunc("GET /", a.home)
 	mux.HandleFunc("POST /auth/request", a.requestLogin)
 	mux.HandleFunc("GET /auth/verify", a.publicPage(a.verifyLogin))
