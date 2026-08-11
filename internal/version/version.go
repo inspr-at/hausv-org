@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.71.1",
+			Date:     "11. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Symbole sitzen exakt in ihren Kreisen.",
+			Intro:    "Die gezeichneten Linien jedes Symbols sind jetzt vermessen und mittig gesetzt; das Plus der Hinzufügen-Kachel ist ein echtes Vektorsymbol.",
+			Items:    []NoteItem{},
+		},
+		{
 			Version:  "0.71.0",
 			Date:     "11. August 2026",
 			Kind:     "Energie-Cockpit",

@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.71.1] - 2026-08-11
+
+### Verbessert
+
+- **Symbole sitzen exakt in ihren Kreisen.** Die gezeichneten Linien jedes Symbols – nicht nur ihr Rahmen – sind jetzt vermessen und mittig gesetzt; das Plus der Hinzufügen-Kachel ist ein echtes SVG statt eines Schriftzeichens.
+
 ## [0.71.0] - 2026-08-11
 
 ### Neu

@@ -1434,7 +1434,8 @@ const PageTemplates = `
     .energy-flow-big.dragging { opacity: .55; }
     .energy-flow-big .drag svg { width: 10px; height: 16px; display: block; margin: 0 auto; }
     .energy-flow-big.ghost { border: 1.5px dashed #c9c2b2; background: transparent; color: var(--muted); grid-template-columns: 34px minmax(0,1fr); min-height: 44px; cursor: pointer; }
-    .energy-flow-big.ghost .plus { width: 21px; height: 21px; border-radius: 50%; border: 1.5px dashed #a89f8a; display: grid; place-items: center; font-size: 14px; color: #8a7b3f; margin: 0 auto; }
+    .energy-flow-big.ghost .plus { width: 21px; height: 21px; border-radius: 50%; border: 1.5px dashed #a89f8a; display: grid; place-items: center; color: #8a7b3f; margin: 0 auto; }
+    .energy-flow-big.ghost .plus svg { width: 11px; height: 11px; display: block; }
     .energy-flow-big.ghost b { font-size: 12px; font-weight: 700; color: var(--muted); }
     .energy-flow-big .tile-actions { display: none; gap: 10px; margin-top: 4px; }
     .energy-flow-big:hover .tile-actions, .energy-flow-big:focus-within .tile-actions { display: flex; }
