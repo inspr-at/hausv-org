@@ -87,6 +87,10 @@ async function assertHomeIdentityPair(page, scope, displayName, unitLabel, label
       secondaryFont: Number.parseFloat(secondaryStyle?.fontSize || '0'),
       visible: Boolean(root.getClientRects().length),
       below: !primaryRect || !secondaryRect || !root.getClientRects().length || secondaryRect.top >= primaryRect.bottom - 1,
+      // Since 0.69.0 the energy heading sets the unit beside the name on one
+      // baseline; the sidebar keeps the stacked arrangement.
+      beside: Boolean(primaryRect && secondaryRect && secondaryRect.left >= primaryRect.right - 1 &&
+        secondaryRect.top < primaryRect.bottom && secondaryRect.bottom > primaryRect.top),
       aria: root.getAttribute('aria-label') || '',
       expected,
     };
@@ -96,7 +100,7 @@ async function assertHomeIdentityPair(page, scope, displayName, unitLabel, label
       !result.inOrder ||
       result.secondaryFont >= result.primaryFont ||
       !result.visible ||
-      !result.below ||
+      !(result.below || result.beside) ||
       !result.aria.includes(displayName) ||
       !result.aria.includes(unitLabel)) {
     fail(`${label}: Anzeigename und offizielle Einheit sind nicht sauber hierarchisiert (${JSON.stringify(result)})`);
@@ -2172,10 +2176,17 @@ async function assertEnergySafetyAndFlow(viewport) {
     }
 
     // Jetzt gibt es Viertelstunden im laufenden Monat UND frische Live-Werte.
-    // Erst hier ist die ruhige Aussage berechtigt — sie belegt zugleich, dass
-    // die Live-Aktualität den Home-Assistant-Zeitpunkt verwendet.
-    if (!(await page.getByText('Messwerte aktuell', { exact: true }).count())) {
+    // Der Sampler darf für sein angebrochenes Start-Viertel bewusst eine
+    // Gap-Zeile schreiben (HAUSV-428) — je nach Laufzeit dieses QA-Laufs ist
+    // die ehrliche Aussage deshalb „aktuell" oder „Messlücke erkannt".
+    // Niemals zulässig sind hier Stale-, Konflikt- oder Leerzustände.
+    const quietOK = await page.getByText('Messwerte aktuell', { exact: true }).count();
+    const restartGapOK = await page.getByText('Messlücke erkannt', { exact: true }).count();
+    if (!quietOK && !restartGapOK) {
       fail('Energie Desktop: mit Monatsgrundlage und frischen Werten fehlt die ruhige Datenlage');
+    }
+    if (await page.getByText('Messwert nicht aktuell', { exact: true }).count()) {
+      fail('Energie Desktop: frische Live-Werte werden als veraltet ausgewiesen');
     }
 
     const tariffDetails = page.locator('details.energy-tariff-disclosure');
@@ -2184,6 +2195,16 @@ async function assertEnergySafetyAndFlow(viewport) {
     await page.waitForLoadState('networkidle');
     if (!(await page.getByText('Festgehaltene Bewertungen', { exact: true }).count())) {
       fail('Energie Desktop: Tarifstand wurde nicht historisch sichtbar');
+    }
+    // 0.69.0: with an estimate the Monatsspitze lives as a chip in the mode
+    // strip on roomy desktops and links to the detail card.
+    if (viewport.size.width >= 1240) {
+      const chip = page.locator('.energy-peak-chip');
+      if (!(await chip.isVisible()) ||
+          !/monatsspitze/i.test(await chip.innerText()) ||
+          (await chip.getAttribute('href')) !== '#tarif') {
+        fail('Energie Desktop: Monatsspitzen-Chip fehlt oder verlinkt nicht auf die Detailkarte');
+      }
     }
     await assertEnergyMetricDisclosures(page, {
       label: 'Energie Desktop nach Messimport',
@@ -2382,7 +2403,8 @@ async function assertEnergyGeometryMatrix() {
         Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top) > 1);
       const health = document.querySelector('.energy-health');
       const lead = health?.querySelector(':scope > .energy-lead-side');
-      const tariff = health?.querySelector(':scope > .energy-tariff');
+      // Since 0.69.0 the tariff detail card lives below the chart, page-level.
+      const tariff = document.querySelector('.energy-tariff');
       const live = lead?.querySelector('.energy-live');
       const next = lead?.querySelector('.energy-nextstep');
       const strip = document.querySelector('.energy-mode-strip');
@@ -2402,8 +2424,8 @@ async function assertEnergyGeometryMatrix() {
       const tariffMetricRects = [...(tariff?.querySelectorAll('.energy-billed > div') || [])]
         .filter((node) => node.getClientRects().length)
         .map(rectOf);
-      const storage = live?.querySelector('.energy-storage-live');
-      const overflow = [health, lead, tariff, live, next, storage]
+      const flowArea = live?.querySelector('.energy-flow-area');
+      const overflow = [health, lead, tariff, live, next, flowArea]
         .filter(Boolean)
         .filter((node) => node.scrollWidth > node.clientWidth + 1)
         .map((node) => node.className);
@@ -2431,12 +2453,9 @@ async function assertEnergyGeometryMatrix() {
           (lead.compareDocumentPosition(tariff) & Node.DOCUMENT_POSITION_FOLLOWING)),
         oneColumn: Boolean(liveRect && tariffRect && Math.abs(liveRect.left - tariffRect.left) <= 1),
         leadBeforeTariff: Boolean(liveRect && tariffRect && liveRect.bottom <= tariffRect.top + 1),
-        leadLeftOfTariff: Boolean(liveRect && tariffRect && liveRect.right <= tariffRect.left + 1),
         liveStartsInViewport: Boolean(live && live.getBoundingClientRect().top < height),
         nextFollowsLive: Boolean(live && next && live.getBoundingClientRect().bottom <= next.getBoundingClientRect().top + 1),
-        tariffBeforeNext: Boolean(tariffRect && nextRect && tariffRect.bottom <= nextRect.top + 1),
-        desktopCardsAligned: Boolean(liveRect && tariffRect &&
-          Math.abs(liveRect.top - tariffRect.top) <= 1 && Math.abs(liveRect.bottom - tariffRect.bottom) <= 1),
+        nextBeforeTariff: Boolean(nextRect && tariffRect && nextRect.bottom <= tariffRect.top + 1),
         tariffMetricCount: tariffMetricRects.length,
         tariffMetricsOverlap: tariffMetricRects.length === 2 && intersects(tariffMetricRects[0], tariffMetricRects[1]),
         tariffMetricsOneColumn: tariffMetricRects.length !== 2 || Math.abs(tariffMetricRects[0].left - tariffMetricRects[1].left) <= 1,
@@ -2456,16 +2475,14 @@ async function assertEnergyGeometryMatrix() {
 
     if (result.missing || result.documentOverflow || result.overflow.length ||
         result.siblingOverlap || result.modeControlOverlap || !result.headingBeforeHealth ||
-        !result.sourceLeadFirst || !result.nextFollowsLive || !result.tariffBeforeNext ||
+        !result.sourceLeadFirst || !result.nextFollowsLive || !result.nextBeforeTariff ||
         result.tariffMetricsOverlap ||
         !result.liveStartsInViewport) {
       fail(`Energie-Geometrie ${size.name}: Grundlayout verletzt (${JSON.stringify(result)})`);
     }
-    if (size.width < 1440 && (!result.oneColumn || !result.leadBeforeTariff)) {
-      fail(`Energie-Geometrie ${size.name}: Tablet/Mobil ist nicht live-zuerst gestapelt (${JSON.stringify(result)})`);
-    }
-    if (size.width >= 1440 && (result.oneColumn || !result.leadLeftOfTariff || !result.desktopCardsAligned)) {
-      fail(`Energie-Geometrie ${size.name}: breite Ansicht trennt Live und Tarif nicht (${JSON.stringify(result)})`);
+    // One shared column at every width since 0.69.0: live first, tariff detail below the chart.
+    if (!result.oneColumn || !result.leadBeforeTariff) {
+      fail(`Energie-Geometrie ${size.name}: Cockpit ist nicht live-zuerst in einer Spalte (${JSON.stringify(result)})`);
     }
     if (result.tariffMetricCount === 2 &&
         (size.width <= 379 ? !result.tariffMetricsOneColumn : result.tariffMetricsOneColumn)) {

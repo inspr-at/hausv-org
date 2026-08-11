@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.69.0] - 2026-08-11
+
+### Neu
+
+- **Der Energiefluss zeigt, woher der Strom kommt und wohin er geht.** PV oben, das Zuhause in der Mitte, Netz unten, Speicher links – die Flusslinien tragen Richtungspfeile, ihre Breite entspricht der Leistung, und weiche Farbverläufe zeigen anteilig die Ziele.
+- **Großverbraucher stehen als Prioritätenliste im Fluss.** E-Auto, Boiler, Wärmepumpe und eigene Geräte erscheinen rechts mit Status und Messwert-Zeile; neue Verbraucher lassen sich direkt von dort ergänzen.
+
+### Verbessert
+
+- **Das Cockpit wirkt aufgeräumter.** Die Monatsspitze steht als kompakte Zeile in der Sicherheitsleiste, der Seitenkopf braucht nur noch eine Zeile, und alle Karten teilen dieselbe Breite und Titel-Typografie. Leistungswerte stehen durchgängig in kW.
+
 ## [0.68.0] - 2026-08-11
 
 ### Neu

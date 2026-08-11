@@ -16,7 +16,7 @@ func TestEnergyFirstViewportRedesignLeavesChartAndFollowingSectionsUntouched(t *
 	const (
 		startMarker = `      <section class="energy-card energy-chart"`
 		endMarker   = "\n{{define \"energyData\"}}"
-		wantSHA256  = "5374e40cc48a8756d21e6ac0a7e6a0ec5eaf8afa75d037e30d02365928706e5e"
+		wantSHA256  = "89eb1c5c4b99513b7042518060b981f664b97bc07fca3459e420a94a2709bcb2"
 	)
 
 	start := strings.Index(PageTemplates, startMarker)
@@ -60,10 +60,11 @@ func TestEnergyFirstViewportRedesignLeavesSharedSidebarUntouched(t *testing.T) {
 
 func TestEnergyFirstViewportDisclosuresKeepContextAndActionsReachable(t *testing.T) {
 	for _, want := range []string{
-		`class="energy-info-disclosure" data-energy-disclosure="flow"`,
+		`class="energy-info-disclosure energy-flow-hint" data-energy-disclosure="flow"`,
 		`<summary aria-label="Energiefluss verstehen" aria-controls="energy-flow-help">`,
 		`Energiefluss verstehen`,
-		`aria-label="Zuhause{{if .Live.HasMain}}, {{.Live.Main.Label}} {{.Live.Main.Value}}{{end}}"`,
+		`<div class="energy-flow-area" data-energy-flow>`,
+		`<script type="application/json">{{.FlowConfigJSON}}</script>`,
 		`Live aus Home Assistant · nur gelesen`,
 		`href="/app/zuhause/onboarding?step=4"`,
 		`class="energy-tariff-disclosure" data-energy-disclosure="tariff"`,

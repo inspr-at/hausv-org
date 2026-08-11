@@ -5,6 +5,13 @@ import { createServer } from 'node:http';
 
 const port = Number(process.argv[2] || 8122);
 const updated = new Date().toISOString();
+// Serve every state as freshly changed: the app treats readings older than
+// ten minutes as stale, and a long QA run must not decay into "Messwert
+// nicht aktuell" merely because this fixture started early in the suite.
+const fresh = (item) => {
+  const now = new Date().toISOString();
+  return { ...item, last_changed: now, last_updated: now };
+};
 // Real, pinned OSM tiles around the deterministic JHW22 fixture keep visual
 // browser QA representative without ever reaching the public tile service.
 // The logged-out card and authenticated sidebar both show attribution.
@@ -118,13 +125,13 @@ createServer((request, response) => {
   }
   const states = homes[match[1]];
   if (!match[2]) {
-    response.end(JSON.stringify(states));
+    response.end(JSON.stringify(states.map(fresh)));
     return;
   }
   const entityID = decodeURIComponent(match[2]);
   const item = states.find((candidate) => candidate.entity_id === entityID);
   if (item) {
-      response.end(JSON.stringify(item));
+      response.end(JSON.stringify(fresh(item)));
       return;
   }
   response.statusCode = 404;

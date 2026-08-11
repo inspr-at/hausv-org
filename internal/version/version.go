@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.69.0",
+			Date:     "11. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Der Energiefluss zeigt jetzt, woher der Strom kommt und wohin er geht.",
+			Intro:    "Das Cockpit ordnet sich neu: PV oben, das Zuhause in der Mitte, Netz unten, Speicher links – und rechts die Großverbraucher nach Priorität. Die Flusslinien tragen Richtungspfeile und Farbverläufe, die die Zielanteile zeigen.",
+			Items: []NoteItem{
+				{Label: "Lebendiger Energiefluss", Text: "Die Linienbreite entspricht der Leistung, weiche Farbbänder zeigen anteilig, wie viel in Haus, Speicher, Netz und Verbraucher fließt."},
+				{Label: "Großverbraucher im Blick", Text: "E-Auto, Boiler, Wärmepumpe und weitere Geräte stehen als Prioritätenliste rechts im Fluss – mit Messwert-Zeile, sobald ein Wert vorliegt."},
+				{Label: "Ruhiger Kopf", Text: "Die Monatsspitze wandert als kompakte Zeile in die Sicherheitsleiste; der Seitenkopf braucht nur noch eine Zeile."},
+				{Label: "Eine Breite, eine Schrift", Text: "Alle Karten teilen dieselbe Spaltenbreite und dieselbe Titel-Typografie; Leistungswerte stehen durchgängig in kW."},
+			},
+		},
+		{
 			Version:  "0.68.0",
 			Date:     "11. August 2026",
 			Kind:     "Auftritt & Klarheit",

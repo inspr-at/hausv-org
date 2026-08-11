@@ -22,17 +22,14 @@ const ownerSidebar = [
   { path: '/app/settings', label: 'Einstellungen' },
 ];
 
+// Since 0.69.0 the flow is rendered client-side (assets/energy-flow.js) into
+// [data-edge] tiles; values carry a separate small unit marker, so patterns
+// match number and unit independently.
 const flowNodes = [
-  { id: 'home', patterns: [/Zuhause/i, /Hausverbrauch/i, /1,8\s*kW/i] },
-  { id: 'pv', patterns: [/PV(?:-Leistung|-Erzeugung)?/i, /3,1\s*kW/i] },
-  { id: 'grid', patterns: [/Netz(?:bezug)?/i, /2,4\s*kW/i] },
-  { id: 'battery', patterns: [/Speicher/i, /78\s*%/i, /lädt/i] },
-];
-
-const flowConnections = [
-  { left: 'pv', right: 'home' },
-  { left: 'grid', right: 'home' },
-  { left: 'battery', right: 'home' },
+  { id: 'hub', patterns: [/Hausverbrauch/i, /1,8/, /kW/] },
+  { id: 'producer-0', patterns: [/PV(?:-Leistung|-Erzeugung)?/i, /3,1/, /kW/] },
+  { id: 'grid', patterns: [/Netz(?:bezug)?/i, /2,4/, /kW/] },
+  { id: 'storage', patterns: [/Speicher/i, /78\s*%/i, /lädt|entlädt|wartet/i] },
 ];
 
 const disclosures = [
@@ -92,7 +89,7 @@ export async function assertEnergyTopContent(page, label) {
   }
 
   for (const expected of flowNodes) {
-    const node = diagram.locator(`[data-energy-node="${expected.id}"]`);
+    const node = diagram.locator(`[data-edge="${expected.id}"]`);
     if ((await node.count()) !== 1 || !(await node.isVisible())) {
       fail(label, `sichtbarer Energie-Knoten „${expected.id}“ fehlt`);
     }
@@ -107,20 +104,19 @@ export async function assertEnergyTopContent(page, label) {
     }
   }
 
-  const connectors = diagram.locator('[data-energy-connector]');
-  const connectorData = await connectors.evaluateAll((nodes) => nodes.map((node) => ({
-    from: node.getAttribute('data-from') || '',
-    to: node.getAttribute('data-to') || '',
-  })));
-  const connectionKey = (left, right) => [left, right].sort().join('|');
-  if (connectorData.length !== flowConnections.length ||
-      new Set(connectorData.map((item) => connectionKey(item.from, item.to))).size !== connectorData.length) {
-    fail(label, 'Energiefluss braucht genau drei eindeutig zuordenbare Verbindungen', connectorData);
+  // Ribbons: one filled polygon per active flow, gradient-filled. The
+  // deterministic fixture always has PV production plus a grid flow.
+  const ribbons = await diagram.locator('svg.energy-flow-ribbons path').evaluateAll((paths) =>
+    paths.map((path) => path.getAttribute('fill') || ''));
+  if (ribbons.length < 2 || ribbons.some((fill) => !fill.startsWith('url('))) {
+    fail(label, 'Energiefluss-Ribbons fehlen oder sind nicht als Verlaufs-Linienzüge gefüllt', ribbons);
   }
-  for (const expected of flowConnections) {
-    if (!connectorData.some((item) => connectionKey(item.from, item.to) === connectionKey(expected.left, expected.right))) {
-      fail(label, `semantische Verbindung ${expected.left} ↔ ${expected.right} fehlt`, connectorData);
-    }
+  const railTiles = await diagram.locator('.energy-flow-rail .energy-flow-big:not(.ghost)').count();
+  const railGhost = await diagram.locator('.energy-flow-rail .energy-flow-big.ghost').count();
+  const railPrios = await diagram.locator('.energy-flow-rail .energy-flow-big .prio').allTextContents();
+  const priosSequential = railPrios.every((text, index) => text.trim() === String(index + 1));
+  if (!railTiles || railGhost !== 1 || !priosSequential) {
+    fail(label, 'Großverbraucher-Spalte fehlt, hat keine fortlaufenden Prioritäten oder keine Hinzufügen-Kachel', { railTiles, railGhost, railPrios });
   }
 
   const mapping = diagram.locator('a[href^="/app/zuhause/onboarding"]').filter({ hasText: 'Messwerte zuordnen' });
@@ -148,7 +144,10 @@ export async function assertEnergyTopContent(page, label) {
     const icons = [...(scope?.querySelectorAll('.energy-mode-strip .energy-ui-icon, .energy-cockpit-top .energy-ui-icon') || [])];
     return {
       count: icons.length,
-      inlineSVGs: scope?.querySelectorAll('.energy-mode-strip svg, .energy-cockpit-top svg').length || 0,
+      // The client-rendered flow (energy-flow.js) owns its inline stroke
+      // icons; outside the flow area the Lucide mask convention holds.
+      inlineSVGs: [...(scope?.querySelectorAll('.energy-mode-strip svg, .energy-cockpit-top svg') || [])]
+        .filter((svg) => !svg.closest('.energy-flow-area')).length,
       missingExternalAsset: icons.map((icon) => {
         const style = getComputedStyle(icon);
         const mask = style.maskImage || style.webkitMaskImage || '';
@@ -159,7 +158,7 @@ export async function assertEnergyTopContent(page, label) {
       }).filter(({ mask }) => !/\/assets\/icons\/lucide\/[a-z0-9-]+\.svg(?:\?|["')]|$)/i.test(mask)),
     };
   });
-  if (iconContract.count < 10 || iconContract.inlineSVGs || iconContract.missingExternalAsset.length) {
+  if (iconContract.count < 6 || iconContract.inlineSVGs || iconContract.missingExternalAsset.length) {
     fail(label, 'Redesign verwendet nicht durchgängig die etablierten externen Lucide-SVGs', iconContract);
   }
 }
@@ -357,122 +356,57 @@ export async function assertEnergyMetricDisclosures(page, { label, width }) {
 }
 
 export async function assertEnergyFlowGeometry(page, { label, width }) {
-  if (width < 1024) return;
-  const result = await page.locator('[data-energy-flow-diagram]').evaluate((root, expectedPairs) => {
+  // Side-by-side flow + rail only exists from 1180px; below that the rail
+  // stacks under the flow and the generic overlap checks cover it.
+  if (width < 1180) return;
+  const result = await page.locator('[data-energy-flow-diagram]').evaluate((root) => {
     const rect = (element) => {
       const box = element?.getBoundingClientRect();
       return box ? {
         top: box.top, right: box.right, bottom: box.bottom, left: box.left,
         width: box.width, height: box.height,
-        centerX: box.left + box.width / 2,
-        centerY: box.top + box.height / 2,
       } : null;
     };
-    const diagram = root.querySelector('.energy-flow-stage');
-    const diagramRect = rect(diagram);
-    const nodeEntries = [...(diagram?.querySelectorAll('[data-energy-node]') || [])].map((element) => ({
-      id: element.getAttribute('data-energy-node'),
-      rect: rect(element),
-    }));
-    const nodes = Object.fromEntries(nodeEntries.map((entry) => [entry.id, entry.rect]));
+    const area = root.querySelector('.energy-flow-area');
+    const areaRect = rect(area);
+    const tiles = [...(area?.querySelectorAll('[data-edge], .energy-flow-big') || [])]
+      .map((element) => ({
+        id: element.getAttribute('data-edge') || 'rail-' + [...element.parentElement.children].indexOf(element),
+        rect: rect(element),
+      }));
     const overlaps = [];
-    for (let left = 0; left < nodeEntries.length; left += 1) {
-      for (let right = left + 1; right < nodeEntries.length; right += 1) {
-        const a = nodeEntries[left];
-        const b = nodeEntries[right];
+    for (let left = 0; left < tiles.length; left += 1) {
+      for (let right = left + 1; right < tiles.length; right += 1) {
+        const a = tiles[left];
+        const b = tiles[right];
         const overlapX = Math.min(a.rect.right, b.rect.right) - Math.max(a.rect.left, b.rect.left);
         const overlapY = Math.min(a.rect.bottom, b.rect.bottom) - Math.max(a.rect.top, b.rect.top);
         if (overlapX > 1 && overlapY > 1) overlaps.push(`${a.id}/${b.id}:${overlapX.toFixed(1)}x${overlapY.toFixed(1)}`);
       }
     }
-
-    const connectors = [...(diagram?.querySelectorAll('[data-energy-connector]') || [])].map((element) => {
-      const box = rect(element);
-      const from = element.getAttribute('data-from');
-      const to = element.getAttribute('data-to');
-      const source = nodes[from];
-      const target = nodes[to];
-      if (!box || !source || !target) {
-        return {
-          id: element.getAttribute('data-energy-connector'),
-          tag: element.tagName,
-          from,
-          to,
-          box,
-          horizontal: null,
-          length: 0,
-          crossSize: null,
-          sourceGap: null,
-          targetGap: null,
-          sourceAxisDelta: null,
-          targetAxisDelta: null,
-          sourceTolerance: 0,
-          targetTolerance: 0,
-        };
-      }
-      const horizontal = box.width >= box.height;
-      const crossSize = horizontal ? box.height : box.width;
-      const length = horizontal ? box.width : box.height;
-      const sourceBeforeTarget = horizontal ? source?.centerX <= target?.centerX : source?.centerY <= target?.centerY;
-      const sourceEdge = horizontal
-        ? (sourceBeforeTarget ? source?.right : source?.left)
-        : (sourceBeforeTarget ? source?.bottom : source?.top);
-      const targetEdge = horizontal
-        ? (sourceBeforeTarget ? target?.left : target?.right)
-        : (sourceBeforeTarget ? target?.top : target?.bottom);
-      const connectorStart = horizontal
-        ? (sourceBeforeTarget ? box.left : box.right)
-        : (sourceBeforeTarget ? box.top : box.bottom);
-      const connectorEnd = horizontal
-        ? (sourceBeforeTarget ? box.right : box.left)
-        : (sourceBeforeTarget ? box.bottom : box.top);
-      const lineAxis = horizontal ? box.centerY : box.centerX;
-      const sourceAxis = horizontal ? source?.centerY : source?.centerX;
-      const targetAxis = horizontal ? target?.centerY : target?.centerX;
-      const sourceTolerance = source ? Math.max(6, (horizontal ? source.height : source.width) * 0.22) : 0;
-      const targetTolerance = target ? Math.max(6, (horizontal ? target.height : target.width) * 0.22) : 0;
-      return {
-        id: element.getAttribute('data-energy-connector'),
-        tag: element.tagName,
-        from,
-        to,
-        box,
-        horizontal,
-        length,
-        crossSize,
-        sourceGap: sourceEdge === undefined ? null : Math.abs(connectorStart - sourceEdge),
-        targetGap: targetEdge === undefined ? null : Math.abs(connectorEnd - targetEdge),
-        sourceAxisDelta: sourceAxis === undefined ? null : Math.abs(lineAxis - sourceAxis),
-        targetAxisDelta: targetAxis === undefined ? null : Math.abs(lineAxis - targetAxis),
-        sourceTolerance,
-        targetTolerance,
-      };
-    });
-
+    const byEdge = Object.fromEntries(tiles.filter((tile) => tile.id).map((tile) => [tile.id, tile.rect]));
+    const rail = rect(area?.querySelector('.energy-flow-rail'));
+    const svg = area?.querySelector('svg.energy-flow-ribbons');
     return {
-      diagramRect,
-      nodeEntries,
+      areaRect,
       overlaps,
-      connectors,
-      missingPairs: expectedPairs.filter((expected) => !connectors.some((item) =>
-        [item.from, item.to].sort().join('|') === [expected.left, expected.right].sort().join('|'))),
-      outsideDiagram: nodeEntries.filter(({ rect: box }) => !box || !diagramRect ||
-        box.left < diagramRect.left - 1 || box.right > diagramRect.right + 1 ||
-        box.top < diagramRect.top - 1 || box.bottom > diagramRect.bottom + 1).map(({ id }) => id),
+      ribbonCount: svg ? svg.querySelectorAll('path').length : 0,
+      // The approved geometry: PV above the hub, grid below it, storage to its
+      // left, the consumer rail fully right of the hub column.
+      pvAboveHub: Boolean(byEdge['producer-0'] && byEdge.hub && byEdge['producer-0'].bottom <= byEdge.hub.top + 1),
+      hubAboveGrid: Boolean(byEdge.hub && byEdge.grid && byEdge.hub.bottom <= byEdge.grid.top + 1),
+      storageLeftOfHub: !byEdge.storage || Boolean(byEdge.hub && byEdge.storage.right <= byEdge.hub.left + 1),
+      railRightOfHub: !rail || Boolean(byEdge.hub && rail.left >= byEdge.hub.right - 1),
+      outsideArea: tiles.filter(({ rect: box }) => !box || !areaRect ||
+        box.left < areaRect.left - 1 || box.right > areaRect.right + 1 ||
+        box.top < areaRect.top - 1 || box.bottom > areaRect.bottom + 1).map(({ id }) => id),
     };
-  }, flowConnections);
+  });
 
-  const badConnector = result.connectors.find((item) =>
-    !item.box || item.length < 16 || item.crossSize > 4 ||
-    item.sourceGap === null || item.targetGap === null ||
-    item.sourceGap > 24 || item.targetGap > 24 ||
-    item.sourceAxisDelta > item.sourceTolerance || item.targetAxisDelta > item.targetTolerance);
-  if (!result.diagramRect || result.nodeEntries.length !== flowNodes.length || result.overlaps.length ||
-      result.missingPairs.length || result.outsideDiagram.length || badConnector) {
-    fail(label, 'Desktop-Energiefluss hat überlappende Knoten oder keine geraden, sauber ausgerichteten Verbindungen', {
-      ...result,
-      badConnector,
-    });
+  if (!result.areaRect || result.overlaps.length || result.outsideArea.length ||
+      result.ribbonCount < 2 || !result.pvAboveHub || !result.hubAboveGrid ||
+      !result.storageLeftOfHub || !result.railRightOfHub) {
+    fail(label, 'Desktop-Energiefluss verletzt die freigegebene Geometrie (Slots, Rail, Ribbons)', result);
   }
 }
 
@@ -497,7 +431,7 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
       const y = Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top);
       return x > 1 && y > 1 ? { width: x, height: y } : null;
     };
-    const groups = ['.energy-heading', '.energy-health', '.energy-lead-side', '.energy-nextstep', '.energy-tariff', '.energy-billed'];
+    const groups = ['.energy-heading', '.energy-health', '.energy-lead-side', '.energy-nextstep', '.energy-tariff', '.energy-billed', '.energy-flow-area'];
     const siblingOverlaps = [];
     for (const selector of groups) {
       const parent = document.querySelector(selector);
@@ -535,17 +469,17 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
     const componentOverflow = checked
       .filter(({ element }) => element.scrollWidth > element.clientWidth + 1)
       .map(({ selector, element }) => ({ selector, client: element.clientWidth, scroll: element.scrollWidth }));
-    const diagram = document.querySelector('[data-energy-flow-diagram] .energy-flow-stage');
+    const diagram = document.querySelector('[data-energy-flow-diagram] .energy-flow-area');
     const diagramRect = rect(diagram);
     const live = document.querySelector('[data-energy-flow-diagram]');
     const liveRect = rect(live);
     const tariff = document.querySelector('.energy-tariff');
     const tariffEmpty = tariff?.querySelector('.energy-tariff-empty');
     const nextOverflow = document.querySelector('.energy-next-overflow');
-    const flowOutliers = [...(diagram?.querySelectorAll('[data-energy-node], [data-energy-connector]') || [])]
+    const flowOutliers = [...(diagram?.querySelectorAll('[data-edge]') || [])]
       .filter(visible)
       .map((element) => ({
-        element: element.getAttribute('data-energy-node') || element.getAttribute('data-energy-connector'),
+        element: element.getAttribute('data-edge'),
         box: rect(element),
       }))
       .filter(({ box }) => !diagramRect || box.left < diagramRect.left - 1 || box.right > diagramRect.right + 1 ||
@@ -567,10 +501,10 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
         client: element.clientWidth,
         scroll: element.scrollWidth,
       }));
-    const flowNodeRects = [...(diagram?.querySelectorAll('[data-energy-node]') || [])]
+    const flowNodeRects = [...(diagram?.querySelectorAll('[data-edge]') || [])]
       .filter(visible)
       .map((element) => ({
-        id: element.getAttribute('data-energy-node'),
+        id: element.getAttribute('data-edge'),
         box: rect(element),
       }));
     const flowNodeOverlaps = [];
@@ -623,15 +557,13 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
 
   const cards = result.layout;
   const missingCards = !cards.live || !cards.tariff || !cards.next;
-  const stackedWrong = width < 1440 && (!cards.live || !cards.tariff || !cards.next ||
+  // One shared column at every width since 0.69.0: live first, next step after
+  // it, the tariff detail card below the chart.
+  const stackedWrong = !missingCards && (
     Math.abs(cards.live.left - cards.tariff.left) > 1 ||
-    cards.live.bottom > cards.tariff.top + 1 ||
-    cards.tariff.bottom > cards.next.top + 1);
-  const columnsWrong = width >= 1440 && (!cards.live || !cards.tariff || !cards.next ||
-    cards.live.right > cards.tariff.left + 1 ||
-    Math.abs(cards.live.top - cards.tariff.top) > 1 ||
-    Math.abs(cards.live.bottom - cards.tariff.bottom) > 1 ||
-    Math.min(cards.live.bottom, cards.tariff.bottom) > cards.next.top + 1);
+    cards.live.bottom > cards.next.top + 1 ||
+    cards.next.bottom > cards.tariff.top + 1);
+  const columnsWrong = false;
 
   if (result.documentWidth > width + 1 || result.bodyWidth > width + 1 ||
       result.siblingOverlaps.length || result.clippedControls.length || result.componentOverflow.length ||

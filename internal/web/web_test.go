@@ -450,15 +450,15 @@ func TestHomeTypeGuidanceAndSidebarBrandHierarchy(t *testing.T) {
 
 func TestEnergyLiveCardUsesIndependentIconsAndAccessibleMotion(t *testing.T) {
 	for _, want := range []string{
-		`{{define "energyMetricIcon"}}`,
-		`energy-metric-icon load`,
-		`energy-metric-icon pv`,
-		`energy-metric-icon grid-import`,
-		`energy-metric-icon grid-export`,
-		`energy-battery-visual {{.Live.Battery.Direction}}`,
-		`data-energy-direction="{{.Live.Battery.Direction}}"`,
+		`<div class="energy-flow-area" data-energy-flow>`,
+		`.energy-flow-tile.k-pv`,
+		`.energy-flow-tile.k-grid`,
+		`.energy-flow-tile.k-batt`,
+		`.energy-flow-hub2`,
+		`.energy-flow-area.is-enhanced .energy-flow-fallback { display: none; }`,
+		`svg.energy-flow-ribbons`,
 		`@media (prefers-reduced-motion: reduce)`,
-		`.energy-flow-item:last-child:nth-child(odd)`,
+		`.energy-flow-big .prio`,
 	} {
 		if !strings.Contains(PageTemplates, want) {
 			t.Fatalf("energy live-card polish missing %q", want)
@@ -474,7 +474,7 @@ func TestEnergyGeometryKeepsSafetyAndLiveFlowFirst(t *testing.T) {
 		`grid-template-columns: minmax(0,1fr); align-content: start;`,
 		`energy-mode-action-compact`,
 		`@media (max-width: 1439px)`,
-		`grid-template-columns: minmax(616px,1.36fr) minmax(460px,1fr);`,
+		`.energy-cockpit-top .energy-health { display: grid; grid-template-columns: minmax(0,1fr); row-gap: 22px; }`,
 		`Keine Steuerung`,
 		`HAUSV liest und empfiehlt, steuert aber kein Gerät.`,
 		`Freigabe nur für Eigentümer oder Hausadministration`,

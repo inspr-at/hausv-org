@@ -69,6 +69,7 @@ func (a *app) chargingLiveView(ctx context.Context, tenant tenantConfig, isAdmin
 	if power, err := tenant.HA.State(ctx, tenant.HA.PowerEntity()); err == nil {
 		if value, err := parseHAFloat(power.State); err == nil {
 			out.PowerLabel = formatWatt(value)
+			out.PowerKW = value / 1000
 		}
 	}
 

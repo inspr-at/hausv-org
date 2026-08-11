@@ -1063,63 +1063,19 @@ const PageTemplates = `
     .energy-live-tools { display: grid; gap: 5px; justify-items: end; text-align: right; }
     .energy-live-tools a { color: #715d28; font-size: 11.5px; font-weight: 800; text-decoration: none; }
     .energy-live-tools a:hover { text-decoration: underline; text-underline-offset: 3px; }
-    .energy-live-main { min-height: 132px; display: grid; grid-template-columns: 66px minmax(0,1fr); gap: 20px; align-items: center; padding: 24px 22px; }
-    .energy-live-main > div { display: grid; gap: 3px; }
-    .energy-live-main span, .energy-flow-item span { color: var(--muted); font-size: 12px; }
-    .energy-live-main strong { font-family: var(--font-serif); font-size: clamp(32px,4vw,42px); font-weight: 600; line-height: 1; }
-    .energy-metric-icon { width: 56px; height: 56px; display: grid; place-items: center; border: 1px solid transparent; border-radius: 16px; }
-    .energy-metric-icon svg { width: 35px; height: 35px; display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-    .energy-metric-icon.load { color: #a24b42; border-color: rgba(162,75,66,.16); background: #fbf1ed; }
-    .energy-metric-icon.pv { color: #3e704c; border-color: rgba(62,112,76,.18); background: #f0f5ee; }
-    .energy-metric-icon.grid-import { color: #9a7422; border-color: rgba(154,116,34,.18); background: #faf4e5; }
-    .energy-metric-icon.grid-export { color: #3f6f74; border-color: rgba(63,111,116,.18); background: #eef5f4; }
-    .energy-metric-icon.battery { color: #5d7583; border-color: rgba(93,117,131,.18); background: #eff3f5; }
-    .energy-storage-live { min-height: 112px; display: grid; grid-template-columns: 118px minmax(0,1fr); gap: 20px; align-items: center; border-top: 1px solid var(--line); padding: 20px 22px; background: #fbfaf6; }
-    .energy-storage-live > div { min-width: 0; display: grid; gap: 2px; }
-    .energy-storage-live span, .energy-storage-live small { color: var(--muted); font-size: 11.5px; }
-    .energy-storage-live strong { font-family: var(--font-serif); font-size: 26px; line-height: 1.05; }
-    .energy-battery-visual { min-width: 0; display: flex; gap: 11px; align-items: center; color: #5d7583; }
-    .energy-battery-gauge { position: relative; box-sizing: border-box; width: 88px; height: 42px; display: flex; align-items: stretch; overflow: visible; border: 2px solid #6d706a; border-radius: 8px; padding: 4px; background: #fff; }
     /* Mittig durch Konstruktion, nicht durch Rechnung: das Pseudoelement erbt
        kein border-box, ein fester Randabstand hinge also an der Randbreite. */
-    .energy-battery-gauge::after { content: ""; position: absolute; top: 50%; right: -7px; width: 5px; height: 14px; transform: translateY(-50%); border: 2px solid #6d706a; border-left: 0; border-radius: 0 4px 4px 0; background: #fff; }
-    .energy-battery-gauge i { height: 100%; max-width: 100%; display: block; border-radius: 4px; background: #607d8d; transition: width .35s ease; }
     /* Die Richtung gehört in den Speicher, nicht daneben: die Pfeile laufen auf
        derselben Achse wie der Füllstand. Laden zeigt nach rechts, Entladen nach
        links — gespiegelt wird der ganze Streifen, damit Form und Bewegung nie
        auseinanderlaufen. Das gilt auch, wenn Bewegung abgeschaltet ist. */
     .energy-battery-flow { position: absolute; inset: 2px 4px; display: flex; align-items: center; justify-content: center; gap: 2px; pointer-events: none; }
-    .energy-battery-chevron { width: 7px; height: 12px; display: block; opacity: 0; animation: energy-flow-forward 1.8s ease-in-out infinite; }
-    .energy-battery-chevron path { fill: none; stroke: #26312a; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-    .energy-battery-chevron:nth-child(2) { animation-delay: .25s; }
-    .energy-battery-chevron:nth-child(3) { animation-delay: .5s; }
-    .energy-battery-visual.discharging .energy-battery-flow { transform: scaleX(-1); }
     @keyframes energy-flow-forward { 0% { opacity: 0; transform: translateX(-5px); } 38% { opacity: .85; } 100% { opacity: 0; transform: translateX(5px); } }
     @media (prefers-reduced-motion: reduce) {
-      .energy-battery-gauge i { transition: none; }
-      .energy-battery-chevron { opacity: .62; animation: none; }
     }
     @media (max-width: 560px) {
-      .energy-live-main { min-height: 118px; grid-template-columns: 52px minmax(0,1fr); gap: 14px; padding: 20px 18px; }
-      .energy-metric-icon { width: 50px; height: 50px; border-radius: 14px; }
-      .energy-metric-icon svg { width: 31px; height: 31px; }
-      .energy-storage-live { grid-template-columns: 108px minmax(0,1fr); gap: 14px; padding: 18px; }
-      .energy-battery-gauge { width: 78px; }
     }
-    .energy-flow-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); border-top: 1px solid var(--line); }
-    .energy-flow-item { min-height: 112px; display: grid; grid-template-columns: 56px minmax(0,1fr); align-content: center; align-items: center; gap: 16px; padding: 17px 18px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .energy-flow-copy { min-width: 0; display: grid; gap: 3px; }
-    .energy-flow-item:nth-child(2n) { border-right: 0; }
-    .energy-flow-item:last-child:nth-child(odd) { grid-column: 1 / -1; border-right: 0; }
-    .energy-flow-item strong { font-family: var(--font-serif); font-size: 24px; font-weight: 600; line-height: 1.1; }
-    .energy-flow-item small { color: var(--muted); font-size: 11.5px; }
-    .energy-flow-item.good strong { color: #315f3d; }
-    .energy-flow-item.warning strong { color: #806116; }
-    .energy-flow-item.danger strong { color: #96372d; }
     @media (max-width: 340px) {
-      .energy-flow-grid { grid-template-columns: minmax(0,1fr); }
-      .energy-flow-item { min-height: 96px; grid-template-columns: 50px minmax(0,1fr); gap: 14px; border-right: 0; }
-      .energy-flow-item:last-child:nth-child(odd) { grid-column: auto; }
     }
     .energy-live-more { margin-top: -1px; }
     .energy-live-more > summary { min-height: 58px; display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 13px 22px; list-style: none; cursor: pointer; }
@@ -1417,21 +1373,87 @@ const PageTemplates = `
     .energy-cockpit-main .energy-mode-capability { color: var(--muted); }
     .energy-cockpit-main .energy-mode-popover { color: var(--ink); background: var(--surface); }
 
-    .energy-cockpit-top { width: min(1344px,calc(100vw - 328px)); justify-self: start; display: grid; gap: 18px; margin-left: calc(50% - min(672px,calc(50vw - 164px))); }
-    .energy-cockpit-top .energy-heading { width: 100%; min-width: 0; min-height: 80px; align-items: center; padding: 2px 2px 0; }
-    .energy-cockpit-top .energy-heading-breadcrumb { display: flex; flex-wrap: wrap; gap: 5px 9px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .energy-cockpit-top { width: 100%; display: grid; gap: 18px; }
+    .energy-cockpit-top .energy-heading { width: 100%; min-width: 0; display: flex; align-items: baseline; gap: 14px; padding: 2px 2px 0; }
+    .energy-cockpit-top .energy-heading-copy { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+    .energy-cockpit-top .energy-heading-side { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .energy-cockpit-top .energy-heading-breadcrumb { display: flex; flex-wrap: wrap; gap: 5px 7px; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
     .energy-cockpit-main .energy-page { padding-top: 26px; }
-    .energy-cockpit-top .energy-heading h1 { margin-top: 3px; font-size: clamp(44px,4vw,54px); font-weight: 500; letter-spacing: -.035em; line-height: .98; }
-    .energy-cockpit-top .energy-heading-unit-row { display: flex; gap: 5px; align-items: center; margin-top: 5px; color: var(--muted); font-size: 12px; }
+    .energy-cockpit-top .energy-heading h1 { margin: 0; font-size: clamp(26px,2.4vw,32px); font-weight: 550; letter-spacing: -.02em; line-height: 1.05; }
+    .energy-cockpit-top .energy-heading-unit-row { display: flex; gap: 5px; align-items: center; margin: 0; color: var(--muted); font-size: 12.5px; }
     .energy-cockpit-top .energy-heading-unit { margin: 0; color: inherit; font-size: inherit; }
     .energy-cockpit-top .energy-heading-context { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
     .energy-cockpit-top .energy-heading-action { width: 50px; height: 50px; min-height: 50px; justify-content: center; border-color: var(--line); border-radius: 10px; padding: 0; background: rgba(255,255,255,.5); }
     .energy-cockpit-top .energy-heading-action > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
     .energy-cockpit-top .energy-heading-action .energy-ui-icon { width: 20px; height: 20px; }
-    .energy-cockpit-top .energy-health { display: grid; grid-template-columns: minmax(616px,1.36fr) minmax(460px,1fr); column-gap: 34px; row-gap: 28px; align-items: stretch; }
+    .energy-cockpit-top .energy-health { display: grid; grid-template-columns: minmax(0,1fr); row-gap: 22px; }
     .energy-cockpit-top .energy-lead-side { display: contents; }
-    .energy-cockpit-top .energy-live { grid-column: 1; grid-row: 1; min-width: 0; min-height: 522px; overflow: visible; border-color: #ded9ce; border-radius: 14px; box-shadow: 0 12px 32px rgba(32,40,33,.06); }
-    .energy-cockpit-top .energy-tariff { grid-column: 2; grid-row: 1; min-width: 0; min-height: 522px; }
+    .energy-cockpit-top .energy-live { grid-column: 1; grid-row: 1; min-width: 0; overflow: visible; border-color: #ded9ce; border-radius: 14px; box-shadow: 0 12px 32px rgba(32,40,33,.06); }
+    /* ---- Data-driven energy flow (HAUSV-439) ------------------------- */
+    .energy-flow-area { position: relative; display: grid; grid-template-columns: minmax(0,1fr); gap: 0 26px; align-items: start; padding: 12px 26px 36px; }
+    /* The 258px rail column exists only while the renderer mounted a rail. */
+    @media (min-width: 1180px) { .energy-flow-area.has-rail { grid-template-columns: minmax(0,1fr) 258px; } }
+    .energy-flow-area .energy-flow-fallback { padding: 6px 0 12px; }
+    .energy-flow-area.is-enhanced .energy-flow-fallback { display: none; }
+    svg.energy-flow-ribbons { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .energy-flow-grid2 { position: relative; display: grid; grid-template-columns: 200px minmax(26px,1fr) 200px minmax(26px,1fr); grid-template-rows: auto 64px auto 64px auto; align-items: center; justify-items: center; }
+    .energy-flow-slot-top { grid-column: 3; grid-row: 1; display: flex; gap: 14px; justify-content: center; width: max-content; justify-self: center; }
+    .energy-flow-slot-left { grid-column: 1; grid-row: 3; width: 100%; }
+    .energy-flow-slot-bottom { grid-column: 3; grid-row: 5; display: flex; justify-content: center; width: max-content; justify-self: center; }
+    .energy-flow-slot-top .energy-flow-tile, .energy-flow-slot-bottom .energy-flow-tile { width: 200px; }
+    .energy-flow-tile { position: relative; z-index: 1; border: 1px solid #d8d2c7; border-radius: 12px; background: #fffefa; padding: 13px 14px; display: grid; grid-template-columns: 38px minmax(0,1fr); align-items: center; gap: 10px; }
+    .energy-flow-tile .ico { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #4a5a4e; background: #f0f2ec; }
+    .energy-flow-tile .ico svg { width: 21px; height: 21px; }
+    .energy-flow-tile strong { font-family: var(--font-serif); font-weight: 550; font-size: 17px; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .energy-flow-tile > div { min-width: 0; }
+    .energy-flow-tile > div > span { display: block; margin-top: 5px; font-size: 11px; line-height: 1.4; color: var(--muted); }
+    .energy-flow-tile span.u, .energy-flow-big span.u { display: inline; margin: 0 0 0 3px; font-family: var(--font-sans); font-size: 10px; font-weight: 800; letter-spacing: .04em; color: #8a8e80; vertical-align: 6px; }
+    .energy-flow-tile.k-pv { border-color: rgba(91,130,82,.4); background: #f7faf3; }
+    .energy-flow-tile.k-pv .ico { color: #3e704c; background: #edf3ea; }
+    .energy-flow-tile.k-grid { border-color: rgba(184,139,49,.36); background: #fffaf0; }
+    .energy-flow-tile.k-grid .ico { color: #9a7422; background: #faf4e5; }
+    .energy-flow-tile.k-batt { border-color: rgba(91,117,131,.34); background: #f3f7f8; }
+    .energy-flow-tile.k-batt .ico { color: #607d8d; background: #eaf1f3; }
+    .energy-flow-hub2 { grid-column: 3; grid-row: 3; width: 100%; border-color: #cfc7b8; z-index: 2; }
+    .energy-flow-hub2 .ico { color: #a24b42; background: #fbf1ed; }
+    .energy-flow-rail { position: relative; z-index: 1; align-self: start; display: grid; gap: 8px; align-content: start; }
+    .energy-flow-rail > .microlabel { position: absolute; top: -22px; left: 2px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .energy-flow-big { border: 1px solid #d8d2c7; border-radius: 11px; background: #fffefa; padding: 12px 12px; display: grid; grid-template-columns: 34px minmax(0,1fr) 16px; align-items: center; gap: 9px; }
+    .energy-flow-big .ico { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #4a5a4e; background: #f0f2ec; }
+    .energy-flow-big .ico svg { width: 19px; height: 19px; }
+    .energy-flow-big b { display: block; font-size: 12.5px; line-height: 1.35; }
+    .energy-flow-big span { display: block; margin-top: 3px; font-size: 11px; line-height: 1.4; color: var(--muted); }
+    .energy-flow-big .sub { color: #40443c; font-variant-numeric: tabular-nums; }
+    .energy-flow-big.active { border-color: rgba(91,130,82,.44); background: #f7faf3; }
+    .energy-flow-big.active .state { color: #3e704c; font-weight: 700; }
+    .energy-flow-big .rcol { display: grid; justify-items: center; gap: 5px; align-self: center; }
+    .energy-flow-big .prio { width: 13px; height: 13px; border-radius: 50%; border: 1px solid #8a7b3f; color: #705c22; font-size: 8.5px; font-weight: 800; display: grid; place-items: center; font-variant-numeric: tabular-nums; margin-top: 0; }
+    .energy-flow-big .drag { color: #b5b0a2; cursor: grab; margin-top: 0; }
+    .energy-flow-big .drag svg { width: 10px; height: 16px; display: block; }
+    .energy-flow-big.ghost { border: 1.5px dashed #c9c2b2; background: transparent; color: var(--muted); grid-template-columns: 34px minmax(0,1fr); min-height: 44px; cursor: pointer; }
+    .energy-flow-big.ghost .plus { width: 21px; height: 21px; border-radius: 50%; border: 1.5px dashed #a89f8a; display: grid; place-items: center; font-size: 14px; color: #8a7b3f; margin: 0 auto; }
+    .energy-flow-big.ghost b { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .energy-flow-hint { position: absolute; left: 26px; bottom: 10px; }
+    .energy-peak-chip { display: inline-flex; align-items: baseline; gap: 9px; margin-inline: auto; justify-self: center; font-size: 12.5px; color: var(--muted); white-space: nowrap; text-decoration: none; }
+    .energy-peak-chip b { font-family: var(--font-serif); font-weight: 600; font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .energy-peak-chip .sep { color: #cfc7b0; }
+    .energy-peak-chip-label { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--gold-ink); }
+    /* The coverage note is the first thing to yield: below 1420px it would
+       push the Testlauf control out of the strip. */
+    @media (max-width: 1419px) { .energy-peak-chip-coverage, .energy-peak-chip-coverage-sep { display: none; } }
+    @media (max-width: 1239px) { .energy-peak-chip { display: none; } }
+    /* Below 1180px the fixed flow grid (452px) plus the 258px rail no longer
+       share the card: the rail stacks under the flow. */
+    @media (max-width: 1179px) {
+      .energy-flow-rail { margin-top: 34px; }
+      .energy-flow-hint { position: static; margin-top: 12px; }
+    }
+    @media (max-width: 760px) {
+      .energy-flow-area { padding: 28px 14px 30px; }
+      .energy-flow-grid2 { grid-template-columns: minmax(0,1fr) 16px minmax(0,1.2fr) 16px; grid-template-rows: auto 44px auto 44px auto; }
+      .energy-flow-slot-top, .energy-flow-slot-bottom { width: 100%; justify-self: stretch; }
+      .energy-flow-slot-top .energy-flow-tile, .energy-flow-slot-bottom .energy-flow-tile { width: auto; min-width: 170px; }
+    }
     .energy-cockpit-top .energy-nextstep { grid-column: 1 / -1; grid-row: 2; }
 
     .energy-cockpit-top .energy-live-head { min-height: 86px; align-items: center; border: 0; padding: 24px 28px 8px; }
@@ -1444,43 +1466,6 @@ const PageTemplates = `
     .energy-cockpit-top .energy-live-dot { width: 9px; height: 9px; border-radius: 50%; background: #5d965c; box-shadow: 0 0 0 3px rgba(93,150,92,.11); }
     .energy-live-state-offline { color: var(--muted); font-size: 11.5px; font-weight: 650; }
     .energy-cockpit-top .energy-live-head > div > span { color: var(--muted); font-size: 12px; }
-    .energy-flow-stage { min-height: 369px; display: grid; grid-template-columns: minmax(154px,180px) minmax(24px,1fr) 96px minmax(24px,1fr) minmax(154px,180px); grid-template-rows: 96px 24px 118px 30px 72px; align-items: center; padding: 8px 26px 16px; }
-    .energy-cockpit-top .energy-live-main { grid-column: 1 / -1; grid-row: 1; width: min(266px,82%); min-height: 96px; justify-self: center; display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 16px; align-items: center; border: 1px solid #ddd5c6; border-radius: 12px; padding: 14px 17px; background: #fffefa; box-shadow: 0 5px 14px rgba(36,42,36,.035); }
-    .energy-cockpit-top .energy-live-main .energy-metric-icon { width: 52px; height: 52px; border-radius: 50%; }
-    .energy-cockpit-top .energy-live-main .energy-metric-icon .energy-ui-icon { width: 29px; height: 29px; }
-    .energy-cockpit-top .energy-live-main .energy-flow-copy { gap: 2px; }
-    .energy-cockpit-top .energy-live-main .energy-flow-copy > span { color: var(--muted); font-size: 11.5px; }
-    .energy-live-value { display: flex; gap: 8px; align-items: center; }
-    .energy-cockpit-top .energy-live-main .energy-live-value > strong { font-family: var(--font-serif); font-size: clamp(34px,2.7vw,40px); font-weight: 550; line-height: 1; white-space: nowrap; }
-    .energy-flow-stem { grid-column: 3; grid-row: 2; width: 2px; height: 100%; justify-self: center; background: #d8d2c7; }
-    .energy-cockpit-top .energy-flow-grid { display: contents; }
-    .energy-cockpit-top .energy-flow-item { min-height: 118px; display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 13px; align-content: center; align-items: center; border: 1px solid #d8d2c7; border-radius: 12px; padding: 14px 15px; background: #fffefa; }
-    .energy-cockpit-top .energy-flow-item .energy-metric-icon { width: 52px; height: 52px; border: 0; background: transparent; }
-    .energy-cockpit-top .energy-flow-item .energy-metric-icon .energy-ui-icon { width: 44px; height: 44px; }
-    .energy-cockpit-top .energy-flow-item .energy-flow-copy { min-width: 0; display: grid; gap: 2px; }
-    .energy-cockpit-top .energy-flow-item .energy-flow-copy strong, .energy-cockpit-top .energy-storage-live .energy-flow-copy strong { color: var(--ink); font-family: var(--font-serif); font-size: 23px; font-weight: 550; line-height: 1; white-space: nowrap; }
-    .energy-cockpit-top .energy-flow-item .energy-flow-copy span, .energy-cockpit-top .energy-storage-live .energy-flow-copy span { color: var(--muted); font-size: 11.5px; }
-    .energy-pv-node { grid-column: 1; grid-row: 3; border-color: rgba(91,130,82,.38) !important; background: #f7faf3 !important; }
-    .energy-grid-node { grid-column: 5; grid-row: 3; border-color: rgba(184,139,49,.34) !important; background: #fffaf0 !important; }
-    .energy-grid-reading { min-width: 0; grid-column: 1 / -1; display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 13px; align-items: center; }
-    .energy-flow-hub { grid-column: 3; grid-row: 3; z-index: 2; width: 96px; height: 96px; display: grid; place-items: center; justify-self: center; border: 1px solid #cfc7b8; border-radius: 50%; color: #213029; background: #fffefa; box-shadow: 0 0 0 8px rgba(255,254,250,.78); }
-    .energy-flow-hub .energy-ui-icon { width: 42px; height: 42px; }
-    .energy-flow-connector { position: relative; z-index: 1; display: block; color: #69835f; }
-    .energy-flow-connector-pv { grid-column: 2; grid-row: 3; width: 100%; height: 3px; background: #6e9a67; }
-    .energy-flow-connector-grid { grid-column: 4; grid-row: 3; width: 100%; height: 3px; background: #c49a45; color: #aa7c24; }
-    .energy-flow-connector-battery { grid-column: 3; grid-row: 4; width: 3px; height: 100%; justify-self: center; background: #7893a1; color: #647f8d; }
-    .energy-flow-connector-battery[data-flow-state="idle"], .energy-flow-connector-battery[data-flow-state=""] { background: repeating-linear-gradient(to bottom,#91a9b5 0 6px,transparent 6px 11px); }
-    .energy-flow-connector-pv[data-flow-state="active"]::after, .energy-flow-connector-grid[data-flow-state="active"]::after { content: ""; position: absolute; top: 50%; width: 10px; height: 10px; border-top: 2.5px solid currentColor; border-right: 2.5px solid currentColor; }
-    .energy-flow-connector-pv::after, .energy-flow-connector-grid[data-from="home"]::after { right: 1px; transform: translateY(-50%) rotate(45deg); }
-    .energy-flow-connector-grid[data-from="grid"]::after { left: 1px; transform: translateY(-50%) rotate(-135deg); }
-    .energy-flow-connector-battery:not([data-flow-state="idle"]):not([data-flow-state=""]):after { content: ""; position: absolute; left: 50%; width: 10px; height: 10px; border-top: 2.5px solid currentColor; border-right: 2.5px solid currentColor; }
-    .energy-flow-connector-battery[data-from="battery"]::after { top: 1px; transform: translateX(-50%) rotate(-45deg); }
-    .energy-flow-connector-battery[data-from="home"]::after { bottom: 1px; transform: translateX(-50%) rotate(135deg); }
-    .energy-cockpit-top .energy-storage-live { grid-column: 1 / -1; grid-row: 5; width: fit-content; min-width: 200px; max-width: 78%; min-height: 72px; justify-self: center; display: grid; grid-template-columns: 62px minmax(0,1fr); gap: 6px; align-items: center; border: 1px solid rgba(91,117,131,.32); border-radius: 12px; padding: 10px; background: #f3f7f8; }
-    .energy-cockpit-top .energy-battery-visual { gap: 6px; }
-    .energy-cockpit-top .energy-battery-gauge { width: 58px; height: 30px; border-width: 1.5px; border-radius: 6px; padding: 3px; }
-    .energy-cockpit-top .energy-battery-gauge::after { right: -6px; height: 11px; border-width: 1.5px; }
-    .energy-cockpit-top .energy-storage-live .energy-flow-copy strong { font-size: 18px; }
     .energy-live-footer { min-height: 58px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 16px; align-items: center; border-top: 1px solid var(--line); padding: 0 22px 0 28px; }
     .energy-live-footer:not(:has(> details[open])) { height: 58px; }
     .energy-cockpit-top .energy-live-more { margin: 0; }
@@ -1496,6 +1481,10 @@ const PageTemplates = `
     .energy-info-mark { width: 22px; height: 22px; display: grid; place-items: center; color: #7b7b73; }
     .energy-info-mark .energy-ui-icon { width: 20px; height: 20px; }
     .energy-live-footer > details[open] { flex: 1 0 100%; }
+    /* The relocated flow explainer opens as a panel card inside the flow area. */
+    .energy-flow-hint[open] > div { display: grid; gap: 10px; margin-top: 10px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); box-shadow: var(--shadow-md); padding: 16px 18px; max-width: 460px; position: relative; z-index: 3; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+    .energy-flow-hint[open] > div > strong { color: var(--ink); font-size: 14px; }
+    .energy-flow-hint[open] > div > a { min-height: 44px; display: inline-flex; align-items: center; justify-self: start; color: #705c22; font-weight: 800; }
     .energy-live-footer > details[open] > div { display: grid; gap: 10px; border-top: 1px solid var(--line); padding: 16px 4px 10px; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
     .energy-live-footer > details[open] > div > strong { color: var(--ink); font-size: 14px; }
     .energy-live-footer > details[open] > div > a { min-height: 44px; display: inline-flex; align-items: center; justify-self: start; color: #705c22; font-weight: 800; }
@@ -1514,34 +1503,33 @@ const PageTemplates = `
     .energy-metric-info > div b { color: var(--ink); font-weight: 750; }
     .energy-metric-info > div small { color: var(--soft); }
 
-    .energy-cockpit-top .energy-tariff { display: flex; flex-direction: column; gap: 12px; overflow: visible; border-color: #ded9ce; border-radius: 14px; padding: 26px 30px 5px; box-shadow: 0 12px 32px rgba(32,40,33,.06); }
-    .energy-cockpit-top .energy-tariff > .energy-card-head { min-height: 58px; align-items: start; margin: 0; }
+    .energy-tariff { display: flex; flex-direction: column; gap: 12px; overflow: visible; border-color: #ded9ce; border-radius: 14px; padding: 26px 30px 5px; box-shadow: 0 12px 32px rgba(32,40,33,.06); }
+    .energy-tariff > .energy-card-head { min-height: 58px; align-items: start; margin: 0; }
     .energy-tariff-heading-copy { min-width: 0; display: grid; gap: 12px; }
     .energy-tariff-title-row { position: relative; display: flex; gap: 7px; align-items: center; }
-    .energy-cockpit-top .energy-tariff > .energy-card-head h2 { font-family: var(--font-sans); font-size: 26px; font-weight: 650; letter-spacing: -.025em; }
-    .energy-cockpit-top .energy-tariff > .energy-card-head p { margin-top: 0; font-size: 13px; }
-    .energy-cockpit-top .energy-tariff > .energy-card-head .pill { border: 0; padding: 6px 11px; color: #816528; background: #f2ebd9; font-size: 11px; }
+    .energy-tariff > .energy-card-head p { margin-top: 0; font-size: 13px; }
+    .energy-tariff > .energy-card-head .pill { border: 0; padding: 6px 11px; color: #816528; background: #f2ebd9; font-size: 11px; }
     .energy-tariff-overview-info { position: static; }
     .energy-tariff-overview-info > div { left: 0; right: auto; top: calc(100% + 8px); }
-    .energy-cockpit-top .energy-billed { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 8px; border: 0; border-radius: 0; overflow: visible; background: transparent; }
-    .energy-cockpit-top .energy-billed > div { min-height: 184px; gap: 9px; border: 1px solid var(--line); border-radius: 11px; padding: 20px 19px; background: #fffefa; }
+    .energy-billed { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 8px; border: 0; border-radius: 0; overflow: visible; background: transparent; }
+    .energy-billed > div { min-height: 184px; gap: 9px; border: 1px solid var(--line); border-radius: 11px; padding: 20px 19px; background: #fffefa; }
     .energy-metric-label { display: flex; gap: 5px; align-items: center; justify-content: space-between; }
-    .energy-cockpit-top .energy-billed .energy-metric-label > span, .energy-tariff-cost .energy-metric-label > span { min-height: 0; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
-    .energy-cockpit-top .energy-billed > div > strong { font-size: clamp(38px,3vw,44px); white-space: nowrap; }
+    .energy-billed .energy-metric-label > span, .energy-tariff-cost .energy-metric-label > span { min-height: 0; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .energy-billed > div > strong { font-size: clamp(38px,3vw,44px); white-space: nowrap; }
     .energy-tariff-meter { width: 100%; height: 8px; display: block; overflow: hidden; border: 0; border-radius: 99px; appearance: none; background: #e8e5df; }
     .energy-tariff-meter::-webkit-progress-bar { border-radius: inherit; background: #e8e5df; }
     .energy-tariff-meter::-webkit-progress-value { border-radius: inherit; background: #234332; }
     .energy-tariff-meter::-moz-progress-bar { border-radius: inherit; background: #234332; }
     .energy-tariff-meter.peak::-webkit-progress-value { min-width: 2px; background: #c6a24b; }
     .energy-tariff-meter.peak::-moz-progress-bar { min-width: 2px; background: #c6a24b; }
-    .energy-cockpit-top .energy-tariff-basis { min-height: 28px; align-items: center; margin: 4px 0 0; overflow: hidden; font-size: 11.5px; white-space: nowrap; }
-    .energy-cockpit-top .energy-tariff-basis > .energy-ui-icon { width: 16px; height: 16px; flex: 0 0 16px; color: var(--muted); }
-    .energy-cockpit-top .energy-tariff-basis > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-    .energy-cockpit-top .energy-tariff-cost { min-height: 106px; display: block; margin-top: 2px; border: 1px solid var(--line); border-radius: 11px; padding: 11px 18px; background: #fffefa; }
-    .energy-cockpit-top .energy-tariff-cost-figure { gap: 5px; }
-    .energy-cockpit-top .energy-tariff-cost-figure > p { display: flex; gap: 7px; align-items: baseline; }
-    .energy-cockpit-top .energy-tariff-cost-figure > p strong { font-family: var(--font-serif); font-size: 36px; font-weight: 550; line-height: 1; white-space: nowrap; }
-    .energy-cockpit-top .energy-tariff-cost-figure > p small { color: var(--muted); font-size: 13px; }
+    .energy-tariff-basis { min-height: 28px; align-items: center; margin: 4px 0 0; overflow: hidden; font-size: 11.5px; white-space: nowrap; }
+    .energy-tariff-basis > .energy-ui-icon { width: 16px; height: 16px; flex: 0 0 16px; color: var(--muted); }
+    .energy-tariff-basis > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .energy-tariff-cost { min-height: 106px; display: block; margin-top: 2px; border: 1px solid var(--line); border-radius: 11px; padding: 11px 18px; background: #fffefa; }
+    .energy-tariff-cost-figure { gap: 5px; }
+    .energy-tariff-cost-figure > p { display: flex; gap: 7px; align-items: baseline; }
+    .energy-tariff-cost-figure > p strong { font-family: var(--font-serif); font-size: 36px; font-weight: 550; line-height: 1; white-space: nowrap; }
+    .energy-tariff-cost-figure > p small { color: var(--muted); font-size: 13px; }
     .energy-tariff-disclosure { margin-top: auto; border-top: 1px solid var(--line); }
     .energy-tariff-disclosure > summary { min-height: 48px; display: flex; justify-content: space-between; gap: 12px; align-items: center; color: var(--ink); font-size: 12.5px; font-weight: 700; cursor: pointer; list-style: none; }
     .energy-tariff-disclosure > summary > .energy-ui-icon { width: 18px; height: 18px; transition: transform .16s ease; }
@@ -1592,12 +1580,10 @@ const PageTemplates = `
       .energy-cockpit-top { width: 100%; margin-left: 0; }
       .energy-cockpit-top .energy-health { grid-template-columns: minmax(0,1fr); }
       .energy-cockpit-top .energy-live { grid-column: 1; grid-row: 1; }
-      .energy-cockpit-top .energy-tariff { grid-column: 1; grid-row: 2; min-height: 0; }
-      .energy-cockpit-top .energy-tariff-disclosure { margin-top: 0; }
+      .energy-tariff-disclosure { margin-top: 0; }
       .energy-cockpit-top .energy-nextstep { grid-column: 1; grid-row: 3; }
     }
     @media (min-width: 901px) and (max-width: 1439px) {
-      .energy-flow-stage { width: min(756px,100%); margin-inline: auto; }
     }
     @media (min-width: 901px) and (max-width: 1100px) {
       .energy-cockpit-top .energy-nextstep { grid-template-columns: 72px minmax(0,1fr); gap: 18px; }
@@ -1623,10 +1609,10 @@ const PageTemplates = `
       .energy-cockpit-top .energy-heading-action { justify-self: end; }
       .energy-cockpit-top .energy-card { padding: 18px; }
       .energy-cockpit-top .energy-live { padding: 0; }
-      .energy-cockpit-top .energy-tariff { padding: 20px 18px 10px; }
-      .energy-cockpit-top .energy-tariff > .energy-card-head { flex-wrap: wrap; gap: 10px; }
-      .energy-cockpit-top .energy-tariff > .energy-card-head > div { flex: 1 1 200px; order: 1; }
-      .energy-cockpit-top .energy-tariff > .energy-card-head > .pill { order: 2; }
+      .energy-tariff { padding: 20px 18px 10px; }
+      .energy-tariff > .energy-card-head { flex-wrap: wrap; gap: 10px; }
+      .energy-tariff > .energy-card-head > div { flex: 1 1 200px; order: 1; }
+      .energy-tariff > .energy-card-head > .pill { order: 2; }
       .energy-cockpit-top .energy-nextstep { grid-template-columns: 62px minmax(0,1fr); gap: 14px; padding: 17px 18px; }
       .energy-nextstep-icon { width: 56px; height: 56px; }
       .energy-nextstep-icon .energy-ui-icon { width: 31px; height: 31px; }
@@ -1647,8 +1633,8 @@ const PageTemplates = `
       .energy-info-mark .energy-ui-icon { width: 20px; height: 20px; }
       .energy-metric-info > div { width: min(280px,calc(100vw - 74px)); }
       .energy-help-readings, .energy-cockpit-top .energy-live-more-list { grid-template-columns: 1fr; }
-      .energy-cockpit-top .energy-billed > div { min-height: 154px; padding: 17px 15px; }
-      .energy-cockpit-top .energy-billed > div > strong { font-size: clamp(32px,10vw,40px); }
+      .energy-billed > div { min-height: 154px; padding: 17px 15px; }
+      .energy-billed > div > strong { font-size: clamp(32px,10vw,40px); }
       .energy-tariff-tiers { grid-template-columns: 1fr; }
       .energy-tariff-disclosure :where(p,li,a,span,small) { overflow-wrap: anywhere; }
       .energy-tariff-settings > summary { flex-wrap: wrap; }
@@ -1664,28 +1650,13 @@ const PageTemplates = `
       .energy-cockpit-top .energy-measure-control > summary.energy-next-overflow { width: 44px; min-width: 44px; min-height: 44px; }
     }
     @media (max-width: 560px) {
-      .energy-flow-stage { width: min(100%,374px); min-height: 355px; grid-template-columns: minmax(0,1fr) 12px 54px 12px minmax(0,1fr); grid-template-rows: 88px 24px 100px 24px 72px; margin-inline: auto; padding: 2px 14px 10px; }
-      .energy-cockpit-top .energy-live-main { width: min(250px,94%); min-height: 84px; grid-template-columns: 44px minmax(0,1fr); gap: 11px; padding: 11px 13px; }
-      .energy-cockpit-top .energy-live-main .energy-metric-icon { width: 42px; height: 42px; }
-      .energy-cockpit-top .energy-live-main .energy-metric-icon .energy-ui-icon { width: 25px; height: 25px; }
-      .energy-cockpit-top .energy-live-main .energy-live-value > strong { font-size: 31px; }
-      .energy-flow-hub { width: 54px; height: 54px; }
-      .energy-flow-hub .energy-ui-icon { width: 28px; height: 28px; }
-      .energy-cockpit-top .energy-flow-item { min-height: 92px; grid-template-columns: 1fr; justify-items: center; gap: 4px; padding: 8px 5px; text-align: center; }
-      .energy-cockpit-top .energy-flow-item .energy-metric-icon { width: 38px; height: 36px; }
-      .energy-cockpit-top .energy-flow-item .energy-metric-icon .energy-ui-icon { width: 31px; height: 31px; }
-      .energy-cockpit-top .energy-flow-item .energy-flow-copy strong { font-size: 19px; }
-      .energy-cockpit-top .energy-grid-reading { grid-template-columns: 1fr; justify-items: center; gap: 3px; }
-      .energy-cockpit-top .energy-storage-live { width: 100%; max-width: 100%; min-height: 64px; grid-template-columns: 70px minmax(0,1fr); gap: 8px; padding: 8px 10px; }
-      .energy-cockpit-top .energy-storage-live .energy-flow-copy { min-width: 0; }
-      .energy-cockpit-top .energy-storage-live .energy-flow-copy strong { font-size: 18px; }
     }
     @media (max-width: 379px) {
       .energy-cockpit-main .energy-mode-strip { gap: 8px; }
       .energy-mode-state { padding-right: 8px; }
       .energy-cockpit-main .energy-mode-action { padding-inline: 9px; }
-      .energy-cockpit-top .energy-billed { grid-template-columns: 1fr; }
-      .energy-cockpit-top .energy-billed > div { min-height: 138px; }
+      .energy-billed { grid-template-columns: 1fr; }
+      .energy-billed > div { min-height: 138px; }
     }
     @media (forced-colors: active) {
       .energy-ui-icon { forced-color-adjust: none; background: currentColor; }
@@ -9219,6 +9190,7 @@ const PageTemplates = `
         <span title="{{if .IsActiveMode}}{{if .IsShadowMode}}HAUSV protokolliert nur und schaltet kein Gerät.{{else}}Freigegebene Geräte folgen Ihren Regeln.{{end}}{{else}}HAUSV liest und empfiehlt, steuert aber kein Gerät.{{end}}">{{if .IsActiveMode}}{{if .IsShadowMode}}Keine Gerätewirkung{{else}}Geräte freigegeben{{end}}{{else}}Keine Steuerung{{end}}</span>
       </div>
     </div>
+    {{if .Tariff}}{{if .Tariff.HasEstimate}}<a class="energy-peak-chip" href="#tarif" aria-label="Monatsspitze {{.Tariff.PeakKW}}, verrechnet {{.Tariff.BilledKW}}, {{.Tariff.AnnualPowerEUR}} pro Jahr — Details öffnen"><span class="energy-peak-chip-label">Monatsspitze</span><b>{{.Tariff.PeakKW}}</b><span class="sep" aria-hidden="true">·</span><span>verrechnet</span><b>{{.Tariff.BilledKW}}</b><span class="sep" aria-hidden="true">·</span><b>{{.Tariff.AnnualPowerEUR}}</b><span>/ Jahr</span>{{if .Tariff.CoverageLabel}}<span class="sep energy-peak-chip-coverage-sep" aria-hidden="true">·</span><span class="energy-peak-chip-coverage">{{.Tariff.CoverageLabel}}</span>{{end}}</a>{{end}}{{end}}
     {{if .IsActiveMode}}
       {{if .CanControlEnergy}}<form method="post" action="/app/energie/mode">
         <input type="hidden" name="mode" value="observe">
@@ -9339,15 +9311,6 @@ const PageTemplates = `
 {{template "appClose" .}}
 {{end}}
 
-{{define "energyMetricIcon"}}
-  {{if eq .Metric "load-power"}}<span class="energy-metric-icon load" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-house-plug"></span></span>
-  {{else if eq .Metric "pv-power"}}<span class="energy-metric-icon pv" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-solar-panel"></span></span>
-  {{else if eq .Metric "grid-import-power"}}<span class="energy-metric-icon grid-import" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-utility-pole"></span></span>
-  {{else if eq .Metric "grid-export-power"}}<span class="energy-metric-icon grid-export" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-utility-pole"></span></span>
-  {{else if eq .Metric "battery-power"}}<span class="energy-metric-icon battery" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-battery"></span></span>
-  {{end}}
-{{end}}
-
 {{define "energyChartLegend"}}
 <div class="energy-chart-legend" aria-label="Diagrammlegende">{{range .Chart.Series}}<span class="{{.Key}}"><i aria-hidden="true"></i>{{.Label}} <strong>{{.Latest}}</strong></span>{{end}}{{if .Chart.HasThreshold}}<span class="threshold"><i aria-hidden="true"></i>{{.Chart.ThresholdLabel}} {{.Chart.ThresholdValue}} <small>(konfigurierbar)</small></span>{{end}}</div>
 {{end}}
@@ -9386,32 +9349,21 @@ const PageTemplates = `
     <aside class="energy-live" aria-label="Energie gerade jetzt" data-energy-flow-diagram data-energy-reading-count="{{len .Metrics}}">
       <header class="energy-live-head"><div><div class="energy-live-title"><h2>Energie jetzt</h2></div>{{if .HasMetrics}}<div class="energy-live-meta"><span class="energy-live-dot" aria-hidden="true"></span><strong>Live</strong><span>Home Assistant</span></div>{{else}}<span class="energy-live-state-offline">Noch nicht verbunden</span>{{end}}</div></header>
       {{if .HasMetrics}}
-        {{$gridFrom := "grid"}}{{$gridTo := "home"}}{{$pvState := "idle"}}{{range .Live.Flows}}{{if and (eq .Metric "pv-power") .Numeric}}{{$pvState = "active"}}{{end}}{{end}}{{if and .Live.HasGrid (eq .Live.Grid.Metric "grid-export-power")}}{{$gridFrom = "home"}}{{$gridTo = "grid"}}{{end}}
-        <div class="energy-flow-stage">
-          {{if .Live.HasMain}}<div class="energy-live-main">{{template "energyMetricIcon" .Live.Main}}<div class="energy-flow-copy"><span>{{.Live.Main.Label}}</span><div class="energy-live-value"><strong>{{.Live.Main.Value}}</strong></div></div></div>{{end}}
-          <span class="energy-flow-stem" aria-hidden="true"></span>
-          <div class="energy-flow-grid">
-            <div class="energy-flow-item energy-pv-node" data-energy-node="pv">
-              {{range .Live.Flows}}{{if eq .Metric "pv-power"}}{{template "energyMetricIcon" .}}<div class="energy-flow-copy"><strong>{{.Value}}</strong><span>{{.Label}}</span></div>{{end}}{{end}}
-            </div>
-            <div class="energy-grid-node energy-flow-item" data-energy-node="grid">
-              {{if .Live.HasGrid}}<div class="energy-grid-reading" data-energy-metric="{{.Live.Grid.Metric}}">{{template "energyMetricIcon" .Live.Grid}}<div class="energy-flow-copy"><strong>{{.Live.Grid.Value}}</strong><span>{{.Live.Grid.Label}}</span></div></div>{{else}}<div class="energy-flow-copy"><strong>–</strong><span>Netz</span></div>{{end}}
+        <div class="energy-flow-area" data-energy-flow>
+          <script type="application/json">{{.FlowConfigJSON}}</script>
+          <div class="energy-flow-fallback">
+            <div class="energy-help-readings">
+              {{if .Live.HasMain}}<span>{{.Live.Main.Label}} <strong>{{.Live.Main.Value}}</strong></span>{{end}}
+              {{range .Live.Flows}}<span>{{.Label}} <strong>{{.Value}}</strong></span>{{end}}
+              {{if .Live.HasBattery}}<span>{{.Live.Battery.Label}} <strong>{{.Live.Battery.Value}}</strong></span>{{end}}
+              {{if .Live.HasBatterySOC}}<span>Ladestand <strong>{{.Live.BatterySOC.Value}}</strong></span>{{end}}
             </div>
           </div>
-          <span class="energy-flow-connector energy-flow-connector-pv" data-energy-connector="pv-home" data-from="pv" data-to="home" data-flow-state="{{$pvState}}" aria-hidden="true"></span>
-          <span class="energy-flow-hub" data-energy-node="home" role="img" aria-label="Zuhause{{if .Live.HasMain}}, {{.Live.Main.Label}} {{.Live.Main.Value}}{{end}}"><span class="energy-ui-icon energy-ui-icon-house" aria-hidden="true"></span>{{if .Live.HasMain}}<span class="sr-only">{{.Live.Main.Label}} {{.Live.Main.Value}}</span>{{end}}</span>
-          <span class="energy-flow-connector energy-flow-connector-grid" data-energy-connector="grid-home" data-from="{{$gridFrom}}" data-to="{{$gridTo}}" data-flow-state="{{if and .Live.HasGrid .Live.Grid.Numeric}}active{{else}}idle{{end}}" aria-hidden="true"></span>
-          <span class="energy-flow-connector energy-flow-connector-battery" data-energy-connector="battery-home" data-from="{{if eq .Live.Battery.Direction "charging"}}home{{else}}battery{{end}}" data-to="{{if eq .Live.Battery.Direction "charging"}}battery{{else}}home{{end}}" data-flow-state="{{.Live.Battery.Direction}}" aria-hidden="true"></span>
-          <div class="energy-storage-live" data-energy-node="battery" data-energy-metric="battery-power">
-            {{if .Live.HasBatterySOC}}<span class="energy-battery-visual {{.Live.Battery.Direction}}" data-energy-direction="{{.Live.Battery.Direction}}" role="img" aria-label="Speicher zu {{.Live.BatterySOC.Value}} gefüllt{{if .Live.HasBattery}}, {{.Live.Battery.Detail}} mit {{.Live.Battery.Value}}{{end}}">
-              <span class="energy-battery-gauge" aria-hidden="true"><i style="width:{{.Live.BatteryFill}}%"></i></span>
-            </span><div class="energy-flow-copy"><strong>{{.Live.BatterySOC.Value}}{{if .Live.HasBattery}} · {{.Live.Battery.Value}}{{end}}</strong><span>Speicher</span>{{if .Live.HasBattery}}<small class="sr-only">{{.Live.Battery.Detail}}</small>{{end}}</div>
-            {{else if .Live.HasBattery}}{{template "energyMetricIcon" .Live.Battery}}<div class="energy-flow-copy"><strong>{{.Live.Battery.Value}}</strong><span>{{.Live.Battery.Label}}</span></div>{{else}}<div class="energy-flow-copy"><strong>–</strong><span>Speicher</span></div>{{end}}
-          </div>
+          <details class="energy-info-disclosure energy-flow-hint" data-energy-disclosure="flow"><summary aria-label="Energiefluss verstehen" aria-controls="energy-flow-help"><span>Energiefluss verstehen</span><span class="energy-info-mark" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-info"></span></span></summary><div id="energy-flow-help"><strong>So lesen Sie den Energiefluss</strong><p>Der Hausverbrauch ist der momentane Verbrauch aus allen Quellen. Die Flussbänder zeigen mit ihrer Pfeilspitze die Richtung, ihre Breite entspricht der Leistung, und die Farbverläufe zeigen anteilig, wohin die Energie geht. 0 kW bedeutet: Diese Verbindung ruht gerade. Werte aktualisieren sich unabhängig und können deshalb kurzzeitig nicht exakt aufgehen.</p><div class="energy-help-readings">{{if .Live.HasMain}}<span>{{.Live.Main.Label}} <strong>{{.Live.Main.Value}}</strong> <small>{{.Live.Main.Detail}}</small></span>{{end}}{{range .Live.Flows}}<span>{{.Label}} <strong>{{.Value}}</strong> <small>{{.Detail}}</small></span>{{end}}{{if .Live.HasBattery}}<span>{{.Live.Battery.Label}} <strong>{{.Live.Battery.Value}}</strong> <small>{{.Live.Battery.Detail}}</small></span>{{end}}{{if .Live.HasBatterySOC}}<span>Ladestand <strong>{{.Live.BatterySOC.Value}}</strong> <small>{{.Live.BatterySOC.Detail}}</small></span>{{end}}</div><small>Live aus Home Assistant · nur gelesen</small>{{if .CanManageEnergy}}<a href="/app/zuhause/onboarding?step=4">Messwerte zuordnen</a>{{end}}</div></details>
         </div>
         <footer class="energy-live-footer">
           {{if .Live.HasAdditional}}<details class="energy-live-more"><summary><span><strong>Weitere Messwerte ({{.Live.AdditionalCount}})</strong><small>{{.Live.AdditionalTopics}}</small></span><span class="energy-ui-icon energy-ui-icon-chevron-right" aria-hidden="true"></span></summary><div class="energy-live-more-list">{{range .Live.Additional}}<div class="energy-live-more-row"><span>{{.Label}}</span><strong>{{.Value}}</strong></div>{{end}}</div></details>{{else}}<span></span>{{end}}
-          <details class="energy-info-disclosure" data-energy-disclosure="flow"><summary aria-label="Energiefluss verstehen" aria-controls="energy-flow-help"><span>Energiefluss verstehen</span><span class="energy-info-mark" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-info"></span></span></summary><div id="energy-flow-help"><strong>So lesen Sie den Energiefluss</strong><p>Der Hausverbrauch ist der momentane Verbrauch aus allen Quellen. Gerade Pfeile zeigen die Richtung zwischen PV, Zuhause, Netz und Speicher. 0 W bedeutet: Diese Verbindung ruht gerade. Werte aktualisieren sich unabhängig und können deshalb kurzzeitig nicht exakt aufgehen.</p><div class="energy-help-readings">{{if .Live.HasMain}}<span>{{.Live.Main.Label}} <strong>{{.Live.Main.Value}}</strong> <small>{{.Live.Main.Detail}}</small></span>{{end}}{{range .Live.Flows}}<span>{{.Label}} <strong>{{.Value}}</strong> <small>{{.Detail}}</small></span>{{end}}{{if .Live.HasBattery}}<span>{{.Live.Battery.Label}} <strong>{{.Live.Battery.Value}}</strong> <small>{{.Live.Battery.Detail}}</small></span>{{end}}{{if .Live.HasBatterySOC}}<span>Ladestand <strong>{{.Live.BatterySOC.Value}}</strong> <small>{{.Live.BatterySOC.Detail}}</small></span>{{end}}</div><small>Live aus Home Assistant · nur gelesen</small>{{if .CanManageEnergy}}<a href="/app/zuhause/onboarding?step=4">Messwerte zuordnen</a>{{end}}</div></details>
+          <span></span>
         </footer>
       {{else}}<div class="energy-live-empty"><strong>Noch keine Live-Werte</strong><span>Home Assistant kann später verbunden werden.</span>{{if .CanManageEnergy}}<a href="/app/zuhause/onboarding?step=4">Messwerte zuordnen</a>{{end}}</div>{{end}}
     </aside>
@@ -9449,60 +9401,21 @@ const PageTemplates = `
       <div class="energy-cockpit-top">
       <header class="energy-heading">
         <div class="energy-heading-copy" data-home-identity="energy-heading" aria-label="{{.HomeIdentity.AriaLabel}}">
-          <div class="energy-heading-breadcrumb"><span>Mein Zuhause</span><span aria-hidden="true">·</span><span>{{.Tenant.Address}}</span></div>
           <h1 data-home-display-name>{{.Profile.HouseholdName}}</h1>
           {{if .HasHomeUnit}}<div class="energy-heading-unit-row"><p class="energy-heading-unit" data-home-unit-label>{{.HomeUnitLabel}}</p><span aria-hidden="true">·</span><span>{{.HomeTypeLabel}}</span></div>{{end}}
           <p class="energy-heading-context">{{.HomeTypeLabel}} · {{.Tenant.Address}}</p>
         </div>
-        {{if .CanManageHomeIdentity}}<a class="button energy-heading-action" href="/app/settings/home?from=energy" aria-label="Zuhause bearbeiten"><span class="energy-ui-icon energy-ui-icon-pencil" aria-hidden="true"></span><span>Zuhause bearbeiten</span></a>{{end}}
+        <div class="energy-heading-side">
+          <span class="energy-heading-breadcrumb"><span>Mein Zuhause</span><span aria-hidden="true">·</span><span>{{.Tenant.Address}}</span></span>
+          {{if .CanManageHomeIdentity}}<a class="button energy-heading-action" href="/app/settings/home?from=energy" aria-label="Zuhause bearbeiten"><span class="energy-ui-icon energy-ui-icon-pencil" aria-hidden="true"></span><span>Zuhause bearbeiten</span></a>{{end}}
+        </div>
       </header>
       {{if .Welcome}}<div class="message success">Ihr Hausprofil ist bereit. Der sichere Beobachtungsmodus bleibt aktiv.</div>{{end}}
       {{if .ModeChanged}}<div class="message success">Der Energiemodus wurde nachvollziehbar geändert.</div>{{end}}
       {{if .ProfileChanged}}<div class="message success">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</div>{{end}}
       <section class="energy-health">
         {{template "energyLead" .}}
-        <section class="energy-card energy-tariff" id="tarif" aria-labelledby="energy-tariff-title">
-          <header class="energy-card-head">
-            <div class="energy-tariff-heading-copy"><div class="energy-tariff-title-row"><h2 id="energy-tariff-title">Monatsspitze</h2><details class="energy-metric-info energy-tariff-overview-info" name="energy-metric-help" data-energy-help="tariff"><summary aria-label="Monatsspitze und Verrechnung erklären" aria-controls="energy-help-tariff"><span class="energy-ui-icon energy-ui-icon-info" aria-hidden="true"></span></summary><div id="energy-help-tariff"><strong>So setzt sich die Leistung zusammen</strong><p><b>Höchste Viertelstunde:</b> höchste mittlere Bezugsleistung einer abgeschlossenen Viertelstunde dieses Kalendermonats.</p><p><b>Verrechnet:</b> der höchste Wert aus Monatsspitze, 2-kW-Sockel und – falls erfasst – 20 % der vereinbarten Anschlussleistung.</p>{{if .Tariff.HasEstimate}}<small>{{if .Tariff.MinimumReason}}{{.Tariff.MinimumReason}}{{else}}Die gemessene Spitze ist maßgeblich.{{end}}</small>{{end}}{{if .Tariff.Basis}}<small>{{.Tariff.Basis}}</small>{{end}}</div></details></div><p>{{.Tariff.MonthLabel}}</p></div>
-            <span class="pill" title="{{.Tariff.Status}}" aria-label="{{.Tariff.Status}}">Entwurf</span>
-          </header>
-          {{if .TargetChanged}}<div class="message success">Ihr persönliches Peak-Ziel wurde gespeichert.</div>{{end}}
-          {{if .AgreedPowerChanged}}<div class="message success">Die vereinbarte Anschlussleistung wurde gespeichert.</div>{{end}}
-          {{if .Tariff.HasEstimate}}<div class="energy-billed" aria-label="Verrechnete Leistung nach dem Entwurf">
-            <div><div class="energy-metric-label"><span>Höchste Viertelstunde</span></div><strong>{{.Tariff.PeakKW}}</strong><progress class="energy-tariff-meter peak" max="100" value="{{.Tariff.PeakMeterPercent}}" aria-label="Gemessene Spitze relativ zur verrechneten Leistung: {{.Tariff.PeakMeterPercent}} Prozent"></progress>{{if .Tariff.HasPeakTime}}<small>Ø {{.Tariff.PeakTime}}</small>{{end}}</div>
-            <div><div class="energy-metric-label"><span>Verrechnet</span></div><strong>{{.Tariff.BilledKW}}</strong><progress class="energy-tariff-meter billed" max="100" value="100" aria-hidden="true"></progress><small>{{if .Tariff.MinimumReason}}{{.Tariff.MinimumReason}}{{else}}die gemessene Spitze ist maßgeblich{{end}}</small></div>
-          </div>
-          <div class="energy-tariff-cost">
-            <div class="energy-tariff-cost-figure"><div class="energy-metric-label"><span>Leistungsanteil des Netztarifs</span><details class="energy-metric-info" name="energy-metric-help" data-energy-help="annual"><summary aria-label="Jahreswert erklären" aria-controls="energy-help-annual"><span class="energy-ui-icon energy-ui-icon-info" aria-hidden="true"></span></summary><div id="energy-help-annual"><strong>Jahreswert</strong><p>Nur der Leistungsanteil des Netztarifs – nicht die Stromrechnung.</p></div></details></div><p><strong>{{.Tariff.AnnualPowerEUR}}</strong><small>/ Jahr</small></p><small>Modellrechnung</small></div>
-          </div>
-          {{if .Tariff.Basis}}<p class="energy-tariff-basis" title="{{.Tariff.Basis}}"><span class="energy-ui-icon energy-ui-icon-clock" aria-hidden="true"></span><span>{{if .Tariff.CoverageLabel}}{{.Tariff.CoverageLabel}}{{else}}{{.Tariff.Basis}}{{end}}</span></p>{{end}}
-          {{else}}<div class="energy-tariff-empty{{if .Tariff.MissingIsWaiting}} waiting{{end}}">
-            <strong>{{if .Tariff.MissingIsWaiting}}Noch keine volle Viertelstunde{{else}}Netzbezug noch nicht zugeordnet{{end}}</strong>
-            <p>{{.Tariff.MissingReason}}</p>
-            {{if not .Tariff.MissingIsWaiting}}<a class="button" href="#messwerte">Netzbezug zuordnen</a>{{end}}
-          </div>{{end}}
-          {{if eq .TariffAssessmentStatus "saved"}}<div class="message success">Diese Modellbewertung wurde mit ihrer damaligen Regelversion festgehalten.</div>{{else if eq .TariffAssessmentStatus "no_data"}}<div class="message">Für eine historische Bewertung fehlen noch abgeschlossene Viertelstunden.</div>{{end}}
-          <details class="energy-tariff-disclosure" data-energy-disclosure="tariff"><summary aria-controls="energy-tariff-details"><span>Mehr erfahren</span><span class="energy-ui-icon energy-ui-icon-chevron-right" aria-hidden="true"></span></summary><div id="energy-tariff-details">
-          <p class="energy-tariff-method">Ab 01.01.2027 bemisst der Netzbetreiber die höchste Viertelstunde jedes Kalendermonats.</p>
-          {{if .Tariff.Basis}}<p class="energy-tariff-detail-basis"><strong>Grundlage</strong>{{.Tariff.Basis}}</p>{{end}}
-          {{if .Tariff.HasEstimate}}<div class="energy-tariff-cost-copy"><p><strong>Das ist nicht Ihre Stromrechnung.</strong> Der Betrag umfasst ausschließlich den Leistungsanteil des Netztarifs. Arbeitspreis, Energiekosten, Abgaben und Steuern sind darin nicht enthalten.</p><p>Gerechnet mit {{.Tariff.BelowRateEUR}} je kW bis {{.Tariff.ThresholdKW}} und {{.Tariff.AboveRateEUR}} je kW darüber, auf die verrechnete Leistung von {{.Tariff.BilledKW}}. Die Sätze stammen aus einem Begutachtungsentwurf und können sich noch ändern.</p></div>
-          {{if .Tariff.HasTier}}<div class="energy-tariff-tiers"><div><span>Günstigere Stufe</span><strong>{{.Tariff.BelowKW}}</strong><small>{{.Tariff.BelowRateEUR}} je kW und Jahr</small></div><div><span>Höhere Stufe</span><strong>{{.Tariff.AboveKW}}</strong><small>{{.Tariff.AboveRateEUR}} je kW und Jahr</small></div></div>{{end}}
-          <ul class="energy-tariff-notes">{{if .Tariff.HasTier}}<li>{{.Tariff.TierHint}}</li>{{end}}<li>Niedertarif-Fenster (SNAP, WiNAP) und Energiegemeinschaften senken den Arbeitspreis, nicht die verrechnete Leistung.</li><li>{{.Tariff.Disclaimer}}</li></ul>{{end}}
-          {{if .CanManageEnergy}}<details class="energy-tariff-settings">
-            <summary>Ihre Werte für diese Rechnung <span>Peak-Ziel, Anschlussleistung</span></summary>
-            <div class="energy-tariff-forms">
-              <form class="energy-target-form" method="post" action="/app/energie/target"><label><span class="onboarding-legend">Persönliches Peak-Ziel in kW</span><input type="text" name="target_peak_kw" inputmode="decimal" value="{{.TargetPeakValue}}" placeholder="z. B. 8,0" required></label><small class="muted">Ein Planungsziel, keine technische Anschlussgrenze.</small><button class="button" type="submit">Ziel speichern</button></form>
-              <form class="energy-target-form" method="post" action="/app/energie/anschlussleistung"><label><span class="onboarding-legend">Vereinbarte Anschlussleistung in kW</span><input type="text" name="agreed_power_kw" inputmode="decimal" value="{{.AgreedPowerValue}}" placeholder="z. B. 14,0"></label><small class="muted">{{if .Tariff.HasAgreed}}Steht auf Ihrer Netzrechnung. Der Entwurf bemisst mindestens 20 % davon.{{else}}{{.Tariff.AgreedHint}}{{end}} Leer lassen, wenn unbekannt.</small><button class="button" type="submit">Anschlussleistung speichern</button></form>
-            </div>
-          </details>{{end}}
-          <footer class="energy-tariff-foot">
-            <span>Regelprofil {{.Tariff.ID}} · Stand {{.Tariff.Version}}</span>
-            <a href="{{.Tariff.SourceURL}}" target="_blank" rel="noopener noreferrer">Quelle: {{.Tariff.SourceTitle}} →</a>
-            {{if and .CanManageEnergy .Tariff.HasEstimate}}<form method="post" action="/app/energie/tariff/assessment"><button class="button quiet" type="submit">Diesen Stand festhalten</button></form>{{end}}
-          </footer>
-          {{if .HasTariffAssessments}}<div class="energy-history"><h4>Festgehaltene Bewertungen</h4><div aria-label="Historische Tarifbewertungen">{{range .TariffAssessments}}<article class="energy-history-row"><div><strong>{{.Month}} · {{.Peak}}</strong><span>{{.Profile}} · {{.Quality}}</span></div><strong>{{.Annual}}</strong><small>{{.Created}}</small></article>{{end}}</div></div>{{end}}
-          </div></details>
-        </section>
+
       </section>
       </div>
       <section class="energy-card energy-chart" id="energieverlauf" aria-labelledby="energy-chart-title">
@@ -9515,6 +9428,48 @@ const PageTemplates = `
           </div>
           <aside class="energy-chart-note"><span>Auf einen Blick</span><strong>{{.Chart.Summary}}</strong><p>{{.Chart.Detail}}</p></aside>
         </div>{{else}}<div class="energy-chart-empty"><strong>Noch kein vollständiger Tagesverlauf</strong><p>{{.Chart.Status}}</p></div>{{end}}
+      </section>
+      <section class="energy-card energy-tariff" id="tarif" aria-labelledby="energy-tariff-title">
+        <header class="energy-card-head">
+          <div class="energy-tariff-heading-copy"><div class="energy-tariff-title-row"><h2 id="energy-tariff-title">Monatsspitze</h2><details class="energy-metric-info energy-tariff-overview-info" name="energy-metric-help" data-energy-help="tariff"><summary aria-label="Monatsspitze und Verrechnung erklären" aria-controls="energy-help-tariff"><span class="energy-ui-icon energy-ui-icon-info" aria-hidden="true"></span></summary><div id="energy-help-tariff"><strong>So setzt sich die Leistung zusammen</strong><p><b>Höchste Viertelstunde:</b> höchste mittlere Bezugsleistung einer abgeschlossenen Viertelstunde dieses Kalendermonats.</p><p><b>Verrechnet:</b> der höchste Wert aus Monatsspitze, 2-kW-Sockel und – falls erfasst – 20 % der vereinbarten Anschlussleistung.</p>{{if .Tariff.HasEstimate}}<small>{{if .Tariff.MinimumReason}}{{.Tariff.MinimumReason}}{{else}}Die gemessene Spitze ist maßgeblich.{{end}}</small>{{end}}{{if .Tariff.Basis}}<small>{{.Tariff.Basis}}</small>{{end}}</div></details></div><p>{{.Tariff.MonthLabel}}</p></div>
+          <span class="pill" title="{{.Tariff.Status}}" aria-label="{{.Tariff.Status}}">Entwurf</span>
+        </header>
+        {{if .TargetChanged}}<div class="message success">Ihr persönliches Peak-Ziel wurde gespeichert.</div>{{end}}
+        {{if .AgreedPowerChanged}}<div class="message success">Die vereinbarte Anschlussleistung wurde gespeichert.</div>{{end}}
+        {{if .Tariff.HasEstimate}}<div class="energy-billed" aria-label="Verrechnete Leistung nach dem Entwurf">
+          <div><div class="energy-metric-label"><span>Höchste Viertelstunde</span></div><strong>{{.Tariff.PeakKW}}</strong><progress class="energy-tariff-meter peak" max="100" value="{{.Tariff.PeakMeterPercent}}" aria-label="Gemessene Spitze relativ zur verrechneten Leistung: {{.Tariff.PeakMeterPercent}} Prozent"></progress>{{if .Tariff.HasPeakTime}}<small>Ø {{.Tariff.PeakTime}}</small>{{end}}</div>
+          <div><div class="energy-metric-label"><span>Verrechnet</span></div><strong>{{.Tariff.BilledKW}}</strong><progress class="energy-tariff-meter billed" max="100" value="100" aria-hidden="true"></progress><small>{{if .Tariff.MinimumReason}}{{.Tariff.MinimumReason}}{{else}}die gemessene Spitze ist maßgeblich{{end}}</small></div>
+        </div>
+        <div class="energy-tariff-cost">
+          <div class="energy-tariff-cost-figure"><div class="energy-metric-label"><span>Leistungsanteil des Netztarifs</span><details class="energy-metric-info" name="energy-metric-help" data-energy-help="annual"><summary aria-label="Jahreswert erklären" aria-controls="energy-help-annual"><span class="energy-ui-icon energy-ui-icon-info" aria-hidden="true"></span></summary><div id="energy-help-annual"><strong>Jahreswert</strong><p>Nur der Leistungsanteil des Netztarifs – nicht die Stromrechnung.</p></div></details></div><p><strong>{{.Tariff.AnnualPowerEUR}}</strong><small>/ Jahr</small></p><small>Modellrechnung</small></div>
+        </div>
+        {{if .Tariff.Basis}}<p class="energy-tariff-basis" title="{{.Tariff.Basis}}"><span class="energy-ui-icon energy-ui-icon-clock" aria-hidden="true"></span><span>{{if .Tariff.CoverageLabel}}{{.Tariff.CoverageLabel}}{{else}}{{.Tariff.Basis}}{{end}}</span></p>{{end}}
+        {{else}}<div class="energy-tariff-empty{{if .Tariff.MissingIsWaiting}} waiting{{end}}">
+          <strong>{{if .Tariff.MissingIsWaiting}}Noch keine volle Viertelstunde{{else}}Netzbezug noch nicht zugeordnet{{end}}</strong>
+          <p>{{.Tariff.MissingReason}}</p>
+          {{if not .Tariff.MissingIsWaiting}}<a class="button" href="#messwerte">Netzbezug zuordnen</a>{{end}}
+        </div>{{end}}
+        {{if eq .TariffAssessmentStatus "saved"}}<div class="message success">Diese Modellbewertung wurde mit ihrer damaligen Regelversion festgehalten.</div>{{else if eq .TariffAssessmentStatus "no_data"}}<div class="message">Für eine historische Bewertung fehlen noch abgeschlossene Viertelstunden.</div>{{end}}
+        <details class="energy-tariff-disclosure" data-energy-disclosure="tariff"><summary aria-controls="energy-tariff-details"><span>Mehr erfahren</span><span class="energy-ui-icon energy-ui-icon-chevron-right" aria-hidden="true"></span></summary><div id="energy-tariff-details">
+        <p class="energy-tariff-method">Ab 01.01.2027 bemisst der Netzbetreiber die höchste Viertelstunde jedes Kalendermonats.</p>
+        {{if .Tariff.Basis}}<p class="energy-tariff-detail-basis"><strong>Grundlage</strong>{{.Tariff.Basis}}</p>{{end}}
+        {{if .Tariff.HasEstimate}}<div class="energy-tariff-cost-copy"><p><strong>Das ist nicht Ihre Stromrechnung.</strong> Der Betrag umfasst ausschließlich den Leistungsanteil des Netztarifs. Arbeitspreis, Energiekosten, Abgaben und Steuern sind darin nicht enthalten.</p><p>Gerechnet mit {{.Tariff.BelowRateEUR}} je kW bis {{.Tariff.ThresholdKW}} und {{.Tariff.AboveRateEUR}} je kW darüber, auf die verrechnete Leistung von {{.Tariff.BilledKW}}. Die Sätze stammen aus einem Begutachtungsentwurf und können sich noch ändern.</p></div>
+        {{if .Tariff.HasTier}}<div class="energy-tariff-tiers"><div><span>Günstigere Stufe</span><strong>{{.Tariff.BelowKW}}</strong><small>{{.Tariff.BelowRateEUR}} je kW und Jahr</small></div><div><span>Höhere Stufe</span><strong>{{.Tariff.AboveKW}}</strong><small>{{.Tariff.AboveRateEUR}} je kW und Jahr</small></div></div>{{end}}
+        <ul class="energy-tariff-notes">{{if .Tariff.HasTier}}<li>{{.Tariff.TierHint}}</li>{{end}}<li>Niedertarif-Fenster (SNAP, WiNAP) und Energiegemeinschaften senken den Arbeitspreis, nicht die verrechnete Leistung.</li><li>{{.Tariff.Disclaimer}}</li></ul>{{end}}
+        {{if .CanManageEnergy}}<details class="energy-tariff-settings">
+          <summary>Ihre Werte für diese Rechnung <span>Peak-Ziel, Anschlussleistung</span></summary>
+          <div class="energy-tariff-forms">
+            <form class="energy-target-form" method="post" action="/app/energie/target"><label><span class="onboarding-legend">Persönliches Peak-Ziel in kW</span><input type="text" name="target_peak_kw" inputmode="decimal" value="{{.TargetPeakValue}}" placeholder="z. B. 8,0" required></label><small class="muted">Ein Planungsziel, keine technische Anschlussgrenze.</small><button class="button" type="submit">Ziel speichern</button></form>
+            <form class="energy-target-form" method="post" action="/app/energie/anschlussleistung"><label><span class="onboarding-legend">Vereinbarte Anschlussleistung in kW</span><input type="text" name="agreed_power_kw" inputmode="decimal" value="{{.AgreedPowerValue}}" placeholder="z. B. 14,0"></label><small class="muted">{{if .Tariff.HasAgreed}}Steht auf Ihrer Netzrechnung. Der Entwurf bemisst mindestens 20 % davon.{{else}}{{.Tariff.AgreedHint}}{{end}} Leer lassen, wenn unbekannt.</small><button class="button" type="submit">Anschlussleistung speichern</button></form>
+          </div>
+        </details>{{end}}
+        <footer class="energy-tariff-foot">
+          <span>Regelprofil {{.Tariff.ID}} · Stand {{.Tariff.Version}}</span>
+          <a href="{{.Tariff.SourceURL}}" target="_blank" rel="noopener noreferrer">Quelle: {{.Tariff.SourceTitle}} →</a>
+          {{if and .CanManageEnergy .Tariff.HasEstimate}}<form method="post" action="/app/energie/tariff/assessment"><button class="button quiet" type="submit">Diesen Stand festhalten</button></form>{{end}}
+        </footer>
+        {{if .HasTariffAssessments}}<div class="energy-history"><h4>Festgehaltene Bewertungen</h4><div aria-label="Historische Tarifbewertungen">{{range .TariffAssessments}}<article class="energy-history-row"><div><strong>{{.Month}} · {{.Peak}}</strong><span>{{.Profile}} · {{.Quality}}</span></div><strong>{{.Annual}}</strong><small>{{.Created}}</small></article>{{end}}</div></div>{{end}}
+        </div></details>
       </section>
       {{if .Chart.HasData}}<dialog id="energy-chart-dialog" class="energy-chart-dialog" aria-labelledby="energy-chart-dialog-title"><div class="energy-chart-dialog-shell" data-energy-fullscreen-surface>
         <header><div><span class="eyebrow">Energieverlauf</span><h2 id="energy-chart-dialog-title">{{.Chart.DialogTitle}}</h2><p>Fahren Sie über die Kurve oder nutzen Sie die Pfeiltasten.</p></div><div class="energy-chart-dialog-actions"><button class="button" type="button" data-dialog="energy-chart-dialog" data-energy-fullscreen aria-controls="energy-chart-dialog" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M9 21H3v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-fullscreen-label>Vollbild</span></button><button class="button" type="button" data-close-dialog>Schließen</button></div></header>
@@ -9682,6 +9637,7 @@ const PageTemplates = `
       </div>
     </div>
   </main>
+<script src="/assets/energy-flow.js?v={{.AssetVersion}}" defer></script>
 {{template "appClose" .}}
 {{end}}
 

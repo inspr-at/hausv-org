@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"math"
 	"net/http"
@@ -1083,7 +1085,16 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		freeUntil = profile.FreeStartedAt.AddDate(3, 0, 0).In(time.Local).Format("02.01.2006")
 	}
 	homeUnitLabel, hasHomeUnit := a.energyHomeUnitLabel(profile)
+	chargingCtx, cancelCharging := context.WithTimeout(r.Context(), 5*time.Second)
+	charging := a.chargingLiveView(chargingCtx, ac.tenant, false, false)
+	cancelCharging()
+	flowConfig := buildEnergyFlowConfig(live, assets, charging, canManageEnergyData)
+	flowConfigJSON, err := json.Marshal(flowConfig)
+	if err != nil {
+		flowConfigJSON = []byte("null")
+	}
 	a.render(w, "energyCockpit", a.withBase(ac, map[string]any{
+		"FlowConfigJSON":          template.JS(flowConfigJSON),
 		"Title":                   profile.HouseholdName,
 		"ActivePage":              "energy",
 		"Profile":                 profile,
@@ -3034,6 +3045,160 @@ func buildEnergyLiveView(metrics []energyMetricView) energyLiveView {
 	return view
 }
 
+// ── energy flow config (HAUSV-439) ──────────────────────────────────────────
+// JSON payload for the client-side flow renderer (assets/energy-flow.js).
+// Every display string is pre-formatted here; the kw numerics only drive
+// ribbon widths and the proportional destination bands.
+
+type energyFlowNodeConfig struct {
+	Icon  string  `json:"icon,omitempty"`
+	Label string  `json:"label,omitempty"`
+	Value string  `json:"value,omitempty"`
+	Unit  string  `json:"unit,omitempty"`
+	KW    float64 `json:"kw"`
+	Dir   string  `json:"dir,omitempty"`
+	Mode  string  `json:"mode,omitempty"`
+	Sub   string  `json:"sub,omitempty"`
+	Flow  float64 `json:"flow,omitempty"`
+}
+
+type energyFlowConsumerConfig struct {
+	Icon   string  `json:"icon,omitempty"`
+	Title  string  `json:"title"`
+	Sub    string  `json:"sub,omitempty"`
+	State  string  `json:"state,omitempty"`
+	KW     float64 `json:"kw"`
+	Active bool    `json:"active,omitempty"`
+}
+
+type energyFlowConfig struct {
+	Home      energyFlowNodeConfig       `json:"home"`
+	Producers []energyFlowNodeConfig     `json:"producers,omitempty"`
+	Storage   *energyFlowNodeConfig      `json:"storage,omitempty"`
+	Grid      *energyFlowNodeConfig      `json:"grid,omitempty"`
+	Consumers []energyFlowConsumerConfig `json:"consumers,omitempty"`
+	AddHint   bool                       `json:"addHint,omitempty"`
+}
+
+// formatEnergyFlowKW renders a power reading in kW without the unit suffix —
+// the flow renderer appends the small raised unit marker itself. Always kW by
+// decision (HAUSV-439); W vs kW may become a user setting later.
+func formatEnergyFlowKW(watts float64) string {
+	kw := watts / 1000
+	digits := 2
+	if math.Abs(kw) >= 10 {
+		digits = 1
+	}
+	out := formatEnergyCompact(kw, digits)
+	if out == "-0" {
+		return "0"
+	}
+	return out
+}
+
+func energyFlowConsumerIcon(kind string) string {
+	switch kind {
+	case "ev", "wallbox":
+		return "car"
+	case "hot-water":
+		return "boiler"
+	case "heat-pump":
+		return "pump"
+	default:
+		return "device"
+	}
+}
+
+func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging parkingLiveView, canManage bool) energyFlowConfig {
+	cfg := energyFlowConfig{AddHint: canManage}
+	cfg.Home = energyFlowNodeConfig{Value: "–", Label: "Hausverbrauch"}
+	if live.HasMain {
+		watts := math.Abs(energyPowerWatts(&live.Main))
+		cfg.Home = energyFlowNodeConfig{Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000, Label: "Hausverbrauch"}
+	}
+	for index := range live.Flows {
+		item := live.Flows[index]
+		if item.Metric != energy.MetricPVPower {
+			continue
+		}
+		// Negative inverter standby draw is not production: clamp to zero so
+		// no producer ribbon appears at night.
+		watts := math.Max(0, energyPowerWatts(&item))
+		cfg.Producers = append(cfg.Producers, energyFlowNodeConfig{
+			Icon: "pv", Label: item.Label,
+			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000,
+		})
+	}
+	if live.HasBattery || live.HasBatterySOC {
+		watts := math.Abs(energyPowerWatts(&live.Battery))
+		mode := "wartet"
+		if live.HasBattery && watts >= 1 {
+			switch live.Battery.Direction {
+			case "charging":
+				mode = "lädt"
+			case "discharging":
+				mode = "entlädt"
+			}
+		}
+		sub := "Speicher"
+		if live.HasBatterySOC {
+			sub += " · " + live.BatterySOC.Value
+		}
+		flow := watts / 1000
+		if mode == "wartet" {
+			// Below the 1 W threshold no direction is claimed — draw no ribbon.
+			flow = 0
+		}
+		cfg.Storage = &energyFlowNodeConfig{
+			Icon: "battery", Value: formatEnergyFlowKW(watts), Unit: "kW",
+			Mode: mode, Flow: flow, Sub: sub + " · " + mode,
+		}
+	}
+	if live.HasGrid {
+		dir := "import"
+		if live.Grid.Metric == energy.MetricGridExportPower {
+			dir = "export"
+		}
+		watts := math.Abs(energyPowerWatts(&live.Grid))
+		cfg.Grid = &energyFlowNodeConfig{
+			Icon: "grid", Label: live.Grid.Label,
+			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000, Dir: dir,
+		}
+	}
+	for _, asset := range assets {
+		switch asset.Kind {
+		case "pv", "battery":
+			continue
+		}
+		title := strings.TrimSpace(asset.Name)
+		if title == "" {
+			title = energy.AssetKindLabel(asset.Kind)
+		}
+		sub := energy.AssetKindLabel(asset.Kind)
+		if asset.RatedPowerKW != nil {
+			sub += " · " + formatEnergyCompact(*asset.RatedPowerKW, 1) + " kW"
+		} else if sub == title {
+			sub = ""
+		}
+		cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
+			Icon: energyFlowConsumerIcon(asset.Kind), Title: title,
+			Sub: sub, State: "Bereit · " + energyFlexibilityLabel(asset.Flexibility),
+		})
+	}
+	if charging.Available {
+		state := charging.ModeLabel
+		kw := 0.0
+		if (charging.Mode == "surplus" || charging.Mode == "manual") && charging.PowerKW > 0.05 {
+			kw = charging.PowerKW
+			state = charging.ModeLabel + " mit " + formatEnergyFlowKW(kw*1000) + " kW"
+		}
+		cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
+			Icon: "parking", Title: "Parkplatz 20", State: state, KW: kw, Active: kw > 0,
+		})
+	}
+	return cfg
+}
+
 func combineBatteryMetrics(metrics []energyMetricView, selected map[int]bool) (energyMetricView, bool) {
 	var charge, discharge, generic *energyMetricView
 	chargeIndex, dischargeIndex, genericIndex := -1, -1, -1
@@ -3068,6 +3233,10 @@ func combineBatteryMetrics(metrics []energyMetricView, selected map[int]bool) (e
 		dischargeW := energyPowerWatts(discharge)
 		netW := dischargeW - chargeW
 		item := energyMetricView{Metric: energy.MetricBatteryPower, Kind: "battery-power", Label: "Speicher"}
+		// The flow config reads Numeric/Unit (HAUSV-439); without them the
+		// split charge/discharge pair rendered a permanently idle battery.
+		item.Numeric = math.Abs(netW)
+		item.Unit = "W"
 		if netW > 0 {
 			item.Value = formatEnergyReading(netW, "W")
 			item.Detail = "liefert Energie"

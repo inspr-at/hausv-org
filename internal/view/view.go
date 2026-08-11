@@ -580,6 +580,7 @@ type ParkingLiveView struct {
 	RateLabel       string
 	PlugOn          bool
 	PowerLabel      string
+	PowerKW         float64
 	FeedInLabel     string
 	BatterySOCLabel string
 	BatteryClass    string // full | partial | low
