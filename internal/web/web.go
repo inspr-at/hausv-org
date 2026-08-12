@@ -976,15 +976,15 @@ const PageTemplates = `
     .nav-badge { margin-left: auto; min-width: 25px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); padding: 0 7px; background: var(--gold); color: #172019; font-size: 11px; font-weight: 900; line-height: 1; }
     .nav-group-label { margin: 10px 12px 2px; color: rgba(255,255,255,.42); font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
     .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 14px 8px 0; display: grid; gap: 8px; }
-    .side-account-meta { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-left: 54px; }
-    .side-map-attribution { min-width: 0; color: rgba(255,255,255,.38); font-size: 9px; line-height: 1.2; text-align: right; text-decoration: none; white-space: nowrap; }
+    .side-map-attribution { min-width: 0; justify-self: start; margin-left: 54px; color: rgba(255,255,255,.38); font-size: 9px; line-height: 1.2; text-decoration: none; }
     .side-map-attribution:hover { color: rgba(255,255,255,.68); }
     .side-user { min-width: 0; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 12px; align-items: center; }
     .side-user-copy { min-width: 0; display: grid; gap: 2px; }
+    .side-user-meta { min-width: 0; display: flex; align-items: center; gap: 6px; }
     .avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: #fff; font-weight: 800; border: 1px solid rgba(255,255,255,.25); }
     .side-user strong { display: -webkit-box; max-height: 2.5em; color: #fff; font-size: 14px; line-height: 1.22; overflow: hidden; overflow-wrap: anywhere; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .side-user span, .side-version { color: rgba(255,255,255,.64); font-size: 13px; }
-    .version-button { width: auto; min-height: 44px; border: 0; padding: 3px 7px; background: transparent; color: rgba(255,255,255,.48); font: inherit; font-size: 10.5px; font-weight: 650; cursor: pointer; }
+    .version-button { width: auto; min-height: 28px; border: 0; padding: 2px 4px; background: transparent; color: rgba(255,255,255,.48); font: inherit; font-size: 10.5px; font-weight: 650; cursor: pointer; }
     .version-button:hover { color: rgba(255,255,255,.84); }
     .logout-form { margin: 0; }
     .logout-button { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,.2); border-radius: var(--radius-xs); color: rgba(255,255,255,.78); background: transparent; cursor: pointer; }
@@ -3129,11 +3129,11 @@ const PageTemplates = `
       .nav-icon svg { width: 18px; height: 18px; }
       .side-foot { gap: 7px; padding-top: 9px; }
       .side-user { grid-template-columns: 32px minmax(0,1fr) auto; gap: 8px; }
-      .side-account-meta { padding-left: 40px; }
+      .side-map-attribution { margin-left: 40px; }
       .avatar { width: 32px; height: 32px; font-size: 11px; }
       .side-user strong { font-size: 12.5px; }
       .side-user span { font-size: 11.5px; }
-      .version-button { min-height: 44px; font-size: 10px; }
+      .version-button { font-size: 10px; }
       .logout-button { min-height: 44px; }
     }
     @media (max-width: 1279px) {
@@ -3283,7 +3283,7 @@ const PageTemplates = `
 	      .nav-group-label { grid-column: 1 / -1; margin: 7px 4px 0; }
 	      .side-foot { margin-top: 2px; gap: 8px; padding: 10px 0 0; }
 	      .side-user { grid-template-columns: 34px minmax(0,1fr) auto; gap: 9px; min-width: 0; }
-	      .side-account-meta { padding-left: 43px; }
+	      .side-map-attribution { margin-left: 43px; }
 	      .avatar { width: 34px; height: 34px; font-size: 12px; }
 	      .side-user strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	      .side-user span { font-size: 12px; }
@@ -3606,13 +3606,10 @@ const PageTemplates = `
     <div id="portal-account" class="side-foot">
       <div class="side-user">
         <span class="avatar">{{.Initials}}</span>
-        <div class="side-user-copy"><strong>{{.DisplayName}}</strong><span>{{.Role}}</span></div>
+        <div class="side-user-copy"><strong>{{.DisplayName}}</strong><span class="side-user-meta"><span>{{.Role}}</span><button class="side-version version-button" type="button" data-dialog="release-history" aria-haspopup="dialog" aria-controls="release-history" aria-label="Version {{.DisplayVersion}} – Versionsverlauf öffnen">v{{.DisplayVersion}}</button></span></div>
         <form class="logout-form" method="post" action="/auth/logout"><button class="logout-button" type="submit" aria-label="Abmelden" title="Abmelden"><span class="energy-ui-icon energy-ui-icon-log-out" aria-hidden="true"></span><span class="sr-only">Abmelden</span></button></form>
       </div>
-      <div class="side-account-meta">
-        <button class="side-version version-button" type="button" data-dialog="release-history" aria-haspopup="dialog" aria-controls="release-history" aria-label="Version {{.DisplayVersion}} – Versionsverlauf öffnen">v{{.DisplayVersion}}</button>
-        <a class="side-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Kartendaten © OpenStreetMap</a>
-      </div>
+      <a class="side-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Kartendaten © OpenStreetMap</a>
     </div>
   </aside>
 {{end}}

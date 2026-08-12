@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.76.2",
+			Date:     "12. August 2026",
+			Kind:     "Seitenleiste",
+			Headline: "Der Kontoabschluss bleibt vollständig sichtbar.",
+			Intro:    "Version und Kartenhinweis haben jetzt jeweils einen verlässlichen Platz, ohne Namen oder Quellenangabe abzuschneiden.",
+			Items:    []NoteItem{},
+		},
+		{
 			Version:  "0.76.1",
 			Date:     "12. August 2026",
 			Kind:     "Energie & Seitenleiste",
