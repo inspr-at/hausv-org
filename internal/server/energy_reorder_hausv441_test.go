@@ -75,7 +75,7 @@ func TestConsumerReorderPersistsPrioritiesHAUSV441(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Assets laden: %v", err)
 	}
-	cfg := buildEnergyFlowConfig(energyLiveView{}, assets, parkingLiveView{}, true)
+	cfg := buildEnergyFlowConfig(energyLiveView{}, assets, nil, nil, parkingLiveView{}, true)
 	got := []string{}
 	for _, consumer := range cfg.Consumers {
 		got = append(got, consumer.ID)

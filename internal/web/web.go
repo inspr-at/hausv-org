@@ -2518,6 +2518,8 @@ const PageTemplates = `
     .energy-icon-search .energy-ui-icon { position: absolute; left: 11px; top: 50%; width: 15px; height: 15px; color: var(--muted); transform: translateY(-50%); pointer-events: none; }
     .energy-icon-search input { width: 100%; min-height: 40px; box-sizing: border-box; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 8px 10px 8px 34px; background: #fff; font: 600 13px/1.2 var(--font-sans); }
     .energy-icon-options { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; }
+    .energy-icon-search-results[hidden], .energy-icon-presets[hidden] { display: none; }
+    .energy-icon-result-note { margin: 0; color: var(--muted); font-size: 12px; }
     .energy-icon-choice { position: relative; min-width: 0; min-height: 70px; display: grid; place-items: center; align-content: center; gap: 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 5px; color: var(--muted); background: #fff; cursor: pointer; }
     .energy-icon-choice[hidden] { display: none; }
     .energy-icon-choice:hover { border-color: #aa9d82; color: var(--ink); }
@@ -2533,20 +2535,31 @@ const PageTemplates = `
     .energy-consumer-recommendations[open] > summary { border-bottom: 1px solid var(--line); }
     .energy-consumer-recommendations[open] > summary::after { transform: rotate(90deg); }
     .energy-consumer-recommendation-fields { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; padding: 12px 13px 14px; }
+    .energy-consumer-measurements { display: grid; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px; background: #fff; }
+    .energy-consumer-measurements-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+    .energy-consumer-measurements-head > div { display: grid; gap: 3px; }
+    .energy-consumer-measurements-head strong { font-size: 14px; }
+    .energy-consumer-measurements-head small, .energy-consumer-measurement-status { color: var(--muted); font-size: 12px; }
+    .energy-consumer-measurement-status { margin: 0; }
+    .energy-consumer-measurement-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+    .energy-consumer-measurement-fields option:disabled { color: #999; }
     .energy-consumer-delete { margin-right: auto; }
     .energy-consumer-delete[hidden] { display: none; }
+    .energy-consumer-delete-confirm { display: flex; align-items: center; gap: 8px; margin-right: auto; color: #812c2d; font-size: 12px; font-weight: 800; }
+    .energy-consumer-delete-confirm[hidden] { display: none; }
     @media (max-width: 600px) {
       .dialog-head { padding: 14px; }
       .dialog-close { width: 44px; height: 44px; flex: 0 0 auto; }
       .dialog-body { padding: 16px 14px 18px; }
       .dialog-footer { padding: 12px 14px max(12px,env(safe-area-inset-bottom)); }
       .dialog-footer .button { width: 100%; min-height: 44px; }
-      .energy-consumer-primary, .energy-consumer-recommendation-fields { grid-template-columns: 1fr; }
+      .energy-consumer-primary, .energy-consumer-recommendation-fields, .energy-consumer-measurement-fields { grid-template-columns: 1fr; }
       .energy-icon-picker-head { align-items: stretch; flex-direction: column; }
       .energy-icon-search { width: 100%; }
       .energy-icon-options { grid-template-columns: repeat(3,minmax(0,1fr)); }
       .energy-consumer-dialog .dialog-footer { flex-wrap: wrap; }
       .energy-consumer-dialog .dialog-footer .energy-consumer-delete { width: auto; margin-right: auto; }
+      .energy-consumer-delete-confirm { width: 100%; flex-wrap: wrap; }
     }
     .release-dialog { width: min(920px, calc(100vw - 28px)); }
     .release-history { display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 20px; max-height: min(72vh, 720px); }
@@ -9482,7 +9495,7 @@ const PageTemplates = `
       {{if .Welcome}}<div class="message success">Ihr Hausprofil ist bereit. Der sichere Beobachtungsmodus bleibt aktiv.</div>{{end}}
       {{if .ModeChanged}}<div class="message success">Der Energiemodus wurde nachvollziehbar geändert.</div>{{end}}
       {{if .ProfileChanged}}<div class="message success">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</div>{{end}}
-      {{if eq .ConsumerNotice "1"}}<div class="message success">Der Verbraucher wurde angelegt.</div>{{else if eq .ConsumerNotice "gespeichert"}}<div class="message success">Der Verbraucher wurde gespeichert.</div>{{else if eq .ConsumerNotice "weg"}}<div class="message success">Der Verbraucher wurde entfernt.</div>{{else if eq .ConsumerNotice "name"}}<div class="message error">Bitte einen Namen angeben.</div>{{else if eq .ConsumerNotice "leistung"}}<div class="message error">Die Leistung muss eine positive kW-Zahl sein.</div>{{else if eq .ConsumerNotice "vorlage"}}<div class="message">Dieser Verbraucher gehört zum Hausprofil und kann hier nicht entfernt werden.</div>{{end}}
+      {{if eq .ConsumerNotice "1"}}<div class="message success">Der Verbraucher wurde angelegt.</div>{{else if eq .ConsumerNotice "gespeichert"}}<div class="message success">Der Verbraucher wurde gespeichert.</div>{{else if eq .ConsumerNotice "weg"}}<div class="message success">Der Verbraucher wurde entfernt.</div>{{else if eq .ConsumerNotice "name"}}<div class="message error">Bitte einen Namen angeben.</div>{{else if eq .ConsumerNotice "leistung"}}<div class="message error">Die Leistung muss eine positive kW-Zahl sein.</div>{{else if eq .ConsumerNotice "messwerte"}}<div class="message error">Die Messwert-Zuordnung konnte nicht gespeichert werden. Bitte Home Assistant und die gewählten Entities prüfen.</div>{{end}}
       <section class="energy-health">
         {{template "energyLead" .}}
 
@@ -9491,7 +9504,9 @@ const PageTemplates = `
       {{if .CanManageEnergy}}<dialog id="energy-consumer-dialog" class="dialog energy-consumer-dialog" aria-labelledby="energy-consumer-dialog-title">
         <form method="post" action="/app/energie/verbraucher">
           <input type="hidden" name="asset_id" value="">
-          <header class="dialog-head"><div class="energy-consumer-dialog-heading"><h2 id="energy-consumer-dialog-title" data-consumer-dialog-title>Verbraucher bearbeiten</h2><p data-consumer-dialog-context>Name, Priorität und Symbol direkt anpassen.</p></div><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen"><span class="energy-ui-icon energy-ui-icon-x" aria-hidden="true"></span></button></header>
+          <input type="hidden" name="measurements_present" value="1">
+          <input type="hidden" name="icon" value="plug" data-consumer-icon-value>
+          <header class="dialog-head"><div class="energy-consumer-dialog-heading"><h2 id="energy-consumer-dialog-title" data-consumer-dialog-title>Verbraucher bearbeiten</h2><p data-consumer-dialog-context>Name, Priorität, Symbol und Messwerte direkt anpassen.</p></div><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen"><span class="energy-ui-icon energy-ui-icon-x" aria-hidden="true"></span></button></header>
           <div class="dialog-body">
             <div class="energy-consumer-primary">
               <label class="energy-consumer-field"><span>Name</span><input type="text" name="name" maxlength="80" required autocomplete="off" placeholder="z. B. Sauna"></label>
@@ -9499,7 +9514,17 @@ const PageTemplates = `
             </div>
             <section class="energy-icon-picker" aria-labelledby="energy-icon-picker-title">
               <div class="energy-icon-picker-head"><div><strong id="energy-icon-picker-title">Symbol auswählen</strong><small>Symbole aus der lokal eingebundenen Lucide-Library.</small></div><label class="energy-icon-search"><span class="energy-ui-icon energy-ui-icon-search" aria-hidden="true"></span><span class="sr-only">Symbole durchsuchen</span><input type="search" data-consumer-icon-search placeholder="Symbol suchen"></label></div>
-              <div class="energy-icon-options">{{range .ConsumerIconOptions}}<label class="energy-icon-choice" data-consumer-icon-choice="{{.Label}} {{.Value}}"><input type="radio" name="icon" value="{{.Value}}"{{if eq .Value "plug"}} checked{{end}}><span class="energy-ui-icon energy-ui-icon-{{.Value}}" aria-hidden="true"></span><span>{{.Label}}</span></label>{{end}}</div>
+              <div class="energy-icon-options energy-icon-presets" data-consumer-icon-presets>{{range .ConsumerIconOptions}}<label class="energy-icon-choice" data-consumer-icon-choice="{{.Label}} {{.Value}}"><input type="radio" name="icon_choice" value="{{.Value}}"{{if eq .Value "plug"}} checked{{end}}><span class="energy-ui-icon energy-ui-icon-{{.Value}}" aria-hidden="true"></span><span>{{.Label}}</span></label>{{end}}</div>
+              <div class="energy-icon-options energy-icon-search-results" data-consumer-icon-results hidden></div>
+              <p class="energy-icon-result-note" data-consumer-icon-result-note hidden></p>
+            </section>
+            <section class="energy-consumer-measurements" aria-labelledby="energy-consumer-measurements-title">
+              <div class="energy-consumer-measurements-head"><div><strong id="energy-consumer-measurements-title">Messwerte</strong><small>Optional pro Verbraucher – Quelle ist Home Assistant und bleibt nur lesend.</small></div><span class="pill">HA</span></div>
+              <div class="energy-consumer-measurement-fields">
+                <label class="energy-consumer-field"><span>Aktuelle Leistung</span><select name="consumer_power_entity"><option value="">Nicht zugeordnet</option></select></label>
+                <label class="energy-consumer-field"><span>Energiezähler</span><select name="consumer_energy_entity"><option value="">Nicht zugeordnet</option></select></label>
+              </div>
+              <p class="energy-consumer-measurement-status" data-consumer-measurement-status>Home-Assistant-Entities werden beim Öffnen geladen.</p>
             </section>
             <details class="energy-consumer-recommendations"><summary>Technische Angaben für Empfehlungen</summary><div class="energy-consumer-recommendation-fields">
               <label class="energy-consumer-field"><span>Kategorie</span><select name="kind">{{range .ConsumerKindOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select></label>
@@ -9507,9 +9532,9 @@ const PageTemplates = `
               <label class="energy-consumer-field"><span>Flexibilität</span><select name="flexibility"><option value="unknown">noch offen</option><option value="shift">zeitlich verschiebbar</option><option value="throttle">kurz begrenzbar</option><option value="fixed">fest</option></select></label>
             </div></details>
           </div>
-          <footer class="dialog-footer"><button class="button quiet energy-consumer-delete" type="submit" formaction="/app/energie/verbraucher/entfernen" formnovalidate data-consumer-delete hidden>Verbraucher entfernen</button><button class="button" type="button" data-close-dialog>Abbrechen</button><button class="button primary" type="submit" data-consumer-submit>Änderungen speichern</button></footer>
+          <footer class="dialog-footer"><button class="button quiet energy-consumer-delete" type="button" data-consumer-delete hidden>Verbraucher löschen</button><span class="energy-consumer-delete-confirm" data-consumer-delete-confirm hidden><span>Wirklich löschen?</span><button class="button quiet" type="button" data-consumer-delete-cancel>Nein</button><button class="button" type="submit" formaction="/app/energie/verbraucher/entfernen" formnovalidate>Ja, löschen</button></span><button class="button" type="button" data-close-dialog>Abbrechen</button><button class="button primary" type="submit" data-consumer-submit>Änderungen speichern</button></footer>
         </form>
-      </dialog>{{end}}
+      </dialog><script id="energy-lucide-icon-names" type="application/json">{{.LucideIconNamesJSON}}</script>{{end}}
       <section class="energy-card energy-chart" id="energieverlauf" aria-labelledby="energy-chart-title">
         <header class="energy-chart-head"><div><h2 id="energy-chart-title">{{.Chart.Title}}</h2><p>Wann war viel los – und woher kam die Energie?</p></div><div class="energy-chart-head-actions"><small>{{.Chart.Status}}</small><div class="energy-chart-toolbar"><nav class="energy-chart-range" aria-label="Zeitraum auswählen"><a href="/app/energie?zeitraum=letzte-24h#energieverlauf"{{if not .Chart.IsToday}} aria-current="page"{{end}}>Letzte 24 h</a><a href="/app/energie?zeitraum=heute#energieverlauf"{{if .Chart.IsToday}} aria-current="page"{{end}}>Heute</a></nav>{{if .Chart.HasData}}<div class="energy-chart-size-actions"><button class="button small energy-chart-size-button" type="button" data-dialog="energy-chart-dialog" aria-haspopup="dialog" aria-controls="energy-chart-dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Vergrößern</button><button class="button small energy-chart-size-button" type="button" data-dialog="energy-chart-dialog" data-energy-fullscreen aria-haspopup="dialog" aria-controls="energy-chart-dialog" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M9 21H3v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-fullscreen-label>Vollbild</span></button></div>{{end}}</div></div></header>
         {{if .Chart.HasData}}<div class="energy-chart-layout">

@@ -12,8 +12,8 @@ func TestEnergyConsumerCardsUseLocalLucideIconsHAUSV446(t *testing.T) {
 	}
 	script := string(scriptBytes)
 	for _, want := range []string{
-		`"solar-panel", "battery", "utility-pole", "house"`,
-		`"car-front"`, `"plug-zap"`, `"grip-vertical"`, `"pencil"`,
+		`energy-lucide-icon-names`, `LUCIDE_ICON_NAMES`, `ICON_NAMES`,
+		`/assets/icons/lucide/`, `grip-vertical`, `pencil`,
 		`energy-ui-icon-`, `openConsumerDialog(c`, `Klicken zum Bearbeiten`,
 	} {
 		if !strings.Contains(script, want) {
@@ -23,6 +23,18 @@ func TestEnergyConsumerCardsUseLocalLucideIconsHAUSV446(t *testing.T) {
 	for _, obsolete := range []string{`var ICONS =`, `ICONS.grip`, `location.hash = "anlagen"`, `className = "tile-actions"`} {
 		if strings.Contains(script, obsolete) {
 			t.Errorf("alte Inline-SVG-/Sprungnavigation ist noch vorhanden: %q", obsolete)
+		}
+	}
+}
+
+func TestCompleteConsumerLucideLibraryIsVendoredHAUSV446(t *testing.T) {
+	names := LucideIconNames()
+	if len(names) < 2000 {
+		t.Fatalf("vollständige Lucide-Library erwartet, nur %d Symbole gefunden", len(names))
+	}
+	for _, name := range []string{"alarm-clock", "badge-euro", "car-front", "plug-zap", "washing-machine"} {
+		if !IsLucideIcon(name) {
+			t.Errorf("Lucide-Symbol %q fehlt im vollständigen Katalog", name)
 		}
 	}
 }

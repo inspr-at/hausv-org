@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.73.0",
+			Date:     "12. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Verbraucher erhalten eigene Messwerte und die ganze Lucide-Auswahl.",
+			Intro:    "Aktuelle Leistung und Energiezähler lassen sich direkt aus Home Assistant zuordnen; jedes lokal ausgelieferte Lucide-Symbol ist auffindbar und Verbraucher können bewusst entfernt werden.",
+			Items: []NoteItem{
+				{Label: "Eigene Messwerte", Text: "Leistung und Energiezähler bleiben pro Verbraucher nachvollziehbar vom gesamten Hausverbrauch getrennt."},
+				{Label: "Alle Lucide-Symbole", Text: "Die schnellen Vorschläge bleiben erhalten; die Suche umfasst zusätzlich den vollständigen lokalen Katalog."},
+				{Label: "Sicher entfernen", Text: "Jeder Verbraucher lässt sich nach einer zweiten Bestätigung löschen, ohne die Home-Assistant-Entity zu verändern."},
+			},
+		},
+		{
 			Version:  "0.72.0",
 			Date:     "12. August 2026",
 			Kind:     "Energie-Cockpit",

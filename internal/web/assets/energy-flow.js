@@ -21,15 +21,14 @@
 
   var ORDER_ENDPOINT = "/app/energie/verbraucher/reihenfolge";
 
-  // Only names from the locally vendored Lucide library are accepted here.
-  // Configuration data can therefore select an icon, but never inject markup
-  // or point the browser at a remote resource.
-  var ICON_NAMES = [
-    "solar-panel", "battery", "utility-pole", "house", "car-front",
-    "plug-zap", "heater", "fan", "washing-machine", "flame", "drill",
-    "waves-ladder", "square-parking", "snowflake", "shower-head", "plug",
-    "plus", "grip-vertical", "pencil"
-  ].reduce(function (names, name) { names[name] = true; return names; }, {});
+  // The server emits the names of every SVG in the pinned, locally vendored
+  // Lucide package. Both the picker and flow renderer use that exact whitelist;
+  // configuration can therefore never inject markup or a remote URL.
+  var iconManifestNode = document.getElementById("energy-lucide-icon-names");
+  var LUCIDE_ICON_NAMES = [];
+  try { LUCIDE_ICON_NAMES = JSON.parse(iconManifestNode ? iconManifestNode.textContent : "[]"); } catch (err) { LUCIDE_ICON_NAMES = []; }
+  LUCIDE_ICON_NAMES = LUCIDE_ICON_NAMES.filter(function (name) { return /^[a-z0-9-]+$/.test(name); });
+  var ICON_NAMES = LUCIDE_ICON_NAMES.reduce(function (names, name) { names[name] = true; return names; }, {});
   var HUB = "#a24b42", BATT = "#7893a1", GRID = "#b8891f", LOAD = "#3e704c", PV = "#4f7d49";
 
   function el(tag, className, parent) {
@@ -42,6 +41,9 @@
   function glyph(name, className, parent) {
     var safeName = ICON_NAMES[name] ? name : "plug";
     var node = el("span", "energy-ui-icon energy-ui-icon-" + safeName + (className ? " " + className : ""), parent);
+    var localURL = 'url("/assets/icons/lucide/' + safeName + '.svg")';
+    node.style.webkitMaskImage = localURL;
+    node.style.maskImage = localURL;
     node.setAttribute("aria-hidden", "true");
     return node;
   }
@@ -136,12 +138,129 @@
 
   var consumerDialog = document.getElementById("energy-consumer-dialog");
   var consumerIconSearch = consumerDialog && consumerDialog.querySelector("[data-consumer-icon-search]");
+  var consumerIconValue = consumerDialog && consumerDialog.querySelector("[data-consumer-icon-value]");
+  var consumerIconPresets = consumerDialog && consumerDialog.querySelector("[data-consumer-icon-presets]");
+  var consumerIconResults = consumerDialog && consumerDialog.querySelector("[data-consumer-icon-results]");
+  var consumerIconResultNote = consumerDialog && consumerDialog.querySelector("[data-consumer-icon-result-note]");
+  function chooseConsumerIcon(name) {
+    var safeName = ICON_NAMES[name] ? name : "plug";
+    if (consumerIconValue) consumerIconValue.value = safeName;
+    [].forEach.call(consumerDialog.querySelectorAll('[name="icon_choice"]'), function (radio) {
+      radio.checked = radio.value === safeName;
+    });
+  }
+  function consumerIconChoice(name, label) {
+    var choice = el("label", "energy-icon-choice", consumerIconResults);
+    choice.dataset.consumerIconChoice = label + " " + name;
+    var radio = el("input", "", choice);
+    radio.type = "radio";
+    radio.name = "icon_choice";
+    radio.value = name;
+    radio.checked = Boolean(consumerIconValue && consumerIconValue.value === name);
+    radio.addEventListener("change", function () { if (radio.checked) chooseConsumerIcon(name); });
+    glyph(name, "", choice);
+    el("span", "", choice).textContent = label;
+  }
+  if (consumerDialog) {
+    consumerDialog.addEventListener("change", function (event) {
+      if (event.target && event.target.name === "icon_choice" && event.target.checked) chooseConsumerIcon(event.target.value);
+    });
+  }
   if (consumerIconSearch) {
     consumerIconSearch.addEventListener("input", function () {
       var query = consumerIconSearch.value.trim().toLocaleLowerCase("de");
-      [].forEach.call(consumerDialog.querySelectorAll("[data-consumer-icon-choice]"), function (choice) {
-        choice.hidden = Boolean(query && choice.dataset.consumerIconChoice.toLocaleLowerCase("de").indexOf(query) === -1);
+      if (!query) {
+        consumerIconPresets.hidden = false;
+        consumerIconResults.hidden = true;
+        consumerIconResults.replaceChildren();
+        consumerIconResultNote.hidden = true;
+        return;
+      }
+      var presetMatches = [];
+      [].forEach.call(consumerIconPresets.querySelectorAll("[data-consumer-icon-choice]"), function (choice) {
+        if (choice.dataset.consumerIconChoice.toLocaleLowerCase("de").indexOf(query) !== -1) {
+          var radio = choice.querySelector("input");
+          presetMatches.push({ name: radio.value, label: choice.querySelector("span:last-child").textContent });
+        }
       });
+      var seen = {};
+      var matches = [];
+      presetMatches.concat(LUCIDE_ICON_NAMES.filter(function (name) { return name.indexOf(query) !== -1; }).map(function (name) {
+        return { name: name, label: name };
+      })).forEach(function (item) {
+        if (!seen[item.name]) { seen[item.name] = true; matches.push(item); }
+      });
+      consumerIconResults.replaceChildren();
+      matches.slice(0, 100).forEach(function (item) { consumerIconChoice(item.name, item.label); });
+      consumerIconPresets.hidden = true;
+      consumerIconResults.hidden = false;
+      consumerIconResultNote.hidden = false;
+      consumerIconResultNote.textContent = matches.length > 100
+        ? matches.length + " Treffer · die ersten 100 werden gezeigt, bitte Suche verfeinern."
+        : matches.length + (matches.length === 1 ? " Symbol gefunden." : " Symbole gefunden.");
+    });
+  }
+
+  var measurementRequest = null;
+  function measurementSelect(kind) {
+    return consumerDialog && consumerDialog.querySelector('[name="consumer_' + kind + '_entity"]');
+  }
+  function seedMeasurementSelect(kind, current) {
+    var select = measurementSelect(kind);
+    if (!select) return;
+    select.replaceChildren();
+    var empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = "Nicht zugeordnet";
+    select.appendChild(empty);
+    if (current) {
+      var existing = document.createElement("option");
+      existing.value = current;
+      existing.textContent = current + " · bisher zugeordnet";
+      select.appendChild(existing);
+      select.value = current;
+    }
+  }
+  function populateMeasurementSelect(kind, current, assetID, entities) {
+    var select = measurementSelect(kind);
+    if (!select) return;
+    seedMeasurementSelect(kind, "");
+    entities.filter(function (entity) { return entity.kind === kind; }).forEach(function (entity) {
+      var option = document.createElement("option");
+      option.value = entity.entityId;
+      option.textContent = entity.name + (entity.unit ? " · " + entity.unit : "") + " · " + entity.entityId;
+      var assignedElsewhere = Boolean(entity.assignedAssetName && (!entity.assignedAssetId || entity.assignedAssetId !== assetID));
+      if (assignedElsewhere) {
+        option.disabled = true;
+        option.textContent += " · verwendet für " + entity.assignedAssetName;
+      }
+      select.appendChild(option);
+    });
+    if (current && ![].some.call(select.options, function (option) { return option.value === current; })) {
+      var retained = document.createElement("option");
+      retained.value = current;
+      retained.textContent = current + " · bisher zugeordnet";
+      select.appendChild(retained);
+    }
+    select.value = current || "";
+  }
+  function loadConsumerMeasurements(item) {
+    var status = consumerDialog.querySelector("[data-consumer-measurement-status]");
+    seedMeasurementSelect("power", item.powerEntity || "");
+    seedMeasurementSelect("energy", item.energyEntity || "");
+    if (status) status.textContent = "Home-Assistant-Entities werden geladen …";
+    if (!measurementRequest) {
+      measurementRequest = fetch("/app/energie/verbraucher/messwerte", { credentials: "same-origin" }).then(function (response) {
+        if (!response.ok || response.redirected) throw new Error("measurement options unavailable");
+        return response.json();
+      });
+    }
+    measurementRequest.then(function (payload) {
+      populateMeasurementSelect("power", item.powerEntity || "", item.id || "", payload.entities || []);
+      populateMeasurementSelect("energy", item.energyEntity || "", item.id || "", payload.entities || []);
+      if (status) status.textContent = payload.message || "Home Assistant · nur gelesen";
+    }).catch(function () {
+      if (status) status.textContent = "Home Assistant ist gerade nicht erreichbar. Bestehende Zuordnungen bleiben erhalten.";
     });
   }
 
@@ -174,38 +293,50 @@
     }
 
     var wantedIcon = ICON_NAMES[item.icon] ? item.icon : "plug";
-    var iconFound = false;
-    [].forEach.call(consumerDialog.querySelectorAll('[name="icon"]'), function (radio) {
-      radio.checked = radio.value === wantedIcon;
-      if (radio.checked) iconFound = true;
-    });
-    if (!iconFound) {
-      var fallback = consumerDialog.querySelector('[name="icon"][value="plug"]');
-      if (fallback) fallback.checked = true;
-    }
+    chooseConsumerIcon(wantedIcon);
 
     var title = consumerDialog.querySelector("[data-consumer-dialog-title]");
     var context = consumerDialog.querySelector("[data-consumer-dialog-context]");
     var submit = consumerDialog.querySelector("[data-consumer-submit]");
     if (title) title.textContent = item.id ? "Verbraucher bearbeiten" : "Verbraucher hinzufügen";
-    if (context) context.textContent = item.id ? "Name, Priorität und Symbol direkt anpassen." : "Neuen Verbraucher im Energiefluss anlegen.";
+    if (context) context.textContent = item.id ? "Name, Priorität, Symbol und Messwerte direkt anpassen." : "Neuen Verbraucher mit optionalen Messwerten anlegen.";
     if (submit) submit.textContent = item.id ? "Änderungen speichern" : "Verbraucher hinzufügen";
 
     var remove = consumerDialog.querySelector("[data-consumer-delete]");
+    var removeConfirm = consumerDialog.querySelector("[data-consumer-delete-confirm]");
     if (remove) {
-      remove.hidden = !(item.id && item.custom);
+      remove.hidden = !item.id;
       remove.disabled = remove.hidden;
     }
+    if (removeConfirm) removeConfirm.hidden = true;
     if (consumerIconSearch) {
       consumerIconSearch.value = "";
       consumerIconSearch.dispatchEvent(new Event("input"));
     }
+    loadConsumerMeasurements(item);
     consumerDialog._returnFocus = trigger || null;
     if (!consumerDialog.open) consumerDialog.showModal();
     window.setTimeout(function () {
       var nameField = consumerDialog.querySelector('[name="name"]');
       if (nameField) nameField.focus();
     }, 0);
+  }
+
+  if (consumerDialog) {
+    var removeButton = consumerDialog.querySelector("[data-consumer-delete]");
+    var removeConfirm = consumerDialog.querySelector("[data-consumer-delete-confirm]");
+    var removeCancel = consumerDialog.querySelector("[data-consumer-delete-cancel]");
+    if (removeButton && removeConfirm) removeButton.addEventListener("click", function () {
+      removeButton.hidden = true;
+      removeConfirm.hidden = false;
+      var confirmButton = removeConfirm.querySelector('button[type="submit"]');
+      if (confirmButton) confirmButton.focus();
+    });
+    if (removeCancel && removeButton && removeConfirm) removeCancel.addEventListener("click", function () {
+      removeConfirm.hidden = true;
+      removeButton.hidden = false;
+      removeButton.focus();
+    });
   }
 
   function render(wrap) {

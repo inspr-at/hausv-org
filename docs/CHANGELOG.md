@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.73.0] - 2026-08-12
+
+### Neu
+
+- **Verbraucher zeigen ihre eigenen Messwerte.** Im Bearbeitungsdialog lassen sich eine aktuelle Leistung und ein Energiezähler aus Home Assistant zuordnen; die Quelle bleibt ausschließlich lesend und klar vom gesamten Hausverbrauch getrennt.
+- **Die vollständige Lucide-Bibliothek ist durchsuchbar.** Die bewährten Vorschläge bleiben direkt sichtbar, zusätzlich findet die Suche jedes lokal ausgelieferte Lucide-Symbol.
+
+### Verbessert
+
+- **Jeder Verbraucher kann bewusst entfernt werden.** Eine zweistufige Bestätigung verhindert versehentliches Löschen; die Home-Assistant-Entity selbst bleibt unverändert.
+- **Schnellere Freigaberunden.** Ein fokussierter QA-Modus prüft betroffene Energie-Dialoge auf Desktop und Mobil, ohne für jede dringende Korrektur die gesamte Portalmatrix abzuwarten.
+
 ## [0.72.0] - 2026-08-12
 
 ### Neu
