@@ -1206,7 +1206,7 @@ func energyComparisonForView(intervals []energy.Interval, at time.Time) (energyC
 			Tone:  "warning",
 			Title: "Messquellen weichen sichtbar ab",
 			Details: "Home Assistant liegt bei der Monatsspitze um " +
-				formatEnergyNumber(comparison.DeltaPercent) + " % neben der Smart-Meter-Referenz. Zähler, Einheit und Vorzeichen prüfen.",
+				formatEnergyValueUnit(formatEnergyNumber(comparison.DeltaPercent), "%") + " neben der Smart-Meter-Referenz. Zähler, Einheit und Vorzeichen prüfen.",
 		}, true
 	}
 	return energyComparisonView{
@@ -1342,7 +1342,7 @@ func buildEnergyTariffAssessmentViews(items []energy.TariffAssessment) []energyT
 		}
 		out = append(out, energyTariffAssessmentView{
 			ID: item.ID, Month: month, Profile: item.ProfileID + " · " + item.ProfileVersion,
-			Peak: formatEnergyNumber(item.PeakKW) + " kW", Annual: formatEnergyNumber(item.AnnualPowerEUR) + " € Modellwert/Jahr",
+			Peak: formatEnergyValueUnit(formatEnergyNumber(item.PeakKW), "kW"), Annual: formatEnergyValueUnit(formatEnergyNumber(item.AnnualPowerEUR), "€") + " Modellwert/Jahr",
 			Quality: energyQualityLabel(item.DataQuality), Created: item.CreatedAt.In(time.Local).Format("02.01.2006 15:04"),
 			SourceURL: item.SourceURL, ProfileStatus: item.ProfileStatus,
 		})
@@ -1371,8 +1371,8 @@ func buildEnergyMeasureViews(items []energy.Measure, contacts map[string]string)
 		view.AfterFrom = energyDateValue(item.AfterFrom)
 		view.AfterTo = energyDateValue(item.AfterTo)
 		if item.BeforePeakKW != nil && item.AfterPeakKW != nil {
-			view.BeforePeak = formatEnergyNumber(*item.BeforePeakKW) + " kW"
-			view.AfterPeak = formatEnergyNumber(*item.AfterPeakKW) + " kW"
+			view.BeforePeak = formatEnergyValueUnit(formatEnergyNumber(*item.BeforePeakKW), "kW")
+			view.AfterPeak = formatEnergyValueUnit(formatEnergyNumber(*item.AfterPeakKW), "kW")
 			view.HasComparison = true
 		}
 		out = append(out, view)
@@ -4095,7 +4095,7 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 			watts := math.Abs(energyPowerWatts(&reading))
 			kw = watts / 1000
 			active = watts >= 50
-			state = formatEnergyFlowKW(watts) + " kW · Home Assistant"
+			state = formatEnergyValueUnit(formatEnergyFlowKW(watts), "kW") + " · Home Assistant"
 		} else if reading, ok := consumerEnergy[asset.ID]; ok {
 			state = reading.Value + " · Home Assistant"
 		}
@@ -4119,10 +4119,10 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 			if reading, ok := consumerPower[parkingAsset.ID]; ok {
 				watts := math.Abs(energyPowerWatts(&reading))
 				kw = watts / 1000
-				state = formatEnergyFlowKW(watts) + " kW · Home Assistant"
+				state = formatEnergyValueUnit(formatEnergyFlowKW(watts), "kW") + " · Home Assistant"
 			} else if (charging.Mode == "surplus" || charging.Mode == "manual") && charging.PowerKW > 0.05 {
 				kw = charging.PowerKW
-				state = charging.ModeLabel + " mit " + formatEnergyFlowKW(kw*1000) + " kW"
+				state = charging.ModeLabel + " mit " + formatEnergyValueUnit(formatEnergyFlowKW(kw*1000), "kW")
 			}
 			cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
 				ID: parkingAsset.ID, Icon: energyConsumerIcon(parkingAsset), Title: parkingAsset.Name,
@@ -4188,7 +4188,7 @@ func applyEnergyFlowHovers(cfg *energyFlowConfig, live energyLiveView) {
 			}
 		}
 	}
-	k := func(watts float64) string { return formatEnergyFlowKW(watts) + " kW" }
+	k := func(watts float64) string { return formatEnergyValueUnit(formatEnergyFlowKW(watts), "kW") }
 	terms := []string{}
 	if pvW > 0 {
 		terms = append(terms, "PV "+k(pvW))
@@ -4296,7 +4296,7 @@ func combineBatteryMetrics(metrics []energyMetricView, selected map[int]bool) (e
 			item.Detail = "lädt"
 			item.Direction = "charging"
 		} else {
-			item.Value = "0 W"
+			item.Value = formatEnergyValueUnit("0", "W")
 			item.Detail = "in Ruhe"
 			item.Direction = "idle"
 		}
@@ -4323,7 +4323,7 @@ func combineBatteryMetrics(metrics []energyMetricView, selected map[int]bool) (e
 			generic.Detail = "liefert Energie"
 			generic.Direction = "discharging"
 		default:
-			generic.Value = "0 W"
+			generic.Value = formatEnergyValueUnit("0", "W")
 			generic.Detail = "in Ruhe"
 			generic.Direction = "idle"
 		}
@@ -4418,7 +4418,7 @@ func (a *app) energy24HourChart(ctx context.Context, tenant tenantConfig, mappin
 		threshold = *profile.TargetPeakKW
 		view.ThresholdLabel = "Persönliches Ziel"
 	}
-	view.ThresholdValue = formatEnergyCompact(threshold, 1) + " kW"
+	view.ThresholdValue = formatEnergyValueUnit(formatEnergyCompact(threshold, 1), "kW")
 	location := time.Local
 	if vienna, err := time.LoadLocation("Europe/Vienna"); err == nil {
 		location = vienna
@@ -4777,7 +4777,7 @@ func energyChartValuePosition(value, minValue, maxValue float64) float64 {
 func latestEnergyChartValue(values []float64, present []bool) string {
 	for index := len(values) - 1; index >= 0; index-- {
 		if index < len(present) && present[index] {
-			return formatEnergyCompact(values[index], 2) + " kW"
+			return formatEnergyValueUnit(formatEnergyCompact(values[index], 2), "kW")
 		}
 	}
 	return ""
@@ -4842,7 +4842,7 @@ func energyChartValueTicks(limit float64) []energyChartTickView {
 		out = append(out, energyChartTickView{
 			Position:       formatEnergySVGNumber(y),
 			MobilePosition: formatEnergySVGNumber(y),
-			Label:          formatEnergyCompact(value, 0) + " kW",
+			Label:          formatEnergyValueUnit(formatEnergyCompact(value, 0), "kW"),
 		})
 	}
 	return out
@@ -4914,7 +4914,7 @@ func energyChartSamples(start, end time.Time, location *time.Location, data []en
 			sample.Values = append(sample.Values, energyChartSampleValueView{
 				Key:            series.Key,
 				Label:          label,
-				Value:          formatEnergyCompact(displayValue, 2) + " kW",
+				Value:          formatEnergyValueUnit(formatEnergyCompact(displayValue, 2), "kW"),
 				Position:       formatEnergySVGNumber(energyChartValuePosition(value, minValue, maxValue)),
 				MobilePosition: formatEnergySVGNumber(energyChartValuePosition(value, minValue, maxValue)),
 			})
@@ -4947,7 +4947,7 @@ func energyChartSummary(start, end time.Time, load []float64, loadPresent []bool
 		step = end.Sub(start) / time.Duration(len(load)-1)
 	}
 	at := start.Add(time.Duration(peakIndex) * step).In(location)
-	summary := "Die höchste Last lag um " + at.Format("15:04") + " Uhr bei " + formatEnergyCompact(peak, 2) + " kW."
+	summary := "Die höchste Last lag um " + at.Format("15:04") + " Uhr bei " + formatEnergyValueUnit(formatEnergyCompact(peak, 2), "kW") + "."
 	valueAt := func(values []float64, present []bool) float64 {
 		if peakIndex < len(values) && peakIndex < len(present) && present[peakIndex] {
 			return values[peakIndex]
@@ -5189,7 +5189,7 @@ func energyPeakViews(intervals []energy.Interval, at time.Time) []energyPeakView
 		}
 		out = append(out, energyPeakView{
 			Source: label,
-			Value:  formatEnergyNumber(energy.PeakForMonth(bySource[source], at, time.Local)) + " kW",
+			Value:  formatEnergyValueUnit(formatEnergyNumber(energy.PeakForMonth(bySource[source], at, time.Local)), "kW"),
 		})
 	}
 	return out
@@ -5240,9 +5240,9 @@ func buildEnergyTariffView(profile energy.HomeProfile, intervals []energy.Interv
 		Disclaimer:  "Keine Tarif- oder Einspargarantie. Neue Verordnungsversionen können ausgetauscht werden, ohne Messdaten zu verändern.",
 		MonthLabel:  energyMonthLabel(now),
 
-		BelowRateEUR: formatEnergyCompact(rules.AnnualBelowEURPerKW, 2) + " €",
-		AboveRateEUR: formatEnergyCompact(rules.AnnualAboveEURPerKW, 2) + " €",
-		ThresholdKW:  formatEnergyCompact(rules.TierThresholdKW, 0) + " kW",
+		BelowRateEUR: formatEnergyValueUnit(formatEnergyCompact(rules.AnnualBelowEURPerKW, 2), "€"),
+		AboveRateEUR: formatEnergyValueUnit(formatEnergyCompact(rules.AnnualAboveEURPerKW, 2), "€"),
+		ThresholdKW:  formatEnergyValueUnit(formatEnergyCompact(rules.TierThresholdKW, 0), "kW"),
 	}
 	peak := energy.PeakForMonth(intervals, now, time.Local)
 	if peak <= 0 {
@@ -5255,7 +5255,7 @@ func buildEnergyTariffView(profile energy.HomeProfile, intervals []energy.Interv
 		return view
 	}
 	estimate := rules.Estimate(peak, agreedPowerKW(profile))
-	view.AnnualPowerEUR = formatEnergyNumber(estimate.AnnualPowerEUR) + " €"
+	view.AnnualPowerEUR = formatEnergyValueUnit(formatEnergyNumber(estimate.AnnualPowerEUR), "€")
 	view.HasEstimate = true
 	coverage := buildEnergyTariffCoverageView(intervals, now)
 	view.CoverageLabel = coverage.Label
@@ -5264,21 +5264,21 @@ func buildEnergyTariffView(profile energy.HomeProfile, intervals []energy.Interv
 		view.PeakTime = at.In(time.Local).Format("02.01. um 15:04")
 		view.HasPeakTime = true
 	}
-	view.PeakKW = formatEnergyCompact(peak, 1) + " kW"
-	view.BilledKW = formatEnergyCompact(estimate.BilledKW, 1) + " kW"
+	view.PeakKW = formatEnergyValueUnit(formatEnergyCompact(peak, 1), "kW")
+	view.BilledKW = formatEnergyValueUnit(formatEnergyCompact(estimate.BilledKW, 1), "kW")
 	if estimate.BilledKW > 0 {
 		view.PeakMeterPercent = int(math.Round(math.Max(0, math.Min(1, peak/estimate.BilledKW)) * 100))
 	}
 	view.MinimumReason = estimate.MinimumReason
 	if estimate.AboveKW > 0 {
 		view.HasTier = true
-		view.BelowKW = formatEnergyCompact(estimate.BelowKW, 1) + " kW"
-		view.AboveKW = formatEnergyCompact(estimate.AboveKW, 1) + " kW"
-		view.TierHint = "Der Anteil über " + formatEnergyCompact(rules.TierThresholdKW, 0) + " kW wird im Entwurf mit dem höheren Satz bemessen. Dort wirkt Kappen etwa doppelt so stark."
+		view.BelowKW = formatEnergyValueUnit(formatEnergyCompact(estimate.BelowKW, 1), "kW")
+		view.AboveKW = formatEnergyValueUnit(formatEnergyCompact(estimate.AboveKW, 1), "kW")
+		view.TierHint = "Der Anteil über " + formatEnergyValueUnit(formatEnergyCompact(rules.TierThresholdKW, 0), "kW") + " wird im Entwurf mit dem höheren Satz bemessen. Dort wirkt Kappen etwa doppelt so stark."
 	}
 	if agreed := agreedPowerKW(profile); agreed > 0 {
 		view.HasAgreed = true
-		view.AgreedKW = formatEnergyCompact(agreed, 1) + " kW"
+		view.AgreedKW = formatEnergyValueUnit(formatEnergyCompact(agreed, 1), "kW")
 	} else {
 		view.AgreedHint = "Ohne vereinbarte Anschlussleistung rechnet die Schätzung nur mit dem 2-kW-Sockel. Der Wert steht auf Ihrer Netzrechnung."
 	}
@@ -5563,9 +5563,9 @@ func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset,
 	view := energyScenarioView{
 		Title: result.Name,
 		BaselineNote: "Ausgangswert: die gemessene Monatsspitze von " +
-			formatEnergyCompact(baseline, 1) + " kW im " + energyMonthLabel(time.Now()) + ".",
-		PeakBand:    formatEnergyNumber(result.ExpectedPeakLowKW) + "–" + formatEnergyNumber(result.ExpectedPeakHighKW) + " kW",
-		EffectBand:  formatEnergyNumber(result.PeakEffectLowKW) + "–" + formatEnergyNumber(result.PeakEffectHighKW) + " kW mögliche Peak-Wirkung",
+			formatEnergyValueUnit(formatEnergyCompact(baseline, 1), "kW") + " im " + energyMonthLabel(time.Now()) + ".",
+		PeakBand:    formatEnergyValueUnit(formatEnergyNumber(result.ExpectedPeakLowKW)+"–"+formatEnergyNumber(result.ExpectedPeakHighKW), "kW"),
+		EffectBand:  formatEnergyValueUnit(formatEnergyNumber(result.PeakEffectLowKW)+"–"+formatEnergyNumber(result.PeakEffectHighKW), "kW") + " mögliche Peak-Wirkung",
 		Uncertainty: result.Uncertainty,
 		Assumptions: strings.Join(assumptions, " · "),
 	}
@@ -5578,14 +5578,14 @@ func buildEnergyScenarioViews(profile energy.HomeProfile, assets []energy.Asset,
 	// Nur zeigen, wenn die Mindestbemessung das Band tatsächlich anhebt. Sonst
 	// stünde zweimal dieselbe Zahl da und die Aussage ginge im Rauschen unter.
 	if billedLow > result.ExpectedPeakLowKW+0.05 || billedHigh > result.ExpectedPeakHighKW+0.05 {
-		view.BilledBand = formatEnergyCompact(billedLow, 1) + "–" + formatEnergyCompact(billedHigh, 1) + " kW"
+		view.BilledBand = formatEnergyValueUnit(formatEnergyCompact(billedLow, 1)+"–"+formatEnergyCompact(billedHigh, 1), "kW")
 		if billedLow == billedHigh {
-			view.BilledBand = formatEnergyCompact(billedLow, 1) + " kW"
+			view.BilledBand = formatEnergyValueUnit(formatEnergyCompact(billedLow, 1), "kW")
 		}
 		view.HasBilledBand = true
 	}
 	if floor := rules.Estimate(0, agreed).BilledKW; result.ExpectedPeakLowKW < floor {
-		view.FloorNote = "Unter " + formatEnergyCompact(floor, 1) + " kW sinkt der verrechnete Betrag nicht weiter: so weit reicht die Mindestbemessung. Weiteres Kappen senkt die Spitze, nicht die Rechnung."
+		view.FloorNote = "Unter " + formatEnergyValueUnit(formatEnergyCompact(floor, 1), "kW") + " sinkt der verrechnete Betrag nicht weiter: so weit reicht die Mindestbemessung. Weiteres Kappen senkt die Spitze, nicht die Rechnung."
 	}
 	return []energyScenarioView{view}
 }
@@ -5655,22 +5655,30 @@ func formatEnergyNumber(value float64) string {
 	return strings.ReplaceAll(strconv.FormatFloat(value, 'f', precision, 64), ".", ",")
 }
 
+func formatEnergyValueUnit(value, unit string) string {
+	unit = strings.TrimSpace(unit)
+	if unit == "" {
+		return value
+	}
+	return value + "\u00a0" + unit
+}
+
 func formatEnergyReading(value float64, unit string) string {
 	normalized := strings.ToLower(strings.TrimSpace(unit))
 	switch normalized {
 	case "w":
 		if value >= 1000 || value <= -1000 {
-			return formatEnergyCompact(value/1000, 2) + " kW"
+			return formatEnergyValueUnit(formatEnergyCompact(value/1000, 2), "kW")
 		}
-		return formatEnergyCompact(value, 0) + " W"
+		return formatEnergyValueUnit(formatEnergyCompact(value, 0), "W")
 	case "kw":
-		return formatEnergyCompact(value, 2) + " kW"
+		return formatEnergyValueUnit(formatEnergyCompact(value, 2), "kW")
 	case "%":
-		return formatEnergyCompact(value, 1) + " %"
+		return formatEnergyValueUnit(formatEnergyCompact(value, 1), "%")
 	case "kwh":
-		return formatEnergyCompact(value, 1) + " kWh"
+		return formatEnergyValueUnit(formatEnergyCompact(value, 1), "kWh")
 	case "mwh":
-		return formatEnergyCompact(value, 2) + " MWh"
+		return formatEnergyValueUnit(formatEnergyCompact(value, 2), "MWh")
 	default:
 		return formatEnergyNumber(value) + energyUnitSuffix(unit)
 	}
@@ -5689,7 +5697,7 @@ func energyUnitSuffix(unit string) string {
 	if unit == "" {
 		return ""
 	}
-	return " " + unit
+	return "\u00a0" + unit
 }
 
 func haAttribute(attributes map[string]any, key string) string {

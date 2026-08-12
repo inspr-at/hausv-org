@@ -2006,11 +2006,11 @@ async function assertEnergySafetyAndFlow(viewport) {
   const visibleChart = chart.locator('svg.energy-chart-svg:visible');
   if (!(await visibleChart.locator('path.energy-chart-area.load').count()) ||
       !(await visibleChart.locator('line.energy-chart-threshold').count()) ||
-      !(await chart.getByText('Planungsgrenze 10 kW', { exact: false }).count())) {
+      !(await chart.getByText('Planungsgrenze 10\u00a0kW', { exact: false }).count())) {
     fail(`Energie ${viewport.name}: Verbrauchsfläche oder konfigurierbare 10-kW-Planungsgrenze fehlt`);
   }
   const scaleLabels = await visibleChart.locator('text.energy-chart-axis-label').allTextContents();
-  if (!scaleLabels.includes('15 kW') || !scaleLabels.includes('-15 kW')) {
+  if (!scaleLabels.includes('15\u00a0kW') || !scaleLabels.includes('-15\u00a0kW')) {
     fail(`Energie ${viewport.name}: symmetrische ±15-kW-Skala mit Headroom fehlt (${scaleLabels.join(', ')})`);
   }
   const loadStyle = await visibleChart.locator('path.energy-chart-line.load').evaluate((node) => getComputedStyle(node).stroke);

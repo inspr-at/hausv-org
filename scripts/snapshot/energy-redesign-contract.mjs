@@ -107,12 +107,16 @@ export async function assertEnergyTopContent(page, label) {
     }
   }
 
-  // Ribbons: one filled polygon per active flow, gradient-filled. The
-  // deterministic fixture always has PV production plus a grid flow.
-  const ribbons = await diagram.locator('svg.energy-flow-ribbons path').evaluateAll((paths) =>
-    paths.map((path) => path.getAttribute('fill') || ''));
-  if (ribbons.length < 2 || ribbons.some((fill) => !fill.startsWith('url('))) {
-    fail(label, 'Energiefluss-Ribbons fehlen oder sind nicht als Verlaufs-Linienzüge gefüllt', ribbons);
+  // Every active flow has a translucent width-coded band, a coloured core,
+  // and a compact chevron for direction. The deterministic fixture always
+  // has PV production plus a grid flow.
+  const ribbons = await diagram.locator('svg.energy-flow-ribbons .energy-flow-band').evaluateAll((paths) =>
+    paths.map((path) => ({ stroke: path.getAttribute('stroke') || '', width: Number(path.getAttribute('stroke-width')) })));
+  const cores = await diagram.locator('svg.energy-flow-ribbons .energy-flow-core').count();
+  const chevrons = await diagram.locator('svg.energy-flow-ribbons .energy-flow-chevron').count();
+  if (ribbons.length < 2 || ribbons.some(({ stroke, width }) => !stroke.startsWith('url(') || width <= 0) ||
+      cores !== ribbons.length || chevrons !== ribbons.length) {
+    fail(label, 'Energiefluss-Bahnen verlieren Breite, Farbe oder Richtung', { ribbons, cores, chevrons });
   }
   const railTiles = await diagram.locator('.energy-flow-rail .energy-flow-big:not(.ghost)').count();
   const railGhost = await diagram.locator('.energy-flow-rail .energy-flow-big.ghost').count();
