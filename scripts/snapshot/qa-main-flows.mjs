@@ -2290,12 +2290,16 @@ async function assertEnergySafetyAndFlow(viewport) {
     }
     await closeContext(helperContext);
 
-    const measureControl = page.locator('details.energy-measure-control');
+    const recommendationDialog = page.locator('#energy-recommendation-dialog');
+    await page.locator('[data-dialog="energy-recommendation-dialog"]').click();
+    await recommendationDialog.waitFor({ state: 'visible' });
+    const measureControl = recommendationDialog.locator('details.energy-measure-control');
     await measureControl.locator('summary').click();
     const measureBox = await measureControl.locator('.energy-measure-form').boundingBox();
-    const roadmapBox = await page.locator('#fahrplan').boundingBox();
-    if (!measureBox || !roadmapBox || measureBox.y + measureBox.height > roadmapBox.y + 1) {
-      fail('Energie Desktop: geöffnetes Hausaufgaben-Formular überlagert den Fahrplan');
+    const dialogBox = await recommendationDialog.boundingBox();
+    if (!measureBox || !dialogBox || measureBox.x < dialogBox.x - 1 ||
+        measureBox.x + measureBox.width > dialogBox.x + dialogBox.width + 1) {
+      fail('Energie Desktop: Hausaufgaben-Formular bleibt nicht im Empfehlungsdialog');
     }
     if (process.env.HV_QA_SCREENSHOT_DIR) {
       mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
@@ -2310,6 +2314,9 @@ async function assertEnergySafetyAndFlow(viewport) {
     await measureControl.locator('input[value="inventory"]').check();
     await measureControl.getByRole('button', { name: 'Hausaufgabe anlegen' }).click();
     await page.waitForLoadState('networkidle');
+    if (await page.locator('#energy-recommendation-dialog').isVisible().catch(() => false)) {
+      await page.locator('#energy-recommendation-dialog [data-close-dialog]').click();
+    }
     const specialistPanel = page.locator('details.energy-collapsible').filter({ hasText: 'Fachhilfe, wenn sie wirklich nötig ist' });
     await specialistPanel.locator(':scope > summary').click();
     const measure = specialistPanel.locator('details.energy-measure-row').first();
