@@ -975,14 +975,15 @@ const PageTemplates = `
     .nav-home-identity small { min-width: 0; overflow: hidden; color: rgba(255,255,255,.48); font-size: 11px; font-weight: 550; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
     .nav-badge { margin-left: auto; min-width: 25px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); padding: 0 7px; background: var(--gold); color: #172019; font-size: 11px; font-weight: 900; line-height: 1; }
     .nav-group-label { margin: 10px 12px 2px; color: rgba(255,255,255,.42); font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
-    .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 14px 8px 0; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; align-items: center; }
-    .side-map-attribution { grid-column: 1 / -1; grid-row: 2; justify-self: start; margin-top: 2px; color: rgba(255,255,255,.38); font-size: 9px; line-height: 1.2; text-decoration: none; }
+    .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 14px 8px 0; display: grid; gap: 8px; }
+    .side-account-meta { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-left: 54px; }
+    .side-map-attribution { min-width: 0; color: rgba(255,255,255,.38); font-size: 9px; line-height: 1.2; text-align: right; text-decoration: none; white-space: nowrap; }
     .side-map-attribution:hover { color: rgba(255,255,255,.68); }
-    .side-user { display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: center; }
+    .side-user { min-width: 0; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 12px; align-items: center; }
+    .side-user-copy { min-width: 0; display: grid; gap: 2px; }
     .avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: #fff; font-weight: 800; border: 1px solid rgba(255,255,255,.25); }
     .side-user strong { display: -webkit-box; max-height: 2.5em; color: #fff; font-size: 14px; line-height: 1.22; overflow: hidden; overflow-wrap: anywhere; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .side-user span, .side-version { color: rgba(255,255,255,.64); font-size: 13px; }
-    .side-account-actions { display: flex; align-items: center; gap: 4px; }
     .version-button { width: auto; min-height: 44px; border: 0; padding: 3px 7px; background: transparent; color: rgba(255,255,255,.48); font: inherit; font-size: 10.5px; font-weight: 650; cursor: pointer; }
     .version-button:hover { color: rgba(255,255,255,.84); }
     .logout-form { margin: 0; }
@@ -3127,7 +3128,8 @@ const PageTemplates = `
       .nav-icon { width: 19px; height: 19px; }
       .nav-icon svg { width: 18px; height: 18px; }
       .side-foot { gap: 7px; padding-top: 9px; }
-      .side-user { grid-template-columns: 32px 1fr; gap: 8px; }
+      .side-user { grid-template-columns: 32px minmax(0,1fr) auto; gap: 8px; }
+      .side-account-meta { padding-left: 40px; }
       .avatar { width: 32px; height: 32px; font-size: 11px; }
       .side-user strong { font-size: 12.5px; }
       .side-user span { font-size: 11.5px; }
@@ -3279,15 +3281,14 @@ const PageTemplates = `
 	      .nav-icon svg { width: 17px; height: 17px; }
 	      .nav-badge { min-width: 20px; height: 18px; padding: 0 6px; font-size: 10px; }
 	      .nav-group-label { grid-column: 1 / -1; margin: 7px 4px 0; }
-	      .side-foot { margin-top: 2px; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 9px 10px; padding: 10px 0 0; }
-	      .side-map-attribution { grid-column: 1 / -1; }
-	      .side-user { grid-template-columns: 34px minmax(0,1fr); gap: 9px; min-width: 0; }
+	      .side-foot { margin-top: 2px; gap: 8px; padding: 10px 0 0; }
+	      .side-user { grid-template-columns: 34px minmax(0,1fr) auto; gap: 9px; min-width: 0; }
+	      .side-account-meta { padding-left: 43px; }
 	      .avatar { width: 34px; height: 34px; font-size: 12px; }
 	      .side-user strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	      .side-user span { font-size: 12px; }
-	      .side-version { justify-self: end; min-width: 44px; min-height: 44px; display: grid; place-items: center; }
+	      .side-version { min-width: 44px; min-height: 44px; display: grid; place-items: center; }
 	      .side-map-attribution { min-height: 44px; display: inline-flex; align-items: center; }
-	      .logout-form { grid-column: 1 / -1; justify-self: stretch; min-width: 0; }
 	      .logout-button { min-height: 44px; }
       .app-main .content-top .button, .energy-mode-popover .button { min-height: 44px !important; }
       :where(.settings-hub,.profile,.notifications,.parking-page,.parking-month-page,.parking-access,.pk-set,.users,.building,.payment-import,.raw-export,.audit-page) :where(.button,button.action,button[type="submit"],button[type="button"],input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,summary) { min-height: 44px !important; }
@@ -3605,13 +3606,13 @@ const PageTemplates = `
     <div id="portal-account" class="side-foot">
       <div class="side-user">
         <span class="avatar">{{.Initials}}</span>
-        <div><strong>{{.DisplayName}}</strong><span>{{.Role}}</span></div>
-      </div>
-      <div class="side-account-actions">
-        <button class="side-version version-button" type="button" data-dialog="release-history" aria-haspopup="dialog" aria-controls="release-history" aria-label="Version {{.DisplayVersion}} – Versionsverlauf öffnen">v{{.DisplayVersion}}</button>
+        <div class="side-user-copy"><strong>{{.DisplayName}}</strong><span>{{.Role}}</span></div>
         <form class="logout-form" method="post" action="/auth/logout"><button class="logout-button" type="submit" aria-label="Abmelden" title="Abmelden"><span class="energy-ui-icon energy-ui-icon-log-out" aria-hidden="true"></span><span class="sr-only">Abmelden</span></button></form>
       </div>
-      <a class="side-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Kartendaten © OpenStreetMap</a>
+      <div class="side-account-meta">
+        <button class="side-version version-button" type="button" data-dialog="release-history" aria-haspopup="dialog" aria-controls="release-history" aria-label="Version {{.DisplayVersion}} – Versionsverlauf öffnen">v{{.DisplayVersion}}</button>
+        <a class="side-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Kartendaten © OpenStreetMap</a>
+      </div>
     </div>
   </aside>
 {{end}}

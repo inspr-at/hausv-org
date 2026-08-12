@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.76.1",
+			Date:     "12. August 2026",
+			Kind:     "Energie & Seitenleiste",
+			Headline: "Speicher-Messwerte und Kontoangaben bleiben zuverlässig zugeordnet.",
+			Intro:    "Ältere Lade- und Entladesensoren landen beim Gestalten weiterhin in den richtigen Feldern; Name, Rolle und Kontoaktionen bleiben vollständig lesbar.",
+			Items:    []NoteItem{},
+		},
+		{
 			Version:  "0.76.0",
 			Date:     "12. August 2026",
 			Kind:     "Energie-Cockpit",

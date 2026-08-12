@@ -519,6 +519,63 @@ func TestStorageChargePowerIsExplicitlyConfigurableAndDisplayed(t *testing.T) {
 	}
 }
 
+func TestStorageColorSaveMigratesLegacyChargeAndDischargeMappings(t *testing.T) {
+	ha := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path != "/api/states" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(`[
+			{"entity_id":"sensor.battery_charge_power","state":"2100","attributes":{"friendly_name":"Battery Charge Power","device_class":"power","unit_of_measurement":"W"}},
+			{"entity_id":"sensor.battery_discharge_power","state":"0","attributes":{"friendly_name":"Battery Discharge Power","device_class":"power","unit_of_measurement":"W"}}
+		]`))
+	}))
+	t.Cleanup(ha.Close)
+	a := consumerAppHAUSV422(t)
+	storageID := energy.StableAssetID("jhw22", "battery")
+	if err := a.energyStore.UpsertAsset(energy.Asset{ID: storageID, TenantSlug: "jhw22", Kind: "battery", Name: "Batteriespeicher", Confirmed: true}); err != nil {
+		t.Fatal(err)
+	}
+	for _, mapping := range []energy.EntityMapping{
+		{TenantSlug: "jhw22", AssetID: storageID, EntityID: "sensor.battery_charge_power", Metric: energy.MetricBatteryPower, DisplayName: "Battery Charge Power", Unit: "W", DeviceClass: "power", Confirmed: true},
+		{TenantSlug: "jhw22", AssetID: storageID, EntityID: "sensor.battery_discharge_power", Metric: energy.MetricBatteryPower, DisplayName: "Battery Discharge Power", Unit: "W", DeviceClass: "power", Confirmed: true},
+	} {
+		if err := a.energyStore.UpsertMapping(mapping); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mappings, _ := a.energyStore.ListMappings("jhw22")
+	slots := energyFlowNodeSlots("storage", storageID, mappings)
+	assigned := map[string]string{}
+	for _, slot := range slots {
+		assigned[slot.Name] = slot.EntityID
+	}
+	if assigned["battery_power_entity"] != "" || assigned["battery_charge_entity"] != "sensor.battery_charge_power" || assigned["battery_discharge_entity"] != "sensor.battery_discharge_power" {
+		t.Fatalf("Legacy-Speichermesswerte landen in falschen Feldern: %+v", assigned)
+	}
+	tenant := a.tenants["jhw22"]
+	tenant.HA = homeassistant.NewConfig(ha.URL, "fixture", "", "", "")
+	a.tenants["jhw22"] = tenant
+	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
+		"asset_id": {storageID}, "node_type": {"storage"}, "name": {"Batteriespeicher"}, "icon": {"battery"}, "color": {"#224466"},
+		"battery_charge_entity": {assigned["battery_charge_entity"]}, "battery_discharge_entity": {assigned["battery_discharge_entity"]},
+	})
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
+		t.Fatalf("reine Anzeigeänderung mit Legacy-Messwerten: status=%d location=%s", response.Code, response.Header().Get("Location"))
+	}
+	mappings, _ = a.energyStore.ListMappings("jhw22")
+	metricsByEntity := map[string]string{}
+	for _, mapping := range mappings {
+		if mapping.AssetID == storageID {
+			metricsByEntity[mapping.EntityID] = mapping.Metric
+		}
+	}
+	if metricsByEntity["sensor.battery_charge_power"] != energy.MetricBatteryCharge || metricsByEntity["sensor.battery_discharge_power"] != energy.MetricBatteryDischarge {
+		t.Fatalf("Legacy-Speichermesswerte wurden nicht normalisiert: %+v", metricsByEntity)
+	}
+}
+
 func TestAllVisibleSystemFlowNodesExposeConfiguration(t *testing.T) {
 	live := energyLiveView{
 		HasMain: true, Main: energyMetricView{Numeric: 1200, Unit: "W"},
