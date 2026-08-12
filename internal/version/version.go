@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.76.1",
+			Date:     "12. August 2026",
+			Kind:     "Seitenleiste",
+			Headline: "Das Konto bleibt kompakt und vollständig lesbar.",
+			Intro:    "Name und Rolle haben wieder ausreichend Platz; Abmelden, Version und Kartenhinweis sind klar und ruhig angeordnet.",
+			Items:    []NoteItem{},
+		},
+		{
 			Version:  "0.76.0",
 			Date:     "12. August 2026",
 			Kind:     "Energie-Cockpit",

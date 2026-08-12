@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.76.1] - 2026-08-12
+
+### Verbessert
+
+- **Das Konto bleibt in der Seitenleiste vollständig lesbar.** Name und Rolle erhalten eine eigene breite Zeile mit dem kompakten Abmelde-Symbol; Version und Kartenhinweis stehen ruhig darunter.
+
 ## [0.76.0] - 2026-08-12
 
 ### Neu

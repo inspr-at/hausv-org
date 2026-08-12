@@ -24,7 +24,8 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 		`.access-row { display: grid; grid-template-columns: minmax(220px, 1fr) 126px 132px minmax(106px, auto);`,
 		`aria-label="Parkplatz-Verwaltung"`,
 		`.mobile-menu-toggle { min-height: 44px;`,
-		`.side-version { justify-self: end; min-width: 44px; min-height: 44px; display: grid; place-items: center; }`,
+		`.side-user { grid-template-columns: 34px minmax(0,1fr) auto; gap: 9px; min-width: 0; }`,
+		`.side-version { min-width: 44px; min-height: 44px; display: grid; place-items: center; }`,
 		`.logout-button { min-height: 44px; }`,
 	}
 	for _, want := range wants {
