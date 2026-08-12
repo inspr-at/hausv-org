@@ -425,8 +425,19 @@
       if (!nextConfig) return;
       cfg = nextConfig;
       configNode.textContent = JSON.stringify(nextConfig);
+      // Keep the trigger node alive while its edit dialog is open so Escape
+      // can return focus reliably. The newest data is already retained above.
+      if (consumerDialog && consumerDialog.open) {
+        wrap._energyFlowPending = true;
+        return;
+      }
       rebuild("");
     };
+    if (consumerDialog) consumerDialog.addEventListener("close", function () {
+      if (!wrap._energyFlowPending) return;
+      wrap._energyFlowPending = false;
+      window.setTimeout(function () { rebuild(""); }, 0);
+    });
 
     function persist(previousOrder, focusConsumerID) {
       saveOrder(cfg, function () {
