@@ -89,6 +89,11 @@ type energyLiveView struct {
 	AdditionalTopics string
 }
 
+type energyLiveRefreshResponse struct {
+	Flow      energyFlowConfig `json:"flow"`
+	UpdatedAt time.Time        `json:"updatedAt"`
+}
+
 type energyChartSeriesView struct {
 	Key            string
 	Label          string
@@ -1201,6 +1206,48 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"MeasureStatus":           r.URL.Query().Get("measure_status"),
 		"ServiceAccessEnabled":    a.serviceAccessEnabled,
 	}))
+}
+
+// energyLiveRefresh returns only the data required to redraw the live flow.
+// Keeping this separate from the full cockpit avoids page jumps, scroll loss
+// and expensive chart/report rebuilding on the ten-second refresh cycle.
+func (a *app) energyLiveRefresh(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.canViewEnergy(ac) {
+		http.Error(w, "Kein Zugriff", http.StatusForbidden)
+		return
+	}
+	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	if err != nil {
+		http.Error(w, "Energiedaten konnten nicht geladen werden.", http.StatusInternalServerError)
+		return
+	}
+	if !exists || !profile.OnboardingComplete {
+		http.Error(w, "Energie-Cockpit ist noch nicht eingerichtet.", http.StatusConflict)
+		return
+	}
+	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
+	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
+	if updated, changed := a.ensureNamedEVMeasurementMappings(r.Context(), ac.tenant, assets, mappings); changed {
+		mappings = updated
+	}
+	metrics, _, _ := a.currentEnergyMetrics(r.Context(), ac.tenant, mappings, profile)
+	if len(metrics) == 0 {
+		http.Error(w, "Home Assistant liefert gerade keine Live-Werte.", http.StatusServiceUnavailable)
+		return
+	}
+	live := buildEnergyLiveView(metrics)
+	chargingCtx, cancelCharging := context.WithTimeout(r.Context(), 5*time.Second)
+	charging := a.chargingLiveView(chargingCtx, ac.tenant, false, false)
+	cancelCharging()
+
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if err := json.NewEncoder(w).Encode(energyLiveRefreshResponse{
+		Flow:      buildEnergyFlowConfig(ac.tenant.Slug, live, assets, mappings, metrics, charging, a.canManageHomeIdentity(ac)),
+		UpdatedAt: time.Now().UTC(),
+	}); err != nil {
+		return
+	}
 }
 
 func energyComparisonForView(intervals []energy.Interval, at time.Time) (energyComparisonView, bool) {

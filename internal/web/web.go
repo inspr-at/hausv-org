@@ -1516,6 +1516,10 @@ const PageTemplates = `
     .energy-live-meta { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 12px; }
     .energy-live-meta strong { color: #3e704c; font-size: 12px; font-weight: 750; }
     .energy-live-meta > span:last-child { margin-left: 6px; }
+    .energy-live-meta .energy-live-updated { margin-left: 4px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .energy-live-meta .energy-live-updated::before { content: "·"; margin-right: 8px; }
+    .energy-live-meta.is-stale strong { color: #8a681c; }
+    .energy-live-meta.is-stale .energy-live-dot { background: #b8891f; box-shadow: 0 0 0 3px rgba(184,137,31,.12); }
     .energy-cockpit-top .energy-live-dot { width: 9px; height: 9px; border-radius: 50%; background: #5d965c; box-shadow: 0 0 0 3px rgba(93,150,92,.11); }
     .energy-live-state-offline { color: var(--muted); font-size: 11.5px; font-weight: 650; }
     .energy-cockpit-top .energy-live-head > div > span { color: var(--muted); font-size: 12px; }
@@ -1653,6 +1657,12 @@ const PageTemplates = `
     }
     @media (max-width: 620px) {
       .energy-cockpit-top { gap: 16px; }
+      .energy-cockpit-top .energy-live-head > div { min-width: 0; }
+      .energy-live-meta { flex-wrap: wrap; }
+      .energy-live-meta .energy-live-updated { flex-basis: 100%; margin-left: 17px; white-space: nowrap; }
+      .energy-live-meta .energy-live-updated::before { content: none; }
+      .energy-recommendation-trigger { width: 44px; min-width: 44px; padding: 0; justify-content: center; }
+      .energy-recommendation-trigger > span:last-child { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
       .energy-cockpit-top .energy-heading { position: relative; min-height: 0; display: block; padding: 0 56px 0 2px; }
       .energy-cockpit-top .energy-heading h1 { overflow: hidden; font-size: 36px; text-overflow: ellipsis; white-space: nowrap; }
       .energy-cockpit-top .energy-heading-breadcrumb { min-width: 0; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; }
@@ -9430,7 +9440,7 @@ const PageTemplates = `
 {{define "energyLead"}}
   <div class="energy-lead-side">
     <aside class="energy-live" aria-label="Energie gerade jetzt" data-energy-flow-diagram data-energy-reading-count="{{len .Metrics}}">
-      <header class="energy-live-head"><div><div class="energy-live-title"><h2>Energie jetzt</h2></div>{{if .HasMetrics}}<div class="energy-live-meta"><span class="energy-live-dot" aria-hidden="true"></span><strong>Live</strong><span>Home Assistant</span></div>{{else}}<span class="energy-live-state-offline">Noch nicht verbunden</span>{{end}}</div><button class="energy-recommendation-trigger" type="button" data-dialog="energy-recommendation-dialog" aria-haspopup="dialog" aria-controls="energy-recommendation-dialog"><span class="energy-ui-icon energy-ui-icon-binoculars" aria-hidden="true"></span><span>Empfehlung</span></button></header>
+      <header class="energy-live-head"><div><div class="energy-live-title"><h2>Energie jetzt</h2></div>{{if .HasMetrics}}<div class="energy-live-meta" data-energy-live-status><span class="energy-live-dot" aria-hidden="true"></span><strong data-energy-live-label>Live</strong><span>Home Assistant</span><span class="energy-live-updated" data-energy-live-updated>Zuletzt aktualisiert vor 0&nbsp;s</span></div>{{else}}<span class="energy-live-state-offline">Noch nicht verbunden</span>{{end}}</div><button class="energy-recommendation-trigger" type="button" data-dialog="energy-recommendation-dialog" aria-haspopup="dialog" aria-controls="energy-recommendation-dialog"><span class="energy-ui-icon energy-ui-icon-binoculars" aria-hidden="true"></span><span>Empfehlung</span></button></header>
       {{if .HasMetrics}}
         <div class="energy-flow-area" data-energy-flow>
           <script type="application/json">{{.FlowConfigJSON}}</script>

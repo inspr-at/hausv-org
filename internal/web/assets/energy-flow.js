@@ -21,6 +21,8 @@
   "use strict";
 
   var ORDER_ENDPOINT = "/app/energie/verbraucher/reihenfolge";
+  var LIVE_ENDPOINT = "/app/energie/live";
+  var LIVE_REFRESH_MS = 10000;
 
   // The server emits the names of every SVG in the pinned, locally vendored
   // Lucide package. Both the picker and flow renderer use that exact whitelist;
@@ -417,6 +419,15 @@
       }
     }
 
+    // Swap data inside the fixed flow area; the page, scroll position and
+    // surrounding cockpit stay untouched.
+    wrap._energyFlowUpdate = function (nextConfig) {
+      if (!nextConfig) return;
+      cfg = nextConfig;
+      configNode.textContent = JSON.stringify(nextConfig);
+      rebuild("");
+    };
+
     function persist(previousOrder, focusConsumerID) {
       saveOrder(cfg, function () {
         cfg.consumers = previousOrder;
@@ -688,6 +699,53 @@
     document.querySelectorAll("[data-energy-flow]").forEach(function (wrap) {
       if (!wrap.dataset.energyFlow) wrap.dataset.energyFlow = String(++seq);
       render(wrap);
+    });
+
+    var diagram = document.querySelector("[data-energy-flow-diagram]");
+    var flow = diagram && diagram.querySelector("[data-energy-flow]");
+    var status = diagram && diagram.querySelector("[data-energy-live-status]");
+    var label = status && status.querySelector("[data-energy-live-label]");
+    var updated = status && status.querySelector("[data-energy-live-updated]");
+    if (!diagram || !flow || !status || !updated) return;
+
+    var lastSuccess = Date.now();
+    var refreshing = false;
+    function updateAge() {
+      var seconds = Math.max(0, Math.floor((Date.now() - lastSuccess) / 1000));
+      updated.textContent = "Zuletzt aktualisiert vor " + seconds + "\u00a0s";
+    }
+    function markLive() {
+      status.classList.remove("is-stale");
+      if (label) label.textContent = "Live";
+    }
+    function markStale() {
+      status.classList.add("is-stale");
+      if (label) label.textContent = "Veraltet";
+    }
+    function refreshLive() {
+      if (refreshing) return;
+      refreshing = true;
+      fetch(LIVE_ENDPOINT, { credentials: "same-origin", cache: "no-store", headers: { "Accept": "application/json" } })
+        .then(function (response) {
+          if (!response.ok || response.redirected) throw new Error("live refresh unavailable");
+          return response.json();
+        })
+        .then(function (payload) {
+          if (!payload || !payload.flow || typeof flow._energyFlowUpdate !== "function") throw new Error("invalid live refresh");
+          flow._energyFlowUpdate(payload.flow);
+          lastSuccess = Date.now();
+          markLive();
+          updateAge();
+        })
+        .catch(markStale)
+        .finally(function () { refreshing = false; });
+    }
+
+    updateAge();
+    window.setInterval(updateAge, 1000);
+    window.setInterval(refreshLive, LIVE_REFRESH_MS);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden && Date.now() - lastSuccess >= LIVE_REFRESH_MS) refreshLive();
     });
   }
 
