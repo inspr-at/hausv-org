@@ -93,9 +93,9 @@ func Notes() []Note {
 		{
 			Version:  "0.76.1",
 			Date:     "12. August 2026",
-			Kind:     "Seitenleiste",
-			Headline: "Das Konto bleibt kompakt und vollständig lesbar.",
-			Intro:    "Name und Rolle haben wieder ausreichend Platz; Abmelden, Version und Kartenhinweis sind klar und ruhig angeordnet.",
+			Kind:     "Energie & Seitenleiste",
+			Headline: "Speicher-Messwerte und Kontoangaben bleiben zuverlässig zugeordnet.",
+			Intro:    "Ältere Lade- und Entladesensoren landen beim Gestalten weiterhin in den richtigen Feldern; Name, Rolle und Kontoaktionen bleiben vollständig lesbar.",
 			Items:    []NoteItem{},
 		},
 		{

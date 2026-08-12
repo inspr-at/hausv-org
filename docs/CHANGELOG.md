@@ -6,6 +6,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 
 ### Verbessert
 
+- **Bestehende Speicher-Messwerte bleiben beim Gestalten erhalten.** Ältere getrennte Lade- und Entladesensoren werden automatisch den richtigen Feldern zugeordnet und beim Speichern sauber übernommen.
 - **Das Konto bleibt in der Seitenleiste vollständig lesbar.** Name und Rolle erhalten eine eigene breite Zeile mit dem kompakten Abmelde-Symbol; Version und Kartenhinweis stehen ruhig darunter.
 
 ## [0.76.0] - 2026-08-12

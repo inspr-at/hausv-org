@@ -4166,7 +4166,7 @@ func (a *app) reorderEnergyConsumers(w http.ResponseWriter, r *http.Request, ac 
 
 func energyFlowMappingEntity(mappings []energy.EntityMapping, assetID, metric string) string {
 	for _, mapping := range mappings {
-		if !mapping.Confirmed || mapping.Metric != metric {
+		if !mapping.Confirmed || !energyFlowMappingMatchesMetric(mapping, metric) {
 			continue
 		}
 		if mapping.AssetID == assetID || (mapping.AssetID == "" && (metric == energy.MetricLoadPower || metric == energy.MetricGridImportPower || metric == energy.MetricGridExportPower)) {
@@ -4174,6 +4174,23 @@ func energyFlowMappingEntity(mappings []energy.EntityMapping, assetID, metric st
 		}
 	}
 	return ""
+}
+
+func energyFlowMappingMatchesMetric(mapping energy.EntityMapping, wanted string) bool {
+	if mapping.Metric != energy.MetricBatteryPower {
+		return mapping.Metric == wanted
+	}
+	legacyKind := energyMetricKind(mapping.Metric, mapping.DisplayName+" "+mapping.EntityID)
+	switch wanted {
+	case energy.MetricBatteryCharge:
+		return legacyKind == "battery-charge"
+	case energy.MetricBatteryDischarge:
+		return legacyKind == "battery-discharge"
+	case energy.MetricBatteryPower:
+		return legacyKind == energy.MetricBatteryPower
+	default:
+		return false
+	}
 }
 
 func energyFlowNodeAsset(assets []energy.Asset, tenantSlug, nodeType string) energy.Asset {
