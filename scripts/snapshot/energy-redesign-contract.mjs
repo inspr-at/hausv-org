@@ -272,6 +272,36 @@ async function assertEnergyConsumerManagement(page, { label, width }) {
     fail(label, 'Hinzufügen-Kachel verwendet nicht denselben leeren Dialog', addState);
   }
   await page.keyboard.press('Escape');
+
+  const homeNode = page.locator('.energy-flow-hub2.editable');
+  await homeNode.click();
+  if (await dialog.locator('[data-consumer-dialog-title]').textContent() !== 'Energiefluss bearbeiten' ||
+      await dialog.locator('[name="load_power_entity"]').count() !== 1 ||
+      await dialog.locator('[data-consumer-delete]').isVisible()) {
+    fail(label, 'Hausknoten ist nicht über denselben sicheren Messwert-Dialog konfigurierbar');
+  }
+  await page.keyboard.press('Escape');
+
+  const storageNode = page.locator('.energy-flow-slot-left .energy-flow-tile.editable');
+  if (await storageNode.count()) {
+    await storageNode.click();
+    for (const field of ['battery_power_entity', 'battery_charge_entity', 'battery_discharge_entity', 'battery_soc_entity']) {
+      if (await dialog.locator(`[name="${field}"]`).count() !== 1) {
+        fail(label, `Speicher-Messwert ${field} fehlt im Knoten-Dialog`);
+      }
+    }
+    await page.keyboard.press('Escape');
+  }
+
+  const parkingNode = page.locator('.energy-flow-big').filter({ hasText: 'Parkplatz 20' }).first();
+  if (await parkingNode.count()) {
+    await parkingNode.locator('button.energy-flow-main').click();
+    if (!(await dialog.locator('[data-consumer-delete]').isVisible()) ||
+        await dialog.locator('[name="consumer_power_entity"]').count() !== 1) {
+      fail(label, 'Parkplatz verwendet nicht den bearbeitbaren und löschbaren Verbraucher-Dialog');
+    }
+    await page.keyboard.press('Escape');
+  }
 }
 
 async function disclosureState(root) {

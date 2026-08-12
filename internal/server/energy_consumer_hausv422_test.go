@@ -276,7 +276,7 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 		}
 	}
 	metrics, _, _ := a.currentEnergyMetrics(t.Context(), tenant, mappings, energy.HomeProfile{})
-	cfg := buildEnergyFlowConfig(energyLiveView{}, assets, mappings, metrics, parkingLiveView{}, true)
+	cfg := buildEnergyFlowConfig("haus", energyLiveView{}, assets, mappings, metrics, parkingLiveView{}, true)
 	for _, consumer := range cfg.Consumers {
 		if consumer.ID == assetID {
 			if consumer.KW != 7.2 || consumer.PowerEntity != "sensor.sauna_power" || consumer.EnergyEntity != "sensor.sauna_energy" {
@@ -380,7 +380,7 @@ func TestConsumerDialogReplacesDuplicateLowerManagementHAUSV446(t *testing.T) {
 		`id="energy-consumer-dialog"`, `data-consumer-dialog-title`, `Symbol auswählen`,
 		`Symbole aus der lokal eingebundenen Lucide-Library.`, `name="priority"`,
 		`name="icon_choice" value="car-front"`, `name="icon_choice" value="plug-zap"`,
-		`name="consumer_power_entity"`, `name="consumer_energy_entity"`,
+		`data-consumer-measurement-fields`, `name="node_type" value="consumer"`,
 		`data-consumer-delete`, `Ihr Energiesystem`, `Verbraucher verwalten Sie direkt oben`,
 	} {
 		if !strings.Contains(body, want) {
@@ -390,6 +390,107 @@ func TestConsumerDialogReplacesDuplicateLowerManagementHAUSV446(t *testing.T) {
 	for _, obsolete := range []string{`id="anlagen"`, `Eigenen Verbraucher hinzufügen`, `class="energy-consumer-list"`} {
 		if strings.Contains(body, obsolete) {
 			t.Errorf("doppelte untere Verbraucherpflege ist noch vorhanden: %q", obsolete)
+		}
+	}
+}
+
+func TestParkingChargingUsesNormalEditableConsumerContract(t *testing.T) {
+	a := consumerAppHAUSV422(t)
+	assets, _ := a.energyStore.ListAssets("jhw22")
+	charging := parkingLiveView{
+		Available: true, Mode: "manual", ModeLabel: "Normalladen", PowerKW: 3.6,
+		PowerEntity: "sensor.parking_power", EnergyEntity: "sensor.parking_energy",
+	}
+	cfg := buildEnergyFlowConfig("jhw22", energyLiveView{}, assets, nil, nil, charging, true)
+	parkingID := energyFlowNodeID("jhw22", "parking")
+	found := false
+	for _, consumer := range cfg.Consumers {
+		if consumer.ID != parkingID {
+			continue
+		}
+		found = true
+		if consumer.NodeType != "parking" || !consumer.Deletable || consumer.KW != 3.6 || len(consumer.Measurements) != 2 {
+			t.Fatalf("Parkplatz verwendet nicht den normalen Verbraucher-Vertrag: %+v", consumer)
+		}
+	}
+	if !found {
+		t.Fatal("konfigurierter Parkplatz fehlt im Energiefluss")
+	}
+	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher/entfernen", url.Values{"asset_id": {parkingID}})
+	if response.Code != http.StatusSeeOther {
+		t.Fatalf("Parkplatz löschen: status=%d", response.Code)
+	}
+	assets, _ = a.energyStore.ListAssets("jhw22")
+	cfg = buildEnergyFlowConfig("jhw22", energyLiveView{}, assets, nil, nil, charging, true)
+	for _, consumer := range cfg.Consumers {
+		if consumer.ID == parkingID {
+			t.Fatal("gelöschter Parkplatz bleibt im Energiefluss")
+		}
+	}
+}
+
+func TestStorageChargePowerIsExplicitlyConfigurableAndDisplayed(t *testing.T) {
+	ha := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/states":
+			_, _ = w.Write([]byte(`[
+				{"entity_id":"sensor.storage_charge","state":"2400","attributes":{"friendly_name":"Speicher Ladeleistung","device_class":"power","unit_of_measurement":"W"}},
+				{"entity_id":"sensor.storage_soc","state":"85","attributes":{"friendly_name":"Speicher Ladestand","device_class":"battery","unit_of_measurement":"%"}}
+			]`))
+		case "/api/states/sensor.storage_charge":
+			_, _ = w.Write([]byte(`{"entity_id":"sensor.storage_charge","state":"2400","attributes":{"friendly_name":"Speicher Ladeleistung","device_class":"power","unit_of_measurement":"W"}}`))
+		case "/api/states/sensor.storage_soc":
+			_, _ = w.Write([]byte(`{"entity_id":"sensor.storage_soc","state":"85","attributes":{"friendly_name":"Speicher Ladestand","device_class":"battery","unit_of_measurement":"%"}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(ha.Close)
+	a := consumerAppHAUSV422(t)
+	storageID := energy.StableAssetID("jhw22", "battery")
+	if err := a.energyStore.UpsertAsset(energy.Asset{ID: storageID, TenantSlug: "jhw22", Kind: "battery", Name: "Speicher", Confirmed: true}); err != nil {
+		t.Fatal(err)
+	}
+	tenant := a.tenants["jhw22"]
+	tenant.HA = homeassistant.NewConfig(ha.URL, "fixture", "", "", "")
+	a.tenants["jhw22"] = tenant
+	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
+		"asset_id": {storageID}, "node_type": {"storage"}, "name": {"Hausspeicher"}, "icon": {"battery-charging"},
+		"battery_charge_entity": {"sensor.storage_charge"}, "battery_soc_entity": {"sensor.storage_soc"},
+	})
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
+		t.Fatalf("Speicher speichern: status=%d location=%s", response.Code, response.Header().Get("Location"))
+	}
+	mappings, _ := a.energyStore.ListMappings("jhw22")
+	metrics, _, _ := a.currentEnergyMetrics(t.Context(), tenant, mappings, energy.HomeProfile{})
+	live := buildEnergyLiveView(metrics)
+	assets, _ := a.energyStore.ListAssets("jhw22")
+	cfg := buildEnergyFlowConfig("jhw22", live, assets, mappings, metrics, parkingLiveView{}, true)
+	if cfg.Storage == nil || cfg.Storage.Mode != "lädt" || cfg.Storage.Value != "2,4" || cfg.Storage.Label != "Hausspeicher" || cfg.Storage.Icon != "battery-charging" {
+		t.Fatalf("konfigurierte Ladeleistung wird nicht angezeigt: %+v", cfg.Storage)
+	}
+	if len(cfg.Storage.Measurements) != 4 {
+		t.Fatalf("Speicher braucht Netto-, Lade-, Entladeleistung und Ladestand: %+v", cfg.Storage.Measurements)
+	}
+}
+
+func TestAllVisibleSystemFlowNodesExposeConfiguration(t *testing.T) {
+	live := energyLiveView{
+		HasMain: true, Main: energyMetricView{Numeric: 1200, Unit: "W"},
+		HasGrid: true, Grid: energyMetricView{Metric: energy.MetricGridImportPower, Numeric: 300, Unit: "W"},
+		HasBattery: true, Battery: energyMetricView{Numeric: 400, Unit: "W", Direction: "charging"},
+		Flows: []energyMetricView{{Metric: energy.MetricPVPower, Numeric: 1500, Unit: "W"}},
+	}
+	cfg := buildEnergyFlowConfig("jhw22", live, nil, nil, nil, parkingLiveView{}, true)
+	nodes := []*energyFlowNodeConfig{&cfg.Home, cfg.Grid, cfg.Storage}
+	if len(cfg.Producers) != 1 {
+		t.Fatalf("PV-Knoten fehlt: %+v", cfg.Producers)
+	}
+	nodes = append(nodes, &cfg.Producers[0])
+	for _, node := range nodes {
+		if node == nil || !node.Editable || node.ID == "" || node.NodeType == "" || len(node.Measurements) == 0 {
+			t.Fatalf("sichtbarer Systemknoten ist noch statisch: %+v", node)
 		}
 	}
 }

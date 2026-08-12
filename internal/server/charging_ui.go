@@ -38,6 +38,8 @@ func (a *app) chargingLiveView(ctx context.Context, tenant tenantConfig, isAdmin
 		return out
 	}
 	out.Available = true
+	out.PowerEntity = tenant.HA.PowerEntity()
+	out.EnergyEntity = tenant.HA.MeterEnergyEntity()
 	out.CanToggle = canToggle
 	data := a.parkingStore.TenantData(tenant.Slug)
 	cfg := store.NormalizeChargingControlSettings(data.Settings.Charging)

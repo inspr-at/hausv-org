@@ -15,7 +15,8 @@
 // Consumers with an id can be reordered by dragging their tile or pressing
 // the arrow keys on the grip button; the order is persisted through
 // POST /app/energie/verbraucher/reihenfolge and rolled back if that fails.
-// Entries without an id (Parkplatz 20) keep their anchored place at the end.
+// Every visible consumer, including the configured parking charger, has a
+// durable id and participates in the same edit/reorder contract.
 (function () {
   "use strict";
 
@@ -202,11 +203,11 @@
   }
 
   var measurementRequest = null;
-  function measurementSelect(kind) {
-    return consumerDialog && consumerDialog.querySelector('[name="consumer_' + kind + '_entity"]');
+  function measurementSelect(name) {
+    return consumerDialog && consumerDialog.querySelector('[name="' + name + '"]');
   }
-  function seedMeasurementSelect(kind, current) {
-    var select = measurementSelect(kind);
+  function seedMeasurementSelect(name, current) {
+    var select = measurementSelect(name);
     if (!select) return;
     select.replaceChildren();
     var empty = document.createElement("option");
@@ -221,15 +222,15 @@
       select.value = current;
     }
   }
-  function populateMeasurementSelect(kind, current, assetID, entities) {
-    var select = measurementSelect(kind);
+  function populateMeasurementSelect(slot, current, assetID, entities) {
+    var select = measurementSelect(slot.name);
     if (!select) return;
-    seedMeasurementSelect(kind, "");
-    entities.filter(function (entity) { return entity.kind === kind; }).forEach(function (entity) {
+    seedMeasurementSelect(slot.name, "");
+    entities.filter(function (entity) { return entity.kind === slot.kind; }).forEach(function (entity) {
       var option = document.createElement("option");
       option.value = entity.entityId;
       option.textContent = entity.name + (entity.unit ? " · " + entity.unit : "") + " · " + entity.entityId;
-      var assignedElsewhere = Boolean(entity.assignedAssetName && (!entity.assignedAssetId || entity.assignedAssetId !== assetID));
+      var assignedElsewhere = Boolean(entity.entityId !== current && entity.assignedAssetName && (!entity.assignedAssetId || entity.assignedAssetId !== assetID));
       if (assignedElsewhere) {
         option.disabled = true;
         option.textContent += " · verwendet für " + entity.assignedAssetName;
@@ -246,8 +247,21 @@
   }
   function loadConsumerMeasurements(item) {
     var status = consumerDialog.querySelector("[data-consumer-measurement-status]");
-    seedMeasurementSelect("power", item.powerEntity || "");
-    seedMeasurementSelect("energy", item.energyEntity || "");
+    var fields = consumerDialog.querySelector("[data-consumer-measurement-fields]");
+    var slots = item.measurements || [
+      { name: "consumer_power_entity", label: "Aktuelle Leistung", kind: "power", entity: item.powerEntity || "" },
+      { name: "consumer_energy_entity", label: "Energiezähler", kind: "energy", entity: item.energyEntity || "" },
+    ];
+    if (fields) {
+      fields.replaceChildren();
+      slots.forEach(function (slot) {
+        var label = el("label", "energy-consumer-field", fields);
+        el("span", "", label).textContent = slot.label;
+        var select = el("select", "", label);
+        select.name = slot.name;
+        seedMeasurementSelect(slot.name, slot.entity || "");
+      });
+    }
     if (status) status.textContent = "Home-Assistant-Entities werden geladen …";
     if (!measurementRequest) {
       measurementRequest = fetch("/app/energie/verbraucher/messwerte", { credentials: "same-origin" }).then(function (response) {
@@ -256,8 +270,9 @@
       });
     }
     measurementRequest.then(function (payload) {
-      populateMeasurementSelect("power", item.powerEntity || "", item.id || "", payload.entities || []);
-      populateMeasurementSelect("energy", item.energyEntity || "", item.id || "", payload.entities || []);
+      slots.forEach(function (slot) {
+        populateMeasurementSelect(slot, slot.entity || "", item.id || "", payload.entities || []);
+      });
       if (status) status.textContent = payload.message || "Home Assistant · nur gelesen";
     }).catch(function () {
       if (status) status.textContent = "Home Assistant ist gerade nicht erreichbar. Bestehende Zuordnungen bleiben erhalten.";
@@ -274,12 +289,18 @@
     if (!consumerDialog || typeof consumerDialog.showModal !== "function") return;
     var item = consumer || {};
     setDialogValue("asset_id", item.id || "");
+    setDialogValue("node_type", item.nodeType || "consumer");
     setDialogValue("name", item.title || "");
     setDialogValue("kind", item.kind || "other");
     setDialogValue("rated_power_kw", item.ratedPower || "");
     setDialogValue("flexibility", item.flexibility || "unknown");
 
     var priorityField = consumerDialog.querySelector('[name="priority"]');
+    var priorityWrap = consumerDialog.querySelector("[data-consumer-priority-field]");
+    var recommendations = consumerDialog.querySelector("[data-consumer-recommendations]");
+    var isRailItem = !item.nodeType || item.nodeType === "consumer" || item.nodeType === "parking";
+    if (priorityWrap) priorityWrap.hidden = !isRailItem;
+    if (recommendations) recommendations.hidden = !isRailItem;
     if (priorityField) {
       priorityField.replaceChildren();
       var count = Math.max(1, total + (item.id ? 0 : 1));
@@ -298,14 +319,15 @@
     var title = consumerDialog.querySelector("[data-consumer-dialog-title]");
     var context = consumerDialog.querySelector("[data-consumer-dialog-context]");
     var submit = consumerDialog.querySelector("[data-consumer-submit]");
-    if (title) title.textContent = item.id ? "Verbraucher bearbeiten" : "Verbraucher hinzufügen";
-    if (context) context.textContent = item.id ? "Name, Priorität, Symbol und Messwerte direkt anpassen." : "Neuen Verbraucher mit optionalen Messwerten anlegen.";
+    var isSystemNode = Boolean(item.nodeType && item.nodeType !== "consumer" && item.nodeType !== "parking");
+    if (title) title.textContent = isSystemNode ? "Energiefluss bearbeiten" : (item.id ? "Verbraucher bearbeiten" : "Verbraucher hinzufügen");
+    if (context) context.textContent = isSystemNode ? "Name, Symbol und passende Home-Assistant-Messwerte direkt anpassen." : (item.id ? "Name, Priorität, Symbol und Messwerte direkt anpassen." : "Neuen Verbraucher mit optionalen Messwerten anlegen.");
     if (submit) submit.textContent = item.id ? "Änderungen speichern" : "Verbraucher hinzufügen";
 
     var remove = consumerDialog.querySelector("[data-consumer-delete]");
     var removeConfirm = consumerDialog.querySelector("[data-consumer-delete-confirm]");
     if (remove) {
-      remove.hidden = !item.id;
+      remove.hidden = !item.id || !item.deletable;
       remove.disabled = remove.hidden;
     }
     if (removeConfirm) removeConfirm.hidden = true;
@@ -336,6 +358,35 @@
       removeConfirm.hidden = true;
       removeButton.hidden = false;
       removeButton.focus();
+    });
+  }
+
+  function makeFlowNodeEditable(node, item) {
+    if (!item || !item.editable) return;
+    node.classList.add("editable");
+    node.tabIndex = 0;
+    node.setAttribute("role", "button");
+    node.setAttribute("aria-label", (item.label || "Energiefluss") + " bearbeiten");
+    var holder = node.querySelector(".ico");
+    if (holder && holder.firstChild) {
+      holder.firstChild.classList.add("energy-flow-icon-default");
+      glyph("pencil", "energy-flow-icon-edit", holder);
+    }
+    function open() {
+      openConsumerDialog({
+        id: item.id,
+        title: item.label,
+        icon: item.icon,
+        nodeType: item.nodeType,
+        measurements: item.measurements || [],
+        deletable: false,
+      }, 1, 1, node);
+    }
+    node.addEventListener("click", open);
+    node.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      open();
     });
   }
 
@@ -400,36 +451,40 @@
         node.dataset.edge = "producer-" + i;
         valueLine(node.lastChild, p.value, p.unit);
         el("span", "", node.lastChild).textContent = p.label;
+        makeFlowNodeEditable(node, p);
         if (p.kw > 0) edges.push({ from: "producer-" + i, to: "hub", kw: p.kw, banded: true });
       });
 
       if (cfg.storage) {
         var leftSlot = el("div", "energy-flow-slot-left", flow);
-        var st = tile("batt", "battery", leftSlot);
+        var st = tile("batt", cfg.storage.icon || "battery", leftSlot);
         if (cfg.storage.hover) st.title = cfg.storage.hover;
         st.dataset.edge = "storage";
         valueLine(st.lastChild, cfg.storage.value, cfg.storage.unit);
         el("span", "", st.lastChild).textContent = cfg.storage.sub;
+        makeFlowNodeEditable(st, cfg.storage);
         if (cfg.storage.flow > 0) {
           if (cfg.storage.mode === "entlädt") edges.push({ from: "storage", to: "hub", kw: cfg.storage.flow, banded: true });
           else edges.push({ from: "hub", to: "storage", kw: cfg.storage.flow, stops: [{ at: 0, c: BATT }, { at: 1, c: BATT }] });
         }
       }
 
-      var hub = tile("hub", "house", flow);
+      var hub = tile("hub", cfg.home.icon || "house", flow);
       hub.classList.add("energy-flow-hub2");
       if (cfg.home.hover) hub.title = cfg.home.hover;
       hub.dataset.edge = "hub";
       valueLine(hub.lastChild, cfg.home.value, cfg.home.unit);
       el("span", "", hub.lastChild).textContent = cfg.home.label || "Hausverbrauch";
+      makeFlowNodeEditable(hub, cfg.home);
 
       if (cfg.grid) {
         var bottom = el("div", "energy-flow-slot-bottom", flow);
-        var gr = tile("grid", "utility-pole", bottom);
+        var gr = tile("grid", cfg.grid.icon || "utility-pole", bottom);
         if (cfg.grid.hover) gr.title = cfg.grid.hover;
         gr.dataset.edge = "grid";
         valueLine(gr.lastChild, cfg.grid.value, cfg.grid.unit);
         el("span", "", gr.lastChild).textContent = cfg.grid.label;
+        makeFlowNodeEditable(gr, cfg.grid);
         if (cfg.grid.kw > 0) {
           if (cfg.grid.dir === "import") edges.push({ from: "grid", to: "hub", kw: cfg.grid.kw, banded: true });
           else edges.push({ from: "hub", to: "grid", kw: cfg.grid.kw, stops: [{ at: 0, c: GRID }, { at: 1, c: GRID }] });

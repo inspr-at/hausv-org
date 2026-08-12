@@ -1427,6 +1427,12 @@ const PageTemplates = `
     .energy-flow-tile.k-grid .ico { color: #9a7422; background: #faf4e5; }
     .energy-flow-tile.k-batt { border-color: rgba(91,117,131,.34); background: #f3f7f8; }
     .energy-flow-tile.k-batt .ico { color: #607d8d; background: #eaf1f3; }
+    .energy-flow-tile.editable { cursor: pointer; transition: border-color .15s ease, background-color .15s ease; }
+    .energy-flow-tile.editable .ico > .energy-ui-icon { grid-area: 1 / 1; transition: opacity .15s ease, transform .15s ease; }
+    .energy-flow-tile.editable .energy-flow-icon-edit { opacity: 0; transform: scale(.86); }
+    .energy-flow-tile.editable:hover, .energy-flow-tile.editable:focus-visible { border-color: rgba(184,139,49,.62); background: #fffaf0; }
+    .energy-flow-tile.editable:hover .energy-flow-icon-default, .energy-flow-tile.editable:focus-visible .energy-flow-icon-default { opacity: 0; }
+    .energy-flow-tile.editable:hover .energy-flow-icon-edit, .energy-flow-tile.editable:focus-visible .energy-flow-icon-edit { opacity: 1; transform: scale(1); }
     .energy-flow-hub2 { grid-column: 3; grid-row: 3; width: 100%; border-color: #cfc7b8; z-index: 2; }
     .energy-flow-hub2 .ico { color: #a24b42; background: #fbf1ed; }
     .energy-flow-rail { position: relative; z-index: 1; align-self: start; display: grid; gap: 8px; align-content: start; }
@@ -9372,7 +9378,7 @@ const PageTemplates = `
             {{if .HasAdditional}}<details class="onboarding-disclosure onboarding-additional"><summary>Weitere technische Treffer anzeigen <span>{{len .AdditionalCandidates}} optional</span></summary><div class="onboarding-candidates">{{range .AdditionalCandidates}}<label class="onboarding-candidate"><input type="checkbox" name="entities" value="{{.EntityID}}"{{if .Checked}} checked{{end}}><span><strong>{{.MetricLabel}}</strong><small>{{.SourceName}}</small><code>{{.EntityID}}</code></span><span class="onboarding-readonly">Nur lesen</span></label>{{end}}</div></details>{{end}}
             <details class="onboarding-disclosure"><summary>Messwert selbst zuordnen <span>nur falls nötig</span></summary><div class="optional-grid">
               <label><span>Sensor-ID</span><input type="text" name="manual_entity_id" placeholder="sensor.netzbezug"></label>
-              <label><span>Bedeutung</span><select name="manual_metric"><option value="grid-import-power">Netzbezug Leistung</option><option value="grid-import-energy">Netzbezug Energie</option><option value="grid-export-power">Netzeinspeisung</option><option value="pv-power">PV-Leistung</option><option value="battery-power">Batterie-Leistung</option><option value="battery-soc">Batterie-Ladestand</option><option value="load-power">Hausverbrauch</option></select></label>
+              <label><span>Bedeutung</span><select name="manual_metric"><option value="grid-import-power">Netzbezug Leistung</option><option value="grid-import-energy">Netzbezug Energie</option><option value="grid-export-power">Netzeinspeisung</option><option value="pv-power">PV-Leistung</option><option value="battery-power">Batterie-Nettoleistung</option><option value="battery-charge-power">Batterie-Ladeleistung</option><option value="battery-discharge-power">Batterie-Entladeleistung</option><option value="battery-soc">Batterie-Ladestand</option><option value="load-power">Hausverbrauch</option></select></label>
               <label><span>Verständlicher Name</span><input type="text" name="manual_name" placeholder="Netzbezug gesamt"></label>
               <label><span>Einheit</span><input type="text" name="manual_unit" placeholder="W oder kW"></label>
               <label><span>Gehört zu</span><select name="manual_asset_id"><option value="">Gesamtes Haus</option>{{range .MappingAssetOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select></label>
@@ -9504,13 +9510,14 @@ const PageTemplates = `
       {{if .CanManageEnergy}}<dialog id="energy-consumer-dialog" class="dialog energy-consumer-dialog" aria-labelledby="energy-consumer-dialog-title">
         <form method="post" action="/app/energie/verbraucher">
           <input type="hidden" name="asset_id" value="">
+          <input type="hidden" name="node_type" value="consumer">
           <input type="hidden" name="measurements_present" value="1">
           <input type="hidden" name="icon" value="plug" data-consumer-icon-value>
           <header class="dialog-head"><div class="energy-consumer-dialog-heading"><h2 id="energy-consumer-dialog-title" data-consumer-dialog-title>Verbraucher bearbeiten</h2><p data-consumer-dialog-context>Name, Priorität, Symbol und Messwerte direkt anpassen.</p></div><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen"><span class="energy-ui-icon energy-ui-icon-x" aria-hidden="true"></span></button></header>
           <div class="dialog-body">
             <div class="energy-consumer-primary">
               <label class="energy-consumer-field"><span>Name</span><input type="text" name="name" maxlength="80" required autocomplete="off" placeholder="z. B. Sauna"></label>
-              <label class="energy-consumer-field"><span>Priorität</span><select name="priority" aria-label="Priorität"></select></label>
+              <label class="energy-consumer-field" data-consumer-priority-field><span>Priorität</span><select name="priority" aria-label="Priorität"></select></label>
             </div>
             <section class="energy-icon-picker" aria-labelledby="energy-icon-picker-title">
               <div class="energy-icon-picker-head"><div><strong id="energy-icon-picker-title">Symbol auswählen</strong><small>Symbole aus der lokal eingebundenen Lucide-Library.</small></div><label class="energy-icon-search"><span class="energy-ui-icon energy-ui-icon-search" aria-hidden="true"></span><span class="sr-only">Symbole durchsuchen</span><input type="search" data-consumer-icon-search placeholder="Symbol suchen"></label></div>
@@ -9520,13 +9527,10 @@ const PageTemplates = `
             </section>
             <section class="energy-consumer-measurements" aria-labelledby="energy-consumer-measurements-title">
               <div class="energy-consumer-measurements-head"><div><strong id="energy-consumer-measurements-title">Messwerte</strong><small>Optional pro Verbraucher – Quelle ist Home Assistant und bleibt nur lesend.</small></div><span class="pill">HA</span></div>
-              <div class="energy-consumer-measurement-fields">
-                <label class="energy-consumer-field"><span>Aktuelle Leistung</span><select name="consumer_power_entity"><option value="">Nicht zugeordnet</option></select></label>
-                <label class="energy-consumer-field"><span>Energiezähler</span><select name="consumer_energy_entity"><option value="">Nicht zugeordnet</option></select></label>
-              </div>
+              <div class="energy-consumer-measurement-fields" data-consumer-measurement-fields></div>
               <p class="energy-consumer-measurement-status" data-consumer-measurement-status>Home-Assistant-Entities werden beim Öffnen geladen.</p>
             </section>
-            <details class="energy-consumer-recommendations"><summary>Technische Angaben für Empfehlungen</summary><div class="energy-consumer-recommendation-fields">
+            <details class="energy-consumer-recommendations" data-consumer-recommendations><summary>Technische Angaben für Empfehlungen</summary><div class="energy-consumer-recommendation-fields">
               <label class="energy-consumer-field"><span>Kategorie</span><select name="kind">{{range .ConsumerKindOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select></label>
               <label class="energy-consumer-field"><span>Leistung in kW</span><input type="text" name="rated_power_kw" inputmode="decimal" placeholder="z. B. 8,0"></label>
               <label class="energy-consumer-field"><span>Flexibilität</span><select name="flexibility"><option value="unknown">noch offen</option><option value="shift">zeitlich verschiebbar</option><option value="throttle">kurz begrenzbar</option><option value="fixed">fest</option></select></label>

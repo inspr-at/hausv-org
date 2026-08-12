@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.74.0",
+			Date:     "12. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Alle Energiefluss-Knoten lassen sich direkt konfigurieren.",
+			Intro:    "Haus, Netz, PV, Speicher und Verbraucher verwenden einen gemeinsamen Dialog; der Speicher kann seine Lade- und Entladeleistung aus getrennten Home-Assistant-Sensoren beziehen.",
+			Items: []NoteItem{
+				{Label: "Einheitlicher Dialog", Text: "Name, Lucide-Symbol und relevante Messwerte werden direkt am jeweiligen Knoten gepflegt."},
+				{Label: "Speicherleistung", Text: "Nettoleistung sowie getrennte Lade- und Entladeleistung können passend zur vorhandenen Installation gewählt werden."},
+				{Label: "Parkplatz 20", Text: "Der Ladepunkt ist jetzt wie andere Verbraucher bearbeitbar, priorisierbar und entfernbar."},
+			},
+		},
+		{
 			Version:  "0.73.0",
 			Date:     "12. August 2026",
 			Kind:     "Energie-Cockpit",
