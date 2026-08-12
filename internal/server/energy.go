@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/markus-barta/hausv-org/internal/energy"
 	"github.com/markus-barta/hausv-org/internal/homeassistant"
@@ -1056,6 +1057,12 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	}
 	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
 	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
+	// Named EVs from the pilot inventory predate per-consumer mappings. When
+	// Home Assistant exposes an unambiguous matching home-charging sensor, bind
+	// it once and then use the normal persisted measurement path.
+	if updated, changed := a.ensureNamedEVMeasurementMappings(r.Context(), ac.tenant, assets, mappings); changed {
+		mappings = updated
+	}
 	metrics, sourceStatus, liveLastSeen := a.currentEnergyMetrics(r.Context(), ac.tenant, mappings, profile)
 	live := buildEnergyLiveView(metrics)
 	chart := a.energy24HourChart(r.Context(), ac.tenant, mappings, profile, time.Now(), r.URL.Query().Get("zeitraum"))
@@ -2503,6 +2510,141 @@ func consumerMeasurementMetric(kind string) string {
 		return energy.MetricConsumerPower
 	}
 	return energy.MetricConsumerEnergy
+}
+
+func compactEnergyMatchKey(value string) string {
+	return strings.Map(func(char rune) rune {
+		if unicode.IsLetter(char) || unicode.IsDigit(char) {
+			return unicode.ToLower(char)
+		}
+		return -1
+	}, value)
+}
+
+func namedEVMeasurementCandidate(name, kind string, states []homeassistant.EntityState, assigned map[string]bool) (homeassistant.EntityState, bool) {
+	wanted := compactEnergyMatchKey(name)
+	if len(wanted) < 4 {
+		return homeassistant.EntityState{}, false
+	}
+	bestScore := 0
+	bestCount := 0
+	best := homeassistant.EntityState{}
+	for _, state := range states {
+		entityID := strings.ToLower(strings.TrimSpace(state.EntityID))
+		if assigned[entityID] || consumerMeasurementKind(state) != kind {
+			continue
+		}
+		haystack := compactEnergyMatchKey(entityID + " " + haAttribute(state.Attributes, "friendly_name"))
+		if !strings.Contains(haystack, wanted) {
+			continue
+		}
+		score := 100
+		if kind == "power" {
+			switch {
+			case strings.Contains(haystack, "ladeleistungzuhause"):
+				score += 80
+			case strings.Contains(haystack, "chargerpower"):
+				score += 60
+			case strings.Contains(haystack, "ladeleistung") || strings.Contains(haystack, "chargingpower"):
+				score += 40
+			}
+		} else {
+			switch {
+			case strings.Contains(haystack, "ladeenergiezuhause"):
+				score += 80
+			case strings.Contains(haystack, "chargeenergyadded"):
+				score += 60
+			case strings.Contains(haystack, "ladeenergie") || strings.Contains(haystack, "chargingenergy"):
+				score += 40
+			}
+		}
+		if score > bestScore {
+			best, bestScore, bestCount = state, score, 1
+		} else if score == bestScore {
+			bestCount++
+		}
+	}
+	return best, bestScore > 100 && bestCount == 1
+}
+
+func (a *app) ensureNamedEVMeasurementMappings(ctx context.Context, tenant tenantConfig, assets []energy.Asset, mappings []energy.EntityMapping) ([]energy.EntityMapping, bool) {
+	if !tenant.HA.Configured() {
+		return mappings, false
+	}
+	mapped := map[string]map[string]bool{}
+	assigned := map[string]bool{}
+	for _, mapping := range mappings {
+		if !mapping.Confirmed {
+			continue
+		}
+		assigned[strings.ToLower(mapping.EntityID)] = true
+		if mapped[mapping.AssetID] == nil {
+			mapped[mapping.AssetID] = map[string]bool{}
+		}
+		mapped[mapping.AssetID][mapping.Metric] = true
+	}
+	needsScan := false
+	for _, asset := range assets {
+		if asset.Kind == "ev" && (!mapped[asset.ID][energy.MetricConsumerPower] || !mapped[asset.ID][energy.MetricConsumerEnergy]) {
+			needsScan = true
+			break
+		}
+	}
+	if !needsScan {
+		return mappings, false
+	}
+	lookupCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
+	states, err := tenant.HA.States(lookupCtx)
+	cancel()
+	if err != nil {
+		return mappings, false
+	}
+	changed := false
+	for _, asset := range assets {
+		if asset.Kind != "ev" {
+			continue
+		}
+		if mapped[asset.ID] == nil {
+			mapped[asset.ID] = map[string]bool{}
+		}
+		for _, kind := range []string{"power", "energy"} {
+			metric := consumerMeasurementMetric(kind)
+			if mapped[asset.ID][metric] {
+				continue
+			}
+			state, ok := namedEVMeasurementCandidate(asset.Name, kind, states, assigned)
+			if !ok {
+				continue
+			}
+			entityID := strings.ToLower(strings.TrimSpace(state.EntityID))
+			mapping := energy.EntityMapping{
+				TenantSlug: tenant.Slug, EntityID: entityID, AssetID: asset.ID, Metric: metric,
+				DisplayName: firstNonEmpty(haAttribute(state.Attributes, "friendly_name"), entityID),
+				Unit:        haAttribute(state.Attributes, "unit_of_measurement"), DeviceClass: haAttribute(state.Attributes, "device_class"), Confirmed: true,
+			}
+			seen := state.LastUpdated
+			if seen.IsZero() {
+				seen = state.LastChanged
+			}
+			if !seen.IsZero() {
+				mapping.LastSeenAt = &seen
+			}
+			if err := a.energyStore.UpsertMapping(mapping); err != nil {
+				continue
+			}
+			assigned[entityID] = true
+			mapped[asset.ID][metric] = true
+			changed = true
+		}
+	}
+	if !changed {
+		return mappings, false
+	}
+	updated, err := a.energyStore.ListMappings(tenant.Slug)
+	if err != nil {
+		return mappings, false
+	}
+	return updated, true
 }
 
 func (a *app) energyConsumerMeasurementOptions(w http.ResponseWriter, r *http.Request, ac authCtx) {

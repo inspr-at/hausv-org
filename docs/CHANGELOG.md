@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.75.2] - 2026-08-12
+
+### Verbessert
+
+- **Benannte E-Autos zeigen ihre Ladeleistung zuverlässig.** Fehlt bei einem vorhandenen Fahrzeug noch die Messwertzuordnung, übernimmt HAUSV eine eindeutig passende Zuhause-Ladeleistung aus Home Assistant und speichert diese dauerhaft.
+
 ## [0.75.1] - 2026-08-12
 
 ### Verbessert

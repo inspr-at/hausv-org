@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.75.2",
+			Date:     "12. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "E-Autos zeigen die aktuelle Ladeleistung zuverlässig.",
+			Intro:    "Eindeutig passende Zuhause-Messwerte aus Home Assistant werden bei benannten Fahrzeugen dauerhaft zugeordnet.",
+			Items:    []NoteItem{},
+		},
+		{
 			Version:  "0.75.1",
 			Date:     "12. August 2026",
 			Kind:     "Energie-Cockpit",
