@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.74.0] - 2026-08-12
+
+### Neu
+
+- **Jeder Knoten im Energiefluss lässt sich direkt konfigurieren.** Hausverbrauch, Netz, PV, Speicher und Verbraucher öffnen denselben ruhigen Dialog für Name, Lucide-Symbol und passende Home-Assistant-Messwerte.
+- **Der Speicher zeigt seine echte Ladeleistung.** Neben einem vorzeichenbehafteten Netto-Sensor können Ladeleistung, Entladeleistung und Ladestand getrennt zugeordnet werden.
+
+### Verbessert
+
+- **Parkplatz 20 verhält sich wie jeder andere Verbraucher.** Der Ladepunkt ist bearbeitbar, priorisierbar und kann nach einer zweiten Bestätigung aus dem Energiefluss entfernt werden.
+
 ## [0.73.0] - 2026-08-12
 
 ### Neu

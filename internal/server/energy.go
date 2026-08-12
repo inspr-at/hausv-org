@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"net/mail"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -1105,7 +1106,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	chargingCtx, cancelCharging := context.WithTimeout(r.Context(), 5*time.Second)
 	charging := a.chargingLiveView(chargingCtx, ac.tenant, false, false)
 	cancelCharging()
-	flowConfig := buildEnergyFlowConfig(live, assets, mappings, metrics, charging, canManageEnergyData)
+	flowConfig := buildEnergyFlowConfig(ac.tenant.Slug, live, assets, mappings, metrics, charging, canManageEnergyData)
 	flowConfigJSON, err := json.Marshal(flowConfig)
 	if err != nil {
 		flowConfigJSON = []byte("null")
@@ -2362,7 +2363,26 @@ func (a *app) updateEnergyCaretaker(w http.ResponseWriter, r *http.Request, ac a
 // energyCustomAssetSource marks consumers created outside the onboarding
 // presets. It keeps their random identity stable when the preset selection is
 // reconciled later.
-const energyCustomAssetSource = "custom"
+const (
+	energyCustomAssetSource   = "custom"
+	energyFlowNodeAssetSource = "energy-flow-node"
+	energyFlowHomeKind        = "flow-home"
+	energyFlowGridKind        = "flow-grid"
+	energyFlowParkingKind     = "flow-parking"
+)
+
+func isEnergyFlowSystemKind(kind string) bool {
+	switch kind {
+	case "pv", "battery", energyFlowHomeKind, energyFlowGridKind, energyFlowParkingKind:
+		return true
+	default:
+		return false
+	}
+}
+
+func energyFlowNodeID(tenantSlug, nodeType string) string {
+	return energy.StableAssetID(tenantSlug, "flow-"+nodeType)
+}
 
 // addEnergyConsumer legt Verbraucher an oder bearbeitet eine bestehende
 // Entität aus dem Cockpit-Dialog. Die Vorlagenidentität bleibt beim Bearbeiten
@@ -2471,6 +2491,8 @@ func consumerMeasurementKind(state homeassistant.EntityState) string {
 		return "power"
 	case deviceClass == "energy" || unit == "wh" || unit == "kwh" || unit == "mwh":
 		return "energy"
+	case deviceClass == "battery" || unit == "%":
+		return "percentage"
 	default:
 		return ""
 	}
@@ -2545,10 +2567,14 @@ func (a *app) energyConsumerMeasurementOptions(w http.ResponseWriter, r *http.Re
 	for _, mapping := range mappings {
 		kind := ""
 		switch mapping.Metric {
-		case energy.MetricConsumerPower:
+		case energy.MetricConsumerPower, energy.MetricLoadPower, energy.MetricGridImportPower,
+			energy.MetricGridExportPower, energy.MetricPVPower, energy.MetricBatteryPower,
+			energy.MetricBatteryCharge, energy.MetricBatteryDischarge:
 			kind = "power"
-		case energy.MetricConsumerEnergy:
+		case energy.MetricConsumerEnergy, energy.MetricGridImportEnergy:
 			kind = "energy"
+		case energy.MetricBatterySOC:
+			kind = "percentage"
 		}
 		if kind == "" || seen[mapping.EntityID] {
 			continue
@@ -2675,6 +2701,227 @@ func (a *app) applyEnergyConsumerMappingPlan(tenantSlug string, plan energyConsu
 	return nil
 }
 
+func (a *app) planEnergyFlowNodeMappings(ctx context.Context, tenant tenantConfig, assetID string, slots []energyFlowMeasurementSlot, form url.Values) (energyConsumerMappingPlan, error) {
+	desired := map[string]string{}
+	wantedKind := map[string]string{}
+	seenEntity := map[string]bool{}
+	for _, slot := range slots {
+		entityID := strings.ToLower(strings.TrimSpace(form.Get(slot.Name)))
+		if entityID != "" && seenEntity[entityID] {
+			return energyConsumerMappingPlan{}, fmt.Errorf("one entity cannot fill multiple measurement slots")
+		}
+		seenEntity[entityID] = entityID != ""
+		desired[slot.Metric] = entityID
+		wantedKind[slot.Metric] = slot.Kind
+	}
+	mappings, err := a.energyStore.ListMappings(tenant.Slug)
+	if err != nil {
+		return energyConsumerMappingPlan{}, err
+	}
+	byEntity := map[string]energy.EntityMapping{}
+	current := map[string]energy.EntityMapping{}
+	for _, mapping := range mappings {
+		entityID := strings.ToLower(strings.TrimSpace(mapping.EntityID))
+		byEntity[entityID] = mapping
+		if _, wanted := desired[mapping.Metric]; !wanted {
+			continue
+		}
+		legacyWholeHome := mapping.AssetID == "" && (mapping.Metric == energy.MetricLoadPower || mapping.Metric == energy.MetricGridImportPower || mapping.Metric == energy.MetricGridExportPower)
+		if mapping.AssetID == assetID || legacyWholeHome {
+			current[mapping.Metric] = mapping
+		}
+	}
+	plan := energyConsumerMappingPlan{}
+	needsLookup := false
+	for metric, entityID := range desired {
+		if existing, ok := current[metric]; ok && strings.ToLower(existing.EntityID) != entityID {
+			plan.deleteIDs = append(plan.deleteIDs, existing.ID)
+		}
+		if entityID == "" || strings.EqualFold(current[metric].EntityID, entityID) {
+			continue
+		}
+		if !strings.HasPrefix(entityID, "sensor.") {
+			return energyConsumerMappingPlan{}, fmt.Errorf("only sensor entities may be mapped")
+		}
+		if existing, found := byEntity[entityID]; found && existing.Confirmed {
+			belongsToNode := existing.AssetID == assetID
+			for _, assigned := range current {
+				belongsToNode = belongsToNode || strings.EqualFold(assigned.EntityID, entityID)
+			}
+			if !belongsToNode {
+				return energyConsumerMappingPlan{}, fmt.Errorf("entity already has another assignment")
+			}
+		}
+		needsLookup = true
+	}
+	statesByID := map[string]homeassistant.EntityState{}
+	if needsLookup {
+		if !tenant.HA.Configured() {
+			return energyConsumerMappingPlan{}, fmt.Errorf("home assistant is not configured")
+		}
+		lookupCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
+		states, lookupErr := tenant.HA.States(lookupCtx)
+		cancel()
+		if lookupErr != nil {
+			return energyConsumerMappingPlan{}, lookupErr
+		}
+		for _, state := range states {
+			statesByID[strings.ToLower(strings.TrimSpace(state.EntityID))] = state
+		}
+	}
+	for metric, entityID := range desired {
+		if entityID == "" || strings.EqualFold(current[metric].EntityID, entityID) {
+			continue
+		}
+		state, found := statesByID[entityID]
+		if !found || consumerMeasurementKind(state) != wantedKind[metric] {
+			return energyConsumerMappingPlan{}, fmt.Errorf("entity does not match measurement slot")
+		}
+		mapping := byEntity[entityID]
+		mapping.TenantSlug = tenant.Slug
+		mapping.EntityID = entityID
+		mapping.AssetID = assetID
+		mapping.Metric = metric
+		mapping.DisplayName = firstNonEmpty(haAttribute(state.Attributes, "friendly_name"), entityID)
+		mapping.Unit = haAttribute(state.Attributes, "unit_of_measurement")
+		mapping.DeviceClass = haAttribute(state.Attributes, "device_class")
+		mapping.Confirmed = true
+		seen := state.LastUpdated
+		if seen.IsZero() {
+			seen = state.LastChanged
+		}
+		if !seen.IsZero() {
+			mapping.LastSeenAt = &seen
+		}
+		plan.upserts = append(plan.upserts, mapping)
+	}
+	return plan, nil
+}
+
+func (a *app) updateEnergyFlowNode(w http.ResponseWriter, r *http.Request, ac authCtx, nodeType string) {
+	allowed := map[string]string{
+		"home": energyFlowHomeKind, "grid": energyFlowGridKind, "pv": "pv",
+		"storage": "battery", "parking": energyFlowParkingKind,
+	}
+	wantedKind, ok := allowed[nodeType]
+	if !ok {
+		http.Error(w, "Ungültiger Energieknoten.", http.StatusBadRequest)
+		return
+	}
+	assets, err := a.energyStore.ListAssets(ac.tenant.Slug)
+	if err != nil {
+		http.Error(w, "Energieknoten konnten nicht geladen werden.", http.StatusInternalServerError)
+		return
+	}
+	asset := energyFlowNodeAsset(assets, ac.tenant.Slug, nodeType)
+	postedID := strings.TrimSpace(r.FormValue("asset_id"))
+	if postedID != asset.ID {
+		http.Error(w, "Ungültiger Energieknoten.", http.StatusBadRequest)
+		return
+	}
+	asset.Kind = wantedKind
+	if nodeType == "home" || nodeType == "grid" || nodeType == "parking" || asset.Source == "" {
+		asset.Source = energyFlowNodeAssetSource
+	}
+	asset.Confirmed = true
+	asset.Name = cleanEnergyText(r.FormValue("name"), 80)
+	if asset.Name == "" {
+		http.Redirect(w, r, "/app/energie?verbraucher=name", http.StatusSeeOther)
+		return
+	}
+	if asset.Metadata == nil {
+		asset.Metadata = map[string]string{}
+	}
+	asset.Metadata["icon"] = normalizeEnergyConsumerIcon(r.FormValue("icon"), wantedKind)
+	asset.Metadata["icon_configured"] = "true"
+	delete(asset.Metadata, "hidden")
+	if nodeType == "parking" {
+		asset.Flexibility = energyConsumerFlexibility(r.FormValue("flexibility"))
+		asset.RatedPowerKW = nil
+		if raw := strings.TrimSpace(r.FormValue("rated_power_kw")); raw != "" {
+			value, parseErr := homeassistant.ParseFloat(raw)
+			if parseErr != nil || !energy.ValidPowerKW(value, 1000) {
+				http.Redirect(w, r, "/app/energie?verbraucher=leistung", http.StatusSeeOther)
+				return
+			}
+			asset.RatedPowerKW = &value
+		}
+	}
+	if nodeType == "storage" && strings.TrimSpace(r.FormValue("battery_power_entity")) != "" &&
+		(strings.TrimSpace(r.FormValue("battery_charge_entity")) != "" || strings.TrimSpace(r.FormValue("battery_discharge_entity")) != "") {
+		http.Redirect(w, r, "/app/energie?verbraucher=messwerte", http.StatusSeeOther)
+		return
+	}
+	plan, err := a.planEnergyFlowNodeMappings(r.Context(), ac.tenant, asset.ID, energyFlowNodeSlots(nodeType, asset.ID, nil), r.Form)
+	if err != nil {
+		http.Redirect(w, r, "/app/energie?verbraucher=messwerte", http.StatusSeeOther)
+		return
+	}
+	if err := a.energyStore.UpsertAsset(asset); err != nil {
+		http.Error(w, "Energieknoten konnte nicht gespeichert werden.", http.StatusInternalServerError)
+		return
+	}
+	if err := a.applyEnergyConsumerMappingPlan(ac.tenant.Slug, plan); err != nil {
+		http.Error(w, "Messwerte konnten nicht gespeichert werden.", http.StatusInternalServerError)
+		return
+	}
+	if nodeType == "parking" {
+		_ = a.updateEnergyConsumerPriority(ac.tenant.Slug, asset.ID, r.FormValue("priority"))
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: ac.tenant.Slug, ActorEmail: ac.email, ActorRole: ac.role,
+		Action: "energy.flow-node.update", TargetType: "energy-asset", TargetID: asset.ID,
+		Summary: "Energiefluss-Knoten bearbeitet", Details: map[string]string{"node_type": nodeType},
+	})
+	http.Redirect(w, r, "/app/energie?verbraucher=gespeichert", http.StatusSeeOther)
+}
+
+func (a *app) updateEnergyConsumerPriority(tenantSlug, assetID, rawPriority string) error {
+	assets, err := a.energyStore.ListAssets(tenantSlug)
+	if err != nil {
+		return err
+	}
+	ordered := []string{}
+	for _, asset := range sortEnergyConsumers(assets) {
+		if isEnergyFlowSystemKind(asset.Kind) && asset.Kind != energyFlowParkingKind {
+			continue
+		}
+		if asset.ID != assetID {
+			ordered = append(ordered, asset.ID)
+		}
+	}
+	priority, err := strconv.Atoi(strings.TrimSpace(rawPriority))
+	if err != nil || priority < 1 {
+		priority = len(ordered) + 1
+	}
+	if priority > len(ordered)+1 {
+		priority = len(ordered) + 1
+	}
+	index := priority - 1
+	ordered = append(ordered, "")
+	copy(ordered[index+1:], ordered[index:])
+	ordered[index] = assetID
+	_, err = a.energyStore.UpdateAssetPriorities(tenantSlug, ordered)
+	return err
+}
+
+func (a *app) ensureEnergyParkingAsset(tenant tenantConfig, assets []energy.Asset) ([]energy.Asset, error) {
+	if !tenant.HA.ChargingConfigured() {
+		return assets, nil
+	}
+	parkingID := energyFlowNodeID(tenant.Slug, "parking")
+	for _, asset := range assets {
+		if asset.ID == parkingID {
+			return assets, nil
+		}
+	}
+	parking := energyFlowNodeAsset(assets, tenant.Slug, "parking")
+	if err := a.energyStore.UpsertAsset(parking); err != nil {
+		return assets, err
+	}
+	return append(assets, parking), nil
+}
+
 func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if !a.canManageEnergy(ac) {
 		http.Error(w, "Kein Zugriff", http.StatusForbidden)
@@ -2682,6 +2929,10 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
+		return
+	}
+	if nodeType := strings.TrimSpace(r.FormValue("node_type")); nodeType != "" && nodeType != "consumer" {
+		a.updateEnergyFlowNode(w, r, ac, nodeType)
 		return
 	}
 	name := cleanEnergyText(r.FormValue("name"), 80)
@@ -2695,12 +2946,20 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 		http.Error(w, "Verbraucher konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
 	}
+	assets, err = a.ensureEnergyParkingAsset(ac.tenant, assets)
+	if err != nil {
+		http.Error(w, "Verbraucher konnten nicht vorbereitet werden.", http.StatusInternalServerError)
+		return
+	}
 	assetID := strings.TrimSpace(r.FormValue("asset_id"))
 	asset := energy.Asset{}
 	consumerCount := 0
 	previousPriority := 1
 	for _, candidate := range sortEnergyConsumers(assets) {
-		if candidate.Kind == "pv" || candidate.Kind == "battery" {
+		if isEnergyFlowSystemKind(candidate.Kind) && candidate.Kind != energyFlowParkingKind {
+			continue
+		}
+		if candidate.Kind == energyFlowParkingKind && candidate.Metadata["hidden"] == "true" {
 			continue
 		}
 		consumerCount++
@@ -2717,7 +2976,7 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 			if candidate.ID != assetID {
 				continue
 			}
-			if candidate.Kind == "pv" || candidate.Kind == "battery" {
+			if isEnergyFlowSystemKind(candidate.Kind) {
 				http.Error(w, "Diese Anlage ist kein Verbraucher.", http.StatusBadRequest)
 				return
 			}
@@ -2779,7 +3038,10 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 	}
 	orderedIDs := []string{}
 	for _, candidate := range sortEnergyConsumers(updatedAssets) {
-		if candidate.Kind == "pv" || candidate.Kind == "battery" || candidate.ID == asset.ID {
+		if (isEnergyFlowSystemKind(candidate.Kind) && candidate.Kind != energyFlowParkingKind) || candidate.ID == asset.ID {
+			continue
+		}
+		if candidate.Kind == energyFlowParkingKind && candidate.Metadata["hidden"] == "true" {
 			continue
 		}
 		orderedIDs = append(orderedIDs, candidate.ID)
@@ -2841,11 +3103,36 @@ func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac au
 		return
 	}
 	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
+	parkingID := energyFlowNodeID(ac.tenant.Slug, "parking")
+	if assetID == parkingID {
+		asset := energyFlowNodeAsset(assets, ac.tenant.Slug, "parking")
+		if asset.Metadata == nil {
+			asset.Metadata = map[string]string{}
+		}
+		asset.Metadata["hidden"] = "true"
+		asset.Source = energyFlowNodeAssetSource
+		if err := a.energyStore.UpsertAsset(asset); err != nil {
+			http.Error(w, "Verbraucher konnte nicht entfernt werden.", http.StatusInternalServerError)
+			return
+		}
+		for _, mapping := range mappings {
+			if mapping.AssetID == assetID && (mapping.Metric == energy.MetricConsumerPower || mapping.Metric == energy.MetricConsumerEnergy) {
+				_, _ = a.energyStore.DeleteMapping(ac.tenant.Slug, mapping.ID)
+			}
+		}
+		a.recordAudit(auditEvent{
+			TenantSlug: ac.tenant.Slug, ActorEmail: ac.email, ActorRole: ac.role,
+			Action: "energy.consumer.remove", TargetType: "energy-asset", TargetID: assetID,
+			Summary: "Verbraucher entfernt", Details: map[string]string{"node_type": "parking"},
+		})
+		http.Redirect(w, r, "/app/energie?verbraucher=weg", http.StatusSeeOther)
+		return
+	}
 	for _, asset := range assets {
 		if asset.ID != assetID {
 			continue
 		}
-		if asset.Kind == "pv" || asset.Kind == "battery" {
+		if isEnergyFlowSystemKind(asset.Kind) {
 			http.Redirect(w, r, "/app/energie", http.StatusSeeOther)
 			return
 		}
@@ -3039,7 +3326,8 @@ func (a *app) saveManualEnergyMapping(tenantSlug, entityID, metric, displayName,
 	}
 	switch metric {
 	case energy.MetricGridImportPower, energy.MetricGridImportEnergy, energy.MetricGridExportPower,
-		energy.MetricPVPower, energy.MetricBatteryPower, energy.MetricBatterySOC, energy.MetricLoadPower:
+		energy.MetricPVPower, energy.MetricBatteryPower, energy.MetricBatteryCharge,
+		energy.MetricBatteryDischarge, energy.MetricBatterySOC, energy.MetricLoadPower:
 	default:
 		return fmt.Errorf("unsupported metric")
 	}
@@ -3063,7 +3351,7 @@ func inferredEnergyAssetID(metric string, assets []energy.Asset) string {
 	switch metric {
 	case energy.MetricPVPower:
 		kind = "pv"
-	case energy.MetricBatteryPower, energy.MetricBatterySOC:
+	case energy.MetricBatteryPower, energy.MetricBatteryCharge, energy.MetricBatteryDischarge, energy.MetricBatterySOC:
 		kind = "battery"
 	default:
 		return ""
@@ -3329,6 +3617,12 @@ func energyMetricForMapping(mapping energy.EntityMapping) string {
 }
 
 func energyMetricKind(metric, detail string) string {
+	if metric == energy.MetricBatteryCharge {
+		return "battery-charge"
+	}
+	if metric == energy.MetricBatteryDischarge {
+		return "battery-discharge"
+	}
 	if metric != energy.MetricBatteryPower {
 		return metric
 	}
@@ -3409,7 +3703,7 @@ func buildEnergyLiveView(metrics []energyMetricView) energyLiveView {
 		switch item.Metric {
 		case energy.MetricGridImportEnergy:
 			topics["Verbrauch"] = true
-		case energy.MetricBatteryPower:
+		case energy.MetricBatteryPower, energy.MetricBatteryCharge, energy.MetricBatteryDischarge:
 			topics["Speicher"] = true
 		default:
 			topics[item.Label] = true
@@ -3432,30 +3726,46 @@ func buildEnergyLiveView(metrics []energyMetricView) energyLiveView {
 // ribbon widths and the proportional destination bands.
 
 type energyFlowNodeConfig struct {
-	Icon  string  `json:"icon,omitempty"`
-	Label string  `json:"label,omitempty"`
-	Value string  `json:"value,omitempty"`
-	Unit  string  `json:"unit,omitempty"`
-	KW    float64 `json:"kw"`
-	Dir   string  `json:"dir,omitempty"`
-	Mode  string  `json:"mode,omitempty"`
-	Sub   string  `json:"sub,omitempty"`
-	Flow  float64 `json:"flow,omitempty"`
-	Hover string  `json:"hover,omitempty"`
+	ID           string                      `json:"id,omitempty"`
+	NodeType     string                      `json:"nodeType,omitempty"`
+	Icon         string                      `json:"icon,omitempty"`
+	Label        string                      `json:"label,omitempty"`
+	Value        string                      `json:"value,omitempty"`
+	Unit         string                      `json:"unit,omitempty"`
+	KW           float64                     `json:"kw"`
+	Dir          string                      `json:"dir,omitempty"`
+	Mode         string                      `json:"mode,omitempty"`
+	Sub          string                      `json:"sub,omitempty"`
+	Flow         float64                     `json:"flow,omitempty"`
+	Hover        string                      `json:"hover,omitempty"`
+	Editable     bool                        `json:"editable,omitempty"`
+	Measurements []energyFlowMeasurementSlot `json:"measurements,omitempty"`
+}
+
+type energyFlowMeasurementSlot struct {
+	Name     string `json:"name"`
+	Label    string `json:"label"`
+	Kind     string `json:"kind"`
+	Metric   string `json:"-"`
+	EntityID string `json:"entity,omitempty"`
 }
 
 type energyFlowConsumerConfig struct {
-	ID           string  `json:"id,omitempty"`
-	Icon         string  `json:"icon,omitempty"`
-	Title        string  `json:"title"`
-	Kind         string  `json:"kind,omitempty"`
-	RatedPower   string  `json:"ratedPower,omitempty"`
-	Flexibility  string  `json:"flexibility,omitempty"`
-	PowerEntity  string  `json:"powerEntity,omitempty"`
-	EnergyEntity string  `json:"energyEntity,omitempty"`
-	State        string  `json:"state,omitempty"`
-	KW           float64 `json:"kw"`
-	Active       bool    `json:"active,omitempty"`
+	ID           string                      `json:"id,omitempty"`
+	Icon         string                      `json:"icon,omitempty"`
+	Title        string                      `json:"title"`
+	Kind         string                      `json:"kind,omitempty"`
+	RatedPower   string                      `json:"ratedPower,omitempty"`
+	Flexibility  string                      `json:"flexibility,omitempty"`
+	PowerEntity  string                      `json:"powerEntity,omitempty"`
+	EnergyEntity string                      `json:"energyEntity,omitempty"`
+	State        string                      `json:"state,omitempty"`
+	KW           float64                     `json:"kw"`
+	Active       bool                        `json:"active,omitempty"`
+	NodeType     string                      `json:"nodeType,omitempty"`
+	Deletable    bool                        `json:"deletable,omitempty"`
+	Measurements []energyFlowMeasurementSlot `json:"measurements,omitempty"`
+	Priority     int                         `json:"-"`
 }
 
 type energyFlowConfig struct {
@@ -3503,9 +3813,8 @@ func sortEnergyConsumers(assets []energy.Asset) []energy.Asset {
 }
 
 // reorderEnergyConsumers persists the rail order chosen by dragging or the
-// keyboard (HAUSV-441). The client posts every consumer asset id in its new
-// order. Parkplatz 20 is not an asset and keeps its anchored place after the
-// assets.
+// keyboard (HAUSV-441). The client posts every visible consumer asset id in
+// its new order; the configured parking charger follows the same contract.
 func (a *app) reorderEnergyConsumers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if !a.canManageEnergy(ac) {
 		http.Error(w, "Kein Zugriff", http.StatusForbidden)
@@ -3521,10 +3830,30 @@ func (a *app) reorderEnergyConsumers(w http.ResponseWriter, r *http.Request, ac 
 		http.Error(w, "Energiedaten konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
 	}
+	parkingID := energyFlowNodeID(ac.tenant.Slug, "parking")
+	for _, id := range order {
+		if id != parkingID {
+			continue
+		}
+		found := false
+		for _, asset := range assets {
+			found = found || asset.ID == parkingID
+		}
+		if !found && ac.tenant.HA.ChargingConfigured() {
+			parking := energyFlowNodeAsset(assets, ac.tenant.Slug, "parking")
+			if err := a.energyStore.UpsertAsset(parking); err != nil {
+				http.Error(w, "Reihenfolge konnte nicht gespeichert werden.", http.StatusInternalServerError)
+				return
+			}
+			assets = append(assets, parking)
+		}
+	}
 	byID := map[string]energy.Asset{}
 	for _, asset := range assets {
-		switch asset.Kind {
-		case "pv", "battery":
+		if isEnergyFlowSystemKind(asset.Kind) && asset.Kind != energyFlowParkingKind {
+			continue
+		}
+		if asset.Kind == energyFlowParkingKind && asset.Metadata["hidden"] == "true" {
 			continue
 		}
 		byID[asset.ID] = asset
@@ -3566,13 +3895,103 @@ func (a *app) reorderEnergyConsumers(w http.ResponseWriter, r *http.Request, ac 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, mappings []energy.EntityMapping, metrics []energyMetricView, charging parkingLiveView, canManage bool) energyFlowConfig {
+func energyFlowMappingEntity(mappings []energy.EntityMapping, assetID, metric string) string {
+	for _, mapping := range mappings {
+		if !mapping.Confirmed || mapping.Metric != metric {
+			continue
+		}
+		if mapping.AssetID == assetID || (mapping.AssetID == "" && (metric == energy.MetricLoadPower || metric == energy.MetricGridImportPower || metric == energy.MetricGridExportPower)) {
+			return mapping.EntityID
+		}
+	}
+	return ""
+}
+
+func energyFlowNodeAsset(assets []energy.Asset, tenantSlug, nodeType string) energy.Asset {
+	wantedKind := ""
+	defaultName, defaultIcon := "", "plug"
+	switch nodeType {
+	case "home":
+		wantedKind, defaultName, defaultIcon = energyFlowHomeKind, "Hausverbrauch", "house"
+	case "grid":
+		wantedKind, defaultName, defaultIcon = energyFlowGridKind, "Netz", "utility-pole"
+	case "pv":
+		wantedKind, defaultName, defaultIcon = "pv", "PV-Leistung", "solar-panel"
+	case "storage":
+		wantedKind, defaultName, defaultIcon = "battery", "Speicher", "battery"
+	case "parking":
+		wantedKind, defaultName, defaultIcon = energyFlowParkingKind, "Parkplatz 20", "square-parking"
+	}
+	for _, asset := range assets {
+		if asset.Kind != wantedKind {
+			continue
+		}
+		metadata := map[string]string{}
+		for key, value := range asset.Metadata {
+			metadata[key] = value
+		}
+		asset.Metadata = metadata
+		if strings.TrimSpace(asset.Name) == "" {
+			asset.Name = defaultName
+		}
+		asset.Metadata["icon"] = normalizeEnergyConsumerIcon(asset.Metadata["icon"], wantedKind)
+		if asset.Metadata["icon"] == "plug" && defaultIcon != "plug" && strings.TrimSpace(asset.Metadata["icon_configured"]) == "" {
+			asset.Metadata["icon"] = defaultIcon
+		}
+		return asset
+	}
+	id := energyFlowNodeID(tenantSlug, nodeType)
+	if nodeType == "pv" || nodeType == "storage" {
+		id = energy.StableAssetID(tenantSlug, wantedKind)
+	}
+	return energy.Asset{
+		ID: id, TenantSlug: tenantSlug, Kind: wantedKind, Name: defaultName,
+		Source: energyFlowNodeAssetSource, Confirmed: true,
+		Metadata: map[string]string{"icon": defaultIcon},
+	}
+}
+
+func energyFlowNodeSlots(nodeType, assetID string, mappings []energy.EntityMapping) []energyFlowMeasurementSlot {
+	definitions := []energyFlowMeasurementSlot{}
+	switch nodeType {
+	case "home":
+		definitions = append(definitions, energyFlowMeasurementSlot{Name: "load_power_entity", Label: "Aktueller Hausverbrauch", Kind: "power", Metric: energy.MetricLoadPower})
+	case "grid":
+		definitions = append(definitions,
+			energyFlowMeasurementSlot{Name: "grid_import_entity", Label: "Netzbezug", Kind: "power", Metric: energy.MetricGridImportPower},
+			energyFlowMeasurementSlot{Name: "grid_export_entity", Label: "Netzeinspeisung", Kind: "power", Metric: energy.MetricGridExportPower})
+	case "pv":
+		definitions = append(definitions, energyFlowMeasurementSlot{Name: "pv_power_entity", Label: "Aktuelle PV-Leistung", Kind: "power", Metric: energy.MetricPVPower})
+	case "storage":
+		definitions = append(definitions,
+			energyFlowMeasurementSlot{Name: "battery_power_entity", Label: "Nettoleistung mit Vorzeichen (alternativ)", Kind: "power", Metric: energy.MetricBatteryPower},
+			energyFlowMeasurementSlot{Name: "battery_charge_entity", Label: "Ladeleistung", Kind: "power", Metric: energy.MetricBatteryCharge},
+			energyFlowMeasurementSlot{Name: "battery_discharge_entity", Label: "Entladeleistung", Kind: "power", Metric: energy.MetricBatteryDischarge},
+			energyFlowMeasurementSlot{Name: "battery_soc_entity", Label: "Ladestand", Kind: "percentage", Metric: energy.MetricBatterySOC})
+	case "parking":
+		definitions = append(definitions,
+			energyFlowMeasurementSlot{Name: "consumer_power_entity", Label: "Aktuelle Ladeleistung", Kind: "power", Metric: energy.MetricConsumerPower},
+			energyFlowMeasurementSlot{Name: "consumer_energy_entity", Label: "Ladeenergiezähler", Kind: "energy", Metric: energy.MetricConsumerEnergy})
+	}
+	for index := range definitions {
+		definitions[index].EntityID = energyFlowMappingEntity(mappings, assetID, definitions[index].Metric)
+	}
+	return definitions
+}
+
+func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []energy.Asset, mappings []energy.EntityMapping, metrics []energyMetricView, charging parkingLiveView, canManage bool) energyFlowConfig {
 	cfg := energyFlowConfig{AddHint: canManage}
-	cfg.Home = energyFlowNodeConfig{Value: "–", Label: "Hausverbrauch"}
+	homeAsset := energyFlowNodeAsset(assets, tenantSlug, "home")
+	cfg.Home = energyFlowNodeConfig{
+		ID: homeAsset.ID, NodeType: "home", Icon: energyConsumerIcon(homeAsset),
+		Value: "–", Label: homeAsset.Name, Editable: canManage,
+		Measurements: energyFlowNodeSlots("home", homeAsset.ID, mappings),
+	}
 	if live.HasMain {
 		watts := math.Abs(energyPowerWatts(&live.Main))
-		cfg.Home = energyFlowNodeConfig{Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000, Label: "Hausverbrauch"}
+		cfg.Home.Value, cfg.Home.Unit, cfg.Home.KW = formatEnergyFlowKW(watts), "kW", watts/1000
 	}
+	pvAsset := energyFlowNodeAsset(assets, tenantSlug, "pv")
 	for index := range live.Flows {
 		item := live.Flows[index]
 		if item.Metric != energy.MetricPVPower {
@@ -3582,11 +4001,13 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, mappings 
 		// no producer ribbon appears at night.
 		watts := math.Max(0, energyPowerWatts(&item))
 		cfg.Producers = append(cfg.Producers, energyFlowNodeConfig{
-			Icon: "solar-panel", Label: item.Label,
+			ID: pvAsset.ID, NodeType: "pv", Icon: energyConsumerIcon(pvAsset), Label: pvAsset.Name, Editable: canManage,
 			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000,
+			Measurements: energyFlowNodeSlots("pv", pvAsset.ID, mappings),
 		})
 	}
 	if live.HasBattery || live.HasBatterySOC {
+		storageAsset := energyFlowNodeAsset(assets, tenantSlug, "storage")
 		watts := math.Abs(energyPowerWatts(&live.Battery))
 		mode := "wartet"
 		if live.HasBattery && watts >= 1 {
@@ -3597,7 +4018,7 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, mappings 
 				mode = "entlädt"
 			}
 		}
-		sub := "Speicher"
+		sub := storageAsset.Name
 		if live.HasBatterySOC {
 			sub += " · " + live.BatterySOC.Value
 		}
@@ -3607,18 +4028,22 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, mappings 
 			flow = 0
 		}
 		cfg.Storage = &energyFlowNodeConfig{
-			Icon: "battery", Value: formatEnergyFlowKW(watts), Unit: "kW",
+			ID: storageAsset.ID, NodeType: "storage", Icon: energyConsumerIcon(storageAsset), Label: storageAsset.Name,
+			Editable: canManage, Measurements: energyFlowNodeSlots("storage", storageAsset.ID, mappings),
+			Value: formatEnergyFlowKW(watts), Unit: "kW",
 			Mode: mode, Flow: flow, Sub: sub + " · " + mode,
 		}
 	}
 	if live.HasGrid {
+		gridAsset := energyFlowNodeAsset(assets, tenantSlug, "grid")
 		dir := "import"
 		if live.Grid.Metric == energy.MetricGridExportPower {
 			dir = "export"
 		}
 		watts := math.Abs(energyPowerWatts(&live.Grid))
 		cfg.Grid = &energyFlowNodeConfig{
-			Icon: "utility-pole", Label: live.Grid.Label,
+			ID: gridAsset.ID, NodeType: "grid", Icon: energyConsumerIcon(gridAsset), Label: gridAsset.Name,
+			Editable: canManage, Measurements: energyFlowNodeSlots("grid", gridAsset.ID, mappings),
 			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000, Dir: dir,
 		}
 	}
@@ -3652,8 +4077,7 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, mappings 
 		}
 	}
 	for _, asset := range sortEnergyConsumers(assets) {
-		switch asset.Kind {
-		case "pv", "battery":
+		if isEnergyFlowSystemKind(asset.Kind) {
 			continue
 		}
 		title := strings.TrimSpace(asset.Name)
@@ -3679,20 +4103,39 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, mappings 
 			ID: asset.ID, Icon: energyConsumerIcon(asset), Title: title,
 			Kind: asset.Kind, RatedPower: ratedPower, Flexibility: asset.Flexibility,
 			PowerEntity: measurementEntities[asset.ID]["power"], EnergyEntity: measurementEntities[asset.ID]["energy"],
-			State: state, KW: kw, Active: active,
+			State: state, KW: kw, Active: active, NodeType: "consumer", Deletable: true,
+			Priority: energyConsumerPriority(asset),
+			Measurements: []energyFlowMeasurementSlot{
+				{Name: "consumer_power_entity", Label: "Aktuelle Leistung", Kind: "power", EntityID: measurementEntities[asset.ID]["power"]},
+				{Name: "consumer_energy_entity", Label: "Energiezähler", Kind: "energy", EntityID: measurementEntities[asset.ID]["energy"]},
+			},
 		})
 	}
 	if charging.Available {
-		state := charging.ModeLabel
-		kw := 0.0
-		if (charging.Mode == "surplus" || charging.Mode == "manual") && charging.PowerKW > 0.05 {
-			kw = charging.PowerKW
-			state = charging.ModeLabel + " mit " + formatEnergyFlowKW(kw*1000) + " kW"
+		parkingAsset := energyFlowNodeAsset(assets, tenantSlug, "parking")
+		if parkingAsset.Metadata["hidden"] != "true" {
+			state := charging.ModeLabel
+			kw := 0.0
+			if reading, ok := consumerPower[parkingAsset.ID]; ok {
+				watts := math.Abs(energyPowerWatts(&reading))
+				kw = watts / 1000
+				state = formatEnergyFlowKW(watts) + " kW · Home Assistant"
+			} else if (charging.Mode == "surplus" || charging.Mode == "manual") && charging.PowerKW > 0.05 {
+				kw = charging.PowerKW
+				state = charging.ModeLabel + " mit " + formatEnergyFlowKW(kw*1000) + " kW"
+			}
+			cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
+				ID: parkingAsset.ID, Icon: energyConsumerIcon(parkingAsset), Title: parkingAsset.Name,
+				Kind: "other", Flexibility: parkingAsset.Flexibility, NodeType: "parking", Deletable: true,
+				State: state, KW: kw, Active: kw > 0, Priority: energyConsumerPriority(parkingAsset),
+				Measurements: []energyFlowMeasurementSlot{
+					{Name: "consumer_power_entity", Label: "Aktuelle Ladeleistung", Kind: "power", EntityID: firstNonEmpty(energyFlowMappingEntity(mappings, parkingAsset.ID, energy.MetricConsumerPower), charging.PowerEntity)},
+					{Name: "consumer_energy_entity", Label: "Ladeenergiezähler", Kind: "energy", EntityID: firstNonEmpty(energyFlowMappingEntity(mappings, parkingAsset.ID, energy.MetricConsumerEnergy), charging.EnergyEntity)},
+				},
+			})
 		}
-		cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
-			Icon: "square-parking", Title: "Parkplatz 20", State: state, KW: kw, Active: kw > 0,
-		})
 	}
+	sort.SliceStable(cfg.Consumers, func(i, j int) bool { return cfg.Consumers[i].Priority < cfg.Consumers[j].Priority })
 	applyEnergyFlowHovers(&cfg, live)
 	return cfg
 }
@@ -3811,7 +4254,7 @@ func combineBatteryMetrics(metrics []energyMetricView, selected map[int]bool) (e
 	chargeIndex, dischargeIndex, genericIndex := -1, -1, -1
 	for index := range metrics {
 		item := metrics[index]
-		if item.Metric != energy.MetricBatteryPower {
+		if item.Metric != energy.MetricBatteryPower && item.Metric != energy.MetricBatteryCharge && item.Metric != energy.MetricBatteryDischarge {
 			continue
 		}
 		switch item.Kind {
@@ -3943,7 +4386,7 @@ func (a *app) energy24HourChart(ctx context.Context, tenant tenantConfig, mappin
 		}
 		metric := energyMetricForMapping(mapping)
 		key := metric
-		if metric == energy.MetricBatteryPower {
+		if metric == energy.MetricBatteryPower || metric == energy.MetricBatteryCharge || metric == energy.MetricBatteryDischarge {
 			key = energyMetricKind(metric, mapping.DisplayName+" "+mapping.EntityID)
 		}
 		switch key {
@@ -4587,8 +5030,8 @@ func buildEnergyMappingSlots(assets []energy.Asset, mappings []energy.EntityMapp
 			metrics: []string{energy.MetricPVPower}, required: hasAsset["pv"] || hasMetric[energy.MetricPVPower],
 		},
 		{
-			key: "battery-power", label: "Speicherleistung", purpose: "Zeigt Laden negativ und Entladen positiv.",
-			metrics: []string{energy.MetricBatteryPower}, required: hasAsset["battery"] || hasMetric[energy.MetricBatteryPower],
+			key: "battery-power", label: "Speicherleistung", purpose: "Zeigt Nettoleistung oder getrennte Lade- und Entladeleistung.",
+			metrics: []string{energy.MetricBatteryPower, energy.MetricBatteryCharge, energy.MetricBatteryDischarge}, required: hasAsset["battery"] || hasMetric[energy.MetricBatteryPower] || hasMetric[energy.MetricBatteryCharge] || hasMetric[energy.MetricBatteryDischarge],
 		},
 		{
 			key: "battery-soc", label: "Speicherfüllstand", purpose: "Zeigt, wie viel Energie relativ zur Kapazität verfügbar ist.",
@@ -4669,6 +5112,9 @@ func buildEnergyCoverageViews(assets []energy.Asset, mappings []energy.EntityMap
 		measured++
 	}
 	for _, asset := range assets {
+		if asset.Kind == energyFlowHomeKind || asset.Kind == energyFlowGridKind || asset.Kind == energyFlowParkingKind {
+			continue
+		}
 		hasMeasurement := confirmedAssets[asset.ID]
 		if hasMeasurement {
 			measured++
@@ -5162,6 +5608,10 @@ func energyMetricLabel(metric string) string {
 		return "PV-Leistung"
 	case energy.MetricBatteryPower:
 		return "Batterieleistung"
+	case energy.MetricBatteryCharge:
+		return "Batterie-Ladeleistung"
+	case energy.MetricBatteryDischarge:
+		return "Batterie-Entladeleistung"
 	case energy.MetricBatterySOC:
 		return "Batteriestand"
 	case energy.MetricLoadPower:
