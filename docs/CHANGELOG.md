@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.75.3] - 2026-08-12
+
+### Verbessert
+
+- **Das Energie-Cockpit bleibt selbstständig aktuell.** Live-Werte werden alle zehn Sekunden ohne Seitensprung erneuert; ein sichtbarer Zeitstempel zeigt das Alter des letzten erfolgreichen Abrufs und kennzeichnet unterbrochene Aktualisierungen klar.
+
 ## [0.75.2] - 2026-08-12
 
 ### Verbessert

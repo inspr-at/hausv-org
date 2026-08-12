@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.75.3",
+			Date:     "12. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Live-Werte aktualisieren sich automatisch.",
+			Intro:    "Der Energiefluss lädt alle zehn Sekunden neue Home-Assistant-Werte, zeigt das Aktualisierungsalter und macht eine unterbrochene Verbindung sichtbar.",
+			Items:    []NoteItem{},
+		},
+		{
 			Version:  "0.75.2",
 			Date:     "12. August 2026",
 			Kind:     "Energie-Cockpit",

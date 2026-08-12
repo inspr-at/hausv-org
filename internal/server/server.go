@@ -892,6 +892,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /app/zuhause/onboarding", a.page(a.withEnergyLifecycleOperation(a.homeOnboarding)))
 	mux.HandleFunc("POST /app/zuhause/onboarding", a.action(a.withEnergyLifecycleOperation(a.updateHomeOnboarding)))
 	mux.HandleFunc("GET /app/energie", a.page(a.withEnergyLifecycleOperation(a.energyCockpit)))
+	mux.HandleFunc("GET /app/energie/live", a.page(a.withEnergyLifecycleOperation(a.energyLiveRefresh)))
 	mux.HandleFunc("POST /app/energie/mode", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyMode)))
 	mux.HandleFunc("POST /app/energie/mappings", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyMappings)))
 	mux.HandleFunc("POST /app/energie/assets", a.action(a.withClaimedEnergyLifecycleOperation(a.updateEnergyAssets)))
