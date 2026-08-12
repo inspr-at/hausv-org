@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.76.2] - 2026-08-12
+
+### Verbessert
+
+- **Der Seitenleisten-Fuß bleibt auch bei langen Kontodaten vollständig sichtbar.** Die Version steht kompakt bei der Rolle; der Kartenhinweis erhält darunter seine eigene Zeile ohne abgeschnittenen Text.
+
 ## [0.76.1] - 2026-08-12
 
 ### Verbessert
