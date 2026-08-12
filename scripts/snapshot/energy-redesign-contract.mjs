@@ -226,11 +226,36 @@ async function assertEnergyConsumerManagement(page, { label, width }) {
   await search.fill('Klima');
   const visibleChoices = await dialog.locator('[data-consumer-icon-choice]:visible').count();
   if (visibleChoices !== 1) fail(label, 'Lucide-Symbolsuche filtert die Auswahl nicht eindeutig', { visibleChoices });
+  await search.fill('cable-car');
+  const completeLibraryChoice = dialog.locator('label:has([name="icon_choice"][value="cable-car"])');
+  if (!(await completeLibraryChoice.isVisible())) {
+    fail(label, 'vollständige Lucide-Library ist nicht durchsuchbar');
+  }
+  await completeLibraryChoice.click();
+  if (await dialog.locator('[data-consumer-icon-value]').inputValue() !== 'cable-car') {
+    fail(label, 'Symbol aus vollständiger Lucide-Library lässt sich nicht auswählen');
+  }
   await search.fill('');
-  await dialog.locator('label:has([name="icon"][value="drill"])').click();
-  if (!(await dialog.locator('[name="icon"][value="drill"]').isChecked())) {
+  await dialog.locator('label:has([name="icon_choice"][value="drill"])').click();
+  if (!(await dialog.locator('[name="icon_choice"][value="drill"]').isChecked()) ||
+      await dialog.locator('[data-consumer-icon-value]').inputValue() !== 'drill') {
     fail(label, 'Lucide-Symbol lässt sich nicht auswählen');
   }
+  await page.waitForFunction(() => {
+    const power = document.querySelector('#energy-consumer-dialog [name="consumer_power_entity"]');
+    const status = document.querySelector('#energy-consumer-dialog [data-consumer-measurement-status]');
+    return power?.options.length > 1 && !/geladen/.test(status?.textContent || '');
+  });
+  if (await dialog.locator('[name="consumer_energy_entity"] option').count() < 2) {
+    fail(label, 'Home-Assistant-Leistung und Energiezähler werden nicht getrennt angeboten');
+  }
+  const remove = dialog.locator('[data-consumer-delete]');
+  if (!(await remove.isVisible())) fail(label, 'Löschoption fehlt beim bestehenden Verbraucher');
+  await remove.click();
+  if (!(await dialog.locator('[data-consumer-delete-confirm]').isVisible())) {
+    fail(label, 'Löschen verlangt keine explizite zweite Bestätigung');
+  }
+  await dialog.locator('[data-consumer-delete-cancel]').click();
   await page.keyboard.press('Escape');
   if (await dialog.isVisible() || !(await editTrigger.evaluate((node) => document.activeElement === node))) {
     fail(label, 'Escape schließt den Dialog nicht mit Fokus-Rückgabe');

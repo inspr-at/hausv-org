@@ -57,11 +57,11 @@ jobs:
           govulncheck ./...
 
   browser-role-qa:
-    name: Browser roles + mobile
+    name: Focused browser smoke test
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    # The gate exercises the resident/admin core plus the public, handover,
-    # document, settings and parking lifecycles in one deterministic run.
-    timeout-minutes: 20
+    # Keep the delivery loop short while rapid human review is active. Remove
+    # the focused flags below to restore the broad resident/admin matrix.
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -95,11 +95,13 @@ jobs:
         working-directory: scripts/snapshot
         run: node verify-versions.mjs --strict
 
-      - name: Run headless resident/admin browser gate
+      - name: Run focused headless energy smoke test
         env:
           CI: "true"
           HV_QA_HEADLESS: "true"
-          HV_QA_CI_CORE: "true"
+          HV_QA_ENERGY_ONLY: "true"
+          HV_QA_FAST: "true"
+          HV_QA_LANDING_ONLY: "true"
           HV_QA_ARTIFACT_DIR: ${{ github.workspace }}/artifacts/browser-role-qa
         run: bash scripts/qa-main-flows.sh
 

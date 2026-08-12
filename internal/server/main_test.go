@@ -3537,8 +3537,8 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now().Add(-2 * time.Hour)
 	expiredAt := now.Add(time.Hour)
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Normaler Hinweis", Body: "Aktuell", Category: "Info", PublishedAt: now.Add(time.Hour)})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Fixierter Hinweis", Body: "Wichtig", Category: "Dringend", Pinned: true, PublishedAt: now})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Normaler Hinweis", Body: "Nur im Beitrag 4711", Category: "Info", PublishedAt: now.Add(time.Hour)})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Fixierter Hinweis", Body: "Nur im Beitrag 4712", Category: "Dringend", Pinned: true, PublishedAt: now})
 	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Alter Hinweis", Body: "Abgelaufen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
 	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Geplanter Hinweis", Body: "Zukunft", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
 
@@ -3557,7 +3557,7 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 	if pinnedIndex > regularIndex {
 		t.Fatalf("portal should list pinned announcements first:\n%s", body)
 	}
-	if strings.Contains(body, "Aktuell") || strings.Contains(body, "Wichtig") {
+	if strings.Contains(body, "Nur im Beitrag 4711") || strings.Contains(body, "Nur im Beitrag 4712") {
 		t.Fatalf("portal should preview titles without repeating announcement bodies:\n%s", body)
 	}
 	for _, forbidden := range []string{"Alter Hinweis", "Geplanter Hinweis", "info-card", `class="quick-row disabled"`, "Schnellzugriff", `class="quick-row" href="/app/announcements"`} {

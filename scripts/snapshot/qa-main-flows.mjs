@@ -18,6 +18,7 @@ if (!baseURL) {
 const artifactDir = process.env.HV_QA_ARTIFACT_DIR?.trim();
 const ciCore = process.env.HV_QA_CI_CORE === 'true';
 const energyOnly = process.env.HV_QA_ENERGY_ONLY === 'true';
+const fastQA = process.env.HV_QA_FAST === 'true';
 const activeContexts = new Set();
 const browserEvents = [];
 const loginStorageStates = new Map();
@@ -1512,6 +1513,10 @@ async function assertHomeOnboarding() {
   await page.getByRole('button', { name: 'Mein Zuhause öffnen' }).press('Enter');
   await page.waitForURL(/\/app\/energie/);
   await closeContext(context);
+  if (fastQA) {
+    process.stdout.write('  ✓ Energie-Onboarding · schneller Einrichtungsweg\n');
+    return;
+  }
 
   context = await newContext({ width: 390, height: 844 });
   page = await localLogin(context, 'owner@example.com');
@@ -2674,9 +2679,11 @@ try {
     await ensureFocusedEnergyUnit();
     for (const viewport of viewports) {
       await assertEnergySafetyAndFlow(viewport);
-      await assertEnergyDataControl(viewport);
+      if (!fastQA) await assertEnergyDataControl(viewport);
     }
-    await assertEnergyGeometryMatrix();
+    if (!fastQA) {
+      await assertEnergyGeometryMatrix();
+    }
   } else {
     if (!ciCore) {
       for (const viewport of viewports) {

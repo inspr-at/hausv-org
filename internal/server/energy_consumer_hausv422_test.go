@@ -1,12 +1,15 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/markus-barta/hausv-org/internal/energy"
+	"github.com/markus-barta/hausv-org/internal/homeassistant"
 )
 
 func consumerAppHAUSV422(t *testing.T) *app {
@@ -193,6 +196,121 @@ func TestPresetCannotBeDeletedAsConsumerHAUSV422(t *testing.T) {
 	t.Fatal("die Vorlage wurde über den Verbraucher-Pfad gelöscht")
 }
 
+func TestPresetConsumerCanBeDeletedFromDialog(t *testing.T) {
+	a := consumerAppHAUSV422(t)
+	presetID := energy.StableAssetID("jhw22", "sauna")
+	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher/entfernen",
+		url.Values{"asset_id": {presetID}})
+	if response.Code != http.StatusSeeOther {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+	assets, _ := a.energyStore.ListAssets("jhw22")
+	for _, asset := range assets {
+		if asset.ID == presetID {
+			t.Fatal("Verbraucher-Vorlage wurde trotz bestätigtem Löschen behalten")
+		}
+	}
+}
+
+func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
+	ha := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		states := `[
+			{"entity_id":"sensor.sauna_power","state":"7.2","attributes":{"friendly_name":"Sauna Leistung","device_class":"power","unit_of_measurement":"kW"}},
+			{"entity_id":"sensor.sauna_energy","state":"42","attributes":{"friendly_name":"Sauna Energie","device_class":"energy","unit_of_measurement":"kWh"}},
+			{"entity_id":"sensor.temperature","state":"22","attributes":{"friendly_name":"Temperatur","device_class":"temperature","unit_of_measurement":"°C"}}
+		]`
+		switch r.URL.Path {
+		case "/api/states":
+			_, _ = w.Write([]byte(states))
+		case "/api/states/sensor.sauna_power":
+			_, _ = w.Write([]byte(`{"entity_id":"sensor.sauna_power","state":"7.2","attributes":{"friendly_name":"Sauna Leistung","device_class":"power","unit_of_measurement":"kW"}}`))
+		case "/api/states/sensor.sauna_energy":
+			_, _ = w.Write([]byte(`{"entity_id":"sensor.sauna_energy","state":"42","attributes":{"friendly_name":"Sauna Energie","device_class":"energy","unit_of_measurement":"kWh"}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(ha.Close)
+	a := consumerAppHAUSV422(t)
+	tenant := a.tenants["jhw22"]
+	tenant.HA = homeassistant.NewConfig(ha.URL, "fixture", "", "", "")
+	a.tenants["jhw22"] = tenant
+
+	optionsResponse := authedRequest(t, a, "owner@example.com", "/app/energie/verbraucher/messwerte")
+	if optionsResponse.Code != http.StatusOK {
+		t.Fatalf("Messwertoptionen: status=%d body=%s", optionsResponse.Code, optionsResponse.Body.String())
+	}
+	var options energyConsumerMeasurementsResponse
+	if err := json.Unmarshal(optionsResponse.Body.Bytes(), &options); err != nil {
+		t.Fatalf("Messwertoptionen dekodieren: %v", err)
+	}
+	if options.Status != "ok" || len(options.Entities) != 2 {
+		t.Fatalf("erwartet nur Leistungs-/Energie-Entities, war %+v", options)
+	}
+
+	assetID := energy.StableAssetID("jhw22", "sauna")
+	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
+		"asset_id": {assetID}, "name": {"Sauna"}, "kind": {"sauna"}, "priority": {"1"},
+		"icon": {"alarm-clock"}, "flexibility": {"shift"}, "measurements_present": {"1"},
+		"consumer_power_entity": {"sensor.sauna_power"}, "consumer_energy_entity": {"sensor.sauna_energy"},
+	})
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
+		t.Fatalf("Verbraucher speichern: status=%d location=%s", response.Code, response.Header().Get("Location"))
+	}
+	mappings, _ := a.energyStore.ListMappings("jhw22")
+	seen := map[string]bool{}
+	for _, mapping := range mappings {
+		if mapping.AssetID != assetID || !mapping.Confirmed {
+			continue
+		}
+		seen[mapping.Metric] = true
+	}
+	if !seen[energy.MetricConsumerPower] || !seen[energy.MetricConsumerEnergy] {
+		t.Fatalf("beide Verbraucher-Messwerte müssen getrennt zugeordnet sein: %+v", mappings)
+	}
+	assets, _ := a.energyStore.ListAssets("jhw22")
+	for _, asset := range assets {
+		if asset.ID == assetID && asset.Metadata["icon"] != "alarm-clock" {
+			t.Fatalf("Symbol aus vollständiger Lucide-Library nicht gespeichert: %+v", asset.Metadata)
+		}
+	}
+	metrics, _, _ := a.currentEnergyMetrics(t.Context(), tenant, mappings, energy.HomeProfile{})
+	cfg := buildEnergyFlowConfig(energyLiveView{}, assets, mappings, metrics, parkingLiveView{}, true)
+	for _, consumer := range cfg.Consumers {
+		if consumer.ID == assetID {
+			if consumer.KW != 7.2 || consumer.PowerEntity != "sensor.sauna_power" || consumer.EnergyEntity != "sensor.sauna_energy" {
+				t.Fatalf("Verbraucher erhält nicht seine eigenen Live-Messwerte: %+v", consumer)
+			}
+			return
+		}
+	}
+	t.Fatal("Sauna fehlt im Energiefluss")
+}
+
+func TestConsumerCannotStealWholeHomeMeasurement(t *testing.T) {
+	a := consumerAppHAUSV422(t)
+	assetID := energy.StableAssetID("jhw22", "sauna")
+	if err := a.energyStore.UpsertMapping(energy.EntityMapping{
+		TenantSlug: "jhw22", EntityID: "sensor.home_consumption", Metric: energy.MetricLoadPower,
+		DisplayName: "Hausverbrauch", Unit: "kW", DeviceClass: "power", Confirmed: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
+		"asset_id": {assetID}, "name": {"Sauna"}, "kind": {"sauna"}, "priority": {"1"},
+		"icon": {"flame"}, "flexibility": {"shift"}, "measurements_present": {"1"},
+		"consumer_power_entity": {"sensor.home_consumption"},
+	})
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=messwerte" {
+		t.Fatalf("Hausmesswert wurde nicht geschützt: status=%d location=%s", response.Code, response.Header().Get("Location"))
+	}
+	mappings, _ := a.energyStore.ListMappings("jhw22")
+	if len(mappings) != 1 || mappings[0].AssetID != "" || mappings[0].Metric != energy.MetricLoadPower {
+		t.Fatalf("Hausmesswert wurde umgehängt: %+v", mappings)
+	}
+}
+
 func TestConsumerCanBeEditedInPlaceWithLucideIconHAUSV446(t *testing.T) {
 	a := consumerAppHAUSV422(t)
 	assets, _ := a.energyStore.ListAssets("jhw22")
@@ -261,7 +379,8 @@ func TestConsumerDialogReplacesDuplicateLowerManagementHAUSV446(t *testing.T) {
 	for _, want := range []string{
 		`id="energy-consumer-dialog"`, `data-consumer-dialog-title`, `Symbol auswählen`,
 		`Symbole aus der lokal eingebundenen Lucide-Library.`, `name="priority"`,
-		`name="icon" value="car-front"`, `name="icon" value="plug-zap"`,
+		`name="icon_choice" value="car-front"`, `name="icon_choice" value="plug-zap"`,
+		`name="consumer_power_entity"`, `name="consumer_energy_entity"`,
 		`data-consumer-delete`, `Ihr Energiesystem`, `Verbraucher verwalten Sie direkt oben`,
 	} {
 		if !strings.Contains(body, want) {

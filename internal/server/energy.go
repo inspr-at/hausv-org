@@ -17,6 +17,7 @@ import (
 	"github.com/markus-barta/hausv-org/internal/energy"
 	"github.com/markus-barta/hausv-org/internal/homeassistant"
 	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/markus-barta/hausv-org/internal/web"
 )
 
 type energyCandidateView struct {
@@ -42,6 +43,7 @@ type energyAssetOption struct {
 }
 
 type energyMetricView struct {
+	AssetID   string
 	Metric    string
 	Kind      string
 	Label     string
@@ -51,6 +53,21 @@ type energyMetricView struct {
 	Direction string
 	Numeric   float64
 	Unit      string
+}
+
+type energyConsumerMeasurementOption struct {
+	EntityID          string `json:"entityId"`
+	Name              string `json:"name"`
+	Unit              string `json:"unit,omitempty"`
+	Kind              string `json:"kind"`
+	AssignedAssetID   string `json:"assignedAssetId,omitempty"`
+	AssignedAssetName string `json:"assignedAssetName,omitempty"`
+}
+
+type energyConsumerMeasurementsResponse struct {
+	Status   string                            `json:"status"`
+	Message  string                            `json:"message"`
+	Entities []energyConsumerMeasurementOption `json:"entities"`
 }
 
 type energyLiveView struct {
@@ -1088,14 +1105,19 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	chargingCtx, cancelCharging := context.WithTimeout(r.Context(), 5*time.Second)
 	charging := a.chargingLiveView(chargingCtx, ac.tenant, false, false)
 	cancelCharging()
-	flowConfig := buildEnergyFlowConfig(live, assets, charging, canManageEnergyData)
+	flowConfig := buildEnergyFlowConfig(live, assets, mappings, metrics, charging, canManageEnergyData)
 	flowConfigJSON, err := json.Marshal(flowConfig)
 	if err != nil {
 		flowConfigJSON = []byte("null")
 	}
+	lucideIconNamesJSON, err := json.Marshal(web.LucideIconNames())
+	if err != nil {
+		lucideIconNamesJSON = []byte("[]")
+	}
 	systemAssets := energySystemAssets(assets)
 	a.render(w, "energyCockpit", a.withBase(ac, map[string]any{
 		"FlowConfigJSON":          template.JS(flowConfigJSON),
+		"LucideIconNamesJSON":     template.JS(lucideIconNamesJSON),
 		"Title":                   profile.HouseholdName,
 		"ActivePage":              "energy",
 		"Profile":                 profile,
@@ -2337,18 +2359,14 @@ func (a *app) updateEnergyCaretaker(w http.ResponseWriter, r *http.Request, ac a
 	http.Redirect(w, r, "/app/energie?caretaker=1#betreuung", http.StatusSeeOther)
 }
 
-// energyCustomAssetSource markiert Verbraucher, die frei angelegt wurden.
-//
-// Die Unterscheidung trägt Gewicht: `saveOnboardingAssets` gleicht die
-// Vorlagen destruktiv nach Art ab und löscht dabei über die aus (Haus, Art)
-// abgeleitete ID. Ein frei angelegter Verbraucher hat eine zufällige ID und
-// wird davon nicht getroffen — deshalb darf umgekehrt auch nur dieser Pfad ihn
-// wieder entfernen.
+// energyCustomAssetSource marks consumers created outside the onboarding
+// presets. It keeps their random identity stable when the preset selection is
+// reconciled later.
 const energyCustomAssetSource = "custom"
 
 // addEnergyConsumer legt Verbraucher an oder bearbeitet eine bestehende
 // Entität aus dem Cockpit-Dialog. Die Vorlagenidentität bleibt beim Bearbeiten
-// erhalten; nur frei angelegte Verbraucher können später entfernt werden.
+// erhalten; deleting is an explicit cockpit action for every consumer.
 //
 // Die Vorlagenliste bleibt unangetastet: sie deckt die häufigen Fälle ab, ist
 // aber keine Obergrenze. Sauna, Durchlauferhitzer, Whirlpool oder Werkstatt
@@ -2429,10 +2447,8 @@ func defaultEnergyConsumerIcon(kind string) string {
 
 func normalizeEnergyConsumerIcon(raw, kind string) string {
 	wanted := strings.TrimSpace(strings.ToLower(raw))
-	for _, option := range buildEnergyConsumerIconOptions() {
-		if wanted == option.Value {
-			return wanted
-		}
+	if web.IsLucideIcon(wanted) {
+		return wanted
 	}
 	return defaultEnergyConsumerIcon(kind)
 }
@@ -2442,6 +2458,221 @@ func energyConsumerIcon(asset energy.Asset) string {
 		return defaultEnergyConsumerIcon(asset.Kind)
 	}
 	return normalizeEnergyConsumerIcon(asset.Metadata["icon"], asset.Kind)
+}
+
+func consumerMeasurementKind(state homeassistant.EntityState) string {
+	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(state.EntityID)), "sensor.") {
+		return ""
+	}
+	deviceClass := strings.ToLower(strings.TrimSpace(haAttribute(state.Attributes, "device_class")))
+	unit := strings.ToLower(strings.TrimSpace(haAttribute(state.Attributes, "unit_of_measurement")))
+	switch {
+	case deviceClass == "power" || unit == "w" || unit == "kw" || unit == "mw":
+		return "power"
+	case deviceClass == "energy" || unit == "wh" || unit == "kwh" || unit == "mwh":
+		return "energy"
+	default:
+		return ""
+	}
+}
+
+func consumerMeasurementMetric(kind string) string {
+	if kind == "power" {
+		return energy.MetricConsumerPower
+	}
+	return energy.MetricConsumerEnergy
+}
+
+func (a *app) energyConsumerMeasurementOptions(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.canManageEnergy(ac) {
+		http.Error(w, "Kein Zugriff", http.StatusForbidden)
+		return
+	}
+	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
+	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
+	assetNames := map[string]string{}
+	for _, asset := range assets {
+		assetNames[asset.ID] = asset.Name
+	}
+	byEntity := map[string]energy.EntityMapping{}
+	for _, mapping := range mappings {
+		byEntity[mapping.EntityID] = mapping
+	}
+	response := energyConsumerMeasurementsResponse{
+		Status:   "not-configured",
+		Message:  "Home Assistant ist für dieses Zuhause noch nicht verbunden.",
+		Entities: []energyConsumerMeasurementOption{},
+	}
+	if ac.tenant.HA.Configured() {
+		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		states, err := ac.tenant.HA.States(ctx)
+		cancel()
+		if err == nil {
+			response.Status = "ok"
+			response.Message = "Home Assistant verbunden · alle Messwerte werden ausschließlich gelesen."
+			for _, state := range states {
+				kind := consumerMeasurementKind(state)
+				if kind == "" {
+					continue
+				}
+				entityID := strings.ToLower(strings.TrimSpace(state.EntityID))
+				option := energyConsumerMeasurementOption{
+					EntityID: entityID,
+					Name:     firstNonEmpty(haAttribute(state.Attributes, "friendly_name"), entityID),
+					Unit:     haAttribute(state.Attributes, "unit_of_measurement"),
+					Kind:     kind,
+				}
+				if mapping, found := byEntity[entityID]; found && mapping.Confirmed {
+					option.AssignedAssetID = mapping.AssetID
+					option.AssignedAssetName = assetNames[mapping.AssetID]
+					if mapping.AssetID == "" {
+						option.AssignedAssetName = "Haus gesamt"
+					}
+				}
+				response.Entities = append(response.Entities, option)
+			}
+		} else {
+			response.Status = "offline"
+			response.Message = "Home Assistant antwortet gerade nicht. Bestehende Zuordnungen bleiben erhalten."
+		}
+	}
+	// Existing consumer mappings remain editable even while HA is offline or
+	// an entity is currently unavailable and therefore absent from /states.
+	seen := map[string]bool{}
+	for _, option := range response.Entities {
+		seen[option.EntityID] = true
+	}
+	for _, mapping := range mappings {
+		kind := ""
+		switch mapping.Metric {
+		case energy.MetricConsumerPower:
+			kind = "power"
+		case energy.MetricConsumerEnergy:
+			kind = "energy"
+		}
+		if kind == "" || seen[mapping.EntityID] {
+			continue
+		}
+		response.Entities = append(response.Entities, energyConsumerMeasurementOption{
+			EntityID: mapping.EntityID, Name: firstNonEmpty(mapping.DisplayName, mapping.EntityID),
+			Unit: mapping.Unit, Kind: kind, AssignedAssetID: mapping.AssetID,
+			AssignedAssetName: assetNames[mapping.AssetID],
+		})
+	}
+	sort.Slice(response.Entities, func(i, j int) bool {
+		left := strings.ToLower(response.Entities[i].Name + " " + response.Entities[i].EntityID)
+		right := strings.ToLower(response.Entities[j].Name + " " + response.Entities[j].EntityID)
+		return left < right
+	})
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	_ = json.NewEncoder(w).Encode(response)
+}
+
+type energyConsumerMappingPlan struct {
+	deleteIDs []string
+	upserts   []energy.EntityMapping
+}
+
+func (a *app) planEnergyConsumerMappings(ctx context.Context, tenant tenantConfig, assetID, powerEntity, energyEntity string) (energyConsumerMappingPlan, error) {
+	desired := map[string]string{
+		"power":  strings.ToLower(strings.TrimSpace(powerEntity)),
+		"energy": strings.ToLower(strings.TrimSpace(energyEntity)),
+	}
+	if desired["power"] != "" && desired["power"] == desired["energy"] {
+		return energyConsumerMappingPlan{}, fmt.Errorf("one entity cannot fill both measurement slots")
+	}
+	mappings, err := a.energyStore.ListMappings(tenant.Slug)
+	if err != nil {
+		return energyConsumerMappingPlan{}, err
+	}
+	byEntity := map[string]energy.EntityMapping{}
+	current := map[string]energy.EntityMapping{}
+	for _, mapping := range mappings {
+		byEntity[mapping.EntityID] = mapping
+		if mapping.AssetID != assetID {
+			continue
+		}
+		switch mapping.Metric {
+		case energy.MetricConsumerPower:
+			current["power"] = mapping
+		case energy.MetricConsumerEnergy:
+			current["energy"] = mapping
+		}
+	}
+	plan := energyConsumerMappingPlan{}
+	needsLookup := false
+	for kind, entityID := range desired {
+		if existing, ok := current[kind]; ok && existing.EntityID != entityID {
+			plan.deleteIDs = append(plan.deleteIDs, existing.ID)
+		}
+		if entityID == "" || current[kind].EntityID == entityID {
+			continue
+		}
+		if !strings.HasPrefix(entityID, "sensor.") {
+			return energyConsumerMappingPlan{}, fmt.Errorf("only sensor entities may be mapped")
+		}
+		if existing, found := byEntity[entityID]; found && existing.Confirmed && existing.AssetID != assetID {
+			return energyConsumerMappingPlan{}, fmt.Errorf("entity already has another assignment")
+		}
+		needsLookup = true
+	}
+	statesByID := map[string]homeassistant.EntityState{}
+	if needsLookup {
+		if !tenant.HA.Configured() {
+			return energyConsumerMappingPlan{}, fmt.Errorf("home assistant is not configured")
+		}
+		lookupCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
+		states, lookupErr := tenant.HA.States(lookupCtx)
+		cancel()
+		if lookupErr != nil {
+			return energyConsumerMappingPlan{}, lookupErr
+		}
+		for _, state := range states {
+			statesByID[strings.ToLower(strings.TrimSpace(state.EntityID))] = state
+		}
+	}
+	for kind, entityID := range desired {
+		if entityID == "" || current[kind].EntityID == entityID {
+			continue
+		}
+		state, found := statesByID[entityID]
+		if !found || consumerMeasurementKind(state) != kind {
+			return energyConsumerMappingPlan{}, fmt.Errorf("entity does not match measurement slot")
+		}
+		mapping := byEntity[entityID]
+		mapping.TenantSlug = tenant.Slug
+		mapping.EntityID = entityID
+		mapping.AssetID = assetID
+		mapping.Metric = consumerMeasurementMetric(kind)
+		mapping.DisplayName = firstNonEmpty(haAttribute(state.Attributes, "friendly_name"), entityID)
+		mapping.Unit = haAttribute(state.Attributes, "unit_of_measurement")
+		mapping.DeviceClass = haAttribute(state.Attributes, "device_class")
+		mapping.Confirmed = true
+		seen := state.LastUpdated
+		if seen.IsZero() {
+			seen = state.LastChanged
+		}
+		if !seen.IsZero() {
+			mapping.LastSeenAt = &seen
+		}
+		plan.upserts = append(plan.upserts, mapping)
+	}
+	return plan, nil
+}
+
+func (a *app) applyEnergyConsumerMappingPlan(tenantSlug string, plan energyConsumerMappingPlan) error {
+	for _, id := range plan.deleteIDs {
+		if _, err := a.energyStore.DeleteMapping(tenantSlug, id); err != nil {
+			return err
+		}
+	}
+	for _, mapping := range plan.upserts {
+		if err := a.energyStore.UpsertMapping(mapping); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -2523,8 +2754,22 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 		}
 		asset.RatedPowerKW = &value
 	}
+	mappingPlan := energyConsumerMappingPlan{}
+	if r.FormValue("measurements_present") == "1" {
+		var planErr error
+		mappingPlan, planErr = a.planEnergyConsumerMappings(r.Context(), ac.tenant, asset.ID,
+			r.FormValue("consumer_power_entity"), r.FormValue("consumer_energy_entity"))
+		if planErr != nil {
+			http.Redirect(w, r, "/app/energie?verbraucher=messwerte", http.StatusSeeOther)
+			return
+		}
+	}
 	if err := a.energyStore.UpsertAsset(asset); err != nil {
 		http.Error(w, "Verbraucher konnte nicht gespeichert werden.", http.StatusInternalServerError)
+		return
+	}
+	if err := a.applyEnergyConsumerMappingPlan(ac.tenant.Slug, mappingPlan); err != nil {
+		http.Error(w, "Messwerte konnten nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
 	updatedAssets, err := a.energyStore.ListAssets(ac.tenant.Slug)
@@ -2569,14 +2814,17 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 		Details: map[string]string{
 			"kind": asset.Kind, "flexibility": asset.Flexibility,
 			"icon": asset.Metadata["icon"], "priority": strconv.Itoa(priority),
+			"power_entity":  strings.TrimSpace(r.FormValue("consumer_power_entity")),
+			"energy_entity": strings.TrimSpace(r.FormValue("consumer_energy_entity")),
 		},
 	})
 	http.Redirect(w, r, "/app/energie?verbraucher="+notice, http.StatusSeeOther)
 }
 
-// deleteEnergyConsumer entfernt ausschließlich frei angelegte Verbraucher.
-// Vorlagen gehören dem Abgleich im Onboarding; sie hier zu löschen würde beim
-// nächsten Speichern ohnehin rückgängig gemacht.
+// deleteEnergyConsumer removes any consumer chosen in the cockpit. PV and
+// battery assets are still protected because they are managed as system
+// assets. Home Assistant entities themselves are never changed; only their
+// HAUSV assignment is removed.
 func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if !a.canManageEnergy(ac) {
 		http.Error(w, "Kein Zugriff", http.StatusForbidden)
@@ -2592,17 +2840,26 @@ func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac au
 		http.Error(w, "Verbraucher konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
 	}
+	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
 	for _, asset := range assets {
 		if asset.ID != assetID {
 			continue
 		}
-		if asset.Source != energyCustomAssetSource {
-			http.Redirect(w, r, "/app/energie?verbraucher=vorlage", http.StatusSeeOther)
+		if asset.Kind == "pv" || asset.Kind == "battery" {
+			http.Redirect(w, r, "/app/energie", http.StatusSeeOther)
 			return
 		}
 		if _, err := a.energyStore.DeleteAsset(ac.tenant.Slug, assetID); err != nil {
 			http.Error(w, "Verbraucher konnte nicht entfernt werden.", http.StatusInternalServerError)
 			return
+		}
+		for _, mapping := range mappings {
+			if mapping.AssetID != assetID {
+				continue
+			}
+			if mapping.Metric == energy.MetricConsumerPower || mapping.Metric == energy.MetricConsumerEnergy {
+				_, _ = a.energyStore.DeleteMapping(ac.tenant.Slug, mapping.ID)
+			}
 		}
 		a.recordAudit(auditEvent{
 			TenantSlug: ac.tenant.Slug,
@@ -3019,6 +3276,7 @@ func (a *app) currentEnergyMetrics(ctx context.Context, tenant tenantConfig, map
 		}
 		metric := energyMetricForDisplay(reading.mapping, reading.state)
 		metrics = append(metrics, energyMetricView{
+			AssetID: reading.mapping.AssetID,
 			Metric:  metric,
 			Kind:    energyMetricKind(metric, detail),
 			Label:   energyMetricLabel(metric),
@@ -3187,16 +3445,17 @@ type energyFlowNodeConfig struct {
 }
 
 type energyFlowConsumerConfig struct {
-	ID          string  `json:"id,omitempty"`
-	Icon        string  `json:"icon,omitempty"`
-	Title       string  `json:"title"`
-	Kind        string  `json:"kind,omitempty"`
-	RatedPower  string  `json:"ratedPower,omitempty"`
-	Flexibility string  `json:"flexibility,omitempty"`
-	State       string  `json:"state,omitempty"`
-	KW          float64 `json:"kw"`
-	Active      bool    `json:"active,omitempty"`
-	Custom      bool    `json:"custom,omitempty"`
+	ID           string  `json:"id,omitempty"`
+	Icon         string  `json:"icon,omitempty"`
+	Title        string  `json:"title"`
+	Kind         string  `json:"kind,omitempty"`
+	RatedPower   string  `json:"ratedPower,omitempty"`
+	Flexibility  string  `json:"flexibility,omitempty"`
+	PowerEntity  string  `json:"powerEntity,omitempty"`
+	EnergyEntity string  `json:"energyEntity,omitempty"`
+	State        string  `json:"state,omitempty"`
+	KW           float64 `json:"kw"`
+	Active       bool    `json:"active,omitempty"`
 }
 
 type energyFlowConfig struct {
@@ -3307,7 +3566,7 @@ func (a *app) reorderEnergyConsumers(w http.ResponseWriter, r *http.Request, ac 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging parkingLiveView, canManage bool) energyFlowConfig {
+func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, mappings []energy.EntityMapping, metrics []energyMetricView, charging parkingLiveView, canManage bool) energyFlowConfig {
 	cfg := energyFlowConfig{AddHint: canManage}
 	cfg.Home = energyFlowNodeConfig{Value: "–", Label: "Hausverbrauch"}
 	if live.HasMain {
@@ -3363,6 +3622,35 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging 
 			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000, Dir: dir,
 		}
 	}
+	consumerPower := map[string]energyMetricView{}
+	consumerEnergy := map[string]energyMetricView{}
+	for _, metric := range metrics {
+		switch metric.Metric {
+		case energy.MetricConsumerPower:
+			if _, exists := consumerPower[metric.AssetID]; metric.AssetID != "" && !exists {
+				consumerPower[metric.AssetID] = metric
+			}
+		case energy.MetricConsumerEnergy:
+			if _, exists := consumerEnergy[metric.AssetID]; metric.AssetID != "" && !exists {
+				consumerEnergy[metric.AssetID] = metric
+			}
+		}
+	}
+	measurementEntities := map[string]map[string]string{}
+	for _, mapping := range mappings {
+		if !mapping.Confirmed || mapping.AssetID == "" {
+			continue
+		}
+		if measurementEntities[mapping.AssetID] == nil {
+			measurementEntities[mapping.AssetID] = map[string]string{}
+		}
+		switch mapping.Metric {
+		case energy.MetricConsumerPower:
+			measurementEntities[mapping.AssetID]["power"] = mapping.EntityID
+		case energy.MetricConsumerEnergy:
+			measurementEntities[mapping.AssetID]["energy"] = mapping.EntityID
+		}
+	}
 	for _, asset := range sortEnergyConsumers(assets) {
 		switch asset.Kind {
 		case "pv", "battery":
@@ -3376,11 +3664,22 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging 
 		if asset.RatedPowerKW != nil {
 			ratedPower = formatEnergyCompact(*asset.RatedPowerKW, 1)
 		}
+		state := "Bereit · " + energyFlexibilityLabel(asset.Flexibility)
+		kw := 0.0
+		active := false
+		if reading, ok := consumerPower[asset.ID]; ok {
+			watts := math.Abs(energyPowerWatts(&reading))
+			kw = watts / 1000
+			active = watts >= 50
+			state = formatEnergyFlowKW(watts) + " kW · Home Assistant"
+		} else if reading, ok := consumerEnergy[asset.ID]; ok {
+			state = reading.Value + " · Home Assistant"
+		}
 		cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
 			ID: asset.ID, Icon: energyConsumerIcon(asset), Title: title,
 			Kind: asset.Kind, RatedPower: ratedPower, Flexibility: asset.Flexibility,
-			State:  "Bereit · " + energyFlexibilityLabel(asset.Flexibility),
-			Custom: asset.Source == energyCustomAssetSource,
+			PowerEntity: measurementEntities[asset.ID]["power"], EnergyEntity: measurementEntities[asset.ID]["energy"],
+			State: state, KW: kw, Active: active,
 		})
 	}
 	if charging.Available {
@@ -4867,6 +5166,10 @@ func energyMetricLabel(metric string) string {
 		return "Batteriestand"
 	case energy.MetricLoadPower:
 		return "Hausverbrauch"
+	case energy.MetricConsumerPower:
+		return "Verbraucherleistung"
+	case energy.MetricConsumerEnergy:
+		return "Verbrauchszähler"
 	default:
 		return "Messwert"
 	}
