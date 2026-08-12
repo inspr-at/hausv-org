@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.75.1] - 2026-08-12
+
+### Verbessert
+
+- **Bewegte Punkte zeigen die Flussrichtung.** Kleine farbige Punkte gleiten ruhig von der Quelle zum Ziel; die breite Leistungsbahn bleibt als zurückhaltende Mengenanzeige erhalten.
+- **Empfehlungen öffnen sich ohne Seitensprung.** Die große Empfehlungskarte wurde durch einen kompakten Einstieg ersetzt; Simulation und Begründung liegen jetzt in einem eigenen Dialog.
+
 ## [0.75.0] - 2026-08-12
 
 ### Verbessert

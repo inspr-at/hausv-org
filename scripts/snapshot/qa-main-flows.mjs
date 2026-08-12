@@ -2290,12 +2290,16 @@ async function assertEnergySafetyAndFlow(viewport) {
     }
     await closeContext(helperContext);
 
-    const measureControl = page.locator('details.energy-measure-control');
+    const recommendationDialog = page.locator('#energy-recommendation-dialog');
+    await page.locator('[data-dialog="energy-recommendation-dialog"]').click();
+    await recommendationDialog.waitFor({ state: 'visible' });
+    const measureControl = recommendationDialog.locator('details.energy-measure-control');
     await measureControl.locator('summary').click();
     const measureBox = await measureControl.locator('.energy-measure-form').boundingBox();
-    const roadmapBox = await page.locator('#fahrplan').boundingBox();
-    if (!measureBox || !roadmapBox || measureBox.y + measureBox.height > roadmapBox.y + 1) {
-      fail('Energie Desktop: geöffnetes Hausaufgaben-Formular überlagert den Fahrplan');
+    const dialogBox = await recommendationDialog.boundingBox();
+    if (!measureBox || !dialogBox || measureBox.x < dialogBox.x - 1 ||
+        measureBox.x + measureBox.width > dialogBox.x + dialogBox.width + 1) {
+      fail('Energie Desktop: Hausaufgaben-Formular bleibt nicht im Empfehlungsdialog');
     }
     if (process.env.HV_QA_SCREENSHOT_DIR) {
       mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
@@ -2310,6 +2314,9 @@ async function assertEnergySafetyAndFlow(viewport) {
     await measureControl.locator('input[value="inventory"]').check();
     await measureControl.getByRole('button', { name: 'Hausaufgabe anlegen' }).click();
     await page.waitForLoadState('networkidle');
+    if (await page.locator('#energy-recommendation-dialog').isVisible().catch(() => false)) {
+      await page.locator('#energy-recommendation-dialog [data-close-dialog]').click();
+    }
     const specialistPanel = page.locator('details.energy-collapsible').filter({ hasText: 'Fachhilfe, wenn sie wirklich nötig ist' });
     await specialistPanel.locator(':scope > summary').click();
     const measure = specialistPanel.locator('details.energy-measure-row').first();
@@ -2443,7 +2450,7 @@ async function assertEnergyGeometryMatrix() {
       // Since 0.69.0 the tariff detail card lives below the chart, page-level.
       const tariff = document.querySelector('.energy-tariff');
       const live = lead?.querySelector('.energy-live');
-      const next = lead?.querySelector('.energy-nextstep');
+      const recommendationTrigger = live?.querySelector('[data-dialog="energy-recommendation-dialog"]');
       const strip = document.querySelector('.energy-mode-strip');
       const sidebar = document.querySelector('.sidebar');
       const heading = document.querySelector('.energy-heading');
@@ -2451,7 +2458,6 @@ async function assertEnergyGeometryMatrix() {
       const modeState = strip?.querySelector('.energy-mode-state');
       const liveRect = rectOf(live);
       const tariffRect = rectOf(tariff);
-      const nextRect = rectOf(next);
       const headingRect = rectOf(heading);
       const healthRect = rectOf(health);
       const stripRect = rectOf(strip);
@@ -2462,7 +2468,7 @@ async function assertEnergyGeometryMatrix() {
         .filter((node) => node.getClientRects().length)
         .map(rectOf);
       const flowArea = live?.querySelector('.energy-flow-area');
-      const overflow = [health, lead, tariff, live, next, flowArea]
+      const overflow = [health, lead, tariff, live, flowArea]
         .filter(Boolean)
         .filter((node) => node.scrollWidth > node.clientWidth + 1)
         .map((node) => node.className);
@@ -2479,7 +2485,7 @@ async function assertEnergyGeometryMatrix() {
       return {
         width,
         height,
-        missing: [health, lead, tariff, live, next, strip].some((node) => !node),
+        missing: [health, lead, tariff, live, recommendationTrigger, strip].some((node) => !node),
         documentOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
         overflow,
         overflowDetails,
@@ -2491,8 +2497,7 @@ async function assertEnergyGeometryMatrix() {
         oneColumn: Boolean(liveRect && tariffRect && Math.abs(liveRect.left - tariffRect.left) <= 1),
         leadBeforeTariff: Boolean(liveRect && tariffRect && liveRect.bottom <= tariffRect.top + 1),
         liveStartsInViewport: Boolean(live && live.getBoundingClientRect().top < height),
-        nextFollowsLive: Boolean(live && next && live.getBoundingClientRect().bottom <= next.getBoundingClientRect().top + 1),
-        nextBeforeTariff: Boolean(nextRect && tariffRect && nextRect.bottom <= tariffRect.top + 1),
+        recommendationInLive: Boolean(recommendationTrigger && live.contains(recommendationTrigger)),
         tariffMetricCount: tariffMetricRects.length,
         tariffMetricsOverlap: tariffMetricRects.length === 2 && intersects(tariffMetricRects[0], tariffMetricRects[1]),
         tariffMetricsOneColumn: tariffMetricRects.length !== 2 || Math.abs(tariffMetricRects[0].left - tariffMetricRects[1].left) <= 1,
@@ -2512,7 +2517,7 @@ async function assertEnergyGeometryMatrix() {
 
     if (result.missing || result.documentOverflow || result.overflow.length ||
         result.siblingOverlap || result.modeControlOverlap || !result.headingBeforeHealth ||
-        !result.sourceLeadFirst || !result.nextFollowsLive || !result.nextBeforeTariff ||
+        !result.sourceLeadFirst || !result.recommendationInLive ||
         result.tariffMetricsOverlap ||
         !result.liveStartsInViewport) {
       fail(`Energie-Geometrie ${size.name}: Grundlayout verletzt (${JSON.stringify(result)})`);

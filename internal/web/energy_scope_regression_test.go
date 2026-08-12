@@ -7,14 +7,14 @@ import (
 	"testing"
 )
 
-// The approved consumer-management flow spans the live rail and the lower
-// system inventory. This fingerprint records that deliberate new baseline so
-// later chart/below changes still cannot slip in unnoticed.
+// The approved energy flow spans the live rail, the recommendation dialog and
+// the lower system inventory. This fingerprint records that deliberate new
+// baseline so later chart/below changes still cannot slip in unnoticed.
 func TestEnergyConsumerManagementKeepsChartAndFollowingSectionsIntentional(t *testing.T) {
 	const (
 		startMarker = `      <section class="energy-card energy-chart"`
 		endMarker   = "\n{{define \"energyData\"}}"
-		wantSHA256  = "c14350278f4d41e12e77f2a703b3756ba0fea515ef1bff14a870ebcbb4aa8e30"
+		wantSHA256  = "584d91c78603e0fe0e3e490a60bffbb9ebbdbb855dfada8f7824c846cd20a1d7"
 	)
 
 	start := strings.Index(PageTemplates, startMarker)
@@ -86,7 +86,7 @@ func TestEnergyFirstViewportDisclosuresKeepContextAndActionsReachable(t *testing
 		`{{.Recommendation.Benefit}}`,
 		`Aufwand: {{.Recommendation.Effort}}`,
 		`{{.Recommendation.ImpactRange}}`,
-		`{{if .RecommendationURL}}<a class="button primary" href="{{.RecommendationURL}}"`,
+		`{{if and .RecommendationURL (ne .Recommendation.ID "simulate")}}<a class="button primary" href="{{.RecommendationURL}}"`,
 		`action="/app/energie/measure"`,
 		`name="share" value="inventory"`,
 		`name="share" value="measurements"`,
