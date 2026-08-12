@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.72.0",
+			Date:     "12. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Verbraucher lassen sich direkt und ohne Springen bearbeiten.",
+			Intro:    "Ein Klick auf eine Verbraucher-Kachel öffnet den neuen Dialog für Name, Priorität, Symbol und technische Angaben; Hinzufügen funktioniert am selben Ort.",
+			Items: []NoteItem{
+				{Label: "Ruhige Kacheln", Text: "Beim Überfahren wechseln nur Symbol und Hinweistext, ohne den Energiefluss zu verschieben."},
+				{Label: "Lucide-Symbole", Text: "Die durchsuchbare Auswahl verwendet die etablierte, lokal ausgelieferte SVG-Bibliothek."},
+				{Label: "Ein klarer Ort", Text: "Verbraucher werden im Energiefluss gepflegt; der Anlagenbereich bleibt Erzeugung, Speicher und Service vorbehalten."},
+			},
+		},
+		{
 			Version:  "0.71.1",
 			Date:     "11. August 2026",
 			Kind:     "Energie-Cockpit",

@@ -21,19 +21,15 @@
 
   var ORDER_ENDPOINT = "/app/energie/verbraucher/reihenfolge";
 
-  var ICONS = {
-    pv: '<svg viewBox="0 -1 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="10" rx="1"/><path d="M4 9h16M9 4v10M15 4v10M8 18h8M12 14v4"/></svg>',
-    battery: '<svg viewBox="0 0.5 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="8" width="16" height="9" rx="2"/><path d="M21 11v3M6 11v3M10 11v3"/></svg>',
-    grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M12 3l-7 5M12 3l7 5M5 12h14M7 21h10"/></svg>',
-    house: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg>',
-    car: '<svg viewBox="0 2 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 16l1.5-6.5A2 2 0 0 1 8.4 8h7.2a2 2 0 0 1 1.9 1.5L19 16"/><rect x="4" y="16" width="16" height="4" rx="1.5"/></svg>',
-    boiler: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="3" width="10" height="18" rx="3"/><path d="M10 7h4M12 11v6"/></svg>',
-    parking: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 16V8h4a2.5 2.5 0 0 1 0 5H9"/></svg>',
-    pump: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="3.4"/><path d="M12 8.6v-1M12 16.4v1"/></svg>',
-    device: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>',
-    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
-    grip: '<svg viewBox="0 0 10 16" fill="currentColor"><circle cx="2.5" cy="2.5" r="1.4"/><circle cx="7.5" cy="2.5" r="1.4"/><circle cx="2.5" cy="8" r="1.4"/><circle cx="7.5" cy="8" r="1.4"/><circle cx="2.5" cy="13.5" r="1.4"/><circle cx="7.5" cy="13.5" r="1.4"/></svg>',
-  };
+  // Only names from the locally vendored Lucide library are accepted here.
+  // Configuration data can therefore select an icon, but never inject markup
+  // or point the browser at a remote resource.
+  var ICON_NAMES = [
+    "solar-panel", "battery", "utility-pole", "house", "car-front",
+    "plug-zap", "heater", "fan", "washing-machine", "flame", "drill",
+    "waves-ladder", "square-parking", "snowflake", "shower-head", "plug",
+    "plus", "grip-vertical", "pencil"
+  ].reduce(function (names, name) { names[name] = true; return names; }, {});
   var HUB = "#a24b42", BATT = "#7893a1", GRID = "#b8891f", LOAD = "#3e704c", PV = "#4f7d49";
 
   function el(tag, className, parent) {
@@ -43,9 +39,16 @@
     return node;
   }
 
+  function glyph(name, className, parent) {
+    var safeName = ICON_NAMES[name] ? name : "plug";
+    var node = el("span", "energy-ui-icon energy-ui-icon-" + safeName + (className ? " " + className : ""), parent);
+    node.setAttribute("aria-hidden", "true");
+    return node;
+  }
+
   function icon(name, holderClass, parent) {
     var holder = el("span", holderClass, parent);
-    holder.innerHTML = ICONS[name] || ICONS.device; // static dictionary only
+    glyph(name, "", holder);
     holder.setAttribute("aria-hidden", "true");
     return holder;
   }
@@ -131,6 +134,80 @@
     return true;
   }
 
+  var consumerDialog = document.getElementById("energy-consumer-dialog");
+  var consumerIconSearch = consumerDialog && consumerDialog.querySelector("[data-consumer-icon-search]");
+  if (consumerIconSearch) {
+    consumerIconSearch.addEventListener("input", function () {
+      var query = consumerIconSearch.value.trim().toLocaleLowerCase("de");
+      [].forEach.call(consumerDialog.querySelectorAll("[data-consumer-icon-choice]"), function (choice) {
+        choice.hidden = Boolean(query && choice.dataset.consumerIconChoice.toLocaleLowerCase("de").indexOf(query) === -1);
+      });
+    });
+  }
+
+  function setDialogValue(name, value) {
+    if (!consumerDialog) return;
+    var field = consumerDialog.querySelector('[name="' + name + '"]');
+    if (field) field.value = value == null ? "" : String(value);
+  }
+
+  function openConsumerDialog(consumer, priority, total, trigger) {
+    if (!consumerDialog || typeof consumerDialog.showModal !== "function") return;
+    var item = consumer || {};
+    setDialogValue("asset_id", item.id || "");
+    setDialogValue("name", item.title || "");
+    setDialogValue("kind", item.kind || "other");
+    setDialogValue("rated_power_kw", item.ratedPower || "");
+    setDialogValue("flexibility", item.flexibility || "unknown");
+
+    var priorityField = consumerDialog.querySelector('[name="priority"]');
+    if (priorityField) {
+      priorityField.replaceChildren();
+      var count = Math.max(1, total + (item.id ? 0 : 1));
+      for (var i = 1; i <= count; i += 1) {
+        var option = document.createElement("option");
+        option.value = String(i);
+        option.textContent = String(i);
+        priorityField.appendChild(option);
+      }
+      priorityField.value = String(priority || count);
+    }
+
+    var wantedIcon = ICON_NAMES[item.icon] ? item.icon : "plug";
+    var iconFound = false;
+    [].forEach.call(consumerDialog.querySelectorAll('[name="icon"]'), function (radio) {
+      radio.checked = radio.value === wantedIcon;
+      if (radio.checked) iconFound = true;
+    });
+    if (!iconFound) {
+      var fallback = consumerDialog.querySelector('[name="icon"][value="plug"]');
+      if (fallback) fallback.checked = true;
+    }
+
+    var title = consumerDialog.querySelector("[data-consumer-dialog-title]");
+    var context = consumerDialog.querySelector("[data-consumer-dialog-context]");
+    var submit = consumerDialog.querySelector("[data-consumer-submit]");
+    if (title) title.textContent = item.id ? "Verbraucher bearbeiten" : "Verbraucher hinzufügen";
+    if (context) context.textContent = item.id ? "Name, Priorität und Symbol direkt anpassen." : "Neuen Verbraucher im Energiefluss anlegen.";
+    if (submit) submit.textContent = item.id ? "Änderungen speichern" : "Verbraucher hinzufügen";
+
+    var remove = consumerDialog.querySelector("[data-consumer-delete]");
+    if (remove) {
+      remove.hidden = !(item.id && item.custom);
+      remove.disabled = remove.hidden;
+    }
+    if (consumerIconSearch) {
+      consumerIconSearch.value = "";
+      consumerIconSearch.dispatchEvent(new Event("input"));
+    }
+    consumerDialog._returnFocus = trigger || null;
+    if (!consumerDialog.open) consumerDialog.showModal();
+    window.setTimeout(function () {
+      var nameField = consumerDialog.querySelector('[name="name"]');
+      if (nameField) nameField.focus();
+    }, 0);
+  }
+
   function render(wrap) {
     var configNode = wrap.querySelector('script[type="application/json"]');
     if (!configNode) return;
@@ -187,7 +264,7 @@
 
       var top = el("div", "energy-flow-slot-top", flow);
       (cfg.producers || []).forEach(function (p, i) {
-        var node = tile("pv", p.icon || "pv", top);
+        var node = tile("pv", p.icon || "solar-panel", top);
         if (p.hover) node.title = p.hover;
         node.dataset.edge = "producer-" + i;
         valueLine(node.lastChild, p.value, p.unit);
@@ -217,7 +294,7 @@
 
       if (cfg.grid) {
         var bottom = el("div", "energy-flow-slot-bottom", flow);
-        var gr = tile("grid", "grid", bottom);
+        var gr = tile("grid", "utility-pole", bottom);
         if (cfg.grid.hover) gr.title = cfg.grid.hover;
         gr.dataset.edge = "grid";
         valueLine(gr.lastChild, cfg.grid.value, cfg.grid.unit);
@@ -282,42 +359,27 @@
         });
         var movableIndex = -1;
         (cfg.consumers || []).forEach(function (c, i) {
-          var t = el("div", "energy-flow-big" + (c.active ? " active" : ""), rail);
+          var canEdit = Boolean(c.id && cfg.addHint);
+          var t = el("div", "energy-flow-big" + (c.active ? " active" : "") + (canEdit ? " editable" : ""), rail);
           t.dataset.edge = "consumer-" + i;
           if (c.id) t.dataset.consumerId = c.id;
-          icon(c.icon || "device", "ico", t);
-          var text = el("div", "", t);
-          el("b", "", text).textContent = c.title;
-          if (c.sub) el("span", "sub", text).textContent = c.sub;
-          if (c.state) el("span", "state", text).textContent = c.state;
-          if (c.id && cfg.addHint) {
-            var actions = el("span", "tile-actions", text);
-            var edit = el("button", "tile-action", actions);
-            edit.type = "button";
-            edit.textContent = "Bearbeiten";
-            edit.addEventListener("click", function () {
-              var section = document.getElementById("anlagen");
-              if (section && section.scrollIntoView) section.scrollIntoView({ behavior: "smooth", block: "start" });
-              location.hash = "anlagen";
+          var main = el(canEdit ? "button" : "div", "energy-flow-main", t);
+          if (canEdit) {
+            main.type = "button";
+            main.setAttribute("aria-label", c.title + " bearbeiten");
+            main.addEventListener("click", function () {
+              var total = cfg.consumers.filter(function (item) { return item.id; }).length;
+              openConsumerDialog(c, i + 1, total, main);
             });
-            if (c.custom) {
-              var remove = el("button", "tile-action", actions);
-              remove.type = "button";
-              remove.textContent = "Entfernen";
-              remove.addEventListener("click", function () {
-                var form = document.createElement("form");
-                form.method = "post";
-                form.action = "/app/energie/verbraucher/entfernen";
-                var field = document.createElement("input");
-                field.type = "hidden";
-                field.name = "asset_id";
-                field.value = c.id;
-                form.appendChild(field);
-                document.body.appendChild(form);
-                form.submit();
-              });
-            }
           }
+          var holder = icon(c.icon || "plug", "ico", main);
+          holder.firstChild.classList.add("energy-flow-icon-default");
+          glyph("pencil", "energy-flow-icon-edit", holder);
+          var text = el("span", "energy-flow-copy", main);
+          el("b", "", text).textContent = c.title;
+          var subtitles = el("span", "energy-flow-subtitles", text);
+          el("span", "energy-flow-state-copy", subtitles).textContent = c.state || "Bereit";
+          if (canEdit) el("span", "energy-flow-edit-copy", subtitles).textContent = "Klicken zum Bearbeiten";
           if (c.kw > 0) edges.push({ from: "hub", to: "consumer-" + i, kw: c.kw, stops: [{ at: 0, c: LOAD }, { at: 1, c: LOAD }] });
           var rcol = el("span", "rcol", t);
           el("span", "prio", rcol).textContent = String(i + 1);
@@ -327,7 +389,7 @@
             (function (myIndex) {
               var grip = el("button", "drag", rcol);
               grip.type = "button";
-              grip.innerHTML = ICONS.grip;
+              glyph("grip-vertical", "", grip);
               grip.setAttribute("aria-label",
                 "Priorität von " + c.title + ", Position " + (i + 1) + " von " + cfg.consumers.length + ": Pfeiltasten oder ziehen");
               grip.addEventListener("keydown", function (event) {
@@ -359,20 +421,24 @@
               });
             })(movableIndex);
           } else {
-            icon("grip", "drag drag-static", rcol);
+            var staticGrip = el("span", "drag drag-static", rcol);
+            glyph("grip-vertical", "", staticGrip);
           }
         });
         if (cfg.addHint) {
           var ghost = el("div", "energy-flow-big ghost", rail);
-          icon("plus", "plus", ghost);
-          var gtext = el("div", "", ghost);
+          var add = el("button", "energy-flow-main", ghost);
+          add.type = "button";
+          add.setAttribute("aria-label", "Verbraucher hinzufügen");
+          icon("plus", "plus", add);
+          var gtext = el("span", "energy-flow-copy", add);
           el("b", "", gtext).textContent = "Verbraucher hinzufügen";
-          el("span", "", gtext).textContent = "steuern oder nur beobachten";
-          ghost.setAttribute("role", "link");
-          ghost.tabIndex = 0;
-          var go = function () { location.hash = "anlagen"; };
-          ghost.addEventListener("click", go);
-          ghost.addEventListener("keydown", function (evt) { if (evt.key === "Enter" || evt.key === " ") { evt.preventDefault(); go(); } });
+          var gsub = el("span", "energy-flow-subtitles", gtext);
+          el("span", "energy-flow-state-copy", gsub).textContent = "steuern oder nur beobachten";
+          add.addEventListener("click", function () {
+            var total = cfg.consumers.filter(function (item) { return item.id; }).length;
+            openConsumerDialog(null, total + 1, total, add);
+          });
         }
       }
 

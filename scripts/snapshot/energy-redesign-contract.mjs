@@ -3,6 +3,9 @@
 // Keep this module limited to the content above #energieverlauf. The chart and
 // every section after it retain their established checks in qa-main-flows.mjs.
 
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+
 export const energyRedesignWidths = new Set([
   320, 359, 360, 361, 390, 430, 559, 560, 561, 619, 620, 621,
   768, 899, 900, 901, 1023, 1024, 1280, 1366, 1439, 1440, 1441,
@@ -22,9 +25,9 @@ const ownerSidebar = [
   { path: '/app/settings', label: 'Einstellungen' },
 ];
 
-// Since 0.69.0 the flow is rendered client-side (assets/energy-flow.js) into
-// [data-edge] tiles; values carry a separate small unit marker, so patterns
-// match number and unit independently.
+// The flow is rendered client-side (assets/energy-flow.js) into [data-edge]
+// tiles; visual symbols are locally vendored Lucide assets while the ribbons
+// remain data-driven SVG geometry.
 const flowNodes = [
   { id: 'hub', patterns: [/Hausverbrauch/i, /1,8/, /kW/] },
   { id: 'producer-0', patterns: [/PV(?:-Leistung|-Erzeugung)?/i, /3,1/, /kW/] },
@@ -144,10 +147,9 @@ export async function assertEnergyTopContent(page, label) {
     const icons = [...(scope?.querySelectorAll('.energy-mode-strip .energy-ui-icon, .energy-cockpit-top .energy-ui-icon') || [])];
     return {
       count: icons.length,
-      // The client-rendered flow (energy-flow.js) owns its inline stroke
-      // icons; outside the flow area the Lucide mask convention holds.
       inlineSVGs: [...(scope?.querySelectorAll('.energy-mode-strip svg, .energy-cockpit-top svg') || [])]
         .filter((svg) => !svg.closest('.energy-flow-area')).length,
+      inlineFlowIconSVGs: scope?.querySelectorAll('.energy-flow-tile .ico svg, .energy-flow-big svg').length || 0,
       missingExternalAsset: icons.map((icon) => {
         const style = getComputedStyle(icon);
         const mask = style.maskImage || style.webkitMaskImage || '';
@@ -158,9 +160,93 @@ export async function assertEnergyTopContent(page, label) {
       }).filter(({ mask }) => !/\/assets\/icons\/lucide\/[a-z0-9-]+\.svg(?:\?|["')]|$)/i.test(mask)),
     };
   });
-  if (iconContract.count < 6 || iconContract.inlineSVGs || iconContract.missingExternalAsset.length) {
+  if (iconContract.count < 6 || iconContract.inlineSVGs || iconContract.inlineFlowIconSVGs || iconContract.missingExternalAsset.length) {
     fail(label, 'Redesign verwendet nicht durchgängig die etablierten externen Lucide-SVGs', iconContract);
   }
+}
+
+async function assertEnergyConsumerManagement(page, { label, width }) {
+  const cards = page.locator('.energy-flow-rail .energy-flow-big[data-consumer-id]');
+  if (!(await cards.count())) fail(label, 'kein direkt bearbeitbarer Verbraucher vorhanden');
+  const first = cards.first();
+  const editTrigger = first.locator('button.energy-flow-main');
+  const before = await cards.evaluateAll((nodes) => nodes.map((node) => {
+    const box = node.getBoundingClientRect();
+    return { top: box.top, height: box.height };
+  }));
+  if (width >= 1180) {
+    await editTrigger.hover();
+    await page.waitForTimeout(180);
+    const after = await cards.evaluateAll((nodes) => nodes.map((node) => {
+      const box = node.getBoundingClientRect();
+      return { top: box.top, height: box.height };
+    }));
+    if (JSON.stringify(before) !== JSON.stringify(after) ||
+        !(await first.getByText('Klicken zum Bearbeiten', { exact: true }).isVisible())) {
+      fail(label, 'Hover verändert weiterhin die Verbraucher-Geometrie oder zeigt den Bearbeitungshinweis nicht', { before, after });
+    }
+  }
+
+  await editTrigger.click();
+  const dialog = page.locator('#energy-consumer-dialog');
+  if (!(await dialog.isVisible()) || !(await dialog.evaluate((node) => node.open))) {
+    fail(label, 'Klick auf Verbraucher öffnet den Bearbeitungsdialog nicht');
+  }
+  const state = await dialog.evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    const choices = [...node.querySelectorAll('[data-consumer-icon-choice]')];
+    return {
+      title: node.querySelector('[data-consumer-dialog-title]')?.textContent?.trim(),
+      name: node.querySelector('[name="name"]')?.value,
+      priorityOptions: node.querySelector('[name="priority"]')?.options.length || 0,
+      iconChoices: choices.length,
+      inlineSVGs: node.querySelectorAll('svg').length,
+      missingMasks: choices.filter((choice) => {
+        const icon = choice.querySelector('.energy-ui-icon');
+        const style = getComputedStyle(icon);
+        return !/\/assets\/icons\/lucide\/[a-z0-9-]+\.svg/i.test(style.maskImage || style.webkitMaskImage || '');
+      }).length,
+      box: { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height },
+      documentWidth: document.documentElement.scrollWidth,
+    };
+  });
+  if (state.title !== 'Verbraucher bearbeiten' || !state.name || !state.priorityOptions ||
+      state.iconChoices < 10 || state.inlineSVGs || state.missingMasks ||
+      state.box.left < -1 || state.box.right > width + 1 || state.documentWidth > width + 1) {
+    fail(label, 'Bearbeitungsdialog ist unvollständig, läuft über oder verwendet nicht-lokale Symbole', state);
+  }
+  if (process.env.HV_QA_SCREENSHOT_DIR) {
+    mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
+    await dialog.screenshot({
+      path: join(process.env.HV_QA_SCREENSHOT_DIR, `energy-consumer-dialog-${width}.png`),
+    });
+  }
+
+  const search = dialog.locator('[data-consumer-icon-search]');
+  await search.fill('Klima');
+  const visibleChoices = await dialog.locator('[data-consumer-icon-choice]:visible').count();
+  if (visibleChoices !== 1) fail(label, 'Lucide-Symbolsuche filtert die Auswahl nicht eindeutig', { visibleChoices });
+  await search.fill('');
+  await dialog.locator('label:has([name="icon"][value="drill"])').click();
+  if (!(await dialog.locator('[name="icon"][value="drill"]').isChecked())) {
+    fail(label, 'Lucide-Symbol lässt sich nicht auswählen');
+  }
+  await page.keyboard.press('Escape');
+  if (await dialog.isVisible() || !(await editTrigger.evaluate((node) => document.activeElement === node))) {
+    fail(label, 'Escape schließt den Dialog nicht mit Fokus-Rückgabe');
+  }
+
+  const addTrigger = page.locator('.energy-flow-big.ghost button.energy-flow-main');
+  await addTrigger.click();
+  const addState = await dialog.evaluate((node) => ({
+    title: node.querySelector('[data-consumer-dialog-title]')?.textContent?.trim(),
+    name: node.querySelector('[name="name"]')?.value,
+    removeHidden: node.querySelector('[data-consumer-delete]')?.hidden,
+  }));
+  if (addState.title !== 'Verbraucher hinzufügen' || addState.name !== '' || !addState.removeHidden) {
+    fail(label, 'Hinzufügen-Kachel verwendet nicht denselben leeren Dialog', addState);
+  }
+  await page.keyboard.press('Escape');
 }
 
 async function disclosureState(root) {
@@ -611,4 +697,5 @@ export async function assertEnergyRedesignViewport(page, { label, width }) {
   await assertEnergyFlowGeometry(page, { label, width });
   await assertEnergyDisclosures(page, { label, width });
   await assertEnergyMetricDisclosures(page, { label, width });
+  if (width === 390 || width === 1440) await assertEnergyConsumerManagement(page, { label, width });
 }

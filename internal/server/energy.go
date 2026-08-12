@@ -1093,14 +1093,17 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	if err != nil {
 		flowConfigJSON = []byte("null")
 	}
+	systemAssets := energySystemAssets(assets)
 	a.render(w, "energyCockpit", a.withBase(ac, map[string]any{
 		"FlowConfigJSON":          template.JS(flowConfigJSON),
 		"Title":                   profile.HouseholdName,
 		"ActivePage":              "energy",
 		"Profile":                 profile,
 		"Assets":                  assets,
-		"CustomConsumers":         buildEnergyCustomConsumerViews(assets),
+		"SystemAssets":            systemAssets,
+		"HasSystemAssets":         len(systemAssets) > 0,
 		"ConsumerKindOptions":     buildEnergyConsumerKindOptions(),
+		"ConsumerIconOptions":     buildEnergyConsumerIconOptions(),
 		"ConsumerNotice":          r.URL.Query().Get("verbraucher"),
 		"HasAssets":               len(assets) > 0,
 		"Mappings":                mappings,
@@ -2343,41 +2346,23 @@ func (a *app) updateEnergyCaretaker(w http.ResponseWriter, r *http.Request, ac a
 // wieder entfernen.
 const energyCustomAssetSource = "custom"
 
-// addEnergyConsumer legt einen frei benannten Verbraucher an.
+// addEnergyConsumer legt Verbraucher an oder bearbeitet eine bestehende
+// Entität aus dem Cockpit-Dialog. Die Vorlagenidentität bleibt beim Bearbeiten
+// erhalten; nur frei angelegte Verbraucher können später entfernt werden.
 //
 // Die Vorlagenliste bleibt unangetastet: sie deckt die häufigen Fälle ab, ist
 // aber keine Obergrenze. Sauna, Durchlauferhitzer, Whirlpool oder Werkstatt
 // treiben die Viertelstundenspitze genauso, und ohne eigene Entität wären sie
 // im Lastmanagement unsichtbar.
 
-type energyConsumerView struct {
-	ID          string
-	Name        string
-	KindLabel   string
-	Power       string
-	Flexibility string
-}
-
-// buildEnergyCustomConsumerViews listet nur frei angelegte Verbraucher: nur
-// sie dürfen hier wieder entfernt werden, Vorlagen gehören dem Onboarding.
-func buildEnergyCustomConsumerViews(assets []energy.Asset) []energyConsumerView {
-	out := []energyConsumerView{}
+func energySystemAssets(assets []energy.Asset) []energy.Asset {
+	out := []energy.Asset{}
 	for _, asset := range assets {
-		if asset.Source != energyCustomAssetSource {
-			continue
+		switch asset.Kind {
+		case "pv", "battery":
+			out = append(out, asset)
 		}
-		view := energyConsumerView{
-			ID:          asset.ID,
-			Name:        asset.Name,
-			KindLabel:   energy.AssetKindLabel(asset.Kind),
-			Flexibility: energyFlexibilityLabel(asset.Flexibility),
-		}
-		if asset.RatedPowerKW != nil {
-			view.Power = formatEnergyCompact(*asset.RatedPowerKW, 1) + " kW"
-		}
-		out = append(out, view)
 	}
-	sort.Slice(out, func(i, j int) bool { return strings.ToLower(out[i].Name) < strings.ToLower(out[j].Name) })
 	return out
 }
 
@@ -2396,12 +2381,67 @@ func energyFlexibilityLabel(flexibility string) string {
 
 func buildEnergyConsumerKindOptions() []energyOption {
 	kinds := []string{"other", "sauna", "instant-water-heater", "air-conditioning", "hot-water",
-		"heat-pump", "ev", "wallbox", "pv", "battery"}
+		"heat-pump", "ev", "wallbox"}
 	out := make([]energyOption, 0, len(kinds))
 	for _, kind := range kinds {
 		out = append(out, energyOption{Value: kind, Label: energy.AssetKindLabel(kind)})
 	}
 	return out
+}
+
+func buildEnergyConsumerIconOptions() []energyOption {
+	return []energyOption{
+		{Value: "car-front", Label: "Auto"},
+		{Value: "plug-zap", Label: "Ladestecker"},
+		{Value: "heater", Label: "Warmwasser"},
+		{Value: "fan", Label: "Wärmepumpe"},
+		{Value: "washing-machine", Label: "Waschmaschine"},
+		{Value: "flame", Label: "Sauna"},
+		{Value: "drill", Label: "Werkstatt"},
+		{Value: "waves-ladder", Label: "Pool"},
+		{Value: "square-parking", Label: "Parkplatz"},
+		{Value: "snowflake", Label: "Klimaanlage"},
+		{Value: "shower-head", Label: "Dusche"},
+		{Value: "plug", Label: "Sonstiges"},
+	}
+}
+
+func defaultEnergyConsumerIcon(kind string) string {
+	switch kind {
+	case "ev":
+		return "car-front"
+	case "wallbox":
+		return "plug-zap"
+	case "hot-water":
+		return "heater"
+	case "instant-water-heater":
+		return "shower-head"
+	case "heat-pump":
+		return "fan"
+	case "sauna":
+		return "flame"
+	case "air-conditioning":
+		return "snowflake"
+	default:
+		return "plug"
+	}
+}
+
+func normalizeEnergyConsumerIcon(raw, kind string) string {
+	wanted := strings.TrimSpace(strings.ToLower(raw))
+	for _, option := range buildEnergyConsumerIconOptions() {
+		if wanted == option.Value {
+			return wanted
+		}
+	}
+	return defaultEnergyConsumerIcon(kind)
+}
+
+func energyConsumerIcon(asset energy.Asset) string {
+	if asset.Metadata == nil {
+		return defaultEnergyConsumerIcon(asset.Kind)
+	}
+	return normalizeEnergyConsumerIcon(asset.Metadata["icon"], asset.Kind)
 }
 
 func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -2415,24 +2455,70 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 	}
 	name := cleanEnergyText(r.FormValue("name"), 80)
 	if name == "" {
-		http.Redirect(w, r, "/app/energie?verbraucher=name#anlagen", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/energie?verbraucher=name", http.StatusSeeOther)
 		return
 	}
 	kind := energyConsumerKind(r.FormValue("kind"))
-
-	asset := energy.Asset{
-		ID:          energy.NewID("asset"),
-		TenantSlug:  ac.tenant.Slug,
-		Kind:        kind,
-		Name:        name,
-		Flexibility: energyConsumerFlexibility(r.FormValue("flexibility")),
-		Source:      energyCustomAssetSource,
-		Confirmed:   true,
+	assets, err := a.energyStore.ListAssets(ac.tenant.Slug)
+	if err != nil {
+		http.Error(w, "Verbraucher konnten nicht geladen werden.", http.StatusInternalServerError)
+		return
 	}
+	assetID := strings.TrimSpace(r.FormValue("asset_id"))
+	asset := energy.Asset{}
+	consumerCount := 0
+	previousPriority := 1
+	for _, candidate := range sortEnergyConsumers(assets) {
+		if candidate.Kind == "pv" || candidate.Kind == "battery" {
+			continue
+		}
+		consumerCount++
+		if candidate.ID == assetID {
+			previousPriority = consumerCount
+		}
+	}
+	if assetID == "" {
+		previousPriority = consumerCount + 1
+	}
+	if assetID != "" {
+		found := false
+		for _, candidate := range sortEnergyConsumers(assets) {
+			if candidate.ID != assetID {
+				continue
+			}
+			if candidate.Kind == "pv" || candidate.Kind == "battery" {
+				http.Error(w, "Diese Anlage ist kein Verbraucher.", http.StatusBadRequest)
+				return
+			}
+			asset = candidate
+			found = true
+			break
+		}
+		if !found {
+			http.Error(w, "Verbraucher nicht gefunden.", http.StatusBadRequest)
+			return
+		}
+	} else {
+		asset = energy.Asset{
+			ID:         energy.NewID("asset"),
+			TenantSlug: ac.tenant.Slug,
+			Source:     energyCustomAssetSource,
+			Confirmed:  true,
+			Metadata:   map[string]string{},
+		}
+	}
+	if asset.Metadata == nil {
+		asset.Metadata = map[string]string{}
+	}
+	asset.Kind = kind
+	asset.Name = name
+	asset.Flexibility = energyConsumerFlexibility(r.FormValue("flexibility"))
+	asset.Metadata["icon"] = normalizeEnergyConsumerIcon(r.FormValue("icon"), kind)
+	asset.RatedPowerKW = nil
 	if raw := strings.TrimSpace(r.FormValue("rated_power_kw")); raw != "" {
 		value, err := homeassistant.ParseFloat(raw)
 		if err != nil || !energy.ValidPowerKW(value, 1000) {
-			http.Redirect(w, r, "/app/energie?verbraucher=leistung#anlagen", http.StatusSeeOther)
+			http.Redirect(w, r, "/app/energie?verbraucher=leistung", http.StatusSeeOther)
 			return
 		}
 		asset.RatedPowerKW = &value
@@ -2441,17 +2527,51 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 		http.Error(w, "Verbraucher konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
+	updatedAssets, err := a.energyStore.ListAssets(ac.tenant.Slug)
+	if err != nil {
+		http.Error(w, "Priorität konnte nicht gespeichert werden.", http.StatusInternalServerError)
+		return
+	}
+	orderedIDs := []string{}
+	for _, candidate := range sortEnergyConsumers(updatedAssets) {
+		if candidate.Kind == "pv" || candidate.Kind == "battery" || candidate.ID == asset.ID {
+			continue
+		}
+		orderedIDs = append(orderedIDs, candidate.ID)
+	}
+	priority, parseErr := strconv.Atoi(strings.TrimSpace(r.FormValue("priority")))
+	if parseErr != nil || priority < 1 {
+		priority = previousPriority
+	}
+	if priority > len(orderedIDs)+1 {
+		priority = len(orderedIDs) + 1
+	}
+	insertAt := priority - 1
+	orderedIDs = append(orderedIDs, "")
+	copy(orderedIDs[insertAt+1:], orderedIDs[insertAt:])
+	orderedIDs[insertAt] = asset.ID
+	if written, err := a.energyStore.UpdateAssetPriorities(ac.tenant.Slug, orderedIDs); err != nil || !written {
+		http.Error(w, "Priorität konnte nicht gespeichert werden.", http.StatusInternalServerError)
+		return
+	}
+	action, summary, notice := "energy.consumer.add", "Verbraucher angelegt", "1"
+	if assetID != "" {
+		action, summary, notice = "energy.consumer.update", "Verbraucher bearbeitet", "gespeichert"
+	}
 	a.recordAudit(auditEvent{
 		TenantSlug: ac.tenant.Slug,
 		ActorEmail: ac.email,
 		ActorRole:  ac.role,
-		Action:     "energy.consumer.add",
+		Action:     action,
 		TargetType: "energy-asset",
 		TargetID:   asset.ID,
-		Summary:    "Verbraucher angelegt",
-		Details:    map[string]string{"kind": asset.Kind, "flexibility": asset.Flexibility},
+		Summary:    summary,
+		Details: map[string]string{
+			"kind": asset.Kind, "flexibility": asset.Flexibility,
+			"icon": asset.Metadata["icon"], "priority": strconv.Itoa(priority),
+		},
 	})
-	http.Redirect(w, r, "/app/energie?verbraucher=1#anlagen", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/energie?verbraucher="+notice, http.StatusSeeOther)
 }
 
 // deleteEnergyConsumer entfernt ausschließlich frei angelegte Verbraucher.
@@ -2477,7 +2597,7 @@ func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac au
 			continue
 		}
 		if asset.Source != energyCustomAssetSource {
-			http.Redirect(w, r, "/app/energie?verbraucher=vorlage#anlagen", http.StatusSeeOther)
+			http.Redirect(w, r, "/app/energie?verbraucher=vorlage", http.StatusSeeOther)
 			return
 		}
 		if _, err := a.energyStore.DeleteAsset(ac.tenant.Slug, assetID); err != nil {
@@ -2493,18 +2613,18 @@ func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac au
 			TargetID:   assetID,
 			Summary:    "Verbraucher entfernt",
 		})
-		http.Redirect(w, r, "/app/energie?verbraucher=weg#anlagen", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/energie?verbraucher=weg", http.StatusSeeOther)
 		return
 	}
 	// Unbekannte ID: nicht als Fehler behandeln, aber auch nichts löschen —
 	// die Liste gehört einem anderen Haus oder ist bereits entfernt.
-	http.Redirect(w, r, "/app/energie#anlagen", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/energie", http.StatusSeeOther)
 }
 
 func energyConsumerKind(raw string) string {
 	kind := strings.ToLower(strings.TrimSpace(raw))
 	switch kind {
-	case "ev", "wallbox", "heat-pump", "hot-water", "pv", "battery",
+	case "ev", "wallbox", "heat-pump", "hot-water",
 		"sauna", "air-conditioning", "instant-water-heater":
 		return kind
 	default:
@@ -3067,14 +3187,16 @@ type energyFlowNodeConfig struct {
 }
 
 type energyFlowConsumerConfig struct {
-	ID     string  `json:"id,omitempty"`
-	Icon   string  `json:"icon,omitempty"`
-	Title  string  `json:"title"`
-	Sub    string  `json:"sub,omitempty"`
-	State  string  `json:"state,omitempty"`
-	KW     float64 `json:"kw"`
-	Active bool    `json:"active,omitempty"`
-	Custom bool    `json:"custom,omitempty"`
+	ID          string  `json:"id,omitempty"`
+	Icon        string  `json:"icon,omitempty"`
+	Title       string  `json:"title"`
+	Kind        string  `json:"kind,omitempty"`
+	RatedPower  string  `json:"ratedPower,omitempty"`
+	Flexibility string  `json:"flexibility,omitempty"`
+	State       string  `json:"state,omitempty"`
+	KW          float64 `json:"kw"`
+	Active      bool    `json:"active,omitempty"`
+	Custom      bool    `json:"custom,omitempty"`
 }
 
 type energyFlowConfig struct {
@@ -3100,19 +3222,6 @@ func formatEnergyFlowKW(watts float64) string {
 		return "0"
 	}
 	return out
-}
-
-func energyFlowConsumerIcon(kind string) string {
-	switch kind {
-	case "ev", "wallbox":
-		return "car"
-	case "hot-water":
-		return "boiler"
-	case "heat-pump":
-		return "pump"
-	default:
-		return "device"
-	}
 }
 
 // energyConsumerPriority reads the stored rail position of an asset (kept in
@@ -3214,7 +3323,7 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging 
 		// no producer ribbon appears at night.
 		watts := math.Max(0, energyPowerWatts(&item))
 		cfg.Producers = append(cfg.Producers, energyFlowNodeConfig{
-			Icon: "pv", Label: item.Label,
+			Icon: "solar-panel", Label: item.Label,
 			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000,
 		})
 	}
@@ -3250,7 +3359,7 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging 
 		}
 		watts := math.Abs(energyPowerWatts(&live.Grid))
 		cfg.Grid = &energyFlowNodeConfig{
-			Icon: "grid", Label: live.Grid.Label,
+			Icon: "utility-pole", Label: live.Grid.Label,
 			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000, Dir: dir,
 		}
 	}
@@ -3263,15 +3372,14 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging 
 		if title == "" {
 			title = energy.AssetKindLabel(asset.Kind)
 		}
-		sub := energy.AssetKindLabel(asset.Kind)
+		ratedPower := ""
 		if asset.RatedPowerKW != nil {
-			sub += " · " + formatEnergyCompact(*asset.RatedPowerKW, 1) + " kW"
-		} else if sub == title {
-			sub = ""
+			ratedPower = formatEnergyCompact(*asset.RatedPowerKW, 1)
 		}
 		cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
-			ID: asset.ID, Icon: energyFlowConsumerIcon(asset.Kind), Title: title,
-			Sub: sub, State: "Bereit · " + energyFlexibilityLabel(asset.Flexibility),
+			ID: asset.ID, Icon: energyConsumerIcon(asset), Title: title,
+			Kind: asset.Kind, RatedPower: ratedPower, Flexibility: asset.Flexibility,
+			State:  "Bereit · " + energyFlexibilityLabel(asset.Flexibility),
 			Custom: asset.Source == energyCustomAssetSource,
 		})
 	}
@@ -3283,7 +3391,7 @@ func buildEnergyFlowConfig(live energyLiveView, assets []energy.Asset, charging 
 			state = charging.ModeLabel + " mit " + formatEnergyFlowKW(kw*1000) + " kW"
 		}
 		cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
-			Icon: "parking", Title: "Parkplatz 20", State: state, KW: kw, Active: kw > 0,
+			Icon: "square-parking", Title: "Parkplatz 20", State: state, KW: kw, Active: kw > 0,
 		})
 	}
 	applyEnergyFlowHovers(&cfg, live)

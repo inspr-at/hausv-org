@@ -192,3 +192,85 @@ func TestPresetCannotBeDeletedAsConsumerHAUSV422(t *testing.T) {
 	}
 	t.Fatal("die Vorlage wurde über den Verbraucher-Pfad gelöscht")
 }
+
+func TestConsumerCanBeEditedInPlaceWithLucideIconHAUSV446(t *testing.T) {
+	a := consumerAppHAUSV422(t)
+	assets, _ := a.energyStore.ListAssets("jhw22")
+	var before energy.Asset
+	for _, asset := range assets {
+		if asset.Kind == "sauna" {
+			before = asset
+			break
+		}
+	}
+	if before.ID == "" {
+		t.Fatal("Sauna-Vorlage fehlt")
+	}
+
+	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
+		"asset_id": {before.ID}, "name": {"Werkstatt Sauna"}, "kind": {"sauna"},
+		"priority": {"1"}, "icon": {"drill"}, "rated_power_kw": {"7,5"}, "flexibility": {"throttle"},
+	})
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
+		t.Fatalf("Bearbeiten: status=%d location=%q body=%s", response.Code, response.Header().Get("Location"), response.Body.String())
+	}
+
+	assets, _ = a.energyStore.ListAssets("jhw22")
+	for _, asset := range assets {
+		if asset.ID != before.ID {
+			continue
+		}
+		if asset.Name != "Werkstatt Sauna" || asset.Kind != "sauna" || asset.Source != before.Source {
+			t.Fatalf("Identität oder Kerndaten gingen beim Bearbeiten verloren: vorher=%+v nachher=%+v", before, asset)
+		}
+		if asset.RatedPowerKW == nil || *asset.RatedPowerKW != 7.5 || asset.Flexibility != energy.FlexThrottle {
+			t.Fatalf("technische Angaben wurden nicht gespeichert: %+v", asset)
+		}
+		if asset.Metadata["icon"] != "drill" || energyConsumerIcon(asset) != "drill" || asset.Metadata["priority"] != "1" {
+			t.Fatalf("Lucide-Symbol oder Priorität wurde nicht gespeichert: %+v", asset.Metadata)
+		}
+		return
+	}
+	t.Fatal("bearbeiteter Verbraucher wurde nicht unter derselben ID gefunden")
+}
+
+func TestConsumerIconIsRestrictedToLocalLucideWhitelistHAUSV446(t *testing.T) {
+	a := consumerAppHAUSV422(t)
+	malicious := `https://example.invalid/icon.svg"><svg onload=alert(1)>`
+	addConsumerHAUSV422(t, a, url.Values{
+		"name": {"Nicht vertrauenswürdig"}, "kind": {"other"}, "priority": {"1"},
+		"icon": {malicious}, "flexibility": {"unknown"},
+	})
+
+	assets, _ := a.energyStore.ListAssets("jhw22")
+	for _, asset := range assets {
+		if asset.Name != "Nicht vertrauenswürdig" {
+			continue
+		}
+		if got := asset.Metadata["icon"]; got != "plug" {
+			t.Fatalf("nicht freigegebenes Symbol wurde gespeichert: %q", got)
+		}
+		return
+	}
+	t.Fatal("angelegter Verbraucher fehlt")
+}
+
+func TestConsumerDialogReplacesDuplicateLowerManagementHAUSV446(t *testing.T) {
+	a := consumerAppHAUSV422(t)
+	body := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
+	for _, want := range []string{
+		`id="energy-consumer-dialog"`, `data-consumer-dialog-title`, `Symbol auswählen`,
+		`Symbole aus der lokal eingebundenen Lucide-Library.`, `name="priority"`,
+		`name="icon" value="car-front"`, `name="icon" value="plug-zap"`,
+		`data-consumer-delete`, `Ihr Energiesystem`, `Verbraucher verwalten Sie direkt oben`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("Verbraucher-Dialog fehlt %q", want)
+		}
+	}
+	for _, obsolete := range []string{`id="anlagen"`, `Eigenen Verbraucher hinzufügen`, `class="energy-consumer-list"`} {
+		if strings.Contains(body, obsolete) {
+			t.Errorf("doppelte untere Verbraucherpflege ist noch vorhanden: %q", obsolete)
+		}
+	}
+}
