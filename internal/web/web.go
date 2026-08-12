@@ -1199,8 +1199,12 @@ const PageTemplates = `
     .energy-roadmap-step a { min-height: 36px; display: inline-flex; align-items: center; color: #735c1b; font-size: 12.5px; font-weight: 800; }
     .energy-roadmap-state { color: #8a742d; font-size: 10px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
     .energy-roadmap-card .energy-card-head { margin-bottom: 14px; }
-    .energy-assets { display: flex; flex-wrap: wrap; gap: 8px; }
-    .energy-asset { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 8px 12px; background: #fff; font-size: 13px; font-weight: 700; }
+    .energy-system-assets { display: flex; flex-wrap: wrap; gap: 10px; }
+    .energy-system-asset { min-width: 190px; display: inline-flex; align-items: center; gap: 11px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px 15px; background: #fff; font-size: 14px; font-weight: 800; }
+    .energy-system-asset .energy-ui-icon { width: 24px; height: 24px; color: #4a5a4e; }
+    .energy-system-helper { margin-top: 13px; color: var(--muted); font-size: 12.5px; }
+    .energy-service-links { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
+    .energy-service-links h3 { font-family: var(--font-sans); font-size: 14px; }
     .energy-business-note { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 12px; align-items: center; border-top: 1px solid var(--line); margin-top: 18px; padding-top: 18px; color: var(--muted); font-size: 13px; }
     .energy-business-note strong { color: var(--ink); }
     .energy-related-links { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 14px; font-size: 13px; font-weight: 750; }
@@ -1322,13 +1326,6 @@ const PageTemplates = `
     .energy-tariff-foot a { grid-column: 1; color: #765f1d; font-weight: 750; }
     .energy-tariff-foot form { grid-column: 2; grid-row: 1 / span 2; }
     .energy-target-form { display: grid; align-content: start; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; background: #fff; }
-    .energy-consumers { margin-top: 16px; display: grid; gap: 12px; }
-    .energy-consumer-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-    .energy-consumer-list li { display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 14px; background: #fff; }
-    .energy-consumer-list small { display: block; color: var(--muted); font-size: 13px; }
-    .energy-consumer-form { display: grid; gap: 12px; margin-top: 12px; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); align-items: end; }
-    .energy-consumer-form label { display: grid; gap: 6px; font-size: 13px; font-weight: 800; }
-    .energy-consumer-form input, .energy-consumer-form select { min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 8px 10px; }
     .energy-billed { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(146px,100%),1fr)); gap: 1px; margin: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; background: var(--line); }
     .energy-billed > div { display: grid; align-content: start; gap: 3px; padding: 13px 14px; background: #fff; }
     .energy-billed span { min-height: 26px; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .05em; line-height: 1.2; text-transform: uppercase; }
@@ -1355,6 +1352,22 @@ const PageTemplates = `
     .energy-ui-icon-chevron-down { -webkit-mask-image: url("/assets/icons/lucide/chevron-down.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/chevron-down.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-ellipsis { -webkit-mask-image: url("/assets/icons/lucide/ellipsis.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/ellipsis.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-clock { -webkit-mask-image: url("/assets/icons/lucide/clock-3.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/clock-3.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-car-front { -webkit-mask-image: url("/assets/icons/lucide/car-front.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/car-front.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-plug-zap { -webkit-mask-image: url("/assets/icons/lucide/plug-zap.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/plug-zap.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-heater { -webkit-mask-image: url("/assets/icons/lucide/heater.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/heater.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-fan { -webkit-mask-image: url("/assets/icons/lucide/fan.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/fan.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-washing-machine { -webkit-mask-image: url("/assets/icons/lucide/washing-machine.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/washing-machine.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-flame { -webkit-mask-image: url("/assets/icons/lucide/flame.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/flame.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-drill { -webkit-mask-image: url("/assets/icons/lucide/drill.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/drill.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-waves-ladder { -webkit-mask-image: url("/assets/icons/lucide/waves-ladder.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/waves-ladder.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-square-parking { -webkit-mask-image: url("/assets/icons/lucide/square-parking.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/square-parking.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-plug { -webkit-mask-image: url("/assets/icons/lucide/plug.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/plug.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-grip-vertical { -webkit-mask-image: url("/assets/icons/lucide/grip-vertical.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/grip-vertical.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-plus { -webkit-mask-image: url("/assets/icons/lucide/plus.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/plus.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-search { -webkit-mask-image: url("/assets/icons/lucide/search.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/search.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-x { -webkit-mask-image: url("/assets/icons/lucide/x.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/x.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-snowflake { -webkit-mask-image: url("/assets/icons/lucide/snowflake.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/snowflake.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-shower-head { -webkit-mask-image: url("/assets/icons/lucide/shower-head.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/shower-head.svg?v={{.AssetVersion}}"); }
 
     .energy-cockpit-main .energy-mode-strip { min-height: 68px; display: flex; gap: 16px; align-items: center; padding-block: 10px; padding-inline: max(18px,calc(50% - 686px)); color: var(--ink); background: #fffefa; border-bottom: 1px solid var(--line); box-shadow: 0 5px 18px rgba(31,39,32,.04); }
     .energy-cockpit-main .energy-mode-strip.active { color: #5f2f28; background: #fffaf7; border-bottom-color: rgba(145,73,61,.24); }
@@ -1403,7 +1416,7 @@ const PageTemplates = `
     .energy-flow-slot-top .energy-flow-tile, .energy-flow-slot-bottom .energy-flow-tile { width: 200px; }
     .energy-flow-tile { position: relative; z-index: 1; border: 1px solid #d8d2c7; border-radius: 12px; background: #fffefa; padding: 13px 14px; display: grid; grid-template-columns: 38px minmax(0,1fr); align-items: center; gap: 10px; }
     .energy-flow-tile .ico { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #4a5a4e; background: #f0f2ec; }
-    .energy-flow-tile .ico svg { width: 21px; height: 21px; display: block; }
+    .energy-flow-tile .ico .energy-ui-icon { width: 21px; height: 21px; }
     .energy-flow-tile strong { font-family: var(--font-serif); font-weight: 550; font-size: 17px; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .energy-flow-tile > div { min-width: 0; }
     .energy-flow-tile > div > span { display: block; margin-top: 5px; font-size: 11px; line-height: 1.4; color: var(--muted); }
@@ -1418,28 +1431,36 @@ const PageTemplates = `
     .energy-flow-hub2 .ico { color: #a24b42; background: #fbf1ed; }
     .energy-flow-rail { position: relative; z-index: 1; align-self: start; display: grid; gap: 8px; align-content: start; }
     .energy-flow-rail > .microlabel { position: absolute; top: -22px; left: 2px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-    .energy-flow-big { border: 1px solid #d8d2c7; border-radius: 11px; background: #fffefa; padding: 12px 12px; display: grid; grid-template-columns: 34px minmax(0,1fr) 16px; align-items: center; gap: 9px; }
-    .energy-flow-big .ico { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #4a5a4e; background: #f0f2ec; }
-    .energy-flow-big .ico svg { width: 19px; height: 19px; display: block; }
-    .energy-flow-big b { display: block; font-size: 12.5px; line-height: 1.35; }
-    .energy-flow-big span { display: block; margin-top: 3px; font-size: 11px; line-height: 1.4; color: var(--muted); }
-    .energy-flow-big .sub { color: #40443c; font-variant-numeric: tabular-nums; }
+    .energy-flow-big { height: 60px; box-sizing: border-box; border: 1px solid #d8d2c7; border-radius: 11px; background: #fffefa; padding: 7px 10px; display: grid; grid-template-columns: minmax(0,1fr) 16px; align-items: center; gap: 9px; transition: border-color .15s ease, background-color .15s ease; }
+    .energy-flow-main { min-width: 0; width: 100%; display: grid; grid-template-columns: 34px minmax(0,1fr); align-items: center; gap: 9px; border: 0; padding: 0; color: inherit; background: transparent; text-align: left; font: inherit; }
+    button.energy-flow-main { cursor: pointer; }
+    .energy-flow-big .ico { position: relative; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #4a5a4e; background: #f0f2ec; }
+    .energy-flow-big .ico .energy-ui-icon { width: 19px; height: 19px; grid-area: 1 / 1; transition: opacity .15s ease, transform .15s ease; }
+    .energy-flow-big .energy-flow-icon-edit { opacity: 0; transform: scale(.86); }
+    .energy-flow-copy { min-width: 0; display: grid; gap: 3px; }
+    .energy-flow-big b { display: block; overflow: hidden; font-size: 12.5px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+    .energy-flow-subtitles { display: grid; min-width: 0; }
+    .energy-flow-subtitles > span { grid-area: 1 / 1; display: block; overflow: hidden; color: var(--muted); font-size: 11px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; transition: opacity .15s ease; }
+    .energy-flow-subtitles .energy-flow-edit-copy { color: #765f1d; font-weight: 750; opacity: 0; }
+    .energy-flow-big.editable:hover, .energy-flow-big.editable:focus-within { border-color: rgba(184,139,49,.58); background: #fffaf0; }
+    .energy-flow-big.editable:hover .energy-flow-icon-default, .energy-flow-big.editable:focus-within .energy-flow-icon-default,
+    .energy-flow-big.editable:hover .energy-flow-state-copy, .energy-flow-big.editable:focus-within .energy-flow-state-copy { opacity: 0; }
+    .energy-flow-big.editable:hover .energy-flow-icon-edit, .energy-flow-big.editable:focus-within .energy-flow-icon-edit { opacity: 1; transform: scale(1); }
+    .energy-flow-big.editable:hover .energy-flow-edit-copy, .energy-flow-big.editable:focus-within .energy-flow-edit-copy { opacity: 1; }
     .energy-flow-big.active { border-color: rgba(91,130,82,.44); background: #f7faf3; }
     .energy-flow-big.active .state { color: #3e704c; font-weight: 700; }
     .energy-flow-big .rcol { display: grid; justify-items: center; gap: 5px; align-self: center; }
     .energy-flow-big .prio { width: 13px; height: 13px; border-radius: 50%; border: 1px solid #8a7b3f; color: #705c22; font-size: 8.5px; font-weight: 800; line-height: 1; display: grid; place-items: center; font-variant-numeric: tabular-nums; margin-top: 0; }
     .energy-flow-big .drag { color: #b5b0a2; cursor: grab; margin-top: 0; }
     .energy-flow-big button.drag { border: 0; background: none; padding: 5px; margin: -5px; display: grid; place-items: center; }
+    .energy-flow-big .drag .energy-ui-icon { width: 10px; height: 16px; }
     .energy-flow-big .drag-static { cursor: default; opacity: .55; }
     .energy-flow-big.dragging { opacity: .55; }
-    .energy-flow-big .drag svg { width: 10px; height: 16px; display: block; margin: 0 auto; }
-    .energy-flow-big.ghost { border: 1.5px dashed #c9c2b2; background: transparent; color: var(--muted); grid-template-columns: 34px minmax(0,1fr); min-height: 44px; cursor: pointer; }
+    .energy-flow-big.ghost { border: 1.5px dashed #c9c2b2; background: transparent; color: var(--muted); grid-template-columns: minmax(0,1fr); cursor: pointer; }
+    .energy-flow-big.ghost .energy-flow-main { cursor: pointer; }
     .energy-flow-big.ghost .plus { width: 21px; height: 21px; border-radius: 50%; border: 1.5px dashed #a89f8a; display: grid; place-items: center; color: #8a7b3f; margin: 0 auto; }
-    .energy-flow-big.ghost .plus svg { width: 11px; height: 11px; display: block; }
+    .energy-flow-big.ghost .plus .energy-ui-icon { width: 11px; height: 11px; }
     .energy-flow-big.ghost b { font-size: 12px; font-weight: 700; color: var(--muted); }
-    .energy-flow-big .tile-actions { display: none; gap: 10px; margin-top: 4px; }
-    .energy-flow-big:hover .tile-actions, .energy-flow-big:focus-within .tile-actions { display: flex; }
-    .energy-flow-big .tile-action { border: 0; background: none; padding: 2px 0; margin: 0; font-size: 11px; font-weight: 800; color: #765f1d; cursor: pointer; }
     .energy-flow-hint { position: absolute; left: 26px; bottom: 10px; }
     .energy-peak-chip { display: inline-flex; align-items: baseline; gap: 9px; margin-inline: auto; justify-self: center; font-size: 12.5px; color: var(--muted); white-space: nowrap; text-decoration: none; }
     .energy-peak-chip b { font-family: var(--font-serif); font-weight: 600; font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -2479,12 +2500,53 @@ const PageTemplates = `
     .dialog-optional[open] > summary::after { transform: rotate(90deg); }
     .dialog-optional-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 12px 13px 14px; }
     .dialog-optional-grid .full { grid-column: 1 / -1; }
+    .energy-consumer-dialog { width: min(720px,calc(100vw - 28px)); }
+    .energy-consumer-dialog .dialog-head { align-items: flex-start; }
+    .energy-consumer-dialog-heading { display: grid; gap: 3px; }
+    .energy-consumer-dialog-heading p { margin: 0; color: var(--muted); font-size: 13px; }
+    .energy-consumer-dialog .dialog-close { display: grid; place-items: center; }
+    .energy-consumer-dialog .dialog-close .energy-ui-icon { width: 17px; height: 17px; }
+    .energy-consumer-primary { display: grid; grid-template-columns: minmax(0,1fr) 150px; gap: 12px; }
+    .energy-consumer-field { display: grid; gap: 6px; color: var(--ink); font-size: 13px; font-weight: 800; }
+    .energy-consumer-field input, .energy-consumer-field select { width: 100%; min-height: 44px; box-sizing: border-box; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 9px 11px; color: var(--ink); background: #fff; font: 600 14px/1.3 var(--font-sans); }
+    .energy-icon-picker { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; }
+    .energy-icon-picker-head { display: flex; align-items: end; justify-content: space-between; gap: 14px; }
+    .energy-icon-picker-head > div { display: grid; gap: 2px; }
+    .energy-icon-picker-head strong { font-size: 14px; }
+    .energy-icon-picker-head small { color: var(--muted); }
+    .energy-icon-search { position: relative; width: min(235px,44%); }
+    .energy-icon-search .energy-ui-icon { position: absolute; left: 11px; top: 50%; width: 15px; height: 15px; color: var(--muted); transform: translateY(-50%); pointer-events: none; }
+    .energy-icon-search input { width: 100%; min-height: 40px; box-sizing: border-box; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 8px 10px 8px 34px; background: #fff; font: 600 13px/1.2 var(--font-sans); }
+    .energy-icon-options { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; }
+    .energy-icon-choice { position: relative; min-width: 0; min-height: 70px; display: grid; place-items: center; align-content: center; gap: 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 5px; color: var(--muted); background: #fff; cursor: pointer; }
+    .energy-icon-choice[hidden] { display: none; }
+    .energy-icon-choice:hover { border-color: #aa9d82; color: var(--ink); }
+    .energy-icon-choice:has(input:checked) { border-color: rgba(62,112,76,.65); color: #3e704c; background: #f4f8f1; box-shadow: inset 0 0 0 1px rgba(62,112,76,.18); }
+    .energy-icon-choice:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+    .energy-icon-choice input { position: absolute; opacity: 0; pointer-events: none; }
+    .energy-icon-choice .energy-ui-icon { width: 24px; height: 24px; }
+    .energy-icon-choice span:last-child { max-width: 100%; overflow: hidden; font-size: 10.5px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+    .energy-consumer-recommendations { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
+    .energy-consumer-recommendations > summary { cursor: pointer; list-style: none; padding: 12px 13px; font-size: 13px; font-weight: 800; }
+    .energy-consumer-recommendations > summary::-webkit-details-marker { display: none; }
+    .energy-consumer-recommendations > summary::after { content: "›"; float: right; color: var(--gold-ink); font-size: 20px; line-height: .8; }
+    .energy-consumer-recommendations[open] > summary { border-bottom: 1px solid var(--line); }
+    .energy-consumer-recommendations[open] > summary::after { transform: rotate(90deg); }
+    .energy-consumer-recommendation-fields { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; padding: 12px 13px 14px; }
+    .energy-consumer-delete { margin-right: auto; }
+    .energy-consumer-delete[hidden] { display: none; }
     @media (max-width: 600px) {
       .dialog-head { padding: 14px; }
       .dialog-close { width: 44px; height: 44px; flex: 0 0 auto; }
       .dialog-body { padding: 16px 14px 18px; }
       .dialog-footer { padding: 12px 14px max(12px,env(safe-area-inset-bottom)); }
       .dialog-footer .button { width: 100%; min-height: 44px; }
+      .energy-consumer-primary, .energy-consumer-recommendation-fields { grid-template-columns: 1fr; }
+      .energy-icon-picker-head { align-items: stretch; flex-direction: column; }
+      .energy-icon-search { width: 100%; }
+      .energy-icon-options { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .energy-consumer-dialog .dialog-footer { flex-wrap: wrap; }
+      .energy-consumer-dialog .dialog-footer .energy-consumer-delete { width: auto; margin-right: auto; }
     }
     .release-dialog { width: min(920px, calc(100vw - 28px)); }
     .release-history { display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 20px; max-height: min(72vh, 720px); }
@@ -9420,11 +9482,34 @@ const PageTemplates = `
       {{if .Welcome}}<div class="message success">Ihr Hausprofil ist bereit. Der sichere Beobachtungsmodus bleibt aktiv.</div>{{end}}
       {{if .ModeChanged}}<div class="message success">Der Energiemodus wurde nachvollziehbar geändert.</div>{{end}}
       {{if .ProfileChanged}}<div class="message success">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</div>{{end}}
+      {{if eq .ConsumerNotice "1"}}<div class="message success">Der Verbraucher wurde angelegt.</div>{{else if eq .ConsumerNotice "gespeichert"}}<div class="message success">Der Verbraucher wurde gespeichert.</div>{{else if eq .ConsumerNotice "weg"}}<div class="message success">Der Verbraucher wurde entfernt.</div>{{else if eq .ConsumerNotice "name"}}<div class="message error">Bitte einen Namen angeben.</div>{{else if eq .ConsumerNotice "leistung"}}<div class="message error">Die Leistung muss eine positive kW-Zahl sein.</div>{{else if eq .ConsumerNotice "vorlage"}}<div class="message">Dieser Verbraucher gehört zum Hausprofil und kann hier nicht entfernt werden.</div>{{end}}
       <section class="energy-health">
         {{template "energyLead" .}}
 
       </section>
       </div>
+      {{if .CanManageEnergy}}<dialog id="energy-consumer-dialog" class="dialog energy-consumer-dialog" aria-labelledby="energy-consumer-dialog-title">
+        <form method="post" action="/app/energie/verbraucher">
+          <input type="hidden" name="asset_id" value="">
+          <header class="dialog-head"><div class="energy-consumer-dialog-heading"><h2 id="energy-consumer-dialog-title" data-consumer-dialog-title>Verbraucher bearbeiten</h2><p data-consumer-dialog-context>Name, Priorität und Symbol direkt anpassen.</p></div><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen"><span class="energy-ui-icon energy-ui-icon-x" aria-hidden="true"></span></button></header>
+          <div class="dialog-body">
+            <div class="energy-consumer-primary">
+              <label class="energy-consumer-field"><span>Name</span><input type="text" name="name" maxlength="80" required autocomplete="off" placeholder="z. B. Sauna"></label>
+              <label class="energy-consumer-field"><span>Priorität</span><select name="priority" aria-label="Priorität"></select></label>
+            </div>
+            <section class="energy-icon-picker" aria-labelledby="energy-icon-picker-title">
+              <div class="energy-icon-picker-head"><div><strong id="energy-icon-picker-title">Symbol auswählen</strong><small>Symbole aus der lokal eingebundenen Lucide-Library.</small></div><label class="energy-icon-search"><span class="energy-ui-icon energy-ui-icon-search" aria-hidden="true"></span><span class="sr-only">Symbole durchsuchen</span><input type="search" data-consumer-icon-search placeholder="Symbol suchen"></label></div>
+              <div class="energy-icon-options">{{range .ConsumerIconOptions}}<label class="energy-icon-choice" data-consumer-icon-choice="{{.Label}} {{.Value}}"><input type="radio" name="icon" value="{{.Value}}"{{if eq .Value "plug"}} checked{{end}}><span class="energy-ui-icon energy-ui-icon-{{.Value}}" aria-hidden="true"></span><span>{{.Label}}</span></label>{{end}}</div>
+            </section>
+            <details class="energy-consumer-recommendations"><summary>Technische Angaben für Empfehlungen</summary><div class="energy-consumer-recommendation-fields">
+              <label class="energy-consumer-field"><span>Kategorie</span><select name="kind">{{range .ConsumerKindOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select></label>
+              <label class="energy-consumer-field"><span>Leistung in kW</span><input type="text" name="rated_power_kw" inputmode="decimal" placeholder="z. B. 8,0"></label>
+              <label class="energy-consumer-field"><span>Flexibilität</span><select name="flexibility"><option value="unknown">noch offen</option><option value="shift">zeitlich verschiebbar</option><option value="throttle">kurz begrenzbar</option><option value="fixed">fest</option></select></label>
+            </div></details>
+          </div>
+          <footer class="dialog-footer"><button class="button quiet energy-consumer-delete" type="submit" formaction="/app/energie/verbraucher/entfernen" formnovalidate data-consumer-delete hidden>Verbraucher entfernen</button><button class="button" type="button" data-close-dialog>Abbrechen</button><button class="button primary" type="submit" data-consumer-submit>Änderungen speichern</button></footer>
+        </form>
+      </dialog>{{end}}
       <section class="energy-card energy-chart" id="energieverlauf" aria-labelledby="energy-chart-title">
         <header class="energy-chart-head"><div><h2 id="energy-chart-title">{{.Chart.Title}}</h2><p>Wann war viel los – und woher kam die Energie?</p></div><div class="energy-chart-head-actions"><small>{{.Chart.Status}}</small><div class="energy-chart-toolbar"><nav class="energy-chart-range" aria-label="Zeitraum auswählen"><a href="/app/energie?zeitraum=letzte-24h#energieverlauf"{{if not .Chart.IsToday}} aria-current="page"{{end}}>Letzte 24 h</a><a href="/app/energie?zeitraum=heute#energieverlauf"{{if .Chart.IsToday}} aria-current="page"{{end}}>Heute</a></nav>{{if .Chart.HasData}}<div class="energy-chart-size-actions"><button class="button small energy-chart-size-button" type="button" data-dialog="energy-chart-dialog" aria-haspopup="dialog" aria-controls="energy-chart-dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Vergrößern</button><button class="button small energy-chart-size-button" type="button" data-dialog="energy-chart-dialog" data-energy-fullscreen aria-haspopup="dialog" aria-controls="energy-chart-dialog" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M9 21H3v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-fullscreen-label>Vollbild</span></button></div>{{end}}</div></div></header>
         {{if .Chart.HasData}}<div class="energy-chart-layout">
@@ -9507,34 +9592,10 @@ const PageTemplates = `
         <div class="energy-roadmap">{{range .Roadmap}}<article class="energy-roadmap-step {{if .Current}}current{{end}}"><span class="energy-roadmap-number">{{.Number}}</span><span class="energy-roadmap-state">{{.State}}</span><strong>{{.Title}}</strong><p>{{.Detail}}</p>{{if .Action}}<a href="{{.URL}}">{{.Action}} →</a>{{end}}</article>{{end}}</div>
       </section>
       <section class="energy-card">
-        <header class="energy-card-head"><div><h2>Was Ihr Zuhause mitbringt</h2><p>Die Grundlage für Empfehlungen – keine Einkaufsliste.</p></div>{{if .CanManageEnergy}}<a class="button" href="/app/zuhause/onboarding?step=3">Bearbeiten</a>{{end}}</header>
-        {{if .HasAssets}}<div class="energy-assets">{{range .Assets}}<span class="energy-asset"><span aria-hidden="true">✓</span>{{.Name}}</span>{{end}}</div><nav class="energy-related-links" aria-label="Verknüpfte Hausbereiche"><a href="/app/dokumente">Unterlagen</a><a href="/app/events">Wartungstermine</a><a href="/app/anliegen?new=1">Aufgabe melden</a><a href="/app/kontakte">Fachkontakte</a></nav>{{else}}<p class="muted">Noch keine größeren Verbraucher erfasst.</p>{{end}}
-        <div id="anlagen" class="energy-consumers">
-          {{if eq .ConsumerNotice "1"}}<div class="message success">Der Verbraucher wurde angelegt.</div>{{end}}
-          {{if eq .ConsumerNotice "weg"}}<div class="message success">Der Verbraucher wurde entfernt.</div>{{end}}
-          {{if eq .ConsumerNotice "name"}}<div class="message">Bitte einen Namen angeben.</div>{{end}}
-          {{if eq .ConsumerNotice "leistung"}}<div class="message">Die Leistung muss eine positive kW-Zahl sein.</div>{{end}}
-          {{if eq .ConsumerNotice "vorlage"}}<div class="message">Vorlagen werden im Onboarding verwaltet, nicht hier.</div>{{end}}
-          {{if .CustomConsumers}}<ul class="energy-consumer-list">{{range .CustomConsumers}}<li>
-            <div><strong>{{.Name}}</strong><small>{{.KindLabel}}{{if .Power}} · {{.Power}}{{end}} · {{.Flexibility}}</small></div>
-            {{if $.CanManageEnergy}}<form method="post" action="/app/energie/verbraucher/entfernen"><input type="hidden" name="asset_id" value="{{.ID}}"><button class="button" type="submit">Entfernen</button></form>{{end}}
-          </li>{{end}}</ul>{{end}}
-          {{if .CanManageEnergy}}<details class="onboarding-disclosure"><summary>Eigenen Verbraucher hinzufügen <span>Sauna, Werkstatt, Pool …</span></summary>
-            <form class="energy-consumer-form" method="post" action="/app/energie/verbraucher">
-              <label>Name<input type="text" name="name" maxlength="80" required placeholder="z. B. Sauna"></label>
-              <label>Kategorie<select name="kind">{{range .ConsumerKindOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select></label>
-              <label>Leistung in kW<input type="text" name="rated_power_kw" inputmode="decimal" placeholder="z. B. 8,0"></label>
-              <label>Flexibilität<select name="flexibility">
-                <option value="unknown">noch offen</option>
-                <option value="shift">zeitlich verschiebbar</option>
-                <option value="throttle">kurz begrenzbar</option>
-                <option value="fixed">fest</option>
-              </select></label>
-              <button class="button primary" type="submit">Verbraucher hinzufügen</button>
-            </form>
-            <small class="muted">Ohne gesetzte Flexibilität zählt ein Verbraucher nur im Verbrauch, nicht in der Peak-Wirkung. Fehlt die Leistung, rechnen wir mit einem Richtwert der Art (E-Auto, Wallbox und Speicher 3 kW, Wärmepumpe und Warmwasser 1 kW) — Ihre eigene Angabe ist genauer. Eine PV-Anlage zählt nie in die Peak-Wirkung: Erzeugung verschiebt die Bezugsspitze nicht.</small>
-          </details>{{end}}
-        </div>
+        <header class="energy-card-head"><div><h2>Ihr Energiesystem</h2><p>Erzeugung und Speicher als Grundlage für Empfehlungen.</p></div>{{if .CanManageEnergy}}<a class="button" href="/app/zuhause/onboarding?step=3">Anlagen bearbeiten</a>{{end}}</header>
+        {{if .HasSystemAssets}}<div class="energy-system-assets">{{range .SystemAssets}}<span class="energy-system-asset"><span class="energy-ui-icon {{if eq .Kind "pv"}}energy-ui-icon-solar-panel{{else}}energy-ui-icon-battery{{end}}" aria-hidden="true"></span>{{.Name}}</span>{{end}}</div>{{else}}<p class="muted">Noch keine Erzeugung oder Speicher erfasst.</p>{{end}}
+        <p class="energy-system-helper">Verbraucher verwalten Sie direkt oben in „Energie jetzt“.</p>
+        <nav class="energy-related-links" aria-label="Service und Unterlagen"><a href="/app/dokumente">Unterlagen</a><a href="/app/events">Wartungstermine</a><a href="/app/anliegen?new=1">Aufgabe melden</a><a href="/app/kontakte">Fachkontakte</a></nav>
         <div class="energy-business-note"><span aria-hidden="true">◎</span><p><strong>Kostenmodell:</strong> voller Produktumfang drei Jahre kostenlos{{if .FreeUntil}} bis {{.FreeUntil}}{{end}}, danach nach heutigem Modell 12 € pro Jahr. Kein Zahlungszwang während des Piloten.</p></div>
       </section>
       <div class="energy-admin">

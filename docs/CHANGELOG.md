@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.72.0] - 2026-08-12
+
+### Neu
+
+- **Verbraucher lassen sich direkt im Energiefluss bearbeiten.** Ein Klick öffnet einen kompakten Dialog für Name, Priorität, Symbol und technische Angaben; neue Verbraucher nutzen denselben klaren Weg.
+- **Passende Symbole stehen zur Auswahl.** Eine durchsuchbare Auswahl aus der etablierten, lokal ausgelieferten Lucide-Bibliothek hält Darstellung und Bedienung einheitlich.
+
+### Verbessert
+
+- **Die Prioritätenliste bleibt ruhig.** Beim Überfahren wechseln nur Symbol und Hinweistext – die Kacheln und der restliche Energiefluss bewegen sich nicht mehr.
+- **Anlagen und Verbraucher sind klar getrennt.** Erzeugung und Speicher bleiben im Anlagenbereich, während Verbraucher ausschließlich dort gepflegt werden, wo sie im Energiefluss sichtbar sind.
+
 ## [0.71.1] - 2026-08-11
 
 ### Verbessert

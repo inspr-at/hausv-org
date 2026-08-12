@@ -7,16 +7,14 @@ import (
 	"testing"
 )
 
-// The first-viewport energy redesign is deliberately bounded: the chart and
-// every section following it already have their own interaction and visual QA.
-// Keep this fingerprint narrow enough that the mode strip, identity, live
-// flow, tariff and next-step surfaces can evolve without making an unrelated
-// chart/below rewrite look accidental.
-func TestEnergyFirstViewportRedesignLeavesChartAndFollowingSectionsUntouched(t *testing.T) {
+// The approved consumer-management flow spans the live rail and the lower
+// system inventory. This fingerprint records that deliberate new baseline so
+// later chart/below changes still cannot slip in unnoticed.
+func TestEnergyConsumerManagementKeepsChartAndFollowingSectionsIntentional(t *testing.T) {
 	const (
 		startMarker = `      <section class="energy-card energy-chart"`
 		endMarker   = "\n{{define \"energyData\"}}"
-		wantSHA256  = "89eb1c5c4b99513b7042518060b981f664b97bc07fca3459e420a94a2709bcb2"
+		wantSHA256  = "c14350278f4d41e12e77f2a703b3756ba0fea515ef1bff14a870ebcbb4aa8e30"
 	)
 
 	start := strings.Index(PageTemplates, startMarker)
@@ -31,7 +29,7 @@ func TestEnergyFirstViewportRedesignLeavesChartAndFollowingSectionsUntouched(t *
 	protected := PageTemplates[start : start+endOffset]
 	got := fmt.Sprintf("%x", sha256.Sum256([]byte(protected)))
 	if got != wantSHA256 {
-		t.Fatalf("energy chart or a following section changed outside the first-viewport redesign scope: sha256=%s, want %s", got, wantSHA256)
+		t.Fatalf("energy chart or a following section changed outside the approved consumer-management scope: sha256=%s, want %s", got, wantSHA256)
 	}
 }
 
