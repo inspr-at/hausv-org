@@ -58,7 +58,7 @@ func TestCuratedConsumerLucideAssetsAreVendoredHAUSV446(t *testing.T) {
 
 func TestEnergyConsumerCardHoverCannotChangeGeometryHAUSV446(t *testing.T) {
 	for _, want := range []string{
-		`.energy-flow-big { height: 60px; box-sizing: border-box;`,
+		`.energy-flow-big { width: 258px; height: 80px; box-sizing: border-box;`,
 		`.energy-flow-subtitles > span { grid-area: 1 / 1;`,
 		`.energy-flow-big.editable:hover .energy-flow-icon-default`,
 		`.energy-flow-big.editable:hover .energy-flow-icon-edit`,

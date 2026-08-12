@@ -34,6 +34,10 @@
   var ICON_NAMES = LUCIDE_ICON_NAMES.reduce(function (names, name) { names[name] = true; return names; }, {});
   var HUB = "#a24b42", BATT = "#7893a1", GRID = "#b8891f", LOAD = "#3e704c", PV = "#4f7d49";
 
+  function nodeColor(value, fallback) {
+    return /^#[0-9a-f]{6}$/i.test(value || "") ? value : fallback;
+  }
+
   function el(tag, className, parent) {
     var node = document.createElement(tag);
     if (className) node.className = className;
@@ -69,19 +73,27 @@
     return strong;
   }
 
-  function tile(kind, iconName, parent) {
+  function tile(kind, iconName, parent, color) {
     var node = el("div", "energy-flow-tile k-" + kind, parent);
+    node.style.setProperty("--energy-node-color", color);
     icon(iconName, "ico", node);
     el("div", "", node);
     return node;
   }
 
+  function secondaryLine(parent, label, value, className) {
+    if (!label && !value) return;
+    var line = el("span", className || "energy-flow-secondary", parent);
+    line.textContent = (label || "Weitere Kennzahl") + " · ";
+    el("b", "", line).textContent = value || "–";
+  }
+
   function sinkBands(cfg) {
     var bands = [];
-    if (cfg.storage && cfg.storage.flow > 0 && cfg.storage.mode !== "entlädt") bands.push({ c: BATT, kw: cfg.storage.flow });
-    (cfg.consumers || []).forEach(function (c) { if (c.kw > 0) bands.push({ c: LOAD, kw: c.kw }); });
-    if (cfg.grid && cfg.grid.kw > 0 && cfg.grid.dir === "export") bands.push({ c: GRID, kw: cfg.grid.kw });
-    bands.push({ c: HUB, kw: Math.max(cfg.home && cfg.home.kw > 0 ? cfg.home.kw : 0, 0.01) });
+    if (cfg.storage && cfg.storage.flow > 0 && cfg.storage.mode !== "entlädt") bands.push({ c: nodeColor(cfg.storage.color, BATT), kw: cfg.storage.flow });
+    (cfg.consumers || []).forEach(function (c) { if (c.kw > 0) bands.push({ c: nodeColor(c.color, LOAD), kw: c.kw }); });
+    if (cfg.grid && cfg.grid.kw > 0 && cfg.grid.dir === "export") bands.push({ c: nodeColor(cfg.grid.color, GRID), kw: cfg.grid.kw });
+    bands.push({ c: nodeColor(cfg.home && cfg.home.color, HUB), kw: Math.max(cfg.home && cfg.home.kw > 0 ? cfg.home.kw : 0, 0.01) });
     return bands;
   }
 
@@ -296,6 +308,8 @@
     setDialogValue("kind", item.kind || "other");
     setDialogValue("rated_power_kw", item.ratedPower || "");
     setDialogValue("flexibility", item.flexibility || "unknown");
+    setDialogValue("color", nodeColor(item.color, LOAD));
+    setDialogValue("secondary_label", item.secondaryLabel || "");
 
     var priorityField = consumerDialog.querySelector('[name="priority"]');
     var priorityWrap = consumerDialog.querySelector("[data-consumer-priority-field]");
@@ -323,7 +337,7 @@
     var submit = consumerDialog.querySelector("[data-consumer-submit]");
     var isSystemNode = Boolean(item.nodeType && item.nodeType !== "consumer" && item.nodeType !== "parking");
     if (title) title.textContent = isSystemNode ? "Energiefluss bearbeiten" : (item.id ? "Verbraucher bearbeiten" : "Verbraucher hinzufügen");
-    if (context) context.textContent = isSystemNode ? "Name, Symbol und passende Home-Assistant-Messwerte direkt anpassen." : (item.id ? "Name, Priorität, Symbol und Messwerte direkt anpassen." : "Neuen Verbraucher mit optionalen Messwerten anlegen.");
+    if (context) context.textContent = isSystemNode ? "Name, Farbe, Symbol und passende Home-Assistant-Messwerte direkt anpassen." : (item.id ? "Name, Priorität, Farbe, Symbol und Messwerte direkt anpassen." : "Neuen Verbraucher mit optionalen Messwerten anlegen.");
     if (submit) submit.textContent = item.id ? "Änderungen speichern" : "Verbraucher hinzufügen";
 
     var remove = consumerDialog.querySelector("[data-consumer-delete]");
@@ -379,6 +393,8 @@
         id: item.id,
         title: item.label,
         icon: item.icon,
+        color: item.color,
+        secondaryLabel: item.secondaryLabel,
         nodeType: item.nodeType,
         measurements: item.measurements || [],
         deletable: false,
@@ -468,48 +484,52 @@
 
       var top = el("div", "energy-flow-slot-top", flow);
       (cfg.producers || []).forEach(function (p, i) {
-        var node = tile("pv", p.icon || "solar-panel", top);
+        var node = tile("pv", p.icon || "solar-panel", top, nodeColor(p.color, PV));
         if (p.hover) node.title = p.hover;
         node.dataset.edge = "producer-" + i;
         valueLine(node.lastChild, p.value, p.unit);
         el("span", "", node.lastChild).textContent = p.label;
+        secondaryLine(node.lastChild, p.secondaryLabel, p.secondary);
         makeFlowNodeEditable(node, p);
         if (p.kw > 0) edges.push({ from: "producer-" + i, to: "hub", kw: p.kw, banded: true });
       });
 
       if (cfg.storage) {
         var leftSlot = el("div", "energy-flow-slot-left", flow);
-        var st = tile("batt", cfg.storage.icon || "battery", leftSlot);
+        var st = tile("batt", cfg.storage.icon || "battery", leftSlot, nodeColor(cfg.storage.color, BATT));
         if (cfg.storage.hover) st.title = cfg.storage.hover;
         st.dataset.edge = "storage";
         valueLine(st.lastChild, cfg.storage.value, cfg.storage.unit);
         el("span", "", st.lastChild).textContent = cfg.storage.sub;
+        secondaryLine(st.lastChild, cfg.storage.secondaryLabel, cfg.storage.secondary);
         makeFlowNodeEditable(st, cfg.storage);
         if (cfg.storage.flow > 0) {
           if (cfg.storage.mode === "entlädt") edges.push({ from: "storage", to: "hub", kw: cfg.storage.flow, banded: true });
-          else edges.push({ from: "hub", to: "storage", kw: cfg.storage.flow, stops: [{ at: 0, c: BATT }, { at: 1, c: BATT }] });
+          else edges.push({ from: "hub", to: "storage", kw: cfg.storage.flow, stops: [{ at: 0, c: nodeColor(cfg.storage.color, BATT) }, { at: 1, c: nodeColor(cfg.storage.color, BATT) }] });
         }
       }
 
-      var hub = tile("hub", cfg.home.icon || "house", flow);
+      var hub = tile("hub", cfg.home.icon || "house", flow, nodeColor(cfg.home.color, HUB));
       hub.classList.add("energy-flow-hub2");
       if (cfg.home.hover) hub.title = cfg.home.hover;
       hub.dataset.edge = "hub";
       valueLine(hub.lastChild, cfg.home.value, cfg.home.unit);
       el("span", "", hub.lastChild).textContent = cfg.home.label || "Hausverbrauch";
+      secondaryLine(hub.lastChild, cfg.home.secondaryLabel, cfg.home.secondary);
       makeFlowNodeEditable(hub, cfg.home);
 
       if (cfg.grid) {
         var bottom = el("div", "energy-flow-slot-bottom", flow);
-        var gr = tile("grid", cfg.grid.icon || "utility-pole", bottom);
+        var gr = tile("grid", cfg.grid.icon || "utility-pole", bottom, nodeColor(cfg.grid.color, GRID));
         if (cfg.grid.hover) gr.title = cfg.grid.hover;
         gr.dataset.edge = "grid";
         valueLine(gr.lastChild, cfg.grid.value, cfg.grid.unit);
         el("span", "", gr.lastChild).textContent = cfg.grid.label;
+        secondaryLine(gr.lastChild, cfg.grid.secondaryLabel, cfg.grid.secondary);
         makeFlowNodeEditable(gr, cfg.grid);
         if (cfg.grid.kw > 0) {
           if (cfg.grid.dir === "import") edges.push({ from: "grid", to: "hub", kw: cfg.grid.kw, banded: true });
-          else edges.push({ from: "hub", to: "grid", kw: cfg.grid.kw, stops: [{ at: 0, c: GRID }, { at: 1, c: GRID }] });
+          else edges.push({ from: "hub", to: "grid", kw: cfg.grid.kw, stops: [{ at: 0, c: nodeColor(cfg.grid.color, GRID) }, { at: 1, c: nodeColor(cfg.grid.color, GRID) }] });
         }
       }
 
@@ -569,6 +589,7 @@
         (cfg.consumers || []).forEach(function (c, i) {
           var canEdit = Boolean(c.id && cfg.addHint);
           var t = el("div", "energy-flow-big" + (c.active ? " active" : "") + (canEdit ? " editable" : ""), rail);
+          t.style.setProperty("--energy-node-color", nodeColor(c.color, LOAD));
           t.dataset.edge = "consumer-" + i;
           if (c.id) t.dataset.consumerId = c.id;
           var main = el(canEdit ? "button" : "div", "energy-flow-main", t);
@@ -588,7 +609,8 @@
           var subtitles = el("span", "energy-flow-subtitles", text);
           el("span", "energy-flow-state-copy", subtitles).textContent = c.state || "Bereit";
           if (canEdit) el("span", "energy-flow-edit-copy", subtitles).textContent = "Klicken zum Bearbeiten";
-          if (c.kw > 0) edges.push({ from: "hub", to: "consumer-" + i, kw: c.kw, stops: [{ at: 0, c: LOAD }, { at: 1, c: LOAD }] });
+          if (c.secondary) secondaryLine(text, c.secondaryLabel, c.secondary, "energy-flow-secondary-copy");
+          if (c.kw > 0) edges.push({ from: "hub", to: "consumer-" + i, kw: c.kw, stops: [{ at: 0, c: nodeColor(c.color, LOAD) }, { at: 1, c: nodeColor(c.color, LOAD) }] });
           var rcol = el("span", "rcol", t);
           el("span", "prio", rcol).textContent = String(i + 1);
           var canReorder = Boolean(c.id && cfg.addHint);

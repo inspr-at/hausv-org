@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.76.0",
+			Date:     "12. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Energiefluss und Seitenleiste sind ruhiger und frei konfigurierbar.",
+			Intro:    "Gleich große Kacheln zeigen frei wählbare Farben und zweite Home-Assistant-Kennzahlen; Empfehlung, Version und Kontoaktionen sitzen kompakt am passenden Ort.",
+			Items:    []NoteItem{},
+		},
+		{
 			Version:  "0.75.3",
 			Date:     "12. August 2026",
 			Kind:     "Energie-Cockpit",
