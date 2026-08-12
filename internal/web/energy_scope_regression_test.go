@@ -33,11 +33,11 @@ func TestEnergyConsumerManagementKeepsChartAndFollowingSectionsIntentional(t *te
 	}
 }
 
-func TestEnergyFirstViewportRedesignLeavesSharedSidebarUntouched(t *testing.T) {
+func TestApprovedCompactSidebarFooterStaysStable(t *testing.T) {
 	const (
 		startMarker = `{{define "sidebar"}}`
 		endMarker   = "\n{{define \"releaseHistoryDialog\"}}"
-		wantSHA256  = "7e410142b1c0324d5530a396541c9ac9e870420fd53e9e873f419fcf01e2682f"
+		wantSHA256  = "9bf20e32404caf57cd0c6e44b944bc344eaa7305dc0f189092426ecf11eba9e2"
 	)
 
 	start := strings.Index(PageTemplates, startMarker)
@@ -52,7 +52,7 @@ func TestEnergyFirstViewportRedesignLeavesSharedSidebarUntouched(t *testing.T) {
 	protected := PageTemplates[start : start+endOffset]
 	got := fmt.Sprintf("%x", sha256.Sum256([]byte(protected)))
 	if got != wantSHA256 {
-		t.Fatalf("shared sidebar changed during the right-hand energy redesign: sha256=%s, want %s", got, wantSHA256)
+		t.Fatalf("approved compact sidebar footer changed: sha256=%s, want %s", got, wantSHA256)
 	}
 }
 

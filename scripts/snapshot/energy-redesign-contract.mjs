@@ -219,6 +219,21 @@ async function assertEnergyConsumerManagement(page, { label, width }) {
       state.box.left < -1 || state.box.right > width + 1 || state.documentWidth > width + 1) {
     fail(label, 'Bearbeitungsdialog ist unvollständig, läuft über oder verwendet nicht-lokale Symbole', state);
   }
+  const recommendations = dialog.locator('[data-consumer-recommendations]');
+  if (await recommendations.count()) await recommendations.evaluate((node) => { node.open = true; });
+  const dialogBody = dialog.locator('.dialog-body');
+  const scrollState = await dialogBody.evaluate((node) => {
+    const naturalHeight = node.clientHeight;
+    if (node.scrollHeight <= node.clientHeight) node.style.maxHeight = '300px';
+    node.scrollTop = node.scrollHeight;
+    const result = { naturalHeight, clientHeight: node.clientHeight, scrollHeight: node.scrollHeight, scrollTop: node.scrollTop };
+    node.style.maxHeight = '';
+    return result;
+  });
+  if (scrollState.scrollHeight <= scrollState.clientHeight || scrollState.scrollTop <= 0) {
+    fail(label, 'Bearbeitungsdialog hat keinen funktionierenden inneren Scrollbereich', scrollState);
+  }
+  await dialogBody.evaluate((node) => { node.scrollTop = 0; });
   if (process.env.HV_QA_SCREENSHOT_DIR) {
     mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
     await dialog.screenshot({

@@ -975,17 +975,19 @@ const PageTemplates = `
     .nav-home-identity small { min-width: 0; overflow: hidden; color: rgba(255,255,255,.48); font-size: 11px; font-weight: 550; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
     .nav-badge { margin-left: auto; min-width: 25px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); padding: 0 7px; background: var(--gold); color: #172019; font-size: 11px; font-weight: 900; line-height: 1; }
     .nav-group-label { margin: 10px 12px 2px; color: rgba(255,255,255,.42); font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
-    .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 16px 8px 0; display: grid; gap: 12px; }
-    .side-map-attribution { justify-self: start; color: rgba(255,255,255,.38); font-size: 9px; line-height: 1.2; text-decoration: none; }
+    .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 14px 8px 0; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; align-items: center; }
+    .side-map-attribution { grid-column: 1 / -1; grid-row: 2; justify-self: start; margin-top: 2px; color: rgba(255,255,255,.38); font-size: 9px; line-height: 1.2; text-decoration: none; }
     .side-map-attribution:hover { color: rgba(255,255,255,.68); }
     .side-user { display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: center; }
     .avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: #fff; font-weight: 800; border: 1px solid rgba(255,255,255,.25); }
     .side-user strong { display: -webkit-box; max-height: 2.5em; color: #fff; font-size: 14px; line-height: 1.22; overflow: hidden; overflow-wrap: anywhere; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .side-user span, .side-version { color: rgba(255,255,255,.64); font-size: 13px; }
-    .version-button { justify-self: start; width: auto; min-height: 26px; border: 0; padding: 3px 0; background: transparent; color: rgba(255,255,255,.48); font: inherit; font-size: 11.5px; font-weight: 650; cursor: pointer; }
+    .side-account-actions { display: flex; align-items: center; gap: 4px; }
+    .version-button { width: auto; min-height: 44px; border: 0; padding: 3px 7px; background: transparent; color: rgba(255,255,255,.48); font: inherit; font-size: 10.5px; font-weight: 650; cursor: pointer; }
     .version-button:hover { color: rgba(255,255,255,.84); }
     .logout-form { margin: 0; }
-    .logout-button { width: 100%; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); color: rgba(255,255,255,.92); background: transparent; font-weight: 700; cursor: pointer; }
+    .logout-button { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,.2); border-radius: var(--radius-xs); color: rgba(255,255,255,.78); background: transparent; cursor: pointer; }
+    .logout-button .energy-ui-icon { width: 19px; height: 19px; }
     .logout-button:hover { border-color: var(--gold); color: #fff; }
     .app-main { min-width: 0; padding-bottom: 58px; }
     /* Energy surfaces use AA-safe text and focus aliases without changing the
@@ -1365,6 +1367,7 @@ const PageTemplates = `
     .energy-ui-icon-info { -webkit-mask-image: url("/assets/icons/lucide/info.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/info.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-play { -webkit-mask-image: url("/assets/icons/lucide/play.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/play.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-pencil { -webkit-mask-image: url("/assets/icons/lucide/pencil.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/pencil.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-log-out { -webkit-mask-image: url("/assets/icons/lucide/log-out.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/log-out.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-chevron-right { -webkit-mask-image: url("/assets/icons/lucide/chevron-right.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/chevron-right.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-chevron-down { -webkit-mask-image: url("/assets/icons/lucide/chevron-down.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/chevron-down.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-ellipsis { -webkit-mask-image: url("/assets/icons/lucide/ellipsis.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/ellipsis.svg?v={{.AssetVersion}}"); }
@@ -1430,52 +1433,56 @@ const PageTemplates = `
     .energy-flow-dots { opacity: .86; animation: energy-flow-dots 1.15s linear infinite; }
     @keyframes energy-flow-dots { to { stroke-dashoffset: -10.1; } }
     @media (prefers-reduced-motion: reduce) { .energy-flow-dots { animation: none; } }
-    .energy-flow-grid2 { position: relative; display: grid; grid-template-columns: 200px minmax(26px,1fr) 200px minmax(26px,1fr); grid-template-rows: auto 64px auto 64px auto; align-items: center; justify-items: center; }
+    .energy-flow-grid2 { --energy-flow-node-width:258px; --energy-flow-node-height:80px; position: relative; display: grid; grid-template-columns: var(--energy-flow-node-width) minmax(26px,1fr) var(--energy-flow-node-width) minmax(26px,1fr); grid-template-rows: auto 64px auto 64px auto; align-items: center; justify-items: center; }
     .energy-flow-slot-top { grid-column: 3; grid-row: 1; display: flex; gap: 14px; justify-content: center; width: max-content; justify-self: center; }
     .energy-flow-slot-left { grid-column: 1; grid-row: 3; width: 100%; }
     .energy-flow-slot-bottom { grid-column: 3; grid-row: 5; display: flex; justify-content: center; width: max-content; justify-self: center; }
-    .energy-flow-slot-top .energy-flow-tile, .energy-flow-slot-bottom .energy-flow-tile { width: 200px; }
-    .energy-flow-tile { position: relative; z-index: 1; border: 1px solid #d8d2c7; border-radius: 12px; background: #fffefa; padding: 13px 14px; display: grid; grid-template-columns: 38px minmax(0,1fr); align-items: center; gap: 10px; }
-    .energy-flow-tile .ico { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #4a5a4e; background: #f0f2ec; }
+    .energy-flow-slot-top .energy-flow-tile, .energy-flow-slot-bottom .energy-flow-tile { width: var(--energy-flow-node-width); }
+    .energy-flow-tile { position: relative; z-index: 1; width: var(--energy-flow-node-width); min-height: var(--energy-flow-node-height); box-sizing: border-box; border: 2px solid var(--energy-node-color,#d8d2c7); border-radius: 12px; background: #fffefa; padding: 11px 14px; display: grid; grid-template-columns: 38px minmax(0,1fr); align-items: center; gap: 10px; }
+    .energy-flow-tile .ico { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--energy-node-color,#4a5a4e); background: #f0f2ec; }
     .energy-flow-tile .ico .energy-ui-icon { width: 21px; height: 21px; }
     .energy-flow-tile strong { font-family: var(--font-serif); font-weight: 550; font-size: 17px; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .energy-flow-tile > div { min-width: 0; }
-    .energy-flow-tile > div > span { display: block; margin-top: 5px; font-size: 11px; line-height: 1.4; color: var(--muted); }
+    .energy-flow-tile > div > span { display: block; margin-top: 4px; overflow: hidden; font-size: 11px; line-height: 1.25; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+    .energy-flow-tile > div > .energy-flow-secondary { margin-top: 2px; font-size: 10px; }
+    .energy-flow-secondary b, .energy-flow-secondary-copy b { display: inline; color: inherit; font-family: var(--font-sans); font-size: inherit; font-weight: 750; white-space: nowrap; }
     .energy-flow-tile span.u, .energy-flow-big span.u { display: inline; margin: 0; font-family: var(--font-sans); font-size: 10px; font-weight: 800; letter-spacing: .04em; color: #8a8e80; vertical-align: 6px; }
-    .energy-flow-tile.k-pv { border-color: rgba(91,130,82,.4); background: #f7faf3; }
-    .energy-flow-tile.k-pv .ico { color: #3e704c; background: #edf3ea; }
-    .energy-flow-tile.k-grid { border-color: rgba(184,139,49,.36); background: #fffaf0; }
-    .energy-flow-tile.k-grid .ico { color: #9a7422; background: #faf4e5; }
-    .energy-flow-tile.k-batt { border-color: rgba(91,117,131,.34); background: #f3f7f8; }
-    .energy-flow-tile.k-batt .ico { color: #607d8d; background: #eaf1f3; }
+    .energy-flow-tile.k-pv { background: #f7faf3; }
+    .energy-flow-tile.k-pv .ico { background: #edf3ea; }
+    .energy-flow-tile.k-grid { background: #fffaf0; }
+    .energy-flow-tile.k-grid .ico { background: #faf4e5; }
+    .energy-flow-tile.k-batt { background: #f3f7f8; }
+    .energy-flow-tile.k-batt .ico { background: #eaf1f3; }
     .energy-flow-tile.editable { cursor: pointer; transition: border-color .15s ease, background-color .15s ease; }
     .energy-flow-tile.editable .ico > .energy-ui-icon { grid-area: 1 / 1; transition: opacity .15s ease, transform .15s ease; }
     .energy-flow-tile.editable .energy-flow-icon-edit { opacity: 0; transform: scale(.86); }
-    .energy-flow-tile.editable:hover, .energy-flow-tile.editable:focus-visible { border-color: rgba(184,139,49,.62); background: #fffaf0; }
+    .energy-flow-tile.editable:hover, .energy-flow-tile.editable:focus-visible { background: #fffaf0; box-shadow: 0 0 0 2px color-mix(in srgb,var(--energy-node-color) 22%,transparent); }
     .energy-flow-tile.editable:hover .energy-flow-icon-default, .energy-flow-tile.editable:focus-visible .energy-flow-icon-default { opacity: 0; }
     .energy-flow-tile.editable:hover .energy-flow-icon-edit, .energy-flow-tile.editable:focus-visible .energy-flow-icon-edit { opacity: 1; transform: scale(1); }
-    .energy-flow-hub2 { grid-column: 3; grid-row: 3; width: 100%; border-color: #cfc7b8; z-index: 2; }
-    .energy-flow-hub2 .ico { color: #a24b42; background: #fbf1ed; }
+    .energy-flow-hub2 { grid-column: 3; grid-row: 3; width: var(--energy-flow-node-width); z-index: 2; }
+    .energy-flow-hub2 .ico { background: #fbf1ed; }
     .energy-flow-rail { position: relative; z-index: 1; align-self: start; display: grid; gap: 8px; align-content: start; }
     .energy-flow-rail > .microlabel { position: absolute; top: -22px; left: 2px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-    .energy-flow-big { height: 60px; box-sizing: border-box; border: 1px solid #d8d2c7; border-radius: 11px; background: #fffefa; padding: 7px 10px; display: grid; grid-template-columns: minmax(0,1fr) 16px; align-items: center; gap: 9px; transition: border-color .15s ease, background-color .15s ease; }
+    .energy-flow-big { width: 258px; height: 80px; box-sizing: border-box; border: 2px solid var(--energy-node-color,#d8d2c7); border-radius: 11px; background: #fffefa; padding: 8px 10px; display: grid; grid-template-columns: minmax(0,1fr) 16px; align-items: center; gap: 9px; transition: background-color .15s ease, box-shadow .15s ease; }
     .energy-flow-main { min-width: 0; width: 100%; display: grid; grid-template-columns: 34px minmax(0,1fr); align-items: center; gap: 9px; border: 0; padding: 0; color: inherit; background: transparent; text-align: left; font: inherit; }
     button.energy-flow-main { cursor: pointer; }
-    .energy-flow-big .ico { position: relative; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #4a5a4e; background: #f0f2ec; }
+    .energy-flow-big .ico { position: relative; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--energy-node-color,#4a5a4e); background: #f0f2ec; }
     .energy-flow-big .ico .energy-ui-icon { width: 19px; height: 19px; grid-area: 1 / 1; transition: opacity .15s ease, transform .15s ease; }
     .energy-flow-big .energy-flow-icon-edit { opacity: 0; transform: scale(.86); }
     .energy-flow-copy { min-width: 0; display: grid; gap: 3px; }
     .energy-flow-big b { display: block; overflow: hidden; font-size: 12.5px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
     .energy-flow-subtitles { display: grid; min-width: 0; }
     .energy-flow-subtitles > span { grid-area: 1 / 1; display: block; overflow: hidden; color: var(--muted); font-size: 11px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; transition: opacity .15s ease; }
+    .energy-flow-secondary-copy { display: block; overflow: hidden; color: var(--muted); font-size: 10px; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+    .energy-flow-big .energy-flow-secondary-copy b { display: inline; color: inherit; font-family: var(--font-sans); font-size: inherit; font-weight: 750; white-space: nowrap; }
     .energy-flow-subtitles .energy-flow-edit-copy { color: #765f1d; font-weight: 750; opacity: 0; }
-    .energy-flow-big.editable:hover, .energy-flow-big.editable:focus-within { border-color: rgba(184,139,49,.58); background: #fffaf0; }
+    .energy-flow-big.editable:hover, .energy-flow-big.editable:focus-within { background: #fffaf0; box-shadow: 0 0 0 2px color-mix(in srgb,var(--energy-node-color) 22%,transparent); }
     .energy-flow-big.editable:hover .energy-flow-icon-default, .energy-flow-big.editable:focus-within .energy-flow-icon-default,
     .energy-flow-big.editable:hover .energy-flow-state-copy, .energy-flow-big.editable:focus-within .energy-flow-state-copy { opacity: 0; }
     .energy-flow-big.editable:hover .energy-flow-icon-edit, .energy-flow-big.editable:focus-within .energy-flow-icon-edit { opacity: 1; transform: scale(1); }
     .energy-flow-big.editable:hover .energy-flow-edit-copy, .energy-flow-big.editable:focus-within .energy-flow-edit-copy { opacity: 1; }
-    .energy-flow-big.active { border-color: rgba(91,130,82,.44); background: #f7faf3; }
-    .energy-flow-big.active .state { color: #3e704c; font-weight: 700; }
+    .energy-flow-big.active { background: #f7faf3; }
+    .energy-flow-big.active .state { color: var(--energy-node-color,#3e704c); font-weight: 700; }
     .energy-flow-big .rcol { display: grid; justify-items: center; gap: 5px; align-self: center; }
     .energy-flow-big .prio { width: 13px; height: 13px; border-radius: 50%; border: 1px solid #8a7b3f; color: #705c22; font-size: 8.5px; font-weight: 800; line-height: 1; display: grid; place-items: center; font-variant-numeric: tabular-nums; margin-top: 0; }
     .energy-flow-big .drag { color: #b5b0a2; cursor: grab; margin-top: 0; }
@@ -1505,9 +1512,14 @@ const PageTemplates = `
     }
     @media (max-width: 760px) {
       .energy-flow-area { padding: 28px 14px 30px; }
-      .energy-flow-grid2 { grid-template-columns: minmax(0,1fr) 16px minmax(0,1.2fr) 16px; grid-template-rows: auto 44px auto 44px auto; }
-      .energy-flow-slot-top, .energy-flow-slot-bottom { width: 100%; justify-self: stretch; }
-      .energy-flow-slot-top .energy-flow-tile, .energy-flow-slot-bottom .energy-flow-tile { width: auto; min-width: 170px; }
+      .energy-flow-grid2 { grid-template-columns: minmax(0,1fr); grid-template-rows: auto 40px auto 40px auto 40px auto; }
+      .energy-flow-slot-top { grid-column: 1; grid-row: 1; width: 100%; flex-wrap: wrap; justify-self: stretch; }
+      .energy-flow-slot-left { grid-column: 1; grid-row: 3; display: flex; justify-content: center; }
+      .energy-flow-hub2 { grid-column: 1; grid-row: 5; }
+      .energy-flow-slot-bottom { grid-column: 1; grid-row: 7; width: 100%; justify-self: stretch; }
+      .energy-flow-slot-top .energy-flow-tile, .energy-flow-slot-bottom .energy-flow-tile, .energy-flow-slot-left .energy-flow-tile, .energy-flow-hub2 { width: min(258px,100%); }
+      .energy-flow-rail { justify-items: center; }
+      .energy-flow-rail > .microlabel { left: max(2px,calc((100% - 258px) / 2)); }
     }
     .energy-cockpit-top .energy-live-head { min-height: 86px; align-items: center; border: 0; padding: 24px 28px 8px; }
     .energy-cockpit-top .energy-live-head > div { display: grid; gap: 6px; }
@@ -1524,6 +1536,7 @@ const PageTemplates = `
     .energy-live-state-offline { color: var(--muted); font-size: 11.5px; font-weight: 650; }
     .energy-cockpit-top .energy-live-head > div > span { color: var(--muted); font-size: 12px; }
     .energy-live-footer { min-height: 58px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 16px; align-items: center; border-top: 1px solid var(--line); padding: 0 22px 0 28px; }
+    .energy-live-footer .energy-recommendation-trigger { margin-left: auto; border-color: transparent; }
     .energy-live-footer:not(:has(> details[open])) { height: 58px; }
     .energy-cockpit-top .energy-live-more { margin: 0; }
     .energy-cockpit-top .energy-live-more > summary, .energy-info-disclosure > summary { min-height: 44px; display: flex; gap: 8px; align-items: center; border: 0; padding: 0; color: var(--ink); background: transparent; font-size: 12px; cursor: pointer; list-style: none; }
@@ -2512,14 +2525,20 @@ const PageTemplates = `
     .dialog-optional-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 12px 13px 14px; }
     .dialog-optional-grid .full { grid-column: 1 / -1; }
     .energy-consumer-dialog { width: min(720px,calc(100vw - 28px)); }
+    .energy-consumer-dialog[open] { height: min(860px,calc(100dvh - 28px)); }
+    .energy-consumer-dialog > form { height: 100%; }
+    .energy-consumer-dialog .dialog-body { overflow-x: hidden; overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; scrollbar-gutter: stable; }
     .energy-consumer-dialog .dialog-head { align-items: flex-start; }
     .energy-consumer-dialog-heading { display: grid; gap: 3px; }
     .energy-consumer-dialog-heading p { margin: 0; color: var(--muted); font-size: 13px; }
     .energy-consumer-dialog .dialog-close { display: grid; place-items: center; }
     .energy-consumer-dialog .dialog-close .energy-ui-icon { width: 17px; height: 17px; }
     .energy-consumer-primary { display: grid; grid-template-columns: minmax(0,1fr) 150px; gap: 12px; }
+    .energy-consumer-display-fields { display: grid; grid-template-columns: 112px minmax(0,1fr); gap: 12px; }
     .energy-consumer-field { display: grid; gap: 6px; color: var(--ink); font-size: 13px; font-weight: 800; }
+    .energy-consumer-field[hidden], .energy-consumer-recommendations[hidden] { display: none; }
     .energy-consumer-field input, .energy-consumer-field select { width: 100%; min-height: 44px; box-sizing: border-box; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 9px 11px; color: var(--ink); background: #fff; font: 600 14px/1.3 var(--font-sans); }
+    .energy-consumer-field input[type="color"] { padding: 5px; cursor: pointer; }
     .energy-icon-picker { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; }
     .energy-icon-picker-head { display: flex; align-items: end; justify-content: space-between; gap: 14px; }
     .energy-icon-picker-head > div { display: grid; gap: 2px; }
@@ -2564,7 +2583,7 @@ const PageTemplates = `
       .dialog-body { padding: 16px 14px 18px; }
       .dialog-footer { padding: 12px 14px max(12px,env(safe-area-inset-bottom)); }
       .dialog-footer .button { width: 100%; min-height: 44px; }
-      .energy-consumer-primary, .energy-consumer-recommendation-fields, .energy-consumer-measurement-fields { grid-template-columns: 1fr; }
+      .energy-consumer-primary, .energy-consumer-display-fields, .energy-consumer-recommendation-fields, .energy-consumer-measurement-fields { grid-template-columns: 1fr; }
       .energy-icon-picker-head { align-items: stretch; flex-direction: column; }
       .energy-icon-search { width: 100%; }
       .energy-icon-options { grid-template-columns: repeat(3,minmax(0,1fr)); }
@@ -3112,8 +3131,8 @@ const PageTemplates = `
       .avatar { width: 32px; height: 32px; font-size: 11px; }
       .side-user strong { font-size: 12.5px; }
       .side-user span { font-size: 11.5px; }
-      .version-button { min-height: 24px; padding: 2px 0; font-size: 10.5px; }
-      .logout-button { min-height: 34px; font-size: 12.5px; }
+      .version-button { min-height: 44px; font-size: 10px; }
+      .logout-button { min-height: 44px; }
     }
     @media (max-width: 1279px) {
       .energy-health { grid-template-columns: minmax(0,1fr); }
@@ -3582,15 +3601,17 @@ const PageTemplates = `
 	      {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="nav-label">Verlauf</span></a>{{end}}
 	      <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span><span class="nav-label">Einstellungen</span></a>
 	      {{end}}
-	    </nav>
+    </nav>
     <div id="portal-account" class="side-foot">
-      <a class="side-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Kartendaten © OpenStreetMap</a>
       <div class="side-user">
         <span class="avatar">{{.Initials}}</span>
         <div><strong>{{.DisplayName}}</strong><span>{{.Role}}</span></div>
       </div>
-      <button class="side-version version-button" type="button" data-dialog="release-history" aria-haspopup="dialog" aria-controls="release-history">v{{.DisplayVersion}}</button>
-      <form class="logout-form" method="post" action="/auth/logout"><button class="logout-button" type="submit">Abmelden</button></form>
+      <div class="side-account-actions">
+        <button class="side-version version-button" type="button" data-dialog="release-history" aria-haspopup="dialog" aria-controls="release-history" aria-label="Version {{.DisplayVersion}} – Versionsverlauf öffnen">v{{.DisplayVersion}}</button>
+        <form class="logout-form" method="post" action="/auth/logout"><button class="logout-button" type="submit" aria-label="Abmelden" title="Abmelden"><span class="energy-ui-icon energy-ui-icon-log-out" aria-hidden="true"></span><span class="sr-only">Abmelden</span></button></form>
+      </div>
+      <a class="side-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Kartendaten © OpenStreetMap</a>
     </div>
   </aside>
 {{end}}
@@ -9440,7 +9461,7 @@ const PageTemplates = `
 {{define "energyLead"}}
   <div class="energy-lead-side">
     <aside class="energy-live" aria-label="Energie gerade jetzt" data-energy-flow-diagram data-energy-reading-count="{{len .Metrics}}">
-      <header class="energy-live-head"><div><div class="energy-live-title"><h2>Energie jetzt</h2></div>{{if .HasMetrics}}<div class="energy-live-meta" data-energy-live-status><span class="energy-live-dot" aria-hidden="true"></span><strong data-energy-live-label>Live</strong><span>Home Assistant</span><span class="energy-live-updated" data-energy-live-updated>Zuletzt aktualisiert vor 0&nbsp;s</span></div>{{else}}<span class="energy-live-state-offline">Noch nicht verbunden</span>{{end}}</div><button class="energy-recommendation-trigger" type="button" data-dialog="energy-recommendation-dialog" aria-haspopup="dialog" aria-controls="energy-recommendation-dialog"><span class="energy-ui-icon energy-ui-icon-binoculars" aria-hidden="true"></span><span>Empfehlung</span></button></header>
+      <header class="energy-live-head"><div><div class="energy-live-title"><h2>Energie jetzt</h2></div>{{if .HasMetrics}}<div class="energy-live-meta" data-energy-live-status><span class="energy-live-dot" aria-hidden="true"></span><strong data-energy-live-label>Live</strong><span>Home Assistant</span><span class="energy-live-updated" data-energy-live-updated>Zuletzt aktualisiert vor 0&nbsp;s</span></div>{{else}}<span class="energy-live-state-offline">Noch nicht verbunden</span>{{end}}</div></header>
       {{if .HasMetrics}}
         <div class="energy-flow-area" data-energy-flow>
           <script type="application/json">{{.FlowConfigJSON}}</script>
@@ -9456,7 +9477,7 @@ const PageTemplates = `
         </div>
         <footer class="energy-live-footer">
           {{if .Live.HasAdditional}}<details class="energy-live-more"><summary><span><strong>Weitere Messwerte ({{.Live.AdditionalCount}})</strong><small>{{.Live.AdditionalTopics}}</small></span><span class="energy-ui-icon energy-ui-icon-chevron-right" aria-hidden="true"></span></summary><div class="energy-live-more-list">{{range .Live.Additional}}<div class="energy-live-more-row"><span>{{.Label}}</span><strong>{{.Value}}</strong></div>{{end}}</div></details>{{else}}<span></span>{{end}}
-          <span></span>
+          <button class="energy-recommendation-trigger" type="button" data-dialog="energy-recommendation-dialog" aria-haspopup="dialog" aria-controls="energy-recommendation-dialog"><span class="energy-ui-icon energy-ui-icon-binoculars" aria-hidden="true"></span><span>Empfehlung</span></button>
         </footer>
       {{else}}<div class="energy-live-empty"><strong>Noch keine Live-Werte</strong><span>Home Assistant kann später verbunden werden.</span>{{if .CanManageEnergy}}<a href="/app/zuhause/onboarding?step=4">Messwerte zuordnen</a>{{end}}</div>{{end}}
     </aside>
@@ -9528,6 +9549,10 @@ const PageTemplates = `
             <div class="energy-consumer-primary">
               <label class="energy-consumer-field"><span>Name</span><input type="text" name="name" maxlength="80" required autocomplete="off" placeholder="z. B. Sauna"></label>
               <label class="energy-consumer-field" data-consumer-priority-field><span>Priorität</span><select name="priority" aria-label="Priorität"></select></label>
+            </div>
+            <div class="energy-consumer-display-fields">
+              <label class="energy-consumer-field energy-consumer-color"><span>Farbe</span><input type="color" name="color" value="#3e704c" aria-label="Farbe der Entität"></label>
+              <label class="energy-consumer-field"><span>Beschriftung zweite Kennzahl</span><input type="text" name="secondary_label" maxlength="60" autocomplete="off" placeholder="z. B. Energie heute"></label>
             </div>
             <section class="energy-icon-picker" aria-labelledby="energy-icon-picker-title">
               <div class="energy-icon-picker-head"><div><strong id="energy-icon-picker-title">Symbol auswählen</strong><small>Symbole aus der lokal eingebundenen Lucide-Library.</small></div><label class="energy-icon-search"><span class="energy-ui-icon energy-ui-icon-search" aria-hidden="true"></span><span class="sr-only">Symbole durchsuchen</span><input type="search" data-consumer-icon-search placeholder="Symbol suchen"></label></div>

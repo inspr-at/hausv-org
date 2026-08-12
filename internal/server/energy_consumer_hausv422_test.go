@@ -252,7 +252,7 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 	assetID := energy.StableAssetID("jhw22", "sauna")
 	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
 		"asset_id": {assetID}, "name": {"Sauna"}, "kind": {"sauna"}, "priority": {"1"},
-		"icon": {"alarm-clock"}, "flexibility": {"shift"}, "measurements_present": {"1"},
+		"icon": {"alarm-clock"}, "color": {"#7755aa"}, "secondary_label": {"Verbrauch heute"}, "flexibility": {"shift"}, "measurements_present": {"1"},
 		"consumer_power_entity": {"sensor.sauna_power"}, "consumer_energy_entity": {"sensor.sauna_energy"},
 	})
 	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
@@ -271,15 +271,15 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 	}
 	assets, _ := a.energyStore.ListAssets("jhw22")
 	for _, asset := range assets {
-		if asset.ID == assetID && asset.Metadata["icon"] != "alarm-clock" {
-			t.Fatalf("Symbol aus vollständiger Lucide-Library nicht gespeichert: %+v", asset.Metadata)
+		if asset.ID == assetID && (asset.Metadata["icon"] != "alarm-clock" || asset.Metadata["color"] != "#7755aa" || asset.Metadata["secondary_label"] != "Verbrauch heute") {
+			t.Fatalf("Darstellung des Verbrauchers nicht vollständig gespeichert: %+v", asset.Metadata)
 		}
 	}
 	metrics, _, _ := a.currentEnergyMetrics(t.Context(), tenant, mappings, energy.HomeProfile{})
 	cfg := buildEnergyFlowConfig("haus", energyLiveView{}, assets, mappings, metrics, parkingLiveView{}, true)
 	for _, consumer := range cfg.Consumers {
 		if consumer.ID == assetID {
-			if consumer.KW != 7.2 || consumer.PowerEntity != "sensor.sauna_power" || consumer.EnergyEntity != "sensor.sauna_energy" {
+			if consumer.KW != 7.2 || consumer.PowerEntity != "sensor.sauna_power" || consumer.EnergyEntity != "sensor.sauna_energy" || consumer.Secondary == "" || consumer.SecondaryLabel != "Verbrauch heute" || consumer.Color != "#7755aa" {
 				t.Fatalf("Verbraucher erhält nicht seine eigenen Live-Messwerte: %+v", consumer)
 			}
 			return
@@ -500,6 +500,7 @@ func TestStorageChargePowerIsExplicitlyConfigurableAndDisplayed(t *testing.T) {
 	a.tenants["jhw22"] = tenant
 	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
 		"asset_id": {storageID}, "node_type": {"storage"}, "name": {"Hausspeicher"}, "icon": {"battery-charging"},
+		"color": {"#336699"}, "secondary_label": {"Akkustand"},
 		"battery_charge_entity": {"sensor.storage_charge"}, "battery_soc_entity": {"sensor.storage_soc"},
 	})
 	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
@@ -510,10 +511,10 @@ func TestStorageChargePowerIsExplicitlyConfigurableAndDisplayed(t *testing.T) {
 	live := buildEnergyLiveView(metrics)
 	assets, _ := a.energyStore.ListAssets("jhw22")
 	cfg := buildEnergyFlowConfig("jhw22", live, assets, mappings, metrics, parkingLiveView{}, true)
-	if cfg.Storage == nil || cfg.Storage.Mode != "lädt" || cfg.Storage.Value != "2,4" || cfg.Storage.Label != "Hausspeicher" || cfg.Storage.Icon != "battery-charging" {
+	if cfg.Storage == nil || cfg.Storage.Mode != "lädt" || cfg.Storage.Value != "2,4" || cfg.Storage.Label != "Hausspeicher" || cfg.Storage.Icon != "battery-charging" || cfg.Storage.Color != "#336699" || cfg.Storage.SecondaryLabel != "Akkustand" || cfg.Storage.Secondary != "85\u00a0%" {
 		t.Fatalf("konfigurierte Ladeleistung wird nicht angezeigt: %+v", cfg.Storage)
 	}
-	if len(cfg.Storage.Measurements) != 4 {
+	if len(cfg.Storage.Measurements) != 5 {
 		t.Fatalf("Speicher braucht Netto-, Lade-, Entladeleistung und Ladestand: %+v", cfg.Storage.Measurements)
 	}
 }

@@ -3023,6 +3023,12 @@ func (a *app) updateEnergyFlowNode(w http.ResponseWriter, r *http.Request, ac au
 	}
 	asset.Metadata["icon"] = normalizeEnergyConsumerIcon(r.FormValue("icon"), wantedKind)
 	asset.Metadata["icon_configured"] = "true"
+	asset.Metadata["color"] = normalizeEnergyFlowColor(r.FormValue("color"), wantedKind)
+	if secondaryLabel := cleanEnergyText(r.FormValue("secondary_label"), 60); secondaryLabel != "" {
+		asset.Metadata["secondary_label"] = secondaryLabel
+	} else {
+		delete(asset.Metadata, "secondary_label")
+	}
 	delete(asset.Metadata, "hidden")
 	if nodeType == "parking" {
 		asset.Flexibility = energyConsumerFlexibility(r.FormValue("flexibility"))
@@ -3193,6 +3199,12 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 	asset.Name = name
 	asset.Flexibility = energyConsumerFlexibility(r.FormValue("flexibility"))
 	asset.Metadata["icon"] = normalizeEnergyConsumerIcon(r.FormValue("icon"), kind)
+	asset.Metadata["color"] = normalizeEnergyFlowColor(r.FormValue("color"), kind)
+	if secondaryLabel := cleanEnergyText(r.FormValue("secondary_label"), 60); secondaryLabel != "" {
+		asset.Metadata["secondary_label"] = secondaryLabel
+	} else {
+		delete(asset.Metadata, "secondary_label")
+	}
 	asset.RatedPowerKW = nil
 	if raw := strings.TrimSpace(r.FormValue("rated_power_kw")); raw != "" {
 		value, err := homeassistant.ParseFloat(raw)
@@ -3915,20 +3927,23 @@ func buildEnergyLiveView(metrics []energyMetricView) energyLiveView {
 // ribbon widths and the proportional destination bands.
 
 type energyFlowNodeConfig struct {
-	ID           string                      `json:"id,omitempty"`
-	NodeType     string                      `json:"nodeType,omitempty"`
-	Icon         string                      `json:"icon,omitempty"`
-	Label        string                      `json:"label,omitempty"`
-	Value        string                      `json:"value,omitempty"`
-	Unit         string                      `json:"unit,omitempty"`
-	KW           float64                     `json:"kw"`
-	Dir          string                      `json:"dir,omitempty"`
-	Mode         string                      `json:"mode,omitempty"`
-	Sub          string                      `json:"sub,omitempty"`
-	Flow         float64                     `json:"flow,omitempty"`
-	Hover        string                      `json:"hover,omitempty"`
-	Editable     bool                        `json:"editable,omitempty"`
-	Measurements []energyFlowMeasurementSlot `json:"measurements,omitempty"`
+	ID             string                      `json:"id,omitempty"`
+	NodeType       string                      `json:"nodeType,omitempty"`
+	Icon           string                      `json:"icon,omitempty"`
+	Label          string                      `json:"label,omitempty"`
+	Value          string                      `json:"value,omitempty"`
+	Unit           string                      `json:"unit,omitempty"`
+	KW             float64                     `json:"kw"`
+	Dir            string                      `json:"dir,omitempty"`
+	Mode           string                      `json:"mode,omitempty"`
+	Sub            string                      `json:"sub,omitempty"`
+	Secondary      string                      `json:"secondary,omitempty"`
+	SecondaryLabel string                      `json:"secondaryLabel,omitempty"`
+	Color          string                      `json:"color,omitempty"`
+	Flow           float64                     `json:"flow,omitempty"`
+	Hover          string                      `json:"hover,omitempty"`
+	Editable       bool                        `json:"editable,omitempty"`
+	Measurements   []energyFlowMeasurementSlot `json:"measurements,omitempty"`
 }
 
 type energyFlowMeasurementSlot struct {
@@ -3940,21 +3955,24 @@ type energyFlowMeasurementSlot struct {
 }
 
 type energyFlowConsumerConfig struct {
-	ID           string                      `json:"id,omitempty"`
-	Icon         string                      `json:"icon,omitempty"`
-	Title        string                      `json:"title"`
-	Kind         string                      `json:"kind,omitempty"`
-	RatedPower   string                      `json:"ratedPower,omitempty"`
-	Flexibility  string                      `json:"flexibility,omitempty"`
-	PowerEntity  string                      `json:"powerEntity,omitempty"`
-	EnergyEntity string                      `json:"energyEntity,omitempty"`
-	State        string                      `json:"state,omitempty"`
-	KW           float64                     `json:"kw"`
-	Active       bool                        `json:"active,omitempty"`
-	NodeType     string                      `json:"nodeType,omitempty"`
-	Deletable    bool                        `json:"deletable,omitempty"`
-	Measurements []energyFlowMeasurementSlot `json:"measurements,omitempty"`
-	Priority     int                         `json:"-"`
+	ID             string                      `json:"id,omitempty"`
+	Icon           string                      `json:"icon,omitempty"`
+	Title          string                      `json:"title"`
+	Kind           string                      `json:"kind,omitempty"`
+	RatedPower     string                      `json:"ratedPower,omitempty"`
+	Flexibility    string                      `json:"flexibility,omitempty"`
+	PowerEntity    string                      `json:"powerEntity,omitempty"`
+	EnergyEntity   string                      `json:"energyEntity,omitempty"`
+	Secondary      string                      `json:"secondary,omitempty"`
+	SecondaryLabel string                      `json:"secondaryLabel,omitempty"`
+	Color          string                      `json:"color,omitempty"`
+	State          string                      `json:"state,omitempty"`
+	KW             float64                     `json:"kw"`
+	Active         bool                        `json:"active,omitempty"`
+	NodeType       string                      `json:"nodeType,omitempty"`
+	Deletable      bool                        `json:"deletable,omitempty"`
+	Measurements   []energyFlowMeasurementSlot `json:"measurements,omitempty"`
+	Priority       int                         `json:"-"`
 }
 
 type energyFlowConfig struct {
@@ -3991,6 +4009,68 @@ func energyConsumerPriority(asset energy.Asset) int {
 		return math.MaxInt32
 	}
 	return value
+}
+
+func defaultEnergyFlowColor(kind string) string {
+	switch kind {
+	case energyFlowHomeKind:
+		return "#a24b42"
+	case "pv":
+		return "#4f7d49"
+	case "battery":
+		return "#7893a1"
+	case energyFlowGridKind:
+		return "#b8891f"
+	default:
+		return "#3e704c"
+	}
+}
+
+func normalizeEnergyFlowColor(raw, kind string) string {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	if len(raw) == 7 && raw[0] == '#' {
+		for _, char := range raw[1:] {
+			if !strings.ContainsRune("0123456789abcdef", char) {
+				return defaultEnergyFlowColor(kind)
+			}
+		}
+		return raw
+	}
+	return defaultEnergyFlowColor(kind)
+}
+
+func defaultEnergySecondaryLabel(nodeType string) string {
+	switch nodeType {
+	case "home":
+		return "Hausenergie heute"
+	case "pv":
+		return "PV-Ertrag heute"
+	case "grid":
+		return "Netzenergie heute"
+	case "storage":
+		return "Ladestand"
+	case "parking":
+		return "Ladeenergie"
+	default:
+		return "Energie"
+	}
+}
+
+func energyAssetSecondaryLabel(asset energy.Asset, nodeType string) string {
+	return firstNonEmpty(cleanEnergyText(asset.Metadata["secondary_label"], 60), defaultEnergySecondaryLabel(nodeType))
+}
+
+func energyAssetFlowColor(asset energy.Asset) string {
+	return normalizeEnergyFlowColor(asset.Metadata["color"], asset.Kind)
+}
+
+func energyFlowAssetMetric(metrics []energyMetricView, assetID, metric string) (energyMetricView, bool) {
+	for _, reading := range metrics {
+		if reading.AssetID == assetID && reading.Metric == metric {
+			return reading, true
+		}
+	}
+	return energyMetricView{}, false
 }
 
 func sortEnergyConsumers(assets []energy.Asset) []energy.Asset {
@@ -4144,19 +4224,25 @@ func energyFlowNodeSlots(nodeType, assetID string, mappings []energy.EntityMappi
 	definitions := []energyFlowMeasurementSlot{}
 	switch nodeType {
 	case "home":
-		definitions = append(definitions, energyFlowMeasurementSlot{Name: "load_power_entity", Label: "Aktueller Hausverbrauch", Kind: "power", Metric: energy.MetricLoadPower})
+		definitions = append(definitions,
+			energyFlowMeasurementSlot{Name: "load_power_entity", Label: "Aktueller Hausverbrauch", Kind: "power", Metric: energy.MetricLoadPower},
+			energyFlowMeasurementSlot{Name: "secondary_energy_entity", Label: "Hausenergie heute", Kind: "energy", Metric: energy.MetricConsumerEnergy})
 	case "grid":
 		definitions = append(definitions,
 			energyFlowMeasurementSlot{Name: "grid_import_entity", Label: "Netzbezug", Kind: "power", Metric: energy.MetricGridImportPower},
-			energyFlowMeasurementSlot{Name: "grid_export_entity", Label: "Netzeinspeisung", Kind: "power", Metric: energy.MetricGridExportPower})
+			energyFlowMeasurementSlot{Name: "grid_export_entity", Label: "Netzeinspeisung", Kind: "power", Metric: energy.MetricGridExportPower},
+			energyFlowMeasurementSlot{Name: "secondary_energy_entity", Label: "Netzenergie heute", Kind: "energy", Metric: energy.MetricConsumerEnergy})
 	case "pv":
-		definitions = append(definitions, energyFlowMeasurementSlot{Name: "pv_power_entity", Label: "Aktuelle PV-Leistung", Kind: "power", Metric: energy.MetricPVPower})
+		definitions = append(definitions,
+			energyFlowMeasurementSlot{Name: "pv_power_entity", Label: "Aktuelle PV-Leistung", Kind: "power", Metric: energy.MetricPVPower},
+			energyFlowMeasurementSlot{Name: "secondary_energy_entity", Label: "PV-Ertrag heute", Kind: "energy", Metric: energy.MetricConsumerEnergy})
 	case "storage":
 		definitions = append(definitions,
 			energyFlowMeasurementSlot{Name: "battery_power_entity", Label: "Nettoleistung mit Vorzeichen (alternativ)", Kind: "power", Metric: energy.MetricBatteryPower},
 			energyFlowMeasurementSlot{Name: "battery_charge_entity", Label: "Ladeleistung", Kind: "power", Metric: energy.MetricBatteryCharge},
 			energyFlowMeasurementSlot{Name: "battery_discharge_entity", Label: "Entladeleistung", Kind: "power", Metric: energy.MetricBatteryDischarge},
-			energyFlowMeasurementSlot{Name: "battery_soc_entity", Label: "Ladestand", Kind: "percentage", Metric: energy.MetricBatterySOC})
+			energyFlowMeasurementSlot{Name: "battery_soc_entity", Label: "Ladestand", Kind: "percentage", Metric: energy.MetricBatterySOC},
+			energyFlowMeasurementSlot{Name: "secondary_energy_entity", Label: "Speicherenergie heute (optional)", Kind: "energy", Metric: energy.MetricConsumerEnergy})
 	case "parking":
 		definitions = append(definitions,
 			energyFlowMeasurementSlot{Name: "consumer_power_entity", Label: "Aktuelle Ladeleistung", Kind: "power", Metric: energy.MetricConsumerPower},
@@ -4173,8 +4259,12 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 	homeAsset := energyFlowNodeAsset(assets, tenantSlug, "home")
 	cfg.Home = energyFlowNodeConfig{
 		ID: homeAsset.ID, NodeType: "home", Icon: energyConsumerIcon(homeAsset),
-		Value: "–", Label: homeAsset.Name, Editable: canManage,
+		Value: "–", Label: homeAsset.Name, Secondary: "–",
+		SecondaryLabel: energyAssetSecondaryLabel(homeAsset, "home"), Color: energyAssetFlowColor(homeAsset), Editable: canManage,
 		Measurements: energyFlowNodeSlots("home", homeAsset.ID, mappings),
+	}
+	if reading, ok := energyFlowAssetMetric(metrics, homeAsset.ID, energy.MetricConsumerEnergy); ok {
+		cfg.Home.Secondary = reading.Value
 	}
 	if live.HasMain {
 		watts := math.Abs(energyPowerWatts(&live.Main))
@@ -4191,9 +4281,13 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 		watts := math.Max(0, energyPowerWatts(&item))
 		cfg.Producers = append(cfg.Producers, energyFlowNodeConfig{
 			ID: pvAsset.ID, NodeType: "pv", Icon: energyConsumerIcon(pvAsset), Label: pvAsset.Name, Editable: canManage,
-			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000,
+			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000, Secondary: "–",
+			SecondaryLabel: energyAssetSecondaryLabel(pvAsset, "pv"), Color: energyAssetFlowColor(pvAsset),
 			Measurements: energyFlowNodeSlots("pv", pvAsset.ID, mappings),
 		})
+		if reading, ok := energyFlowAssetMetric(metrics, pvAsset.ID, energy.MetricConsumerEnergy); ok {
+			cfg.Producers[len(cfg.Producers)-1].Secondary = reading.Value
+		}
 	}
 	if live.HasBattery || live.HasBatterySOC {
 		storageAsset := energyFlowNodeAsset(assets, tenantSlug, "storage")
@@ -4207,10 +4301,6 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 				mode = "entlädt"
 			}
 		}
-		sub := storageAsset.Name
-		if live.HasBatterySOC {
-			sub += " · " + live.BatterySOC.Value
-		}
 		flow := watts / 1000
 		if mode == "wartet" {
 			// Below the 1 W threshold no direction is claimed — draw no ribbon.
@@ -4219,8 +4309,18 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 		cfg.Storage = &energyFlowNodeConfig{
 			ID: storageAsset.ID, NodeType: "storage", Icon: energyConsumerIcon(storageAsset), Label: storageAsset.Name,
 			Editable: canManage, Measurements: energyFlowNodeSlots("storage", storageAsset.ID, mappings),
-			Value: formatEnergyFlowKW(watts), Unit: "kW",
-			Mode: mode, Flow: flow, Sub: sub + " · " + mode,
+			Value: formatEnergyFlowKW(watts), Unit: "kW", Secondary: "–",
+			SecondaryLabel: energyAssetSecondaryLabel(storageAsset, "storage"), Color: energyAssetFlowColor(storageAsset),
+			Mode: mode, Flow: flow, Sub: storageAsset.Name + " · " + mode,
+		}
+		if live.HasBatterySOC {
+			cfg.Storage.Secondary = live.BatterySOC.Value
+		}
+		if reading, ok := energyFlowAssetMetric(metrics, storageAsset.ID, energy.MetricConsumerEnergy); ok {
+			cfg.Storage.Secondary = reading.Value
+			if strings.TrimSpace(storageAsset.Metadata["secondary_label"]) == "" {
+				cfg.Storage.SecondaryLabel = "Speicherenergie heute"
+			}
 		}
 	}
 	if live.HasGrid {
@@ -4233,7 +4333,11 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 		cfg.Grid = &energyFlowNodeConfig{
 			ID: gridAsset.ID, NodeType: "grid", Icon: energyConsumerIcon(gridAsset), Label: gridAsset.Name,
 			Editable: canManage, Measurements: energyFlowNodeSlots("grid", gridAsset.ID, mappings),
-			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000, Dir: dir,
+			Value: formatEnergyFlowKW(watts), Unit: "kW", KW: watts / 1000, Dir: dir, Secondary: "–",
+			SecondaryLabel: energyAssetSecondaryLabel(gridAsset, "grid"), Color: energyAssetFlowColor(gridAsset),
+		}
+		if reading, ok := energyFlowAssetMetric(metrics, gridAsset.ID, energy.MetricConsumerEnergy); ok {
+			cfg.Grid.Secondary = reading.Value
 		}
 	}
 	consumerPower := map[string]energyMetricView{}
@@ -4278,6 +4382,7 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 			ratedPower = formatEnergyCompact(*asset.RatedPowerKW, 1)
 		}
 		state := "Bereit · " + energyFlexibilityLabel(asset.Flexibility)
+		secondary := ""
 		kw := 0.0
 		active := false
 		if reading, ok := consumerPower[asset.ID]; ok {
@@ -4285,6 +4390,9 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 			kw = watts / 1000
 			active = watts >= 50
 			state = formatEnergyValueUnit(formatEnergyFlowKW(watts), "kW") + " · Home Assistant"
+			if energyReading, hasEnergy := consumerEnergy[asset.ID]; hasEnergy {
+				secondary = energyReading.Value
+			}
 		} else if reading, ok := consumerEnergy[asset.ID]; ok {
 			state = reading.Value + " · Home Assistant"
 		}
@@ -4292,6 +4400,7 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 			ID: asset.ID, Icon: energyConsumerIcon(asset), Title: title,
 			Kind: asset.Kind, RatedPower: ratedPower, Flexibility: asset.Flexibility,
 			PowerEntity: measurementEntities[asset.ID]["power"], EnergyEntity: measurementEntities[asset.ID]["energy"],
+			Secondary: secondary, SecondaryLabel: energyAssetSecondaryLabel(asset, "consumer"), Color: energyAssetFlowColor(asset),
 			State: state, KW: kw, Active: active, NodeType: "consumer", Deletable: true,
 			Priority: energyConsumerPriority(asset),
 			Measurements: []energyFlowMeasurementSlot{
@@ -4304,11 +4413,15 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 		parkingAsset := energyFlowNodeAsset(assets, tenantSlug, "parking")
 		if parkingAsset.Metadata["hidden"] != "true" {
 			state := charging.ModeLabel
+			secondary := ""
 			kw := 0.0
 			if reading, ok := consumerPower[parkingAsset.ID]; ok {
 				watts := math.Abs(energyPowerWatts(&reading))
 				kw = watts / 1000
 				state = formatEnergyValueUnit(formatEnergyFlowKW(watts), "kW") + " · Home Assistant"
+				if energyReading, hasEnergy := consumerEnergy[parkingAsset.ID]; hasEnergy {
+					secondary = energyReading.Value
+				}
 			} else if (charging.Mode == "surplus" || charging.Mode == "manual") && charging.PowerKW > 0.05 {
 				kw = charging.PowerKW
 				state = charging.ModeLabel + " mit " + formatEnergyValueUnit(formatEnergyFlowKW(kw*1000), "kW")
@@ -4316,6 +4429,7 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 			cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
 				ID: parkingAsset.ID, Icon: energyConsumerIcon(parkingAsset), Title: parkingAsset.Name,
 				Kind: "other", Flexibility: parkingAsset.Flexibility, NodeType: "parking", Deletable: true,
+				Secondary: secondary, SecondaryLabel: energyAssetSecondaryLabel(parkingAsset, "parking"), Color: energyAssetFlowColor(parkingAsset),
 				State: state, KW: kw, Active: kw > 0, Priority: energyConsumerPriority(parkingAsset),
 				Measurements: []energyFlowMeasurementSlot{
 					{Name: "consumer_power_entity", Label: "Aktuelle Ladeleistung", Kind: "power", EntityID: firstNonEmpty(energyFlowMappingEntity(mappings, parkingAsset.ID, energy.MetricConsumerPower), charging.PowerEntity)},

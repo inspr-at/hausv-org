@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.76.0] - 2026-08-12
+
+### Neu
+
+- **Jede Energie-Kachel erhält eine eigene Farbe und zweite Kennzahl.** Farbe, Beschriftung und passender Home-Assistant-Messwert lassen sich direkt im bestehenden Dialog konfigurieren und bleiben dauerhaft gespeichert.
+
+### Verbessert
+
+- **Der Energiefluss ist ruhiger und einheitlicher.** Hauptentitäten und Verbraucher verwenden dieselbe Größe, kräftigere farbige Konturen und die gewählte Farbe auch für ihre bewegten Energiepunkte.
+- **Empfehlungen bleiben aus dem Weg.** Der kompakte Einstieg sitzt jetzt rechts unten im Energie-Cockpit und öffnet weiterhin den eigenen Dialog ohne Seitensprung.
+- **Der Seitenleisten-Abschluss ist aufgeräumt.** Konto, Version und Abmelden bilden eine kompakte Zeile; Abmelden verwendet ein klares Lucide-Symbol und der Kartenhinweis sitzt am unteren Rand.
+
 ## [0.75.3] - 2026-08-12
 
 ### Verbessert
