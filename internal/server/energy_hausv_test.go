@@ -1093,8 +1093,8 @@ func TestCuratedEnergySpecialistAndMeasureStayClosedUntilExplicitPortalGate(t *t
 		t.Fatalf("closed gate caused portal invitation: %+v", mailer.invites)
 	}
 	page := authedRequest(t, a, "owner@example.com", "/app/energie")
-	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "9,2 kW") ||
-		!strings.Contains(page.Body.String(), "6,4 kW") || !strings.Contains(page.Body.String(), "Energiehilfe Graz") {
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "9,2\u00a0kW") ||
+		!strings.Contains(page.Body.String(), "6,4\u00a0kW") || !strings.Contains(page.Body.String(), "Energiehilfe Graz") {
 		t.Fatalf("measure context missing: status=%d", page.Code)
 	}
 }
@@ -1220,30 +1220,30 @@ func TestEnergyDiscoveryOnlySuggestsMeasurementEntities(t *testing.T) {
 
 func TestEnergyLiveViewCondensesManyReadingsIntoHouseFlow(t *testing.T) {
 	metrics := []energyMetricView{
-		{Metric: energy.MetricBatteryPower, Kind: "battery-charge", Label: "Batterieleistung", Value: "0 W", Detail: "Battery Charge Power", Numeric: 0, Unit: "W"},
-		{Metric: energy.MetricBatteryPower, Kind: "battery-discharge", Label: "Batterieleistung", Value: "701 W", Detail: "Battery Discharge Power", Numeric: 701, Unit: "W"},
-		{Metric: energy.MetricLoadPower, Kind: energy.MetricLoadPower, Label: "Hausverbrauch", Value: "7,19 kW", Detail: "Home Current Consumption", Numeric: 7192, Unit: "W"},
-		{Metric: energy.MetricBatterySOC, Kind: energy.MetricBatterySOC, Label: "Batteriestand", Value: "50 %", Detail: "Sonnenbatterie Ladestand", Numeric: 50, Unit: "%"},
-		{Metric: energy.MetricGridExportPower, Kind: energy.MetricGridExportPower, Label: "Einspeisung", Value: "0 W", Detail: "Grid Export Power", Numeric: 0, Unit: "W"},
-		{Metric: energy.MetricGridImportEnergy, Kind: energy.MetricGridImportEnergy, Label: "Netzbezug gesamt", Value: "5.407 kWh", Detail: "Grid Import Energy", Numeric: 5407, Unit: "kWh"},
-		{Metric: energy.MetricGridImportPower, Kind: energy.MetricGridImportPower, Label: "Netzbezug jetzt", Value: "50 W", Detail: "Grid Import Power", Numeric: 50, Unit: "W"},
-		{Metric: energy.MetricPVPower, Kind: energy.MetricPVPower, Label: "PV-Leistung", Value: "6,35 kW", Detail: "SolarEdge Current Power", Numeric: 6345, Unit: "W"},
+		{Metric: energy.MetricBatteryPower, Kind: "battery-charge", Label: "Batterieleistung", Value: "0\u00a0W", Detail: "Battery Charge Power", Numeric: 0, Unit: "W"},
+		{Metric: energy.MetricBatteryPower, Kind: "battery-discharge", Label: "Batterieleistung", Value: "701\u00a0W", Detail: "Battery Discharge Power", Numeric: 701, Unit: "W"},
+		{Metric: energy.MetricLoadPower, Kind: energy.MetricLoadPower, Label: "Hausverbrauch", Value: "7,19\u00a0kW", Detail: "Home Current Consumption", Numeric: 7192, Unit: "W"},
+		{Metric: energy.MetricBatterySOC, Kind: energy.MetricBatterySOC, Label: "Batteriestand", Value: "50\u00a0%", Detail: "Sonnenbatterie Ladestand", Numeric: 50, Unit: "%"},
+		{Metric: energy.MetricGridExportPower, Kind: energy.MetricGridExportPower, Label: "Einspeisung", Value: "0\u00a0W", Detail: "Grid Export Power", Numeric: 0, Unit: "W"},
+		{Metric: energy.MetricGridImportEnergy, Kind: energy.MetricGridImportEnergy, Label: "Netzbezug gesamt", Value: "5.407\u00a0kWh", Detail: "Grid Import Energy", Numeric: 5407, Unit: "kWh"},
+		{Metric: energy.MetricGridImportPower, Kind: energy.MetricGridImportPower, Label: "Netzbezug jetzt", Value: "50\u00a0W", Detail: "Grid Import Power", Numeric: 50, Unit: "W"},
+		{Metric: energy.MetricPVPower, Kind: energy.MetricPVPower, Label: "PV-Leistung", Value: "6,35\u00a0kW", Detail: "SolarEdge Current Power", Numeric: 6345, Unit: "W"},
 	}
 
 	view := buildEnergyLiveView(metrics)
-	if !view.HasMain || view.Main.Label != "Hausverbrauch" || view.Main.Value != "7,19 kW" {
+	if !view.HasMain || view.Main.Label != "Hausverbrauch" || view.Main.Value != "7,19\u00a0kW" {
 		t.Fatalf("main = %+v", view.Main)
 	}
-	if !view.HasBattery || view.Battery.Value != "701 W" || view.Battery.Detail != "liefert Energie" || view.Battery.Direction != "discharging" {
+	if !view.HasBattery || view.Battery.Value != "701\u00a0W" || view.Battery.Detail != "liefert Energie" || view.Battery.Direction != "discharging" {
 		t.Fatalf("battery = %+v", view.Battery)
 	}
-	if !view.HasBatterySOC || view.BatterySOC.Value != "50 %" || view.BatteryFill != "50.0" {
+	if !view.HasBatterySOC || view.BatterySOC.Value != "50\u00a0%" || view.BatteryFill != "50.0" {
 		t.Fatalf("battery SOC = %+v fill=%q", view.BatterySOC, view.BatteryFill)
 	}
 	if len(view.Flows) != 3 {
 		t.Fatalf("flows = %+v", view.Flows)
 	}
-	if !view.HasGrid || view.Grid.Metric != energy.MetricGridImportPower || view.Grid.Value != "50 W" {
+	if !view.HasGrid || view.Grid.Metric != energy.MetricGridImportPower || view.Grid.Value != "50\u00a0W" {
 		t.Fatalf("primary grid flow = %+v", view.Grid)
 	}
 	if !view.HasAdditional || view.AdditionalCount != 1 ||
@@ -1271,10 +1271,10 @@ func TestEnergyLiveViewClampsSOCAndExposesChargingDirection(t *testing.T) {
 		{Metric: energy.MetricBatteryPower, Kind: "battery-charge", Numeric: 500, Unit: "W"},
 		{Metric: energy.MetricBatterySOC, Kind: energy.MetricBatterySOC, Value: "108 %", Numeric: 108, Unit: "%"},
 	})
-	if !view.HasBatterySOC || view.BatterySOC.Value != "100 %" || view.BatteryFill != "100.0" {
+	if !view.HasBatterySOC || view.BatterySOC.Value != "100\u00a0%" || view.BatteryFill != "100.0" {
 		t.Fatalf("clamped battery SOC = %+v fill=%q", view.BatterySOC, view.BatteryFill)
 	}
-	if !view.HasBattery || view.Battery.Direction != "charging" || view.Battery.Detail != "lädt" || view.Battery.Value != "500 W" {
+	if !view.HasBattery || view.Battery.Direction != "charging" || view.Battery.Detail != "lädt" || view.Battery.Value != "500\u00a0W" {
 		t.Fatalf("charging battery = %+v", view.Battery)
 	}
 }
@@ -1288,9 +1288,9 @@ func TestEnergyLiveViewNormalisesSignedGenericBatteryPower(t *testing.T) {
 		detail    string
 		direction string
 	}{
-		{name: "charging", numeric: -1.25, unit: "kW", value: "1,25 kW", detail: "lädt", direction: "charging"},
-		{name: "discharging", numeric: 720, unit: "W", value: "720 W", detail: "liefert Energie", direction: "discharging"},
-		{name: "idle", numeric: 0, unit: "W", value: "0 W", detail: "in Ruhe", direction: "idle"},
+		{name: "charging", numeric: -1.25, unit: "kW", value: "1,25\u00a0kW", detail: "lädt", direction: "charging"},
+		{name: "discharging", numeric: 720, unit: "W", value: "720\u00a0W", detail: "liefert Energie", direction: "discharging"},
+		{name: "idle", numeric: 0, unit: "W", value: "0\u00a0W", detail: "in Ruhe", direction: "idle"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -1311,10 +1311,10 @@ func TestEnergyReadingUsesHumanScaleAndUnitAwarePeakTone(t *testing.T) {
 		unit  string
 		want  string
 	}{
-		{7192, "W", "7,19 kW"},
-		{701, "W", "701 W"},
-		{0.05, "kW", "0,05 kW"},
-		{50, "%", "50 %"},
+		{7192, "W", "7,19\u00a0kW"},
+		{701, "W", "701\u00a0W"},
+		{0.05, "kW", "0,05\u00a0kW"},
+		{50, "%", "50\u00a0%"},
 	} {
 		if got := formatEnergyReading(test.value, test.unit); got != test.want {
 			t.Fatalf("formatEnergyReading(%v, %q) = %q, want %q", test.value, test.unit, got, test.want)
@@ -1377,7 +1377,7 @@ func TestEnergyChartSummarisesPeakWithoutPromise(t *testing.T) {
 	pv[48] = 4
 	battery[48] = 1
 	summary, detail := energyChartSummary(start, start.Add(24*time.Hour), load, present, pv, present, grid, present, battery, present, time.UTC)
-	if !strings.Contains(summary, "12:00 Uhr") || !strings.Contains(summary, "6 kW") {
+	if !strings.Contains(summary, "12:00 Uhr") || !strings.Contains(summary, "6\u00a0kW") {
 		t.Fatalf("summary = %q", summary)
 	}
 	if detail != "PV und Speicher deckten zu diesem Zeitpunkt den größten Teil." {
@@ -1406,7 +1406,7 @@ func TestEnergyChartUsesSymmetricFiveKWScaleWithHeadroom(t *testing.T) {
 	for _, tick := range ticks {
 		labels = append(labels, tick.Label)
 	}
-	if strings.Join(labels, ",") != "15 kW,10 kW,5 kW,0 kW,-5 kW,-10 kW,-15 kW" {
+	if strings.Join(labels, ",") != "15\u00a0kW,10\u00a0kW,5\u00a0kW,0\u00a0kW,-5\u00a0kW,-10\u00a0kW,-15\u00a0kW" {
 		t.Fatalf("ticks = %v", labels)
 	}
 	path := energyChartAreaPath(
@@ -1557,7 +1557,7 @@ func TestCurrentEnergyMetricsUsesLiveTimestampAndCorrectsLegacyConsumptionDispla
 		TenantSlug: "jhw22", EntityID: "sensor.sonnenbatterie_state_consumption_current",
 		Metric: energy.MetricBatteryPower, DisplayName: "Home Current Consumption", Unit: "W", Confirmed: true,
 	}}, energy.DefaultProfile("jhw22", time.Now()))
-	if len(metrics) != 1 || metrics[0].Metric != energy.MetricLoadPower || metrics[0].Value != "7,23 kW" {
+	if len(metrics) != 1 || metrics[0].Metric != energy.MetricLoadPower || metrics[0].Value != "7,23\u00a0kW" {
 		t.Fatalf("metrics = %+v", metrics)
 	}
 	if !latest.Equal(updated) {

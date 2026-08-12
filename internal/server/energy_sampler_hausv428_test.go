@@ -557,7 +557,7 @@ func TestCockpitStopsBeingEmptyAfterSamplingHAUSV428(t *testing.T) {
 		t.Fatal("die Tarifkarte ist nach dem Messen immer noch leer")
 	}
 	block := billedBlockHAUSV425(t, after)
-	for _, want := range []string{"Höchste Viertelstunde", "16 kW", "Verrechnet"} {
+	for _, want := range []string{"Höchste Viertelstunde", "16\u00a0kW", "Verrechnet"} {
 		if !strings.Contains(block, want) {
 			t.Fatalf("Kennzahlenblock ohne %q, war:\n%s", want, block)
 		}

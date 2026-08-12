@@ -55,7 +55,7 @@ func (a *app) chargingLiveView(ctx context.Context, tenant tenantConfig, isAdmin
 		out.PlugOn = in.PlugOn
 		out.ToggleOn = in.PlugOn
 		out.FeedInLabel = formatWatt(in.FeedInW)
-		out.BatterySOCLabel = strconv.FormatFloat(in.SocPercent, 'f', 0, 64) + " %"
+		out.BatterySOCLabel = formatEnergyValueUnit(strconv.FormatFloat(in.SocPercent, 'f', 0, 64), "%")
 		switch {
 		case in.SocPercent >= cfg.StartSocPercent:
 			out.BatteryClass = "full"
@@ -584,7 +584,7 @@ func chargingSettingsMessage(code string) (string, bool) {
 
 func formatWatt(value float64) string {
 	if value >= 1000 {
-		return strings.ReplaceAll(strconv.FormatFloat(value/1000, 'f', 1, 64), ".", ",") + " kW"
+		return formatEnergyValueUnit(strings.ReplaceAll(strconv.FormatFloat(value/1000, 'f', 1, 64), ".", ","), "kW")
 	}
-	return strconv.FormatFloat(value, 'f', 0, 64) + " W"
+	return formatEnergyValueUnit(strconv.FormatFloat(value, 'f', 0, 64), "W")
 }

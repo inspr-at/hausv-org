@@ -88,9 +88,9 @@ func TestCockpitShowsBilledPowerAndTierSplitHAUSV425(t *testing.T) {
 		"Verrechnet",
 		"Günstigere Stufe",
 		"Höhere Stufe",
-		"16 kW", // gemessene Spitze
-		"10 kW", // günstigere Stufe bis zur Staffelschwelle
-		"6 kW",  // Anteil darüber
+		"16\u00a0kW", // gemessene Spitze
+		"10\u00a0kW", // günstigere Stufe bis zur Staffelschwelle
+		"6\u00a0kW",  // Anteil darüber
 	} {
 		if !strings.Contains(block, want) {
 			t.Fatalf("Kennzahlenblock ohne %q, war:\n%s", want, block)
@@ -114,7 +114,7 @@ func TestCockpitExplainsMinimumChargeHAUSV425(t *testing.T) {
 	if !strings.Contains(body, "Mindestbemessung aus der vereinbarten Leistung") {
 		t.Fatal("die Mindestbemessung muss begründet werden, sonst wirkt sie wie ein Rechenfehler")
 	}
-	if block := billedBlockHAUSV425(t, body); !strings.Contains(block, "8 kW") {
+	if block := billedBlockHAUSV425(t, body); !strings.Contains(block, "8\u00a0kW") {
 		t.Fatalf("verrechnete Leistung 8 kW fehlt im Kennzahlenblock, war:\n%s", block)
 	}
 	if block := billedBlockHAUSV425(t, body); !strings.Contains(block, `class="energy-tariff-meter peak" max="100" value="38"`) {

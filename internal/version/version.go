@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.75.0",
+			Date:     "12. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Energieflüsse sind ruhiger und besser lesbar.",
+			Intro:    "Leichte Leistungsbahnen erhalten Breite, Farbe und Richtung; Wert und Einheit bleiben in allen Anzeigen des Energie-Cockpits zuverlässig zusammen.",
+			Items: []NoteItem{
+				{Label: "Elegante Flüsse", Text: "Transparente Bahnen, eine feine Farblinie und kompakte Richtungspfeile ersetzen die dominanten Blockpfeile."},
+				{Label: "Geschützte Einheiten", Text: "Zwischen Zahlen und Einheiten steht nun immer ein geschützter Abstand, damit Angaben nicht auseinanderbrechen."},
+			},
+		},
+		{
 			Version:  "0.74.0",
 			Date:     "12. August 2026",
 			Kind:     "Energie-Cockpit",

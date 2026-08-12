@@ -5,8 +5,8 @@
 // server HTML for user-named tiles — every string lands via textContent).
 // The renderer builds the tiles into fixed slots (producers top, storage
 // left, grid bottom, consumers right, home centre) and draws the flows as
-// single filled SVG polygons: sides offset by half the width, ending in a
-// chisel tip exactly as wide as the line (angle >= 135°, no overhang).
+// calm translucent SVG lanes. Lane width still encodes power; a slim core
+// and compact chevron preserve colour and direction without a block arrow.
 // Source ribbons carry proportional colour bands — each destination owns a
 // share of the line length matching its kW share, softly blended. Stroke
 // width scales with sqrt(kW). Values are pre-formatted by the server; the
@@ -62,7 +62,7 @@
     strong.textContent = value;
     if (unit) {
       var u = el("span", "u", strong);
-      u.textContent = unit;
+      u.textContent = "\u00a0" + unit;
     }
     return strong;
   }
@@ -657,27 +657,29 @@
             x1 = right ? a.r : a.l; y1 = a.cy; x2 = right ? b.l : b.r; y2 = b.cy; dir = [right ? 1 : -1, 0];
           }
           var w = 20 + 22 * Math.sqrt(e.kw / maxKw);
-          var h = w / 2;
-          // One closed polygon per ribbon: sides offset by half the width,
-          // ending in a chisel tip exactly as wide as the line (no lateral
-          // overhang); tip length 0.2*w keeps the point angle >= 135deg.
-          var tipLen = Math.max(2.5, 0.2 * w);
-          var ex = x2 - dir[0] * tipLen, ey = y2 - dir[1] * tipLen;
           var d;
           if (vertical) {
-            var dy = (ey - y1) * 0.5;
-            d = "M " + (x1 - h) + " " + y1 + " C " + (x1 - h) + " " + (y1 + dy) + ", " + (x2 - h) + " " + (ey - dy) + ", " + (x2 - h) + " " + ey +
-                " L " + x2 + " " + y2 + " L " + (x2 + h) + " " + ey + " C " + (x2 + h) + " " + (ey - dy) + ", " + (x1 + h) + " " + (y1 + dy) + ", " + (x1 + h) + " " + y1 + " Z";
+            var dy = (y2 - y1) * 0.5;
+            d = "M " + x1 + " " + y1 + " C " + x1 + " " + (y1 + dy) + ", " + x2 + " " + (y2 - dy) + ", " + x2 + " " + y2;
           } else {
-            var dx = (ex - x1) * 0.5;
-            d = "M " + x1 + " " + (y1 - h) + " C " + (x1 + dx) + " " + (y1 - h) + ", " + (ex - dx) + " " + (ey - h) + ", " + ex + " " + (ey - h) +
-                " L " + x2 + " " + y2 + " L " + ex + " " + (ey + h) + " C " + (ex - dx) + " " + (ey + h) + ", " + (x1 + dx) + " " + (y1 + h) + ", " + x1 + " " + (y1 + h) + " Z";
+            var dx = (x2 - x1) * 0.5;
+            d = "M " + x1 + " " + y1 + " C " + (x1 + dx) + " " + y1 + ", " + (x2 - dx) + " " + y2 + ", " + x2 + " " + y2;
           }
           var gid = "efg-" + wrap.dataset.energyFlow + "-" + i;
           var stops = "";
           e.stops.forEach(function (st) { stops += '<stop offset="' + st.at.toFixed(3) + '" stop-color="' + st.c + '"/>'; });
           defs += '<linearGradient id="' + gid + '" gradientUnits="userSpaceOnUse" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '">' + stops + "</linearGradient>";
-          shapes += '<path d="' + d + '" fill="url(#' + gid + ')"/>';
+          var arrowGap = Math.min(14, Math.max(7, Math.abs(vertical ? y2 - y1 : x2 - x1) * 0.18));
+          var arrowLen = Math.min(9, Math.max(6, w * 0.2));
+          var arrowHalf = Math.min(5.5, Math.max(3.5, w * 0.12));
+          var tipX = x2 - dir[0] * arrowGap, tipY = y2 - dir[1] * arrowGap;
+          var baseX = tipX - dir[0] * arrowLen, baseY = tipY - dir[1] * arrowLen;
+          var normal = [-dir[1], dir[0]];
+          var chevron = "M " + (baseX + normal[0] * arrowHalf) + " " + (baseY + normal[1] * arrowHalf) +
+            " L " + tipX + " " + tipY + " L " + (baseX - normal[0] * arrowHalf) + " " + (baseY - normal[1] * arrowHalf);
+          shapes += '<path class="energy-flow-band" d="' + d + '" fill="none" stroke="url(#' + gid + ')" stroke-width="' + w.toFixed(2) + '" stroke-linecap="round"/>';
+          shapes += '<path class="energy-flow-core" d="' + d + '" fill="none" stroke="url(#' + gid + ')" stroke-width="' + Math.min(3, Math.max(1.75, w * 0.07)).toFixed(2) + '" stroke-linecap="round"/>';
+          shapes += '<path class="energy-flow-chevron" d="' + chevron + '" fill="none" stroke="' + e.stops[e.stops.length - 1].c + '" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>';
         });
         svg.innerHTML = defs + "</defs>" + shapes;
       }

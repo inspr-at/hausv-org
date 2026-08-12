@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.75.0] - 2026-08-12
+
+### Verbessert
+
+- **Energieflüsse wirken leichter und bleiben eindeutig.** Transparente Leistungsbahnen zeigen die relative Breite und Farbe, während eine feine Linie mit kompaktem Richtungspfeil den Weg der Energie markiert.
+- **Wert und Einheit bleiben zusammen.** Leistungs-, Energie-, Prozent- und Preisangaben im Energie-Cockpit verwenden durchgängig einen geschützten Abstand und brechen nicht mehr zwischen Zahl und Einheit um.
+
 ## [0.74.0] - 2026-08-12
 
 ### Neu
