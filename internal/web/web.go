@@ -1030,8 +1030,8 @@ const PageTemplates = `
     .energy-health > *, .energy-lead-side > * { min-width: 0; max-width: 100%; }
     .energy-pair { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(380px,100%),1fr)); gap: 18px; align-items: start; }
     .energy-card { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-sm); }
-    .energy-nextstep { display: grid; align-content: start; gap: 13px; padding: 20px 22px; }
-    .energy-nextstep h2 { margin-top: 2px; font-size: 20px; }
+    .energy-nextstep { display: grid; align-content: start; gap: 13px; }
+    .energy-nextstep h3 { margin: 0; font-size: 23px; }
     .energy-nextstep p { margin-top: 5px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
     .energy-nextstep-copy { min-width: 0; }
     .energy-nextstep .energy-recommendation-actions { gap: 8px; justify-content: flex-start; }
@@ -1047,6 +1047,23 @@ const PageTemplates = `
     .energy-next-meta span:not(:last-child)::after { content: " ·"; color: var(--line); }
     .energy-recommendation-actions { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
     .energy-recommendation-actions form { display: flex; flex-wrap: wrap; gap: 6px; }
+    .energy-recommendation-trigger { min-height: 44px; display: inline-flex; gap: 7px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 8px 12px; color: var(--ink); background: transparent; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+    .energy-recommendation-trigger:hover { border-color: #b9aa80; background: #faf8f1; }
+    .energy-recommendation-trigger .energy-ui-icon { width: 17px; height: 17px; color: #496f47; }
+    .energy-recommendation-dialog { width: min(760px,calc(100vw - 28px)); }
+    .energy-recommendation-dialog .dialog-head { align-items: flex-start; }
+    .energy-recommendation-dialog .dialog-body { gap: 22px; }
+    .energy-recommendation-summary { display: grid; grid-template-columns: 68px minmax(0,1fr); gap: 18px; align-items: center; }
+    .energy-recommendation-summary .energy-nextstep-icon { width: 68px; height: 68px; }
+    .energy-recommendation-summary .energy-nextstep-icon .energy-ui-icon { width: 34px; height: 34px; }
+    .energy-recommendation-dialog .energy-nextstep-copy { display: grid; gap: 7px; }
+    .energy-recommendation-dialog .energy-next-progress-row { margin-top: 2px; }
+    .energy-recommendation-dialog .energy-next-why > div { margin-top: 4px; }
+    .energy-recommendation-dialog .energy-recommendation-actions { padding-top: 2px; }
+    .energy-recommendation-dialog .energy-measure-form { border: 0; padding: 14px; background: transparent; }
+    .energy-recommendation-scenarios { display: grid; gap: 12px; border-top: 1px solid var(--line); padding-top: 20px; }
+    .energy-recommendation-scenarios > header { display: grid; gap: 3px; }
+    .energy-recommendation-scenarios > header p { color: var(--muted); font-size: 13px; }
     .energy-measure-control { max-width: 100%; }
     .energy-measure-control[open] { flex: 1 0 100%; }
     .energy-measure-control > summary { list-style: none; }
@@ -1410,8 +1427,9 @@ const PageTemplates = `
     .energy-flow-area.is-enhanced .energy-flow-fallback { display: none; }
     svg.energy-flow-ribbons { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
     .energy-flow-band { opacity: .2; }
-    .energy-flow-core { opacity: .78; }
-    .energy-flow-chevron { opacity: .92; }
+    .energy-flow-dots { opacity: .86; animation: energy-flow-dots 1.15s linear infinite; }
+    @keyframes energy-flow-dots { to { stroke-dashoffset: -10.1; } }
+    @media (prefers-reduced-motion: reduce) { .energy-flow-dots { animation: none; } }
     .energy-flow-grid2 { position: relative; display: grid; grid-template-columns: 200px minmax(26px,1fr) 200px minmax(26px,1fr); grid-template-rows: auto 64px auto 64px auto; align-items: center; justify-items: center; }
     .energy-flow-slot-top { grid-column: 3; grid-row: 1; display: flex; gap: 14px; justify-content: center; width: max-content; justify-self: center; }
     .energy-flow-slot-left { grid-column: 1; grid-row: 3; width: 100%; }
@@ -1491,8 +1509,6 @@ const PageTemplates = `
       .energy-flow-slot-top, .energy-flow-slot-bottom { width: 100%; justify-self: stretch; }
       .energy-flow-slot-top .energy-flow-tile, .energy-flow-slot-bottom .energy-flow-tile { width: auto; min-width: 170px; }
     }
-    .energy-cockpit-top .energy-nextstep { grid-column: 1 / -1; grid-row: 2; }
-
     .energy-cockpit-top .energy-live-head { min-height: 86px; align-items: center; border: 0; padding: 24px 28px 8px; }
     .energy-cockpit-top .energy-live-head > div { display: grid; gap: 6px; }
     .energy-cockpit-top .energy-live-title { display: flex; gap: 9px; align-items: center; }
@@ -1582,11 +1598,8 @@ const PageTemplates = `
     .energy-tariff-tiers strong { font-family: var(--font-serif); font-size: 21px; }
     .energy-tariff-disclosure .energy-tariff-foot { margin-top: 2px; }
 
-    .energy-cockpit-top .energy-nextstep { min-height: 134px; display: grid; grid-template-columns: 90px minmax(0,1fr) auto; gap: 26px; align-items: center; border-color: #ded9ce; border-radius: 14px; padding: 20px 26px; box-shadow: 0 12px 32px rgba(32,40,33,.05); }
     .energy-nextstep-icon { width: 84px; height: 84px; display: grid; place-items: center; border-radius: 50%; color: #436a3e; background: #edf3e7; }
     .energy-nextstep-icon .energy-ui-icon { width: 43px; height: 43px; }
-    .energy-cockpit-top .energy-nextstep-copy { min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 14px; align-items: center; }
-    .energy-cockpit-top .energy-nextstep h2 { grid-column: 1 / -1; margin: 0; font-size: 27px; }
     .energy-next-progress-row { min-width: 0; display: flex; gap: 10px; align-items: center; }
     .energy-next-progress-row > small { color: var(--muted); font-size: 11px; white-space: nowrap; }
     .energy-next-progress { width: min(300px,100%); height: 7px; overflow: hidden; border-radius: 99px; background: #e6e4de; }
@@ -1599,36 +1612,21 @@ const PageTemplates = `
     .energy-next-why > div { grid-column: 1 / -1; display: grid; gap: 7px; border-top: 1px solid var(--line); padding-top: 10px; }
     .energy-next-why[open] { grid-column: 1 / -1; width: 100%; }
     .energy-next-why[open] > summary { margin-bottom: 5px; }
-    .energy-cockpit-top .energy-nextstep .energy-next-why p { margin: 0; }
-    .energy-cockpit-top .energy-recommendation-actions { justify-content: flex-end; flex-wrap: nowrap; }
+    .energy-recommendation-dialog .energy-next-why p { margin: 0; }
     .energy-observation-running { min-height: 52px; display: inline-flex; gap: 9px; align-items: center; justify-content: center; border-radius: 8px; padding: 10px 22px; color: #fff; background: #173526; font-size: 13px; font-weight: 750; white-space: nowrap; }
     .energy-observation-running > span { color: #79a579; font-size: 9px; }
-    .energy-cockpit-top .energy-nextstep .energy-recommendation-actions > form .button { min-height: 48px; border: 0; padding: 0 13px; color: var(--ink); background: transparent; font-size: 12.5px; text-decoration: none; }
-    .energy-cockpit-top .energy-measure-control > summary.energy-next-overflow { width: 50px; min-width: 50px; min-height: 50px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: transparent; cursor: pointer; list-style: none; }
-    .energy-cockpit-top .energy-next-overflow > .energy-ui-icon { width: 22px; height: 22px; color: #34423a; }
-    .energy-cockpit-top .energy-measure-control { position: relative; width: 50px; flex: 0 0 50px; }
-    .energy-cockpit-top .energy-measure-control[open] { width: 100%; flex: 1 0 100%; }
     .energy-next-menu { display: grid; gap: 8px; margin-top: 10px; }
-    .energy-cockpit-top .energy-measure-form { margin-top: 0; }
     .energy-dismiss-form { justify-self: end; }
-    .energy-cockpit-top .energy-nextstep > .message { grid-column: 2 / -1; }
 
     @media (max-width: 1439px) {
       .energy-cockpit-top { width: 100%; margin-left: 0; }
       .energy-cockpit-top .energy-health { grid-template-columns: minmax(0,1fr); }
       .energy-cockpit-top .energy-live { grid-column: 1; grid-row: 1; }
       .energy-tariff-disclosure { margin-top: 0; }
-      .energy-cockpit-top .energy-nextstep { grid-column: 1; grid-row: 3; }
     }
     @media (min-width: 901px) and (max-width: 1439px) {
     }
     @media (min-width: 901px) and (max-width: 1100px) {
-      .energy-cockpit-top .energy-nextstep { grid-template-columns: 72px minmax(0,1fr); gap: 18px; }
-      .energy-nextstep-icon { width: 68px; height: 68px; }
-      .energy-nextstep-icon .energy-ui-icon { width: 36px; height: 36px; }
-      .energy-cockpit-top .energy-nextstep-copy { grid-template-columns: minmax(0,1fr); }
-      .energy-cockpit-top .energy-nextstep-copy > * { grid-column: 1; }
-      .energy-cockpit-top .energy-recommendation-actions { grid-column: 1 / -1; }
     }
     @media (max-width: 1023px) {
       .energy-cockpit-main .energy-mode-copy span { display: none; }
@@ -1650,10 +1648,6 @@ const PageTemplates = `
       .energy-tariff > .energy-card-head { flex-wrap: wrap; gap: 10px; }
       .energy-tariff > .energy-card-head > div { flex: 1 1 200px; order: 1; }
       .energy-tariff > .energy-card-head > .pill { order: 2; }
-      .energy-cockpit-top .energy-nextstep { grid-template-columns: 62px minmax(0,1fr); gap: 14px; padding: 17px 18px; }
-      .energy-nextstep-icon { width: 56px; height: 56px; }
-      .energy-nextstep-icon .energy-ui-icon { width: 31px; height: 31px; }
-      .energy-cockpit-top .energy-recommendation-actions { grid-column: 1 / -1; justify-content: stretch; }
       .energy-observation-running { flex: 1 1 auto; }
       .energy-metric-info > summary { width: 44px; height: 44px; }
     }
@@ -1676,15 +1670,13 @@ const PageTemplates = `
       .energy-tariff-disclosure :where(p,li,a,span,small) { overflow-wrap: anywhere; }
       .energy-tariff-settings > summary { flex-wrap: wrap; }
       .energy-tariff-settings > summary span { min-width: 0; }
-      .energy-cockpit-top .energy-nextstep-copy { grid-template-columns: minmax(0,1fr); gap: 4px; }
-      .energy-cockpit-top .energy-nextstep-copy > * { grid-column: 1; }
-      .energy-cockpit-top .energy-nextstep h2 { font-size: 21px; }
-      .energy-cockpit-top .energy-recommendation-actions { flex-wrap: wrap; }
+      .energy-recommendation-summary { grid-template-columns: 52px minmax(0,1fr); gap: 13px; }
+      .energy-recommendation-summary .energy-nextstep-icon { width: 52px; height: 52px; }
+      .energy-recommendation-summary .energy-nextstep-icon .energy-ui-icon { width: 27px; height: 27px; }
+      .energy-nextstep h3 { font-size: 20px; }
+      .energy-recommendation-dialog .energy-recommendation-actions { flex-wrap: wrap; }
       .energy-observation-running { width: 100%; }
-      .energy-cockpit-top .energy-nextstep .energy-recommendation-actions > form { flex: 1 1 auto; }
-      .energy-cockpit-top .energy-nextstep .energy-recommendation-actions > form .button { width: 100%; }
-      .energy-cockpit-top .energy-measure-control:not([open]) { width: 44px; flex: 0 0 44px; }
-      .energy-cockpit-top .energy-measure-control > summary.energy-next-overflow { width: 44px; min-width: 44px; min-height: 44px; }
+      .energy-recommendation-dialog .energy-recommendation-actions > form { flex: 1 1 auto; }
     }
     @media (max-width: 560px) {
     }
@@ -9438,7 +9430,7 @@ const PageTemplates = `
 {{define "energyLead"}}
   <div class="energy-lead-side">
     <aside class="energy-live" aria-label="Energie gerade jetzt" data-energy-flow-diagram data-energy-reading-count="{{len .Metrics}}">
-      <header class="energy-live-head"><div><div class="energy-live-title"><h2>Energie jetzt</h2></div>{{if .HasMetrics}}<div class="energy-live-meta"><span class="energy-live-dot" aria-hidden="true"></span><strong>Live</strong><span>Home Assistant</span></div>{{else}}<span class="energy-live-state-offline">Noch nicht verbunden</span>{{end}}</div></header>
+      <header class="energy-live-head"><div><div class="energy-live-title"><h2>Energie jetzt</h2></div>{{if .HasMetrics}}<div class="energy-live-meta"><span class="energy-live-dot" aria-hidden="true"></span><strong>Live</strong><span>Home Assistant</span></div>{{else}}<span class="energy-live-state-offline">Noch nicht verbunden</span>{{end}}</div><button class="energy-recommendation-trigger" type="button" data-dialog="energy-recommendation-dialog" aria-haspopup="dialog" aria-controls="energy-recommendation-dialog"><span class="energy-ui-icon energy-ui-icon-binoculars" aria-hidden="true"></span><span>Empfehlung</span></button></header>
       {{if .HasMetrics}}
         <div class="energy-flow-area" data-energy-flow>
           <script type="application/json">{{.FlowConfigJSON}}</script>
@@ -9450,7 +9442,7 @@ const PageTemplates = `
               {{if .Live.HasBatterySOC}}<span>Ladestand <strong>{{.Live.BatterySOC.Value}}</strong></span>{{end}}
             </div>
           </div>
-          <details class="energy-info-disclosure energy-flow-hint" data-energy-disclosure="flow"><summary aria-label="Energiefluss verstehen" aria-controls="energy-flow-help"><span>Energiefluss verstehen</span><span class="energy-info-mark" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-info"></span></span></summary><div id="energy-flow-help"><strong>So lesen Sie den Energiefluss</strong><p>Der Hausverbrauch ist der momentane Verbrauch aus allen Quellen. Die Flussbänder zeigen mit ihrer Pfeilspitze die Richtung, ihre Breite entspricht der Leistung, und die Farbverläufe zeigen anteilig, wohin die Energie geht. 0 kW bedeutet: Diese Verbindung ruht gerade. Werte aktualisieren sich unabhängig und können deshalb kurzzeitig nicht exakt aufgehen.</p><div class="energy-help-readings">{{if .Live.HasMain}}<span>{{.Live.Main.Label}} <strong>{{.Live.Main.Value}}</strong> <small>{{.Live.Main.Detail}}</small></span>{{end}}{{range .Live.Flows}}<span>{{.Label}} <strong>{{.Value}}</strong> <small>{{.Detail}}</small></span>{{end}}{{if .Live.HasBattery}}<span>{{.Live.Battery.Label}} <strong>{{.Live.Battery.Value}}</strong> <small>{{.Live.Battery.Detail}}</small></span>{{end}}{{if .Live.HasBatterySOC}}<span>Ladestand <strong>{{.Live.BatterySOC.Value}}</strong> <small>{{.Live.BatterySOC.Detail}}</small></span>{{end}}</div><small>Live aus Home Assistant · nur gelesen</small>{{if .CanManageEnergy}}<a href="/app/zuhause/onboarding?step=4">Messwerte zuordnen</a>{{end}}</div></details>
+          <details class="energy-info-disclosure energy-flow-hint" data-energy-disclosure="flow"><summary aria-label="Energiefluss verstehen" aria-controls="energy-flow-help"><span>Energiefluss verstehen</span><span class="energy-info-mark" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-info"></span></span></summary><div id="energy-flow-help"><strong>So lesen Sie den Energiefluss</strong><p>Der Hausverbrauch ist der momentane Verbrauch aus allen Quellen. Die bewegten Punkte zeigen die Richtung, die Breite der ruhigen Flussbahn entspricht der Leistung, und die Farbverläufe zeigen anteilig, wohin die Energie geht. 0&nbsp;kW bedeutet: Diese Verbindung ruht gerade. Werte aktualisieren sich unabhängig und können deshalb kurzzeitig nicht exakt aufgehen.</p><div class="energy-help-readings">{{if .Live.HasMain}}<span>{{.Live.Main.Label}} <strong>{{.Live.Main.Value}}</strong> <small>{{.Live.Main.Detail}}</small></span>{{end}}{{range .Live.Flows}}<span>{{.Label}} <strong>{{.Value}}</strong> <small>{{.Detail}}</small></span>{{end}}{{if .Live.HasBattery}}<span>{{.Live.Battery.Label}} <strong>{{.Live.Battery.Value}}</strong> <small>{{.Live.Battery.Detail}}</small></span>{{end}}{{if .Live.HasBatterySOC}}<span>Ladestand <strong>{{.Live.BatterySOC.Value}}</strong> <small>{{.Live.BatterySOC.Detail}}</small></span>{{end}}</div><small>Live aus Home Assistant · nur gelesen</small>{{if .CanManageEnergy}}<a href="/app/zuhause/onboarding?step=4">Messwerte zuordnen</a>{{end}}</div></details>
         </div>
         <footer class="energy-live-footer">
           {{if .Live.HasAdditional}}<details class="energy-live-more"><summary><span><strong>Weitere Messwerte ({{.Live.AdditionalCount}})</strong><small>{{.Live.AdditionalTopics}}</small></span><span class="energy-ui-icon energy-ui-icon-chevron-right" aria-hidden="true"></span></summary><div class="energy-live-more-list">{{range .Live.Additional}}<div class="energy-live-more-row"><span>{{.Label}}</span><strong>{{.Value}}</strong></div>{{end}}</div></details>{{else}}<span></span>{{end}}
@@ -9458,30 +9450,32 @@ const PageTemplates = `
         </footer>
       {{else}}<div class="energy-live-empty"><strong>Noch keine Live-Werte</strong><span>Home Assistant kann später verbunden werden.</span>{{if .CanManageEnergy}}<a href="/app/zuhause/onboarding?step=4">Messwerte zuordnen</a>{{end}}</div>{{end}}
     </aside>
-    <section class="energy-card energy-nextstep" id="naechster-schritt">
-      <span class="energy-nextstep-icon" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-binoculars"></span></span>
-      <div class="energy-nextstep-copy"><h2>{{if eq .Recommendation.ID "observe"}}{{.ObservationProgress.Title}}{{else}}{{.Recommendation.Title}}{{end}}</h2>{{if eq .Recommendation.ID "observe"}}<div class="energy-next-progress-row"><div class="energy-next-progress" role="progressbar" aria-label="Beobachtungsfortschritt" aria-valuemin="0" aria-valuemax="{{.ObservationProgress.Target}}" aria-valuenow="{{.ObservationProgress.Completed}}" aria-valuetext="{{.ObservationProgress.Label}}"><span style="width:{{.ObservationProgress.Percent}}%"></span></div><small>{{.ObservationProgress.Label}}</small></div>{{end}}<div class="energy-next-status"><span aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-check"></span></span>{{.Recommendation.Effort}} · keine Steuerung</div><details class="energy-next-why" data-energy-disclosure="recommendation"><summary aria-controls="energy-next-explanation">Warum?</summary><div id="energy-next-explanation"><p>{{.Recommendation.Reason}}</p><div class="energy-next-meta"><span>{{.Recommendation.Benefit}}</span><span>Aufwand: {{.Recommendation.Effort}}</span><span>{{.Recommendation.ImpactRange}}</span></div></div></details></div>
-      {{if .MeasureCreated}}<div class="message success">Als nachvollziehbare Hausaufgabe angelegt. Erst dort wählen Sie später bewusst einen bekannten Dienstleister.</div>{{end}}
-      {{if .RecommendationDeferred}}<div class="message">Für später gemerkt. HAUSV aktiviert dadurch nichts.</div>{{else if .RecommendationDismissed}}<div class="message">Abgelehnt. Die Entscheidung bleibt nachvollziehbar und löst nichts aus.</div>{{else}}
-      <div class="energy-recommendation-actions">
-        {{if .RecommendationURL}}<a class="button primary" href="{{.RecommendationURL}}">Diesen Schritt öffnen</a>{{end}}
-        {{if not .RecommendationURL}}<span class="energy-observation-running"><span aria-hidden="true">●</span>Beobachtung läuft</span>{{end}}
-        <form method="post" action="/app/energie/recommendation"><input type="hidden" name="recommendation_id" value="{{.Recommendation.ID}}"><button class="button quiet" type="submit" name="status" value="deferred">Später</button></form>
-        <details class="energy-measure-control">
-          <summary class="energy-next-overflow" aria-label="Weitere Optionen"><span class="energy-ui-icon energy-ui-icon-ellipsis" aria-hidden="true"></span></summary>
-          <div class="energy-next-menu"><form class="energy-measure-form" method="post" action="/app/energie/measure">
-            <h3>Als Hausaufgabe übernehmen</h3><p>Was darf in die Aufgabe?</p>
-            <p>Es entsteht ein normales Anliegen – keine Bestellung und keine Preiszusage.</p>
-            <label><input type="checkbox" name="share" value="inventory"><span>Anlageninventar beilegen</span></label>
-            <label><input type="checkbox" name="share" value="measurements"><span>Zusammengefasste Messwerte beilegen</span></label>
-            <label><input type="checkbox" name="share" value="contact"><span>Kontaktdaten beilegen</span></label>
-            <input type="hidden" name="recommendation_id" value="{{.Recommendation.ID}}">
-            <button class="button primary" type="submit">Hausaufgabe anlegen</button>
-          </form><form class="energy-dismiss-form" method="post" action="/app/energie/recommendation"><input type="hidden" name="recommendation_id" value="{{.Recommendation.ID}}"><button class="button quiet" type="submit" name="status" value="dismissed">Nicht für uns</button></form></div>
-        </details>
-      </div>{{end}}
-    </section>
   </div>
+{{end}}
+
+{{define "energyRecommendationDialog"}}
+  <dialog id="energy-recommendation-dialog" class="dialog energy-recommendation-dialog" aria-labelledby="energy-recommendation-dialog-title">
+    <header class="dialog-head"><div><div class="kicker">Nächster Schritt</div><h2 id="energy-recommendation-dialog-title">Empfehlung</h2></div><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button></header>
+    <div class="dialog-body">
+      <section class="energy-nextstep" id="naechster-schritt">
+        <div class="energy-recommendation-summary"><span class="energy-nextstep-icon" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-binoculars"></span></span><div class="energy-nextstep-copy"><h3>{{if eq .Recommendation.ID "observe"}}{{.ObservationProgress.Title}}{{else}}{{.Recommendation.Title}}{{end}}</h3>{{if eq .Recommendation.ID "observe"}}<div class="energy-next-progress-row"><div class="energy-next-progress" role="progressbar" aria-label="Beobachtungsfortschritt" aria-valuemin="0" aria-valuemax="{{.ObservationProgress.Target}}" aria-valuenow="{{.ObservationProgress.Completed}}" aria-valuetext="{{.ObservationProgress.Label}}"><span style="width:{{.ObservationProgress.Percent}}%"></span></div><small>{{.ObservationProgress.Label}}</small></div>{{end}}<div class="energy-next-status"><span aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-check"></span></span>{{.Recommendation.Effort}} · keine Steuerung</div><details class="energy-next-why" data-energy-disclosure="recommendation"><summary aria-controls="energy-next-explanation">Warum?</summary><div id="energy-next-explanation"><p>{{.Recommendation.Reason}}</p><div class="energy-next-meta"><span>{{.Recommendation.Benefit}}</span><span>Aufwand: {{.Recommendation.Effort}}</span><span>{{.Recommendation.ImpactRange}}</span></div></div></details></div></div>
+        {{if not .RecommendationDeferred}}{{if not .RecommendationDismissed}}<div class="energy-recommendation-actions">
+          {{if and .RecommendationURL (ne .Recommendation.ID "simulate")}}<a class="button primary" href="{{.RecommendationURL}}">Diesen Schritt öffnen</a>{{end}}
+          {{if not .RecommendationURL}}<span class="energy-observation-running"><span aria-hidden="true">●</span>Beobachtung läuft</span>{{end}}
+          <form method="post" action="/app/energie/recommendation"><input type="hidden" name="recommendation_id" value="{{.Recommendation.ID}}"><button class="button quiet" type="submit" name="status" value="deferred">Später</button></form>
+        </div><details class="dialog-optional energy-measure-control"><summary>Weitere Optionen</summary><div class="energy-next-menu"><form class="energy-measure-form" method="post" action="/app/energie/measure">
+          <h3>Als Hausaufgabe übernehmen</h3><p>Was darf in die Aufgabe?</p><p>Es entsteht ein normales Anliegen – keine Bestellung und keine Preiszusage.</p>
+          <label><input type="checkbox" name="share" value="inventory"><span>Anlageninventar beilegen</span></label><label><input type="checkbox" name="share" value="measurements"><span>Zusammengefasste Messwerte beilegen</span></label><label><input type="checkbox" name="share" value="contact"><span>Kontaktdaten beilegen</span></label>
+          <input type="hidden" name="recommendation_id" value="{{.Recommendation.ID}}"><button class="button primary" type="submit">Hausaufgabe anlegen</button>
+        </form><form class="energy-dismiss-form" method="post" action="/app/energie/recommendation"><input type="hidden" name="recommendation_id" value="{{.Recommendation.ID}}"><button class="button quiet" type="submit" name="status" value="dismissed">Nicht für uns</button></form></div></details>{{end}}{{end}}
+      </section>
+      {{if .HasScenarios}}<section class="energy-recommendation-scenarios" id="szenarien">
+        <header><h3>Was-wäre-wenn</h3><p>Direkt im Dialog simulieren – ohne Sprung auf der Seite.</p></header>
+        {{range .Scenarios}}<article class="energy-scenario"><div class="energy-scenario-copy"><strong>{{.Title}}</strong><p>{{.EffectBand}} · Unsicherheit: {{.Uncertainty}}</p><p class="energy-scenario-assumptions">{{.Assumptions}}</p>{{if .BaselineNote}}<p class="energy-scenario-assumptions">{{.BaselineNote}}</p>{{end}}</div><div class="energy-scenario-result"><span>Spitze im Modell</span><strong>{{.PeakBand}}</strong>{{if .HasBilledBand}}<span class="energy-scenario-billed">davon verrechnet <b>{{.BilledBand}}</b></span>{{end}}</div></article>{{if .FloorNote}}<p class="energy-scenario-floor"><span aria-hidden="true">!</span>{{.FloorNote}}</p>{{end}}{{end}}
+        <p class="energy-scenario-caveat">Die Bandbreite tritt nur ein, wenn sich die genannten Verbraucher tatsächlich verschieben lassen und nicht ohnehin gleichzeitig laufen. HAUSV rechnet sie bewusst nicht in Euro um: dafür ist der Entwurf zu unsicher und die Messbasis zu jung.</p>
+      </section>{{end}}
+    </div>
+  </dialog>
 {{end}}
 
 {{define "energyCockpit"}}
@@ -9505,11 +9499,14 @@ const PageTemplates = `
       {{if .ModeChanged}}<div class="message success">Der Energiemodus wurde nachvollziehbar geändert.</div>{{end}}
       {{if .ProfileChanged}}<div class="message success">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</div>{{end}}
       {{if eq .ConsumerNotice "1"}}<div class="message success">Der Verbraucher wurde angelegt.</div>{{else if eq .ConsumerNotice "gespeichert"}}<div class="message success">Der Verbraucher wurde gespeichert.</div>{{else if eq .ConsumerNotice "weg"}}<div class="message success">Der Verbraucher wurde entfernt.</div>{{else if eq .ConsumerNotice "name"}}<div class="message error">Bitte einen Namen angeben.</div>{{else if eq .ConsumerNotice "leistung"}}<div class="message error">Die Leistung muss eine positive kW-Zahl sein.</div>{{else if eq .ConsumerNotice "messwerte"}}<div class="message error">Die Messwert-Zuordnung konnte nicht gespeichert werden. Bitte Home Assistant und die gewählten Entities prüfen.</div>{{end}}
+      {{if .MeasureCreated}}<div class="message success">Als nachvollziehbare Hausaufgabe angelegt. Erst dort wählen Sie später bewusst einen bekannten Dienstleister.</div>{{end}}
+      {{if .RecommendationDeferred}}<div class="message">Für später gemerkt. HAUSV aktiviert dadurch nichts.</div>{{else if .RecommendationDismissed}}<div class="message">Abgelehnt. Die Entscheidung bleibt nachvollziehbar und löst nichts aus.</div>{{end}}
       <section class="energy-health">
         {{template "energyLead" .}}
 
       </section>
       </div>
+      {{template "energyRecommendationDialog" .}}
       {{if .CanManageEnergy}}<dialog id="energy-consumer-dialog" class="dialog energy-consumer-dialog" aria-labelledby="energy-consumer-dialog-title">
         <form method="post" action="/app/energie/verbraucher">
           <input type="hidden" name="asset_id" value="">
@@ -9602,17 +9599,6 @@ const PageTemplates = `
         <small class="energy-chart-hint">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. {{.Chart.Range}}</small>
       </div></dialog>{{end}}
       <div class="energy-pair">
-        {{if .HasScenarios}}<section class="energy-card" id="szenarien">
-          <header class="energy-card-head"><div><h2>Was-wäre-wenn</h2><p>Bandbreite statt Einsparversprechen.</p></div></header>
-          {{range .Scenarios}}<article class="energy-scenario">
-            <div class="energy-scenario-copy"><strong>{{.Title}}</strong><p>{{.EffectBand}} · Unsicherheit: {{.Uncertainty}}</p><p class="energy-scenario-assumptions">{{.Assumptions}}</p>{{if .BaselineNote}}<p class="energy-scenario-assumptions">{{.BaselineNote}}</p>{{end}}</div>
-            <div class="energy-scenario-result">
-              <span>Spitze im Modell</span><strong>{{.PeakBand}}</strong>
-              {{if .HasBilledBand}}<span class="energy-scenario-billed">davon verrechnet <b>{{.BilledBand}}</b></span>{{end}}
-            </div>
-          </article>{{if .FloorNote}}<p class="energy-scenario-floor"><span aria-hidden="true">!</span>{{.FloorNote}}</p>{{end}}{{end}}
-          <p class="energy-scenario-caveat">Die Bandbreite tritt nur ein, wenn sich die genannten Verbraucher tatsächlich verschieben lassen und nicht ohnehin gleichzeitig laufen. HAUSV rechnet sie bewusst nicht in Euro um: dafür ist der Entwurf zu unsicher und die Messbasis zu jung.</p>
-        </section>{{end}}
         <section class="energy-card">
           <header class="energy-card-head"><div><h2>Datenlage</h2><p>Keine scheinpräzisen Aussagen bei Lücken oder alten Werten.</p></div></header>
           <div class="energy-quality"><span aria-hidden="true">{{if eq .Quality.Status "measured"}}✓{{else}}!{{end}}</span><div><strong>{{.Quality.Label}}</strong><p>{{.Quality.Effect}}</p></div><small>{{.Quality.NextAction}}</small></div>

@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.75.1",
+			Date:     "12. August 2026",
+			Kind:     "Energie-Cockpit",
+			Headline: "Ruhige Energieflüsse und Empfehlungen ohne Seitensprung.",
+			Intro:    "Bewegte Punkte zeigen die Flussrichtung; Empfehlungen und Simulationen öffnen sich kompakt in einem eigenen Dialog.",
+			Items:    []NoteItem{},
+		},
+		{
 			Version:  "0.75.0",
 			Date:     "12. August 2026",
 			Kind:     "Energie-Cockpit",

@@ -173,6 +173,20 @@
     });
   });
 
+  // Legacy deep links such as /app/energie#szenarien now reveal their target
+  // in the owning dialog instead of moving the page underneath the user.
+  function openHashDialog() {
+    if (!window.location.hash) return;
+    var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+    var dialog = target && target.closest ? target.closest("dialog") : null;
+    if (!dialog || dialog.open || typeof dialog.showModal !== "function") return;
+    dialog.showModal();
+    setExpanded(dialog.id, true);
+  }
+
+  openHashDialog();
+  window.addEventListener("hashchange", openHashDialog);
+
   Array.prototype.forEach.call(document.querySelectorAll("dialog"), function (dialog) {
     dialog.addEventListener("cancel", function (event) {
       if (isEnergyFullscreen(dialog)) {

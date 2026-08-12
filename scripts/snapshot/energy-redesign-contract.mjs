@@ -107,16 +107,16 @@ export async function assertEnergyTopContent(page, label) {
     }
   }
 
-  // Every active flow has a translucent width-coded band, a coloured core,
-  // and a compact chevron for direction. The deterministic fixture always
-  // has PV production plus a grid flow.
+  // Every active flow has a translucent width-coded band and coloured dots
+  // moving from source to destination. The deterministic fixture always has
+  // PV production plus a grid flow.
   const ribbons = await diagram.locator('svg.energy-flow-ribbons .energy-flow-band').evaluateAll((paths) =>
     paths.map((path) => ({ stroke: path.getAttribute('stroke') || '', width: Number(path.getAttribute('stroke-width')) })));
-  const cores = await diagram.locator('svg.energy-flow-ribbons .energy-flow-core').count();
-  const chevrons = await diagram.locator('svg.energy-flow-ribbons .energy-flow-chevron').count();
+  const dots = await diagram.locator('svg.energy-flow-ribbons .energy-flow-dots').evaluateAll((paths) =>
+    paths.map((path) => ({ stroke: path.getAttribute('stroke') || '', dash: path.getAttribute('stroke-dasharray') || '' })));
   if (ribbons.length < 2 || ribbons.some(({ stroke, width }) => !stroke.startsWith('url(') || width <= 0) ||
-      cores !== ribbons.length || chevrons !== ribbons.length) {
-    fail(label, 'Energiefluss-Bahnen verlieren Breite, Farbe oder Richtung', { ribbons, cores, chevrons });
+      dots.length !== ribbons.length || dots.some(({ stroke, dash }) => !stroke.startsWith('url(') || !dash)) {
+    fail(label, 'Energiefluss-Bahnen verlieren Breite, Farbe oder Richtungspunkte', { ribbons, dots });
   }
   const railTiles = await diagram.locator('.energy-flow-rail .energy-flow-big:not(.ghost)').count();
   const railGhost = await diagram.locator('.energy-flow-rail .energy-flow-big.ghost').count();
@@ -388,6 +388,12 @@ async function waitForDisclosure(root, expected) {
 export async function assertEnergyDisclosures(page, { label, width }) {
   const originalScroll = await page.evaluate(() => ({ x: window.scrollX, y: window.scrollY }));
   for (const expected of disclosures) {
+    const recommendationDialog = expected.selector === '.energy-next-why'
+      ? page.locator('#energy-recommendation-dialog') : null;
+    if (recommendationDialog) {
+      await page.locator('[data-dialog="energy-recommendation-dialog"]').click();
+      await recommendationDialog.waitFor({ state: 'visible' });
+    }
     const root = page.locator(expected.selector);
     if ((await root.count()) !== 1) {
       fail(label, `${expected.label}: genau eine stabile Offenlegung ${expected.selector} fehlt`);
@@ -428,6 +434,10 @@ export async function assertEnergyDisclosures(page, { label, width }) {
     const closed = await disclosureState(root);
     if (closed.open || closed.panelVisible || !(await trigger.evaluate((element) => document.activeElement === element))) {
       fail(label, `${expected.label}: Leertaste schließt nicht mit erhaltenem Fokus`, closed);
+    }
+    if (recommendationDialog) {
+      await recommendationDialog.locator('[data-close-dialog]').click();
+      await recommendationDialog.waitFor({ state: 'hidden' });
     }
   }
   await page.evaluate(({ x, y }) => window.scrollTo(x, y), originalScroll);
@@ -576,7 +586,7 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
       const y = Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top);
       return x > 1 && y > 1 ? { width: x, height: y } : null;
     };
-    const groups = ['.energy-heading', '.energy-health', '.energy-lead-side', '.energy-nextstep', '.energy-tariff', '.energy-billed', '.energy-flow-area'];
+    const groups = ['.energy-heading', '.energy-health', '.energy-lead-side', '.energy-tariff', '.energy-billed', '.energy-flow-area'];
     const siblingOverlaps = [];
     for (const selector of groups) {
       const parent = document.querySelector(selector);
@@ -620,7 +630,6 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
     const liveRect = rect(live);
     const tariff = document.querySelector('.energy-tariff');
     const tariffEmpty = tariff?.querySelector('.energy-tariff-empty');
-    const nextOverflow = document.querySelector('.energy-next-overflow');
     const flowOutliers = [...(diagram?.querySelectorAll('[data-edge]') || [])]
       .filter(visible)
       .map((element) => ({
@@ -668,7 +677,7 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
     const headingAction = document.querySelector('.energy-heading-action');
     const modeState = document.querySelector('.energy-mode-state');
     const modeAction = document.querySelector('.energy-mode-action');
-    const next = document.querySelector('.energy-nextstep');
+    const recommendationTrigger = document.querySelector('[data-dialog="energy-recommendation-dialog"]');
     return {
       viewport: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,
@@ -690,24 +699,17 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
           ? overlap(rect(modeState), rect(modeAction)) : null,
         live: rect(liveCard),
         tariff: rect(tariff),
-        next: rect(next),
+        recommendationTrigger: rect(recommendationTrigger),
       },
       emptyTariffHeight: tariffEmpty && visible(tariffEmpty) ? rect(tariff)?.height || 0 : 0,
-      nextOverflow: nextOverflow && visible(nextOverflow) ? {
-        box: rect(nextOverflow),
-        name: nextOverflow.getAttribute('aria-label') || '',
-      } : null,
     };
   });
 
   const cards = result.layout;
-  const missingCards = !cards.live || !cards.tariff || !cards.next;
-  // One shared column at every width since 0.69.0: live first, next step after
-  // it, the tariff detail card below the chart.
-  const stackedWrong = !missingCards && (
-    Math.abs(cards.live.left - cards.tariff.left) > 1 ||
-    cards.live.bottom > cards.next.top + 1 ||
-    cards.next.bottom > cards.tariff.top + 1);
+  const missingCards = !cards.live || !cards.tariff || !cards.recommendationTrigger;
+  // Live remains first and the tariff detail follows below the chart. The
+  // recommendation is deliberately a dialog trigger, not another page card.
+  const stackedWrong = !missingCards && Math.abs(cards.live.left - cards.tariff.left) > 1;
   const columnsWrong = false;
 
   if (result.documentWidth > width + 1 || result.bodyWidth > width + 1 ||
@@ -716,10 +718,7 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
       result.flowOutliers.length || result.flowNodeOverlaps.length || result.layout.headingControlOverlap ||
       result.layout.modeControlOverlap || missingCards || stackedWrong || columnsWrong ||
       (width <= 1024 && result.emptyTariffHeight > 400) ||
-      (width <= 390 && result.nextOverflow &&
-        (result.nextOverflow.name !== 'Weitere Optionen' ||
-         result.nextOverflow.box.width < 43.5 || result.nextOverflow.box.width > 54 ||
-         result.nextOverflow.box.height < 43.5 || result.nextOverflow.box.height > 54))) {
+      cards.recommendationTrigger.height < 43.5) {
     fail(label, 'Top-Redesign läuft über, überlappt oder schneidet Bedienelemente ab', result);
   }
 }

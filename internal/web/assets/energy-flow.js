@@ -5,8 +5,8 @@
 // server HTML for user-named tiles — every string lands via textContent).
 // The renderer builds the tiles into fixed slots (producers top, storage
 // left, grid bottom, consumers right, home centre) and draws the flows as
-// calm translucent SVG lanes. Lane width still encodes power; a slim core
-// and compact chevron preserve colour and direction without a block arrow.
+// calm translucent SVG lanes. Lane width still encodes power; small coloured
+// dots move from source to destination and show direction without arrowheads.
 // Source ribbons carry proportional colour bands — each destination owns a
 // share of the line length matching its kW share, softly blended. Stroke
 // width scales with sqrt(kW). Values are pre-formatted by the server; the
@@ -648,13 +648,13 @@
           var a = { l: ra.left - wr.left, r: ra.right - wr.left, t: ra.top - wr.top, b: ra.bottom - wr.top, cx: ra.left - wr.left + ra.width / 2, cy: ra.top - wr.top + ra.height / 2 };
           var b = { l: rb.left - wr.left, r: rb.right - wr.left, t: rb.top - wr.top, b: rb.bottom - wr.top, cx: rb.left - wr.left + rb.width / 2, cy: rb.top - wr.top + rb.height / 2 };
           var vertical = Math.abs(a.cx - b.cx) < 60 || Math.abs(a.cy - b.cy) > Math.abs(a.cx - b.cx);
-          var x1, y1, x2, y2, dir;
+          var x1, y1, x2, y2;
           if (vertical) {
             var down = a.cy < b.cy;
-            x1 = a.cx; y1 = down ? a.b : a.t; x2 = b.cx; y2 = down ? b.t : b.b; dir = [0, down ? 1 : -1];
+            x1 = a.cx; y1 = down ? a.b : a.t; x2 = b.cx; y2 = down ? b.t : b.b;
           } else {
             var right = a.cx < b.cx;
-            x1 = right ? a.r : a.l; y1 = a.cy; x2 = right ? b.l : b.r; y2 = b.cy; dir = [right ? 1 : -1, 0];
+            x1 = right ? a.r : a.l; y1 = a.cy; x2 = right ? b.l : b.r; y2 = b.cy;
           }
           var w = 20 + 22 * Math.sqrt(e.kw / maxKw);
           var d;
@@ -669,17 +669,8 @@
           var stops = "";
           e.stops.forEach(function (st) { stops += '<stop offset="' + st.at.toFixed(3) + '" stop-color="' + st.c + '"/>'; });
           defs += '<linearGradient id="' + gid + '" gradientUnits="userSpaceOnUse" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '">' + stops + "</linearGradient>";
-          var arrowGap = Math.min(14, Math.max(7, Math.abs(vertical ? y2 - y1 : x2 - x1) * 0.18));
-          var arrowLen = Math.min(9, Math.max(6, w * 0.2));
-          var arrowHalf = Math.min(5.5, Math.max(3.5, w * 0.12));
-          var tipX = x2 - dir[0] * arrowGap, tipY = y2 - dir[1] * arrowGap;
-          var baseX = tipX - dir[0] * arrowLen, baseY = tipY - dir[1] * arrowLen;
-          var normal = [-dir[1], dir[0]];
-          var chevron = "M " + (baseX + normal[0] * arrowHalf) + " " + (baseY + normal[1] * arrowHalf) +
-            " L " + tipX + " " + tipY + " L " + (baseX - normal[0] * arrowHalf) + " " + (baseY - normal[1] * arrowHalf);
           shapes += '<path class="energy-flow-band" d="' + d + '" fill="none" stroke="url(#' + gid + ')" stroke-width="' + w.toFixed(2) + '" stroke-linecap="round"/>';
-          shapes += '<path class="energy-flow-core" d="' + d + '" fill="none" stroke="url(#' + gid + ')" stroke-width="' + Math.min(3, Math.max(1.75, w * 0.07)).toFixed(2) + '" stroke-linecap="round"/>';
-          shapes += '<path class="energy-flow-chevron" d="' + chevron + '" fill="none" stroke="' + e.stops[e.stops.length - 1].c + '" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>';
+          shapes += '<path class="energy-flow-dots" d="' + d + '" fill="none" stroke="url(#' + gid + ')" stroke-width="' + Math.min(4, Math.max(2.5, w * 0.09)).toFixed(2) + '" stroke-dasharray="0.1 10" stroke-linecap="round"/>';
         });
         svg.innerHTML = defs + "</defs>" + shapes;
       }
