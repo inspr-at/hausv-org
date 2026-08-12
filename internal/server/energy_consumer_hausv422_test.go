@@ -288,6 +288,49 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 	t.Fatal("Sauna fehlt im Energiefluss")
 }
 
+func TestNamedEVGetsUnambiguousHomeChargingMeasurementsOnce(t *testing.T) {
+	ha := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path != "/api/states" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(`[
+			{"entity_id":"sensor.model_x_markus_charger_power","state":"3","attributes":{"friendly_name":"Model X Charger power","device_class":"power","unit_of_measurement":"kW"}},
+			{"entity_id":"sensor.model_x_ladeleistung_zuhause","state":"3","attributes":{"friendly_name":"Model X Ladeleistung zuhause","device_class":"power","unit_of_measurement":"kW"}},
+			{"entity_id":"sensor.model_x_markus_charge_energy_added","state":"10.3","attributes":{"friendly_name":"Model X Charge energy added","device_class":"energy","unit_of_measurement":"kWh"}},
+			{"entity_id":"sensor.model_x_ladeenergie_zuhause","state":"10.4","attributes":{"friendly_name":"Model X Ladeenergie zuhause","device_class":"energy","unit_of_measurement":"kWh"}}
+		]`))
+	}))
+	t.Cleanup(ha.Close)
+	a := consumerAppHAUSV422(t)
+	asset := energy.Asset{ID: "asset-jhw22-model-x", TenantSlug: "jhw22", Kind: "ev", Name: "Model X", Confirmed: true}
+	if err := a.energyStore.UpsertAsset(asset); err != nil {
+		t.Fatal(err)
+	}
+	tenant := a.tenants["jhw22"]
+	tenant.HA = homeassistant.NewConfig(ha.URL, "fixture", "", "", "")
+
+	mappings, _ := a.energyStore.ListMappings("jhw22")
+	updated, changed := a.ensureNamedEVMeasurementMappings(t.Context(), tenant, []energy.Asset{asset}, mappings)
+	if !changed {
+		t.Fatal("eindeutige Model-X-Messwerte wurden nicht automatisch zugeordnet")
+	}
+	got := map[string]string{}
+	for _, mapping := range updated {
+		if mapping.AssetID == asset.ID {
+			got[mapping.Metric] = mapping.EntityID
+		}
+	}
+	if got[energy.MetricConsumerPower] != "sensor.model_x_ladeleistung_zuhause" ||
+		got[energy.MetricConsumerEnergy] != "sensor.model_x_ladeenergie_zuhause" {
+		t.Fatalf("Zuhause-Sensoren wurden nicht bevorzugt: %+v", got)
+	}
+	if _, changedAgain := a.ensureNamedEVMeasurementMappings(t.Context(), tenant, []energy.Asset{asset}, updated); changedAgain {
+		t.Fatal("persistierte Zuordnung darf nicht bei jedem Seitenaufruf neu geschrieben werden")
+	}
+}
+
 func TestConsumerCannotStealWholeHomeMeasurement(t *testing.T) {
 	a := consumerAppHAUSV422(t)
 	assetID := energy.StableAssetID("jhw22", "sauna")
