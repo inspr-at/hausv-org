@@ -721,16 +721,16 @@ async function assertPublicLanding(viewport) {
   if (!response || response.status() !== 200) {
     fail(`Öffentliche Startseite ${viewport.name}: Status ${response?.status() ?? 0}`);
   }
-  if (!(await page.getByRole('heading', { name: 'Alles, was Zuhause anfällt.' }).count())) {
+  if (!(await page.getByRole('heading', { name: 'Ein Portal. Zwei Wege zu einem besseren Zuhause.' }).count())) {
     fail(`Öffentliche Startseite ${viewport.name}: Hauptaussage fehlt`);
   }
-  const features = await page.locator('.feature').count();
-  if (features !== 5) fail(`Öffentliche Startseite ${viewport.name}: ${features} statt 5 Kernaufgaben`);
+  const paths = await page.locator('.product-path').count();
+  if (paths !== 2) fail(`Öffentliche Startseite ${viewport.name}: ${paths} statt 2 Produktwege`);
   for (const text of [
-    'Heute im privaten Pilot',
-    'Nächste Ausbaustufe',
-    'Servicepauschale',
-    '+ 1 € je Einheit und Monat',
+    'HAUSV Gemeinschaft',
+    'HAUSV Zuhause',
+    'Fair Use bis 25 Einheiten',
+    'Drei Jahre kostenlos',
   ]) {
     if (!(await page.getByText(text, { exact: true }).count())) {
       fail(`Öffentliche Startseite ${viewport.name}: „${text}“ fehlt`);
@@ -748,7 +748,7 @@ async function assertPublicLanding(viewport) {
     fail(`Öffentliche Startseite ${viewport.name}: Produktdetails sind ungefragt offen`);
   }
   await productDetails.locator('summary').click();
-  if (!(await page.getByRole('heading', { name: 'Heute nutzbar' }).count())) {
+  if (!(await page.getByRole('heading', { name: 'Keine eigene Verrechnung' }).count())) {
     fail(`Öffentliche Startseite ${viewport.name}: Produktdetails lassen sich nicht öffnen`);
   }
   const metrics = await page.evaluate(() => ({

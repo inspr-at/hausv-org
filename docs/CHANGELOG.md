@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.77.0] - 2026-08-13
+
+### Neu
+
+- **Ein Portal erzählt jetzt zwei klare Wege.** Die öffentliche Seite stellt HAUSV Gemeinschaft für Kommunikation und Selbstverwaltung sowie HAUSV Zuhause für Hauszustand, Wartung und lesende Energieeinblicke gleichwertig nebeneinander.
+- **Der gemeinsame Vertrauenskern wird sichtbar.** Rollen, Dokumente, Messwerte und nachvollziehbare Änderungen verbinden beide Produktwege, ohne ihre unterschiedlichen Aufgaben zu vermischen.
+
+### Verbessert
+
+- **Angebotsgrenzen sind sofort verständlich.** Jahresabrechnung, Buchhaltung, allgemeine aktive Energiesteuerung, offene Dienstleister-Zugänge und öffentlicher Marktplatz werden ausdrücklich nicht als verfügbar dargestellt.
+- **Pilotmodelle bleiben ehrlich getrennt.** Gemeinschafts-Fair-Use und die private Drei-Jahres-/12-Euro-Hypothese stehen getrennt und ausdrücklich unverbindlich; Impressum, Datenschutz und Pilotkontakt sprechen beide Produktwege konsistent an.
+
 ## [0.76.3] - 2026-08-13
 
 ### Verbessert

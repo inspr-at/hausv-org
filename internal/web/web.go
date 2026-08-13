@@ -330,7 +330,7 @@ const PageTemplates = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
-  <meta name="description" content="Sicheres Kommunikations- und Transparenzportal für WEGs, Wohnungen und Mehrparteienhäuser. Aushänge, Termine, Dokumente, Anliegen, Abstimmungen und Schnittstellen ohne eigene Buchhaltung.">
+  <meta name="description" content="HAUSV Gemeinschaft und HAUSV Zuhause verbinden Kommunikation, Hauszustand, Wartung und lesende Energieeinblicke auf einem sicheren, datensparsamen Kern.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
   <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
@@ -372,7 +372,7 @@ const PageTemplates = `
     body[data-hero-mark="out"] .mark3d-veil { opacity: 1; }
     /* The rotating mark is a static block above the hero eyebrow. The inline
        fallback SVG shows until the renderer is ready, then cross-fades away. */
-    .mark3d-stage { position: relative; width: min(540px,100%); aspect-ratio: 1008 / 616; margin: 0 0 10px; filter: drop-shadow(0 0 .8px rgba(24,28,22,.06)) drop-shadow(0 3px 9px rgba(24,28,22,.1)); }
+    .mark3d-stage { position: relative; width: min(380px,100%); aspect-ratio: 1008 / 616; margin: 0 0 8px; filter: drop-shadow(0 0 .8px rgba(24,28,22,.06)) drop-shadow(0 3px 9px rgba(24,28,22,.1)); }
     .mark3d-stage canvas, .mark3d-fallback { transition: opacity .45s ease; }
     .mark3d-fallback { position: absolute; inset: 12% 18%; width: 64%; height: 76%; fill: none; stroke: var(--gold-light); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
     .mark3d-stage[data-mark3d-state="ready"] .mark3d-fallback { opacity: 0; }
@@ -414,26 +414,39 @@ const PageTemplates = `
     /* ---- Panels ---------------------------------------------------------
        One panel language for the whole page: hairline border, 12px radius,
        hairline dividers instead of gaps, so every row shares an edge. */
-    .feature-grid, .product-state, .price-panel { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
-    .feature-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); }
-    /* auto/auto/1fr with a reserved two-line title row: whatever the headline
-       length, every description starts on the same baseline. */
-    .feature { min-width: 0; display: grid; grid-template-rows: auto auto 1fr; align-content: start; padding: 24px 20px 26px; border-right: 1px solid var(--line); }
-    .feature:last-child { border-right: 0; }
-    .feature-icon { width: 40px; height: 40px; margin-bottom: 18px; display: grid; place-items: center; border-radius: var(--radius-md); background: rgba(200,153,63,.1); color: var(--gold-ink); }
-    .feature-icon svg { width: 22px; height: 22px; display: block; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .feature strong { display: block; min-height: 2.3em; margin-bottom: 9px; font-family: var(--font-serif); font-weight: 600; font-size: 21px; line-height: 1.15; }
-    .feature p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; text-wrap: pretty; }
-    /* Subgrid keeps the eyebrow, the headline and the body of both halves on
-       the same three baselines, whatever the headline wraps to. */
-    .product-state { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: auto auto auto; }
-    .product-state > div { grid-row: span 3; display: grid; grid-template-rows: subgrid; align-content: start; padding: 24px 26px 26px; }
-    .product-state > div + div { border-left: 1px solid var(--line); }
-    .product-state span { margin-bottom: 11px; font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
-    .product-state > div:first-child span { color: var(--leaf); }
-    .product-state > div:last-child span { color: var(--gold-ink); }
-    .product-state strong { font-family: var(--font-serif); font-weight: 600; font-size: 24px; line-height: 1.15; }
-    .product-state p { margin: 9px 0 0; max-width: 42ch; color: var(--muted); line-height: 1.55; text-wrap: pretty; }
+    .price-panel { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
+    .product-paths { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+    .product-path { min-width: 0; display: grid; grid-template-rows: auto auto 1fr auto; border: 2px solid var(--line); border-radius: var(--radius-lg); padding: clamp(24px,3vw,34px); background: var(--panel); box-shadow: var(--shadow-panel); }
+    .product-path.community { border-color: rgba(47,107,74,.42); }
+    .product-path.home { border-color: rgba(174,76,48,.38); }
+    .product-path-head { display: grid; grid-template-columns: 54px minmax(0,1fr); gap: 16px; align-items: center; }
+    .product-path-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 50%; background: rgba(47,107,74,.1); color: var(--leaf); }
+    .product-path.home .product-path-icon { background: rgba(174,76,48,.09); color: #a84f39; }
+    .product-path-icon svg { width: 27px; height: 27px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .product-path-kicker { display: block; margin-bottom: 5px; color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .product-path h3 { margin: 0; font-family: var(--font-serif); font-size: clamp(27px,2.5vw,35px); font-weight: 600; line-height: 1.05; }
+    .product-path > p { margin: 22px 0 0; color: var(--muted); font-size: 16px; line-height: 1.58; }
+    .product-capabilities { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; margin: 24px 0 0; padding: 0; list-style: none; }
+    .product-capabilities li { min-height: 44px; display: flex; align-items: center; gap: 9px; border-top: 1px solid var(--line); padding: 10px 0; font-size: 14px; font-weight: 760; }
+    .product-capabilities li::before { content: "✓"; color: var(--leaf); font-weight: 900; }
+    .product-path.home .product-capabilities li::before { color: #a84f39; }
+    .product-path-status { margin-top: 22px; display: flex; align-items: center; gap: 9px; color: var(--soft); font-size: 12px; font-weight: 800; }
+    .product-path-status::before { content: ""; width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(200,153,63,.12); }
+    .shared-core { position: relative; display: grid; grid-template-columns: minmax(190px,.9fr) repeat(4,minmax(0,1fr)); border: 1px solid rgba(47,107,74,.3); border-radius: var(--radius-lg); background: #162018; color: #fff; overflow: hidden; }
+    .shared-core::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg,rgba(200,153,63,.13),transparent 34%,rgba(47,107,74,.12)); }
+    .shared-core > * { position: relative; min-width: 0; padding: 22px 20px; }
+    .shared-core-head { display: grid; align-content: center; border-right: 1px solid rgba(255,255,255,.16); }
+    .shared-core-head span { color: var(--gold-light); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .shared-core-head strong { margin-top: 5px; font-family: var(--font-serif); font-size: 23px; font-weight: 600; line-height: 1.1; }
+    .shared-core-item { display: grid; align-content: center; gap: 5px; border-right: 1px solid rgba(255,255,255,.12); }
+    .shared-core-item:last-child { border-right: 0; }
+    .shared-core-item strong { font-size: 14px; }
+    .shared-core-item span { color: rgba(255,255,255,.68); font-size: 12px; line-height: 1.4; }
+    .boundary-strip { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel-soft); overflow: hidden; }
+    .boundary-strip > div { padding: 21px 22px; }
+    .boundary-strip > div + div { border-left: 1px solid var(--line); }
+    .boundary-strip strong { display: block; font-size: 15px; }
+    .boundary-strip span { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.48; }
 
     /* ---- Disclosures ----------------------------------------------------- */
     .landing-more { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -467,15 +480,6 @@ const PageTemplates = `
     .price-summary > div:first-child span { color: var(--leaf); }
     .price-summary strong { font-family: var(--font-serif); font-weight: 600; font-size: clamp(23px,1.9vw,27px); line-height: 1.14; text-wrap: balance; }
     .price-summary p { margin: 11px 0 0; color: var(--muted); line-height: 1.55; text-wrap: pretty; }
-    /* Label plus three examples in four equal columns as a labelled footer
-       band under the three positions. */
-    .price-examples { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-top: 1px solid var(--line); background: var(--panel-soft); }
-    .price-examples-label { margin: 0; display: grid; align-content: center; padding: 20px 22px 22px 28px; border-right: 1px solid var(--line); color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .12em; line-height: 1.5; text-transform: uppercase; }
-    .price-example { display: grid; align-content: start; gap: 5px; padding: 20px 20px 22px; }
-    .price-example + .price-example { border-left: 1px solid var(--line); }
-    .price-example:last-child { padding-right: 28px; }
-    .price-example b { font-family: var(--font-serif); font-weight: 600; font-size: 26px; line-height: 1; color: var(--gold-ink); }
-    .price-example span { color: var(--muted); font-size: 13px; line-height: 1.45; text-wrap: balance; }
     .price-footnote { margin: 0; max-width: 78ch; color: var(--muted); font-size: 14px; line-height: 1.6; text-wrap: pretty; }
 
     /* ---- Imprint and closing --------------------------------------------- */
@@ -492,22 +496,9 @@ const PageTemplates = `
     footer div { width: min(1180px,100%); margin: 0 auto; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 14px; }
 
     /* ---- Responsive -------------------------------------------------------
-       1100: the five-across strip gets too narrow to read, so it becomes a
-       two-across list. 900: the nav collapses. 640: everything stacks. */
+       900: the nav collapses. 640: everything stacks. */
     @media (max-width: 1100px) {
       .section-head { grid-template-columns: minmax(0,1fr) minmax(0,320px); }
-      .feature-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
-      .feature { grid-template-columns: 40px minmax(0,1fr); grid-template-rows: auto auto; column-gap: 16px; padding: 22px 24px; border-bottom: 1px solid var(--line); }
-      .feature:nth-child(2n), .feature:last-child { border-right: 0; }
-      .feature-icon { grid-row: 1 / span 2; margin-bottom: 0; }
-      .feature strong { grid-column: 2; min-height: 0; margin-bottom: 6px; }
-      .feature p { grid-column: 2; }
-      /* Five cards in two columns leave the fifth alone on its row: it spans
-         and turns into one line, so the row is filled rather than half empty. */
-      .feature:last-child { grid-column: 1 / -1; grid-template-columns: 40px auto minmax(0,1fr); align-items: center; border-bottom: 0; }
-      .feature:last-child .feature-icon { grid-row: 1; }
-      .feature:last-child strong { grid-row: 1; margin-bottom: 0; }
-      .feature:last-child p { grid-column: 3; grid-row: 1; }
       .trust-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .trust-line { padding-top: 24px; }
       .trust-line:nth-child(-n+2) { padding-bottom: 24px; border-bottom: 1px solid var(--line); }
@@ -533,23 +524,18 @@ const PageTemplates = `
       .imprint-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       /* Three cards in two columns would leave a half-width orphan. */
       .imprint-card:last-child { grid-column: 1 / -1; }
-      .price-examples { grid-template-columns: repeat(3,minmax(0,1fr)); }
-      .price-examples-label { grid-column: 1 / -1; padding: 18px 20px 0; border-right: 0; }
-      .price-example { padding: 16px 20px 20px; }
-      .price-example:last-child { padding-right: 20px; }
       /* Three positions side by side get too narrow below 900px: stack them. */
       .price-summary { grid-template-columns: minmax(0,1fr); }
       .price-summary > div + div { border-left: 0; border-top: 1px solid var(--line); }
       .price-summary > div { padding: 22px 20px; }
+      .shared-core { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .shared-core-head { grid-column: 1 / -1; border-right: 0; border-bottom: 1px solid rgba(255,255,255,.16); }
+      .shared-core-item:nth-child(3) { border-right: 0; }
+      .shared-core-item:nth-child(-n+3) { border-bottom: 1px solid rgba(255,255,255,.12); }
     }
     @media (max-width: 640px) {
       /* .price-summary stacks at 900px already. */
-      .feature-grid, .product-state, .price-examples, .imprint-grid, .landing-more-grid { grid-template-columns: minmax(0,1fr); }
-      .feature:nth-child(2n) { border-bottom: 1px solid var(--line); }
-      .feature, .feature:last-child { grid-column: auto; grid-template-columns: 40px minmax(0,1fr); align-items: start; padding: 18px 20px; }
-      .feature:last-child .feature-icon { grid-row: 1 / span 2; }
-      .feature:last-child strong { margin-bottom: 6px; }
-      .feature:last-child p { grid-column: 2; grid-row: 2; }
+      .imprint-grid, .landing-more-grid { grid-template-columns: minmax(0,1fr); }
       /* Stacked, the number belongs beside the line rather than above it —
          four full-width blocks otherwise cost a screen of scrolling. */
       .trust-summary { grid-template-columns: minmax(0,1fr); }
@@ -557,13 +543,13 @@ const PageTemplates = `
       .trust-line:nth-child(-n+3) { padding-bottom: 20px; border-bottom: 1px solid var(--line); }
       .trust-number { grid-row: 1 / span 2; margin-bottom: 0; }
       .trust-line strong, .trust-line p { grid-column: 2; }
-      .product-state > div + div { border-left: 0; border-top: 1px solid var(--line); }
-      .product-state > div { padding: 22px 20px; }
-      .price-examples-label { padding: 18px 20px 0; }
-      .price-example { gap: 3px; padding: 14px 20px 16px; }
-      .price-example:last-child { padding-right: 20px; }
-      .price-example + .price-example { border-left: 0; border-top: 1px solid var(--line); }
       .landing-contact { align-items: flex-start; flex-direction: column; }
+      .product-paths, .boundary-strip { grid-template-columns: minmax(0,1fr); }
+      .boundary-strip > div + div { border-left: 0; border-top: 1px solid var(--line); }
+      .shared-core { grid-template-columns: minmax(0,1fr); }
+      .shared-core-head { grid-column: auto; }
+      .shared-core-item { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.12); }
+      .shared-core-item:last-child { border-bottom: 0; }
     }
     @media (max-width: 520px) {
       .landing-hero { min-height: max(100svh,650px); }
@@ -610,9 +596,9 @@ const PageTemplates = `
       <a class="landing-brand" href="/" aria-label="hausv.org"><span class="landing-mark">{{template "hausvLandingMark" .}}</span></a>
       <button class="landing-menu-toggle" type="button" data-landing-menu-toggle aria-expanded="false" aria-controls="landing-navigation">Menü</button>
       <nav id="landing-navigation" class="landing-links" aria-label="Navigation">
-        <a href="#funktionen">Funktionen</a>
-        <a href="#sicherheit">Sicherheit</a>
-        <a href="#preise">Preise</a>
+        <a href="#produkte">Produkte</a>
+        <a href="#sicherheit">Vertrauen</a>
+        <a href="#modelle">Modelle</a>
         <a href="#impressum">Impressum</a>
         <a href="#kontakt" class="js-mail-link" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a>
       </nav>
@@ -632,42 +618,52 @@ const PageTemplates = `
           <path d="M51.5 27h5"/><path d="M31 21h10"/>
         </svg>
       </div>
-      <div class="landing-eyebrow">Hausverwaltung &amp; Energiemanagement</div>
-      <h1>Alles, was Zuhause anfällt.</h1>
-      <p class="landing-lead">Aushänge, Termine, Dokumente und Anliegen – privat an einem Ort. Energie transparent verstehen und Spitzen gezielt vermeiden.</p>
+      <div class="landing-eyebrow">Gemeinschaft &amp; persönliches Zuhause</div>
+      <h1>Ein Portal. Zwei Wege zu einem besseren Zuhause.</h1>
+      <p class="landing-lead">Gemeinschaften organisieren, was alle betrifft. Im eigenen Zuhause Zustand, Wartung und Energie verstehen. Beides auf einem sicheren, datensparsamen Kern.</p>
       <div class="landing-actions">
         <a class="landing-button primary js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org Pilot anfragen" data-mail-reveal="false">Pilot anfragen</a>
-        <a class="landing-button secondary" href="#funktionen">Funktionen ansehen</a>
+        <a class="landing-button secondary" href="#produkte">Beide Wege ansehen</a>
       </div>
       <p class="landing-access"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Privat · Zugang nach Abstimmung</p>
     </div>
   </section>
 
-  <section id="funktionen" class="section features-section">
+  <section id="produkte" class="section features-section">
     <div class="section-inner">
       <div class="section-head">
         <div>
-          <p class="section-kicker">Der gemeinsame Arbeitsbereich</p>
-          <h2>Was Sie damit tun können.</h2>
+          <p class="section-kicker">Zwei Produktwege</p>
+          <h2>Gemeinsam wohnen. Persönlich verstehen.</h2>
         </div>
-        <p class="section-lead">Fünf klare Aufgaben statt vieler einzelner Werkzeuge.</p>
+        <p class="section-lead">Wählen Sie den Blick, der gerade zählt. Rollen, Dokumente, Aufgaben und Nachweise bleiben darunter verlässlich verbunden.</p>
       </div>
-      <div class="feature-grid">
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 3z"/><path d="M8 9h8M8 13h6"/></svg></span><strong>Informieren</strong><p>Aushänge, Termine und Hinweise erreichen alle am richtigen Ort.</p></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H10z"/><path d="M8.5 8.5h7"/></svg></span><strong>Anliegen klären</strong><p>Melden, nachfragen und den nächsten Schritt nachvollziehen.</p></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><strong>Unterlagen ordnen</strong><p>Dokumente, Protokolle und Nachweise passend freigeben.</p></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M6 18V9M12 18V5M18 18v-6"/><path d="M4 18h16"/></svg></span><strong>Entscheiden</strong><p>Abstimmungen und Übergaben verständlich dokumentieren.</p></div>
-        <div class="feature"><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M4 13h5l2-7 3 12 2-5h4"/><path d="M5 20h14"/></svg></span><strong>Energie verstehen</strong><p>Verbrauch und Spitzen beobachten. Aktive Steuerung bleibt bewusst geschlossen.</p></div>
+      <div class="product-paths">
+        <article class="product-path community" id="gemeinschaft">
+          <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><div><span class="product-path-kicker">Für Mehrparteienhäuser</span><h3>HAUSV Gemeinschaft</h3></div></header>
+          <p>Kommunikation und Selbstverwaltung für Eigentümer, Bewohner, Beirat und Hausverwaltung – nachvollziehbar an einem gemeinsamen Ort.</p>
+          <ul class="product-capabilities"><li>Aushänge &amp; Termine</li><li>Anliegen &amp; Rückfragen</li><li>Dokumente &amp; Übergaben</li><li>Abstimmungen &amp; Verlauf</li></ul>
+          <span class="product-path-status">Im privaten Pilot für ausgewählte Hausgemeinschaften</span>
+        </article>
+        <article class="product-path home" id="zuhause">
+          <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-6h6v6"/></svg></span><div><span class="product-path-kicker">Für Wohnung &amp; Haus</span><h3>HAUSV Zuhause</h3></div></header>
+          <p>Den Zustand des eigenen Zuhauses verstehen, Wartung im Blick behalten und Energie zunächst ausschließlich beobachten – ohne Technikjargon im Alltag.</p>
+          <ul class="product-capabilities"><li>Hauszustand</li><li>Wartung &amp; Unterlagen</li><li>Energiebeobachtung</li><li>Verständlicher Fahrplan</li></ul>
+          <span class="product-path-status">Private Pilotprojekte nach persönlicher Abstimmung</span>
+        </article>
       </div>
-      <div class="product-state" aria-label="Produktstand">
-        <div><span>Heute im privaten Pilot</span><strong>Hausalltag an einem Ort</strong><p>Aushänge, Termine, Anliegen, Dokumente, Abstimmungen, Übergaben und ein verständlicher Verlauf.</p></div>
-        <div><span>Nächste Ausbaustufe</span><strong>Gezielte Übergaben</strong><p>Dienstleister-Zugänge sind derzeit geschlossen. Fachsystem-Anbindungen entstehen schrittweise.</p></div>
+      <div class="shared-core" aria-label="Gemeinsamer Vertrauenskern">
+        <div class="shared-core-head"><span>Ein gemeinsamer Kern</span><strong>Vertrauen verbindet beide Wege.</strong></div>
+        <div class="shared-core-item"><strong>Rollen &amp; Rechte</strong><span>Nur sehen, was zur eigenen Aufgabe gehört.</span></div>
+        <div class="shared-core-item"><strong>Dokumente</strong><span>Geschützt und passend freigegeben.</span></div>
+        <div class="shared-core-item"><strong>Messwerte</strong><span>Lesend, bestätigt und nachvollziehbar.</span></div>
+        <div class="shared-core-item"><strong>Verlauf</strong><span>Änderungen bleiben überprüfbar.</span></div>
       </div>
       <details id="ausblick" class="landing-more">
-        <summary>Produktstand im Detail</summary>
+        <summary>Was bewusst noch nicht Teil des Angebots ist</summary>
         <div class="landing-more-grid">
-          <div><h3>Heute nutzbar</h3><ul><li>Kalender abonnieren</li><li>Kontakte wiederverwenden</li><li>Zahlungsstatus geschützt anzeigen</li><li>Änderungen nachvollziehen</li></ul></div>
-          <div><h3>Bewusst begrenzt</h3><ul><li><small>Vorbereitet</small> Dienstleister-Koordination</li><li><small>Schrittweise</small> Übergabe an bestehende Fachsysteme</li><li>Keine eigene Buchhaltung, kein Mahnwesen und keine Zahlungsaufträge</li></ul></div>
+          <div><h3>Keine eigene Verrechnung</h3><ul><li>Keine Jahresabrechnung oder Buchhaltung</li><li>Kein Mahnwesen und keine Zahlungsaufträge</li><li>Übergabe an bestehende Fachsysteme statt Nachbau</li></ul></div>
+          <div><h3>Geschlossen bis zur Freigabe</h3><ul><li>Keine allgemeine aktive Energiesteuerung</li><li>Keine offenen Dienstleister-Zugänge</li><li>Kein öffentlicher Marktplatz oder Zahlungsfluss</li></ul></div>
         </div>
       </details>
     </div>
@@ -680,7 +676,7 @@ const PageTemplates = `
           <p class="section-kicker">Sicherheit & Datenschutz</p>
           <h2>Vertrauen zuerst.</h2>
         </div>
-        <p class="section-lead">Einfach für die Hausgemeinschaft, nachvollziehbar für den Betrieb.</p>
+        <p class="section-lead">Einfach für Gemeinschaft und Zuhause, nachvollziehbar für den jeweiligen Betrieb.</p>
       </div>
       <div class="trust-summary" aria-label="Sicherheitsprinzipien">
         <div class="trust-line"><span class="trust-number">01</span><strong>Getrennte Häuser</strong><p>Eigene Domain, eigene Rollen, eigene Sichtbarkeit.</p></div>
@@ -691,29 +687,28 @@ const PageTemplates = `
     </div>
   </section>
 
-  <section id="preise" class="section cost-section">
+  <section id="modelle" class="section cost-section">
     <div class="section-inner">
       <div class="section-head">
         <div>
-          <p class="section-kicker">Fair geregelt</p>
-          <h2>Einfach gerechnet.</h2>
+          <p class="section-kicker">Getrennte Modelle</p>
+          <h2>Transparent, aber noch unverbindlich.</h2>
         </div>
-        <p class="section-lead">Der Kern von hausv.org ist Open Source und bleibt kostenlos. Für Hausverwaltungen gibt es den betreuten Betrieb über Augmentoring – mit Servicepauschale und klarem Preis je weiterer Wohneinheit.</p>
+        <p class="section-lead">Der Open-Source-Kern bleibt kostenlos. Die beiden Pilotwege haben bewusst getrennte Annahmen – ohne Online-Vertrag, Paywall oder Zahlungszwang.</p>
       </div>
       <div class="price-panel">
         <div class="price-summary" aria-label="Servicemodell und Preise">
           <div><span>Open-Source-Kern</span><strong>Kostenlos</strong><p>Der Kern der Lösung ist quelloffen (<a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener noreferrer">AGPL-3.0</a>) und bleibt frei nutzbar – heute wie morgen.</p></div>
-          <div><span>Service für Hausverwaltungen</span><strong>Servicepauschale</strong><p>Betreuter Betrieb über Augmentoring. Die Höhe richtet sich nach der Größe der Hausverwaltung und wird im persönlichen Angebot festgelegt – bis 25 Einheiten inkludiert.</p></div>
-          <div><span>Je weitere Wohneinheit</span><strong>+ 1 € je Einheit und Monat</strong><p>Ab der 26. Einheit. Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit.</p></div>
+          <div><span>HAUSV Gemeinschaft</span><strong>Fair Use bis 25 Einheiten</strong><p>Der heutige Fair-Use-Rahmen umfasst bis zu 25 Wohneinheiten. Betreuter Betrieb ist ein separates persönliches Angebot; darüber gilt als Richtwert 1 € je weiterer Einheit und Monat.</p></div>
+          <div><span>HAUSV Zuhause</span><strong>Drei Jahre kostenlos</strong><p>Danach gilt als heutige, unverbindliche Hypothese 12 € pro Jahr. Im Pilot gibt es weder Zahlung noch versteckte Einschränkung.</p></div>
         </div>
-        <div class="price-examples" aria-label="Preisbeispiele für das Servicemodell">
-          <p class="price-examples-label">Rechenbeispiele</p>
-          <div class="price-example"><b>Inkludiert</b><span>Kleinere Verwaltung · bis 25 Einheiten</span></div>
-          <div class="price-example"><b>+ 75 €</b><span>Verwaltung · 100 Einheiten / Monat</span></div>
-          <div class="price-example"><b>+ 475 €</b><span>Größere Verwaltung · 500 Einheiten / Monat</span></div>
+        <div class="boundary-strip" aria-label="Geltungsgrenzen der Modelle">
+          <div><strong>Kein Online-Abschluss</strong><span>Angebot und Pilotfreigabe entstehen immer persönlich.</span></div>
+          <div><strong>Keine automatische Abrechnung</strong><span>HAUSV stellt derzeit weder Rechnung noch Zahlungsauftrag aus.</span></div>
+          <div><strong>Annahmen, kein Versprechen</strong><span>Fair Use und 12-Euro-Hypothese können vor einem späteren Angebot angepasst werden.</span></div>
         </div>
       </div>
-      <p class="price-footnote">Wohnungen und vergleichbare Nutzungseinheiten zählen. Zubehör wie Keller oder Stellplätze zählt nicht automatisch. Angebot und Vertrag entstehen persönlich – es gibt keinen öffentlichen Online-Vertragsabschluss.</p>
+      <p class="price-footnote">Für Gemeinschaften zählen Wohnungen und vergleichbare Nutzungseinheiten; Zubehör wie Keller oder Stellplätze zählt nicht automatisch. Professionelle Einrichtung und betreuten Betrieb für Hausverwaltungen bietet die Augmentoring GmbH nach persönlichem Angebot.</p>
     </div>
   </section>
 
@@ -732,8 +727,8 @@ const PageTemplates = `
         <div class="imprint-card"><strong>Rechtliches im Detail</strong><p><a class="landing-button imprint-more" href="/impressum">Impressum &amp; Infos</a></p></div>
       </div>
       <div class="landing-contact">
-        <div><strong>Passt das zu Ihrer Hausverwaltung?</strong><p>Wir zeigen hausv.org persönlich und klären, wie der betreute Betrieb zu Ihrem Bestand passt.</p></div>
-        <a class="landing-button js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org für Hausverwaltungen" data-mail-reveal="false">Gespräch anfragen</a>
+        <div><strong>Welcher Weg passt zu Ihnen?</strong><p>Wir zeigen HAUSV Gemeinschaft und HAUSV Zuhause persönlich und klären, welcher private Pilot sinnvoll ist.</p></div>
+        <a class="landing-button js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="hausv.org Pilot anfragen" data-mail-reveal="false">Pilot anfragen</a>
       </div>
     </div>
   </section>
@@ -787,10 +782,10 @@ const PageTemplates = `
       <dt>Medieninhaber / Betreiber</dt><dd>{{.OperatorName}} · natürliche Person</dd>
       <dt>Ladungsfähige Anschrift</dt><dd>{{.OperatorAddress}}</dd>
       <dt>Kontakt</dt><dd><a class="js-mail-link" href="/#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a></dd>
-      <dt>Zweck des Angebots</dt><dd>Information und technischer Pilot einer Kommunikations- und Transparenzplattform für Hausgemeinschaften.</dd>
+      <dt>Zweck des Angebots</dt><dd>Information und technischer Pilot für HAUSV Gemeinschaft als Kommunikations- und Transparenzportal sowie HAUSV Zuhause für Hauszustand, Wartung und lesende Energieeinblicke.</dd>
       <dt>Firmenbuch / UID</dt><dd>Nicht anwendbar: privates Projekt einer natürlichen Person, kein Unternehmen und derzeit kein öffentlicher Online-Vertragsabschluss.</dd>
       <dt>Gewerbebehörde / Kammer</dt><dd>Nicht anwendbar: der aktuelle persönliche Pilot wird nicht gewerblich angeboten.</dd>
-      <dt>Blattlinie</dt><dd>Information über hausv.org und digitale Selbstverwaltung für Mehrparteienhäuser.</dd>
+      <dt>Blattlinie</dt><dd>Information über hausv.org, digitale Selbstverwaltung für Mehrparteienhäuser und verständliche, datensparsame Unterstützung für das persönliche Zuhause.</dd>
     </dl>
 
     <h2>Professionelle Services</h2>
@@ -843,7 +838,7 @@ const PageTemplates = `
   <header><a href="/">← Zurück zur Startseite</a><span>{{.AppVersion}}</span></header>
   <main>
     <h1>Datenschutz</h1>
-    <p class="lead">Diese Information beschreibt den tatsächlichen Pilotbetrieb von hausv.org. Sie ist eine dokumentierte Betreiber-Selbstprüfung nach den Grundsätzen der DSGVO, kein Zertifikat und keine unabhängige Rechtsberatung.</p>
+    <p class="lead">Diese Information beschreibt den tatsächlichen Pilotbetrieb von HAUSV Gemeinschaft und HAUSV Zuhause. Sie ist eine dokumentierte Betreiber-Selbstprüfung nach den Grundsätzen der DSGVO, kein Zertifikat und keine unabhängige Rechtsberatung.</p>
 
     <div class="status">
       <strong>Dienstleister-Zugang: {{if .ServiceProviderEnabled}}für den begrenzten Pilot freigegeben{{else}}geschlossen{{end}}</strong>
