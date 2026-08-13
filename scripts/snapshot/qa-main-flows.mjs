@@ -2419,14 +2419,35 @@ async function assertEnergyGeometryMatrix() {
     { name: '1920x1080', width: 1920, height: 1080 },
     { name: '2048x1152', width: 2048, height: 1152 },
   ];
+  const selectedSizes = process.env.HV_QA_ENERGY_PAGE_END_ONLY === 'true'
+    ? sizes.filter(({ width }) => width >= 1920)
+    : sizes;
 
-  for (const size of sizes) {
+  for (const size of selectedSizes) {
     const context = await newContext({ width: size.width, height: size.height });
     const page = await localLogin(context, 'owner@example.com');
     const response = await page.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
     if (!response || response.status() !== 200) {
       fail(`Energie-Geometrie ${size.name}: Cockpit nicht erreichbar`);
     }
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const sidebarAtPageEnd = await page.evaluate((mobile) => {
+      const strip = document.querySelector('.energy-mode-strip')?.getBoundingClientRect();
+      const sidebar = document.querySelector('.sidebar')?.getBoundingClientRect();
+      return {
+        stripTop: strip?.top ?? -1,
+        sidebarTop: sidebar?.top ?? -1,
+        sidebarBottom: sidebar?.bottom ?? -1,
+        viewportHeight: window.innerHeight,
+        delta: mobile && strip && sidebar ? Math.abs(strip.top - sidebar.bottom) : 0,
+      };
+    }, size.width <= 900);
+    if ((size.width <= 900 && sidebarAtPageEnd.delta > 1) ||
+        (size.width > 900 && (sidebarAtPageEnd.stripTop > 1 || Math.abs(sidebarAtPageEnd.sidebarTop) > 1 ||
+          Math.abs(sidebarAtPageEnd.sidebarBottom - sidebarAtPageEnd.viewportHeight) > 1))) {
+      fail(`Energie-Geometrie ${size.name}: Seitenleiste schließt am Seitenende nicht mit dem Viewport ab (${JSON.stringify(sidebarAtPageEnd)})`);
+    }
+    await page.evaluate(() => window.scrollTo(0, 0));
     if (energyRedesignWidths.has(size.width)) {
       await assertEnergyRedesignViewport(page, {
         label: `Energie-Redesign ${size.name}`,

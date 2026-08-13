@@ -1390,6 +1390,10 @@ const PageTemplates = `
     .energy-ui-icon-snowflake { -webkit-mask-image: url("/assets/icons/lucide/snowflake.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/snowflake.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-shower-head { -webkit-mask-image: url("/assets/icons/lucide/shower-head.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/shower-head.svg?v={{.AssetVersion}}"); }
 
+    @media (min-width: 901px) {
+      .app-shell:has(.energy-cockpit-main) { display: block; padding-left: 264px; }
+      .app-shell:has(.energy-cockpit-main) > .sidebar { position: fixed; inset: 0 auto 0 0; width: 264px; height: auto; }
+    }
     .energy-cockpit-main .energy-mode-strip { min-height: 68px; display: flex; gap: 16px; align-items: center; padding-block: 10px; padding-inline: max(18px,calc(50% - 686px)); color: var(--ink); background: #fffefa; border-bottom: 1px solid var(--line); box-shadow: 0 5px 18px rgba(31,39,32,.04); }
     .energy-cockpit-main .energy-mode-strip.active { color: #5f2f28; background: #fffaf7; border-bottom-color: rgba(145,73,61,.24); }
     .energy-mode-state { min-height: 46px; display: inline-flex; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 7px 26px 7px 10px; background: rgba(255,255,255,.56); }

@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.76.3] - 2026-08-13
+
+### Verbessert
+
+- **Die Navigation bleibt auch am Ende der langen Energieübersicht vollständig stehen.** Auf großen Bildschirmen schließt die Seitenleiste weiterhin bündig mit dem Browserfenster ab.
+
 ## [0.76.2] - 2026-08-12
 
 ### Verbessert
