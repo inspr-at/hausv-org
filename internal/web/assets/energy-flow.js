@@ -265,6 +265,7 @@
     var slots = item.measurements || [
       { name: "consumer_power_entity", label: "Aktuelle Leistung", kind: "power", entity: item.powerEntity || "" },
       { name: "consumer_energy_entity", label: "Energiezähler", kind: "energy", entity: item.energyEntity || "" },
+      { name: "consumer_soc_entity", label: "Ladestand", kind: "percentage", entity: item.socEntity || "" },
     ];
     if (fields) {
       fields.replaceChildren();

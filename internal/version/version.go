@@ -93,10 +93,12 @@ func Notes() []Note {
 		{
 			Version:  "0.76.3",
 			Date:     "13. August 2026",
-			Kind:     "Energie",
-			Headline: "Die Navigation bleibt bis zum Seitenende vollständig sichtbar.",
-			Intro:    "Auch auf großen Bildschirmen schließt die Seitenleiste der langen Energieübersicht bündig mit dem Browserfenster ab.",
-			Items:    []NoteItem{},
+			Kind:     "Energie & Navigation",
+			Headline: "Ladestände werden vollständiger sichtbar.",
+			Intro:    "Speicher und entsprechend konfigurierte Verbraucher verbinden Prozentwert und Energiemenge in einer Unterzeile; die Seitenleiste bleibt zugleich bis zum Seitenende vollständig stehen.",
+			Items: []NoteItem{
+				{Label: "Navigation", Text: "Auch auf großen Bildschirmen schließt die Seitenleiste der langen Energieübersicht bündig mit dem Browserfenster ab."},
+			},
 		},
 		{
 			Version:  "0.76.2",

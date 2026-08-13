@@ -2553,10 +2553,14 @@ func consumerMeasurementKind(state homeassistant.EntityState) string {
 }
 
 func consumerMeasurementMetric(kind string) string {
-	if kind == "power" {
+	switch kind {
+	case "power":
 		return energy.MetricConsumerPower
+	case "percentage":
+		return energy.MetricBatterySOC
+	default:
+		return energy.MetricConsumerEnergy
 	}
-	return energy.MetricConsumerEnergy
 }
 
 func compactEnergyMatchKey(value string) string {
@@ -2789,13 +2793,18 @@ type energyConsumerMappingPlan struct {
 	upserts   []energy.EntityMapping
 }
 
-func (a *app) planEnergyConsumerMappings(ctx context.Context, tenant tenantConfig, assetID, powerEntity, energyEntity string) (energyConsumerMappingPlan, error) {
+func (a *app) planEnergyConsumerMappings(ctx context.Context, tenant tenantConfig, assetID, powerEntity, energyEntity, socEntity string) (energyConsumerMappingPlan, error) {
 	desired := map[string]string{
-		"power":  strings.ToLower(strings.TrimSpace(powerEntity)),
-		"energy": strings.ToLower(strings.TrimSpace(energyEntity)),
+		"power":      strings.ToLower(strings.TrimSpace(powerEntity)),
+		"energy":     strings.ToLower(strings.TrimSpace(energyEntity)),
+		"percentage": strings.ToLower(strings.TrimSpace(socEntity)),
 	}
-	if desired["power"] != "" && desired["power"] == desired["energy"] {
-		return energyConsumerMappingPlan{}, fmt.Errorf("one entity cannot fill both measurement slots")
+	seenDesired := map[string]bool{}
+	for _, entityID := range desired {
+		if entityID != "" && seenDesired[entityID] {
+			return energyConsumerMappingPlan{}, fmt.Errorf("one entity cannot fill multiple measurement slots")
+		}
+		seenDesired[entityID] = entityID != ""
 	}
 	mappings, err := a.energyStore.ListMappings(tenant.Slug)
 	if err != nil {
@@ -2813,6 +2822,8 @@ func (a *app) planEnergyConsumerMappings(ctx context.Context, tenant tenantConfi
 			current["power"] = mapping
 		case energy.MetricConsumerEnergy:
 			current["energy"] = mapping
+		case energy.MetricBatterySOC:
+			current["percentage"] = mapping
 		}
 	}
 	plan := energyConsumerMappingPlan{}
@@ -3218,7 +3229,7 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 	if r.FormValue("measurements_present") == "1" {
 		var planErr error
 		mappingPlan, planErr = a.planEnergyConsumerMappings(r.Context(), ac.tenant, asset.ID,
-			r.FormValue("consumer_power_entity"), r.FormValue("consumer_energy_entity"))
+			r.FormValue("consumer_power_entity"), r.FormValue("consumer_energy_entity"), r.FormValue("consumer_soc_entity"))
 		if planErr != nil {
 			http.Redirect(w, r, "/app/energie?verbraucher=messwerte", http.StatusSeeOther)
 			return
@@ -3279,6 +3290,7 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 			"icon": asset.Metadata["icon"], "priority": strconv.Itoa(priority),
 			"power_entity":  strings.TrimSpace(r.FormValue("consumer_power_entity")),
 			"energy_entity": strings.TrimSpace(r.FormValue("consumer_energy_entity")),
+			"soc_entity":    strings.TrimSpace(r.FormValue("consumer_soc_entity")),
 		},
 	})
 	http.Redirect(w, r, "/app/energie?verbraucher="+notice, http.StatusSeeOther)
@@ -4064,6 +4076,20 @@ func energyAssetFlowColor(asset energy.Asset) string {
 	return normalizeEnergyFlowColor(asset.Metadata["color"], asset.Kind)
 }
 
+func joinEnergySecondaryValues(values ...string) string {
+	parts := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" && value != "–" {
+			parts = append(parts, value)
+		}
+	}
+	if len(parts) == 0 {
+		return "–"
+	}
+	return strings.Join(parts, " · ")
+}
+
 func energyFlowAssetMetric(metrics []energyMetricView, assetID, metric string) (energyMetricView, bool) {
 	for _, reading := range metrics {
 		if reading.AssetID == assetID && reading.Metric == metric {
@@ -4263,7 +4289,8 @@ func energyFlowNodeSlots(nodeType, assetID string, mappings []energy.EntityMappi
 	case "parking":
 		definitions = append(definitions,
 			energyFlowMeasurementSlot{Name: "consumer_power_entity", Label: "Aktuelle Ladeleistung", Kind: "power", Metric: energy.MetricConsumerPower},
-			energyFlowMeasurementSlot{Name: "consumer_energy_entity", Label: "Ladeenergiezähler", Kind: "energy", Metric: energy.MetricConsumerEnergy})
+			energyFlowMeasurementSlot{Name: "consumer_energy_entity", Label: "Ladeenergiezähler", Kind: "energy", Metric: energy.MetricConsumerEnergy},
+			energyFlowMeasurementSlot{Name: "consumer_soc_entity", Label: "Ladestand", Kind: "percentage", Metric: energy.MetricBatterySOC})
 	}
 	for index := range definitions {
 		definitions[index].EntityID = energyFlowMappingEntity(mappings, assetID, definitions[index].Metric)
@@ -4306,8 +4333,9 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 			cfg.Producers[len(cfg.Producers)-1].Secondary = reading.Value
 		}
 	}
-	if live.HasBattery || live.HasBatterySOC {
-		storageAsset := energyFlowNodeAsset(assets, tenantSlug, "storage")
+	storageAsset := energyFlowNodeAsset(assets, tenantSlug, "storage")
+	storageSOC, hasStorageSOC := energyFlowAssetMetric(metrics, storageAsset.ID, energy.MetricBatterySOC)
+	if live.HasBattery || hasStorageSOC {
 		watts := math.Abs(energyPowerWatts(&live.Battery))
 		mode := "wartet"
 		if live.HasBattery && watts >= 1 {
@@ -4330,14 +4358,11 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 			SecondaryLabel: energyAssetSecondaryLabel(storageAsset, "storage"), Color: energyAssetFlowColor(storageAsset),
 			Mode: mode, Flow: flow, Sub: storageAsset.Name + " · " + mode,
 		}
-		if live.HasBatterySOC {
-			cfg.Storage.Secondary = live.BatterySOC.Value
+		if hasStorageSOC {
+			cfg.Storage.Secondary = storageSOC.Value
 		}
 		if reading, ok := energyFlowAssetMetric(metrics, storageAsset.ID, energy.MetricConsumerEnergy); ok {
-			cfg.Storage.Secondary = reading.Value
-			if strings.TrimSpace(storageAsset.Metadata["secondary_label"]) == "" {
-				cfg.Storage.SecondaryLabel = "Speicherenergie heute"
-			}
+			cfg.Storage.Secondary = joinEnergySecondaryValues(cfg.Storage.Secondary, reading.Value)
 		}
 	}
 	if live.HasGrid {
@@ -4359,6 +4384,7 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 	}
 	consumerPower := map[string]energyMetricView{}
 	consumerEnergy := map[string]energyMetricView{}
+	consumerSOC := map[string]energyMetricView{}
 	for _, metric := range metrics {
 		switch metric.Metric {
 		case energy.MetricConsumerPower:
@@ -4368,6 +4394,10 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 		case energy.MetricConsumerEnergy:
 			if _, exists := consumerEnergy[metric.AssetID]; metric.AssetID != "" && !exists {
 				consumerEnergy[metric.AssetID] = metric
+			}
+		case energy.MetricBatterySOC:
+			if _, exists := consumerSOC[metric.AssetID]; metric.AssetID != "" && !exists {
+				consumerSOC[metric.AssetID] = metric
 			}
 		}
 	}
@@ -4384,6 +4414,8 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 			measurementEntities[mapping.AssetID]["power"] = mapping.EntityID
 		case energy.MetricConsumerEnergy:
 			measurementEntities[mapping.AssetID]["energy"] = mapping.EntityID
+		case energy.MetricBatterySOC:
+			measurementEntities[mapping.AssetID]["soc"] = mapping.EntityID
 		}
 	}
 	for _, asset := range sortEnergyConsumers(assets) {
@@ -4413,16 +4445,24 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 		} else if reading, ok := consumerEnergy[asset.ID]; ok {
 			state = reading.Value + " · Home Assistant"
 		}
+		if reading, ok := consumerSOC[asset.ID]; ok {
+			secondary = joinEnergySecondaryValues(reading.Value, secondary)
+		}
+		secondaryLabel := energyAssetSecondaryLabel(asset, "consumer")
+		if _, hasSOC := consumerSOC[asset.ID]; hasSOC && strings.TrimSpace(asset.Metadata["secondary_label"]) == "" {
+			secondaryLabel = "Ladestand"
+		}
 		cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
 			ID: asset.ID, Icon: energyConsumerIcon(asset), Title: title,
 			Kind: asset.Kind, RatedPower: ratedPower, Flexibility: asset.Flexibility,
 			PowerEntity: measurementEntities[asset.ID]["power"], EnergyEntity: measurementEntities[asset.ID]["energy"],
-			Secondary: secondary, SecondaryLabel: energyAssetSecondaryLabel(asset, "consumer"), Color: energyAssetFlowColor(asset),
+			Secondary: secondary, SecondaryLabel: secondaryLabel, Color: energyAssetFlowColor(asset),
 			State: state, KW: kw, Active: active, NodeType: "consumer", Deletable: true,
 			Priority: energyConsumerPriority(asset),
 			Measurements: []energyFlowMeasurementSlot{
 				{Name: "consumer_power_entity", Label: "Aktuelle Leistung", Kind: "power", EntityID: measurementEntities[asset.ID]["power"]},
 				{Name: "consumer_energy_entity", Label: "Energiezähler", Kind: "energy", EntityID: measurementEntities[asset.ID]["energy"]},
+				{Name: "consumer_soc_entity", Label: "Ladestand", Kind: "percentage", EntityID: measurementEntities[asset.ID]["soc"]},
 			},
 		})
 	}
@@ -4451,6 +4491,7 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 				Measurements: []energyFlowMeasurementSlot{
 					{Name: "consumer_power_entity", Label: "Aktuelle Ladeleistung", Kind: "power", EntityID: firstNonEmpty(energyFlowMappingEntity(mappings, parkingAsset.ID, energy.MetricConsumerPower), charging.PowerEntity)},
 					{Name: "consumer_energy_entity", Label: "Ladeenergiezähler", Kind: "energy", EntityID: firstNonEmpty(energyFlowMappingEntity(mappings, parkingAsset.ID, energy.MetricConsumerEnergy), charging.EnergyEntity)},
+					{Name: "consumer_soc_entity", Label: "Ladestand", Kind: "percentage", EntityID: energyFlowMappingEntity(mappings, parkingAsset.ID, energy.MetricBatterySOC)},
 				},
 			})
 		}
