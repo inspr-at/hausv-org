@@ -227,7 +227,7 @@ async function captureViewport(viewport) {
   }
   const contactHref = await page.locator('.landing-hero .landing-button.primary').getAttribute('href');
   if (!contactHref?.startsWith('mailto:')) throw new Error(`Landing ${viewport.name}: primary contact action is not ready`);
-  for (const id of ['funktionen', 'sicherheit', 'preise', 'impressum', 'kontakt']) {
+  for (const id of ['produkte', 'sicherheit', 'modelle', 'impressum', 'kontakt']) {
     if (!(await page.locator(`#${id}`).count())) throw new Error(`Landing ${viewport.name}: #${id} destination is missing`);
   }
 
@@ -248,7 +248,7 @@ async function captureViewport(viewport) {
   const productDetails = page.locator('details.landing-more');
   await productDetails.locator('summary').click();
   await screenshot(page, `${screenshotPrefix}-landing-product-details-${viewport.name}`);
-  if (!(await productDetails.getByRole('heading', { name: 'Heute nutzbar' }).isVisible())) {
+  if (!(await productDetails.getByRole('heading', { name: 'Keine eigene Verrechnung' }).isVisible())) {
     throw new Error(`Landing ${viewport.name}: product disclosure does not open`);
   }
   await productDetails.locator('summary').click();

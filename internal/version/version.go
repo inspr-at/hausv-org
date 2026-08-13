@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.77.0",
+			Date:     "13. August 2026",
+			Kind:     "Produkt & Positionierung",
+			Headline: "Gemeinschaft und Zuhause werden als zwei klare Wege sichtbar.",
+			Intro:    "Die öffentliche Seite verbindet beide Produktlinien über einen gemeinsamen Vertrauenskern und hält Preise, Pilotstatus und noch geschlossene Funktionen sauber auseinander.",
+			Items: []NoteItem{
+				{Label: "HAUSV Gemeinschaft", Text: "Kommunikation, Dokumente, Anliegen und Entscheidungen für Mehrparteienhäuser stehen als eigener Produktweg im Mittelpunkt."},
+				{Label: "HAUSV Zuhause", Text: "Hauszustand, Wartung, Energiebeobachtung und ein verständlicher Fahrplan werden ohne Technikjargon erklärt."},
+				{Label: "Ehrliche Grenzen", Text: "Verrechnung, allgemeine aktive Steuerung, offene Dienstleister-Zugänge und Marktplatz bleiben ausdrücklich außerhalb des aktuellen Angebots."},
+			},
+		},
+		{
 			Version:  "0.76.3",
 			Date:     "13. August 2026",
 			Kind:     "Energie & Navigation",

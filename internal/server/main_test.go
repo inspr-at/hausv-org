@@ -1361,25 +1361,25 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 	}
 	body := rr.Body.String()
 	for _, want := range []string{
-		"Alles, was Zuhause anfällt.",
+		"Ein Portal. Zwei Wege zu einem besseren Zuhause.",
+		"HAUSV Gemeinschaft",
+		"HAUSV Zuhause",
+		"Vertrauen verbindet beide Wege.",
+		"Hauszustand",
+		"Wartung &amp; Unterlagen",
+		"Energiebeobachtung",
+		"Verständlicher Fahrplan",
 		"Mehrparteien",
 		"hello [at] hausv [dot] org",
 		"Privat · Zugang nach Abstimmung",
 		"Open-Source-Kern",
 		"quelloffen",
 		"AGPL-3.0",
-		"Service für Hausverwaltungen",
-		"Servicepauschale",
-		"bis 25 Einheiten inkludiert",
-		"Ab der 26. Einheit.",
-		"1 € je Einheit und Monat",
-		"Gemeint ist eine Wohnung oder vergleichbare Nutzungseinheit.",
-		"Kleinere Verwaltung · bis 25 Einheiten",
-		"Verwaltung · 100 Einheiten / Monat",
-		"Größere Verwaltung · 500 Einheiten / Monat",
-		"Inkludiert",
-		"+ 75 €",
-		"+ 475 €",
+		"Fair Use bis 25 Einheiten",
+		"1 € je weiterer Einheit und Monat",
+		"Drei Jahre kostenlos",
+		"12 € pro Jahr",
+		"unverbindliche Hypothese",
 		"Impressum",
 		"Ing. Markus Barta",
 		"natürliche Person",
@@ -1388,41 +1388,37 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Impressum &amp; Infos",
 		"Datensparsam",
 		"KI nur mit Opt-in",
-		"Keine eigene Buchhaltung",
-		"kein Mahnwesen",
+		"Keine Jahresabrechnung oder Buchhaltung",
+		"Kein Mahnwesen",
 		"keine Zahlungsaufträge",
-		"Heute im privaten Pilot",
-		"Nächste Ausbaustufe",
-		"Produktstand im Detail",
-		"Dienstleister-Koordination",
-		"Übergabe an bestehende Fachsysteme",
-		"Kalender abonnieren",
-		"Kontakte wiederverwenden",
-		"Zahlungsstatus geschützt anzeigen",
+		"Keine allgemeine aktive Energiesteuerung",
+		"Keine offenen Dienstleister-Zugänge",
+		"Kein öffentlicher Marktplatz oder Zahlungsfluss",
+		"Übergabe an bestehende Fachsysteme statt Nachbau",
 		`/assets/landing.js`,
 		"/assets/hausv-landing-hero.png",
 		"mark3d-stage",
 		"mark3d-fallback",
 		"Sicherheit & Datenschutz",
-		"Einfach gerechnet.",
+		"Transparent, aber noch unverbindlich.",
 		"Zubehör wie Keller oder Stellplätze",
-		"Passt das zu Ihrer Hausverwaltung?",
-		"Gespräch anfragen",
+		"Welcher Weg passt zu Ihnen?",
+		"Pilot anfragen",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
 		}
 	}
-	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "500 €", "900 €", "Ladungsfähige Anschrift", "Janischhofweg 22/11", "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "ebInterface", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
+	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Home Assistant", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "500 €", "900 €", "Ladungsfähige Anschrift", "Janischhofweg 22/11", "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "ebInterface", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
 	}
-	if got := strings.Count(body, `class="feature"`); got != 5 {
-		t.Fatalf("focused feature count = %d, want 5", got)
+	if got := strings.Count(body, `class="product-path `); got != 2 {
+		t.Fatalf("product path count = %d, want 2", got)
 	}
-	if strings.Count(body, `class="product-state"`) != 1 {
-		t.Fatal("landing should separate the current pilot from the next expansion exactly once")
+	if strings.Count(body, `class="shared-core"`) != 1 {
+		t.Fatal("landing should show the shared trust core exactly once")
 	}
 	if strings.Contains(body, `class="roadmap-grid"`) || strings.Contains(body, `class="use-grid"`) {
 		t.Fatal("landing should not render the old repetitive roadmap or role card grids")
@@ -1481,7 +1477,7 @@ func TestImprintPageCarriesLegalDetails(t *testing.T) {
 		"Professionelle Services",
 		"Augmentoring GmbH",
 		"GNU AGPL-3.0",
-		"Betreiber-Selbstprüfung vom 29. Juli 2026",
+		"Betreiber-Selbstprüfung vom 13. August 2026",
 		"§ 5 ECG",
 		"§ 24 MedienG",
 		"Keine externe Zertifizierung",
