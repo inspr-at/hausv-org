@@ -302,7 +302,8 @@ func TestNamedEVGetsUnambiguousHomeChargingMeasurementsOnce(t *testing.T) {
 			{"entity_id":"sensor.model_x_markus_charger_power","state":"3","attributes":{"friendly_name":"Model X Charger power","device_class":"power","unit_of_measurement":"kW"}},
 			{"entity_id":"sensor.model_x_ladeleistung_zuhause","state":"3","attributes":{"friendly_name":"Model X Ladeleistung zuhause","device_class":"power","unit_of_measurement":"kW"}},
 			{"entity_id":"sensor.model_x_markus_charge_energy_added","state":"10.3","attributes":{"friendly_name":"Model X Charge energy added","device_class":"energy","unit_of_measurement":"kWh"}},
-			{"entity_id":"sensor.model_x_ladeenergie_zuhause","state":"10.4","attributes":{"friendly_name":"Model X Ladeenergie zuhause","device_class":"energy","unit_of_measurement":"kWh"}}
+			{"entity_id":"sensor.model_x_ladeenergie_zuhause","state":"10.4","attributes":{"friendly_name":"Model X Ladeenergie zuhause","device_class":"energy","unit_of_measurement":"kWh"}},
+			{"entity_id":"sensor.model_x_markus_battery_level","state":"72","attributes":{"friendly_name":"Model X Battery level","device_class":"battery","unit_of_measurement":"%"}}
 		]`))
 	}))
 	t.Cleanup(ha.Close)
@@ -326,7 +327,8 @@ func TestNamedEVGetsUnambiguousHomeChargingMeasurementsOnce(t *testing.T) {
 		}
 	}
 	if got[energy.MetricConsumerPower] != "sensor.model_x_ladeleistung_zuhause" ||
-		got[energy.MetricConsumerEnergy] != "sensor.model_x_ladeenergie_zuhause" {
+		got[energy.MetricConsumerEnergy] != "sensor.model_x_ladeenergie_zuhause" ||
+		got[energy.MetricBatterySOC] != "sensor.model_x_markus_battery_level" {
 		t.Fatalf("Zuhause-Sensoren wurden nicht bevorzugt: %+v", got)
 	}
 	if _, changedAgain := a.ensureNamedEVMeasurementMappings(t.Context(), tenant, []energy.Asset{asset}, updated); changedAgain {

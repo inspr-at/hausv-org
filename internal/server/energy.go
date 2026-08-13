@@ -2590,7 +2590,8 @@ func namedEVMeasurementCandidate(name, kind string, states []homeassistant.Entit
 			continue
 		}
 		score := 100
-		if kind == "power" {
+		switch kind {
+		case "power":
 			switch {
 			case strings.Contains(haystack, "ladeleistungzuhause"):
 				score += 80
@@ -2599,13 +2600,22 @@ func namedEVMeasurementCandidate(name, kind string, states []homeassistant.Entit
 			case strings.Contains(haystack, "ladeleistung") || strings.Contains(haystack, "chargingpower"):
 				score += 40
 			}
-		} else {
+		case "energy":
 			switch {
 			case strings.Contains(haystack, "ladeenergiezuhause"):
 				score += 80
 			case strings.Contains(haystack, "chargeenergyadded"):
 				score += 60
 			case strings.Contains(haystack, "ladeenergie") || strings.Contains(haystack, "chargingenergy"):
+				score += 40
+			}
+		case "percentage":
+			switch {
+			case strings.Contains(haystack, "batterylevel") || strings.Contains(haystack, "ladestand"):
+				score += 80
+			case strings.Contains(haystack, "stateofcharge") || strings.Contains(haystack, "batterypercentage"):
+				score += 60
+			case strings.Contains(haystack, "soc"):
 				score += 40
 			}
 		}
@@ -2636,7 +2646,7 @@ func (a *app) ensureNamedEVMeasurementMappings(ctx context.Context, tenant tenan
 	}
 	needsScan := false
 	for _, asset := range assets {
-		if asset.Kind == "ev" && (!mapped[asset.ID][energy.MetricConsumerPower] || !mapped[asset.ID][energy.MetricConsumerEnergy]) {
+		if asset.Kind == "ev" && (!mapped[asset.ID][energy.MetricConsumerPower] || !mapped[asset.ID][energy.MetricConsumerEnergy] || !mapped[asset.ID][energy.MetricBatterySOC]) {
 			needsScan = true
 			break
 		}
@@ -2658,7 +2668,7 @@ func (a *app) ensureNamedEVMeasurementMappings(ctx context.Context, tenant tenan
 		if mapped[asset.ID] == nil {
 			mapped[asset.ID] = map[string]bool{}
 		}
-		for _, kind := range []string{"power", "energy"} {
+		for _, kind := range []string{"power", "energy", "percentage"} {
 			metric := consumerMeasurementMetric(kind)
 			if mapped[asset.ID][metric] {
 				continue
