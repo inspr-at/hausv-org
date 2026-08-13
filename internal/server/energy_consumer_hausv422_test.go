@@ -218,6 +218,7 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 		states := `[
 			{"entity_id":"sensor.sauna_power","state":"7.2","attributes":{"friendly_name":"Sauna Leistung","device_class":"power","unit_of_measurement":"kW"}},
 			{"entity_id":"sensor.sauna_energy","state":"42","attributes":{"friendly_name":"Sauna Energie","device_class":"energy","unit_of_measurement":"kWh"}},
+			{"entity_id":"sensor.sauna_soc","state":"65","attributes":{"friendly_name":"Sauna Ladestand","device_class":"battery","unit_of_measurement":"%"}},
 			{"entity_id":"sensor.temperature","state":"22","attributes":{"friendly_name":"Temperatur","device_class":"temperature","unit_of_measurement":"°C"}}
 		]`
 		switch r.URL.Path {
@@ -227,6 +228,8 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 			_, _ = w.Write([]byte(`{"entity_id":"sensor.sauna_power","state":"7.2","attributes":{"friendly_name":"Sauna Leistung","device_class":"power","unit_of_measurement":"kW"}}`))
 		case "/api/states/sensor.sauna_energy":
 			_, _ = w.Write([]byte(`{"entity_id":"sensor.sauna_energy","state":"42","attributes":{"friendly_name":"Sauna Energie","device_class":"energy","unit_of_measurement":"kWh"}}`))
+		case "/api/states/sensor.sauna_soc":
+			_, _ = w.Write([]byte(`{"entity_id":"sensor.sauna_soc","state":"65","attributes":{"friendly_name":"Sauna Ladestand","device_class":"battery","unit_of_measurement":"%"}}`))
 		default:
 			http.NotFound(w, r)
 		}
@@ -245,15 +248,15 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 	if err := json.Unmarshal(optionsResponse.Body.Bytes(), &options); err != nil {
 		t.Fatalf("Messwertoptionen dekodieren: %v", err)
 	}
-	if options.Status != "ok" || len(options.Entities) != 2 {
-		t.Fatalf("erwartet nur Leistungs-/Energie-Entities, war %+v", options)
+	if options.Status != "ok" || len(options.Entities) != 3 {
+		t.Fatalf("erwartet Leistungs-, Energie- und Ladestands-Entities, war %+v", options)
 	}
 
 	assetID := energy.StableAssetID("jhw22", "sauna")
 	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
 		"asset_id": {assetID}, "name": {"Sauna"}, "kind": {"sauna"}, "priority": {"1"},
 		"icon": {"alarm-clock"}, "color": {"#7755aa"}, "secondary_label": {"Verbrauch heute"}, "flexibility": {"shift"}, "measurements_present": {"1"},
-		"consumer_power_entity": {"sensor.sauna_power"}, "consumer_energy_entity": {"sensor.sauna_energy"},
+		"consumer_power_entity": {"sensor.sauna_power"}, "consumer_energy_entity": {"sensor.sauna_energy"}, "consumer_soc_entity": {"sensor.sauna_soc"},
 	})
 	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
 		t.Fatalf("Verbraucher speichern: status=%d location=%s", response.Code, response.Header().Get("Location"))
@@ -266,8 +269,8 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 		}
 		seen[mapping.Metric] = true
 	}
-	if !seen[energy.MetricConsumerPower] || !seen[energy.MetricConsumerEnergy] {
-		t.Fatalf("beide Verbraucher-Messwerte müssen getrennt zugeordnet sein: %+v", mappings)
+	if !seen[energy.MetricConsumerPower] || !seen[energy.MetricConsumerEnergy] || !seen[energy.MetricBatterySOC] {
+		t.Fatalf("alle drei Verbraucher-Messwerte müssen getrennt zugeordnet sein: %+v", mappings)
 	}
 	assets, _ := a.energyStore.ListAssets("jhw22")
 	for _, asset := range assets {
@@ -279,7 +282,7 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 	cfg := buildEnergyFlowConfig("haus", energyLiveView{}, assets, mappings, metrics, parkingLiveView{}, true)
 	for _, consumer := range cfg.Consumers {
 		if consumer.ID == assetID {
-			if consumer.KW != 7.2 || consumer.PowerEntity != "sensor.sauna_power" || consumer.EnergyEntity != "sensor.sauna_energy" || consumer.Secondary == "" || consumer.SecondaryLabel != "Verbrauch heute" || consumer.Color != "#7755aa" {
+			if consumer.KW != 7.2 || consumer.PowerEntity != "sensor.sauna_power" || consumer.EnergyEntity != "sensor.sauna_energy" || consumer.Secondary != "65\u00a0% · 42\u00a0kWh" || consumer.SecondaryLabel != "Verbrauch heute" || consumer.Color != "#7755aa" || len(consumer.Measurements) != 3 {
 				t.Fatalf("Verbraucher erhält nicht seine eigenen Live-Messwerte: %+v", consumer)
 			}
 			return
@@ -452,7 +455,7 @@ func TestParkingChargingUsesNormalEditableConsumerContract(t *testing.T) {
 			continue
 		}
 		found = true
-		if consumer.NodeType != "parking" || !consumer.Deletable || consumer.KW != 3.6 || len(consumer.Measurements) != 2 {
+		if consumer.NodeType != "parking" || !consumer.Deletable || consumer.KW != 3.6 || len(consumer.Measurements) != 3 {
 			t.Fatalf("Parkplatz verwendet nicht den normalen Verbraucher-Vertrag: %+v", consumer)
 		}
 	}
@@ -479,12 +482,15 @@ func TestStorageChargePowerIsExplicitlyConfigurableAndDisplayed(t *testing.T) {
 		case "/api/states":
 			_, _ = w.Write([]byte(`[
 				{"entity_id":"sensor.storage_charge","state":"2400","attributes":{"friendly_name":"Speicher Ladeleistung","device_class":"power","unit_of_measurement":"W"}},
-				{"entity_id":"sensor.storage_soc","state":"85","attributes":{"friendly_name":"Speicher Ladestand","device_class":"battery","unit_of_measurement":"%"}}
+				{"entity_id":"sensor.storage_soc","state":"85","attributes":{"friendly_name":"Speicher Ladestand","device_class":"battery","unit_of_measurement":"%"}},
+				{"entity_id":"sensor.storage_energy","state":"4.3","attributes":{"friendly_name":"Speicher Energie","device_class":"energy","unit_of_measurement":"kWh"}}
 			]`))
 		case "/api/states/sensor.storage_charge":
 			_, _ = w.Write([]byte(`{"entity_id":"sensor.storage_charge","state":"2400","attributes":{"friendly_name":"Speicher Ladeleistung","device_class":"power","unit_of_measurement":"W"}}`))
 		case "/api/states/sensor.storage_soc":
 			_, _ = w.Write([]byte(`{"entity_id":"sensor.storage_soc","state":"85","attributes":{"friendly_name":"Speicher Ladestand","device_class":"battery","unit_of_measurement":"%"}}`))
+		case "/api/states/sensor.storage_energy":
+			_, _ = w.Write([]byte(`{"entity_id":"sensor.storage_energy","state":"4.3","attributes":{"friendly_name":"Speicher Energie","device_class":"energy","unit_of_measurement":"kWh"}}`))
 		default:
 			http.NotFound(w, r)
 		}
@@ -502,6 +508,7 @@ func TestStorageChargePowerIsExplicitlyConfigurableAndDisplayed(t *testing.T) {
 		"asset_id": {storageID}, "node_type": {"storage"}, "name": {"Hausspeicher"}, "icon": {"battery-charging"},
 		"color": {"#336699"}, "secondary_label": {"Akkustand"},
 		"battery_charge_entity": {"sensor.storage_charge"}, "battery_soc_entity": {"sensor.storage_soc"},
+		"secondary_energy_entity": {"sensor.storage_energy"},
 	})
 	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
 		t.Fatalf("Speicher speichern: status=%d location=%s", response.Code, response.Header().Get("Location"))
@@ -511,7 +518,7 @@ func TestStorageChargePowerIsExplicitlyConfigurableAndDisplayed(t *testing.T) {
 	live := buildEnergyLiveView(metrics)
 	assets, _ := a.energyStore.ListAssets("jhw22")
 	cfg := buildEnergyFlowConfig("jhw22", live, assets, mappings, metrics, parkingLiveView{}, true)
-	if cfg.Storage == nil || cfg.Storage.Mode != "lädt" || cfg.Storage.Value != "2,4" || cfg.Storage.Label != "Hausspeicher" || cfg.Storage.Icon != "battery-charging" || cfg.Storage.Color != "#336699" || cfg.Storage.SecondaryLabel != "Akkustand" || cfg.Storage.Secondary != "85\u00a0%" {
+	if cfg.Storage == nil || cfg.Storage.Mode != "lädt" || cfg.Storage.Value != "2,4" || cfg.Storage.Label != "Hausspeicher" || cfg.Storage.Icon != "battery-charging" || cfg.Storage.Color != "#336699" || cfg.Storage.SecondaryLabel != "Akkustand" || cfg.Storage.Secondary != "85\u00a0% · 4,3\u00a0kWh" {
 		t.Fatalf("konfigurierte Ladeleistung wird nicht angezeigt: %+v", cfg.Storage)
 	}
 	if len(cfg.Storage.Measurements) != 5 {

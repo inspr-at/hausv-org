@@ -7,6 +7,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 ### Verbessert
 
 - **Die Navigation bleibt auch am Ende der langen Energieübersicht vollständig stehen.** Auf großen Bildschirmen schließt die Seitenleiste weiterhin bündig mit dem Browserfenster ab.
+- **Ladestand und Energiemenge stehen gemeinsam in der Energie-Kachel.** Speicher und entsprechend konfigurierte Verbraucher zeigen Prozentwert und Energiekennzahl übersichtlich in derselben Unterzeile.
 
 ## [0.76.2] - 2026-08-12
 
