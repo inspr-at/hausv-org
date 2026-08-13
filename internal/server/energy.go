@@ -4345,6 +4345,9 @@ func buildEnergyFlowConfig(tenantSlug string, live energyLiveView, assets []ener
 	}
 	storageAsset := energyFlowNodeAsset(assets, tenantSlug, "storage")
 	storageSOC, hasStorageSOC := energyFlowAssetMetric(metrics, storageAsset.ID, energy.MetricBatterySOC)
+	if !hasStorageSOC && live.HasBatterySOC {
+		storageSOC, hasStorageSOC = live.BatterySOC, true
+	}
 	if live.HasBattery || hasStorageSOC {
 		watts := math.Abs(energyPowerWatts(&live.Battery))
 		mode := "wartet"
