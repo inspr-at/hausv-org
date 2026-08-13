@@ -18,6 +18,8 @@ import (
 )
 
 const (
+	DefaultHomeKey = "default"
+
 	ModeObserve = "observe"
 	ModeActive  = "active"
 
@@ -51,6 +53,7 @@ const (
 
 type HomeProfile struct {
 	TenantSlug         string
+	HomeKey            string
 	UnitID             string
 	HomeType           string
 	HouseholdName      string
@@ -73,6 +76,7 @@ type HomeProfile struct {
 type Asset struct {
 	ID           string
 	TenantSlug   string
+	HomeKey      string
 	Kind         string
 	Name         string
 	RatedPowerKW *float64
@@ -87,6 +91,7 @@ type Asset struct {
 type EntityMapping struct {
 	ID          string
 	TenantSlug  string
+	HomeKey     string
 	EntityID    string
 	AssetID     string
 	Metric      string
@@ -101,6 +106,7 @@ type EntityMapping struct {
 
 type Interval struct {
 	TenantSlug string
+	HomeKey    string
 	StartsAt   time.Time
 	Duration   time.Duration
 	ImportKWh  float64
@@ -132,12 +138,17 @@ type PeakSummary struct {
 }
 
 func DefaultProfile(tenantSlug string, now time.Time) HomeProfile {
+	return DefaultProfileForHome(tenantSlug, DefaultHomeKey, now)
+}
+
+func DefaultProfileForHome(tenantSlug, homeKey string, now time.Time) HomeProfile {
 	if now.IsZero() {
 		now = time.Now()
 	}
 	now = now.UTC()
 	return HomeProfile{
 		TenantSlug:      normalizeSlug(tenantSlug),
+		HomeKey:         NormalizeHomeKey(homeKey),
 		HomeType:        HomeApartment,
 		OperatingMode:   ModeObserve,
 		AutomationStage: StageObserve,
@@ -152,6 +163,7 @@ func NormalizeProfile(profile HomeProfile, now time.Time) HomeProfile {
 		now = time.Now()
 	}
 	profile.TenantSlug = normalizeSlug(profile.TenantSlug)
+	profile.HomeKey = NormalizeHomeKey(profile.HomeKey)
 	profile.UnitID = textutil.UnitID(profile.UnitID)
 	profile.HouseholdName = strings.TrimSpace(profile.HouseholdName)
 	profile.RecommendationID = normalizeToken(profile.RecommendationID, "")
@@ -221,6 +233,7 @@ func NormalizeAsset(asset Asset, now time.Time) Asset {
 		asset.ID = NewID("asset")
 	}
 	asset.TenantSlug = normalizeSlug(asset.TenantSlug)
+	asset.HomeKey = NormalizeHomeKey(asset.HomeKey)
 	asset.Kind = normalizeToken(asset.Kind, "other")
 	asset.Name = strings.TrimSpace(asset.Name)
 	if asset.Name == "" {
@@ -261,6 +274,7 @@ func NormalizeMapping(mapping EntityMapping, now time.Time) EntityMapping {
 		mapping.ID = NewID("mapping")
 	}
 	mapping.TenantSlug = normalizeSlug(mapping.TenantSlug)
+	mapping.HomeKey = NormalizeHomeKey(mapping.HomeKey)
 	mapping.EntityID = strings.ToLower(strings.TrimSpace(mapping.EntityID))
 	mapping.AssetID = strings.TrimSpace(mapping.AssetID)
 	mapping.Metric = normalizeMetric(mapping.Metric)
@@ -311,7 +325,25 @@ func NewID(prefix string) string {
 // StableAssetID keeps bootstrapped and onboarding-managed asset identities
 // deterministic without colliding when several homes use the same asset kind.
 func StableAssetID(tenantSlug, kind string) string {
-	return "asset-" + normalizeSlug(tenantSlug) + "-" + normalizeToken(kind, "other")
+	return StableAssetIDForHome(tenantSlug, DefaultHomeKey, kind)
+}
+
+func StableAssetIDForHome(tenantSlug, homeKey, kind string) string {
+	base := "asset-" + normalizeSlug(tenantSlug)
+	if normalized := NormalizeHomeKey(homeKey); normalized != DefaultHomeKey {
+		base += "-" + normalized
+	}
+	return base + "-" + normalizeToken(kind, "other")
+}
+
+// NormalizeHomeKey returns the stable, tenant-local key used to isolate one
+// Zuhause. The default keeps every pre-0.78 single-home installation working
+// without new configuration.
+func NormalizeHomeKey(raw string) string {
+	if normalized := normalizeSlug(raw); normalized != "" {
+		return normalized
+	}
+	return DefaultHomeKey
 }
 
 // ClassifyCandidate translates Home Assistant metadata into a conservative

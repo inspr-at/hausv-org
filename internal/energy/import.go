@@ -16,6 +16,7 @@ import (
 type ImportRecord struct {
 	ID         string
 	TenantSlug string
+	HomeKey    string
 	Filename   string
 	SHA256     string
 	Format     string

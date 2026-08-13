@@ -1,7 +1,10 @@
 package db
 
 import (
+	"database/sql"
 	"path/filepath"
+	"sort"
+	"strings"
 	"testing"
 )
 
@@ -232,4 +235,110 @@ func TestConsumptionMappingMigrationOnlyCorrectsLegacyBatteryHeuristic(t *testin
 	if legacy != "load-power" || battery != "battery-power" {
 		t.Fatalf("migration metrics: legacy=%q battery=%q", legacy, battery)
 	}
+}
+
+func TestEnergyHomeScopeMigrationPreservesLegacyDefaultHome(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "home-scope.db")
+	database := openBeforeMigration(t, path, "0026_energy_home_scope.sql")
+	now := "2026-08-13T09:00:00Z"
+	statements := []string{
+		`INSERT INTO home_profiles(tenant_slug,unit_id,household_name,agreed_power_kw,created_at,updated_at) VALUES('jhw22','top-11','Penthouse',15,?,?)`,
+		`INSERT INTO energy_assets(id,tenant_slug,kind,name,created_at,updated_at) VALUES('asset-jhw22-battery','jhw22','battery','Speicher',?,?)`,
+		`INSERT INTO energy_entity_mappings(id,tenant_slug,entity_id,asset_id,metric,created_at,updated_at) VALUES('mapping-1','jhw22','sensor.battery','asset-jhw22-battery','battery-power',?,?)`,
+		`INSERT INTO energy_intervals(tenant_slug,starts_at,import_kwh,average_kw,created_at) VALUES('jhw22',?,1.25,5,?)`,
+		`INSERT INTO energy_imports(id,tenant_slug,filename,sha256,format,payload,imported_at) VALUES('import-1','jhw22','legacy.csv','sha-1','csv',x'01',?)`,
+		`INSERT INTO energy_maintenance_plans(id,tenant_slug,asset_id,title,interval_months,next_due_at,created_at,updated_at) VALUES('maintenance-1','jhw22','asset-jhw22-battery','Wartung',12,?,?,?)`,
+		`INSERT INTO energy_tariff_assessments(id,tenant_slug,assessment_month,profile_id,profile_version,profile_status,source_url,peak_kw,billed_kw,annual_power_eur,data_quality,created_at) VALUES('tariff-1','jhw22','2026-08','p','1','active','https://example.test',5,5,100,'measured',?)`,
+		`INSERT INTO energy_measures(id,tenant_slug,issue_id,recommendation_id,title,created_at,updated_at) VALUES('measure-1','jhw22','issue-1','rec-1','Maßnahme',?,?)`,
+	}
+	for _, statement := range statements {
+		args := make([]any, strings.Count(statement, "?"))
+		for i := range args {
+			args[i] = now
+		}
+		if _, err := database.Exec(statement, args...); err != nil {
+			t.Fatalf("seed legacy row: %v\n%s", err, statement)
+		}
+	}
+	if err := database.Close(); err != nil {
+		t.Fatalf("close legacy db: %v", err)
+	}
+
+	database, err := Open(path)
+	if err != nil {
+		t.Fatalf("apply home-scope migration: %v", err)
+	}
+	defer database.Close()
+	for _, table := range []string{
+		"home_profiles", "energy_assets", "energy_entity_mappings", "energy_intervals",
+		"energy_imports", "energy_maintenance_plans", "energy_tariff_assessments", "energy_measures",
+	} {
+		var count int
+		if err := database.QueryRow(`SELECT COUNT(*) FROM ` + table + ` WHERE tenant_slug='jhw22' AND home_key='default'`).Scan(&count); err != nil || count != 1 {
+			t.Fatalf("%s default-home rows=%d err=%v", table, count, err)
+		}
+	}
+	var household, unit string
+	var agreed float64
+	if err := database.QueryRow(`SELECT household_name,unit_id,agreed_power_kw FROM home_profiles WHERE tenant_slug='jhw22' AND home_key='default'`).Scan(&household, &unit, &agreed); err != nil {
+		t.Fatalf("read migrated profile: %v", err)
+	}
+	if household != "Penthouse" || unit != "top-11" || agreed != 15 {
+		t.Fatalf("profile changed during migration: household=%q unit=%q agreed=%v", household, unit, agreed)
+	}
+	var foreignKeyErrors int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM pragma_foreign_key_check`).Scan(&foreignKeyErrors); err != nil || foreignKeyErrors != 0 {
+		t.Fatalf("foreign key check: count=%d err=%v", foreignKeyErrors, err)
+	}
+}
+
+func openBeforeMigration(t *testing.T, path, stopBefore string) *sql.DB {
+	t.Helper()
+	database, err := sql.Open("sqlite", "file:"+path+"?_pragma=foreign_keys(1)")
+	if err != nil {
+		t.Fatalf("open pre-migration db: %v", err)
+	}
+	if _, err := database.Exec(`CREATE TABLE schema_migrations (version TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')))`); err != nil {
+		database.Close()
+		t.Fatalf("create migration ledger: %v", err)
+	}
+	entries, err := migrationsFS.ReadDir("migrations")
+	if err != nil {
+		database.Close()
+		t.Fatalf("read migrations: %v", err)
+	}
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".sql") && !strings.HasPrefix(entry.Name(), ".") {
+			names = append(names, entry.Name())
+		}
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if name == stopBefore {
+			break
+		}
+		raw, err := migrationsFS.ReadFile("migrations/" + name)
+		if err != nil {
+			database.Close()
+			t.Fatalf("read migration %s: %v", name, err)
+		}
+		tx, err := database.Begin()
+		if err == nil {
+			_, err = tx.Exec(string(raw))
+		}
+		if err == nil {
+			_, err = tx.Exec(`INSERT INTO schema_migrations(version) VALUES(?)`, name)
+		}
+		if err == nil {
+			err = tx.Commit()
+		} else if tx != nil {
+			tx.Rollback()
+		}
+		if err != nil {
+			database.Close()
+			t.Fatalf("apply migration %s: %v", name, err)
+		}
+	}
+	return database
 }

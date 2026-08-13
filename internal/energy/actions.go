@@ -20,6 +20,7 @@ const (
 type MaintenancePlan struct {
 	ID              string
 	TenantSlug      string
+	HomeKey         string
 	AssetID         string
 	Title           string
 	IntervalMonths  int
@@ -44,6 +45,7 @@ func NormalizeMaintenancePlan(plan MaintenancePlan, now time.Time) (MaintenanceP
 		plan.ID = NewID("maintenance")
 	}
 	plan.TenantSlug = normalizeSlug(plan.TenantSlug)
+	plan.HomeKey = NormalizeHomeKey(plan.HomeKey)
 	plan.AssetID = strings.TrimSpace(plan.AssetID)
 	plan.Title = strings.TrimSpace(plan.Title)
 	if plan.Title == "" {
@@ -118,6 +120,7 @@ func MaintenanceRecommendation(now time.Time, plans []MaintenancePlan) (Recommen
 type TariffAssessment struct {
 	ID              string
 	TenantSlug      string
+	HomeKey         string
 	AssessmentMonth string
 	ProfileID       string
 	ProfileVersion  string
@@ -139,6 +142,7 @@ func NormalizeTariffAssessment(item TariffAssessment, now time.Time) (TariffAsse
 		item.ID = NewID("tariff")
 	}
 	item.TenantSlug = normalizeSlug(item.TenantSlug)
+	item.HomeKey = NormalizeHomeKey(item.HomeKey)
 	item.AssessmentMonth = strings.TrimSpace(item.AssessmentMonth)
 	item.ProfileID = strings.TrimSpace(item.ProfileID)
 	item.ProfileVersion = strings.TrimSpace(item.ProfileVersion)
@@ -161,6 +165,7 @@ func NormalizeTariffAssessment(item TariffAssessment, now time.Time) (TariffAsse
 type Measure struct {
 	ID               string
 	TenantSlug       string
+	HomeKey          string
 	IssueID          string
 	RecommendationID string
 	Title            string
@@ -194,6 +199,7 @@ func NormalizeMeasure(item Measure, now time.Time) (Measure, error) {
 		item.ID = NewID("measure")
 	}
 	item.TenantSlug = normalizeSlug(item.TenantSlug)
+	item.HomeKey = NormalizeHomeKey(item.HomeKey)
 	item.IssueID = strings.TrimSpace(item.IssueID)
 	item.RecommendationID = normalizeToken(item.RecommendationID, "other")
 	item.Title = strings.TrimSpace(item.Title)

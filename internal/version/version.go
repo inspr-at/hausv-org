@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.78.0",
+			Date:     "13. August 2026",
+			Kind:     "Energie & Zuhause",
+			Headline: "Mehrere Zuhause bleiben auch im selben Portal sauber getrennt.",
+			Intro:    "Energieprofile, Messwerte und Home-Assistant-Verbindungen erhalten einen stabilen Zuhause-Bezug, während bestehende Einzel-Zuhause ohne zusätzliche Konfiguration weiterlaufen.",
+			Items: []NoteItem{
+				{Label: "Sichere Trennung", Text: "Anlagen, Zuordnungen, Wartungen, Maßnahmen und Messverläufe werden je Zuhause gespeichert und abgefragt."},
+				{Label: "Bestehende Daten", Text: "Der bisherige Datenbestand wird verlustfrei dem Standard-Zuhause zugeordnet."},
+				{Label: "Home Assistant", Text: "Mehrere lesende Verbindungen je Portal können jeweils einem eigenen Zuhause folgen."},
+			},
+		},
+		{
 			Version:  "0.77.0",
 			Date:     "13. August 2026",
 			Kind:     "Produkt & Positionierung",

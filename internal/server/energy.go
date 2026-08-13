@@ -376,39 +376,58 @@ type energyMeasureView struct {
 }
 
 func (a *app) canViewEnergy(ac authCtx) bool {
+	_, allowed := a.energyStoreForHome(ac, energy.DefaultHomeKey)
+	return allowed
+}
+
+// energyStoreForHome is the authorization boundary for future home selectors
+// and background handlers. Returning the already-scoped store makes it hard to
+// authorize one home and accidentally query another one afterwards.
+func (a *app) energyStoreForHome(ac authCtx, homeKey string) (energy.Storage, bool) {
 	if !canUseResidentAreas(ac.role) {
-		return false
+		return nil, false
 	}
+	store := a.energyStore.ForHome(homeKey)
 	if a.isEnergyHouseAdmin(ac) {
-		return true
+		return store, true
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := store.Profile(ac.tenant.Slug)
 	if err != nil {
-		return false
+		return nil, false
 	}
 	if !exists || energyProfileUnclaimed(profile) {
 		// The durable directory role may still be "resident" while the official
 		// unit relation identifies this person as its owner. Keep that owner
 		// relation authoritative for first-time and post-deletion onboarding.
-		return a.ownerCanAccessEnergyProfile(ac, profile, exists)
+		return store, a.ownerCanAccessEnergyProfile(ac, profile, exists)
+	}
+	if energy.NormalizeHomeKey(homeKey) != energy.DefaultHomeKey && profile.HomeType == energy.HomeApartment {
+		linked, ok := a.effectiveEnergyUnit(profile)
+		if !ok {
+			return nil, false
+		}
+		if !a.actorBelongsToEnergyUnit(ac, linked.ID, false) {
+			return nil, false
+		}
+		return store, true
 	}
 	person := a.profileForTenant(ac.email, ac.tenant.Slug)
 	if person.HasPermission(permissionEnergyView) ||
 		person.HasPermission(permissionEnergyConfigure) ||
 		person.HasPermission(permissionEnergyControl) ||
 		person.HasPermission(permissionEnergyCaretaker) {
-		return true
+		return store, true
 	}
 	if profile.HomeType != energy.HomeApartment {
-		return ac.role == roleOwner || ac.role == roleRenter || ac.role == roleResident || ac.role == roleBeirat
+		return store, ac.role == roleOwner || ac.role == roleRenter || ac.role == roleResident || ac.role == roleBeirat
 	}
 	if linked, ok := a.effectiveEnergyUnit(profile); ok {
-		return a.actorBelongsToEnergyUnit(ac, linked.ID, false)
+		return store, a.actorBelongsToEnergyUnit(ac, linked.ID, false)
 	}
 	if len(a.energyResidentialUnits(ac.tenant.Slug)) == 0 && strings.TrimSpace(profile.UnitID) == "" {
-		return ac.role == roleOwner || ac.role == roleRenter || ac.role == roleResident || ac.role == roleBeirat
+		return store, ac.role == roleOwner || ac.role == roleRenter || ac.role == roleResident || ac.role == roleBeirat
 	}
-	return false
+	return nil, false
 }
 
 func (a *app) canManageEnergy(ac authCtx) bool {
