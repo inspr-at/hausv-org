@@ -69,15 +69,13 @@ func (a *app) startEnergyIntervalSampler() func() {
 	}
 	configured := 0
 	for _, tenant := range a.tenants {
-		if tenant.HA.Configured() {
-			configured++
-		}
+		configured += len(tenant.HomeAssistantHomeKeys())
 	}
 	if configured == 0 {
 		logInfo("energy interval sampler disabled", "reason", "no_configured_home_assistant_tenants")
 		return func() {}
 	}
-	logInfo("energy interval sampler enabled", "tenants", configured, "interval", a.energySampleInterval)
+	logInfo("energy interval sampler enabled", "homes", configured, "interval", a.energySampleInterval)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -98,10 +96,9 @@ func (a *app) startEnergyIntervalSampler() func() {
 
 func (a *app) sampleEnergyTenants(ctx context.Context, now time.Time) {
 	for _, tenant := range a.tenants {
-		if !tenant.HA.Configured() {
-			continue
+		for _, homeKey := range tenant.HomeAssistantHomeKeys() {
+			a.sampleEnergyHome(ctx, tenant, homeKey, now)
 		}
-		a.sampleEnergyTenant(ctx, tenant, now)
 	}
 }
 
@@ -109,11 +106,26 @@ func (a *app) sampleEnergyTenants(ctx context.Context, now time.Time) {
 // schreibt die vorige Viertelstunde fest, sobald sie vorbei ist. Zurückgegeben
 // werden die dabei geschriebenen Viertelstunden.
 func (a *app) sampleEnergyTenant(ctx context.Context, tenant tenantConfig, now time.Time) []energy.Interval {
-	mapping, ok := a.confirmedGridImportMapping(tenant.Slug)
+	return a.sampleEnergyHome(ctx, tenant, energy.DefaultHomeKey, now)
+}
+
+func (a *app) sampleEnergyHome(ctx context.Context, tenant tenantConfig, homeKey string, now time.Time) []energy.Interval {
+	homeKey = energy.NormalizeHomeKey(homeKey)
+	connector := tenant.HomeAssistant(homeKey)
+	if !connector.Configured() {
+		return nil
+	}
+	tenant.HA = connector
+	store := a.energyStore.ForHome(homeKey)
+	samplerKey := tenant.Slug
+	if homeKey != energy.DefaultHomeKey {
+		samplerKey += "\x00" + homeKey
+	}
+	mapping, ok := a.confirmedGridImportMappingFor(store, tenant.Slug)
 	if !ok {
 		// Ohne bestätigten Netzbezug wird nicht gemessen, und ein früher
 		// aufgebauter Puffer beschreibt nichts mehr, was noch zugeordnet ist.
-		a.resetEnergySampler(tenant.Slug)
+		a.resetEnergySampler(samplerKey)
 		return nil
 	}
 	if now.IsZero() {
@@ -123,7 +135,7 @@ func (a *app) sampleEnergyTenant(ctx context.Context, tenant tenantConfig, now t
 
 	a.energySamplerMu.Lock()
 	defer a.energySamplerMu.Unlock()
-	state := a.energySamplerStateLocked(tenant.Slug)
+	state := a.energySamplerStateLocked(samplerKey)
 	if state.entityID != mapping.EntityID {
 		// Andere Messstelle: der alte Puffer beschreibt eine andere Größe.
 		*state = energySamplerState{entityID: mapping.EntityID}
@@ -145,12 +157,13 @@ func (a *app) sampleEnergyTenant(ctx context.Context, tenant tenantConfig, now t
 			StaleReadings: state.staleReadings,
 			Policy:        a.energySamplingPolicy(),
 		}); complete {
-			if err := a.energyStore.PutInterval(interval); err != nil {
-				logError("home assistant quarter hour not recorded", err, "tenant", tenant.Slug)
+			if err := store.PutInterval(interval); err != nil {
+				logError("home assistant quarter hour not recorded", err, "tenant", tenant.Slug, "home", homeKey)
 			} else {
 				recorded = append(recorded, interval)
 				logInfo("home assistant quarter hour recorded",
 					"tenant", tenant.Slug,
+					"home", homeKey,
 					"starts_at", interval.StartsAt.Format(time.RFC3339),
 					"average_kw", interval.AverageKW,
 					"quality", interval.Quality,
@@ -191,7 +204,11 @@ func (a *app) confirmedGridImportMapping(tenantSlug string) (energy.EntityMappin
 	if a.energyStore == nil {
 		return energy.EntityMapping{}, false
 	}
-	mappings, err := a.energyStore.ListMappings(tenantSlug)
+	return a.confirmedGridImportMappingFor(a.energyStore, tenantSlug)
+}
+
+func (a *app) confirmedGridImportMappingFor(store energy.Storage, tenantSlug string) (energy.EntityMapping, bool) {
+	mappings, err := store.ListMappings(tenantSlug)
 	if err != nil {
 		logError("energy mappings unavailable for quarter hour sampling", err, "tenant", tenantSlug)
 		return energy.EntityMapping{}, false

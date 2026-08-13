@@ -15,6 +15,7 @@ import (
 	"net/mail"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -25,27 +26,28 @@ import (
 )
 
 type TenantConfig struct {
-	Slug              string               `json:"slug"`
-	Name              string               `json:"name"`
-	Address           string               `json:"address"`
-	PortalType        string               `json:"portal_type,omitempty"`
-	BrandIcon         string               `json:"brand_icon,omitempty"`
-	BrandAbbreviation string               `json:"brand_abbreviation,omitempty"`
-	MapLatitude       float64              `json:"map_latitude,omitempty"`
-	MapLongitude      float64              `json:"map_longitude,omitempty"`
-	MapZoom           int                  `json:"map_zoom,omitempty"`
-	ContactName       string               `json:"contact_name,omitempty"`
-	ContactAddress    string               `json:"contact_address,omitempty"`
-	ContactEmail      string               `json:"contact_email,omitempty"`
-	ContactPhone      string               `json:"contact_phone,omitempty"`
-	EmergencyName     string               `json:"emergency_name,omitempty"`
-	EmergencyPhone    string               `json:"emergency_phone,omitempty"`
-	CaretakerName     string               `json:"caretaker_name,omitempty"`
-	CaretakerEmail    string               `json:"caretaker_email,omitempty"`
-	CaretakerPhone    string               `json:"caretaker_phone,omitempty"`
-	HeroImageURL      string               `json:"hero_image_url,omitempty"`
-	Host              string               `json:"host"`
-	HA                homeassistant.Config `json:"-"`
+	Slug              string                   `json:"slug"`
+	Name              string                   `json:"name"`
+	Address           string                   `json:"address"`
+	PortalType        string                   `json:"portal_type,omitempty"`
+	BrandIcon         string                   `json:"brand_icon,omitempty"`
+	BrandAbbreviation string                   `json:"brand_abbreviation,omitempty"`
+	MapLatitude       float64                  `json:"map_latitude,omitempty"`
+	MapLongitude      float64                  `json:"map_longitude,omitempty"`
+	MapZoom           int                      `json:"map_zoom,omitempty"`
+	ContactName       string                   `json:"contact_name,omitempty"`
+	ContactAddress    string                   `json:"contact_address,omitempty"`
+	ContactEmail      string                   `json:"contact_email,omitempty"`
+	ContactPhone      string                   `json:"contact_phone,omitempty"`
+	EmergencyName     string                   `json:"emergency_name,omitempty"`
+	EmergencyPhone    string                   `json:"emergency_phone,omitempty"`
+	CaretakerName     string                   `json:"caretaker_name,omitempty"`
+	CaretakerEmail    string                   `json:"caretaker_email,omitempty"`
+	CaretakerPhone    string                   `json:"caretaker_phone,omitempty"`
+	HeroImageURL      string                   `json:"hero_image_url,omitempty"`
+	Host              string                   `json:"host"`
+	HA                homeassistant.Config     `json:"-"`
+	HAConnectors      *HomeAssistantConnectors `json:"-"`
 }
 
 const (
@@ -59,6 +61,7 @@ const (
 // inline token material is intentionally not part of the schema.
 type HomeAssistantConnector struct {
 	TenantSlug  string `json:"tenant_slug"`
+	HomeKey     string `json:"home_key,omitempty"`
 	BaseURL     string `json:"base_url"`
 	TokenFile   string `json:"token_file,omitempty"`
 	TokenEnv    string `json:"token_env,omitempty"`
@@ -69,6 +72,8 @@ type HomeAssistantConnector struct {
 	BatterySOC  string `json:"battery_soc_entity,omitempty"`
 	GridFeedIn  string `json:"grid_feed_in_entity,omitempty"`
 }
+
+type HomeAssistantConnectors map[string]homeassistant.Config
 
 func (t TenantConfig) PublicURL(path string) string {
 	if path == "" {
@@ -270,14 +275,16 @@ func ApplyHomeAssistantConnectors(raw string, tenants map[string]TenantConfig) e
 	seen := map[string]struct{}{}
 	for _, connector := range connectors {
 		slug := textutil.Slug(connector.TenantSlug)
+		homeKey := NormalizeHomeKey(connector.HomeKey)
 		tenant, ok := tenants[slug]
 		if slug == "" || !ok {
 			return fmt.Errorf("home assistant connector references unknown tenant")
 		}
-		if _, duplicate := seen[slug]; duplicate {
-			return fmt.Errorf("duplicate home assistant connector for tenant %s", slug)
+		connectorKey := slug + "\x00" + homeKey
+		if _, duplicate := seen[connectorKey]; duplicate {
+			return fmt.Errorf("duplicate home assistant connector for tenant %s and home %s", slug, homeKey)
 		}
-		seen[slug] = struct{}{}
+		seen[connectorKey] = struct{}{}
 		baseURL := strings.TrimRight(strings.TrimSpace(connector.BaseURL), "/")
 		parsed, err := url.Parse(baseURL)
 		if err != nil || parsed.Scheme == "" || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
@@ -287,7 +294,7 @@ func ApplyHomeAssistantConnectors(raw string, tenants map[string]TenantConfig) e
 		if err != nil {
 			return fmt.Errorf("home assistant credential unavailable for tenant %s", slug)
 		}
-		tenant.HA = homeassistant.NewConfig(
+		ha := homeassistant.NewConfig(
 			baseURL,
 			token,
 			strings.TrimSpace(connector.MeterEnergy),
@@ -298,9 +305,61 @@ func ApplyHomeAssistantConnectors(raw string, tenants map[string]TenantConfig) e
 			strings.TrimSpace(connector.BatterySOC),
 			strings.TrimSpace(connector.GridFeedIn),
 		)
+		if tenant.HAConnectors == nil {
+			connectors := HomeAssistantConnectors{}
+			tenant.HAConnectors = &connectors
+		}
+		(*tenant.HAConnectors)[homeKey] = ha
+		if homeKey == DefaultHomeKey {
+			tenant.HA = ha
+		}
 		tenants[slug] = tenant
 	}
 	return nil
+}
+
+const DefaultHomeKey = "default"
+
+func NormalizeHomeKey(raw string) string {
+	if key := textutil.Slug(raw); key != "" {
+		return key
+	}
+	return DefaultHomeKey
+}
+
+func (t TenantConfig) HomeAssistant(homeKey string) homeassistant.Config {
+	key := NormalizeHomeKey(homeKey)
+	if t.HAConnectors != nil {
+		if connector, ok := (*t.HAConnectors)[key]; ok {
+			return connector
+		}
+	}
+	if key == DefaultHomeKey {
+		return t.HA
+	}
+	return homeassistant.Config{}
+}
+
+func (t TenantConfig) HomeAssistantHomeKeys() []string {
+	keys := []string{}
+	if t.HAConnectors != nil {
+		for key, connector := range *t.HAConnectors {
+			if connector.Configured() {
+				keys = append(keys, NormalizeHomeKey(key))
+			}
+		}
+	}
+	if t.HA.Configured() {
+		found := false
+		for _, key := range keys {
+			found = found || key == DefaultHomeKey
+		}
+		if !found {
+			keys = append(keys, DefaultHomeKey)
+		}
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func connectorToken(connector HomeAssistantConnector) (string, error) {

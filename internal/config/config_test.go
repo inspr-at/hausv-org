@@ -36,6 +36,30 @@ func TestApplyHomeAssistantConnectorsUsesReferencedSecret(t *testing.T) {
 	}
 }
 
+func TestApplyHomeAssistantConnectorsSupportsMultipleHomesPerTenant(t *testing.T) {
+	t.Setenv("HA_TEST_TOKEN", "fixture")
+	tenants := map[string]TenantConfig{"home": {Slug: "home"}}
+	err := ApplyHomeAssistantConnectors(`[
+		{"tenant_slug":"home","home_key":"top-11","base_url":"https://top11.example.test","token_env":"HA_TEST_TOKEN"},
+		{"tenant_slug":"home","home_key":"top-12","base_url":"https://top12.example.test","token_env":"HA_TEST_TOKEN"}
+	]`, tenants)
+	if err != nil {
+		t.Fatalf("ApplyHomeAssistantConnectors: %v", err)
+	}
+	for homeKey, wantURL := range map[string]string{
+		"top-11": "https://top11.example.test",
+		"top-12": "https://top12.example.test",
+	} {
+		connector := tenants["home"].HomeAssistant(homeKey)
+		if !connector.Configured() || connector.BaseURL() != wantURL {
+			t.Fatalf("connector %q = configured:%v url:%q, want %q", homeKey, connector.Configured(), connector.BaseURL(), wantURL)
+		}
+	}
+	if tenants["home"].HA.Configured() {
+		t.Fatal("named home connectors must not silently replace the legacy default connector")
+	}
+}
+
 func TestApplyHomeAssistantConnectorsRejectsMissingAndDuplicateTenant(t *testing.T) {
 	tenants := map[string]TenantConfig{"home": {Slug: "home"}}
 	t.Setenv("HA_TEST_TOKEN", "fixture")

@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.78.0] - 2026-08-13
+
+### Neu
+
+- **Mehrere Zuhause bleiben innerhalb einer Liegenschaft sauber getrennt.** Energieprofile, Anlagen, Messwertzuordnungen, Wartungen und Verläufe erhalten einen stabilen Zuhause-Bezug; auch mehrere Home-Assistant-Verbindungen je Portal sind vorbereitet.
+
+### Verbessert
+
+- **Bestehende Einzel-Zuhause funktionieren unverändert weiter.** Vorhandene Energie-Daten werden beim Update vollständig dem bisherigen Standard-Zuhause zugeordnet, ohne neue Konfiguration zu verlangen.
+- **Messwerte und Berechtigungen folgen derselben Zuhause-Grenze.** Gleich benannte Home-Assistant-Entitäten können in verschiedenen Einheiten parallel verwendet werden, ohne Daten oder Zugriffe zu vermischen.
+
 ## [0.77.0] - 2026-08-13
 
 ### Neu
