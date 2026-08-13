@@ -528,6 +528,19 @@ func TestStorageChargePowerIsExplicitlyConfigurableAndDisplayed(t *testing.T) {
 	}
 }
 
+func TestStorageKeepsLegacyWholeHomeChargeLevel(t *testing.T) {
+	live := energyLiveView{
+		HasBattery:    true,
+		Battery:       energyMetricView{Numeric: 600, Unit: "W", Direction: "charging"},
+		HasBatterySOC: true,
+		BatterySOC:    energyMetricView{Value: "78\u00a0%", Numeric: 78, Unit: "%"},
+	}
+	cfg := buildEnergyFlowConfig("jhw22", live, nil, nil, nil, parkingLiveView{}, true)
+	if cfg.Storage == nil || cfg.Storage.Secondary != "78\u00a0%" {
+		t.Fatalf("globaler Legacy-Ladestand fehlt am Speicher: %+v", cfg.Storage)
+	}
+}
+
 func TestStorageColorSaveMigratesLegacyChargeAndDischargeMappings(t *testing.T) {
 	ha := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
