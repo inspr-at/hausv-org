@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.76.3",
+			Date:     "13. August 2026",
+			Kind:     "Energie",
+			Headline: "Die Navigation bleibt bis zum Seitenende vollständig sichtbar.",
+			Intro:    "Auch auf großen Bildschirmen schließt die Seitenleiste der langen Energieübersicht bündig mit dem Browserfenster ab.",
+			Items:    []NoteItem{},
+		},
+		{
 			Version:  "0.76.2",
 			Date:     "12. August 2026",
 			Kind:     "Seitenleiste",
