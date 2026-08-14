@@ -860,6 +860,10 @@ const PageTemplates = `
     .home-start-path-result { margin-top: 22px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px 18px; background: var(--panel-soft); }
     .home-start-path-result span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
     .home-start-path-result strong { display: block; margin-top: 5px; font-size: 20px; overflow-wrap: anywhere; }
+    .home-setup-progress { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin: 0 0 22px; }
+    .home-setup-step { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .home-setup-step strong { display: block; margin-bottom: 2px; color: var(--ink); font-size: 15px; }
+    .home-setup-step.active { border-color: var(--leaf); background: rgba(47,107,74,.07); }
     .home-portal-activation { margin: 0 0 24px; border: 2px solid var(--leaf); border-radius: var(--radius-md); padding: 18px; background: rgba(47,107,74,.06); }
     .home-portal-activation strong { display: block; font-size: 19px; }
     .home-portal-activation p { margin: 7px 0 14px; color: var(--muted); line-height: 1.5; }
@@ -878,6 +882,10 @@ const PageTemplates = `
     .home-command { display: block; margin: 10px 0; border-radius: var(--radius-sm); padding: 13px; background: var(--ink); color: #fff; font: 12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; overflow-wrap: anywhere; user-select: all; }
     .home-downloads { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
     .home-downloads a { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; background: #fff; font-size: 13px; font-weight: 800; text-decoration: none; }
+    .home-technical { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
+    .home-technical summary { min-height: 44px; display: flex; align-items: center; color: var(--leaf); font-weight: 900; cursor: pointer; }
+    .home-help { margin-top: 22px; border-radius: var(--radius-sm); padding: 14px 16px; background: var(--panel-soft); color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .home-help strong { color: var(--ink); }
     .home-connector-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
     .home-connector-actions form { margin: 0; }
     .home-connector-action { min-height: 46px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 15px; background: #fff; color: var(--ink); font: inherit; font-weight: 900; cursor: pointer; }
@@ -906,8 +914,8 @@ const PageTemplates = `
       <section class="home-start-copy">
         <p class="home-start-kicker">Ihr eigener Bereich</p>
         <h1>Zuhause zuerst sicher anlegen.</h1>
-        <p class="home-start-lead">Reservieren Sie Ihren persönlichen Pfad und bestätigen Sie Ihre E-Mail. Erst danach bereiten wir die lesende Energieverbindung gemeinsam vor.</p>
-        <ul class="home-start-trust"><li>Keine Zahlungsdaten erforderlich</li><li>Keine Home-Assistant-Zugangsdaten in diesem Schritt</li><li>Unbestätigte Reservierungen verfallen nach 24 Stunden</li><li>Keine Gerätesteuerung ohne spätere ausdrückliche Freigabe</li></ul>
+        <p class="home-start-lead">Reservieren Sie Ihre persönliche Adresse und bestätigen Sie Ihre E-Mail. Danach können Sie Ihr Portal sofort öffnen.</p>
+        <ul class="home-start-trust"><li>Keine Zahlungsdaten erforderlich</li><li>In diesem Schritt ist kein Zugriff auf Geräte nötig</li><li>Unbestätigte Reservierungen verfallen nach 24 Stunden</li><li>Keine Gerätesteuerung ohne Ihre ausdrückliche Freigabe</li></ul>
       </section>
       <section class="home-start-card" aria-labelledby="home-start-title">
         {{if .Sent}}
@@ -947,8 +955,12 @@ const PageTemplates = `
   <div class="home-start-shell">
     <header class="home-start-head"><a class="home-start-brand" href="/">{{template "hausvLandingMark" .}}<span>HAUSV Home</span></a><a class="home-start-back" href="/">Zur Übersicht</a></header>
     <main class="home-start-main">
-      <section class="home-start-copy"><p class="home-start-kicker">E-Mail bestätigt</p><h1>{{.HouseholdName}} {{if .PortalActive}}ist bereit.{{else}}ist reserviert.{{end}}</h1><p class="home-start-lead">{{if .PortalActive}}Ihr persönlicher Bereich ist aktiv und dauerhaft unter seinem eigenen Pfad erreichbar.{{else}}Der persönliche Bereich ist eindeutig vorgemerkt. Aktivieren Sie ihn jetzt, um ihn direkt zu öffnen.{{end}}</p><div class="home-start-path-result"><span>{{if .PortalActive}}Portalpfad{{else}}Reservierter Pfad{{end}}</span><strong>hausv.org{{.PublicPath}}</strong></div></section>
+      <section class="home-start-copy"><p class="home-start-kicker">E-Mail bestätigt</p><h1>{{.HouseholdName}} {{if .PortalActive}}ist bereit.{{else}}ist reserviert.{{end}}</h1><p class="home-start-lead">{{if .PortalActive}}Ihr persönlicher Bereich ist aktiv. Die optionale Energieverbindung können Sie jetzt oder später einrichten.{{else}}Aktivieren Sie jetzt Ihr privates Portal. Die Energieverbindung ist danach ein eigener, optionaler Schritt.{{end}}</p><div class="home-start-path-result"><span>{{if .PortalActive}}Portaladresse{{else}}Reservierte Adresse{{end}}</span><strong>hausv.org{{.PublicPath}}</strong></div></section>
       <section class="home-start-card">
+        <div class="home-setup-progress" aria-label="Fortschritt der Einrichtung">
+          <div class="home-setup-step {{if not .PortalActive}}active{{end}}"><strong>Schritt 1 von 2</strong>Privates Portal öffnen</div>
+          <div class="home-setup-step {{if .PortalActive}}active{{end}}"><strong>Schritt 2 von 2</strong>Energie verbinden, optional</div>
+        </div>
         <div class="home-portal-activation">
           {{if .PortalActive}}
           <strong>Ihr privates Portal ist aktiv.</strong><p>Öffnen Sie es jederzeit über Ihren persönlichen Pfad. Die lokale Energieverbindung können Sie unabhängig davon unten verwalten.</p><a class="home-portal-open" href="{{.PublicPath}}/app">Privates Portal öffnen</a>
@@ -956,30 +968,28 @@ const PageTemplates = `
           <strong>Privates Portal aktivieren</strong><p>HAUSV legt Ihren Bereich und Ihren Eigentümerzugang gemeinsam an. Danach werden Sie direkt angemeldet.</p><form method="post" action="/start/activate"><button class="home-connector-action primary" type="submit">Portal jetzt aktivieren</button></form>
           {{end}}
         </div>
-        <h2>Lokale Verbindung</h2>
-        <p>Der Connector läuft bei Ihnen zu Hause und arbeitet ausschließlich im Nur-Lese-Modus. HAUSV fragt hier bewusst keinen Token aus Home Assistant und keine lokale Adresse ab.</p>
+        <h2>Energieverbindung</h2>
+        <p>Optional verbindet ein kleiner Helfer Ihr Energiesystem zu Hause mit HAUSV. Er darf nur lesen und kann keine Geräte steuern.</p>
         <div class="home-connector-status" aria-live="polite"><span>Status</span><strong>{{.ConnectorState}}</strong><p>{{.ConnectorDetail}}</p></div>
         {{if .Connected}}
-        <div class="home-connector-facts" aria-label="Verbindungsdetails"><div><span>Zuletzt gemeldet</span><strong>{{.LastSeen}}</strong></div><div><span>Lokale Version</span><strong>{{.HomeAssistantVersion}}</strong></div><div><span>Erkannte Einträge</span><strong>{{.EntityCount}}</strong></div></div>
+        <div class="home-connector-facts" aria-label="Verbindungsdetails"><div><span>Zuletzt gemeldet</span><strong>{{.LastSeen}}</strong></div><div><span>Energiesystem</span><strong>{{.HomeAssistantVersion}}</strong></div><div><span>Erkannte Messwerte</span><strong>{{.EntityCount}}</strong></div></div>
         {{end}}
         {{if .PairingCreated}}
         <div class="home-pairing">
-          <h3>Einmal-Code bis {{.PairingExpires}}</h3>
-          <p class="home-connector-note">Dieser Code funktioniert genau einmal. Er ersetzt eine bestehende Verbindung erst nach erfolgreicher Kopplung.</p>
+          <h3>Verbindung vorbereiten</h3>
+          <p class="home-connector-note">Geben Sie diesen Einmal-Code beim lokalen Helfer ein. Er funktioniert bis {{.PairingExpires}} genau einmal.</p>
           <code class="home-pairing-code">{{.PairingCode}}</code>
-          <div class="home-downloads"><a href="/downloads/hausv-connector-linux-amd64">Linux amd64 laden</a><a href="/downloads/hausv-connector-linux-arm64">Linux arm64 laden</a></div>
-          <ol class="home-start-steps"><li><span>Speichern Sie den in Home Assistant erzeugten Lesetoken lokal in <code>home-assistant.token</code> und schützen Sie die Datei vor anderen Benutzern.</span></li><li><span>Machen Sie den Download ausführbar und starten Sie die passende Zeile unten. Token und lokale Adresse werden nur vom lokalen Connector gelesen.</span></li><li><span>Nach dem ersten erfolgreichen Lauf erscheint hier der aktuelle Verbindungsstatus. Messwerte werden in diesem Schritt noch nicht an HAUSV übertragen.</span></li></ol>
-          <code class="home-command">chmod 700 ./hausv-connector-linux-amd64<br>./hausv-connector-linux-amd64 connector --pairing-code {{.PairingCode}} --home-assistant-url http://homeassistant.local:8123 --home-assistant-token-file ./home-assistant.token</code>
-          <p class="home-connector-note">Für arm64 ersetzen Sie im Befehl den Dateinamen. Der langlebige Connector-Zugang wird lokal mit Dateimodus 0600 gespeichert und im Portal nur gehasht geführt.</p>
+          <ol class="home-start-steps"><li><span>Laden Sie den Helfer auf den Computer, auf dem Ihr Energiesystem läuft.</span></li><li><span>Starten Sie ihn dort mit dem Einmal-Code. Zugangsdaten bleiben ausschließlich bei Ihnen zu Hause.</span></li><li><span>Kehren Sie zu dieser Seite zurück. Der Status wechselt automatisch nach der ersten erfolgreichen Meldung.</span></li></ol>
+          <details class="home-technical"><summary>Technische Anleitung für die Installation</summary><p class="home-connector-note">Home Assistant ist die lokale Software, aus der der Helfer später ausgewählte Messwerte liest. Er benötigt dort einen eigenen Nur-Lese-Zugang.</p><div class="home-downloads"><a href="/downloads/hausv-connector-linux-amd64">Für Intel/AMD Linux laden</a><a href="/downloads/hausv-connector-linux-arm64">Für ARM oder Raspberry Pi laden</a></div><code class="home-command">chmod 700 ./hausv-connector-linux-amd64<br>./hausv-connector-linux-amd64 connector --pairing-code {{.PairingCode}} --home-assistant-url http://homeassistant.local:8123 --home-assistant-token-file ./home-assistant.token</code><p class="home-connector-note">Speichern Sie den in Home Assistant erzeugten Leseschlüssel lokal in <code>home-assistant.token</code>. Für ARM ersetzen Sie den Dateinamen im Befehl.</p></details>
         </div>
         {{else if .PairingPending}}
-        <div class="home-start-notice"><strong>Eine Kopplung wartet auf den lokalen Connector.</strong>Der Einmal-Code wird aus Sicherheitsgründen nach dieser Ansicht nicht erneut angezeigt. Erstellen Sie bei Bedarf einfach einen neuen.</div>
+        <div class="home-start-notice"><strong>Die Verbindung wartet auf den Helfer zu Hause.</strong>Der Einmal-Code wird nur einmal angezeigt. Falls er verloren ging oder ablief, bereiten Sie die Verbindung einfach erneut vor.</div>
         {{end}}
         <div class="home-connector-actions">
-          <form method="post" action="/start/connector/pairing"><button class="home-connector-action primary" type="submit">{{if .Connected}}Zugang erneuern{{else}}Connector koppeln{{end}}</button></form>
+          <form method="post" action="/start/connector/pairing"><button class="home-connector-action primary" type="submit">{{if .Connected}}Verbindung erneut vorbereiten{{else}}Energieverbindung vorbereiten{{end}}</button></form>
           {{if .Connected}}<form method="post" action="/start/connector/revoke"><button class="home-connector-action danger" type="submit">Verbindung widerrufen</button></form>{{end}}
         </div>
-        <p class="home-connector-note">Keine Gerätesteuerung. Keine Home-Assistant-Zugangsdaten im Portal. Der nächste Schritt ordnet ausgewählte Messwerte verständlich zu.</p>
+        <div class="home-help"><strong>Brauchen Sie Hilfe?</strong> Sie können diesen Schritt überspringen und Ihr Portal bereits verwenden. Für die Verbindung braucht die unterstützende Person nur Zugriff auf den Computer Ihres Energiesystems, niemals Ihr HAUSV-Passwort.</div>
       </section>
     </main>
     <footer class="home-start-foot">HAUSV Home · keine Geheimnisse im Portal · keine Steuerung ohne Freigabe</footer>
