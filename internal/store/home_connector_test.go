@@ -125,3 +125,54 @@ func TestHomeConnectorPairingExpiresAndSQLitePersists(t *testing.T) {
 		t.Fatalf("persisted connector = %+v found=%v err=%v", item, found, err)
 	}
 }
+
+func TestHomeConnectorReadingsMemoryAndSQLiteParity(t *testing.T) {
+	now := time.Date(2026, 8, 14, 14, 0, 0, 0, time.UTC)
+	database, err := db.Open(filepath.Join(t.TempDir(), "readings.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	reservations := store.NewSQLHomeReservationStore(database)
+	if _, err := reservations.Reserve(store.HomeReservation{
+		Slug: "sql-readings", HouseholdName: "SQL Readings", OwnerEmail: "owner@example.com", AuthorizationConfirmed: true,
+	}, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.NewSQLHomeConnectorStore(database).StartPairing("sql-readings", bytes.Repeat([]byte{1}, 32), now.Add(time.Minute), now); err != nil {
+		t.Fatal(err)
+	}
+	backends := map[string]struct {
+		slug  string
+		store store.HomeConnectorReadingStorage
+	}{
+		"memory": {slug: "memory-readings", store: store.NewMemoryHomeConnectorReadingStore()},
+		"sqlite": {slug: "sql-readings", store: store.NewSQLHomeConnectorReadingStore(database)},
+	}
+	for name, fixture := range backends {
+		t.Run(name, func(t *testing.T) {
+			readings := []store.HomeConnectorReading{{
+				EntityID: "sensor.grid_import_power", State: "1200", DisplayName: "Netzbezug",
+				Unit: "W", DeviceClass: "power", StateClass: "measurement", LastUpdated: now,
+			}}
+			if err := fixture.store.Upsert(fixture.slug, readings, now); err != nil {
+				t.Fatal(err)
+			}
+			readings[0].State = "1500"
+			if err := fixture.store.Upsert(fixture.slug, readings, now.Add(time.Second)); err != nil {
+				t.Fatal(err)
+			}
+			got, err := fixture.store.List(fixture.slug)
+			if err != nil || len(got) != 1 || got[0].State != "1500" || got[0].ReceivedAt != now.Add(time.Second) {
+				t.Fatalf("readings=%+v err=%v", got, err)
+			}
+			if err := fixture.store.Clear(fixture.slug); err != nil {
+				t.Fatal(err)
+			}
+			got, err = fixture.store.List(fixture.slug)
+			if err != nil || len(got) != 0 {
+				t.Fatalf("cleared readings=%+v err=%v", got, err)
+			}
+		})
+	}
+}

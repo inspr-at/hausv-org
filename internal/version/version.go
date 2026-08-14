@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.86.0",
+			Date:     "14. August 2026",
+			Kind:     "HAUSV Home",
+			Headline: "Ausgewählte Energiewerte fließen sicher vom eigenen Zuhause ins Live-Cockpit.",
+			Intro:    "Der lokale Connector ergänzt den bisherigen Verbindungsstatus um bestätigte Messwerte, ohne Home-Assistant-Adresse oder Zugangstoken an HAUSV zu übertragen.",
+			Items: []NoteItem{
+				{Label: "Gezielt ausgewählt", Text: "Nach dem ersten sicheren Energiekatalog sendet der Connector nur die im Portal bestätigten Sensoren."},
+				{Label: "Live sichtbar", Text: "Die ausgewählten Werte stehen im Energie-Onboarding und im persönlichen Live-Cockpit zur Verfügung."},
+				{Label: "Klar getrennt", Text: "Messwerte bleiben dem reservierten Zuhause zugeordnet und werden beim Widerruf der Verbindung entfernt."},
+				{Label: "Direkt zugänglich", Text: "Bestehende Konten erkennen zusätzlich aktivierte Zuhause-Portale, ohne Rollen aus anderen Häusern zu übernehmen."},
+			},
+		},
+		{
 			Version:  "0.85.0",
 			Date:     "14. August 2026",
 			Kind:     "HAUSV Home",

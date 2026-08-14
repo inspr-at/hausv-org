@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -21,7 +23,7 @@ import (
 const (
 	homeConnectorPairingTTL = 10 * time.Minute
 	homeConnectorFreshFor   = 90 * time.Second
-	maxHomeConnectorBody    = 8 << 10
+	maxHomeConnectorBody    = 64 << 10
 )
 
 var (
@@ -87,6 +89,13 @@ func (a *app) revokeHomeConnector(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Verbindung konnte nicht widerrufen werden", http.StatusInternalServerError)
 		return
 	}
+	if a.homeConnectorReadings != nil {
+		if err := a.homeConnectorReadings.Clear(reservation.Slug); err != nil {
+			logWarn("home connector readings revoke failed", "error_type", "store")
+			http.Error(w, "Verbindung konnte nicht widerrufen werden", http.StatusInternalServerError)
+			return
+		}
+	}
 	http.Redirect(w, r, "/start/connector?revoked=1", http.StatusSeeOther)
 }
 
@@ -99,7 +108,8 @@ func (a *app) pairHomeConnector(w http.ResponseWriter, r *http.Request) {
 	if !decodeHomeConnectorJSON(w, r, &request) {
 		return
 	}
-	if !validHomeConnectorMetadata(request.Heartbeat) || !validConnectorSecret(request.PairingCode) {
+	now := time.Now()
+	if !validHomeConnectorMetadata(request.Heartbeat) || !validConnectorSecret(request.PairingCode) || !validHomeConnectorReadingSet(request.Readings, now) {
 		writeHomeConnectorUnauthorized(w)
 		return
 	}
@@ -115,7 +125,7 @@ func (a *app) pairHomeConnector(w http.ResponseWriter, r *http.Request) {
 	item, exchanged, err := a.homeConnectors.ExchangePairing(pairingHash,
 		homeConnectorHash(a.homeConnectorHashKey, credential), store.HomeConnectorHeartbeat{
 			ConnectorVersion: request.ConnectorVersion, HomeAssistantVersion: request.HomeAssistantVersion, EntityCount: request.EntityCount,
-		}, time.Now())
+		}, now)
 	if err != nil {
 		logWarn("home connector exchange failed", "error_type", "store")
 		http.Error(w, "Service unavailable", http.StatusServiceUnavailable)
@@ -125,9 +135,14 @@ func (a *app) pairHomeConnector(w http.ResponseWriter, r *http.Request) {
 		writeHomeConnectorUnauthorized(w)
 		return
 	}
+	if !a.persistHomeConnectorReadings(item.Slug, request.Readings, now, true) {
+		_, _, _ = a.homeConnectors.Revoke(item.Slug, now)
+		http.Error(w, "Service unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(homeconnector.PairResponse{Credential: credential})
+	_ = json.NewEncoder(w).Encode(homeconnector.PairResponse{Credential: credential, SelectedEntityIDs: a.selectedHomeConnectorEntities(item.Slug)})
 }
 
 func (a *app) heartbeatHomeConnector(w http.ResponseWriter, r *http.Request) {
@@ -148,13 +163,14 @@ func (a *app) heartbeatHomeConnector(w http.ResponseWriter, r *http.Request) {
 	if !decodeHomeConnectorJSON(w, r, &heartbeat) {
 		return
 	}
-	if !validHomeConnectorMetadata(heartbeat) {
+	now := time.Now()
+	if !validHomeConnectorMetadata(heartbeat) || !validHomeConnectorReadingSet(heartbeat.Readings, now) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	_, accepted, err := a.homeConnectors.Heartbeat(credentialHash, store.HomeConnectorHeartbeat{
+	item, accepted, err := a.homeConnectors.Heartbeat(credentialHash, store.HomeConnectorHeartbeat{
 		ConnectorVersion: heartbeat.ConnectorVersion, HomeAssistantVersion: heartbeat.HomeAssistantVersion, EntityCount: heartbeat.EntityCount,
-	}, time.Now())
+	}, now)
 	if err != nil {
 		logWarn("home connector heartbeat failed", "error_type", "store")
 		http.Error(w, "Service unavailable", http.StatusServiceUnavailable)
@@ -164,7 +180,132 @@ func (a *app) heartbeatHomeConnector(w http.ResponseWriter, r *http.Request) {
 		writeHomeConnectorUnauthorized(w)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	selected := a.selectedHomeConnectorEntities(item.Slug)
+	incoming := filterHomeConnectorReadings(heartbeat.Readings, selected)
+	if len(selected) == 0 && !a.homeConnectorCatalogAllowed(item.Slug) {
+		incoming = nil
+		if a.homeConnectorReadings != nil {
+			if err := a.homeConnectorReadings.Clear(item.Slug); err != nil {
+				logWarn("home connector readings clear failed", "error_type", "store")
+				http.Error(w, "Service unavailable", http.StatusServiceUnavailable)
+				return
+			}
+		}
+	}
+	if !a.persistHomeConnectorReadings(item.Slug, incoming, now, false) {
+		http.Error(w, "Service unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(homeconnector.HeartbeatResponse{SelectedEntityIDs: selected})
+}
+
+func (a *app) homeConnectorCatalogAllowed(slug string) bool {
+	if a.energyStore == nil {
+		return true
+	}
+	profile, exists, err := a.energyStore.Profile(slug)
+	return err == nil && (!exists || !energyProfileUnclaimed(profile))
+}
+
+func filterHomeConnectorReadings(input []homeconnector.Reading, selected []string) []homeconnector.Reading {
+	if len(selected) == 0 {
+		return input
+	}
+	wanted := make(map[string]bool, len(selected))
+	for _, entityID := range selected {
+		wanted[strings.ToLower(strings.TrimSpace(entityID))] = true
+	}
+	out := make([]homeconnector.Reading, 0, len(selected))
+	for _, reading := range input {
+		if wanted[strings.ToLower(strings.TrimSpace(reading.EntityID))] {
+			out = append(out, reading)
+		}
+	}
+	return out
+}
+
+func (a *app) persistHomeConnectorReadings(slug string, input []homeconnector.Reading, now time.Time, replace bool) bool {
+	if len(input) > homeconnector.MaxReadings || a.homeConnectorReadings == nil {
+		return len(input) == 0 && a.homeConnectorReadings == nil
+	}
+	readings := make([]store.HomeConnectorReading, 0, len(input))
+	seen := map[string]bool{}
+	for _, reading := range input {
+		entityID := strings.ToLower(strings.TrimSpace(reading.EntityID))
+		if seen[entityID] || !validHomeConnectorReading(reading, now) {
+			return false
+		}
+		seen[entityID] = true
+		readings = append(readings, store.HomeConnectorReading{
+			EntityID: entityID, State: strings.TrimSpace(reading.State), DisplayName: strings.TrimSpace(reading.DisplayName),
+			Unit: strings.TrimSpace(reading.Unit), DeviceClass: strings.ToLower(strings.TrimSpace(reading.DeviceClass)),
+			StateClass: strings.ToLower(strings.TrimSpace(reading.StateClass)), LastUpdated: reading.LastUpdated.UTC(),
+		})
+	}
+	if replace {
+		if err := a.homeConnectorReadings.Clear(slug); err != nil {
+			logWarn("home connector reading reset failed", "error_type", "store")
+			return false
+		}
+	}
+	if err := a.homeConnectorReadings.Upsert(slug, readings, now); err != nil {
+		logWarn("home connector readings persist failed", "error_type", "store")
+		return false
+	}
+	return true
+}
+
+func validHomeConnectorReading(reading homeconnector.Reading, now time.Time) bool {
+	entityID := strings.ToLower(strings.TrimSpace(reading.EntityID))
+	state := strings.TrimSpace(reading.State)
+	unit := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(reading.Unit), " ", ""))
+	deviceClass := strings.ToLower(strings.TrimSpace(reading.DeviceClass))
+	if !strings.HasPrefix(entityID, "sensor.") || len(entityID) > 180 || len(state) == 0 || len(state) > 48 ||
+		len(reading.DisplayName) > 160 || len(reading.StateClass) > 32 || reading.LastUpdated.IsZero() ||
+		reading.LastUpdated.After(now.Add(5*time.Minute)) {
+		return false
+	}
+	allowedUnit := unit == "w" || unit == "kw" || unit == "mw" || unit == "wh" || unit == "kwh" || unit == "mwh" || unit == "%"
+	value, parseErr := strconv.ParseFloat(strings.ReplaceAll(state, ",", "."), 64)
+	allowedState := (parseErr == nil && !math.IsNaN(value) && !math.IsInf(value, 0)) || strings.EqualFold(state, "unknown") || strings.EqualFold(state, "unavailable")
+	return allowedUnit && allowedState && (deviceClass == "power" || deviceClass == "energy" || deviceClass == "battery")
+}
+
+func validHomeConnectorReadingSet(readings []homeconnector.Reading, now time.Time) bool {
+	if len(readings) > homeconnector.MaxReadings {
+		return false
+	}
+	seen := map[string]bool{}
+	for _, reading := range readings {
+		entityID := strings.ToLower(strings.TrimSpace(reading.EntityID))
+		if seen[entityID] || !validHomeConnectorReading(reading, now) {
+			return false
+		}
+		seen[entityID] = true
+	}
+	return true
+}
+
+func (a *app) selectedHomeConnectorEntities(slug string) []string {
+	if a.energyStore == nil {
+		return nil
+	}
+	mappings, err := a.energyStore.ListMappings(slug)
+	if err != nil {
+		return nil
+	}
+	selected := make([]string, 0, len(mappings))
+	for _, mapping := range mappings {
+		if mapping.Confirmed && strings.HasPrefix(strings.ToLower(strings.TrimSpace(mapping.EntityID)), "sensor.") {
+			selected = append(selected, strings.ToLower(strings.TrimSpace(mapping.EntityID)))
+		}
+	}
+	sort.Strings(selected)
+	if len(selected) > homeconnector.MaxReadings {
+		selected = selected[:homeconnector.MaxReadings]
+	}
+	return selected
 }
 
 func (a *app) downloadHomeConnector(w http.ResponseWriter, r *http.Request) {

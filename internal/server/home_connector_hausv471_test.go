@@ -49,12 +49,12 @@ func TestHomeConnectorPairRotateHeartbeatAndRevoke(t *testing.T) {
 	}
 	pairConnectorHAUSV471(t, handler, pairingOne, http.StatusUnauthorized)
 
-	heartbeat := heartbeatConnectorHAUSV471(t, handler, credentialOne, http.StatusNoContent)
+	heartbeat := heartbeatConnectorHAUSV471(t, handler, credentialOne, http.StatusOK)
 	if heartbeat.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("heartbeat cache control = %q", heartbeat.Header().Get("Cache-Control"))
 	}
 	connected := homeConnectorSetupRequestHAUSV471(t, handler, http.MethodGet, "/start/connector", setupCookie, nil)
-	for _, want := range []string{"Verbunden und bereit", "2026.8.1", "27", "Verbindung erneut vorbereiten", "Verbindung widerrufen", "Noch werden keine Messwerte übertragen"} {
+	for _, want := range []string{"Verbunden und bereit", "2026.8.1", "27", "Verbindung erneut vorbereiten", "Verbindung widerrufen"} {
 		if !strings.Contains(connected.Body.String(), want) {
 			t.Fatalf("connected page missing %q", want)
 		}
@@ -68,13 +68,13 @@ func TestHomeConnectorPairRotateHeartbeatAndRevoke(t *testing.T) {
 	if pairingTwo == pairingOne {
 		t.Fatal("rotation reused the pairing code")
 	}
-	heartbeatConnectorHAUSV471(t, handler, credentialOne, http.StatusNoContent)
+	heartbeatConnectorHAUSV471(t, handler, credentialOne, http.StatusOK)
 	credentialTwo := pairConnectorHAUSV471(t, handler, pairingTwo, http.StatusCreated)
 	if credentialTwo == credentialOne {
 		t.Fatal("rotation reused the connector credential")
 	}
 	heartbeatConnectorHAUSV471(t, handler, credentialOne, http.StatusUnauthorized)
-	heartbeatConnectorHAUSV471(t, handler, credentialTwo, http.StatusNoContent)
+	heartbeatConnectorHAUSV471(t, handler, credentialTwo, http.StatusOK)
 
 	revoked := homeConnectorSetupRequestHAUSV471(t, handler, http.MethodPost, "/start/connector/revoke", setupCookie, url.Values{})
 	if revoked.Code != http.StatusSeeOther || revoked.Header().Get("Location") != "/start/connector?revoked=1" {

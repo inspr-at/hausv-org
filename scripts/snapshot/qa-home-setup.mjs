@@ -91,7 +91,13 @@ try {
     const pairingCode = (await page.locator('.home-pairing-code').textContent())?.trim();
     if (!pairingCode || pairingCode.length < 40) throw new Error('pairing code missing');
 
-    const heartbeat = { connector_version: '0.85.0', home_assistant_version: '2026.8.1', entity_count: 27 };
+    const heartbeat = {
+      connector_version: '0.86.0', home_assistant_version: '2026.8.1', entity_count: 27,
+      readings: [{
+        entity_id: 'sensor.grid_import_power', state: '1250', display_name: 'Netzbezug',
+        unit: 'W', device_class: 'power', state_class: 'measurement', last_updated: new Date().toISOString(),
+      }],
+    };
     const pairResult = await page.evaluate(async ({ pairingCode, heartbeat }) => {
       const response = await fetch('/api/home-connectors/pair', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -108,7 +114,7 @@ try {
       });
       return response.status;
     }, { credential, heartbeat });
-    if (beatStatus !== 204) throw new Error(`heartbeat failed with ${beatStatus}`);
+    if (beatStatus !== 200) throw new Error(`heartbeat failed with ${beatStatus}`);
     await page.reload({ waitUntil: 'networkidle' });
     await page.getByText('Verbunden und bereit').waitFor();
     await context.storageState({ path: statePath });

@@ -665,10 +665,11 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 	discovery := energyDiscoveryView{}
 	connectorMessage := "Home Assistant ist noch nicht verbunden. Das ist okay – Sie können später weitermachen."
 	connectorOK := false
-	if step == 4 && ac.tenant.HA.Configured() {
+	if step == 4 {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
-		if discovered, discoverErr := discoverEnergyCandidates(ctx, ac.tenant.HA, mappings); discoverErr == nil {
+		states, configured, sourceErr := a.energyStates(ctx, ac.tenant)
+		if discovered, discoverErr := discoverEnergyCandidatesFromStates(states, mappings); configured && sourceErr == nil && discoverErr == nil {
 			discovery = discovered
 			connectorOK = true
 			if len(discovery.Recommended) > 0 {
@@ -676,7 +677,7 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 			} else {
 				connectorMessage = "Verbindung hergestellt, aber noch kein eindeutig passender Hausenergie-Messwert gefunden."
 			}
-		} else {
+		} else if configured {
 			connectorMessage = "Home Assistant antwortet gerade nicht. Ihre bisherigen Angaben bleiben erhalten."
 		}
 	}
@@ -777,11 +778,9 @@ func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac au
 		}
 		nextStep = 4
 	case "mappings":
-		if ac.tenant.HA.Configured() {
-			if err := a.saveSelectedEnergyMappings(r.Context(), ac.tenant, r.Form["entities"]); err != nil {
-				http.Error(w, "Messwerte konnten nicht gespeichert werden.", http.StatusBadGateway)
-				return
-			}
+		if err := a.saveSelectedEnergyMappings(r.Context(), ac.tenant, r.Form["entities"]); err != nil {
+			http.Error(w, "Messwerte konnten nicht gespeichert werden.", http.StatusBadGateway)
+			return
 		}
 		if strings.TrimSpace(r.FormValue("manual_entity_id")) != "" {
 			if err := a.saveManualEnergyMapping(ac.tenant.Slug, r.FormValue("manual_entity_id"), r.FormValue("manual_metric"), r.FormValue("manual_name"), r.FormValue("manual_unit"), r.FormValue("manual_asset_id")); err != nil {
@@ -2648,9 +2647,6 @@ func namedEVMeasurementCandidate(name, kind string, states []homeassistant.Entit
 }
 
 func (a *app) ensureNamedEVMeasurementMappings(ctx context.Context, tenant tenantConfig, assets []energy.Asset, mappings []energy.EntityMapping) ([]energy.EntityMapping, bool) {
-	if !tenant.HA.Configured() {
-		return mappings, false
-	}
 	mapped := map[string]map[string]bool{}
 	assigned := map[string]bool{}
 	for _, mapping := range mappings {
@@ -2674,9 +2670,9 @@ func (a *app) ensureNamedEVMeasurementMappings(ctx context.Context, tenant tenan
 		return mappings, false
 	}
 	lookupCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
-	states, err := tenant.HA.States(lookupCtx)
+	states, configured, err := a.energyStates(lookupCtx, tenant)
 	cancel()
-	if err != nil {
+	if err != nil || !configured {
 		return mappings, false
 	}
 	changed := false
@@ -2747,10 +2743,10 @@ func (a *app) energyConsumerMeasurementOptions(w http.ResponseWriter, r *http.Re
 		Message:  "Home Assistant ist für dieses Zuhause noch nicht verbunden.",
 		Entities: []energyConsumerMeasurementOption{},
 	}
-	if ac.tenant.HA.Configured() {
-		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
-		states, err := ac.tenant.HA.States(ctx)
-		cancel()
+	ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+	states, configured, err := a.energyStates(ctx, ac.tenant)
+	cancel()
+	if configured {
 		if err == nil {
 			response.Status = "ok"
 			response.Message = "Home Assistant verbunden · alle Messwerte werden ausschließlich gelesen."
@@ -2874,13 +2870,13 @@ func (a *app) planEnergyConsumerMappings(ctx context.Context, tenant tenantConfi
 	}
 	statesByID := map[string]homeassistant.EntityState{}
 	if needsLookup {
-		if !tenant.HA.Configured() {
-			return energyConsumerMappingPlan{}, fmt.Errorf("home assistant is not configured")
-		}
 		lookupCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
-		states, lookupErr := tenant.HA.States(lookupCtx)
+		states, configured, lookupErr := a.energyStates(lookupCtx, tenant)
 		cancel()
-		if lookupErr != nil {
+		if lookupErr != nil || !configured {
+			if lookupErr == nil {
+				lookupErr = fmt.Errorf("home assistant is not configured")
+			}
 			return energyConsumerMappingPlan{}, lookupErr
 		}
 		for _, state := range states {
@@ -2985,13 +2981,13 @@ func (a *app) planEnergyFlowNodeMappings(ctx context.Context, tenant tenantConfi
 	}
 	statesByID := map[string]homeassistant.EntityState{}
 	if needsLookup {
-		if !tenant.HA.Configured() {
-			return energyConsumerMappingPlan{}, fmt.Errorf("home assistant is not configured")
-		}
 		lookupCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
-		states, lookupErr := tenant.HA.States(lookupCtx)
+		states, configured, lookupErr := a.energyStates(lookupCtx, tenant)
 		cancel()
-		if lookupErr != nil {
+		if lookupErr != nil || !configured {
+			if lookupErr == nil {
+				lookupErr = fmt.Errorf("home assistant is not configured")
+			}
 			return energyConsumerMappingPlan{}, lookupErr
 		}
 		for _, state := range states {
@@ -3505,14 +3501,14 @@ func (a *app) saveOnboardingAssets(tenantSlug string, selected []string) error {
 }
 
 func (a *app) saveSelectedEnergyMappings(ctx context.Context, tenant tenantConfig, selected []string) error {
-	if !tenant.HA.Configured() {
-		return nil
-	}
 	timeoutCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
 	defer cancel()
-	states, err := tenant.HA.States(timeoutCtx)
+	states, configured, err := a.energyStates(timeoutCtx, tenant)
 	if err != nil {
 		return err
+	}
+	if !configured {
+		return nil
 	}
 	selectedSet := map[string]struct{}{}
 	for _, entityID := range selected {
@@ -3616,6 +3612,10 @@ func discoverEnergyCandidates(ctx context.Context, cfg homeassistant.Config, map
 	if err != nil {
 		return energyDiscoveryView{}, err
 	}
+	return discoverEnergyCandidatesFromStates(states, mappings)
+}
+
+func discoverEnergyCandidatesFromStates(states []homeassistant.EntityState, mappings []energy.EntityMapping) (energyDiscoveryView, error) {
 	confirmed := map[string]bool{}
 	confirmedMappings := map[string]energy.EntityMapping{}
 	for _, mapping := range mappings {
@@ -3763,11 +3763,20 @@ func classifyHAState(state homeassistant.EntityState) (energy.EntityCandidate, b
 }
 
 func (a *app) currentEnergyMetrics(ctx context.Context, tenant tenantConfig, mappings []energy.EntityMapping, profile energy.HomeProfile) ([]energyMetricView, string, time.Time) {
-	if !tenant.HA.Configured() {
-		return nil, "Noch keine Messquelle verbunden", time.Time{}
-	}
 	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
+	states := []homeassistant.EntityState{}
+	if !tenant.HA.Configured() {
+		var configured bool
+		var sourceErr error
+		states, configured, sourceErr = a.energyStates(timeoutCtx, tenant)
+		if !configured {
+			return nil, "Noch keine Messquelle verbunden", time.Time{}
+		}
+		if sourceErr != nil {
+			return nil, "Messquelle ist gerade nicht erreichbar", time.Time{}
+		}
+	}
 	type reading struct {
 		mapping energy.EntityMapping
 		state   homeassistant.EntityState
@@ -3777,7 +3786,13 @@ func (a *app) currentEnergyMetrics(ctx context.Context, tenant tenantConfig, map
 		if !mapping.Confirmed {
 			continue
 		}
-		state, err := tenant.HA.State(timeoutCtx, mapping.EntityID)
+		var state homeassistant.EntityState
+		var err error
+		if tenant.HA.Configured() {
+			state, err = tenant.HA.State(timeoutCtx, mapping.EntityID)
+		} else {
+			state, err = energyStateByID(states, mapping.EntityID)
+		}
 		if err != nil {
 			continue
 		}

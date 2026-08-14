@@ -20,7 +20,7 @@ HAUSV is an open source portal for property communication, administration, and e
 - Digital apartment handovers with rooms, condition, meter readings, keys, parties, and attachments
 - Voting with traceable results and records
 - Role-based access for managers, boards, residents, owners, and service providers
-- Live energy flows through Home Assistant for solar, grid, batteries, homes, and individual consumers
+- Live energy flows for solar, grid, batteries, homes, and individual consumers through direct Home Assistant integration or the outbound-only local connector
 - Parking, charging, CAMT, ebInterface, and structured data exchange with specialist systems
 
 ## Scope

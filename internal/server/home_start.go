@@ -175,7 +175,7 @@ func (a *app) renderHomeConnectorStart(w http.ResponseWriter, reservation store.
 	detail := "Die Energieverbindung wurde noch nicht eingerichtet. Sie können diesen optionalen Schritt später erledigen."
 	if connected && fresh {
 		state = "Verbunden und bereit"
-		detail = "Der Helfer bei Ihnen zu Hause meldet sich aktuell. Noch werden keine Messwerte übertragen."
+		detail = "Der Helfer bei Ihnen zu Hause meldet sich aktuell. Ausgewählte Energiewerte werden ausschließlich gelesen."
 	} else if connected {
 		state = "Verbindung braucht Aufmerksamkeit"
 		detail = "Der Helfer bei Ihnen zu Hause hat sich länger nicht gemeldet. Starten Sie ihn neu oder bereiten Sie die Verbindung erneut vor."
