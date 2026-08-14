@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.90.0",
+			Date:     "14. August 2026",
+			Kind:     "Portalbereiche",
+			Headline: "Jede Liegenschaft zeigt nur die Funktionen, die sie wirklich braucht.",
+			Intro:    "Verwaltungen stellen die sichtbaren Portalbereiche zentral zusammen; Hausüberblick und Einstellungen bleiben dabei immer verfügbar.",
+			Items: []NoteItem{
+				{Label: "Passend zum Haus", Text: "Energie, Aushang, Termine, Kontakte, Dokumente, Anliegen und weitere Bereiche lassen sich einzeln ein- oder ausblenden."},
+				{Label: "Konsequent", Text: "Ausgeschaltete Bereiche verschwinden aus Navigation, Hausüberblick und Einstellungen und sind auch über direkte Links nicht erreichbar."},
+				{Label: "Sicherer Standard", Text: "Bestehende Liegenschaften starten unverändert mit allen bisherigen Funktionen."},
+			},
+		},
+		{
 			Version:  "0.89.1",
 			Date:     "14. August 2026",
 			Kind:     "Portalwechsel",

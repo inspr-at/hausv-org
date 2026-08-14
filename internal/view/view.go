@@ -1205,6 +1205,7 @@ func AuditActionOptions(selected string) []SelectOption {
 		store.AuditActionInviteUpdate,
 		store.AuditActionInviteDelete,
 		store.AuditActionBuildingUpdate,
+		store.AuditActionPortalModulesUpdate,
 		store.AuditActionHeroUpdate,
 		store.AuditActionUnitSave,
 		store.AuditActionUnitDelete,
@@ -1255,6 +1256,8 @@ func AuditActionLabel(action string) string {
 		return "Einladung gelöscht"
 	case store.AuditActionBuildingUpdate:
 		return "Gebäude geändert"
+	case store.AuditActionPortalModulesUpdate:
+		return "Portalbereiche geändert"
 	case store.AuditActionHeroUpdate:
 		return "Hero-Bild geändert"
 	case store.AuditActionUnitSave:

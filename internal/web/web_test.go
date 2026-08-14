@@ -139,7 +139,7 @@ func TestAuthenticatedAppShellIsKeyboardOperable(t *testing.T) {
 	appOpens := strings.Count(PageTemplates, `{{template "appOpen" .}}`)
 	mainTargets := strings.Count(PageTemplates, `id="main-content" tabindex="-1" class="app-main`)
 	appCloses := strings.Count(PageTemplates, `{{template "appClose" .}}`)
-	if appOpens != 28 || mainTargets != appOpens || appCloses != appOpens {
+	if appOpens != 29 || mainTargets != appOpens || appCloses != appOpens {
 		t.Fatalf("authenticated templates must each have one skip target: opens=%d targets=%d closes=%d", appOpens, mainTargets, appCloses)
 	}
 

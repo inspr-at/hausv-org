@@ -135,6 +135,11 @@ func (a *app) page(h authedHandler) http.HandlerFunc {
 			ew.finish(authCtx{}, false)
 			return
 		}
+		if module, managed := portalModuleForPath(r.URL.Path); managed && !a.portalModulesFor(ac.tenant.Slug).Enabled(module) {
+			http.NotFound(ew, r)
+			ew.finish(ac, true)
+			return
+		}
 		h(ew, r, ac)
 		ew.finish(ac, true)
 	}
@@ -161,6 +166,10 @@ func (a *app) action(h authedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ac, ok := a.authenticate(w, r)
 		if !ok {
+			return
+		}
+		if module, managed := portalModuleForPath(r.URL.Path); managed && !a.portalModulesFor(ac.tenant.Slug).Enabled(module) {
+			http.NotFound(w, r)
 			return
 		}
 		if !sameOriginPost(r) {
