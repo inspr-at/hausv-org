@@ -53,6 +53,7 @@ CASE = required("DEPLOY_FIXTURE_CASE")
 STATE = Path(required("DEPLOY_FIXTURE_STATE"))
 REPO = Path(required("DEPLOY_FIXTURE_REPO"))
 LIVE_URL = required("HAUSV_DEPLOY_LIVE_URL")
+CONTAINER = required("HAUSV_DEPLOY_CONTAINER")
 APP_VERSION = (REPO / "VERSION").read_text(encoding="utf-8").strip()
 STATE.mkdir(parents=True, exist_ok=True)
 
@@ -327,9 +328,15 @@ def mock_ssh(args: list[str]) -> int:
     if "log_file=" in script:
         if not require_remote_sh(wrapped, "start-log check"):
             return 64
+        if f"docker logs {CONTAINER}" not in script:
+            print("start-log check did not target the configured container", file=sys.stderr)
+            return 64
         return 1 if CASE == "schema_startlog_fail" else 0
 
     if remote.startswith("docker inspect --format"):
+        if not remote.endswith(f" {CONTAINER}"):
+            print("health probe did not target the configured container", file=sys.stderr)
+            return 64
         if CASE in {
             "schema_snapshot_recovery_fail",
             "schema_snapshot_recovery_encoder_fail",
@@ -350,6 +357,7 @@ def mock_ssh(args: list[str]) -> int:
             "docker image inspect --format",
             LOCK_PREFIX,
             IMAGE_ID,
+            f"docker inspect --format '{{{{.Image}}}}' {CONTAINER}",
         )
         if any(fragment not in script for fragment in required):
             print("rollback image preservation is incomplete", file=sys.stderr)
@@ -388,6 +396,7 @@ def mock_ssh(args: list[str]) -> int:
             IMAGE_ID,
             f"docker tag ghcr.io/inspr-at/hausv-org:release-{APP_VERSION}-aaaaaaa ghcr.io/inspr-at/hausv-org:latest || exit 43",
             f"{CANONICAL_COMPOSE} up -d --force-recreate --no-deps hausv-org || exit 43",
+            f"docker inspect --format '{{{{.Image}}}}' {CONTAINER}",
         )
         if any(fragment not in script for fragment in required):
             print("activation is not one locked, revalidated transition", file=sys.stderr)
@@ -435,6 +444,7 @@ def mock_ssh(args: list[str]) -> int:
             'locked_close="$(printf "\\051")"',
             'locked_build_marker="0.0.0 ${locked_open}bbbbbbb${locked_close}"',
             'grep -F "$locked_build_marker"',
+            f"docker inspect --format '{{{{.Image}}}}' {CONTAINER}",
         )
         missing = [fragment for fragment in required if fragment not in script]
         if missing:

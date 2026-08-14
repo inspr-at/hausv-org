@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.81.1",
+			Date:     "14. August 2026",
+			Kind:     "Portalbetrieb",
+			Headline: "Portalinstanzen werden eindeutig und sicher ausgeliefert.",
+			Intro:    "Der geprüfte Releasepfad kann jetzt mehrere pfadbasierte Portalinstanzen auf demselben Host zuverlässig voneinander unterscheiden.",
+			Items: []NoteItem{
+				{Label: "Instanzen", Text: "Jede Instanz kann einen eigenen Container, Datenpfad und öffentlichen Portalpfad verwenden."},
+				{Label: "Sicherheit", Text: "Gesundheit, Image-Identität und Startprotokoll werden weiterhin am tatsächlich ausgelieferten Container geprüft."},
+				{Label: "Kompatibilität", Text: "Bestehende Installationen funktionieren ohne zusätzliche Konfiguration unverändert weiter."},
+			},
+		},
+		{
 			Version:  "0.81.0",
 			Date:     "14. August 2026",
 			Kind:     "Portalbetrieb",

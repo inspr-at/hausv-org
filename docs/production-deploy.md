@@ -28,12 +28,17 @@ HAUSV_DEPLOY_SSH_PORT=22
 HAUSV_DEPLOY_COMPOSE_DIR=/srv/hausv/compose
 HAUSV_DEPLOY_COMPOSE_FILE=/srv/hausv/compose/docker-compose.yml
 HAUSV_DEPLOY_COMPOSE_PROJECT=hausv
+HAUSV_DEPLOY_CONTAINER=hausv-demo
 HAUSV_DEPLOY_COMPOSE_LOCK=/run/lock/hausv-compose.lock
 HAUSV_DEPLOY_DATA_DIR=/var/lib/hausv
 HAUSV_DEPLOY_SNAPSHOT_ROOT=/var/backups/hausv-predeploy
 HAUSV_DEPLOY_LIVE_URL=https://hausv.org/demo/
 HAUSV_DEPLOY_HEALTH_URL=https://hausv.org/healthz
 ```
+
+`HAUSV_DEPLOY_CONTAINER` identifies the unique container created by the
+configured Compose service. It may differ from the stable service name
+`hausv-org`, which allows multiple path-routed instances on one host.
 
 Optional overrides:
 

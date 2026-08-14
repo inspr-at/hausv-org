@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.81.1] - 2026-08-14
+
+### Verbessert
+
+- **Mehrere Portalinstanzen lassen sich auf einem Host eindeutig ausliefern.** Der geprüfte Releasepfad kann neben dem stabilen Compose-Service jetzt den konkreten Container einer pfadbasierten Instanz adressieren.
+- **Bestehende Installationen bleiben kompatibel.** Ohne eigene Containerangabe verwendet der Releasepfad weiterhin den bisherigen Standardnamen.
+
 ## [0.81.0] - 2026-08-14
 
 ### Neu
