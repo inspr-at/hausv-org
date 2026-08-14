@@ -24,6 +24,8 @@ fake_ha_log="$log_dir/fake-ha.log"
 app_log="$log_dir/app.log"
 playwright_log="$log_dir/playwright.log"
 public_auth_log="$log_dir/public-auth.log"
+home_setup_log="$log_dir/home-setup.log"
+fake_smtp_log="$log_dir/fake-smtp.log"
 handover_log="$log_dir/handover.log"
 document_log="$log_dir/document.log"
 settings_empty_log="$log_dir/settings-parking-empty.log"
@@ -31,9 +33,12 @@ settings_populated_log="$log_dir/settings-parking-populated.log"
 structured_log="$log_dir/structured-log-check.log"
 port=${HV_QA_PORT:-8121}
 ha_port=${HV_QA_HA_PORT:-8122}
+smtp_port=${HV_QA_SMTP_PORT:-8123}
+smtp_api_port=${HV_QA_SMTP_API_PORT:-8124}
 HAUSV_QA_TMP="$tmp"
 HAUSV_QA_PID=""
 HAUSV_QA_HA_PID=""
+HAUSV_QA_SMTP_PID=""
 go_bin=${HV_GO:-}
 if [ -z "$go_bin" ]; then
     go_bin=$(command -v go || true)
@@ -64,6 +69,9 @@ cleanup_main_flow_qa() {
     stop_portal
     if [ -n "${HAUSV_QA_HA_PID:-}" ]; then
         kill "$HAUSV_QA_HA_PID" 2>/dev/null
+    fi
+    if [ -n "${HAUSV_QA_SMTP_PID:-}" ]; then
+        kill "$HAUSV_QA_SMTP_PID" 2>/dev/null
     fi
     if [ -n "${HAUSV_QA_TMP:-}" ] && [ -d "$HAUSV_QA_TMP" ]; then
         command rm -rf -- "$HAUSV_QA_TMP"
@@ -108,17 +116,38 @@ fi
 
 export HV_PORT=$port
 export HV_QA_HA_PORT=$ha_port
+export HV_QA_SMTP_PORT=$smtp_port
+export HV_QA_SMTP_API="http://127.0.0.1:$smtp_api_port"
 export HV_DATA="$tmp/data"
 mkdir -p "$HV_DATA"
 # shellcheck source=scripts/snapshot/env.sh
 . "$repo/scripts/snapshot/env.sh"
 
-for checked_port in "$port" "$ha_port"; do
+for checked_port in "$port" "$ha_port" "$smtp_port" "$smtp_api_port"; do
     if curl -sS --max-time 1 "http://localhost:$checked_port/" >/dev/null 2>&1; then
         echo "Port $checked_port ist bereits belegt. Mit HV_QA_PORT/HV_QA_HA_PORT freie Ports wählen." >&2
         exit 1
     fi
 done
+
+echo "── starting deterministic local mail fixture on :$smtp_port"
+node "$repo/scripts/snapshot/fake-smtp.mjs" "$smtp_port" "$smtp_api_port" >"$fake_smtp_log" 2>&1 &
+HAUSV_QA_SMTP_PID=$!
+disown %% 2>/dev/null || true
+
+smtp_ready=0
+for _ in $(seq 40); do
+    if curl -sf "http://127.0.0.1:$smtp_api_port/healthz" >/dev/null 2>&1; then
+        smtp_ready=1
+        break
+    fi
+    sleep 0.1
+done
+if [ "$smtp_ready" -eq 0 ]; then
+    echo "Mail-Fixture wurde nicht bereit:" >&2
+    command tail -n 40 "$fake_smtp_log" >&2
+    exit 1
+fi
 
 echo "── starting deterministic read-only Home Assistant fixture on :$ha_port"
 node "$repo/scripts/snapshot/fake-ha.mjs" "$ha_port" >"$fake_ha_log" 2>&1 &
@@ -167,6 +196,7 @@ if [ "$qa_status" -ne 0 ]; then
     fi
     exit "$qa_status"
 fi
+
 if [ "${HV_QA_LANDING_ONLY:-}" != true ]; then
     # Every specialist uses the same persistent fake dataset, but an
     # independent process. Production-like auth throttling therefore remains
@@ -182,6 +212,7 @@ if [ "${HV_QA_LANDING_ONLY:-}" != true ]; then
         exit "$public_auth_status"
     fi
 fi
+
 if [ "${HV_QA_LANDING_ONLY:-}" != true ]; then
     restart_portal
     handover_artifacts=""
@@ -253,6 +284,26 @@ if [ "${HV_QA_LANDING_ONLY:-}" != true ]; then
         exit "$settings_populated_status"
     fi
 fi
+
+# The existing role flows intentionally use the local login shortcut. Enable
+# SMTP only for this final lifecycle so it must consume a real captured mail.
+export SMTP_HOST=127.0.0.1
+export SMTP_PORT=$smtp_port
+restart_portal
+home_setup_state="$tmp/home-setup-state.json"
+echo "── running HAUSV Home setup from reservation through connector"
+node "$repo/scripts/snapshot/qa-home-setup.mjs" "http://localhost:$port" create "$home_setup_state" 2>&1 | tee "$home_setup_log"
+home_setup_status=${PIPESTATUS[0]}
+if [ "$home_setup_status" -ne 0 ]; then
+    exit "$home_setup_status"
+fi
+restart_portal
+node "$repo/scripts/snapshot/qa-home-setup.mjs" "http://localhost:$port" verify "$home_setup_state" 2>&1 | tee -a "$home_setup_log"
+home_setup_status=${PIPESTATUS[0]}
+if [ "$home_setup_status" -ne 0 ]; then
+    exit "$home_setup_status"
+fi
+
 if [ "${HV_QA_LANDING_ONLY:-}" != true ]; then
     if ! command grep -q '^fake map tile served /map-tiles/' "$fake_ha_log"; then
         echo "Lokale Karten-Fixture wurde nicht verwendet; Browser-QA darf keine öffentliche Kachelquelle benötigen." >&2

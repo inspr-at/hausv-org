@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.85.0",
+			Date:     "14. August 2026",
+			Kind:     "HAUSV Home",
+			Headline: "Die Einrichtung führt verständlich vom bestätigten Zuhause zur optionalen Energieverbindung.",
+			Intro:    "Portalaktivierung und Energieverbindung sind zwei klare Schritte; technische Details bleiben bei Bedarf erreichbar, ohne den Hauptweg zu überladen.",
+			Items: []NoteItem{
+				{Label: "Klar geführt", Text: "Der aktuelle Schritt und die nächste Handlung sind jederzeit direkt sichtbar."},
+				{Label: "Technik nach Bedarf", Text: "Home-Assistant-Begriffe und Installationsbefehle stehen in einer getrennten, aufklappbaren Anleitung."},
+				{Label: "Durchgehend geprüft", Text: "Ein Browserlauf belegt E-Mail-Bestätigung, Portalaktivierung, lokale Kopplung und dauerhafte Trennung der Häuser."},
+			},
+		},
+		{
 			Version:  "0.84.0",
 			Date:     "14. August 2026",
 			Kind:     "HAUSV Home",

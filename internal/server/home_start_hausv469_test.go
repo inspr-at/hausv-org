@@ -42,7 +42,7 @@ func TestHomeStartReservationConfirmationAndConnectorBoundary(t *testing.T) {
 	if page.Code != http.StatusOK {
 		t.Fatalf("start page status = %d", page.Code)
 	}
-	for _, want := range []string{"Zuhause zuerst sicher anlegen", "hausv.org/", "Keine Home-Assistant-Zugangsdaten", `action="/start"`} {
+	for _, want := range []string{"Zuhause zuerst sicher anlegen", "hausv.org/", "kein Zugriff auf Geräte nötig", `action="/start"`} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("start page missing %q", want)
 		}
@@ -100,7 +100,7 @@ func TestHomeStartReservationConfirmationAndConnectorBoundary(t *testing.T) {
 		t.Fatalf("connector page status = %d", connector.Code)
 	}
 	connectorBody := connector.Body.String()
-	for _, want := range []string{"Zuhause am Stadtpark ist reserviert", "hausv.org/stadtpark-7", "keinen Token", "Nur-Lese"} {
+	for _, want := range []string{"Zuhause am Stadtpark ist reserviert", "hausv.org/stadtpark-7", "Schritt 1 von 2", "keine Geräte steuern"} {
 		if !strings.Contains(connectorBody, want) {
 			t.Fatalf("connector page missing %q", want)
 		}

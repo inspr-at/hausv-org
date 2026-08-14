@@ -5,8 +5,9 @@ Die konkrete Landkarte aller Haupt- und Unterwege steht in
 die Ausführung und die technischen Gates des Browserlaufs.
 
 Der lokale QA-Lauf startet das aktuelle Arbeitsverzeichnis mit ausschließlich
-erfundenen Daten, mehreren Rollen und vier strikt getrennten Hausprofilen. Er
-sendet keine E-Mails, greift nicht auf Produktivdaten zu und lädt auch keine
+erfundenen Daten, mehreren Rollen und strikt getrennten Hausprofilen. E-Mails
+gehen ausschließlich an einen lokalen SMTP-Empfänger im temporären
+Testverzeichnis. Der Lauf greift nicht auf Produktivdaten zu und lädt auch keine
 Kartenkacheln von einem öffentlichen Dienst.
 
 Der vollständige lokale Lauf ist zugleich das Browser-Regressionsgate:
@@ -52,6 +53,10 @@ Der Lauf:
 - startet zwischen den fachlichen Harnesses nur den isolierten Prozess neu,
   behält dabei die gemeinsame Fake-Datenbasis und setzt so ausschließlich
   kurzlebige Anmeldelimits zurück;
+- reserviert ein HAUSV Home im Browser, verarbeitet die tatsächlich über SMTP
+  zugestellte Bestätigungs-E-Mail, aktiviert das private Portal, koppelt einen
+  simulierten lokalen Nur-Lese-Helfer und prüft Portal, Verbindung sowie
+  Mandantentrennung erneut nach einem Prozessneustart;
 - öffnet die private Grundmatrix aus vier Rollen und sieben Routen auf
   1440 × 900 und 390 × 844;
 - prüft öffentlichen Einstieg, Übergabe und Dokument-Lifecycle bei 320, 390,
@@ -78,7 +83,7 @@ headless.
 
 ## Verpflichtendes CI-Gate
 
-Der parallele Blacksmith-Job `Browser roles + mobile` führt bei jedem Push auf
+Der parallele Blacksmith-Job `Focused browser smoke test` führt bei jedem Push auf
 `main` und bei jedem Pull Request denselben Orchestrator headless aus. Ein
 Fehler macht den Workflow rot. `HV_QA_CI_CORE=true` verkleinert nur die breite
 Rollen-/Routen-Grundmatrix; die spezialisierten öffentlichen, Bewohner-,
@@ -87,7 +92,8 @@ Gates. Mit vollständig erfundenen, lokalen Daten prüft es:
 
 - Anmeldung als Bewohner und Admin;
 - Hausüberblick, Anliegen und Bewohnerinhalte auf Desktop und Mobil;
-- das geführte Energie-Onboarding auf Desktop und Mobil;
+- das geführte Energie-Onboarding sowie den vollständigen HAUSV-Home-Start von
+  der Reservierung bis zur dauerhaften lokalen Verbindung;
 - Abmelden mit anschließendem Browser-Zurück ohne wieder sichtbare
   Portal-Inhalte;
 - öffentliche Anmeldung/Karte, Übergabe, Dokumente/E-Rechnung sowie
@@ -117,7 +123,7 @@ scripts/qa-main-flows.sh
 Mit `CI=true` verwendet der lokale Nachweis wie Blacksmith das zu Playwright
 gehörende Chromium statt eines eventuell installierten System-Chrome.
 
-Das Artefaktverzeichnis enthält Build-, Fake-Home-Assistant-, App-, Basis-,
+Das Artefaktverzeichnis enthält Build-, Fake-Home-Assistant-, Fake-SMTP-, App-, Basis-,
 Public/Auth-, Übergabe-, Dokument-, Einstellungs-/Parkplatz- und
 Strukturprüfungs-Logs. Die Fachharnesses legen ihre Berichte und
 Vollseiten-Screenshots in getrennten Unterordnern ab; der Basislauf ergänzt bei

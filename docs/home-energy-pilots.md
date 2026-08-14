@@ -130,6 +130,14 @@ bereits aktiven Bereich aktiv. Eine bestehende globale Person behält Namen,
 Anmeldeverfahren und Mitgliedschaften anderer Häuser unverändert; ergänzt wird
 nur die Eigentümer-Mitgliedschaft für den neuen Pfad.
 
+Die Oberfläche führt zuerst durch die Portalaktivierung und kennzeichnet die
+Energieverbindung danach ausdrücklich als optional. Begriffe aus Home Assistant
+und Installationsbefehle stehen nur in einer aufklappbaren technischen
+Anleitung. Der sichtbare Hauptweg erklärt stattdessen Zweck, Sicherheitsgrenze,
+Status und jeweils genau die nächste Handlung. Bei einem abgelaufenen oder
+verlorenen Einmal-Code kann die Verbindung ohne Nebenwirkung neu vorbereitet
+werden.
+
 Unabhängig von der Portalaktivierung erzeugt die Eigentümerin oder der Eigentümer im
 geschützten Einrichtungsbereich einen zehn Minuten gültigen Einmal-Code. Der
 lokale Connector wird für Linux amd64 oder arm64 heruntergeladen und erhält die
@@ -148,6 +156,13 @@ Eine Rotation lässt den bisherigen Connector-Zugang so lange aktiv, bis der
 neue Einmal-Code erfolgreich eingelöst wurde. Ein Widerruf sperrt ihn sofort.
 Die aktuelle Ausbaustufe koppelt und überwacht den lokalen Connector. Sie
 überträgt noch keine Messwerte und führt keine Gerätesteuerung aus.
+
+`scripts/snapshot/qa-home-setup.mjs` belegt diesen Lebenszyklus gegen die echte
+Anwendung: Reservierung im Browser, tatsächlicher Versand an eine lokale
+SMTP-Fixture, E-Mail-Bestätigung, Portalaktivierung, Connector-Kopplung,
+Statusmeldung sowie erneute Prüfung von Persistenz und Mandantentrennung nach
+einem Prozessneustart. Die Fixture gibt keine Nachricht oder Zugangsdaten in
+das CI-Protokoll aus.
 
 ### Betreiberkonfigurierte Pilotverbindung
 

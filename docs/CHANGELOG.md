@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.85.0] - 2026-08-14
+
+### Verbessert
+
+- **HAUSV Home führt verständlich durch zwei klare Schritte.** Zuerst wird das private Portal aktiviert; die Energieverbindung folgt getrennt und bleibt ausdrücklich optional.
+- **Technische Details stehen nur dort, wo sie gebraucht werden.** Alltagssprache erklärt Zweck, Sicherheitsgrenze und nächste Handlung; Installationsbefehle bleiben in einer aufklappbaren Anleitung.
+- **Der komplette Startweg wird automatisch im Browser geprüft.** Reservierung, zugestellte E-Mail, Aktivierung, lokale Kopplung, Neustart und Mandantentrennung gehören nun zum verpflichtenden Release-Nachweis.
+
 ## [0.84.0] - 2026-08-14
 
 ### Neu

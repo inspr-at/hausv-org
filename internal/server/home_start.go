@@ -172,16 +172,16 @@ func (a *app) renderHomeConnectorStart(w http.ResponseWriter, reservation store.
 	connected := connector.Status == store.HomeConnectorConnected && connector.LastSeenAt != nil
 	fresh := connected && now.Sub(*connector.LastSeenAt) <= homeConnectorFreshFor
 	state := "Noch nicht gekoppelt"
-	detail := "Der lokale Connector hat sich noch nicht bei HAUSV gemeldet."
+	detail := "Die Energieverbindung wurde noch nicht eingerichtet. Sie können diesen optionalen Schritt später erledigen."
 	if connected && fresh {
-		state = "Verbunden · nur lesen"
-		detail = "Die lokale Verbindung ist aktuell. Messwerte werden in diesem Schritt noch nicht übernommen."
+		state = "Verbunden und bereit"
+		detail = "Der Helfer bei Ihnen zu Hause meldet sich aktuell. Noch werden keine Messwerte übertragen."
 	} else if connected {
-		state = "Verbindung nicht aktuell"
-		detail = "Der lokale Connector hat sich länger nicht gemeldet. Bestehende Zugangsdaten bleiben unverändert."
+		state = "Verbindung braucht Aufmerksamkeit"
+		detail = "Der Helfer bei Ihnen zu Hause hat sich länger nicht gemeldet. Starten Sie ihn neu oder bereiten Sie die Verbindung erneut vor."
 	} else if connector.Status == store.HomeConnectorRevoked {
 		state = "Verbindung widerrufen"
-		detail = "Der bisherige Connector-Zugang ist nicht mehr gültig."
+		detail = "Der bisherige Zugang ist nicht mehr gültig. Sie können jederzeit eine neue Verbindung vorbereiten."
 	}
 	pairingPending := connector.PairingExpiresAt != nil && connector.PairingExpiresAt.After(now)
 	data := map[string]any{

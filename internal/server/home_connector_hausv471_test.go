@@ -25,7 +25,7 @@ func TestHomeConnectorPairRotateHeartbeatAndRevoke(t *testing.T) {
 	setupCookie := confirmedHomeSetupCookieHAUSV471(t, a, "stadtpark-home", "owner@example.com")
 
 	initial := homeConnectorSetupRequestHAUSV471(t, handler, http.MethodGet, "/start/connector", setupCookie, nil)
-	if initial.Code != http.StatusOK || !strings.Contains(initial.Body.String(), "Noch nicht gekoppelt") || !strings.Contains(initial.Body.String(), "Connector koppeln") {
+	if initial.Code != http.StatusOK || !strings.Contains(initial.Body.String(), "Noch nicht gekoppelt") || !strings.Contains(initial.Body.String(), "Energieverbindung vorbereiten") {
 		t.Fatalf("initial page status=%d body=%q", initial.Code, initial.Body.String())
 	}
 
@@ -54,7 +54,7 @@ func TestHomeConnectorPairRotateHeartbeatAndRevoke(t *testing.T) {
 		t.Fatalf("heartbeat cache control = %q", heartbeat.Header().Get("Cache-Control"))
 	}
 	connected := homeConnectorSetupRequestHAUSV471(t, handler, http.MethodGet, "/start/connector", setupCookie, nil)
-	for _, want := range []string{"Verbunden · nur lesen", "2026.8.1", "27", "Zugang erneuern", "Verbindung widerrufen", "noch nicht übernommen"} {
+	for _, want := range []string{"Verbunden und bereit", "2026.8.1", "27", "Verbindung erneut vorbereiten", "Verbindung widerrufen", "Noch werden keine Messwerte übertragen"} {
 		if !strings.Contains(connected.Body.String(), want) {
 			t.Fatalf("connected page missing %q", want)
 		}
