@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 // HAUSV-428: Der Sampler schreibt dieselbe Viertelstunde nach einem Neustart

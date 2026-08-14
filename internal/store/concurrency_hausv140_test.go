@@ -30,7 +30,7 @@ func TestAnnouncementStoreConcurrentCreateListDeletePersist(t *testing.T) {
 			defer wg.Done()
 			for i := 0; i < perWorker; i++ {
 				created, err := s.Create(Announcement{
-					TenantSlug: "jhw22",
+					TenantSlug: "demo",
 					Title:      fmt.Sprintf("w%d-%d", w, i),
 					Body:       "x",
 					AuthorName: "t",
@@ -39,9 +39,9 @@ func TestAnnouncementStoreConcurrentCreateListDeletePersist(t *testing.T) {
 					t.Errorf("create: %v", err)
 					return
 				}
-				_ = s.ListTenant("jhw22")
+				_ = s.ListTenant("demo")
 				if i%3 == 0 {
-					if _, err := s.Delete("jhw22", created.ID); err != nil {
+					if _, err := s.Delete("demo", created.ID); err != nil {
 						t.Errorf("delete: %v", err)
 						return
 					}
@@ -67,7 +67,7 @@ func TestAnnouncementStoreConcurrentCreateListDeletePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reload after concurrent writes: %v", err)
 	}
-	if got, want := len(reloaded.ListTenant("jhw22")), len(s.ListTenant("jhw22")); got != want {
+	if got, want := len(reloaded.ListTenant("demo")), len(s.ListTenant("demo")); got != want {
 		t.Fatalf("reloaded count %d != in-memory count %d", got, want)
 	}
 }
@@ -86,19 +86,19 @@ func TestUnitPaymentStatusStoreConcurrentSet(t *testing.T) {
 			defer wg.Done()
 			for i := 0; i < 50; i++ {
 				if _, err := s.Set(UnitPaymentStatus{
-					TenantSlug: "jhw22",
+					TenantSlug: "demo",
 					UnitID:     fmt.Sprintf("unit-%d", w),
 					Status:     UnitPaymentStatusPaid,
 				}); err != nil {
 					t.Errorf("set: %v", err)
 					return
 				}
-				_ = s.ListTenant("jhw22")
+				_ = s.ListTenant("demo")
 			}
 		}(w)
 	}
 	wg.Wait()
-	if got := len(s.ListTenant("jhw22")); got != 16 {
+	if got := len(s.ListTenant("demo")); got != 16 {
 		t.Fatalf("want 16 distinct units, got %d", got)
 	}
 }

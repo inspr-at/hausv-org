@@ -2,9 +2,9 @@
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.054.001.08">
   <BkToCstmrDbtCdtNtfctn>
     <Ntfctn>
-      <Id>JHW22-NOTIF-202607</Id>
+      <Id>DEMO-NOTIF-202607</Id>
       <Acct>
-        <Ownr><Nm>jhw22</Nm></Ownr>
+        <Ownr><Nm>demo</Nm></Ownr>
       </Acct>
       <Ntry>
         <NtryRef>adv-202607-1</NtryRef>
@@ -15,7 +15,7 @@
         <NtryDtls>
           <TxDtls>
             <Refs>
-              <EndToEndId>HV-JHW22-202607-GHI789</EndToEndId>
+              <EndToEndId>HV-DEMO-202607-GHI789</EndToEndId>
               <TxId>bank-tx-2</TxId>
             </Refs>
             <RltdPties>
@@ -23,7 +23,7 @@
               <DbtrAcct><Id><IBAN>AT000000000000000000</IBAN></Id></DbtrAcct>
             </RltdPties>
             <RmtInf>
-              <Ustrd>Hausgeld Juli HV-JHW22-202607-GHI789</Ustrd>
+              <Ustrd>Hausgeld Juli HV-DEMO-202607-GHI789</Ustrd>
             </RmtInf>
           </TxDtls>
         </NtryDtls>

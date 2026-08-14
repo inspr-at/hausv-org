@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 // VoteStorage is the behaviour both the JSON VoteStore and the SQLite

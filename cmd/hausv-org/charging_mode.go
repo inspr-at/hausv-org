@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func runChargingMode(args []string) error {

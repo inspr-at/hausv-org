@@ -24,7 +24,7 @@ func TestAuditStoreRotatesAndPreservesHistory(t *testing.T) {
 	}
 	const total = 60
 	for i := 0; i < total; i++ {
-		if err := s.Append(AuditEvent{TenantSlug: "jhw22", ActorEmail: "a@b.c", Action: AuditActionLogin, Summary: "x"}); err != nil {
+		if err := s.Append(AuditEvent{TenantSlug: "demo", ActorEmail: "a@b.c", Action: AuditActionLogin, Summary: "x"}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -51,7 +51,7 @@ func TestAuditStoreRotatesAndPreservesHistory(t *testing.T) {
 		t.Fatal("no archive file created — history would be lost, not preserved")
 	}
 	// Queries still work off the retained tail.
-	if got := s.List(AuditFilter{TenantSlug: "jhw22", Limit: 3}); len(got) != 3 {
+	if got := s.List(AuditFilter{TenantSlug: "demo", Limit: 3}); len(got) != 3 {
 		t.Fatalf("List after rotation returned %d, want 3", len(got))
 	}
 }
@@ -72,7 +72,7 @@ func TestAuditStoreRotatesByAgeAndSize(t *testing.T) {
 		t.Fatal(err)
 	}
 	old := time.Now().Add(-48 * time.Hour)
-	if err := s.Append(AuditEvent{At: old, TenantSlug: "jhw22", Action: AuditActionLogin, Summary: "old"}); err != nil {
+	if err := s.Append(AuditEvent{At: old, TenantSlug: "demo", Action: AuditActionLogin, Summary: "old"}); err != nil {
 		t.Fatal(err)
 	}
 	if archives, _ := filepath.Glob(path + ".*"); len(archives) == 0 {
@@ -84,7 +84,7 @@ func TestAuditStoreRotatesByAgeAndSize(t *testing.T) {
 
 	auditRotateMaxAge = 365 * 24 * time.Hour
 	auditRotateMaxBytes = 1
-	if err := s.Append(AuditEvent{TenantSlug: "jhw22", Action: AuditActionLogin, Summary: "large"}); err != nil {
+	if err := s.Append(AuditEvent{TenantSlug: "demo", Action: AuditActionLogin, Summary: "large"}); err != nil {
 		t.Fatal(err)
 	}
 	if archives, _ := filepath.Glob(path + ".*"); len(archives) < 2 {

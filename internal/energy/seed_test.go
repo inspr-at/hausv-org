@@ -8,11 +8,11 @@ import (
 func TestApplyProfileSeedsCreatesThreeObserveOnlyPilotsAndNeverOverwrites(t *testing.T) {
 	storage := NewMemoryStore()
 	now := time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC)
-	known := map[string]struct{}{"jhw22": {}, "eltern": {}, "schwiegereltern": {}}
+	known := map[string]struct{}{"demo": {}, "haus-a": {}, "haus-b": {}}
 	raw := `[
-		{"tenant_slug":"jhw22","household_name":"Wohnung Barta","home_type":"apartment","assets":["ev"],"complete":true},
-		{"tenant_slug":"eltern","household_name":"Haus Eltern","home_type":"house","assets":["pv","ev","hot-water"]},
-		{"tenant_slug":"schwiegereltern","household_name":"Haus Schwiegereltern","home_type":"house","assets":["pv","battery","ev"]}
+		{"tenant_slug":"demo","household_name":"Demo-Wohnung","home_type":"apartment","assets":["ev"],"complete":true},
+		{"tenant_slug":"haus-a","household_name":"Haus A","home_type":"house","assets":["pv","ev","hot-water"]},
+		{"tenant_slug":"haus-b","household_name":"Haus B","home_type":"house","assets":["pv","battery","ev"]}
 	]`
 	if err := ApplyProfileSeeds(storage, raw, known, now); err != nil {
 		t.Fatalf("ApplyProfileSeeds: %v", err)
@@ -26,22 +26,22 @@ func TestApplyProfileSeedsCreatesThreeObserveOnlyPilotsAndNeverOverwrites(t *tes
 			t.Fatalf("%s mode = %s/%s", slug, profile.OperatingMode, profile.AutomationStage)
 		}
 	}
-	jhw22, _, _ := storage.Profile("jhw22")
-	jhw22.HouseholdName = "Vom Nutzer geändert"
-	if err := storage.SaveProfile(jhw22); err != nil {
+	demo, _, _ := storage.Profile("demo")
+	demo.HouseholdName = "Vom Nutzer geändert"
+	if err := storage.SaveProfile(demo); err != nil {
 		t.Fatal(err)
 	}
 	if err := ApplyProfileSeeds(storage, raw, known, now.Add(time.Hour)); err != nil {
 		t.Fatalf("second ApplyProfileSeeds: %v", err)
 	}
-	jhw22, _, _ = storage.Profile("jhw22")
-	if jhw22.HouseholdName != "Vom Nutzer geändert" {
-		t.Fatalf("seed overwrote profile: %+v", jhw22)
+	demo, _, _ = storage.Profile("demo")
+	if demo.HouseholdName != "Vom Nutzer geändert" {
+		t.Fatalf("seed overwrote profile: %+v", demo)
 	}
 }
 
 func TestApplyProfileSeedsRejectsUnknownTenant(t *testing.T) {
-	err := ApplyProfileSeeds(NewMemoryStore(), `[{"tenant_slug":"foreign","household_name":"Nope"}]`, map[string]struct{}{"jhw22": {}}, time.Now())
+	err := ApplyProfileSeeds(NewMemoryStore(), `[{"tenant_slug":"foreign","household_name":"Nope"}]`, map[string]struct{}{"demo": {}}, time.Now())
 	if err == nil {
 		t.Fatal("expected unknown tenant error")
 	}

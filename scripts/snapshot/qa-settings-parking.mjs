@@ -188,11 +188,11 @@ async function geometry(page, viewport, label) {
   if (result.smallTargets.length) fail(`${label}: Touch-Ziele unter 44px: ${JSON.stringify(result.smallTargets)}`);
   if (result.clipped.length) fail(`${label}: seitlich abgeschnitten: ${JSON.stringify(result.clipped)}`);
   if (result.shellOverlap) fail(`${label}: Ortskopf und Menü überlappen`);
-  if (!result.address.startsWith('Janischhofweg 22') || /\bJHW22\b/i.test(result.address)) {
+  if (!result.address.startsWith('Musterweg 1') || /\bDEMO\b/i.test(result.address)) {
     fail(`${label}: sichtbare Adresse ist nicht sinnvoll ausgeschrieben (${result.address})`);
   }
-  if (!result.mapLabel.includes('Janischhofweg 22, 8043 Graz') ||
-      !result.homeLabel.includes('Janischhofweg 22, 8043 Graz')) {
+  if (!result.mapLabel.includes('Musterweg 1, 1010 Wien') ||
+      !result.homeLabel.includes('Musterweg 1, 1010 Wien')) {
     fail(`${label}: vollständige Adresse fehlt in den zugänglichen Linknamen`);
   }
   if (viewport.width === 320 && result.addressScrollWidth > result.addressWidth + 1) {
@@ -257,7 +257,7 @@ async function assertAccess(page, label, viewport) {
   })));
   const requiredEmails = ['admin@example.com', 'owner@example.com', 'resident@example.com', 'verwalter@example.com'];
   // The unified browser gate deliberately keeps its fake data between
-  // lifecycles. The base flow may therefore have created this valid JHW22
+  // lifecycles. The base flow may therefore have created this valid DEMO
   // technical helper before the settings flow starts. Prove the stable
   // principals and tenant boundary without treating legitimate prior state as
   // a leak from another house.
@@ -267,7 +267,7 @@ async function assertAccess(page, label, viewport) {
     fail(`${label}: Zugriffsliste verletzt den erwarteten Hausumfang (${JSON.stringify(rows)})`);
   }
   if (rows.some((row) => !row.name || row.name === row.email)) fail(`${label}: E-Mail wird trotz Name als Primärlabel gezeigt`);
-  if (rows.some((row) => /parents|inlaws|cockpit/i.test(row.email))) fail(`${label}: fremder Mandant in Zugriffsliste`);
+  if (rows.some((row) => /house_a|house_b|cockpit/i.test(row.email))) fail(`${label}: fremder Mandant in Zugriffsliste`);
   const fixed = page.locator('.access-fixed').first();
   if (!(await fixed.count()) || !(await fixed.getAttribute('aria-label'))?.includes('hier nicht änderbar')) {
     fail(`${label}: Erklärung für festen Zugriff fehlt`);
@@ -547,7 +547,7 @@ async function exerciseStructuredExport() {
     page.waitForEvent('download'),
     page.getByRole('button', { name: 'ZIP herunterladen' }).click(),
   ]);
-  if (!/^hausv-rohdaten-jhw22-\d{8}-\d{6}\.zip$/.test(download.suggestedFilename())) {
+  if (!/^hausv-rohdaten-demo-\d{8}-\d{6}\.zip$/.test(download.suggestedFilename())) {
     fail(`Datenübergabe: unerwarteter Dateiname ${download.suggestedFilename()}`);
   }
   const stream = await download.createReadStream();
@@ -642,7 +642,7 @@ function writePopulatedFixture(target) {
   const oldestYear = Number(older.slice(0, 4)) - 1;
   const fixture = {
     tenants: {
-      jhw22: {
+      demo: {
         settings: {
           grid_fee_eur_per_kwh: 0.1,
           base_fee_eur: 3,

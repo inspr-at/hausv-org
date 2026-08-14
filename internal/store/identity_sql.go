@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 // Person is the global identity: who someone is, and whether they may sign in

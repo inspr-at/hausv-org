@@ -23,10 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/auth"
-	"github.com/markus-barta/hausv-org/internal/energy"
-	"github.com/markus-barta/hausv-org/internal/version"
-	"github.com/markus-barta/hausv-org/internal/web"
+	"github.com/inspr-at/hausv-org/internal/auth"
+	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/version"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 type sentNotification struct {
@@ -130,7 +130,7 @@ func TestInviteStoreAddDedupeGetList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newInviteStore: %v", err)
 	}
-	p := userProfile{Email: "New.Person@example.com", FirstName: "New", LastName: "Person", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	p := userProfile{Email: "New.Person@example.com", FirstName: "New", LastName: "Person", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	added, err := store.Add(p)
 	if err != nil || !added {
 		t.Fatalf("first Add: added=%v err=%v", added, err)
@@ -165,7 +165,7 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newUnitStore: %v", err)
 	}
-	if err := store.SetTenantUnits("jhw22", []unit{
+	if err := store.SetTenantUnits("demo", []unit{
 		{
 			ID:                    "Top_2",
 			Label:                 "Top 2",
@@ -186,7 +186,7 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 
-	units := store.ListTenant("JHW22")
+	units := store.ListTenant("DEMO")
 	if len(units) != 3 {
 		t.Fatalf("ListTenant len = %d, want 3", len(units))
 	}
@@ -206,15 +206,15 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 		t.Fatalf("legacy unit should default to residential/full billable: %+v", units[1])
 	}
 
-	memberships := store.UnitsForEmail("jhw22", "OWNER@example.com")
+	memberships := store.UnitsForEmail("demo", "OWNER@example.com")
 	if len(memberships) != 1 || memberships[0].Unit.ID != "top-2" || memberships[0].Relation != roleOwner {
 		t.Fatalf("owner memberships = %+v", memberships)
 	}
-	renterMemberships := store.UnitsForEmail("jhw22", "renter@example.com")
+	renterMemberships := store.UnitsForEmail("demo", "renter@example.com")
 	if len(renterMemberships) != 1 || renterMemberships[0].Relation != roleRenter {
 		t.Fatalf("renter memberships = %+v", renterMemberships)
 	}
-	members := store.MembersForUnit("jhw22", "top-2")
+	members := store.MembersForUnit("demo", "top-2")
 	if !members.Found || len(members.Owners) != 1 || members.Owners[0] != "owner@example.com" || len(members.Renters) != 1 || members.Renters[0] != "renter@example.com" {
 		t.Fatalf("members = %+v", members)
 	}
@@ -227,10 +227,10 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	if got := reopened.UnitCount("jhw22"); got != 3 {
+	if got := reopened.UnitCount("demo"); got != 3 {
 		t.Fatalf("reopened UnitCount = %d, want 3", got)
 	}
-	if got := reopened.BillableUnitWeight("jhw22"); got != 2*unitBillableFullPPM {
+	if got := reopened.BillableUnitWeight("demo"); got != 2*unitBillableFullPPM {
 		t.Fatalf("reopened BillableUnitWeight = %d, want %d", got, 2*unitBillableFullPPM)
 	}
 }
@@ -242,7 +242,7 @@ func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
 		t.Fatalf("newVoteStore: %v", err)
 	}
 	created, err := store.Create(ballot{
-		TenantSlug:  "JHW22",
+		TenantSlug:  "DEMO",
 		Title:       "Ladestation beschließen",
 		Description: "Soll eine Wallbox angeschafft werden?",
 		Options:     []string{"Ja", "Nein", "Ja"},
@@ -255,29 +255,29 @@ func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	if created.ID == "" || created.Status != ballotStatusDraft || created.TenantSlug != "jhw22" || len(created.Options) != 2 || created.CreatedBy != "manager@example.com" {
+	if created.ID == "" || created.Status != ballotStatusDraft || created.TenantSlug != "demo" || len(created.Options) != 2 || created.CreatedBy != "manager@example.com" {
 		t.Fatalf("created ballot = %+v", created)
 	}
-	opened, found, err := store.Open("jhw22", created.ID, time.Now())
+	opened, found, err := store.Open("demo", created.ID, time.Now())
 	if err != nil || !found || opened.Status != ballotStatusOpen {
 		t.Fatalf("Open = %+v found=%v err=%v", opened, found, err)
 	}
-	voted, found, err := store.CastVote("jhw22", created.ID, "Owner@Example.com", "Ja", 12345, time.Now())
+	voted, found, err := store.CastVote("demo", created.ID, "Owner@Example.com", "Ja", 12345, time.Now())
 	if err != nil || !found {
 		t.Fatalf("CastVote first found=%v err=%v", found, err)
 	}
 	if vote := voted.Votes["owner@example.com"]; vote.Option != "Ja" || vote.Weight != 12345 {
 		t.Fatalf("first vote = %+v", vote)
 	}
-	voted, found, err = store.CastVote("jhw22", created.ID, "owner@example.com", "Nein", 12345, time.Now())
+	voted, found, err = store.CastVote("demo", created.ID, "owner@example.com", "Nein", 12345, time.Now())
 	if err != nil || !found || len(voted.Votes) != 1 || voted.Votes["owner@example.com"].Option != "Nein" {
 		t.Fatalf("mutable vote = %+v found=%v err=%v", voted.Votes, found, err)
 	}
-	closed, found, err := store.Close("jhw22", created.ID, time.Now())
+	closed, found, err := store.Close("demo", created.ID, time.Now())
 	if err != nil || !found || closed.Status != ballotStatusClosed {
 		t.Fatalf("Close = %+v found=%v err=%v", closed, found, err)
 	}
-	if _, _, err := store.CastVote("jhw22", created.ID, "owner@example.com", "Ja", 12345, time.Now()); err == nil {
+	if _, _, err := store.CastVote("demo", created.ID, "owner@example.com", "Ja", 12345, time.Now()); err == nil {
 		t.Fatal("closed ballot should reject votes")
 	}
 	info, err := os.Stat(path)
@@ -288,24 +288,24 @@ func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	loaded, ok := reopened.Get("jhw22", created.ID)
+	loaded, ok := reopened.Get("demo", created.ID)
 	if !ok || loaded.Status != ballotStatusClosed || loaded.Votes["owner@example.com"].Option != "Nein" {
 		t.Fatalf("loaded ballot = %+v ok=%v", loaded, ok)
 	}
 }
 
 func TestBallotVoteWeightUsesOwnerUnits(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
-		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 12345, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
-		{ID: "top-2", TenantSlug: "jhw22", Label: "Top 2", MiteigentumsanteilPPM: 22222, OwnerEmails: []string{"owner@example.com"}},
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	if err := a.unitStore.SetTenantUnits("demo", []unit{
+		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 12345, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
+		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", MiteigentumsanteilPPM: 22222, OwnerEmails: []string{"owner@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	shareBallot, err := a.voteStore.Create(ballot{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Sanierung",
 		Options:    []string{"Ja", "Nein"},
 		Type:       ballotTypeCircular,
@@ -315,21 +315,21 @@ func TestBallotVoteWeightUsesOwnerUnits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create share ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("jhw22", shareBallot.ID, time.Now()); err != nil {
+	if _, _, err := a.voteStore.Open("demo", shareBallot.ID, time.Now()); err != nil {
 		t.Fatalf("Open share ballot: %v", err)
 	}
-	updated, found, err := a.castBallotVote("jhw22", "owner@example.com", shareBallot.ID, "Ja", time.Now())
+	updated, found, err := a.castBallotVote("demo", "owner@example.com", shareBallot.ID, "Ja", time.Now())
 	if err != nil || !found {
 		t.Fatalf("owner cast share vote found=%v err=%v", found, err)
 	}
 	if got := updated.Votes["owner@example.com"].Weight; got != 34567 {
 		t.Fatalf("owner share vote weight = %d, want 34567", got)
 	}
-	if _, _, err := a.castBallotVote("jhw22", "renter@example.com", shareBallot.ID, "Ja", time.Now()); err == nil {
+	if _, _, err := a.castBallotVote("demo", "renter@example.com", shareBallot.ID, "Ja", time.Now()); err == nil {
 		t.Fatal("renter should not be eligible for owner ballot")
 	}
 	headBallot, err := a.voteStore.Create(ballot{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Pro Kopf",
 		Options:    []string{"Ja", "Nein"},
 		Type:       ballotTypeMeeting,
@@ -339,26 +339,26 @@ func TestBallotVoteWeightUsesOwnerUnits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create head ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("jhw22", headBallot.ID, time.Now()); err != nil {
+	if _, _, err := a.voteStore.Open("demo", headBallot.ID, time.Now()); err != nil {
 		t.Fatalf("Open head ballot: %v", err)
 	}
-	updated, found, err = a.castBallotVote("jhw22", "owner@example.com", headBallot.ID, "Nein", time.Now())
+	updated, found, err = a.castBallotVote("demo", "owner@example.com", headBallot.ID, "Nein", time.Now())
 	if err != nil || !found || updated.Votes["owner@example.com"].Weight != 1 {
 		t.Fatalf("owner cast head vote = %+v found=%v err=%v", updated.Votes["owner@example.com"], found, err)
 	}
 }
 
 func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
-		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
+	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	if err := a.unitStore.SetTenantUnits("demo", []unit{
+		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	created, err := a.voteStore.Create(ballot{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Dachsanierung",
 		Options:    []string{"Ja", "Nein"},
 		Type:       ballotTypeCircular,
@@ -368,16 +368,16 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("jhw22", created.ID, time.Now()); err != nil {
+	if _, _, err := a.voteStore.Open("demo", created.ID, time.Now()); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
 
-	ownerPage := authedRequest(t, a, "owner@example.com", "/app/abstimmungen")
+	ownerPage := authedRequest(t, a, "owner@example.com", "/demo/app/abstimmungen")
 	if ownerPage.Code != http.StatusOK {
 		t.Fatalf("owner ballots status = %d", ownerPage.Code)
 	}
 	ownerBody := ownerPage.Body.String()
-	for _, want := range []string{`href="/app/abstimmungen"`, "nav-item active", "Dachsanierung", `name="option"`, "Ihre Stimme zählt: " + formatBallotWeight(400000), "Ihre Stimme ist gefragt", "Details zur Abstimmung"} {
+	for _, want := range []string{`href="/demo/app/abstimmungen"`, "nav-item active", "Dachsanierung", `name="option"`, "Ihre Stimme zählt: " + formatBallotWeight(400000), "Ihre Stimme ist gefragt", "Details zur Abstimmung"} {
 		if !strings.Contains(ownerBody, want) {
 			t.Fatalf("owner ballots page missing %q:\n%s", want, ownerBody)
 		}
@@ -389,21 +389,21 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 		t.Fatalf("Abstimmungen nav item must be a live link:\n%s", ownerBody)
 	}
 
-	vote := authedFormRequest(t, a, "owner@example.com", "/app/abstimmungen", url.Values{
+	vote := authedFormRequest(t, a, "owner@example.com", "/demo/app/abstimmungen", url.Values{
 		"ballot_id": {created.ID},
 		"option":    {"Ja"},
 	})
 	if vote.Code != http.StatusSeeOther {
 		t.Fatalf("owner vote status = %d, want redirect", vote.Code)
 	}
-	if location := vote.Header().Get("Location"); location != "/app/abstimmungen?vote=cast#ballot-"+created.ID {
+	if location := vote.Header().Get("Location"); location != "/demo/app/abstimmungen?vote=cast#ballot-"+created.ID {
 		t.Fatalf("owner vote redirect = %q, want ballot anchor", location)
 	}
-	stored, _ := a.voteStore.Get("jhw22", created.ID)
+	stored, _ := a.voteStore.Get("demo", created.ID)
 	if got := stored.Votes["owner@example.com"].Weight; got != 400000 {
 		t.Fatalf("owner vote weight = %d, want 400000", got)
 	}
-	voteEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionVoteCast, Limit: 10})
+	voteEvents := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionVoteCast, Limit: 10})
 	if len(voteEvents) != 1 || voteEvents[0].TargetID != created.ID || voteEvents[0].Details["weight"] == "" || voteEvents[0].Details["cast_at"] == "" {
 		t.Fatalf("vote audit event should record timestamp/weight without option: %+v", voteEvents)
 	}
@@ -418,7 +418,7 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 		{"renter@example.com", "Nur Eigentümer können abstimmen."},
 		{"beirat@example.com", "Beirat: lesende Übersicht."},
 	} {
-		page := authedRequest(t, a, persona.email, "/app/abstimmungen")
+		page := authedRequest(t, a, persona.email, "/demo/app/abstimmungen")
 		if page.Code != http.StatusOK {
 			t.Fatalf("%s ballots status = %d", persona.email, page.Code)
 		}
@@ -429,7 +429,7 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 		if strings.Contains(body, `name="option"`) {
 			t.Fatalf("%s must not see vote inputs:\n%s", persona.email, body)
 		}
-		post := authedFormRequest(t, a, persona.email, "/app/abstimmungen", url.Values{
+		post := authedFormRequest(t, a, persona.email, "/demo/app/abstimmungen", url.Values{
 			"ballot_id": {created.ID},
 			"option":    {"Nein"},
 		})
@@ -438,16 +438,16 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 		}
 	}
 
-	board := authedRequest(t, a, "beirat@example.com", "/app/abstimmungen").Body.String()
+	board := authedRequest(t, a, "beirat@example.com", "/demo/app/abstimmungen").Body.String()
 	if !strings.Contains(board, "Teilnahme") || !strings.Contains(board, "100,0 %") || !strings.Contains(board, formatBallotResultWeight(ballotWeightingPerShare, 400000)+" · 1 Stimmen") {
 		t.Fatalf("beirat oversight should show weighted aggregate:\n%s", board)
 	}
 }
 
 func TestBallotCreateShowsAttachmentPreview(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	create := authedMultipartFileRequest(t, a, "manager@example.com", "/app/abstimmungen", map[string]string{
+	create := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/abstimmungen", map[string]string{
 		"title":        "Dachsanierung",
 		"description":  "Unterlagen beachten.",
 		"options_text": "Ja\nNein",
@@ -457,15 +457,15 @@ func TestBallotCreateShowsAttachmentPreview(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("ballot create status = %d, want redirect", create.Code)
 	}
-	ballots := a.voteStore.ListTenant("jhw22")
+	ballots := a.voteStore.ListTenant("demo")
 	if len(ballots) != 1 {
 		t.Fatalf("ballots = %+v", ballots)
 	}
-	attachments := a.attachmentStore.ListEntity("jhw22", "ballot", ballots[0].ID)
+	attachments := a.attachmentStore.ListEntity("demo", "ballot", ballots[0].ID)
 	if len(attachments) != 1 || attachments[0].ContentType != "application/pdf" {
 		t.Fatalf("ballot attachments = %+v", attachments)
 	}
-	page := authedRequest(t, a, "manager@example.com", "/app/abstimmungen")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/abstimmungen")
 	body := page.Body.String()
 	if !strings.Contains(body, "angebot.pdf") || !strings.Contains(body, "Dachsanierung") {
 		t.Fatalf("ballots page should render attachment:\n%s", body)
@@ -481,19 +481,19 @@ func TestBallotCreateShowsAttachmentPreview(t *testing.T) {
 }
 
 func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "owner1@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["owner2@example.com"] = userProfile{Email: "owner2@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
-		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner1@example.com"}, RenterEmails: []string{"renter@example.com"}},
-		{ID: "top-2", TenantSlug: "jhw22", Label: "Top 2", MiteigentumsanteilPPM: 600000, OwnerEmails: []string{"owner2@example.com"}},
+	a := newTestPortalApp(t, userProfile{Email: "owner1@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["owner2@example.com"] = userProfile{Email: "owner2@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	if err := a.unitStore.SetTenantUnits("demo", []unit{
+		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner1@example.com"}, RenterEmails: []string{"renter@example.com"}},
+		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", MiteigentumsanteilPPM: 600000, OwnerEmails: []string{"owner2@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	deadline := time.Now().Add(time.Hour)
 	created, err := a.voteStore.Create(ballot{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Fassade",
 		Options:    []string{"Ja", "Nein"},
 		Type:       ballotTypeCircular,
@@ -505,35 +505,35 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("jhw22", created.ID, time.Now()); err != nil {
+	if _, _, err := a.voteStore.Open("demo", created.ID, time.Now()); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
-	if _, _, err := a.castBallotVote("jhw22", "owner1@example.com", created.ID, "Ja", time.Now()); err != nil {
+	if _, _, err := a.castBallotVote("demo", "owner1@example.com", created.ID, "Ja", time.Now()); err != nil {
 		t.Fatalf("owner1 vote: %v", err)
 	}
-	item, _ := a.voteStore.Get("jhw22", created.ID)
-	view := a.ballotViewForActor("jhw22", "beirat@example.com", roleBeirat, item, time.Now(), true)
+	item, _ := a.voteStore.Get("demo", created.ID)
+	view := a.ballotViewForActor("demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
 	if view.TotalWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 400000) || view.EligibleWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 1000000) || view.Participation != "40,0 %" || view.QuorumStatus != "Quorum offen" || view.WinnerLabel != "Ja" {
 		t.Fatalf("single-vote tally = %+v", view)
 	}
-	if _, _, err := a.castBallotVote("jhw22", "owner2@example.com", created.ID, "Nein", time.Now()); err != nil {
+	if _, _, err := a.castBallotVote("demo", "owner2@example.com", created.ID, "Nein", time.Now()); err != nil {
 		t.Fatalf("owner2 vote: %v", err)
 	}
-	item, _ = a.voteStore.Get("jhw22", created.ID)
-	view = a.ballotViewForActor("jhw22", "beirat@example.com", roleBeirat, item, time.Now(), true)
+	item, _ = a.voteStore.Get("demo", created.ID)
+	view = a.ballotViewForActor("demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
 	if view.TotalWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 1000000) || view.Participation != "100,0 %" || view.QuorumStatus != "Quorum erreicht" || view.WinnerLabel != "Nein" {
 		t.Fatalf("full tally = %+v", view)
 	}
 
-	openProtocol := authedRequest(t, a, "owner1@example.com", "/app/abstimmungen/"+created.ID+"/protokoll")
+	openProtocol := authedRequest(t, a, "owner1@example.com", "/demo/app/abstimmungen/"+created.ID+"/protokoll")
 	if openProtocol.Code != http.StatusConflict {
 		t.Fatalf("open protocol status = %d, want 409", openProtocol.Code)
 	}
-	closed, err := a.voteStore.CloseExpiredTenant("jhw22", deadline.Add(time.Minute))
+	closed, err := a.voteStore.CloseExpiredTenant("demo", deadline.Add(time.Minute))
 	if err != nil || len(closed) != 1 || closed[0].Status != ballotStatusClosed {
 		t.Fatalf("CloseExpiredTenant = %+v err=%v", closed, err)
 	}
-	protocol := authedRequest(t, a, "owner1@example.com", "/app/abstimmungen/"+created.ID+"/protokoll")
+	protocol := authedRequest(t, a, "owner1@example.com", "/demo/app/abstimmungen/"+created.ID+"/protokoll")
 	if protocol.Code != http.StatusOK {
 		t.Fatalf("protocol status = %d", protocol.Code)
 	}
@@ -546,22 +546,22 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 			t.Fatalf("protocol missing %q:\n%s", want, body)
 		}
 	}
-	renterProtocol := authedRequest(t, a, "renter@example.com", "/app/abstimmungen/"+created.ID+"/protokoll")
+	renterProtocol := authedRequest(t, a, "renter@example.com", "/demo/app/abstimmungen/"+created.ID+"/protokoll")
 	if renterProtocol.Code != http.StatusForbidden {
 		t.Fatalf("renter protocol status = %d, want 403", renterProtocol.Code)
 	}
 }
 
 func TestBallotVoteAfterDeadlineAutoCloses(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
-		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 1000000, OwnerEmails: []string{"owner@example.com"}},
+	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if err := a.unitStore.SetTenantUnits("demo", []unit{
+		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 1000000, OwnerEmails: []string{"owner@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	now := time.Now()
 	created, err := a.voteStore.Create(ballot{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Deadline",
 		Options:    []string{"Ja", "Nein"},
 		Type:       ballotTypeCircular,
@@ -573,31 +573,31 @@ func TestBallotVoteAfterDeadlineAutoCloses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("jhw22", created.ID, now.Add(-2*time.Hour)); err != nil {
+	if _, _, err := a.voteStore.Open("demo", created.ID, now.Add(-2*time.Hour)); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
-	if _, _, err := a.castBallotVote("jhw22", "owner@example.com", created.ID, "Ja", now); err == nil {
+	if _, _, err := a.castBallotVote("demo", "owner@example.com", created.ID, "Ja", now); err == nil {
 		t.Fatal("vote after deadline should fail")
 	}
-	closed, _ := a.voteStore.Get("jhw22", created.ID)
+	closed, _ := a.voteStore.Get("demo", created.ID)
 	if closed.Status != ballotStatusClosed {
 		t.Fatalf("deadline vote should auto-close ballot: %+v", closed)
 	}
-	page := authedRequest(t, a, "owner@example.com", "/app/abstimmungen").Body.String()
+	page := authedRequest(t, a, "owner@example.com", "/demo/app/abstimmungen").Body.String()
 	if strings.Contains(page, `name="option"`) || !strings.Contains(page, `aria-label="Abstimmungsergebnis"`) || strings.Contains(page, `class="vote-option vote-option-static"`) {
 		t.Fatalf("closed ballot should render read-only:\n%s", page)
 	}
 }
 
 func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["owner1@example.com"] = userProfile{Email: "owner1@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["owner2@example.com"] = userProfile{Email: "owner2@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["owner3@example.com"] = userProfile{Email: "owner3@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
-		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 300000, OwnerEmails: []string{"owner1@example.com"}},
-		{ID: "top-2", TenantSlug: "jhw22", Label: "Top 2", MiteigentumsanteilPPM: 300000, OwnerEmails: []string{"owner2@example.com"}},
-		{ID: "top-3", TenantSlug: "jhw22", Label: "Top 3", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner3@example.com"}},
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["owner1@example.com"] = userProfile{Email: "owner1@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["owner2@example.com"] = userProfile{Email: "owner2@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["owner3@example.com"] = userProfile{Email: "owner3@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	if err := a.unitStore.SetTenantUnits("demo", []unit{
+		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 300000, OwnerEmails: []string{"owner1@example.com"}},
+		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", MiteigentumsanteilPPM: 300000, OwnerEmails: []string{"owner2@example.com"}},
+		{ID: "top-3", TenantSlug: "demo", Label: "Top 3", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner3@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
@@ -608,7 +608,7 @@ func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
 	}
 	now := time.Now()
 	created, err := a.voteStore.Create(ballot{
-		TenantSlug:            "jhw22",
+		TenantSlug:            "demo",
 		Title:                 "Reminder",
 		Options:               []string{"Ja", "Nein"},
 		Type:                  ballotTypeCircular,
@@ -620,20 +620,20 @@ func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("jhw22", created.ID, now); err != nil {
+	if _, _, err := a.voteStore.Open("demo", created.ID, now); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
-	if _, _, err := a.castBallotVote("jhw22", "owner1@example.com", created.ID, "Ja", now); err != nil {
+	if _, _, err := a.castBallotVote("demo", "owner1@example.com", created.ID, "Ja", now); err != nil {
 		t.Fatalf("owner1 vote: %v", err)
 	}
 
 	if sent := a.sendDueBallotReminders(now.Add(30 * time.Minute)); sent != 1 {
 		t.Fatalf("sendDueBallotReminders sent = %d, want 1", sent)
 	}
-	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "owner2@example.com" || !strings.Contains(mailer.notifications[0].Subject, "Reminder") || !strings.Contains(mailer.notifications[0].Body, "/app/abstimmungen#ballot-"+created.ID) {
+	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "owner2@example.com" || !strings.Contains(mailer.notifications[0].Subject, "Reminder") || !strings.Contains(mailer.notifications[0].Body, "/demo/app/abstimmungen#ballot-"+created.ID) {
 		t.Fatalf("reminder notifications = %+v", mailer.notifications)
 	}
-	updated, _ := a.voteStore.Get("jhw22", created.ID)
+	updated, _ := a.voteStore.Get("demo", created.ID)
 	if _, ok := updated.ReminderSentAt["owner2@example.com"]; !ok {
 		t.Fatalf("owner2 should be marked reminded: %+v", updated.ReminderSentAt)
 	}
@@ -646,7 +646,7 @@ func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
 	if sent := a.sendDueBallotReminders(now.Add(time.Hour)); sent != 0 || len(mailer.notifications) != 1 {
 		t.Fatalf("duplicate reminders sent=%d notifications=%+v", sent, mailer.notifications)
 	}
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionVoteReminder, Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionVoteReminder, Limit: 10})
 	if len(events) != 1 || events[0].Details["recipients"] != "1" || events[0].Details["title"] != "Reminder" {
 		t.Fatalf("reminder audit events = %+v", events)
 	}
@@ -661,7 +661,7 @@ func TestDocumentStoreCreatePersistAndValidate(t *testing.T) {
 		t.Fatalf("newDocumentStore: %v", err)
 	}
 	created, err := store.Create(documentRecord{
-		TenantSlug: "JHW22",
+		TenantSlug: "DEMO",
 		Title:      "Hausordnung",
 		Category:   documentCategoryRules,
 		Visibility: documentVisibilityAllResidents,
@@ -670,7 +670,7 @@ func TestDocumentStoreCreatePersistAndValidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	if created.ID == "" || created.TenantSlug != "jhw22" || created.Filename != "Hausordnung.pdf" || created.StoredFilename == created.Filename {
+	if created.ID == "" || created.TenantSlug != "demo" || created.Filename != "Hausordnung.pdf" || created.StoredFilename == created.Filename {
 		t.Fatalf("created document not normalized/private: %+v", created)
 	}
 	if created.ContentType != "application/pdf" || created.UploadedBy != "manager@example.com" || created.Size <= 0 {
@@ -690,12 +690,12 @@ func TestDocumentStoreCreatePersistAndValidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	docs := reopened.ListTenant("JHW22")
+	docs := reopened.ListTenant("DEMO")
 	if len(docs) != 1 || docs[0].Title != "Hausordnung" {
 		t.Fatalf("reopened docs = %+v", docs)
 	}
 	if _, err := store.Create(documentRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Script",
 		Category:   documentCategoryOther,
 		Visibility: documentVisibilityAllResidents,
@@ -712,7 +712,7 @@ func TestDocumentStoreReplaceKeepsVersionHistory(t *testing.T) {
 		t.Fatalf("newDocumentStore: %v", err)
 	}
 	created, err := store.Create(documentRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Hausordnung",
 		Category:   documentCategoryRules,
 		Visibility: documentVisibilityAllResidents,
@@ -721,7 +721,7 @@ func TestDocumentStoreReplaceKeepsVersionHistory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	replacement, replaced, err := store.Replace("jhw22", created.ID, "manager@example.com", testMultipartHeader(t, "document", "hausordnung-v2.pdf", []byte("%PDF-1.4\nv2\n")), time.Date(2026, 2, 1, 9, 0, 0, 0, time.UTC))
+	replacement, replaced, err := store.Replace("demo", created.ID, "manager@example.com", testMultipartHeader(t, "document", "hausordnung-v2.pdf", []byte("%PDF-1.4\nv2\n")), time.Date(2026, 2, 1, 9, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatalf("Replace: %v", err)
 	}
@@ -731,11 +731,11 @@ func TestDocumentStoreReplaceKeepsVersionHistory(t *testing.T) {
 	if replaced.Current || replaced.ReplacedByID != replacement.ID {
 		t.Fatalf("replaced metadata = %+v", replaced)
 	}
-	current := store.ListCurrentTenant("jhw22")
+	current := store.ListCurrentTenant("demo")
 	if len(current) != 1 || current[0].ID != replacement.ID {
 		t.Fatalf("current docs = %+v", current)
 	}
-	versions := store.Versions("jhw22", created.SeriesID)
+	versions := store.Versions("demo", created.SeriesID)
 	if len(versions) != 2 || versions[0].Version != 2 || versions[1].Version != 1 {
 		t.Fatalf("versions = %+v", versions)
 	}
@@ -758,7 +758,7 @@ func TestIssueStoreCreateListPersist(t *testing.T) {
 		t.Fatalf("newIssueStore: %v", err)
 	}
 	created, err := store.Create(residentIssue{
-		TenantSlug:     "JHW22",
+		TenantSlug:     "DEMO",
 		AuthorEmail:    "Resident@Example.com",
 		AuthorName:     "Resident",
 		Category:       "Reparatur",
@@ -781,8 +781,8 @@ func TestIssueStoreCreateListPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	byAuthor := reopened.ListAuthor("jhw22", "resident@example.com")
-	if len(byAuthor) != 1 || byAuthor[0].Title != "Licht im Stiegenhaus" || byAuthor[0].TenantSlug != "jhw22" {
+	byAuthor := reopened.ListAuthor("demo", "resident@example.com")
+	if len(byAuthor) != 1 || byAuthor[0].Title != "Licht im Stiegenhaus" || byAuthor[0].TenantSlug != "demo" {
 		t.Fatalf("ListAuthor = %+v", byAuthor)
 	}
 }
@@ -793,17 +793,17 @@ func TestDirectoryProfileEnvWinsAndInviteGrantsLogin(t *testing.T) {
 		t.Fatalf("newInviteStore: %v", err)
 	}
 	// an invite trying to claim admin for an email that is an env resident
-	if _, err := store.Add(userProfile{Email: "resident@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+	if _, err := store.Add(userProfile{Email: "resident@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 	// a brand-new invited-only user
-	if _, err := store.Add(userProfile{Email: "invited@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+	if _, err := store.Add(userProfile{Email: "invited@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 	a := &app{
-		defaultTenant: "jhw22",
+		defaultTenant: "demo",
 		profiles: map[string]userProfile{
-			"resident@example.com": {Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()},
+			"resident@example.com": {Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()},
 		},
 		inviteStore: store,
 	}
@@ -815,11 +815,11 @@ func TestDirectoryProfileEnvWinsAndInviteGrantsLogin(t *testing.T) {
 	if p, ok := a.directoryProfile("invited@example.com"); !ok || p.Role != roleResident {
 		t.Fatalf("invited user should resolve: got %+v ok=%v", p, ok)
 	}
-	if !a.isAllowed("invited@example.com", "jhw22") {
-		t.Fatal("invited user should be allowed for jhw22")
+	if !a.isAllowed("invited@example.com", "demo") {
+		t.Fatal("invited user should be allowed for demo")
 	}
 	// an unknown email is still denied
-	if a.isAllowed("stranger@example.com", "jhw22") {
+	if a.isAllowed("stranger@example.com", "demo") {
 		t.Fatal("stranger must not be allowed")
 	}
 }
@@ -831,7 +831,7 @@ func TestInviteStoreUpdateRekeyAndDelete(t *testing.T) {
 		t.Fatalf("newInviteStore: %v", err)
 	}
 	mustAdd := func(email, first string) {
-		if _, err := store.Add(userProfile{Email: email, FirstName: first, Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+		if _, err := store.Add(userProfile{Email: email, FirstName: first, Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}); err != nil {
 			t.Fatalf("Add %s: %v", email, err)
 		}
 	}
@@ -844,7 +844,7 @@ func TestInviteStoreUpdateRekeyAndDelete(t *testing.T) {
 	}
 
 	// re-key old -> new + role change (case-insensitive key)
-	ok, err := store.Update("old@example.com", userProfile{Email: "New@example.com", FirstName: "New", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	ok, err := store.Update("old@example.com", userProfile{Email: "New@example.com", FirstName: "New", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	if err != nil || !ok {
 		t.Fatalf("Update rekey: ok=%v err=%v", ok, err)
 	}
@@ -909,12 +909,12 @@ func TestUserRowsDeriveStatusFromActivity(t *testing.T) {
 	act, _ := newActivityStore("")
 	_ = act.Touch("loggedin@example.com", time.Date(2026, 7, 6, 9, 0, 0, 0, time.UTC), authMethodOIDC)
 	inv, _ := newInviteStore("")
-	_, _ = inv.Add(userProfile{Email: "loggedin@example.com", Role: roleResident, Status: "Eingeladen", Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	_, _ = inv.Add(userProfile{Email: "never@example.com", Role: roleResident, Status: "Eingeladen", Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a := &app{defaultTenant: "jhw22", profiles: map[string]userProfile{}, inviteStore: inv, activityStore: act}
+	_, _ = inv.Add(userProfile{Email: "loggedin@example.com", Role: roleResident, Status: "Eingeladen", Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	_, _ = inv.Add(userProfile{Email: "never@example.com", Role: roleResident, Status: "Eingeladen", Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a := &app{defaultTenant: "demo", profiles: map[string]userProfile{}, inviteStore: inv, activityStore: act}
 
 	byEmail := map[string]userRow{}
-	for _, r := range a.userRows("jhw22") {
+	for _, r := range a.userRows("demo") {
 		byEmail[r.Email] = r
 	}
 	if got := byEmail["loggedin@example.com"]; got.Status != "Aktiv" || !strings.Contains(got.LastSeen, "zuletzt angemeldet") {
@@ -994,9 +994,9 @@ func TestReleaseNotesMentionWohneinheitenPricing(t *testing.T) {
 		t.Fatal("release notes should mention Wohneinheiten pricing")
 	}
 	// Since 0.67.0 the public model is: open-source core stays free, managed
-	// service via Augmentoring at 500/900 € base plus 1 € per unit (HAUSV-435).
-	if !strings.Contains(joined, "500 €") || !strings.Contains(joined, "900 €") || !strings.Contains(joined, "Augmentoring") {
-		t.Fatal("release notes should mention the Augmentoring service-fee model (500 €/900 € base)")
+	// service via HAUSV Professional at 500/900 € base plus 1 € per unit (HAUSV-435).
+	if !strings.Contains(joined, "500 €") || !strings.Contains(joined, "900 €") || !strings.Contains(joined, "HAUSV Professional") {
+		t.Fatal("release notes should mention the HAUSV Professional service-fee model (500 €/900 € base)")
 	}
 	if strings.Contains(joined, "1 € pro Haus") || strings.Contains(joined, "pro Hausadresse") {
 		t.Fatalf("release notes contain old house-based pricing wording: %s", joined)
@@ -1004,18 +1004,18 @@ func TestReleaseNotesMentionWohneinheitenPricing(t *testing.T) {
 }
 
 func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	mailer := &recordingMailer{}
 	a.mailer = mailer
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
-		{ID: "top-11", Label: "Top 11", OwnerEmails: []string{"owner@example.com"}},
+	if err := a.unitStore.SetTenantUnits("demo", []unit{
+		{ID: "einheit-12", Label: "Einheit 12", OwnerEmails: []string{"owner@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 
-	create := authedMultipartFileRequest(t, a, "manager@example.com", "/app/uebergaben", map[string]string{
-		"title":          "Übergabe Top 11",
-		"unit_id":        "top-11",
+	create := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/uebergaben", map[string]string{
+		"title":          "Übergabe Einheit 12",
+		"unit_id":        "einheit-12",
 		"handover_type":  "Nutzerwechsel",
 		"scheduled_at":   "2026-07-08T14:30",
 		"outgoing_name":  "Alte Nutzerin",
@@ -1031,12 +1031,12 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		t.Fatalf("handover create status = %d, want redirect", create.Code)
 	}
 
-	items := a.handoverStore.ListTenant("jhw22")
+	items := a.handoverStore.ListTenant("demo")
 	if len(items) != 1 {
 		t.Fatalf("handovers = %+v", items)
 	}
 	item := items[0]
-	if item.UnitID != "top-11" || len(item.Rooms) != 2 || len(item.Meters) != 1 || len(item.Keys) != 1 {
+	if item.UnitID != "einheit-12" || len(item.Rooms) != 2 || len(item.Meters) != 1 || len(item.Keys) != 1 {
 		t.Fatalf("handover content = %+v", item)
 	}
 	if got := handoverStatus(item); got != handoverStatusPending {
@@ -1049,18 +1049,18 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		t.Fatalf("handover notifications = %+v", mailer.notifications)
 	}
 
-	attachments := a.attachmentStore.ListEntity("jhw22", "handover", item.ID)
+	attachments := a.attachmentStore.ListEntity("demo", "handover", item.ID)
 	if len(attachments) != 1 || attachments[0].ContentType != "image/png" || attachments[0].ThumbFilename == "" {
 		t.Fatalf("handover attachments = %+v", attachments)
 	}
-	page := authedRequest(t, a, "manager@example.com", "/app/uebergaben")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/uebergaben")
 	for _, want := range []string{
-		"Übergabe Top 11",
+		"Übergabe Einheit 12",
 		"bad.png",
 		"data-lightbox-src",
 		"PDF exportieren",
 		"ohne Kautions- oder Schadenabrechnung",
-		`name="redirect" value="/app/uebergaben#handover-` + item.ID + `"`,
+		`name="redirect" value="/demo/app/uebergaben#handover-` + item.ID + `"`,
 	} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("handover page missing %q:\n%s", want, page.Body.String())
@@ -1071,14 +1071,14 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	if !ok {
 		t.Fatal("handover attachment file path missing")
 	}
-	deleted := authedFormRequest(t, a, "manager@example.com", "/app/attachments/delete", url.Values{
+	deleted := authedFormRequest(t, a, "manager@example.com", "/demo/app/attachments/delete", url.Values{
 		"id":       {attachments[0].ID},
-		"redirect": {"/app/uebergaben#handover-" + item.ID},
+		"redirect": {"/demo/app/uebergaben#handover-" + item.ID},
 	})
-	if deleted.Code != http.StatusSeeOther || deleted.Header().Get("Location") != "/app/uebergaben#handover-"+item.ID {
+	if deleted.Code != http.StatusSeeOther || deleted.Header().Get("Location") != "/demo/app/uebergaben#handover-"+item.ID {
 		t.Fatalf("handover attachment delete = %d %q", deleted.Code, deleted.Header().Get("Location"))
 	}
-	if got := a.attachmentStore.ListEntity("jhw22", "handover", item.ID); len(got) != 0 {
+	if got := a.attachmentStore.ListEntity("demo", "handover", item.ID); len(got) != 0 {
 		t.Fatalf("handover attachments after delete = %+v, want none", got)
 	}
 	if _, err := os.Stat(attachmentPath); !errors.Is(err, os.ErrNotExist) {
@@ -1089,25 +1089,25 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	for _, notification := range mailer.notifications {
 		for _, line := range strings.Split(notification.Body, "\n") {
 			parsed, err := url.Parse(strings.TrimSpace(line))
-			if err == nil && strings.HasPrefix(parsed.Path, "/handover/") {
-				tokens = append(tokens, strings.TrimPrefix(parsed.Path, "/handover/"))
+			if err == nil && strings.HasPrefix(parsed.Path, "/demo/handover/") {
+				tokens = append(tokens, strings.TrimPrefix(parsed.Path, "/demo/handover/"))
 			}
 		}
 	}
 	if len(tokens) != 2 {
 		t.Fatalf("handover confirmation tokens = %q, want two", tokens)
 	}
-	addedFiles := authedMultipartFileRequest(t, a, "manager@example.com", "/app/uebergaben/attachments", map[string]string{
+	addedFiles := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/uebergaben/attachments", map[string]string{
 		"id": item.ID,
 	}, "attachments", "nachtrag.png", minimalPNG())
 	if addedFiles.Code != http.StatusSeeOther || !strings.Contains(addedFiles.Header().Get("Location"), "handover=attachments") {
 		t.Fatalf("handover add files = %d %q", addedFiles.Code, addedFiles.Header().Get("Location"))
 	}
-	addedAttachments := a.attachmentStore.ListEntity("jhw22", "handover", item.ID)
+	addedAttachments := a.attachmentStore.ListEntity("demo", "handover", item.ID)
 	if len(addedAttachments) != 1 {
 		t.Fatalf("handover attachments after add = %+v, want one", addedAttachments)
 	}
-	publicReview := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/handover/"+tokens[0], nil)
+	publicReview := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/handover/"+tokens[0], nil)
 	publicReview.SetPathValue("token", tokens[0])
 	publicReviewRR := httptest.NewRecorder()
 	a.handoverConfirmPage(publicReviewRR, publicReview)
@@ -1117,7 +1117,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		!strings.Contains(publicReviewRR.Body.String(), publicAttachmentURL) {
 		t.Fatalf("public handover review does not expose its token-scoped evidence: %d/%s", publicReviewRR.Code, publicReviewRR.Body.String())
 	}
-	publicAttachment := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org"+publicAttachmentURL, nil)
+	publicAttachment := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo"+publicAttachmentURL, nil)
 	publicAttachment.SetPathValue("token", tokens[0])
 	publicAttachment.SetPathValue("id", addedAttachments[0].ID)
 	publicAttachmentRR := httptest.NewRecorder()
@@ -1126,7 +1126,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		publicAttachmentRR.Header().Get("Cache-Control") != "private, no-store" {
 		t.Fatalf("public handover attachment = %d %q %q", publicAttachmentRR.Code, publicAttachmentRR.Header().Get("Content-Type"), publicAttachmentRR.Header().Get("Cache-Control"))
 	}
-	wrongTokenAttachment := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/handover/wrong/attachments/"+addedAttachments[0].ID, nil)
+	wrongTokenAttachment := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/handover/wrong/attachments/"+addedAttachments[0].ID, nil)
 	wrongTokenAttachment.SetPathValue("token", "wrong")
 	wrongTokenAttachment.SetPathValue("id", addedAttachments[0].ID)
 	wrongTokenAttachmentRR := httptest.NewRecorder()
@@ -1134,13 +1134,13 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	if wrongTokenAttachmentRR.Code != http.StatusNotFound {
 		t.Fatalf("wrong handover token opened attachment: %d", wrongTokenAttachmentRR.Code)
 	}
-	unrelatedAttachments, err := a.attachmentStore.CreateUploaded("jhw22", "handover", "another-handover", "manager@example.com", []uploadedFile{
+	unrelatedAttachments, err := a.attachmentStore.CreateUploaded("demo", "handover", "another-handover", "manager@example.com", []uploadedFile{
 		testMultipartHeader(t, "attachments", "fremd.png", minimalPNG()),
 	}, time.Now())
 	if err != nil || len(unrelatedAttachments) != 1 {
 		t.Fatalf("unrelated handover attachment = %+v err=%v", unrelatedAttachments, err)
 	}
-	unrelated := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/handover/"+tokens[0]+"/attachments/"+unrelatedAttachments[0].ID, nil)
+	unrelated := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/handover/"+tokens[0]+"/attachments/"+unrelatedAttachments[0].ID, nil)
 	unrelated.SetPathValue("token", tokens[0])
 	unrelated.SetPathValue("id", unrelatedAttachments[0].ID)
 	unrelatedRR := httptest.NewRecorder()
@@ -1148,11 +1148,11 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	if unrelatedRR.Code != http.StatusNotFound {
 		t.Fatalf("handover token opened unrelated attachment: %d", unrelatedRR.Code)
 	}
-	prematureFile := authedFormRequest(t, a, "manager@example.com", "/app/uebergaben/file", url.Values{"id": {item.ID}})
+	prematureFile := authedFormRequest(t, a, "manager@example.com", "/demo/app/uebergaben/file", url.Values{"id": {item.ID}})
 	if prematureFile.Code != http.StatusSeeOther || !strings.Contains(prematureFile.Header().Get("Location"), "handover=pending") {
 		t.Fatalf("pending handover file = %d %q", prematureFile.Code, prematureFile.Header().Get("Location"))
 	}
-	if docs := a.documentStore.ListTenant("jhw22"); len(docs) != 0 {
+	if docs := a.documentStore.ListTenant("demo"); len(docs) != 0 {
 		t.Fatalf("pending handover created documents: %+v", docs)
 	}
 	for idx, token := range tokens {
@@ -1160,27 +1160,27 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 			"confirm": {"yes"},
 			"name":    {"Bestätigende Person " + strconv.Itoa(idx+1)},
 		}
-		confirm := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/handover/"+token, strings.NewReader(form.Encode()))
+		confirm := httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/handover/"+token, strings.NewReader(form.Encode()))
 		confirm.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		confirm.Header.Set("Origin", "http://jhw22.hausv.org")
+		confirm.Header.Set("Origin", "http://hausv.org/demo")
 		confirmed := httptest.NewRecorder()
 		a.handler().ServeHTTP(confirmed, confirm)
 		if confirmed.Code != http.StatusSeeOther {
 			t.Fatalf("handover confirmation %d status = %d, want redirect", idx, confirmed.Code)
 		}
 		if idx == 0 {
-			lockedDelete := authedFormRequest(t, a, "manager@example.com", "/app/attachments/delete", url.Values{
+			lockedDelete := authedFormRequest(t, a, "manager@example.com", "/demo/app/attachments/delete", url.Values{
 				"id": {addedAttachments[0].ID},
 			})
 			if lockedDelete.Code != http.StatusConflict {
 				t.Fatalf("confirmed handover attachment delete = %d, want conflict", lockedDelete.Code)
 			}
-			if got := a.attachmentStore.ListEntity("jhw22", "handover", item.ID); len(got) != 1 {
+			if got := a.attachmentStore.ListEntity("demo", "handover", item.ID); len(got) != 1 {
 				t.Fatalf("confirmed handover attachments = %+v, want immutable file", got)
 			}
 		}
 	}
-	afterConfirm, found := a.handoverStore.Get("jhw22", item.ID)
+	afterConfirm, found := a.handoverStore.Get("demo", item.ID)
 	if !found || handoverStatus(afterConfirm) != handoverStatusConfirmed {
 		t.Fatalf("handover after both confirmations = found %v item %+v", found, afterConfirm)
 	}
@@ -1190,7 +1190,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		}
 	}
 
-	exported := authedRequest(t, a, "manager@example.com", "/app/uebergaben/"+item.ID+"/protokoll")
+	exported := authedRequest(t, a, "manager@example.com", "/demo/app/uebergaben/"+item.ID+"/protokoll")
 	if exported.Code != http.StatusOK || !strings.HasPrefix(exported.Body.String(), "%PDF") {
 		t.Fatalf("handover export status/body = %d/%q", exported.Code, exported.Body.String()[:min(12, exported.Body.Len())])
 	}
@@ -1198,26 +1198,26 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		t.Fatalf("handover export content-type = %q", ct)
 	}
 
-	filed := authedFormRequest(t, a, "manager@example.com", "/app/uebergaben/file", url.Values{"id": {item.ID}})
+	filed := authedFormRequest(t, a, "manager@example.com", "/demo/app/uebergaben/file", url.Values{"id": {item.ID}})
 	if filed.Code != http.StatusSeeOther {
 		t.Fatalf("handover file status = %d, want redirect", filed.Code)
 	}
-	updated, found := a.handoverStore.Get("jhw22", item.ID)
+	updated, found := a.handoverStore.Get("demo", item.ID)
 	if !found || updated.FiledDocumentID == "" {
 		t.Fatalf("handover not filed: found=%v item=%+v", found, updated)
 	}
-	docs := a.documentStore.ListTenant("jhw22")
-	if len(docs) != 1 || docs[0].Category != documentCategoryProtocol || docs[0].UnitID != "top-11" || docs[0].ContentType != "application/pdf" {
+	docs := a.documentStore.ListTenant("demo")
+	if len(docs) != 1 || docs[0].Category != documentCategoryProtocol || docs[0].UnitID != "einheit-12" || docs[0].ContentType != "application/pdf" {
 		t.Fatalf("filed document = %+v", docs)
 	}
 }
 
 func TestHandoverPublicConfirmationToken(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	token := "confirm-secret-token"
 	item, err := a.handoverStore.Create(handoverRecord{
 		ID:           "handover-1",
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		UnitID:       "top-1",
 		Title:        "Übergabe Top 1",
 		HandoverType: "Nutzerwechsel",
@@ -1236,7 +1236,7 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 		t.Fatalf("create handover: %v", err)
 	}
 
-	get := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/handover/"+token, nil)
+	get := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/handover/"+token, nil)
 	get.SetPathValue("token", token)
 	getRR := httptest.NewRecorder()
 	a.handoverConfirmPage(getRR, get)
@@ -1250,34 +1250,34 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 	}
 
 	form := url.Values{"confirm": {"yes"}, "name": {"Neue Nutzerin"}, "note": {"geprüft"}}
-	post := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/handover/"+token, strings.NewReader(form.Encode()))
+	post := httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/handover/"+token, strings.NewReader(form.Encode()))
 	post.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	post.Header.Set("Origin", "http://jhw22.hausv.org")
+	post.Header.Set("Origin", "http://hausv.org/demo")
 	post.SetPathValue("token", token)
 	postRR := httptest.NewRecorder()
 	a.confirmHandover(postRR, post)
 	if postRR.Code != http.StatusSeeOther {
 		t.Fatalf("confirm post status = %d, want redirect", postRR.Code)
 	}
-	updated, found := a.handoverStore.Get("jhw22", item.ID)
+	updated, found := a.handoverStore.Get("demo", item.ID)
 	if !found || len(updated.Confirmations) != 1 || updated.Confirmations[0].ConfirmedAt.IsZero() || updated.Confirmations[0].Note != "geprüft" {
 		t.Fatalf("updated confirmation = found %v item %+v", found, updated)
 	}
-	confirmEventsBefore := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionHandoverConfirm, Limit: 20})
+	confirmEventsBefore := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionHandoverConfirm, Limit: 20})
 	repeatForm := url.Values{"confirm": {"yes"}, "name": {"Andere Person"}, "note": {"darf nicht ändern"}}
-	repeat := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/handover/"+token, strings.NewReader(repeatForm.Encode()))
+	repeat := httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/handover/"+token, strings.NewReader(repeatForm.Encode()))
 	repeat.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	repeat.Header.Set("Origin", "http://jhw22.hausv.org")
+	repeat.Header.Set("Origin", "http://hausv.org/demo")
 	repeat.SetPathValue("token", token)
 	repeatRR := httptest.NewRecorder()
 	a.confirmHandover(repeatRR, repeat)
-	afterRepeat, _ := a.handoverStore.Get("jhw22", item.ID)
-	confirmEventsAfter := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionHandoverConfirm, Limit: 20})
+	afterRepeat, _ := a.handoverStore.Get("demo", item.ID)
+	confirmEventsAfter := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionHandoverConfirm, Limit: 20})
 	if repeatRR.Code != http.StatusSeeOther || afterRepeat.Confirmations[0].Note != "geprüft" ||
 		len(confirmEventsAfter) != len(confirmEventsBefore) {
 		t.Fatalf("repeated confirmation changed state: status=%d confirmation=%+v audit=%d→%d", repeatRR.Code, afterRepeat.Confirmations[0], len(confirmEventsBefore), len(confirmEventsAfter))
 	}
-	revisit := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/handover/"+token, nil)
+	revisit := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/handover/"+token, nil)
 	revisit.SetPathValue("token", token)
 	revisitRR := httptest.NewRecorder()
 	a.handoverConfirmPage(revisitRR, revisit)
@@ -1288,18 +1288,18 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 }
 
 func TestTenantHomeUsesHouseLanguageAndPrivateMapLink(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.mailer = &recordingMailer{}
-	profile := energy.DefaultProfile("jhw22", time.Now())
+	profile := energy.DefaultProfile("demo", time.Now())
 	profile.HomeType = energy.HomeCommunity
-	profile.HouseholdName = "Janischhofweg 22"
+	profile.HouseholdName = "Musterweg 1"
 	profile.OnboardingComplete = true
 	profile.OnboardingStep = 5
 	if err := a.energyStore.SaveProfile(profile); err != nil {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
+	req := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/", nil)
 	rr := httptest.NewRecorder()
 	a.home(rr, req)
 	if rr.Code != http.StatusOK {
@@ -1313,7 +1313,7 @@ func TestTenantHomeUsesHouseLanguageAndPrivateMapLink(t *testing.T) {
 		"Anmeldelink senden",
 		"Karte öffnen",
 		"© OpenStreetMap",
-		`class="location-map-tile" data-map-tile="/map-tiles/17/`,
+		`class="location-map-tile" data-map-tile="/demo/map-tiles/17/`,
 		"Privat für eingeladene Personen",
 		"Impressum",
 	} {
@@ -1329,10 +1329,10 @@ func TestTenantHomeUsesHouseLanguageAndPrivateMapLink(t *testing.T) {
 }
 
 func TestExpiredMagicLinkReturnsToFriendlyLoginWithoutToken(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	verify := httptest.NewRecorder()
-	a.verifyLogin(verify, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/auth/verify?token=expired-secret", nil))
+	a.verifyLogin(verify, httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/auth/verify?token=expired-secret", nil))
 	if verify.Code != http.StatusSeeOther {
 		t.Fatalf("expired verify status = %d, want redirect", verify.Code)
 	}
@@ -1342,7 +1342,7 @@ func TestExpiredMagicLinkReturnsToFriendlyLoginWithoutToken(t *testing.T) {
 	}
 
 	page := httptest.NewRecorder()
-	a.home(page, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/?login=expired", nil))
+	a.home(page, httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/?login=expired", nil))
 	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Der bisherige Link ist abgelaufen") {
 		t.Fatalf("friendly expired page = %d %q", page.Code, page.Body.String())
 	}
@@ -1352,7 +1352,7 @@ func TestExpiredMagicLinkReturnsToFriendlyLoginWithoutToken(t *testing.T) {
 }
 
 func TestRootDomainRendersMarketingLanding(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	rr := httptest.NewRecorder()
 	a.home(rr, httptest.NewRequest(http.MethodGet, "http://hausv.org/", nil))
@@ -1382,10 +1382,10 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"quelloffen",
 		"AGPL-3.0",
 		"0&nbsp;€ für immer",
-		"Tickets &amp; Pull Requests auf GitHub",
+		"Öffentliche Veröffentlichung mit Version 1.0",
 		"E-Mail-Support",
 		"Telefon- &amp; E-Mail-Support",
-		"https://github.com/inspr-at/hausv-org",
+		"Quellcode-Veröffentlichung mit Version 1.0",
 		"12 Monate kostenlos",
 		"12&nbsp;€ pro Jahr",
 		"25 Einheiten kostenlos",
@@ -1394,7 +1394,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Home Assistant",
 		"CAMT und ebInterface",
 		"Impressum",
-		"Ing. Markus Barta",
+		"Betreiber laut Host-Konfiguration",
 		"natürliche Person",
 		`href="/impressum"`,
 		"Rechtliches im Detail",
@@ -1421,7 +1421,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
 		}
 	}
-	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "500 €", "900 €", "Ladungsfähige Anschrift", "Janischhofweg 22/11", "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
+	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "500 €", "900 €", "Ladungsfähige Anschrift", "Musterweg 1", "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
@@ -1444,7 +1444,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 }
 
 func TestWwwHostRedirectsPermanentlyToApex(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	handler := a.handler()
 
 	rr := httptest.NewRecorder()
@@ -1463,14 +1463,14 @@ func TestWwwHostRedirectsPermanentlyToApex(t *testing.T) {
 	}
 
 	rr = httptest.NewRecorder()
-	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil))
+	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/", nil))
 	if rr.Code != http.StatusOK {
 		t.Fatalf("tenant host status = %d, want 200 (must not be redirected)", rr.Code)
 	}
 }
 
 func TestImprintPageCarriesLegalDetails(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	rr := httptest.NewRecorder()
 	a.handler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://hausv.org/impressum", nil))
@@ -1481,16 +1481,12 @@ func TestImprintPageCarriesLegalDetails(t *testing.T) {
 	for _, want := range []string{
 		"Impressum &amp; Infos",
 		"Medieninhaber / Betreiber",
-		"Ing. Markus Barta",
+		"Betreiber laut Host-Konfiguration",
 		"Ladungsfähige Anschrift",
-		"Janischhofweg 22/11, 8043 Graz, Österreich",
-		"natürliche Person",
-		"kein Unternehmen",
-		"Nicht anwendbar",
-		"kein öffentlicher Online-Vertragsabschluss",
+		"Anschrift laut Host-Konfiguration",
 		"Blattlinie",
 		"Professionelle Services",
-		"Augmentoring GmbH",
+		"HAUSV Professional",
 		"GNU AGPL-3.0",
 		"Betreiber-Selbstprüfung vom 13. August 2026",
 		"§ 5 ECG",
@@ -1529,7 +1525,7 @@ func TestSignedSessionRoundTripSurvivesNewStore(t *testing.T) {
 	secret := []byte(strings.Repeat("s", 32))
 	first := newSessionStore(secret)
 
-	token, _, err := first.Put("Markus@Barta.com", "JHW22", authMethodOIDC, time.Hour)
+	token, _, err := first.Put("user@example.com", "DEMO", authMethodOIDC, time.Hour)
 	if err != nil {
 		t.Fatalf("put session: %v", err)
 	}
@@ -1539,7 +1535,7 @@ func TestSignedSessionRoundTripSurvivesNewStore(t *testing.T) {
 	if !ok {
 		t.Fatal("session should verify in a new store with the same secret")
 	}
-	if email != "markus@barta.com" || tenantSlug != "jhw22" || authMethod != authMethodOIDC {
+	if email != "user@example.com" || tenantSlug != "demo" || authMethod != authMethodOIDC {
 		t.Fatalf("unexpected session claims: %s %s %s", email, tenantSlug, authMethod)
 	}
 
@@ -1550,9 +1546,9 @@ func TestSignedSessionRoundTripSurvivesNewStore(t *testing.T) {
 }
 
 func TestParseUserProfilesNormalizesAuthMethods(t *testing.T) {
-	raw := `[{"email":"joerg.lehner@gmx.net","first_name":"Jörg","last_name":"Lehner","tenants":["jhw22"],"auth_methods":["zitadel"]}]`
+	raw := `[{"email":"joerg.lehner@gmx.net","first_name":"Jörg","last_name":"Lehner","tenants":["demo"],"auth_methods":["zitadel"]}]`
 
-	profiles, err := parseUserProfiles(raw, map[string]struct{}{}, map[string]struct{}{}, "jhw22")
+	profiles, err := parseUserProfiles(raw, map[string]struct{}{}, map[string]struct{}{}, "demo")
 	if err != nil {
 		t.Fatalf("parse profiles: %v", err)
 	}
@@ -1569,20 +1565,20 @@ func TestParseUserProfilesNormalizesAuthMethods(t *testing.T) {
 }
 
 func TestParseUserProfilesNormalizesTenantMemberships(t *testing.T) {
-	raw := `[{"email":"multi@example.com","role":"resident","permissions":["parking"],"tenant_memberships":{"JHW22":{"role":"Hausverwaltung"},"Haus-B":{"role":"Mieter","permissions":[]}}}]`
+	raw := `[{"email":"multi@example.com","role":"resident","permissions":["parking"],"tenant_memberships":{"DEMO":{"role":"Hausverwaltung"},"Haus-B":{"role":"Mieter","permissions":[]}}}]`
 
-	profiles, err := parseUserProfiles(raw, map[string]struct{}{}, map[string]struct{}{}, "jhw22")
+	profiles, err := parseUserProfiles(raw, map[string]struct{}{}, map[string]struct{}{}, "demo")
 	if err != nil {
 		t.Fatalf("parse profiles: %v", err)
 	}
 	profile := profiles["multi@example.com"]
-	if !profile.HasTenant("jhw22") || !profile.HasTenant("haus-b") {
+	if !profile.HasTenant("demo") || !profile.HasTenant("haus-b") {
 		t.Fatalf("tenant membership keys should grant tenant membership: %+v", profile)
 	}
 
-	jhwProfile := profile.ForTenant("jhw22")
-	if jhwProfile.Role != roleManager || !jhwProfile.HasPermission(permissionParking) {
-		t.Fatalf("jhw22 profile = %+v, want manager inheriting parking permission", jhwProfile)
+	demoProfile := profile.ForTenant("demo")
+	if demoProfile.Role != roleManager || !demoProfile.HasPermission(permissionParking) {
+		t.Fatalf("demo profile = %+v, want manager inheriting parking permission", demoProfile)
 	}
 
 	otherProfile := profile.ForTenant("haus-b")
@@ -1597,46 +1593,46 @@ func TestRoleForUsesTenantMembershipOverride(t *testing.T) {
 		FirstName:   "Multi",
 		LastName:    "Tenant",
 		Role:        roleResident,
-		Tenants:     []string{"jhw22", "haus-b"},
+		Tenants:     []string{"demo", "haus-b"},
 		Permissions: []string{permissionParking},
 		TenantMemberships: map[string]tenantMembership{
-			"jhw22":  {Role: roleManager},
+			"demo":   {Role: roleManager},
 			"haus-b": {Role: roleResident, Permissions: []string{}},
 		},
 		AuthMethods: defaultAuthMethods(),
 	})
-	a.tenants["haus-b"] = tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Haus B", Host: "haus-b.hausv.org"}
+	a.tenants["haus-b"] = tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Haus B"}
 
-	if got := a.roleFor("multi@example.com", "jhw22"); got != roleManager {
-		t.Fatalf("roleFor jhw22 = %q, want %q", got, roleManager)
+	if got := a.roleFor("multi@example.com", "demo"); got != roleManager {
+		t.Fatalf("roleFor demo = %q, want %q", got, roleManager)
 	}
 	if got := a.roleFor("multi@example.com", "haus-b"); got != roleResident {
 		t.Fatalf("roleFor haus-b = %q, want %q", got, roleResident)
 	}
 
-	jhwProfile := a.profileForTenant("multi@example.com", "jhw22")
-	if jhwProfile.Role != roleManager || !jhwProfile.HasPermission(permissionParking) {
-		t.Fatalf("jhw22 profile = %+v, want manager with parking", jhwProfile)
+	demoProfile := a.profileForTenant("multi@example.com", "demo")
+	if demoProfile.Role != roleManager || !demoProfile.HasPermission(permissionParking) {
+		t.Fatalf("demo profile = %+v, want manager with parking", demoProfile)
 	}
 	otherProfile := a.profileForTenant("multi@example.com", "haus-b")
 	if otherProfile.Role != roleResident || otherProfile.HasPermission(permissionParking) {
 		t.Fatalf("haus-b profile = %+v, want resident without parking", otherProfile)
 	}
 
-	token, _, err := a.sessions.Put("multi@example.com", "jhw22", authMethodEmail, time.Hour)
+	token, _, err := a.sessions.Put("multi@example.com", "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatalf("put session: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app", nil)
+	req := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/app", nil)
 	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
 	_, role, tenantSlug, ok := a.currentUser(req)
-	if !ok || tenantSlug != "jhw22" || role != roleManager {
-		t.Fatalf("currentUser ok=%v tenant=%q role=%q, want jhw22 manager", ok, tenantSlug, role)
+	if !ok || tenantSlug != "demo" || role != roleManager {
+		t.Fatalf("currentUser ok=%v tenant=%q role=%q, want demo manager", ok, tenantSlug, role)
 	}
 
-	jhwRow := userRowForEmail(t, a.userRows("jhw22"), "multi@example.com")
-	if jhwRow.Role != roleManager || !jhwRow.ParkingChecked {
-		t.Fatalf("jhw22 row = %+v, want manager with parking checked", jhwRow)
+	demoRow := userRowForEmail(t, a.userRows("demo"), "multi@example.com")
+	if demoRow.Role != roleManager || !demoRow.ParkingChecked {
+		t.Fatalf("demo row = %+v, want manager with parking checked", demoRow)
 	}
 	otherRow := userRowForEmail(t, a.userRows("haus-b"), "multi@example.com")
 	if otherRow.Role != roleResident || otherRow.ParkingChecked {
@@ -1648,15 +1644,15 @@ func TestRoleForBackwardsCompatibleDefault(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		Permissions: []string{permissionParking},
 		AuthMethods: defaultAuthMethods(),
 	})
 
-	if got := a.roleFor("owner@example.com", "jhw22"); got != roleOwner {
+	if got := a.roleFor("owner@example.com", "demo"); got != roleOwner {
 		t.Fatalf("roleFor default tenant = %q, want %q", got, roleOwner)
 	}
-	profile := a.profileForTenant("owner@example.com", "jhw22")
+	profile := a.profileForTenant("owner@example.com", "demo")
 	if profile.Role != roleOwner || !profile.HasPermission(permissionParking) {
 		t.Fatalf("profileForTenant = %+v, want owner retaining global parking permission", profile)
 	}
@@ -1737,14 +1733,14 @@ func TestNormalizeRoleAliasesAndCapabilityMatrix(t *testing.T) {
 }
 
 func TestSettingsHubVisibleToResidentWithoutAdminSections(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	rr := authedRequest(t, a, "resident@example.com", "/app/settings")
+	rr := authedRequest(t, a, "resident@example.com", "/demo/app/settings")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("settings hub status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/app/settings"`, "Profil", "Benachrichtigungen", "Kalender-Abo", "/calendar/", "<h2>Verlauf</h2>", "Eigene Änderungen nachvollziehen."} {
+	for _, want := range []string{`href="/demo/app/settings"`, "Profil", "Benachrichtigungen", "Kalender-Abo", "/calendar/", "<h2>Verlauf</h2>", "Eigene Änderungen nachvollziehen."} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("settings hub should contain %q", want)
 		}
@@ -1752,18 +1748,18 @@ func TestSettingsHubVisibleToResidentWithoutAdminSections(t *testing.T) {
 	if strings.Contains(body, "<h2>Verwaltung</h2>") {
 		t.Fatal("resident settings hub must not label the personal audit area as management")
 	}
-	if strings.Contains(body, `href="/app/parking/settings"`) {
+	if strings.Contains(body, `href="/demo/app/parking/settings"`) {
 		t.Fatal("resident settings hub must not expose parking settings")
 	}
-	if strings.Contains(body, `href="/app/settings/parking-access"`) {
+	if strings.Contains(body, `href="/demo/app/settings/parking-access"`) {
 		t.Fatal("resident settings hub must not expose parking access management")
 	}
 }
 
 func TestNotificationSettingsPersistAndRender(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	save := authedFormRequest(t, a, "resident@example.com", "/app/settings/notifications", url.Values{
+	save := authedFormRequest(t, a, "resident@example.com", "/demo/app/settings/notifications", url.Values{
 		"email_enabled": {"on"},
 		"events":        {notificationEventAnnouncement, notificationEventDocument},
 	})
@@ -1775,12 +1771,12 @@ func TestNotificationSettingsPersistAndRender(t *testing.T) {
 		t.Fatalf("saved notification prefs = %+v", prefs)
 	}
 
-	page := authedRequest(t, a, "resident@example.com", "/app/settings/notifications")
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/settings/notifications")
 	if page.Code != http.StatusOK {
 		t.Fatalf("notification settings status = %d", page.Code)
 	}
 	body := page.Body.String()
-	if !strings.Contains(body, `href="/app/settings"`) || !strings.Contains(body, `value="announcement" checked`) || strings.Contains(body, `value="issue" checked`) {
+	if !strings.Contains(body, `href="/demo/app/settings"`) || !strings.Contains(body, `value="announcement" checked`) || strings.Contains(body, `value="issue" checked`) {
 		t.Fatalf("notification settings page did not reflect saved prefs:\n%s", body)
 	}
 	for _, want := range []string{`data-notification-form`, "Haus &amp; Kommunikation", "Entscheidungen &amp; Unterlagen", "Zahlung &amp; Nutzung", "2 von 6 aktiv"} {
@@ -1789,13 +1785,13 @@ func TestNotificationSettingsPersistAndRender(t *testing.T) {
 		}
 	}
 
-	pause := authedFormRequest(t, a, "resident@example.com", "/app/settings/notifications", url.Values{
+	pause := authedFormRequest(t, a, "resident@example.com", "/demo/app/settings/notifications", url.Values{
 		"events": {notificationEventAnnouncement, notificationEventDocument},
 	})
 	if pause.Code != http.StatusSeeOther {
 		t.Fatalf("notification pause status = %d", pause.Code)
 	}
-	hub := authedRequest(t, a, "resident@example.com", "/app/settings")
+	hub := authedRequest(t, a, "resident@example.com", "/demo/app/settings")
 	if !strings.Contains(hub.Body.String(), "E-Mails pausiert") {
 		t.Fatalf("settings hub should summarize paused notifications:\n%s", hub.Body.String())
 	}
@@ -1833,7 +1829,7 @@ func TestTenantOverrideStoreLayersOverEnvDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newTenantOverrideStore: %v", err)
 	}
-	if err := store.Set("JHW22", tenantOverride{
+	if err := store.Set("DEMO", tenantOverride{
 		Name:              "WEG Sonneneck",
 		Address:           "Neue Gasse 7",
 		BrandIcon:         "multi-tenant",
@@ -1852,38 +1848,37 @@ func TestTenantOverrideStoreLayersOverEnvDefaults(t *testing.T) {
 		t.Fatalf("store file mode = %v, want 0600", info.Mode().Perm())
 	}
 
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.tenants["jhw22"] = tenantConfig{
-		Slug:         "jhw22",
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.tenants["demo"] = tenantConfig{
+		Slug:         "demo",
 		Name:         "Env Name",
 		Address:      "Env Address",
 		ContactName:  "Env Contact",
 		ContactEmail: "env@example.com",
 		ContactPhone: "+43 1 111",
 		HeroImageURL: "/assets/env.jpg",
-		Host:         "jhw22.hausv.org",
 	}
 	a.tenantOverrides = store
 
-	tenant, ok := a.tenantBySlug("jhw22")
+	tenant, ok := a.tenantBySlug("demo")
 	if !ok {
 		t.Fatal("tenant not found")
 	}
 	if tenant.Name != "WEG Sonneneck" || tenant.Address != "Neue Gasse 7" || tenant.BrandIcon != tenantBrandMultiTenant || tenant.BrandAbbreviation != "SN-ECKSCRIPT" || tenant.ContactEmail != "office@example.com" || tenant.HeroImageURL != "/assets/env.jpg" {
 		t.Fatalf("tenant override = %+v", tenant)
 	}
-	if err := store.SetHeroImage("jhw22", "jhw22-hero.png"); err != nil {
+	if err := store.SetHeroImage("demo", "demo-hero.png"); err != nil {
 		t.Fatalf("set hero image: %v", err)
 	}
-	tenant, _ = a.tenantBySlug("jhw22")
-	if tenant.HeroImageURL != "/tenant-hero/jhw22" || tenant.ContactName != "Hausverwaltung Nord" || tenant.BrandIcon != tenantBrandMultiTenant {
+	tenant, _ = a.tenantBySlug("demo")
+	if tenant.HeroImageURL != "/tenant-hero/demo" || tenant.ContactName != "Hausverwaltung Nord" || tenant.BrandIcon != tenantBrandMultiTenant {
 		t.Fatalf("tenant after hero override = %+v", tenant)
 	}
 }
 
 func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if err := a.unitStore.SetTenantUnits("demo", []unit{{
 		ID:                    "top-1",
 		Label:                 "Top 1",
 		MiteigentumsanteilPPM: 12345,
@@ -1892,7 +1887,7 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 
-	save := authedFormRequest(t, a, "resident@example.com", "/app/settings/profile", url.Values{
+	save := authedFormRequest(t, a, "resident@example.com", "/demo/app/settings/profile", url.Values{
 		"title":            {"Dr."},
 		"first_name":       {"Resi"},
 		"last_name":        {"Dent"},
@@ -1904,7 +1899,7 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 	if save.Code != http.StatusSeeOther {
 		t.Fatalf("profile save status = %d, want redirect", save.Code)
 	}
-	profile := a.profileForTenant("resident@example.com", "jhw22")
+	profile := a.profileForTenant("resident@example.com", "demo")
 	if profile.DisplayName() != "Dr. Resi Dent" || profile.Phone != "+43 1 234" {
 		t.Fatalf("profile overlay not applied: %+v", profile)
 	}
@@ -1914,15 +1909,15 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 	if !profile.DirectoryOptIn {
 		t.Fatalf("profile directory opt-in not applied: %+v", profile)
 	}
-	if parking := authedRequest(t, a, "resident@example.com", "/app/parking"); parking.Code != http.StatusNotFound {
+	if parking := authedRequest(t, a, "resident@example.com", "/demo/app/parking"); parking.Code != http.StatusNotFound {
 		t.Fatalf("parking status = %d, want 404 without parking permission", parking.Code)
 	}
 
-	settings := authedRequest(t, a, "resident@example.com", "/app/settings")
-	if !strings.Contains(settings.Body.String(), `href="/app/settings/profile"`) {
+	settings := authedRequest(t, a, "resident@example.com", "/demo/app/settings")
+	if !strings.Contains(settings.Body.String(), `href="/demo/app/settings/profile"`) {
 		t.Fatalf("settings hub should link to profile:\n%s", settings.Body.String())
 	}
-	page := authedRequest(t, a, "resident@example.com", "/app/settings/profile")
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/settings/profile")
 	if page.Code != http.StatusOK {
 		t.Fatalf("profile page status = %d", page.Code)
 	}
@@ -1932,23 +1927,23 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 			t.Fatalf("profile page should contain %q", want)
 		}
 	}
-	row := userRowForEmail(t, a.userRows("jhw22"), "resident@example.com")
+	row := userRowForEmail(t, a.userRows("demo"), "resident@example.com")
 	if row.DisplayName != "Dr. Resi Dent" || row.Phone != "+43 1 234" || !row.DirectoryOptIn || row.Role != roleResident || row.ParkingChecked {
 		t.Fatalf("roster row = %+v, want overlay display without authz escalation", row)
 	}
 }
 
 func TestContactsPageShowsBuildingBoardAndOptInDirectory(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Phone: "+43 1 234", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["private@example.com"] = userProfile{Email: "private@example.com", FirstName: "Privat", LastName: "Person", Phone: "+43 1 555", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["board@example.com"] = userProfile{Email: "board@example.com", FirstName: "Berta", LastName: "Beirat", Phone: "+43 1 777", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Phone: "+43 1 234", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["private@example.com"] = userProfile{Email: "private@example.com", FirstName: "Privat", LastName: "Person", Phone: "+43 1 555", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["board@example.com"] = userProfile{Email: "board@example.com", FirstName: "Berta", LastName: "Beirat", Phone: "+43 1 777", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	saveMeta := authedFormRequest(t, a, "manager@example.com", "/app/settings/building", url.Values{
+	saveMeta := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building", url.Values{
 		"name":            {"WEG Portal"},
-		"address":         {"Janischhofweg 22"},
+		"address":         {"Musterweg 1"},
 		"contact_name":    {"Hausverwaltung Nord"},
-		"contact_address": {"Verwaltergasse 10, 8010 Graz"},
+		"contact_address": {"Verwaltergasse 10, 1010 Wien"},
 		"contact_email":   {"office@example.com"},
 		"contact_phone":   {"+43 1 999"},
 		"emergency_name":  {"Notdienst 24"},
@@ -1961,12 +1956,12 @@ func TestContactsPageShowsBuildingBoardAndOptInDirectory(t *testing.T) {
 		t.Fatalf("building settings save status = %d", saveMeta.Code)
 	}
 
-	page := authedRequest(t, a, "resident@example.com", "/app/kontakte")
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/kontakte")
 	if page.Code != http.StatusOK {
 		t.Fatalf("contacts status = %d", page.Code)
 	}
 	body := page.Body.String()
-	for _, want := range []string{`href="/app/kontakte"`, "nav-item active", "Hausverwaltung Nord", "office@example.com", "Notdienst 24", "144", "Hausmeister Max", "hausmeister@example.com", "Berta Beirat", "board@example.com", "43 1 777"} {
+	for _, want := range []string{`href="/demo/app/kontakte"`, "nav-item active", "Hausverwaltung Nord", "office@example.com", "Notdienst 24", "144", "Hausmeister Max", "hausmeister@example.com", "Berta Beirat", "board@example.com", "43 1 777"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("contacts page should contain %q", want)
 		}
@@ -1977,7 +1972,7 @@ func TestContactsPageShowsBuildingBoardAndOptInDirectory(t *testing.T) {
 		}
 	}
 
-	optIn := authedFormRequest(t, a, "resident@example.com", "/app/settings/profile", url.Values{
+	optIn := authedFormRequest(t, a, "resident@example.com", "/demo/app/settings/profile", url.Values{
 		"first_name":       {"Resi"},
 		"last_name":        {"Dent"},
 		"phone":            {"+43 1 234"},
@@ -1986,7 +1981,7 @@ func TestContactsPageShowsBuildingBoardAndOptInDirectory(t *testing.T) {
 	if optIn.Code != http.StatusSeeOther {
 		t.Fatalf("profile opt-in status = %d", optIn.Code)
 	}
-	page = authedRequest(t, a, "resident@example.com", "/app/kontakte")
+	page = authedRequest(t, a, "resident@example.com", "/demo/app/kontakte")
 	body = page.Body.String()
 	for _, want := range []string{"Resi Dent", "resident@example.com", "43 1 234"} {
 		if !strings.Contains(body, want) {
@@ -1999,25 +1994,25 @@ func TestContactsPageShowsBuildingBoardAndOptInDirectory(t *testing.T) {
 }
 
 func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	resident := authedRequest(t, a, "resident@example.com", "/app/settings/building")
+	resident := authedRequest(t, a, "resident@example.com", "/demo/app/settings/building")
 	if resident.Code != http.StatusForbidden {
 		t.Fatalf("resident building settings status = %d, want 403", resident.Code)
 	}
-	hub := authedRequest(t, a, "manager@example.com", "/app/settings")
-	if !strings.Contains(hub.Body.String(), `href="/app/settings/building"`) {
+	hub := authedRequest(t, a, "manager@example.com", "/demo/app/settings")
+	if !strings.Contains(hub.Body.String(), `href="/demo/app/settings/building"`) {
 		t.Fatalf("manager settings hub should link building settings:\n%s", hub.Body.String())
 	}
 
-	saveMeta := authedFormRequest(t, a, "manager@example.com", "/app/settings/building", url.Values{
+	saveMeta := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building", url.Values{
 		"name":               {"WEG Sonneneck"},
 		"address":            {"Neue Gasse 7"},
 		"brand_icon":         {"mixed-use"},
 		"brand_abbreviation": {"sun/eck"},
 		"contact_name":       {"Hausverwaltung Nord"},
-		"contact_address":    {"Verwaltergasse 10, 8010 Graz"},
+		"contact_address":    {"Verwaltergasse 10, 1010 Wien"},
 		"contact_email":      {"office@example.com"},
 		"contact_phone":      {"+43 1 999"},
 		"emergency_name":     {"Notdienst 24"},
@@ -2029,17 +2024,17 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if saveMeta.Code != http.StatusSeeOther {
 		t.Fatalf("building meta save status = %d", saveMeta.Code)
 	}
-	tenant, _ := a.tenantBySlug("jhw22")
-	if tenant.Name != "WEG Sonneneck" || tenant.Address != "Neue Gasse 7" || tenant.BrandIcon != tenantBrandMixedUse || tenant.BrandAbbreviation != "SUN-ECK" || tenant.ContactName != "Hausverwaltung Nord" || tenant.ContactAddress != "Verwaltergasse 10, 8010 Graz" || tenant.ContactEmail != "office@example.com" || tenant.ContactPhone != "+43 1 999" || tenant.EmergencyName != "Notdienst 24" || tenant.EmergencyPhone != "144" || tenant.CaretakerName != "Hausmeister Max" || tenant.CaretakerEmail != "hausmeister@example.com" || tenant.CaretakerPhone != "+43 1 888" {
+	tenant, _ := a.tenantBySlug("demo")
+	if tenant.Name != "WEG Sonneneck" || tenant.Address != "Neue Gasse 7" || tenant.BrandIcon != tenantBrandMixedUse || tenant.BrandAbbreviation != "SUN-ECK" || tenant.ContactName != "Hausverwaltung Nord" || tenant.ContactAddress != "Verwaltergasse 10, 1010 Wien" || tenant.ContactEmail != "office@example.com" || tenant.ContactPhone != "+43 1 999" || tenant.EmergencyName != "Notdienst 24" || tenant.EmergencyPhone != "144" || tenant.CaretakerName != "Hausmeister Max" || tenant.CaretakerEmail != "hausmeister@example.com" || tenant.CaretakerPhone != "+43 1 888" {
 		t.Fatalf("tenant after meta save = %+v", tenant)
 	}
-	homeReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
+	homeReq := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/", nil)
 	home := httptest.NewRecorder()
 	a.home(home, homeReq)
 	if !strings.Contains(home.Body.String(), "WEG Sonneneck") || !strings.Contains(home.Body.String(), "Neue Gasse 7") || !strings.Contains(home.Body.String(), defaultTenantHeroImageURL) {
 		t.Fatalf("home should render layered name, address and default hero:\n%s", home.Body.String())
 	}
-	appPage := authedRequest(t, a, "manager@example.com", "/app")
+	appPage := authedRequest(t, a, "manager@example.com", "/demo/app")
 	for _, want := range []string{`tenant-brand-mark`, `M16 17l16-7 16 7`} {
 		if !strings.Contains(appPage.Body.String(), want) {
 			t.Fatalf("app sidebar should render selected brand marker %q:\n%s", want, appPage.Body.String())
@@ -2048,18 +2043,18 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if strings.Contains(appPage.Body.String(), `class="side-code"`) || strings.Contains(appPage.Body.String(), ">SUN-ECK<") {
 		t.Fatal("app sidebar should not repeat the internal brand abbreviation")
 	}
-	settingsPage := authedRequest(t, a, "manager@example.com", "/app/settings/building")
+	settingsPage := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building")
 	for _, want := range []string{`name="brand_icon"`, `value="mixed-use" selected`, `value="SUN-ECK"`, `Gemischt genutzt`} {
 		if !strings.Contains(settingsPage.Body.String(), want) {
 			t.Fatalf("building settings should render brand control %q:\n%s", want, settingsPage.Body.String())
 		}
 	}
-	invalidBrand := authedFormRequest(t, a, "manager@example.com", "/app/settings/building", url.Values{
+	invalidBrand := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building", url.Values{
 		"name":       {"WEG Sonneneck"},
 		"address":    {"Neue Gasse 7"},
 		"brand_icon": {"<svg onload=alert(1)>"},
 	})
-	if invalidBrand.Code != http.StatusSeeOther || invalidBrand.Result().Header.Get("Location") != "/app/settings/building?building=invalid#overview" {
+	if invalidBrand.Code != http.StatusSeeOther || invalidBrand.Result().Header.Get("Location") != "/demo/app/settings/building?building=invalid#overview" {
 		t.Fatalf("invalid brand save should redirect invalid, status=%d location=%q", invalidBrand.Code, invalidBrand.Result().Header.Get("Location"))
 	}
 
@@ -2068,16 +2063,16 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
 		0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89,
 	}
-	uploadHero := authedMultipartFileRequest(t, a, "manager@example.com", "/app/settings/building/hero", nil, "hero_image", "hero.png", png)
+	uploadHero := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/settings/building/hero", nil, "hero_image", "hero.png", png)
 	if uploadHero.Code != http.StatusSeeOther {
 		t.Fatalf("hero upload status = %d", uploadHero.Code)
 	}
-	tenant, _ = a.tenantBySlug("jhw22")
-	if tenant.HeroImageURL != "/tenant-hero/jhw22" {
+	tenant, _ = a.tenantBySlug("demo")
+	if tenant.HeroImageURL != "/tenant-hero/demo" {
 		t.Fatalf("tenant hero url = %q", tenant.HeroImageURL)
 	}
-	override, ok := a.tenantOverrides.Get("jhw22")
-	if !ok || !strings.HasPrefix(override.HeroImage, "jhw22-hero-") || !strings.HasSuffix(override.HeroImage, ".png") {
+	override, ok := a.tenantOverrides.Get("demo")
+	if !ok || !strings.HasPrefix(override.HeroImage, "demo-hero-") || !strings.HasSuffix(override.HeroImage, ".png") {
 		t.Fatalf("hero override filename = %#v, ok=%v", override.HeroImage, ok)
 	}
 	heroPath := filepath.Join(a.tenantHeroDir, override.HeroImage)
@@ -2088,36 +2083,36 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if heroInfo.Mode().Perm() != 0o600 {
 		t.Fatalf("hero file mode = %v, want 0600", heroInfo.Mode().Perm())
 	}
-	heroReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/tenant-hero/jhw22", nil)
-	heroReq.SetPathValue("tenant", "jhw22")
+	heroReq := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/tenant-hero/demo", nil)
+	heroReq.SetPathValue("tenant", "demo")
 	hero := httptest.NewRecorder()
 	a.tenantHeroImage(hero, heroReq)
 	if hero.Code != http.StatusOK || !strings.HasPrefix(hero.Header().Get("Content-Type"), "image/png") {
 		t.Fatalf("hero response status=%d content-type=%q", hero.Code, hero.Header().Get("Content-Type"))
 	}
-	homeAfterHeroReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
+	homeAfterHeroReq := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/", nil)
 	homeAfterHero := httptest.NewRecorder()
 	a.home(homeAfterHero, homeAfterHeroReq)
-	if !strings.Contains(homeAfterHero.Body.String(), "/tenant-hero/jhw22") {
+	if !strings.Contains(homeAfterHero.Body.String(), "/tenant-hero/demo") {
 		t.Fatalf("home should render uploaded hero path:\n%s", homeAfterHero.Body.String())
 	}
-	portal := authedRequest(t, a, "manager@example.com", "/app")
-	if !strings.Contains(portal.Body.String(), "/tenant-hero/jhw22") {
+	portal := authedRequest(t, a, "manager@example.com", "/demo/app")
+	if !strings.Contains(portal.Body.String(), "/tenant-hero/demo") {
 		t.Fatalf("portal should render uploaded hero path:\n%s", portal.Body.String())
 	}
-	settingsAfterHero := authedRequest(t, a, "manager@example.com", "/app/settings/building")
-	if !strings.Contains(settingsAfterHero.Body.String(), `/app/settings/building/hero/delete`) {
+	settingsAfterHero := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building")
+	if !strings.Contains(settingsAfterHero.Body.String(), `/demo/app/settings/building/hero/delete`) {
 		t.Fatalf("building settings should offer hero reset after upload:\n%s", settingsAfterHero.Body.String())
 	}
-	deleteHero := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/hero/delete", url.Values{})
+	deleteHero := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/hero/delete", url.Values{})
 	if deleteHero.Code != http.StatusSeeOther {
 		t.Fatalf("hero delete status = %d", deleteHero.Code)
 	}
-	tenant, _ = a.tenantBySlug("jhw22")
+	tenant, _ = a.tenantBySlug("demo")
 	if tenant.HeroImageURL != defaultTenantHeroImageURL {
 		t.Fatalf("tenant hero after delete = %q", tenant.HeroImageURL)
 	}
-	override, _ = a.tenantOverrides.Get("jhw22")
+	override, _ = a.tenantOverrides.Get("demo")
 	if override.HeroImage != "" {
 		t.Fatalf("hero override after delete = %q", override.HeroImage)
 	}
@@ -2130,7 +2125,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatalf("deleted tenant hero status = %d, want 404", heroAfterDelete.Code)
 	}
 
-	addUnit := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units", url.Values{
+	addUnit := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/units", url.Values{
 		"label":              {"Top 1"},
 		"unit_type":          {"residential"},
 		"miteigentumsanteil": {"12345"},
@@ -2140,18 +2135,18 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if addUnit.Code != http.StatusSeeOther {
 		t.Fatalf("unit add status = %d", addUnit.Code)
 	}
-	units := a.unitStore.ListTenant("jhw22")
+	units := a.unitStore.ListTenant("demo")
 	if len(units) != 1 || units[0].ID != "top-1" || units[0].UnitType != unitTypeResidential || units[0].BillableWeightPPM != unitBillableFullPPM || units[0].MiteigentumsanteilPPM != 12345 || len(units[0].OwnerEmails) != 2 || units[0].RenterEmails[0] != "resident@example.com" {
 		t.Fatalf("units after add = %+v", units)
 	}
-	page := authedRequest(t, a, "manager@example.com", "/app/settings/building")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building")
 	for _, want := range []string{"WEG Sonneneck", "Neue Gasse 7", "Top 1", "Wohnung", "zählt als 1 WE", "1</strong> von 25 Wohneinheit (Fair Use)", "12.345 / 1.000.000", `value="owner@example.com, second@example.com"`} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("building page should contain %q", want)
 		}
 	}
 
-	editUnit := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units", url.Values{
+	editUnit := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/units", url.Values{
 		"orig_id":            {"top-1"},
 		"id":                 {"top-1"},
 		"label":              {"Top 1A"},
@@ -2163,29 +2158,29 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if editUnit.Code != http.StatusSeeOther {
 		t.Fatalf("unit edit status = %d", editUnit.Code)
 	}
-	units = a.unitStore.ListTenant("jhw22")
+	units = a.unitStore.ListTenant("demo")
 	if len(units) != 1 || units[0].Label != "Top 1A" || units[0].UnitType != unitTypeParking || units[0].BillableWeightPPM != 0 || units[0].MiteigentumsanteilPPM != 23456 || len(units[0].RenterEmails) != 0 {
 		t.Fatalf("units after edit = %+v", units)
 	}
 
-	deleteUnit := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units/delete", url.Values{"id": {"top-1"}})
+	deleteUnit := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/units/delete", url.Values{"id": {"top-1"}})
 	if deleteUnit.Code != http.StatusSeeOther {
 		t.Fatalf("unit delete status = %d", deleteUnit.Code)
 	}
-	if units := a.unitStore.ListTenant("jhw22"); len(units) != 0 {
+	if units := a.unitStore.ListTenant("demo"); len(units) != 0 {
 		t.Fatalf("units after delete = %+v", units)
 	}
 }
 
 func TestSettingsHubAdminLinksManagementSections(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	rr := authedRequest(t, a, "admin@example.com", "/app/settings")
+	rr := authedRequest(t, a, "admin@example.com", "/demo/app/settings")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("settings hub status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/app/settings/building"`, `href="/app/settings/users"`, `href="/app/settings/parking-access"`, `href="/app/parking/settings"`, "Parkplatz-Abrechnung", "Parkplatz-Zugriff", "Gebäude"} {
+	for _, want := range []string{`href="/demo/app/settings/building"`, `href="/demo/app/settings/users"`, `href="/demo/app/settings/parking-access"`, `href="/demo/app/parking/settings"`, "Parkplatz-Abrechnung", "Parkplatz-Zugriff", "Gebäude"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("admin settings hub should contain %q", want)
 		}
@@ -2193,47 +2188,47 @@ func TestSettingsHubAdminLinksManagementSections(t *testing.T) {
 }
 
 func TestSettingsHubManagerLinksTenantManagementOnly(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	rr := authedRequest(t, a, "manager@example.com", "/app/settings")
+	rr := authedRequest(t, a, "manager@example.com", "/demo/app/settings")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("settings hub status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/app/settings/building"`, `href="/app/settings/users"`, `href="/app/settings/parking-access"`, "Benutzer &amp; Rechte", "Parkplatz-Zugriff", "Gebäude"} {
+	for _, want := range []string{`href="/demo/app/settings/building"`, `href="/demo/app/settings/users"`, `href="/demo/app/settings/parking-access"`, "Benutzer &amp; Rechte", "Parkplatz-Zugriff", "Gebäude"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("manager settings hub should contain %q", want)
 		}
 	}
-	if strings.Contains(body, `href="/app/parking/settings"`) {
+	if strings.Contains(body, `href="/demo/app/parking/settings"`) {
 		t.Fatal("manager settings hub must not expose parking accounting config")
 	}
 }
 
 func TestUserRowsDoesNotInjectSyntheticEmptyRow(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles = map[string]userProfile{}
 	a.allowed = map[string]struct{}{}
 	a.admins = map[string]struct{}{}
 
-	rows := a.userRows("jhw22")
+	rows := a.userRows("demo")
 	if len(rows) != 0 {
 		t.Fatalf("empty userRows = %+v, want no synthetic rows", rows)
 	}
 }
 
 func TestRoleManagementUIOffersAllEffectiveRoles(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	for _, profile := range []userProfile{
-		{Email: "owner@example.com", FirstName: "Eva", LastName: "Owner", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()},
-		{Email: "renter@example.com", FirstName: "Max", LastName: "Renter", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()},
-		{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()},
-		{Email: "board@example.com", FirstName: "Berta", LastName: "Beirat", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()},
+		{Email: "owner@example.com", FirstName: "Eva", LastName: "Owner", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()},
+		{Email: "renter@example.com", FirstName: "Max", LastName: "Renter", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()},
+		{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()},
+		{Email: "board@example.com", FirstName: "Berta", LastName: "Beirat", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()},
 	} {
 		a.profiles[profile.Email] = profile
 	}
 
-	rr := authedRequest(t, a, "admin@example.com", "/app/settings/users")
+	rr := authedRequest(t, a, "admin@example.com", "/demo/app/settings/users")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("user settings status = %d", rr.Code)
 	}
@@ -2250,12 +2245,12 @@ func TestRoleManagementUIOffersAllEffectiveRoles(t *testing.T) {
 }
 
 func TestRoleManagementUIOffersPermissionCheckboxesAndPresets(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"demo"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
 		t.Fatalf("Add invite: %v", err)
 	}
 
-	rr := authedRequest(t, a, "admin@example.com", "/app/settings/users")
+	rr := authedRequest(t, a, "admin@example.com", "/demo/app/settings/users")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("user settings status = %d", rr.Code)
 	}
@@ -2274,7 +2269,7 @@ func TestRoleManagementUIOffersPermissionCheckboxesAndPresets(t *testing.T) {
 }
 
 func TestInviteCreatedWithParkingPermissionGrantsParkingAccess(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	values := url.Values{
 		"email":       {"parker@example.com"},
 		"first_name":  {"Pat"},
@@ -2282,7 +2277,7 @@ func TestInviteCreatedWithParkingPermissionGrantsParkingAccess(t *testing.T) {
 		"role":        {"Mieter"},
 		"permissions": {permissionParking},
 	}
-	create := authedFormRequest(t, a, "admin@example.com", "/app/settings/users", values)
+	create := authedFormRequest(t, a, "admin@example.com", "/demo/app/settings/users", values)
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("create invite status = %d, want redirect", create.Code)
 	}
@@ -2290,15 +2285,15 @@ func TestInviteCreatedWithParkingPermissionGrantsParkingAccess(t *testing.T) {
 	if !ok || !profile.HasPermission(permissionParking) {
 		t.Fatalf("stored invite = %+v ok=%v, want parking permission", profile, ok)
 	}
-	parking := authedRequest(t, a, "parker@example.com", "/app/parking")
+	parking := authedRequest(t, a, "parker@example.com", "/demo/app/parking")
 	if parking.Code != http.StatusOK {
 		t.Fatalf("parking status = %d, want 200 for invited parking user", parking.Code)
 	}
 }
 
 func TestEditInviteCanRevokeParkingPermission(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"demo"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
 		t.Fatalf("Add invite: %v", err)
 	}
 	values := url.Values{
@@ -2308,7 +2303,7 @@ func TestEditInviteCanRevokeParkingPermission(t *testing.T) {
 		"last_name":  {"Parker"},
 		"role":       {"Mieter"},
 	}
-	edit := authedFormRequest(t, a, "admin@example.com", "/app/settings/users/edit", values)
+	edit := authedFormRequest(t, a, "admin@example.com", "/demo/app/settings/users/edit", values)
 	if edit.Code != http.StatusSeeOther {
 		t.Fatalf("edit invite status = %d, want redirect", edit.Code)
 	}
@@ -2316,19 +2311,19 @@ func TestEditInviteCanRevokeParkingPermission(t *testing.T) {
 	if !ok || profile.HasPermission(permissionParking) {
 		t.Fatalf("stored invite = %+v ok=%v, want parking revoked", profile, ok)
 	}
-	parking := authedRequest(t, a, "parker@example.com", "/app/parking")
+	parking := authedRequest(t, a, "parker@example.com", "/demo/app/parking")
 	if parking.Code != http.StatusNotFound {
 		t.Fatalf("parking status = %d, want 404 after parking revoke", parking.Code)
 	}
 }
 
 func TestParkingAccessPageGrantsAndRevokesInvitePermission(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}); err != nil {
 		t.Fatalf("Add invite: %v", err)
 	}
 
-	page := authedRequest(t, a, "manager@example.com", "/app/settings/parking-access")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/parking-access")
 	if page.Code != http.StatusOK {
 		t.Fatalf("parking access status = %d, want 200", page.Code)
 	}
@@ -2338,11 +2333,11 @@ func TestParkingAccessPageGrantsAndRevokesInvitePermission(t *testing.T) {
 			t.Fatalf("parking access page missing %q:\n%s", want, body)
 		}
 	}
-	if strings.Contains(body, `/app/parking/settings?section=`) {
+	if strings.Contains(body, `/demo/app/parking/settings?section=`) {
 		t.Fatal("user manager must not see links to admin-only parking configuration")
 	}
 
-	grant := authedFormRequest(t, a, "manager@example.com", "/app/settings/parking-access", url.Values{
+	grant := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/parking-access", url.Values{
 		"email":   {"parker@example.com"},
 		"parking": {"1"},
 	})
@@ -2353,11 +2348,11 @@ func TestParkingAccessPageGrantsAndRevokesInvitePermission(t *testing.T) {
 	if !ok || !profile.HasPermission(permissionParking) {
 		t.Fatalf("stored profile after grant = %+v ok=%v", profile, ok)
 	}
-	if parking := authedRequest(t, a, "parker@example.com", "/app/parking"); parking.Code != http.StatusOK {
+	if parking := authedRequest(t, a, "parker@example.com", "/demo/app/parking"); parking.Code != http.StatusOK {
 		t.Fatalf("parking status after grant = %d, want 200", parking.Code)
 	}
 
-	revoke := authedFormRequest(t, a, "manager@example.com", "/app/settings/parking-access", url.Values{
+	revoke := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/parking-access", url.Values{
 		"email":   {"parker@example.com"},
 		"parking": {"0"},
 	})
@@ -2368,23 +2363,23 @@ func TestParkingAccessPageGrantsAndRevokesInvitePermission(t *testing.T) {
 	if !ok || profile.HasPermission(permissionParking) {
 		t.Fatalf("stored profile after revoke = %+v ok=%v", profile, ok)
 	}
-	if parking := authedRequest(t, a, "parker@example.com", "/app/parking"); parking.Code != http.StatusNotFound {
+	if parking := authedRequest(t, a, "parker@example.com", "/demo/app/parking"); parking.Code != http.StatusNotFound {
 		t.Fatalf("parking status after revoke = %d, want 404", parking.Code)
 	}
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionInviteUpdate, Query: "parker", Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionInviteUpdate, Query: "parker", Limit: 10})
 	if len(events) != 2 || events[0].Summary != "Parkplatz-Zugriff geändert" {
 		t.Fatalf("parking access audit events = %+v", events)
 	}
 }
 
 func TestParkingAccessCandidatesStayTenantScopedAndPreferNames(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["local@example.com"] = userProfile{Email: "local@example.com", FirstName: "Lina", LastName: "Lokal", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["local@example.com"] = userProfile{Email: "local@example.com", FirstName: "Lina", LastName: "Lokal", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", FirstName: "Oskar", LastName: "Anderes Haus", Role: roleOwner, Tenants: []string{"other-house"}, AuthMethods: defaultAuthMethods()}
 	a.allowed["local@example.com"] = struct{}{}
 	a.allowed["other@example.com"] = struct{}{}
 
-	page := authedRequest(t, a, "manager@example.com", "/app/settings/parking-access")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/parking-access")
 	if page.Code != http.StatusOK {
 		t.Fatalf("parking access status = %d, want 200", page.Code)
 	}
@@ -2401,23 +2396,23 @@ func TestParkingAccessCandidatesStayTenantScopedAndPreferNames(t *testing.T) {
 }
 
 func TestClosedServiceProviderParkingAccessIsReadOnlyForEffectiveTenantRole(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	if _, err := a.inviteStore.Add(userProfile{
 		Email:       "service@example.com",
 		FirstName:   "Multi",
 		LastName:    "Service",
 		Role:        roleResident,
-		Tenants:     []string{"jhw22", "haus-b"},
+		Tenants:     []string{"demo", "haus-b"},
 		AuthMethods: defaultAuthMethods(),
 		TenantMemberships: map[string]tenantMembership{
-			"jhw22":  {Role: roleServiceProvider},
+			"demo":   {Role: roleServiceProvider},
 			"haus-b": {Role: roleResident},
 		},
 	}); err != nil {
 		t.Fatalf("Add service invite: %v", err)
 	}
 
-	page := authedRequest(t, a, "manager@example.com", "/app/settings/parking-access")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/parking-access")
 	if page.Code != http.StatusOK {
 		t.Fatalf("parking access status = %d, want 200", page.Code)
 	}
@@ -2429,14 +2424,14 @@ func TestClosedServiceProviderParkingAccessIsReadOnlyForEffectiveTenantRole(t *t
 		t.Fatalf("closed service provider still has a parking mutation form:\n%s", body)
 	}
 
-	update := authedFormRequest(t, a, "manager@example.com", "/app/settings/parking-access", url.Values{
+	update := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/parking-access", url.Values{
 		"email":   {"service@example.com"},
 		"parking": {"1"},
 	})
 	if update.Code != http.StatusForbidden || !strings.Contains(update.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") {
 		t.Fatalf("closed service parking update = %d %q, want clear 403", update.Code, update.Body.String())
 	}
-	edit := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/edit", url.Values{
+	edit := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/users/edit", url.Values{
 		"orig_email": {"service@example.com"},
 		"email":      {"service@example.com"},
 		"first_name": {"Changed"},
@@ -2445,24 +2440,24 @@ func TestClosedServiceProviderParkingAccessIsReadOnlyForEffectiveTenantRole(t *t
 	if edit.Code != http.StatusForbidden || !strings.Contains(edit.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") {
 		t.Fatalf("closed effective service edit = %d %q, want clear 403", edit.Code, edit.Body.String())
 	}
-	deleteResponse := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/delete", url.Values{
+	deleteResponse := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/users/delete", url.Values{
 		"email": {"service@example.com"},
 	})
 	if deleteResponse.Code != http.StatusForbidden || !strings.Contains(deleteResponse.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") {
 		t.Fatalf("closed effective service delete = %d %q, want clear 403", deleteResponse.Code, deleteResponse.Body.String())
 	}
 	profile, ok := a.inviteStore.Get("service@example.com")
-	if !ok || profile.FirstName != "Multi" || profile.HasPermission(permissionParking) || profile.ForTenant("jhw22").HasPermission(permissionParking) {
+	if !ok || profile.FirstName != "Multi" || profile.HasPermission(permissionParking) || profile.ForTenant("demo").HasPermission(permissionParking) {
 		t.Fatalf("rejected service mutations changed profile: %+v ok=%v", profile, ok)
 	}
 	if profile.ForTenant("haus-b").Role != roleResident {
 		t.Fatalf("unrelated tenant membership changed: %+v", profile.ForTenant("haus-b"))
 	}
-	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Query: "service@example.com", Limit: 10}); len(events) != 0 {
+	if events := a.auditStore.List(auditFilter{TenantSlug: "demo", Query: "service@example.com", Limit: 10}); len(events) != 0 {
 		t.Fatalf("rejected service mutations created audit events: %+v", events)
 	}
 
-	users := authedRequest(t, a, "manager@example.com", "/app/settings/users")
+	users := authedRequest(t, a, "manager@example.com", "/demo/app/settings/users")
 	if users.Code != http.StatusOK {
 		t.Fatalf("users status = %d, want 200", users.Code)
 	}
@@ -2476,10 +2471,10 @@ func TestClosedServiceProviderParkingAccessIsReadOnlyForEffectiveTenantRole(t *t
 }
 
 func TestParkingAccessPageKeepsEnvUsersReadOnly(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["env-parker@example.com"] = userProfile{Email: "env-parker@example.com", FirstName: "Env", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["env-parker@example.com"] = userProfile{Email: "env-parker@example.com", FirstName: "Env", LastName: "Parker", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	page := authedRequest(t, a, "manager@example.com", "/app/settings/parking-access")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/parking-access")
 	if page.Code != http.StatusOK {
 		t.Fatalf("parking access status = %d, want 200", page.Code)
 	}
@@ -2488,7 +2483,7 @@ func TestParkingAccessPageKeepsEnvUsersReadOnly(t *testing.T) {
 		t.Fatalf("env user should render read-only:\n%s", body)
 	}
 
-	grant := authedFormRequest(t, a, "manager@example.com", "/app/settings/parking-access", url.Values{
+	grant := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/parking-access", url.Values{
 		"email":   {"env-parker@example.com"},
 		"parking": {"1"},
 	})
@@ -2498,15 +2493,15 @@ func TestParkingAccessPageKeepsEnvUsersReadOnly(t *testing.T) {
 	if a.profiles["env-parker@example.com"].HasPermission(permissionParking) {
 		t.Fatal("env profile must not be mutated by parking access page")
 	}
-	if parking := authedRequest(t, a, "env-parker@example.com", "/app/parking"); parking.Code != http.StatusNotFound {
+	if parking := authedRequest(t, a, "env-parker@example.com", "/demo/app/parking"); parking.Code != http.StatusNotFound {
 		t.Fatalf("env parking status = %d, want 404", parking.Code)
 	}
 }
 
 func TestNavigationActionsStayScopedToRelevantPages(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	portal := authedRequest(t, a, "admin@example.com", "/app")
+	portal := authedRequest(t, a, "admin@example.com", "/demo/app")
 	if portal.Code != http.StatusOK {
 		t.Fatalf("portal status = %d, want 200", portal.Code)
 	}
@@ -2514,15 +2509,15 @@ func TestNavigationActionsStayScopedToRelevantPages(t *testing.T) {
 		t.Fatal("portal should not duplicate the Aushang destination with an admin-only quick link")
 	}
 
-	access := authedRequest(t, a, "admin@example.com", "/app/settings/parking-access")
+	access := authedRequest(t, a, "admin@example.com", "/demo/app/settings/parking-access")
 	if access.Code != http.StatusOK {
 		t.Fatalf("parking access status = %d, want 200", access.Code)
 	}
-	if strings.Contains(access.Body.String(), `action="/app/parking/reminders"`) {
+	if strings.Contains(access.Body.String(), `action="/demo/app/parking/reminders"`) {
 		t.Fatal("parking access should keep payment reminders in the accounting flow")
 	}
-	accounting := authedRequest(t, a, "admin@example.com", "/app/parking/settings?section=accounting")
-	if accounting.Code != http.StatusOK || !strings.Contains(accounting.Body.String(), `action="/app/parking/reminders"`) {
+	accounting := authedRequest(t, a, "admin@example.com", "/demo/app/parking/settings?section=accounting")
+	if accounting.Code != http.StatusOK || !strings.Contains(accounting.Body.String(), `action="/demo/app/parking/reminders"`) {
 		t.Fatalf("parking accounting should own the reminder action, status=%d", accounting.Code)
 	}
 
@@ -2530,14 +2525,14 @@ func TestNavigationActionsStayScopedToRelevantPages(t *testing.T) {
 		name string
 		path string
 	}{
-		{name: "building", path: "/app/settings/building"},
-		{name: "profile", path: "/app/settings/profile"},
+		{name: "building", path: "/demo/app/settings/building"},
+		{name: "profile", path: "/demo/app/settings/profile"},
 	} {
 		rr := authedRequest(t, a, "admin@example.com", tc.path)
 		if rr.Code != http.StatusOK {
 			t.Fatalf("%s status = %d, want 200", tc.name, rr.Code)
 		}
-		if strings.Contains(rr.Body.String(), `action="/app/parking/reminders"`) {
+		if strings.Contains(rr.Body.String(), `action="/demo/app/parking/reminders"`) {
 			t.Fatalf("%s page should not expose parking reminders", tc.name)
 		}
 	}
@@ -2550,7 +2545,7 @@ func TestAuditStoreAppendListFilterAndSanitize(t *testing.T) {
 		t.Fatalf("newAuditStore: %v", err)
 	}
 	if err := store.Append(auditEvent{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		ActorEmail: "Admin@Example.com",
 		ActorRole:  roleAdmin,
 		Action:     auditActionInviteCreate,
@@ -2578,7 +2573,7 @@ func TestAuditStoreAppendListFilterAndSanitize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen audit store: %v", err)
 	}
-	events := reopened.List(auditFilter{TenantSlug: "jhw22", Action: auditActionInviteCreate, Query: "resident", Limit: 10})
+	events := reopened.List(auditFilter{TenantSlug: "demo", Action: auditActionInviteCreate, Query: "resident", Limit: 10})
 	if len(events) != 1 {
 		t.Fatalf("filtered audit events = %+v, want one", events)
 	}
@@ -2595,8 +2590,8 @@ func TestAuditStoreAppendListFilterAndSanitize(t *testing.T) {
 }
 
 func TestAuditLogRecordsInviteAndGatesAccess(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	values := url.Values{
 		"email":       {"new.resident@example.com"},
 		"first_name":  {"New"},
@@ -2604,15 +2599,15 @@ func TestAuditLogRecordsInviteAndGatesAccess(t *testing.T) {
 		"role":        {"Mieter"},
 		"permissions": {permissionParking},
 	}
-	create := authedFormRequest(t, a, "manager@example.com", "/app/settings/users", values)
+	create := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/users", values)
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("create invite status = %d, want redirect", create.Code)
 	}
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionInviteCreate, Query: "new.resident", Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionInviteCreate, Query: "new.resident", Limit: 10})
 	if len(events) != 1 || events[0].ActorEmail != "manager@example.com" || events[0].TargetID != "new.resident@example.com" {
 		t.Fatalf("invite audit events = %+v", events)
 	}
-	body := authedRequest(t, a, "manager@example.com", "/app/audit")
+	body := authedRequest(t, a, "manager@example.com", "/demo/app/audit")
 	auditBody := body.Body.String()
 	for _, want := range []string{"Einladung angelegt", "new.resident@example.com", "Aktivitätsverlauf", "audit-timeline", "audit-filter-panel", "audit-event", "audit-detail-list", "audit-add", "audit-time"} {
 		if !strings.Contains(auditBody, want) {
@@ -2622,7 +2617,7 @@ func TestAuditLogRecordsInviteAndGatesAccess(t *testing.T) {
 	if body.Code != http.StatusOK {
 		t.Fatalf("manager audit page status/body = %d\n%s", body.Code, body.Body.String())
 	}
-	resident := authedRequest(t, a, "resident@example.com", "/app/audit")
+	resident := authedRequest(t, a, "resident@example.com", "/demo/app/audit")
 	if resident.Code != http.StatusOK {
 		t.Fatalf("resident audit status = %d, want 200", resident.Code)
 	}
@@ -2646,56 +2641,56 @@ func TestAuditLogRecordsInviteAndGatesAccess(t *testing.T) {
 }
 
 func TestDocumentUploadRecordsMetadataAndAudit(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	fields := map[string]string{
 		"title":      "Hausordnung",
 		"category":   documentCategoryRules,
 		"visibility": documentVisibilityAllResidents,
 	}
-	upload := authedMultipartFileRequest(t, a, "manager@example.com", "/app/dokumente", fields, "document", "hausordnung.pdf", []byte("%PDF-1.4\n% weg portal test\n"))
+	upload := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/dokumente", fields, "document", "hausordnung.pdf", []byte("%PDF-1.4\n% weg portal test\n"))
 	if upload.Code != http.StatusSeeOther {
 		t.Fatalf("upload status = %d, want redirect", upload.Code)
 	}
-	docs := a.documentStore.ListTenant("jhw22")
+	docs := a.documentStore.ListTenant("demo")
 	if len(docs) != 1 || docs[0].Title != "Hausordnung" || docs[0].Visibility != documentVisibilityAllResidents {
 		t.Fatalf("stored docs = %+v", docs)
 	}
-	if location := upload.Header().Get("Location"); location != "/app/dokumente?doc=uploaded#document-"+docs[0].ID {
+	if location := upload.Header().Get("Location"); location != "/demo/app/dokumente?doc=uploaded#document-"+docs[0].ID {
 		t.Fatalf("upload redirect = %q, want created document anchor", location)
 	}
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionDocumentUpload, Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionDocumentUpload, Limit: 10})
 	if len(events) != 1 || events[0].TargetID != docs[0].ID || events[0].Details["title"] != "Hausordnung" {
 		t.Fatalf("audit events = %+v", events)
 	}
-	page := authedRequest(t, a, "resident@example.com", "/app/dokumente")
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/dokumente")
 	if page.Code != http.StatusOK {
 		t.Fatalf("resident documents status = %d, want 200", page.Code)
 	}
 	body := page.Body.String()
-	for _, want := range []string{`href="/app/dokumente"`, "Hausordnung", "Alle Bewohner", "Vorschau", "/preview"} {
+	for _, want := range []string{`href="/demo/app/dokumente"`, "Hausordnung", "Alle Bewohner", "Vorschau", "/preview"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("documents page missing %q", want)
 		}
 	}
-	preview := authedRequest(t, a, "resident@example.com", "/app/dokumente/"+docs[0].ID+"/preview")
+	preview := authedRequest(t, a, "resident@example.com", "/demo/app/dokumente/"+docs[0].ID+"/preview")
 	if preview.Code != http.StatusOK {
 		t.Fatalf("document preview status = %d, want 200", preview.Code)
 	}
 	if !strings.Contains(preview.Header().Get("Content-Disposition"), "inline") {
 		t.Fatalf("preview disposition = %q, want inline", preview.Header().Get("Content-Disposition"))
 	}
-	residentUpload := authedMultipartFileRequest(t, a, "resident@example.com", "/app/dokumente", fields, "document", "resident.pdf", []byte("%PDF-1.4\n% weg portal test\n"))
+	residentUpload := authedMultipartFileRequest(t, a, "resident@example.com", "/demo/app/dokumente", fields, "document", "resident.pdf", []byte("%PDF-1.4\n% weg portal test\n"))
 	if residentUpload.Code != http.StatusForbidden {
 		t.Fatalf("resident upload status = %d, want 403", residentUpload.Code)
 	}
 }
 
 func TestDocumentsPageFiltersManagerOnlyMetadata(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	if _, err := a.documentStore.Create(documentRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Internes Protokoll",
 		Category:   documentCategoryProtocol,
 		Visibility: documentVisibilityManagerOnly,
@@ -2704,7 +2699,7 @@ func TestDocumentsPageFiltersManagerOnlyMetadata(t *testing.T) {
 		t.Fatalf("create manager-only doc: %v", err)
 	}
 	if _, err := a.documentStore.Create(documentRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Hausordnung",
 		Category:   documentCategoryRules,
 		Visibility: documentVisibilityAllResidents,
@@ -2712,7 +2707,7 @@ func TestDocumentsPageFiltersManagerOnlyMetadata(t *testing.T) {
 	}, testMultipartHeader(t, "document", "hausordnung.pdf", []byte("%PDF-1.4\n% public\n")), time.Now()); err != nil {
 		t.Fatalf("create public doc: %v", err)
 	}
-	residentPage := authedRequest(t, a, "resident@example.com", "/app/dokumente")
+	residentPage := authedRequest(t, a, "resident@example.com", "/demo/app/dokumente")
 	if residentPage.Code != http.StatusOK {
 		t.Fatalf("resident documents status = %d, want 200", residentPage.Code)
 	}
@@ -2723,16 +2718,16 @@ func TestDocumentsPageFiltersManagerOnlyMetadata(t *testing.T) {
 	if !strings.Contains(body, "Hausordnung") {
 		t.Fatal("resident page should show all-residents document")
 	}
-	managerPage := authedRequest(t, a, "manager@example.com", "/app/dokumente")
+	managerPage := authedRequest(t, a, "manager@example.com", "/demo/app/dokumente")
 	if !strings.Contains(managerPage.Body.String(), "Internes Protokoll") {
 		t.Fatal("manager page should show manager-only document")
 	}
 }
 
 func TestDocumentsPageSearchSortAndCategoryEmptyStates(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	oldDoc, err := a.documentStore.Create(documentRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Abrechnung 2025",
 		Category:   documentCategoryBilling,
 		Visibility: documentVisibilityAllResidents,
@@ -2742,7 +2737,7 @@ func TestDocumentsPageSearchSortAndCategoryEmptyStates(t *testing.T) {
 		t.Fatalf("create old doc: %v", err)
 	}
 	newDoc, err := a.documentStore.Create(documentRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Abrechnung 2026",
 		Category:   documentCategoryBilling,
 		Visibility: documentVisibilityAllResidents,
@@ -2751,7 +2746,7 @@ func TestDocumentsPageSearchSortAndCategoryEmptyStates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create new doc: %v", err)
 	}
-	page := authedRequest(t, a, "manager@example.com", "/app/dokumente?sort=oldest")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/dokumente?sort=oldest")
 	body := page.Body.String()
 	oldIndex := strings.Index(body, oldDoc.Title)
 	newIndex := strings.Index(body, newDoc.Title)
@@ -2764,7 +2759,7 @@ func TestDocumentsPageSearchSortAndCategoryEmptyStates(t *testing.T) {
 	if !strings.Contains(body, `value="" disabled selected>Kategorie wählen`) {
 		t.Fatal("document upload should require an explicit category")
 	}
-	filtered := authedRequest(t, a, "manager@example.com", "/app/dokumente?q=2025")
+	filtered := authedRequest(t, a, "manager@example.com", "/demo/app/dokumente?q=2025")
 	filteredBody := filtered.Body.String()
 	if !strings.Contains(filteredBody, oldDoc.Title) || strings.Contains(filteredBody, newDoc.Title) {
 		t.Fatalf("search filtering body = %s", filteredBody)
@@ -2772,43 +2767,43 @@ func TestDocumentsPageSearchSortAndCategoryEmptyStates(t *testing.T) {
 }
 
 func TestEmptyLibrariesHideToolsThatHaveNothingToSearch(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	documents := authedRequest(t, a, "resident@example.com", "/app/dokumente").Body.String()
+	documents := authedRequest(t, a, "resident@example.com", "/demo/app/dokumente").Body.String()
 	if !strings.Contains(documents, "Noch keine Dokumente") || strings.Contains(documents, `class="document-toolbar"`) {
 		t.Fatalf("empty document library should explain itself without search tools:\n%s", documents)
 	}
 
-	announcements := authedRequest(t, a, "resident@example.com", "/app/announcements").Body.String()
+	announcements := authedRequest(t, a, "resident@example.com", "/demo/app/announcements").Body.String()
 	if !strings.Contains(announcements, "Noch keine Beiträge") || strings.Contains(announcements, `class="archive-tools"`) {
 		t.Fatalf("empty announcement archive should explain itself without search tools:\n%s", announcements)
 	}
 
-	audit := authedRequest(t, a, "resident@example.com", "/app/audit").Body.String()
+	audit := authedRequest(t, a, "resident@example.com", "/demo/app/audit").Body.String()
 	if !strings.Contains(audit, "Noch nichts im Verlauf") || strings.Contains(audit, `class="audit-filter-panel"`) {
 		t.Fatalf("empty resident history should explain itself without filters:\n%s", audit)
 	}
 
-	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board").Body.String()
+	board := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board").Body.String()
 	if !strings.Contains(board, "Keine Anliegen im Haus") || strings.Contains(board, `class="issue-board-tools"`) {
 		t.Fatalf("empty issue board should explain itself without filters:\n%s", board)
 	}
 }
 
 func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
-		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", MiteigentumsanteilPPM: 10000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	if err := a.unitStore.SetTenantUnits("demo", []unit{
+		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 10000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	publicDoc, err := a.documentStore.Create(documentRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Hausordnung",
 		Category:   documentCategoryRules,
 		Visibility: documentVisibilityAllResidents,
@@ -2818,7 +2813,7 @@ func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
 		t.Fatalf("create public doc: %v", err)
 	}
 	ownerDoc, err := a.documentStore.Create(documentRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Top 1 Abrechnung",
 		Category:   documentCategoryBilling,
 		Visibility: documentVisibilityOwnersOnly,
@@ -2829,7 +2824,7 @@ func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
 		t.Fatalf("create owner doc: %v", err)
 	}
 	managerDoc, err := a.documentStore.Create(documentRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Interne Notiz",
 		Category:   documentCategoryOther,
 		Visibility: documentVisibilityManagerOnly,
@@ -2859,7 +2854,7 @@ func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
 	}
 	authorized := 0
 	for _, tc := range cases {
-		rr := authedRequest(t, a, tc.email, "/app/dokumente/"+tc.doc.ID+"/download")
+		rr := authedRequest(t, a, tc.email, "/demo/app/dokumente/"+tc.doc.ID+"/download")
 		if rr.Code != tc.want {
 			t.Fatalf("%s downloading %s status = %d, want %d", tc.email, tc.doc.Title, rr.Code, tc.want)
 		}
@@ -2873,16 +2868,16 @@ func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
 			}
 		}
 	}
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionDocumentDownload, Limit: 50})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionDocumentDownload, Limit: 50})
 	if len(events) != authorized {
 		t.Fatalf("download audit count = %d, want %d: %+v", len(events), authorized, events)
 	}
 }
 
 func TestDocumentReplaceShowsHistoryAndDownloadAuditVersion(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	created, err := a.documentStore.Create(documentRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Hausordnung",
 		Category:   documentCategoryRules,
 		Visibility: documentVisibilityAllResidents,
@@ -2891,42 +2886,42 @@ func TestDocumentReplaceShowsHistoryAndDownloadAuditVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create doc: %v", err)
 	}
-	replace := authedMultipartFileRequest(t, a, "manager@example.com", "/app/dokumente/replace", map[string]string{"id": created.ID}, "document", "hausordnung-v2.pdf", []byte("%PDF-1.4\nv2\n"))
+	replace := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/dokumente/replace", map[string]string{"id": created.ID}, "document", "hausordnung-v2.pdf", []byte("%PDF-1.4\nv2\n"))
 	if replace.Code != http.StatusSeeOther {
 		t.Fatalf("replace status = %d, want redirect", replace.Code)
 	}
-	current := a.documentStore.ListCurrentTenant("jhw22")
+	current := a.documentStore.ListCurrentTenant("demo")
 	if len(current) != 1 || current[0].Version != 2 {
 		t.Fatalf("current docs = %+v", current)
 	}
-	if location := replace.Header().Get("Location"); location != "/app/dokumente?doc=replaced#document-"+current[0].ID {
+	if location := replace.Header().Get("Location"); location != "/demo/app/dokumente?doc=replaced#document-"+current[0].ID {
 		t.Fatalf("replace redirect = %q, want current document anchor", location)
 	}
-	page := authedRequest(t, a, "manager@example.com", "/app/dokumente")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/dokumente")
 	body := page.Body.String()
 	for _, want := range []string{"Version 2", "Versionsverlauf", "Version 1", "Neue Version hochladen"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("documents page missing %q", want)
 		}
 	}
-	downloadOld := authedRequest(t, a, "manager@example.com", "/app/dokumente/"+created.ID+"/download")
+	downloadOld := authedRequest(t, a, "manager@example.com", "/demo/app/dokumente/"+created.ID+"/download")
 	if downloadOld.Code != http.StatusOK || !strings.Contains(downloadOld.Body.String(), "v1") {
 		t.Fatalf("old version download status/body = %d %q", downloadOld.Code, downloadOld.Body.String())
 	}
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionDocumentDownload, Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionDocumentDownload, Limit: 10})
 	if len(events) != 1 || events[0].TargetID != created.ID || events[0].Details["version"] != "Version 1" {
 		t.Fatalf("download audit events = %+v", events)
 	}
-	replaceEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionDocumentReplace, Limit: 10})
+	replaceEvents := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionDocumentReplace, Limit: 10})
 	if len(replaceEvents) != 1 || replaceEvents[0].Details["version"] != "Version 2" || replaceEvents[0].Details["previous"] != "Version 1" {
 		t.Fatalf("replace audit events = %+v", replaceEvents)
 	}
 }
 
 func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	users := authedRequest(t, a, "manager@example.com", "/app/settings/users")
+	users := authedRequest(t, a, "manager@example.com", "/demo/app/settings/users")
 	if users.Code != http.StatusOK {
 		t.Fatalf("manager user settings status = %d, want 200", users.Code)
 	}
@@ -2936,7 +2931,7 @@ func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	if strings.Contains(users.Body.String(), `<option value="Admin"`) {
 		t.Fatal("manager user management must not offer Admin role assignment")
 	}
-	adminInvite := authedFormRequest(t, a, "manager@example.com", "/app/settings/users", url.Values{
+	adminInvite := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/users", url.Values{
 		"email": {"new-admin@example.com"},
 		"role":  {"Admin"},
 	})
@@ -2946,10 +2941,10 @@ func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	if _, ok := a.inviteStore.Get("new-admin@example.com"); ok {
 		t.Fatal("manager must not be able to create an Admin invite")
 	}
-	if _, err := a.inviteStore.Add(userProfile{Email: "persisted-admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+	if _, err := a.inviteStore.Add(userProfile{Email: "persisted-admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}); err != nil {
 		t.Fatalf("Add admin invite: %v", err)
 	}
-	deleteAdmin := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/delete", url.Values{
+	deleteAdmin := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/users/delete", url.Values{
 		"email": {"persisted-admin@example.com"},
 	})
 	if deleteAdmin.Code != http.StatusSeeOther {
@@ -2962,12 +2957,12 @@ func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 		"title": {"Manager post"},
 		"body":  {"Allowed"},
 	}
-	write := authedFormRequest(t, a, "manager@example.com", "/app/announcements", values)
+	write := authedFormRequest(t, a, "manager@example.com", "/demo/app/announcements", values)
 	if write.Code != http.StatusSeeOther {
 		t.Fatalf("manager announcement create status = %d, want redirect", write.Code)
 	}
 	ballotDeadline := time.Now().Add(48 * time.Hour).In(time.Local).Format("2006-01-02T15:04")
-	ballotCreate := authedFormRequest(t, a, "manager@example.com", "/app/abstimmungen", url.Values{
+	ballotCreate := authedFormRequest(t, a, "manager@example.com", "/demo/app/abstimmungen", url.Values{
 		"title":                 {"Dachsanierung"},
 		"description":           {"Beschluss zur Beauftragung"},
 		"options_text":          {"Ja\nNein\nEnthaltung"},
@@ -2980,51 +2975,51 @@ func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	if ballotCreate.Code != http.StatusSeeOther {
 		t.Fatalf("manager ballot create status = %d, want redirect", ballotCreate.Code)
 	}
-	ballots := a.voteStore.ListTenant("jhw22")
+	ballots := a.voteStore.ListTenant("demo")
 	if len(ballots) != 1 || ballots[0].Title != "Dachsanierung" || ballots[0].QuorumPPM != 500000 || ballots[0].ReminderBeforeMinutes != 720 {
 		t.Fatalf("created ballots = %+v", ballots)
 	}
-	if location := ballotCreate.Header().Get("Location"); location != "/app/abstimmungen?vote=created#ballot-"+ballots[0].ID {
+	if location := ballotCreate.Header().Get("Location"); location != "/demo/app/abstimmungen?vote=created#ballot-"+ballots[0].ID {
 		t.Fatalf("manager ballot create redirect = %q, want ballot anchor", location)
 	}
-	open := authedFormRequest(t, a, "manager@example.com", "/app/abstimmungen/open", url.Values{"id": {ballots[0].ID}})
+	open := authedFormRequest(t, a, "manager@example.com", "/demo/app/abstimmungen/open", url.Values{"id": {ballots[0].ID}})
 	if open.Code != http.StatusSeeOther {
 		t.Fatalf("manager ballot open status = %d, want redirect", open.Code)
 	}
-	if location := open.Header().Get("Location"); location != "/app/abstimmungen?vote=opened#ballot-"+ballots[0].ID {
+	if location := open.Header().Get("Location"); location != "/demo/app/abstimmungen?vote=opened#ballot-"+ballots[0].ID {
 		t.Fatalf("manager ballot open redirect = %q, want ballot anchor", location)
 	}
-	close := authedFormRequest(t, a, "manager@example.com", "/app/abstimmungen/close", url.Values{"id": {ballots[0].ID}})
+	close := authedFormRequest(t, a, "manager@example.com", "/demo/app/abstimmungen/close", url.Values{"id": {ballots[0].ID}})
 	if close.Code != http.StatusSeeOther {
 		t.Fatalf("manager ballot close status = %d, want redirect", close.Code)
 	}
-	if location := close.Header().Get("Location"); location != "/app/abstimmungen?vote=closed#ballot-"+ballots[0].ID {
+	if location := close.Header().Get("Location"); location != "/demo/app/abstimmungen?vote=closed#ballot-"+ballots[0].ID {
 		t.Fatalf("manager ballot close redirect = %q, want ballot anchor", location)
 	}
-	closed, _ := a.voteStore.Get("jhw22", ballots[0].ID)
+	closed, _ := a.voteStore.Get("demo", ballots[0].ID)
 	if closed.Status != ballotStatusClosed {
 		t.Fatalf("closed ballot = %+v", closed)
 	}
 	for _, action := range []string{auditActionVoteCreate, auditActionVoteOpen, auditActionVoteClose} {
-		events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: action, Limit: 10})
+		events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: action, Limit: 10})
 		if len(events) != 1 {
 			t.Fatalf("audit events for %s = %+v", action, events)
 		}
 	}
-	parkingSettings := authedRequest(t, a, "manager@example.com", "/app/parking/settings")
+	parkingSettings := authedRequest(t, a, "manager@example.com", "/demo/app/parking/settings")
 	if parkingSettings.Code != http.StatusForbidden {
 		t.Fatalf("manager parking settings status = %d, want 403", parkingSettings.Code)
 	}
 }
 
 func TestResidentCannotManageTenantUsers(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	users := authedRequest(t, a, "resident@example.com", "/app/settings/users")
+	users := authedRequest(t, a, "resident@example.com", "/demo/app/settings/users")
 	if users.Code != http.StatusForbidden {
 		t.Fatalf("resident user settings status = %d, want 403", users.Code)
 	}
-	ballotCreate := authedFormRequest(t, a, "resident@example.com", "/app/abstimmungen", url.Values{
+	ballotCreate := authedFormRequest(t, a, "resident@example.com", "/demo/app/abstimmungen", url.Values{
 		"title":        {"Nicht erlaubt"},
 		"options_text": {"Ja\nNein"},
 	})
@@ -3034,14 +3029,14 @@ func TestResidentCannotManageTenantUsers(t *testing.T) {
 }
 
 func TestParkingSettingsIsParkingSpecificNotGlobalSettings(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	rr := authedRequest(t, a, "admin@example.com", "/app/parking/settings")
+	rr := authedRequest(t, a, "admin@example.com", "/demo/app/parking/settings")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("parking settings status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{"Parkplatz verwalten", `href="/app/settings"`, "Einstellungen", "Tarif &amp; Gültigkeit"} {
+	for _, want := range []string{"Parkplatz verwalten", `href="/demo/app/settings"`, "Einstellungen", "Tarif &amp; Gültigkeit"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("parking settings should contain %q", want)
 		}
@@ -3052,7 +3047,7 @@ func TestParkingSettingsIsParkingSpecificNotGlobalSettings(t *testing.T) {
 }
 
 func TestParkingSettingsSeparatesAdminTasksIntoSections(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	tests := []struct {
 		path   string
@@ -3061,19 +3056,19 @@ func TestParkingSettingsSeparatesAdminTasksIntoSections(t *testing.T) {
 		hides  []string
 	}{
 		{
-			path:   "/app/parking/settings?section=accounting",
+			path:   "/demo/app/parking/settings?section=accounting",
 			active: "accounting",
 			wants:  []string{`id="abrechnung"`, "Tarif &amp; Gültigkeit", "Zahlungsstände prüfen", "Offene Zahlungen erinnern"},
 			hides:  []string{`id="laderegelung"`, `id="telegram"`},
 		},
 		{
-			path:   "/app/parking/settings?section=charging",
+			path:   "/demo/app/parking/settings?section=charging",
 			active: "charging",
 			wants:  []string{`id="laderegelung"`, "Erweiterte Grenzwerte", "Regler-Status &amp; Ereignisse", "Laderegeln speichern"},
 			hides:  []string{`id="abrechnung"`, `id="telegram"`},
 		},
 		{
-			path:   "/app/parking/settings?section=telegram",
+			path:   "/demo/app/parking/settings?section=telegram",
 			active: "telegram",
 			wants:  []string{`id="telegram"`, "Telegram verbinden", "Code erzeugen", "Noch niemand verbunden"},
 			hides:  []string{`id="abrechnung"`, `id="laderegelung"`},
@@ -3085,7 +3080,7 @@ func TestParkingSettingsSeparatesAdminTasksIntoSections(t *testing.T) {
 			t.Fatalf("%s status = %d", test.active, page.Code)
 		}
 		body := page.Body.String()
-		activeLink := `class="pk-nav-item active" href="/app/parking/settings?section=` + test.active + `"`
+		activeLink := `class="pk-nav-item active" href="/demo/app/parking/settings?section=` + test.active + `"`
 		if !strings.Contains(body, activeLink) {
 			t.Fatalf("%s section missing active navigation", test.active)
 		}
@@ -3103,9 +3098,9 @@ func TestParkingSettingsSeparatesAdminTasksIntoSections(t *testing.T) {
 }
 
 func TestParkingSettingsSavesEffectiveTariffHistory(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	save := authedFormRequest(t, a, "admin@example.com", "/app/parking/settings", url.Values{
+	save := authedFormRequest(t, a, "admin@example.com", "/demo/app/parking/settings", url.Values{
 		"effective_from":       {"2026-07-01"},
 		"grid_fee_eur_per_kwh": {"0.12"},
 		"base_fee_eur":         {"5.50"},
@@ -3113,18 +3108,18 @@ func TestParkingSettingsSavesEffectiveTariffHistory(t *testing.T) {
 	if save.Code != http.StatusSeeOther {
 		t.Fatalf("parking tariff save status = %d, want redirect", save.Code)
 	}
-	data := a.parkingStore.TenantData("jhw22")
+	data := a.parkingStore.TenantData("demo")
 	tariff := parkingTariffAt(data.Settings, time.Date(2026, 7, 15, 0, 0, 0, 0, time.Local), time.Local)
 	if tariff.EffectiveFrom != "2026-07-01" {
 		t.Fatalf("saved tariff = %+v", tariff)
 	}
 	assertClose(t, tariff.GridFeeEURPerKWh, 0.12)
 	assertClose(t, tariff.BaseFeeEUR, 5.50)
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionParkingSettings, Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionParkingSettings, Limit: 10})
 	if len(events) != 1 || events[0].Details["base_fee"] != "5,50 €" || events[0].Details["effective_from"] == "" {
 		t.Fatalf("parking tariff audit events = %+v", events)
 	}
-	page := authedRequest(t, a, "admin@example.com", "/app/parking/settings")
+	page := authedRequest(t, a, "admin@example.com", "/demo/app/parking/settings")
 	body := page.Body.String()
 	for _, want := range []string{"Tarif", "2026-07-01", "0,120 €/kWh", "Basis 5,50 €"} {
 		if !strings.Contains(body, want) {
@@ -3141,16 +3136,16 @@ func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 	}
 	now := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	expiredAt := now.Add(-time.Hour)
-	future, err := store.Create(announcement{TenantSlug: "jhw22", Title: "Future", Body: "Later", Category: "Info", PublishedAt: now.Add(time.Hour)})
+	future, err := store.Create(announcement{TenantSlug: "demo", Title: "Future", Body: "Later", Category: "Info", PublishedAt: now.Add(time.Hour)})
 	if err != nil || future.ID == "" {
 		t.Fatalf("create future: item=%+v err=%v", future, err)
 	}
-	expired, _ := store.Create(announcement{TenantSlug: "jhw22", Title: "Expired", Body: "Old", Category: "Info", PublishedAt: now.Add(-2 * time.Hour), ExpiresAt: &expiredAt})
-	normal, _ := store.Create(announcement{TenantSlug: "jhw22", Title: "Normal", Body: "Visible", Category: "Termin", PublishedAt: now.Add(-30 * time.Minute)})
-	pinned, _ := store.Create(announcement{TenantSlug: "jhw22", Title: "Pinned", Body: "Top", Category: "Dringend", Pinned: true, PublishedAt: now.Add(-2 * time.Hour)})
+	expired, _ := store.Create(announcement{TenantSlug: "demo", Title: "Expired", Body: "Old", Category: "Info", PublishedAt: now.Add(-2 * time.Hour), ExpiresAt: &expiredAt})
+	normal, _ := store.Create(announcement{TenantSlug: "demo", Title: "Normal", Body: "Visible", Category: "Termin", PublishedAt: now.Add(-30 * time.Minute)})
+	pinned, _ := store.Create(announcement{TenantSlug: "demo", Title: "Pinned", Body: "Top", Category: "Dringend", Pinned: true, PublishedAt: now.Add(-2 * time.Hour)})
 	_, _ = store.Create(announcement{TenantSlug: "other", Title: "Other", Body: "Hidden", Category: "Info", PublishedAt: now.Add(-time.Hour)})
 
-	visible := store.Visible("jhw22", now)
+	visible := store.Visible("demo", now)
 	if len(visible) != 2 {
 		t.Fatalf("visible len = %d, want 2 (future=%s expired=%s normal=%s pinned=%s)", len(visible), future.ID, expired.ID, normal.ID, pinned.ID)
 	}
@@ -3163,7 +3158,7 @@ func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 	if ok, err := store.Update(normal.ID, updated); !ok || err != nil {
 		t.Fatalf("update: ok=%v err=%v", ok, err)
 	}
-	if removed, err := store.Delete("jhw22", pinned.ID); !removed || err != nil {
+	if removed, err := store.Delete("demo", pinned.ID); !removed || err != nil {
 		t.Fatalf("delete: removed=%v err=%v", removed, err)
 	}
 	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
@@ -3173,7 +3168,7 @@ func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	all := reopened.ListTenant("jhw22")
+	all := reopened.ListTenant("demo")
 	if len(all) != 3 {
 		t.Fatalf("reopened list len = %d, want 3 after delete", len(all))
 	}
@@ -3195,7 +3190,7 @@ func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
 		t.Fatalf("newAnnouncementReadStore: %v", err)
 	}
 	seenAt := time.Date(2026, 7, 6, 12, 30, 0, 0, time.UTC)
-	if err := store.MarkSeen("jhw22", "Resident@Example.com", seenAt); err != nil {
+	if err := store.MarkSeen("demo", "Resident@Example.com", seenAt); err != nil {
 		t.Fatalf("mark seen: %v", err)
 	}
 	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
@@ -3205,7 +3200,7 @@ func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen read store: %v", err)
 	}
-	if got := reopened.LastSeen("jhw22", "resident@example.com"); !got.Equal(seenAt) {
+	if got := reopened.LastSeen("demo", "resident@example.com"); !got.Equal(seenAt) {
 		t.Fatalf("last seen = %v, want %v", got, seenAt)
 	}
 }
@@ -3217,17 +3212,17 @@ func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 		t.Fatalf("newEventStore: %v", err)
 	}
 	now := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
-	past, err := store.Create(houseEvent{TenantSlug: "jhw22", Title: "Alte Reinigung", Category: "Reinigung", StartsAt: now.AddDate(0, 0, -2)})
+	past, err := store.Create(houseEvent{TenantSlug: "demo", Title: "Alte Reinigung", Category: "Reinigung", StartsAt: now.AddDate(0, 0, -2)})
 	if err != nil {
 		t.Fatalf("create past: %v", err)
 	}
-	future, err := store.Create(houseEvent{TenantSlug: "jhw22", Title: "Eigentümerversammlung", Category: "meeting", Location: "Hof", StartsAt: now.Add(48 * time.Hour)})
+	future, err := store.Create(houseEvent{TenantSlug: "demo", Title: "Eigentümerversammlung", Category: "meeting", Location: "Hof", StartsAt: now.Add(48 * time.Hour)})
 	if err != nil {
 		t.Fatalf("create future: %v", err)
 	}
 	_, _ = store.Create(houseEvent{TenantSlug: "other", Title: "Other", Category: "Wartung", StartsAt: now.Add(24 * time.Hour)})
 
-	upcoming := store.Upcoming("jhw22", now)
+	upcoming := store.Upcoming("demo", now)
 	if len(upcoming) != 1 || upcoming[0].ID != future.ID || upcoming[0].Category != "Eigentümerversammlung" {
 		t.Fatalf("upcoming = %+v, want only normalized future event", upcoming)
 	}
@@ -3238,7 +3233,7 @@ func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 	if ok, err := store.Update(future.ID, updated); !ok || err != nil {
 		t.Fatalf("update: ok=%v err=%v", ok, err)
 	}
-	if removed, err := store.Delete("jhw22", past.ID); !removed || err != nil {
+	if removed, err := store.Delete("demo", past.ID); !removed || err != nil {
 		t.Fatalf("delete past: removed=%v err=%v", removed, err)
 	}
 	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
@@ -3249,16 +3244,16 @@ func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	events := reopened.ListTenant("jhw22")
+	events := reopened.ListTenant("demo")
 	if len(events) != 1 || events[0].Title != "Versammlung aktualisiert" {
 		t.Fatalf("reopened events = %+v", events)
 	}
 }
 
 func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	rr := authedRequest(t, a, "resident@example.com", "/app")
+	rr := authedRequest(t, a, "resident@example.com", "/demo/app")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("portal status = %d", rr.Code)
 	}
@@ -3285,7 +3280,7 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 	if !strings.Contains(body, `class="home-hero"`) || strings.Contains(body, `class="banner"`) {
 		t.Fatal("portal should use the integrated home hero instead of the old banner")
 	}
-	if got := strings.Count(body, `href="/app/anliegen?new=1#issue-new"`); got != 1 {
+	if got := strings.Count(body, `href="/demo/app/anliegen?new=1#issue-new"`); got != 1 {
 		t.Fatalf("calm portal should expose one quiet create path, got %d", got)
 	}
 	for _, want := range []string{`.home-primary-task {`, `.home-follow-row {`, `.home-utilities {`} {
@@ -3301,27 +3296,27 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 }
 
 func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	now := time.Now()
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now.Add(-time.Hour)})
-	_, _ = a.eventStore.Create(houseEvent{TenantSlug: "jhw22", Title: "Versammlung", Category: "Eigentümerversammlung", StartsAt: now.Add(48 * time.Hour)})
-	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Eigenes Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
-	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "jhw22", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Privates Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now.Add(-time.Hour)})
+	_, _ = a.eventStore.Create(houseEvent{TenantSlug: "demo", Title: "Versammlung", Category: "Eigentümerversammlung", StartsAt: now.Add(48 * time.Hour)})
+	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Eigenes Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
+	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Privates Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
 
-	resident := authedRequest(t, a, "resident@example.com", "/app").Body.String()
+	resident := authedRequest(t, a, "resident@example.com", "/demo/app").Body.String()
 	for _, want := range []string{"Was ist als Nächstes zu tun?", "Neuen Aushang lesen", "ungelesener Beitrag", "Anliegen bleibt im Blick", "Eigenes Anliegen", "Nächster Termin: Versammlung"} {
 		if !strings.Contains(resident, want) {
 			t.Fatalf("resident digest should contain %q", want)
 		}
 	}
-	if strings.Contains(resident, `href="/app/anliegen/board"`) {
+	if strings.Contains(resident, `href="/demo/app/anliegen/board"`) {
 		t.Fatalf("resident digest must be role-scoped:\n%s", resident)
 	}
 
-	manager := authedRequest(t, a, "manager@example.com", "/app").Body.String()
-	for _, want := range []string{"Priorisieren", "2 offene Anliegen", `href="/app/anliegen/board/`} {
+	manager := authedRequest(t, a, "manager@example.com", "/demo/app").Body.String()
+	for _, want := range []string{"Priorisieren", "2 offene Anliegen", `href="/demo/app/anliegen/board/`} {
 		if !strings.Contains(manager, want) {
 			t.Fatalf("manager digest should contain %q", want)
 		}
@@ -3335,16 +3330,16 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 // Bleibt danach eine Karte ohne Zeile, sagt sie, wo der Eintrag steht, und der
 // Kartenkopf nennt weiterhin die echte Gesamtzahl.
 func TestPortalDoesNotRepeatFocusItemsInBoardCards(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now()
-	if _, err := a.eventStore.Create(houseEvent{TenantSlug: "jhw22", Title: "Dachbegehung", Category: "Sonstiges", StartsAt: now.Add(48 * time.Hour)}); err != nil {
+	if _, err := a.eventStore.Create(houseEvent{TenantSlug: "demo", Title: "Dachbegehung", Category: "Sonstiges", StartsAt: now.Add(48 * time.Hour)}); err != nil {
 		t.Fatalf("create event: %v", err)
 	}
-	if _, err := a.issueStore.Create(residentIssue{TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Wasserdruck im Bad zu niedrig", Body: "Kaum Druck", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm}); err != nil {
+	if _, err := a.issueStore.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Wasserdruck im Bad zu niedrig", Body: "Kaum Druck", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm}); err != nil {
 		t.Fatalf("create issue: %v", err)
 	}
 
-	body := authedRequest(t, a, "resident@example.com", "/app").Body.String()
+	body := authedRequest(t, a, "resident@example.com", "/demo/app").Body.String()
 	for _, once := range []string{"Wasserdruck im Bad zu niedrig", "Dachbegehung"} {
 		if count := strings.Count(body, once); count != 1 {
 			t.Fatalf("portal should name %q exactly once, got %d:\n%s", once, count, body)
@@ -3367,11 +3362,11 @@ func TestPortalDoesNotRepeatFocusItemsInBoardCards(t *testing.T) {
 }
 
 func TestPortalDashboardShowsRoleScopedDocumentsAndParking(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["parker@example.com"] = userProfile{Email: "parker@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["parker@example.com"] = userProfile{Email: "parker@example.com", Role: roleRenter, Tenants: []string{"demo"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	upload := authedMultipartFileRequest(t, a, "manager@example.com", "/app/dokumente", map[string]string{
+	upload := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/dokumente", map[string]string{
 		"title":      "Hausordnung",
 		"category":   documentCategoryRules,
 		"visibility": documentVisibilityAllResidents,
@@ -3380,7 +3375,7 @@ func TestPortalDashboardShowsRoleScopedDocumentsAndParking(t *testing.T) {
 		t.Fatalf("upload status = %d, want redirect", upload.Code)
 	}
 
-	parker := authedRequest(t, a, "parker@example.com", "/app").Body.String()
+	parker := authedRequest(t, a, "parker@example.com", "/demo/app").Body.String()
 	for _, want := range []string{"Dokumente", "Parkplatznutzung", "Weitere Bereiche", "Alles im Blick"} {
 		if !strings.Contains(parker, want) {
 			t.Fatalf("parking user dashboard should contain %q", want)
@@ -3390,24 +3385,24 @@ func TestPortalDashboardShowsRoleScopedDocumentsAndParking(t *testing.T) {
 		t.Fatal("dashboard should not duplicate the document library without a real unread state")
 	}
 
-	resident := authedRequest(t, a, "resident@example.com", "/app").Body.String()
+	resident := authedRequest(t, a, "resident@example.com", "/demo/app").Body.String()
 	if !strings.Contains(resident, "Dokumente") || strings.Contains(resident, "Hausordnung") {
 		t.Fatal("resident dashboard should keep documents in navigation without duplicating arbitrary files")
 	}
-	if !strings.Contains(resident, "<title>Janischhofweg 22</title>") || strings.Contains(resident, "<title>WEG Portal</title>") {
+	if !strings.Contains(resident, "<title>Musterweg 1</title>") || strings.Contains(resident, "<title>WEG Portal</title>") {
 		t.Fatal("dashboard browser title should use the house name instead of the legacy product name")
 	}
-	if strings.Contains(resident, `href="/app/parking"`) || strings.Contains(resident, `href="/app/parking#`) || strings.Contains(resident, `Parkplatz öffnen`) {
+	if strings.Contains(resident, `href="/demo/app/parking"`) || strings.Contains(resident, `href="/demo/app/parking#`) || strings.Contains(resident, `Parkplatz öffnen`) {
 		t.Fatal("resident without parking permission must not see parking dashboard links")
 	}
 }
 
 func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	start := time.Now().Add(48 * time.Hour).In(time.Local).Format("2006-01-02T15:04")
 
-	create := authedFormRequest(t, a, "manager@example.com", "/app/events", url.Values{
+	create := authedFormRequest(t, a, "manager@example.com", "/demo/app/events", url.Values{
 		"title":     {"Liftwartung"},
 		"category":  {"Wartung"},
 		"starts_at": {start},
@@ -3417,36 +3412,36 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("create event status = %d, want redirect", create.Code)
 	}
-	events := a.eventStore.ListTenant("jhw22")
+	events := a.eventStore.ListTenant("demo")
 	if len(events) != 1 || events[0].Title != "Liftwartung" || events[0].Category != "Wartung" {
 		t.Fatalf("stored events = %+v", events)
 	}
-	if loc := create.Header().Get("Location"); loc != "/app/events?event=created#event-"+events[0].ID {
+	if loc := create.Header().Get("Location"); loc != "/demo/app/events?event=created#event-"+events[0].ID {
 		t.Fatalf("create event redirect = %q", loc)
 	}
 
-	page := authedRequest(t, a, "resident@example.com", "/app/events")
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/events")
 	if page.Code != http.StatusOK {
 		t.Fatalf("resident events status = %d", page.Code)
 	}
 	body := page.Body.String()
-	for _, want := range []string{"Liftwartung", "Stiegenhaus", "Lift außer Betrieb.", "Als Nächstes", "Kalender abonnieren", "Details", `href="/app/events"`} {
+	for _, want := range []string{"Liftwartung", "Stiegenhaus", "Lift außer Betrieb.", "Als Nächstes", "Kalender abonnieren", "Details", `href="/demo/app/events"`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("events page should contain %q", want)
 		}
 	}
-	for _, forbidden := range []string{`data-dialog="event-create"`, `action="/app/events/delete"`} {
+	for _, forbidden := range []string{`data-dialog="event-create"`, `action="/demo/app/events/delete"`} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("resident events page must not contain management control %q", forbidden)
 		}
 	}
-	dashboard := authedRequest(t, a, "resident@example.com", "/app")
+	dashboard := authedRequest(t, a, "resident@example.com", "/demo/app")
 	if dashboard.Code != http.StatusOK || !strings.Contains(dashboard.Body.String(), "Liftwartung") {
 		t.Fatalf("dashboard should show upcoming event, status=%d body=\n%s", dashboard.Code, dashboard.Body.String())
 	}
 
 	editedStart := time.Now().Add(72 * time.Hour).In(time.Local).Format("2006-01-02T15:04")
-	edit := authedFormRequest(t, a, "manager@example.com", "/app/events/edit", url.Values{
+	edit := authedFormRequest(t, a, "manager@example.com", "/demo/app/events/edit", url.Values{
 		"id":        {events[0].ID},
 		"title":     {"Hofreinigung"},
 		"category":  {"Reinigung"},
@@ -3456,35 +3451,35 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	if edit.Code != http.StatusSeeOther {
 		t.Fatalf("edit event status = %d, want redirect", edit.Code)
 	}
-	events = a.eventStore.ListTenant("jhw22")
+	events = a.eventStore.ListTenant("demo")
 	if len(events) != 1 || events[0].Title != "Hofreinigung" || events[0].Category != "Reinigung" || events[0].Location != "Hof" {
 		t.Fatalf("edited events = %+v", events)
 	}
-	if loc := edit.Header().Get("Location"); loc != "/app/events?event=updated#event-"+events[0].ID {
+	if loc := edit.Header().Get("Location"); loc != "/demo/app/events?event=updated#event-"+events[0].ID {
 		t.Fatalf("edit event redirect = %q", loc)
 	}
 
-	deleteResp := authedFormRequest(t, a, "manager@example.com", "/app/events/delete", url.Values{"id": {events[0].ID}})
+	deleteResp := authedFormRequest(t, a, "manager@example.com", "/demo/app/events/delete", url.Values{"id": {events[0].ID}})
 	if deleteResp.Code != http.StatusSeeOther {
 		t.Fatalf("delete event status = %d, want redirect", deleteResp.Code)
 	}
-	if got := a.eventStore.Upcoming("jhw22", time.Now()); len(got) != 0 {
+	if got := a.eventStore.Upcoming("demo", time.Now()); len(got) != 0 {
 		t.Fatalf("events after delete = %+v, want none", got)
 	}
-	empty := authedRequest(t, a, "resident@example.com", "/app/events")
+	empty := authedRequest(t, a, "resident@example.com", "/demo/app/events")
 	if !strings.Contains(empty.Body.String(), "Noch keine kommenden Termine") {
 		t.Fatalf("empty events page should show empty state:\n%s", empty.Body.String())
 	}
 }
 
 func TestEventsPageKeepsPastEventsProgressiveAndDashboardPreviewsUpcomingOnly(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now()
 	pastEnd := now.Add(-47 * time.Hour)
 	items := []houseEvent{
-		{TenantSlug: "jhw22", Title: "Vergangene Begehung", Category: "Sonstiges", StartsAt: now.Add(-48 * time.Hour), EndsAt: &pastEnd},
-		{TenantSlug: "jhw22", Title: "Nächste Ablesung", Category: "Ablesung", StartsAt: now.Add(24 * time.Hour)},
-		{TenantSlug: "jhw22", Title: "Spätere Wartung", Category: "Wartung", StartsAt: now.Add(72 * time.Hour)},
+		{TenantSlug: "demo", Title: "Vergangene Begehung", Category: "Sonstiges", StartsAt: now.Add(-48 * time.Hour), EndsAt: &pastEnd},
+		{TenantSlug: "demo", Title: "Nächste Ablesung", Category: "Ablesung", StartsAt: now.Add(24 * time.Hour)},
+		{TenantSlug: "demo", Title: "Spätere Wartung", Category: "Wartung", StartsAt: now.Add(72 * time.Hour)},
 	}
 	for _, item := range items {
 		if _, err := a.eventStore.Create(item); err != nil {
@@ -3492,7 +3487,7 @@ func TestEventsPageKeepsPastEventsProgressiveAndDashboardPreviewsUpcomingOnly(t 
 		}
 	}
 
-	page := authedRequest(t, a, "resident@example.com", "/app/events").Body.String()
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/events").Body.String()
 	for _, want := range []string{"Nächste Ablesung", "Spätere Wartung", "Vergangene Termine · 1", "Vergangene Begehung", `class="event-history"`} {
 		if !strings.Contains(page, want) {
 			t.Fatalf("events page should contain %q", want)
@@ -3502,7 +3497,7 @@ func TestEventsPageKeepsPastEventsProgressiveAndDashboardPreviewsUpcomingOnly(t 
 	// Der Hausüberblick zeigt die nächsten Termine als kurze Vorschau. Sie ist
 	// bewusst auf die kommenden Einträge begrenzt: Vergangenes gehört in den
 	// Verlauf der Terminseite und nicht auf den Einstieg.
-	dashboard := authedRequest(t, a, "resident@example.com", "/app").Body.String()
+	dashboard := authedRequest(t, a, "resident@example.com", "/demo/app").Body.String()
 	for _, want := range []string{"Nächste Termine", "Nächste Ablesung", "Spätere Wartung"} {
 		if !strings.Contains(dashboard, want) {
 			t.Fatalf("dashboard should preview upcoming events and contain %q:\n%s", want, dashboard)
@@ -3514,11 +3509,11 @@ func TestEventsPageKeepsPastEventsProgressiveAndDashboardPreviewsUpcomingOnly(t 
 }
 
 func TestEventCreateShowsAttachmentPreview(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	start := time.Now().Add(48 * time.Hour).In(time.Local).Format("2006-01-02T15:04")
 
-	create := authedMultipartFileRequest(t, a, "manager@example.com", "/app/events", map[string]string{
+	create := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/events", map[string]string{
 		"title":     "Hofbegehung",
 		"category":  "Sonstiges",
 		"starts_at": start,
@@ -3527,15 +3522,15 @@ func TestEventCreateShowsAttachmentPreview(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("event create status = %d, want redirect", create.Code)
 	}
-	events := a.eventStore.ListTenant("jhw22")
+	events := a.eventStore.ListTenant("demo")
 	if len(events) != 1 {
 		t.Fatalf("events = %+v", events)
 	}
-	attachments := a.attachmentStore.ListEntity("jhw22", "event", events[0].ID)
+	attachments := a.attachmentStore.ListEntity("demo", "event", events[0].ID)
 	if len(attachments) != 1 || attachments[0].ContentType != "image/png" {
 		t.Fatalf("event attachments = %+v", attachments)
 	}
-	page := authedRequest(t, a, "resident@example.com", "/app/events")
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/events")
 	body := page.Body.String()
 	for _, want := range []string{"hof.png", `data-lightbox-src`, "Hofbegehung"} {
 		if !strings.Contains(body, want) {
@@ -3545,15 +3540,15 @@ func TestEventCreateShowsAttachmentPreview(t *testing.T) {
 }
 
 func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now().Add(-2 * time.Hour)
 	expiredAt := now.Add(time.Hour)
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Normaler Hinweis", Body: "Nur im Beitrag 4711", Category: "Info", PublishedAt: now.Add(time.Hour)})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Fixierter Hinweis", Body: "Nur im Beitrag 4712", Category: "Dringend", Pinned: true, PublishedAt: now})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Alter Hinweis", Body: "Abgelaufen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Geplanter Hinweis", Body: "Zukunft", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Normaler Hinweis", Body: "Nur im Beitrag 4711", Category: "Info", PublishedAt: now.Add(time.Hour)})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Fixierter Hinweis", Body: "Nur im Beitrag 4712", Category: "Dringend", Pinned: true, PublishedAt: now})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Alter Hinweis", Body: "Abgelaufen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Geplanter Hinweis", Body: "Zukunft", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
 
-	rr := authedRequest(t, a, "resident@example.com", "/app")
+	rr := authedRequest(t, a, "resident@example.com", "/demo/app")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("portal status = %d", rr.Code)
 	}
@@ -3571,21 +3566,21 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 	if strings.Contains(body, "Nur im Beitrag 4711") || strings.Contains(body, "Nur im Beitrag 4712") {
 		t.Fatalf("portal should preview titles without repeating announcement bodies:\n%s", body)
 	}
-	for _, forbidden := range []string{"Alter Hinweis", "Geplanter Hinweis", "info-card", `class="quick-row disabled"`, "Schnellzugriff", `class="quick-row" href="/app/announcements"`} {
+	for _, forbidden := range []string{"Alter Hinweis", "Geplanter Hinweis", "info-card", `class="quick-row disabled"`, "Schnellzugriff", `class="quick-row" href="/demo/app/announcements"`} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("portal must not contain %q", forbidden)
 		}
 	}
-	if !strings.Contains(body, `href="/app/announcements"`) || !strings.Contains(body, "Neue Aushänge lesen") {
+	if !strings.Contains(body, `href="/demo/app/announcements"`) || !strings.Contains(body, "Neue Aushänge lesen") {
 		t.Fatal("portal should keep one focused unread-announcement action")
 	}
 }
 
 func TestAnnouncementCreateShowsAttachmentPreview(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	create := authedMultipartFileRequest(t, a, "manager@example.com", "/app/announcements", map[string]string{
+	create := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/announcements", map[string]string{
 		"title":    "Wirtschaftsplan",
 		"body":     "Bitte beachten.",
 		"category": "Info",
@@ -3593,30 +3588,30 @@ func TestAnnouncementCreateShowsAttachmentPreview(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("announcement create status = %d, want redirect", create.Code)
 	}
-	items := a.announcementStore.ListTenant("jhw22")
+	items := a.announcementStore.ListTenant("demo")
 	if len(items) != 1 {
 		t.Fatalf("announcements = %+v", items)
 	}
-	attachments := a.attachmentStore.ListEntity("jhw22", "announcement", items[0].ID)
+	attachments := a.attachmentStore.ListEntity("demo", "announcement", items[0].ID)
 	if len(attachments) != 1 || attachments[0].ContentType != "application/pdf" {
 		t.Fatalf("announcement attachments = %+v", attachments)
 	}
-	page := authedRequest(t, a, "resident@example.com", "/app/announcements")
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/announcements")
 	body := page.Body.String()
-	if !strings.Contains(body, "wirtschaftsplan.pdf") || strings.Contains(body, `action="/app/attachments/delete"`) {
+	if !strings.Contains(body, "wirtschaftsplan.pdf") || strings.Contains(body, `action="/demo/app/attachments/delete"`) {
 		t.Fatalf("resident announcement page attachment rendering mismatch:\n%s", body)
 	}
 }
 
 func TestIssuesPageRendersResidentFormAndNav(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	rr := authedRequest(t, a, "resident@example.com", "/app/anliegen")
+	rr := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("issues status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/app/anliegen"`, "Anliegen", "Erstes Anliegen melden", `enctype="multipart/form-data"`, `name="category"`, `name="location_type"`, `name="attachments"`, `multiple`} {
+	for _, want := range []string{`href="/demo/app/anliegen"`, "Anliegen", "Erstes Anliegen melden", `enctype="multipart/form-data"`, `name="category"`, `name="location_type"`, `name="attachments"`, `multiple`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("issues page should contain %q", want)
 		}
@@ -3656,8 +3651,8 @@ func TestIssueTitleFallbackIsServerOwnedAndBounded(t *testing.T) {
 		})
 	}
 
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	created := authedMultipartFilesRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	created := authedMultipartFilesRequest(t, a, "resident@example.com", "/demo/app/anliegen", map[string]string{
 		"category":        "Frage",
 		"location_type":   issueLocationUnit,
 		"location_detail": "Vorraum",
@@ -3666,16 +3661,16 @@ func TestIssueTitleFallbackIsServerOwnedAndBounded(t *testing.T) {
 	if created.Code != http.StatusSeeOther {
 		t.Fatalf("create without title status = %d", created.Code)
 	}
-	issues := a.issueStore.ListAuthor("jhw22", "resident@example.com")
+	issues := a.issueStore.ListAuthor("demo", "resident@example.com")
 	if len(issues) != 1 || issues[0].Title != "Warum läuft die Lüftung" {
 		t.Fatalf("server-derived issue = %+v", issues)
 	}
-	if loc := created.Header().Get("Location"); loc != "/app/anliegen/"+issues[0].ID+"?created=1" {
+	if loc := created.Header().Get("Location"); loc != "/demo/app/anliegen/"+issues[0].ID+"?created=1" {
 		t.Fatalf("direct detail redirect = %q", loc)
 	}
 
 	limitTitle := strings.Repeat("T", 140)
-	limits := authedMultipartFilesRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+	limits := authedMultipartFilesRequest(t, a, "resident@example.com", "/demo/app/anliegen", map[string]string{
 		"category":      "Vorschlag",
 		"location_type": issueLocationUnit,
 		"title":         limitTitle,
@@ -3685,7 +3680,7 @@ func TestIssueTitleFallbackIsServerOwnedAndBounded(t *testing.T) {
 		t.Fatalf("exact issue limits status = %d", limits.Code)
 	}
 	foundLimit := false
-	for _, issue := range a.issueStore.ListAuthor("jhw22", "resident@example.com") {
+	for _, issue := range a.issueStore.ListAuthor("demo", "resident@example.com") {
 		if issue.Title == limitTitle && len([]rune(issue.Body)) == 4000 {
 			foundLimit = true
 			break
@@ -3695,18 +3690,18 @@ func TestIssueTitleFallbackIsServerOwnedAndBounded(t *testing.T) {
 		t.Fatal("exact 140-rune title and 4000-rune body were not preserved")
 	}
 
-	invalid := authedMultipartFilesRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+	invalid := authedMultipartFilesRequest(t, a, "resident@example.com", "/demo/app/anliegen", map[string]string{
 		"category":      "Frage",
 		"location_type": issueLocationUnit,
 		"body":          strings.Repeat("x", 4001),
 	}, nil)
-	if invalid.Code != http.StatusSeeOther || invalid.Header().Get("Location") != "/app/anliegen?issue=invalid" {
+	if invalid.Code != http.StatusSeeOther || invalid.Header().Get("Location") != "/demo/app/anliegen?issue=invalid" {
 		t.Fatalf("overlong body response = %d %q", invalid.Code, invalid.Header().Get("Location"))
 	}
 }
 
 func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	attachmentDir := filepath.Join(t.TempDir(), "issue-attachments")
 	store, err := newIssueStore(filepath.Join(t.TempDir(), "issues.json"), attachmentDir)
 	if err != nil {
@@ -3720,7 +3715,7 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	}
 	a.attachmentStore = managedAttachments
 
-	rr := authedMultipartRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+	rr := authedMultipartRequest(t, a, "resident@example.com", "/demo/app/anliegen", map[string]string{
 		"category":        "Reparatur",
 		"location_type":   issueLocationCommon,
 		"location_detail": "Stiegenhaus",
@@ -3730,15 +3725,15 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	if rr.Code != http.StatusSeeOther {
 		t.Fatalf("submit issue status = %d, want redirect", rr.Code)
 	}
-	if loc := rr.Header().Get("Location"); !strings.HasPrefix(loc, "/app/anliegen/") || !strings.HasSuffix(loc, "?created=1") {
+	if loc := rr.Header().Get("Location"); !strings.HasPrefix(loc, "/demo/app/anliegen/") || !strings.HasSuffix(loc, "?created=1") {
 		t.Fatalf("redirect = %q", loc)
 	}
-	issues := store.ListAuthor("jhw22", "resident@example.com")
+	issues := store.ListAuthor("demo", "resident@example.com")
 	if len(issues) != 1 {
 		t.Fatalf("stored issues = %+v", issues)
 	}
 	issue := issues[0]
-	if loc := rr.Header().Get("Location"); loc != "/app/anliegen/"+issue.ID+"?created=1" {
+	if loc := rr.Header().Get("Location"); loc != "/demo/app/anliegen/"+issue.ID+"?created=1" {
 		t.Fatalf("redirect = %q, want direct resident detail", loc)
 	}
 	if issue.Category != "Reparatur" || issue.LocationType != issueLocationCommon || issue.LocationDetail != "Stiegenhaus" || issue.Status != issueStatusOpen {
@@ -3747,7 +3742,7 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	if len(issue.PhotoPaths) != 0 {
 		t.Fatalf("legacy photo paths = %+v, want none", issue.PhotoPaths)
 	}
-	attachments := managedAttachments.ListEntity("jhw22", "issue", issue.ID)
+	attachments := managedAttachments.ListEntity("demo", "issue", issue.ID)
 	if len(attachments) != 1 {
 		t.Fatalf("managed attachments = %+v, want one", attachments)
 	}
@@ -3772,7 +3767,7 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	if _, err := os.Stat(thumbPath); err != nil {
 		t.Fatalf("stat thumbnail: %v", err)
 	}
-	servedThumb := authedRequest(t, a, "resident@example.com", "/app/attachments/"+attachments[0].ID+"/thumb")
+	servedThumb := authedRequest(t, a, "resident@example.com", "/demo/app/attachments/"+attachments[0].ID+"/thumb")
 	if servedThumb.Code != http.StatusOK {
 		t.Fatalf("serve thumbnail status = %d", servedThumb.Code)
 	}
@@ -3780,7 +3775,7 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 		t.Fatalf("thumbnail content type = %q", ct)
 	}
 
-	page := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issue.ID+"?created=1")
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/"+issue.ID+"?created=1")
 	if !strings.Contains(page.Body.String(), "Anliegen gemeldet") || !strings.Contains(page.Body.String(), "Ihre Meldung") || !strings.Contains(page.Body.String(), "Licht flackert") || !strings.Contains(page.Body.String(), "1 Foto") || !strings.Contains(page.Body.String(), `data-lightbox-src`) {
 		t.Fatalf("issues page should show submitted issue with photo count:\n%s", page.Body.String())
 	}
@@ -3794,7 +3789,7 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 // legacy render path, which is gone along with that path — what matters to a
 // user is unchanged: the photo is still there.
 func TestMigratedLegacyIssuePhotoStillRendersOnTheIssue(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	dir := t.TempDir()
 	legacyDir := filepath.Join(dir, "issue-attachments")
 	issues, err := newIssueStore(filepath.Join(dir, "issues.json"), legacyDir)
@@ -3808,16 +3803,16 @@ func TestMigratedLegacyIssuePhotoStillRendersOnTheIssue(t *testing.T) {
 	}
 	a.attachmentStore = attachments
 
-	if err := os.MkdirAll(filepath.Join(legacyDir, "jhw22"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(legacyDir, "demo"), 0o755); err != nil {
 		t.Fatalf("mkdir legacy photo dir: %v", err)
 	}
 	legacyFilename := "legacy-1-photo.png"
-	if err := os.WriteFile(filepath.Join(legacyDir, "jhw22", legacyFilename), minimalPNG(), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(legacyDir, "demo", legacyFilename), minimalPNG(), 0o600); err != nil {
 		t.Fatalf("write legacy photo: %v", err)
 	}
 	if _, err := issues.Create(residentIssue{
 		ID:           "legacy-1",
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		Category:     "Reparatur",
 		Title:        "Altes Foto",
@@ -3825,17 +3820,17 @@ func TestMigratedLegacyIssuePhotoStillRendersOnTheIssue(t *testing.T) {
 		LocationType: issueLocationCommon,
 		Status:       issueStatusNew,
 		Priority:     issuePriorityNorm,
-		PhotoPaths:   []string{filepath.ToSlash(filepath.Join(filepath.Base(legacyDir), "jhw22", legacyFilename))},
+		PhotoPaths:   []string{filepath.ToSlash(filepath.Join(filepath.Base(legacyDir), "demo", legacyFilename))},
 	}); err != nil {
 		t.Fatalf("create legacy issue: %v", err)
 	}
 
-	n, err := migrateLegacyIssuePhotos(issues, attachments, legacyDir, []string{"jhw22"}, time.Now())
+	n, err := migrateLegacyIssuePhotos(issues, attachments, legacyDir, []string{"demo"}, time.Now())
 	if err != nil || n != 1 {
 		t.Fatalf("migrate: n=%d err=%v", n, err)
 	}
 
-	page := authedRequest(t, a, "resident@example.com", "/app/anliegen/legacy-1")
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/legacy-1")
 	body := page.Body.String()
 	for _, want := range []string{"Altes Foto", "1 Foto", legacyFilename, "data-lightbox-src="} {
 		if !strings.Contains(body, want) {
@@ -3843,14 +3838,14 @@ func TestMigratedLegacyIssuePhotoStillRendersOnTheIssue(t *testing.T) {
 		}
 	}
 	// And the legacy route is gone.
-	if gone := authedRequest(t, a, "resident@example.com", "/app/anliegen/legacy-1/photos/0"); gone.Code == http.StatusOK {
+	if gone := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/legacy-1/photos/0"); gone.Code == http.StatusOK {
 		t.Fatal("the legacy photo route should no longer exist")
 	}
 }
 func TestResidentCanSubmitIssueWithMultipleAttachments(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	rr := authedMultipartFilesRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+	rr := authedMultipartFilesRequest(t, a, "resident@example.com", "/demo/app/anliegen", map[string]string{
 		"category":      "Reparatur",
 		"location_type": issueLocationCommon,
 		"title":         "Wasser im Keller",
@@ -3862,18 +3857,18 @@ func TestResidentCanSubmitIssueWithMultipleAttachments(t *testing.T) {
 	if rr.Code != http.StatusSeeOther {
 		t.Fatalf("submit issue status = %d, want redirect", rr.Code)
 	}
-	issues := a.issueStore.ListAuthor("jhw22", "resident@example.com")
+	issues := a.issueStore.ListAuthor("demo", "resident@example.com")
 	if len(issues) != 1 {
 		t.Fatalf("stored issues = %+v", issues)
 	}
-	attachments := a.attachmentStore.ListEntity("jhw22", "issue", issues[0].ID)
+	attachments := a.attachmentStore.ListEntity("demo", "issue", issues[0].ID)
 	if len(attachments) != 2 {
 		t.Fatalf("attachments = %+v, want two", attachments)
 	}
 	if attachments[0].ContentType != "image/png" || attachments[1].ContentType != "application/pdf" {
 		t.Fatalf("attachment content types = %+v", attachments)
 	}
-	page := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issues[0].ID)
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/"+issues[0].ID)
 	body := page.Body.String()
 	for _, want := range []string{"keller.png", "notiz.pdf", "1 Foto", `data-lightbox-src`} {
 		if !strings.Contains(body, want) {
@@ -3883,8 +3878,8 @@ func TestResidentCanSubmitIssueWithMultipleAttachments(t *testing.T) {
 }
 
 func TestIssueAttachmentCreatorCanDelete(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	create := authedMultipartRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	create := authedMultipartRequest(t, a, "resident@example.com", "/demo/app/anliegen", map[string]string{
 		"category":      "Reparatur",
 		"location_type": issueLocationCommon,
 		"title":         "Tür klemmt",
@@ -3893,11 +3888,11 @@ func TestIssueAttachmentCreatorCanDelete(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("create status = %d", create.Code)
 	}
-	issues := a.issueStore.ListAuthor("jhw22", "resident@example.com")
+	issues := a.issueStore.ListAuthor("demo", "resident@example.com")
 	if len(issues) != 1 {
 		t.Fatalf("issues = %+v", issues)
 	}
-	attachments := a.attachmentStore.ListEntity("jhw22", "issue", issues[0].ID)
+	attachments := a.attachmentStore.ListEntity("demo", "issue", issues[0].ID)
 	if len(attachments) != 1 {
 		t.Fatalf("attachments = %+v", attachments)
 	}
@@ -3905,29 +3900,29 @@ func TestIssueAttachmentCreatorCanDelete(t *testing.T) {
 	if !ok {
 		t.Fatal("attachment file path missing")
 	}
-	thumb := authedRequest(t, a, "resident@example.com", "/app/attachments/"+attachments[0].ID+"/thumb")
+	thumb := authedRequest(t, a, "resident@example.com", "/demo/app/attachments/"+attachments[0].ID+"/thumb")
 	if thumb.Code != http.StatusOK {
 		t.Fatalf("thumb status = %d", thumb.Code)
 	}
-	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionAttachmentView}); len(events) != 0 {
+	if events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionAttachmentView}); len(events) != 0 {
 		t.Fatalf("thumbnail request must not create audit noise: %+v", events)
 	}
-	view := authedRequest(t, a, "resident@example.com", "/app/attachments/"+attachments[0].ID)
+	view := authedRequest(t, a, "resident@example.com", "/demo/app/attachments/"+attachments[0].ID)
 	if view.Code != http.StatusOK {
 		t.Fatalf("attachment view status = %d", view.Code)
 	}
-	delete := authedFormRequest(t, a, "resident@example.com", "/app/attachments/delete", url.Values{"id": {attachments[0].ID}})
+	delete := authedFormRequest(t, a, "resident@example.com", "/demo/app/attachments/delete", url.Values{"id": {attachments[0].ID}})
 	if delete.Code != http.StatusSeeOther {
 		t.Fatalf("delete status = %d", delete.Code)
 	}
-	if got := a.attachmentStore.ListEntity("jhw22", "issue", issues[0].ID); len(got) != 0 {
+	if got := a.attachmentStore.ListEntity("demo", "issue", issues[0].ID); len(got) != 0 {
 		t.Fatalf("attachments after delete = %+v, want none", got)
 	}
 	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("deleted attachment file stat err = %v, want not exist", err)
 	}
-	viewEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionAttachmentView})
-	deleteEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionAttachmentDelete})
+	viewEvents := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionAttachmentView})
+	deleteEvents := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionAttachmentDelete})
 	if len(viewEvents) != 1 || len(deleteEvents) != 1 {
 		t.Fatalf("attachment audit events view=%+v delete=%+v", viewEvents, deleteEvents)
 	}
@@ -3942,14 +3937,14 @@ func TestIssueAttachmentCreatorCanDelete(t *testing.T) {
 }
 
 func TestIssueSubmitRejectsInvalidPhotoType(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	store, err := newIssueStore(filepath.Join(t.TempDir(), "issues.json"), filepath.Join(t.TempDir(), "issue-attachments"))
 	if err != nil {
 		t.Fatalf("newIssueStore: %v", err)
 	}
 	a.issueStore = store
 
-	rr := authedMultipartRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+	rr := authedMultipartRequest(t, a, "resident@example.com", "/demo/app/anliegen", map[string]string{
 		"category":      "Frage",
 		"location_type": issueLocationUnit,
 		"title":         "Dokument hochladen",
@@ -3958,18 +3953,18 @@ func TestIssueSubmitRejectsInvalidPhotoType(t *testing.T) {
 	if rr.Code != http.StatusSeeOther {
 		t.Fatalf("invalid photo status = %d, want redirect", rr.Code)
 	}
-	if loc := rr.Header().Get("Location"); loc != "/app/anliegen?issue=photo" {
+	if loc := rr.Header().Get("Location"); loc != "/demo/app/anliegen?issue=photo" {
 		t.Fatalf("redirect = %q", loc)
 	}
-	if got := store.ListAuthor("jhw22", "resident@example.com"); len(got) != 0 {
+	if got := store.ListAuthor("demo", "resident@example.com"); len(got) != 0 {
 		t.Fatalf("invalid photo must not create issue, got %+v", got)
 	}
 }
 
 func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
 		Category:     "Reparatur",
@@ -3981,7 +3976,7 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 		t.Fatalf("Create issue: %v", err)
 	}
 
-	update := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/workflow", url.Values{
+	update := authedFormRequest(t, a, "manager@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":             {issue.ID},
 		"status":         {issueStatusProgress},
 		"priority":       {issuePriorityUrgent},
@@ -3990,10 +3985,10 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 	if update.Code != http.StatusSeeOther {
 		t.Fatalf("manager workflow status = %d, want redirect", update.Code)
 	}
-	if loc := update.Header().Get("Location"); loc != "/app/anliegen/board?issue=updated#issue-"+issue.ID {
+	if loc := update.Header().Get("Location"); loc != "/demo/app/anliegen/board?issue=updated#issue-"+issue.ID {
 		t.Fatalf("manager workflow redirect = %q", loc)
 	}
-	updated, ok := a.issueStore.Get("jhw22", issue.ID)
+	updated, ok := a.issueStore.Get("demo", issue.ID)
 	if !ok {
 		t.Fatal("updated issue not found")
 	}
@@ -4004,7 +3999,7 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 		t.Fatalf("status history = %+v", updated.StatusHistory)
 	}
 
-	page := authedRequest(t, a, "manager@example.com", "/app/anliegen")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen")
 	body := page.Body.String()
 	for _, want := range []string{"Anliegen", "Triage-Board"} {
 		if !strings.Contains(body, want) {
@@ -4018,9 +4013,9 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 		t.Fatalf("manager overview should link to board instead of rendering workflow form")
 	}
 
-	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board")
+	board := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board")
 	boardBody := board.Body.String()
-	for _, want := range []string{"Anliegen bearbeiten", "Tür schließt nicht", issuePriorityUrgent, `href="/app/anliegen/board/` + issue.ID + `"`} {
+	for _, want := range []string{"Anliegen bearbeiten", "Tür schließt nicht", issuePriorityUrgent, `href="/demo/app/anliegen/board/` + issue.ID + `"`} {
 		if !strings.Contains(boardBody, want) {
 			t.Fatalf("manager issue board should contain %q", want)
 		}
@@ -4032,7 +4027,7 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 		strings.Contains(boardBody, `<details class="issue-board-tools" open>`) {
 		t.Fatalf("inactive issue filters should be collapsed")
 	}
-	triage := authedRequest(t, a, "manager@example.com", "/app/anliegen/board/"+issue.ID+"?step=1").Body.String()
+	triage := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board/"+issue.ID+"?step=1").Body.String()
 	for _, want := range []string{"Schritt 1 von 2", "Wie dringend ist das Anliegen?", "Heute kümmern", "Diese Woche", "Kann warten"} {
 		if !strings.Contains(triage, want) {
 			t.Fatalf("focused issue triage should contain %q", want)
@@ -4041,10 +4036,10 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 }
 
 func TestManagerIssueTriageKeepsTheIssueContextAcrossBothSteps(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
 		Category:     "Reparatur",
@@ -4058,13 +4053,13 @@ func TestManagerIssueTriageKeepsTheIssueContextAcrossBothSteps(t *testing.T) {
 		t.Fatalf("Create issue: %v", err)
 	}
 
-	resident := authedRequest(t, a, "resident@example.com", "/app/anliegen/board/"+issue.ID)
+	resident := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/board/"+issue.ID)
 	if resident.Code != http.StatusForbidden {
 		t.Fatalf("resident triage status = %d, want forbidden", resident.Code)
 	}
 
-	stepOneRedirect := "/app/anliegen/board/" + issue.ID + "?step=2"
-	stepOne := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/workflow", url.Values{
+	stepOneRedirect := "/demo/app/anliegen/board/" + issue.ID + "?step=2"
+	stepOne := authedFormRequest(t, a, "manager@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":             {issue.ID},
 		"status":         {issueStatusNew},
 		"priority":       {issuePriorityHigh},
@@ -4081,8 +4076,8 @@ func TestManagerIssueTriageKeepsTheIssueContextAcrossBothSteps(t *testing.T) {
 		}
 	}
 
-	doneRedirect := "/app/anliegen/board/" + issue.ID + "?step=done"
-	stepTwo := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/workflow", url.Values{
+	doneRedirect := "/demo/app/anliegen/board/" + issue.ID + "?step=done"
+	stepTwo := authedFormRequest(t, a, "manager@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":             {issue.ID},
 		"status":         {issueStatusProgress},
 		"priority":       {issuePriorityHigh},
@@ -4092,7 +4087,7 @@ func TestManagerIssueTriageKeepsTheIssueContextAcrossBothSteps(t *testing.T) {
 	if stepTwo.Code != http.StatusSeeOther || stepTwo.Header().Get("Location") != doneRedirect {
 		t.Fatalf("triage step two redirect = %d %q", stepTwo.Code, stepTwo.Header().Get("Location"))
 	}
-	updated, found := a.issueStore.Get("jhw22", issue.ID)
+	updated, found := a.issueStore.Get("demo", issue.ID)
 	if !found || updated.Status != issueStatusProgress || updated.Priority != issuePriorityHigh || updated.AssigneeEmail != "manager@example.com" {
 		t.Fatalf("triaged issue = %+v found=%v", updated, found)
 	}
@@ -4105,10 +4100,10 @@ func TestManagerIssueTriageKeepsTheIssueContextAcrossBothSteps(t *testing.T) {
 }
 
 func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:    "jhw22",
+		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resi Dent",
 		Category:      "Reparatur",
@@ -4123,15 +4118,15 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 		t.Fatalf("Create issue: %v", err)
 	}
 
-	managerPage := authedRequest(t, a, "manager@example.com", "/app/anliegen/board/"+issue.ID)
+	managerPage := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board/"+issue.ID)
 	for _, want := range []string{"Was soll der Bewohner wissen?", "Information senden", "Rückfrage stellen", "Lösung zur Prüfung senden"} {
 		if !strings.Contains(managerPage.Body.String(), want) {
 			t.Fatalf("manager message step missing %q", want)
 		}
 	}
 
-	sentRedirect := "/app/anliegen/board/" + issue.ID + "?step=sent"
-	question := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/comment", url.Values{
+	sentRedirect := "/demo/app/anliegen/board/" + issue.ID + "?step=sent"
+	question := authedFormRequest(t, a, "manager@example.com", "/demo/app/anliegen/comment", url.Values{
 		"id":           {issue.ID},
 		"body":         {"In welchem Stockwerk ist das Licht ausgefallen?"},
 		"message_type": {issueCommentKindQuestion},
@@ -4140,11 +4135,11 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 	if question.Code != http.StatusSeeOther || question.Header().Get("Location") != sentRedirect {
 		t.Fatalf("question redirect = %d %q", question.Code, question.Header().Get("Location"))
 	}
-	stored, found := a.issueStore.Get("jhw22", issue.ID)
+	stored, found := a.issueStore.Get("demo", issue.ID)
 	if !found || len(stored.Comments) != 1 || stored.Comments[0].Kind != issueCommentKindQuestion {
 		t.Fatalf("stored question = %+v found=%v", stored.Comments, found)
 	}
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIssueComment, Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionIssueComment, Limit: 10})
 	if len(events) != 1 || events[0].Details["message_type"] != issueCommentKindQuestion {
 		t.Fatalf("question audit = %+v", events)
 	}
@@ -4153,8 +4148,8 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 		t.Fatalf("question confirmation missing resident state")
 	}
 
-	overview := authedRequest(t, a, "resident@example.com", "/app/anliegen").Body.String()
-	for _, want := range []string{"Die Verwaltung braucht Ihre Antwort.", `href="/app/anliegen/` + issue.ID + `"`, "Antworten"} {
+	overview := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen").Body.String()
+	for _, want := range []string{"Die Verwaltung braucht Ihre Antwort.", `href="/demo/app/anliegen/` + issue.ID + `"`, "Antworten"} {
 		if !strings.Contains(overview, want) {
 			t.Fatalf("resident overview missing %q", want)
 		}
@@ -4164,13 +4159,13 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 			t.Fatalf("resident overview must not show generic action %q", unwanted)
 		}
 	}
-	dashboard := authedRequest(t, a, "resident@example.com", "/app").Body.String()
-	for _, want := range []string{"Rückfrage beantworten", "Kellerlicht defekt", "Die Verwaltung braucht Ihre Antwort.", `href="/app/anliegen/` + issue.ID + `"`, "Antworten"} {
+	dashboard := authedRequest(t, a, "resident@example.com", "/demo/app").Body.String()
+	for _, want := range []string{"Rückfrage beantworten", "Kellerlicht defekt", "Die Verwaltung braucht Ihre Antwort.", `href="/demo/app/anliegen/` + issue.ID + `"`, "Antworten"} {
 		if !strings.Contains(dashboard, want) {
 			t.Fatalf("resident dashboard missing focused answer task %q", want)
 		}
 	}
-	detailURL := "/app/anliegen/" + issue.ID
+	detailURL := "/demo/app/anliegen/" + issue.ID
 	detail := authedRequest(t, a, "resident@example.com", detailURL).Body.String()
 	for _, want := range []string{"Rückfrage der Verwaltung", "In welchem Stockwerk ist das Licht ausgefallen?", `aria-label="Ihre Antwort"`, "Antwort senden", "Neuigkeiten zum Anliegen"} {
 		if !strings.Contains(detail, want) {
@@ -4178,7 +4173,7 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 		}
 	}
 
-	answer := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/comment", url.Values{
+	answer := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/comment", url.Values{
 		"id":           {issue.ID},
 		"body":         {"Im zweiten Stock."},
 		"message_type": {issueCommentKindQuestion},
@@ -4187,7 +4182,7 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 	if answer.Code != http.StatusSeeOther || answer.Header().Get("Location") != detailURL {
 		t.Fatalf("answer redirect = %d %q", answer.Code, answer.Header().Get("Location"))
 	}
-	stored, _ = a.issueStore.Get("jhw22", issue.ID)
+	stored, _ = a.issueStore.Get("demo", issue.ID)
 	if len(stored.Comments) != 2 || stored.Comments[1].Kind != issueCommentKindAnswer {
 		t.Fatalf("stored answer kind = %+v", stored.Comments)
 	}
@@ -4196,7 +4191,7 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 		t.Fatalf("answered question should return to waiting state")
 	}
 
-	info := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/comment", url.Values{
+	info := authedFormRequest(t, a, "manager@example.com", "/demo/app/anliegen/comment", url.Values{
 		"id":           {issue.ID},
 		"body":         {"Der Elektriker ist informiert."},
 		"message_type": {issueCommentKindInformation},
@@ -4205,7 +4200,7 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 	if info.Code != http.StatusSeeOther {
 		t.Fatalf("information status = %d", info.Code)
 	}
-	stored, _ = a.issueStore.Get("jhw22", issue.ID)
+	stored, _ = a.issueStore.Get("demo", issue.ID)
 	if got := stored.Comments[len(stored.Comments)-1].Kind; got != issueCommentKindInformation {
 		t.Fatalf("stored information kind = %q", got)
 	}
@@ -4216,11 +4211,11 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 }
 
 func TestResidentConfirmsOrRejectsProposedIssueResolution(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	createDone := func(title string) residentIssue {
 		item, err := a.issueStore.Create(residentIssue{
-			TenantSlug:   "jhw22",
+			TenantSlug:   "demo",
 			AuthorEmail:  "resident@example.com",
 			AuthorName:   "Resident",
 			Category:     "Reparatur",
@@ -4237,28 +4232,28 @@ func TestResidentConfirmsOrRejectsProposedIssueResolution(t *testing.T) {
 	}
 
 	confirmedIssue := createDone("Gelöste Tür")
-	detailURL := "/app/anliegen/" + confirmedIssue.ID
+	detailURL := "/demo/app/anliegen/" + confirmedIssue.ID
 	detail := authedRequest(t, a, "resident@example.com", detailURL).Body.String()
 	for _, want := range []string{"Ist das Anliegen für Sie erledigt?", "Ja, erledigt", "Nein, noch offen"} {
 		if !strings.Contains(detail, want) {
 			t.Fatalf("resolution task missing %q", want)
 		}
 	}
-	forbidden := authedFormRequest(t, a, "other@example.com", "/app/anliegen/resolution", url.Values{
+	forbidden := authedFormRequest(t, a, "other@example.com", "/demo/app/anliegen/resolution", url.Values{
 		"id":       {confirmedIssue.ID},
 		"resolved": {"yes"},
 	})
 	if forbidden.Code != http.StatusForbidden {
 		t.Fatalf("other resident resolution status = %d, want 403", forbidden.Code)
 	}
-	confirm := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/resolution", url.Values{
+	confirm := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/resolution", url.Values{
 		"id":       {confirmedIssue.ID},
 		"resolved": {"yes"},
 	})
 	if confirm.Code != http.StatusSeeOther || confirm.Header().Get("Location") != detailURL {
 		t.Fatalf("confirm redirect = %d %q", confirm.Code, confirm.Header().Get("Location"))
 	}
-	confirmed, _ := a.issueStore.Get("jhw22", confirmedIssue.ID)
+	confirmed, _ := a.issueStore.Get("demo", confirmedIssue.ID)
 	if confirmed.Status != issueStatusDone || confirmed.ResolutionConfirmedAt.IsZero() || confirmed.ResolutionConfirmedBy != "resident@example.com" {
 		t.Fatalf("confirmed resolution = %+v", confirmed)
 	}
@@ -4268,27 +4263,27 @@ func TestResidentConfirmsOrRejectsProposedIssueResolution(t *testing.T) {
 	}
 
 	reopenedIssue := createDone("Noch klemmende Tür")
-	reopen := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/resolution", url.Values{
+	reopen := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/resolution", url.Values{
 		"id":       {reopenedIssue.ID},
 		"resolved": {"no"},
 	})
 	if reopen.Code != http.StatusSeeOther {
 		t.Fatalf("reopen status = %d", reopen.Code)
 	}
-	reopened, _ := a.issueStore.Get("jhw22", reopenedIssue.ID)
+	reopened, _ := a.issueStore.Get("demo", reopenedIssue.ID)
 	if reopened.Status != issueStatusNew || !reopened.ResolutionConfirmedAt.IsZero() {
 		t.Fatalf("reopened resolution = %+v", reopened)
 	}
-	reopenedPage := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+reopenedIssue.ID).Body.String()
+	reopenedPage := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/"+reopenedIssue.ID).Body.String()
 	if !strings.Contains(reopenedPage, "Als Nächstes prüft die Verwaltung Ihre Meldung.") {
 		t.Fatalf("reopened issue should return to waiting state")
 	}
 }
 
 func TestResidentCanCloseAndReopenOwnIssueOnly(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	own, err := a.issueStore.Create(residentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
 		Category:     "Frage",
@@ -4300,7 +4295,7 @@ func TestResidentCanCloseAndReopenOwnIssueOnly(t *testing.T) {
 		t.Fatalf("Create own issue: %v", err)
 	}
 	other, err := a.issueStore.Create(residentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "other@example.com",
 		AuthorName:   "Other",
 		Category:     "Frage",
@@ -4312,37 +4307,37 @@ func TestResidentCanCloseAndReopenOwnIssueOnly(t *testing.T) {
 		t.Fatalf("Create other issue: %v", err)
 	}
 
-	closeOwn := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/workflow", url.Values{
+	closeOwn := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":     {own.ID},
 		"status": {issueStatusDone},
 	})
 	if closeOwn.Code != http.StatusSeeOther {
 		t.Fatalf("resident close status = %d, want redirect", closeOwn.Code)
 	}
-	closed, _ := a.issueStore.Get("jhw22", own.ID)
+	closed, _ := a.issueStore.Get("demo", own.ID)
 	if closed.Status != issueStatusDone {
 		t.Fatalf("closed status = %q", closed.Status)
 	}
-	reopenOwn := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/workflow", url.Values{
+	reopenOwn := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":     {own.ID},
 		"status": {issueStatusNew},
 	})
 	if reopenOwn.Code != http.StatusSeeOther {
 		t.Fatalf("resident reopen status = %d, want redirect", reopenOwn.Code)
 	}
-	reopened, _ := a.issueStore.Get("jhw22", own.ID)
+	reopened, _ := a.issueStore.Get("demo", own.ID)
 	if reopened.Status != issueStatusNew {
 		t.Fatalf("reopened status = %q", reopened.Status)
 	}
 
-	otherUpdate := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/workflow", url.Values{
+	otherUpdate := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":     {other.ID},
 		"status": {issueStatusDone},
 	})
 	if otherUpdate.Code != http.StatusForbidden {
 		t.Fatalf("resident other issue status = %d, want 403", otherUpdate.Code)
 	}
-	priorityUpdate := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/workflow", url.Values{
+	priorityUpdate := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":       {own.ID},
 		"status":   {issueStatusDone},
 		"priority": {issuePriorityUrgent},
@@ -4353,12 +4348,12 @@ func TestResidentCanCloseAndReopenOwnIssueOnly(t *testing.T) {
 }
 
 func TestIssueCommentsRenderAndNotify(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	mailer := &recordingMailer{}
 	a.mailer = mailer
 
-	create := authedMultipartRequest(t, a, "resident@example.com", "/app/anliegen", map[string]string{
+	create := authedMultipartRequest(t, a, "resident@example.com", "/demo/app/anliegen", map[string]string{
 		"category":      "Frage",
 		"location_type": issueLocationCommon,
 		"title":         "Kommentar Test",
@@ -4367,43 +4362,43 @@ func TestIssueCommentsRenderAndNotify(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("create status = %d", create.Code)
 	}
-	issues := a.issueStore.ListAuthor("jhw22", "resident@example.com")
+	issues := a.issueStore.ListAuthor("demo", "resident@example.com")
 	if len(issues) != 1 {
 		t.Fatalf("issues = %+v", issues)
 	}
-	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "manager@example.com" || !strings.Contains(mailer.notifications[0].Subject, "Neues Anliegen") || !strings.Contains(mailer.notifications[0].Body, "/app/anliegen#issue-"+issues[0].ID) {
+	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "manager@example.com" || !strings.Contains(mailer.notifications[0].Subject, "Neues Anliegen") || !strings.Contains(mailer.notifications[0].Body, "/demo/app/anliegen#issue-"+issues[0].ID) {
 		t.Fatalf("new issue notifications = %+v", mailer.notifications)
 	}
 
-	managerComment := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/comment", url.Values{
+	managerComment := authedFormRequest(t, a, "manager@example.com", "/demo/app/anliegen/comment", url.Values{
 		"id":   {issues[0].ID},
 		"body": {"Ich prüfe das und melde mich."},
 	})
 	if managerComment.Code != http.StatusSeeOther {
 		t.Fatalf("manager comment status = %d", managerComment.Code)
 	}
-	updated, _ := a.issueStore.Get("jhw22", issues[0].ID)
+	updated, _ := a.issueStore.Get("demo", issues[0].ID)
 	if len(updated.Comments) != 1 || updated.Comments[0].AuthorEmail != "manager@example.com" {
 		t.Fatalf("comments after manager = %+v", updated.Comments)
 	}
-	if len(mailer.notifications) != 2 || mailer.notifications[1].To != "resident@example.com" || !strings.Contains(mailer.notifications[1].Subject, "Neuer Kommentar") || !strings.Contains(mailer.notifications[1].Body, "/app/anliegen#issue-"+issues[0].ID) {
+	if len(mailer.notifications) != 2 || mailer.notifications[1].To != "resident@example.com" || !strings.Contains(mailer.notifications[1].Subject, "Neuer Kommentar") || !strings.Contains(mailer.notifications[1].Body, "/demo/app/anliegen#issue-"+issues[0].ID) {
 		t.Fatalf("comment notifications = %+v", mailer.notifications)
 	}
 
-	residentComment := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/comment", url.Values{
+	residentComment := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/comment", url.Values{
 		"id":   {issues[0].ID},
 		"body": {"Danke, ich ergänze ein Foto später."},
 	})
 	if residentComment.Code != http.StatusSeeOther {
 		t.Fatalf("resident comment status = %d", residentComment.Code)
 	}
-	updated, _ = a.issueStore.Get("jhw22", issues[0].ID)
+	updated, _ = a.issueStore.Get("demo", issues[0].ID)
 	if len(updated.Comments) != 2 {
 		t.Fatalf("comments after resident = %+v", updated.Comments)
 	}
 	managerCommentID := updated.Comments[0].ID
 	residentCommentID := updated.Comments[1].ID
-	page := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issues[0].ID)
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/"+issues[0].ID)
 	body := page.Body.String()
 	first := strings.Index(body, "Ich prüfe das")
 	second := strings.Index(body, "Danke, ich ergänze")
@@ -4419,45 +4414,45 @@ func TestIssueCommentsRenderAndNotify(t *testing.T) {
 	if strings.Contains(body, `name="comment_id" value="`+managerCommentID+`"`) {
 		t.Fatalf("resident must not see delete control for manager comment:\n%s", body)
 	}
-	deleteManagerAsResident := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/comment/delete", url.Values{
+	deleteManagerAsResident := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/comment/delete", url.Values{
 		"comment_id": {managerCommentID},
 	})
 	if deleteManagerAsResident.Code != http.StatusForbidden {
 		t.Fatalf("resident delete manager comment status = %d, want 403", deleteManagerAsResident.Code)
 	}
-	unchanged, _ := a.issueStore.Get("jhw22", issues[0].ID)
+	unchanged, _ := a.issueStore.Get("demo", issues[0].ID)
 	if len(unchanged.Comments) != 2 {
 		t.Fatalf("forbidden delete changed comments: %+v", unchanged.Comments)
 	}
-	deleteOwn := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/comment/delete", url.Values{
+	deleteOwn := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/comment/delete", url.Values{
 		"comment_id": {residentCommentID},
 	})
 	if deleteOwn.Code != http.StatusSeeOther {
 		t.Fatalf("resident delete own comment status = %d", deleteOwn.Code)
 	}
-	afterOwnDelete, _ := a.issueStore.Get("jhw22", issues[0].ID)
+	afterOwnDelete, _ := a.issueStore.Get("demo", issues[0].ID)
 	if len(afterOwnDelete.Comments) != 1 || afterOwnDelete.Comments[0].ID != managerCommentID {
 		t.Fatalf("own comment delete result = %+v", afterOwnDelete.Comments)
 	}
-	deleteManager := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/comment/delete", url.Values{
+	deleteManager := authedFormRequest(t, a, "manager@example.com", "/demo/app/anliegen/comment/delete", url.Values{
 		"comment_id": {managerCommentID},
 	})
 	if deleteManager.Code != http.StatusSeeOther {
 		t.Fatalf("manager delete comment status = %d", deleteManager.Code)
 	}
-	afterManagerDelete, _ := a.issueStore.Get("jhw22", issues[0].ID)
+	afterManagerDelete, _ := a.issueStore.Get("demo", issues[0].ID)
 	if len(afterManagerDelete.Comments) != 0 {
 		t.Fatalf("manager delete result = %+v", afterManagerDelete.Comments)
 	}
-	if len(mailer.notifications) < 3 || !strings.Contains(mailer.notifications[len(mailer.notifications)-1].Subject, "gelöscht") || !strings.Contains(mailer.notifications[len(mailer.notifications)-1].Body, "/app/anliegen#issue-"+issues[0].ID) {
+	if len(mailer.notifications) < 3 || !strings.Contains(mailer.notifications[len(mailer.notifications)-1].Subject, "gelöscht") || !strings.Contains(mailer.notifications[len(mailer.notifications)-1].Body, "/demo/app/anliegen#issue-"+issues[0].ID) {
 		t.Fatalf("delete notification missing deeplink = %+v", mailer.notifications)
 	}
 }
 
 func TestResidentCannotCommentOnOtherIssue(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	other, err := a.issueStore.Create(residentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "other@example.com",
 		AuthorName:   "Other",
 		Category:     "Frage",
@@ -4469,44 +4464,44 @@ func TestResidentCannotCommentOnOtherIssue(t *testing.T) {
 		t.Fatalf("Create other issue: %v", err)
 	}
 
-	comment := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/comment", url.Values{
+	comment := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/comment", url.Values{
 		"id":   {other.ID},
 		"body": {"Kann ich nicht sehen."},
 	})
 	if comment.Code != http.StatusForbidden {
 		t.Fatalf("other comment status = %d, want 403", comment.Code)
 	}
-	unchanged, _ := a.issueStore.Get("jhw22", other.ID)
+	unchanged, _ := a.issueStore.Get("demo", other.ID)
 	if len(unchanged.Comments) != 0 {
 		t.Fatalf("other issue comments = %+v", unchanged.Comments)
 	}
 }
 
 func TestIssueVisibilityByPersona(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["board@example.com"] = userProfile{Email: "board@example.com", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["board@example.com"] = userProfile{Email: "board@example.com", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	for _, item := range []residentIssue{
-		{TenantSlug: "jhw22", AuthorEmail: "renter@example.com", AuthorName: "Renter", Category: "Frage", Title: "Renter private", Body: "Own unit.", LocationType: issueLocationUnit},
-		{TenantSlug: "jhw22", AuthorEmail: "owner@example.com", AuthorName: "Owner", Category: "Frage", Title: "Owner private", Body: "Own unit.", LocationType: issueLocationUnit},
-		{TenantSlug: "jhw22", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Common roof", Body: "Shared.", LocationType: issueLocationCommon},
-		{TenantSlug: "jhw22", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Other private", Body: "Hidden.", LocationType: issueLocationUnit},
+		{TenantSlug: "demo", AuthorEmail: "renter@example.com", AuthorName: "Renter", Category: "Frage", Title: "Renter private", Body: "Own unit.", LocationType: issueLocationUnit},
+		{TenantSlug: "demo", AuthorEmail: "owner@example.com", AuthorName: "Owner", Category: "Frage", Title: "Owner private", Body: "Own unit.", LocationType: issueLocationUnit},
+		{TenantSlug: "demo", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Common roof", Body: "Shared.", LocationType: issueLocationCommon},
+		{TenantSlug: "demo", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Other private", Body: "Hidden.", LocationType: issueLocationUnit},
 	} {
 		if _, err := a.issueStore.Create(item); err != nil {
 			t.Fatalf("Create issue %q: %v", item.Title, err)
 		}
 	}
 
-	renter := authedRequest(t, a, "renter@example.com", "/app/anliegen").Body.String()
+	renter := authedRequest(t, a, "renter@example.com", "/demo/app/anliegen").Body.String()
 	if !strings.Contains(renter, "Renter private") || strings.Contains(renter, "Common roof") || strings.Contains(renter, "Other private") {
 		t.Fatalf("renter visibility wrong:\n%s", renter)
 	}
-	owner := authedRequest(t, a, "owner@example.com", "/app/anliegen").Body.String()
+	owner := authedRequest(t, a, "owner@example.com", "/demo/app/anliegen").Body.String()
 	if !strings.Contains(owner, "Owner private") || !strings.Contains(owner, "Common roof") || strings.Contains(owner, "Other private") || strings.Contains(owner, "Renter private") {
 		t.Fatalf("owner visibility wrong:\n%s", owner)
 	}
-	board := authedRequest(t, a, "board@example.com", "/app/anliegen").Body.String()
+	board := authedRequest(t, a, "board@example.com", "/demo/app/anliegen").Body.String()
 	for _, want := range []string{"Renter private", "Owner private", "Common roof", "Other private"} {
 		if !strings.Contains(board, want) {
 			t.Fatalf("beirat view missing %q:\n%s", want, board)
@@ -4516,8 +4511,8 @@ func TestIssueVisibilityByPersona(t *testing.T) {
 		t.Fatalf("beirat view must be read-only:\n%s", board)
 	}
 
-	boardComment := authedFormRequest(t, a, "board@example.com", "/app/anliegen/comment", url.Values{
-		"id":   {a.issueStore.ListAuthor("jhw22", "owner@example.com")[0].ID},
+	boardComment := authedFormRequest(t, a, "board@example.com", "/demo/app/anliegen/comment", url.Values{
+		"id":   {a.issueStore.ListAuthor("demo", "owner@example.com")[0].ID},
 		"body": {"Read-only should fail."},
 	})
 	if boardComment.Code != http.StatusForbidden {
@@ -4526,12 +4521,12 @@ func TestIssueVisibilityByPersona(t *testing.T) {
 }
 
 func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
 	assigned, err := a.issueStore.Create(residentIssue{
-		TenantSlug:    "jhw22",
+		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
 		Category:      "Reparatur",
@@ -4544,7 +4539,7 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 		t.Fatalf("Create assigned issue: %v", err)
 	}
 	unassigned, err := a.issueStore.Create(residentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
 		Category:     "Reparatur",
@@ -4556,7 +4551,7 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 		t.Fatalf("Create unassigned issue: %v", err)
 	}
 
-	page := authedRequest(t, a, "service@example.com", "/app/anliegen")
+	page := authedRequest(t, a, "service@example.com", "/demo/app/anliegen")
 	if page.Code != http.StatusOK {
 		t.Fatalf("service issue page status = %d", page.Code)
 	}
@@ -4564,18 +4559,18 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 	if !strings.Contains(body, "Heizung prüfen") || strings.Contains(body, "Dachrinne reinigen") {
 		t.Fatalf("service provider issue visibility wrong:\n%s", body)
 	}
-	for _, hidden := range []string{`href="/app/announcements"`, `href="/app/events"`, `href="/app/kontakte"`, `href="/app/dokumente"`, `href="/app/abstimmungen"`, `href="/app/settings"`, "Anliegen senden"} {
+	for _, hidden := range []string{`href="/demo/app/announcements"`, `href="/demo/app/events"`, `href="/demo/app/kontakte"`, `href="/demo/app/dokumente"`, `href="/demo/app/abstimmungen"`, `href="/demo/app/settings"`, "Anliegen senden"} {
 		if strings.Contains(body, hidden) {
 			t.Fatalf("service provider page should not expose %q:\n%s", hidden, body)
 		}
 	}
-	if !a.canViewIssueForActor("jhw22", assigned, "service@example.com", roleServiceProvider) {
+	if !a.canViewIssueForActor("demo", assigned, "service@example.com", roleServiceProvider) {
 		t.Fatal("service provider should be able to view assigned issue")
 	}
-	if a.canViewIssueForActor("jhw22", unassigned, "service@example.com", roleServiceProvider) {
+	if a.canViewIssueForActor("demo", unassigned, "service@example.com", roleServiceProvider) {
 		t.Fatal("service provider should not be able to view unassigned issue")
 	}
-	if emailListContains(a.tenantNotificationEmails("jhw22"), "service@example.com") {
+	if emailListContains(a.tenantNotificationEmails("demo"), "service@example.com") {
 		t.Fatal("service provider should not receive broad tenant notifications")
 	}
 	if !emailListContains(a.notificationRecipients(portalNotification{
@@ -4586,7 +4581,7 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 		t.Fatal("service provider should still receive explicitly assigned issue notifications")
 	}
 
-	comment := authedFormRequest(t, a, "service@example.com", "/app/anliegen/comment", url.Values{
+	comment := authedFormRequest(t, a, "service@example.com", "/demo/app/anliegen/comment", url.Values{
 		"id":   {unassigned.ID},
 		"body": {"Bitte ansehen."},
 	})
@@ -4594,7 +4589,7 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 		t.Fatalf("service provider comment on unassigned issue status = %d, want 403", comment.Code)
 	}
 
-	create := authedFormRequest(t, a, "service@example.com", "/app/anliegen", url.Values{
+	create := authedFormRequest(t, a, "service@example.com", "/demo/app/anliegen", url.Values{
 		"category":      {"Frage"},
 		"location_type": {issueLocationCommon},
 		"title":         {"Neues Anliegen"},
@@ -4604,16 +4599,16 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 		t.Fatalf("service provider create issue status = %d, want 403", create.Code)
 	}
 
-	portal := authedRequest(t, a, "service@example.com", "/app")
-	if portal.Code != http.StatusSeeOther || portal.Header().Get("Location") != "/app/anliegen" {
-		t.Fatalf("service provider portal redirect = %d %q, want /app/anliegen", portal.Code, portal.Header().Get("Location"))
+	portal := authedRequest(t, a, "service@example.com", "/demo/app")
+	if portal.Code != http.StatusSeeOther || portal.Header().Get("Location") != "/demo/app/anliegen" {
+		t.Fatalf("service provider portal redirect = %d %q, want /demo/app/anliegen", portal.Code, portal.Header().Get("Location"))
 	}
 	for name, path := range map[string]string{
-		"announcements": "/app/announcements",
-		"contacts":      "/app/kontakte",
-		"documents":     "/app/dokumente",
-		"settings":      "/app/settings",
-		"users":         "/app/settings/users",
+		"announcements": "/demo/app/announcements",
+		"contacts":      "/demo/app/kontakte",
+		"documents":     "/demo/app/dokumente",
+		"settings":      "/demo/app/settings",
+		"users":         "/demo/app/settings/users",
 	} {
 		rr := authedRequest(t, a, "service@example.com", path)
 		if rr.Code != http.StatusForbidden {
@@ -4623,16 +4618,16 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 }
 
 func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	if a.serviceAccessEnabled {
 		t.Fatal("service-provider access must default to closed")
 	}
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	mailer := &recordingMailer{}
 	a.mailer = mailer
 
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
 		Category:     "Reparatur",
@@ -4645,7 +4640,7 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	if err != nil {
 		t.Fatalf("Create issue: %v", err)
 	}
-	assign := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/workflow", url.Values{
+	assign := authedFormRequest(t, a, "manager@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":             {issue.ID},
 		"status":         {issueStatusProgress},
 		"priority":       {issuePriorityHigh},
@@ -4654,7 +4649,7 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	if assign.Code != http.StatusForbidden || !strings.Contains(assign.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") {
 		t.Fatalf("closed assignment = %d %q, want clear 403", assign.Code, assign.Body.String())
 	}
-	unchanged, ok := a.issueStore.Get("jhw22", issue.ID)
+	unchanged, ok := a.issueStore.Get("demo", issue.ID)
 	if !ok || unchanged.Status != issueStatusOpen || unchanged.Priority != issuePriorityNorm || unchanged.AssigneeEmail != "" || len(unchanged.StatusHistory) != 0 {
 		t.Fatalf("rejected assignment changed issue: %+v ok=%v", unchanged, ok)
 	}
@@ -4664,29 +4659,29 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	if len(mailer.magicLinks) != 0 || len(mailer.invites) != 0 || len(mailer.notifications) != 0 || assign.Header().Get("Set-Cookie") != "" {
 		t.Fatalf("rejected assignment caused side effects: magic=%+v invites=%+v notifications=%+v cookie=%q", mailer.magicLinks, mailer.invites, mailer.notifications, assign.Header().Get("Set-Cookie"))
 	}
-	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Limit: 20}); len(events) != 0 {
+	if events := a.auditStore.List(auditFilter{TenantSlug: "demo", Limit: 20}); len(events) != 0 {
 		t.Fatalf("rejected assignment created audit events: %+v", events)
 	}
 
-	createContact := authedFormRequest(t, a, "manager@example.com", "/app/kontakte", url.Values{
+	createContact := authedFormRequest(t, a, "manager@example.com", "/demo/app/kontakte", url.Values{
 		"kind": {"Dienstleister"}, "name": {"Extern GmbH"}, "email": {"contact@example.com"}, "active": {"true"},
 	})
-	if createContact.Code != http.StatusForbidden || len(a.contactStore.ListTenant("jhw22", true)) != 0 {
-		t.Fatalf("closed contact create = %d contacts=%+v", createContact.Code, a.contactStore.ListTenant("jhw22", true))
+	if createContact.Code != http.StatusForbidden || len(a.contactStore.ListTenant("demo", true)) != 0 {
+		t.Fatalf("closed contact create = %d contacts=%+v", createContact.Code, a.contactStore.ListTenant("demo", true))
 	}
-	existingContact, _, err := a.contactStore.Upsert(managedContact{TenantSlug: "jhw22", Kind: roleServiceProvider, Name: "Alt GmbH", Email: "old-contact@example.com", Active: true})
+	existingContact, _, err := a.contactStore.Upsert(managedContact{TenantSlug: "demo", Kind: roleServiceProvider, Name: "Alt GmbH", Email: "old-contact@example.com", Active: true})
 	if err != nil {
 		t.Fatalf("seed service contact: %v", err)
 	}
-	editContact := authedFormRequest(t, a, "manager@example.com", "/app/kontakte", url.Values{
+	editContact := authedFormRequest(t, a, "manager@example.com", "/demo/app/kontakte", url.Values{
 		"id": {existingContact.ID}, "kind": {"Hausmeister"}, "name": {"Neu GmbH"}, "email": {"new-contact@example.com"}, "active": {"true"},
 	})
-	contacts := a.contactStore.ListTenant("jhw22", true)
+	contacts := a.contactStore.ListTenant("demo", true)
 	if editContact.Code != http.StatusForbidden || len(contacts) != 1 || contacts[0].Name != "Alt GmbH" || contacts[0].Email != "old-contact@example.com" {
 		t.Fatalf("closed contact edit = %d contacts=%+v", editContact.Code, contacts)
 	}
 
-	createInvite := authedFormRequest(t, a, "manager@example.com", "/app/settings/users", url.Values{
+	createInvite := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/users", url.Values{
 		"email": {"invite@example.com"}, "role": {"Handwerker"},
 	})
 	if createInvite.Code != http.StatusForbidden {
@@ -4695,44 +4690,44 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	if _, ok := a.inviteStore.Get("invite@example.com"); ok || len(mailer.invites) != 0 {
 		t.Fatalf("closed service invite persisted or mailed: ok=%v mail=%+v", ok, mailer.invites)
 	}
-	if _, err := a.inviteStore.Add(userProfile{Email: "existing-service@example.com", FirstName: "Alt", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}); err != nil {
+	if _, err := a.inviteStore.Add(userProfile{Email: "existing-service@example.com", FirstName: "Alt", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}); err != nil {
 		t.Fatalf("seed service invite: %v", err)
 	}
-	editInvite := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/edit", url.Values{
+	editInvite := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/users/edit", url.Values{
 		"orig_email": {"existing-service@example.com"}, "email": {"existing-service@example.com"}, "first_name": {"Neu"}, "role": {roleResident},
 	})
 	persisted, ok := a.inviteStore.Get("existing-service@example.com")
 	if editInvite.Code != http.StatusForbidden || !ok || persisted.FirstName != "Alt" || !isServiceProviderRole(persisted.Role) {
 		t.Fatalf("closed service invite edit = %d profile=%+v ok=%v", editInvite.Code, persisted, ok)
 	}
-	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Limit: 20}); len(events) != 0 {
+	if events := a.auditStore.List(auditFilter{TenantSlug: "demo", Limit: 20}); len(events) != 0 {
 		t.Fatalf("rejected contact/invite writes created audit events: %+v", events)
 	}
 
-	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board").Body.String()
+	board := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board").Body.String()
 	if strings.Contains(board, "Betreiberfreigabe offen") || strings.Contains(board, "datalist id=\"service-provider-contacts\"") || strings.Contains(board, `name="assignee_email"`) {
 		t.Fatalf("closed issue board should not expose service assignment controls or internal gate language:\n%s", board)
 	}
-	contactPage := authedRequest(t, a, "manager@example.com", "/app/kontakte").Body.String()
+	contactPage := authedRequest(t, a, "manager@example.com", "/demo/app/kontakte").Body.String()
 	if !strings.Contains(contactPage, "Dienstleister-Zugänge sind derzeit nicht verfügbar") || strings.Contains(contactPage, "<option value=\"Dienstleister\"") {
 		t.Fatalf("closed contact UI still offers service-provider creation:\n%s", contactPage)
 	}
-	usersPage := authedRequest(t, a, "manager@example.com", "/app/settings/users").Body.String()
+	usersPage := authedRequest(t, a, "manager@example.com", "/demo/app/settings/users").Body.String()
 	if !strings.Contains(usersPage, "Dienstleister-Zugänge können noch nicht") || strings.Contains(usersPage, "<option value=\"Dienstleister\"") {
 		t.Fatalf("closed user UI still offers service-provider roles:\n%s", usersPage)
 	}
 }
 
 func TestPublicPrivacyNoticeMatchesActualDependencies(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	tenant := a.tenants["jhw22"]
-	tenant.ContactName = "Alwog Allgemeine Wohnbaugesellschaft mbH"
-	tenant.ContactAddress = "Naglergasse 10, 8010 Graz"
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	tenant := a.tenants["demo"]
+	tenant.ContactName = "Hausverwaltung Beispiel GmbH"
+	tenant.ContactAddress = "Verwaltergasse 10, 1010 Wien"
 	tenant.ContactEmail = "haus@example.com"
-	a.tenants["jhw22"] = tenant
+	a.tenants["demo"] = tenant
 
 	rr := httptest.NewRecorder()
-	a.handler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/datenschutz", nil))
+	a.handler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/datenschutz", nil))
 	if rr.Code != http.StatusOK {
 		t.Fatalf("privacy status = %d, body=%q", rr.Code, rr.Body.String())
 	}
@@ -4740,17 +4735,16 @@ func TestPublicPrivacyNoticeMatchesActualDependencies(t *testing.T) {
 	for _, want := range []string{
 		"Betreiber-Selbstprüfung",
 		"Dienstleister-Zugang: geschlossen",
-		"Alwog Allgemeine Wohnbaugesellschaft mbH",
-		"Naglergasse 10, 8010 Graz",
+		"Hausverwaltung Beispiel GmbH",
+		"Verwaltergasse 10, 1010 Wien",
 		"Betroffenes Haus",
 		"haus@example.com",
-		"Ing. Markus Barta",
-		"Janischhofweg 22/11, 8043 Graz, Österreich",
+		"Betreiber laut Host-Konfiguration",
+		"Anschrift laut Host-Konfiguration",
 		"hello@hausv.org",
-		"Resend",
-		"Cloudflare",
-		"Hetzner",
-		"auch in den USA verarbeitet",
+		"Transaktionsmails werden über den vom Betreiber dokumentierten Maildienst versendet",
+		"öffentliche Webzugriff wird über die vom Betreiber dokumentierte Infrastruktur",
+		"Sicherungen werden verschlüsselt",
 		"Auditdaten werden nach drei Jahren zur Löschung fällig",
 		"Österreichische Datenschutzbehörde",
 		"§ 5 ECG",
@@ -4794,34 +4788,34 @@ func TestServiceProviderAccessConfigRequiresExplicitOptIn(t *testing.T) {
 }
 
 func TestClosedServiceProviderAuthenticationAndNotificationsAreRejected(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	mailer := &recordingMailer{}
 	a.mailer = mailer
 
 	loginValues := url.Values{"email": {"service@example.com"}}
-	loginReq := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/auth/request", strings.NewReader(loginValues.Encode()))
+	loginReq := httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/auth/request", strings.NewReader(loginValues.Encode()))
 	loginReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	loginReq.Header.Set("Origin", "http://jhw22.hausv.org")
+	loginReq.Header.Set("Origin", "http://hausv.org/demo")
 	login := httptest.NewRecorder()
 	a.handler().ServeHTTP(login, loginReq)
-	if login.Code != http.StatusSeeOther || login.Header().Get("Location") != "/?sent=1" || len(mailer.magicLinks) != 0 {
+	if login.Code != http.StatusSeeOther || login.Header().Get("Location") != "/demo/?sent=1" || len(mailer.magicLinks) != 0 {
 		t.Fatalf("closed login request = %d %q magic=%+v", login.Code, login.Body.String(), mailer.magicLinks)
 	}
 
-	a.tokens.Put("existing-magic-token", "service@example.com", "jhw22", 15*time.Minute)
+	a.tokens.Put("existing-magic-token", "service@example.com", "demo", 15*time.Minute)
 	verify := httptest.NewRecorder()
-	verifyReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/auth/verify?token=existing-magic-token", nil)
-	a.verifyLogin(verify, verifyReq)
+	verifyReq := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/auth/verify?token=existing-magic-token", nil)
+	a.handler().ServeHTTP(verify, verifyReq)
 	if verify.Code != http.StatusForbidden || !strings.Contains(verify.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") || verify.Header().Get("Set-Cookie") != "" {
 		t.Fatalf("closed magic-link verification = %d %q cookie=%q", verify.Code, verify.Body.String(), verify.Header().Get("Set-Cookie"))
 	}
 
-	sessionToken, _, err := a.sessions.Put("service@example.com", "jhw22", authMethodEmail, time.Hour)
+	sessionToken, _, err := a.sessions.Put("service@example.com", "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatalf("seed existing session: %v", err)
 	}
-	sessionReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app/anliegen", nil)
+	sessionReq := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/app/anliegen", nil)
 	sessionReq.AddCookie(&http.Cookie{Name: "weg_session", Value: sessionToken})
 	session := httptest.NewRecorder()
 	a.handler().ServeHTTP(session, sessionReq)
@@ -4831,14 +4825,14 @@ func TestClosedServiceProviderAuthenticationAndNotificationsAreRejected(t *testi
 
 	a.notify(portalNotification{
 		Event:      notificationEventIssue,
-		Tenant:     a.tenants["jhw22"],
+		Tenant:     a.tenants["demo"],
 		Recipients: []string{"service@example.com", "resident@example.com"},
 		Subject:    "Test",
 	})
 	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "resident@example.com" {
 		t.Fatalf("closed provider received notification: %+v", mailer.notifications)
 	}
-	a.notifyIssueUpdated(a.tenants["jhw22"], residentIssue{
+	a.notifyIssueUpdated(a.tenants["demo"], residentIssue{
 		AuthorEmail:   "resident@example.com",
 		AssigneeEmail: "unknown-external@example.com",
 		Title:         "Bestehende Zuordnung",
@@ -4850,20 +4844,20 @@ func TestClosedServiceProviderAuthenticationAndNotificationsAreRejected(t *testi
 			t.Fatalf("closed unknown provider received notification: %+v", mailer.notifications)
 		}
 	}
-	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionLogin, Limit: 20}); len(events) != 0 {
+	if events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionLogin, Limit: 20}); len(events) != 0 {
 		t.Fatalf("rejected authentication created login audit events: %+v", events)
 	}
 }
 
 func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	mailer := &recordingMailer{}
 	a.mailer = mailer
 
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
 		Category:     "Reparatur",
@@ -4875,7 +4869,7 @@ func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testin
 		t.Fatalf("Create issue: %v", err)
 	}
 
-	assign := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/workflow", url.Values{
+	assign := authedFormRequest(t, a, "manager@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":             {issue.ID},
 		"status":         {issueStatusProgress},
 		"priority":       {issuePriorityHigh},
@@ -4885,7 +4879,7 @@ func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testin
 		t.Fatalf("assign service provider status = %d, want redirect", assign.Code)
 	}
 	invite, ok := a.inviteStore.Get("service@example.com")
-	if !ok || normalizeRole(invite.Role) != roleServiceProvider || !invite.HasTenant("jhw22") {
+	if !ok || normalizeRole(invite.Role) != roleServiceProvider || !invite.HasTenant("demo") {
 		t.Fatalf("service invite = %+v ok=%v", invite, ok)
 	}
 	if len(mailer.magicLinks) != 1 || mailer.magicLinks[0].To != "service@example.com" {
@@ -4894,17 +4888,17 @@ func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testin
 
 	verify := httptest.NewRecorder()
 	verifyReq := httptest.NewRequest(http.MethodGet, mailer.magicLinks[0].Link, nil)
-	a.verifyLogin(verify, verifyReq)
-	if verify.Code != http.StatusSeeOther || verify.Header().Get("Location") != "/app/anliegen#issue-"+issue.ID {
+	a.handler().ServeHTTP(verify, verifyReq)
+	if verify.Code != http.StatusSeeOther || verify.Header().Get("Location") != "/demo/app/anliegen#issue-"+issue.ID {
 		t.Fatalf("verify redirect = %d %q", verify.Code, verify.Header().Get("Location"))
 	}
 
-	servicePage := authedRequest(t, a, "service@example.com", "/app/anliegen").Body.String()
+	servicePage := authedRequest(t, a, "service@example.com", "/demo/app/anliegen").Body.String()
 	if !strings.Contains(servicePage, "Fenster undicht") {
 		t.Fatalf("assigned issue missing for service provider:\n%s", servicePage)
 	}
 
-	closeIssue := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/workflow", url.Values{
+	closeIssue := authedFormRequest(t, a, "manager@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":             {issue.ID},
 		"status":         {issueStatusDone},
 		"priority":       {issuePriorityHigh},
@@ -4913,15 +4907,15 @@ func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testin
 	if closeIssue.Code != http.StatusSeeOther {
 		t.Fatalf("close issue status = %d, want redirect", closeIssue.Code)
 	}
-	closed, ok := a.issueStore.Get("jhw22", issue.ID)
+	closed, ok := a.issueStore.Get("demo", issue.ID)
 	if !ok {
 		t.Fatal("closed issue not found")
 	}
-	if a.canViewIssueForActor("jhw22", closed, "service@example.com", roleServiceProvider) {
+	if a.canViewIssueForActor("demo", closed, "service@example.com", roleServiceProvider) {
 		t.Fatal("closed issue should lock service provider out")
 	}
 
-	revoke := authedFormRequest(t, a, "manager@example.com", "/app/anliegen/workflow", url.Values{
+	revoke := authedFormRequest(t, a, "manager@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":             {issue.ID},
 		"status":         {issueStatusNew},
 		"priority":       {issuePriorityHigh},
@@ -4930,15 +4924,15 @@ func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testin
 	if revoke.Code != http.StatusSeeOther {
 		t.Fatalf("revoke service provider status = %d, want redirect", revoke.Code)
 	}
-	revoked, ok := a.issueStore.Get("jhw22", issue.ID)
+	revoked, ok := a.issueStore.Get("demo", issue.ID)
 	if !ok {
 		t.Fatal("revoked issue not found")
 	}
-	if a.canViewIssueForActor("jhw22", revoked, "service@example.com", roleServiceProvider) {
+	if a.canViewIssueForActor("demo", revoked, "service@example.com", roleServiceProvider) {
 		t.Fatal("unassigned issue should lock service provider out")
 	}
 
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Limit: 50})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Limit: 50})
 	for _, action := range []string{auditActionIssueServiceAdd, auditActionIssueServiceDrop, auditActionLogin} {
 		found := false
 		for _, event := range events {
@@ -4954,12 +4948,12 @@ func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testin
 }
 
 func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:    "jhw22",
+		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
 		Category:      "Reparatur",
@@ -4972,29 +4966,29 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 		t.Fatalf("Create issue: %v", err)
 	}
 
-	page := authedRequest(t, a, "service@example.com", "/app/anliegen").Body.String()
+	page := authedRequest(t, a, "service@example.com", "/demo/app/anliegen").Body.String()
 	for _, want := range []string{"Kellerlicht defekt", "Kommentar senden", `name="service_proposal"`, "Status senden"} {
 		if !strings.Contains(page, want) {
 			t.Fatalf("service work view missing %q:\n%s", want, page)
 		}
 	}
 
-	comment := authedMultipartFilesRequest(t, a, "service@example.com", "/app/anliegen/comment", map[string]string{
+	comment := authedMultipartFilesRequest(t, a, "service@example.com", "/demo/app/anliegen/comment", map[string]string{
 		"id":   issue.ID,
 		"body": "Leuchte ist bestellt, Foto vom Bestand angehängt.",
 	}, []multipartTestFile{{Field: "attachments", Filename: "bestand.png", Body: minimalPNG()}})
 	if comment.Code != http.StatusSeeOther {
 		t.Fatalf("service comment status = %d, want redirect", comment.Code)
 	}
-	updated, ok := a.issueStore.Get("jhw22", issue.ID)
+	updated, ok := a.issueStore.Get("demo", issue.ID)
 	if !ok || len(updated.Comments) != 1 || updated.Comments[0].AuthorEmail != "service@example.com" {
 		t.Fatalf("service comment not saved: %+v ok=%v", updated.Comments, ok)
 	}
-	if attachments := a.attachmentStore.ListEntity("jhw22", "issue-comment", updated.Comments[0].ID); len(attachments) != 1 {
+	if attachments := a.attachmentStore.ListEntity("demo", "issue-comment", updated.Comments[0].ID); len(attachments) != 1 {
 		t.Fatalf("service comment attachments = %+v, want one", attachments)
 	}
 
-	forbidden := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+	forbidden := authedFormRequest(t, a, "service@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":             {issue.ID},
 		"status":         {issueStatusProgress},
 		"priority":       {issuePriorityUrgent},
@@ -5004,7 +4998,7 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 		t.Fatalf("service forbidden workflow status = %d, want 403", forbidden.Code)
 	}
 
-	proposal := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+	proposal := authedFormRequest(t, a, "service@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":               {issue.ID},
 		"status":           {issueStatusProgress},
 		"service_proposal": {"Dienstag, 14. Juli, 9-11 Uhr"},
@@ -5012,16 +5006,16 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 	if proposal.Code != http.StatusSeeOther {
 		t.Fatalf("service proposal status = %d, want redirect", proposal.Code)
 	}
-	updated, ok = a.issueStore.Get("jhw22", issue.ID)
+	updated, ok = a.issueStore.Get("demo", issue.ID)
 	if !ok || updated.Status != issueStatusProgress || updated.Priority != issuePriorityNorm || updated.AssigneeEmail != "service@example.com" || updated.ServiceProposal != "Dienstag, 14. Juli, 9-11 Uhr" {
 		t.Fatalf("service workflow update = %+v ok=%v", updated, ok)
 	}
-	residentPage := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issue.ID).Body.String()
+	residentPage := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/"+issue.ID).Body.String()
 	if !strings.Contains(residentPage, "Hinweis:") || !strings.Contains(residentPage, "Dienstag, 14. Juli, 9-11 Uhr") || !strings.Contains(residentPage, "Leuchte ist bestellt") {
 		t.Fatalf("resident should see service proposal and comment:\n%s", residentPage)
 	}
 
-	done := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+	done := authedFormRequest(t, a, "service@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":               {issue.ID},
 		"status":           {issueStatusDone},
 		"service_proposal": {"Erledigt am Dienstagvormittag"},
@@ -5029,11 +5023,11 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 	if done.Code != http.StatusSeeOther {
 		t.Fatalf("service done status = %d, want redirect", done.Code)
 	}
-	closed, ok := a.issueStore.Get("jhw22", issue.ID)
+	closed, ok := a.issueStore.Get("demo", issue.ID)
 	if !ok || closed.Status != issueStatusDone || closed.ServiceProposal != "Erledigt am Dienstagvormittag" {
 		t.Fatalf("service done update = %+v ok=%v", closed, ok)
 	}
-	if a.canViewIssueForActor("jhw22", closed, "service@example.com", roleServiceProvider) {
+	if a.canViewIssueForActor("demo", closed, "service@example.com", roleServiceProvider) {
 		t.Fatal("service provider should lose access after marking issue done")
 	}
 }
@@ -5042,11 +5036,11 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 // status changes AND uploads — must be visible in the Verwaltung audit-log.
 // Before this, comment/photo uploads left no trace.
 func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
 
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:    "jhw22",
+		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
 		Category:      "Reparatur",
@@ -5059,7 +5053,7 @@ func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
 		t.Fatalf("Create issue: %v", err)
 	}
 
-	comment := authedMultipartFilesRequest(t, a, "service@example.com", "/app/anliegen/comment", map[string]string{
+	comment := authedMultipartFilesRequest(t, a, "service@example.com", "/demo/app/anliegen/comment", map[string]string{
 		"id":   issue.ID,
 		"body": "Foto vom Schaden angehängt.",
 	}, []multipartTestFile{{Field: "attachments", Filename: "schaden.png", Body: minimalPNG()}})
@@ -5067,7 +5061,7 @@ func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
 		t.Fatalf("service comment status = %d, want redirect", comment.Code)
 	}
 
-	status := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+	status := authedFormRequest(t, a, "service@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":     {issue.ID},
 		"status": {issueStatusProgress},
 	})
@@ -5075,7 +5069,7 @@ func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
 		t.Fatalf("service status change = %d, want redirect", status.Code)
 	}
 
-	commentEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIssueComment, Limit: 10})
+	commentEvents := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionIssueComment, Limit: 10})
 	if len(commentEvents) == 0 {
 		t.Fatal("provider comment produced no issue.comment audit event")
 	}
@@ -5086,7 +5080,7 @@ func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
 		t.Fatalf("comment audit has_file = %q, want true (photo upload must be traceable)", commentEvents[0].Details["has_file"])
 	}
 
-	workflowEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIssueWorkflow, Limit: 10})
+	workflowEvents := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionIssueWorkflow, Limit: 10})
 	if len(workflowEvents) == 0 || workflowEvents[0].ActorEmail != "service@example.com" {
 		t.Fatalf("provider status change not audited with provider as actor: %+v", workflowEvents)
 	}
@@ -5095,10 +5089,10 @@ func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
 // HAUSV-128: a comment may carry a photo with no text (before/after
 // documentation), but a truly-empty submit is still rejected.
 func TestIssueCommentAllowsPhotoOnlyButRejectsEmpty(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident",
+		TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resident",
 		Category: "Reparatur", Title: "Foto-only", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
 		AssigneeEmail: "service@example.com",
 	})
@@ -5106,25 +5100,25 @@ func TestIssueCommentAllowsPhotoOnlyButRejectsEmpty(t *testing.T) {
 		t.Fatalf("create: %v", err)
 	}
 
-	photoOnly := authedMultipartFilesRequest(t, a, "service@example.com", "/app/anliegen/comment", map[string]string{
+	photoOnly := authedMultipartFilesRequest(t, a, "service@example.com", "/demo/app/anliegen/comment", map[string]string{
 		"id": issue.ID,
 	}, []multipartTestFile{{Field: "attachments", Filename: "foto.png", Body: minimalPNG()}})
-	if photoOnly.Code != http.StatusSeeOther || photoOnly.Header().Get("Location") != "/app/anliegen?issue=updated" {
+	if photoOnly.Code != http.StatusSeeOther || photoOnly.Header().Get("Location") != "/demo/app/anliegen?issue=updated" {
 		t.Fatalf("photo-only comment = %d loc=%q, want redirect to updated", photoOnly.Code, photoOnly.Header().Get("Location"))
 	}
-	updated, ok := a.issueStore.Get("jhw22", issue.ID)
+	updated, ok := a.issueStore.Get("demo", issue.ID)
 	if !ok || len(updated.Comments) != 1 || updated.Comments[0].Body != "" {
 		t.Fatalf("photo-only comment not saved with empty body: %+v", updated.Comments)
 	}
-	if atts := a.attachmentStore.ListEntity("jhw22", "issue-comment", updated.Comments[0].ID); len(atts) != 1 {
+	if atts := a.attachmentStore.ListEntity("demo", "issue-comment", updated.Comments[0].ID); len(atts) != 1 {
 		t.Fatalf("photo-only attachment = %+v, want one", atts)
 	}
 
-	empty := authedFormRequest(t, a, "service@example.com", "/app/anliegen/comment", url.Values{"id": {issue.ID}})
-	if empty.Code != http.StatusSeeOther || empty.Header().Get("Location") != "/app/anliegen?issue=invalid" {
+	empty := authedFormRequest(t, a, "service@example.com", "/demo/app/anliegen/comment", url.Values{"id": {issue.ID}})
+	if empty.Code != http.StatusSeeOther || empty.Header().Get("Location") != "/demo/app/anliegen?issue=invalid" {
 		t.Fatalf("empty comment = %d loc=%q, want redirect to invalid", empty.Code, empty.Header().Get("Location"))
 	}
-	if again, _ := a.issueStore.Get("jhw22", issue.ID); len(again.Comments) != 1 {
+	if again, _ := a.issueStore.Get("demo", issue.ID); len(again.Comments) != 1 {
 		t.Fatalf("empty comment must not be saved: now %d comments", len(again.Comments))
 	}
 }
@@ -5132,10 +5126,10 @@ func TestIssueCommentAllowsPhotoOnlyButRejectsEmpty(t *testing.T) {
 // HAUSV-128: a provider can advance an assigned issue into the new states
 // (Angenommen) and keeps access; reopening to Neu is blocked.
 func TestServiceProviderCanAcceptButNotReopen(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident",
+		TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resident",
 		Category: "Reparatur", Title: "Annehmen", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
 		AssigneeEmail: "service@example.com",
 	})
@@ -5143,22 +5137,22 @@ func TestServiceProviderCanAcceptButNotReopen(t *testing.T) {
 		t.Fatalf("create: %v", err)
 	}
 
-	accept := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+	accept := authedFormRequest(t, a, "service@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":     {issue.ID},
 		"status": {issueStatusAccepted},
 	})
 	if accept.Code != http.StatusSeeOther {
 		t.Fatalf("accept status = %d, want redirect", accept.Code)
 	}
-	updated, ok := a.issueStore.Get("jhw22", issue.ID)
+	updated, ok := a.issueStore.Get("demo", issue.ID)
 	if !ok || updated.Status != issueStatusAccepted {
 		t.Fatalf("status after accept = %q, want %q", updated.Status, issueStatusAccepted)
 	}
-	if !a.canViewIssueForActor("jhw22", updated, "service@example.com", roleServiceProvider) {
+	if !a.canViewIssueForActor("demo", updated, "service@example.com", roleServiceProvider) {
 		t.Fatal("Angenommen must keep the issue open and accessible to the provider")
 	}
 
-	reopen := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+	reopen := authedFormRequest(t, a, "service@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":     {issue.ID},
 		"status": {issueStatusNew},
 	})
@@ -5170,10 +5164,10 @@ func TestServiceProviderCanAcceptButNotReopen(t *testing.T) {
 // HAUSV-128: "Termin vereinbart" requires a structured date, and a structured
 // appointment renders as a real dated VEVENT (not the old dateless VTODO).
 func TestServiceProviderScheduledRequiresDateAndEmitsEvent(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident",
+		TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resident",
 		Category: "Reparatur", Title: "Termin", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
 		AssigneeEmail: "service@example.com",
 	})
@@ -5181,33 +5175,33 @@ func TestServiceProviderScheduledRequiresDateAndEmitsEvent(t *testing.T) {
 		t.Fatalf("create: %v", err)
 	}
 
-	noDate := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+	noDate := authedFormRequest(t, a, "service@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":     {issue.ID},
 		"status": {issueStatusScheduled},
 	})
-	if noDate.Code != http.StatusSeeOther || noDate.Header().Get("Location") != "/app/anliegen?issue=termin" {
+	if noDate.Code != http.StatusSeeOther || noDate.Header().Get("Location") != "/demo/app/anliegen?issue=termin" {
 		t.Fatalf("scheduled without date = %d loc=%q, want redirect to termin", noDate.Code, noDate.Header().Get("Location"))
 	}
-	if u, _ := a.issueStore.Get("jhw22", issue.ID); u.Status == issueStatusScheduled {
+	if u, _ := a.issueStore.Get("demo", issue.ID); u.Status == issueStatusScheduled {
 		t.Fatal("status must not become Termin vereinbart without a date")
 	}
 
-	withDate := authedFormRequest(t, a, "service@example.com", "/app/anliegen/workflow", url.Values{
+	withDate := authedFormRequest(t, a, "service@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":            {issue.ID},
 		"status":        {issueStatusScheduled},
 		"service_start": {"2026-07-14T09:00"},
 		"service_end":   {"2026-07-14T11:00"},
 	})
-	if withDate.Code != http.StatusSeeOther || withDate.Header().Get("Location") != "/app/anliegen?issue=updated" {
+	if withDate.Code != http.StatusSeeOther || withDate.Header().Get("Location") != "/demo/app/anliegen?issue=updated" {
 		t.Fatalf("scheduled with date = %d loc=%q, want redirect to updated", withDate.Code, withDate.Header().Get("Location"))
 	}
-	updated, ok := a.issueStore.Get("jhw22", issue.ID)
+	updated, ok := a.issueStore.Get("demo", issue.ID)
 	if !ok || updated.Status != issueStatusScheduled || updated.ServiceProposedStart.IsZero() {
 		t.Fatalf("scheduled issue = %+v, want status scheduled + start set", updated)
 	}
 
 	var b strings.Builder
-	writeCalendarIssueProposal(&b, tenantConfig{Slug: "jhw22"}, updated, time.Now())
+	writeCalendarIssueProposal(&b, tenantConfig{Slug: "demo"}, updated, time.Now())
 	if ics := b.String(); !strings.Contains(ics, "BEGIN:VEVENT") || !strings.Contains(ics, "DTSTART:") {
 		t.Fatalf("structured appointment must emit a dated VEVENT:\n%s", ics)
 	}
@@ -5217,19 +5211,19 @@ func TestServiceProviderScheduledRequiresDateAndEmitsEvent(t *testing.T) {
 // building-settings page (informational, not enforced), and a Stellplatz does
 // not count toward the billable total.
 func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	mkUnits := func(n int) []unit {
 		out := make([]unit, 0, n)
 		for i := 0; i < n; i++ {
-			out = append(out, unit{ID: fmt.Sprintf("u%03d", i), TenantSlug: "jhw22", Label: fmt.Sprintf("Top %d", i), UnitType: unitTypeResidential})
+			out = append(out, unit{ID: fmt.Sprintf("u%03d", i), TenantSlug: "demo", Label: fmt.Sprintf("Top %d", i), UnitType: unitTypeResidential})
 		}
 		return out
 	}
 
-	if err := a.unitStore.SetTenantUnits("jhw22", mkUnits(25)); err != nil {
+	if err := a.unitStore.SetTenantUnits("demo", mkUnits(25)); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	page := authedRequest(t, a, "admin@example.com", "/app/settings/building").Body.String()
+	page := authedRequest(t, a, "admin@example.com", "/demo/app/settings/building").Body.String()
 	if !strings.Contains(page, "von 25") {
 		t.Fatalf("building settings should show 'von 25':\n%s", page)
 	}
@@ -5237,32 +5231,32 @@ func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
 		t.Fatal("25 billable units must not trigger the over-limit hint")
 	}
 
-	withParking := append(mkUnits(25), unit{ID: "p1", TenantSlug: "jhw22", Label: "Stellplatz", UnitType: unitTypeParking})
-	if err := a.unitStore.SetTenantUnits("jhw22", withParking); err != nil {
+	withParking := append(mkUnits(25), unit{ID: "p1", TenantSlug: "demo", Label: "Stellplatz", UnitType: unitTypeParking})
+	if err := a.unitStore.SetTenantUnits("demo", withParking); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	if page = authedRequest(t, a, "admin@example.com", "/app/settings/building").Body.String(); strings.Contains(page, "Über dem inkludierten Rahmen") {
+	if page = authedRequest(t, a, "admin@example.com", "/demo/app/settings/building").Body.String(); strings.Contains(page, "Über dem inkludierten Rahmen") {
 		t.Fatal("a Stellplatz must not push the billable count over the fair-use limit")
 	}
 
-	if err := a.unitStore.SetTenantUnits("jhw22", mkUnits(26)); err != nil {
+	if err := a.unitStore.SetTenantUnits("demo", mkUnits(26)); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	if page = authedRequest(t, a, "admin@example.com", "/app/settings/building").Body.String(); !strings.Contains(page, "Über dem inkludierten Rahmen") {
+	if page = authedRequest(t, a, "admin@example.com", "/demo/app/settings/building").Body.String(); !strings.Contains(page, "Über dem inkludierten Rahmen") {
 		t.Fatalf("26 billable units should trigger the over-limit hint:\n%s", page)
 	}
 }
 
 func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
-	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["service@example.com"] = userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["other-service@example.com"] = userProfile{Email: "other-service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["service@example.com"] = userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["other-service@example.com"] = userProfile{Email: "other-service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
 	start := time.Now().Add(48 * time.Hour).UTC().Truncate(time.Second)
 	if _, err := a.eventStore.Create(houseEvent{
-		TenantSlug:  "jhw22",
+		TenantSlug:  "demo",
 		Title:       "Hausversammlung",
 		Body:        "Beschlüsse und offene Punkte.",
 		Category:    "Eigentümerversammlung",
@@ -5274,7 +5268,7 @@ func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 		t.Fatalf("create event: %v", err)
 	}
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:      "jhw22",
+		TenantSlug:      "demo",
 		AuthorEmail:     "owner@example.com",
 		AuthorName:      "Owner",
 		Category:        "Reparatur",
@@ -5291,7 +5285,7 @@ func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 		t.Fatalf("create issue: %v", err)
 	}
 
-	residentToken, err := a.calendarFeedToken("resident@example.com", "jhw22")
+	residentToken, err := a.calendarFeedToken("resident@example.com", "demo")
 	if err != nil {
 		t.Fatalf("resident token: %v", err)
 	}
@@ -5314,7 +5308,7 @@ func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 		t.Fatalf("feed content-type = %q", got)
 	}
 
-	serviceToken, err := a.calendarFeedToken("service@example.com", "jhw22")
+	serviceToken, err := a.calendarFeedToken("service@example.com", "demo")
 	if err != nil {
 		t.Fatalf("service token: %v", err)
 	}
@@ -5332,7 +5326,7 @@ func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 		t.Fatalf("service provider feed should not expose house events:\n%s", serviceBody)
 	}
 
-	otherToken, err := a.calendarFeedToken("other-service@example.com", "jhw22")
+	otherToken, err := a.calendarFeedToken("other-service@example.com", "demo")
 	if err != nil {
 		t.Fatalf("other service token: %v", err)
 	}
@@ -5346,11 +5340,11 @@ func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 		t.Fatalf("invalid feed token status = %d, want 404", invalid.Code)
 	}
 
-	eventPage := authedRequest(t, a, "resident@example.com", "/app/events").Body.String()
+	eventPage := authedRequest(t, a, "resident@example.com", "/demo/app/events").Body.String()
 	if !strings.Contains(eventPage, "Kalender abonnieren") || !strings.Contains(eventPage, "/calendar/") {
 		t.Fatalf("events page should expose calendar subscription link:\n%s", eventPage)
 	}
-	issuePage := authedRequest(t, a, "service@example.com", "/app/anliegen").Body.String()
+	issuePage := authedRequest(t, a, "service@example.com", "/demo/app/anliegen").Body.String()
 	if !strings.Contains(issuePage, "Kalender abonnieren") || !strings.Contains(issuePage, "/calendar/") {
 		t.Fatalf("service issue page should expose calendar subscription link:\n%s", issuePage)
 	}
@@ -5358,7 +5352,7 @@ func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 
 func calendarFeedRequest(t *testing.T, a *app, token string) *httptest.ResponseRecorder {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/calendar/"+token+".ics", nil)
+	req := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/calendar/"+token+".ics", nil)
 	req.SetPathValue("token", token+".ics")
 	rr := httptest.NewRecorder()
 	a.calendarFeed(rr, req)
@@ -5366,12 +5360,12 @@ func calendarFeedRequest(t *testing.T, a *app, token string) *httptest.ResponseR
 }
 
 func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.tenants["other"] = tenantConfig{Slug: "other", Name: "Other Portal", Address: "Andere Gasse 1", Host: "other.hausv.org"}
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.tenants["other"] = tenantConfig{Slug: "other", Name: "Other Portal", Address: "Andere Gasse 1"}
 
-	save := authedFormRequest(t, a, "manager@example.com", "/app/kontakte", url.Values{
+	save := authedFormRequest(t, a, "manager@example.com", "/demo/app/kontakte", url.Values{
 		"kind":    {"Dienstleister"},
 		"name":    {"Eva Elektrik"},
 		"company": {"Elektro Eva GmbH"},
@@ -5383,11 +5377,11 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 	if save.Code != http.StatusSeeOther {
 		t.Fatalf("contact save status = %d, want redirect", save.Code)
 	}
-	contacts := a.contactStore.ListTenant("jhw22", true)
+	contacts := a.contactStore.ListTenant("demo", true)
 	if len(contacts) != 1 || contacts[0].Kind != "Dienstleister" || contacts[0].Email != "eva@example.com" || !contacts[0].Active {
 		t.Fatalf("saved contacts = %+v", contacts)
 	}
-	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionContactSave}); len(events) != 1 {
+	if events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionContactSave}); len(events) != 1 {
 		t.Fatalf("contact save audit events = %+v", events)
 	}
 
@@ -5401,7 +5395,7 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 		t.Fatalf("other tenant contact: %v", err)
 	}
 
-	residentPage := authedRequest(t, a, "resident@example.com", "/app/kontakte").Body.String()
+	residentPage := authedRequest(t, a, "resident@example.com", "/demo/app/kontakte").Body.String()
 	if !strings.Contains(residentPage, "Eva Elektrik") || !strings.Contains(residentPage, "eva@example.com") {
 		t.Fatalf("resident contacts missing active address book entry:\n%s", residentPage)
 	}
@@ -5410,7 +5404,7 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 	}
 
 	if _, err := a.issueStore.Create(residentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
 		Category:     "Reparatur",
@@ -5422,12 +5416,12 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 	}); err != nil {
 		t.Fatalf("create issue for service-provider chooser: %v", err)
 	}
-	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board").Body.String()
+	board := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board").Body.String()
 	if !strings.Contains(board, `datalist id="service-provider-contacts"`) || !strings.Contains(board, `value="eva@example.com"`) || !strings.Contains(board, `list="service-provider-contacts"`) {
 		t.Fatalf("issue board missing service-provider contact chooser:\n%s", board)
 	}
 
-	forbidden := authedFormRequest(t, a, "resident@example.com", "/app/kontakte", url.Values{
+	forbidden := authedFormRequest(t, a, "resident@example.com", "/demo/app/kontakte", url.Values{
 		"kind":   {"Dienstleister"},
 		"name":   {"Should Fail"},
 		"email":  {"fail@example.com"},
@@ -5437,39 +5431,39 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 		t.Fatalf("resident contact save status = %d, want 403", forbidden.Code)
 	}
 
-	deleteReq := authedFormRequest(t, a, "manager@example.com", "/app/kontakte/delete", url.Values{"id": {contacts[0].ID}})
+	deleteReq := authedFormRequest(t, a, "manager@example.com", "/demo/app/kontakte/delete", url.Values{"id": {contacts[0].ID}})
 	if deleteReq.Code != http.StatusSeeOther {
 		t.Fatalf("contact deactivate status = %d, want redirect", deleteReq.Code)
 	}
-	contacts = a.contactStore.ListTenant("jhw22", true)
+	contacts = a.contactStore.ListTenant("demo", true)
 	if len(contacts) != 1 || contacts[0].Active {
 		t.Fatalf("deactivated contacts = %+v", contacts)
 	}
-	residentAfterDelete := authedRequest(t, a, "resident@example.com", "/app/kontakte").Body.String()
+	residentAfterDelete := authedRequest(t, a, "resident@example.com", "/demo/app/kontakte").Body.String()
 	if strings.Contains(residentAfterDelete, "Eva Elektrik") {
 		t.Fatalf("resident contacts should hide inactive entries:\n%s", residentAfterDelete)
 	}
-	managerPage := authedRequest(t, a, "manager@example.com", "/app/kontakte").Body.String()
+	managerPage := authedRequest(t, a, "manager@example.com", "/demo/app/kontakte").Body.String()
 	if !strings.Contains(managerPage, "Eva Elektrik") || !strings.Contains(managerPage, "Inaktiv") {
 		t.Fatalf("manager contacts should show inactive entries:\n%s", managerPage)
 	}
-	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionContactDelete}); len(events) != 1 {
+	if events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionContactDelete}); len(events) != 1 {
 		t.Fatalf("contact deactivate audit events = %+v", events)
 	}
 }
 
 func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{
-		{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", UnitType: unitTypeResidential, MiteigentumsanteilPPM: 100000, OwnerEmails: []string{"owner@example.com"}},
-		{ID: "top-2", TenantSlug: "jhw22", Label: "Top 2", UnitType: unitTypeResidential, MiteigentumsanteilPPM: 100000, OwnerEmails: []string{"other@example.com"}},
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	if err := a.unitStore.SetTenantUnits("demo", []unit{
+		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential, MiteigentumsanteilPPM: 100000, OwnerEmails: []string{"owner@example.com"}},
+		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", UnitType: unitTypeResidential, MiteigentumsanteilPPM: 100000, OwnerEmails: []string{"other@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 
-	forbidden := authedFormRequest(t, a, "owner@example.com", "/app/settings/building/payment-status", url.Values{
+	forbidden := authedFormRequest(t, a, "owner@example.com", "/demo/app/settings/building/payment-status", url.Values{
 		"unit_id": {"top-1"},
 		"status":  {unitPaymentStatusPaid},
 	})
@@ -5477,14 +5471,14 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 		t.Fatalf("resident payment status update status = %d, want 403", forbidden.Code)
 	}
 
-	saveTop1 := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/payment-status", url.Values{
+	saveTop1 := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/payment-status", url.Values{
 		"unit_id": {"top-1"},
 		"status":  {"überfällig"},
 	})
 	if saveTop1.Code != http.StatusSeeOther {
 		t.Fatalf("top-1 payment status update = %d, want redirect", saveTop1.Code)
 	}
-	saveTop2 := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/payment-status", url.Values{
+	saveTop2 := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/payment-status", url.Values{
 		"unit_id": {"top-2"},
 		"status":  {unitPaymentStatusPaid},
 	})
@@ -5492,12 +5486,12 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 		t.Fatalf("top-2 payment status update = %d, want redirect", saveTop2.Code)
 	}
 
-	records := a.unitPaymentStore.ListTenant("jhw22")
+	records := a.unitPaymentStore.ListTenant("demo")
 	if len(records) != 2 || records[0].UnitID != "top-1" || records[0].Status != unitPaymentStatusOverdue || records[1].Status != unitPaymentStatusPaid {
 		t.Fatalf("payment status records = %+v", records)
 	}
 
-	ownerPage := authedRequest(t, a, "owner@example.com", "/app").Body.String()
+	ownerPage := authedRequest(t, a, "owner@example.com", "/demo/app").Body.String()
 	if !strings.Contains(ownerPage, "Offenen Zahlungsstatus klären") || !strings.Contains(ownerPage, "Top 1") || !strings.Contains(ownerPage, "Überfällig") {
 		t.Fatalf("owner page missing own payment status:\n%s", ownerPage)
 	}
@@ -5505,12 +5499,12 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 		t.Fatalf("owner page leaked other unit payment status:\n%s", ownerPage)
 	}
 
-	buildingPage := authedRequest(t, a, "manager@example.com", "/app/settings/building").Body.String()
+	buildingPage := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building").Body.String()
 	if !strings.Contains(buildingPage, "Zahlungsstatus") || !strings.Contains(buildingPage, "Top 1") || !strings.Contains(buildingPage, "Top 2") || !strings.Contains(buildingPage, "Überfällig") || !strings.Contains(buildingPage, "Bezahlt") {
 		t.Fatalf("manager building settings missing payment status overview:\n%s", buildingPage)
 	}
 
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionUnitPayment, Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionUnitPayment, Limit: 10})
 	if len(events) != 2 {
 		t.Fatalf("payment audit events = %+v, want 2", events)
 	}
@@ -5520,13 +5514,13 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 }
 
 func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
-	a.profiles["other-service@example.com"] = userProfile{Email: "other-service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["other-service@example.com"] = userProfile{Email: "other-service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:    "jhw22",
+		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
 		Category:      "Reparatur",
@@ -5538,13 +5532,13 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 	if err != nil {
 		t.Fatalf("Create issue: %v", err)
 	}
-	issueAttachments, err := a.attachmentStore.CreateUploaded("jhw22", "issue", issue.ID, "resident@example.com", []uploadedFile{
+	issueAttachments, err := a.attachmentStore.CreateUploaded("demo", "issue", issue.ID, "resident@example.com", []uploadedFile{
 		testMultipartHeader(t, "attachments", "schaden.png", minimalPNG()),
 	}, time.Now())
 	if err != nil || len(issueAttachments) != 1 {
 		t.Fatalf("issue attachment = %+v err=%v", issueAttachments, err)
 	}
-	commented, found, err := a.issueStore.AddComment("jhw22", issue.ID, issueComment{
+	commented, found, err := a.issueStore.AddComment("demo", issue.ID, issueComment{
 		AuthorEmail: "service@example.com",
 		AuthorName:  "Dienstleister",
 		Body:        "Foto nach Erstbesichtigung.",
@@ -5552,7 +5546,7 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 	if err != nil || !found || len(commented.Comments) != 1 {
 		t.Fatalf("AddComment issue=%+v found=%v err=%v", commented, found, err)
 	}
-	commentAttachments, err := a.attachmentStore.CreateUploaded("jhw22", "issue-comment", commented.Comments[0].ID, "service@example.com", []uploadedFile{
+	commentAttachments, err := a.attachmentStore.CreateUploaded("demo", "issue-comment", commented.Comments[0].ID, "service@example.com", []uploadedFile{
 		testMultipartHeader(t, "attachments", "bestand.png", minimalPNG()),
 	}, time.Now())
 	if err != nil || len(commentAttachments) != 1 {
@@ -5560,23 +5554,23 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 	}
 
 	for _, item := range []attachmentRecord{issueAttachments[0], commentAttachments[0]} {
-		assigned := authedRequest(t, a, "service@example.com", "/app/attachments/"+item.ID+"/thumb")
+		assigned := authedRequest(t, a, "service@example.com", "/demo/app/attachments/"+item.ID+"/thumb")
 		if assigned.Code != http.StatusOK {
 			t.Fatalf("assigned service attachment %s status = %d, want 200", item.EntityType, assigned.Code)
 		}
-		unassigned := authedRequest(t, a, "other-service@example.com", "/app/attachments/"+item.ID+"/thumb")
+		unassigned := authedRequest(t, a, "other-service@example.com", "/demo/app/attachments/"+item.ID+"/thumb")
 		if unassigned.Code != http.StatusForbidden {
 			t.Fatalf("unassigned service attachment %s status = %d, want 403", item.EntityType, unassigned.Code)
 		}
-		anonymousReq := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app/attachments/"+item.ID+"/thumb", nil)
+		anonymousReq := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/app/attachments/"+item.ID+"/thumb", nil)
 		anonymous := httptest.NewRecorder()
 		a.handler().ServeHTTP(anonymous, anonymousReq)
-		if anonymous.Code != http.StatusSeeOther || anonymous.Header().Get("Location") != "/" {
-			t.Fatalf("anonymous attachment %s status = %d location=%q, want redirect to /", item.EntityType, anonymous.Code, anonymous.Header().Get("Location"))
+		if anonymous.Code != http.StatusSeeOther || anonymous.Header().Get("Location") != "/demo/" {
+			t.Fatalf("anonymous attachment %s status = %d location=%q, want redirect to tenant login", item.EntityType, anonymous.Code, anonymous.Header().Get("Location"))
 		}
 	}
 
-	_, _, err = a.issueStore.UpdateWorkflow("jhw22", issue.ID, issueWorkflowUpdate{
+	_, _, err = a.issueStore.UpdateWorkflow("demo", issue.ID, issueWorkflowUpdate{
 		ActorEmail: "manager@example.com",
 		Status:     issueStatusDone,
 		Priority:   issuePriorityNorm,
@@ -5584,19 +5578,19 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 	if err != nil {
 		t.Fatalf("close issue: %v", err)
 	}
-	closed := authedRequest(t, a, "service@example.com", "/app/attachments/"+issueAttachments[0].ID+"/thumb")
+	closed := authedRequest(t, a, "service@example.com", "/demo/app/attachments/"+issueAttachments[0].ID+"/thumb")
 	if closed.Code != http.StatusForbidden {
 		t.Fatalf("closed issue attachment status = %d, want 403", closed.Code)
 	}
 }
 
 func TestIssueEstimateMetadataAndAttachmentUseProtectedRoutes(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
 	issue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:    "jhw22",
+		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
 		Category:      "Reparatur",
@@ -5609,7 +5603,7 @@ func TestIssueEstimateMetadataAndAttachmentUseProtectedRoutes(t *testing.T) {
 		t.Fatalf("Create issue: %v", err)
 	}
 
-	save := authedMultipartFilesRequest(t, a, "service@example.com", "/app/anliegen/workflow", map[string]string{
+	save := authedMultipartFilesRequest(t, a, "service@example.com", "/demo/app/anliegen/workflow", map[string]string{
 		"id":              issue.ID,
 		"status":          issueStatusOpen,
 		"estimate_amount": "240,50",
@@ -5618,18 +5612,18 @@ func TestIssueEstimateMetadataAndAttachmentUseProtectedRoutes(t *testing.T) {
 	if save.Code != http.StatusSeeOther {
 		t.Fatalf("estimate save status = %d, want redirect", save.Code)
 	}
-	if loc := save.Header().Get("Location"); loc != "/app/anliegen?issue=updated" {
+	if loc := save.Header().Get("Location"); loc != "/demo/app/anliegen?issue=updated" {
 		t.Fatalf("estimate save redirect = %q", loc)
 	}
-	updated, ok := a.issueStore.Get("jhw22", issue.ID)
+	updated, ok := a.issueStore.Get("demo", issue.ID)
 	if !ok || updated.EstimateAmountCents != 24050 || updated.EstimateNote != "Material und Anfahrt grob geschätzt." || updated.EstimateUpdatedBy != "service@example.com" {
 		t.Fatalf("stored estimate = %+v ok=%v", updated, ok)
 	}
-	attachments := a.attachmentStore.ListEntity("jhw22", "issue-estimate", issue.ID)
+	attachments := a.attachmentStore.ListEntity("demo", "issue-estimate", issue.ID)
 	if len(attachments) != 1 || attachments[0].ContentType != "application/pdf" {
 		t.Fatalf("estimate attachments = %+v", attachments)
 	}
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIssueEstimate, Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionIssueEstimate, Limit: 10})
 	if len(events) != 1 || events[0].Details["estimate_amount"] != "240,50 €" || events[0].Details["file_count"] != "1" || events[0].Details["has_file"] != "true" {
 		t.Fatalf("estimate audit events = %+v", events)
 	}
@@ -5641,13 +5635,13 @@ func TestIssueEstimateMetadataAndAttachmentUseProtectedRoutes(t *testing.T) {
 			t.Fatalf("estimate filename should not be persisted in audit details: %+v", events[0])
 		}
 	}
-	residentPage := authedRequest(t, a, "resident@example.com", "/app/anliegen/"+issue.ID).Body.String()
+	residentPage := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/"+issue.ID).Body.String()
 	for _, want := range []string{"Kostenvoranschlag", "240,50 €", "Material und Anfahrt grob geschätzt.", "kostenvoranschlag.pdf", "keine Rechnung und kein Zahlungsstatus"} {
 		if !strings.Contains(residentPage, want) {
 			t.Fatalf("resident estimate view missing %q:\n%s", want, residentPage)
 		}
 	}
-	served := authedRequest(t, a, "resident@example.com", "/app/attachments/"+attachments[0].ID)
+	served := authedRequest(t, a, "resident@example.com", "/demo/app/attachments/"+attachments[0].ID)
 	if served.Code != http.StatusOK {
 		t.Fatalf("resident estimate attachment status = %d, want 200", served.Code)
 	}
@@ -5655,7 +5649,7 @@ func TestIssueEstimateMetadataAndAttachmentUseProtectedRoutes(t *testing.T) {
 		t.Fatalf("estimate attachment disposition = %q", got)
 	}
 
-	forbidden := authedFormRequest(t, a, "resident@example.com", "/app/anliegen/workflow", url.Values{
+	forbidden := authedFormRequest(t, a, "resident@example.com", "/demo/app/anliegen/workflow", url.Values{
 		"id":              {issue.ID},
 		"status":          {issueStatusDone},
 		"estimate_amount": {"1,00"},
@@ -5666,24 +5660,24 @@ func TestIssueEstimateMetadataAndAttachmentUseProtectedRoutes(t *testing.T) {
 }
 
 func TestIssueTriageBoardFiltersAndOpenCounts(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	old := time.Now().Add(-48 * time.Hour)
 	for _, item := range []residentIssue{
-		{TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident", Category: "Reparatur", Title: "Urgent repair", Body: "Broken.", LocationType: issueLocationCommon, Status: issueStatusProgress, Priority: issuePriorityUrgent, AssigneeEmail: "manager@example.com", CreatedAt: old, UpdatedAt: old},
-		{TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident", Category: "Frage", Title: "Regular question", Body: "Question.", LocationType: issueLocationCommon, Status: issueStatusNew, Priority: issuePriorityNorm},
-		{TenantSlug: "jhw22", AuthorEmail: "resident@example.com", AuthorName: "Resident", Category: "Vorschlag", Title: "Closed suggestion", Body: "Done.", LocationType: issueLocationCommon, Status: issueStatusDone, Priority: issuePriorityLow},
+		{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resident", Category: "Reparatur", Title: "Urgent repair", Body: "Broken.", LocationType: issueLocationCommon, Status: issueStatusProgress, Priority: issuePriorityUrgent, AssigneeEmail: "manager@example.com", CreatedAt: old, UpdatedAt: old},
+		{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resident", Category: "Frage", Title: "Regular question", Body: "Question.", LocationType: issueLocationCommon, Status: issueStatusNew, Priority: issuePriorityNorm},
+		{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resident", Category: "Vorschlag", Title: "Closed suggestion", Body: "Done.", LocationType: issueLocationCommon, Status: issueStatusDone, Priority: issuePriorityLow},
 	} {
 		if _, err := a.issueStore.Create(item); err != nil {
 			t.Fatalf("Create issue %q: %v", item.Title, err)
 		}
 	}
 
-	residentBoard := authedRequest(t, a, "resident@example.com", "/app/anliegen/board")
+	residentBoard := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/board")
 	if residentBoard.Code != http.StatusForbidden {
 		t.Fatalf("resident board status = %d, want 403", residentBoard.Code)
 	}
-	board := authedRequest(t, a, "manager@example.com", "/app/anliegen/board?status=In+Bearbeitung&priority=Dringend&category=Reparatur&assignee=manager@example.com&sort=age")
+	board := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board?status=In+Bearbeitung&priority=Dringend&category=Reparatur&assignee=manager@example.com&sort=age")
 	if board.Code != http.StatusOK {
 		t.Fatalf("manager board status = %d", board.Code)
 	}
@@ -5697,17 +5691,17 @@ func TestIssueTriageBoardFiltersAndOpenCounts(t *testing.T) {
 		t.Fatalf("triage board filter leaked other issues:\n%s", body)
 	}
 
-	dashboard := authedRequest(t, a, "manager@example.com", "/app").Body.String()
+	dashboard := authedRequest(t, a, "manager@example.com", "/demo/app").Body.String()
 	if !strings.Contains(dashboard, "2 offene Anliegen") || !strings.Contains(dashboard, "Priorisieren") || !strings.Contains(dashboard, "nav-badge") {
 		t.Fatalf("dashboard should surface open issue count:\n%s", dashboard)
 	}
 }
 
 func TestNotificationFrameworkDedupesRecipientsAndHonorsPrefs(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "actor@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["enabled@example.com"] = userProfile{Email: "enabled@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["muted@example.com"] = userProfile{Email: "muted@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["unsubscribed@example.com"] = userProfile{Email: "unsubscribed@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "actor@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["enabled@example.com"] = userProfile{Email: "enabled@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["muted@example.com"] = userProfile{Email: "muted@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["unsubscribed@example.com"] = userProfile{Email: "unsubscribed@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	mailer := &recordingMailer{}
 	a.mailer = mailer
 	if err := a.notificationPrefs.Set("muted@example.com", notificationPreferences{Email: map[string]bool{notificationEventIssue: false}}); err != nil {
@@ -5719,7 +5713,7 @@ func TestNotificationFrameworkDedupesRecipientsAndHonorsPrefs(t *testing.T) {
 
 	a.notify(portalNotification{
 		Event:      notificationEventIssue,
-		Tenant:     a.tenants["jhw22"],
+		Tenant:     a.tenants["demo"],
 		Recipients: []string{"enabled@example.com", "ENABLED@example.com", "muted@example.com", "unsubscribed@example.com", "actor@example.com"},
 		ActorEmail: "actor@example.com",
 		Subject:    "Anliegen aktualisiert",
@@ -5732,12 +5726,12 @@ func TestNotificationFrameworkDedupesRecipientsAndHonorsPrefs(t *testing.T) {
 }
 
 func TestPublishedAnnouncementNotifiesTenantRecipients(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	mailer := &recordingMailer{}
 	a.mailer = mailer
 
-	create := authedFormRequest(t, a, "manager@example.com", "/app/announcements", url.Values{
+	create := authedFormRequest(t, a, "manager@example.com", "/demo/app/announcements", url.Values{
 		"title":    {"Liftwartung"},
 		"body":     {"Lift am Freitag außer Betrieb."},
 		"category": {"Wartung"},
@@ -5745,14 +5739,14 @@ func TestPublishedAnnouncementNotifiesTenantRecipients(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("announcement create status = %d", create.Code)
 	}
-	items := a.announcementStore.ListTenant("jhw22")
+	items := a.announcementStore.ListTenant("demo")
 	if len(items) != 1 {
 		t.Fatalf("announcements = %+v", items)
 	}
-	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "resident@example.com" || !strings.Contains(mailer.notifications[0].Subject, "Neuer Aushang") || !strings.Contains(mailer.notifications[0].Body, "/app/announcements#announcement-"+items[0].ID) {
+	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "resident@example.com" || !strings.Contains(mailer.notifications[0].Subject, "Neuer Aushang") || !strings.Contains(mailer.notifications[0].Body, "/demo/app/announcements#announcement-"+items[0].ID) {
 		t.Fatalf("announcement notifications = %+v", mailer.notifications)
 	}
-	page := authedRequest(t, a, "resident@example.com", "/app/announcements")
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/announcements")
 	if !strings.Contains(page.Body.String(), `id="announcement-`+items[0].ID+`"`) {
 		t.Fatalf("announcement page missing deeplink anchor:\n%s", page.Body.String())
 	}
@@ -5769,15 +5763,15 @@ func minimalPNG() []byte {
 }
 
 func TestAnnouncementArchiveFiltersSearchesAndIncludesPast(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now().Add(-2 * time.Hour)
 	expiredAt := time.Now().Add(-time.Hour)
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Hausfest", Body: "Sommertermin", Category: "Termin", PublishedAt: now})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Alter Hinweis", Body: "Vergangen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Geplant", Body: "Noch nicht sichtbar", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Hausfest", Body: "Sommertermin", Category: "Termin", PublishedAt: now})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Alter Hinweis", Body: "Vergangen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Geplant", Body: "Noch nicht sichtbar", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
 
-	all := authedRequest(t, a, "resident@example.com", "/app/announcements")
+	all := authedRequest(t, a, "resident@example.com", "/demo/app/announcements")
 	if all.Code != http.StatusOK {
 		t.Fatalf("archive status = %d", all.Code)
 	}
@@ -5791,7 +5785,7 @@ func TestAnnouncementArchiveFiltersSearchesAndIncludesPast(t *testing.T) {
 		t.Fatal("archive must not expose future announcements to residents")
 	}
 
-	filtered := authedRequest(t, a, "resident@example.com", "/app/announcements?category=Wartung&q=Lift")
+	filtered := authedRequest(t, a, "resident@example.com", "/demo/app/announcements?category=Wartung&q=Lift")
 	if filtered.Code != http.StatusOK {
 		t.Fatalf("filtered archive status = %d", filtered.Code)
 	}
@@ -5802,10 +5796,10 @@ func TestAnnouncementArchiveFiltersSearchesAndIncludesPast(t *testing.T) {
 }
 
 func TestAnnouncementUnreadBadgeClearsAfterArchiveView(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "jhw22", Title: "Neue Wartung", Body: "Heute", Category: "Wartung", PublishedAt: time.Now().Add(-time.Hour)})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Neue Wartung", Body: "Heute", Category: "Wartung", PublishedAt: time.Now().Add(-time.Hour)})
 
-	before := authedRequest(t, a, "resident@example.com", "/app")
+	before := authedRequest(t, a, "resident@example.com", "/demo/app")
 	if before.Code != http.StatusOK {
 		t.Fatalf("portal before status = %d", before.Code)
 	}
@@ -5813,15 +5807,15 @@ func TestAnnouncementUnreadBadgeClearsAfterArchiveView(t *testing.T) {
 		t.Fatalf("portal should show unread announcement and nav badge before archive view:\n%s", body)
 	}
 
-	archive := authedRequest(t, a, "resident@example.com", "/app/announcements")
+	archive := authedRequest(t, a, "resident@example.com", "/demo/app/announcements")
 	if archive.Code != http.StatusOK {
 		t.Fatalf("archive status = %d", archive.Code)
 	}
-	if got := a.announcementReadStore.LastSeen("jhw22", "resident@example.com"); got.IsZero() {
+	if got := a.announcementReadStore.LastSeen("demo", "resident@example.com"); got.IsZero() {
 		t.Fatal("archive view should mark announcements as seen")
 	}
 
-	after := authedRequest(t, a, "resident@example.com", "/app")
+	after := authedRequest(t, a, "resident@example.com", "/demo/app")
 	if after.Code != http.StatusOK {
 		t.Fatalf("portal after status = %d", after.Code)
 	}
@@ -5832,13 +5826,13 @@ func TestAnnouncementUnreadBadgeClearsAfterArchiveView(t *testing.T) {
 }
 
 func TestAnnouncementRoutesGateWritesAndAllowResidentRead(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
-	read := authedRequest(t, a, "resident@example.com", "/app/announcements")
+	read := authedRequest(t, a, "resident@example.com", "/demo/app/announcements")
 	if read.Code != http.StatusOK {
 		t.Fatalf("resident announcement read status = %d", read.Code)
 	}
-	write := authedFormRequest(t, a, "resident@example.com", "/app/announcements", url.Values{
+	write := authedFormRequest(t, a, "resident@example.com", "/demo/app/announcements", url.Values{
 		"title": {"Resident post"},
 		"body":  {"Nope"},
 	})
@@ -5848,7 +5842,7 @@ func TestAnnouncementRoutesGateWritesAndAllowResidentRead(t *testing.T) {
 }
 
 func TestAnnouncementCreateRejectsCrossOriginAndPersistsSameOrigin(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	values := url.Values{
 		"title":        {"Liftwartung"},
 		"body":         {"Der Lift ist am Freitag vormittags außer Betrieb."},
@@ -5857,16 +5851,16 @@ func TestAnnouncementCreateRejectsCrossOriginAndPersistsSameOrigin(t *testing.T)
 		"pinned":       {"true"},
 	}
 
-	cross := authedFormRequestWithOrigin(t, a, "admin@example.com", "/app/announcements", values, "https://evil.example")
+	cross := authedFormRequestWithOrigin(t, a, "admin@example.com", "/demo/app/announcements", values, "https://evil.example")
 	if cross.Code != http.StatusForbidden {
 		t.Fatalf("cross-origin create status = %d, want 403", cross.Code)
 	}
 
-	same := authedFormRequest(t, a, "admin@example.com", "/app/announcements", values)
+	same := authedFormRequest(t, a, "admin@example.com", "/demo/app/announcements", values)
 	if same.Code != http.StatusSeeOther {
 		t.Fatalf("same-origin create status = %d, want redirect", same.Code)
 	}
-	visible := a.announcementStore.Visible("jhw22", time.Date(2026, 7, 6, 13, 0, 0, 0, time.Local))
+	visible := a.announcementStore.Visible("demo", time.Date(2026, 7, 6, 13, 0, 0, 0, time.Local))
 	if len(visible) != 1 || visible[0].Title != "Liftwartung" || !visible[0].Pinned {
 		t.Fatalf("created visible announcement = %+v", visible)
 	}
@@ -5882,7 +5876,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	profile.Role = normalizeRole(profile.Role)
 	profile.Permissions = normalizePermissions(profile.Permissions)
 	profile.TenantMemberships = normalizeTenantMemberships(profile.TenantMemberships)
-	profile.Tenants = normalizeTenants(append(profile.Tenants, tenantMembershipSlugs(profile.TenantMemberships)...), "jhw22")
+	profile.Tenants = normalizeTenants(append(profile.Tenants, tenantMembershipSlugs(profile.TenantMemberships)...), "demo")
 	authMethods, err := normalizeAuthMethods(profile.AuthMethods)
 	if err != nil {
 		t.Fatalf("normalize auth methods: %v", err)
@@ -5963,9 +5957,9 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	a := &app{
 		baseURL:       "http://localhost:8080",
 		rootDomain:    "hausv.org",
-		defaultTenant: "jhw22",
+		defaultTenant: "demo",
 		tenants: map[string]tenantConfig{
-			"jhw22": {Slug: "jhw22", Name: "WEG Portal", Address: "Janischhofweg 22", HeroImageURL: defaultTenantHeroImageURL, Host: "jhw22.hausv.org"},
+			"demo": {Slug: "demo", Name: "WEG Portal", Address: "Musterweg 1", MapLatitude: 48.2082, MapLongitude: 16.3738, MapZoom: 17, HeroImageURL: defaultTenantHeroImageURL},
 		},
 		profiles: map[string]userProfile{
 			profile.Email: profile,
@@ -6017,11 +6011,11 @@ func userRowForEmail(t *testing.T, rows []userRow, email string) userRow {
 
 func authedRequest(t *testing.T, a *app, email string, path string) *httptest.ResponseRecorder {
 	t.Helper()
-	token, _, err := a.sessions.Put(email, "jhw22", authMethodEmail, time.Hour)
+	token, _, err := a.sessions.Put(email, "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatalf("put session: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org"+path, nil)
+	req := httptest.NewRequest(http.MethodGet, "http://hausv.org"+path, nil)
 	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
 	rr := httptest.NewRecorder()
 	a.handler().ServeHTTP(rr, req)
@@ -6029,7 +6023,7 @@ func authedRequest(t *testing.T, a *app, email string, path string) *httptest.Re
 }
 
 func authedFormRequest(t *testing.T, a *app, email string, path string, values url.Values) *httptest.ResponseRecorder {
-	return authedFormRequestWithOrigin(t, a, email, path, values, "http://jhw22.hausv.org")
+	return authedFormRequestWithOrigin(t, a, email, path, values, "http://hausv.org/demo")
 }
 
 func authedMultipartRequest(t *testing.T, a *app, email string, path string, fields map[string]string, filename string, fileBody []byte) *httptest.ResponseRecorder {
@@ -6063,13 +6057,13 @@ func authedMultipartFilesRequest(t *testing.T, a *app, email string, path string
 	if err := writer.Close(); err != nil {
 		t.Fatalf("multipart close: %v", err)
 	}
-	token, _, err := a.sessions.Put(email, "jhw22", authMethodEmail, time.Hour)
+	token, _, err := a.sessions.Put(email, "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatalf("put session: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org"+path, &body)
+	req := httptest.NewRequest(http.MethodPost, "http://hausv.org"+path, &body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("Origin", "http://jhw22.hausv.org")
+	req.Header.Set("Origin", "http://hausv.org/demo")
 	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
 	rr := httptest.NewRecorder()
 	a.handler().ServeHTTP(rr, req)
@@ -6090,7 +6084,7 @@ func testMultipartHeader(t *testing.T, field string, filename string, fileBody [
 	if err := writer.Close(); err != nil {
 		t.Fatalf("multipart close: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/upload", &body)
+	req := httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/upload", &body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	if err := req.ParseMultipartForm(maxDocumentBytes); err != nil {
 		t.Fatalf("ParseMultipartForm: %v", err)
@@ -6123,13 +6117,13 @@ func authedMultipartFileRequest(t *testing.T, a *app, email string, path string,
 	if err := writer.Close(); err != nil {
 		t.Fatalf("multipart close: %v", err)
 	}
-	token, _, err := a.sessions.Put(email, "jhw22", authMethodEmail, time.Hour)
+	token, _, err := a.sessions.Put(email, "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatalf("put session: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org"+path, &body)
+	req := httptest.NewRequest(http.MethodPost, "http://hausv.org"+path, &body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("Origin", "http://jhw22.hausv.org")
+	req.Header.Set("Origin", "http://hausv.org/demo")
 	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
 	rr := httptest.NewRecorder()
 	a.handler().ServeHTTP(rr, req)
@@ -6138,11 +6132,11 @@ func authedMultipartFileRequest(t *testing.T, a *app, email string, path string,
 
 func authedFormRequestWithOrigin(t *testing.T, a *app, email string, path string, values url.Values, origin string) *httptest.ResponseRecorder {
 	t.Helper()
-	token, _, err := a.sessions.Put(email, "jhw22", authMethodEmail, time.Hour)
+	token, _, err := a.sessions.Put(email, "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatalf("put session: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org"+path, strings.NewReader(values.Encode()))
+	req := httptest.NewRequest(http.MethodPost, "http://hausv.org"+path, strings.NewReader(values.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Origin", origin)
 	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
@@ -6248,12 +6242,12 @@ func TestParkingTariffHistoryAppliesPerHourAndMonthlyBaseFee(t *testing.T) {
 }
 
 func TestParkingEmptyStateGuidesSetupWithoutPaymentControls(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"demo"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
 		t.Fatalf("Add invite: %v", err)
 	}
 
-	adminPage := authedRequest(t, a, "admin@example.com", "/app/parking")
+	adminPage := authedRequest(t, a, "admin@example.com", "/demo/app/parking")
 	adminBody := adminPage.Body.String()
 	for _, want := range []string{"parking-empty", "Bereit für die erste Abrechnung", "Noch keine Monatswerte", "Abrechnung konfigurieren", "Zugriff verwalten", "Tarif", "Messwerte", "Nur Nachweis", "Keine Buchung"} {
 		if !strings.Contains(adminBody, want) {
@@ -6266,14 +6260,14 @@ func TestParkingEmptyStateGuidesSetupWithoutPaymentControls(t *testing.T) {
 		}
 	}
 
-	residentPage := authedRequest(t, a, "parker@example.com", "/app/parking")
+	residentPage := authedRequest(t, a, "parker@example.com", "/demo/app/parking")
 	residentBody := residentPage.Body.String()
 	for _, want := range []string{"parking-empty", "Hausüberblick öffnen", "Nur Nachweis", "Keine Buchung"} {
 		if !strings.Contains(residentBody, want) {
 			t.Fatalf("resident empty parking page missing %q:\n%s", want, residentBody)
 		}
 	}
-	for _, hidden := range []string{`href="/app/parking/settings"`, `href="/app/settings/parking-access"`, "Zugriff verwalten"} {
+	for _, hidden := range []string{`href="/demo/app/parking/settings"`, `href="/demo/app/settings/parking-access"`, "Zugriff verwalten"} {
 		if strings.Contains(residentBody, hidden) {
 			t.Fatalf("resident empty parking page should not expose %q:\n%s", hidden, residentBody)
 		}
@@ -6281,12 +6275,12 @@ func TestParkingEmptyStateGuidesSetupWithoutPaymentControls(t *testing.T) {
 }
 
 func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"demo"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
 		t.Fatalf("Add invite: %v", err)
 	}
 	base := time.Date(2026, 6, 25, 10, 0, 0, 0, time.UTC)
-	if err := a.parkingStore.AppendReadings("jhw22", []parkingNumericSample{
+	if err := a.parkingStore.AppendReadings("demo", []parkingNumericSample{
 		{At: base, Value: 100},
 		{At: base.Add(2 * time.Hour), Value: 102},
 	}, []parkingNumericSample{
@@ -6296,15 +6290,15 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 		t.Fatalf("AppendReadings: %v", err)
 	}
 
-	parkerPage := authedRequest(t, a, "parker@example.com", "/app/parking")
+	parkerPage := authedRequest(t, a, "parker@example.com", "/demo/app/parking")
 	if parkerPage.Code != http.StatusOK || !strings.Contains(parkerPage.Body.String(), "0,80 €") || !strings.Contains(parkerPage.Body.String(), "OFFEN") {
 		t.Fatalf("parker outstanding page = %d\n%s", parkerPage.Code, parkerPage.Body.String())
 	}
-	adminParking := authedRequest(t, a, "admin@example.com", "/app/parking")
+	adminParking := authedRequest(t, a, "admin@example.com", "/demo/app/parking")
 	adminBody := adminParking.Body.String()
 	// The overview keeps one current-month summary and moves payment details to
 	// the dedicated month page instead of rendering the same figures twice.
-	for _, want := range []string{"parking-months-panel", "parking-current-month", "Neuester Monat", `/app/parking/month/2026-06`, "Wie wird gerechnet?"} {
+	for _, want := range []string{"parking-months-panel", "parking-current-month", "Neuester Monat", `/demo/app/parking/month/2026-06`, "Wie wird gerechnet?"} {
 		if !strings.Contains(adminBody, want) {
 			t.Fatalf("parking overview redesign missing %q:\n%s", want, adminBody)
 		}
@@ -6314,42 +6308,42 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 			t.Fatalf("parking overview should not render old dense/payment UI %q:\n%s", old, adminBody)
 		}
 	}
-	adminMonth := authedRequest(t, a, "admin@example.com", "/app/parking/month/2026-06")
+	adminMonth := authedRequest(t, a, "admin@example.com", "/demo/app/parking/month/2026-06")
 	for _, want := range []string{"parking-month-summary", "Bezahlung erhalten", "Details (optional)", `name="payment_reference"`, "Kosten aufschlüsseln", "Stundenwerte"} {
 		if !strings.Contains(adminMonth.Body.String(), want) {
 			t.Fatalf("parking month redesign missing %q:\n%s", want, adminMonth.Body.String())
 		}
 	}
-	residentMark := authedFormRequest(t, a, "parker@example.com", "/app/parking/month", url.Values{
+	residentMark := authedFormRequest(t, a, "parker@example.com", "/demo/app/parking/month", url.Values{
 		"month": {"2026-06"},
 		"paid":  {"true"},
 	})
 	if residentMark.Code != http.StatusSeeOther {
 		t.Fatalf("resident payment mark status = %d, want redirect", residentMark.Code)
 	}
-	residentState := a.parkingStore.TenantData("jhw22").Months["2026-06"]
+	residentState := a.parkingStore.TenantData("demo").Months["2026-06"]
 	if !residentState.Paid || residentState.PaidBy != "parker@example.com" {
 		t.Fatalf("resident payment state = %+v", residentState)
 	}
-	if err := a.parkingStore.SetMonthPaid("jhw22", "2026-06", false); err != nil {
+	if err := a.parkingStore.SetMonthPaid("demo", "2026-06", false); err != nil {
 		t.Fatalf("reset resident payment: %v", err)
 	}
-	residentParking := authedRequest(t, a, "parker@example.com", "/app/parking/month/2026-06")
+	residentParking := authedRequest(t, a, "parker@example.com", "/demo/app/parking/month/2026-06")
 	if residentParking.Code != http.StatusOK || !strings.Contains(residentParking.Body.String(), "Als bezahlt markieren") || strings.Contains(residentParking.Body.String(), "Bezahlung erhalten") {
 		t.Fatalf("resident parking action mismatch = %d\n%s", residentParking.Code, residentParking.Body.String())
 	}
-	accessPage := authedRequest(t, a, "admin@example.com", "/app/settings/parking-access")
+	accessPage := authedRequest(t, a, "admin@example.com", "/demo/app/settings/parking-access")
 	if accessPage.Code != http.StatusOK || !strings.Contains(accessPage.Body.String(), "parker@example.com") || strings.Contains(accessPage.Body.String(), "0,80 €") {
 		t.Fatalf("access page should show permissions without mixing in balances = %d\n%s", accessPage.Code, accessPage.Body.String())
 	}
-	accountingPage := authedRequest(t, a, "admin@example.com", "/app/parking/settings?section=accounting")
-	for _, want := range []string{"Zahlungsstände prüfen", `/app/parking?view=months#monate`, "Offene Zahlungen erinnern"} {
+	accountingPage := authedRequest(t, a, "admin@example.com", "/demo/app/parking/settings?section=accounting")
+	for _, want := range []string{"Zahlungsstände prüfen", `/demo/app/parking?view=months#monate`, "Offene Zahlungen erinnern"} {
 		if accountingPage.Code != http.StatusOK || !strings.Contains(accountingPage.Body.String(), want) {
 			t.Fatalf("accounting flow missing %q = %d\n%s", want, accountingPage.Code, accountingPage.Body.String())
 		}
 	}
 
-	save := authedMultipartFileRequest(t, a, "admin@example.com", "/app/parking/month", map[string]string{
+	save := authedMultipartFileRequest(t, a, "admin@example.com", "/demo/app/parking/month", map[string]string{
 		"month":             "2026-06",
 		"paid":              "true",
 		"paid_at":           "2026-07-05",
@@ -6359,14 +6353,14 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 	if save.Code != http.StatusSeeOther {
 		t.Fatalf("payment save status = %d, want redirect", save.Code)
 	}
-	if loc := save.Header().Get("Location"); loc != "/app/parking/month/2026-06?month=saved" {
+	if loc := save.Header().Get("Location"); loc != "/demo/app/parking/month/2026-06?month=saved" {
 		t.Fatalf("payment save redirect = %q", loc)
 	}
-	state := a.parkingStore.TenantData("jhw22").Months["2026-06"]
+	state := a.parkingStore.TenantData("demo").Months["2026-06"]
 	if !state.Paid || state.PaidBy != "admin@example.com" || state.PaymentMethod != "Überweisung" || state.PaymentReference != "ABC-123" || formatLocalDate(state.PaidAt) != "05.07.2026" {
 		t.Fatalf("stored payment state = %+v", state)
 	}
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionParkingMonth, Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionParkingMonth, Limit: 10})
 	var adminPaymentEvent *auditEvent
 	for i := range events {
 		if events[i].ActorEmail == "admin@example.com" && events[i].Details["paid_by"] == "admin@example.com" {
@@ -6377,11 +6371,11 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 	if adminPaymentEvent == nil || adminPaymentEvent.Details["payment_reference"] != "ABC-123" {
 		t.Fatalf("payment audit events = %+v", events)
 	}
-	attachments := a.attachmentStore.ListEntity("jhw22", "parking", "2026-06")
+	attachments := a.attachmentStore.ListEntity("demo", "parking", "2026-06")
 	if len(attachments) != 1 || attachments[0].ContentType != "application/pdf" {
 		t.Fatalf("parking attachments = %+v", attachments)
 	}
-	paidPage := authedRequest(t, a, "parker@example.com", "/app/parking/month/2026-06")
+	paidPage := authedRequest(t, a, "parker@example.com", "/demo/app/parking/month/2026-06")
 	body := paidPage.Body.String()
 	for _, want := range []string{"BEZAHLT", "Zahlung ist markiert."} {
 		if !strings.Contains(body, want) {
@@ -6396,10 +6390,10 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 }
 
 func TestParkingPaymentRemindersRespectPreferencesAndDedupe(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	for _, profile := range []userProfile{
-		{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()},
-		{Email: "muted@example.com", FirstName: "Mute", LastName: "User", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()},
+		{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"demo"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()},
+		{Email: "muted@example.com", FirstName: "Mute", LastName: "User", Role: roleRenter, Tenants: []string{"demo"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()},
 	} {
 		if _, err := a.inviteStore.Add(profile); err != nil {
 			t.Fatalf("Add invite %s: %v", profile.Email, err)
@@ -6411,7 +6405,7 @@ func TestParkingPaymentRemindersRespectPreferencesAndDedupe(t *testing.T) {
 		t.Fatalf("Set prefs: %v", err)
 	}
 	base := time.Date(2026, 6, 25, 10, 0, 0, 0, time.UTC)
-	if err := a.parkingStore.AppendReadings("jhw22", []parkingNumericSample{
+	if err := a.parkingStore.AppendReadings("demo", []parkingNumericSample{
 		{At: base, Value: 100},
 		{At: base.Add(2 * time.Hour), Value: 102},
 	}, []parkingNumericSample{
@@ -6422,22 +6416,22 @@ func TestParkingPaymentRemindersRespectPreferencesAndDedupe(t *testing.T) {
 	}
 
 	now := time.Date(2026, 7, 7, 12, 0, 0, 0, time.Local)
-	sent := a.sendParkingPaymentReminders(a.tenants["jhw22"], "manager@example.com", roleManager, now)
+	sent := a.sendParkingPaymentReminders(a.tenants["demo"], "manager@example.com", roleManager, now)
 	if sent != 1 || len(mailer.notifications) != 1 {
 		t.Fatalf("reminders sent=%d notifications=%+v", sent, mailer.notifications)
 	}
 	notification := mailer.notifications[0]
-	if notification.To != "parker@example.com" || !strings.Contains(notification.Subject, "Zahlungserinnerung") || !strings.Contains(notification.Body, "Juni 2026") || !strings.Contains(notification.Body, "0,80 €") || !strings.Contains(notification.Body, "/app/parking#parking-month-2026-06") {
+	if notification.To != "parker@example.com" || !strings.Contains(notification.Subject, "Zahlungserinnerung") || !strings.Contains(notification.Body, "Juni 2026") || !strings.Contains(notification.Body, "0,80 €") || !strings.Contains(notification.Body, "/demo/app/parking#parking-month-2026-06") {
 		t.Fatalf("payment reminder notification = %+v", notification)
 	}
-	state := a.parkingStore.TenantData("jhw22").Months["2026-06"]
+	state := a.parkingStore.TenantData("demo").Months["2026-06"]
 	if _, ok := state.ReminderSentAt["parker@example.com"]; !ok {
 		t.Fatalf("reminder timestamp not stored: %+v", state)
 	}
 	if _, ok := state.ReminderSentAt["muted@example.com"]; ok {
 		t.Fatalf("muted recipient should not be marked reminded: %+v", state)
 	}
-	again := a.sendParkingPaymentReminders(a.tenants["jhw22"], "manager@example.com", roleManager, now.Add(time.Hour))
+	again := a.sendParkingPaymentReminders(a.tenants["demo"], "manager@example.com", roleManager, now.Add(time.Hour))
 	if again != 0 || len(mailer.notifications) != 1 {
 		t.Fatalf("duplicate reminders sent=%d notifications=%+v", again, mailer.notifications)
 	}
@@ -6482,11 +6476,11 @@ func TestParkingMonthDetailsExposeHourlyRows(t *testing.T) {
 }
 
 func TestParkingStatementCSVAccessAndFigures(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"jhw22"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()})
-	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"demo"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()})
+	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	base := time.Date(2026, 6, 25, 10, 0, 0, 0, time.UTC)
-	if err := a.parkingStore.AppendReadings("jhw22", []parkingNumericSample{
+	if err := a.parkingStore.AppendReadings("demo", []parkingNumericSample{
 		{At: base, Value: 100},
 		{At: base.Add(2 * time.Hour), Value: 102},
 	}, []parkingNumericSample{
@@ -6495,11 +6489,11 @@ func TestParkingStatementCSVAccessAndFigures(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("AppendReadings: %v", err)
 	}
-	if err := a.parkingStore.SetMonthPaid("jhw22", "2026-06", true); err != nil {
+	if err := a.parkingStore.SetMonthPaid("demo", "2026-06", true); err != nil {
 		t.Fatalf("SetMonthPaid: %v", err)
 	}
 
-	resident := authedRequest(t, a, "parker@example.com", "/app/parking/export/2026")
+	resident := authedRequest(t, a, "parker@example.com", "/demo/app/parking/export/2026")
 	if resident.Code != http.StatusOK {
 		t.Fatalf("resident export status = %d", resident.Code)
 	}
@@ -6516,15 +6510,15 @@ func TestParkingStatementCSVAccessAndFigures(t *testing.T) {
 		t.Fatalf("statement CSV contains obsolete export title:\n%s", body)
 	}
 
-	manager := authedRequest(t, a, "manager@example.com", "/app/parking/export/2026?user=parker@example.com")
+	manager := authedRequest(t, a, "manager@example.com", "/demo/app/parking/export/2026?user=parker@example.com")
 	if manager.Code != http.StatusOK || !strings.Contains(manager.Body.String(), "parker@example.com") {
 		t.Fatalf("manager export status/body = %d\n%s", manager.Code, manager.Body.String())
 	}
-	other := authedRequest(t, a, "other@example.com", "/app/parking/export/2026?user=parker@example.com")
+	other := authedRequest(t, a, "other@example.com", "/demo/app/parking/export/2026?user=parker@example.com")
 	if other.Code != http.StatusNotFound {
 		t.Fatalf("other resident export status = %d, want 404", other.Code)
 	}
-	noParking := authedRequest(t, a, "other@example.com", "/app/parking/export/2026")
+	noParking := authedRequest(t, a, "other@example.com", "/demo/app/parking/export/2026")
 	if noParking.Code != http.StatusNotFound {
 		t.Fatalf("resident without parking export status = %d, want 404", noParking.Code)
 	}
@@ -6536,10 +6530,10 @@ func TestParkingStorePersistsPaidFlagAndGridFee(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new store: %v", err)
 	}
-	if err := store.SetGridFee("jhw22", 0.123); err != nil {
+	if err := store.SetGridFee("demo", 0.123); err != nil {
 		t.Fatalf("set grid fee: %v", err)
 	}
-	if err := store.SetMonthPaid("jhw22", "2026-06", true); err != nil {
+	if err := store.SetMonthPaid("demo", "2026-06", true); err != nil {
 		t.Fatalf("set paid flag: %v", err)
 	}
 
@@ -6547,7 +6541,7 @@ func TestParkingStorePersistsPaidFlagAndGridFee(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reload store: %v", err)
 	}
-	data := loaded.TenantData("jhw22")
+	data := loaded.TenantData("demo")
 	assertClose(t, data.Settings.GridFeeEURPerKWh, 0.123)
 	if !data.Months["2026-06"].Paid {
 		t.Fatal("paid flag was not persisted")

@@ -14,15 +14,15 @@ import (
 	"testing"
 	"time"
 
-	appdb "github.com/markus-barta/hausv-org/internal/db"
+	appdb "github.com/inspr-at/hausv-org/internal/db"
 )
 
 func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["resident@example.com"] = userProfile{
 		Email:       "resident@example.com",
 		Role:        roleResident,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	}
 	data, err := os.ReadFile("../integrations/testdata/ebinterface-6p0.xml")
@@ -30,7 +30,7 @@ func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
 		t.Fatalf("read fixture: %v", err)
 	}
 
-	page := authedRequest(t, a, "manager@example.com", "/app/dokumente/rechnungen/import")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/dokumente/rechnungen/import")
 	if page.Code != http.StatusOK {
 		t.Fatalf("import page status = %d", page.Code)
 	}
@@ -40,16 +40,16 @@ func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
 		}
 	}
 
-	preview := authedMultipartFileRequest(t, a, "manager@example.com", "/app/dokumente/rechnungen/import/preview", nil, "invoice_file", "rechnung.xml", data)
+	preview := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/dokumente/rechnungen/import/preview", nil, "invoice_file", "rechnung.xml", data)
 	token := ebInterfaceImportPreviewToken(t, preview)
-	previewPage := authedRequest(t, a, "manager@example.com", "/app/dokumente/rechnungen/import?preview="+url.QueryEscape(token))
+	previewPage := authedRequest(t, a, "manager@example.com", "/demo/app/dokumente/rechnungen/import?preview="+url.QueryEscape(token))
 	if previewPage.Code != http.StatusOK {
 		t.Fatalf("preview page status = %d", previewPage.Code)
 	}
 	body := previewPage.Body.String()
 	for _, want := range []string{
 		"rechnung.xml", "ebInterface 6.0", "RE-2026-0006", "Hausservice Beispiel e.U.",
-		"jhw22", "99,90 €", "09.07.2026", "23.07.2026", "02.07.2026 – 09.07.2026",
+		"demo", "99,90 €", "09.07.2026", "23.07.2026", "02.07.2026 – 09.07.2026",
 		"Geschützt ablegen", "keine Buchung oder Zahlung",
 	} {
 		if !strings.Contains(body, want) {
@@ -65,17 +65,17 @@ func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
 	a.ebInterfaceImportMu.Lock()
 	storedPreview := a.ebInterfaceImportPreviews[token]
 	a.ebInterfaceImportMu.Unlock()
-	if string(storedPreview.RawXML) != string(data) || storedPreview.TenantSlug != "jhw22" {
+	if string(storedPreview.RawXML) != string(data) || storedPreview.TenantSlug != "demo" {
 		t.Fatalf("stored preview is not exact and tenant-bound: tenant=%q bytes=%d", storedPreview.TenantSlug, len(storedPreview.RawXML))
 	}
 
-	store := authedFormRequest(t, a, "manager@example.com", "/app/dokumente/rechnungen/import/store", url.Values{
+	store := authedFormRequest(t, a, "manager@example.com", "/demo/app/dokumente/rechnungen/import/store", url.Values{
 		"preview_token": {token},
 	})
 	if store.Code != http.StatusSeeOther || !strings.Contains(store.Header().Get("Location"), "doc=invoice-imported#document-") {
 		t.Fatalf("store status=%d location=%q body=%s", store.Code, store.Header().Get("Location"), store.Body.String())
 	}
-	documents := a.documentStore.ListTenant("jhw22")
+	documents := a.documentStore.ListTenant("demo")
 	if len(documents) != 1 {
 		t.Fatalf("documents = %+v", documents)
 	}
@@ -95,71 +95,71 @@ func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
 	if string(storedData) != string(data) {
 		t.Fatal("stored original XML changed")
 	}
-	importEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIntegrationImport, Limit: 20})
+	importEvents := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionIntegrationImport, Limit: 20})
 	if len(importEvents) != 1 || importEvents[0].Details["document_id"] != created.ID ||
 		importEvents[0].Details["visibility"] != documentVisibilityLabel(documentVisibilityManagerOnly) {
 		t.Fatalf("import audit = %+v", importEvents)
 	}
 
-	residentPage := authedRequest(t, a, "resident@example.com", "/app/dokumente")
+	residentPage := authedRequest(t, a, "resident@example.com", "/demo/app/dokumente")
 	if strings.Contains(residentPage.Body.String(), "RE-2026-0006") || strings.Contains(residentPage.Body.String(), created.Filename) {
 		t.Fatalf("resident document list exposes E-Rechnung:\n%s", residentPage.Body.String())
 	}
-	residentDownload := authedRequest(t, a, "resident@example.com", "/app/dokumente/"+created.ID+"/download")
+	residentDownload := authedRequest(t, a, "resident@example.com", "/demo/app/dokumente/"+created.ID+"/download")
 	if residentDownload.Code != http.StatusForbidden {
 		t.Fatalf("resident download status = %d, want 403", residentDownload.Code)
 	}
-	managerDownload := authedRequest(t, a, "manager@example.com", "/app/dokumente/"+created.ID+"/download")
+	managerDownload := authedRequest(t, a, "manager@example.com", "/demo/app/dokumente/"+created.ID+"/download")
 	if managerDownload.Code != http.StatusOK || managerDownload.Body.String() != string(data) {
 		t.Fatalf("manager download status=%d bytes=%d", managerDownload.Code, managerDownload.Body.Len())
 	}
 
-	secondPreview := authedMultipartFileRequest(t, a, "manager@example.com", "/app/dokumente/rechnungen/import/preview", nil, "invoice_file", "rechnung-nochmal.xml", data)
+	secondPreview := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/dokumente/rechnungen/import/preview", nil, "invoice_file", "rechnung-nochmal.xml", data)
 	secondToken := ebInterfaceImportPreviewToken(t, secondPreview)
-	secondStore := authedFormRequest(t, a, "manager@example.com", "/app/dokumente/rechnungen/import/store", url.Values{
+	secondStore := authedFormRequest(t, a, "manager@example.com", "/demo/app/dokumente/rechnungen/import/store", url.Values{
 		"preview_token": {secondToken},
 	})
 	if secondStore.Code != http.StatusSeeOther || !strings.Contains(secondStore.Header().Get("Location"), "result=already") {
 		t.Fatalf("repeated store status=%d location=%q", secondStore.Code, secondStore.Header().Get("Location"))
 	}
-	if got := len(a.documentStore.ListTenant("jhw22")); got != 1 {
+	if got := len(a.documentStore.ListTenant("demo")); got != 1 {
 		t.Fatalf("repeated import created %d documents", got)
 	}
-	if got := len(a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIntegrationImport, Limit: 20})); got != 1 {
+	if got := len(a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionIntegrationImport, Limit: 20})); got != 1 {
 		t.Fatalf("repeated import created %d import audits", got)
 	}
 }
 
 func TestEBInterfacePortalRejectsUnauthorizedCrossOriginAndInvalidInput(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if page := authedRequest(t, a, "resident@example.com", "/app/dokumente/rechnungen/import"); page.Code != http.StatusForbidden {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if page := authedRequest(t, a, "resident@example.com", "/demo/app/dokumente/rechnungen/import"); page.Code != http.StatusForbidden {
 		t.Fatalf("resident import page status = %d, want 403", page.Code)
 	}
-	if post := ebInterfaceMultipartRequest(t, a, "resident@example.com", "http://jhw22.hausv.org", "invoice.xml", []byte("<Invoice/>")); post.Code != http.StatusForbidden {
+	if post := ebInterfaceMultipartRequest(t, a, "resident@example.com", "http://hausv.org/demo", "invoice.xml", []byte("<Invoice/>")); post.Code != http.StatusForbidden {
 		t.Fatalf("resident preview status = %d, want 403", post.Code)
 	}
-	adminApp := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if page := authedRequest(t, adminApp, "admin@example.com", "/app/dokumente/rechnungen/import"); page.Code != http.StatusOK {
+	adminApp := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if page := authedRequest(t, adminApp, "admin@example.com", "/demo/app/dokumente/rechnungen/import"); page.Code != http.StatusOK {
 		t.Fatalf("admin import page status = %d, want 200", page.Code)
 	}
 
-	a = newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a = newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	if cross := ebInterfaceMultipartRequest(t, a, "manager@example.com", "https://evil.example", "invoice.xml", []byte("<Invoice/>")); cross.Code != http.StatusForbidden {
 		t.Fatalf("cross-origin preview status = %d, want 403", cross.Code)
 	}
-	invalid := authedMultipartFileRequest(t, a, "manager@example.com", "/app/dokumente/rechnungen/import/preview", nil, "invoice_file", "invoice.txt", []byte("not xml"))
+	invalid := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/dokumente/rechnungen/import/preview", nil, "invoice_file", "invoice.txt", []byte("not xml"))
 	if invalid.Code != http.StatusSeeOther || !strings.Contains(invalid.Header().Get("Location"), "result=invalid") {
 		t.Fatalf("invalid input status=%d location=%q", invalid.Code, invalid.Header().Get("Location"))
 	}
 	oversized := bytes.Repeat([]byte("x"), maxEBInterfaceImportBytes+1)
-	tooLarge := authedMultipartFileRequest(t, a, "manager@example.com", "/app/dokumente/rechnungen/import/preview", nil, "invoice_file", "invoice.xml", oversized)
+	tooLarge := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/dokumente/rechnungen/import/preview", nil, "invoice_file", "invoice.xml", oversized)
 	if tooLarge.Code != http.StatusSeeOther || !strings.Contains(tooLarge.Header().Get("Location"), "result=invalid") {
 		t.Fatalf("oversized input status=%d location=%q", tooLarge.Code, tooLarge.Header().Get("Location"))
 	}
 }
 
 func TestEBInterfacePortalExplainsUnsupportedAndInvalidProfiles(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	for _, tc := range []struct {
 		name string
 		xml  string
@@ -169,9 +169,9 @@ func TestEBInterfacePortalExplainsUnsupportedAndInvalidProfiles(t *testing.T) {
 		{"invalid", `<Invoice xmlns="http://www.ebinterface.at/schema/6p0/"><InvoiceNumber>BAD</InvoiceNumber></Invoice>`, "Der Bruttobetrag oder die Währung fehlt oder ist ungültig."},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			response := authedMultipartFileRequest(t, a, "manager@example.com", "/app/dokumente/rechnungen/import/preview", nil, "invoice_file", tc.name+".xml", []byte(tc.xml))
+			response := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/dokumente/rechnungen/import/preview", nil, "invoice_file", tc.name+".xml", []byte(tc.xml))
 			token := ebInterfaceImportPreviewToken(t, response)
-			page := authedRequest(t, a, "manager@example.com", "/app/dokumente/rechnungen/import?preview="+url.QueryEscape(token))
+			page := authedRequest(t, a, "manager@example.com", "/demo/app/dokumente/rechnungen/import?preview="+url.QueryEscape(token))
 			if !strings.Contains(page.Body.String(), tc.want) || !strings.Contains(page.Body.String(), "Ablage nicht möglich") ||
 				strings.Contains(page.Body.String(), `type="submit">Geschützt ablegen`) {
 				t.Fatalf("%s preview is unclear:\n%s", tc.name, page.Body.String())
@@ -181,9 +181,9 @@ func TestEBInterfacePortalExplainsUnsupportedAndInvalidProfiles(t *testing.T) {
 }
 
 func TestEBInterfacePreviewIsTenantBoundAndExpires(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	preview := ebInterfaceImportPreview{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		CreatedAt:  time.Now().UTC(),
 		RawXML:     []byte("<Invoice/>"),
 	}
@@ -199,7 +199,7 @@ func TestEBInterfacePreviewIsTenantBoundAndExpires(t *testing.T) {
 	expired.CreatedAt = expired.CreatedAt.Add(-ebInterfaceImportPreviewTTL - 1)
 	a.ebInterfaceImportPreviews[token] = expired
 	a.ebInterfaceImportMu.Unlock()
-	if _, ok := a.ebInterfaceImportPreview(token, "jhw22"); ok {
+	if _, ok := a.ebInterfaceImportPreview(token, "demo"); ok {
 		t.Fatal("expired preview remained available")
 	}
 }
@@ -215,22 +215,22 @@ func TestEBInterfaceImportLedgerIsDurableAndTenantBound(t *testing.T) {
 	digest := hex.EncodeToString(digestBytes[:])
 	a := &app{db: database}
 	preview := ebInterfaceImportPreview{FileDigest: digest, SourceVersion: "6.0"}
-	if err := a.recordEBInterfaceImportLedger("jhw22", "manager@example.com", preview); err != nil {
+	if err := a.recordEBInterfaceImportLedger("demo", "manager@example.com", preview); err != nil {
 		t.Fatalf("record ledger: %v", err)
 	}
-	if !a.ebInterfaceImportAlreadyStored("jhw22", digest) {
+	if !a.ebInterfaceImportAlreadyStored("demo", digest) {
 		t.Fatal("same tenant and digest not found in durable ledger")
 	}
 	if a.ebInterfaceImportAlreadyStored("other-house", digest) {
 		t.Fatal("digest leaked across tenant boundary")
 	}
-	if err := a.recordEBInterfaceImportLedger("jhw22", "manager@example.com", preview); err != nil {
+	if err := a.recordEBInterfaceImportLedger("demo", "manager@example.com", preview); err != nil {
 		t.Fatalf("repeat ledger: %v", err)
 	}
 	var rows int
 	if err := database.QueryRow(
 		`SELECT COUNT(*) FROM integration_imports WHERE tenant_slug = ? AND format = ? AND file_digest = ?`,
-		"jhw22", "ebinterface", digest,
+		"demo", "ebinterface", digest,
 	).Scan(&rows); err != nil {
 		t.Fatalf("count ledger: %v", err)
 	}
@@ -269,11 +269,11 @@ func ebInterfaceMultipartRequest(t *testing.T, a *app, email, origin, filename s
 	if err := writer.Close(); err != nil {
 		t.Fatalf("close multipart: %v", err)
 	}
-	token, _, err := a.sessions.Put(email, "jhw22", authMethodEmail, time.Hour)
+	token, _, err := a.sessions.Put(email, "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatalf("put session: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/app/dokumente/rechnungen/import/preview", &body)
+	req := httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/app/dokumente/rechnungen/import/preview", &body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("Origin", origin)
 	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})

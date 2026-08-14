@@ -14,7 +14,7 @@ export const energyRedesignWidths = new Set([
 
 const ownerSidebar = [
   { path: '/app', label: 'Hausüberblick' },
-  { path: '/app/energie', label: 'QA Zuhause', secondary: 'Top 11' },
+  { path: '/app/energie', label: 'QA Zuhause', secondary: 'Einheit 12' },
   { path: '/app/announcements', label: 'Aushang' },
   { path: '/app/events', label: 'Termine' },
   { path: '/app/kontakte', label: 'Kontakte' },

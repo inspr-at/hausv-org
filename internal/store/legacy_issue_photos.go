@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 // MigrateLegacyIssuePhotos moves photos recorded in the legacy

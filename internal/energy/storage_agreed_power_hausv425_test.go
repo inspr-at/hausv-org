@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	appdb "github.com/markus-barta/hausv-org/internal/db"
-	"github.com/markus-barta/hausv-org/internal/energy"
+	appdb "github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 // Die vereinbarte Anschlussleistung steuert die Mindestbemessung und damit eine

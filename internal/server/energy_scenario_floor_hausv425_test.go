@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 // Ein Szenario darf keine Ersparnis nahelegen, die unterhalb der

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	appdb "github.com/markus-barta/hausv-org/internal/db"
+	appdb "github.com/inspr-at/hausv-org/internal/db"
 )
 
 func TestHealthChecksDatabaseAndWritableDataDir(t *testing.T) {

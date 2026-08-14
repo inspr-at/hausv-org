@@ -2,9 +2,9 @@
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.08">
   <BkToCstmrStmt>
     <Stmt>
-      <Id>JHW22</Id>
+      <Id>DEMO</Id>
       <Acct>
-        <Ownr><Nm>jhw22</Nm></Ownr>
+        <Ownr><Nm>demo</Nm></Ownr>
       </Acct>
       <Ntry>
         <NtryRef>AT-2019-0001</NtryRef>
@@ -22,7 +22,7 @@
               <Dbtr><Nm>Max Muster</Nm></Dbtr>
               <DbtrAcct><Id><IBAN>AT483200000012345864</IBAN></Id></DbtrAcct>
             </RltdPties>
-            <RmtInf><Ustrd>Danke, Referenz: HV-JHW22-202607-DEF456.</Ustrd></RmtInf>
+            <RmtInf><Ustrd>Danke, Referenz: HV-DEMO-202607-DEF456.</Ustrd></RmtInf>
           </TxDtls>
         </NtryDtls>
       </Ntry>

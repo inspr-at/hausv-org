@@ -320,7 +320,7 @@ async function run() {
     manager.getByRole('button', { name: 'Vorschau erstellen' }).click(),
   ]);
   const invoicePreviewURL = manager.url();
-  for (const text of ['RE-2026-0006', '99,90 €', 'Hausservice Beispiel e.U.', 'jhw22', '09.07.2026', '23.07.2026']) {
+  for (const text of ['RE-2026-0006', '99,90 €', 'Hausservice Beispiel e.U.', 'demo', '09.07.2026', '23.07.2026']) {
     if (!(await manager.getByText(text, { exact: true }).count())) fail(`Rechnungsvorschau fehlt: ${text}`);
   }
 

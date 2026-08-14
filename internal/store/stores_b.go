@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 // Handover audit actions. They live here with the rest of the audit vocabulary;

@@ -16,7 +16,7 @@ import (
 
 var (
 	// Version is the semver of the build. Overridden via:
-	//   -X github.com/markus-barta/hausv-org/internal/version.Version=1.2.3
+	//   -X github.com/inspr-at/hausv-org/internal/version.Version=1.2.3
 	Version = "dev"
 	// Commit is the short git SHA. Overridden the same way.
 	Commit = "dev"
@@ -90,6 +90,18 @@ func DisplayVersion(version string) string {
 
 func Notes() []Note {
 	return []Note{
+		{
+			Version:  "0.81.0",
+			Date:     "14. August 2026",
+			Kind:     "Portalbetrieb",
+			Headline: "Eine Domain, ein stabiler Pfad je Portal.",
+			Intro:    "Hausportale laufen jetzt unter hausv.org mit einem eigenen Kurzcode, ohne zusätzliche DNS-Einträge und ohne Verlust des Portalbezugs bei Links oder Weiterleitungen.",
+			Items: []NoteItem{
+				{Label: "Adresse", Text: "Anmeldung, Formulare, Downloads, Kalender und Benachrichtigungen bleiben zuverlässig im Pfad des gewählten Portals."},
+				{Label: "Betrieb", Text: "Konkrete Instanz- und Infrastrukturkonfiguration kann getrennt vom allgemeinen Produktcode verwaltet werden."},
+				{Label: "HAUSV Free", Text: "Die öffentliche Quellcode-Veröffentlichung ist klar für Version 1.0 angekündigt; bis dahin führt kein öffentlicher Link in ein privates Repository."},
+			},
+		},
 		{
 			Version:  "0.80.0",
 			Date:     "14. August 2026",
@@ -309,7 +321,7 @@ func Notes() []Note {
 			Intro:    "Die öffentliche Seite zeigt jetzt, wie es weitergeht: Der Kern von hausv.org ist Open Source und bleibt kostenlos, der betreute Betrieb für Hausverwaltungen bekommt eine klare Preisbasis.",
 			Items: []NoteItem{
 				{Label: "Open-Source-Kern", Text: "Der Kern der Lösung ist quelloffen und bleibt für Hausgemeinschaften dauerhaft frei nutzbar."},
-				{Label: "Service für Hausverwaltungen", Text: "Betreuter Betrieb über Augmentoring: 500 € je Monat für kleinere, 900 € je Monat für größere Hausverwaltungen, zuzüglich 1 € je Wohneinheit und Monat."},
+				{Label: "Service für Hausverwaltungen", Text: "Betreuter Betrieb über HAUSV Professional: 500 € je Monat für kleinere, 900 € je Monat für größere Hausverwaltungen, zuzüglich 1 € je Wohneinheit und Monat."},
 				{Label: "Eine Adresse", Text: "www.hausv.org führt jetzt direkt auf hausv.org – eine Adresse, ein Lesezeichen, keine Duplikate."},
 			},
 		},
@@ -511,7 +523,7 @@ func Notes() []Note {
 			Intro:    "Der gewählte Name steht im Vordergrund; die offizielle Wohneinheit bleibt direkt darunter ruhig und eindeutig sichtbar.",
 			Items: []NoteItem{
 				{Label: "Schneller erkennen", Text: "Seitenleiste, Mobilmenü, Energieüberblick und Einstellungen nennen dasselbe Zuhause gleich."},
-				{Label: "Sauber unterscheiden", Text: "„QA Zuhause“ kann persönlich heißen, während „Top 11“ die unveränderte offizielle Stammdatenbezeichnung bleibt."},
+				{Label: "Sauber unterscheiden", Text: "„QA Zuhause“ kann persönlich heißen, während „Einheit 12“ die unveränderte offizielle Stammdatenbezeichnung bleibt."},
 				{Label: "Überall mitnehmen", Text: "Der Anzeigename bleibt auch während eines noch laufenden Onboardings auf anderen Portalseiten erhalten."},
 				{Label: "Mobil lesbar bleiben", Text: "Auch lange Namen ordnen sich ohne horizontales Überlaufen in die klare zweistufige Hierarchie ein."},
 			},
@@ -523,7 +535,7 @@ func Notes() []Note {
 			Headline: "Hausprofil und offizielle Wohnung sind jetzt klar verbunden und leicht bearbeitbar.",
 			Intro:    "Der freundliche Cockpitname bleibt von den Stammdaten getrennt und gehört zugleich eindeutig zur richtigen Wohnung.",
 			Items: []NoteItem{
-				{Label: "Namen einordnen", Text: "Ein Anzeigename wie „Penthouse“ steht sichtbar neben seiner offiziellen Wohnung, zum Beispiel „Top 11“."},
+				{Label: "Namen einordnen", Text: "Ein Anzeigename wie „Dachwohnung“ steht sichtbar neben seiner offiziellen Wohnung, zum Beispiel „Einheit 12“."},
 				{Label: "Direkt bearbeiten", Text: "Energieüberblick, Einstellungen und Einheitenverwaltung führen ohne erneutes Onboarding zu Name, Art und Wohnungszuordnung."},
 				{Label: "Stammdaten bewahren", Text: "Eine Änderung am Hausprofil lässt Adresse, Gebäudename und offizielle Einheitsbezeichnungen unverändert."},
 				{Label: "Historie schützen", Text: "Mehrdeutige Altbestände bleiben ungeöffnet, bis die Hausverwaltung die richtige Wohnung bewusst zuordnet."},
@@ -642,7 +654,7 @@ func Notes() []Note {
 			Items: []NoteItem{
 				{Label: "Messung zuordnen", Text: "PV- und Speicherwerte finden bei eindeutigem Bestand die richtige Anlage; manuelle Zuordnungen bleiben bewusst steuerbar."},
 				{Label: "Lücken überblicken", Text: "Eine flache Übersicht unterscheidet gemessene Bereiche von lediglich erfassten Verbrauchern, ohne Sensor-IDs zu zeigen."},
-				{Label: "Piloten absichern", Text: "Wohnung, Eltern-Haus ohne Speicher und Schwiegereltern-Haus mit Speicher bleiben getrennt und starten ausschließlich mit „Nur beobachten“."},
+				{Label: "Piloten absichern", Text: "Wohnung, Haus A ohne Speicher und Haus B mit Speicher bleiben getrennt und starten ausschließlich mit „Nur beobachten“."},
 				{Label: "Technikhilfe begrenzen", Text: "Eigene Betreuungskonten dürfen einrichten, erhalten aber niemals den Eigentümer-Schalter für die aktive Steuerung."},
 			},
 		},
@@ -1002,7 +1014,7 @@ func Notes() []Note {
 			Intro:    "Die Datenschutzinformation trennt die Anschrift des Hausbetriebs von der Adresse des betroffenen Hauses und nennt die tatsächliche Betriebs- und Sicherungsinfrastruktur.",
 			Items: []NoteItem{
 				{Label: "Klare Kontakte", Text: "Hausverwaltung, betroffenes Haus und technischer Betrieb erscheinen als getrennte Angaben."},
-				{Label: "Vollständiger Datenfluss", Text: "Netcup, Cloudflare, Hetzner, das selbst betriebene Zitadel und Resend sind ihrem tatsächlichen Zweck entsprechend erklärt."},
+				{Label: "Vollständiger Datenfluss", Text: "Hosting, Webschutz, verschlüsselte Sicherungen, Identitätsdienst und Mailversand sind ihrem tatsächlichen Zweck entsprechend erklärt."},
 			},
 		},
 		{

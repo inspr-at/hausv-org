@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
 )
 
 // HAUSV-169 / HAUSV-135: person and house are separate aggregates joined N:N.
@@ -69,7 +69,7 @@ func TestSecondHouseLinksMembershipNotSecondPerson(t *testing.T) {
 		t.Fatalf("person: %v", err)
 	}
 	if _, err := s.SetMembership(HouseMembership{
-		PersonID: person.ID, TenantSlug: "jhw22", Role: RoleOwner, Status: "Eingeladen",
+		PersonID: person.ID, TenantSlug: "demo", Role: RoleOwner, Status: "Eingeladen",
 	}, now); err != nil {
 		t.Fatalf("membership a: %v", err)
 	}
@@ -86,14 +86,14 @@ func TestSecondHouseLinksMembershipNotSecondPerson(t *testing.T) {
 		t.Fatalf("expected 2 memberships, got %d", len(got))
 	}
 	// Each house sees only its own member list.
-	if got := s.ListHouseMembers("jhw22"); len(got) != 1 || got[0].Membership.Role != RoleOwner {
-		t.Fatalf("jhw22 members = %+v", got)
+	if got := s.ListHouseMembers("demo"); len(got) != 1 || got[0].Membership.Role != RoleOwner {
+		t.Fatalf("demo members = %+v", got)
 	}
 	if got := s.ListHouseMembers("haus-b"); len(got) != 1 || got[0].Membership.Role != RoleRenter {
 		t.Fatalf("haus-b members = %+v", got)
 	}
 	// A membership needs a real person.
-	if _, err := s.SetMembership(HouseMembership{PersonID: "ghost", TenantSlug: "jhw22"}, now); err == nil {
+	if _, err := s.SetMembership(HouseMembership{PersonID: "ghost", TenantSlug: "demo"}, now); err == nil {
 		t.Fatal("membership for an unknown person must be rejected")
 	}
 }
@@ -105,7 +105,7 @@ func TestEditingOneMembershipLeavesOthersUntouched(t *testing.T) {
 
 	person, _ := s.UpsertPerson(Person{Email: "anna@example.com"}, now)
 	if _, err := s.SetMembership(HouseMembership{
-		PersonID: person.ID, TenantSlug: "jhw22", Role: RoleOwner,
+		PersonID: person.ID, TenantSlug: "demo", Role: RoleOwner,
 		Permissions: []string{PermissionParking}, Status: "Aktiv",
 	}, now); err != nil {
 		t.Fatalf("membership a: %v", err)
@@ -117,9 +117,9 @@ func TestEditingOneMembershipLeavesOthersUntouched(t *testing.T) {
 		t.Fatalf("membership b: %v", err)
 	}
 
-	// House jhw22 changes role AND permissions.
+	// House demo changes role AND permissions.
 	if _, err := s.SetMembership(HouseMembership{
-		PersonID: person.ID, TenantSlug: "jhw22", Role: RoleManager, Status: "Aktiv",
+		PersonID: person.ID, TenantSlug: "demo", Role: RoleManager, Status: "Aktiv",
 	}, now.Add(time.Hour)); err != nil {
 		t.Fatalf("edit a: %v", err)
 	}
@@ -139,10 +139,10 @@ func TestRemoveMembershipKeepsPersonAndOtherHouses(t *testing.T) {
 	now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
 
 	person, _ := s.UpsertPerson(Person{Email: "anna@example.com"}, now)
-	_, _ = s.SetMembership(HouseMembership{PersonID: person.ID, TenantSlug: "jhw22", Role: RoleOwner}, now)
+	_, _ = s.SetMembership(HouseMembership{PersonID: person.ID, TenantSlug: "demo", Role: RoleOwner}, now)
 	_, _ = s.SetMembership(HouseMembership{PersonID: person.ID, TenantSlug: "haus-b", Role: RoleRenter}, now)
 
-	removed, err := s.RemoveMembership(person.ID, "jhw22")
+	removed, err := s.RemoveMembership(person.ID, "demo")
 	if err != nil || !removed {
 		t.Fatalf("remove: removed=%v err=%v", removed, err)
 	}
@@ -152,11 +152,11 @@ func TestRemoveMembershipKeepsPersonAndOtherHouses(t *testing.T) {
 	if _, ok := s.Membership(person.ID, "haus-b"); !ok {
 		t.Fatal("removing one membership must not affect another house")
 	}
-	if got := s.ListHouseMembers("jhw22"); len(got) != 0 {
-		t.Fatalf("jhw22 should have no members left: %+v", got)
+	if got := s.ListHouseMembers("demo"); len(got) != 0 {
+		t.Fatalf("demo should have no members left: %+v", got)
 	}
 	// Removing again is a no-op, not an error.
-	if removed, err := s.RemoveMembership(person.ID, "jhw22"); err != nil || removed {
+	if removed, err := s.RemoveMembership(person.ID, "demo"); err != nil || removed {
 		t.Fatalf("second remove: removed=%v err=%v", removed, err)
 	}
 
@@ -176,10 +176,10 @@ func TestChangePersonEmailKeepsMembershipsAndCannotCollide(t *testing.T) {
 	now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
 
 	anna, _ := s.UpsertPerson(Person{Email: "anna@example.com"}, now)
-	_, _ = s.SetMembership(HouseMembership{PersonID: anna.ID, TenantSlug: "jhw22", Role: RoleOwner}, now)
+	_, _ = s.SetMembership(HouseMembership{PersonID: anna.ID, TenantSlug: "demo", Role: RoleOwner}, now)
 	_, _ = s.SetMembership(HouseMembership{PersonID: anna.ID, TenantSlug: "haus-b", Role: RoleRenter}, now)
 	bob, _ := s.UpsertPerson(Person{Email: "bob@example.com"}, now)
-	_, _ = s.SetMembership(HouseMembership{PersonID: bob.ID, TenantSlug: "jhw22", Role: RoleManager}, now)
+	_, _ = s.SetMembership(HouseMembership{PersonID: bob.ID, TenantSlug: "demo", Role: RoleManager}, now)
 
 	// Cannot take over an existing person's email.
 	if _, err := s.ChangePersonEmail(anna.ID, "bob@example.com", now.Add(time.Hour)); err == nil {
@@ -214,7 +214,7 @@ func TestImportProfilesIsLosslessAndIdempotent(t *testing.T) {
 	// old whole-profile CRUD could corrupt.
 	if _, err := jsonStore.Add(UserProfile{
 		Email: "anna@example.com", Title: "Dr.", FirstName: "Anna", LastName: "Muster",
-		Role: RoleRenter, Status: "Eingeladen", Tenants: []string{"jhw22", "haus-b"},
+		Role: RoleRenter, Status: "Eingeladen", Tenants: []string{"demo", "haus-b"},
 		Permissions: []string{PermissionParking},
 		TenantMemberships: map[string]TenantMembership{
 			"haus-b": {Role: RoleOwner},
@@ -248,16 +248,16 @@ func TestImportProfilesIsLosslessAndIdempotent(t *testing.T) {
 	if len(memberships) != 2 {
 		t.Fatalf("expected 2 memberships, got %+v", memberships)
 	}
-	jhw, ok := s.Membership(person.ID, "jhw22")
-	if !ok || jhw.Role != RoleRenter {
-		t.Fatalf("jhw22 membership should inherit the default role: %+v", jhw)
+	demoMembership, ok := s.Membership(person.ID, "demo")
+	if !ok || demoMembership.Role != RoleRenter {
+		t.Fatalf("demo membership should inherit the default role: %+v", demoMembership)
 	}
 	hausB, ok := s.Membership(person.ID, "haus-b")
 	if !ok || hausB.Role != RoleOwner {
 		t.Fatalf("haus-b membership should use its per-tenant override: %+v", hausB)
 	}
-	if jhw.Status != "Eingeladen" {
-		t.Fatalf("membership status lost: %+v", jhw)
+	if demoMembership.Status != "Eingeladen" {
+		t.Fatalf("membership status lost: %+v", demoMembership)
 	}
 }
 

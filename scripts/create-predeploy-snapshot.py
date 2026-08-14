@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Create one atomic, root-only HAUSV pre-schema recovery point.
 
-The caller streams this committed file to csb1 and runs it with the system
+The caller streams this committed file to hausv and runs it with the system
 Python as root while holding the host's compose lock for the helper's complete
 lifetime. Compose mutations deliberately do not reacquire that non-reentrant
 lock. The helper never prints database rows, filenames from user content, or

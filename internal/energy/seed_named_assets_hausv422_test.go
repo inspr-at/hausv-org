@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 func seedTenantsHAUSV422() map[string]struct{} {

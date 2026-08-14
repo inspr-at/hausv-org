@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 // DocumentStorage is the behaviour both the JSON DocumentStore and the SQLite

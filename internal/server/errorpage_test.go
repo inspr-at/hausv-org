@@ -14,7 +14,7 @@ func ownerTestApp(t *testing.T) *app {
 	return newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 }
@@ -23,7 +23,7 @@ func ownerTestApp(t *testing.T) *app {
 // a way onward. The plain-text body it used to return was the only horizontal
 // overflow in the product, because a <pre> does not wrap.
 func TestRefusedPageRendersBrandedErrorPage(t *testing.T) {
-	response := authedRequest(t, ownerTestApp(t), "owner@example.com", "/app/uebergaben")
+	response := authedRequest(t, ownerTestApp(t), "owner@example.com", "/demo/app/uebergaben")
 
 	if response.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want 403", response.Code)
@@ -40,7 +40,7 @@ func TestRefusedPageRendersBrandedErrorPage(t *testing.T) {
 		// away the only part that tells the reader why.
 		"Übergabeprotokolle sind der Verwaltung vorbehalten.",
 		"Fehler 403",
-		`href="/app"`,
+		`href="/demo/app"`,
 		"Zum Hausüberblick",
 	} {
 		if !strings.Contains(body, want) {
@@ -52,14 +52,14 @@ func TestRefusedPageRendersBrandedErrorPage(t *testing.T) {
 // The onward links exist to help, not to advertise. Naming a locked area would
 // tell this owner that handovers exist and are closed to them.
 func TestErrorPageOnwardLinksOnlyOfferReachableAreas(t *testing.T) {
-	body := authedRequest(t, ownerTestApp(t), "owner@example.com", "/app/uebergaben").Body.String()
+	body := authedRequest(t, ownerTestApp(t), "owner@example.com", "/demo/app/uebergaben").Body.String()
 
-	for _, forbidden := range []string{"/app/uebergaben\"", "/app/settings/users", "/app/audit", "/app/parking\""} {
+	for _, forbidden := range []string{"/demo/app/uebergaben\"", "/demo/app/settings/users", "/demo/app/audit", "/demo/app/parking\""} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("error page offers unreachable area %q", forbidden)
 		}
 	}
-	if !strings.Contains(body, `href="/app/anliegen"`) {
+	if !strings.Contains(body, `href="/demo/app/anliegen"`) {
 		t.Fatal("error page does not offer Anliegen, which this role can open")
 	}
 }
@@ -70,11 +70,11 @@ func TestErrorPageSendsServiceProvidersToTheirOwnArea(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "service@example.com",
 		Role:        roleServiceProvider,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	a.serviceAccessEnabled = true
-	body := authedRequest(t, a, "service@example.com", "/app/dokumente").Body.String()
+	body := authedRequest(t, a, "service@example.com", "/demo/app/dokumente").Body.String()
 
 	if !strings.Contains(body, "Zu den Anliegen") {
 		t.Fatalf("service provider error page has no reachable primary action: %q", firstChars(body, 400))
@@ -89,7 +89,7 @@ func TestErrorPageSendsServiceProvidersToTheirOwnArea(t *testing.T) {
 func TestUnknownURLRendersBrandedNotFoundPage(t *testing.T) {
 	a := ownerTestApp(t)
 	response := httptest.NewRecorder()
-	a.handler().ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app/gibtesnicht", nil))
+	a.handler().ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/app/gibtesnicht", nil))
 
 	if response.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404", response.Code)
@@ -108,12 +108,12 @@ func TestUnknownURLOffersSignInToVisitorsAndNavigationToMembers(t *testing.T) {
 	a := ownerTestApp(t)
 
 	anonymous := httptest.NewRecorder()
-	a.handler().ServeHTTP(anonymous, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app/gibtesnicht", nil))
+	a.handler().ServeHTTP(anonymous, httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/app/gibtesnicht", nil))
 	if !strings.Contains(anonymous.Body.String(), "Zur Anmeldung") {
 		t.Fatal("visitor is not offered the sign-in page")
 	}
 
-	member := authedRequest(t, a, "owner@example.com", "/app/gibtesnicht")
+	member := authedRequest(t, a, "owner@example.com", "/demo/app/gibtesnicht")
 	if !strings.Contains(member.Body.String(), "Zum Hausüberblick") {
 		t.Fatal("signed-in member is not offered their own navigation")
 	}
@@ -125,7 +125,7 @@ func TestUnknownURLOffersSignInToVisitorsAndNavigationToMembers(t *testing.T) {
 func TestPlainTextErrorsSurviveWhereTheyBelong(t *testing.T) {
 	a := ownerTestApp(t)
 
-	post := authedFormRequest(t, a, "owner@example.com", "/app/announcements", url.Values{"title": {"x"}, "body": {"y"}})
+	post := authedFormRequest(t, a, "owner@example.com", "/demo/app/announcements", url.Values{"title": {"x"}, "body": {"y"}})
 	if post.Code != http.StatusForbidden {
 		t.Fatalf("post status = %d, want 403", post.Code)
 	}
@@ -134,11 +134,11 @@ func TestPlainTextErrorsSurviveWhereTheyBelong(t *testing.T) {
 	}
 
 	for _, subresource := range []string{"empty", "image"} {
-		token, _, err := a.sessions.Put("owner@example.com", "jhw22", authMethodEmail, time.Hour)
+		token, _, err := a.sessions.Put("owner@example.com", "demo", authMethodEmail, time.Hour)
 		if err != nil {
 			t.Fatalf("put session: %v", err)
 		}
-		request := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app/uebergaben", nil)
+		request := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/app/uebergaben", nil)
 		request.Header.Set("Sec-Fetch-Dest", subresource)
 		request.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
 		response := httptest.NewRecorder()
@@ -157,7 +157,7 @@ func TestPlainTextErrorsSurviveWhereTheyBelong(t *testing.T) {
 // transparent for HTML, and for the binary and text formats page routes serve.
 func TestErrorPageWrapperLeavesSuccessfulPagesAlone(t *testing.T) {
 	a := ownerTestApp(t)
-	response := authedRequest(t, a, "owner@example.com", "/app/dokumente")
+	response := authedRequest(t, a, "owner@example.com", "/demo/app/dokumente")
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", response.Code)

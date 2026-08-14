@@ -348,13 +348,13 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 	})
 	a.notifyIssueUpdated(tenant, updated, email, "Neuer Kommentar zu Anliegen \""+updated.Title+"\"")
 	if canManage {
-		if redirect := issueContextRedirect(updated.ID, r.FormValue("redirect")); redirect != "" {
+		if redirect := issueContextRedirect(updated.ID, internalTenantPath(r, r.FormValue("redirect"))); redirect != "" {
 			http.Redirect(w, r, redirect, http.StatusSeeOther)
 			return
 		}
 	}
 	if isOwner {
-		if redirect := issueResidentContextRedirect(updated.ID, r.FormValue("redirect")); redirect != "" {
+		if redirect := issueResidentContextRedirect(updated.ID, internalTenantPath(r, r.FormValue("redirect"))); redirect != "" {
 			http.Redirect(w, r, redirect, http.StatusSeeOther)
 			return
 		}
@@ -627,7 +627,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	a.handleIssueServiceAssignmentChange(r, tenant, existing, updated, email, role)
 	a.notifyIssueUpdated(tenant, updated, email, "Anliegen \""+updated.Title+"\" aktualisiert")
 	if canManage {
-		if redirect := issueContextRedirect(updated.ID, r.FormValue("redirect")); redirect != "" {
+		if redirect := issueContextRedirect(updated.ID, internalTenantPath(r, r.FormValue("redirect"))); redirect != "" {
 			http.Redirect(w, r, redirect, http.StatusSeeOther)
 			return
 		}

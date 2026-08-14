@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 // HAUSV-135: a manager of one tenant must not be able to edit or delete an
@@ -14,7 +14,7 @@ import (
 func TestEditInviteRejectsForeignTenantTarget(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email: "manager@example.com", Role: roleManager,
-		Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	// A victim invite that belongs ONLY to another building.
 	if _, err := a.inviteStore.Add(store.UserProfile{
@@ -25,9 +25,9 @@ func TestEditInviteRejectsForeignTenantTarget(t *testing.T) {
 		t.Fatalf("seed victim: %v", err)
 	}
 
-	// Manager of jhw22 tries to rename the other tenant's invite to an address
+	// Manager of demo tries to rename the other tenant's invite to an address
 	// they control — the account-takeover primitive.
-	rr := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/edit", url.Values{
+	rr := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/users/edit", url.Values{
 		"orig_email": {"victim@other.example"},
 		"email":      {"attacker@evil.example"},
 		"role":       {roleResident},
@@ -45,12 +45,12 @@ func TestEditInviteRejectsForeignTenantTarget(t *testing.T) {
 	if !ok {
 		t.Fatal("SECURITY: victim invite disappeared (cross-tenant mutation)")
 	}
-	if victim.HasTenant("jhw22") {
+	if victim.HasTenant("demo") {
 		t.Fatal("SECURITY: victim invite was pulled into the attacker's tenant")
 	}
 
 	// And delete must be refused too.
-	del := authedFormRequest(t, a, "manager@example.com", "/app/settings/users/delete", url.Values{
+	del := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/users/delete", url.Values{
 		"email": {"victim@other.example"},
 	})
 	if del.Code != http.StatusSeeOther {

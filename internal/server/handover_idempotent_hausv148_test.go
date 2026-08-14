@@ -11,20 +11,20 @@ import (
 func TestHandoverFilingIsIdempotent(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email: "manager@example.com", Role: roleManager,
-		Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	h, err := a.handoverStore.Create(handoverRecord{
-		ID: "hv-test-1", TenantSlug: "jhw22", Title: "Whg 1", HandoverType: "auszug", CreatedBy: "manager@example.com",
+		ID: "hv-test-1", TenantSlug: "demo", Title: "Whg 1", HandoverType: "auszug", CreatedBy: "manager@example.com",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	file := func() int {
-		rr := authedFormRequest(t, a, "manager@example.com", "/app/uebergaben/file", url.Values{"id": {h.ID}})
+		rr := authedFormRequest(t, a, "manager@example.com", "/demo/app/uebergaben/file", url.Values{"id": {h.ID}})
 		if rr.Code != http.StatusSeeOther {
 			t.Fatalf("file status = %d", rr.Code)
 		}
-		return len(a.documentStore.ListTenant("jhw22"))
+		return len(a.documentStore.ListTenant("demo"))
 	}
 	if got := file(); got != 1 {
 		t.Fatalf("after first filing: %d documents, want 1", got)

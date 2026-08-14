@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
 )
 
 // HAUSV-172: multi-part operations must be all-or-nothing. Inviting someone
@@ -33,7 +33,7 @@ func TestInviteRollsBackPersonWhenMembershipWriteFails(t *testing.T) {
 	}
 
 	added, err := s.Add(UserProfile{
-		Email: "anna@example.com", Role: RoleOwner, Tenants: []string{"jhw22"},
+		Email: "anna@example.com", Role: RoleOwner, Tenants: []string{"demo"},
 	})
 	if err == nil {
 		t.Fatal("the invite must fail when the membership cannot be written")
@@ -57,7 +57,7 @@ func TestInviteRollsBackPersonWhenMembershipWriteFails(t *testing.T) {
 func TestProfileUpdateRollsBackEntirelyOnFailure(t *testing.T) {
 	s, database := identityStoreWithDB(t)
 	if _, err := s.Add(UserProfile{
-		Email: "anna@example.com", Role: RoleOwner, Tenants: []string{"jhw22"},
+		Email: "anna@example.com", Role: RoleOwner, Tenants: []string{"demo"},
 	}); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestProfileUpdateRollsBackEntirelyOnFailure(t *testing.T) {
 	}
 
 	if _, err := s.Update("anna@example.com", UserProfile{
-		Email: "anna.neu@example.com", Role: RoleManager, Tenants: []string{"jhw22"},
+		Email: "anna.neu@example.com", Role: RoleManager, Tenants: []string{"demo"},
 	}); err == nil {
 		t.Fatal("the update must fail when memberships cannot be reconciled")
 	}
@@ -85,7 +85,7 @@ func TestProfileUpdateRollsBackEntirelyOnFailure(t *testing.T) {
 func TestInviteCreatesPersonAndMembershipTogether(t *testing.T) {
 	s, database := identityStoreWithDB(t)
 	if _, err := s.Add(UserProfile{
-		Email: "anna@example.com", Role: RoleOwner, Tenants: []string{"jhw22"},
+		Email: "anna@example.com", Role: RoleOwner, Tenants: []string{"demo"},
 		Status: "Eingeladen",
 	}); err != nil {
 		t.Fatalf("invite: %v", err)

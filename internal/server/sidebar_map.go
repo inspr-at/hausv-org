@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/version"
+	"github.com/inspr-at/hausv-org/internal/version"
 )
 
 const (
@@ -84,11 +84,6 @@ func mapViewForTenant(tenant tenantConfig, width, height int) sidebarMapView {
 
 func tenantMapCoordinates(tenant tenantConfig) (float64, float64, int, bool) {
 	latitude, longitude := tenant.MapLatitude, tenant.MapLongitude
-	if latitude == 0 && longitude == 0 &&
-		tenant.Slug == "jhw22" &&
-		strings.Contains(strings.ToLower(tenant.Address), "janischhofweg 22") {
-		latitude, longitude = 47.1008592, 15.4717681
-	}
 	if latitude < -85.0511 || latitude > 85.0511 || longitude < -180 || longitude > 180 ||
 		(latitude == 0 && longitude == 0) {
 		return 0, 0, 0, false
@@ -150,7 +145,7 @@ func (a *app) mapTile(w http.ResponseWriter, r *http.Request) {
 	req.Header.Set("User-Agent", fmt.Sprintf("hausv.org/%s (+https://hausv.org; contact: hello@hausv.org)", version.DisplayVersion(version.Version)))
 	referer := tenant.PublicURL("/app")
 	if !strings.HasPrefix(referer, "https://") && !strings.HasPrefix(referer, "http://") {
-		referer = "https://hausv.org/"
+		referer = strings.TrimRight(a.baseURL, "/") + referer
 	}
 	req.Header.Set("Referer", referer)
 

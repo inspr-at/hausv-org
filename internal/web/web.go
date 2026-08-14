@@ -670,7 +670,7 @@ const PageTemplates = `
           <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg></span><div><span class="product-path-kicker">Open Source · Self-Hosted</span><h3>HAUSV Free</h3></div></header>
           <p>Die freie Open-Source-Lösung für alle, die HAUSV selbst betreiben und vollständig in der eigenen technischen Verantwortung halten möchten.</p>
           <ul class="product-capabilities"><li>Für immer kostenlos</li><li>Frei selbst betreiben</li><li>GNU AGPL-3.0</li><li>Community-Support</li></ul>
-          <span class="product-path-status"><a href="https://github.com/inspr-at/hausv-org" rel="noopener noreferrer">Tickets &amp; Pull Requests auf GitHub</a></span>
+          <span class="product-path-status">Öffentliche Veröffentlichung mit Version 1.0</span>
         </article>
         <article class="product-path home" id="home">
           <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-6h6v6"/></svg></span><div><span class="product-path-kicker">Für die Selbstverwaltung</span><h3>HAUSV Home</h3></div></header>
@@ -736,7 +736,7 @@ const PageTemplates = `
         <p class="section-lead">Einfach für Gemeinschaft und Zuhause, nachvollziehbar für den jeweiligen Betrieb.</p>
       </div>
       <div class="trust-summary" aria-label="Sicherheitsprinzipien">
-        <div class="trust-line"><span class="trust-number">01</span><strong>Getrennte Häuser</strong><p>Eigene Domain, eigene Rollen, eigene Sichtbarkeit.</p></div>
+        <div class="trust-line"><span class="trust-number">01</span><strong>Getrennte Häuser</strong><p>Eigener Portalbereich, eigene Rollen, eigene Sichtbarkeit.</p></div>
         <div class="trust-line"><span class="trust-number">02</span><strong>Geschützte Dateien</strong><p>Downloads nur über geprüfte App-Wege.</p></div>
         <div class="trust-line"><span class="trust-number">03</span><strong>Datensparsam</strong><p>Nur Angaben, die der Betrieb wirklich braucht.</p></div>
         <div class="trust-line"><span class="trust-number">04</span><strong>KI nur mit Opt-in</strong><p>Keine automatische Auswertung ohne Zustimmung.</p></div>
@@ -757,7 +757,7 @@ const PageTemplates = `
         <article class="offer-card free">
           <span class="offer-label">Open Source</span>
           <h3>HAUSV Free</h3>
-          <ul><li>Self-Hosted in eigener Verantwortung</li><li>Der vollständige AGPL-3.0-Kern</li><li>Support über Tickets und Pull Requests auf GitHub</li></ul>
+          <ul><li>Self-Hosted in eigener Verantwortung</li><li>Der vollständige AGPL-3.0-Kern</li><li>Ab Version 1.0: Support über Tickets und Pull Requests auf GitHub</li></ul>
           <div class="offer-price"><strong>0&nbsp;€ für immer</strong><span>frei verwenden, anpassen und selbst betreiben</span></div>
         </article>
         <article class="offer-card home">
@@ -774,8 +774,8 @@ const PageTemplates = `
         </article>
       </div>
       <div class="open-source-note">
-        <div><strong>HAUSV Free bleibt dauerhaft kostenlos.</strong><p>Die technische Basis ist quelloffen und steht unter der GNU AGPL-3.0. Hosting und direkter Support sind davon getrennte Services.</p></div>
-        <a href="https://github.com/inspr-at/hausv-org" rel="noopener noreferrer">GitHub-Repository öffnen</a>
+        <div><strong>HAUSV Free bleibt dauerhaft kostenlos.</strong><p>Die technische Basis wird mit Version 1.0 quelloffen unter der GNU AGPL-3.0 veröffentlicht. Hosting und direkter Support sind davon getrennte Services.</p></div>
+        <span>Quellcode-Veröffentlichung mit Version 1.0</span>
       </div>
       <div class="boundary-strip" aria-label="Klare Produktgrenzen">
         <div><strong>Kommunikation &amp; Energie</strong><span>HAUSV bündelt Hausalltag, Zusammenarbeit und Energieverwaltung.</span></div>
@@ -852,17 +852,15 @@ const PageTemplates = `
     <p class="lead">Direkter Kontakt statt anonymer Hotline – und die rechtlichen Angaben zu hausv.org an einem Ort.</p>
 
     <dl>
-      <dt>Medieninhaber / Betreiber</dt><dd>{{.OperatorName}} · natürliche Person</dd>
+      <dt>Medieninhaber / Betreiber</dt><dd>{{.OperatorName}}</dd>
       <dt>Ladungsfähige Anschrift</dt><dd>{{.OperatorAddress}}</dd>
       <dt>Kontakt</dt><dd><a class="js-mail-link" href="/#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a></dd>
       <dt>Zweck des Angebots</dt><dd>Information und technischer Pilot für HAUSV Gemeinschaft als Kommunikations- und Transparenzportal sowie HAUSV Zuhause für Hauszustand, Wartung und lesende Energieeinblicke.</dd>
-      <dt>Firmenbuch / UID</dt><dd>Nicht anwendbar: privates Projekt einer natürlichen Person, kein Unternehmen und derzeit kein öffentlicher Online-Vertragsabschluss.</dd>
-      <dt>Gewerbebehörde / Kammer</dt><dd>Nicht anwendbar: der aktuelle persönliche Pilot wird nicht gewerblich angeboten.</dd>
       <dt>Blattlinie</dt><dd>Information über hausv.org, digitale Selbstverwaltung für Mehrparteienhäuser und verständliche, datensparsame Unterstützung für das persönliche Zuhause.</dd>
     </dl>
 
     <h2>Professionelle Services</h2>
-    <p>Einrichtung, betreuten Betrieb und Betreuung von hausv.org für Hausverwaltungen erbringt die Augmentoring GmbH. Die Unternehmensangaben nennt das persönliche Angebot.</p>
+    <p>{{.ProfessionalServicesNotice}}</p>
 
     <h2>Open Source</h2>
     <p>Der Kern von hausv.org ist quelloffen und steht unter der <a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener noreferrer">GNU AGPL-3.0</a>.</p>
@@ -954,10 +952,10 @@ const PageTemplates = `
     <ul>
       <li>Daten stammen von eingeladenen Personen, der Hausadministration, ausdrücklich verbundenen Home-Assistant-Instanzen und bewusst hochgeladenen Smart-Meter-Dateien.</li>
       <li>Innerhalb eines Hauses sehen nur die jeweils berechtigten Rollen die für ihre Aufgabe notwendigen Bereiche. Technische Vertrauenspersonen sehen oder konfigurieren Energie nur im sichtbar erteilten Umfang und dürfen den Haus-Schalter nicht umlegen. Der Zugriff ist widerrufbar.</li>
-      <li>Die Fachdaten und das selbst betriebene Zitadel für SSO liegen auf dem Netcup-Server <code>csb1</code> in Wien und sind je Haus und Rolle getrennt.</li>
-      <li>Cloudflare schützt und vermittelt den öffentlichen Webzugriff. Dabei fallen technisch notwendige Verbindungsdaten an.</li>
-      <li>Verschlüsselte Sicherungen werden in einem Hetzner Storage Box Konto innerhalb der EU gespeichert.</li>
-      <li>Resend versendet Transaktionsmails über die Region Irland. E-Mail-Adresse, Betreff und Inhalt sowie Kontodaten, Metadaten, Logs und API-Aufzeichnungen werden dabei auch in den USA verarbeitet. Resend stellt eine Vereinbarung zur Auftragsverarbeitung einschließlich Standardvertragsklauseln bereit und hält reguläre E-Mail-Inhalte 30 Tage vor.</li>
+      <li>{{.IdentityStorageNotice}}</li>
+      <li>{{.WebAccessNotice}}</li>
+      <li>{{.BackupStorageNotice}}</li>
+      <li>{{.MailDeliveryNotice}}</li>
       <li>Es gibt keine Werbung, keine Analyse-Skripte und keine extern geladenen Web-Schriften.</li>
       <li>Die festen Kartenausschnitte auf der Anmeldeseite und in der Portalnavigation nutzen OpenStreetMap-Kartenkacheln. hausv.org ruft ausschließlich die für das konfigurierte Haus benötigten Kacheln serverseitig ab und speichert sie mindestens sieben Tage zwischen; OpenStreetMap erhält dabei weder die IP-Adresse noch Anmelde- oder Kontodaten der Portalbesuchenden. Erst beim bewussten Öffnen des Kartenlinks baut der Browser eine direkte Verbindung zu OpenStreetMap auf.</li>
       {{if .EnergyProfileExists}}<li>Home-Assistant-Endpunkt und Zugangstoken bleiben in der verschlüsselten Host-Konfiguration. Sie werden weder in der Fachdatenbank noch im Energieexport gespeichert oder angezeigt.</li>{{end}}
@@ -4011,7 +4009,7 @@ const PageTemplates = `
               <label>Telefon<input name="phone" value="{{.Phone}}" maxlength="80"></label>
               <label>E-Mail<input type="email" name="email" value="{{.Email}}"></label>
               <label class="f-wide">Notiz<input name="notes" value="{{.Notes}}" maxlength="300"></label>
-              <label>Region<input name="service_region" value="{{.ServiceRegion}}" maxlength="120" placeholder="z. B. Graz und Umgebung"></label>
+              <label>Region<input name="service_region" value="{{.ServiceRegion}}" maxlength="120" placeholder="z. B. Wien und Umgebung"></label>
               <label>Qualifikation<input name="qualification" value="{{.Qualification}}" maxlength="240" placeholder="z. B. konzessionierter Elektrobetrieb"></label>
               <fieldset class="f-wide"><legend>Energie-Fähigkeiten</legend><div class="permission-grid">
                 <label><input type="checkbox" name="energy_capabilities" value="metering"{{range .EnergyCapabilities}}{{if eq . "metering"}} checked{{end}}{{end}}> Leistungsmessung</label>
@@ -4269,7 +4267,7 @@ const PageTemplates = `
                       <details class="contact-add-optional">
                         <summary>Region, Qualifikation und Energie-Fähigkeiten</summary>
                         <div class="contact-add-optional-grid">
-                          <label>Region <span class="muted">(optional)</span><input name="service_region" maxlength="120" placeholder="z. B. Graz und Umgebung"></label>
+                          <label>Region <span class="muted">(optional)</span><input name="service_region" maxlength="120" placeholder="z. B. Wien und Umgebung"></label>
                           <label>Qualifikation <span class="muted">(optional)</span><input name="qualification" maxlength="240" placeholder="z. B. konzessionierter Elektrobetrieb"></label>
                           <fieldset><legend>Energie-Fähigkeiten <span class="muted">(optional, kein Portalzugang)</span></legend><div class="permission-grid">
                             <label><input type="checkbox" name="energy_capabilities" value="metering"> Leistungsmessung</label>
@@ -6362,7 +6360,7 @@ const PageTemplates = `
             <div class="dialog-grid">
               <label for="handover-unit">Einheit<select id="handover-unit" name="unit_id" required>{{range .UnitOptions}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>{{end}}</select></label>
               <label for="handover-type">Anlass<select id="handover-type" name="handover_type"><option>Nutzerwechsel</option><option>Einzug</option><option>Auszug</option></select></label>
-              <label class="full" for="handover-title">Titel<input id="handover-title" name="title" required maxlength="160" placeholder="Nutzerwechsel Top 11"></label>
+              <label class="full" for="handover-title">Titel<input id="handover-title" name="title" required maxlength="160" placeholder="Nutzerwechsel Einheit 12"></label>
               <label class="full" for="handover-time">Termin<input id="handover-time" type="datetime-local" name="scheduled_at" value="{{.NowInput}}"></label>
             </div>
             <div class="handover-form-step"><span>2</span><div><strong>Zustand</strong><small>Raum | Zustand | Mangel · eine Zeile pro Raum</small></div></div>
@@ -7023,7 +7021,7 @@ const PageTemplates = `
           <header class="home-identity-form-head"><h2>Anzeigename festlegen</h2><p>{{if .HasHomeUnit}}„{{.Profile.HouseholdName}}“ ist der freundliche Name. „{{.HomeUnitLabel}}“ bleibt die offizielle Einheit und wird hier eindeutig zugeordnet.{{else}}Der freundliche Name erscheint im Energie- und Wartungsbereich; die Stammdaten der Liegenschaft bleiben unverändert.{{end}}</p></header>
           <form class="home-identity-form" method="post" action="/app/settings/home">
             <input type="hidden" name="from" value="{{.From}}">
-            <label><span>Anzeigename für „Mein Zuhause“</span><input type="text" name="household_name" value="{{.Profile.HouseholdName}}" placeholder="z. B. Penthouse" required maxlength="100"></label>
+            <label><span>Anzeigename für „Mein Zuhause“</span><input type="text" name="household_name" value="{{.Profile.HouseholdName}}" placeholder="z. B. Dachwohnung" required maxlength="100"></label>
             {{if .HomeTypeLocked}}
               <div class="home-identity-field"><span>Art des Zuhauses</span><input type="hidden" name="home_type" value="{{.Profile.HomeType}}"><div class="home-identity-readonly"><strong>{{.HomeTypeLabel}}</strong><small>Durch die zugeordnete Wohneinheit festgelegt</small></div></div>
             {{else}}
@@ -8069,7 +8067,7 @@ const PageTemplates = `
                   </select>
                 </label>
                 <label for="brand-abbreviation">Kurzkennung
-                  <input id="brand-abbreviation" form="building-meta-form" type="text" name="brand_abbreviation" value="{{.Tenant.BrandAbbreviation}}" maxlength="12" placeholder="JHW22">
+                  <input id="brand-abbreviation" form="building-meta-form" type="text" name="brand_abbreviation" value="{{.Tenant.BrandAbbreviation}}" maxlength="12" placeholder="DEMO">
                 </label>
                 <div class="section-save"><button class="button primary" type="submit" form="building-meta-form">Änderungen speichern</button></div>
               </section>
@@ -9426,7 +9424,7 @@ const PageTemplates = `
         {{else if eq .Step 2}}
           <header class="onboarding-card-head"><span class="eyebrow">Ihr Zuhause</span><h1>Was richten wir gemeinsam ein?</h1><p>Ein Name und die Art des Zuhauses genügen. Technische Details kommen erst, wenn sie wirklich helfen.</p></header>
           <form class="onboarding-body onboarding-form" method="post" action="/app/zuhause/onboarding">
-            <label><span>Anzeigename für „Mein Zuhause“</span><input type="text" name="household_name" value="{{.Profile.HouseholdName}}" placeholder="z. B. Penthouse oder Zuhause Barta" required maxlength="100"></label>
+            <label><span>Anzeigename für „Mein Zuhause“</span><input type="text" name="household_name" value="{{.Profile.HouseholdName}}" placeholder="z. B. Dachwohnung oder Mein Zuhause" required maxlength="100"></label>
             {{if .HomeTypeLocked}}
               <div class="home-identity-field"><span>Art</span><input type="hidden" name="home_type" value="{{.Profile.HomeType}}"><div class="home-identity-readonly"><strong>{{.HomeTypeLabel}}</strong><small>Durch die zugeordnete Wohneinheit festgelegt</small></div></div>
             {{else}}

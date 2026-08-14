@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/config"
-	"github.com/markus-barta/hausv-org/internal/store"
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/config"
+	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 // Values copied verbatim from main's mixed const blocks (the mover will not

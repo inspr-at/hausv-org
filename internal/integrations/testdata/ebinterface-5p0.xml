@@ -17,18 +17,18 @@
     <Address>
       <Name>Elektro Beispiel GmbH</Name>
       <Street>Beispielweg 1</Street>
-      <Town>Graz</Town>
-      <ZIP>8010</ZIP>
+      <Town>Wien</Town>
+      <ZIP>1010</ZIP>
       <Country CountryCode="AT">Österreich</Country>
     </Address>
   </Biller>
   <InvoiceRecipient>
     <VATIdentificationNumber>ATU00000002</VATIdentificationNumber>
     <Address>
-      <Name>jhw22</Name>
-      <Street>Janischhofweg 22</Street>
-      <Town>Graz</Town>
-      <ZIP>8043</ZIP>
+      <Name>demo</Name>
+      <Street>Musterweg 1</Street>
+      <Town>Wien</Town>
+      <ZIP>1010</ZIP>
       <Country CountryCode="AT">Österreich</Country>
     </Address>
   </InvoiceRecipient>

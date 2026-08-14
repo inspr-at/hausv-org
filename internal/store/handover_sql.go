@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 // HandoverStorage is the behaviour both the JSON HandoverStore and the SQLite

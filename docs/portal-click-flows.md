@@ -97,14 +97,14 @@ Hauptpersonen aktiv:
 - `owner@example.com`: Eigentümer
 - `verwalter@example.com`: Verwalter
 - `admin@example.com`: Admin
-- zusätzliche Eigentümer-Fixtures für Eltern-, Schwiegereltern- und
+- zusätzliche Eigentümer-Fixtures für Haus A-, Haus B- und
   Energie-Cockpit-Zuhause; `cockpit-owner@example.com` hält den fertigen
   Cockpit-Zustand vor, ist aber keine eigene Playwright-Hauptperson
 
 Home Assistant, Kartenkacheln, Dokumente, Anhänge und E-Mail-Links stammen aus
-lokalen Fixtures. Drei getrennte Home-Assistant-Datensätze modellieren JHW22,
-Eltern und Schwiegereltern; das Cockpit-Haus verwendet bewusst den
-umfangreichen JHW22-Datensatz. Mieter, Beirat und Dienstleister sind in
+lokalen Fixtures. Drei getrennte Home-Assistant-Datensätze modellieren DEMO,
+Haus A und Haus B; das Cockpit-Haus verwendet bewusst den
+umfangreichen DEMO-Datensatz. Mieter, Beirat und Dienstleister sind in
 serverseitigen Rollenprüfungen abgedeckt, derzeit aber keine eigenen
 Playwright-Hauptpersonen. Reale Home-Assistant-Daten sind für diese Regression
 nicht erforderlich und werden nicht geschrieben.

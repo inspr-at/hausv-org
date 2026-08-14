@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
 )
 
 func TestEventStorageParity(t *testing.T) {
@@ -30,35 +30,35 @@ func TestEventStorageParity(t *testing.T) {
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
 			s := build(t)
-			if _, err := s.Create(HouseEvent{TenantSlug: "jhw22", Title: ""}); err == nil {
+			if _, err := s.Create(HouseEvent{TenantSlug: "demo", Title: ""}); err == nil {
 				t.Fatal("event without title/start must error")
 			}
-			created, err := s.Create(HouseEvent{TenantSlug: "jhw22", Title: "Versammlung", StartsAt: now.Add(24 * time.Hour), AuthorEmail: "a@example.com"})
+			created, err := s.Create(HouseEvent{TenantSlug: "demo", Title: "Versammlung", StartsAt: now.Add(24 * time.Hour), AuthorEmail: "a@example.com"})
 			if err != nil || created.ID == "" {
 				t.Fatalf("create: %v %+v", err, created)
 			}
 			id := created.ID
-			if got := s.ListTenant("jhw22"); len(got) != 1 || got[0].ID != id {
+			if got := s.ListTenant("demo"); len(got) != 1 || got[0].ID != id {
 				t.Fatalf("list = %+v", got)
 			}
-			ok, err := s.Update(id, HouseEvent{TenantSlug: "jhw22", Title: "Versammlung 2", StartsAt: now.Add(48 * time.Hour)})
+			ok, err := s.Update(id, HouseEvent{TenantSlug: "demo", Title: "Versammlung 2", StartsAt: now.Add(48 * time.Hour)})
 			if err != nil || !ok {
 				t.Fatalf("update: %v ok=%v", err, ok)
 			}
-			if got := s.ListTenant("jhw22"); got[0].Title != "Versammlung 2" || !got[0].CreatedAt.Equal(created.CreatedAt) {
+			if got := s.ListTenant("demo"); got[0].Title != "Versammlung 2" || !got[0].CreatedAt.Equal(created.CreatedAt) {
 				t.Fatalf("update result: %+v", got[0])
 			}
 			// past event -> not upcoming
-			_, _ = s.Create(HouseEvent{TenantSlug: "jhw22", Title: "Vergangen", StartsAt: now.Add(-72 * time.Hour)})
-			up := s.Upcoming("jhw22", now)
+			_, _ = s.Create(HouseEvent{TenantSlug: "demo", Title: "Vergangen", StartsAt: now.Add(-72 * time.Hour)})
+			up := s.Upcoming("demo", now)
 			if len(up) != 1 || up[0].Title != "Versammlung 2" {
 				t.Fatalf("upcoming = %d %+v", len(up), up)
 			}
-			del, err := s.Delete("jhw22", id)
+			del, err := s.Delete("demo", id)
 			if err != nil || !del {
 				t.Fatalf("delete: %v %v", err, del)
 			}
-			if d2, _ := s.Delete("jhw22", "nope"); d2 {
+			if d2, _ := s.Delete("demo", "nope"); d2 {
 				t.Fatal("delete unknown must be false")
 			}
 		})

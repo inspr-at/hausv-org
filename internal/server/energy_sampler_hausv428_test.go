@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
-	"github.com/markus-barta/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/homeassistant"
 )
 
 // HAUSV-428: Ohne diesen Sampler entsteht auf einem Haus mit reiner
@@ -141,7 +141,7 @@ func samplerAppHAUSV428(t *testing.T) *app {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	a.energySampleInterval = sampleIntervalHAUSV428
@@ -188,15 +188,15 @@ func runQuarterHAUSV428(t *testing.T, a *app, tenant tenantConfig, fake *fakeHom
 func TestSamplerRecordsCompletedQuarterHourFromHomeAssistantHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 	start := quarterAnchorHAUSV428()
 
 	recorded := runQuarterHAUSV428(t, a, tenant, fake, start, 4.81)
 	if len(recorded) != 1 {
 		t.Fatalf("festgeschriebene Viertelstunden = %d, erwartet 1", len(recorded))
 	}
-	intervals, err := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
+	intervals, err := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
 	if err != nil || len(intervals) != 1 {
 		t.Fatalf("Intervalle = %+v err=%v", intervals, err)
 	}
@@ -223,8 +223,8 @@ func TestSamplerRecordsCompletedQuarterHourFromHomeAssistantHAUSV428(t *testing.
 func TestSamplerNeverWritesARunningQuarterHourHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 	start := quarterAnchorHAUSV428()
 
 	// Vollständige Abtastung, aber die Viertelstunde läuft noch.
@@ -235,7 +235,7 @@ func TestSamplerNeverWritesARunningQuarterHourHAUSV428(t *testing.T) {
 			t.Fatalf("bei %s wurde eine laufende Viertelstunde geschrieben: %+v", at, recorded)
 		}
 	}
-	intervals, _ := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
+	intervals, _ := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
 	if len(intervals) != 0 {
 		t.Fatalf("die laufende Viertelstunde darf nicht im Speicher stehen: %+v", intervals)
 	}
@@ -250,8 +250,8 @@ func TestSamplerNeverWritesARunningQuarterHourHAUSV428(t *testing.T) {
 func TestSamplerRefusesValueForPartialQuarterHourHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 	start := quarterAnchorHAUSV428()
 
 	// Der Sampler steigt erst in der Mitte ein — etwa nach einem Neustart.
@@ -264,7 +264,7 @@ func TestSamplerRefusesValueForPartialQuarterHourHAUSV428(t *testing.T) {
 	fake.reading(11.4, boundary)
 	a.sampleEnergyTenant(t.Context(), tenant, boundary)
 
-	intervals, _ := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
+	intervals, _ := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
 	if len(intervals) != 1 {
 		t.Fatalf("Intervalle = %+v", intervals)
 	}
@@ -282,8 +282,8 @@ func TestSamplerRefusesValueForPartialQuarterHourHAUSV428(t *testing.T) {
 func TestSamplerDegradesQualityOnConnectionHoleHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 	start := quarterAnchorHAUSV428()
 
 	for i := 0; i < samplesPerQuarterHAUSV; i++ {
@@ -303,7 +303,7 @@ func TestSamplerDegradesQualityOnConnectionHoleHAUSV428(t *testing.T) {
 	fake.reading(1.0, boundary)
 	a.sampleEnergyTenant(t.Context(), tenant, boundary)
 
-	intervals, _ := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
+	intervals, _ := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
 	if len(intervals) != 1 || intervals[0].Quality != energy.QualityGap {
 		t.Fatalf("Qualität = %+v, erwartet eine Messlücke", intervals)
 	}
@@ -322,8 +322,8 @@ func TestSamplerDegradesQualityOnConnectionHoleHAUSV428(t *testing.T) {
 func TestSamplerNamesFrozenReadingsStaleHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 	start := quarterAnchorHAUSV428()
 
 	// Die Verbindung antwortet, der Messwert steht seit einer Stunde still.
@@ -337,7 +337,7 @@ func TestSamplerNamesFrozenReadingsStaleHAUSV428(t *testing.T) {
 	fake.freeze(9.9, frozen)
 	a.sampleEnergyTenant(t.Context(), tenant, boundary)
 
-	intervals, _ := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
+	intervals, _ := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
 	if len(intervals) != 1 || intervals[0].Quality != energy.QualityStale {
 		t.Fatalf("Qualität = %+v, erwartet %q", intervals, energy.QualityStale)
 	}
@@ -349,8 +349,8 @@ func TestSamplerNamesFrozenReadingsStaleHAUSV428(t *testing.T) {
 func TestSamplerTreatsUnavailableAsHoleHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 	start := quarterAnchorHAUSV428()
 
 	// Einzelne „unavailable"-Aussetzer kommen auf echten Anlagen vor. Einer darf
@@ -368,7 +368,7 @@ func TestSamplerTreatsUnavailableAsHoleHAUSV428(t *testing.T) {
 	fake.reading(5.5, boundary)
 	a.sampleEnergyTenant(t.Context(), tenant, boundary)
 
-	intervals, _ := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
+	intervals, _ := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
 	if len(intervals) != 1 || intervals[0].Quality != energy.QualityEstimated {
 		t.Fatalf("einzelner Aussetzer = %+v", intervals)
 	}
@@ -380,17 +380,17 @@ func TestSamplerTreatsUnavailableAsHoleHAUSV428(t *testing.T) {
 func TestSamplerIsIdempotentAcrossRestartHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 	start := quarterAnchorHAUSV428()
 
 	runQuarterHAUSV428(t, a, tenant, fake, start, 6.4)
 	// Neustart: der Puffer ist weg, dieselbe Viertelstunde wird erneut
 	// abgefahren. Die Zeile darf sich nicht verdoppeln.
-	a.resetEnergySampler("jhw22")
+	a.resetEnergySampler("demo")
 	runQuarterHAUSV428(t, a, tenant, fake, start, 6.4)
 
-	intervals, _ := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
+	intervals, _ := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
 	if len(intervals) != 1 {
 		t.Fatalf("Viertelstunde wurde verdoppelt: %+v", intervals)
 	}
@@ -402,26 +402,26 @@ func TestSamplerIsIdempotentAcrossRestartHAUSV428(t *testing.T) {
 func TestSamplerRecordsNothingWithoutConfirmedMappingHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 	start := quarterAnchorHAUSV428()
 
 	// Erkannt, aber nicht bestätigt: HAUSV misst nicht.
 	if err := a.energyStore.UpsertMapping(energy.EntityMapping{
-		ID: energy.NewID("mapping"), TenantSlug: "jhw22", EntityID: gridEntityHAUSV428,
+		ID: energy.NewID("mapping"), TenantSlug: "demo", EntityID: gridEntityHAUSV428,
 		Metric: energy.MetricGridImportPower, Unit: "kW", Confirmed: false,
 	}); err != nil {
 		t.Fatal(err)
 	}
 	// Und eine bestätigte Zuordnung anderer Art zählt ebenfalls nicht.
 	if err := a.energyStore.UpsertMapping(energy.EntityMapping{
-		ID: energy.NewID("mapping"), TenantSlug: "jhw22", EntityID: "sensor.pv_power",
+		ID: energy.NewID("mapping"), TenantSlug: "demo", EntityID: "sensor.pv_power",
 		Metric: energy.MetricPVPower, Unit: "kW", Confirmed: true,
 	}); err != nil {
 		t.Fatal(err)
 	}
 	runQuarterHAUSV428(t, a, tenant, fake, start, 8.0)
 
-	intervals, _ := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
+	intervals, _ := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
 	if len(intervals) != 0 {
 		t.Fatalf("ohne bestätigten Netzbezug darf nichts entstehen: %+v", intervals)
 	}
@@ -435,15 +435,15 @@ func TestSamplerRecordsNothingWithoutConfirmedMappingHAUSV428(t *testing.T) {
 
 func TestSamplerKeepsHousesApartHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
-	a.tenants["eltern"] = tenantConfig{Slug: "eltern", Name: "Haus Eltern", Host: "eltern.hausv.org"}
+	a.tenants["haus-a"] = tenantConfig{Slug: "haus-a", Name: "Haus A"}
 	firstHA := newFakeHomeAssistantHAUSV428(t)
 	secondHA := newFakeHomeAssistantHAUSV428(t)
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
-	confirmGridImportHAUSV428(t, a, "eltern", gridEntityHAUSV428)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
+	confirmGridImportHAUSV428(t, a, "haus-a", gridEntityHAUSV428)
 	start := quarterAnchorHAUSV428()
 
-	first := samplerTenantHAUSV428(a, "jhw22", firstHA)
-	second := samplerTenantHAUSV428(a, "eltern", secondHA)
+	first := samplerTenantHAUSV428(a, "demo", firstHA)
+	second := samplerTenantHAUSV428(a, "haus-a", secondHA)
 	for i := 0; i < samplesPerQuarterHAUSV; i++ {
 		at := start.Add(time.Duration(i) * sampleIntervalHAUSV428)
 		firstHA.reading(3.0, at)
@@ -460,7 +460,7 @@ func TestSamplerKeepsHousesApartHAUSV428(t *testing.T) {
 	for _, item := range []struct {
 		slug string
 		kw   float64
-	}{{"jhw22", 3.0}, {"eltern", 12.0}} {
+	}{{"demo", 3.0}, {"haus-a", 12.0}} {
 		intervals, _ := a.energyStore.ListIntervals(item.slug, time.Time{}, time.Time{})
 		if len(intervals) != 1 {
 			t.Fatalf("%s: Intervalle = %+v", item.slug, intervals)
@@ -477,17 +477,17 @@ func TestSamplerKeepsHousesApartHAUSV428(t *testing.T) {
 func TestSamplerRecordsInObserveModeWithoutTouchingHomeAssistantHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
-	profile := energy.DefaultProfile("jhw22", time.Now())
+	profile := energy.DefaultProfile("demo", time.Now())
 	profile.OnboardingComplete = true
 	if err := a.energyStore.SaveProfile(profile); err != nil {
 		t.Fatal(err)
 	}
-	stored, _, err := a.energyStore.Profile("jhw22")
+	stored, _, err := a.energyStore.Profile("demo")
 	if err != nil || stored.OperatingMode != energy.ModeObserve {
 		t.Fatalf("Betriebsmodus = %q err=%v", stored.OperatingMode, err)
 	}
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 
 	recorded := runQuarterHAUSV428(t, a, tenant, fake, quarterAnchorHAUSV428(), 5.0)
 	if len(recorded) != 1 {
@@ -529,30 +529,30 @@ func TestCockpitStopsBeingEmptyAfterSamplingHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
 	steps := []url.Values{
-		{"action": {"profile"}, "household_name": {"Zuhause Kirchweg"}, "home_type": {"house"}},
+		{"action": {"profile"}, "household_name": {"Energiehaus"}, "home_type": {"house"}},
 		{"action": {"assets"}, "assets": {"pv"}},
 		{"action": {"mappings"}},
 		{"action": {"finish"}},
 	}
 	for i, form := range steps {
-		if response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", form); response.Code != http.StatusSeeOther {
+		if response := authedFormRequest(t, a, "owner@example.com", "/demo/app/zuhause/onboarding", form); response.Code != http.StatusSeeOther {
 			t.Fatalf("Onboarding-Schritt %d: status=%d", i+1, response.Code)
 		}
 	}
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
 
 	// Vor dem Messen ist die Tarifkarte leer — genau der gemeldete Zustand.
-	before := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
+	before := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
 	// Mit zugeordnetem Netzbezug ist der Leerzustand eine Wartezeit, keine
 	// Aufforderung, eine Datei zu suchen — die Karte fuellt sich von selbst.
 	if !strings.Contains(before, "Noch keine volle Viertelstunde") {
 		t.Fatal("Ausgangslage verfehlt: die Tarifkarte war schon vorher gefüllt")
 	}
 
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 	runQuarterHAUSV428(t, a, tenant, fake, quarterAnchorHAUSV428(), 16)
 
-	after := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
+	after := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
 	if strings.Contains(after, "Noch keine volle Viertelstunde") {
 		t.Fatal("die Tarifkarte ist nach dem Messen immer noch leer")
 	}
@@ -581,13 +581,13 @@ func TestCockpitStopsBeingEmptyAfterSamplingHAUSV428(t *testing.T) {
 func TestSmartMeterComparisonCanFireAfterSamplingHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 	start := quarterAnchorHAUSV428()
 
 	// Referenz aus dem Smart-Meter-Export für denselben Monat.
 	if err := a.energyStore.PutInterval(energy.Interval{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		StartsAt:   start.Add(-15 * time.Minute),
 		Duration:   15 * time.Minute,
 		AverageKW:  8.0,
@@ -621,7 +621,7 @@ func intervalsForMonthHAUSV428(t *testing.T, a *app) []energy.Interval {
 	t.Helper()
 	now := time.Now()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
-	intervals, err := a.energyStore.ListIntervals("jhw22", monthStart.UTC(), time.Time{})
+	intervals, err := a.energyStore.ListIntervals("demo", monthStart.UTC(), time.Time{})
 	if err != nil {
 		t.Fatalf("Intervalle laden: %v", err)
 	}
@@ -634,12 +634,12 @@ func intervalsForMonthHAUSV428(t *testing.T, a *app) []energy.Interval {
 func TestSampledQuarterHoursAreCoveredByRetentionExportAndDeleteHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
 	fake := newFakeHomeAssistantHAUSV428(t)
-	confirmGridImportHAUSV428(t, a, "jhw22", gridEntityHAUSV428)
-	tenant := samplerTenantHAUSV428(a, "jhw22", fake)
+	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)
+	tenant := samplerTenantHAUSV428(a, "demo", fake)
 	runQuarterHAUSV428(t, a, tenant, fake, quarterAnchorHAUSV428(), 4.2)
 
 	// Export: die Viertelstunde steht mit ihrer Quelle in der CSV.
-	intervals, _ := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
+	intervals, _ := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
 	csv, err := energyIntervalsCSV(intervals)
 	if err != nil {
 		t.Fatalf("CSV: %v", err)
@@ -656,18 +656,18 @@ func TestSampledQuarterHoursAreCoveredByRetentionExportAndDeleteHAUSV428(t *test
 	if _, err := a.energyStore.PurgeExpired(time.Time{}, time.Now().UTC().AddDate(0, 1, 0), time.Time{}); err != nil {
 		t.Fatalf("PurgeExpired: %v", err)
 	}
-	if remaining, _ := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{}); len(remaining) != 0 {
+	if remaining, _ := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{}); len(remaining) != 0 {
 		t.Fatalf("die Aufbewahrungsfrist greift nicht: %+v", remaining)
 	}
 
 	// Löschung: der Messverlauf verschwindet vollständig.
-	a.resetEnergySampler("jhw22")
+	a.resetEnergySampler("demo")
 	runQuarterHAUSV428(t, a, tenant, fake, quarterAnchorHAUSV428(), 4.2)
-	summary, err := a.energyStore.DeleteMeasurementData("jhw22")
+	summary, err := a.energyStore.DeleteMeasurementData("demo")
 	if err != nil || summary.Intervals != 1 {
 		t.Fatalf("Löschzusammenfassung = %+v err=%v", summary, err)
 	}
-	if remaining, _ := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{}); len(remaining) != 0 {
+	if remaining, _ := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{}); len(remaining) != 0 {
 		t.Fatalf("nach der Löschung blieb etwas übrig: %+v", remaining)
 	}
 }

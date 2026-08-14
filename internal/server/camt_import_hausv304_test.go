@@ -12,27 +12,27 @@ import (
 	"testing"
 	"time"
 
-	appdb "github.com/markus-barta/hausv-org/internal/db"
+	appdb "github.com/inspr-at/hausv-org/internal/db"
 )
 
 func TestCAMT053PortalPreviewApplyAndIdempotency(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if err := a.unitStore.SetTenantUnits("demo", []unit{{
 		ID:         "top-1",
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Label:      "Top 1",
 		UnitType:   unitTypeResidential,
 	}}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	period := "2026-07"
-	candidates, err := unitPaymentReferenceCandidates("jhw22", period, a.unitStore.ListTenant("jhw22"), nil)
+	candidates, err := unitPaymentReferenceCandidates("demo", period, a.unitStore.ListTenant("demo"), nil)
 	if err != nil || len(candidates) != 1 {
 		t.Fatalf("reference candidates = %+v err=%v", candidates, err)
 	}
 	xml := testCAMT053XML("urn:iso:std:iso:20022:tech:xsd:camt.053.001.08", candidates[0].Reference)
 
-	page := authedRequest(t, a, "manager@example.com", "/app/settings/payments/import?period="+period)
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/payments/import?period="+period)
 	if page.Code != http.StatusOK {
 		t.Fatalf("import page status = %d", page.Code)
 	}
@@ -42,11 +42,11 @@ func TestCAMT053PortalPreviewApplyAndIdempotency(t *testing.T) {
 		}
 	}
 
-	preview := authedMultipartFileRequest(t, a, "manager@example.com", "/app/settings/payments/import/preview", map[string]string{
+	preview := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/settings/payments/import/preview", map[string]string{
 		"period": period,
 	}, "camt_file", "kontoauszug.xml", []byte(xml))
 	token := paymentImportPreviewToken(t, preview)
-	previewPage := authedRequest(t, a, "manager@example.com", "/app/settings/payments/import?period="+period+"&preview="+url.QueryEscape(token))
+	previewPage := authedRequest(t, a, "manager@example.com", "/demo/app/settings/payments/import?period="+period+"&preview="+url.QueryEscape(token))
 	if previewPage.Code != http.StatusOK {
 		t.Fatalf("preview page status = %d", previewPage.Code)
 	}
@@ -68,64 +68,64 @@ func TestCAMT053PortalPreviewApplyAndIdempotency(t *testing.T) {
 		t.Fatalf("preview retained private bank fields: %+v", stored.Payments)
 	}
 
-	apply := authedFormRequest(t, a, "manager@example.com", "/app/settings/payments/import/apply", url.Values{
+	apply := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/payments/import/apply", url.Values{
 		"preview_token": {token},
 	})
 	if apply.Code != http.StatusSeeOther || !strings.Contains(apply.Header().Get("Location"), "result=applied") || !strings.Contains(apply.Header().Get("Location"), "changed=1") {
 		t.Fatalf("apply status=%d location=%q", apply.Code, apply.Header().Get("Location"))
 	}
-	status, ok := a.unitPaymentStore.Get("jhw22", "top-1")
+	status, ok := a.unitPaymentStore.Get("demo", "top-1")
 	if !ok || status.Status != unitPaymentStatusPaid || status.UpdatedBy != "manager@example.com" {
 		t.Fatalf("payment status after import = %+v ok=%v", status, ok)
 	}
-	unitEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionUnitPayment, Limit: 20})
-	importEvents := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIntegrationImport, Limit: 20})
+	unitEvents := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionUnitPayment, Limit: 20})
+	importEvents := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionIntegrationImport, Limit: 20})
 	if len(unitEvents) != 1 || len(importEvents) != 1 || importEvents[0].Details["changed"] != "1" {
 		t.Fatalf("audit after import unit=%+v import=%+v", unitEvents, importEvents)
 	}
 
-	secondPreview := authedMultipartFileRequest(t, a, "manager@example.com", "/app/settings/payments/import/preview", map[string]string{
+	secondPreview := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/settings/payments/import/preview", map[string]string{
 		"period": period,
 	}, "camt_file", "kontoauszug.xml", []byte(xml))
 	secondToken := paymentImportPreviewToken(t, secondPreview)
-	secondApply := authedFormRequest(t, a, "manager@example.com", "/app/settings/payments/import/apply", url.Values{
+	secondApply := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/payments/import/apply", url.Values{
 		"preview_token": {secondToken},
 	})
 	if secondApply.Code != http.StatusSeeOther || !strings.Contains(secondApply.Header().Get("Location"), "result=already") {
 		t.Fatalf("second apply status=%d location=%q", secondApply.Code, secondApply.Header().Get("Location"))
 	}
-	if got := len(a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionUnitPayment, Limit: 20})); got != 1 {
+	if got := len(a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionUnitPayment, Limit: 20})); got != 1 {
 		t.Fatalf("repeated import duplicated unit audit: %d", got)
 	}
-	if got := len(a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: auditActionIntegrationImport, Limit: 20})); got != 1 {
+	if got := len(a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionIntegrationImport, Limit: 20})); got != 1 {
 		t.Fatalf("repeated import duplicated integration audit: %d", got)
 	}
 }
 
 func TestCAMT053PortalRejectsUnauthorizedCrossOriginAndInvalidInput(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if page := authedRequest(t, a, "resident@example.com", "/app/settings/payments/import"); page.Code != http.StatusForbidden {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if page := authedRequest(t, a, "resident@example.com", "/demo/app/settings/payments/import"); page.Code != http.StatusForbidden {
 		t.Fatalf("resident import page status = %d, want 403", page.Code)
 	}
-	if post := paymentImportMultipartRequest(t, a, "resident@example.com", "http://jhw22.hausv.org", []byte("<Document/>")); post.Code != http.StatusForbidden {
+	if post := paymentImportMultipartRequest(t, a, "resident@example.com", "http://hausv.org/demo", []byte("<Document/>")); post.Code != http.StatusForbidden {
 		t.Fatalf("resident import preview status = %d, want 403", post.Code)
 	}
 
-	a = newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", UnitType: unitTypeResidential}}); err != nil {
+	a = newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if err := a.unitStore.SetTenantUnits("demo", []unit{{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential}}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	if cross := paymentImportMultipartRequest(t, a, "manager@example.com", "https://evil.example", []byte("<Document/>")); cross.Code != http.StatusForbidden {
 		t.Fatalf("cross-origin import preview status = %d, want 403", cross.Code)
 	}
-	invalid := authedMultipartFileRequest(t, a, "manager@example.com", "/app/settings/payments/import/preview", map[string]string{
+	invalid := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/settings/payments/import/preview", map[string]string{
 		"period": "2026-07",
 	}, "camt_file", "kontoauszug.txt", []byte("not xml"))
 	if invalid.Code != http.StatusSeeOther || !strings.Contains(invalid.Header().Get("Location"), "result=invalid") {
 		t.Fatalf("invalid import status=%d location=%q", invalid.Code, invalid.Header().Get("Location"))
 	}
 	oversized := bytes.Repeat([]byte("x"), maxCAMTImportBytes+1)
-	tooLarge := authedMultipartFileRequest(t, a, "manager@example.com", "/app/settings/payments/import/preview", map[string]string{
+	tooLarge := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/settings/payments/import/preview", map[string]string{
 		"period": "2026-07",
 	}, "camt_file", "kontoauszug.xml", oversized)
 	if tooLarge.Code != http.StatusSeeOther || !strings.Contains(tooLarge.Header().Get("Location"), "result=invalid") {
@@ -134,15 +134,15 @@ func TestCAMT053PortalRejectsUnauthorizedCrossOriginAndInvalidInput(t *testing.T
 }
 
 func TestCAMT053PortalShowsUnsupportedProfileWithoutApply(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", UnitType: unitTypeResidential}}); err != nil {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if err := a.unitStore.SetTenantUnits("demo", []unit{{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential}}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	preview := authedMultipartFileRequest(t, a, "manager@example.com", "/app/settings/payments/import/preview", map[string]string{
+	preview := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/settings/payments/import/preview", map[string]string{
 		"period": "2026-07",
 	}, "camt_file", "future.xml", []byte(`<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.14"><BkToCstmrStmt/></Document>`))
 	token := paymentImportPreviewToken(t, preview)
-	page := authedRequest(t, a, "manager@example.com", "/app/settings/payments/import?period=2026-07&preview="+url.QueryEscape(token))
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/payments/import?period=2026-07&preview="+url.QueryEscape(token))
 	body := page.Body.String()
 	for _, want := range []string{"Nicht unterstützt", "Abgelehnt", "Dieses camt.053-Profil wird nicht unterstützt", "Keine Übernahme möglich"} {
 		if !strings.Contains(body, want) {
@@ -164,22 +164,22 @@ func TestCAMT053ImportLedgerIsDurableAndTenantBound(t *testing.T) {
 	}
 	report := unitPaymentImportReport{Assigned: 2, Changed: 1, Unclear: 1}
 
-	if err := a.recordPaymentImportLedger("jhw22", "manager@example.com", preview, report); err != nil {
+	if err := a.recordPaymentImportLedger("demo", "manager@example.com", preview, report); err != nil {
 		t.Fatalf("record ledger: %v", err)
 	}
-	if !a.paymentImportAlreadyApplied("jhw22", preview.FileDigest) {
+	if !a.paymentImportAlreadyApplied("demo", preview.FileDigest) {
 		t.Fatal("same tenant and digest not found in durable ledger")
 	}
 	if a.paymentImportAlreadyApplied("other-house", preview.FileDigest) {
 		t.Fatal("digest leaked across tenant boundary")
 	}
-	if err := a.recordPaymentImportLedger("jhw22", "manager@example.com", preview, report); err != nil {
+	if err := a.recordPaymentImportLedger("demo", "manager@example.com", preview, report); err != nil {
 		t.Fatalf("repeat record ledger: %v", err)
 	}
 	var rows int
 	if err := database.QueryRow(
 		`SELECT COUNT(*) FROM integration_imports WHERE tenant_slug = ? AND format = ? AND file_digest = ?`,
-		"jhw22", "camt.053", preview.FileDigest,
+		"demo", "camt.053", preview.FileDigest,
 	).Scan(&rows); err != nil {
 		t.Fatalf("count ledger: %v", err)
 	}
@@ -221,11 +221,11 @@ func paymentImportMultipartRequest(t *testing.T, a *app, email, origin string, f
 	if err := writer.Close(); err != nil {
 		t.Fatalf("close multipart: %v", err)
 	}
-	token, _, err := a.sessions.Put(email, "jhw22", authMethodEmail, time.Hour)
+	token, _, err := a.sessions.Put(email, "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatalf("put session: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/app/settings/payments/import/preview", &body)
+	req := httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/app/settings/payments/import/preview", &body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("Origin", origin)
 	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})

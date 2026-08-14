@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 // Das Modell darf nie mehr Flexibilität behaupten, als der Haushalt erklärt

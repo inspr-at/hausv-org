@@ -3,7 +3,7 @@ package authz
 import (
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 // The service-provider (Dienstleister) role is the only externally-invited role

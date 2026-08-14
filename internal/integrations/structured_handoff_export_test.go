@@ -10,13 +10,13 @@ import (
 
 func TestStructuredHandoffAdapterWritesCSV(t *testing.T) {
 	record := ExportRecord{
-		TenantSlug: "JHW22",
-		RecordID:   "parking-2026-06-top-11",
+		TenantSlug: "DEMO",
+		RecordID:   "parking-2026-06-einheit-12",
 		Kind:       "payment-status",
 		Occurred:   time.Date(2026, 7, 8, 0, 0, 0, 0, time.Local),
-		UnitID:     "top-11",
+		UnitID:     "einheit-12",
 		PersonRef:  "person:max",
-		Reference:  "HV-JHW22-202606-A1B2C3",
+		Reference:  "HV-DEMO-202606-A1B2C3",
 		Amount:     MoneyAmount{Currency: "EUR", Cents: 13304},
 		Fields: map[string]string{
 			"period":             "2026-06",
@@ -47,7 +47,7 @@ func TestStructuredHandoffAdapterWritesCSV(t *testing.T) {
 
 func TestStructuredHandoffAdapterRejectsAccountingFields(t *testing.T) {
 	record := ExportRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		RecordID:   "raw-1",
 		Kind:       "payment-status",
 		Occurred:   time.Date(2026, 7, 8, 0, 0, 0, 0, time.Local),
@@ -86,7 +86,7 @@ func TestStructuredHandoffAdapterRejectsAccountingFields(t *testing.T) {
 
 func TestStructuredHandoffAdapterRejectsUnmappedFieldsAndMissingDate(t *testing.T) {
 	record := ExportRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		RecordID:   "raw-2",
 		Kind:       "payment-status",
 		Amount:     MoneyAmount{Currency: "EUR", Cents: 100},

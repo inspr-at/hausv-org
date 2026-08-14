@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func TestRunChargingModePreservesSettingsAndAudits(t *testing.T) {
@@ -23,18 +23,18 @@ func TestRunChargingModePreservesSettingsAndAudits(t *testing.T) {
 		Enabled:    true,
 		ShadowMode: true,
 	})
-	if err := parking.SetChargingControl("jhw22", settings); err != nil {
+	if err := parking.SetChargingControl("demo", settings); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := runChargingMode([]string{"--tenant", "jhw22", "--mode", "live"}); err != nil {
+	if err := runChargingMode([]string{"--tenant", "demo", "--mode", "live"}); err != nil {
 		t.Fatal(err)
 	}
 	reloaded, err := store.NewParkingStore(parkingPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := reloaded.TenantData("jhw22").Settings.Charging
+	got := reloaded.TenantData("demo").Settings.Charging
 	if !got.Enabled || got.ShadowMode {
 		t.Fatalf("expected live mode, got %+v", got)
 	}
@@ -48,7 +48,7 @@ func TestRunChargingModePreservesSettingsAndAudits(t *testing.T) {
 
 func TestRunChargingModeRejectsInvalidMode(t *testing.T) {
 	t.Setenv("PARKING_DATA_PATH", filepath.Join(t.TempDir(), "parking.json"))
-	if err := runChargingMode([]string{"--tenant", "jhw22", "--mode", "invalid"}); err == nil {
+	if err := runChargingMode([]string{"--tenant", "demo", "--mode", "invalid"}); err == nil {
 		t.Fatal("expected invalid mode error")
 	}
 }

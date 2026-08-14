@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
-	"github.com/markus-barta/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/homeassistant"
 )
 
 func consumerAppHAUSV422(t *testing.T) *app {
@@ -17,7 +17,7 @@ func consumerAppHAUSV422(t *testing.T) *app {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	steps := []url.Values{
@@ -27,7 +27,7 @@ func consumerAppHAUSV422(t *testing.T) *app {
 		{"action": {"finish"}},
 	}
 	for i, form := range steps {
-		if response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", form); response.Code != http.StatusSeeOther {
+		if response := authedFormRequest(t, a, "owner@example.com", "/demo/app/zuhause/onboarding", form); response.Code != http.StatusSeeOther {
 			t.Fatalf("Onboarding-Schritt %d: status=%d", i+1, response.Code)
 		}
 	}
@@ -36,7 +36,7 @@ func consumerAppHAUSV422(t *testing.T) *app {
 
 func addConsumerHAUSV422(t *testing.T, a *app, form url.Values) {
 	t.Helper()
-	if response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", form); response.Code != http.StatusSeeOther {
+	if response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher", form); response.Code != http.StatusSeeOther {
 		t.Fatalf("Verbraucher anlegen: status=%d body=%s", response.Code, response.Body.String())
 	}
 }
@@ -53,7 +53,7 @@ func TestTwoConsumersOfSameKindCoexistHAUSV422(t *testing.T) {
 		"name": {"Infrarotkabine"}, "kind": {"sauna"}, "rated_power_kw": {"2,5"}, "flexibility": {"shift"},
 	})
 
-	assets, err := a.energyStore.ListAssets("jhw22")
+	assets, err := a.energyStore.ListAssets("demo")
 	if err != nil {
 		t.Fatalf("Assets laden: %v", err)
 	}
@@ -83,12 +83,12 @@ func TestPresetResaveKeepsCustomConsumersHAUSV422(t *testing.T) {
 	})
 
 	// Sauna-Vorlage abwählen: der Abgleich löscht sie, der freie Verbraucher bleibt.
-	if response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding",
+	if response := authedFormRequest(t, a, "owner@example.com", "/demo/app/zuhause/onboarding",
 		url.Values{"action": {"assets"}, "assets": {"pv"}}); response.Code != http.StatusSeeOther {
 		t.Fatalf("Vorlagen erneut speichern: status=%d", response.Code)
 	}
 
-	assets, _ := a.energyStore.ListAssets("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
 	found := false
 	for _, asset := range assets {
 		if asset.Name == "Werkstatt" {
@@ -109,21 +109,21 @@ func TestPresetResaveKeepsCustomConsumersHAUSV422(t *testing.T) {
 func TestPresetResaveKeepsRecordedPowerHAUSV422(t *testing.T) {
 	a := consumerAppHAUSV422(t)
 	rated := 9.0
-	id := energy.StableAssetID("jhw22", "heat-pump")
+	id := energy.StableAssetID("demo", "heat-pump")
 	if err := a.energyStore.UpsertAsset(energy.Asset{
-		ID: id, TenantSlug: "jhw22", Kind: "heat-pump", Name: "Wärmepumpe",
+		ID: id, TenantSlug: "demo", Kind: "heat-pump", Name: "Wärmepumpe",
 		RatedPowerKW: &rated, Flexibility: energy.FlexThrottle,
 		Source: "profile-seed", Confirmed: true,
 	}); err != nil {
 		t.Fatalf("Seed-Asset speichern: %v", err)
 	}
 
-	if response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding",
+	if response := authedFormRequest(t, a, "owner@example.com", "/demo/app/zuhause/onboarding",
 		url.Values{"action": {"assets"}, "assets": {"pv", "sauna", "heat-pump"}}); response.Code != http.StatusSeeOther {
 		t.Fatalf("Vorlagen erneut speichern: status=%d", response.Code)
 	}
 
-	assets, _ := a.energyStore.ListAssets("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
 	for _, asset := range assets {
 		if asset.ID != id {
 			continue
@@ -146,9 +146,9 @@ func TestCustomConsumerCountsTowardsPeakShavingHAUSV422(t *testing.T) {
 	addConsumerHAUSV422(t, a, url.Values{
 		"name": {"Sauna Keller"}, "kind": {"sauna"}, "rated_power_kw": {"8"}, "flexibility": {"shift"},
 	})
-	assets, _ := a.energyStore.ListAssets("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
 
-	views := buildEnergyScenarioViews(energy.HomeProfile{TenantSlug: "jhw22"}, assets, scenarioIntervals(18))
+	views := buildEnergyScenarioViews(energy.HomeProfile{TenantSlug: "demo"}, assets, scenarioIntervals(18))
 	if len(views) == 0 {
 		t.Fatal("erwartet wurde ein Szenario")
 	}
@@ -163,14 +163,14 @@ func TestConsumerWithoutFlexibilityPromisesNothingHAUSV422(t *testing.T) {
 	addConsumerHAUSV422(t, a, url.Values{
 		"name": {"Serverschrank"}, "kind": {"other"}, "rated_power_kw": {"1,2"}, "flexibility": {"unknown"},
 	})
-	assets, _ := a.energyStore.ListAssets("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
 
 	for _, asset := range assets {
 		if asset.Name == "Serverschrank" && asset.Flexibility != energy.FlexUnknown {
 			t.Fatalf("offene Flexibilität wurde stillschweigend gesetzt: %q", asset.Flexibility)
 		}
 	}
-	views := buildEnergyScenarioViews(energy.HomeProfile{TenantSlug: "jhw22"}, assets, scenarioIntervals(18))
+	views := buildEnergyScenarioViews(energy.HomeProfile{TenantSlug: "demo"}, assets, scenarioIntervals(18))
 	if len(views) > 0 && strings.Contains(views[0].Assumptions, "Serverschrank") {
 		t.Fatal("ein Verbraucher ohne Flexibilität darf nicht als Peak-Wirkung erscheinen")
 	}
@@ -180,14 +180,14 @@ func TestConsumerWithoutFlexibilityPromisesNothingHAUSV422(t *testing.T) {
 // verschwinden, sonst legt der nächste Abgleich sie ohnehin wieder an.
 func TestPresetCannotBeDeletedAsConsumerHAUSV422(t *testing.T) {
 	a := consumerAppHAUSV422(t)
-	presetID := energy.StableAssetID("jhw22", "pv")
+	presetID := energy.StableAssetID("demo", "pv")
 
-	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher/entfernen",
+	response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher/entfernen",
 		url.Values{"asset_id": {presetID}})
 	if response.Code != http.StatusSeeOther {
 		t.Fatalf("status=%d", response.Code)
 	}
-	assets, _ := a.energyStore.ListAssets("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
 	for _, asset := range assets {
 		if asset.ID == presetID {
 			return
@@ -198,13 +198,13 @@ func TestPresetCannotBeDeletedAsConsumerHAUSV422(t *testing.T) {
 
 func TestPresetConsumerCanBeDeletedFromDialog(t *testing.T) {
 	a := consumerAppHAUSV422(t)
-	presetID := energy.StableAssetID("jhw22", "sauna")
-	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher/entfernen",
+	presetID := energy.StableAssetID("demo", "sauna")
+	response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher/entfernen",
 		url.Values{"asset_id": {presetID}})
 	if response.Code != http.StatusSeeOther {
 		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
 	}
-	assets, _ := a.energyStore.ListAssets("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
 	for _, asset := range assets {
 		if asset.ID == presetID {
 			t.Fatal("Verbraucher-Vorlage wurde trotz bestätigtem Löschen behalten")
@@ -236,11 +236,11 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 	}))
 	t.Cleanup(ha.Close)
 	a := consumerAppHAUSV422(t)
-	tenant := a.tenants["jhw22"]
+	tenant := a.tenants["demo"]
 	tenant.HA = homeassistant.NewConfig(ha.URL, "fixture", "", "", "")
-	a.tenants["jhw22"] = tenant
+	a.tenants["demo"] = tenant
 
-	optionsResponse := authedRequest(t, a, "owner@example.com", "/app/energie/verbraucher/messwerte")
+	optionsResponse := authedRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher/messwerte")
 	if optionsResponse.Code != http.StatusOK {
 		t.Fatalf("Messwertoptionen: status=%d body=%s", optionsResponse.Code, optionsResponse.Body.String())
 	}
@@ -252,16 +252,16 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 		t.Fatalf("erwartet Leistungs-, Energie- und Ladestands-Entities, war %+v", options)
 	}
 
-	assetID := energy.StableAssetID("jhw22", "sauna")
-	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
+	assetID := energy.StableAssetID("demo", "sauna")
+	response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher", url.Values{
 		"asset_id": {assetID}, "name": {"Sauna"}, "kind": {"sauna"}, "priority": {"1"},
 		"icon": {"alarm-clock"}, "color": {"#7755aa"}, "secondary_label": {"Verbrauch heute"}, "flexibility": {"shift"}, "measurements_present": {"1"},
 		"consumer_power_entity": {"sensor.sauna_power"}, "consumer_energy_entity": {"sensor.sauna_energy"}, "consumer_soc_entity": {"sensor.sauna_soc"},
 	})
-	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/demo/app/energie?verbraucher=gespeichert" {
 		t.Fatalf("Verbraucher speichern: status=%d location=%s", response.Code, response.Header().Get("Location"))
 	}
-	mappings, _ := a.energyStore.ListMappings("jhw22")
+	mappings, _ := a.energyStore.ListMappings("demo")
 	seen := map[string]bool{}
 	for _, mapping := range mappings {
 		if mapping.AssetID != assetID || !mapping.Confirmed {
@@ -272,7 +272,7 @@ func TestConsumerMeasurementsUseDedicatedHomeAssistantSlots(t *testing.T) {
 	if !seen[energy.MetricConsumerPower] || !seen[energy.MetricConsumerEnergy] || !seen[energy.MetricBatterySOC] {
 		t.Fatalf("alle drei Verbraucher-Messwerte müssen getrennt zugeordnet sein: %+v", mappings)
 	}
-	assets, _ := a.energyStore.ListAssets("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
 	for _, asset := range assets {
 		if asset.ID == assetID && (asset.Metadata["icon"] != "alarm-clock" || asset.Metadata["color"] != "#7755aa" || asset.Metadata["secondary_label"] != "Verbrauch heute") {
 			t.Fatalf("Darstellung des Verbrauchers nicht vollständig gespeichert: %+v", asset.Metadata)
@@ -299,23 +299,23 @@ func TestNamedEVGetsUnambiguousHomeChargingMeasurementsOnce(t *testing.T) {
 			return
 		}
 		_, _ = w.Write([]byte(`[
-			{"entity_id":"sensor.model_x_markus_charger_power","state":"3","attributes":{"friendly_name":"Model X Charger power","device_class":"power","unit_of_measurement":"kW"}},
+			{"entity_id":"sensor.model_x_vehicle_charger_power","state":"3","attributes":{"friendly_name":"Model X Charger power","device_class":"power","unit_of_measurement":"kW"}},
 			{"entity_id":"sensor.model_x_ladeleistung_zuhause","state":"3","attributes":{"friendly_name":"Model X Ladeleistung zuhause","device_class":"power","unit_of_measurement":"kW"}},
-			{"entity_id":"sensor.model_x_markus_charge_energy_added","state":"10.3","attributes":{"friendly_name":"Model X Charge energy added","device_class":"energy","unit_of_measurement":"kWh"}},
+			{"entity_id":"sensor.model_x_vehicle_charge_energy_added","state":"10.3","attributes":{"friendly_name":"Model X Charge energy added","device_class":"energy","unit_of_measurement":"kWh"}},
 			{"entity_id":"sensor.model_x_ladeenergie_zuhause","state":"10.4","attributes":{"friendly_name":"Model X Ladeenergie zuhause","device_class":"energy","unit_of_measurement":"kWh"}},
-			{"entity_id":"sensor.model_x_markus_battery_level","state":"72","attributes":{"friendly_name":"Model X Battery level","device_class":"battery","unit_of_measurement":"%"}}
+			{"entity_id":"sensor.model_x_vehicle_battery_level","state":"72","attributes":{"friendly_name":"Model X Battery level","device_class":"battery","unit_of_measurement":"%"}}
 		]`))
 	}))
 	t.Cleanup(ha.Close)
 	a := consumerAppHAUSV422(t)
-	asset := energy.Asset{ID: "asset-jhw22-model-x", TenantSlug: "jhw22", Kind: "ev", Name: "Model X", Confirmed: true}
+	asset := energy.Asset{ID: "asset-demo-model-x", TenantSlug: "demo", Kind: "ev", Name: "Model X", Confirmed: true}
 	if err := a.energyStore.UpsertAsset(asset); err != nil {
 		t.Fatal(err)
 	}
-	tenant := a.tenants["jhw22"]
+	tenant := a.tenants["demo"]
 	tenant.HA = homeassistant.NewConfig(ha.URL, "fixture", "", "", "")
 
-	mappings, _ := a.energyStore.ListMappings("jhw22")
+	mappings, _ := a.energyStore.ListMappings("demo")
 	updated, changed := a.ensureNamedEVMeasurementMappings(t.Context(), tenant, []energy.Asset{asset}, mappings)
 	if !changed {
 		t.Fatal("eindeutige Model-X-Messwerte wurden nicht automatisch zugeordnet")
@@ -328,7 +328,7 @@ func TestNamedEVGetsUnambiguousHomeChargingMeasurementsOnce(t *testing.T) {
 	}
 	if got[energy.MetricConsumerPower] != "sensor.model_x_ladeleistung_zuhause" ||
 		got[energy.MetricConsumerEnergy] != "sensor.model_x_ladeenergie_zuhause" ||
-		got[energy.MetricBatterySOC] != "sensor.model_x_markus_battery_level" {
+		got[energy.MetricBatterySOC] != "sensor.model_x_vehicle_battery_level" {
 		t.Fatalf("Zuhause-Sensoren wurden nicht bevorzugt: %+v", got)
 	}
 	if _, changedAgain := a.ensureNamedEVMeasurementMappings(t.Context(), tenant, []energy.Asset{asset}, updated); changedAgain {
@@ -338,22 +338,22 @@ func TestNamedEVGetsUnambiguousHomeChargingMeasurementsOnce(t *testing.T) {
 
 func TestConsumerCannotStealWholeHomeMeasurement(t *testing.T) {
 	a := consumerAppHAUSV422(t)
-	assetID := energy.StableAssetID("jhw22", "sauna")
+	assetID := energy.StableAssetID("demo", "sauna")
 	if err := a.energyStore.UpsertMapping(energy.EntityMapping{
-		TenantSlug: "jhw22", EntityID: "sensor.home_consumption", Metric: energy.MetricLoadPower,
+		TenantSlug: "demo", EntityID: "sensor.home_consumption", Metric: energy.MetricLoadPower,
 		DisplayName: "Hausverbrauch", Unit: "kW", DeviceClass: "power", Confirmed: true,
 	}); err != nil {
 		t.Fatal(err)
 	}
-	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
+	response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher", url.Values{
 		"asset_id": {assetID}, "name": {"Sauna"}, "kind": {"sauna"}, "priority": {"1"},
 		"icon": {"flame"}, "flexibility": {"shift"}, "measurements_present": {"1"},
 		"consumer_power_entity": {"sensor.home_consumption"},
 	})
-	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=messwerte" {
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/demo/app/energie?verbraucher=messwerte" {
 		t.Fatalf("Hausmesswert wurde nicht geschützt: status=%d location=%s", response.Code, response.Header().Get("Location"))
 	}
-	mappings, _ := a.energyStore.ListMappings("jhw22")
+	mappings, _ := a.energyStore.ListMappings("demo")
 	if len(mappings) != 1 || mappings[0].AssetID != "" || mappings[0].Metric != energy.MetricLoadPower {
 		t.Fatalf("Hausmesswert wurde umgehängt: %+v", mappings)
 	}
@@ -361,7 +361,7 @@ func TestConsumerCannotStealWholeHomeMeasurement(t *testing.T) {
 
 func TestConsumerCanBeEditedInPlaceWithLucideIconHAUSV446(t *testing.T) {
 	a := consumerAppHAUSV422(t)
-	assets, _ := a.energyStore.ListAssets("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
 	var before energy.Asset
 	for _, asset := range assets {
 		if asset.Kind == "sauna" {
@@ -373,15 +373,15 @@ func TestConsumerCanBeEditedInPlaceWithLucideIconHAUSV446(t *testing.T) {
 		t.Fatal("Sauna-Vorlage fehlt")
 	}
 
-	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
+	response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher", url.Values{
 		"asset_id": {before.ID}, "name": {"Werkstatt Sauna"}, "kind": {"sauna"},
 		"priority": {"1"}, "icon": {"drill"}, "rated_power_kw": {"7,5"}, "flexibility": {"throttle"},
 	})
-	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/demo/app/energie?verbraucher=gespeichert" {
 		t.Fatalf("Bearbeiten: status=%d location=%q body=%s", response.Code, response.Header().Get("Location"), response.Body.String())
 	}
 
-	assets, _ = a.energyStore.ListAssets("jhw22")
+	assets, _ = a.energyStore.ListAssets("demo")
 	for _, asset := range assets {
 		if asset.ID != before.ID {
 			continue
@@ -408,7 +408,7 @@ func TestConsumerIconIsRestrictedToLocalLucideWhitelistHAUSV446(t *testing.T) {
 		"icon": {malicious}, "flexibility": {"unknown"},
 	})
 
-	assets, _ := a.energyStore.ListAssets("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
 	for _, asset := range assets {
 		if asset.Name != "Nicht vertrauenswürdig" {
 			continue
@@ -423,7 +423,7 @@ func TestConsumerIconIsRestrictedToLocalLucideWhitelistHAUSV446(t *testing.T) {
 
 func TestConsumerDialogReplacesDuplicateLowerManagementHAUSV446(t *testing.T) {
 	a := consumerAppHAUSV422(t)
-	body := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
+	body := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
 	for _, want := range []string{
 		`id="energy-consumer-dialog"`, `data-consumer-dialog-title`, `Symbol auswählen`,
 		`Symbole aus der lokal eingebundenen Lucide-Library.`, `name="priority"`,
@@ -444,13 +444,13 @@ func TestConsumerDialogReplacesDuplicateLowerManagementHAUSV446(t *testing.T) {
 
 func TestParkingChargingUsesNormalEditableConsumerContract(t *testing.T) {
 	a := consumerAppHAUSV422(t)
-	assets, _ := a.energyStore.ListAssets("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
 	charging := parkingLiveView{
 		Available: true, Mode: "manual", ModeLabel: "Normalladen", PowerKW: 3.6,
 		PowerEntity: "sensor.parking_power", EnergyEntity: "sensor.parking_energy",
 	}
-	cfg := buildEnergyFlowConfig("jhw22", energyLiveView{}, assets, nil, nil, charging, true)
-	parkingID := energyFlowNodeID("jhw22", "parking")
+	cfg := buildEnergyFlowConfig("demo", energyLiveView{}, assets, nil, nil, charging, true)
+	parkingID := energyFlowNodeID("demo", "parking")
 	found := false
 	for _, consumer := range cfg.Consumers {
 		if consumer.ID != parkingID {
@@ -464,12 +464,12 @@ func TestParkingChargingUsesNormalEditableConsumerContract(t *testing.T) {
 	if !found {
 		t.Fatal("konfigurierter Parkplatz fehlt im Energiefluss")
 	}
-	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher/entfernen", url.Values{"asset_id": {parkingID}})
+	response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher/entfernen", url.Values{"asset_id": {parkingID}})
 	if response.Code != http.StatusSeeOther {
 		t.Fatalf("Parkplatz löschen: status=%d", response.Code)
 	}
-	assets, _ = a.energyStore.ListAssets("jhw22")
-	cfg = buildEnergyFlowConfig("jhw22", energyLiveView{}, assets, nil, nil, charging, true)
+	assets, _ = a.energyStore.ListAssets("demo")
+	cfg = buildEnergyFlowConfig("demo", energyLiveView{}, assets, nil, nil, charging, true)
 	for _, consumer := range cfg.Consumers {
 		if consumer.ID == parkingID {
 			t.Fatal("gelöschter Parkplatz bleibt im Energiefluss")
@@ -499,27 +499,27 @@ func TestStorageChargePowerIsExplicitlyConfigurableAndDisplayed(t *testing.T) {
 	}))
 	t.Cleanup(ha.Close)
 	a := consumerAppHAUSV422(t)
-	storageID := energy.StableAssetID("jhw22", "battery")
-	if err := a.energyStore.UpsertAsset(energy.Asset{ID: storageID, TenantSlug: "jhw22", Kind: "battery", Name: "Speicher", Confirmed: true}); err != nil {
+	storageID := energy.StableAssetID("demo", "battery")
+	if err := a.energyStore.UpsertAsset(energy.Asset{ID: storageID, TenantSlug: "demo", Kind: "battery", Name: "Speicher", Confirmed: true}); err != nil {
 		t.Fatal(err)
 	}
-	tenant := a.tenants["jhw22"]
+	tenant := a.tenants["demo"]
 	tenant.HA = homeassistant.NewConfig(ha.URL, "fixture", "", "", "")
-	a.tenants["jhw22"] = tenant
-	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
+	a.tenants["demo"] = tenant
+	response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher", url.Values{
 		"asset_id": {storageID}, "node_type": {"storage"}, "name": {"Hausspeicher"}, "icon": {"battery-charging"},
 		"color": {"#336699"}, "secondary_label": {"Akkustand"},
 		"battery_charge_entity": {"sensor.storage_charge"}, "battery_soc_entity": {"sensor.storage_soc"},
 		"secondary_energy_entity": {"sensor.storage_energy"},
 	})
-	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/demo/app/energie?verbraucher=gespeichert" {
 		t.Fatalf("Speicher speichern: status=%d location=%s", response.Code, response.Header().Get("Location"))
 	}
-	mappings, _ := a.energyStore.ListMappings("jhw22")
+	mappings, _ := a.energyStore.ListMappings("demo")
 	metrics, _, _ := a.currentEnergyMetrics(t.Context(), tenant, mappings, energy.HomeProfile{})
 	live := buildEnergyLiveView(metrics)
-	assets, _ := a.energyStore.ListAssets("jhw22")
-	cfg := buildEnergyFlowConfig("jhw22", live, assets, mappings, metrics, parkingLiveView{}, true)
+	assets, _ := a.energyStore.ListAssets("demo")
+	cfg := buildEnergyFlowConfig("demo", live, assets, mappings, metrics, parkingLiveView{}, true)
 	if cfg.Storage == nil || cfg.Storage.Mode != "lädt" || cfg.Storage.Value != "2,4" || cfg.Storage.Label != "Hausspeicher" || cfg.Storage.Icon != "battery-charging" || cfg.Storage.Color != "#336699" || cfg.Storage.SecondaryLabel != "Akkustand" || cfg.Storage.Secondary != "85\u00a0% · 4,3\u00a0kWh" {
 		t.Fatalf("konfigurierte Ladeleistung wird nicht angezeigt: %+v", cfg.Storage)
 	}
@@ -535,7 +535,7 @@ func TestStorageKeepsLegacyWholeHomeChargeLevel(t *testing.T) {
 		HasBatterySOC: true,
 		BatterySOC:    energyMetricView{Value: "78\u00a0%", Numeric: 78, Unit: "%"},
 	}
-	cfg := buildEnergyFlowConfig("jhw22", live, nil, nil, nil, parkingLiveView{}, true)
+	cfg := buildEnergyFlowConfig("demo", live, nil, nil, nil, parkingLiveView{}, true)
 	if cfg.Storage == nil || cfg.Storage.Secondary != "78\u00a0%" {
 		t.Fatalf("globaler Legacy-Ladestand fehlt am Speicher: %+v", cfg.Storage)
 	}
@@ -555,19 +555,19 @@ func TestStorageColorSaveMigratesLegacyChargeAndDischargeMappings(t *testing.T) 
 	}))
 	t.Cleanup(ha.Close)
 	a := consumerAppHAUSV422(t)
-	storageID := energy.StableAssetID("jhw22", "battery")
-	if err := a.energyStore.UpsertAsset(energy.Asset{ID: storageID, TenantSlug: "jhw22", Kind: "battery", Name: "Batteriespeicher", Confirmed: true}); err != nil {
+	storageID := energy.StableAssetID("demo", "battery")
+	if err := a.energyStore.UpsertAsset(energy.Asset{ID: storageID, TenantSlug: "demo", Kind: "battery", Name: "Batteriespeicher", Confirmed: true}); err != nil {
 		t.Fatal(err)
 	}
 	for _, mapping := range []energy.EntityMapping{
-		{TenantSlug: "jhw22", AssetID: storageID, EntityID: "sensor.battery_charge_power", Metric: energy.MetricBatteryPower, DisplayName: "Battery Charge Power", Unit: "W", DeviceClass: "power", Confirmed: true},
-		{TenantSlug: "jhw22", AssetID: storageID, EntityID: "sensor.battery_discharge_power", Metric: energy.MetricBatteryPower, DisplayName: "Battery Discharge Power", Unit: "W", DeviceClass: "power", Confirmed: true},
+		{TenantSlug: "demo", AssetID: storageID, EntityID: "sensor.battery_charge_power", Metric: energy.MetricBatteryPower, DisplayName: "Battery Charge Power", Unit: "W", DeviceClass: "power", Confirmed: true},
+		{TenantSlug: "demo", AssetID: storageID, EntityID: "sensor.battery_discharge_power", Metric: energy.MetricBatteryPower, DisplayName: "Battery Discharge Power", Unit: "W", DeviceClass: "power", Confirmed: true},
 	} {
 		if err := a.energyStore.UpsertMapping(mapping); err != nil {
 			t.Fatal(err)
 		}
 	}
-	mappings, _ := a.energyStore.ListMappings("jhw22")
+	mappings, _ := a.energyStore.ListMappings("demo")
 	slots := energyFlowNodeSlots("storage", storageID, mappings)
 	assigned := map[string]string{}
 	for _, slot := range slots {
@@ -576,17 +576,17 @@ func TestStorageColorSaveMigratesLegacyChargeAndDischargeMappings(t *testing.T) 
 	if assigned["battery_power_entity"] != "" || assigned["battery_charge_entity"] != "sensor.battery_charge_power" || assigned["battery_discharge_entity"] != "sensor.battery_discharge_power" {
 		t.Fatalf("Legacy-Speichermesswerte landen in falschen Feldern: %+v", assigned)
 	}
-	tenant := a.tenants["jhw22"]
+	tenant := a.tenants["demo"]
 	tenant.HA = homeassistant.NewConfig(ha.URL, "fixture", "", "", "")
-	a.tenants["jhw22"] = tenant
-	response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher", url.Values{
+	a.tenants["demo"] = tenant
+	response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher", url.Values{
 		"asset_id": {storageID}, "node_type": {"storage"}, "name": {"Batteriespeicher"}, "icon": {"battery"}, "color": {"#224466"},
 		"battery_charge_entity": {assigned["battery_charge_entity"]}, "battery_discharge_entity": {assigned["battery_discharge_entity"]},
 	})
-	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/app/energie?verbraucher=gespeichert" {
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/demo/app/energie?verbraucher=gespeichert" {
 		t.Fatalf("reine Anzeigeänderung mit Legacy-Messwerten: status=%d location=%s", response.Code, response.Header().Get("Location"))
 	}
-	mappings, _ = a.energyStore.ListMappings("jhw22")
+	mappings, _ = a.energyStore.ListMappings("demo")
 	metricsByEntity := map[string]string{}
 	for _, mapping := range mappings {
 		if mapping.AssetID == storageID {
@@ -605,7 +605,7 @@ func TestAllVisibleSystemFlowNodesExposeConfiguration(t *testing.T) {
 		HasBattery: true, Battery: energyMetricView{Numeric: 400, Unit: "W", Direction: "charging"},
 		Flows: []energyMetricView{{Metric: energy.MetricPVPower, Numeric: 1500, Unit: "W"}},
 	}
-	cfg := buildEnergyFlowConfig("jhw22", live, nil, nil, nil, parkingLiveView{}, true)
+	cfg := buildEnergyFlowConfig("demo", live, nil, nil, nil, parkingLiveView{}, true)
 	nodes := []*energyFlowNodeConfig{&cfg.Home, cfg.Grid, cfg.Storage}
 	if len(cfg.Producers) != 1 {
 		t.Fatalf("PV-Knoten fehlt: %+v", cfg.Producers)

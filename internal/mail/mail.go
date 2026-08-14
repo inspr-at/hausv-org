@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/config"
+	"github.com/inspr-at/hausv-org/internal/config"
 )
 
 const (
@@ -198,7 +198,12 @@ func privacyURL(raw string) string {
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		return "/datenschutz"
 	}
-	u.Path = "/datenschutz"
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) > 0 && parts[0] != "" && parts[0] != "auth" {
+		u.Path = "/" + parts[0] + "/datenschutz"
+	} else {
+		u.Path = "/datenschutz"
+	}
 	u.RawPath = ""
 	u.RawQuery = ""
 	u.Fragment = ""

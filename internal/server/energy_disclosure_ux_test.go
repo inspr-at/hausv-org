@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 func TestEnergyObservationProgressUsesMeasuredAndEstimatedQuarterHours(t *testing.T) {
@@ -69,11 +69,11 @@ func TestEnergyTariffCoverageKeepsCompactAndDetailedQualityWording(t *testing.T)
 
 func TestEnergyFirstViewportDisclosuresRenderDynamicContextAndRealActions(t *testing.T) {
 	a := energyCockpitAppHAUSV425(t, 16, "")
-	body := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
+	body := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
 
 	for _, want := range []string{
 		`Noch keine Live-Werte`,
-		`href="/app/zuhause/onboarding?step=4"`,
+		`href="/demo/app/zuhause/onboarding?step=4"`,
 		`data-energy-disclosure="tariff"`,
 		`data-energy-help="tariff"`,
 		`data-energy-help="annual"`,
@@ -93,9 +93,9 @@ func TestEnergyFirstViewportDisclosuresRenderDynamicContextAndRealActions(t *tes
 		`Keine Tarif- oder Einspargarantie.`,
 		`Regelprofil at-ne7-draft-2027-v1`,
 		`Quelle: E-Control, Begutachtungsentwurf`,
-		`action="/app/energie/target"`,
-		`action="/app/energie/anschlussleistung"`,
-		`action="/app/energie/tariff/assessment"`,
+		`action="/demo/app/energie/target"`,
+		`action="/demo/app/energie/anschlussleistung"`,
+		`action="/demo/app/energie/tariff/assessment"`,
 		`Diesen Stand festhalten`,
 		`data-energy-disclosure="recommendation"`,
 		`Für eine Empfehlung fehlen noch ausreichend abgeschlossene Viertelstunden.`,
@@ -103,7 +103,7 @@ func TestEnergyFirstViewportDisclosuresRenderDynamicContextAndRealActions(t *tes
 		`Automatisch · keine Steuerung`,
 		`Noch keine belastbare Wirkung`,
 		`Beobachtung läuft`,
-		`action="/app/energie/measure"`,
+		`action="/demo/app/energie/measure"`,
 		`name="share" value="inventory"`,
 		`name="share" value="measurements"`,
 		`name="share" value="contact"`,
@@ -118,7 +118,7 @@ func TestEnergyFirstViewportDisclosuresRenderDynamicContextAndRealActions(t *tes
 
 func TestEnergyTariffHeaderHelpExplainsDynamicMinimumReason(t *testing.T) {
 	a := energyCockpitAppHAUSV425(t, 3, "40")
-	body := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
+	body := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
 
 	start := strings.Index(body, `data-energy-help="tariff"`)
 	if start < 0 {

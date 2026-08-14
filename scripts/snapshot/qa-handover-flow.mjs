@@ -141,11 +141,11 @@ async function ensureUnit() {
   const context = await newContext(1024);
   const page = await localLogin(context);
   await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
-  if (!(await page.getByText('Top 11', { exact: true }).count())) {
+  if (!(await page.getByText('Einheit 12', { exact: true }).count())) {
     const panel = page.locator('#unit-add');
     if (!(await panel.evaluate((element) => element.open))) await panel.locator('summary').click();
     const form = panel.locator('form');
-    await form.locator('input[name="label"]').fill('Top 11');
+    await form.locator('input[name="label"]').fill('Einheit 12');
     await form.locator('input[name="owner_emails"]').fill('owner@example.com');
     await form.locator('input[name="renter_emails"]').fill('resident@example.com');
     await form.getByRole('button', { name: 'Einheit anlegen' }).click();
@@ -186,8 +186,8 @@ async function createHandover() {
   await page.goto(`${baseURL}/app/uebergaben`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /Übergabe anlegen/ }).first().click();
   const dialog = page.locator('#handover-create[open]');
-  await dialog.locator('input[name="title"]').fill('Nutzerwechsel Top 11');
-  await dialog.locator('select[name="unit_id"]').selectOption({ label: 'Top 11' });
+  await dialog.locator('input[name="title"]').fill('Nutzerwechsel Einheit 12');
+  await dialog.locator('select[name="unit_id"]').selectOption({ label: 'Einheit 12' });
   await dialog.locator('[name="rooms_text"]').fill('Wohnzimmer | sehr gut | keine Mängel');
 
   const people = dialog.locator('details.dialog-optional').filter({ hasText: 'Personen für Bestätigung' });
@@ -213,7 +213,7 @@ async function createHandover() {
   await capture(page, 'baseline-dialog-complete-1024', false);
   await dialog.getByRole('button', { name: 'Übergabe anlegen' }).click();
   await page.waitForURL(/handover=created/);
-  const card = page.locator('article.handover-card').filter({ hasText: 'Nutzerwechsel Top 11' }).first();
+  const card = page.locator('article.handover-card').filter({ hasText: 'Nutzerwechsel Einheit 12' }).first();
   await card.waitFor({ state: 'visible' });
   const id = (await card.getAttribute('id'))?.replace(/^handover-/, '');
   if (!id) fail('ID der angelegten Übergabe fehlt');
@@ -243,7 +243,7 @@ async function captureManagerState(state) {
       const filedSection = page.locator('details.handover-section').filter({ hasText: 'Abgeschlossen' });
       if (!(await filedSection.evaluate((element) => element.open))) await filedSection.locator(':scope > summary').click();
     }
-    const card = page.locator('article.handover-card').filter({ hasText: 'Nutzerwechsel Top 11' }).first();
+    const card = page.locator('article.handover-card').filter({ hasText: 'Nutzerwechsel Einheit 12' }).first();
     await card.waitFor({ state: 'visible' });
     await assertNoOverflow(page, `${state} Verwaltung ${width}`);
     if (width <= 390) {
@@ -259,7 +259,7 @@ async function capturePublicReview(token, state) {
     const context = await newContext(width);
     const page = await context.newPage();
     await page.goto(`${baseURL}/handover/${token}`, { waitUntil: 'networkidle' });
-    await page.getByRole('heading', { name: 'Nutzerwechsel Top 11' }).waitFor();
+    await page.getByRole('heading', { name: 'Nutzerwechsel Einheit 12' }).waitFor();
     const publicAttachment = page.getByRole('link', { name: /wohnzimmer-qa\.png/ });
     await publicAttachment.waitFor();
     const attachmentHref = await publicAttachment.getAttribute('href');
@@ -327,7 +327,7 @@ async function assertLockedAfterFirstConfirmation() {
   const context = await newContext(390);
   const page = await localLogin(context);
   await page.goto(`${baseURL}/app/uebergaben`, { waitUntil: 'networkidle' });
-  const card = page.locator('article.handover-card').filter({ hasText: 'Nutzerwechsel Top 11' }).first();
+  const card = page.locator('article.handover-card').filter({ hasText: 'Nutzerwechsel Einheit 12' }).first();
   if (await card.locator('form.handover-add-files').count()) fail('Dateien bleiben nach erster Bestätigung veränderbar');
   if (await card.locator('.attachment-delete').count()) fail('Anhang bleibt nach erster Bestätigung löschbar');
   if (await card.locator('details.handover-details').evaluate((element) => element.open)) fail('Halb bestätigte Manager-Karte öffnet Details ungefragt');
@@ -339,7 +339,7 @@ async function fileAndVerify() {
   const context = await newContext(390);
   const page = await localLogin(context);
   await page.goto(`${baseURL}/app/uebergaben`, { waitUntil: 'networkidle' });
-  const card = page.locator('article.handover-card').filter({ hasText: 'Nutzerwechsel Top 11' }).first();
+  const card = page.locator('article.handover-card').filter({ hasText: 'Nutzerwechsel Einheit 12' }).first();
   await card.getByRole('button', { name: 'Jetzt ablegen' }).click();
   await page.waitForURL(/handover=filed/);
   await page.getByRole('link', { name: 'Dokument öffnen' }).waitFor();
@@ -354,7 +354,7 @@ async function fileAndVerify() {
   await page.goto(`${baseURL}/app/uebergaben`, { waitUntil: 'networkidle' });
   const filedSection = page.locator('details.handover-section').filter({ hasText: 'Abgeschlossen' });
   if (!(await filedSection.evaluate((element) => element.open))) await filedSection.locator(':scope > summary').click();
-  const filedCard = page.locator('article.handover-card').filter({ hasText: 'Nutzerwechsel Top 11' }).first();
+  const filedCard = page.locator('article.handover-card').filter({ hasText: 'Nutzerwechsel Einheit 12' }).first();
   await filedCard.locator('details.handover-details summary').click();
   const image = filedCard.locator('.attachment-open').first();
   if (!(await image.count())) fail('Anhang fehlt im abgelegten Protokoll');

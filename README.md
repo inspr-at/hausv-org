@@ -43,9 +43,20 @@ go run ./cmd/hausv-org
 
 `.env.local` is ignored by Git. Do not commit credentials or production configuration.
 
+## Tenant URLs
+
+One installation serves multiple portals below one domain. Each tenant has a
+stable slug and is available at `https://hausv.org/<slug>`, for example
+`https://hausv.org/demo`. Adding a tenant does not require a DNS change.
+
+Tenant metadata is supplied through `WEG_TENANTS_JSON`. Hosting paths, operator
+details, Home Assistant credentials and other deployment-specific values stay
+outside the repository. See the deployment documentation for the required
+runtime settings.
+
 ## Documentation
 
-- [Deployment](docs/csb1-deploy.md)
+- [Deployment](docs/production-deploy.md)
 - [Browser QA](docs/playwright-main-flow-qa.md)
 - [Service provider privacy](docs/service-provider-privacy.md)
 - [Structured logging QA](docs/structured-log-qa.md)

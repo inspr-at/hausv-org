@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 func scenarioOfHAUSV422(t *testing.T, assets []energy.Asset) energyScenarioView {

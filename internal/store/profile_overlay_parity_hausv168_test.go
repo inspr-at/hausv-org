@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
 )
 
 // TestProfileOverlayStorageParity runs the JSON and SQLite backends through

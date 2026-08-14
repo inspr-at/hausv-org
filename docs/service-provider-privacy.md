@@ -52,11 +52,9 @@ bestimmt.
   konkreten Auftrags. Ob er für einzelne Verarbeitungsschritte eigener
   Verantwortlicher oder Auftragsverarbeiter ist, ergibt sich aus dem realen
   Vertrag, nicht aus der Rollenbezeichnung im Portal.
-- Resend verarbeitet Transaktionsmails als Auftragsverarbeiter des
-  Resend-Kunden. Zitadel wird auf demselben Netcup-Host selbst betrieben und
-  verarbeitet die für den gewählten SSO-Weg erforderliche Identität. Cloudflare
-  vermittelt den öffentlichen Webzugriff; verschlüsselte Sicherungen liegen in
-  einer Hetzner Storage Box.
+- Die für Hosting, Webzugriff, Identität, Mail und Sicherungen eingesetzten
+  Anbieter werden je Betrieb dokumentiert und vertraglich geprüft. Das Portal
+  selbst setzt keinen bestimmten Anbieter voraus.
 
 ## Zwecke und Rechtsgrundlagen der Selbstprüfung
 
@@ -103,30 +101,22 @@ Rolle und konkretes Objekt; negative Zugriffstests sichern diese Grenzen.
 
 ## Auftragsverarbeiter und Drittland
 
-Der Primärbetrieb liegt bei Netcup in Wien. Cloudflare verarbeitet beim
-vermittelten Webzugriff technisch notwendige Verbindungsdaten in seinem
-globalen Netz. Restic verschlüsselt Sicherungen vor der Übertragung an eine
-Hetzner Storage Box innerhalb der EU. Die vorgesehenen
-Auftragsverarbeitungsnachweise und konkreten TOMs stehen im
-[`JHW22-Art.-28-/TOM-Freigabepaket`](jhw22-art28-tom-approval.md).
+Hosting, Webschutz, Identitätsdienst, Mailversand und verschlüsselte Sicherungen
+sind betreiberspezifisch. Vor Freigabe werden die tatsächlich eingesetzten
+Anbieter, Verarbeitungsregionen, Aufbewahrungsfristen, DPAs, TOMs,
+Unterauftragnehmer und allfällige Drittlandtransfers dokumentiert. Die Vorlage
+dafür ist das
+[`Art.-28-/TOM-Freigabepaket`](processor-approval-template.md).
 
-Resend speichert laut eigener Dokumentation Accountdaten einschließlich
-E-Mail-Metadaten, Logs und API-Aufzeichnungen unabhängig von der Senderegion in
-den USA. Die aktuelle DPA ist Teil des Resend-Vertrags, behandelt Resend
-grundsätzlich als Auftragsverarbeiter und bindet EU-Standardvertragsklauseln
-ein. Die aktive Domain `notify.hausv.org` ist für die Versandregion
-`eu-west-1` (Irland) verifiziert; dies ändert nichts an der US-Speicherung der
-Account- und Protokolldaten. Resend nennt 30 Tage für reguläre E-Mail-Inhalte
-und laut DPA bis zu 90 Tage für die Löschung verbleibender Kunden-/Nutzerdaten
-nach Vertragsende. Der Betreiber prüft DPA, Transfermechanismus und die
-veröffentlichte Subprozessorliste mindestens jährlich und bei
-Änderungsmitteilungen.
+Ein Anbieterwechsel oder neuer Drittlandtransfer schließt das technische Gate,
+bis Vertrag, Risikoprüfung und öffentliche Datenschutzinformation aktualisiert
+sind.
 
 Das Web-Frontend lädt keine externen Schriften, Analyse- oder Werbeskripte.
 
 ## Information und Betroffenenrechte
 
-`/datenschutz` ist vor der Anmeldung öffentlich erreichbar und wird in
+`/<portal>/datenschutz` ist vor der Anmeldung öffentlich erreichbar und wird in
 Einladungs- und Magic-Link-Mails verlinkt. Die Seite nennt Zwecke, Kategorien,
 Empfänger, Drittlandtransfer, Aufbewahrung, Kontakte, Gate-Status und Rechte.
 Anfragen nach Art. 12 bis 22 DSGVO gehen an den dort genannten Hauskontakt; der
@@ -147,8 +137,8 @@ Löschung.
 - Audit-Live-Datei rotiert nach 10 MiB, 90 Tagen oder 20.000 Einträgen.
   Auditdaten werden nach drei Jahren zur Löschung fällig und beim nächsten
   sechsstündlichen Bereinigungslauf aus Live-Datei und Archiven entfernt.
-- Resend: reguläre E-Mail-Inhalte laut Anbieter 30 Tage; verbleibende
-  Kunden-/Nutzerdaten nach Vertragsende laut DPA innerhalb von 90 Tagen.
+- Betriebsabhängige Mail- und Metadatenfristen werden in der öffentlichen
+  Datenschutzinformation des jeweiligen Betreibers ausgewiesen.
 
 ## Wiederholbare Betreiberentscheidung
 
@@ -160,7 +150,7 @@ Vor `SERVICE_PROVIDER_ACCESS_ENABLED=true` wird dokumentiert:
    der Betrieb für eine andere verantwortliche Stelle erfolgt.
 4. Unterauftragsverarbeiter, kontobezogene AVV-/DPA-Nachweise,
    Transfermechanismen und aktuelle Subprozessoren wurden geprüft.
-5. Einladung verweist auf `/datenschutz`; Freitext-/Foto-Hinweise sind sichtbar.
+5. Einladung verweist auf `/<portal>/datenschutz`; Freitext-/Foto-Hinweise sind sichtbar.
 6. Es gibt keine beabsichtigten Art.-9-/10-Daten oder ein anderes
    DSFA-Hochrisikomerkmal.
 7. Lösch- und Betroffenenprozess ist organisatorisch zugewiesen.
@@ -178,8 +168,3 @@ oder unerreichbares Abnahmekriterium.
 - [DSB: Rechte betroffener Personen](https://dsb.gv.at/rechte-pflichten/ihre-rechte-als-betroffene-person)
 - [EDSA: Accountability](https://www.edpb.europa.eu/topics/accountability-and-compliance-tools/accountability_en)
 - [EDSA: Guidelines 07/2020 zu Verantwortlichen/Auftragsverarbeitern](https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-072020-concepts-controller-and-processor-gdpr_en)
-- [Resend DPA](https://resend.com/legal/dpa)
-- [Resend Datenregionen](https://resend.com/docs/dashboard/domains/regions)
-- [Resend Subprozessoren](https://resend.com/legal/subprocessors)
-- [Cloudflare Customer DPA](https://www.cloudflare.com/cloudflare-customer-dpa/)
-- [Hetzner: Datenschutz und AVV](https://docs.hetzner.com/de/general/company-and-policy/data-protection-at-hetzner/)

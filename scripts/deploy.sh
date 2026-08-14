@@ -4,7 +4,7 @@
 #   scripts/deploy.sh [--dry-run]
 #
 # CI proves the exact commit on Blacksmith but never publishes an image.
-# Production is built from `git archive HEAD` on csb1 after every precondition
+# Production is built from `git archive HEAD` on the configured host after every precondition
 # below has passed. A schema-changing release first creates a quiesced,
 # transactionally consistent recovery point outside the live mount.
 #
@@ -19,9 +19,7 @@ fail_before_change() {
     exit 1
 }
 
-# POSIX single-quote escaping. csb1's SSH login shell is fish, which decodes
-# the '\'' idiom identically to sh — verified by round-tripping quotes,
-# backslashes, dollars, backticks, globs and newlines through `fish -c`.
+# POSIX single-quote escaping for the configured SSH transport.
 shell_quote() {
     printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
 }
@@ -61,10 +59,10 @@ encode_locked_body() {
 }
 
 locked_remote_script() {
-    # Hold the csb1 project lock across the complete transition, not merely
+    # Hold the deployment project lock across the complete transition, not merely
     # one compose subprocess. This keeps retag + recreate and
     # stop + snapshot + restart atomic against declarative reconcile jobs.
-    # The body travels as data so csb1's fish login shell never reparses its
+    # The body travels as data so the remote login shell never reparses its
     # POSIX quotes, Docker templates, parentheses or redirections.
     local encoded
     encoded=$(encode_locked_body "$1") || return 1
@@ -107,7 +105,7 @@ print_rollback() {
         echo "locked schema recovery shell: $(printable_locked_recovery_ssh "$4" "$3")"
         echo "inside that same locked shell, containment command: $containment_body"
         # shellcheck disable=SC1111 # German typographic quotes, intentional
-        echo "restore procedure: hausv-org docs/csb1-deploy.md → “Schema rollback procedure”; keep the locked shell open through verification, data replacement and recreation."
+        echo "restore procedure: hausv-org docs/production-deploy.md → “Schema rollback procedure”; keep the locked shell open through verification, data replacement and recreation."
         echo "inside that same locked shell after the matching data restore: $image_body"
     else
         if image_script=$(locked_remote_script "$image_body"); then
@@ -142,26 +140,35 @@ for arg in ${@+"$@"}; do
     esac
 done
 
-ssh_host=mba@cs1.barta.cm
-ssh_port=2222
+required_deploy_env() {
+    local name=$1 value
+    eval "value=\${$name-}"
+    [ -n "$value" ] || fail_before_change "$name is required; load a private deployment environment file"
+    printf '%s' "$value"
+}
+
+ssh_host=$(required_deploy_env HAUSV_DEPLOY_SSH_HOST)
+ssh_port=${HAUSV_DEPLOY_SSH_PORT:-22}
 github_repo=inspr-at/hausv-org
 workflow=CI
-image=ghcr.io/markus-barta/hausv-org:latest
-compose_dir=/home/mba/Code/nixcfg/hosts/csb1/docker
-compose_file=/etc/compose/csb1/docker-compose.yml
-compose_project=csb1
-compose_lock=/run/lock/compose-csb1.lock
-compose_lock_dir=/run/lock
-flock_bin=/run/current-system/sw/bin/flock
-base64_bin=/run/current-system/sw/bin/base64
-mktemp_bin=/run/current-system/sw/bin/mktemp
+image=${HAUSV_DEPLOY_IMAGE:-ghcr.io/inspr-at/hausv-org:latest}
+case $image in *:latest) ;; *) fail_before_change "HAUSV_DEPLOY_IMAGE must end in :latest" ;; esac
+image_repo=${image%:latest}
+compose_dir=$(required_deploy_env HAUSV_DEPLOY_COMPOSE_DIR)
+compose_file=$(required_deploy_env HAUSV_DEPLOY_COMPOSE_FILE)
+compose_project=${HAUSV_DEPLOY_COMPOSE_PROJECT:-hausv}
+compose_lock=${HAUSV_DEPLOY_COMPOSE_LOCK:-/run/lock/hausv-compose.lock}
+compose_lock_dir=${compose_lock%/*}
+flock_bin=${HAUSV_DEPLOY_FLOCK_BIN:-/usr/bin/flock}
+base64_bin=${HAUSV_DEPLOY_BASE64_BIN:-/usr/bin/base64}
+mktemp_bin=${HAUSV_DEPLOY_MKTEMP_BIN:-/usr/bin/mktemp}
 compose_command="docker compose --project-directory $compose_dir -p $compose_project -f $compose_file"
 service=hausv-org
 build_dir=/tmp/hausv-build
-data_dir=/var/lib/csb1-docker/hausv-org
-snapshot_root=/var/lib/csb1-docker/hausv-org-predeploy
-live_url=https://jhw22.hausv.org/
-health_url=https://jhw22.hausv.org/healthz
+data_dir=$(required_deploy_env HAUSV_DEPLOY_DATA_DIR)
+snapshot_root=$(required_deploy_env HAUSV_DEPLOY_SNAPSHOT_ROOT)
+live_url=$(required_deploy_env HAUSV_DEPLOY_LIVE_URL)
+health_url=${HAUSV_DEPLOY_HEALTH_URL:-${live_url%/}/healthz}
 verify_attempts=15
 verify_sleep=2
 if [ -n "${HAUSV_DEPLOY_VERIFY_ATTEMPTS+x}" ]; then
@@ -318,7 +325,7 @@ case $schema_diff_status in
     *) fail_before_change "cannot determine whether database migrations changed" ;;
 esac
 
-previous_tag="ghcr.io/markus-barta/hausv-org:prev-$live_version-$live_commit"
+previous_tag="$image_repo:prev-$live_version-$live_commit"
 
 # Read-only remote preflight. It verifies the currently healthy service, image,
 # compose entry and (for schema changes) non-interactive root capability. The
@@ -463,7 +470,7 @@ ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$preserve_script")" \
     || fail_before_change "could not preserve the currently running image"
 echo "preserved previous image: $previous_tag"
 
-release_tag="ghcr.io/markus-barta/hausv-org:release-$app_version-$commit"
+release_tag="$image_repo:release-$app_version-$commit"
 echo "building exact HEAD…"
 export COPYFILE_DISABLE=1
 build_script="\

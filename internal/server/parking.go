@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/homeassistant"
 )
 
 func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {

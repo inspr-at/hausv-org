@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
 )
 
 func TestUnitPaymentStatusStorageParity(t *testing.T) {
@@ -30,14 +30,14 @@ func TestUnitPaymentStatusStorageParity(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			s := build(t)
 
-			if _, ok := s.Get("jhw22", "w-01"); ok {
+			if _, ok := s.Get("demo", "w-01"); ok {
 				t.Fatal("unknown (tenant,unit) must not be found")
 			}
 			if _, err := s.Set(UnitPaymentStatus{TenantSlug: "", UnitID: "w-01", Status: "bezahlt"}); err == nil {
 				t.Fatal("missing tenant must error")
 			}
 
-			set, err := s.Set(UnitPaymentStatus{TenantSlug: "jhw22", UnitID: "W 01", Status: "bezahlt", UpdatedBy: "admin@example.com"})
+			set, err := s.Set(UnitPaymentStatus{TenantSlug: "demo", UnitID: "W 01", Status: "bezahlt", UpdatedBy: "admin@example.com"})
 			if err != nil {
 				t.Fatalf("set: %v", err)
 			}
@@ -45,22 +45,22 @@ func TestUnitPaymentStatusStorageParity(t *testing.T) {
 				t.Fatalf("set returned %+v", set)
 			}
 
-			got, ok := s.Get("jhw22", "w-01") // normalized unit lookup
+			got, ok := s.Get("demo", "w-01") // normalized unit lookup
 			if !ok || got.Status != "bezahlt" || got.UpdatedBy != "admin@example.com" {
 				t.Fatalf("get mismatch: %+v ok=%v", got, ok)
 			}
 
 			// Upsert same (tenant,unit): status changes, still one row.
-			if _, err := s.Set(UnitPaymentStatus{TenantSlug: "jhw22", UnitID: "w-01", Status: "teilbezahlt"}); err != nil {
+			if _, err := s.Set(UnitPaymentStatus{TenantSlug: "demo", UnitID: "w-01", Status: "teilbezahlt"}); err != nil {
 				t.Fatalf("upsert: %v", err)
 			}
 			// A second unit + a different tenant.
-			_, _ = s.Set(UnitPaymentStatus{TenantSlug: "jhw22", UnitID: "w-02", Status: "offen"})
+			_, _ = s.Set(UnitPaymentStatus{TenantSlug: "demo", UnitID: "w-02", Status: "offen"})
 			_, _ = s.Set(UnitPaymentStatus{TenantSlug: "other", UnitID: "w-01", Status: "bezahlt"})
 
-			list := s.ListTenant("jhw22")
+			list := s.ListTenant("demo")
 			if len(list) != 2 {
-				t.Fatalf("ListTenant(jhw22) = %d rows, want 2 (tenant-scoped): %+v", len(list), list)
+				t.Fatalf("ListTenant(demo) = %d rows, want 2 (tenant-scoped): %+v", len(list), list)
 			}
 			byUnit := map[string]string{}
 			for _, it := range list {
@@ -78,8 +78,8 @@ func TestSQLUnitPaymentImportFromJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json store: %v", err)
 	}
-	_, _ = jsonStore.Set(UnitPaymentStatus{TenantSlug: "jhw22", UnitID: "w-01", Status: "bezahlt"})
-	_, _ = jsonStore.Set(UnitPaymentStatus{TenantSlug: "jhw22", UnitID: "w-02", Status: "offen"})
+	_, _ = jsonStore.Set(UnitPaymentStatus{TenantSlug: "demo", UnitID: "w-01", Status: "bezahlt"})
+	_, _ = jsonStore.Set(UnitPaymentStatus{TenantSlug: "demo", UnitID: "w-02", Status: "offen"})
 
 	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
@@ -89,7 +89,7 @@ func TestSQLUnitPaymentImportFromJSON(t *testing.T) {
 	sqlStore := NewSQLUnitPaymentStatusStore(database)
 
 	// Newer SQLite write survives re-import.
-	if _, err := sqlStore.Set(UnitPaymentStatus{TenantSlug: "jhw22", UnitID: "w-01", Status: "ueberfaellig"}); err != nil {
+	if _, err := sqlStore.Set(UnitPaymentStatus{TenantSlug: "demo", UnitID: "w-01", Status: "ueberfaellig"}); err != nil {
 		t.Fatalf("pre-set: %v", err)
 	}
 	for i := 0; i < 2; i++ {
@@ -97,10 +97,10 @@ func TestSQLUnitPaymentImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	if got, _ := sqlStore.Get("jhw22", "w-01"); got.Status != "ueberfaellig" {
+	if got, _ := sqlStore.Get("demo", "w-01"); got.Status != "ueberfaellig" {
 		t.Fatalf("import clobbered newer SQLite write: %+v", got)
 	}
-	if got, ok := sqlStore.Get("jhw22", "w-02"); !ok || got.Status != "offen" {
+	if got, ok := sqlStore.Get("demo", "w-02"); !ok || got.Status != "offen" {
 		t.Fatalf("import missed json-only row: %+v ok=%v", got, ok)
 	}
 }

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	appdb "github.com/markus-barta/hausv-org/internal/db"
-	"github.com/markus-barta/hausv-org/internal/energy"
+	appdb "github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 func TestHomeProfileUnitScopeStorageParity(t *testing.T) {
@@ -28,7 +28,7 @@ func TestHomeProfileUnitScopeStorageParity(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			storage := factory(t)
 			profile := energy.DefaultProfile("home-a", now)
-			profile.HouseholdName = "Penthouse"
+			profile.HouseholdName = "Dachwohnung"
 			profile.UnitID = " Wohnung Günter/1.2 "
 			if err := storage.SaveProfile(profile); err != nil {
 				t.Fatalf("save profile: %v", err)
@@ -38,7 +38,7 @@ func TestHomeProfileUnitScopeStorageParity(t *testing.T) {
 			if err != nil || !ok {
 				t.Fatalf("load profile: ok=%v err=%v", ok, err)
 			}
-			if stored.UnitID != "wohnung-günter-1.2" || stored.HouseholdName != "Penthouse" {
+			if stored.UnitID != "wohnung-günter-1.2" || stored.HouseholdName != "Dachwohnung" {
 				t.Fatalf("stored profile = %+v", stored)
 			}
 

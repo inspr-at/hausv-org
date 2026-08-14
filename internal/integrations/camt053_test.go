@@ -15,8 +15,8 @@ func TestCAMT053AdapterParses2009And2019GoldenFiles(t *testing.T) {
 		reference string
 		cents     int64
 	}{
-		{"2009", "testdata/camt053-2009.xml", "2009/camt.053.001.02", "HV-JHW22-202606-ABC123", 13304},
-		{"2019", "testdata/camt053-2019.xml", "2019/camt.053.001.08", "HV-JHW22-202607-DEF456", 42},
+		{"2009", "testdata/camt053-2009.xml", "2009/camt.053.001.02", "HV-DEMO-202606-ABC123", 13304},
+		{"2019", "testdata/camt053-2019.xml", "2019/camt.053.001.08", "HV-DEMO-202607-DEF456", 42},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			f, err := os.Open(tc.fixture)
@@ -47,11 +47,11 @@ func TestCAMT053AdapterReportsBadRecordsWithoutAborting(t *testing.T) {
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.08">
   <BkToCstmrStmt>
     <Stmt>
-      <Id>JHW22</Id>
-      <Acct><Ownr><Nm>jhw22</Nm></Ownr></Acct>
+      <Id>DEMO</Id>
+      <Acct><Ownr><Nm>demo</Nm></Ownr></Acct>
       <Ntry>
         <NtryRef>ok-1</NtryRef><Amt Ccy="EUR">1.00</Amt><CdtDbtInd>CRDT</CdtDbtInd><BookgDt><Dt>2026-07-08</Dt></BookgDt>
-        <NtryDtls><TxDtls><Refs><EndToEndId>HV-JHW22-202607-OK123</EndToEndId></Refs><RmtInf><Ustrd>ok</Ustrd></RmtInf></TxDtls></NtryDtls>
+        <NtryDtls><TxDtls><Refs><EndToEndId>HV-DEMO-202607-OK123</EndToEndId></Refs><RmtInf><Ustrd>ok</Ustrd></RmtInf></TxDtls></NtryDtls>
       </Ntry>
       <Ntry>
         <NtryRef>debit-1</NtryRef><Amt Ccy="EUR">2.00</Amt><CdtDbtInd>DBIT</CdtDbtInd><BookgDt><Dt>2026-07-08</Dt></BookgDt>
@@ -90,18 +90,18 @@ func TestCAMT053AdapterUsesTenantBoundSourceInsteadOfBankOwnerName(t *testing.T)
   <BkToCstmrStmt><Stmt><Id>statement-1</Id>
     <Acct><Ownr><Nm>Unrelated account owner</Nm></Ownr></Acct>
     <Ntry><NtryRef>entry-1</NtryRef><Amt Ccy="EUR">1.00</Amt><CdtDbtInd>CRDT</CdtDbtInd><BookgDt><Dt>2026-07-08</Dt></BookgDt>
-      <NtryDtls><TxDtls><Refs><EndToEndId>HV-JHW22-202607-OK123</EndToEndId></Refs></TxDtls></NtryDtls>
+      <NtryDtls><TxDtls><Refs><EndToEndId>HV-DEMO-202607-OK123</EndToEndId></Refs></TxDtls></NtryDtls>
     </Ntry>
   </Stmt></BkToCstmrStmt>
 </Document>`
 	result, err := CAMT053Adapter{}.ParsePayments(context.Background(), Source{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Format:     FormatCAMT053,
 	}, strings.NewReader(xml))
 	if err != nil {
 		t.Fatalf("ParsePayments: %v", err)
 	}
-	if len(result.Payments) != 1 || result.Payments[0].TenantSlug != "jhw22" {
+	if len(result.Payments) != 1 || result.Payments[0].TenantSlug != "demo" {
 		t.Fatalf("tenant-bound payment = %+v", result.Payments)
 	}
 }

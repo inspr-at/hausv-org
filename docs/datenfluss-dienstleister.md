@@ -1,4 +1,4 @@
-# Datenfluss Dienstleister-Zugriff (JHW22)
+# Datenfluss Dienstleister-Zugriff (DEMO)
 
 **Zweck dieses Dokuments:** eine vollständige, sachliche Beschreibung, welche
 Daten beim Dienstleister-Zugriff entstehen, wozu sie verarbeitet werden, wer
@@ -27,14 +27,14 @@ und OIDC, bestehende Sitzungen, Benachrichtigungen und Parkplatzrechte
 **abgewiesen, bevor** Daten-, Mail-, Audit- oder Sitzungsänderungen entstehen.
 Es wird kein unzugänglicher Entwurf gespeichert.
 
-**In der Produktion bei JHW22 existiert derzeit kein Dienstleister-Zugang.** Die
+**In der Produktion bei DEMO existiert derzeit kein Dienstleister-Zugang.** Die
 folgende Beschreibung gilt für den Zustand nach einer etwaigen Freigabe.
 
 ## 2. Speicherorte
 
-Alle Anwendungsdaten liegen auf dem Host `csb1` in Wien im Verzeichnis
-`/var/lib/csb1-docker/hausv-org` (im Container `/data`), das ausschließlich
-diesem Dienst zugeordnet ist.
+Der konkrete Host, die Speicherpfade und die Anbieter gehören zur privaten
+Betreiberkonfiguration. Im Container liegt die HAUSV-Dienstablage unter `/data`.
+Die öffentliche Dokumentation beschreibt nur ihre Struktur:
 
 | Ort | Inhalt |
 |---|---|
@@ -148,12 +148,12 @@ Speicherort.
 
 | Empfänger | Wofür | Übermittelte Daten |
 |---|---|---|
-| **Resend** (`smtp.resend.com`, Absender `noreply@notify.hausv.org`) | Versand von Einladungen, Anmeldelinks und Benachrichtigungen; Kontodaten und Versand-Metadaten werden laut Anbieter unabhängig von der Versandregion in den USA gespeichert, reguläre E-Mail-Inhalte 30 Tage | Empfänger-E-Mail-Adresse, Betreff und Inhalt der Nachricht (kann Anliegen-Titel enthalten); DPA, EU-Standardvertragsklauseln und Unterauftragnehmerliste werden bei der Betreiberprüfung kontrolliert |
-| **Netcup** (`csb1`, Wien) | VPS-Hosting der Anwendung und des selbst betriebenen Zitadel | sämtliche Fachdaten, Dateien, Identitäts-, Audit-, Verbindungs- und Betriebsdaten |
-| **Cloudflare** | DNS, Reverse Proxy, DDoS- und Webschutz vor `jhw22.hausv.org` | technisch notwendige Verbindungsdaten und vermittelter, TLS-geschützter Webverkehr |
-| **Hetzner Storage Box** | verschlüsselte Restic-Sicherung der HAUSV-Dienstablage | vor Übertragung verschlüsselte Sicherung von Fachdaten, Dateien, Audit und Konfiguration ohne Schlüsselmaterial |
-| **Zitadel** (`https://auth.inspr.at`, selbst betrieben auf `csb1`) | Anmeldung per Single Sign-on, sofern für den Zugang aktiviert | Identitätsdaten im Rahmen des OIDC-Ablaufs; kein weiterer externer Betreiber neben dem Netcup-Hosting |
-| **Home Assistant** (`100.64.0.7`, internes Netz) | Parkplatz-/Ladesteuerung | **kein Dienstleister-Bezug**; hier werden keine Dienstleisterdaten übermittelt |
+| **Konfigurierter Maildienst** | Versand von Einladungen, Anmeldelinks und Benachrichtigungen | Empfänger-E-Mail-Adresse, Betreff und Inhalt; DPA, Transfermechanismus, Aufbewahrung und Unterauftragnehmer sind je Betreiber zu prüfen |
+| **Konfigurierter Hosting-Anbieter** | Betrieb von Anwendung und optionalem Identitätsdienst | Fachdaten, Dateien, Identitäts-, Audit-, Verbindungs- und Betriebsdaten |
+| **Konfigurierter Webschutz** | DNS, Reverse Proxy und Missbrauchsschutz | technisch notwendige Verbindungsdaten und vermittelter TLS-Verkehr |
+| **Konfigurierter Backup-Anbieter** | verschlüsselte Sicherung der HAUSV-Dienstablage | vor Übertragung verschlüsselte Sicherungsdaten ohne Schlüsselmaterial |
+| **Konfigurierter Identitätsdienst** | Anmeldung per Single Sign-on, sofern aktiviert | Identitätsdaten im Rahmen des OIDC-Ablaufs |
+| **Verbundene Home-Assistant-Instanz** | optionale Energie- und Ladefunktionen | keine Dienstleisterdaten; Messwerte und Steuerbefehle gemäß freigegebener Konfiguration |
 
 Weitere anwendungsseitige Übermittlungen an Dritte finden nicht statt. Die
 Anwendung bindet keine externen Skripte, Schriftarten oder Analysedienste ein.
@@ -182,10 +182,10 @@ Die Selbstprüfung vom 26.07.2026 hält fest:
    Art. 6 DSGVO. Ein pauschales Einwilligungsmodell wird nicht verwendet.
 3. Die vorgesehenen Auftragsverarbeiter, Unterauftragsverarbeiter,
    Drittlandtransfers und TOMs sind im
-   [`JHW22-Art.-28-/TOM-Freigabepaket`](jhw22-art28-tom-approval.md)
-   dokumentiert. Zitadel ist selbst betrieben. Änderungen an Empfängern oder
+   [`Art.-28-/TOM-Freigabepaket`](processor-approval-template.md)
+   dokumentiert. Änderungen an Empfängern oder
    Speicherorten schließen das Gate bis zur erneuten Prüfung.
-4. Die öffentliche Seite `/datenschutz` informiert über Zwecke, Empfänger,
+4. Die öffentliche Seite `/<portal>/datenschutz` informiert über Zwecke, Empfänger,
    Fristen, Rechte und Kontakte; ausgehende Anmelde- und Einladungs-E-Mails
    verlinken darauf.
 5. Geschlossene Anliegen und zugehörige Inhalte werden jährlich geprüft und

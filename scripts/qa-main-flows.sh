@@ -129,7 +129,7 @@ disown %% 2>/dev/null || true
 
 ha_ready=0
 for _ in $(seq 40); do
-    if curl -sf "http://127.0.0.1:$ha_port/jhw22/api/states" >/dev/null 2>&1; then
+    if curl -sf "http://127.0.0.1:$ha_port/demo/api/states" >/dev/null 2>&1; then
         ha_ready=1
         break
     fi

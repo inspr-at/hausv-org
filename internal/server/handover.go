@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/pdf"
-	"github.com/markus-barta/hausv-org/internal/store"
-	"github.com/markus-barta/hausv-org/internal/version"
+	"github.com/inspr-at/hausv-org/internal/pdf"
+	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/version"
 )
 
 // The audit vocabulary lives in the store (it is what gets persisted and
@@ -475,8 +475,7 @@ func (a *app) handoverConfirmPage(w http.ResponseWriter, r *http.Request) {
 	}
 	handover.AttachmentGroup = attachmentGroup{Attachments: handover.Attachments, HasAttachments: len(handover.Attachments) > 0}
 	msg, okMsg := handoverMessage(r.URL.Query().Get("handover"))
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := a.templates.ExecuteTemplate(w, "handoverConfirm", map[string]any{
+	a.executeTemplate(w, "handoverConfirm", map[string]any{
 		"Title":        "Übergabe bestätigen",
 		"Tenant":       tenant,
 		"Handover":     handover,
@@ -485,9 +484,7 @@ func (a *app) handoverConfirmPage(w http.ResponseWriter, r *http.Request) {
 		"Msg":          msg,
 		"MsgOK":        okMsg,
 		"AppVersion":   version.BuildLabel(),
-	}); err != nil {
-		logError("handover confirmation render failed", err)
-	}
+	})
 }
 
 // handoverAttachment lets a participant inspect exactly the evidence attached

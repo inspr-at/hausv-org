@@ -2,8 +2,8 @@
 
 Stand: 30.07.2026 · HAUSV-407 + HAUSV-418
 
-Dieses Dokument beschreibt den konkreten Vertrag zwischen Cloudflare,
-Traefik/cloudflarewarp und der HAUSV-Anwendung. Es ist die code-nahe,
+Dieses Dokument beschreibt den Vertrag zwischen einem konfigurierten äußeren
+Proxy, dem Anwendungs-Router und der HAUSV-Anwendung. Es ist die code-nahe,
 versionierte Referenz für Header, Grenzwerte und reproduzierbare Negativtests.
 Betriebs- und Freigabestatus bleiben in PPM Knowledge.
 
@@ -11,8 +11,8 @@ Betriebs- und Freigabestatus bleiben in PPM Knowledge.
 
 | Schicht | Verantwortung | Bewusst nicht verantwortlich |
 | --- | --- | --- |
-| Cloudflare | öffentliche Kante, DDoS-/Bot-Grundschutz und Weiterleitung von HTTP auf HTTPS | Benutzerkonto-Limits, Anwendungsantworten und eigene HSTS-Abweichungen |
-| Traefik + cloudflarewarp | einziger Netzwerkzugang zum Container, TLS-Terminierung, ein bereinigtes `X-Real-IP` und genau eine HSTS-Policy am HAUSV-Router | Kontenlogik, Magic-Link-Limits und zusätzliche Cache-Header |
+| Äußerer Proxy | öffentliche Kante, grundlegender Netzschutz und Weiterleitung von HTTP auf HTTPS | Benutzerkonto-Limits, Anwendungsantworten und eigene HSTS-Abweichungen |
+| Anwendungs-Router | einziger Netzwerkzugang zum Container, TLS-Terminierung, ein bereinigtes `X-Real-IP` und genau eine HSTS-Policy | Kontenlogik, Magic-Link-Limits und zusätzliche Cache-Header |
 | HAUSV | explizite Proxy-Allowlist, Source-/Account-Limits, generische Login-Antworten, `Retry-After`, `no-store` sowie HTTP-Servergrenzen | Vertrauen in frei gesetzte Weiterleitungsheader oder eine eigene HSTS-Kopie |
 
 Die Anwendung akzeptiert `X-Real-IP` nur von einer in
@@ -26,8 +26,8 @@ Start. Die sichere Cookie-Policy folgt ausschließlich der konfigurierten
 `BASE_URL` gilt ohne Konfiguration ein sicherer Loopback-Default
 (`127.0.0.1/32,::1/128`).
 
-cloudflarewarp überschreibt am erlaubten Traefik-Peer `X-Real-IP` mit der durch
-Cloudflare bestätigten Clientadresse. Bei allen anderen Peers – einschließlich
+Der äußere Proxy übermittelt am ausdrücklich erlaubten Router-Peer eine
+validierte Clientadresse als `X-Real-IP`. Bei allen anderen Peers, einschließlich
 anderer Container im selben privaten Netz – ignoriert HAUSV
 Weiterleitungsheader und verwendet die tatsächliche Gegenstelle.
 `X-Forwarded-For` wird für Login-Limits nie ausgewertet.
@@ -87,7 +87,7 @@ Worker bis zum Prozessende binden. Ein Transportfehler oder Panic entwertet
 den betroffenen Token ebenfalls. Unabhängig davon verfallen alle
 Magic-Link-Tokens weiterhin nach 15 Minuten.
 
-Die deklarative Container-Stopfrist auf csb1 beträgt 30 Sekunden. Sie deckt
+Die deklarative Container-Stopfrist auf dem konfigurierten Produktionshost beträgt 30 Sekunden. Sie deckt
 15 Sekunden HTTP-Shutdown, 5+1 Sekunden Mailabschluss und 9 Sekunden
 Host-Sicherheitsmarge ab. Damit lässt sich aus Status, Ziel, Antworttext oder
 grober SMTP-Laufzeit nicht ablesen, ob eine Adresse existiert.
@@ -116,15 +116,15 @@ Nach dem Abmelden ist das Session-Token serverseitig widerrufen. Wird eine
 geschützte Ansicht aus dem Browser-Back/Forward-Cache wiederhergestellt, lädt
 die Seite einmal neu und durchläuft dadurch die Sessionprüfung.
 
-Am äußeren HAUSV-Router setzt ausschließlich Traefik:
+Am äußeren HAUSV-Router wird genau einmal gesetzt:
 
 ```text
 Strict-Transport-Security: max-age=31536000
 ```
 
-`includeSubDomains` und `preload` bleiben bewusst aus, bis alle bestehenden und
-künftigen Subdomains separat dafür freigegeben sind. Cloudflare reicht den Wert
-unverändert durch; die Anwendung erzeugt bewusst keinen zweiten Header. Dadurch
+`includeSubDomains` und `preload` bleiben bewusst aus, bis alle weiteren Hosts
+separat dafür freigegeben sind. Der äußere Proxy reicht den Wert unverändert
+durch; die Anwendung erzeugt bewusst keinen zweiten Header. Dadurch
 erhalten auch vom HAUSV-Router erzeugte Antworten die Policy, selbst wenn sie
 den Go-Handler nicht erreichen.
 
@@ -166,13 +166,13 @@ Nach jedem Deployment ist die unveränderte äußere Antwort zusätzlich
 read-only zu prüfen:
 
 ```fish
-curl -sS -D - -o /dev/null https://jhw22.hausv.org/ \
+curl -sS -D - -o /dev/null https://hausv.org/demo/ \
   | string match -r -i '^(HTTP/|strict-transport-security:|cache-control:)'
 
-curl -sS -D - -o /dev/null 'https://jhw22.hausv.org/auth/verify?token=ungueltiger-qa-token' \
+curl -sS -D - -o /dev/null 'https://hausv.org/demo/auth/verify?token=ungueltiger-qa-token' \
   | string match -r -i '^(HTTP/|location:|strict-transport-security:|cache-control:)'
 
-curl -sS -D - -o /dev/null https://jhw22.hausv.org/absichtlich-nicht-vorhanden \
+curl -sS -D - -o /dev/null https://hausv.org/demo/absichtlich-nicht-vorhanden \
   | string match -r -i '^(HTTP/|strict-transport-security:|cache-control:)'
 ```
 

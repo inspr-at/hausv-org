@@ -10,8 +10,8 @@ import (
 	"time"
 
 	oidc "github.com/coreos/go-oidc/v3/oidc"
-	"github.com/markus-barta/hausv-org/internal/auth"
-	"github.com/markus-barta/hausv-org/internal/config"
+	"github.com/inspr-at/hausv-org/internal/auth"
+	"github.com/inspr-at/hausv-org/internal/config"
 	"golang.org/x/oauth2"
 )
 
@@ -61,22 +61,23 @@ func (a *app) marketingLanding(w http.ResponseWriter, r *http.Request) {
 		"ContactLocal":   "hello",
 		"ContactDomain":  "hausv.org",
 		"ContactDisplay": "hello [at] hausv [dot] org",
-		"PrimaryAppURL":  "https://jhw22.hausv.org/",
+		"PrimaryAppURL":  primaryAppURL(),
 		"RequestedHost":  normalizeHost(r.Host),
 		"LandingHeroURL": "/assets/hausv-landing-hero.png",
-		"OperatorName":   platformOperatorName,
+		"OperatorName":   platformOperatorName(),
 	})
 }
 
 func (a *app) imprintPage(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "imprint", map[string]any{
-		"Title":           "Impressum & Infos · hausv.org",
-		"ContactLocal":    "hello",
-		"ContactDomain":   "hausv.org",
-		"ContactDisplay":  "hello [at] hausv [dot] org",
-		"OperatorName":    platformOperatorName,
-		"OperatorAddress": platformOperatorAddress,
-		"LegalReviewDate": legalReviewDate,
+		"Title":                      "Impressum & Infos · hausv.org",
+		"ContactLocal":               "hello",
+		"ContactDomain":              "hausv.org",
+		"ContactDisplay":             "hello [at] hausv [dot] org",
+		"OperatorName":               platformOperatorName(),
+		"OperatorAddress":            platformOperatorAddress(),
+		"ProfessionalServicesNotice": professionalServicesNotice(),
+		"LegalReviewDate":            legalReviewDate,
 	})
 }
 
@@ -99,9 +100,13 @@ func (a *app) privacyNotice(w http.ResponseWriter, r *http.Request) {
 		"HouseContactAddress":           tenant.ContactAddress,
 		"HouseContactEmail":             contactEmail,
 		"HouseContactPhone":             tenant.ContactPhone,
-		"TechnicalOperatorName":         platformOperatorName,
-		"TechnicalOperatorAddress":      platformOperatorAddress,
+		"TechnicalOperatorName":         platformOperatorName(),
+		"TechnicalOperatorAddress":      platformOperatorAddress(),
 		"TechnicalContactEmail":         platformContactEmail,
+		"IdentityStorageNotice":         identityStorageNotice(),
+		"BackupStorageNotice":           backupStorageNotice(),
+		"WebAccessNotice":               webAccessNotice(),
+		"MailDeliveryNotice":            mailDeliveryNotice(),
 		"LegalReviewDate":               legalReviewDate,
 		"ServiceProviderEnabled":        a.serviceAccessEnabled,
 		"ServiceProviderAssessment":     serviceProviderAssessmentVersion,
@@ -298,7 +303,7 @@ func (a *app) verifyLogin(w http.ResponseWriter, r *http.Request) {
 func tenantMapURL(address string) string {
 	query := strings.TrimSpace(address)
 	if query == "" {
-		query = "Graz, Österreich"
+		query = "Wien, Österreich"
 	}
 	return "https://www.openstreetmap.org/search?query=" + url.QueryEscape(query)
 }

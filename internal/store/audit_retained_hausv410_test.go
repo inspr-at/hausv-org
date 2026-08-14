@@ -26,16 +26,16 @@ func TestAuditStoreListRetainedDeduplicatesArchiveOverlapAndFiltersTenant(t *tes
 		})
 	}
 
-	first := event(1, "jhw22", "first")
+	first := event(1, "demo", "first")
 	expired := first
 	expired.At = time.Date(2020, 7, 29, 8, 0, 0, 0, time.UTC)
 	expired.TargetID = "expired"
 	expired.Summary = "expired"
 	otherTenant := event(2, "other-house", "other tenant")
-	firstBoundary := event(3, "jhw22", "first boundary")
-	legitimateDuplicate := event(4, "jhw22", "legitimate duplicate")
-	secondBoundary := event(5, "jhw22", "second boundary")
-	liveOnly := event(6, "jhw22", "live only")
+	firstBoundary := event(3, "demo", "first boundary")
+	legitimateDuplicate := event(4, "demo", "legitimate duplicate")
+	secondBoundary := event(5, "demo", "second boundary")
+	liveOnly := event(6, "demo", "live only")
 
 	// Older deployments may have JSON-array audit files. The next archive is
 	// JSONL and starts with the tail retained from this source.
@@ -61,7 +61,7 @@ func TestAuditStoreListRetainedDeduplicatesArchiveOverlapAndFiltersTenant(t *tes
 		t.Fatalf("NewAuditStore() error = %v", err)
 	}
 
-	got, err := auditStore.ListRetained(" JHW22 ")
+	got, err := auditStore.ListRetained(" DEMO ")
 	if err != nil {
 		t.Fatalf("ListRetained() error = %v", err)
 	}
@@ -97,11 +97,11 @@ func TestAuditStorePurgeExpiredRetriesAfterLiveRewriteFailure(t *testing.T) {
 
 	now := time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC)
 	expired := NormalizeAuditEvent(AuditEvent{
-		At: now.Add(-31 * 24 * time.Hour), TenantSlug: "jhw22",
+		At: now.Add(-31 * 24 * time.Hour), TenantSlug: "demo",
 		Action: AuditActionLogin, Summary: "expired",
 	})
 	recent := NormalizeAuditEvent(AuditEvent{
-		At: now.Add(-24 * time.Hour), TenantSlug: "jhw22",
+		At: now.Add(-24 * time.Hour), TenantSlug: "demo",
 		Action: AuditActionLogin, Summary: "recent",
 	})
 	path := filepath.Join(t.TempDir(), "audit.jsonl")
@@ -143,15 +143,15 @@ func TestAuditStorePurgeUsesEventTimeBeforeOldArchiveMtime(t *testing.T) {
 
 	now := time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC)
 	expired := NormalizeAuditEvent(AuditEvent{
-		At: now.Add(-31 * 24 * time.Hour), TenantSlug: "jhw22",
+		At: now.Add(-31 * 24 * time.Hour), TenantSlug: "demo",
 		Action: AuditActionLogin, Summary: "expired",
 	})
 	recent := NormalizeAuditEvent(AuditEvent{
-		At: now.Add(-24 * time.Hour), TenantSlug: "jhw22",
+		At: now.Add(-24 * time.Hour), TenantSlug: "demo",
 		Action: AuditActionLogin, Summary: "recent",
 	})
 	legacyWithoutTimestamp := AuditEvent{
-		TenantSlug: "jhw22", Action: AuditActionLogin, Summary: "legacy expired by mtime",
+		TenantSlug: "demo", Action: AuditActionLogin, Summary: "legacy expired by mtime",
 	}
 	path := filepath.Join(t.TempDir(), "audit.jsonl")
 	archive := path + ".100"
@@ -182,15 +182,15 @@ func TestAuditStorePersistsLegacyLiveTimestampFallbackBeforePruning(t *testing.T
 
 	now := time.Now().UTC().Truncate(time.Second)
 	expired := NormalizeAuditEvent(AuditEvent{
-		At: now.Add(-31 * 24 * time.Hour), TenantSlug: "jhw22",
+		At: now.Add(-31 * 24 * time.Hour), TenantSlug: "demo",
 		Action: AuditActionLogin, Summary: "expired",
 	})
 	recent := NormalizeAuditEvent(AuditEvent{
-		At: now.Add(-24 * time.Hour), TenantSlug: "jhw22",
+		At: now.Add(-24 * time.Hour), TenantSlug: "demo",
 		Action: AuditActionLogin, Summary: "recent",
 	})
 	legacyWithoutTimestamp := AuditEvent{
-		TenantSlug: "jhw22", Action: AuditActionLogin, Summary: "legacy expired by mtime",
+		TenantSlug: "demo", Action: AuditActionLogin, Summary: "legacy expired by mtime",
 	}
 	path := filepath.Join(t.TempDir(), "audit.jsonl")
 	writeAuditJSONLArchive(t, path, []AuditEvent{expired, recent, legacyWithoutTimestamp})
@@ -203,7 +203,7 @@ func TestAuditStorePersistsLegacyLiveTimestampFallbackBeforePruning(t *testing.T
 	if err != nil {
 		t.Fatalf("first NewAuditStore() error = %v", err)
 	}
-	got := first.List(AuditFilter{TenantSlug: "jhw22", Limit: 10})
+	got := first.List(AuditFilter{TenantSlug: "demo", Limit: 10})
 	if len(got) != 1 || got[0].Summary != "recent" {
 		t.Fatalf("legacy live retention after first load = %+v", got)
 	}
@@ -219,7 +219,7 @@ func TestAuditStorePersistsLegacyLiveTimestampFallbackBeforePruning(t *testing.T
 	if err != nil {
 		t.Fatalf("second NewAuditStore() error = %v", err)
 	}
-	reloaded := second.List(AuditFilter{TenantSlug: "jhw22", Limit: 10})
+	reloaded := second.List(AuditFilter{TenantSlug: "demo", Limit: 10})
 	if len(reloaded) != 1 || reloaded[0].Summary != "recent" {
 		t.Fatalf("restart extended or removed retained live data: %+v", reloaded)
 	}

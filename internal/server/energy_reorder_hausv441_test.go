@@ -12,7 +12,7 @@ func reorderAppHAUSV441(t *testing.T) *app {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	steps := []url.Values{
@@ -22,7 +22,7 @@ func reorderAppHAUSV441(t *testing.T) *app {
 		{"action": {"finish"}},
 	}
 	for i, form := range steps {
-		if response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", form); response.Code != http.StatusSeeOther {
+		if response := authedFormRequest(t, a, "owner@example.com", "/demo/app/zuhause/onboarding", form); response.Code != http.StatusSeeOther {
 			t.Fatalf("Onboarding-Schritt %d: status=%d", i+1, response.Code)
 		}
 	}
@@ -31,7 +31,7 @@ func reorderAppHAUSV441(t *testing.T) *app {
 
 func consumerIDsHAUSV441(t *testing.T, a *app) []string {
 	t.Helper()
-	assets, err := a.energyStore.ListAssets("jhw22")
+	assets, err := a.energyStore.ListAssets("demo")
 	if err != nil {
 		t.Fatalf("Assets laden: %v", err)
 	}
@@ -61,7 +61,7 @@ func TestConsumerReorderPersistsPrioritiesHAUSV441(t *testing.T) {
 		reversed[left], reversed[right] = reversed[right], reversed[left]
 	}
 	form := url.Values{"order": reversed}
-	if response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher/reihenfolge", form); response.Code != http.StatusNoContent {
+	if response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher/reihenfolge", form); response.Code != http.StatusNoContent {
 		t.Fatalf("Reihenfolge speichern: status=%d body=%s", response.Code, response.Body.String())
 	}
 
@@ -71,7 +71,7 @@ func TestConsumerReorderPersistsPrioritiesHAUSV441(t *testing.T) {
 	}
 
 	// Die Flow-Config für den Renderer muss die neue Reihenfolge tragen.
-	assets, err := a.energyStore.ListAssets("jhw22")
+	assets, err := a.energyStore.ListAssets("demo")
 	if err != nil {
 		t.Fatalf("Assets laden: %v", err)
 	}
@@ -90,13 +90,13 @@ func TestConsumerReorderRejectsPartialOrForeignOrdersHAUSV441(t *testing.T) {
 	a := reorderAppHAUSV441(t)
 	ids := consumerIDsHAUSV441(t, a)
 
-	if response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher/reihenfolge",
+	if response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher/reihenfolge",
 		url.Values{"order": ids[:1]}); response.Code != http.StatusBadRequest {
 		t.Fatalf("Teilliste muss abgelehnt werden: status=%d", response.Code)
 	}
 	foreign := append([]string(nil), ids...)
 	foreign[0] = "asset-fremd"
-	if response := authedFormRequest(t, a, "owner@example.com", "/app/energie/verbraucher/reihenfolge",
+	if response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher/reihenfolge",
 		url.Values{"order": foreign}); response.Code != http.StatusBadRequest {
 		t.Fatalf("fremde ID muss abgelehnt werden: status=%d", response.Code)
 	}
@@ -111,9 +111,9 @@ func TestConsumerReorderRequiresManageEnergyHAUSV441(t *testing.T) {
 	ids := consumerIDsHAUSV441(t, a)
 	a.profiles["resident@example.com"] = userProfile{
 		Email: "resident@example.com", Role: roleResident,
-		Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	}
-	if response := authedFormRequest(t, a, "resident@example.com", "/app/energie/verbraucher/reihenfolge",
+	if response := authedFormRequest(t, a, "resident@example.com", "/demo/app/energie/verbraucher/reihenfolge",
 		url.Values{"order": ids}); response.Code != http.StatusForbidden {
 		t.Fatalf("Bewohner ohne Recht: status=%d", response.Code)
 	}

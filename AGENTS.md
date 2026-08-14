@@ -2,7 +2,7 @@
 
 ## INSPR And PPM
 
-- The default PPM project is `HAUSV` (project id `21`) on `pm.barta.cm`.
+- The default PPM project is `HAUSV` (project id `21`) in the configured PPM instance.
 - Keep backlog and ticket state in PPM; do not create local backlog or TODO files.
 - PPM Knowledge is canonical for durable architecture, design rationale,
   positioning, playbooks, research, delivery/approval status, and cross-project
@@ -20,7 +20,7 @@
 - Keep `docs/CHANGELOG.md` in German, newest entry first, with customer-facing release language. Prefer positive wording such as "Stabilität verbessert" over raw bug wording.
 - Add a matching entry to `Notes()` in `internal/version/version.go`. Its newest entry must equal `VERSION`; a test enforces this, so bump the version *before* the final test run — it has been forgotten once already.
 - Build and deploy with `VERSION` as `APP_VERSION`; do not deploy a changed product with an unchanged visible version.
-- Deploy with `scripts/deploy.sh` (`--dry-run` to check first). It ships `HEAD` via `git archive`, builds the image on the host with `VERSION`/commit baked in, recreates the compose service, verifies the live version, and prints a rollback command. It refuses to run on a dirty tree, when `VERSION` is already live, when `HEAD` differs from `origin/main`, or when that exact commit has no completed, green CI run on Blacksmith runners. Details in `docs/csb1-deploy.md`.
+- Deploy with `scripts/deploy.sh` (`--dry-run` to check first). It ships `HEAD` via `git archive`, builds the image on the host with `VERSION`/commit baked in, recreates the compose service, verifies the live version, and prints a rollback command. It refuses to run on a dirty tree, when `VERSION` is already live, when `HEAD` differs from `origin/main`, or when that exact commit has no completed, green CI run on Blacksmith runners. Details in `docs/production-deploy.md`.
 - Deployment is manual: CI builds the image to prove the Dockerfile works but never pushes it.
 
 ## Secrets

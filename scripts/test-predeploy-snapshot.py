@@ -36,7 +36,7 @@ def run_snapshot(
     compose_file: Path,
     target: str,
     *,
-    compose_project: str = "csb1",
+    compose_project: str = "hausv",
     backup_error: bool = False,
     stop_error: bool = False,
     recovery_error: bool = False,
@@ -125,7 +125,7 @@ def main() -> int:
         base = Path(raw)
         source = base / "live" / "hausv-org"
         compose = base / "config" / "docker"
-        compose_file = base / "rendered" / "csb1" / "docker-compose.yml"
+        compose_file = base / "rendered" / "hausv" / "docker-compose.yml"
         snapshot_root = base / "recovery" / "hausv-org-predeploy"
         source.mkdir(parents=True)
         compose.mkdir(parents=True)
@@ -262,7 +262,7 @@ def main() -> int:
             compose,
             compose_file,
             "0.62.0",
-            compose_project="csb1; docker compose down",
+            compose_project="hausv; docker compose down",
             expected_error="unsafe compose project",
         )
         if invalid_project_commands:
@@ -274,7 +274,7 @@ def main() -> int:
             source,
             missing_compose_file,
             compose,
-            base / "rendered" / "csb1" / "missing-compose.yml",
+            base / "rendered" / "hausv" / "missing-compose.yml",
             "0.63.0",
             expected_error="required compose file is unavailable",
         )

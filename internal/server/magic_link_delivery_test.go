@@ -115,7 +115,7 @@ func TestMagicLinkRequestDoesNotWaitForSlowMailer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	mailer := newGatedMagicLinkMailer()
@@ -155,7 +155,7 @@ func TestMagicLinkRequestDoesNotWaitForSlowMailer(t *testing.T) {
 	if known.responseCode != http.StatusSeeOther || unknown.Code != known.responseCode {
 		t.Fatalf("known/unknown statuses = %d/%d", known.responseCode, unknown.Code)
 	}
-	if known.location != "/?sent=1" || unknown.Header().Get("Location") != known.location {
+	if known.location != "/demo/?sent=1" || unknown.Header().Get("Location") != known.location {
 		t.Fatalf("known/unknown locations = %q/%q", known.location, unknown.Header().Get("Location"))
 	}
 	if known.body != unknown.Body.String() {
@@ -173,14 +173,14 @@ func TestMagicLinkDeliveryQueueIsBoundedAndDrainsOnClose(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "first@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	for _, email := range []string{"second@example.com", "third@example.com"} {
 		a.profiles[email] = userProfile{
 			Email:       email,
 			Role:        roleOwner,
-			Tenants:     []string{"jhw22"},
+			Tenants:     []string{"demo"},
 			AuthMethods: defaultAuthMethods(),
 		}
 	}
@@ -204,7 +204,7 @@ func TestMagicLinkDeliveryQueueIsBoundedAndDrainsOnClose(t *testing.T) {
 		"second": second,
 		"third":  third,
 	} {
-		if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/?sent=1" {
+		if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/demo/?sent=1" {
 			t.Fatalf("%s request = status %d location %q", name, response.Code, response.Header().Get("Location"))
 		}
 	}
@@ -247,7 +247,7 @@ func TestMagicLinkDeliveryShutdownIsBoundedAndInvalidatesUndeliveredTokens(t *te
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	mailer := newContextBlockedMagicLinkMailer()
@@ -255,7 +255,7 @@ func TestMagicLinkDeliveryShutdownIsBoundedAndInvalidatesUndeliveredTokens(t *te
 	a.magicLinkDelivery = queue
 
 	for _, token := range []string{"active-token", "pending-token"} {
-		a.tokens.Put(token, "owner@example.com", "jhw22", 15*time.Minute)
+		a.tokens.Put(token, "owner@example.com", "demo", 15*time.Minute)
 		token := token
 		if !queue.enqueue(magicLinkDeliveryJob{
 			mailer:  mailer,

@@ -83,7 +83,7 @@ func TestChargingSessionLifecyclePersists(t *testing.T) {
 		t.Fatal(err)
 	}
 	start := time.Now().UTC().Add(-time.Hour)
-	session, err := s.StartChargingSession("jhw22", ChargingSession{
+	session, err := s.StartChargingSession("demo", ChargingSession{
 		Start:         start,
 		StartKWh:      2550.13,
 		Mode:          ChargingModeSurplus,
@@ -102,7 +102,7 @@ func TestChargingSessionLifecyclePersists(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data := reloaded.TenantData("jhw22")
+	data := reloaded.TenantData("demo")
 	if data.Charging.Phase != ChargingPhaseSurplus || data.Charging.ActiveSessionID != session.ID {
 		t.Fatalf("controller state lost: %+v", data.Charging)
 	}
@@ -111,20 +111,20 @@ func TestChargingSessionLifecyclePersists(t *testing.T) {
 	}
 
 	// Meter going backwards is distrusted: energy clamps to zero, not negative.
-	closed, found, err := reloaded.EndChargingSession("jhw22", session.ID, start.Add(time.Hour), 2549.0, "system", "feedin-low", ChargingControllerState{Phase: ChargingPhaseIdle})
+	closed, found, err := reloaded.EndChargingSession("demo", session.ID, start.Add(time.Hour), 2549.0, "system", "feedin-low", ChargingControllerState{Phase: ChargingPhaseIdle})
 	if err != nil || !found {
 		t.Fatalf("end session: found=%v err=%v", found, err)
 	}
 	if closed.EndKWh != closed.StartKWh {
 		t.Fatalf("backwards meter must clamp EndKWh to StartKWh, got %v", closed.EndKWh)
 	}
-	data = reloaded.TenantData("jhw22")
+	data = reloaded.TenantData("demo")
 	if data.Charging.ActiveSessionID != "" || data.Charging.Phase != ChargingPhaseIdle {
 		t.Fatalf("controller state after end: %+v", data.Charging)
 	}
 
 	// Ending twice must not find an open session again.
-	_, found, err = reloaded.EndChargingSession("jhw22", session.ID, start.Add(2*time.Hour), 2551, "system", "manual", ChargingControllerState{Phase: ChargingPhaseIdle})
+	_, found, err = reloaded.EndChargingSession("demo", session.ID, start.Add(2*time.Hour), 2551, "system", "manual", ChargingControllerState{Phase: ChargingPhaseIdle})
 	if err != nil {
 		t.Fatal(err)
 	}

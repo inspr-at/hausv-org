@@ -111,15 +111,15 @@ func TestAttachmentCreateRollsBackOnPartialFailure(t *testing.T) {
 		uploadFrom("photo.png", onePixelPNG),
 		uploadFrom("notes.txt", []byte("this is not an image")),
 	}
-	if _, err := store.CreateUploaded("jhw22", "issue", "issue-1", "admin@example.com", uploads, now); err == nil {
+	if _, err := store.CreateUploaded("demo", "issue", "issue-1", "admin@example.com", uploads, now); err == nil {
 		t.Fatal("a batch containing an invalid upload must fail")
 	}
 
-	if got := store.ListEntity("jhw22", "issue", "issue-1"); len(got) != 0 {
+	if got := store.ListEntity("demo", "issue", "issue-1"); len(got) != 0 {
 		t.Fatalf("rollback must leave no records, got %d", len(got))
 	}
 
-	tenantDir := filepath.Join(fileDir, "jhw22")
+	tenantDir := filepath.Join(fileDir, "demo")
 	entries, _ := os.ReadDir(tenantDir)
 	files := 0
 	for _, e := range entries {
@@ -141,7 +141,7 @@ func TestDocumentReplaceCASVersioning(t *testing.T) {
 	now := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
 
 	created, err := store.Create(
-		DocumentRecord{TenantSlug: "jhw22", Title: "Hausordnung", Visibility: "all", UploadedBy: "admin@example.com"},
+		DocumentRecord{TenantSlug: "demo", Title: "Hausordnung", Visibility: "all", UploadedBy: "admin@example.com"},
 		uploadFrom("v1.png", onePixelPNG), now)
 	if err != nil {
 		t.Fatalf("create: %v", err)
@@ -151,7 +151,7 @@ func TestDocumentReplaceCASVersioning(t *testing.T) {
 	}
 
 	// Replacing the current version bumps to v2; v1 becomes non-current.
-	v2, v1, err := store.Replace("jhw22", created.ID, "admin@example.com", uploadFrom("v2.png", onePixelPNG), now.Add(time.Hour))
+	v2, v1, err := store.Replace("demo", created.ID, "admin@example.com", uploadFrom("v2.png", onePixelPNG), now.Add(time.Hour))
 	if err != nil {
 		t.Fatalf("replace current: %v", err)
 	}
@@ -163,17 +163,17 @@ func TestDocumentReplaceCASVersioning(t *testing.T) {
 	}
 
 	// CAS: replacing the now-superseded v1 id must fail.
-	if _, _, err := store.Replace("jhw22", created.ID, "admin@example.com", uploadFrom("stale.png", onePixelPNG), now.Add(2*time.Hour)); err == nil {
+	if _, _, err := store.Replace("demo", created.ID, "admin@example.com", uploadFrom("stale.png", onePixelPNG), now.Add(2*time.Hour)); err == nil {
 		t.Fatal("replacing a superseded version must fail (compare-and-swap)")
 	}
 
 	// Replacing a missing id must fail.
-	if _, _, err := store.Replace("jhw22", "does-not-exist", "admin@example.com", uploadFrom("x.png", onePixelPNG), now); err == nil {
+	if _, _, err := store.Replace("demo", "does-not-exist", "admin@example.com", uploadFrom("x.png", onePixelPNG), now); err == nil {
 		t.Fatal("replacing a missing document must fail")
 	}
 
 	// The current version stays replaceable (v2 -> v3).
-	v3, _, err := store.Replace("jhw22", v2.ID, "admin@example.com", uploadFrom("v3.png", onePixelPNG), now.Add(3*time.Hour))
+	v3, _, err := store.Replace("demo", v2.ID, "admin@example.com", uploadFrom("v3.png", onePixelPNG), now.Add(3*time.Hour))
 	if err != nil {
 		t.Fatalf("replace current v2: %v", err)
 	}

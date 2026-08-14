@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
 )
 
 // HAUSV-148: filing a handover protocol writes a document AND the link on the
@@ -35,7 +35,7 @@ func countFiles(t *testing.T, dir string) int {
 
 func protocolDoc() DocumentRecord {
 	return DocumentRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Übergabeprotokoll Test",
 		Category:   "Protokoll",
 		Visibility: "owner",
@@ -86,7 +86,7 @@ func TestProtocolFilerParity(t *testing.T) {
 			}
 
 			created, updated, already, err := b.filer.FileHandoverProtocol(
-				"jhw22", "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now)
+				"demo", "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now)
 			if err != nil || already {
 				t.Fatalf("file: err=%v already=%v", err, already)
 			}
@@ -97,16 +97,16 @@ func TestProtocolFilerParity(t *testing.T) {
 				t.Fatalf("handover not linked: %+v", updated)
 			}
 			// Link is persisted, not just returned.
-			if got, _ := b.handovers.Get("jhw22", "h1"); got.FiledDocumentID != created.ID {
+			if got, _ := b.handovers.Get("demo", "h1"); got.FiledDocumentID != created.ID {
 				t.Fatalf("persisted link = %q, want %q", got.FiledDocumentID, created.ID)
 			}
-			if docs := b.documents.ListTenant("jhw22"); len(docs) != 1 {
+			if docs := b.documents.ListTenant("demo"); len(docs) != 1 {
 				t.Fatalf("want exactly 1 document, got %d", len(docs))
 			}
 
 			// Retry: must NOT create a second protocol document.
 			_, again, already2, err := b.filer.FileHandoverProtocol(
-				"jhw22", "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now.Add(time.Hour))
+				"demo", "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now.Add(time.Hour))
 			if err != nil {
 				t.Fatalf("refile: %v", err)
 			}
@@ -116,7 +116,7 @@ func TestProtocolFilerParity(t *testing.T) {
 			if again.FiledDocumentID != created.ID {
 				t.Fatalf("refile changed the link: %+v", again)
 			}
-			if docs := b.documents.ListTenant("jhw22"); len(docs) != 1 {
+			if docs := b.documents.ListTenant("demo"); len(docs) != 1 {
 				t.Fatalf("retry created a duplicate document: %d", len(docs))
 			}
 			// And no orphaned file was left by the retry.
@@ -126,10 +126,10 @@ func TestProtocolFilerParity(t *testing.T) {
 
 			// Unknown handover: no document, no file left behind.
 			if _, _, _, err := b.filer.FileHandoverProtocol(
-				"jhw22", "does-not-exist", protocolDoc(), "x.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now); err == nil {
+				"demo", "does-not-exist", protocolDoc(), "x.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now); err == nil {
 				t.Fatal("filing an unknown handover must error")
 			}
-			if docs := b.documents.ListTenant("jhw22"); len(docs) != 1 {
+			if docs := b.documents.ListTenant("demo"); len(docs) != 1 {
 				t.Fatalf("failed filing left a document behind: %d", len(docs))
 			}
 			if n := countFiles(t, b.fileDir); n != 1 {
@@ -167,18 +167,18 @@ func TestSQLProtocolFilerConcurrentFilingCreatesOneDocument(t *testing.T) {
 			// Errors are acceptable for the loser of the race; the invariant
 			// below is what must hold.
 			_, _, _, _ = filer.FileHandoverProtocol(
-				"jhw22", "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now)
+				"demo", "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now)
 		}()
 	}
 	close(start)
 	<-done
 	<-done
 
-	list := docs.ListTenant("jhw22")
+	list := docs.ListTenant("demo")
 	if len(list) != 1 {
 		t.Fatalf("concurrent filing produced %d documents, want exactly 1", len(list))
 	}
-	linked, _ := handovers.Get("jhw22", "h1")
+	linked, _ := handovers.Get("demo", "h1")
 	if linked.FiledDocumentID != list[0].ID {
 		t.Fatalf("handover links %q but the only document is %q", linked.FiledDocumentID, list[0].ID)
 	}

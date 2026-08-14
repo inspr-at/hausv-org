@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/store"
-	"github.com/markus-barta/hausv-org/internal/telegram"
+	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/telegram"
 )
 
 type recordedTelegram struct {
@@ -62,13 +62,13 @@ func newTelegramTestApp(t *testing.T) (*app, *fakeHA, *recordedTelegram) {
 			Email:       "joerg@example.com",
 			FirstName:   "Jörg",
 			Role:        "Bewohner",
-			Tenants:     []string{"jhw22"},
+			Tenants:     []string{"demo"},
 			Permissions: []string{permissionParking},
 		},
 		"nopark@example.com": {
 			Email:   "nopark@example.com",
 			Role:    "Bewohner",
-			Tenants: []string{"jhw22"},
+			Tenants: []string{"demo"},
 		},
 	}
 	return a, ha, tg
@@ -145,7 +145,7 @@ func TestTelegramManualCommandsRoundTrip(t *testing.T) {
 	if !strings.Contains(reply, "eingeschaltet") {
 		t.Fatalf("reply = %q", reply)
 	}
-	data := a.parkingStore.TenantData("jhw22")
+	data := a.parkingStore.TenantData("demo")
 	if len(data.ChargingSessions) != 1 || data.ChargingSessions[0].Mode != chargingModeManual {
 		t.Fatalf("sessions = %+v", data.ChargingSessions)
 	}

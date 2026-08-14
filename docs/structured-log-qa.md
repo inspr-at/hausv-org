@@ -17,7 +17,7 @@ Eine Produktionsstichprobe kann geprüft werden, ohne Logwerte auf dem lokalen
 Bildschirm auszugeben:
 
 ```fish
-ssh -p 2222 mba@cs1.barta.cm \
+ssh -p 2222 deployer@host.example \
   "docker logs hausv-org --since 24h 2>&1" \
   | scripts/check-structured-logs.py
 ```
@@ -27,7 +27,7 @@ Request-Feldern, konkreten Pfaden, Klartext-E-Mail-Adressen, sensitiven
 Query-Parametern sowie Feldern für Token, Passwörter, Chat-IDs oder
 Request-Bodies. Sie gibt ausschließlich Zähler aus.
 
-Ein deklarativer csb1-Wächter prüft zusätzlich alle fünf Minuten das öffentliche
+Ein deklarativer Wächter auf dem konfigurierten Produktionshost prüft zusätzlich alle fünf Minuten das öffentliche
 `/healthz`, den Containerzustand sowie neue strukturierte Fehlerklassen. Das
 Healthsignal umfasst auch einen fehlgeschlagenen laufenden
 Energie-Aufbewahrungslauf; der Wächter baut dafür keine zweite
@@ -37,7 +37,7 @@ Aufbewahrungslogik. Alle `ERROR`-Ereignisse und ausgewählte betriebsrelevante
 Secrets werden weder in den Alarm noch in dessen Zustand übernommen.
 
 Alarm und Entwarnung werden nur bei einem Zustandswechsel über den bestehenden
-csb1-Betriebskanal zugestellt. Ein Zustellfehler bleibt ausstehend und wird
+Betreiberkanal zugestellt. Ein Zustellfehler bleibt ausstehend und wird
 erneut versucht. Der Deploy-Runner prüft weiterhin die frischen Containerlogs
 auf Start-, Import-, Panic- und Fatalfehler; Ad-hoc-Filter verwenden die
 JSON-Felder `level`, `msg`, `route`, `tenant`, `status` und `request_id`.

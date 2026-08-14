@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/config"
-	"github.com/markus-barta/hausv-org/internal/energy"
-	"github.com/markus-barta/hausv-org/internal/homeassistant"
-	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/config"
+	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func TestPublicHomeCopyFollowsPortalTypeNotEnergyProfile(t *testing.T) {
@@ -40,7 +40,7 @@ func TestPublicHomeCopyFollowsPortalTypeNotEnergyProfile(t *testing.T) {
 			lead:       "Termine, Dokumente, Aufgaben und Energie – privat an einem Ort.",
 		},
 		{
-			name:           "jhw22 community despite penthouse energy profile",
+			name:           "demo community despite apartment energy profile",
 			portalType:     config.PortalTypeCommunity,
 			energyHomeType: energy.HomeApartment,
 			headline:       "Alles Wichtige rund um unser Haus.",
@@ -63,24 +63,24 @@ func TestPublicHomeCopyFollowsPortalTypeNotEnergyProfile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := newTestPortalApp(t, userProfile{
-				Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+				Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 			})
-			tenant := a.tenants["jhw22"]
+			tenant := a.tenants["demo"]
 			tenant.PortalType = tt.portalType
-			a.tenants["jhw22"] = tenant
+			a.tenants["demo"] = tenant
 			switch tt.energyHomeType {
 			case "":
 				// No profile is the pre-onboarding state and must not affect
 				// the independent portal classification.
 			case "unclaimed":
-				if err := a.energyStore.SaveProfile(energy.DefaultProfile("jhw22", time.Now())); err != nil {
+				if err := a.energyStore.SaveProfile(energy.DefaultProfile("demo", time.Now())); err != nil {
 					t.Fatal(err)
 				}
 			default:
 				saveClaimedEnergyProfileHAUSV410(t, a, tt.energyHomeType)
 			}
 
-			got := a.publicHomeCopy("jhw22")
+			got := a.publicHomeCopy("demo")
 			if got.Headline != tt.headline || got.Lead != tt.lead {
 				t.Fatalf("public copy = %+v, want headline %q and lead %q", got, tt.headline, tt.lead)
 			}
@@ -90,18 +90,18 @@ func TestPublicHomeCopyFollowsPortalTypeNotEnergyProfile(t *testing.T) {
 
 func TestLocalDevLoginRerenderUsesHomeTypeAwareCopy(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
-		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
-	tenant := a.tenants["jhw22"]
+	tenant := a.tenants["demo"]
 	tenant.PortalType = config.PortalTypeHouse
-	a.tenants["jhw22"] = tenant
+	a.tenants["demo"] = tenant
 	saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 	a.localDevLogin = true
 
 	form := url.Values{"email": {"owner@example.com"}}
-	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/auth/request", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/auth/request", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Origin", "http://jhw22.hausv.org")
+	req.Header.Set("Origin", "http://hausv.org/demo")
 	rr := httptest.NewRecorder()
 	a.handler().ServeHTTP(rr, req)
 
@@ -113,7 +113,7 @@ func TestLocalDevLoginRerenderUsesHomeTypeAwareCopy(t *testing.T) {
 			t.Fatalf("local dev login page missing %q:\n%s", want, rr.Body.String())
 		}
 	}
-	if got := strings.Count(rr.Body.String(), `action="/auth/request"`); got != 1 {
+	if got := strings.Count(rr.Body.String(), `action="/demo/auth/request"`); got != 1 {
 		t.Fatalf("prepared login renders %d competing request forms, want one collapsed retry form", got)
 	}
 	for _, forbidden := range []string{"Lokalen Testzugang", "lokale Mailversand", "Magic-Link", "SSO", "Zitadel"} {
@@ -175,13 +175,13 @@ func TestPrivacyCopyDistinguishesPrivateHomeAndCommunityEnergyContext(t *testing
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := newTestPortalApp(t, userProfile{
-				Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+				Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 			})
-			tenant := a.tenants["jhw22"]
+			tenant := a.tenants["demo"]
 			tenant.PortalType = tt.portalType
-			a.tenants["jhw22"] = tenant
+			a.tenants["demo"] = tenant
 			if tt.energyHomeType == "unclaimed" {
-				if err := a.energyStore.SaveProfile(energy.DefaultProfile("jhw22", time.Now())); err != nil {
+				if err := a.energyStore.SaveProfile(energy.DefaultProfile("demo", time.Now())); err != nil {
 					t.Fatal(err)
 				}
 			} else {
@@ -189,7 +189,7 @@ func TestPrivacyCopyDistinguishesPrivateHomeAndCommunityEnergyContext(t *testing
 			}
 
 			rr := httptest.NewRecorder()
-			a.handler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/datenschutz", nil))
+			a.handler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/datenschutz", nil))
 			if rr.Code != http.StatusOK {
 				t.Fatalf("privacy status = %d body=%s", rr.Code, rr.Body.String())
 			}
@@ -208,35 +208,35 @@ func TestPrivacyCopyDistinguishesPrivateHomeAndCommunityEnergyContext(t *testing
 
 func TestEnergyDataPageRoleMatrix(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
-		Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 	a.serviceAccessEnabled = true
 	for email, profile := range map[string]userProfile{
 		"manager@example.com": {
-			Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+			Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 		},
 		"owner@example.com": {
-			Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+			Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 		},
 		"resident@example.com": {
-			Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+			Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 		},
 		"renter@example.com": {
-			Email: "renter@example.com", Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+			Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 		},
 		"board@example.com": {
-			Email: "board@example.com", Role: roleBeirat, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+			Email: "board@example.com", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 		},
 		"caretaker@example.com": {
 			Email: "caretaker@example.com", Role: roleResident, Permissions: []string{
 				permissionEnergyView, permissionEnergyConfigure, permissionEnergyCaretaker,
-			}, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+			}, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 		},
 		"service@example.com": {
 			Email: "service@example.com", Role: roleServiceProvider, Permissions: []string{
 				permissionEnergyView, permissionEnergyConfigure,
-			}, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+			}, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 		},
 	} {
 		a.profiles[email] = profile
@@ -256,7 +256,7 @@ func TestEnergyDataPageRoleMatrix(t *testing.T) {
 		{email: "service@example.com", want: http.StatusForbidden},
 	} {
 		t.Run(tt.email, func(t *testing.T) {
-			rr := authedRequest(t, a, tt.email, "/app/settings/energy-data")
+			rr := authedRequest(t, a, tt.email, "/demo/app/settings/energy-data")
 			if rr.Code != tt.want {
 				t.Fatalf("energy data page status = %d, want %d body=%s", rr.Code, tt.want, rr.Body.String())
 			}
@@ -266,17 +266,17 @@ func TestEnergyDataPageRoleMatrix(t *testing.T) {
 
 func TestEnergyDataPageRendersUnderstandableLifecycleAndSeparateDeleteChoices(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
-		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 	if _, err := a.energyStore.PutImport(energy.ImportRecord{
-		ID: "import-page", TenantSlug: "jhw22", Filename: "mein-smart-meter.csv",
+		ID: "import-page", TenantSlug: "demo", Filename: "mein-smart-meter.csv",
 		SHA256: "page-sha", Format: "smart-meter-csv", Payload: []byte("page"), ImportedAt: time.Now(),
 	}, nil); err != nil {
 		t.Fatal(err)
 	}
 
-	rr := authedRequest(t, a, "owner@example.com", "/app/settings/energy-data")
+	rr := authedRequest(t, a, "owner@example.com", "/demo/app/settings/energy-data")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("energy data page status = %d body=%s", rr.Code, rr.Body.String())
 	}
@@ -299,17 +299,17 @@ func TestEnergyDataPageRendersUnderstandableLifecycleAndSeparateDeleteChoices(t 
 			t.Fatalf("energy data page missing %q:\n%s", want, body)
 		}
 	}
-	if strings.Contains(body, `action="/app/settings/energy-data/import/`) {
+	if strings.Contains(body, `action="/demo/app/settings/energy-data/import/`) {
 		t.Fatalf("page offers unsafe per-import deletion:\n%s", body)
 	}
 }
 
 func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
-		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
-	tenant := a.tenants["jhw22"]
+	tenant := a.tenants["demo"]
 	tenant.HA = homeassistant.NewConfig(
 		"https://home-assistant-secret.invalid",
 		"HOME-ASSISTANT-TOKEN-SENTINEL",
@@ -317,11 +317,11 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 		"",
 		"",
 	)
-	a.tenants["jhw22"] = tenant
+	a.tenants["demo"] = tenant
 
 	currentAssetID := "asset-current"
 	if err := a.energyStore.UpsertAsset(energy.Asset{
-		ID: currentAssetID, TenantSlug: "jhw22", Kind: "pv", Name: "Eigene PV",
+		ID: currentAssetID, TenantSlug: "demo", Kind: "pv", Name: "Eigene PV",
 		Confirmed: true, Metadata: map[string]string{
 			"manufacturer":  "Sicherer Hersteller",
 			"api_token":     "ASSET-TOKEN-SENTINEL",
@@ -332,17 +332,17 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 		t.Fatal(err)
 	}
 	if err := a.energyStore.UpsertMapping(energy.EntityMapping{
-		ID: "mapping-current", TenantSlug: "jhw22", EntityID: "sensor.pv_power",
+		ID: "mapping-current", TenantSlug: "demo", EntityID: "sensor.pv_power",
 		AssetID: currentAssetID, Metric: energy.MetricPVPower, DisplayName: "PV Leistung", Unit: "kW", Confirmed: true,
 	}); err != nil {
 		t.Fatal(err)
 	}
 	currentInterval := energy.Interval{
-		TenantSlug: "jhw22", StartsAt: time.Date(2026, 7, 29, 8, 0, 0, 0, time.UTC),
+		TenantSlug: "demo", StartsAt: time.Date(2026, 7, 29, 8, 0, 0, 0, time.UTC),
 		Duration: 15 * time.Minute, ImportKWh: 0.5, AverageKW: 2, Quality: "measured", Source: "smart-meter",
 	}
 	if _, err := a.energyStore.PutImport(energy.ImportRecord{
-		ID: "import-current", TenantSlug: "jhw22", Filename: "eigene-werte.csv",
+		ID: "import-current", TenantSlug: "demo", Filename: "eigene-werte.csv",
 		SHA256: "current-sha", Format: "smart-meter-csv",
 		Payload: []byte("CURRENT_IMPORT_MARKER"), ImportedAt: time.Now(),
 	}, []energy.Interval{currentInterval}); err != nil {
@@ -372,15 +372,15 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 		t.Fatal(err)
 	}
 	if err := a.auditStore.Append(auditEvent{
-		TenantSlug: "jhw22", ActorEmail: "third-party-auditor@example.invalid", ActorRole: roleManager,
-		Action: store.AuditActionEnergyTarget, TargetType: "home-energy", TargetID: "jhw22",
+		TenantSlug: "demo", ActorEmail: "third-party-auditor@example.invalid", ActorRole: roleManager,
+		Action: store.AuditActionEnergyTarget, TargetType: "home-energy", TargetID: "demo",
 		Summary: "Energieziel aktualisiert",
 	}); err != nil {
 		t.Fatal(err)
 	}
 	if err := a.auditStore.Append(auditEvent{
-		TenantSlug: "jhw22", ActorEmail: "owner@example.com", ActorRole: roleOwner,
-		Action: store.AuditActionEnergyOnboarding, TargetType: "home-energy", TargetID: "jhw22",
+		TenantSlug: "demo", ActorEmail: "owner@example.com", ActorRole: roleOwner,
+		Action: store.AuditActionEnergyOnboarding, TargetType: "home-energy", TargetID: "demo",
 		Summary: "Energieprofil eingerichtet",
 	}); err != nil {
 		t.Fatal(err)
@@ -393,12 +393,12 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 		t.Fatal(err)
 	}
 
-	ac := authCtx{email: "owner@example.com", role: roleOwner, tenant: a.tenants["jhw22"]}
+	ac := authCtx{email: "owner@example.com", role: roleOwner, tenant: a.tenants["demo"]}
 	payload, filename, counts, err := a.buildEnergyDataPackage(ac, time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatalf("buildEnergyDataPackage: %v", err)
 	}
-	if filename != "hausv-energiedaten-jhw22-20260729.zip" {
+	if filename != "hausv-energiedaten-demo-20260729.zip" {
 		t.Fatalf("filename = %q", filename)
 	}
 	if counts["assets"] != 1 || counts["mappings"] != 1 || counts["intervals"] != 1 || counts["raw_imports"] != 1 {
@@ -449,7 +449,7 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 
 func TestMeasurementDeletionKeepsSetupAndResetsDerivedRecommendationState(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
-		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	profile := saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 	profile.RecommendationID = "shift-load"
@@ -458,12 +458,12 @@ func TestMeasurementDeletionKeepsSetupAndResetsDerivedRecommendationState(t *tes
 		t.Fatal(err)
 	}
 	if err := a.energyStore.UpsertAsset(energy.Asset{
-		ID: "asset-keep", TenantSlug: "jhw22", Kind: "pv", Name: "PV", Confirmed: true,
+		ID: "asset-keep", TenantSlug: "demo", Kind: "pv", Name: "PV", Confirmed: true,
 	}); err != nil {
 		t.Fatal(err)
 	}
 	if err := a.energyStore.UpsertMapping(energy.EntityMapping{
-		ID: "mapping-keep", TenantSlug: "jhw22", EntityID: "sensor.pv",
+		ID: "mapping-keep", TenantSlug: "demo", EntityID: "sensor.pv",
 		AssetID: "asset-keep", Metric: energy.MetricPVPower, DisplayName: "PV", Confirmed: true,
 	}); err != nil {
 		t.Fatal(err)
@@ -471,16 +471,16 @@ func TestMeasurementDeletionKeepsSetupAndResetsDerivedRecommendationState(t *tes
 	at := time.Date(2026, 7, 29, 8, 0, 0, 0, time.UTC)
 	peak := 8.4
 	if _, err := a.energyStore.PutImport(energy.ImportRecord{
-		ID: "import-delete", TenantSlug: "jhw22", Filename: "delete.csv",
+		ID: "import-delete", TenantSlug: "demo", Filename: "delete.csv",
 		SHA256: "delete-sha", Format: "smart-meter-csv", Payload: []byte("delete me"), ImportedAt: at,
 	}, []energy.Interval{{
-		TenantSlug: "jhw22", StartsAt: at, Duration: 15 * time.Minute,
+		TenantSlug: "demo", StartsAt: at, Duration: 15 * time.Minute,
 		ImportKWh: 2.1, AverageKW: peak, Quality: "measured", Source: "smart-meter",
 	}}); err != nil {
 		t.Fatal(err)
 	}
 	if err := a.energyStore.SaveTariffAssessment(energy.TariffAssessment{
-		ID: "assessment-delete", TenantSlug: "jhw22", AssessmentMonth: "2026-07",
+		ID: "assessment-delete", TenantSlug: "demo", AssessmentMonth: "2026-07",
 		ProfileID: "draft-at", ProfileVersion: "2026-07", ProfileStatus: "draft", PeakKW: peak, CreatedAt: at,
 	}); err != nil {
 		t.Fatal(err)
@@ -488,20 +488,20 @@ func TestMeasurementDeletionKeepsSetupAndResetsDerivedRecommendationState(t *tes
 	beforeFrom := at.Add(-24 * time.Hour)
 	afterTo := at.Add(24 * time.Hour)
 	if err := a.energyStore.UpsertMeasure(energy.Measure{
-		ID: "measure-keep", TenantSlug: "jhw22", IssueID: "issue-1",
+		ID: "measure-keep", TenantSlug: "demo", IssueID: "issue-1",
 		RecommendationID: "shift-load", Title: "Last verschieben", Status: energy.MeasureCompleted,
 		BeforeFrom: &beforeFrom, AfterTo: &afterTo, BeforePeakKW: &peak, BeforeQuality: "measured",
 	}); err != nil {
 		t.Fatal(err)
 	}
 
-	rr := authedFormRequest(t, a, "owner@example.com", "/app/settings/energy-data/history/delete", url.Values{
+	rr := authedFormRequest(t, a, "owner@example.com", "/demo/app/settings/energy-data/history/delete", url.Values{
 		"confirmation": {"MESSVERLAUF LÖSCHEN"},
 	})
-	if rr.Code != http.StatusSeeOther || rr.Header().Get("Location") != "/app/settings/energy-data?result=history-deleted" {
+	if rr.Code != http.StatusSeeOther || rr.Header().Get("Location") != "/demo/app/settings/energy-data?result=history-deleted" {
 		t.Fatalf("history delete = %d location=%q body=%s", rr.Code, rr.Header().Get("Location"), rr.Body.String())
 	}
-	stored, exists, err := a.energyStore.Profile("jhw22")
+	stored, exists, err := a.energyStore.Profile("demo")
 	if err != nil || !exists {
 		t.Fatalf("profile after history deletion: exists=%v err=%v", exists, err)
 	}
@@ -509,16 +509,16 @@ func TestMeasurementDeletionKeepsSetupAndResetsDerivedRecommendationState(t *tes
 		stored.RecommendationID != "" || stored.RecommendationStatus != "" {
 		t.Fatalf("profile after history deletion = %+v", stored)
 	}
-	assets, _ := a.energyStore.ListAssets("jhw22")
-	mappings, _ := a.energyStore.ListMappings("jhw22")
-	imports, _ := a.energyStore.ListImportsForExport("jhw22")
-	intervals, _ := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
-	assessments, _ := a.energyStore.ListTariffAssessments("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
+	mappings, _ := a.energyStore.ListMappings("demo")
+	imports, _ := a.energyStore.ListImportsForExport("demo")
+	intervals, _ := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
+	assessments, _ := a.energyStore.ListTariffAssessments("demo")
 	if len(assets) != 1 || len(mappings) != 1 || len(imports) != 0 || len(intervals) != 0 || len(assessments) != 0 {
 		t.Fatalf("history deletion boundaries: assets=%d mappings=%d imports=%d intervals=%d assessments=%d",
 			len(assets), len(mappings), len(imports), len(intervals), len(assessments))
 	}
-	measure, exists, err := a.energyStore.GetMeasure("jhw22", "measure-keep")
+	measure, exists, err := a.energyStore.GetMeasure("demo", "measure-keep")
 	if err != nil || !exists {
 		t.Fatalf("measure after history deletion: exists=%v err=%v", exists, err)
 	}
@@ -531,7 +531,7 @@ func TestMeasurementDeletionKeepsSetupAndResetsDerivedRecommendationState(t *tes
 
 func TestProfileDeletionAllowsCleanReonboardingPreservesEntitlementAndRevokesEnvGrant(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
-		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	profile := saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 	if profile.FreeStartedAt == nil {
@@ -539,12 +539,12 @@ func TestProfileDeletionAllowsCleanReonboardingPreservesEntitlementAndRevokesEnv
 	}
 	started := *profile.FreeStartedAt
 	if err := a.energyStore.UpsertAsset(energy.Asset{
-		ID: "asset-delete", TenantSlug: "jhw22", Kind: "pv", Name: "PV", Confirmed: true,
+		ID: "asset-delete", TenantSlug: "demo", Kind: "pv", Name: "PV", Confirmed: true,
 	}); err != nil {
 		t.Fatal(err)
 	}
 	if err := a.energyStore.UpsertMapping(energy.EntityMapping{
-		ID: "mapping-delete", TenantSlug: "jhw22", EntityID: "sensor.pv",
+		ID: "mapping-delete", TenantSlug: "demo", EntityID: "sensor.pv",
 		AssetID: "asset-delete", Metric: energy.MetricPVPower, DisplayName: "PV", Confirmed: true,
 	}); err != nil {
 		t.Fatal(err)
@@ -552,10 +552,10 @@ func TestProfileDeletionAllowsCleanReonboardingPreservesEntitlementAndRevokesEnv
 	a.profiles["helper@example.com"] = userProfile{
 		Email: "helper@example.com", Role: roleResident,
 		Permissions: []string{permissionParking, permissionEnergyView, permissionEnergyConfigure, permissionEnergyCaretaker},
-		Tenants:     []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Tenants:     []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	}
 	a.energyChartCache = map[string]energyChartCacheEntry{
-		"jhw22|sensor.private|24h": {
+		"demo|sensor.private|24h": {
 			View: energyChartView{Summary: "transient private history"}, ExpiresAt: time.Now().Add(5 * time.Minute),
 		},
 		"other-house|sensor.keep|24h": {
@@ -563,25 +563,25 @@ func TestProfileDeletionAllowsCleanReonboardingPreservesEntitlementAndRevokesEnv
 		},
 	}
 
-	rr := authedFormRequest(t, a, "owner@example.com", "/app/settings/energy-data/profile/delete", url.Values{
+	rr := authedFormRequest(t, a, "owner@example.com", "/demo/app/settings/energy-data/profile/delete", url.Values{
 		"confirmation": {"ENERGIEPROFIL LÖSCHEN"},
 	})
-	if rr.Code != http.StatusSeeOther || rr.Header().Get("Location") != "/app/zuhause/onboarding?reset=1" {
+	if rr.Code != http.StatusSeeOther || rr.Header().Get("Location") != "/demo/app/zuhause/onboarding?reset=1" {
 		t.Fatalf("profile delete = %d location=%q body=%s", rr.Code, rr.Header().Get("Location"), rr.Body.String())
 	}
-	stored, exists, err := a.energyStore.Profile("jhw22")
+	stored, exists, err := a.energyStore.Profile("demo")
 	if err != nil || !exists {
 		t.Fatalf("placeholder after deletion: exists=%v err=%v", exists, err)
 	}
 	if !energyProfileUnclaimed(stored) || stored.FreeStartedAt == nil || !stored.FreeStartedAt.Equal(started) {
 		t.Fatalf("placeholder after deletion = %+v", stored)
 	}
-	assets, _ := a.energyStore.ListAssets("jhw22")
-	mappings, _ := a.energyStore.ListMappings("jhw22")
+	assets, _ := a.energyStore.ListAssets("demo")
+	mappings, _ := a.energyStore.ListMappings("demo")
 	if len(assets) != 0 || len(mappings) != 0 {
 		t.Fatalf("profile content remained after deletion: assets=%+v mappings=%+v", assets, mappings)
 	}
-	if _, exists := a.energyChartCache["jhw22|sensor.private|24h"]; exists {
+	if _, exists := a.energyChartCache["demo|sensor.private|24h"]; exists {
 		t.Fatal("tenant Home Assistant history remained in memory after profile deletion")
 	}
 	if _, exists := a.energyChartCache["other-house|sensor.keep|24h"]; !exists {
@@ -592,7 +592,7 @@ func TestProfileDeletionAllowsCleanReonboardingPreservesEntitlementAndRevokesEnv
 	if !ok || !helper.Adopted {
 		t.Fatalf("env helper was not converted to a revocable override: %+v ok=%v", helper, ok)
 	}
-	effective := a.profileForTenant("helper@example.com", "jhw22")
+	effective := a.profileForTenant("helper@example.com", "demo")
 	if effective.HasPermission(permissionEnergyView) ||
 		effective.HasPermission(permissionEnergyConfigure) ||
 		effective.HasPermission(permissionEnergyControl) ||
@@ -603,16 +603,16 @@ func TestProfileDeletionAllowsCleanReonboardingPreservesEntitlementAndRevokesEnv
 		t.Fatalf("unrelated helper permission was removed: %+v", effective.Permissions)
 	}
 
-	const seed = `[{"tenant_slug":"jhw22","household_name":"MUST NOT RETURN","home_type":"house","assets":["pv"],"complete":true}]`
-	if err := energy.ApplyProfileSeeds(a.energyStore, seed, map[string]struct{}{"jhw22": {}}, time.Now()); err != nil {
+	const seed = `[{"tenant_slug":"demo","household_name":"MUST NOT RETURN","home_type":"house","assets":["pv"],"complete":true}]`
+	if err := energy.ApplyProfileSeeds(a.energyStore, seed, map[string]struct{}{"demo": {}}, time.Now()); err != nil {
 		t.Fatalf("apply profile seed after deletion: %v", err)
 	}
-	stored, _, _ = a.energyStore.Profile("jhw22")
-	assets, _ = a.energyStore.ListAssets("jhw22")
+	stored, _, _ = a.energyStore.Profile("demo")
+	assets, _ = a.energyStore.ListAssets("demo")
 	if !energyProfileUnclaimed(stored) || stored.HouseholdName != "" || len(assets) != 0 {
 		t.Fatalf("declarative seed resurrected deleted profile: profile=%+v assets=%+v", stored, assets)
 	}
-	onboarding := authedRequest(t, a, "owner@example.com", "/app/zuhause/onboarding?reset=1")
+	onboarding := authedRequest(t, a, "owner@example.com", "/demo/app/zuhause/onboarding?reset=1")
 	if onboarding.Code != http.StatusOK || !strings.Contains(onboarding.Body.String(), "Womit möchten Sie beginnen? Mit Ihrem Zuhause.") {
 		t.Fatalf("clean re-onboarding unavailable: status=%d body=%s", onboarding.Code, onboarding.Body.String())
 	}
@@ -642,7 +642,7 @@ func TestEnergyChartCachePrunesExpiredEntries(t *testing.T) {
 func saveClaimedEnergyProfileHAUSV410(t *testing.T, a *app, homeType string) energy.HomeProfile {
 	t.Helper()
 	now := time.Date(2026, 7, 29, 7, 0, 0, 0, time.UTC)
-	profile := energy.DefaultProfile("jhw22", now)
+	profile := energy.DefaultProfile("demo", now)
 	profile.HomeType = homeType
 	profile.HouseholdName = "Test Zuhause"
 	profile.OnboardingStep = 5
@@ -652,7 +652,7 @@ func saveClaimedEnergyProfileHAUSV410(t *testing.T, a *app, homeType string) ene
 	if err := a.energyStore.SaveProfile(profile); err != nil {
 		t.Fatalf("save claimed profile: %v", err)
 	}
-	stored, _, _ := a.energyStore.Profile("jhw22")
+	stored, _, _ := a.energyStore.Profile("demo")
 	return stored
 }
 
@@ -699,7 +699,7 @@ func mapValuesHAUSV410(items map[string][]byte) [][]byte {
 
 func assertEnergyDeleteAuditStagesHAUSV410(t *testing.T, a *app, action string) {
 	t.Helper()
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: action, Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: action, Limit: 10})
 	if len(events) != 2 {
 		t.Fatalf("%s audit events = %+v, want requested and completed", action, events)
 	}

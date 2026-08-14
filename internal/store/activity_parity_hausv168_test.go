@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
 )
 
 // TestActivityStorageParity runs the JSON and SQLite backends through identical

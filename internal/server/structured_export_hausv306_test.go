@@ -15,14 +15,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/integrations"
-	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/integrations"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func TestStructuredExportPackageManifestAndChecksum(t *testing.T) {
 	generated := time.Date(2026, 7, 27, 18, 30, 0, 0, time.UTC)
 	records := []integrations.ExportRecord{{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		RecordID:   "unit-payment-status-top-1",
 		Kind:       structuredExportSourcePayments,
 		Occurred:   generated,
@@ -34,7 +34,7 @@ func TestStructuredExportPackageManifestAndChecksum(t *testing.T) {
 			"verification_note": "Neutrale Rohdatenübergabe",
 		},
 	}}
-	pkg, manifest, filename, err := buildStructuredExportPackage(context.Background(), "jhw22", []string{structuredExportSourcePayments}, records, generated)
+	pkg, manifest, filename, err := buildStructuredExportPackage(context.Background(), "demo", []string{structuredExportSourcePayments}, records, generated)
 	if err != nil {
 		t.Fatalf("buildStructuredExportPackage: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestStructuredExportPackageManifestAndChecksum(t *testing.T) {
 		manifest.RecordCount != 1 || manifest.RejectedRecordCount != 0 || manifest.TargetSystemCompatibility {
 		t.Fatalf("manifest = %+v", manifest)
 	}
-	if !strings.Contains(filename, "hausv-rohdaten-jhw22-") {
+	if !strings.Contains(filename, "hausv-rohdaten-demo-") {
 		t.Fatalf("filename = %q", filename)
 	}
 	archive, err := zip.NewReader(bytes.NewReader(pkg), int64(len(pkg)))
@@ -85,15 +85,15 @@ func TestStructuredExportPackageManifestAndChecksum(t *testing.T) {
 }
 
 func TestStructuredExportPortalSelectionDownloadAuditAndOneTimeToken(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{
-		ID: "top-1", TenantSlug: "jhw22", Label: "Top 1", UnitType: unitTypeResidential,
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+		ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential,
 		OwnerEmails: []string{"owner-secret@example.com"},
 	}}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	if _, err := a.unitPaymentStore.Set(unitPaymentStatus{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		UnitID:     "top-1",
 		Status:     unitPaymentStatusPaid,
 		UpdatedAt:  time.Date(2026, 7, 27, 18, 0, 0, 0, time.UTC),
@@ -102,7 +102,7 @@ func TestStructuredExportPortalSelectionDownloadAuditAndOneTimeToken(t *testing.
 		t.Fatalf("set payment status: %v", err)
 	}
 
-	page := authedRequest(t, a, "manager@example.com", "/app/settings/data-export")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/data-export")
 	if page.Code != http.StatusOK {
 		t.Fatalf("page status = %d", page.Code)
 	}
@@ -115,7 +115,7 @@ func TestStructuredExportPortalSelectionDownloadAuditAndOneTimeToken(t *testing.
 		t.Fatal("manager page must not offer admin-only parking exports")
 	}
 
-	previewResponse := authedFormRequest(t, a, "manager@example.com", "/app/settings/data-export/preview", url.Values{
+	previewResponse := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/data-export/preview", url.Values{
 		"source": {structuredExportSourcePayments},
 	})
 	if previewResponse.Code != http.StatusSeeOther {
@@ -139,7 +139,7 @@ func TestStructuredExportPortalSelectionDownloadAuditAndOneTimeToken(t *testing.
 		}
 	}
 
-	download := authedFormRequest(t, a, "manager@example.com", "/app/settings/data-export/download", url.Values{
+	download := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/data-export/download", url.Values{
 		"preview_token": {token},
 	})
 	if download.Code != http.StatusOK || download.Header().Get("Content-Type") != "application/zip" {
@@ -148,52 +148,52 @@ func TestStructuredExportPortalSelectionDownloadAuditAndOneTimeToken(t *testing.
 	if strings.Contains(download.Body.String(), "owner-secret@example.com") {
 		t.Fatal("export package must not contain unit membership addresses")
 	}
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: store.AuditActionIntegrationExport, Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: store.AuditActionIntegrationExport, Limit: 10})
 	if len(events) != 1 || events[0].ActorEmail != "manager@example.com" || events[0].Details["records"] != "1" ||
 		events[0].Details["sources"] != structuredExportSourcePayments || events[0].Details["csv_checksum"] == "" {
 		t.Fatalf("export audit events = %+v", events)
 	}
-	second := authedFormRequest(t, a, "manager@example.com", "/app/settings/data-export/download", url.Values{
+	second := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/data-export/download", url.Values{
 		"preview_token": {token},
 	})
 	if second.Code != http.StatusGone {
 		t.Fatalf("second download status = %d, want 410", second.Code)
 	}
-	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: store.AuditActionIntegrationExport, Limit: 10}); len(events) != 1 {
+	if events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: store.AuditActionIntegrationExport, Limit: 10}); len(events) != 1 {
 		t.Fatalf("second download created audit event: %+v", events)
 	}
 }
 
 func TestStructuredExportAuthorizationAndActorBinding(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	if _, err := a.unitPaymentStore.Set(unitPaymentStatus{
-		TenantSlug: "jhw22", UnitID: "top-1", Status: unitPaymentStatusOpen, UpdatedAt: time.Now().UTC(),
+		TenantSlug: "demo", UnitID: "top-1", Status: unitPaymentStatusOpen, UpdatedAt: time.Now().UTC(),
 	}); err != nil {
 		t.Fatalf("set payment status: %v", err)
 	}
-	if page := authedRequest(t, a, "resident@example.com", "/app/settings/data-export"); page.Code != http.StatusForbidden {
+	if page := authedRequest(t, a, "resident@example.com", "/demo/app/settings/data-export"); page.Code != http.StatusForbidden {
 		t.Fatalf("resident page status = %d, want 403", page.Code)
 	}
-	tampered := authedFormRequest(t, a, "manager@example.com", "/app/settings/data-export/preview", url.Values{
+	tampered := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/data-export/preview", url.Values{
 		"source": {structuredExportSourceParking},
 	})
 	if tampered.Code != http.StatusSeeOther || !strings.Contains(tampered.Header().Get("Location"), "result=selection") {
 		t.Fatalf("tampered manager preview status=%d location=%q", tampered.Code, tampered.Header().Get("Location"))
 	}
-	previewResponse := authedFormRequest(t, a, "manager@example.com", "/app/settings/data-export/preview", url.Values{
+	previewResponse := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/data-export/preview", url.Values{
 		"source": {structuredExportSourcePayments},
 	})
 	location, _ := url.Parse(previewResponse.Header().Get("Location"))
 	token := location.Query().Get("preview")
-	crossActor := authedFormRequest(t, a, "other@example.com", "/app/settings/data-export/download", url.Values{
+	crossActor := authedFormRequest(t, a, "other@example.com", "/demo/app/settings/data-export/download", url.Values{
 		"preview_token": {token},
 	})
 	if crossActor.Code != http.StatusGone {
 		t.Fatalf("cross-actor download status = %d, want 410", crossActor.Code)
 	}
-	if events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Action: store.AuditActionIntegrationExport, Limit: 10}); len(events) != 0 {
+	if events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: store.AuditActionIntegrationExport, Limit: 10}); len(events) != 0 {
 		t.Fatalf("rejected downloads created audit events: %+v", events)
 	}
 }
@@ -202,7 +202,7 @@ func TestStructuredExportPreviewClaimIsAtomic(t *testing.T) {
 	a := &app{}
 	token := "preview-token"
 	a.storeStructuredExportPreview(token, structuredExportPreview{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		ActorEmail: "manager@example.com",
 		CreatedAt:  time.Now().UTC(),
 		Package:    []byte("package"),
@@ -214,7 +214,7 @@ func TestStructuredExportPreviewClaimIsAtomic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, ok := a.takeStructuredExportPreview(token, "jhw22", "manager@example.com")
+			_, ok := a.takeStructuredExportPreview(token, "demo", "manager@example.com")
 			results <- ok
 		}()
 	}

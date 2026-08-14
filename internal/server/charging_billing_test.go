@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 // PP20 surplus billing: surplus-session kWh bill at the flat rate and are

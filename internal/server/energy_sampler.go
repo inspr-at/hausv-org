@@ -26,8 +26,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
-	"github.com/markus-barta/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/homeassistant"
 )
 
 const (

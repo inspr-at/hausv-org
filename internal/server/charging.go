@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 type chargingControllerState = store.ChargingControllerState

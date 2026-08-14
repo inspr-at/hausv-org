@@ -766,7 +766,7 @@ async function assertPublicLanding(viewport) {
   if (!imprintResponse || imprintResponse.status() !== 200) {
     fail(`Impressum ${viewport.name}: Status ${imprintResponse?.status() ?? 0}`);
   }
-  for (const text of ['Ladungsfähige Anschrift', 'Augmentoring GmbH']) {
+  for (const text of ['Ladungsfähige Anschrift', 'HAUSV Professional']) {
     if (!(await page.getByText(text).count())) {
       fail(`Impressum ${viewport.name}: „${text}“ fehlt`);
     }
@@ -989,7 +989,7 @@ async function seedManagedContent() {
       element.open = true;
     });
   }
-  await contact.locator('input[name="service_region"]').fill('Graz und Umgebung');
+  await contact.locator('input[name="service_region"]').fill('Wien und Umgebung');
   await contact.locator('input[name="qualification"]').fill('Elektrotechnik');
   await contact.locator('input[name="energy_capabilities"][value="metering"]').check();
   await contact.locator('input[name="energy_capabilities"][value="home-assistant"]').check();
@@ -1011,13 +1011,13 @@ async function seedManagedContent() {
   await page.waitForURL(/\/app\/dokumente/);
 
   await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
-  if (!(await page.getByText('Top 11', { exact: true }).count())) {
+  if (!(await page.getByText('Einheit 12', { exact: true }).count())) {
     const unitPanel = page.locator('#unit-add');
     if (!(await unitPanel.evaluate((element) => element.open))) {
       await unitPanel.locator('summary').click();
     }
     const unitForm = unitPanel.locator('form');
-    await unitForm.locator('input[name="label"]').fill('Top 11');
+    await unitForm.locator('input[name="label"]').fill('Einheit 12');
     await unitForm.locator('input[name="owner_emails"]').fill('owner@example.com');
     await unitForm.locator('input[name="renter_emails"]').fill('resident@example.com');
     await unitForm.getByRole('button', { name: 'Einheit anlegen' }).click();
@@ -1026,13 +1026,13 @@ async function seedManagedContent() {
   await page.goto(`${baseURL}/app/settings/home?from=building`, { waitUntil: 'networkidle' });
   const officialUnit = page.locator('select[name="unit_id"]');
   if (await officialUnit.count()) {
-    await officialUnit.selectOption('top-11');
+    await officialUnit.selectOption('einheit-12');
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await page.waitForURL(/\/app\/settings\/building\?home=saved/);
   }
   await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
-  await assertHomeIdentityPair(page, 'building-context', 'QA Zuhause', 'Top 11', 'Gebäude-Einstellungen');
-  await assertHomeIdentityPair(page, 'building-unit', 'QA Zuhause', 'Top 11', 'Verknüpfte Einheit');
+  await assertHomeIdentityPair(page, 'building-context', 'QA Zuhause', 'Einheit 12', 'Gebäude-Einstellungen');
+  await assertHomeIdentityPair(page, 'building-unit', 'QA Zuhause', 'Einheit 12', 'Verknüpfte Einheit');
   if (!(await page.locator('[data-home-identity="building-context"]').getByText('QA Zuhause', { exact: true }).count()) ||
       !(await page.getByText('Offizielle Bezeichnung', { exact: true }).count())) {
     fail('Gebäude-Einstellungen: „Mein Zuhause“ und offizielle Einheit werden nicht klar getrennt');
@@ -1544,13 +1544,13 @@ async function ensureFocusedEnergyUnit() {
   const context = await newContext({ width: 1440, height: 900 });
   const page = await localLogin(context, 'admin@example.com');
   await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
-  if (!(await page.getByText('Top 11', { exact: true }).count())) {
+  if (!(await page.getByText('Einheit 12', { exact: true }).count())) {
     const unitPanel = page.locator('#unit-add');
     if (!(await unitPanel.evaluate((element) => element.open))) {
       await unitPanel.locator('summary').click();
     }
     const unitForm = unitPanel.locator('form');
-    await unitForm.locator('input[name="label"]').fill('Top 11');
+    await unitForm.locator('input[name="label"]').fill('Einheit 12');
     await unitForm.locator('input[name="owner_emails"]').fill('owner@example.com');
     await unitForm.locator('input[name="renter_emails"]').fill('resident@example.com');
     await unitForm.getByRole('button', { name: 'Einheit anlegen' }).click();
@@ -1559,7 +1559,7 @@ async function ensureFocusedEnergyUnit() {
   await page.goto(`${baseURL}/app/settings/home?from=building`, { waitUntil: 'networkidle' });
   const officialUnit = page.locator('select[name="unit_id"]');
   if (await officialUnit.count()) {
-    await officialUnit.selectOption('top-11');
+    await officialUnit.selectOption('einheit-12');
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await page.waitForURL(/\/app\/settings\/building\?home=saved/);
   }
@@ -1575,7 +1575,7 @@ async function ensureFocusedEnergyUnit() {
     await contact.locator('input[name="phone"]').fill('+43 316 000000');
     const optional = contact.locator('details.contact-add-optional');
     if (await optional.count()) await optional.evaluate((element) => { element.open = true; });
-    await contact.locator('input[name="service_region"]').fill('Graz und Umgebung');
+    await contact.locator('input[name="service_region"]').fill('Wien und Umgebung');
     await contact.locator('input[name="qualification"]').fill('Elektrotechnik');
     await contact.locator('input[name="energy_capabilities"][value="metering"]').check();
     await contact.locator('input[name="energy_capabilities"][value="home-assistant"]').check();
@@ -1706,12 +1706,12 @@ async function assertPilotHome({
     await invitation.locator('summary').click();
     await invitation.locator('input[name="first_name"]').fill('Sanfte');
     await invitation.locator('input[name="last_name"]').fill('Hilfe');
-    await invitation.locator('input[name="email"]').fill('inlaws-helper@example.com');
+    await invitation.locator('input[name="email"]').fill('house_b-helper@example.com');
     await invitation.locator('input[value="configure"]').check();
     await invitation.getByRole('button', { name: 'Hausbezogen einladen' }).click();
     await page.waitForLoadState('networkidle');
     const helperContext = await newContext({ width: 390, height: 844 });
-    const helper = await localLogin(helperContext, 'inlaws-helper@example.com', origin);
+    const helper = await localLogin(helperContext, 'house_b-helper@example.com', origin);
     const response = await helper.goto(`${origin}/app/energie`, { waitUntil: 'networkidle' });
     if (!response || response.status() !== 200 ||
         !(await helper.getByText('Nur beobachten', { exact: true }).count())) {
@@ -1865,11 +1865,11 @@ async function assertEnergySafetyAndFlow(viewport) {
   const ownerContext = await newContext(viewport.size);
   const page = await localLogin(ownerContext, 'owner@example.com');
   await page.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
-  await assertHomeIdentityPair(page, 'energy-heading', 'QA Zuhause', 'Top 11', `Energie ${viewport.name}`);
+  await assertHomeIdentityPair(page, 'energy-heading', 'QA Zuhause', 'Einheit 12', `Energie ${viewport.name}`);
   if (viewport.name === 'Mobil') {
     await page.locator('.mobile-menu-toggle').click();
-    await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Top 11', `Navigation ${viewport.name}`);
-    await assertHomeIdentityPair(page, 'mobile-menu', 'QA Zuhause', 'Top 11', `Mobiler Menükopf ${viewport.name}`);
+    await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Einheit 12', `Navigation ${viewport.name}`);
+    await assertHomeIdentityPair(page, 'mobile-menu', 'QA Zuhause', 'Einheit 12', `Mobiler Menükopf ${viewport.name}`);
     if (process.env.HV_QA_SCREENSHOT_DIR) {
       mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
       await page.screenshot({
@@ -1878,24 +1878,24 @@ async function assertEnergySafetyAndFlow(viewport) {
     }
     await page.locator('.mobile-menu-toggle').click();
   } else {
-    await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Top 11', `Navigation ${viewport.name}`);
+    await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Einheit 12', `Navigation ${viewport.name}`);
   }
-  if (!(await page.locator('.energy-heading-breadcrumb').getByText('Janischhofweg 22, 8043 Graz', { exact: true }).count()) ||
+  if (!(await page.locator('.energy-heading-breadcrumb').getByText('Musterweg 1, 1010 Wien', { exact: true }).count()) ||
       !(await page.locator('.energy-heading-unit-row').getByText('Wohnung', { exact: false }).count()) ||
       !(await page.getByRole('link', { name: 'Zuhause bearbeiten' }).count())) {
     fail(`Energie ${viewport.name}: Name, offizielle Wohnung oder sichtbarer Bearbeitungsweg fehlt`);
   }
   await page.getByRole('link', { name: 'Zuhause bearbeiten' }).click();
   await page.waitForURL(/\/app\/settings\/home/);
-  await assertHomeIdentityPair(page, 'editor-heading', 'QA Zuhause', 'Top 11', `Zuhause-Einstellungen ${viewport.name}`);
-  await assertHomeIdentityPair(page, 'editor-summary', 'QA Zuhause', 'Top 11', `Zuhause-Zusammenfassung ${viewport.name}`);
+  await assertHomeIdentityPair(page, 'editor-heading', 'QA Zuhause', 'Einheit 12', `Zuhause-Einstellungen ${viewport.name}`);
+  await assertHomeIdentityPair(page, 'editor-summary', 'QA Zuhause', 'Einheit 12', `Zuhause-Zusammenfassung ${viewport.name}`);
   if (!(await page.getByRole('heading', { name: 'QA Zuhause', exact: true }).count()) ||
       (await page.locator('input[name="household_name"]').inputValue()) !== 'QA Zuhause' ||
-      !(await page.getByText('Top 11', { exact: true }).count()) ||
-      (await page.locator('[name="unit_id"]').inputValue()) !== 'top-11' ||
+      !(await page.getByText('Einheit 12', { exact: true }).count()) ||
+      (await page.locator('[name="unit_id"]').inputValue()) !== 'einheit-12' ||
       !(await page.getByText('Diesem Hausprofil zugeordnet.', { exact: true }).count()) ||
       !(await page.locator('[data-home-type-explanation]').count())) {
-    fail(`Energie ${viewport.name}: Hausname ist nicht verständlich mit „Top 11“ verknüpft`);
+    fail(`Energie ${viewport.name}: Hausname ist nicht verständlich mit „Einheit 12“ verknüpft`);
   }
   if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)) {
     fail(`Energie ${viewport.name}: Hausname-Einstellungen laufen horizontal über`);
@@ -1911,8 +1911,8 @@ async function assertEnergySafetyAndFlow(viewport) {
     await page.locator('input[name="household_name"]').fill('Sonnendeck QA');
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await page.waitForURL(/\/app\/energie/);
-    await assertHomeIdentityPair(page, 'energy-heading', 'Sonnendeck QA', 'Top 11', 'Umbenennung Energie Desktop');
-    await assertHomeIdentityPair(page, 'nav', 'Sonnendeck QA', 'Top 11', 'Umbenennung Navigation Desktop');
+    await assertHomeIdentityPair(page, 'energy-heading', 'Sonnendeck QA', 'Einheit 12', 'Umbenennung Energie Desktop');
+    await assertHomeIdentityPair(page, 'nav', 'Sonnendeck QA', 'Einheit 12', 'Umbenennung Navigation Desktop');
     await page.getByRole('link', { name: 'Zuhause bearbeiten' }).click();
     await page.locator('input[name="household_name"]').fill('QA Zuhause');
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
@@ -1922,9 +1922,9 @@ async function assertEnergySafetyAndFlow(viewport) {
     await page.locator('input[name="household_name"]').fill(longDisplayName);
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await page.waitForURL(/\/app\/energie/);
-    await assertHomeIdentityPair(page, 'energy-heading', longDisplayName, 'Top 11', 'Langer Anzeigename Mobil');
+    await assertHomeIdentityPair(page, 'energy-heading', longDisplayName, 'Einheit 12', 'Langer Anzeigename Mobil');
     await page.locator('.mobile-menu-toggle').click();
-    await assertHomeIdentityPair(page, 'nav', longDisplayName, 'Top 11', 'Langer Navigationsname Mobil');
+    await assertHomeIdentityPair(page, 'nav', longDisplayName, 'Einheit 12', 'Langer Navigationsname Mobil');
     const longNameOverflow = await page.evaluate(() => ({
       viewport: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,
@@ -1953,7 +1953,7 @@ async function assertEnergySafetyAndFlow(viewport) {
     await page.waitForURL(/\/app\/energie/);
   }
   await page.goto(`${baseURL}/app/settings`, { waitUntil: 'networkidle' });
-  await assertHomeIdentityPair(page, 'settings', 'QA Zuhause', 'Top 11', `Einstellungen ${viewport.name}`);
+  await assertHomeIdentityPair(page, 'settings', 'QA Zuhause', 'Einheit 12', `Einstellungen ${viewport.name}`);
   if (process.env.HV_QA_SCREENSHOT_DIR) {
     await page.screenshot({
       path: join(process.env.HV_QA_SCREENSHOT_DIR, `home-name-settings-${viewport.name.toLowerCase()}.png`),
@@ -2321,7 +2321,7 @@ async function assertEnergySafetyAndFlow(viewport) {
     await specialistPanel.locator(':scope > summary').click();
     const measure = specialistPanel.locator('details.energy-measure-row').first();
     await measure.locator('summary').click();
-    await measure.locator('select[name="contact_id"]').selectOption({ label: 'QA Energiehilfe · Graz und Umgebung' });
+    await measure.locator('select[name="contact_id"]').selectOption({ label: 'QA Energiehilfe · Wien und Umgebung' });
     await measure.locator('input[name="offer_note"]').fill('Messkonzept angefragt');
     await measure.getByRole('button', { name: 'Maßnahmenstand speichern' }).click();
     await page.waitForLoadState('networkidle');
@@ -2662,7 +2662,7 @@ async function assertEnergyDataControl(viewport) {
     page.waitForEvent('download'),
     page.getByRole('button', { name: 'Energiedaten exportieren' }).click(),
   ]);
-  if (!/^hausv-energiedaten-jhw22-\d{8}\.zip$/.test(download.suggestedFilename())) {
+  if (!/^hausv-energiedaten-demo-\d{8}\.zip$/.test(download.suggestedFilename())) {
     fail(`Energiedaten ${viewport.name}: unerwarteter Exportname ${download.suggestedFilename()}`);
   }
   await page.waitForTimeout(2700);
@@ -2725,18 +2725,18 @@ try {
       await assertResponsiveAdminWidths();
       if (!ciCore) {
         await assertPilotHome({
-          slug: 'eltern',
-          email: 'parents-owner@example.com',
-          householdName: 'Haus Eltern',
+          slug: 'haus-a',
+          email: 'house_a-owner@example.com',
+          householdName: 'Haus A',
           expectedAssets: ['pv', 'ev', 'hot-water', 'heat-pump'],
           absentAssets: ['battery'],
           expectedMeasured: ['Hausanschluss', 'PV-Anlage'],
           expectedCaptured: ['E-Auto', 'Warmwasser', 'Wärmepumpe'],
         });
         await assertPilotHome({
-          slug: 'schwiegereltern',
-          email: 'inlaws-owner@example.com',
-          householdName: 'Haus Schwiegereltern',
+          slug: 'haus-b',
+          email: 'house_b-owner@example.com',
+          householdName: 'Haus B',
           expectedAssets: ['pv', 'battery', 'ev'],
           expectedMeasured: ['Hausanschluss', 'PV-Anlage', 'Batteriespeicher'],
           expectedCaptured: ['E-Auto'],

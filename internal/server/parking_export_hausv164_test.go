@@ -60,7 +60,7 @@ func TestParkingMonthCSVTotalsMatchView(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	tenant := tenantConfig{Slug: "jhw22", Name: "Janischhofweg 22", Address: "Janischhofweg 22"}
+	tenant := tenantConfig{Slug: "demo", Name: "Musterweg 1", Address: "Musterweg 1"}
 	if err := writeParkingMonthCSV(&buf, tenant, view); err != nil {
 		t.Fatalf("csv: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestParkingMonthCSVWarnsOnPartialData(t *testing.T) {
 		t.Fatal("mid-month coverage should flag Partial")
 	}
 	var buf bytes.Buffer
-	if err := writeParkingMonthCSV(&buf, tenantConfig{Name: "Janischhofweg 22", Address: "Janischhofweg 22"}, view); err != nil {
+	if err := writeParkingMonthCSV(&buf, tenantConfig{Name: "Musterweg 1", Address: "Musterweg 1"}, view); err != nil {
 		t.Fatalf("csv: %v", err)
 	}
 	if !strings.Contains(buf.String(), "unvollständig") {
@@ -111,17 +111,17 @@ func TestParkingMonthCSVWarnsOnPartialData(t *testing.T) {
 }
 
 func TestParkingMonthExportRouteServesCSV(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if err := a.parkingStore.UpsertTariff("jhw22", parkingTariff{EffectiveFrom: "2026-01-01", GridFeeEURPerKWh: 0.05, BaseFeeEUR: 3}); err != nil {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if err := a.parkingStore.UpsertTariff("demo", parkingTariff{EffectiveFrom: "2026-01-01", GridFeeEURPerKWh: 0.05, BaseFeeEUR: 3}); err != nil {
 		t.Fatalf("tariff: %v", err)
 	}
 	energy, prices, _ := chargingBillingFixture(t)
-	if err := a.parkingStore.AppendReadings("jhw22", energy, prices); err != nil {
+	if err := a.parkingStore.AppendReadings("demo", energy, prices); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
 	month := energy[0].At.In(time.Local).Format("2006-01")
 
-	res := authedRequest(t, a, "admin@example.com", "/app/parking/month/"+month+"/export")
+	res := authedRequest(t, a, "admin@example.com", "/demo/app/parking/month/"+month+"/export")
 	if res.Code != http.StatusOK {
 		t.Fatalf("export status = %d, want 200", res.Code)
 	}
@@ -137,30 +137,30 @@ func TestParkingMonthExportRouteServesCSV(t *testing.T) {
 }
 
 func TestParkingMonthExportDeniedForNonParkingUser(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	res := authedRequest(t, a, "resident@example.com", "/app/parking/month/2026-07/export")
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	res := authedRequest(t, a, "resident@example.com", "/demo/app/parking/month/2026-07/export")
 	if res.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404", res.Code)
 	}
 }
 
 func TestParkingMonthPageShowsExportPrintAndWarning(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	if err := a.parkingStore.UpsertTariff("jhw22", parkingTariff{EffectiveFrom: "2026-01-01", GridFeeEURPerKWh: 0.05, BaseFeeEUR: 3}); err != nil {
+	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if err := a.parkingStore.UpsertTariff("demo", parkingTariff{EffectiveFrom: "2026-01-01", GridFeeEURPerKWh: 0.05, BaseFeeEUR: 3}); err != nil {
 		t.Fatalf("tariff: %v", err)
 	}
 	energy, prices, _ := chargingBillingFixture(t)
-	if err := a.parkingStore.AppendReadings("jhw22", energy, prices); err != nil {
+	if err := a.parkingStore.AppendReadings("demo", energy, prices); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
 	month := energy[0].At.In(time.Local).Format("2006-01")
 
-	page := authedRequest(t, a, "admin@example.com", "/app/parking/month/"+month)
+	page := authedRequest(t, a, "admin@example.com", "/demo/app/parking/month/"+month)
 	if page.Code != http.StatusOK {
 		t.Fatalf("status = %d", page.Code)
 	}
 	body := page.Body.String()
-	if !strings.Contains(body, "/app/parking/month/"+month+"/export") {
+	if !strings.Contains(body, "/demo/app/parking/month/"+month+"/export") {
 		t.Fatal("month page should link to the CSV export")
 	}
 	if !strings.Contains(body, "data-print") {

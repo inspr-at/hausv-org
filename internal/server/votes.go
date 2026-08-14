@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/version"
+	"github.com/inspr-at/hausv-org/internal/version"
 )
 
 func (a *app) createBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -395,15 +395,13 @@ func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx)
 	view := a.ballotViewForActor(tenant.Slug, email, role, item, now, true)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": "abstimmung-" + item.ID + "-protokoll.html"}))
-	if err := a.templates.ExecuteTemplate(w, "ballotProtocol", map[string]any{
+	a.executeTemplate(w, "ballotProtocol", map[string]any{
 		"Title":       "Abstimmungsprotokoll",
 		"Tenant":      tenant,
 		"Ballot":      view,
 		"GeneratedAt": formatLocalDateTime(now),
 		"AppVersion":  version.BuildLabel(),
-	}); err != nil {
-		logError("ballot protocol render failed", err)
-	}
+	})
 }
 
 func (a *app) castBallotVote(tenantSlug string, email string, ballotID string, option string, at time.Time) (ballot, bool, error) {

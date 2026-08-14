@@ -7,9 +7,9 @@ import (
 
 func TestGeneratePaymentReferenceIsReadableValidAndShort(t *testing.T) {
 	reference, err := GeneratePaymentReference(PaymentReferenceInput{
-		TenantSlug: "Jänischhofweg 22 / Graz",
+		TenantSlug: "Musterweg 1 / Wien",
 		Scope:      "parking",
-		SubjectID:  "top-11",
+		SubjectID:  "einheit-12",
 		Period:     "2026-06",
 	}, nil)
 	if err != nil {
@@ -21,7 +21,7 @@ func TestGeneratePaymentReferenceIsReadableValidAndShort(t *testing.T) {
 	if len(reference) > paymentReferenceMaxLength {
 		t.Fatalf("reference len = %d, want <= %d: %q", len(reference), paymentReferenceMaxLength, reference)
 	}
-	if !strings.HasPrefix(reference, "HV-JAENISCHHO-202606-") {
+	if !strings.HasPrefix(reference, "HV-MUSTERWEG1-202606-") {
 		t.Fatalf("reference = %q, want readable tenant and period", reference)
 	}
 }
@@ -29,18 +29,18 @@ func TestGeneratePaymentReferenceIsReadableValidAndShort(t *testing.T) {
 func TestValidatePaymentReferenceRejectsSpecialCharactersAndLength(t *testing.T) {
 	for _, bad := range []string{
 		"",
-		"hv-JHW22-202606-ABC",
-		"HV-JHW22-202606-AB C",
-		"HV-JHW22-202606-ÄBC",
-		"HV-JHW22--202606-ABC",
-		"HV-JHW22-202606-ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+		"hv-DEMO-202606-ABC",
+		"HV-DEMO-202606-AB C",
+		"HV-DEMO-202606-ÄBC",
+		"HV-DEMO--202606-ABC",
+		"HV-DEMO-202606-ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 	} {
 		if err := ValidatePaymentReference(bad); err == nil {
 			t.Fatalf("ValidatePaymentReference(%q) succeeded, want error", bad)
 		}
 	}
 	for _, good := range []string{
-		"HV-JHW22-202606-ABC123",
+		"HV-DEMO-202606-ABC123",
 		"HV-HAUS10-GEN-Z9Y8X7W6V5",
 	} {
 		if err := ValidatePaymentReference(good); err != nil {
@@ -51,9 +51,9 @@ func TestValidatePaymentReferenceRejectsSpecialCharactersAndLength(t *testing.T)
 
 func TestGeneratePaymentReferenceAvoidsTenantCollisions(t *testing.T) {
 	input := PaymentReferenceInput{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Scope:      "parking",
-		SubjectID:  "top-11",
+		SubjectID:  "einheit-12",
 		Period:     "2026-06",
 	}
 	first, err := GeneratePaymentReference(input, nil)
@@ -73,10 +73,10 @@ func TestGeneratePaymentReferenceAvoidsTenantCollisions(t *testing.T) {
 }
 
 func TestPaymentReferenceNormalizesWhitespaceOnlyForLookup(t *testing.T) {
-	if got := NormalizePaymentReference(" hv-jhw22-202606-abc123 "); got != "HV-JHW22-202606-ABC123" {
+	if got := NormalizePaymentReference(" hv-demo-202606-abc123 "); got != "HV-DEMO-202606-ABC123" {
 		t.Fatalf("NormalizePaymentReference = %q", got)
 	}
-	if err := ValidatePaymentReference(NormalizePaymentReference(" hv-jhw22-202606-abc123 ")); err != nil {
+	if err := ValidatePaymentReference(NormalizePaymentReference(" hv-demo-202606-abc123 ")); err != nil {
 		t.Fatalf("normalized reference should validate: %v", err)
 	}
 }

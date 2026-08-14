@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/integrations"
-	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/integrations"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 const (

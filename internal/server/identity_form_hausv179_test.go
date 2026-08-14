@@ -14,15 +14,15 @@ func usersPageFor(t *testing.T, actorRole string) string {
 	t.Helper()
 	a := newTestPortalApp(t, userProfile{
 		Email: "actor@example.com", Role: actorRole,
-		Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	if _, err := a.inviteStore.Add(userProfile{
 		Email: "anna@example.com", FirstName: "Anna", LastName: "Muster",
-		Role: roleRenter, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	}); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	rr := authedRequest(t, a, "actor@example.com", "/app/settings/users")
+	rr := authedRequest(t, a, "actor@example.com", "/demo/app/settings/users")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("users page status = %d", rr.Code)
 	}

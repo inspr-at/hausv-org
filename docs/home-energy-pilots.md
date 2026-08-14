@@ -14,20 +14,20 @@ keinen Steuerungsmodus setzen: jedes Profil beginnt immer mit
 ```json
 [
   {
-    "tenant_slug": "jhw22",
-    "household_name": "Wohnung Barta",
+    "tenant_slug": "demo",
+    "household_name": "Demo-Wohnung",
     "home_type": "apartment",
     "assets": ["ev", "wallbox"]
   },
   {
-    "tenant_slug": "eltern",
-    "household_name": "Haus Eltern",
+    "tenant_slug": "haus-a",
+    "household_name": "Haus A",
     "home_type": "house",
     "assets": ["pv", "ev", "hot-water", "heat-pump"]
   },
   {
-    "tenant_slug": "schwiegereltern",
-    "household_name": "Haus Schwiegereltern",
+    "tenant_slug": "haus-b",
+    "household_name": "Haus B",
     "home_type": "house",
     "assets": ["pv", "battery", "ev"]
   }
@@ -42,8 +42,8 @@ die Kurzform bleibt unverändert gültig.
 
 ```json
 {
-  "tenant_slug": "eltern",
-  "household_name": "Haus Eltern",
+  "tenant_slug": "haus-a",
+  "household_name": "Haus A",
   "home_type": "house",
   "assets": [
     "pv",
@@ -93,7 +93,7 @@ mit `complete: true`. Die drei anderen QA-Mandanten fahren im Prüflauf den
 Einrichtungsassistenten durch und dürfen deshalb nicht vorab abgeschlossen sein
 — ohne diesen vierten zeigte jede Aufnahme von `/app/energie` den Assistenten
 statt des Cockpits. Der Mandant liest bewusst dieselbe Home-Assistant-Fixture
-wie `jhw22` und braucht keine eigene Kopie. Für eine sofort reproduzierbare
+wie `demo` und braucht keine eigene Kopie. Für eine sofort reproduzierbare
 Momentaufnahme importiert der Prüflauf weiterhin eine Viertelstunden-CSV **des
 laufenden Kalendermonats**: Der Home-Assistant-Sampler schreibt erst nach einer
 vollständig abgelaufenen Viertelstunde. `PeakForMonth` filtert außerdem nach
@@ -123,19 +123,19 @@ Inline-Tokens sind nicht Teil des Formats.
 ```json
 [
   {
-    "tenant_slug": "jhw22",
+    "tenant_slug": "demo",
     "base_url": "https://home-assistant.example.internal",
-    "token_file": "/run/agenix/hausv-jhw22-ha-token"
+    "token_file": "/run/agenix/hausv-demo-ha-token"
   },
   {
-    "tenant_slug": "eltern",
-    "base_url": "https://home-assistant-eltern.example.internal",
-    "token_file": "/run/agenix/hausv-eltern-ha-token"
+    "tenant_slug": "haus-a",
+    "base_url": "https://home-assistant-haus-a.example.internal",
+    "token_file": "/run/agenix/hausv-haus-a-ha-token"
   },
   {
-    "tenant_slug": "schwiegereltern",
-    "base_url": "https://home-assistant-schwiegereltern.example.internal",
-    "token_file": "/run/agenix/hausv-schwiegereltern-ha-token"
+    "tenant_slug": "haus-b",
+    "base_url": "https://home-assistant-haus-b.example.internal",
+    "token_file": "/run/agenix/hausv-haus-b-ha-token"
   }
 ]
 ```

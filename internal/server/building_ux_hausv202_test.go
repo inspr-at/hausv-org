@@ -7,19 +7,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "manager@example.com",
 		Role:        roleManager,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{
+	if err := a.unitStore.SetTenantUnits("demo", []unit{{
 		ID:                    "top-1",
-		TenantSlug:            "jhw22",
+		TenantSlug:            "demo",
 		Label:                 "Top 1",
 		UnitType:              unitTypeResidential,
 		MiteigentumsanteilPPM: 250000,
@@ -30,15 +30,15 @@ func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) 
 		t.Fatalf("seed unit: %v", err)
 	}
 	if _, err := a.unitPaymentStore.Set(unitPaymentStatus{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		UnitID:     "top-1",
 		Status:     unitPaymentStatusOverdue,
 		UpdatedBy:  "manager@example.com",
 	}); err != nil {
 		t.Fatalf("seed payment: %v", err)
 	}
-	profile := energy.DefaultProfile("jhw22", time.Now())
-	profile.HouseholdName = "Penthouse"
+	profile := energy.DefaultProfile("demo", time.Now())
+	profile.HouseholdName = "Dachwohnung"
 	profile.HomeType = energy.HomeApartment
 	profile.UnitID = "top-1"
 	profile.OnboardingComplete = true
@@ -46,7 +46,7 @@ func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) 
 		t.Fatalf("seed home profile: %v", err)
 	}
 
-	page := authedRequest(t, a, "manager@example.com", "/app/settings/building")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building")
 	if page.Code != http.StatusOK {
 		t.Fatalf("building page status = %d", page.Code)
 	}
@@ -63,13 +63,13 @@ func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) 
 		`<span class="pill dringend">Überfällig</span>`,
 		`<h3>Zahlungsstatus</h3>`,
 		`form="building-meta-form"`,
-		`data-home-identity="building-context" aria-label="Penthouse, offizielle Einheit Top 1"`,
-		`<strong data-home-display-name>Penthouse</strong>`,
+		`data-home-identity="building-context" aria-label="Dachwohnung, offizielle Einheit Top 1"`,
+		`<strong data-home-display-name>Dachwohnung</strong>`,
 		`<small class="home-profile-unit" data-home-unit-label>Top 1</small>`,
 		`„Top 1“ bleibt die offizielle Stammdatenbezeichnung.`,
-		`data-home-identity="building-unit" aria-label="Penthouse, offizielle Einheit Top 1"`,
+		`data-home-identity="building-unit" aria-label="Dachwohnung, offizielle Einheit Top 1"`,
 		`<span class="unit-official" data-home-unit-label>Top 1</span>`,
-		`href="/app/settings/home?from=building"`,
+		`href="/demo/app/settings/home?from=building"`,
 		`Offizielle Bezeichnung`,
 	} {
 		if !strings.Contains(body, want) {
@@ -90,21 +90,21 @@ func TestBuildingSettingsUsesOneEmptyUnitStateAndAnchoredActions(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "manager@example.com",
 		Role:        roleManager,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 
-	page := authedRequest(t, a, "manager@example.com", "/app/settings/building")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building")
 	if got := strings.Count(page.Body.String(), "Noch keine Einheiten"); got != 1 {
 		t.Fatalf("empty unit state count = %d, want 1", got)
 	}
 
-	invalidMeta := authedFormRequest(t, a, "manager@example.com", "/app/settings/building", url.Values{})
-	if got := invalidMeta.Header().Get("Location"); got != "/app/settings/building?building=invalid#overview" {
+	invalidMeta := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building", url.Values{})
+	if got := invalidMeta.Header().Get("Location"); got != "/demo/app/settings/building?building=invalid#overview" {
 		t.Fatalf("invalid meta redirect = %q", got)
 	}
-	invalidUnit := authedFormRequest(t, a, "manager@example.com", "/app/settings/building/units", url.Values{})
-	if got := invalidUnit.Header().Get("Location"); got != "/app/settings/building?unit=invalid#unit-add" {
+	invalidUnit := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/units", url.Values{})
+	if got := invalidUnit.Header().Get("Location"); got != "/demo/app/settings/building?unit=invalid#unit-add" {
 		t.Fatalf("invalid unit redirect = %q", got)
 	}
 }

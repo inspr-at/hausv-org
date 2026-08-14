@@ -8,7 +8,7 @@ import (
 
 func TestTokenStoreInvalidateRemovesUnusedMagicLink(t *testing.T) {
 	store := NewTokenStore([]byte(strings.Repeat("s", 32)))
-	store.Put("undelivered-token", "owner@example.com", "jhw22", 15*time.Minute)
+	store.Put("undelivered-token", "owner@example.com", "demo", 15*time.Minute)
 
 	if _, _, _, ok := store.Peek("undelivered-token"); !ok {
 		t.Fatal("new token is not readable")

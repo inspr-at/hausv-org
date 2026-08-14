@@ -30,11 +30,11 @@ func TestBallotOverviewExplainsReadOnlyOpenBallotTruthfully(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	created, err := a.voteStore.Create(ballot{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Innenhof",
 		Options:    []string{"Ja", "Nein"},
 		Type:       ballotTypeCircular,
@@ -44,11 +44,11 @@ func TestBallotOverviewExplainsReadOnlyOpenBallotTruthfully(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("jhw22", created.ID, time.Now()); err != nil {
+	if _, _, err := a.voteStore.Open("demo", created.ID, time.Now()); err != nil {
 		t.Fatalf("open ballot: %v", err)
 	}
 
-	body := authedRequest(t, a, "owner@example.com", "/app/abstimmungen").Body.String()
+	body := authedRequest(t, a, "owner@example.com", "/demo/app/abstimmungen").Body.String()
 	for _, want := range []string{
 		"Offene Abstimmung zur Information",
 		"Für diesen Zugang ist keine Stimmabgabe hinterlegt.",

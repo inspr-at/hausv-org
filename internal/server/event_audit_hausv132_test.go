@@ -12,7 +12,7 @@ func TestEventMutationsWritePrivacySafeAuditTrail(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "manager@example.com",
 		Role:        roleManager,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	start := time.Now().Add(48 * time.Hour).In(time.Local).Format("2006-01-02T15:04")
@@ -26,7 +26,7 @@ func TestEventMutationsWritePrivacySafeAuditTrail(t *testing.T) {
 		"Besprechungsraum 2",
 	}
 
-	create := authedMultipartFileRequest(t, a, "manager@example.com", "/app/events", map[string]string{
+	create := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/events", map[string]string{
 		"title":     privateValues[0],
 		"body":      privateValues[1],
 		"location":  privateValues[2],
@@ -36,13 +36,13 @@ func TestEventMutationsWritePrivacySafeAuditTrail(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("create status = %d, want redirect", create.Code)
 	}
-	items := a.eventStore.ListTenant("jhw22")
+	items := a.eventStore.ListTenant("demo")
 	if len(items) != 1 {
 		t.Fatalf("created events = %+v", items)
 	}
 	eventID := items[0].ID
 
-	edit := authedFormRequest(t, a, "manager@example.com", "/app/events/edit", url.Values{
+	edit := authedFormRequest(t, a, "manager@example.com", "/demo/app/events/edit", url.Values{
 		"id":        {eventID},
 		"title":     {privateValues[4]},
 		"body":      {privateValues[5]},
@@ -53,12 +53,12 @@ func TestEventMutationsWritePrivacySafeAuditTrail(t *testing.T) {
 	if edit.Code != http.StatusSeeOther {
 		t.Fatalf("edit status = %d, want redirect", edit.Code)
 	}
-	deleteResponse := authedFormRequest(t, a, "manager@example.com", "/app/events/delete", url.Values{"id": {eventID}})
+	deleteResponse := authedFormRequest(t, a, "manager@example.com", "/demo/app/events/delete", url.Values{"id": {eventID}})
 	if deleteResponse.Code != http.StatusSeeOther {
 		t.Fatalf("delete status = %d, want redirect", deleteResponse.Code)
 	}
 
-	events := a.auditStore.List(auditFilter{TenantSlug: "jhw22", Limit: 10})
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Limit: 10})
 	if len(events) != 3 {
 		t.Fatalf("event audit count = %d, want 3: %+v", len(events), events)
 	}
@@ -103,7 +103,7 @@ func TestEventMutationsWritePrivacySafeAuditTrail(t *testing.T) {
 		}
 	}
 
-	page := authedRequest(t, a, "manager@example.com", "/app/audit")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/audit")
 	if page.Code != http.StatusOK {
 		t.Fatalf("audit page status = %d", page.Code)
 	}

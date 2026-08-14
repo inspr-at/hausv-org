@@ -279,7 +279,9 @@
     }
     if (status) status.textContent = "Home-Assistant-Entities werden geladen …";
     if (!measurementRequest) {
-      measurementRequest = fetch("/app/energie/verbraucher/messwerte", { credentials: "same-origin" }).then(function (response) {
+      var firstPathSegment = window.location.pathname.split("/").filter(Boolean)[0] || "";
+      var tenantPrefix = firstPathSegment === "app" ? "" : "/" + firstPathSegment;
+      measurementRequest = fetch(tenantPrefix + "/app/energie/verbraucher/messwerte", { credentials: "same-origin" }).then(function (response) {
         if (!response.ok || response.redirected) throw new Error("measurement options unavailable");
         return response.json();
       });

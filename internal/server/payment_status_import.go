@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/markus-barta/hausv-org/internal/integrations"
+	"github.com/inspr-at/hausv-org/internal/integrations"
 )
 
 type unitPaymentReferenceCandidate struct {

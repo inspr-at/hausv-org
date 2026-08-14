@@ -9,11 +9,10 @@
 
 export BASE_URL="http://localhost:${HV_PORT:-}"
 export ADDR=":${HV_PORT:-}"
-# NOT "localhost": the app renders the public marketing page when the request
-# host equals ROOT_DOMAIN. Keeping the root domain distinct from the tenant host
-# ("localhost") makes / resolve to the tenant login instead.
+# The root domain serves the public marketing page. Tenant portals are reached
+# through /<slug>, so browser QA does not need tenant-specific DNS entries.
 export ROOT_DOMAIN=hausv.test
-export DEFAULT_TENANT=jhw22
+export DEFAULT_TENANT=demo
 export LOCAL_DEV_LOGIN=true
 
 # "cockpit" ist bewusst ein VIERTER Mandant: die drei anderen fahren im QA-Lauf
@@ -21,14 +20,14 @@ export LOCAL_DEV_LOGIN=true
 # abgeschlossen sein. Ohne einen abgeschlossenen Haushalt hat aber nie jemand
 # das Energie-Cockpit gesehen — jede Aufnahme von /app/energie zeigte den
 # Assistenten. Dieser Mandant schließt genau diese Lücke.
-export WEG_TENANTS_JSON='[{"slug":"jhw22","name":"JHW22-Portal","address":"Janischhofweg 22, 8043 Graz","host":"localhost","map_latitude":47.1008592,"map_longitude":15.4717681,"map_zoom":17},{"slug":"eltern","name":"Haus Eltern","address":"Pilot Eltern","host":"eltern.hausv.test"},{"slug":"schwiegereltern","name":"Haus Schwiegereltern","address":"Pilot Schwiegereltern","host":"schwiegereltern.hausv.test"},{"slug":"cockpit","name":"Haus Kirchweg","address":"Kirchweg 8, 8043 Graz","host":"cockpit.hausv.test"}]'
-export WEG_USERS_JSON='[{"email":"admin@example.com","first_name":"Ada","last_name":"Admin","role":"Admin","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"verwalter@example.com","first_name":"Vera","last_name":"Verwalter","role":"Verwalter","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"owner@example.com","first_name":"Otto","last_name":"Eigentuemer","role":"Eigentümer","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"resident@example.com","first_name":"Rita","last_name":"Bewohnerin","role":"Bewohner","status":"Aktiv","tenants":["jhw22"],"auth_methods":["email"]},{"email":"parents-owner@example.com","first_name":"Erika","last_name":"Eigentuemerin","role":"Eigentümer","status":"Aktiv","tenants":["eltern"],"auth_methods":["email"]},{"email":"inlaws-owner@example.com","first_name":"Ilse","last_name":"Eigentuemerin","role":"Eigentümer","status":"Aktiv","tenants":["schwiegereltern"],"auth_methods":["email"]},{"email":"cockpit-owner@example.com","first_name":"Clara","last_name":"Eigentuemerin","role":"Eigentümer","status":"Aktiv","tenants":["cockpit"],"auth_methods":["email"]}]'
+export WEG_TENANTS_JSON='[{"slug":"demo","name":"Demohaus","address":"Musterweg 1, 1010 Wien","map_latitude":48.2082,"map_longitude":16.3738,"map_zoom":17},{"slug":"haus-a","name":"Haus A","address":"Beispielweg 2, 1020 Wien"},{"slug":"haus-b","name":"Haus B","address":"Beispielweg 3, 1030 Wien"},{"slug":"cockpit","name":"Energiehaus","address":"Energiestraße 8, 1020 Wien"}]'
+export WEG_USERS_JSON='[{"email":"admin@example.com","first_name":"Ada","last_name":"Admin","role":"Admin","status":"Aktiv","tenants":["demo"],"auth_methods":["email"]},{"email":"verwalter@example.com","first_name":"Vera","last_name":"Verwalter","role":"Verwalter","status":"Aktiv","tenants":["demo"],"auth_methods":["email"]},{"email":"owner@example.com","first_name":"Otto","last_name":"Eigentuemer","role":"Eigentümer","status":"Aktiv","tenants":["demo"],"auth_methods":["email"]},{"email":"resident@example.com","first_name":"Rita","last_name":"Bewohnerin","role":"Bewohner","status":"Aktiv","tenants":["demo"],"auth_methods":["email"]},{"email":"house-a-owner@example.com","first_name":"Alex","last_name":"Eigentuemer","role":"Eigentümer","status":"Aktiv","tenants":["haus-a"],"auth_methods":["email"]},{"email":"house-b-owner@example.com","first_name":"Bianca","last_name":"Eigentuemerin","role":"Eigentümer","status":"Aktiv","tenants":["haus-b"],"auth_methods":["email"]},{"email":"cockpit-owner@example.com","first_name":"Clara","last_name":"Eigentuemerin","role":"Eigentümer","status":"Aktiv","tenants":["cockpit"],"auth_methods":["email"]}]'
 # complete=true überspringt den Assistenten auf Schritt 5. Der Betriebsmodus
 # bleibt trotzdem "Nur beobachten" — ApplyProfileSeeds erlaubt keine
 # Freigabe per Konfiguration.
-export HOME_PROFILE_SEEDS_JSON='[{"tenant_slug":"jhw22","household_name":"QA Zuhause","home_type":"apartment","assets":["pv","ev","wallbox"]},{"tenant_slug":"eltern","household_name":"Haus Eltern","home_type":"house","assets":["pv","ev","hot-water","heat-pump"]},{"tenant_slug":"schwiegereltern","household_name":"Haus Schwiegereltern","home_type":"house","assets":["pv","battery","ev"]},{"tenant_slug":"cockpit","household_name":"Zuhause Kirchweg","home_type":"house","complete":true,"assets":["pv","battery","ev","wallbox","heat-pump","hot-water",{"kind":"sauna","name":"Sauna Keller","rated_power_kw":8,"flexibility":"shift"}]}]'
+export HOME_PROFILE_SEEDS_JSON='[{"tenant_slug":"demo","household_name":"QA Zuhause","home_type":"apartment","assets":["pv","ev","wallbox"]},{"tenant_slug":"haus-a","household_name":"Haus A","home_type":"house","assets":["pv","ev","hot-water","heat-pump"]},{"tenant_slug":"haus-b","household_name":"Haus B","home_type":"house","assets":["pv","battery","ev"]},{"tenant_slug":"cockpit","household_name":"Energiehaus","home_type":"house","complete":true,"assets":["pv","battery","ev","wallbox","heat-pump","hot-water",{"kind":"sauna","name":"Sauna Keller","rated_power_kw":8,"flexibility":"shift"}]}]'
 export ADMIN_EMAILS=admin@example.com
-export INVITE_EMAILS=admin@example.com,verwalter@example.com,owner@example.com,resident@example.com,parents-owner@example.com,inlaws-owner@example.com,cockpit-owner@example.com
+export INVITE_EMAILS=admin@example.com,verwalter@example.com,owner@example.com,resident@example.com,house-a-owner@example.com,house-b-owner@example.com,cockpit-owner@example.com
 
 # Fixed session key so cookies from the baseline run stay valid for the
 # candidate run — otherwise every page would just be the login screen.
@@ -36,13 +35,13 @@ export SESSION_KEY=snapshot-harness-fixed-key-not-a-secret-000
 
 # Deterministic, local-only Home Assistant fixture. It deliberately includes
 # device noise so Playwright proves that onboarding stays calm and read-only.
-export HV_QA_JHW_HA_TOKEN="qa-read-only-jhw-fixture"
-export HV_QA_PARENTS_HA_TOKEN="qa-read-only-parents-fixture"
-export HV_QA_INLAWS_HA_TOKEN="qa-read-only-inlaws-fixture"
-# Der Mandant "cockpit" liest bewusst dieselbe /jhw22-Fixture: sie hat die
+export HV_QA_DEMO_HA_TOKEN="qa-read-only-demo-fixture"
+export HV_QA_HOUSE_A_HA_TOKEN="qa-read-only-house-a-fixture"
+export HV_QA_HOUSE_B_HA_TOKEN="qa-read-only-house-b-fixture"
+# Der Mandant "cockpit" liest bewusst dieselbe /demo-Fixture: sie hat die
 # vollständigste Sensorlage (Netz beide Richtungen, PV, Speicher, Verbrauch).
 # Damit braucht der abgeschlossene Haushalt keine eigene Fixture-Kopie.
-export HA_CONNECTORS_JSON="[{\"tenant_slug\":\"jhw22\",\"base_url\":\"http://127.0.0.1:${HV_QA_HA_PORT:-}/jhw22\",\"token_env\":\"HV_QA_JHW_HA_TOKEN\"},{\"tenant_slug\":\"eltern\",\"base_url\":\"http://127.0.0.1:${HV_QA_HA_PORT:-}/eltern\",\"token_env\":\"HV_QA_PARENTS_HA_TOKEN\"},{\"tenant_slug\":\"schwiegereltern\",\"base_url\":\"http://127.0.0.1:${HV_QA_HA_PORT:-}/schwiegereltern\",\"token_env\":\"HV_QA_INLAWS_HA_TOKEN\"},{\"tenant_slug\":\"cockpit\",\"base_url\":\"http://127.0.0.1:${HV_QA_HA_PORT:-}/jhw22\",\"token_env\":\"HV_QA_JHW_HA_TOKEN\"}]"
+export HA_CONNECTORS_JSON="[{\"tenant_slug\":\"demo\",\"base_url\":\"http://127.0.0.1:${HV_QA_HA_PORT:-}/demo\",\"token_env\":\"HV_QA_DEMO_HA_TOKEN\"},{\"tenant_slug\":\"haus-a\",\"base_url\":\"http://127.0.0.1:${HV_QA_HA_PORT:-}/haus-a\",\"token_env\":\"HV_QA_HOUSE_A_HA_TOKEN\"},{\"tenant_slug\":\"haus-b\",\"base_url\":\"http://127.0.0.1:${HV_QA_HA_PORT:-}/haus-b\",\"token_env\":\"HV_QA_HOUSE_B_HA_TOKEN\"},{\"tenant_slug\":\"cockpit\",\"base_url\":\"http://127.0.0.1:${HV_QA_HA_PORT:-}/demo\",\"token_env\":\"HV_QA_DEMO_HA_TOKEN\"}]"
 # The same local fixture serves a valid PNG for the sidebar map. Browser QA
 # must never depend on or send traffic to the public OpenStreetMap tile service.
 export MAP_TILE_BASE_URL="http://127.0.0.1:${HV_QA_HA_PORT:-}/map-tiles"

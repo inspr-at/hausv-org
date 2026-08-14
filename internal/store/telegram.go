@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 // TelegramStore persists what the bot must not lose across restarts: the

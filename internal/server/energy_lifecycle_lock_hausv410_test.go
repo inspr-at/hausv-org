@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
-	"github.com/markus-barta/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/homeassistant"
 )
 
 type blockingEnergyImportStoreHAUSV410 struct {
@@ -44,7 +44,7 @@ func (s *blockingEnergyProfileDeleteStoreHAUSV410) DeleteProfile(tenantSlug stri
 
 func TestEnergyProfileDeletionWaitsForInFlightSmartMeterImport(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
-		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 
@@ -61,7 +61,7 @@ func TestEnergyProfileDeletionWaitsForInFlightSmartMeterImport(t *testing.T) {
 	importRequest := newAuthedEnergyMultipartRequestHAUSV410(
 		t,
 		a,
-		"/app/energie/smart-meter",
+		"/demo/app/energie/smart-meter",
 		"smart_meter_file",
 		"smart-meter.csv",
 		[]byte("timestamp;import_kwh\n2026-07-01T00:00:00+02:00;0,42\n2026-07-01T00:15:00+02:00;0,38\n"),
@@ -69,7 +69,7 @@ func TestEnergyProfileDeletionWaitsForInFlightSmartMeterImport(t *testing.T) {
 	deleteRequest := newAuthedEnergyFormRequestHAUSV410(
 		t,
 		a,
-		"/app/settings/energy-data/profile/delete",
+		"/demo/app/settings/energy-data/profile/delete",
 		url.Values{"confirmation": {"ENERGIEPROFIL LÖSCHEN"}},
 	)
 	handler := a.handler()
@@ -78,7 +78,7 @@ func TestEnergyProfileDeletionWaitsForInFlightSmartMeterImport(t *testing.T) {
 	awaitEnergySignalHAUSV410(t, importStarted, "Smart-Meter import did not reach storage")
 
 	deleteDone := serveEnergyRequestHAUSV410(handler, deleteRequest)
-	awaitEnergyLifecycleWriterHAUSV410(t, a, "jhw22")
+	awaitEnergyLifecycleWriterHAUSV410(t, a, "demo")
 	select {
 	case result := <-deleteDone:
 		t.Fatalf("profile deletion completed while Smart-Meter import was in flight: status=%d body=%s", result.Code, result.Body.String())
@@ -95,15 +95,15 @@ func TestEnergyProfileDeletionWaitsForInFlightSmartMeterImport(t *testing.T) {
 		t.Fatalf("profile deletion status = %d body=%s", deleteResult.Code, deleteResult.Body.String())
 	}
 
-	profile, exists, err := a.energyStore.Profile("jhw22")
+	profile, exists, err := a.energyStore.Profile("demo")
 	if err != nil || !exists || !energyProfileUnclaimed(profile) {
 		t.Fatalf("profile after raced deletion: exists=%v profile=%+v err=%v", exists, profile, err)
 	}
-	imports, err := a.energyStore.ListImports("jhw22")
+	imports, err := a.energyStore.ListImports("demo")
 	if err != nil || len(imports) != 0 {
 		t.Fatalf("Smart-Meter imports survived raced deletion: imports=%+v err=%v", imports, err)
 	}
-	intervals, err := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
+	intervals, err := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
 	if err != nil || len(intervals) != 0 {
 		t.Fatalf("Smart-Meter intervals survived raced deletion: intervals=%+v err=%v", intervals, err)
 	}
@@ -111,7 +111,7 @@ func TestEnergyProfileDeletionWaitsForInFlightSmartMeterImport(t *testing.T) {
 
 func TestEnergyMutationQueuedBehindProfileDeletionCannotRecreateData(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
-		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 
@@ -128,13 +128,13 @@ func TestEnergyMutationQueuedBehindProfileDeletionCannotRecreateData(t *testing.
 	deleteRequest := newAuthedEnergyFormRequestHAUSV410(
 		t,
 		a,
-		"/app/settings/energy-data/profile/delete",
+		"/demo/app/settings/energy-data/profile/delete",
 		url.Values{"confirmation": {"ENERGIEPROFIL LÖSCHEN"}},
 	)
 	importRequest := newAuthedEnergyMultipartRequestHAUSV410(
 		t,
 		a,
-		"/app/energie/smart-meter",
+		"/demo/app/energie/smart-meter",
 		"smart_meter_file",
 		"queued-smart-meter.csv",
 		[]byte("timestamp;import_kwh\n2026-07-01T00:00:00+02:00;0,42\n2026-07-01T00:15:00+02:00;0,38\n"),
@@ -161,15 +161,15 @@ func TestEnergyMutationQueuedBehindProfileDeletionCannotRecreateData(t *testing.
 		t.Fatalf("queued import status = %d, want %d after profile deletion; body=%s", importResult.Code, http.StatusConflict, importResult.Body.String())
 	}
 
-	profile, exists, err := a.energyStore.Profile("jhw22")
+	profile, exists, err := a.energyStore.Profile("demo")
 	if err != nil || !exists || !energyProfileUnclaimed(profile) {
 		t.Fatalf("profile after queued write: exists=%v profile=%+v err=%v", exists, profile, err)
 	}
-	imports, err := a.energyStore.ListImports("jhw22")
+	imports, err := a.energyStore.ListImports("demo")
 	if err != nil || len(imports) != 0 {
 		t.Fatalf("queued import recreated data: imports=%+v err=%v", imports, err)
 	}
-	intervals, err := a.energyStore.ListIntervals("jhw22", time.Time{}, time.Time{})
+	intervals, err := a.energyStore.ListIntervals("demo", time.Time{}, time.Time{})
 	if err != nil || len(intervals) != 0 {
 		t.Fatalf("queued import recreated intervals: intervals=%+v err=%v", intervals, err)
 	}
@@ -219,12 +219,12 @@ func TestEnergyProfileDeletionCannotBeFollowedByInFlightChartCacheRefill(t *test
 	t.Cleanup(haServer.Close)
 
 	a := newTestPortalApp(t, userProfile{
-		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	saveClaimedEnergyProfileHAUSV410(t, a, energy.HomeHouse)
 	if err := a.energyStore.UpsertMapping(energy.EntityMapping{
 		ID:          "mapping-house-power",
-		TenantSlug:  "jhw22",
+		TenantSlug:  "demo",
 		EntityID:    "sensor.house_power",
 		Metric:      energy.MetricLoadPower,
 		DisplayName: "Hausverbrauch",
@@ -233,15 +233,15 @@ func TestEnergyProfileDeletionCannotBeFollowedByInFlightChartCacheRefill(t *test
 	}); err != nil {
 		t.Fatal(err)
 	}
-	tenant := a.tenants["jhw22"]
+	tenant := a.tenants["demo"]
 	tenant.HA = homeassistant.NewConfig(haServer.URL, "fixture", "", "", "")
-	a.tenants["jhw22"] = tenant
+	a.tenants["demo"] = tenant
 
-	cockpitRequest := newAuthedEnergyGETRequestHAUSV410(t, a, "/app/energie")
+	cockpitRequest := newAuthedEnergyGETRequestHAUSV410(t, a, "/demo/app/energie")
 	deleteRequest := newAuthedEnergyFormRequestHAUSV410(
 		t,
 		a,
-		"/app/settings/energy-data/profile/delete",
+		"/demo/app/settings/energy-data/profile/delete",
 		url.Values{"confirmation": {"ENERGIEPROFIL LÖSCHEN"}},
 	)
 	handler := a.handler()
@@ -250,7 +250,7 @@ func TestEnergyProfileDeletionCannotBeFollowedByInFlightChartCacheRefill(t *test
 	awaitEnergySignalHAUSV410(t, historyStarted, "energy chart did not request Home Assistant history")
 
 	deleteDone := serveEnergyRequestHAUSV410(handler, deleteRequest)
-	awaitEnergyLifecycleWriterHAUSV410(t, a, "jhw22")
+	awaitEnergyLifecycleWriterHAUSV410(t, a, "demo")
 	releaseOnce.Do(func() { close(historyRelease) })
 
 	cockpitResult := awaitEnergyResponseHAUSV410(t, cockpitDone, "energy cockpit")
@@ -265,7 +265,7 @@ func TestEnergyProfileDeletionCannotBeFollowedByInFlightChartCacheRefill(t *test
 	a.energyChartMu.Lock()
 	defer a.energyChartMu.Unlock()
 	for key := range a.energyChartCache {
-		if strings.HasPrefix(key, "jhw22|") {
+		if strings.HasPrefix(key, "demo|") {
 			t.Fatalf("in-flight Home Assistant history refilled deleted tenant cache: key=%q", key)
 		}
 	}
@@ -274,31 +274,31 @@ func TestEnergyProfileDeletionCannotBeFollowedByInFlightChartCacheRefill(t *test
 func TestEnergyLifecycleLocksAreAppScoped(t *testing.T) {
 	first := &app{}
 	second := &app{}
-	if first.energyLifecycleLock("jhw22") == second.energyLifecycleLock("jhw22") {
+	if first.energyLifecycleLock("demo") == second.energyLifecycleLock("demo") {
 		t.Fatal("independent app instances share a tenant lifecycle lock")
 	}
 }
 
 func newAuthedEnergyGETRequestHAUSV410(t *testing.T, a *app, path string) *http.Request {
 	t.Helper()
-	token, _, err := a.sessions.Put("owner@example.com", "jhw22", authMethodEmail, time.Hour)
+	token, _, err := a.sessions.Put("owner@example.com", "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatalf("put session: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org"+path, nil)
+	req := httptest.NewRequest(http.MethodGet, "http://hausv.org"+path, nil)
 	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
 	return req
 }
 
 func newAuthedEnergyFormRequestHAUSV410(t *testing.T, a *app, path string, values url.Values) *http.Request {
 	t.Helper()
-	token, _, err := a.sessions.Put("owner@example.com", "jhw22", authMethodEmail, time.Hour)
+	token, _, err := a.sessions.Put("owner@example.com", "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatalf("put session: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org"+path, strings.NewReader(values.Encode()))
+	req := httptest.NewRequest(http.MethodPost, "http://hausv.org"+path, strings.NewReader(values.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Origin", "http://jhw22.hausv.org")
+	req.Header.Set("Origin", "http://hausv.org/demo")
 	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
 	return req
 }
@@ -317,13 +317,13 @@ func newAuthedEnergyMultipartRequestHAUSV410(t *testing.T, a *app, path, field, 
 	if err := writer.Close(); err != nil {
 		t.Fatalf("close multipart body: %v", err)
 	}
-	token, _, err := a.sessions.Put("owner@example.com", "jhw22", authMethodEmail, time.Hour)
+	token, _, err := a.sessions.Put("owner@example.com", "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatalf("put session: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org"+path, &body)
+	req := httptest.NewRequest(http.MethodPost, "http://hausv.org"+path, &body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("Origin", "http://jhw22.hausv.org")
+	req.Header.Set("Origin", "http://hausv.org/demo")
 	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
 	return req
 }

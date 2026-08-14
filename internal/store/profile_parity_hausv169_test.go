@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
 )
 
 // HAUSV-169 phase 3: the JSON profile store and the SQLite person/house model
@@ -35,7 +35,7 @@ func twoHouseProfile() UserProfile {
 	return UserProfile{
 		Email: "anna@example.com", Title: "Dr.", FirstName: "Anna", LastName: "Muster",
 		Role: RoleRenter, Status: "Eingeladen",
-		Tenants:     []string{"jhw22", "haus-b"},
+		Tenants:     []string{"demo", "haus-b"},
 		AuthMethods: []string{"email"},
 		TenantMemberships: map[string]TenantMembership{
 			"haus-b": {Role: RoleOwner},
@@ -65,13 +65,13 @@ func TestProfileStorageParity(t *testing.T) {
 				t.Fatalf("identity lost: %+v", got)
 			}
 			// Per-house resolution is what the app actually consumes.
-			if r := got.ForTenant("jhw22").Role; r != RoleRenter {
-				t.Fatalf("jhw22 role = %q, want %q", r, RoleRenter)
+			if r := got.ForTenant("demo").Role; r != RoleRenter {
+				t.Fatalf("demo role = %q, want %q", r, RoleRenter)
 			}
 			if r := got.ForTenant("haus-b").Role; r != RoleOwner {
 				t.Fatalf("haus-b role = %q, want %q", r, RoleOwner)
 			}
-			if !got.HasTenant("jhw22") || !got.HasTenant("haus-b") {
+			if !got.HasTenant("demo") || !got.HasTenant("haus-b") {
 				t.Fatalf("tenants lost: %+v", got.Tenants)
 			}
 			if got.HasTenant("haus-c") {
@@ -97,13 +97,13 @@ func TestSetTenantMembershipDoesNotLeakToOtherHouseParity(t *testing.T) {
 				t.Fatalf("add: %v", err)
 			}
 
-			// House jhw22 promotes Anna to manager, in its own house only.
-			updated, ok, err := s.SetTenantMembership("anna@example.com", "jhw22", RoleManager, []string{PermissionParking})
+			// House demo promotes Anna to manager, in its own house only.
+			updated, ok, err := s.SetTenantMembership("anna@example.com", "demo", RoleManager, []string{PermissionParking})
 			if err != nil || !ok {
 				t.Fatalf("set membership: ok=%v err=%v", ok, err)
 			}
-			if r := updated.ForTenant("jhw22").Role; r != RoleManager {
-				t.Fatalf("jhw22 role not applied: %q", r)
+			if r := updated.ForTenant("demo").Role; r != RoleManager {
+				t.Fatalf("demo role not applied: %q", r)
 			}
 			// The other house is unaffected.
 			if r := updated.ForTenant("haus-b").Role; r != RoleOwner {
@@ -114,14 +114,14 @@ func TestSetTenantMembershipDoesNotLeakToOtherHouseParity(t *testing.T) {
 			if r := reread.ForTenant("haus-b").Role; r != RoleOwner {
 				t.Fatalf("haus-b role leaked after re-read: %q", r)
 			}
-			if r := reread.ForTenant("jhw22").Role; r != RoleManager {
-				t.Fatalf("jhw22 role lost after re-read: %q", r)
+			if r := reread.ForTenant("demo").Role; r != RoleManager {
+				t.Fatalf("demo role lost after re-read: %q", r)
 			}
 			// Global identity untouched by a house-scoped edit.
 			if reread.Title != "Dr." || reread.FirstName != "Anna" {
 				t.Fatalf("house edit changed global identity: %+v", reread)
 			}
-			if _, ok, _ := s.SetTenantMembership("nobody@example.com", "jhw22", RoleManager, nil); ok {
+			if _, ok, _ := s.SetTenantMembership("nobody@example.com", "demo", RoleManager, nil); ok {
 				t.Fatal("unknown person must not be found")
 			}
 		})
@@ -139,22 +139,22 @@ func TestMutateTenantPermissionsIsScopedAndPreservesOtherBitsParity(t *testing.T
 				t.Fatalf("add: %v", err)
 			}
 
-			updated, ok, err := s.MutateTenantPermissions("anna@example.com", "jhw22", func(permissions []string) []string {
+			updated, ok, err := s.MutateTenantPermissions("anna@example.com", "demo", func(permissions []string) []string {
 				return append(permissions, PermissionParking)
 			})
 			if err != nil || !ok {
 				t.Fatalf("grant: ok=%v err=%v", ok, err)
 			}
-			jhw22 := updated.ForTenant("jhw22")
-			if !jhw22.HasPermission(PermissionParking) || !jhw22.HasPermission("documents") || jhw22.Role != RoleRenter {
-				t.Fatalf("jhw22 permission mutation damaged membership: %+v", jhw22)
+			demo := updated.ForTenant("demo")
+			if !demo.HasPermission(PermissionParking) || !demo.HasPermission("documents") || demo.Role != RoleRenter {
+				t.Fatalf("demo permission mutation damaged membership: %+v", demo)
 			}
 			other := updated.ForTenant("haus-b")
 			if !other.HasPermission("billing") || other.HasPermission(PermissionParking) || other.Role != RoleOwner {
 				t.Fatalf("other house changed: %+v", other)
 			}
 
-			updated, ok, err = s.MutateTenantPermissions("anna@example.com", "jhw22", func(permissions []string) []string {
+			updated, ok, err = s.MutateTenantPermissions("anna@example.com", "demo", func(permissions []string) []string {
 				out := []string{}
 				for _, permission := range permissions {
 					if permission != PermissionParking {
@@ -166,10 +166,10 @@ func TestMutateTenantPermissionsIsScopedAndPreservesOtherBitsParity(t *testing.T
 			if err != nil || !ok {
 				t.Fatalf("revoke: ok=%v err=%v", ok, err)
 			}
-			if effective := updated.ForTenant("jhw22"); effective.HasPermission(PermissionParking) || !effective.HasPermission("documents") {
+			if effective := updated.ForTenant("demo"); effective.HasPermission(PermissionParking) || !effective.HasPermission("documents") {
 				t.Fatalf("revoke lost unrelated permission: %+v", effective)
 			}
-			if _, ok, err := s.MutateTenantPermissions("nobody@example.com", "jhw22", func(p []string) []string { return p }); err != nil || ok {
+			if _, ok, err := s.MutateTenantPermissions("nobody@example.com", "demo", func(p []string) []string { return p }); err != nil || ok {
 				t.Fatalf("unknown person: ok=%v err=%v", ok, err)
 			}
 		})
@@ -186,7 +186,7 @@ func TestRemoveTenantIsHouseScopedParity(t *testing.T) {
 				t.Fatalf("add: %v", err)
 			}
 
-			removedProfile, found, err := s.RemoveTenant("anna@example.com", "jhw22")
+			removedProfile, found, err := s.RemoveTenant("anna@example.com", "demo")
 			if err != nil || !found {
 				t.Fatalf("remove: found=%v err=%v", found, err)
 			}
@@ -197,8 +197,8 @@ func TestRemoveTenantIsHouseScopedParity(t *testing.T) {
 			if !ok {
 				t.Fatal("person disappeared after a house-scoped removal")
 			}
-			if after.HasTenant("jhw22") {
-				t.Fatal("jhw22 membership should be gone")
+			if after.HasTenant("demo") {
+				t.Fatal("demo membership should be gone")
 			}
 			if !after.HasTenant("haus-b") || after.ForTenant("haus-b").Role != RoleOwner {
 				t.Fatalf("the other house was damaged: %+v", after)
@@ -250,7 +250,7 @@ func TestProfileUpdateDeleteMutateParity(t *testing.T) {
 			if !ok {
 				t.Fatal("renamed profile not found")
 			}
-			if !moved.HasTenant("jhw22") || !moved.HasTenant("haus-b") {
+			if !moved.HasTenant("demo") || !moved.HasTenant("haus-b") {
 				t.Fatalf("rename lost houses: %+v", moved.Tenants)
 			}
 			if _, ok := s.Get("anna@example.com"); ok {
@@ -281,7 +281,7 @@ func TestRevokedPermissionIsNotVisibleOnRawProfileParity(t *testing.T) {
 			s := build(t)
 			if _, err := s.Add(UserProfile{
 				Email: "parker@example.com", Role: RoleRenter,
-				Tenants: []string{"jhw22"}, Permissions: []string{PermissionParking},
+				Tenants: []string{"demo"}, Permissions: []string{PermissionParking},
 			}); err != nil {
 				t.Fatalf("add: %v", err)
 			}
@@ -290,14 +290,14 @@ func TestRevokedPermissionIsNotVisibleOnRawProfileParity(t *testing.T) {
 			}
 
 			// Revoke it for that house.
-			if _, ok, err := s.SetTenantMembership("parker@example.com", "jhw22", RoleRenter, nil); err != nil || !ok {
+			if _, ok, err := s.SetTenantMembership("parker@example.com", "demo", RoleRenter, nil); err != nil || !ok {
 				t.Fatalf("revoke: ok=%v err=%v", ok, err)
 			}
 			got, ok := s.Get("parker@example.com")
 			if !ok {
 				t.Fatal("profile gone")
 			}
-			if got.ForTenant("jhw22").HasPermission(PermissionParking) {
+			if got.ForTenant("demo").HasPermission(PermissionParking) {
 				t.Fatalf("permission still effective after revoke: %+v", got)
 			}
 			if got.HasPermission(PermissionParking) {
@@ -314,7 +314,7 @@ func TestHouseScopedEditOnLegacyShapeDoesNotLeakParity(t *testing.T) {
 	legacy := func() UserProfile {
 		return UserProfile{
 			Email: "anna@example.com", Role: RoleRenter,
-			Tenants: []string{"jhw22", "haus-b"},
+			Tenants: []string{"demo", "haus-b"},
 		}
 	}
 	for name, build := range profileBackends() {
@@ -329,12 +329,12 @@ func TestHouseScopedEditOnLegacyShapeDoesNotLeakParity(t *testing.T) {
 				t.Fatalf("precondition: haus-b = %q", before.ForTenant("haus-b").Role)
 			}
 
-			if _, ok, err := s.SetTenantMembership("anna@example.com", "jhw22", RoleManager, nil); err != nil || !ok {
+			if _, ok, err := s.SetTenantMembership("anna@example.com", "demo", RoleManager, nil); err != nil || !ok {
 				t.Fatalf("scoped edit: ok=%v err=%v", ok, err)
 			}
 			after, _ := s.Get("anna@example.com")
-			if got := after.ForTenant("jhw22").Role; got != RoleManager {
-				t.Fatalf("jhw22 role = %q, want %q", got, RoleManager)
+			if got := after.ForTenant("demo").Role; got != RoleManager {
+				t.Fatalf("demo role = %q, want %q", got, RoleManager)
 			}
 			if got := after.ForTenant("haus-b").Role; got != RoleRenter {
 				t.Fatalf("haus-b role leaked to %q — it had no explicit membership", got)
@@ -350,11 +350,11 @@ func TestHouseScopedRemovalOnLegacyShapeParity(t *testing.T) {
 			s := build(t)
 			if _, err := s.Add(UserProfile{
 				Email: "anna@example.com", Role: RoleOwner,
-				Tenants: []string{"jhw22", "haus-b"},
+				Tenants: []string{"demo", "haus-b"},
 			}); err != nil {
 				t.Fatalf("add: %v", err)
 			}
-			removedProfile, found, err := s.RemoveTenant("anna@example.com", "jhw22")
+			removedProfile, found, err := s.RemoveTenant("anna@example.com", "demo")
 			if err != nil || !found || removedProfile {
 				t.Fatalf("remove: removedProfile=%v found=%v err=%v", removedProfile, found, err)
 			}
@@ -362,8 +362,8 @@ func TestHouseScopedRemovalOnLegacyShapeParity(t *testing.T) {
 			if !ok {
 				t.Fatal("person removed globally")
 			}
-			if after.HasTenant("jhw22") {
-				t.Fatal("jhw22 should be detached")
+			if after.HasTenant("demo") {
+				t.Fatal("demo should be detached")
 			}
 			if got := after.ForTenant("haus-b").Role; got != RoleOwner {
 				t.Fatalf("haus-b role damaged: %q", got)
@@ -385,7 +385,7 @@ func TestDirectoryVisibilityIsPerHouseParity(t *testing.T) {
 
 			// Unset: both houses inherit whatever the person-wide value is.
 			got, _ := s.Get("anna@example.com")
-			for _, house := range []string{"jhw22", "haus-b"} {
+			for _, house := range []string{"demo", "haus-b"} {
 				resolved := got
 				resolved.DirectoryOptIn = true // person-wide value, as the overlay supplies it
 				if !resolved.ForTenant(house).DirectoryOptIn {
@@ -393,32 +393,32 @@ func TestDirectoryVisibilityIsPerHouseParity(t *testing.T) {
 				}
 			}
 
-			// Opt out in jhw22 only.
-			if found, err := s.SetTenantDirectoryOptIn("anna@example.com", "jhw22", false); err != nil || !found {
+			// Opt out in demo only.
+			if found, err := s.SetTenantDirectoryOptIn("anna@example.com", "demo", false); err != nil || !found {
 				t.Fatalf("set: found=%v err=%v", found, err)
 			}
 			got, _ = s.Get("anna@example.com")
 			withPersonWideOptIn := got
 			withPersonWideOptIn.DirectoryOptIn = true
-			if withPersonWideOptIn.ForTenant("jhw22").DirectoryOptIn {
-				t.Fatal("jhw22 should now be hidden despite the person-wide opt-in")
+			if withPersonWideOptIn.ForTenant("demo").DirectoryOptIn {
+				t.Fatal("demo should now be hidden despite the person-wide opt-in")
 			}
 			if !withPersonWideOptIn.ForTenant("haus-b").DirectoryOptIn {
 				t.Fatal("haus-b must still inherit the person-wide opt-in")
 			}
 
 			// A later role edit must not reset the visibility choice.
-			if _, ok, err := s.SetTenantMembership("anna@example.com", "jhw22", RoleManager, nil); err != nil || !ok {
+			if _, ok, err := s.SetTenantMembership("anna@example.com", "demo", RoleManager, nil); err != nil || !ok {
 				t.Fatalf("role edit: ok=%v err=%v", ok, err)
 			}
 			got, _ = s.Get("anna@example.com")
 			afterEdit := got
 			afterEdit.DirectoryOptIn = true
-			if afterEdit.ForTenant("jhw22").DirectoryOptIn {
+			if afterEdit.ForTenant("demo").DirectoryOptIn {
 				t.Fatal("a role edit silently reset the house's directory visibility")
 			}
 
-			if found, err := s.SetTenantDirectoryOptIn("nobody@example.com", "jhw22", true); err != nil || found {
+			if found, err := s.SetTenantDirectoryOptIn("nobody@example.com", "demo", true); err != nil || found {
 				t.Fatalf("unknown person: found=%v err=%v", found, err)
 			}
 		})

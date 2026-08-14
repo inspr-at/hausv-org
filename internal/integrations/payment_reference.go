@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base32"
 	"fmt"
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 	"strings"
 )
 

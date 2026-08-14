@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/web"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 func TestAuthRateLimiterAppliesChecksAtomicallyWithoutRetainingPII(t *testing.T) {
@@ -69,7 +69,7 @@ func TestAuthRequestSourceOnlyTrustsSanitizedHeaderFromExplicitProxy(t *testing.
 	}
 	a := &app{trustedProxies: proxies}
 
-	proxied := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
+	proxied := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/", nil)
 	proxied.RemoteAddr = "172.18.0.4:43122"
 	proxied.Header.Set("X-Real-IP", "198.51.100.12")
 	proxied.Header.Set("X-Forwarded-For", "192.0.2.99")
@@ -77,7 +77,7 @@ func TestAuthRequestSourceOnlyTrustsSanitizedHeaderFromExplicitProxy(t *testing.
 		t.Fatalf("proxied source = %q", got)
 	}
 
-	foreignPrivate := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
+	foreignPrivate := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/", nil)
 	foreignPrivate.RemoteAddr = "172.18.0.5:43122"
 	foreignPrivate.Header.Set("X-Real-IP", "198.51.100.12")
 	foreignPrivate.Header.Set("X-Forwarded-For", "192.0.2.99")
@@ -85,7 +85,7 @@ func TestAuthRequestSourceOnlyTrustsSanitizedHeaderFromExplicitProxy(t *testing.
 		t.Fatalf("foreign private peer trusted forwarding header: %q", got)
 	}
 
-	direct := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/", nil)
+	direct := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/", nil)
 	direct.RemoteAddr = "203.0.113.20:43122"
 	direct.Header.Set("X-Real-IP", "198.51.100.12")
 	direct.Header.Set("X-Forwarded-For", "192.0.2.99")
@@ -98,7 +98,7 @@ func TestMagicLinkRequestDoesNotRevealWhetherAccountExists(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	mailer := &recordingMailer{}
@@ -109,7 +109,7 @@ func TestMagicLinkRequestDoesNotRevealWhetherAccountExists(t *testing.T) {
 	if known.Code != http.StatusSeeOther || unknown.Code != known.Code {
 		t.Fatalf("known/unknown statuses = %d/%d", known.Code, unknown.Code)
 	}
-	if known.Header().Get("Location") != "/?sent=1" ||
+	if known.Header().Get("Location") != "/demo/?sent=1" ||
 		unknown.Header().Get("Location") != known.Header().Get("Location") {
 		t.Fatalf("known/unknown locations = %q/%q", known.Header().Get("Location"), unknown.Header().Get("Location"))
 	}
@@ -126,7 +126,7 @@ func TestMagicLinkRateLimitsAccountAndSourceWithGenericRetry(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	now := time.Date(2026, 7, 30, 8, 0, 0, 0, time.UTC)
@@ -145,7 +145,7 @@ func TestMagicLinkRateLimitsAccountAndSourceWithGenericRetry(t *testing.T) {
 	sourceApp := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	sourceApp.authLimiter = newAuthRateLimiter(func() time.Time { return now })
@@ -169,12 +169,12 @@ func TestMagicLinkAccountLimitDoesNotConsumeValidToken(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	now := time.Date(2026, 7, 30, 8, 0, 0, 0, time.UTC)
 	a.authLimiter = newAuthRateLimiter(func() time.Time { return now })
-	account := "jhw22|owner@example.com"
+	account := "demo|owner@example.com"
 	for i := 0; i < loginCompletionAccountPolicy.limit; i++ {
 		allowed, retry := a.authLimiter.Allow(authRateCheck{
 			policy: loginCompletionAccountPolicy,
@@ -184,12 +184,12 @@ func TestMagicLinkAccountLimitDoesNotConsumeValidToken(t *testing.T) {
 			t.Fatalf("seed account bucket attempt %d = %v/%s", i+1, allowed, retry)
 		}
 	}
-	a.tokens.Put("still-valid", "owner@example.com", "jhw22", 15*time.Minute)
+	a.tokens.Put("still-valid", "owner@example.com", "demo", 15*time.Minute)
 
 	limited := httptest.NewRecorder()
 	limitedRequest := httptest.NewRequest(
 		http.MethodGet,
-		"http://jhw22.hausv.org/auth/verify?token=still-valid",
+		"http://hausv.org/demo/auth/verify?token=still-valid",
 		nil,
 	)
 	limitedRequest.RemoteAddr = "203.0.113.70:1234"
@@ -200,12 +200,12 @@ func TestMagicLinkAccountLimitDoesNotConsumeValidToken(t *testing.T) {
 	accepted := httptest.NewRecorder()
 	acceptedRequest := httptest.NewRequest(
 		http.MethodGet,
-		"http://jhw22.hausv.org/auth/verify?token=still-valid",
+		"http://hausv.org/demo/auth/verify?token=still-valid",
 		nil,
 	)
 	acceptedRequest.RemoteAddr = "203.0.113.70:1234"
 	a.handler().ServeHTTP(accepted, acceptedRequest)
-	if accepted.Code != http.StatusSeeOther || accepted.Header().Get("Location") != "/app" {
+	if accepted.Code != http.StatusSeeOther || accepted.Header().Get("Location") != "/demo/app" {
 		t.Fatalf("token after limit reset = %d location %q body %q", accepted.Code, accepted.Header().Get("Location"), accepted.Body.String())
 	}
 	if accepted.Header().Get("Set-Cookie") == "" {
@@ -217,12 +217,12 @@ func TestSecurityHeadersPreventCachingAndLeaveHSTSToEdge(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 
 	login := httptest.NewRecorder()
-	a.handler().ServeHTTP(login, httptest.NewRequest(http.MethodGet, "https://jhw22.hausv.org/", nil))
+	a.handler().ServeHTTP(login, httptest.NewRequest(http.MethodGet, "https://hausv.org/demo/", nil))
 	if login.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("login cache control = %q", login.Header().Get("Cache-Control"))
 	}
@@ -231,7 +231,7 @@ func TestSecurityHeadersPreventCachingAndLeaveHSTSToEdge(t *testing.T) {
 	}
 
 	protected := httptest.NewRecorder()
-	a.handler().ServeHTTP(protected, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app", nil))
+	a.handler().ServeHTTP(protected, httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/app", nil))
 	if protected.Code != http.StatusSeeOther || protected.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("protected response = %d cache %q", protected.Code, protected.Header().Get("Cache-Control"))
 	}
@@ -240,18 +240,18 @@ func TestSecurityHeadersPreventCachingAndLeaveHSTSToEdge(t *testing.T) {
 	}
 
 	errorPage := httptest.NewRecorder()
-	a.handler().ServeHTTP(errorPage, httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/not-a-route", nil))
+	a.handler().ServeHTTP(errorPage, httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/not-a-route", nil))
 	if errorPage.Code < http.StatusBadRequest || errorPage.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("error response = %d cache %q", errorPage.Code, errorPage.Header().Get("Cache-Control"))
 	}
 
 	asset := httptest.NewRecorder()
-	a.handler().ServeHTTP(asset, httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/assets/app.js", nil))
+	a.handler().ServeHTTP(asset, httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/assets/app.js", nil))
 	if asset.Code != http.StatusOK || asset.Header().Get("Cache-Control") == "no-store" {
 		t.Fatalf("asset response = %d cache %q", asset.Code, asset.Header().Get("Cache-Control"))
 	}
 
-	proxiedHTTPS := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/healthz", nil)
+	proxiedHTTPS := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/healthz", nil)
 	proxiedHTTPS.RemoteAddr = "172.18.0.4:1234"
 	proxiedHTTPS.Header.Set("X-Forwarded-Proto", "https")
 	proxied := httptest.NewRecorder()
@@ -279,7 +279,7 @@ func TestProtectedAppContentAlwaysDisablesCaching(t *testing.T) {
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(
 				response,
-				httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app/documents/content", nil),
+				httptest.NewRequest(http.MethodGet, "http://hausv.org/app/documents/content", nil),
 			)
 			if response.Code != http.StatusOK {
 				t.Fatalf("status = %d", response.Code)
@@ -298,16 +298,16 @@ func TestLogoutRevokesSessionAndAuthenticatedBackCacheIsRevalidated(t *testing.T
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
-	token, _, err := a.sessions.Put("owner@example.com", "jhw22", authMethodEmail, time.Hour)
+	token, _, err := a.sessions.Put("owner@example.com", "demo", authMethodEmail, time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	logoutRequest := httptest.NewRequest(http.MethodPost, "http://jhw22.hausv.org/auth/logout", nil)
-	logoutRequest.Header.Set("Origin", "http://jhw22.hausv.org")
+	logoutRequest := httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/auth/logout", nil)
+	logoutRequest.Header.Set("Origin", "http://hausv.org/demo")
 	logoutRequest.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
 	logout := httptest.NewRecorder()
 	a.handler().ServeHTTP(logout, logoutRequest)
@@ -315,16 +315,16 @@ func TestLogoutRevokesSessionAndAuthenticatedBackCacheIsRevalidated(t *testing.T
 		t.Fatalf("logout = %d cache %q", logout.Code, logout.Header().Get("Cache-Control"))
 	}
 
-	backRequest := httptest.NewRequest(http.MethodGet, "http://jhw22.hausv.org/app", nil)
+	backRequest := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/app", nil)
 	backRequest.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
 	back := httptest.NewRecorder()
 	a.handler().ServeHTTP(back, backRequest)
-	if back.Code != http.StatusSeeOther || back.Header().Get("Location") != "/" ||
+	if back.Code != http.StatusSeeOther || back.Header().Get("Location") != "/demo/" ||
 		back.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("revoked session response = %d location %q cache %q", back.Code, back.Header().Get("Location"), back.Header().Get("Cache-Control"))
 	}
 
-	page := authedRequest(t, a, "owner@example.com", "/app")
+	page := authedRequest(t, a, "owner@example.com", "/demo/app")
 	if !strings.Contains(page.Body.String(), "<body data-authenticated-app>") {
 		t.Fatal("authenticated page is missing its back-cache marker")
 	}
@@ -343,11 +343,11 @@ func requestMagicLink(t *testing.T, a *app, email string, remoteAddr string) *ht
 	values := url.Values{"email": {email}}
 	request := httptest.NewRequest(
 		http.MethodPost,
-		"http://jhw22.hausv.org/auth/request",
+		"http://hausv.org/demo/auth/request",
 		strings.NewReader(values.Encode()),
 	)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	request.Header.Set("Origin", "http://jhw22.hausv.org")
+	request.Header.Set("Origin", "http://hausv.org/demo")
 	request.RemoteAddr = remoteAddr
 	response := httptest.NewRecorder()
 	a.handler().ServeHTTP(response, request)

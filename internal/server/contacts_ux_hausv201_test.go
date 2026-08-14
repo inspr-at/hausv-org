@@ -11,11 +11,11 @@ func TestContactsUXPrioritizesOfficialActionsAndProgressiveManagement(t *testing
 	a := newTestPortalApp(t, userProfile{
 		Email:       "manager@example.com",
 		Role:        roleManager,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	a.serviceAccessEnabled = true
-	tenant := a.tenants["jhw22"]
+	tenant := a.tenants["demo"]
 	tenant.ContactName = "Hausverwaltung Nord"
 	tenant.ContactEmail = "office@example.com"
 	tenant.ContactPhone = "+43 316 100"
@@ -24,7 +24,7 @@ func TestContactsUXPrioritizesOfficialActionsAndProgressiveManagement(t *testing
 	tenant.CaretakerName = "Hausmeister Max"
 	tenant.CaretakerEmail = "hausmeister@example.com"
 	tenant.CaretakerPhone = "+43 664 300"
-	a.tenants["jhw22"] = tenant
+	a.tenants["demo"] = tenant
 	a.profiles["resident@example.com"] = userProfile{
 		Email:          "resident@example.com",
 		FirstName:      "Resi",
@@ -32,21 +32,21 @@ func TestContactsUXPrioritizesOfficialActionsAndProgressiveManagement(t *testing
 		Phone:          "+43 664 400",
 		DirectoryOptIn: true,
 		Role:           roleResident,
-		Tenants:        []string{"jhw22"},
+		Tenants:        []string{"demo"},
 		AuthMethods:    defaultAuthMethods(),
 	}
 	if _, _, err := a.contactStore.Upsert(managedContact{
-		TenantSlug: "jhw22", Kind: "Dienstleister", Name: "Liftservice", Email: "lift@example.com", Phone: "+43 316 500", Active: true,
+		TenantSlug: "demo", Kind: "Dienstleister", Name: "Liftservice", Email: "lift@example.com", Phone: "+43 316 500", Active: true,
 	}); err != nil {
 		t.Fatalf("seed active contact: %v", err)
 	}
 	if _, _, err := a.contactStore.Upsert(managedContact{
-		TenantSlug: "jhw22", Kind: "Sonstiges", Name: "Alter Kontakt", Email: "alt@example.com", Active: false,
+		TenantSlug: "demo", Kind: "Sonstiges", Name: "Alter Kontakt", Email: "alt@example.com", Active: false,
 	}); err != nil {
 		t.Fatalf("seed inactive contact: %v", err)
 	}
 
-	body := authedRequest(t, a, "manager@example.com", "/app/kontakte").Body.String()
+	body := authedRequest(t, a, "manager@example.com", "/demo/app/kontakte").Body.String()
 	quick := strings.Index(body, "Schnell erreichen")
 	managed := strings.Index(body, "Weitere wichtige Kontakte")
 	directory := strings.Index(body, "Freiwilliges Verzeichnis")
@@ -60,14 +60,14 @@ func TestContactsUXPrioritizesOfficialActionsAndProgressiveManagement(t *testing
 		`<details class="contact-add" id="contact-add"`,
 		`<summary>Kontakt hinzufügen</summary>`,
 		`<summary>Inaktive Kontakte (1)</summary>`,
-		`href="/app/settings/building#building-contact"`,
+		`href="/demo/app/settings/building#building-contact"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("contacts UX missing %q", want)
 		}
 	}
 
-	residentBody := authedRequest(t, a, "resident@example.com", "/app/kontakte").Body.String()
+	residentBody := authedRequest(t, a, "resident@example.com", "/demo/app/kontakte").Body.String()
 	for _, forbidden := range []string{`id="contact-add"`, "Alter Kontakt", "Inaktive Kontakte", "Hauskontakte pflegen"} {
 		if strings.Contains(residentBody, forbidden) {
 			t.Fatalf("resident contacts leaked management UI %q", forbidden)
@@ -79,10 +79,10 @@ func TestContactsUXUsesOneHelpfulEmptyState(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "resident@example.com",
 		Role:        roleResident,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
-	body := authedRequest(t, a, "resident@example.com", "/app/kontakte").Body.String()
+	body := authedRequest(t, a, "resident@example.com", "/demo/app/kontakte").Body.String()
 	if got := strings.Count(body, `class="empty-state"`); got != 1 {
 		t.Fatalf("empty-state count = %d, want 1", got)
 	}
@@ -95,22 +95,22 @@ func TestContactWritesReturnToTheirWorkArea(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "manager@example.com",
 		Role:        roleManager,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	a.serviceAccessEnabled = true
 
-	invalid := authedFormRequest(t, a, "manager@example.com", "/app/kontakte", url.Values{
+	invalid := authedFormRequest(t, a, "manager@example.com", "/demo/app/kontakte", url.Values{
 		"kind": {"Hausmeister"},
 	})
-	if invalid.Code != http.StatusSeeOther || invalid.Header().Get("Location") != "/app/kontakte?contact=invalid#contact-add" {
+	if invalid.Code != http.StatusSeeOther || invalid.Header().Get("Location") != "/demo/app/kontakte?contact=invalid#contact-add" {
 		t.Fatalf("invalid redirect = %d %q", invalid.Code, invalid.Header().Get("Location"))
 	}
 
-	saved := authedFormRequest(t, a, "manager@example.com", "/app/kontakte", url.Values{
+	saved := authedFormRequest(t, a, "manager@example.com", "/demo/app/kontakte", url.Values{
 		"kind": {"Hausmeister"}, "name": {"Hausmeister Max"}, "phone": {"+43 664 300"}, "active": {"true"},
 	})
-	if saved.Code != http.StatusSeeOther || saved.Header().Get("Location") != "/app/kontakte?contact=saved#contact-book" {
+	if saved.Code != http.StatusSeeOther || saved.Header().Get("Location") != "/demo/app/kontakte?contact=saved#contact-book" {
 		t.Fatalf("saved redirect = %d %q", saved.Code, saved.Header().Get("Location"))
 	}
 }

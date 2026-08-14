@@ -25,7 +25,7 @@ func TestEBInterfaceAdapterParses5And6GoldenFiles(t *testing.T) {
 				t.Fatalf("open fixture: %v", err)
 			}
 			defer f.Close()
-			result, err := EBInterfaceAdapter{}.ParseInvoices(context.Background(), Source{TenantSlug: "jhw22", Filename: tc.fixture}, f)
+			result, err := EBInterfaceAdapter{}.ParseInvoices(context.Background(), Source{TenantSlug: "demo", Filename: tc.fixture}, f)
 			if err != nil {
 				t.Fatalf("ParseInvoices: %v", err)
 			}
@@ -47,7 +47,7 @@ func TestEBInterfaceAdapterParses5And6GoldenFiles(t *testing.T) {
 }
 
 func TestEBInterfaceAdapterReportsInvalidRecords(t *testing.T) {
-	result, err := EBInterfaceAdapter{}.ParseInvoices(context.Background(), Source{TenantSlug: "jhw22"}, strings.NewReader(`<?xml version="1.0"?><Invoice xmlns="http://www.ebinterface.at/schema/6p0/"><InvoiceNumber>BAD</InvoiceNumber></Invoice>`))
+	result, err := EBInterfaceAdapter{}.ParseInvoices(context.Background(), Source{TenantSlug: "demo"}, strings.NewReader(`<?xml version="1.0"?><Invoice xmlns="http://www.ebinterface.at/schema/6p0/"><InvoiceNumber>BAD</InvoiceNumber></Invoice>`))
 	if err != nil {
 		t.Fatalf("ParseInvoices: %v", err)
 	}

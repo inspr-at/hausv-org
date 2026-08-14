@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"database/sql"
@@ -26,21 +27,21 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/auth"
-	"github.com/markus-barta/hausv-org/internal/authz"
-	"github.com/markus-barta/hausv-org/internal/config"
-	"github.com/markus-barta/hausv-org/internal/db"
-	"github.com/markus-barta/hausv-org/internal/energy"
-	"github.com/markus-barta/hausv-org/internal/homeassistant"
-	appmail "github.com/markus-barta/hausv-org/internal/mail"
-	"github.com/markus-barta/hausv-org/internal/view"
-	"github.com/markus-barta/hausv-org/internal/web"
+	"github.com/inspr-at/hausv-org/internal/auth"
+	"github.com/inspr-at/hausv-org/internal/authz"
+	"github.com/inspr-at/hausv-org/internal/config"
+	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/homeassistant"
+	appmail "github.com/inspr-at/hausv-org/internal/mail"
+	"github.com/inspr-at/hausv-org/internal/view"
+	"github.com/inspr-at/hausv-org/internal/web"
 
-	"github.com/markus-barta/hausv-org/internal/integrations"
-	"github.com/markus-barta/hausv-org/internal/store"
-	"github.com/markus-barta/hausv-org/internal/telegram"
-	"github.com/markus-barta/hausv-org/internal/textutil"
-	"github.com/markus-barta/hausv-org/internal/version"
+	"github.com/inspr-at/hausv-org/internal/integrations"
+	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/telegram"
+	"github.com/inspr-at/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/version"
 )
 
 // ── extracted to view ──────────────────────────────────────────────
@@ -1014,7 +1015,46 @@ func (a *app) routes() *http.ServeMux {
 func (a *app) handler() http.Handler {
 	// recoverAndLog is outermost so it captures panics and the final status from
 	// every inner layer, including securityHeaders (HAUSV-141).
-	return a.recoverAndLog(a.securityHeaders(a.canonicalHost(a.routes())))
+	return a.recoverAndLog(a.securityHeaders(a.canonicalHost(a.tenantPaths(a.routes()))))
+}
+
+type tenantPathContextKey struct{}
+
+// tenantPaths resolves /<tenant>/... before the standard mux sees the request
+// and keeps redirects inside the same tenant prefix.
+func (a *app) tenantPaths(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		first, rest, _ := strings.Cut(path, "/")
+		tenant, ok := a.tenantBySlug(first)
+		if !ok {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		cloned := r.Clone(context.WithValue(r.Context(), tenantPathContextKey{}, tenant.Slug))
+		cloned.URL.Path = "/" + rest
+		if rest == "" {
+			cloned.URL.Path = "/"
+		}
+		writer := &tenantLocationWriter{ResponseWriter: w, prefix: "/" + tenant.Slug}
+		next.ServeHTTP(writer, cloned)
+		r.Pattern = cloned.Pattern
+	})
+}
+
+type tenantLocationWriter struct {
+	http.ResponseWriter
+	prefix string
+}
+
+func (w *tenantLocationWriter) WriteHeader(status int) {
+	location := w.Header().Get("Location")
+	if strings.HasPrefix(location, "/") && !strings.HasPrefix(location, "//") &&
+		!strings.HasPrefix(location, w.prefix+"/") && location != w.prefix {
+		w.Header().Set("Location", w.prefix+location)
+	}
+	w.ResponseWriter.WriteHeader(status)
 }
 
 // canonicalHost permanently redirects the www alias to the bare root domain so
@@ -1090,8 +1130,8 @@ func newApp() (*app, error) {
 	allowed := parseAllowed(env("INVITE_EMAILS", ""))
 	admins := parseAllowed(env("ADMIN_EMAILS", ""))
 	rootDomain := normalizeHost(env("ROOT_DOMAIN", "hausv.org"))
-	defaultTenant := env("DEFAULT_TENANT", "jhw22")
-	tenants, err := parseTenants(env("WEG_TENANTS_JSON", ""), rootDomain, defaultTenant, newHomeAssistantConfig())
+	defaultTenant := env("DEFAULT_TENANT", "demo")
+	tenants, err := parseTenants(env("WEG_TENANTS_JSON", ""), defaultTenant, newHomeAssistantConfig())
 	if err != nil {
 		return nil, err
 	}
@@ -1667,7 +1707,7 @@ func (a *app) writeCalendarEvent(b *strings.Builder, tenant tenantConfig, item h
 		end = *item.EndsAt
 	}
 	calendarLine(b, "BEGIN", "VEVENT")
-	calendarLine(b, "UID", "event-"+item.ID+"@"+tenant.Slug+".hausv.org")
+	calendarLine(b, "UID", "event-"+item.ID+"+"+tenant.Slug+"@hausv.org")
 	calendarLine(b, "DTSTAMP", calendarDateTime(now))
 	calendarLine(b, "DTSTART", calendarDateTime(item.StartsAt))
 	calendarLine(b, "DTEND", calendarDateTime(end))
@@ -1709,7 +1749,7 @@ func writeCalendarIssueProposal(b *strings.Builder, tenant tenantConfig, item re
 			end = item.ServiceProposedStart.Add(time.Hour)
 		}
 		calendarLine(b, "BEGIN", "VEVENT")
-		calendarLine(b, "UID", "issue-proposal-"+item.ID+"@"+tenant.Slug+".hausv.org")
+		calendarLine(b, "UID", "issue-proposal-"+item.ID+"+"+tenant.Slug+"@hausv.org")
 		calendarLine(b, "DTSTAMP", calendarDateTime(now))
 		calendarLine(b, "DTSTART", calendarDateTime(item.ServiceProposedStart))
 		calendarLine(b, "DTEND", calendarDateTime(end))
@@ -1720,7 +1760,7 @@ func writeCalendarIssueProposal(b *strings.Builder, tenant tenantConfig, item re
 	}
 
 	calendarLine(b, "BEGIN", "VTODO")
-	calendarLine(b, "UID", "issue-proposal-"+item.ID+"@"+tenant.Slug+".hausv.org")
+	calendarLine(b, "UID", "issue-proposal-"+item.ID+"+"+tenant.Slug+"@hausv.org")
 	calendarLine(b, "DTSTAMP", calendarDateTime(now))
 	calendarLine(b, "SUMMARY", "Terminvorschlag: "+item.Title)
 	calendarLine(b, "DESCRIPTION", description)
@@ -1758,6 +1798,7 @@ func redirectAfterAttachmentChange(r *http.Request, fallback string) string {
 		if raw == "" {
 			continue
 		}
+		raw = internalTenantPath(r, raw)
 		if strings.HasPrefix(raw, "/app/") || raw == "/app" {
 			return raw
 		}
@@ -1768,6 +1809,7 @@ func redirectAfterAttachmentChange(r *http.Request, fallback string) string {
 		if normalizeHost(parsed.Host) != normalizeHost(r.Host) {
 			continue
 		}
+		parsed.Path = internalTenantPath(r, parsed.Path)
 		if parsed.Path == "/app" || strings.HasPrefix(parsed.Path, "/app/") {
 			if parsed.RawQuery != "" {
 				return parsed.Path + "?" + parsed.RawQuery
@@ -1776,6 +1818,28 @@ func redirectAfterAttachmentChange(r *http.Request, fallback string) string {
 		}
 	}
 	return fallback
+}
+
+func internalTenantPath(r *http.Request, raw string) string {
+	if r == nil {
+		return raw
+	}
+	slug, _ := r.Context().Value(tenantPathContextKey{}).(string)
+	return stripTenantPath(raw, slug)
+}
+
+func stripTenantPath(raw string, tenantSlug string) string {
+	prefix := "/" + normalizeSlug(tenantSlug)
+	if prefix == "/" {
+		return raw
+	}
+	if raw == prefix {
+		return "/"
+	}
+	if strings.HasPrefix(raw, prefix+"/") {
+		return strings.TrimPrefix(raw, prefix)
+	}
+	return raw
 }
 
 func parseBallotQuorumPPM(rawPPM string, rawPercent string) (int, error) {
@@ -2571,6 +2635,9 @@ func (a *app) notify(event portalNotification) []string {
 	event.Event = normalizeNotificationEvent(event.Event)
 	if event.Event == "" {
 		return nil
+	}
+	if strings.HasPrefix(event.ActionURL, "/") && !strings.HasPrefix(event.ActionURL, "//") {
+		event.ActionURL = strings.TrimRight(a.baseURL, "/") + event.ActionURL
 	}
 	body := event.Body()
 	sent := []string{}
@@ -4751,18 +4818,45 @@ func (a *app) withBase(ac authCtx, pageData map[string]any) map[string]any {
 // logic — just template + data → HTML. This is the piece that becomes
 // internal/web.Renderer.
 func (a *app) executeTemplate(w http.ResponseWriter, name string, data map[string]any) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	viewData := data
+	tenantSlug := ""
 	if tenant, ok := data["Tenant"].(tenantConfig); ok {
+		tenantSlug = tenant.Slug
 		viewData = make(map[string]any, len(data))
 		for key, value := range data {
 			viewData[key] = value
 		}
 		viewData["Tenant"] = tenantTemplateViewFrom(tenant)
 	}
-	if err := a.templates.ExecuteTemplate(w, name, viewData); err != nil {
+	var rendered bytes.Buffer
+	if err := a.templates.ExecuteTemplate(&rendered, name, viewData); err != nil {
 		logError("template render failed", err, "template", name)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	body := rendered.String()
+	if tenantSlug != "" {
+		body = prefixTenantHTMLPaths(body, tenantSlug)
+	}
+	_, _ = io.WriteString(w, body)
+}
+
+func prefixTenantHTMLPaths(body string, tenantSlug string) string {
+	prefix := "/" + normalizeSlug(tenantSlug)
+	if prefix == "/" {
+		return body
+	}
+	for _, attribute := range []string{"href", "action", "formaction", "src", "data-src", "data-glass-src", "data-map-tile", "value"} {
+		needle := attribute + `="/`
+		body = strings.ReplaceAll(body, needle+tenantSlug+"/", "\x00HAUSV_TENANT_PATH\x00")
+		body = strings.ReplaceAll(body, needle, attribute+`="`+prefix+"/")
+		body = strings.ReplaceAll(body, "\x00HAUSV_TENANT_PATH\x00", needle+tenantSlug+"/")
+	}
+	body = strings.ReplaceAll(body, "url(/", "url("+prefix+"/")
+	body = strings.ReplaceAll(body, "url('/", "url('"+prefix+"/")
+	body = strings.ReplaceAll(body, `url("/`, `url("`+prefix+`/`)
+	return body
 }
 
 // tenantTemplateView keeps the configuration model free of html/template
@@ -4908,16 +5002,17 @@ func (a *app) tenantHeroImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) tenantForRequest(r *http.Request) tenantConfig {
-	host := normalizeHost(r.Host)
-	for _, tenant := range a.tenants {
-		if tenant.Host != "" && tenant.Host == host {
-			return a.withTenantOverride(tenant)
+	if r != nil {
+		if slug, ok := r.Context().Value(tenantPathContextKey{}).(string); ok {
+			if tenant, ok := a.tenantBySlug(slug); ok {
+				return tenant
+			}
 		}
-	}
-	if a.rootDomain != "" && strings.HasSuffix(host, "."+a.rootDomain) {
-		slug := normalizeSlug(strings.TrimSuffix(host, "."+a.rootDomain))
-		if tenant, ok := a.tenantBySlug(slug); ok {
-			return tenant
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		if first, _, _ := strings.Cut(path, "/"); first != "" {
+			if tenant, ok := a.tenantBySlug(first); ok {
+				return tenant
+			}
 		}
 	}
 	tenant, _ := a.tenantBySlug(a.defaultTenant)
@@ -4927,6 +5022,15 @@ func (a *app) tenantForRequest(r *http.Request) tenantConfig {
 func (a *app) isMarketingHost(r *http.Request) bool {
 	if a == nil || r == nil {
 		return false
+	}
+	if _, ok := r.Context().Value(tenantPathContextKey{}).(string); ok {
+		return false
+	}
+	path := strings.TrimPrefix(r.URL.Path, "/")
+	if first, _, _ := strings.Cut(path, "/"); first != "" {
+		if _, ok := a.tenantBySlug(first); ok {
+			return false
+		}
 	}
 	host := normalizeHost(r.Host)
 	root := normalizeHost(a.rootDomain)
@@ -5010,14 +5114,7 @@ func (a *app) hasTenantHero(tenantSlug string) bool {
 }
 
 func (a *app) publicBaseURL(r *http.Request, tenant tenantConfig) string {
-	host := normalizeHost(r.Host)
-	if isLocalHost(host) {
-		return a.baseURL
-	}
-	if tenant.Host != "" {
-		return "https://" + tenant.Host
-	}
-	return a.baseURL
+	return strings.TrimRight(a.baseURL, "/") + "/" + tenant.Slug
 }
 
 func (a *app) currentUser(r *http.Request) (string, string, string, bool) {
@@ -5487,9 +5584,6 @@ func normalizeTenantBrandAbbreviation(raw string) string {
 
 func generatedTenantBrandAbbreviation(tenant tenantConfig) string {
 	if value := normalizeTenantBrandAbbreviation(tenant.Slug); value != "" {
-		return value
-	}
-	if value := normalizeTenantBrandAbbreviation(tenant.Host); value != "" {
 		return value
 	}
 	return "HAUS"

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 // billedBlockHAUSV425 schneidet die Tarifkarte heraus. Kennzahlen und ihre
@@ -37,7 +37,7 @@ func energyCockpitAppHAUSV425(t *testing.T, peakKW float64, agreedKW string) *ap
 	a := newTestPortalApp(t, userProfile{
 		Email:       "owner@example.com",
 		Role:        roleOwner,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	steps := []url.Values{
@@ -47,7 +47,7 @@ func energyCockpitAppHAUSV425(t *testing.T, peakKW float64, agreedKW string) *ap
 		{"action": {"finish"}},
 	}
 	for i, form := range steps {
-		if response := authedFormRequest(t, a, "owner@example.com", "/app/zuhause/onboarding", form); response.Code != http.StatusSeeOther {
+		if response := authedFormRequest(t, a, "owner@example.com", "/demo/app/zuhause/onboarding", form); response.Code != http.StatusSeeOther {
 			t.Fatalf("Onboarding-Schritt %d: status=%d", i+1, response.Code)
 		}
 	}
@@ -56,7 +56,7 @@ func energyCockpitAppHAUSV425(t *testing.T, peakKW float64, agreedKW string) *ap
 	// Wert liefert.
 	start := quarterHourThisMonth()
 	if err := a.energyStore.PutInterval(energy.Interval{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		StartsAt:   start,
 		Duration:   15 * time.Minute,
 		AverageKW:  peakKW,
@@ -68,7 +68,7 @@ func energyCockpitAppHAUSV425(t *testing.T, peakKW float64, agreedKW string) *ap
 	}
 
 	if agreedKW != "" {
-		response := authedFormRequest(t, a, "owner@example.com", "/app/energie/anschlussleistung",
+		response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/anschlussleistung",
 			url.Values{"agreed_power_kw": {agreedKW}})
 		if response.Code != http.StatusSeeOther {
 			t.Fatalf("Anschlussleistung speichern: status=%d body=%s", response.Code, response.Body.String())
@@ -80,7 +80,7 @@ func energyCockpitAppHAUSV425(t *testing.T, peakKW float64, agreedKW string) *ap
 func TestCockpitShowsBilledPowerAndTierSplitHAUSV425(t *testing.T) {
 	// 16 kW Spitze: 10 kW in der günstigeren, 6 kW in der höheren Stufe.
 	a := energyCockpitAppHAUSV425(t, 16, "")
-	body := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
+	body := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
 
 	block := billedBlockHAUSV425(t, body)
 	for _, want := range []string{
@@ -109,7 +109,7 @@ func TestCockpitShowsBilledPowerAndTierSplitHAUSV425(t *testing.T) {
 func TestCockpitExplainsMinimumChargeHAUSV425(t *testing.T) {
 	// 3 kW gemessen, aber 40 kW vereinbart: 20 % davon sind 8 kW und dominieren.
 	a := energyCockpitAppHAUSV425(t, 3, "40")
-	body := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
+	body := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
 
 	if !strings.Contains(body, "Mindestbemessung aus der vereinbarten Leistung") {
 		t.Fatal("die Mindestbemessung muss begründet werden, sonst wirkt sie wie ein Rechenfehler")
@@ -128,7 +128,7 @@ func TestCockpitExplainsMinimumChargeHAUSV425(t *testing.T) {
 
 func TestCockpitPromptsForAgreedPowerWhenMissingHAUSV425(t *testing.T) {
 	a := energyCockpitAppHAUSV425(t, 12, "")
-	body := authedRequest(t, a, "owner@example.com", "/app/energie").Body.String()
+	body := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
 
 	if !strings.Contains(body, "Vereinbarte Anschlussleistung") {
 		t.Fatal("das Eingabefeld für die Anschlussleistung fehlt")

@@ -11,7 +11,7 @@ import (
 
 func TestCanonicalIntegrationValidationReportsRecordLevelErrors(t *testing.T) {
 	valid := Payment{
-		TenantSlug:  "JHW22",
+		TenantSlug:  "DEMO",
 		ExternalID:  "txn-1",
 		Amount:      MoneyAmount{Currency: "EUR", Cents: 1234},
 		BookingDate: time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC),
@@ -65,7 +65,7 @@ func TestCanonicalIntegrationAdaptersAreFormatNeutral(t *testing.T) {
 
 	var out strings.Builder
 	report, err := fakeExportAdapter{}.WriteExportData(context.Background(), &out, []ExportRecord{{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		RecordID:   "raw-1",
 		Kind:       "parking-payment-status",
 		Amount:     MoneyAmount{Currency: "EUR", Cents: 99},
@@ -114,10 +114,10 @@ func TestInterfaceDocumentationCoversQAGatesAndAustrianFormats(t *testing.T) {
 
 func TestCanonicalModelsKeepAccountingOutOfProductScope(t *testing.T) {
 	record := ExportRecord{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		RecordID:   "parking-2026-06",
 		Kind:       "payment-status",
-		Reference:  "HVP-JHW22-202606-A1B2C3",
+		Reference:  "HVP-DEMO-202606-A1B2C3",
 		Amount:     MoneyAmount{Currency: "EUR", Cents: 13304},
 		Fields: map[string]string{
 			"status": "paid",
@@ -139,7 +139,7 @@ type fakePaymentAdapter struct{}
 
 func (fakePaymentAdapter) ParsePayments(_ context.Context, source Source, _ io.Reader) (PaymentImportResult, error) {
 	payment := Payment{
-		TenantSlug:  "jhw22",
+		TenantSlug:  "demo",
 		ExternalID:  "fixture-1",
 		Amount:      MoneyAmount{Currency: "EUR", Cents: 100},
 		BookingDate: time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC),
@@ -152,7 +152,7 @@ type fakeInvoiceAdapter struct{}
 
 func (fakeInvoiceAdapter) ParseInvoices(_ context.Context, source Source, _ io.Reader) (InvoiceImportResult, error) {
 	invoice := Invoice{
-		TenantSlug:    "jhw22",
+		TenantSlug:    "demo",
 		ExternalID:    "invoice-1",
 		InvoiceNumber: "RE-1",
 		Amount:        MoneyAmount{Currency: "EUR", Cents: 100},

@@ -1,4 +1,4 @@
-module github.com/markus-barta/hausv-org
+module github.com/inspr-at/hausv-org
 
 go 1.26.6
 

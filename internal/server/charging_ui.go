@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/store"
-	"github.com/markus-barta/hausv-org/internal/view"
+	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/view"
 )
 
 var errInvalidChargingForm = errors.New("invalid charging settings")

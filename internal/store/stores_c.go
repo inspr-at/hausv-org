@@ -25,11 +25,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 const (
-	DefaultTenantHeroImageURL     = "/assets/jhw22-hero.jpg"
+	DefaultTenantHeroImageURL     = "/assets/hausv-landing-hero.png"
 	MaxIssuePhotoBytes            = 5 << 20
 	MaxIssueFormBytes             = MaxIssuePhotoBytes + (1 << 20)
 	MaxAttachmentBytes            = 10 << 20

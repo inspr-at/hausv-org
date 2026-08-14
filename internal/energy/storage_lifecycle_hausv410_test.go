@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	appdb "github.com/markus-barta/hausv-org/internal/db"
-	"github.com/markus-barta/hausv-org/internal/energy"
+	appdb "github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 func lifecycleStoreFactories() map[string]func(*testing.T) energy.Storage {

@@ -8,10 +8,10 @@ set -u
 deploy_fixture_repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 deploy_fixture_mock=$deploy_fixture_repo/scripts/testdata/deploy/mock-command
 deploy_fixture_root=$(mktemp -d -t hausv-deploy-fixture.XXXXXX) || exit 1
-deploy_fixture_lock_prefix="/run/current-system/sw/bin/flock -w 300 /run/lock/compose-csb1.lock /bin/sh -eu"
+deploy_fixture_lock_prefix="/run/current-system/sw/bin/flock -w 300 /run/lock/compose-hausv.lock /bin/sh -eu"
 deploy_fixture_base64_bin="/run/current-system/sw/bin/base64"
 deploy_fixture_mktemp_bin="/run/current-system/sw/bin/mktemp"
-deploy_fixture_compose_command="docker compose --project-directory /home/mba/Code/nixcfg/hosts/csb1/docker -p csb1 -f /etc/compose/csb1/docker-compose.yml"
+deploy_fixture_compose_command="docker compose --project-directory /srv/hausv/compose -p hausv -f /srv/hausv/compose/docker-compose.yml"
 
 cleanup() {
     case $deploy_fixture_root in
@@ -83,6 +83,18 @@ fixture() {
             DEPLOY_FIXTURE_CASE="$case_name" \
             DEPLOY_FIXTURE_STATE="$state" \
             DEPLOY_FIXTURE_REPO="$deploy_fixture_repo" \
+            HAUSV_DEPLOY_SSH_HOST="deployer@production.example.invalid" \
+            HAUSV_DEPLOY_SSH_PORT=2222 \
+            HAUSV_DEPLOY_COMPOSE_DIR="/srv/hausv/compose" \
+            HAUSV_DEPLOY_COMPOSE_FILE="/srv/hausv/compose/docker-compose.yml" \
+            HAUSV_DEPLOY_COMPOSE_PROJECT=hausv \
+            HAUSV_DEPLOY_COMPOSE_LOCK="/run/lock/compose-hausv.lock" \
+            HAUSV_DEPLOY_FLOCK_BIN="/run/current-system/sw/bin/flock" \
+            HAUSV_DEPLOY_BASE64_BIN="$deploy_fixture_base64_bin" \
+            HAUSV_DEPLOY_MKTEMP_BIN="$deploy_fixture_mktemp_bin" \
+            HAUSV_DEPLOY_DATA_DIR="/var/lib/hausv" \
+            HAUSV_DEPLOY_SNAPSHOT_ROOT="/var/backups/hausv-predeploy" \
+            HAUSV_DEPLOY_LIVE_URL="https://portal.example.invalid/demo/" \
             HAUSV_DEPLOY_VERIFY_ATTEMPTS=1 \
             HAUSV_DEPLOY_VERIFY_SLEEP=0 \
             bash "$deploy_fixture_repo/scripts/deploy.sh" --dry-run >"$output" 2>&1
@@ -92,6 +104,18 @@ fixture() {
             DEPLOY_FIXTURE_CASE="$case_name" \
             DEPLOY_FIXTURE_STATE="$state" \
             DEPLOY_FIXTURE_REPO="$deploy_fixture_repo" \
+            HAUSV_DEPLOY_SSH_HOST="deployer@production.example.invalid" \
+            HAUSV_DEPLOY_SSH_PORT=2222 \
+            HAUSV_DEPLOY_COMPOSE_DIR="/srv/hausv/compose" \
+            HAUSV_DEPLOY_COMPOSE_FILE="/srv/hausv/compose/docker-compose.yml" \
+            HAUSV_DEPLOY_COMPOSE_PROJECT=hausv \
+            HAUSV_DEPLOY_COMPOSE_LOCK="/run/lock/compose-hausv.lock" \
+            HAUSV_DEPLOY_FLOCK_BIN="/run/current-system/sw/bin/flock" \
+            HAUSV_DEPLOY_BASE64_BIN="$deploy_fixture_base64_bin" \
+            HAUSV_DEPLOY_MKTEMP_BIN="$deploy_fixture_mktemp_bin" \
+            HAUSV_DEPLOY_DATA_DIR="/var/lib/hausv" \
+            HAUSV_DEPLOY_SNAPSHOT_ROOT="/var/backups/hausv-predeploy" \
+            HAUSV_DEPLOY_LIVE_URL="https://portal.example.invalid/demo/" \
             HAUSV_DEPLOY_VERIFY_ATTEMPTS=1 \
             HAUSV_DEPLOY_VERIFY_SLEEP=0 \
             bash "$deploy_fixture_repo/scripts/deploy.sh" >"$output" 2>&1
@@ -120,7 +144,7 @@ if ! grep -qF -- "$deploy_fixture_lock_prefix" \
     echo "FAIL no_schema: preflight did not use the encoded locked transport" >&2
     exit 1
 fi
-for forbidden in "docker build" "docker tag" "--source /var/lib/csb1-docker/hausv-org"; do
+for forbidden in "docker build" "docker tag" "--source /var/lib/hausv"; do
     if grep -qF -- "$forbidden" "$deploy_fixture_root/no_schema/commands.log"; then
         echo "FAIL no_schema: dry-run invoked mutating command '$forbidden'" >&2
         exit 1
@@ -171,7 +195,7 @@ fi
 fixture schema_snapshot_recovery_encoder_fail 1 "locked mandatory recovery shell:" release
 if grep -qF -- "mandatory recovery command: ssh" \
     "$deploy_fixture_root/schema_snapshot_recovery_encoder_fail/output.txt" \
-    || ! grep -qF -- "ssh -tt -p 2222 mba@cs1.barta.cm" \
+    || ! grep -qF -- "ssh -tt -p 2222 deployer@production.example.invalid" \
     "$deploy_fixture_root/schema_snapshot_recovery_encoder_fail/output.txt" \
     || ! grep -qF -- "inside that locked shell, mandatory recovery command: $deploy_fixture_compose_command up" \
     "$deploy_fixture_root/schema_snapshot_recovery_encoder_fail/output.txt"; then
@@ -194,7 +218,7 @@ fi
 fixture rollback_encoder_fail 1 "locked image rollback shell:" release
 if grep -qF -- "image rollback command: ssh" \
     "$deploy_fixture_root/rollback_encoder_fail/output.txt" \
-    || ! grep -qF -- "ssh -tt -p 2222 mba@cs1.barta.cm" \
+    || ! grep -qF -- "ssh -tt -p 2222 deployer@production.example.invalid" \
     "$deploy_fixture_root/rollback_encoder_fail/output.txt" \
     || ! grep -qF -- "inside that locked shell, image rollback command: docker tag" \
     "$deploy_fixture_root/rollback_encoder_fail/output.txt" \
@@ -236,7 +260,7 @@ fixture post_health_fail 1 "image rollback command:" release
 fixture post_version_mismatch 1 "post-deploy health/version verification failed" release
 fixture schema_startlog_fail 1 "data/schema restore required" release
 fixture_app_version=$(tr -d '[:space:]' < "$deploy_fixture_repo/VERSION")
-if ! grep -qF -- "/hausv-org-predeploy/$fixture_app_version-aaaaaaa" \
+if ! grep -qF -- "/var/backups/hausv-predeploy/$fixture_app_version-aaaaaaa" \
     "$deploy_fixture_root/schema_startlog_fail/output.txt"; then
     echo "FAIL schema_startlog_fail: exact versioned recovery path missing" >&2
     exit 1

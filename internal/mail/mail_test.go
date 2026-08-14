@@ -50,8 +50,8 @@ func TestSMTPMailerRequiresPairedCredentials(t *testing.T) {
 }
 
 func TestPrivacyURLUsesSamePortalOrigin(t *testing.T) {
-	got := privacyURL("https://jhw22.hausv.org/auth/verify?token=secret")
-	if got != "https://jhw22.hausv.org/datenschutz" {
+	got := privacyURL("https://hausv.org/demo/auth/verify?token=secret")
+	if got != "https://hausv.org/demo/datenschutz" {
 		t.Fatalf("privacy URL = %q", got)
 	}
 }
@@ -60,15 +60,15 @@ func TestMagicLinkMessageUsesHouseLanguageWithoutProviderJargon(t *testing.T) {
 	msg := magicLinkMessage(
 		"hausv.org <noreply@hausv.org>",
 		"max@example.com",
-		"https://jhw22.hausv.org/auth/verify?token=secret",
-		"Janischhofweg 22, 8043 Graz",
+		"https://hausv.org/demo/auth/verify?token=secret",
+		"Musterweg 1, 1010 Wien",
 	)
 	for _, want := range []string{
-		"Subject: Ihr Anmeldelink für Janischhofweg 22, 8043 Graz",
-		"im Hausportal für Janischhofweg 22, 8043 Graz",
+		"Subject: Ihr Anmeldelink für Musterweg 1, 1010 Wien",
+		"im Hausportal für Musterweg 1, 1010 Wien",
 		"Der Link ist 15 Minuten gültig",
-		"https://jhw22.hausv.org/datenschutz",
-		"Hausportal Janischhofweg 22, 8043 Graz",
+		"https://hausv.org/demo/datenschutz",
+		"Hausportal Musterweg 1, 1010 Wien",
 	} {
 		if !strings.Contains(msg, want) {
 			t.Fatalf("magic-link message missing %q:\n%s", want, msg)

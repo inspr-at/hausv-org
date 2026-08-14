@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/homeassistant"
 )
 
 func TestApplyHomeAssistantConnectorsUsesReferencedSecret(t *testing.T) {
@@ -40,15 +40,15 @@ func TestApplyHomeAssistantConnectorsSupportsMultipleHomesPerTenant(t *testing.T
 	t.Setenv("HA_TEST_TOKEN", "fixture")
 	tenants := map[string]TenantConfig{"home": {Slug: "home"}}
 	err := ApplyHomeAssistantConnectors(`[
-		{"tenant_slug":"home","home_key":"top-11","base_url":"https://top11.example.test","token_env":"HA_TEST_TOKEN"},
+		{"tenant_slug":"home","home_key":"einheit-12","base_url":"https://unit12.example.test","token_env":"HA_TEST_TOKEN"},
 		{"tenant_slug":"home","home_key":"top-12","base_url":"https://top12.example.test","token_env":"HA_TEST_TOKEN"}
 	]`, tenants)
 	if err != nil {
 		t.Fatalf("ApplyHomeAssistantConnectors: %v", err)
 	}
 	for homeKey, wantURL := range map[string]string{
-		"top-11": "https://top11.example.test",
-		"top-12": "https://top12.example.test",
+		"einheit-12": "https://unit12.example.test",
+		"top-12":     "https://top12.example.test",
 	} {
 		connector := tenants["home"].HomeAssistant(homeKey)
 		if !connector.Configured() || connector.BaseURL() != wantURL {
@@ -83,7 +83,7 @@ func TestApplyHomeAssistantConnectorsRequiresExternalTokenReference(t *testing.T
 
 func TestParseTenantsKeepsDefaultConnectorFallback(t *testing.T) {
 	defaultHA := homeassistant.NewConfig("https://ha.example.test", "fixture", "", "", "")
-	tenants, err := ParseTenants("", "hausv.org", "home", defaultHA)
+	tenants, err := ParseTenants("", "home", defaultHA)
 	if err != nil {
 		t.Fatalf("ParseTenants: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestParseTenantsKeepsDefaultConnectorFallback(t *testing.T) {
 	if tenants["home"].PortalType != PortalTypeCommunity {
 		t.Fatalf("default portal type = %q", tenants["home"].PortalType)
 	}
-	if tenants["home"].Name != "Janischhofweg 22" {
+	if tenants["home"].Name != "Musterweg 1" {
 		t.Fatalf("default tenant name = %q", tenants["home"].Name)
 	}
 }
@@ -104,7 +104,6 @@ func TestParseTenantsKeepsDefaultConnectorFallback(t *testing.T) {
 func TestParseTenantsValidatesIndependentPortalType(t *testing.T) {
 	tenants, err := ParseTenants(
 		`[{"slug":"private-home","portal_type":"house"},{"slug":"weg","portal_type":"community"}]`,
-		"hausv.org",
 		"weg",
 		homeassistant.Config{},
 	)
@@ -116,7 +115,6 @@ func TestParseTenantsValidatesIndependentPortalType(t *testing.T) {
 	}
 	if _, err := ParseTenants(
 		`[{"slug":"invalid","portal_type":"mixed-up"}]`,
-		"hausv.org",
 		"invalid",
 		homeassistant.Config{},
 	); err == nil {
@@ -127,7 +125,6 @@ func TestParseTenantsValidatesIndependentPortalType(t *testing.T) {
 func TestParseTenantsUsesAddressAsNeutralNameFallback(t *testing.T) {
 	tenants, err := ParseTenants(
 		`[{"slug":"private-home","address":"Musterweg 4","portal_type":"house"},{"slug":"slug-only","portal_type":"apartment"}]`,
-		"hausv.org",
 		"private-home",
 		homeassistant.Config{},
 	)

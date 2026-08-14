@@ -24,7 +24,7 @@ func TestCAMT054AdapterParsesPaymentAdviceGoldenFile(t *testing.T) {
 	if payment.Source.Format != FormatCAMT054 || payment.Source.Version != "2019/camt.054.001.08" {
 		t.Fatalf("source = %+v", payment.Source)
 	}
-	if payment.Reference != "HV-JHW22-202607-GHI789" || payment.Amount.Cents != 13304 || payment.Amount.Currency != "EUR" {
+	if payment.Reference != "HV-DEMO-202607-GHI789" || payment.Amount.Cents != 13304 || payment.Amount.Currency != "EUR" {
 		t.Fatalf("payment = %+v", payment)
 	}
 	if payment.BookingDate.IsZero() || payment.RawDigest == "" || len(payment.RemittanceLines) != 1 {

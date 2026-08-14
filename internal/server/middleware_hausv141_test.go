@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/config"
+	"github.com/inspr-at/hausv-org/internal/config"
 )
 
 // HAUSV-141: a panicking handler must yield a 500, not crash the request.
@@ -46,20 +46,20 @@ func TestRequestLogIncludesTenant(t *testing.T) {
 	defer slog.SetDefault(old)
 
 	a := &app{
-		defaultTenant: "jhw22",
+		defaultTenant: "demo",
 		tenants: map[string]config.TenantConfig{
-			"jhw22": {Slug: "jhw22", Host: "jhw22.hausv.org"},
+			"demo": {Slug: "demo"},
 		},
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /app", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	h := a.recoverAndLog(mux)
-	req := httptest.NewRequest(http.MethodGet, "https://jhw22.hausv.org/app", nil)
+	h := a.recoverAndLog(a.tenantPaths(mux))
+	req := httptest.NewRequest(http.MethodGet, "https://hausv.org/demo/app", nil)
 	h.ServeHTTP(httptest.NewRecorder(), req)
 	got := logs.String()
-	if !strings.Contains(got, `"tenant":"jhw22"`) {
+	if !strings.Contains(got, `"tenant":"demo"`) {
 		t.Fatalf("request log has no tenant: %s", got)
 	}
 	if !strings.Contains(got, `"route":"GET /app"`) {
@@ -83,7 +83,8 @@ func TestRequestLogNeverStoresPathTokensOrQueryData(t *testing.T) {
 	mux.HandleFunc("GET /auth/verify", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	h := (&app{}).recoverAndLog(mux)
+	a := &app{defaultTenant: "demo", tenants: map[string]config.TenantConfig{"demo": {Slug: "demo"}}}
+	h := a.recoverAndLog(a.tenantPaths(mux))
 
 	secrets := []string{
 		"calendar-secret-token",
@@ -92,9 +93,9 @@ func TestRequestLogNeverStoresPathTokensOrQueryData(t *testing.T) {
 		"person@example.com",
 	}
 	for _, target := range []string{
-		"https://jhw22.hausv.org/calendar/calendar-secret-token.ics",
-		"https://jhw22.hausv.org/handover/handover-secret-token",
-		"https://jhw22.hausv.org/auth/verify?token=magic-secret-token&email=person@example.com",
+		"https://hausv.org/demo/calendar/calendar-secret-token.ics",
+		"https://hausv.org/demo/handover/handover-secret-token",
+		"https://hausv.org/demo/auth/verify?token=magic-secret-token&email=person@example.com",
 	} {
 		h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, target, nil))
 	}

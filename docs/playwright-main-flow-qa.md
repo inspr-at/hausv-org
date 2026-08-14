@@ -26,8 +26,8 @@ Der Lauf:
 - prüft das private Haus-Cockpit für Bewohner und Eigentümer, einschließlich
   dauerhaft sichtbarem Beobachtungsmodus, bewusstem Shadow-Testlauf,
   Sofort-Rückkehr und idempotentem Smart-Meter-Import;
-- spielt die Eltern-Konstellation mit PV, E-Auto, Warmwasser-Wärmepumpe und
-  bewusst fehlendem Speicher sowie die Schwiegereltern-Konstellation mit PV,
+- spielt die Haus A-Konstellation mit PV, E-Auto, Warmwasser-Wärmepumpe und
+  bewusst fehlendem Speicher sowie die Haus B-Konstellation mit PV,
   Speicher, E-Auto und eigener technischer Vertrauensperson durch;
 - wechselt im Onboarding zwischen Wohnung, Einfamilienhaus und
   Hausgemeinschaft und prüft, dass Umfang, unveränderte Rechte und der
@@ -101,7 +101,7 @@ Verbindlich ist das Gate trotzdem für Produktion: `scripts/deploy.sh`
 akzeptiert ausschließlich einen vollständig grünen `CI`-Push-Lauf auf
 Blacksmith für exakt den auszurollenden Commit. Ein roter Browserjob verhindert
 damit fail-closed das Deployment. Der vollständige Releasevertrag steht in
-`docs/csb1-deploy.md`.
+`docs/production-deploy.md`.
 
 Der gleiche Lauf lässt sich lokal so reproduzieren:
 

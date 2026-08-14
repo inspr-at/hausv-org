@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
 )
 
 func sampleHandover(id string) HandoverRecord {
 	return HandoverRecord{
 		ID:         id,
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Title:      "Übergabe " + id,
 		CreatedBy:  "admin@example.com",
 		Confirmations: []HandoverConfirmation{
@@ -46,7 +46,7 @@ func TestHandoverStorageParity(t *testing.T) {
 			s := build(t)
 
 			// Invalid: missing title.
-			if _, err := s.Create(HandoverRecord{ID: "x", TenantSlug: "jhw22", CreatedBy: "a@example.com"}); err == nil {
+			if _, err := s.Create(HandoverRecord{ID: "x", TenantSlug: "demo", CreatedBy: "a@example.com"}); err == nil {
 				t.Fatal("handover without title must error")
 			}
 
@@ -63,14 +63,14 @@ func TestHandoverStorageParity(t *testing.T) {
 				t.Fatal("duplicate handover must error")
 			}
 
-			if got := s.ListTenant("jhw22"); len(got) != 1 || got[0].ID != "h1" {
+			if got := s.ListTenant("demo"); len(got) != 1 || got[0].ID != "h1" {
 				t.Fatalf("list = %+v", got)
 			}
 
-			if got, ok := s.Get("jhw22", "h1"); !ok || got.Title != "Übergabe h1" {
+			if got, ok := s.Get("demo", "h1"); !ok || got.Title != "Übergabe h1" {
 				t.Fatalf("get = %+v ok=%v", got, ok)
 			}
-			if _, ok := s.Get("jhw22", "nope"); ok {
+			if _, ok := s.Get("demo", "nope"); ok {
 				t.Fatal("get unknown must be false")
 			}
 
@@ -110,14 +110,14 @@ func TestHandoverStorageParity(t *testing.T) {
 			}
 
 			// File a document id.
-			filed, ok, err := s.SetFiledDocument("jhw22", "h1", "doc-99", now)
+			filed, ok, err := s.SetFiledDocument("demo", "h1", "doc-99", now)
 			if err != nil || !ok || filed.FiledDocumentID != "doc-99" {
 				t.Fatalf("SetFiledDocument: err=%v ok=%v filed=%+v", err, ok, filed)
 			}
-			if got, _ := s.Get("jhw22", "h1"); got.FiledDocumentID != "doc-99" {
+			if got, _ := s.Get("demo", "h1"); got.FiledDocumentID != "doc-99" {
 				t.Fatalf("filed doc not persisted: %+v", got)
 			}
-			if _, ok, _ := s.SetFiledDocument("jhw22", "missing", "d", now); ok {
+			if _, ok, _ := s.SetFiledDocument("demo", "missing", "d", now); ok {
 				t.Fatal("SetFiledDocument unknown must be false")
 			}
 		})
@@ -148,7 +148,7 @@ func TestSQLHandoverImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	if got := sqlStore.ListTenant("jhw22"); len(got) != 2 {
+	if got := sqlStore.ListTenant("demo"); len(got) != 2 {
 		t.Fatalf("imported %d, want 2: %+v", len(got), got)
 	}
 	// Token lookup works on imported data.

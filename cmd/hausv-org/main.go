@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/server"
+	"github.com/inspr-at/hausv-org/internal/server"
 )
 
 const (

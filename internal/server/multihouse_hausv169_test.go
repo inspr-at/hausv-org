@@ -19,7 +19,7 @@ func multiHouseResident(t *testing.T, a *app) {
 		// where every house falls back to the top-level role. It is the shape that
 		// actually leaks — writing the whole profile changes the default, and with
 		// it the person's role in every house that has no explicit entry.
-		Role: roleRenter, Tenants: []string{"jhw22", "haus-b"},
+		Role: roleRenter, Tenants: []string{"demo", "haus-b"},
 		AuthMethods: defaultAuthMethods(),
 	}); err != nil {
 		t.Fatalf("seed: %v", err)
@@ -29,12 +29,12 @@ func multiHouseResident(t *testing.T, a *app) {
 func TestEditInviteDoesNotChangeRoleInAnotherHouse(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email: "admin@example.com", Role: roleAdmin,
-		Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	multiHouseResident(t, a)
 
-	// The jhw22 admin promotes Anna to Verwalter — in jhw22.
-	edit := authedFormRequest(t, a, "admin@example.com", "/app/settings/users/edit", url.Values{
+	// The demo admin promotes Anna to Verwalter — in demo.
+	edit := authedFormRequest(t, a, "admin@example.com", "/demo/app/settings/users/edit", url.Values{
 		"orig_email": {"anna@example.com"},
 		"email":      {"anna@example.com"},
 		"first_name": {"Anna"},
@@ -49,10 +49,10 @@ func TestEditInviteDoesNotChangeRoleInAnotherHouse(t *testing.T) {
 	if !ok {
 		t.Fatal("profile gone")
 	}
-	if got := normalizeRole(profile.ForTenant("jhw22").Role); got != roleManager {
-		t.Fatalf("jhw22 role = %q, want %q", got, roleManager)
+	if got := normalizeRole(profile.ForTenant("demo").Role); got != roleManager {
+		t.Fatalf("demo role = %q, want %q", got, roleManager)
 	}
-	// The whole point: haus-b keeps the role it had before the jhw22 edit.
+	// The whole point: haus-b keeps the role it had before the demo edit.
 	if got := normalizeRole(profile.ForTenant("haus-b").Role); got != roleRenter {
 		t.Fatalf("haus-b role changed to %q — a house edit leaked into another house", got)
 	}
@@ -61,11 +61,11 @@ func TestEditInviteDoesNotChangeRoleInAnotherHouse(t *testing.T) {
 func TestDeleteInviteOnlyRemovesTheCurrentHouse(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email: "admin@example.com", Role: roleAdmin,
-		Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	multiHouseResident(t, a)
 
-	del := authedFormRequest(t, a, "admin@example.com", "/app/settings/users/delete", url.Values{
+	del := authedFormRequest(t, a, "admin@example.com", "/demo/app/settings/users/delete", url.Values{
 		"email": {"anna@example.com"},
 	})
 	if del.Code != http.StatusSeeOther {
@@ -76,8 +76,8 @@ func TestDeleteInviteOnlyRemovesTheCurrentHouse(t *testing.T) {
 	if !ok {
 		t.Fatal("removing one house must not delete the person globally")
 	}
-	if profile.HasTenant("jhw22") {
-		t.Fatal("jhw22 membership should be gone")
+	if profile.HasTenant("demo") {
+		t.Fatal("demo membership should be gone")
 	}
 	if !profile.HasTenant("haus-b") {
 		t.Fatal("haus-b membership must survive")
@@ -92,15 +92,15 @@ func TestDeleteInviteOnlyRemovesTheCurrentHouse(t *testing.T) {
 func TestDeleteInviteRemovesRecordWhenNoHouseRemains(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email: "admin@example.com", Role: roleAdmin,
-		Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 	if _, err := a.inviteStore.Add(userProfile{
 		Email: "solo@example.com", Role: roleRenter,
-		Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods(),
+		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	}); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	del := authedFormRequest(t, a, "admin@example.com", "/app/settings/users/delete", url.Values{
+	del := authedFormRequest(t, a, "admin@example.com", "/demo/app/settings/users/delete", url.Values{
 		"email": {"solo@example.com"},
 	})
 	if del.Code != http.StatusSeeOther {

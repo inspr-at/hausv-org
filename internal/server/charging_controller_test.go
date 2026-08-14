@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/homeassistant"
-	"github.com/markus-barta/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 // Fake Home Assistant: /api/states/{id} + switch services against a virtual
@@ -96,11 +96,11 @@ func newChargingTestApp(t *testing.T, ha *fakeHA) (*app, tenantConfig, *recordin
 	}
 	haCfg := homeassistant.NewConfig(ha.srv.URL, "test-token", "sensor.meter", "sensor.power", "sensor.price").
 		WithChargingEntities("switch.plug", "sensor.soc", "sensor.feed")
-	tenant := tenantConfig{Slug: "jhw22", Name: "Test", HA: haCfg}
+	tenant := tenantConfig{Slug: "demo", Name: "Test", HA: haCfg}
 	mailer := &recordingMailer{}
 	a := &app{
-		defaultTenant:          "jhw22",
-		tenants:                map[string]tenantConfig{"jhw22": tenant},
+		defaultTenant:          "demo",
+		tenants:                map[string]tenantConfig{"demo": tenant},
 		profiles:               map[string]userProfile{},
 		admins:                 map[string]struct{}{"admin@example.com": {}},
 		allowed:                map[string]struct{}{},
@@ -117,7 +117,7 @@ func newChargingTestApp(t *testing.T, ha *fakeHA) (*app, tenantConfig, *recordin
 		chargingEvents:         &chargingEventRing{},
 		chargingLastPoll:       map[string]time.Time{},
 	}
-	if err := parkingStore.SetChargingControl("jhw22", chargingControlSettings{Enabled: true}); err != nil {
+	if err := parkingStore.SetChargingControl("demo", chargingControlSettings{Enabled: true}); err != nil {
 		t.Fatal(err)
 	}
 	return a, tenant, mailer
@@ -129,7 +129,7 @@ func TestChargingControllerStartsSessionEndToEnd(t *testing.T) {
 
 	a.tickChargingTenant(context.Background(), tenant)
 
-	data := a.parkingStore.TenantData("jhw22")
+	data := a.parkingStore.TenantData("demo")
 	if len(data.ChargingSessions) != 1 {
 		t.Fatalf("expected 1 session, got %d", len(data.ChargingSessions))
 	}
@@ -160,7 +160,7 @@ func TestChargingControllerStartsSessionEndToEnd(t *testing.T) {
 	if len(mailer.notifications) != 1 {
 		t.Fatalf("notification spam: %+v", mailer.notifications)
 	}
-	data = a.parkingStore.TenantData("jhw22")
+	data = a.parkingStore.TenantData("demo")
 	if data.Charging.PendingConfirm != "" {
 		t.Fatalf("pending confirm not cleared: %+v", data.Charging)
 	}
@@ -171,13 +171,13 @@ func TestChargingControllerRecoveryAfterRestart(t *testing.T) {
 	a, _, _ := newChargingTestApp(t, ha)
 
 	start := time.Now().UTC().Add(-time.Hour)
-	session, err := a.parkingStore.StartChargingSession("jhw22", chargingSession{
+	session, err := a.parkingStore.StartChargingSession("demo", chargingSession{
 		Start: start, StartKWh: 2500, Mode: store.ChargingModeSurplus, TriggerSource: chargingTriggerAuto, StartedBy: "system",
 	}, chargingControllerState{Phase: chargingPhaseSurplus, LastSwitchAt: start})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := a.parkingStore.AppendReadings("jhw22", []parkingNumericSample{{At: start.Add(30 * time.Minute), Value: 2504.5}}, nil); err != nil {
+	if err := a.parkingStore.AppendReadings("demo", []parkingNumericSample{{At: start.Add(30 * time.Minute), Value: 2504.5}}, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -186,7 +186,7 @@ func TestChargingControllerRecoveryAfterRestart(t *testing.T) {
 	ha.plugOn = true
 	ha.mu.Unlock()
 	a.recoverChargingTenants(context.Background())
-	data := a.parkingStore.TenantData("jhw22")
+	data := a.parkingStore.TenantData("demo")
 	if data.Charging.ActiveSessionID != session.ID {
 		t.Fatalf("resume lost the session: %+v", data.Charging)
 	}
@@ -196,7 +196,7 @@ func TestChargingControllerRecoveryAfterRestart(t *testing.T) {
 	ha.plugOn = false
 	ha.mu.Unlock()
 	a.recoverChargingTenants(context.Background())
-	data = a.parkingStore.TenantData("jhw22")
+	data = a.parkingStore.TenantData("demo")
 	if data.Charging.ActiveSessionID != "" || data.Charging.Phase != chargingPhaseIdle {
 		t.Fatalf("recovery did not close: %+v", data.Charging)
 	}
@@ -244,7 +244,7 @@ func TestChargingControllerHAOutageAlertsOnce(t *testing.T) {
 func TestChargingControllerShadowNeverSwitches(t *testing.T) {
 	ha := newFakeHA(t)
 	a, tenant, mailer := newChargingTestApp(t, ha)
-	if err := a.parkingStore.SetChargingControl("jhw22", chargingControlSettings{Enabled: true, ShadowMode: true}); err != nil {
+	if err := a.parkingStore.SetChargingControl("demo", chargingControlSettings{Enabled: true, ShadowMode: true}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -254,14 +254,14 @@ func TestChargingControllerShadowNeverSwitches(t *testing.T) {
 	if calls := ha.calls(); len(calls) != 0 {
 		t.Fatalf("shadow mode switched the plug: %v", calls)
 	}
-	data := a.parkingStore.TenantData("jhw22")
+	data := a.parkingStore.TenantData("demo")
 	if len(data.ChargingSessions) != 0 {
 		t.Fatalf("shadow mode created sessions: %+v", data.ChargingSessions)
 	}
 	if len(mailer.notifications) != 0 {
 		t.Fatalf("shadow mode notified: %+v", mailer.notifications)
 	}
-	events := a.chargingEvents.list("jhw22", 0)
+	events := a.chargingEvents.list("demo", 0)
 	if len(events) == 0 {
 		t.Fatal("shadow mode must log events")
 	}

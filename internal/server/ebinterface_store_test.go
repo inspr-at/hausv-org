@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/integrations"
+	"github.com/inspr-at/hausv-org/internal/integrations"
 )
 
 func TestEBInterfaceInvoiceCanBeStoredAsProtectedDocument(t *testing.T) {
@@ -15,7 +15,7 @@ func TestEBInterfaceInvoiceCanBeStoredAsProtectedDocument(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
 	}
-	result, err := integrations.EBInterfaceAdapter{}.ParseInvoices(context.Background(), integrations.Source{TenantSlug: "jhw22", Filename: "ebinterface-6p0.xml"}, strings.NewReader(string(data)))
+	result, err := integrations.EBInterfaceAdapter{}.ParseInvoices(context.Background(), integrations.Source{TenantSlug: "demo", Filename: "ebinterface-6p0.xml"}, strings.NewReader(string(data)))
 	if err != nil {
 		t.Fatalf("ParseInvoices: %v", err)
 	}

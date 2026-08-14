@@ -2,9 +2,9 @@
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
   <BkToCstmrStmt>
     <Stmt>
-      <Id>JHW22</Id>
+      <Id>DEMO</Id>
       <Acct>
-        <Ownr><Nm>jhw22</Nm></Ownr>
+        <Ownr><Nm>demo</Nm></Ownr>
       </Acct>
       <Ntry>
         <NtryRef>AT-2009-0001</NtryRef>
@@ -15,14 +15,14 @@
         <NtryDtls>
           <TxDtls>
             <Refs>
-              <EndToEndId>HV-JHW22-202606-ABC123</EndToEndId>
+              <EndToEndId>HV-DEMO-202606-ABC123</EndToEndId>
               <TxId>TX-2009-0001</TxId>
             </Refs>
             <RltdPties>
               <Dbtr><Nm>Joerg Bewohner</Nm></Dbtr>
               <DbtrAcct><Id><IBAN>AT611904300234573201</IBAN></Id></DbtrAcct>
             </RltdPties>
-            <RmtInf><Ustrd>Parkplatz Juni HV-JHW22-202606-ABC123</Ustrd></RmtInf>
+            <RmtInf><Ustrd>Parkplatz Juni HV-DEMO-202606-ABC123</Ustrd></RmtInf>
           </TxDtls>
         </NtryDtls>
       </Ntry>

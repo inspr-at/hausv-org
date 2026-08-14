@@ -7,21 +7,21 @@ import (
 )
 
 func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T) {
-	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleOwner, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()})
-	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
-	a.profiles["service@example.com"] = userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"jhw22"}, AuthMethods: defaultAuthMethods()}
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
+	a.profiles["service@example.com"] = userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.serviceAccessEnabled = true
 
-	if err := a.unitStore.SetTenantUnits("jhw22", []unit{{
+	if err := a.unitStore.SetTenantUnits("demo", []unit{{
 		ID:          "top-1",
-		TenantSlug:  "jhw22",
+		TenantSlug:  "demo",
 		Label:       "Top 1",
 		OwnerEmails: []string{"resident@example.com"},
 	}}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	ownIssue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
 		Category:     "Reparatur",
@@ -33,7 +33,7 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 		t.Fatalf("Create resident issue: %v", err)
 	}
 	providerIssue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:    "jhw22",
+		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
 		Category:      "Reparatur",
@@ -46,7 +46,7 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 		t.Fatalf("Create provider issue: %v", err)
 	}
 	hiddenIssue, err := a.issueStore.Create(residentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "other@example.com",
 		AuthorName:   "Other",
 		Category:     "Reparatur",
@@ -60,33 +60,33 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 
 	for _, event := range []auditEvent{
 		{
-			TenantSlug: "jhw22", ActorEmail: "manager@example.com", ActorRole: roleManager,
+			TenantSlug: "demo", ActorEmail: "manager@example.com", ActorRole: roleManager,
 			Action: auditActionIssueWorkflow, TargetType: "issue", TargetID: ownIssue.ID,
 			Summary: "PERSONAL-SUMMARY-MUST-NOT-LEAK",
 			Details: map[string]string{"status": "In Bearbeitung", "paid_by": "private@example.com", "payment_reference": "SECRET-REFERENCE"},
 		},
 		{
-			TenantSlug: "jhw22", ActorEmail: "manager@example.com", ActorRole: roleManager,
+			TenantSlug: "demo", ActorEmail: "manager@example.com", ActorRole: roleManager,
 			Action: auditActionIssueWorkflow, TargetType: "issue", TargetID: providerIssue.ID,
 			Summary: "Provider workflow", Details: map[string]string{"status": "Angenommen"},
 		},
 		{
-			TenantSlug: "jhw22", ActorEmail: "manager@example.com", ActorRole: roleManager,
+			TenantSlug: "demo", ActorEmail: "manager@example.com", ActorRole: roleManager,
 			Action: auditActionIssueWorkflow, TargetType: "issue", TargetID: hiddenIssue.ID,
 			Summary: "Hidden workflow",
 		},
 		{
-			TenantSlug: "jhw22", ActorEmail: "manager@example.com", ActorRole: roleManager,
+			TenantSlug: "demo", ActorEmail: "manager@example.com", ActorRole: roleManager,
 			Action: auditActionUnitPayment, TargetType: "unit", TargetID: "top-1",
 			Summary: "Unit payment", Details: map[string]string{"status": "Bezahlt", "payment_reference": "UNIT-SECRET"},
 		},
 		{
-			TenantSlug: "jhw22", ActorEmail: "manager@example.com", ActorRole: roleManager,
+			TenantSlug: "demo", ActorEmail: "manager@example.com", ActorRole: roleManager,
 			Action: auditActionInviteCreate, TargetType: "user", TargetID: "other.person@example.com",
 			Summary: "Unrelated invite",
 		},
 		{
-			TenantSlug: "jhw22", ActorEmail: "resident@example.com", ActorRole: roleOwner,
+			TenantSlug: "demo", ActorEmail: "resident@example.com", ActorRole: roleOwner,
 			Action: auditActionLogin, TargetType: "session", TargetID: "resident@example.com",
 			Summary: "Login with unsafe prose", Details: map[string]string{"auth_method": "E-Mail-Link", "secret_token": "must-not-exist"},
 		},
@@ -101,7 +101,7 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 		}
 	}
 
-	residentPage := authedRequest(t, a, "resident@example.com", "/app/audit")
+	residentPage := authedRequest(t, a, "resident@example.com", "/demo/app/audit")
 	if residentPage.Code != http.StatusOK {
 		t.Fatalf("resident audit status = %d", residentPage.Code)
 	}
@@ -120,7 +120,7 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 		}
 	}
 
-	providerPage := authedRequest(t, a, "service@example.com", "/app/audit")
+	providerPage := authedRequest(t, a, "service@example.com", "/demo/app/audit")
 	if providerPage.Code != http.StatusOK {
 		t.Fatalf("provider audit status = %d", providerPage.Code)
 	}
@@ -128,13 +128,13 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 	if !strings.Contains(providerBody, "Zugewiesener Vorgang") || !strings.Contains(providerBody, "Verwaltung") {
 		t.Fatalf("provider audit missing assigned history:\n%s", providerBody)
 	}
-	for _, forbidden := range []string{providerIssue.ID, ownIssue.ID, hiddenIssue.ID, "manager@example.com", `href="/app/settings"`} {
+	for _, forbidden := range []string{providerIssue.ID, ownIssue.ID, hiddenIssue.ID, "manager@example.com", `href="/demo/app/settings"`} {
 		if strings.Contains(providerBody, forbidden) {
 			t.Fatalf("provider audit leaks or links forbidden value %q:\n%s", forbidden, providerBody)
 		}
 	}
 
-	managerPage := authedRequest(t, a, "manager@example.com", "/app/audit")
+	managerPage := authedRequest(t, a, "manager@example.com", "/demo/app/audit")
 	if managerPage.Code != http.StatusOK {
 		t.Fatalf("manager audit status = %d", managerPage.Code)
 	}

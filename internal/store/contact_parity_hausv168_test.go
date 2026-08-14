@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
 )
 
 func TestContactBookStorageParity(t *testing.T) {
@@ -31,13 +31,13 @@ func TestContactBookStorageParity(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			s := build(t)
 
-			if _, _, err := s.Upsert(ManagedContact{TenantSlug: "jhw22", Kind: "dienstleister"}); err == nil {
+			if _, _, err := s.Upsert(ManagedContact{TenantSlug: "demo", Kind: "dienstleister"}); err == nil {
 				t.Fatal("contact without name/route must error")
 			}
 
 			created, isNew, err := s.Upsert(ManagedContact{
-				TenantSlug: "jhw22", Kind: "energie-fachbetrieb", Name: "Test AG", Phone: "+43 1 234", Active: true,
-				ServiceRegion: "Graz und Umgebung", Qualification: "Elektrotechnik",
+				TenantSlug: "demo", Kind: "energie-fachbetrieb", Name: "Test AG", Phone: "+43 1 234", Active: true,
+				ServiceRegion: "Wien und Umgebung", Qualification: "Elektrotechnik",
 				EnergyCapabilities: []string{"metering", "home-assistant", "unknown", "metering"},
 			})
 			if err != nil || !isNew {
@@ -46,19 +46,19 @@ func TestContactBookStorageParity(t *testing.T) {
 			if created.ID == "" || created.CreatedAt.IsZero() {
 				t.Fatalf("created missing id/timestamp: %+v", created)
 			}
-			if created.Kind != "Energie-Fachbetrieb" || created.ServiceRegion != "Graz und Umgebung" ||
+			if created.Kind != "Energie-Fachbetrieb" || created.ServiceRegion != "Wien und Umgebung" ||
 				created.Qualification != "Elektrotechnik" || len(created.EnergyCapabilities) != 2 {
 				t.Fatalf("energy contact fields = %+v", created)
 			}
 			id := created.ID
 
-			if got := s.ListTenant("jhw22", false); len(got) != 1 || got[0].ID != id {
+			if got := s.ListTenant("demo", false); len(got) != 1 || got[0].ID != id {
 				t.Fatalf("list active = %+v", got)
 			}
 
 			// Update by id: isNew=false, CreatedAt preserved, fields changed.
 			updated, isNew2, err := s.Upsert(ManagedContact{
-				TenantSlug: "jhw22", ID: id, Kind: "hausmeister", Name: "Test AG 2", Phone: "+43 1 999", Active: true,
+				TenantSlug: "demo", ID: id, Kind: "hausmeister", Name: "Test AG 2", Phone: "+43 1 999", Active: true,
 			})
 			if err != nil || isNew2 {
 				t.Fatalf("update: err=%v isNew=%v", err, isNew2)
@@ -71,19 +71,19 @@ func TestContactBookStorageParity(t *testing.T) {
 			}
 
 			// Deactivate: excluded from active list, present with includeInactive.
-			deact, err := s.Deactivate("jhw22", id, time.Time{})
+			deact, err := s.Deactivate("demo", id, time.Time{})
 			if err != nil || deact.Active {
 				t.Fatalf("deactivate: err=%v active=%v", err, deact.Active)
 			}
-			if got := s.ListTenant("jhw22", false); len(got) != 0 {
+			if got := s.ListTenant("demo", false); len(got) != 0 {
 				t.Fatalf("deactivated must be excluded from active list: %+v", got)
 			}
-			if got := s.ListTenant("jhw22", true); len(got) != 1 {
+			if got := s.ListTenant("demo", true); len(got) != 1 {
 				t.Fatalf("includeInactive must show it: %+v", got)
 			}
 
 			// Deactivate unknown -> empty, no error.
-			if c, err := s.Deactivate("jhw22", "does-not-exist", time.Time{}); err != nil || c.ID != "" {
+			if c, err := s.Deactivate("demo", "does-not-exist", time.Time{}); err != nil || c.ID != "" {
 				t.Fatalf("deactivate unknown: err=%v c=%+v", err, c)
 			}
 		})
@@ -95,8 +95,8 @@ func TestSQLContactImportFromJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json store: %v", err)
 	}
-	a, _, _ := jsonStore.Upsert(ManagedContact{TenantSlug: "jhw22", Kind: "dienstleister", Name: "Alpha", Phone: "+43 1 1", Active: true})
-	_, _, _ = jsonStore.Upsert(ManagedContact{TenantSlug: "jhw22", Kind: "notdienst", Company: "Beta GmbH", Email: "b@example.com", Active: true})
+	a, _, _ := jsonStore.Upsert(ManagedContact{TenantSlug: "demo", Kind: "dienstleister", Name: "Alpha", Phone: "+43 1 1", Active: true})
+	_, _, _ = jsonStore.Upsert(ManagedContact{TenantSlug: "demo", Kind: "notdienst", Company: "Beta GmbH", Email: "b@example.com", Active: true})
 
 	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
@@ -110,14 +110,14 @@ func TestSQLContactImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	list := sqlStore.ListTenant("jhw22", true)
+	list := sqlStore.ListTenant("demo", true)
 	if len(list) != 2 {
 		t.Fatalf("imported %d contacts, want 2: %+v", len(list), list)
 	}
-	if _, err := sqlStore.Deactivate("jhw22", a.ID, time.Time{}); err != nil {
+	if _, err := sqlStore.Deactivate("demo", a.ID, time.Time{}); err != nil {
 		t.Fatalf("deactivate imported: %v", err)
 	}
-	if got := sqlStore.ListTenant("jhw22", false); len(got) != 1 {
+	if got := sqlStore.ListTenant("demo", false); len(got) != 1 {
 		t.Fatalf("after deactivate one, active should be 1: %+v", got)
 	}
 }

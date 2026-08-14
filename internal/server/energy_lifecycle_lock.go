@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 // energyLifecycleLock returns an app-local, tenant-scoped barrier between

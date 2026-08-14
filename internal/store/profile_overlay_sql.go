@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 // ProfileOverlayStorage is the behaviour both the JSON ProfileOverlayStore and

@@ -36,7 +36,7 @@ def main() -> int:
     try:
         row = connection.execute(
             "SELECT data FROM handovers WHERE tenant_slug=? AND id=?",
-            ("jhw22", sys.argv[2]),
+            ("demo", sys.argv[2]),
         ).fetchone()
         if row is None:
             print("handover fixture record not found", file=sys.stderr)
@@ -51,7 +51,7 @@ def main() -> int:
         encoded = json.dumps(record, ensure_ascii=False, separators=(",", ":"))
         cursor = connection.execute(
             "UPDATE handovers SET data=? WHERE tenant_slug=? AND id=?",
-            (encoded, "jhw22", sys.argv[2]),
+            (encoded, "demo", sys.argv[2]),
         )
         connection.commit()
         if cursor.rowcount != 1:

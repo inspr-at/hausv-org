@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/markus-barta/hausv-org/internal/energy"
-	"github.com/markus-barta/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/homeassistant"
 )
 
 func TestEnergyLiveRefreshReturnsCurrentFlowWithoutPageReload(t *testing.T) {
@@ -22,17 +22,17 @@ func TestEnergyLiveRefreshReturnsCurrentFlowWithoutPageReload(t *testing.T) {
 	t.Cleanup(ha.Close)
 
 	a := consumerAppHAUSV422(t)
-	tenant := a.tenants["jhw22"]
+	tenant := a.tenants["demo"]
 	tenant.HA = homeassistant.NewConfig(ha.URL, "fixture", "", "", "")
-	a.tenants["jhw22"] = tenant
+	a.tenants["demo"] = tenant
 	if err := a.energyStore.UpsertMapping(energy.EntityMapping{
-		ID: energy.NewID("mapping"), TenantSlug: "jhw22", EntityID: "sensor.house_power",
+		ID: energy.NewID("mapping"), TenantSlug: "demo", EntityID: "sensor.house_power",
 		Metric: energy.MetricLoadPower, DisplayName: "Hausverbrauch", Unit: "W", Confirmed: true,
 	}); err != nil {
 		t.Fatal(err)
 	}
 
-	response := authedRequest(t, a, "owner@example.com", "/app/energie/live")
+	response := authedRequest(t, a, "owner@example.com", "/demo/app/energie/live")
 	if response.Code != http.StatusOK {
 		t.Fatalf("Live-Refresh: status=%d body=%s", response.Code, response.Body.String())
 	}

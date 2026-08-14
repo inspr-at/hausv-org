@@ -20,14 +20,14 @@ func TestUnitStoreConcurrentUpsertKeepsAll(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			dup, err := s.UpsertUnit("jhw22", "", Unit{ID: fmt.Sprintf("u%02d", i), TenantSlug: "jhw22", Label: fmt.Sprintf("Unit %d", i)})
+			dup, err := s.UpsertUnit("demo", "", Unit{ID: fmt.Sprintf("u%02d", i), TenantSlug: "demo", Label: fmt.Sprintf("Unit %d", i)})
 			if err != nil || dup {
 				t.Errorf("upsert u%02d: dup=%v err=%v", i, dup, err)
 			}
 		}(i)
 	}
 	wg.Wait()
-	if got := len(s.ListTenant("jhw22")); got != n {
+	if got := len(s.ListTenant("demo")); got != n {
 		t.Fatalf("concurrent adds lost updates: got %d units, want %d", got, n)
 	}
 }
@@ -35,14 +35,14 @@ func TestUnitStoreConcurrentUpsertKeepsAll(t *testing.T) {
 // Duplicate semantics preserved: a second create with the same ID is rejected.
 func TestUnitStoreUpsertDuplicateDetection(t *testing.T) {
 	s, _ := NewUnitStore(filepath.Join(t.TempDir(), "units.json"))
-	if dup, _ := s.UpsertUnit("jhw22", "", Unit{ID: "a", TenantSlug: "jhw22", Label: "A"}); dup {
+	if dup, _ := s.UpsertUnit("demo", "", Unit{ID: "a", TenantSlug: "demo", Label: "A"}); dup {
 		t.Fatal("first create must not be a duplicate")
 	}
-	if dup, _ := s.UpsertUnit("jhw22", "", Unit{ID: "a", TenantSlug: "jhw22", Label: "A2"}); !dup {
+	if dup, _ := s.UpsertUnit("demo", "", Unit{ID: "a", TenantSlug: "demo", Label: "A2"}); !dup {
 		t.Fatal("second create of same ID must be a duplicate")
 	}
 	// Editing the same unit in place is NOT a duplicate.
-	if dup, _ := s.UpsertUnit("jhw22", "a", Unit{ID: "a", TenantSlug: "jhw22", Label: "A3"}); dup {
+	if dup, _ := s.UpsertUnit("demo", "a", Unit{ID: "a", TenantSlug: "demo", Label: "A3"}); dup {
 		t.Fatal("in-place edit must not be a duplicate")
 	}
 }

@@ -20,9 +20,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/homeassistant"
-	"github.com/markus-barta/hausv-org/internal/store"
-	"github.com/markus-barta/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 type TenantConfig struct {
@@ -45,7 +45,6 @@ type TenantConfig struct {
 	CaretakerEmail    string                   `json:"caretaker_email,omitempty"`
 	CaretakerPhone    string                   `json:"caretaker_phone,omitempty"`
 	HeroImageURL      string                   `json:"hero_image_url,omitempty"`
-	Host              string                   `json:"host"`
 	HA                homeassistant.Config     `json:"-"`
 	HAConnectors      *HomeAssistantConnectors `json:"-"`
 }
@@ -82,10 +81,7 @@ func (t TenantConfig) PublicURL(path string) string {
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
-	if t.Host == "" {
-		return path
-	}
-	return "https://" + t.Host + path
+	return "/" + t.Slug + path
 }
 
 func ParseDuration(raw string) (time.Duration, error) {
@@ -187,7 +183,7 @@ func ParseAllowed(raw string) map[string]struct{} {
 	return out
 }
 
-func ParseTenants(raw string, rootDomain string, defaultTenant string, defaultHA homeassistant.Config) (map[string]TenantConfig, error) {
+func ParseTenants(raw string, defaultTenant string, defaultHA homeassistant.Config) (map[string]TenantConfig, error) {
 	out := map[string]TenantConfig{}
 	raw = strings.TrimSpace(raw)
 	if raw != "" {
@@ -227,10 +223,6 @@ func ParseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 			if tenant.HeroImageURL == "" {
 				tenant.HeroImageURL = store.DefaultTenantHeroImageURL
 			}
-			tenant.Host = NormalizeHost(tenant.Host)
-			if tenant.Host == "" && rootDomain != "" {
-				tenant.Host = tenant.Slug + "." + rootDomain
-			}
 			if tenant.HA.BaseURL() == "" && tenant.Slug == textutil.Slug(defaultTenant) {
 				tenant.HA = defaultHA
 			}
@@ -240,20 +232,15 @@ func ParseTenants(raw string, rootDomain string, defaultTenant string, defaultHA
 
 	defaultTenant = textutil.Slug(defaultTenant)
 	if _, ok := out[defaultTenant]; !ok {
-		host := ""
-		if rootDomain != "" {
-			host = defaultTenant + "." + rootDomain
-		}
 		out[defaultTenant] = TenantConfig{
 			Slug:         defaultTenant,
-			Name:         "Janischhofweg 22",
-			Address:      "Janischhofweg 22",
+			Name:         "Musterweg 1",
+			Address:      "Musterweg 1",
 			PortalType:   PortalTypeCommunity,
-			MapLatitude:  47.1008592,
-			MapLongitude: 15.4717681,
+			MapLatitude:  48.2082,
+			MapLongitude: 16.3738,
 			MapZoom:      17,
 			HeroImageURL: store.DefaultTenantHeroImageURL,
-			Host:         host,
 			HA:           defaultHA,
 		}
 	}

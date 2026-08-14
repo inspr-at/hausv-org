@@ -38,7 +38,7 @@ func samplesHAUSV428(start time.Time, interval time.Duration, count int, kw floa
 func TestCompleteQuarterHourIsEstimatedNotMeasuredHAUSV428(t *testing.T) {
 	start := quarterAnchorHAUSV428()
 	interval, complete := QuarterFromPowerSamples(QuarterInput{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Source:     SourceHomeAssistant,
 		Start:      start,
 		Now:        start.Add(QuarterDuration),
@@ -73,7 +73,7 @@ func TestRunningQuarterHourIsNeverWrittenHAUSV428(t *testing.T) {
 		start.Add(QuarterDuration - time.Nanosecond),
 	} {
 		if _, complete := QuarterFromPowerSamples(QuarterInput{
-			TenantSlug: "jhw22",
+			TenantSlug: "demo",
 			Start:      start,
 			Now:        now,
 			Location:   time.Local,
@@ -90,7 +90,7 @@ func TestQuarterHourWithHoleDegradesInsteadOfInventingHAUSV428(t *testing.T) {
 	// Zehn Minuten Loch in der Mitte: fünf Minuten gemessen, dann nichts mehr.
 	samples := samplesHAUSV428(start, 30*time.Second, 11, 9.0)
 	interval, complete := QuarterFromPowerSamples(QuarterInput{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Start:      start,
 		Now:        start.Add(QuarterDuration),
 		Location:   time.Local,
@@ -116,7 +116,7 @@ func TestQuarterHourWithHoleDegradesInsteadOfInventingHAUSV428(t *testing.T) {
 func TestFrozenReadingsAreNamedStaleHAUSV428(t *testing.T) {
 	start := quarterAnchorHAUSV428()
 	interval, complete := QuarterFromPowerSamples(QuarterInput{
-		TenantSlug:    "jhw22",
+		TenantSlug:    "demo",
 		Start:         start,
 		Now:           start.Add(QuarterDuration),
 		Location:      time.Local,
@@ -139,7 +139,7 @@ func TestSingleMissedSampleStaysUsableHAUSV428(t *testing.T) {
 	// einem echten Haus dauerhaft leer.
 	dropped := append(append([]PowerSample{}, samples[:10]...), samples[11:]...)
 	interval, complete := QuarterFromPowerSamples(QuarterInput{
-		TenantSlug: "jhw22",
+		TenantSlug: "demo",
 		Start:      start,
 		Now:        start.Add(QuarterDuration),
 		Location:   time.Local,

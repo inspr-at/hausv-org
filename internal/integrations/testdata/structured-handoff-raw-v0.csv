@@ -1,2 +1,2 @@
 tenant_slug;record_id;kind;occurred_at;unit_id;person_ref;reference;amount_currency;amount_cents;amount_decimal;period;status;source;document_reference;description;verification_note
-jhw22;parking-2026-06-top-11;payment-status;2026-07-08;top-11;person:max;HV-JHW22-202606-A1B2C3;EUR;13304;133,04;2026-06;paid;parking;doc-abc;Parkplatzabrechnung Juni 2026;Neutral handoff without target-system compatibility claim
+demo;parking-2026-06-einheit-12;payment-status;2026-07-08;einheit-12;person:max;HV-DEMO-202606-A1B2C3;EUR;13304;133,04;2026-06;paid;parking;doc-abc;Parkplatzabrechnung Juni 2026;Neutral handoff without target-system compatibility claim

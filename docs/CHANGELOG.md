@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.81.0] - 2026-08-14
+
+### Neu
+
+- **Jedes Portal erhält eine stabile Adresse unter hausv.org.** Mandanten werden über einen eigenen Pfad wie `hausv.org/demo` erreicht; zusätzliche DNS-Einträge sind nicht erforderlich.
+- **Betrieb und Produkt sind sauber getrennt.** Konkrete Instanzdaten, Infrastrukturpfade und Secret-Referenzen können vollständig außerhalb des Produktrepositorys verwaltet werden.
+
+### Verbessert
+
+- **Alle Portalwege bleiben innerhalb des gewählten Hauses.** Anmeldung, Formulare, Weiterleitungen, Downloads, Karten, Kalender und Benachrichtigungen behalten den Mandantenpfad zuverlässig bei.
+- **Die Open-Source-Veröffentlichung ist zeitlich eindeutig.** HAUSV Free verweist bis zur öffentlichen Version 1.0 nicht auf ein noch privates Repository.
+- **Datenschutz und Portabilität sind vorbereitet.** Mitgelieferte Beispieldaten und Betriebsdokumente verwenden neutrale Angaben; konkrete Betreiberinformationen werden zur Laufzeit konfiguriert.
+
 ## [0.80.0] - 2026-08-14
 
 ### Neu
@@ -183,7 +196,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 ### Neu
 
 - **Die Servicepauschale macht Preise einfach.** Für Hausverwaltungen sind bis 25 Wohneinheiten in der Pauschale inkludiert, darüber gilt 1 € je Einheit und Monat; die Höhe der Pauschale klärt das persönliche Gespräch.
-- **Impressum & Infos haben eine eigene Seite.** Anschrift, rechtliche Details, die AGPL-3.0-Lizenz des quelloffenen Kerns und der Hinweis auf professionelle Services durch die Augmentoring GmbH stehen ruhig gebündelt auf einer Unterseite.
+- **Impressum & Infos haben eine eigene Seite.** Anschrift, rechtliche Details, die AGPL-3.0-Lizenz des quelloffenen Kerns und der Hinweis auf professionelle Services durch die HAUSV Professional stehen ruhig gebündelt auf einer Unterseite.
 
 ### Verbessert
 
@@ -194,7 +207,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 
 ### Neu
 
-- **Ein klarer Weg für Hausverwaltungen.** Die öffentliche Seite zeigt das neue Servicemodell: Der Kern von hausv.org ist Open Source und bleibt kostenlos; der betreute Betrieb über Augmentoring kostet 500 € je Monat für kleinere und 900 € je Monat für größere Hausverwaltungen, zuzüglich 1 € je Wohneinheit und Monat.
+- **Ein klarer Weg für Hausverwaltungen.** Die öffentliche Seite zeigt das neue Servicemodell: Der Kern von hausv.org ist Open Source und bleibt kostenlos; der betreute Betrieb über HAUSV Professional kostet 500 € je Monat für kleinere und 900 € je Monat für größere Hausverwaltungen, zuzüglich 1 € je Wohneinheit und Monat.
 
 ### Verbessert
 
@@ -363,7 +376,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 
 - **Aufbewahrung ist sichtbar und technisch durchgesetzt.** Smart-Meter-Originale, Viertelstundenwerte, Tarifbewertungen und Auditdaten werden nach ihren Fristen automatisch bereinigt; ein Fehlschlag wird im Gesundheitsstatus sichtbar.
 - **Home Assistant bleibt konsequent datensparsam.** Adresse und Token verlassen die geschützte Host-Konfiguration nicht, und transient gelesene Diagrammwerte verschwinden bei der Profil-Löschung sofort aus dem Arbeitsspeicher.
-- **Hausportal und persönliches Zuhause bleiben sauber getrennt.** JHW22 bleibt rechtlich und redaktionell eine Hausgemeinschaft, auch wenn „Mein Zuhause“ darin als einzelne Wohnung eingerichtet ist.
+- **Hausportal und persönliches Zuhause bleiben sauber getrennt.** DEMO bleibt rechtlich und redaktionell eine Hausgemeinschaft, auch wenn „Mein Zuhause“ darin als einzelne Wohnung eingerichtet ist.
 - **Datenschutz und Produkttext beschreiben denselben tatsächlichen Betrieb.** Zuständigkeiten, Export, Löschung, Gratiszeitraum-Marker und interne Betreiber-Selbstprüfung sind ohne vorausgesetzten externen Auditor konsistent dokumentiert.
 - **Die Datenkontrolle ist auf Desktop und Mobil ruhiger lesbar.** Fristen, Inventar und sichere Löschwege geben Überblick, ohne alle Details gleichzeitig aufzudrängen.
 
@@ -379,7 +392,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 ### Verbessert
 
 - **Der persönliche Name des Zuhauses führt durch das Portal.** Seitenleiste, Mobilmenü, Energieüberblick und Einstellungen verwenden durchgehend den gewählten Anzeigenamen.
-- **Die offizielle Wohneinheit bleibt direkt erkennbar.** Bezeichnungen wie „Top 11“ stehen ruhig und kleiner unter dem Anzeigenamen, statt mit ihm um Aufmerksamkeit zu konkurrieren.
+- **Die offizielle Wohneinheit bleibt direkt erkennbar.** Bezeichnungen wie „Einheit 12“ stehen ruhig und kleiner unter dem Anzeigenamen, statt mit ihm um Aufmerksamkeit zu konkurrieren.
 - **Gebäudeübersicht und Zuhause-Einstellung sprechen dieselbe Sprache.** Die verknüpfte Einheit zeigt den persönlichen Namen, während Eingabefelder, Zahlungen, Dokumente und andere formale Bereiche weiterhin die offizielle Stammdatenbezeichnung verwenden.
 - **Der Anzeigename begleitet bereits das laufende Onboarding.** Nach der Namenswahl bleibt die neue Identität auch in den folgenden Schritten sichtbar.
 - **Die Darstellung ist für alle Rollen abgesichert.** Automatisierte Prüfungen kontrollieren Hierarchie, Reihenfolge, Umbenennen und mobile Darstellung sowie den Schutz vor Einblicken durch nicht zugeordnete Nutzer.
@@ -389,7 +402,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 ### Neu
 
 - **„Mein Zuhause“ hat einen eigenen, auffindbaren Einstellungsweg.** Anzeigename, Zuhause-Art und zugeordnete Wohnung lassen sich direkt vom Energieüberblick, vom Einstellungs-Hub und aus „Gebäude & Einheiten“ öffnen und ändern.
-- **Anzeigename und offizielle Wohnung gehören nachvollziehbar zusammen.** Ein freundlicher Name wie „Penthouse“ wird sichtbar mit der offiziellen Einheit „Top 11“ verbunden, ohne deren Stammdaten umzubenennen.
+- **Anzeigename und offizielle Wohnung gehören nachvollziehbar zusammen.** Ein freundlicher Name wie „Dachwohnung“ wird sichtbar mit der offiziellen Einheit „Einheit 12“ verbunden, ohne deren Stammdaten umzubenennen.
 
 ### Verbessert
 
@@ -496,7 +509,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 
 ### Verbessert
 
-- **Drei private Hauswege sind reproduzierbar geprüft.** Wohnung, Eltern-Haus ohne Speicher und Schwiegereltern-Haus mit Speicher laufen als getrennte, ausschließlich lesende Home-Assistant-Piloten durch Desktop- und Mobil-QA.
+- **Drei private Hauswege sind reproduzierbar geprüft.** Wohnung, Haus A ohne Speicher und Haus B mit Speicher laufen als getrennte, ausschließlich lesende Home-Assistant-Piloten durch Desktop- und Mobil-QA.
 - **Technische Hilfe bleibt klar begrenzt.** Eine eigene Vertrauensperson kann das richtige Haus ansehen und einrichten, sieht aber niemals den Eigentümer-Schalter für die aktive Steuerung.
 - **Die visuelle Hierarchie ist ruhiger.** ImageGen-Review und echte Browseraufnahmen führten zu einer flachen, immer sichtbaren Messübersicht statt eines weiteren versteckten Detailbereichs.
 - **Der QA-Werkzeugkasten ist sicherer.** Playwright wurde auf eine Version ohne den gemeldeten Browser-Download-Mangel aktualisiert; Go-, Race-, Abhängigkeits-, Rollen- und Datenschutzprüfungen bleiben grün.
@@ -809,15 +822,15 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 ### Verbessert
 
 - **Verantwortliche Stelle und Hausanschrift sind eindeutig getrennt.** Die Datenschutzseite zeigt die Anschrift des verantwortlichen Hausbetriebs als eigene Angabe und kennzeichnet die Portaladresse separat als betroffenes Haus.
-- **Die tatsächliche Infrastruktur ist vollständig erklärt.** Netcup-Hosting, Cloudflare-Webschutz, selbst betriebenes Zitadel, verschlüsselte Hetzner-Sicherungen und der Resend-Drittlandtransfer sind transparent dokumentiert.
+- **Die tatsächliche Infrastruktur ist vollständig erklärt.** Hosting, Webschutz, Identitätsdienst, verschlüsselte Sicherungen und Mailversand sind je Betreiber transparent dokumentiert.
 - **Die Dienstleister-Freigabe ist konkret vorbereitet.** Ein hausbezogenes Art.-28-/TOM-Paket beschreibt Verarbeitung, Schutzmaßnahmen, Unterauftragsverarbeiter, Löschung und den weiterhin geschlossenen Freigabeweg.
 
 ## [0.23.0] - 2026-07-26
 
 ### Verbessert
 
-- **Betreiber und Kontakt sind vollständig nachvollziehbar.** Impressum und Datenschutzinformation nennen den persönlichen Betreiber, seine ladungsfähige Anschrift und den dauerhaften technischen Kontakt; die verantwortliche Stelle des jeweiligen Hauses bleibt davon klar getrennt.
-- **Der private Pilot ist eindeutig vom öffentlichen Angebot abgegrenzt.** Zugang, Kostenorientierung und Vertragsstatus erklären verständlich, dass derzeit kein öffentlicher Online-Vertragsabschluss und keine automatische Vertragsannahme stattfinden.
+- **Betreiber und Kontakt sind vollständig nachvollziehbar.** Impressum und Datenschutzinformation nennen den konfigurierten Betreiber, seine ladungsfähige Anschrift und den dauerhaften technischen Kontakt; die verantwortliche Stelle des jeweiligen Hauses bleibt davon klar getrennt.
+- **Pilotbetrieb und öffentliches Angebot sind eindeutig abgegrenzt.** Zugang, Kostenorientierung und Vertragsstatus erklären verständlich, wann ein öffentlicher Online-Vertragsabschluss möglich ist.
 - **Die rechtliche Selbstprüfung ist transparent belegt.** Datum und österreichische Primärquellen sind direkt verlinkt; die Seiten stellen klar, dass keine externe Zertifizierung behauptet wird.
 
 ## [0.22.0] - 2026-07-26
@@ -1252,6 +1265,6 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 
 ### Neu
 
-- **Erster Pilot für hausv.org.** Ein geschützter Portalrahmen, der Hausüberblick und die Parkplatznutzung für Janischhofweg 22 gehen an den Start.
+- **Erster Pilot für hausv.org.** Ein geschützter Portalrahmen, der Hausüberblick und die Parkplatznutzung für Musterweg 1 gehen an den Start.
 - **Basisrollen eingerichtet.** Verwaltung und Bewohner erhalten getrennte Zugänge; weitere Rollen werden für den schrittweisen Ausbau vorbereitet.
 - **Ausbau transparent vorbereitet.** Aushänge, Termine, Dokumente, Anliegen und Abstimmungen sind zunächst als nächste Portalbereiche sichtbar und folgen in späteren Releases.

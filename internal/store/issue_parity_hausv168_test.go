@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/markus-barta/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
 )
 
 func sampleIssue() ResidentIssue {
 	return ResidentIssue{
-		TenantSlug:   "jhw22",
+		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
 		Category:     "Schaden",
@@ -66,24 +66,24 @@ func TestIssueStorageParity(t *testing.T) {
 			}
 			id := created.ID
 
-			if got, ok := s.Get("jhw22", id); !ok || got.Title != "Wasserhahn tropft" {
+			if got, ok := s.Get("demo", id); !ok || got.Title != "Wasserhahn tropft" {
 				t.Fatalf("get = %+v ok=%v", got, ok)
 			}
-			if _, ok := s.Get("jhw22", "nope"); ok {
+			if _, ok := s.Get("demo", "nope"); ok {
 				t.Fatal("unknown issue must not be found")
 			}
-			if got := s.ListTenant("jhw22"); len(got) != 1 {
+			if got := s.ListTenant("demo"); len(got) != 1 {
 				t.Fatalf("list = %+v", got)
 			}
-			if got := s.ListAuthor("jhw22", "resident@example.com"); len(got) != 1 {
+			if got := s.ListAuthor("demo", "resident@example.com"); len(got) != 1 {
 				t.Fatalf("list author = %+v", got)
 			}
-			if got := s.ListAuthor("jhw22", "someone@example.com"); len(got) != 0 {
+			if got := s.ListAuthor("demo", "someone@example.com"); len(got) != 0 {
 				t.Fatalf("other author must be empty: %+v", got)
 			}
 
 			// Workflow: a status change appends history; an unchanged status does not.
-			updated, ok, err := s.UpdateWorkflow("jhw22", id, IssueWorkflowUpdate{
+			updated, ok, err := s.UpdateWorkflow("demo", id, IssueWorkflowUpdate{
 				Status: IssueStatusProgress, Priority: IssuePriorityNorm,
 				ActorEmail: "manager@example.com", ActorName: "Manager", ChangedAt: now,
 			})
@@ -96,7 +96,7 @@ func TestIssueStorageParity(t *testing.T) {
 			if updated.StatusHistory[0].To != IssueStatusProgress || updated.StatusHistory[0].ActorEmail != "manager@example.com" {
 				t.Fatalf("history entry = %+v", updated.StatusHistory[0])
 			}
-			same, _, err := s.UpdateWorkflow("jhw22", id, IssueWorkflowUpdate{
+			same, _, err := s.UpdateWorkflow("demo", id, IssueWorkflowUpdate{
 				Status: IssueStatusProgress, Priority: IssuePriorityHigh,
 				ActorEmail: "manager@example.com", ChangedAt: now.Add(time.Minute),
 			})
@@ -109,12 +109,12 @@ func TestIssueStorageParity(t *testing.T) {
 			if same.Priority != IssuePriorityHigh {
 				t.Fatalf("priority not applied: %q", same.Priority)
 			}
-			if _, ok, _ := s.UpdateWorkflow("jhw22", "missing", IssueWorkflowUpdate{
+			if _, ok, _ := s.UpdateWorkflow("demo", "missing", IssueWorkflowUpdate{
 				Status: IssueStatusProgress, Priority: IssuePriorityNorm, ChangedAt: now,
 			}); ok {
 				t.Fatal("workflow on unknown issue must report not found")
 			}
-			confirmed, ok, err := s.UpdateWorkflow("jhw22", id, IssueWorkflowUpdate{
+			confirmed, ok, err := s.UpdateWorkflow("demo", id, IssueWorkflowUpdate{
 				Status: IssueStatusDone, Priority: IssuePriorityHigh,
 				ResolutionConfirmed: true, UpdateResolution: true,
 				ActorEmail: "resident@example.com", ChangedAt: now.Add(90 * time.Second),
@@ -122,7 +122,7 @@ func TestIssueStorageParity(t *testing.T) {
 			if err != nil || !ok || confirmed.ResolutionConfirmedBy != "resident@example.com" || confirmed.ResolutionConfirmedAt.IsZero() {
 				t.Fatalf("resolution confirmation: err=%v ok=%v issue=%+v", err, ok, confirmed)
 			}
-			reopened, ok, err := s.UpdateWorkflow("jhw22", id, IssueWorkflowUpdate{
+			reopened, ok, err := s.UpdateWorkflow("demo", id, IssueWorkflowUpdate{
 				Status: IssueStatusProgress, Priority: IssuePriorityHigh,
 				ActorEmail: "manager@example.com", ChangedAt: now.Add(100 * time.Second),
 			})
@@ -131,7 +131,7 @@ func TestIssueStorageParity(t *testing.T) {
 			}
 
 			// Comments.
-			withComment, ok, err := s.AddComment("jhw22", id, IssueComment{
+			withComment, ok, err := s.AddComment("demo", id, IssueComment{
 				AuthorEmail: "manager@example.com", AuthorName: "Manager",
 				Body: "Wir schauen uns das an.", Kind: IssueCommentKindQuestion, CreatedAt: now.Add(2 * time.Minute),
 			})
@@ -146,21 +146,21 @@ func TestIssueStorageParity(t *testing.T) {
 				t.Fatalf("comment kind not persisted: %+v", withComment.Comments[0])
 			}
 			// A photo-only (empty body) comment is allowed.
-			if _, _, err := s.AddComment("jhw22", id, IssueComment{
+			if _, _, err := s.AddComment("demo", id, IssueComment{
 				AuthorEmail: "resident@example.com", CreatedAt: now.Add(3 * time.Minute),
 			}); err != nil {
 				t.Fatalf("photo-only comment must be allowed: %v", err)
 			}
 			// A comment without an author is not.
-			if _, _, err := s.AddComment("jhw22", id, IssueComment{Body: "x"}); err == nil {
+			if _, _, err := s.AddComment("demo", id, IssueComment{Body: "x"}); err == nil {
 				t.Fatal("comment without author must error")
 			}
 
-			deleted, ok, err := s.DeleteComment("jhw22", id, commentID, now.Add(4*time.Minute))
+			deleted, ok, err := s.DeleteComment("demo", id, commentID, now.Add(4*time.Minute))
 			if err != nil || !ok || len(deleted.Comments) != 1 {
 				t.Fatalf("delete comment: err=%v ok=%v comments=%+v", err, ok, deleted.Comments)
 			}
-			if _, ok, err := s.DeleteComment("jhw22", id, commentID, now); ok || err != nil {
+			if _, ok, err := s.DeleteComment("demo", id, commentID, now); ok || err != nil {
 				t.Fatalf("deleting the same comment twice: ok=%v err=%v", ok, err)
 			}
 		})
@@ -178,13 +178,13 @@ func TestSQLIssueImportFromJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	if _, _, err := jsonStore.UpdateWorkflow("jhw22", created.ID, IssueWorkflowUpdate{
+	if _, _, err := jsonStore.UpdateWorkflow("demo", created.ID, IssueWorkflowUpdate{
 		Status: IssueStatusProgress, Priority: IssuePriorityNorm,
 		ActorEmail: "manager@example.com", ChangedAt: now,
 	}); err != nil {
 		t.Fatalf("seed workflow: %v", err)
 	}
-	if _, _, err := jsonStore.AddComment("jhw22", created.ID, IssueComment{
+	if _, _, err := jsonStore.AddComment("demo", created.ID, IssueComment{
 		AuthorEmail: "manager@example.com", Body: "Notiz", Kind: IssueCommentKindInformation, CreatedAt: now.Add(time.Minute),
 	}); err != nil {
 		t.Fatalf("seed comment: %v", err)
@@ -202,11 +202,11 @@ func TestSQLIssueImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	if got := sqlStore.ListTenant("jhw22"); len(got) != 1 {
+	if got := sqlStore.ListTenant("demo"); len(got) != 1 {
 		t.Fatalf("imported %d issues, want 1", len(got))
 	}
 	// Comments and status history survive the import.
-	got, ok := sqlStore.Get("jhw22", created.ID)
+	got, ok := sqlStore.Get("demo", created.ID)
 	if !ok {
 		t.Fatal("imported issue not found")
 	}

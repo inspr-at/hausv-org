@@ -141,7 +141,7 @@ func TestHomeProfileUnitMigrationPreservesExistingRows(t *testing.T) {
 		t.Fatalf("insert existing profiles: %v", err)
 	}
 	if _, err := database.Exec(`INSERT INTO units(tenant_slug,id,data) VALUES
-		('legacy-home','top-11','{"id":"top-11","tenant":"legacy-home","label":"Top 11","unit_type":"residential","miteigentumsanteil":10}'),
+		('legacy-home','einheit-12','{"id":"einheit-12","tenant":"legacy-home","label":"Einheit 12","unit_type":"residential","miteigentumsanteil":10}'),
 		('ambiguous-home','top-1','{"id":"top-1","tenant":"ambiguous-home","label":"Top 1","unit_type":"residential","miteigentumsanteil":10}'),
 		('ambiguous-home','top-2','{"id":"top-2","tenant":"ambiguous-home","label":"Top 2","unit_type":"residential","miteigentumsanteil":10}')`); err != nil {
 		t.Fatalf("insert existing units: %v", err)
@@ -167,7 +167,7 @@ func TestHomeProfileUnitMigrationPreservesExistingRows(t *testing.T) {
 		Scan(&householdName, &unitID); err != nil {
 		t.Fatalf("load migrated profile: %v", err)
 	}
-	if householdName != "Bestehendes Zuhause" || unitID != "top-11" {
+	if householdName != "Bestehendes Zuhause" || unitID != "einheit-12" {
 		t.Fatalf("migrated profile: household_name=%q unit_id=%q", householdName, unitID)
 	}
 	if err := database.QueryRow(`SELECT unit_id FROM home_profiles WHERE tenant_slug='ambiguous-home'`).
@@ -196,7 +196,7 @@ func TestConsumptionMappingMigrationOnlyCorrectsLegacyBatteryHeuristic(t *testin
 		t.Fatalf("open: %v", err)
 	}
 	now := "2026-07-29T10:00:00Z"
-	if _, err := database.Exec(`INSERT INTO home_profiles(tenant_slug,created_at,updated_at) VALUES('jhw22',?,?)`, now, now); err != nil {
+	if _, err := database.Exec(`INSERT INTO home_profiles(tenant_slug,created_at,updated_at) VALUES('demo',?,?)`, now, now); err != nil {
 		t.Fatalf("insert profile: %v", err)
 	}
 	for _, item := range []struct {
@@ -207,7 +207,7 @@ func TestConsumptionMappingMigrationOnlyCorrectsLegacyBatteryHeuristic(t *testin
 	} {
 		if _, err := database.Exec(`INSERT INTO energy_entity_mappings
 			(id,tenant_slug,entity_id,metric,display_name,unit,device_class,confirmed,created_at,updated_at,asset_id)
-			VALUES(?,'jhw22',?,'battery-power',?,'W','power',1,?,?, '')`,
+			VALUES(?,'demo',?,'battery-power',?,'W','power',1,?,?, '')`,
 			item.id, item.entity, item.name, now, now,
 		); err != nil {
 			t.Fatalf("insert mapping %s: %v", item.id, err)
@@ -242,14 +242,14 @@ func TestEnergyHomeScopeMigrationPreservesLegacyDefaultHome(t *testing.T) {
 	database := openBeforeMigration(t, path, "0026_energy_home_scope.sql")
 	now := "2026-08-13T09:00:00Z"
 	statements := []string{
-		`INSERT INTO home_profiles(tenant_slug,unit_id,household_name,agreed_power_kw,created_at,updated_at) VALUES('jhw22','top-11','Penthouse',15,?,?)`,
-		`INSERT INTO energy_assets(id,tenant_slug,kind,name,created_at,updated_at) VALUES('asset-jhw22-battery','jhw22','battery','Speicher',?,?)`,
-		`INSERT INTO energy_entity_mappings(id,tenant_slug,entity_id,asset_id,metric,created_at,updated_at) VALUES('mapping-1','jhw22','sensor.battery','asset-jhw22-battery','battery-power',?,?)`,
-		`INSERT INTO energy_intervals(tenant_slug,starts_at,import_kwh,average_kw,created_at) VALUES('jhw22',?,1.25,5,?)`,
-		`INSERT INTO energy_imports(id,tenant_slug,filename,sha256,format,payload,imported_at) VALUES('import-1','jhw22','legacy.csv','sha-1','csv',x'01',?)`,
-		`INSERT INTO energy_maintenance_plans(id,tenant_slug,asset_id,title,interval_months,next_due_at,created_at,updated_at) VALUES('maintenance-1','jhw22','asset-jhw22-battery','Wartung',12,?,?,?)`,
-		`INSERT INTO energy_tariff_assessments(id,tenant_slug,assessment_month,profile_id,profile_version,profile_status,source_url,peak_kw,billed_kw,annual_power_eur,data_quality,created_at) VALUES('tariff-1','jhw22','2026-08','p','1','active','https://example.test',5,5,100,'measured',?)`,
-		`INSERT INTO energy_measures(id,tenant_slug,issue_id,recommendation_id,title,created_at,updated_at) VALUES('measure-1','jhw22','issue-1','rec-1','Maßnahme',?,?)`,
+		`INSERT INTO home_profiles(tenant_slug,unit_id,household_name,agreed_power_kw,created_at,updated_at) VALUES('demo','einheit-12','Dachwohnung',15,?,?)`,
+		`INSERT INTO energy_assets(id,tenant_slug,kind,name,created_at,updated_at) VALUES('asset-demo-battery','demo','battery','Speicher',?,?)`,
+		`INSERT INTO energy_entity_mappings(id,tenant_slug,entity_id,asset_id,metric,created_at,updated_at) VALUES('mapping-1','demo','sensor.battery','asset-demo-battery','battery-power',?,?)`,
+		`INSERT INTO energy_intervals(tenant_slug,starts_at,import_kwh,average_kw,created_at) VALUES('demo',?,1.25,5,?)`,
+		`INSERT INTO energy_imports(id,tenant_slug,filename,sha256,format,payload,imported_at) VALUES('import-1','demo','legacy.csv','sha-1','csv',x'01',?)`,
+		`INSERT INTO energy_maintenance_plans(id,tenant_slug,asset_id,title,interval_months,next_due_at,created_at,updated_at) VALUES('maintenance-1','demo','asset-demo-battery','Wartung',12,?,?,?)`,
+		`INSERT INTO energy_tariff_assessments(id,tenant_slug,assessment_month,profile_id,profile_version,profile_status,source_url,peak_kw,billed_kw,annual_power_eur,data_quality,created_at) VALUES('tariff-1','demo','2026-08','p','1','active','https://example.test',5,5,100,'measured',?)`,
+		`INSERT INTO energy_measures(id,tenant_slug,issue_id,recommendation_id,title,created_at,updated_at) VALUES('measure-1','demo','issue-1','rec-1','Maßnahme',?,?)`,
 	}
 	for _, statement := range statements {
 		args := make([]any, strings.Count(statement, "?"))
@@ -274,16 +274,16 @@ func TestEnergyHomeScopeMigrationPreservesLegacyDefaultHome(t *testing.T) {
 		"energy_imports", "energy_maintenance_plans", "energy_tariff_assessments", "energy_measures",
 	} {
 		var count int
-		if err := database.QueryRow(`SELECT COUNT(*) FROM ` + table + ` WHERE tenant_slug='jhw22' AND home_key='default'`).Scan(&count); err != nil || count != 1 {
+		if err := database.QueryRow(`SELECT COUNT(*) FROM ` + table + ` WHERE tenant_slug='demo' AND home_key='default'`).Scan(&count); err != nil || count != 1 {
 			t.Fatalf("%s default-home rows=%d err=%v", table, count, err)
 		}
 	}
 	var household, unit string
 	var agreed float64
-	if err := database.QueryRow(`SELECT household_name,unit_id,agreed_power_kw FROM home_profiles WHERE tenant_slug='jhw22' AND home_key='default'`).Scan(&household, &unit, &agreed); err != nil {
+	if err := database.QueryRow(`SELECT household_name,unit_id,agreed_power_kw FROM home_profiles WHERE tenant_slug='demo' AND home_key='default'`).Scan(&household, &unit, &agreed); err != nil {
 		t.Fatalf("read migrated profile: %v", err)
 	}
-	if household != "Penthouse" || unit != "top-11" || agreed != 15 {
+	if household != "Dachwohnung" || unit != "einheit-12" || agreed != 15 {
 		t.Fatalf("profile changed during migration: household=%q unit=%q agreed=%v", household, unit, agreed)
 	}
 	var foreignKeyErrors int

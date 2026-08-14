@@ -59,6 +59,9 @@ func (w *securityResponseWriter) shouldPreventCaching(status int) bool {
 		return status >= http.StatusBadRequest
 	}
 	path := w.request.URL.Path
+	if w.app != nil {
+		path = stripTenantPath(path, w.app.tenantForRequest(w.request).Slug)
+	}
 	if strings.HasPrefix(path, "/auth/") || strings.HasPrefix(path, "/handover/") {
 		return true
 	}

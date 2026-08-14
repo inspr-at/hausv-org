@@ -12,7 +12,7 @@ const fresh = (item) => {
   const now = new Date().toISOString();
   return { ...item, last_changed: now, last_updated: now };
 };
-// Real, pinned OSM tiles around the deterministic JHW22 fixture keep visual
+// Real, pinned OSM tiles around the deterministic DEMO fixture keep visual
 // browser QA representative without ever reaching the public tile service.
 // The logged-out card and authenticated sidebar both show attribution.
 const mapTilePNGs = new Map([
@@ -36,7 +36,7 @@ const commonNoise = [
   state('switch.wallbox', 'off', 'Wallbox', '', ''),
 ];
 const homes = {
-  jhw22: [
+  demo: [
   state('sensor.grid_import_power', '2.4', 'Netzbezug', 'power', 'kW'),
   state('sensor.grid_export_power', '0.4', 'Netzeinspeisung', 'power', 'kW'),
   state('sensor.grid_import_energy', '42', 'Netzbezug Energie', 'energy', 'kWh'),
@@ -47,21 +47,21 @@ const homes = {
   state('sensor.battery_discharge_power', '0.2', 'Batteriespeicher Entladeleistung', 'power', 'kW'),
   ...commonNoise,
   ],
-  eltern: [
-    state('sensor.parents_grid_import_power', '3.2', 'Netzbezug Haus Eltern', 'power', 'kW'),
-    state('sensor.parents_grid_import_energy', '73', 'Netzbezug Energie Haus Eltern', 'energy', 'kWh'),
-    state('sensor.parents_grid_export_power', '1.1', 'Netzeinspeisung Haus Eltern', 'power', 'kW'),
-    state('sensor.parents_pv_current_power', '5.6', 'PV Leistung Haus Eltern', 'power', 'kW'),
-    state('sensor.parents_home_consumption', '2.5', 'Hausverbrauch Eltern', 'power', 'kW'),
+  haus-a: [
+    state('sensor.house_a_grid_import_power', '3.2', 'Netzbezug Haus A', 'power', 'kW'),
+    state('sensor.house_a_grid_import_energy', '73', 'Netzbezug Energie Haus A', 'energy', 'kWh'),
+    state('sensor.house_a_grid_export_power', '1.1', 'Netzeinspeisung Haus A', 'power', 'kW'),
+    state('sensor.house_a_pv_current_power', '5.6', 'PV Leistung Haus A', 'power', 'kW'),
+    state('sensor.house_a_home_consumption', '2.5', 'Hausverbrauch Haus A', 'power', 'kW'),
     ...commonNoise,
   ],
-  schwiegereltern: [
-    state('sensor.inlaws_grid_import_power', '1.7', 'Netzbezug Haus Schwiegereltern', 'power', 'kW'),
-    state('sensor.inlaws_grid_import_energy', '51', 'Netzbezug Energie Haus Schwiegereltern', 'energy', 'kWh'),
-    state('sensor.inlaws_pv_current_power', '4.2', 'PV Leistung Haus Schwiegereltern', 'power', 'kW'),
-    state('sensor.inlaws_home_battery_soc', '66', 'Hausspeicher Ladestand Schwiegereltern', 'battery', '%'),
-    state('sensor.inlaws_battery_charge_power', '1.2', 'Batteriespeicher Ladeleistung Schwiegereltern', 'power', 'kW'),
-    state('sensor.inlaws_home_consumption', '2.1', 'Hausverbrauch Schwiegereltern', 'power', 'kW'),
+  haus-b: [
+    state('sensor.house_b_grid_import_power', '1.7', 'Netzbezug Haus B', 'power', 'kW'),
+    state('sensor.house_b_grid_import_energy', '51', 'Netzbezug Energie Haus B', 'energy', 'kWh'),
+    state('sensor.house_b_pv_current_power', '4.2', 'PV Leistung Haus B', 'power', 'kW'),
+    state('sensor.house_b_home_battery_soc', '66', 'Hausspeicher Ladestand Haus B', 'battery', '%'),
+    state('sensor.house_b_battery_charge_power', '1.2', 'Batteriespeicher Ladeleistung Haus B', 'power', 'kW'),
+    state('sensor.house_b_home_consumption', '2.1', 'Hausverbrauch Haus B', 'power', 'kW'),
     ...commonNoise,
   ],
 };
@@ -91,7 +91,7 @@ createServer((request, response) => {
     return;
   }
   response.setHeader('Content-Type', 'application/json');
-  const historyMatch = url.pathname.match(/^\/(jhw22|eltern|schwiegereltern)\/api\/history\/period(?:\/.*)?$/);
+  const historyMatch = url.pathname.match(/^\/(demo|haus-a|haus-b)\/api\/history\/period(?:\/.*)?$/);
   if (request.method === 'GET' && historyMatch) {
     const states = homes[historyMatch[1]];
     const requested = (url.searchParams.get('filter_entity_id') || '').split(',').filter(Boolean);
@@ -117,7 +117,7 @@ createServer((request, response) => {
     response.end(JSON.stringify(groups));
     return;
   }
-  const match = url.pathname.match(/^\/(jhw22|eltern|schwiegereltern)\/api\/states(?:\/(.*))?$/);
+  const match = url.pathname.match(/^\/(demo|haus-a|haus-b)\/api\/states(?:\/(.*))?$/);
   if (request.method !== 'GET' || !match) {
     response.statusCode = 404;
     response.end('{"message":"not found"}');

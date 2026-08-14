@@ -12,13 +12,13 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 		LastName:    "Lovelace",
 		Role:        roleResident,
 		Permissions: []string{permissionParking},
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	ac := authCtx{
 		email:  "resident@example.com",
 		role:   roleResident,
-		tenant: a.tenants["jhw22"],
+		tenant: a.tenants["demo"],
 	}
 
 	got := a.baseContext(ac)
@@ -31,14 +31,14 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	if got["DisplayName"] != "Ada Lovelace" || got["Initials"] != "AL" {
 		t.Fatalf("baseContext profile = %#v", got)
 	}
-	if got["HouseName"] != "Janischhofweg 22" {
+	if got["HouseName"] != "Musterweg 1" {
 		t.Fatalf("baseContext house name = %#v", got["HouseName"])
 	}
-	if got["MapURL"] != "https://www.openstreetmap.org/search?query=Janischhofweg+22" {
+	if got["MapURL"] != "https://www.openstreetmap.org/search?query=Musterweg+1" {
 		t.Fatalf("baseContext map URL = %#v", got["MapURL"])
 	}
 	sidebarAddress, ok := got["SidebarAddress"].(sidebarAddressView)
-	if !ok || sidebarAddress.Full != "Janischhofweg 22" || sidebarAddress.Primary != "Janischhofweg 22" || sidebarAddress.HasLocality {
+	if !ok || sidebarAddress.Full != "Musterweg 1" || sidebarAddress.Primary != "Musterweg 1" || sidebarAddress.HasLocality {
 		t.Fatalf("baseContext sidebar address = %#v", got["SidebarAddress"])
 	}
 	sidebarMap, ok := got["SidebarMap"].(sidebarMapView)
@@ -68,15 +68,15 @@ func TestSidebarAddressKeepsAStableMobileHouseIdentity(t *testing.T) {
 	}{
 		{
 			name:     "portal abbreviation and postcode",
-			tenant:   tenantConfig{Name: "JHW22-Portal", Address: "Janischhofweg 22, 8043 Graz"},
-			primary:  "Janischhofweg 22",
-			locality: "Graz",
+			tenant:   tenantConfig{Name: "DEMO-Portal", Address: "Musterweg 1, 1010 Wien"},
+			primary:  "Musterweg 1",
+			locality: "Wien",
 		},
 		{
 			name:     "named house",
-			tenant:   tenantConfig{Name: "Haus Kirchweg", Address: "Kirchweg 8, 8043 Graz, Österreich"},
-			primary:  "Kirchweg 8",
-			locality: "Graz",
+			tenant:   tenantConfig{Name: "Energiehaus", Address: "Energiestraße 8, 1020 Wien, Österreich"},
+			primary:  "Energiestraße 8",
+			locality: "Wien",
 		},
 		{
 			name:    "generic portal falls back to street",
@@ -90,8 +90,8 @@ func TestSidebarAddressKeepsAStableMobileHouseIdentity(t *testing.T) {
 		},
 		{
 			name:    "generic pilot address falls back to house name",
-			tenant:  tenantConfig{Name: "Haus Eltern", Address: "Pilot Eltern"},
-			primary: "Haus Eltern",
+			tenant:  tenantConfig{Name: "Haus A", Address: "Pilot Haus A"},
+			primary: "Haus A",
 		},
 	}
 	for _, tt := range tests {
@@ -108,13 +108,13 @@ func TestWithBaseKeepsPageOverridesExplicit(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
 		Email:       "manager@example.com",
 		Role:        roleManager,
-		Tenants:     []string{"jhw22"},
+		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
 	ac := authCtx{
 		email:  "manager@example.com",
 		role:   roleManager,
-		tenant: a.tenants["jhw22"],
+		tenant: a.tenants["demo"],
 	}
 
 	got := a.withBase(ac, map[string]any{
@@ -131,15 +131,15 @@ func TestWithBaseKeepsPageOverridesExplicit(t *testing.T) {
 }
 
 func TestTenantTemplateViewTrustsOnlyServerOwnedHeroRoute(t *testing.T) {
-	for _, raw := range []string{"/tenant-hero/jhw22", "/assets/jhw22-hero.jpg"} {
-		internal := tenantTemplateViewFrom(tenantConfig{Slug: "jhw22", HeroImageURL: raw})
+	for _, raw := range []string{"/tenant-hero/demo", "/assets/hausv-landing-hero.png"} {
+		internal := tenantTemplateViewFrom(tenantConfig{Slug: "demo", HeroImageURL: raw})
 		if got, ok := internal.HeroImageURL.(template.URL); !ok || got != template.URL(raw) {
 			t.Fatalf("internal hero URL = %#v, want trusted same-origin route %q", internal.HeroImageURL, raw)
 		}
 	}
 
 	for _, raw := range []string{"javascript:alert(1)", "https://example.com/hero.jpg", "/assets/../private", "/assets/hero.jpg?variant=external"} {
-		configured := tenantTemplateViewFrom(tenantConfig{Slug: "jhw22", HeroImageURL: raw})
+		configured := tenantTemplateViewFrom(tenantConfig{Slug: "demo", HeroImageURL: raw})
 		if got, ok := configured.HeroImageURL.(string); !ok || got != raw {
 			t.Fatalf("configured hero URL = %#v, want untrusted string %q", configured.HeroImageURL, raw)
 		}
