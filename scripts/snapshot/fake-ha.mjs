@@ -47,7 +47,7 @@ const homes = {
   state('sensor.battery_discharge_power', '0.2', 'Batteriespeicher Entladeleistung', 'power', 'kW'),
   ...commonNoise,
   ],
-  haus-a: [
+  'haus-a': [
     state('sensor.house_a_grid_import_power', '3.2', 'Netzbezug Haus A', 'power', 'kW'),
     state('sensor.house_a_grid_import_energy', '73', 'Netzbezug Energie Haus A', 'energy', 'kWh'),
     state('sensor.house_a_grid_export_power', '1.1', 'Netzeinspeisung Haus A', 'power', 'kW'),
@@ -55,7 +55,7 @@ const homes = {
     state('sensor.house_a_home_consumption', '2.5', 'Hausverbrauch Haus A', 'power', 'kW'),
     ...commonNoise,
   ],
-  haus-b: [
+  'haus-b': [
     state('sensor.house_b_grid_import_power', '1.7', 'Netzbezug Haus B', 'power', 'kW'),
     state('sensor.house_b_grid_import_energy', '51', 'Netzbezug Energie Haus B', 'energy', 'kWh'),
     state('sensor.house_b_pv_current_power', '4.2', 'PV Leistung Haus B', 'power', 'kW'),
