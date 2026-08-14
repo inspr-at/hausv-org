@@ -284,6 +284,41 @@ async function assertSidebarNavReachable() {
   process.stdout.write('  ✓ Seitenleiste · alle Einträge erreichbar · 720–1080px\n');
 }
 
+async function assertMapIntegratedPortalSwitcher() {
+  const context = await trackedContext({ viewport: { width: 1440, height: 900 }, locale: 'de-AT' });
+  const page = await localLogin(context, 'multi@example.com');
+  await page.goto(`${baseURL}/demo/app`, { waitUntil: 'networkidle' });
+
+  const switcher = page.locator('.side-map-card .portal-context-switch');
+  if ((await switcher.count()) !== 1 || await page.locator('.side-foot .portal-context-switch').count()) {
+    fail('Portalwechsler ist nicht ausschließlich in die Sidebar-Karte integriert');
+  }
+  if ((await page.locator('.side-address-label strong').textContent())?.trim() !== 'Demohaus') {
+    fail('Portalwechsler zeigt vor dem Wechsel nicht den aktiven Portalnamen');
+  }
+  await switcher.locator('summary').click();
+  await switcher.locator('form').filter({ hasText: 'Haus B' }).getByRole('button').click();
+  await page.waitForLoadState('networkidle');
+  if (new URL(page.url()).pathname !== '/haus-b/app' ||
+      (await page.locator('.side-address-label strong').textContent())?.trim() !== 'Haus B' ||
+      !(await page.locator('.side-map-tile').count()) ||
+      (await page.locator('.portal-context-current strong').textContent())?.trim() !== 'Haus B · Admin') {
+    fail(`Portalwechsel aktualisiert URL, Name, Rolle oder Karte nicht atomar (${page.url()})`);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileGeometry = await page.evaluate(() => ({
+    overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+    switcherVisible: Boolean(document.querySelector('.portal-context-switch > summary')?.getClientRects().length),
+    mapWidth: document.querySelector('.side-map')?.getBoundingClientRect().width || 0,
+  }));
+  if (mobileGeometry.overflow || !mobileGeometry.switcherVisible || mobileGeometry.mapWidth > 64) {
+    fail(`Portalwechsler ist im schmalen Layout nicht stabil (${JSON.stringify(mobileGeometry)})`);
+  }
+  await closeContext(context);
+  process.stdout.write('  ✓ Portalwechsler · Kartenkopf · Desktop und Mobil\n');
+}
+
 async function assertSharedAppShellNavigation() {
   let adminStorageState;
   for (const width of [320, 390, 430]) {
@@ -2738,6 +2773,7 @@ try {
 
     if (process.env.HV_QA_LANDING_ONLY !== 'true') {
       await assertSidebarNavReachable();
+      await assertMapIntegratedPortalSwitcher();
       await assertSharedAppShellNavigation();
       await assertHomeOnboarding();
       await assertBoundedAdminDialogs();

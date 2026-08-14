@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.91.0",
+			Date:     "14. August 2026",
+			Kind:     "Portalwechsel",
+			Headline: "Karte und Portalwechsel bilden jetzt einen klaren Ortskopf.",
+			Intro:    "Das aktive Haus, die gewählte Rolle und die passende OpenStreetMap-Ansicht bleiben beim Wechsel sichtbar und konsistent.",
+			Items: []NoteItem{
+				{Label: "Kompakt", Text: "Der Portalwechsler sitzt direkt im Kartenkopf und bleibt auch auf kleinen Bildschirmen gut erreichbar."},
+				{Label: "Aktuell", Text: "Name, Rolle, Adresse, Markierung und Kartenkacheln wechseln gemeinsam zur ausgewählten Liegenschaft."},
+				{Label: "Konfigurierbar", Text: "Die Kartenposition kann in den Gebäudestammdaten hinterlegt oder wieder entfernt werden."},
+				{Label: "Ehrlich", Text: "Ohne Koordinaten weist der Kartenkopf klar auf die fehlende Standortangabe hin."},
+			},
+		},
+		{
 			Version:  "0.90.0",
 			Date:     "14. August 2026",
 			Kind:     "Portalbereiche",
