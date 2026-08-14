@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.88.1",
+			Date:     "14. August 2026",
+			Kind:     "Stabilität",
+			Headline: "Die zentrale Anmeldung führt jedes Zuhause zuverlässig an den richtigen Ort zurück.",
+			Intro:    "Ein gemeinsamer Rücksprungpunkt macht neue und bestehende Portalpfade unabhängig von zusätzlichen Freischaltungen beim Anmeldedienst.",
+			Items: []NoteItem{
+				{Label: "Für alle Zuhause", Text: "Die Anmeldung verwendet eine stabile Plattformadresse und funktioniert damit auch für neu eingerichtete Portalpfade."},
+				{Label: "Richtig zurück", Text: "Nach erfolgreicher Anmeldung öffnet sich gezielt das Zuhause, aus dem der Vorgang gestartet wurde."},
+			},
+		},
+		{
 			Version:  "0.88.0",
 			Date:     "14. August 2026",
 			Kind:     "Hilfe",

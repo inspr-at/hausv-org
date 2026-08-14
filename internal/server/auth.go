@@ -412,7 +412,7 @@ func (a *app) startOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	a.oidcFlows.Put(state, auth.NewOIDCFlow(tenant.Slug, nonce, codeVerifier), 10*time.Minute)
 
-	redirectURL := a.oidc.RedirectURL(a.publicBaseURL(r, tenant))
+	redirectURL := a.oidcRedirectURL()
 	oauthConfig := a.oidc.OAuthConfig(redirectURL)
 	authCodeURL := oauthConfig.AuthCodeURL(
 		state,
@@ -459,7 +459,7 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
-	oauthConfig := a.oidc.OAuthConfig(a.oidc.RedirectURL(a.publicBaseURL(r, tenant)))
+	oauthConfig := a.oidc.OAuthConfig(a.oidcRedirectURL())
 	token, err := oauthConfig.Exchange(
 		ctx,
 		code,
@@ -507,7 +507,7 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	email := normalizeEmail(claims.Email)
 	if email == "" || claims.EmailVerified == nil || !*claims.EmailVerified {
-		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
+		http.Redirect(w, r, tenant.PublicURL("/?denied=1"), http.StatusSeeOther)
 		return
 	}
 	if !a.allowAuthRequest(
@@ -524,14 +524,21 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !a.isAllowed(email, tenant.Slug) || !a.isAuthMethodAllowed(email, tenant.Slug, authMethodOIDC) {
-		http.Redirect(w, r, "/?denied=1", http.StatusSeeOther)
+		http.Redirect(w, r, tenant.PublicURL("/?denied=1"), http.StatusSeeOther)
 		return
 	}
 	if err := a.startSession(w, email, tenant.Slug, authMethodOIDC); err != nil {
 		http.Error(w, "Could not create session", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/app", http.StatusSeeOther)
+	http.Redirect(w, r, tenant.PublicURL("/app"), http.StatusSeeOther)
+}
+
+// oidcRedirectURL deliberately uses one platform callback for every tenant.
+// The signed, single-use OIDC flow carries the tenant slug and routes the user
+// back to the correct portal after authentication.
+func (a *app) oidcRedirectURL() string {
+	return a.oidc.RedirectURL(a.baseURL)
 }
 
 func (a *app) startSession(w http.ResponseWriter, email string, tenantSlug string, authMethod string) error {
