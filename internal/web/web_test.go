@@ -39,8 +39,8 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 	if got := strings.Count(PageTemplates, `{{template "designTokens" .}}`); got != 7 {
 		t.Fatalf("design token partial is used %d times, want home, landing, HAUSV Home start, imprint, privacy, app styles and the error page", got)
 	}
-	if got := strings.Count(PageTemplates, `<span class="nav-label">`); got != 13 {
-		t.Fatalf("navigation labels are wrapped inconsistently: got %d, want 13", got)
+	if got := strings.Count(PageTemplates, `<span class="nav-label">`); got != 14 {
+		t.Fatalf("navigation labels are wrapped inconsistently: got %d, want 14", got)
 	}
 }
 
@@ -139,7 +139,7 @@ func TestAuthenticatedAppShellIsKeyboardOperable(t *testing.T) {
 	appOpens := strings.Count(PageTemplates, `{{template "appOpen" .}}`)
 	mainTargets := strings.Count(PageTemplates, `id="main-content" tabindex="-1" class="app-main`)
 	appCloses := strings.Count(PageTemplates, `{{template "appClose" .}}`)
-	if appOpens != 27 || mainTargets != appOpens || appCloses != appOpens {
+	if appOpens != 28 || mainTargets != appOpens || appCloses != appOpens {
 		t.Fatalf("authenticated templates must each have one skip target: opens=%d targets=%d closes=%d", appOpens, mainTargets, appCloses)
 	}
 

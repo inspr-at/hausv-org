@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.88.0] - 2026-08-14
+
+### Neu
+
+- **Ein eigener Hilfebereich erklärt die lokale Energieverbindung Schritt für Schritt.** Der Ablauf in HAUSV, die technische Funktionsweise und typische Fehlerbilder sind für neue Nutzer an einem Ort verständlich beschrieben.
+- **Die Connector-Einrichtung bleibt dauerhaft im Portal erreichbar.** Berechtigte Personen können einen neuen, zehn Minuten gültigen Einmal-Code erzeugen und eine bestehende Verbindung widerrufen, auch wenn der ursprüngliche Einrichtungslink nicht mehr vorliegt.
+
+### Verbessert
+
+- **Der aktuelle Connector-Status ist direkt sichtbar.** Letzte Meldung, Home-Assistant-Version und Zahl der erkannten Messwerte helfen bei der schnellen Einordnung.
+- **Datenschutz und Systemgrenzen sind konkret benannt.** Home-Assistant-Adresse und Token bleiben lokal; der Connector ruft nur Konfiguration und Zustände ab und sendet keine Steuerbefehle.
+- **Die visuelle Seitenprüfung funktioniert wieder mit pfadbasierten Portaladressen.** Alle Rollen und der neue Hilfebereich werden unter dem korrekten Hauspfad erfasst.
+
 ## [0.87.0] - 2026-08-14
 
 ### Verbessert

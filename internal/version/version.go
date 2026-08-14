@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.88.0",
+			Date:     "14. August 2026",
+			Kind:     "Hilfe",
+			Headline: "Die lokale Energieverbindung ist verständlich erklärt und dauerhaft erreichbar.",
+			Intro:    "Ein neuer Hilfebereich verbindet Einsteigerführung, technischen Hintergrund, aktuellen Status und sichere Connector-Einrichtung an einem Ort.",
+			Items: []NoteItem{
+				{Label: "Schritt für Schritt", Text: "Der Weg von der Kopplung über die Messwertauswahl bis zum Live-Energieportal ist klar beschrieben."},
+				{Label: "Jederzeit erreichbar", Text: "Berechtigte Personen erzeugen direkt im Portal einen neuen Einmal-Code oder widerrufen die Verbindung."},
+				{Label: "Technisch transparent", Text: "Lokale Geheimnisse, übertragene Daten, reine Lesezugriffe und häufige Fehlerbilder sind konkret erklärt."},
+			},
+		},
+		{
 			Version:  "0.87.0",
 			Date:     "14. August 2026",
 			Kind:     "HAUSV Home",
