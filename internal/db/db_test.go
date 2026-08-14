@@ -292,6 +292,41 @@ func TestEnergyHomeScopeMigrationPreservesLegacyDefaultHome(t *testing.T) {
 	}
 }
 
+func TestHomeEntitlementEndMigrationGrandfathersExistingProfiles(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "home-entitlement.db")
+	database := openBeforeMigration(t, path, "0031_home_entitlement_end.sql")
+	const started = "2025-04-30T21:15:00Z"
+	if _, err := database.Exec(`INSERT INTO home_profiles
+		(tenant_slug,home_key,free_started_at,created_at,updated_at)
+		VALUES('existing','default',?,?,?),('not-started','default',NULL,?,?)`,
+		started, started, started, started, started); err != nil {
+		t.Fatalf("seed pre-migration profiles: %v", err)
+	}
+	if err := database.Close(); err != nil {
+		t.Fatalf("close pre-migration database: %v", err)
+	}
+
+	database, err := Open(path)
+	if err != nil {
+		t.Fatalf("apply entitlement migration: %v", err)
+	}
+	defer database.Close()
+	var until string
+	if err := database.QueryRow(`SELECT free_until_at FROM home_profiles WHERE tenant_slug='existing'`).Scan(&until); err != nil {
+		t.Fatalf("read grandfathered end: %v", err)
+	}
+	if until != "2028-04-30T21:15:00Z" {
+		t.Fatalf("grandfathered end = %q, want existing three-year promise", until)
+	}
+	var missing sql.NullString
+	if err := database.QueryRow(`SELECT free_until_at FROM home_profiles WHERE tenant_slug='not-started'`).Scan(&missing); err != nil {
+		t.Fatalf("read unstarted entitlement: %v", err)
+	}
+	if missing.Valid {
+		t.Fatalf("migration started a new entitlement: %q", missing.String)
+	}
+}
+
 func openBeforeMigration(t *testing.T, path, stopBefore string) *sql.DB {
 	t.Helper()
 	database, err := sql.Open("sqlite", "file:"+path+"?_pragma=foreign_keys(1)")

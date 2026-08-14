@@ -14,7 +14,7 @@ func TestEnergyConsumerManagementKeepsChartAndFollowingSectionsIntentional(t *te
 	const (
 		startMarker = `      <section class="energy-card energy-chart"`
 		endMarker   = "\n{{define \"energyData\"}}"
-		wantSHA256  = "584d91c78603e0fe0e3e490a60bffbb9ebbdbb855dfada8f7824c846cd20a1d7"
+		wantSHA256  = "bfb77ff163f5f72098459bf33cf6732571da2f681ce1c7cee4c6445b58bd6fa9"
 	)
 
 	start := strings.Index(PageTemplates, startMarker)

@@ -78,7 +78,9 @@ func ApplyProfileSeeds(storage Storage, raw string, knownTenants map[string]stru
 		if seed.Complete {
 			profile.OnboardingStep = 5
 			started := now.UTC()
+			until := started.AddDate(1, 0, 0)
 			profile.FreeStartedAt = &started
+			profile.FreeUntilAt = &until
 		}
 		// The seed format intentionally has no operating-mode field. Bootstraps
 		// cannot silently authorize control.

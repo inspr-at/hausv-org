@@ -27,6 +27,10 @@ func TestApplyProfileSeedsCreatesThreeObserveOnlyPilotsAndNeverOverwrites(t *tes
 		}
 	}
 	demo, _, _ := storage.Profile("demo")
+	if demo.FreeStartedAt == nil || demo.FreeUntilAt == nil ||
+		!demo.FreeStartedAt.Equal(now) || !demo.FreeUntilAt.Equal(now.AddDate(1, 0, 0)) {
+		t.Fatalf("completed seed entitlement = start %v end %v", demo.FreeStartedAt, demo.FreeUntilAt)
+	}
 	demo.HouseholdName = "Vom Nutzer geändert"
 	if err := storage.SaveProfile(demo); err != nil {
 		t.Fatal(err)

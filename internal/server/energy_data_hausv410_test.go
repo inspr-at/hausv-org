@@ -143,7 +143,7 @@ func TestPrivacyCopyDistinguishesPrivateHomeAndCommunityEnergyContext(t *testing
 				"festgehaltene Tarifbewertungen nach drei Jahren",
 				"keine ausschließlich automatisierte Entscheidung",
 				"Solange kein externer Auditor verfügbar ist",
-				"Beginn des dreijährigen kostenlosen Nutzungszeitraums",
+				"Neue HAUSV-Home-Portale erhalten zwölf Monate",
 			},
 			notWanted: "Bei einer Hausgemeinschaft entscheidet",
 		},
@@ -166,7 +166,7 @@ func TestPrivacyCopyDistinguishesPrivateHomeAndCommunityEnergyContext(t *testing
 			energyHomeType: "unclaimed",
 			want: []string{
 				"Bei einer Hausgemeinschaft entscheidet die Eigentümergemeinschaft",
-				"Beginn des kostenlosen Anspruchs bleibt bis zum Ende",
+				"Beginn und fixes Ende des kostenlosen Anspruchs bleiben bis zum Ende",
 			},
 			notWanted: "Bei einem privaten Zuhause entscheidet",
 		},
@@ -448,6 +448,10 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 	}
 
 	var metadata struct {
+		Home struct {
+			FreeStartedAt string `json:"free_started_at"`
+			FreeUntilAt   string `json:"free_until_at"`
+		} `json:"home"`
 		ConnectorValues []map[string]any `json:"connector_sensor_catalog"`
 		EnergyAudit     []struct {
 			Actor string `json:"actor"`
@@ -461,6 +465,9 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 	}
 	if len(metadata.ConnectorValues) != 1 {
 		t.Fatalf("connector values = %+v", metadata.ConnectorValues)
+	}
+	if metadata.Home.FreeStartedAt == "" || metadata.Home.FreeUntilAt == "" {
+		t.Fatalf("export entitlement = start %q end %q", metadata.Home.FreeStartedAt, metadata.Home.FreeUntilAt)
 	}
 }
 
@@ -674,7 +681,9 @@ func saveClaimedEnergyProfileHAUSV410(t *testing.T, a *app, homeType string) ene
 	profile.OnboardingStep = 5
 	profile.OnboardingComplete = true
 	started := now
+	until := started.AddDate(1, 0, 0)
 	profile.FreeStartedAt = &started
+	profile.FreeUntilAt = &until
 	if err := a.energyStore.SaveProfile(profile); err != nil {
 		t.Fatalf("save claimed profile: %v", err)
 	}

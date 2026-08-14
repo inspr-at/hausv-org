@@ -29,33 +29,62 @@ func lifecycleStoreFactories() map[string]func(*testing.T) energy.Storage {
 func TestFreePeriodStartCannotBeClearedOrRestartedHAUSV410(t *testing.T) {
 	now := time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC)
 	original := now.AddDate(-1, 0, 0)
+	originalUntil := original.AddDate(3, 0, 0)
 	replacement := now
+	replacementUntil := replacement.AddDate(1, 0, 0)
 	for name, factory := range lifecycleStoreFactories() {
 		t.Run(name, func(t *testing.T) {
 			storage := factory(t)
 			profile := energy.DefaultProfile("home-a", now)
 			profile.FreeStartedAt = &original
+			profile.FreeUntilAt = &originalUntil
 			if err := storage.SaveProfile(profile); err != nil {
 				t.Fatalf("save original profile: %v", err)
 			}
 
 			profile.FreeStartedAt = nil
+			profile.FreeUntilAt = nil
 			profile.HouseholdName = "Neu eingerichtet"
 			if err := storage.SaveProfile(profile); err != nil {
 				t.Fatalf("save profile without marker: %v", err)
 			}
 			stored, exists, err := storage.Profile("home-a")
-			if err != nil || !exists || stored.FreeStartedAt == nil || !stored.FreeStartedAt.Equal(original) {
+			if err != nil || !exists || stored.FreeStartedAt == nil || !stored.FreeStartedAt.Equal(original) ||
+				stored.FreeUntilAt == nil || !stored.FreeUntilAt.Equal(originalUntil) {
 				t.Fatalf("clearing changed free-period start: profile=%+v exists=%v err=%v", stored, exists, err)
 			}
 
 			profile.FreeStartedAt = &replacement
+			profile.FreeUntilAt = &replacementUntil
 			if err := storage.SaveProfile(profile); err != nil {
 				t.Fatalf("save profile with replacement marker: %v", err)
 			}
 			stored, exists, err = storage.Profile("home-a")
-			if err != nil || !exists || stored.FreeStartedAt == nil || !stored.FreeStartedAt.Equal(original) {
+			if err != nil || !exists || stored.FreeStartedAt == nil || !stored.FreeStartedAt.Equal(original) ||
+				stored.FreeUntilAt == nil || !stored.FreeUntilAt.Equal(originalUntil) {
 				t.Fatalf("replacement changed free-period start: profile=%+v exists=%v err=%v", stored, exists, err)
+			}
+		})
+	}
+}
+
+func TestLegacyHomeWithoutEndKeepsThreeYearPromiseHAUSV408(t *testing.T) {
+	now := time.Date(2026, 8, 14, 12, 0, 0, 0, time.UTC)
+	started := time.Date(2025, 2, 28, 23, 30, 0, 0, time.FixedZone("CET", 60*60))
+	for name, factory := range lifecycleStoreFactories() {
+		t.Run(name, func(t *testing.T) {
+			storage := factory(t)
+			profile := energy.DefaultProfile("legacy-home", now)
+			profile.FreeStartedAt = &started
+			if err := storage.SaveProfile(profile); err != nil {
+				t.Fatalf("save legacy profile: %v", err)
+			}
+			stored, exists, err := storage.Profile("legacy-home")
+			wantStart := started.UTC()
+			wantUntil := wantStart.AddDate(3, 0, 0)
+			if err != nil || !exists || stored.FreeStartedAt == nil || stored.FreeUntilAt == nil ||
+				!stored.FreeStartedAt.Equal(wantStart) || !stored.FreeUntilAt.Equal(wantUntil) {
+				t.Fatalf("legacy entitlement = %+v exists=%v err=%v", stored, exists, err)
 			}
 		})
 	}
@@ -124,6 +153,7 @@ func TestDeleteMeasurementDataKeepsConfigurationAndResetsDerivedStateHAUSV410(t 
 func TestDeleteProfileRetainsTrialMarkerAndBlocksSeedResurrectionHAUSV410(t *testing.T) {
 	now := time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC)
 	freeStartedAt := now.AddDate(-1, 0, 0)
+	freeUntilAt := freeStartedAt.AddDate(3, 0, 0)
 	const replacementSeed = `[{
 		"tenant_slug":"home-a",
 		"household_name":"Seed resurrected this",
@@ -159,6 +189,9 @@ func TestDeleteProfileRetainsTrialMarkerAndBlocksSeedResurrectionHAUSV410(t *tes
 			}
 			if placeholder.FreeStartedAt == nil || !placeholder.FreeStartedAt.Equal(freeStartedAt) {
 				t.Fatalf("free-period start not retained: got=%v want=%v", placeholder.FreeStartedAt, freeStartedAt)
+			}
+			if placeholder.FreeUntilAt == nil || !placeholder.FreeUntilAt.Equal(freeUntilAt) {
+				t.Fatalf("free-period end not retained: got=%v want=%v", placeholder.FreeUntilAt, freeUntilAt)
 			}
 			assertLifecycleCounts(t, storage, "home-a", lifecycleCounts{})
 

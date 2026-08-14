@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.87.0",
+			Date:     "14. August 2026",
+			Kind:     "HAUSV Home",
+			Headline: "Zwölf kostenlose Monate für neue Zuhause, bestehende Pilot-Zusagen bleiben erhalten.",
+			Intro:    "Der kostenlose Nutzungszeitraum ist jetzt als fixes Start- und Enddatum je Zuhause festgeschrieben; eine Zahlung oder Paywall bleibt weiterhin inaktiv.",
+			Items: []NoteItem{
+				{Label: "Klar geregelt", Text: "Neue HAUSV-Home-Portale nutzen ab abgeschlossener Einrichtung zwölf Monate den vollen Produktumfang kostenlos."},
+				{Label: "Fair geschützt", Text: "Bestehende Pilot-Zuhause behalten ihr bereits zugesagtes dreijähriges Enddatum ohne Verkürzung."},
+				{Label: "Dauerhaft gebunden", Text: "Löschen, Neueinrichtung, weitere Berechtigte oder ein Eigentümerwechsel starten den Anspruch nicht neu."},
+			},
+		},
+		{
 			Version:  "0.86.0",
 			Date:     "14. August 2026",
 			Kind:     "HAUSV Home",

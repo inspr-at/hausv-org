@@ -123,13 +123,19 @@ func (s *MemoryStore) SaveProfile(profile HomeProfile) error {
 	if profile.TenantSlug == "" {
 		return fmt.Errorf("energy: tenant required")
 	}
-	// The free-period start is an entitlement marker, not editable profile
+	// The free-period timestamps are entitlement markers, not editable profile
 	// content. Once set, re-onboarding or a stale client must not clear or
 	// restart it. SQLStore enforces the same rule with COALESCE.
 	key := profile.TenantSlug + "\x00" + profile.HomeKey
-	if existing, ok := s.state.profiles[key]; ok && existing.FreeStartedAt != nil {
-		preserved := existing.FreeStartedAt.UTC()
-		profile.FreeStartedAt = &preserved
+	if existing, ok := s.state.profiles[key]; ok {
+		if existing.FreeStartedAt != nil {
+			preserved := existing.FreeStartedAt.UTC()
+			profile.FreeStartedAt = &preserved
+		}
+		if existing.FreeUntilAt != nil {
+			preserved := existing.FreeUntilAt.UTC()
+			profile.FreeUntilAt = &preserved
+		}
 	}
 	s.state.profiles[key] = profile
 	return nil
@@ -458,13 +464,15 @@ func (s *MemoryStore) DeleteProfile(tenantSlug string) (DeleteSummary, error) {
 	var summary DeleteSummary
 	if current, ok := s.state.profiles[profileKey]; ok {
 		freeStartedAt := current.FreeStartedAt
+		freeUntilAt := current.FreeUntilAt
 		delete(s.state.profiles, profileKey)
 		// Keep an empty technical placeholder so a declarative pilot seed cannot
 		// silently recreate user-deleted home data on the next restart.
 		placeholder := DefaultProfileForHome(tenantSlug, homeKey, time.Now())
 		// The commercial entitlement is contract metadata, not energy content.
-		// Deleting and re-onboarding must not restart the three-year free period.
+		// Deleting and re-onboarding must not restart the agreed free period.
 		placeholder.FreeStartedAt = freeStartedAt
+		placeholder.FreeUntilAt = freeUntilAt
 		s.state.profiles[profileKey] = placeholder
 		summary.Profiles = 1
 	}
@@ -678,7 +686,7 @@ func (s *SQLStore) ForHome(homeKey string) Storage {
 func (s *SQLStore) scopeHomeKey() string { return NormalizeHomeKey(s.homeKey) }
 
 func (s *SQLStore) ListProfiles(tenantSlug string) ([]HomeProfile, error) {
-	rows, err := s.db.Query(`SELECT tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,created_at,updated_at
+	rows, err := s.db.Query(`SELECT tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at
 		FROM home_profiles WHERE tenant_slug=? ORDER BY home_key`, normalizeSlug(tenantSlug))
 	if err != nil {
 		return nil, err
@@ -701,8 +709,8 @@ func scanHomeProfile(scanner homeProfileScanner) (HomeProfile, error) {
 	var item HomeProfile
 	var complete int
 	var target, agreed sql.NullFloat64
-	var free, created, updated sql.NullString
-	err := scanner.Scan(&item.TenantSlug, &item.HomeKey, &item.UnitID, &item.HomeType, &item.HouseholdName, &item.OperatingMode, &item.AutomationStage, &item.OnboardingStep, &complete, &target, &agreed, &item.RecommendationID, &item.RecommendationStatus, &free, &created, &updated)
+	var freeStarted, freeUntil, created, updated sql.NullString
+	err := scanner.Scan(&item.TenantSlug, &item.HomeKey, &item.UnitID, &item.HomeType, &item.HouseholdName, &item.OperatingMode, &item.AutomationStage, &item.OnboardingStep, &complete, &target, &agreed, &item.RecommendationID, &item.RecommendationStatus, &freeStarted, &freeUntil, &created, &updated)
 	if err != nil {
 		return HomeProfile{}, err
 	}
@@ -713,8 +721,11 @@ func scanHomeProfile(scanner homeProfileScanner) (HomeProfile, error) {
 	if agreed.Valid {
 		item.AgreedPowerKW = &agreed.Float64
 	}
-	if parsed, ok := parseTime(free.String); ok {
+	if parsed, ok := parseTime(freeStarted.String); ok {
 		item.FreeStartedAt = &parsed
+	}
+	if parsed, ok := parseTime(freeUntil.String); ok {
+		item.FreeUntilAt = &parsed
 	}
 	item.CreatedAt, _ = time.Parse(time.RFC3339Nano, created.String)
 	item.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updated.String)
@@ -725,7 +736,7 @@ func (s *SQLStore) Profile(tenantSlug string) (HomeProfile, bool, error) {
 	if s == nil || s.db == nil {
 		return HomeProfile{}, false, nil
 	}
-	item, err := scanHomeProfile(s.db.QueryRow(`SELECT tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,created_at,updated_at
+	item, err := scanHomeProfile(s.db.QueryRow(`SELECT tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at
 		FROM home_profiles WHERE tenant_slug=? AND home_key=?`, normalizeSlug(tenantSlug), s.scopeHomeKey()))
 	if err == sql.ErrNoRows {
 		return HomeProfile{}, false, nil
@@ -757,9 +768,13 @@ func (s *SQLStore) SaveProfile(profile HomeProfile) error {
 	if profile.FreeStartedAt != nil {
 		free = profile.FreeStartedAt.UTC().Format(time.RFC3339Nano)
 	}
+	var freeUntil any
+	if profile.FreeUntilAt != nil {
+		freeUntil = profile.FreeUntilAt.UTC().Format(time.RFC3339Nano)
+	}
 	_, err := s.db.Exec(`INSERT INTO home_profiles
-		(tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,created_at,updated_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+		(tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(tenant_slug,home_key) DO UPDATE SET
 		unit_id=excluded.unit_id, home_type=excluded.home_type, household_name=excluded.household_name,
 		operating_mode=excluded.operating_mode, automation_stage=excluded.automation_stage, onboarding_step=excluded.onboarding_step,
@@ -767,9 +782,10 @@ func (s *SQLStore) SaveProfile(profile HomeProfile) error {
 		agreed_power_kw=excluded.agreed_power_kw,
 		recommendation_id=excluded.recommendation_id, recommendation_status=excluded.recommendation_status,
 		free_started_at=COALESCE(home_profiles.free_started_at,excluded.free_started_at),
+		free_until_at=COALESCE(home_profiles.free_until_at,excluded.free_until_at),
 		updated_at=excluded.updated_at`,
 		profile.TenantSlug, profile.HomeKey, profile.UnitID, profile.HomeType, profile.HouseholdName, profile.OperatingMode, profile.AutomationStage,
-		profile.OnboardingStep, boolInt(profile.OnboardingComplete), target, agreed, profile.RecommendationID, profile.RecommendationStatus, free,
+		profile.OnboardingStep, boolInt(profile.OnboardingComplete), target, agreed, profile.RecommendationID, profile.RecommendationStatus, free, freeUntil,
 		profile.CreatedAt.Format(time.RFC3339Nano), profile.UpdatedAt.Format(time.RFC3339Nano))
 	return err
 }
@@ -1189,8 +1205,8 @@ func (s *SQLStore) DeleteProfile(tenantSlug string) (DeleteSummary, error) {
 	}
 	defer tx.Rollback()
 	var summary DeleteSummary
-	var retainedFreeStartedAt sql.NullString
-	if err := tx.QueryRow(`SELECT free_started_at FROM home_profiles WHERE tenant_slug=? AND home_key=?`, tenantSlug, homeKey).Scan(&retainedFreeStartedAt); err != nil && !errors.Is(err, sql.ErrNoRows) {
+	var retainedFreeStartedAt, retainedFreeUntilAt sql.NullString
+	if err := tx.QueryRow(`SELECT free_started_at,free_until_at FROM home_profiles WHERE tenant_slug=? AND home_key=?`, tenantSlug, homeKey).Scan(&retainedFreeStartedAt, &retainedFreeUntilAt); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return DeleteSummary{}, err
 	}
 	for _, item := range []struct {
@@ -1221,15 +1237,19 @@ func (s *SQLStore) DeleteProfile(tenantSlug string) (DeleteSummary, error) {
 		// name, inventory or history after restart.
 		now := time.Now().UTC()
 		var freeStartedAt any
+		var freeUntilAt any
 		if retainedFreeStartedAt.Valid {
 			freeStartedAt = retainedFreeStartedAt.String
 		}
+		if retainedFreeUntilAt.Valid {
+			freeUntilAt = retainedFreeUntilAt.String
+		}
 		if _, err := tx.Exec(`INSERT INTO home_profiles
 			(tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,
-			 target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,created_at,updated_at)
-			VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			 target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at)
+			VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 			tenantSlug, homeKey, "", HomeApartment, "", ModeObserve, StageObserve, 1, 0,
-			nil, nil, "", "", freeStartedAt, now.Format(time.RFC3339Nano), now.Format(time.RFC3339Nano)); err != nil {
+			nil, nil, "", "", freeStartedAt, freeUntilAt, now.Format(time.RFC3339Nano), now.Format(time.RFC3339Nano)); err != nil {
 			return DeleteSummary{}, err
 		}
 	}
