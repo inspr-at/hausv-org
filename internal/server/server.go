@@ -734,6 +734,8 @@ type app struct {
 	sessionTTL              time.Duration
 	tokens                  *tokenStore
 	sessions                *sessionStore
+	homeSetupTokens         *tokenStore
+	homeSetupSessions       *sessionStore
 	oidc                    *oidcLogin
 	oidcFlows               *oidcFlowStore
 	mailer                  mailer
@@ -775,6 +777,7 @@ type app struct {
 	parkingSampleInterval time.Duration
 	parkingHistoryStart   time.Time
 	energyStore           energy.Storage
+	homeReservations      store.HomeReservationStorage
 	energySampleInterval  time.Duration
 	energySamplerMu       sync.Mutex
 	energySamplers        map[string]*energySamplerState
@@ -883,6 +886,10 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /healthz", a.health)
 	mux.HandleFunc("GET /datenschutz", a.privacyNotice)
 	mux.HandleFunc("GET /impressum", a.imprintPage)
+	mux.HandleFunc("GET /start", a.homeStartPage)
+	mux.HandleFunc("POST /start", a.requestHomeStart)
+	mux.HandleFunc("GET /start/verify", a.verifyHomeStart)
+	mux.HandleFunc("GET /start/connector", a.homeConnectorStart)
 	mux.HandleFunc("GET /", a.home)
 	mux.HandleFunc("POST /auth/request", a.requestLogin)
 	mux.HandleFunc("GET /auth/verify", a.publicPage(a.verifyLogin))
@@ -1357,6 +1364,12 @@ func newApp() (*app, error) {
 	sqlIssues := newSQLIssueStore(database, issueAttachmentDir)
 	identity := newSQLIdentityStore(database)
 	energyBackend := energy.NewSQLStore(database)
+	homeReservationBackend := store.NewSQLHomeReservationStore(database)
+	if removed, err := homeReservationBackend.PurgePendingBefore(time.Now().Add(-homePendingRetention)); err != nil {
+		return nil, fmt.Errorf("expired home reservation purge failed: %w", err)
+	} else if removed > 0 {
+		logInfo("expired home reservations purged", "count", removed)
+	}
 	knownEnergyTenants := make(map[string]struct{}, len(tenants))
 	for slug := range tenants {
 		knownEnergyTenants[slug] = struct{}{}
@@ -1470,6 +1483,8 @@ func newApp() (*app, error) {
 		sessionTTL:            sessionTTL,
 		tokens:                auth.NewTokenStore(secret),
 		sessions:              newSessionStore(secret),
+		homeSetupTokens:       auth.NewTokenStore(homeSetupSecret(secret)),
+		homeSetupSessions:     newSessionStore(homeSetupSecret(secret)),
 		oidc:                  oidcLogin,
 		oidcFlows:             auth.NewOIDCFlowStore(),
 		mailer:                mailTransport,
@@ -1503,6 +1518,7 @@ func newApp() (*app, error) {
 		parkingSampleInterval: parkingSampleInterval,
 		parkingHistoryStart:   parkingHistoryStart,
 		energyStore:           energyBackend,
+		homeReservations:      homeReservationBackend,
 		energySampleInterval:  energySampleInterval,
 		energySamplers:        map[string]*energySamplerState{},
 		mapTileBaseURL:        env("MAP_TILE_BASE_URL", ""),

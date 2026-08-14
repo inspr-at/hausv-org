@@ -141,6 +141,58 @@ func (m SmtpMailer) SendMagicLinkContext(ctx context.Context, to string, link st
 	return m.send(ctx, to, []byte(msg))
 }
 
+// SendHomeConfirmation sends the ownership-confirmation link used by the
+// public HAUSV Home reservation flow. It is deliberately separate from login
+// mail: the link confirms a reservation but does not activate a portal.
+func (m SmtpMailer) SendHomeConfirmation(to string, link string, homeName string) error {
+	return m.SendHomeConfirmationContext(context.Background(), to, link, homeName)
+}
+
+func (m SmtpMailer) SendHomeConfirmationContext(ctx context.Context, to string, link string, homeName string) error {
+	if !m.Configured() {
+		return errors.New("smtp not configured")
+	}
+	return m.send(ctx, to, []byte(homeConfirmationMessage(m.from, to, link, homeName)))
+}
+
+func homeConfirmationMessage(from string, to string, link string, homeName string) string {
+	homeName = strings.TrimSpace(homeName)
+	if homeName == "" {
+		homeName = "Ihr Zuhause"
+	}
+	return strings.Join([]string{
+		"From: " + from,
+		"To: " + to,
+		"Subject: HAUSV Home Reservierung bestätigen",
+		"MIME-Version: 1.0",
+		"Content-Type: text/plain; charset=UTF-8",
+		"",
+		"Hallo,",
+		"",
+		"bestätigen Sie mit diesem Einmal-Link die Reservierung für " + homeName + ":",
+		link,
+		"",
+		"Der Link ist 15 Minuten gültig und kann nur einmal verwendet werden.",
+		"Dabei wird noch kein Portal aktiviert und es werden keine Home-Assistant-Zugangsdaten abgefragt.",
+		"Datenschutzinformationen: " + absoluteRootPrivacyURL(link),
+		"",
+		"Freundliche Grüße",
+		"HAUSV Home",
+	}, "\r\n")
+}
+
+func absoluteRootPrivacyURL(raw string) string {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return "/datenschutz"
+	}
+	u.Path = "/datenschutz"
+	u.RawPath = ""
+	u.RawQuery = ""
+	u.Fragment = ""
+	return u.String()
+}
+
 func magicLinkMessage(from string, to string, link string, address string) string {
 	address = strings.TrimSpace(address)
 	if address == "" {

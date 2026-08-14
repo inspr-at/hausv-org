@@ -62,7 +62,7 @@ func (w *securityResponseWriter) shouldPreventCaching(status int) bool {
 	if w.app != nil {
 		path = stripTenantPath(path, w.app.tenantForRequest(w.request).Slug)
 	}
-	if strings.HasPrefix(path, "/auth/") || strings.HasPrefix(path, "/handover/") {
+	if strings.HasPrefix(path, "/auth/") || strings.HasPrefix(path, "/handover/") || path == "/start" || strings.HasPrefix(path, "/start/") {
 		return true
 	}
 	if path == "/" && w.app != nil && !w.app.isMarketingHost(w.request) {

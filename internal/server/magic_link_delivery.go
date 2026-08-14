@@ -15,15 +15,24 @@ const (
 )
 
 type magicLinkDeliveryJob struct {
-	mailer     mailer
-	to         string
-	link       string
-	address    string
-	invalidate func()
+	mailer           mailer
+	to               string
+	link             string
+	address          string
+	homeConfirmation bool
+	invalidate       func()
 }
 
 type contextualMagicLinkMailer interface {
 	SendMagicLinkContext(context.Context, string, string, string) error
+}
+
+type contextualHomeConfirmationMailer interface {
+	SendHomeConfirmationContext(context.Context, string, string, string) error
+}
+
+type homeConfirmationMailer interface {
+	SendHomeConfirmation(string, string, string) error
 }
 
 // magicLinkDeliveryQueue keeps the public login request independent from SMTP
@@ -108,7 +117,12 @@ func deliverMagicLink(ctx context.Context, job magicLinkDeliveryJob) {
 			)
 		}
 	}()
-	err := sendMagicLinkWithContext(ctx, job.mailer, job.to, job.link, job.address)
+	var err error
+	if job.homeConfirmation {
+		err = sendHomeConfirmationWithContext(ctx, job.mailer, job.to, job.link, job.address)
+	} else {
+		err = sendMagicLinkWithContext(ctx, job.mailer, job.to, job.link, job.address)
+	}
 	if err != nil {
 		job.invalidateToken()
 		// The SMTP error text is intentionally omitted. Relay responses may
@@ -117,6 +131,18 @@ func deliverMagicLink(ctx context.Context, job magicLinkDeliveryJob) {
 			"error_type", fmt.Sprintf("%T", err),
 		)
 	}
+}
+
+func sendHomeConfirmationWithContext(ctx context.Context, sender mailer, to string, link string, homeName string) error {
+	if contextual, ok := sender.(contextualHomeConfirmationMailer); ok {
+		return contextual.SendHomeConfirmationContext(ctx, to, link, homeName)
+	}
+	if dedicated, ok := sender.(homeConfirmationMailer); ok {
+		return dedicated.SendHomeConfirmation(to, link, homeName)
+	}
+	// Test and third-party mailers that implement only the stable Mailer
+	// interface still receive the one-time link without widening that contract.
+	return sender.SendMagicLink(to, link, homeName)
 }
 
 func sendMagicLinkWithContext(ctx context.Context, sender mailer, to string, link string, address string) error {

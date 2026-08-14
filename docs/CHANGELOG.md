@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.82.0] - 2026-08-14
+
+### Neu
+
+- **HAUSV Home kann direkt über die öffentliche Startseite vorbereitet werden.** Eigentümer reservieren einen eindeutigen persönlichen Pfad und bestätigen ihre E-Mail mit einem 15 Minuten gültigen Einmal-Link.
+- **Der nächste Verbindungsschritt bleibt bewusst datensparsam.** Vor der bestätigten Reservierung werden weder Home-Assistant-Adressen noch Zugangstoken abgefragt oder gespeichert.
+
+### Verbessert
+
+- **Reservierungen schützen Privatsphäre und verfügbare Pfade.** Konflikte erhalten eine neutrale Antwort, Systempfade bleiben gesperrt und unbestätigte Anfragen werden nach 24 Stunden entfernt.
+- **Der neue Einstieg funktioniert auf Desktop und Mobilgeräten.** Klare Schritte erklären Pfadreservierung, Nur-Lese-Verbindung und die weiterhin geschlossene Gerätesteuerung.
+
 ## [0.81.2] - 2026-08-14
 
 ### Verbessert

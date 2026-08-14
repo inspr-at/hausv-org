@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.82.0",
+			Date:     "14. August 2026",
+			Kind:     "HAUSV Home",
+			Headline: "Der eigene Zuhause-Bereich beginnt mit einer sicheren Reservierung.",
+			Intro:    "Eigentümer können ihren gewünschten HAUSV-Home-Pfad vormerken und ihre E-Mail bestätigen, bevor technische Verbindungen eingerichtet werden.",
+			Items: []NoteItem{
+				{Label: "Eigener Pfad", Text: "Name und persönliche hausv.org-Adresse werden eindeutig reserviert."},
+				{Label: "Bestätigung", Text: "Ein 15 Minuten gültiger Einmal-Link bestätigt die angegebene Eigentümer-E-Mail."},
+				{Label: "Datensparsam", Text: "Home-Assistant-Adresse und Zugangstoken werden in diesem ersten Schritt bewusst noch nicht abgefragt."},
+			},
+		},
+		{
 			Version:  "0.81.2",
 			Date:     "14. August 2026",
 			Kind:     "Portalauftritt",

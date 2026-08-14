@@ -436,6 +436,10 @@ const PageTemplates = `
     .product-path-status { margin-top: 22px; display: flex; align-items: center; gap: 9px; color: var(--soft); font-size: 12px; font-weight: 800; }
     .product-path-status::before { content: ""; width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(200,153,63,.12); }
     .product-path-status a { color: inherit; text-underline-offset: 3px; }
+    .product-path-footer { margin-top: 22px; display: grid; gap: 14px; align-content: end; }
+    .product-path-footer .product-path-status { margin-top: 0; }
+    .product-path-start { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); padding: 11px 16px; background: var(--leaf); color: #fff; text-decoration: none; font-size: 14px; font-weight: 900; }
+    .product-path-start:hover { background: #24563b; }
     .feature-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
     .feature-card { min-width: 0; display: grid; grid-template-columns: 168px minmax(0,1fr); min-height: 210px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
     .feature-card:nth-child(1), .feature-card:nth-child(9) { border-color: rgba(47,107,74,.42); }
@@ -676,7 +680,7 @@ const PageTemplates = `
           <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-6h6v6"/></svg></span><div><span class="product-path-kicker">Für die Selbstverwaltung</span><h3>HAUSV Home</h3></div></header>
           <p>Der gehostete Einstieg für Eigentümer und Hausgemeinschaften, die Kommunikation, Aufgaben und Energie selbst übersichtlich organisieren möchten.</p>
           <ul class="product-capabilities"><li>Hosted Service</li><li>Einfach selbst verwalten</li><li>E-Mail-Support</li><li>12 Monate kostenlos</li></ul>
-          <span class="product-path-status">Danach 12&nbsp;€ pro Jahr</span>
+          <div class="product-path-footer"><span class="product-path-status">Danach 12&nbsp;€ pro Jahr</span><a class="product-path-start" href="/start">HAUSV Home starten</a></div>
         </article>
         <article class="product-path professional" id="professional">
           <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M6 21V5l6-3 6 3v16"/><path d="M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1"/></svg></span><div><span class="product-path-kicker">Für Hausverwaltungen</span><h3>HAUSV Professional</h3></div></header>
@@ -813,6 +817,121 @@ const PageTemplates = `
 </html>
 {{end}}
 
+{{define "homeStartStyles"}}
+    :root { color-scheme: light; {{template "designTokens" .}} }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--paper); color: var(--ink); font-family: var(--font-sans); }
+    a { color: var(--leaf); }
+    :where(a,button,input):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
+    .home-start-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+    .home-start-head, .home-start-main, .home-start-foot { width: min(980px,calc(100% - 36px)); margin: 0 auto; }
+    .home-start-head { min-height: 84px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .home-start-brand { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; font-weight: 900; }
+    .home-start-brand .hausv-mark { width: 58px; height: 40px; stroke: var(--gold-ink); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .home-start-back { font-size: 14px; font-weight: 800; text-decoration: none; }
+    .home-start-main { display: grid; grid-template-columns: minmax(0,.9fr) minmax(360px,1.1fr); gap: clamp(28px,6vw,72px); align-items: center; padding: 42px 0 68px; }
+    .home-start-kicker { margin: 0 0 14px; color: var(--gold-ink); font-size: 12px; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; }
+    .home-start-copy h1 { margin: 0; max-width: 12ch; font-family: var(--font-serif); font-size: clamp(40px,6vw,64px); font-weight: 500; line-height: 1.02; }
+    .home-start-lead { margin: 22px 0 0; max-width: 46ch; color: var(--muted); font-size: 18px; line-height: 1.58; }
+    .home-start-trust { margin: 28px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+    .home-start-trust li { display: flex; gap: 10px; align-items: flex-start; color: var(--muted); line-height: 1.45; }
+    .home-start-trust li::before { content: "✓"; color: var(--leaf); font-weight: 900; }
+    .home-start-card { border: 1px solid var(--line); border-radius: var(--radius-xl); padding: clamp(24px,4vw,38px); background: var(--panel); box-shadow: var(--shadow-md); }
+    .home-start-card h2 { margin: 0; font-family: var(--font-serif); font-size: 30px; font-weight: 600; }
+    .home-start-card > p { color: var(--muted); line-height: 1.5; }
+    .home-start-form { display: grid; gap: 18px; margin-top: 24px; }
+    .home-start-field { display: grid; gap: 8px; }
+    .home-start-field label, .home-start-label { font-size: 13px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .home-start-field input { width: 100%; min-height: 52px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: #fff; color: var(--ink); font: inherit; }
+    .home-start-field small { color: var(--muted); line-height: 1.4; }
+    .home-start-path { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; overflow: hidden; }
+    .home-start-path span { padding-left: 14px; color: var(--muted); white-space: nowrap; }
+    .home-start-path input { border: 0; padding-left: 2px; }
+    .home-start-check { display: grid; grid-template-columns: 22px minmax(0,1fr); gap: 10px; align-items: start; color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .home-start-check input { width: 20px; height: 20px; margin: 0; accent-color: var(--leaf); }
+    .home-start-submit { min-height: 52px; border: 0; border-radius: var(--radius-sm); padding: 12px 18px; background: var(--ink); color: #fff; font: inherit; font-weight: 900; cursor: pointer; }
+    .home-start-submit:hover { background: #000; }
+    .home-start-notice { border: 1px solid rgba(47,107,74,.28); border-radius: var(--radius-md); padding: 18px; background: rgba(47,107,74,.07); color: var(--ink); line-height: 1.5; }
+    .home-start-notice strong { display: block; margin-bottom: 5px; }
+    .home-start-error { border-color: rgba(160,70,50,.28); background: rgba(160,70,50,.06); }
+    .home-start-steps { display: grid; gap: 12px; margin: 24px 0 0; padding: 0; list-style: none; counter-reset: setup; }
+    .home-start-steps li { counter-increment: setup; display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 12px; align-items: start; color: var(--muted); line-height: 1.5; }
+    .home-start-steps li::before { content: counter(setup); width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: rgba(47,107,74,.1); color: var(--leaf); font-weight: 900; }
+    .home-start-path-result { margin-top: 22px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px 18px; background: var(--panel-soft); }
+    .home-start-path-result span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+    .home-start-path-result strong { display: block; margin-top: 5px; font-size: 20px; overflow-wrap: anywhere; }
+    .home-start-foot { padding: 20px 0 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+    @media (max-width: 760px) { .home-start-main { grid-template-columns: minmax(0,1fr); padding-top: 24px; } .home-start-copy h1 { max-width: none; } }
+{{end}}
+
+{{define "homeStart"}}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} · hausv.org</title>
+  <meta name="description" content="HAUSV Home sicher und in wenigen Schritten vorbereiten.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>{{template "homeStartStyles" .}}</style>
+</head>
+<body>
+  <div class="home-start-shell">
+    <header class="home-start-head"><a class="home-start-brand" href="/">{{template "hausvLandingMark" .}}<span>HAUSV Home</span></a><a class="home-start-back" href="/">Zur Übersicht</a></header>
+    <main class="home-start-main">
+      <section class="home-start-copy">
+        <p class="home-start-kicker">Ihr eigener Bereich</p>
+        <h1>Zuhause zuerst sicher anlegen.</h1>
+        <p class="home-start-lead">Reservieren Sie Ihren persönlichen Pfad und bestätigen Sie Ihre E-Mail. Erst danach bereiten wir die lesende Energieverbindung gemeinsam vor.</p>
+        <ul class="home-start-trust"><li>Keine Zahlungsdaten erforderlich</li><li>Keine Home-Assistant-Zugangsdaten in diesem Schritt</li><li>Unbestätigte Reservierungen verfallen nach 24 Stunden</li><li>Keine Gerätesteuerung ohne spätere ausdrückliche Freigabe</li></ul>
+      </section>
+      <section class="home-start-card" aria-labelledby="home-start-title">
+        {{if .Sent}}
+          <h2 id="home-start-title">Bitte E-Mail prüfen</h2>
+          <div class="home-start-notice"><strong>Wenn die Angaben reservierbar sind, ist der Bestätigungslink unterwegs.</strong>Er gilt 15 Minuten. Diese neutrale Antwort schützt bestehende Reservierungen und Konten.</div>
+        {{else}}
+          <h2 id="home-start-title">Pfad reservieren</h2>
+          <p>Drei Angaben genügen. Der Bereich wird erst nach Ihrer Bestätigung vorbereitet.</p>
+          {{if .Expired}}<div class="home-start-notice home-start-error"><strong>Der Link ist nicht mehr gültig.</strong>Starten Sie die Reservierung erneut, um einen neuen Einmal-Link zu erhalten.</div>{{end}}
+          <form class="home-start-form" method="post" action="/start">
+            <div class="home-start-field"><label for="household-name">Name des Zuhauses</label><input id="household-name" name="household_name" autocomplete="organization" maxlength="80" required placeholder="Zum Beispiel: Zuhause am Stadtpark"></div>
+            <div class="home-start-field"><label for="home-path">Gewünschter Pfad</label><div class="home-start-path"><span>hausv.org/</span><input id="home-path" name="slug" inputmode="url" autocomplete="off" minlength="3" maxlength="32" pattern="[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])?" required placeholder="mein-zuhause"></div><small>Kleinbuchstaben, Zahlen und Bindestriche; 3 bis 32 Zeichen.</small></div>
+            <div class="home-start-field"><label for="owner-email">Eigentümer-E-Mail</label><input id="owner-email" type="email" name="email" autocomplete="email" maxlength="254" required placeholder="name@beispiel.at"></div>
+            <label class="home-start-check"><input type="checkbox" name="authority" value="1" required><span>Ich bin Eigentümer oder ausdrücklich berechtigt, dieses Zuhause in HAUSV anzulegen.</span></label>
+            <button class="home-start-submit" type="submit">Bestätigungslink anfordern</button>
+          </form>
+        {{end}}
+      </section>
+    </main>
+    <footer class="home-start-foot">HAUSV Home · datensparsam · zunächst nur beobachten</footer>
+  </div>
+</body>
+</html>
+{{end}}
+
+{{define "homeConnectorStart"}}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} · hausv.org</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>{{template "homeStartStyles" .}}</style>
+</head>
+<body>
+  <div class="home-start-shell">
+    <header class="home-start-head"><a class="home-start-brand" href="/">{{template "hausvLandingMark" .}}<span>HAUSV Home</span></a><a class="home-start-back" href="/">Zur Übersicht</a></header>
+    <main class="home-start-main">
+      <section class="home-start-copy"><p class="home-start-kicker">E-Mail bestätigt</p><h1>{{.HouseholdName}} ist reserviert.</h1><p class="home-start-lead">Der persönliche Bereich ist eindeutig vorgemerkt. Zugangsdaten wurden dafür weder abgefragt noch gespeichert.</p><div class="home-start-path-result"><span>Reservierter Pfad</span><strong>hausv.org{{.PublicPath}}</strong></div></section>
+      <section class="home-start-card"><h2>Verbindung sicher vorbereiten</h2><p>Home Assistant wird später über einen eigenen, widerrufbaren Lesekanal verbunden. Der Nur-Lese-Ansatz bedeutet: HAUSV fragt hier bewusst noch keinen Token ab.</p><ol class="home-start-steps"><li><span>Der sichere Connector wird Ihrem reservierten Zuhause fest zugeordnet.</span></li><li><span>Sie geben ausschließlich lesende Messwerte frei und können die Verbindung jederzeit widerrufen.</span></li><li><span>Erst nach einer verständlichen Prüfung wird der Bereich aktiviert. Gerätesteuerung bleibt aus.</span></li></ol><div class="home-start-notice"><strong>Vorbereitung abgeschlossen.</strong>Wir informieren Sie per E-Mail, sobald der sichere Connector-Schritt für Ihr Zuhause bereitsteht.</div></section>
+    </main>
+    <footer class="home-start-foot">HAUSV Home · keine Geheimnisse im Portal · keine Steuerung ohne Freigabe</footer>
+  </div>
+</body>
+</html>
+{{end}}
+
 {{define "imprint"}}
 <!doctype html>
 <html lang="de">
@@ -936,6 +1055,7 @@ const PageTemplates = `
     <h2>Welche Daten und wofür?</h2>
     <ul>
       <li>Identität, Hauszugehörigkeit, Rollen und Rechte für Anmeldung und Zugriffsschutz.</li>
+      <li>Für eine HAUSV-Home-Reservierung werden der gewünschte Pfad, der Name des Zuhauses, die Eigentümer-E-Mail und die ausdrückliche Berechtigungsbestätigung gespeichert. In diesem Schritt werden keine Home-Assistant-Adresse und kein Zugangstoken angenommen.</li>
       <li>Aushänge, Termine, Dokumente, Anliegen, Kommentare, Anhänge und Abstimmungen für Kommunikation und Verwaltung des Hauses.</li>
       <li>Anmelde- und Auditdaten für Sicherheit, Fehlerklärung und nachvollziehbare Änderungen.</li>
       <li>Parkplatz- und Ladedaten nur für berechtigte Personen des jeweiligen Hauses.</li>
@@ -951,6 +1071,7 @@ const PageTemplates = `
     <h2>Quellen, Empfänger und Speicherorte</h2>
     <ul>
       <li>Daten stammen von eingeladenen Personen, der Hausadministration, ausdrücklich verbundenen Home-Assistant-Instanzen und bewusst hochgeladenen Smart-Meter-Dateien.</li>
+      <li>Angaben zur HAUSV-Home-Reservierung stammen ausschließlich von der Person, die den Pfad anfordert und ihre E-Mail über den Einmal-Link bestätigt.</li>
       <li>Innerhalb eines Hauses sehen nur die jeweils berechtigten Rollen die für ihre Aufgabe notwendigen Bereiche. Technische Vertrauenspersonen sehen oder konfigurieren Energie nur im sichtbar erteilten Umfang und dürfen den Haus-Schalter nicht umlegen. Der Zugriff ist widerrufbar.</li>
       <li>{{.IdentityStorageNotice}}</li>
       <li>{{.WebAccessNotice}}</li>
@@ -963,7 +1084,8 @@ const PageTemplates = `
 
     <h2>Aufbewahrung</h2>
     <ul>
-      <li>Einmalige E-Mail-Anmeldelinks: 15 Minuten; OIDC-Anmeldevorgänge: 10 Minuten; beide nur einmal nutzbar.</li>
+      <li>Einmalige E-Mail-Anmelde- und Reservierungslinks: 15 Minuten; OIDC-Anmeldevorgänge: 10 Minuten; alle nur einmal nutzbar.</li>
+      <li>Unbestätigte HAUSV-Home-Reservierungen: nach 24 Stunden zur Löschung fällig und spätestens im nächsten stündlichen Bereinigungslauf entfernt. Bestätigte Reservierungen: bis zur Aktivierung des angeforderten Bereichs oder bis zum Widerruf beziehungsweise Löschverlangen.</li>
       <li>Sitzungscookie: regulär höchstens 30 Tage oder bis zur Abmeldung beziehungsweise Sperre.</li>
       <li>Hauszugehörigkeit und Dienstleister-Zugriff: bis zum Entzug; der Zugriff endet sofort.</li>
       <li>Gelöschte Anhangdateien: sofort entfernt; leere Löschmarkierung nach einem Jahr.</li>

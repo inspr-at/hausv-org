@@ -36,8 +36,8 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 	if got := strings.Count(PageTemplates, "--ink:#20251f"); got != 1 {
 		t.Fatalf("color token block is duplicated %d times, want once", got)
 	}
-	if got := strings.Count(PageTemplates, `{{template "designTokens" .}}`); got != 6 {
-		t.Fatalf("design token partial is used %d times, want home, landing, imprint, privacy, app styles and the error page", got)
+	if got := strings.Count(PageTemplates, `{{template "designTokens" .}}`); got != 7 {
+		t.Fatalf("design token partial is used %d times, want home, landing, HAUSV Home start, imprint, privacy, app styles and the error page", got)
 	}
 	if got := strings.Count(PageTemplates, `<span class="nav-label">`); got != 13 {
 		t.Fatalf("navigation labels are wrapped inconsistently: got %d, want 13", got)
