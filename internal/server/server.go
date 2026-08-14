@@ -781,6 +781,7 @@ type app struct {
 	homeReservations         store.HomeReservationStorage
 	homePortals              store.HomePortalStorage
 	homeConnectors           store.HomeConnectorStorage
+	homeConnectorReadings    store.HomeConnectorReadingStorage
 	homeConnectorDownloadDir string
 	energySampleInterval     time.Duration
 	energySamplerMu          sync.Mutex
@@ -1377,6 +1378,7 @@ func newApp() (*app, error) {
 	homeReservationBackend := store.NewSQLHomeReservationStore(database)
 	homePortalBackend := store.NewSQLHomePortalStore(database)
 	homeConnectorBackend := store.NewSQLHomeConnectorStore(database)
+	homeConnectorReadingBackend := store.NewSQLHomeConnectorReadingStore(database)
 	if removed, err := homeReservationBackend.PurgePendingBefore(time.Now().Add(-homePendingRetention)); err != nil {
 		return nil, fmt.Errorf("expired home reservation purge failed: %w", err)
 	} else if removed > 0 {
@@ -1534,6 +1536,7 @@ func newApp() (*app, error) {
 		homeReservations:         homeReservationBackend,
 		homePortals:              homePortalBackend,
 		homeConnectors:           homeConnectorBackend,
+		homeConnectorReadings:    homeConnectorReadingBackend,
 		homeConnectorDownloadDir: env("HOME_CONNECTOR_DOWNLOAD_DIR", "/connector-downloads"),
 		energySampleInterval:     energySampleInterval,
 		energySamplers:           map[string]*energySamplerState{},
@@ -5250,6 +5253,16 @@ func (a *app) isAllowed(email string, tenantSlug string) bool {
 		}
 		return true
 	}
+	// A self-service home activation is a separate, verified authorization
+	// boundary. It may add exactly that home's confirmed owner to an existing
+	// env-backed identity, but must not let an arbitrary persisted profile
+	// override env roles or memberships (HAUSV-478).
+	if a.isConfirmedHomePortalOwner(email, tenantSlug) {
+		if profile, ok := a.directoryProfile(email); ok && profile.Deactivated {
+			return false
+		}
+		return true
+	}
 	_, ok := a.allowed[email]
 	return ok
 }
@@ -5260,7 +5273,11 @@ func (a *app) isAuthMethodAllowed(email string, tenantSlug string, authMethod st
 		return false
 	}
 	profile, ok := a.directoryProfile(email)
-	if !ok || !profile.HasTenant(tenantSlug) {
+	confirmedHomeOwner := a.isConfirmedHomePortalOwner(email, tenantSlug)
+	if !ok {
+		return confirmedHomeOwner && userProfile{AuthMethods: defaultAuthMethods()}.AllowsAuthMethod(authMethod)
+	}
+	if !profile.HasTenant(tenantSlug) && !confirmedHomeOwner {
 		return false
 	}
 	if profile.Deactivated {
@@ -5273,12 +5290,28 @@ func (a *app) isAuthMethodAllowed(email string, tenantSlug string, authMethod st
 	return profile.AllowsAuthMethod(authMethod)
 }
 
+// isConfirmedHomePortalOwner trusts only the owner recorded by the atomic
+// self-service activation transaction. A plain invite/profile record is not
+// sufficient, preserving the anti-escalation boundary for env-backed users.
+func (a *app) isConfirmedHomePortalOwner(email string, tenantSlug string) bool {
+	if a == nil || a.homePortals == nil {
+		return false
+	}
+	email = normalizeEmail(email)
+	tenantSlug = normalizeSlug(tenantSlug)
+	if email == "" || tenantSlug == "" {
+		return false
+	}
+	portal, found, err := a.homePortals.Get(tenantSlug)
+	return err == nil && found && normalizeEmail(portal.OwnerEmail) == email
+}
+
 func (a *app) emailLoginAvailable() bool {
 	return a.mailer.Configured() || a.localDevLogin
 }
 
 func (a *app) roleFor(email string, tenantSlug string) string {
-	if profile, ok := a.directoryProfile(email); ok {
+	if profile, ok := a.directoryProfile(email); ok && profile.HasTenant(tenantSlug) {
 		profile = profile.ForTenant(tenantSlug)
 		if profile.Role != "" {
 			return normalizeRole(profile.Role)
@@ -5286,6 +5319,9 @@ func (a *app) roleFor(email string, tenantSlug string) string {
 	}
 	if _, ok := a.admins[email]; ok {
 		return roleAdmin
+	}
+	if a.isConfirmedHomePortalOwner(email, tenantSlug) {
+		return roleOwner
 	}
 	return roleResident
 }
@@ -5301,6 +5337,14 @@ func (a *app) profileForTenant(email string, tenantSlug string) userProfile {
 		tenantSlug = a.defaultTenant
 	}
 	if profile, ok := a.directoryProfile(email); ok {
+		if !profile.HasTenant(tenantSlug) && a.isConfirmedHomePortalOwner(email, tenantSlug) {
+			if _, isBreakGlass := a.admins[email]; !isBreakGlass {
+				profile.Role = roleOwner
+				profile.Status = "Aktiv"
+				profile.Tenants = append(profile.Tenants, tenantSlug)
+				profile.Permissions = nil
+			}
+		}
 		return profile.ForTenant(tenantSlug)
 	}
 	role := a.roleFor(email, tenantSlug)

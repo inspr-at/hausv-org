@@ -148,14 +148,16 @@ lokale Parameter und Dateien. Er ruft nur `GET /api/config` und
 Der Einmal-Code wird einmalig gegen einen langlebigen Connector-Zugang
 getauscht. HAUSV speichert serverseitig nur HMAC-Hashes der Zugangsdaten. Die
 lokale Zugangdatei muss auf Unix-Systemen Modus `0600` haben. Eine regelmäßige
-Statusmeldung enthält ausschließlich Connector-Version, Home-Assistant-Version
-und Anzahl der verfügbaren Entitäten. Sie enthält weder lokale URL und Token
-noch Entity-IDs, Werte oder Gerätezustände.
+erste Statusmeldung enthält neben Connector-Version, Home-Assistant-Version und
+Anzahl der verfügbaren Entitäten höchstens 64 konservativ gefilterte
+Energiesensoren. Beliebige Gerätezustände werden nicht übernommen. Sobald die
+Auswahl im Portal bestätigt ist, sendet der Connector nur noch diese
+Entity-IDs und Werte. Lokale URL und Token werden nie übertragen.
 
 Eine Rotation lässt den bisherigen Connector-Zugang so lange aktiv, bis der
 neue Einmal-Code erfolgreich eingelöst wurde. Ein Widerruf sperrt ihn sofort.
 Die aktuelle Ausbaustufe koppelt und überwacht den lokalen Connector. Sie
-überträgt noch keine Messwerte und führt keine Gerätesteuerung aus.
+überträgt ausschließlich im Portal ausgewählte Energiewerte und führt keine Gerätesteuerung aus.
 
 `scripts/snapshot/qa-home-setup.mjs` belegt diesen Lebenszyklus gegen die echte
 Anwendung: Reservierung im Browser, tatsächlicher Versand an eine lokale

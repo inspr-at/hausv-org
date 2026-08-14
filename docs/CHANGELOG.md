@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.86.0] - 2026-08-14
+
+### Neu
+
+- **Der lokale HAUSV-Home-Connector liefert ausgewählte Energiewerte direkt ins persönliche Portal.** Netz, PV, Speicher und weitere bestätigte Sensoren können ohne serverseitigen Zugriff auf Home Assistant im Live-Cockpit erscheinen.
+- **Messwerte lassen sich im bestehenden Energie-Onboarding auswählen.** Der erste sichere Energiekatalog bildet die Grundlage; danach überträgt der Connector nur noch die bestätigten Entitäten.
+
+### Verbessert
+
+- **Private Energiedaten bleiben auf das jeweilige Zuhause begrenzt.** Home-Assistant-Adresse und Zugangstoken verlassen das lokale Netzwerk nicht; fremde Sensoren werden gefiltert und ein Widerruf entfernt die gepufferten Werte.
+- **Der Connector bleibt mit älteren Portalständen kompatibel.** Aktualisierungen können ohne gleichzeitigen Wechsel beider Seiten ausgerollt werden.
+- **Bestehende Konten können weitere bestätigte Zuhause-Portale direkt nutzen.** Die neue Eigentümerzuordnung wird für den persönlichen Portalpfad erkannt, ohne bestehende Rollen in anderen Häusern zu verändern.
+
 ## [0.85.0] - 2026-08-14
 
 ### Verbessert

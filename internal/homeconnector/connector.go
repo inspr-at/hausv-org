@@ -1,6 +1,7 @@
 // Package homeconnector runs the local, outbound-only HAUSV Home connector.
 // Home Assistant credentials never leave this process: the portal receives
-// only a compact reachability heartbeat.
+// only a bounded energy catalog and then the read-only sensors selected by the
+// portal.
 package homeconnector
 
 import (
@@ -17,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -25,6 +27,7 @@ import (
 
 const (
 	MaxEntityCount        = 50000
+	MaxReadings           = 64
 	DefaultInterval       = 30 * time.Second
 	minimumInterval       = 15 * time.Second
 	maxConnectorResponse  = 4 << 10
@@ -32,9 +35,22 @@ const (
 )
 
 type Heartbeat struct {
-	ConnectorVersion     string `json:"connector_version"`
-	HomeAssistantVersion string `json:"home_assistant_version"`
-	EntityCount          int    `json:"entity_count"`
+	ConnectorVersion     string    `json:"connector_version"`
+	HomeAssistantVersion string    `json:"home_assistant_version"`
+	EntityCount          int       `json:"entity_count"`
+	Readings             []Reading `json:"readings,omitempty"`
+}
+
+// Reading contains only the small energy-sensor subset allowed to leave the
+// local network. Arbitrary Home Assistant attributes are intentionally absent.
+type Reading struct {
+	EntityID    string    `json:"entity_id"`
+	State       string    `json:"state"`
+	DisplayName string    `json:"display_name,omitempty"`
+	Unit        string    `json:"unit"`
+	DeviceClass string    `json:"device_class"`
+	StateClass  string    `json:"state_class,omitempty"`
+	LastUpdated time.Time `json:"last_updated"`
 }
 
 type PairRequest struct {
@@ -43,7 +59,12 @@ type PairRequest struct {
 }
 
 type PairResponse struct {
-	Credential string `json:"credential"`
+	Credential        string   `json:"credential"`
+	SelectedEntityIDs []string `json:"selected_entity_ids,omitempty"`
+}
+
+type HeartbeatResponse struct {
+	SelectedEntityIDs []string `json:"selected_entity_ids,omitempty"`
 }
 
 type Options struct {
@@ -112,11 +133,15 @@ func RunWithOptions(ctx context.Context, options Options) error {
 	if err != nil {
 		return err
 	}
+	selectedEntityIDs := []string{}
 	if strings.TrimSpace(options.PairingCode) != "" {
-		credential, err = pair(ctx, client, portalURL, options.PairingCode, heartbeat)
+		var paired PairResponse
+		paired, err = pair(ctx, client, portalURL, options.PairingCode, heartbeat)
 		if err != nil {
 			return err
 		}
+		credential = paired.Credential
+		selectedEntityIDs = paired.SelectedEntityIDs
 		if err := writeCredential(options.CredentialFile, credential); err != nil {
 			return err
 		}
@@ -125,7 +150,8 @@ func RunWithOptions(ctx context.Context, options Options) error {
 	if !found {
 		return errors.New("Kopplungscode fehlt; erstellen Sie im Portal eine neue Kopplung")
 	}
-	if err := sendHeartbeat(ctx, client, portalURL, credential, heartbeat); err != nil {
+	selectedEntityIDs, err = sendHeartbeat(ctx, client, portalURL, credential, selectHeartbeatReadings(heartbeat, selectedEntityIDs))
+	if err != nil {
 		return err
 	}
 	if options.Once {
@@ -143,7 +169,8 @@ func RunWithOptions(ctx context.Context, options Options) error {
 			if err != nil {
 				return err
 			}
-			if err := sendHeartbeat(ctx, client, portalURL, credential, heartbeat); err != nil {
+			selectedEntityIDs, err = sendHeartbeat(ctx, client, portalURL, credential, selectHeartbeatReadings(heartbeat, selectedEntityIDs))
+			if err != nil {
 				return err
 			}
 		}
@@ -169,15 +196,82 @@ func readHomeAssistant(ctx context.Context, client *http.Client, baseURL, tokenF
 	if err != nil {
 		return Heartbeat{}, err
 	}
-	var states []json.RawMessage
+	var states []struct {
+		EntityID   string         `json:"entity_id"`
+		State      string         `json:"state"`
+		Attributes map[string]any `json:"attributes"`
+		Updated    time.Time      `json:"last_updated"`
+		Changed    time.Time      `json:"last_changed"`
+	}
 	if err := json.Unmarshal(statesBody, &states); err != nil || len(states) > MaxEntityCount {
 		return Heartbeat{}, errors.New("lokale Energiedaten haben einen unerwarteten Umfang")
+	}
+	readings := make([]Reading, 0, MaxReadings)
+	for _, state := range states {
+		unit := connectorAttribute(state.Attributes, "unit_of_measurement")
+		deviceClass := strings.ToLower(connectorAttribute(state.Attributes, "device_class"))
+		if !allowedEnergyReading(state.EntityID, state.State, unit, deviceClass) {
+			continue
+		}
+		updated := state.Updated
+		if updated.IsZero() {
+			updated = state.Changed
+		}
+		if updated.IsZero() {
+			updated = time.Now().UTC()
+		}
+		readings = append(readings, Reading{
+			EntityID: strings.ToLower(strings.TrimSpace(state.EntityID)), State: strings.TrimSpace(state.State),
+			DisplayName: connectorAttribute(state.Attributes, "friendly_name"), Unit: strings.TrimSpace(unit),
+			DeviceClass: deviceClass, StateClass: strings.ToLower(connectorAttribute(state.Attributes, "state_class")),
+			LastUpdated: updated.UTC(),
+		})
+	}
+	sort.Slice(readings, func(i, j int) bool { return readings[i].EntityID < readings[j].EntityID })
+	if len(readings) > MaxReadings {
+		readings = readings[:MaxReadings]
 	}
 	return Heartbeat{
 		ConnectorVersion:     version.Version,
 		HomeAssistantVersion: strings.TrimSpace(config.Version),
 		EntityCount:          len(states),
+		Readings:             readings,
 	}, nil
+}
+
+func connectorAttribute(attributes map[string]any, key string) string {
+	value, _ := attributes[key].(string)
+	return strings.TrimSpace(value)
+}
+
+func allowedEnergyReading(entityID, state, unit, deviceClass string) bool {
+	entityID = strings.ToLower(strings.TrimSpace(entityID))
+	if !strings.HasPrefix(entityID, "sensor.") || len(entityID) > 180 || len(strings.TrimSpace(state)) > 48 {
+		return false
+	}
+	normalizedUnit := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(unit), " ", ""))
+	allowedUnit := normalizedUnit == "w" || normalizedUnit == "kw" || normalizedUnit == "mw" ||
+		normalizedUnit == "wh" || normalizedUnit == "kwh" || normalizedUnit == "mwh" || normalizedUnit == "%"
+	deviceClass = strings.ToLower(strings.TrimSpace(deviceClass))
+	return allowedUnit && (deviceClass == "power" || deviceClass == "energy" || deviceClass == "battery")
+}
+
+func selectHeartbeatReadings(heartbeat Heartbeat, selected []string) Heartbeat {
+	if len(selected) == 0 {
+		return heartbeat
+	}
+	wanted := make(map[string]bool, len(selected))
+	for _, entityID := range selected {
+		wanted[strings.ToLower(strings.TrimSpace(entityID))] = true
+	}
+	filtered := make([]Reading, 0, len(selected))
+	for _, reading := range heartbeat.Readings {
+		if wanted[reading.EntityID] {
+			filtered = append(filtered, reading)
+		}
+	}
+	heartbeat.Readings = filtered
+	return heartbeat
 }
 
 func homeAssistantGET(ctx context.Context, client *http.Client, endpoint, token string, limit int64) ([]byte, error) {
@@ -204,23 +298,35 @@ func homeAssistantGET(ctx context.Context, client *http.Client, endpoint, token 
 	return body, nil
 }
 
-func pair(ctx context.Context, client *http.Client, portalURL, pairingCode string, heartbeat Heartbeat) (string, error) {
+func pair(ctx context.Context, client *http.Client, portalURL, pairingCode string, heartbeat Heartbeat) (PairResponse, error) {
 	requestBody, _ := json.Marshal(PairRequest{PairingCode: strings.TrimSpace(pairingCode), Heartbeat: heartbeat})
 	response, err := portalPOST(ctx, client, portalURL+"/api/home-connectors/pair", "", requestBody)
 	if err != nil {
-		return "", err
+		return PairResponse{}, err
 	}
 	var result PairResponse
 	if err := json.Unmarshal(response, &result); err != nil || !validSecret(result.Credential) {
-		return "", errors.New("das Portal hat die Kopplung nicht bestätigt")
+		return PairResponse{}, errors.New("das Portal hat die Kopplung nicht bestätigt")
 	}
-	return result.Credential, nil
+	return result, nil
 }
 
-func sendHeartbeat(ctx context.Context, client *http.Client, portalURL, credential string, heartbeat Heartbeat) error {
+func sendHeartbeat(ctx context.Context, client *http.Client, portalURL, credential string, heartbeat Heartbeat) ([]string, error) {
 	requestBody, _ := json.Marshal(heartbeat)
-	_, err := portalPOST(ctx, client, portalURL+"/api/home-connectors/heartbeat", credential, requestBody)
-	return err
+	response, err := portalPOST(ctx, client, portalURL+"/api/home-connectors/heartbeat", credential, requestBody)
+	if err != nil {
+		return nil, err
+	}
+	// Portal versions before measurement transport answered heartbeats with 204.
+	// Accept that response so connector upgrades do not require a lockstep deploy.
+	if len(bytes.TrimSpace(response)) == 0 {
+		return nil, nil
+	}
+	var result HeartbeatResponse
+	if err := json.Unmarshal(response, &result); err != nil {
+		return nil, errors.New("Portalantwort ist ungültig")
+	}
+	return result.SelectedEntityIDs, nil
 }
 
 func portalPOST(ctx context.Context, client *http.Client, endpoint, credential string, body []byte) ([]byte, error) {

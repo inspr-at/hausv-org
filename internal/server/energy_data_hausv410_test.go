@@ -337,6 +337,18 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 	}); err != nil {
 		t.Fatal(err)
 	}
+	if err := a.homeConnectorReadings.Upsert("demo", []store.HomeConnectorReading{{
+		EntityID: "sensor.pv_power", State: "2.4", DisplayName: "CURRENT_CONNECTOR_MARKER",
+		Unit: "kW", DeviceClass: "power", StateClass: "measurement", LastUpdated: time.Now(),
+	}}, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.homeConnectorReadings.Upsert("other-house", []store.HomeConnectorReading{{
+		EntityID: "sensor.foreign_power", State: "9.9", DisplayName: "FOREIGN_CONNECTOR_MARKER",
+		Unit: "kW", DeviceClass: "power", StateClass: "measurement", LastUpdated: time.Now(),
+	}}, time.Now()); err != nil {
+		t.Fatal(err)
+	}
 	currentInterval := energy.Interval{
 		TenantSlug: "demo", StartsAt: time.Date(2026, 7, 29, 8, 0, 0, 0, time.UTC),
 		Duration: 15 * time.Minute, ImportKWh: 0.5, AverageKW: 2, Quality: "measured", Source: "smart-meter",
@@ -401,7 +413,7 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 	if filename != "hausv-energiedaten-demo-20260729.zip" {
 		t.Fatalf("filename = %q", filename)
 	}
-	if counts["assets"] != 1 || counts["mappings"] != 1 || counts["intervals"] != 1 || counts["raw_imports"] != 1 {
+	if counts["assets"] != 1 || counts["mappings"] != 1 || counts["intervals"] != 1 || counts["raw_imports"] != 1 || counts["connector_readings"] != 1 {
 		t.Fatalf("export counts = %+v", counts)
 	}
 
@@ -423,19 +435,21 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 		"FOREIGN_ASSET_MARKER",
 		"FOREIGN_IMPORT_MARKER",
 		"FOREIGN_AUDIT_MARKER",
+		"FOREIGN_CONNECTOR_MARKER",
 	} {
 		if bytes.Contains(all, []byte(forbidden)) {
 			t.Fatalf("export leaked %q", forbidden)
 		}
 	}
-	for _, want := range []string{"CURRENT_IMPORT_MARKER", "Sicherer Hersteller", "Andere berechtigte Person", `"actor": "Sie"`} {
+	for _, want := range []string{"CURRENT_IMPORT_MARKER", "CURRENT_CONNECTOR_MARKER", "Sicherer Hersteller", "Andere berechtigte Person", `"actor": "Sie"`} {
 		if !bytes.Contains(all, []byte(want)) {
 			t.Fatalf("export missing %q", want)
 		}
 	}
 
 	var metadata struct {
-		EnergyAudit []struct {
+		ConnectorValues []map[string]any `json:"connector_sensor_catalog"`
+		EnergyAudit     []struct {
 			Actor string `json:"actor"`
 		} `json:"energy_audit_live"`
 	}
@@ -444,6 +458,9 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 	}
 	if len(metadata.EnergyAudit) != 2 {
 		t.Fatalf("energy audit rows = %+v", metadata.EnergyAudit)
+	}
+	if len(metadata.ConnectorValues) != 1 {
+		t.Fatalf("connector values = %+v", metadata.ConnectorValues)
 	}
 }
 
@@ -549,6 +566,11 @@ func TestProfileDeletionAllowsCleanReonboardingPreservesEntitlementAndRevokesEnv
 	}); err != nil {
 		t.Fatal(err)
 	}
+	if err := a.homeConnectorReadings.Upsert("demo", []store.HomeConnectorReading{{
+		EntityID: "sensor.pv", State: "2.1", Unit: "kW", DeviceClass: "power", LastUpdated: time.Now(),
+	}}, time.Now()); err != nil {
+		t.Fatal(err)
+	}
 	a.profiles["helper@example.com"] = userProfile{
 		Email: "helper@example.com", Role: roleResident,
 		Permissions: []string{permissionParking, permissionEnergyView, permissionEnergyConfigure, permissionEnergyCaretaker},
@@ -580,6 +602,10 @@ func TestProfileDeletionAllowsCleanReonboardingPreservesEntitlementAndRevokesEnv
 	mappings, _ := a.energyStore.ListMappings("demo")
 	if len(assets) != 0 || len(mappings) != 0 {
 		t.Fatalf("profile content remained after deletion: assets=%+v mappings=%+v", assets, mappings)
+	}
+	connectorReadings, err := a.homeConnectorReadings.List("demo")
+	if err != nil || len(connectorReadings) != 0 {
+		t.Fatalf("connector readings remained after deletion: %+v err=%v", connectorReadings, err)
 	}
 	if _, exists := a.energyChartCache["demo|sensor.private|24h"]; exists {
 		t.Fatal("tenant Home Assistant history remained in memory after profile deletion")

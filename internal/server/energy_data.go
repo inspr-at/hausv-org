@@ -271,6 +271,13 @@ func (a *app) deleteEnergyProfile(w http.ResponseWriter, r *http.Request, ac aut
 		http.Error(w, "Technische Freigaben konnten nicht sicher widerrufen werden; das Energieprofil wurde nicht gelöscht.", http.StatusInternalServerError)
 		return
 	}
+	if a.homeConnectorReadings != nil {
+		if err := a.homeConnectorReadings.Clear(ac.tenant.Slug); err != nil {
+			logError("home connector readings before energy profile deletion failed", err, "tenant", ac.tenant.Slug)
+			http.Error(w, "Lokale Messwerte konnten nicht sicher gelöscht werden; das Energieprofil wurde nicht gelöscht.", http.StatusInternalServerError)
+			return
+		}
+	}
 	summary, err := a.energyStore.DeleteProfile(ac.tenant.Slug)
 	if err != nil {
 		// Revoking delegated access before deleting is fail-safe: a later retry
@@ -401,6 +408,13 @@ func (a *app) buildEnergyDataPackage(ac authCtx, generatedAt time.Time) ([]byte,
 	if err != nil {
 		return nil, "", nil, err
 	}
+	connectorReadings := []store.HomeConnectorReading{}
+	if a.homeConnectorReadings != nil {
+		connectorReadings, err = a.homeConnectorReadings.List(ac.tenant.Slug)
+		if err != nil {
+			return nil, "", nil, err
+		}
+	}
 	totalRawBytes := 0
 	for _, item := range imports {
 		totalRawBytes += len(item.Payload)
@@ -495,14 +509,15 @@ func (a *app) buildEnergyDataPackage(ac authCtx, generatedAt time.Time) ([]byte,
 			"created_at":            profile.CreatedAt.UTC().Format(time.RFC3339),
 			"updated_at":            profile.UpdatedAt.UTC().Format(time.RFC3339),
 		},
-		"assets":                  exportEnergyAssets(assets),
-		"home_assistant_mappings": exportEnergyMappings(mappings),
-		"smart_meter_imports":     importMetadata,
-		"maintenance":             exportEnergyMaintenance(maintenance),
-		"tariff_assessments":      exportEnergyAssessments(assessments),
-		"measures":                exportEnergyMeasures(measures),
-		"technical_access":        exportEnergyCaretakers(a.energyCaretakerViews(ac)),
-		"current_recommendation":  recommendation,
+		"assets":                   exportEnergyAssets(assets),
+		"home_assistant_mappings":  exportEnergyMappings(mappings),
+		"connector_sensor_catalog": exportHomeConnectorReadings(connectorReadings),
+		"smart_meter_imports":      importMetadata,
+		"maintenance":              exportEnergyMaintenance(maintenance),
+		"tariff_assessments":       exportEnergyAssessments(assessments),
+		"measures":                 exportEnergyMeasures(measures),
+		"technical_access":         exportEnergyCaretakers(a.energyCaretakerViews(ac)),
+		"current_recommendation":   recommendation,
 		"current_tariff_model": map[string]any{
 			"id":         tariff.ID,
 			"version":    tariff.Version,
@@ -513,7 +528,7 @@ func (a *app) buildEnergyDataPackage(ac authCtx, generatedAt time.Time) ([]byte,
 		},
 		"energy_audit_live": energyEvents,
 		"source_notes": []string{
-			"Home Assistant wird nur gelesen. Einzelne Zustände und Verläufe werden für die Anzeige abgerufen und nicht in diesem Export gespiegelt.",
+			"Home Assistant wird nur gelesen. Der Export enthält den begrenzten Sensorkatalog des lokalen Connectors und für ausgewählte Sensoren den zuletzt empfangenen Wert; direkte Home-Assistant-Zustände und Verläufe bleiben transient.",
 			"Viertelstundenwerte mit der Quelle \"home-assistant\" stammen aus laufend gelesenen Momentanwerten des bestätigten Netzbezugs. Sie sind aus Abtastungen verdichtet und deshalb höchstens mit der Güte \"estimated\" ausgewiesen; \"gap\" und \"stale\" benennen fehlende oder eingefrorene Messwerte, statt über sie hinwegzumitteln.",
 			"Der Export enthält bestätigte Entity-Zuordnungen, aber weder Home-Assistant-Adresse noch Zugangstoken.",
 			"Smart-Meter-Rohdateien stammen aus den vom Nutzer hochgeladenen Originalen.",
@@ -539,11 +554,12 @@ func (a *app) buildEnergyDataPackage(ac authCtx, generatedAt time.Time) ([]byte,
 		"tenant":       ac.tenant.Slug,
 		"format":       "ZIP with JSON, CSV and retained source files",
 		"retention": map[string]string{
-			"smart_meter_originals": "30 Tage",
-			"quarter_hour_values":   "13 Monate",
-			"derived_assessments":   "3 Jahre",
-			"profile_and_mappings":  "bis zur Korrektur, Trennung oder Löschung des Energieprofils",
-			"energy_audit":          "höchstens 3 Jahre; Sicherheitsnachweise bleiben von der Selbstlöschung getrennt",
+			"smart_meter_originals":    "30 Tage",
+			"quarter_hour_values":      "13 Monate",
+			"derived_assessments":      "3 Jahre",
+			"profile_and_mappings":     "bis zur Korrektur, Trennung oder Löschung des Energieprofils",
+			"connector_sensor_catalog": "bis zum Widerruf der Verbindung oder zur Löschung des Energieprofils; ausgewählte Werte werden mit jeder Meldung ersetzt",
+			"energy_audit":             "höchstens 3 Jahre; Sicherheitsnachweise bleiben von der Selbstlöschung getrennt",
 		},
 		"not_included": []string{
 			"Home-Assistant-Endpunkt und Zugangstoken",
@@ -579,12 +595,26 @@ func (a *app) buildEnergyDataPackage(ac authCtx, generatedAt time.Time) ([]byte,
 	}
 	filename := "hausv-energiedaten-" + safeFilenamePart(ac.tenant.Slug) + "-" + generatedAt.Format("20060102") + ".zip"
 	counts := map[string]int{
-		"assets":      len(assets),
-		"mappings":    len(mappings),
-		"intervals":   len(intervals),
-		"raw_imports": len(imports),
+		"assets":             len(assets),
+		"mappings":           len(mappings),
+		"intervals":          len(intervals),
+		"raw_imports":        len(imports),
+		"connector_readings": len(connectorReadings),
 	}
 	return output.Bytes(), filename, counts, nil
+}
+
+func exportHomeConnectorReadings(items []store.HomeConnectorReading) []map[string]any {
+	out := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		out = append(out, map[string]any{
+			"entity_id": item.EntityID, "state": item.State, "display_name": item.DisplayName,
+			"unit": item.Unit, "device_class": item.DeviceClass, "state_class": item.StateClass,
+			"last_updated": item.LastUpdated.UTC().Format(time.RFC3339),
+			"received_at":  item.ReceivedAt.UTC().Format(time.RFC3339),
+		})
+	}
+	return out
 }
 
 func energyIntervalsCSV(items []energy.Interval) ([]byte, error) {

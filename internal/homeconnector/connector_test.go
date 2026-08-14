@@ -140,6 +140,67 @@ func TestConnectorReusesCredentialAndReportsRevocationWithoutSecret(t *testing.T
 	}
 }
 
+func TestConnectorSendsCatalogThenOnlyPortalSelectedReadings(t *testing.T) {
+	const token = "local-home-assistant-secret"
+	const pairingCode = "pairing_code_abcdefghijklmnopqrstuvwxyz123456"
+	const credential = "connector_credential_abcdefghijklmnopqrstuvwxyz123456"
+	updated := time.Now().UTC().Format(time.RFC3339)
+	ha := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/api/config" {
+			_, _ = io.WriteString(w, `{"version":"2026.8.1"}`)
+			return
+		}
+		_, _ = io.WriteString(w, `[`+
+			`{"entity_id":"sensor.grid_import_power","state":"1250","last_updated":"`+updated+`","attributes":{"friendly_name":"Netzbezug","unit_of_measurement":"W","device_class":"power","state_class":"measurement"}},`+
+			`{"entity_id":"sensor.pv_power","state":"2.2","last_updated":"`+updated+`","attributes":{"friendly_name":"PV","unit_of_measurement":"kW","device_class":"power","state_class":"measurement"}},`+
+			`{"entity_id":"sensor.bedroom_temperature","state":"21","last_updated":"`+updated+`","attributes":{"unit_of_measurement":"°C","device_class":"temperature"}},`+
+			`{"entity_id":"switch.private_alarm","state":"on","last_updated":"`+updated+`","attributes":{}}]`)
+	}))
+	defer ha.Close()
+	var pairRequest PairRequest
+	var heartbeat Heartbeat
+	portal := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/home-connectors/pair":
+			_ = json.NewDecoder(r.Body).Decode(&pairRequest)
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(PairResponse{Credential: credential, SelectedEntityIDs: []string{"sensor.grid_import_power"}})
+		case "/api/home-connectors/heartbeat":
+			_ = json.NewDecoder(r.Body).Decode(&heartbeat)
+			_ = json.NewEncoder(w).Encode(HeartbeatResponse{SelectedEntityIDs: []string{"sensor.grid_import_power"}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer portal.Close()
+	directory := t.TempDir()
+	tokenFile := filepath.Join(directory, "ha.token")
+	credentialFile := filepath.Join(directory, "connector.credential")
+	if err := os.WriteFile(tokenFile, []byte(token), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := RunWithOptions(context.Background(), Options{
+		PortalURL: portal.URL, PairingCode: pairingCode, HAURL: ha.URL, HATokenFile: tokenFile,
+		CredentialFile: credentialFile, Once: true, HTTPClient: portal.Client(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(pairRequest.Readings) != 2 {
+		t.Fatalf("pair catalog=%+v", pairRequest.Readings)
+	}
+	if len(heartbeat.Readings) != 1 || heartbeat.Readings[0].EntityID != "sensor.grid_import_power" {
+		t.Fatalf("selected heartbeat=%+v", heartbeat.Readings)
+	}
+	encoded, _ := json.Marshal(pairRequest)
+	for _, forbidden := range []string{token, ha.URL, "sensor.bedroom_temperature", "switch.private_alarm"} {
+		if strings.Contains(string(encoded), forbidden) {
+			t.Fatalf("catalog exposed %q: %s", forbidden, encoded)
+		}
+	}
+}
+
 func TestConnectorRejectsInsecurePortalAndLooseSecretFiles(t *testing.T) {
 	if _, err := normalizePortalURL("http://example.com"); err == nil {
 		t.Fatal("insecure public portal accepted")

@@ -6002,6 +6002,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		homeReservations:         homeReservations,
 		homePortals:              store.NewMemoryHomePortalStore(homeReservations, inviteStore),
 		homeConnectors:           store.NewMemoryHomeConnectorStore(),
+		homeConnectorReadings:    store.NewMemoryHomeConnectorReadingStore(),
 		homeConnectorDownloadDir: t.TempDir(),
 	}
 	t.Cleanup(a.closeMagicLinkDelivery)
