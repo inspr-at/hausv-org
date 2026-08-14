@@ -492,6 +492,7 @@ const (
 	auditActionEventUpdate             = store.AuditActionEventUpdate
 	auditActionEventDelete             = store.AuditActionEventDelete
 	auditActionLogin                   = store.AuditActionLogin
+	auditActionContextSwitch           = store.AuditActionContextSwitch
 	auditActionParkingMonth            = store.AuditActionParkingMonth
 	auditActionParkingReminder         = store.AuditActionParkingReminder
 	auditActionParkingSettings         = store.AuditActionParkingSettings
@@ -909,6 +910,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /auth/logout", a.logout)
 	mux.HandleFunc("GET /calendar/{token}", a.calendarFeed)
 	mux.HandleFunc("GET /app", a.page(a.portal))
+	mux.HandleFunc("POST /app/context", a.action(a.switchPortalContext))
 	mux.HandleFunc("GET /app/hilfe", a.page(a.helpPage))
 	mux.HandleFunc("POST /app/hilfe/connector/pairing", a.action(a.startAppHomeConnectorPairing))
 	mux.HandleFunc("POST /app/hilfe/connector/revoke", a.action(a.revokeAppHomeConnector))
@@ -4791,23 +4793,26 @@ func (a *app) baseContext(ac authCtx) map[string]any {
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
 	isAdmin := hasCapability(ac.role, capabilityPlatformAdmin)
 	canViewEnergy := a.canViewEnergy(ac)
+	portalContexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
 	return map[string]any{
-		"Tenant":                ac.tenant,
-		"HouseName":             houseDisplayName(ac.tenant),
-		"SidebarAddress":        sidebarAddressForTenant(ac.tenant),
-		"MapURL":                tenantMapURL(ac.tenant.Address),
-		"SidebarMap":            sidebarMapForTenant(ac.tenant),
-		"Email":                 ac.email,
-		"Role":                  ac.role,
-		"IsAdmin":               isAdmin,
-		"DisplayName":           profile.DisplayName(),
-		"Initials":              profile.Initials(),
-		"CanSeeParking":         isAdmin || profile.HasPermission(permissionParking),
-		"CanViewEnergy":         canViewEnergy,
-		"CanManageEnergy":       a.canManageEnergy(ac),
-		"CanManageHomeIdentity": a.canManageHomeIdentity(ac),
-		"CanControlEnergy":      a.canControlEnergy(ac),
-		"HomeIdentity":          a.homeIdentityForActor(ac, canViewEnergy),
+		"Tenant":                 ac.tenant,
+		"HouseName":              houseDisplayName(ac.tenant),
+		"SidebarAddress":         sidebarAddressForTenant(ac.tenant),
+		"MapURL":                 tenantMapURL(ac.tenant.Address),
+		"SidebarMap":             sidebarMapForTenant(ac.tenant),
+		"Email":                  ac.email,
+		"Role":                   ac.role,
+		"PortalContexts":         portalContexts,
+		"CanSwitchPortalContext": len(portalContexts) > 1,
+		"IsAdmin":                isAdmin,
+		"DisplayName":            profile.DisplayName(),
+		"Initials":               profile.Initials(),
+		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
+		"CanViewEnergy":          canViewEnergy,
+		"CanManageEnergy":        a.canManageEnergy(ac),
+		"CanManageHomeIdentity":  a.canManageHomeIdentity(ac),
+		"CanControlEnergy":       a.canControlEnergy(ac),
+		"HomeIdentity":           a.homeIdentityForActor(ac, canViewEnergy),
 	}
 }
 
@@ -5184,14 +5189,21 @@ func (a *app) currentUser(r *http.Request) (string, string, string, bool) {
 	if err != nil {
 		return "", "", "", false
 	}
-	email, tenantSlug, authMethod, ok := a.sessions.Get(c.Value)
+	session, ok := a.sessions.GetSession(c.Value)
 	if !ok {
 		return "", "", "", false
 	}
-	if !a.isAllowed(email, tenantSlug) || !a.isAuthMethodAllowed(email, tenantSlug, authMethod) {
+	if !a.isAllowed(session.Email, session.TenantSlug) || !a.isAuthMethodAllowed(session.Email, session.TenantSlug, session.AuthMethod) {
 		return "", "", "", false
 	}
-	return email, a.roleFor(email, tenantSlug), tenantSlug, true
+	role := a.roleFor(session.Email, session.TenantSlug)
+	if session.Role != "" {
+		if !a.ownPortalContextAllowed(session.Email, session.TenantSlug, session.Role, session.AuthMethod) {
+			return "", "", "", false
+		}
+		role = session.Role
+	}
+	return session.Email, role, session.TenantSlug, true
 }
 
 // directoryProfile resolves a profile from the env directory first, then falls

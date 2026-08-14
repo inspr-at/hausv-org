@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.89.0] - 2026-08-14
+
+### Neu
+
+- **Eigene Zuhause lassen sich direkt im Portal wechseln.** Wer zu mehreren Liegenschaften gehört, öffnet den passenden Bereich ohne neue Anmeldung über einen kompakten Wechsler in der Navigation.
+- **Eigentümer können ihre eigene Mieteransicht prüfen.** Die gewählte Perspektive gilt nur für die eigene Identität und lässt sich jederzeit wieder zurückstellen.
+
+### Verbessert
+
+- **Jeder Portal-Kontext wird serverseitig geprüft.** Fremde Liegenschaften und nicht freigegebene Rollen bleiben auch bei manipulierten Anfragen gesperrt; Berechtigungen werden niemals zusammengeführt.
+- **Der Wechsel bleibt in der bestehenden Anmeldung.** Die ursprüngliche Ablaufzeit bleibt erhalten, der vorherige Session-Token wird ersetzt und jeder Wechsel erscheint im Verlauf.
+
 ## [0.88.1] - 2026-08-14
 
 ### Verbessert
