@@ -72,6 +72,13 @@ func TestSQLHomePortalActivationIsAtomicIdempotentAndPersistent(t *testing.T) {
 	if err != nil || created || !second.ActivatedAt.Equal(portal.ActivatedAt) {
 		t.Fatalf("repeat activation portal=%+v created=%v err=%v", second, created, err)
 	}
+	owned, err := portals.ListByOwner(" OWNER@example.com ")
+	if err != nil || len(owned) != 1 || owned[0].Slug != "stadtpark-home" {
+		t.Fatalf("owned portals=%+v err=%v", owned, err)
+	}
+	if foreign, err := portals.ListByOwner("other@example.com"); err != nil || len(foreign) != 0 {
+		t.Fatalf("foreign portals=%+v err=%v", foreign, err)
+	}
 
 	if err := database.Close(); err != nil {
 		t.Fatal(err)
@@ -84,6 +91,10 @@ func TestSQLHomePortalActivationIsAtomicIdempotentAndPersistent(t *testing.T) {
 	reopened, found, err := store.NewSQLHomePortalStore(database).Get("stadtpark-home")
 	if err != nil || !found || reopened.OwnerEmail != "owner@example.com" || reopened.HouseholdName != portal.HouseholdName {
 		t.Fatalf("reopened portal=%+v found=%v err=%v", reopened, found, err)
+	}
+	owned, err = store.NewSQLHomePortalStore(database).ListByOwner("owner@example.com")
+	if err != nil || len(owned) != 1 || owned[0].HouseholdName != portal.HouseholdName {
+		t.Fatalf("reopened owned portals=%+v err=%v", owned, err)
 	}
 }
 

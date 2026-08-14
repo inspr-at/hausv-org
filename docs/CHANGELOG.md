@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.91.1] - 2026-08-14
+
+### Verbessert
+
+- **Der Portalwechsler nutzt den Kartenkopf ohne doppelte Beschriftung.** Die aktive Liegenschaft steht einmal gut lesbar im oberen Verlauf; lange Namen und Adressen bleiben im geöffneten Menü vollständig sichtbar.
+- **Neu angelegte Zuhause bleiben beim Wechsel verfügbar.** Aktivierte Home-Portale erscheinen zuverlässig in der Auswahl, auch nachdem zu einer anderen Liegenschaft gewechselt wurde.
+
 ## [0.91.0] - 2026-08-14
 
 ### Neu

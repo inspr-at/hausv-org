@@ -440,7 +440,7 @@ func TestHomeTypeGuidanceAndSidebarBrandHierarchy(t *testing.T) {
 		`data-description="Mehrere Parteien und gemeinsam genutzte Anlagen.`,
 		`Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern.`,
 		`„Nur beobachten“ bleibt unverändert.`,
-		`.side-map-card { position: relative; min-width: 0; height: 244px;`,
+		`.side-map-card { position: relative; min-width: 0; height: 276px;`,
 		`.side-map { position: absolute; inset: 0; width: 100%; height: 100%;`,
 		`.side-map-pin-mark svg { width: 25px; height: 21px;`,
 		`Standort nicht hinterlegt`,

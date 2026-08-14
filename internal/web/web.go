@@ -1195,7 +1195,7 @@ const PageTemplates = `
     .app-shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0,1fr); background: var(--paper); }
     .sidebar { position: sticky; top: 0; height: 100vh; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 22px 16px 18px; color: rgba(255,255,255,.86); background: radial-gradient(circle at 20% 0%, rgba(255,255,255,.08), transparent 28%), var(--nav); border-right: 1px solid rgba(255,255,255,.08); }
     .side-brand { flex: 0 0 auto; display: grid; gap: 0; margin: -22px -16px 0; padding: 0 0 8px; }
-    .side-map-card { position: relative; min-width: 0; height: 244px; }
+    .side-map-card { position: relative; min-width: 0; height: 276px; }
     .side-map { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; border: 0; border-radius: 0; background: #d8d2c4; color: inherit; isolation: isolate; }
     .side-map::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(247,243,234,.08) 0%, rgba(23,32,25,.06) 48%, rgba(23,32,25,.48) 73%, rgba(23,32,25,.93) 94%, var(--nav) 100%); box-shadow: inset 0 -18px 28px rgba(23,32,25,.42); }
     .side-map-tiles { position: absolute; inset: 0; z-index: 1; pointer-events: none; filter: saturate(.54) sepia(.1) contrast(.86) brightness(.97); }
@@ -1205,6 +1205,8 @@ const PageTemplates = `
     .side-map-pin-shape { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; fill: var(--nav); stroke: rgba(231,216,177,.88); stroke-width: 1.25; stroke-linejoin: round; }
     .side-map-pin-mark { position: absolute; left: 50%; top: 9px; width: 25px; height: 22px; display: grid; place-items: center; transform: translateX(-50%); }
     .side-map-pin-mark svg { width: 25px; height: 21px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .side-map-top { position: absolute; left: 0; right: 0; top: 0; z-index: 7; min-width: 0; padding: 14px 14px 48px; background: linear-gradient(180deg, rgba(23,32,25,.91) 0%, rgba(23,32,25,.67) 54%, rgba(23,32,25,0) 100%); pointer-events: none; }
+    .side-map-top > * { pointer-events: auto; }
     .side-place-copy { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; min-width: 0; display: grid; gap: 8px; padding: 0 18px 14px; color: inherit; }
     .side-address-label { min-width: 0; display: grid; gap: 2px; justify-self: start; color: inherit; font-family: var(--font-sans); line-height: 1.2; text-decoration: none; }
     .side-address-label strong { overflow: hidden; color: rgba(255,255,255,.96); font-size: 20px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
@@ -1239,17 +1241,17 @@ const PageTemplates = `
     .nav-group-label { margin: 10px 12px 2px; color: rgba(255,255,255,.42); font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
     .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 14px 8px 0; display: grid; gap: 8px; }
     .portal-context-switch { position: relative; min-width: 0; }
-    .portal-context-switch > summary { min-height: 50px; display: grid; grid-template-columns: 30px minmax(0,1fr) 16px; gap: 9px; align-items: center; border: 1px solid rgba(255,255,255,.22); border-radius: var(--radius-xs); padding: 7px 9px; color: rgba(255,255,255,.92); background: rgba(23,32,25,.52); backdrop-filter: blur(7px); cursor: pointer; list-style: none; }
+    .portal-context-switch > summary { min-height: 58px; display: grid; grid-template-columns: 32px minmax(0,1fr) 16px; gap: 10px; align-items: center; border: 1px solid rgba(255,255,255,.28); border-radius: var(--radius-xs); padding: 8px 10px; color: rgba(255,255,255,.95); background: rgba(23,32,25,.5); box-shadow: 0 8px 22px rgba(23,32,25,.14); backdrop-filter: blur(9px); cursor: pointer; list-style: none; }
     .portal-context-switch > summary::-webkit-details-marker { display: none; }
     .portal-context-switch > summary:hover, .portal-context-switch[open] > summary { border-color: rgba(231,197,116,.62); background: rgba(231,197,116,.1); }
     .portal-context-icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: var(--gold-light); background: rgba(255,255,255,.08); }
     .portal-context-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
     .portal-context-current { min-width: 0; display: grid; gap: 1px; }
-    .portal-context-current small { color: rgba(255,255,255,.48); font-size: 9px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
-    .portal-context-current strong { overflow: hidden; font-size: 11.5px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+    .portal-context-current small { color: rgba(255,255,255,.58); font-size: 9px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+    .portal-context-current strong { font-size: 12.5px; line-height: 1.22; overflow-wrap: anywhere; }
     .portal-context-chevron { width: 8px; height: 8px; justify-self: center; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .15s ease; }
     .portal-context-switch[open] .portal-context-chevron { transform: rotate(225deg) translate(-1px,-1px); }
-    .portal-context-menu { position: absolute; left: 0; right: 0; top: calc(100% + 7px); z-index: 80; max-height: min(420px,70vh); display: grid; gap: 5px; overflow: auto; border: 1px solid rgba(231,197,116,.38); border-radius: var(--radius-sm); padding: 7px; color: var(--ink); background: var(--surface); box-shadow: var(--shadow-lg); }
+    .portal-context-menu { position: absolute; left: 0; top: calc(100% + 7px); z-index: 80; width: min(360px,calc(100vw - 28px)); max-height: min(420px,70vh); display: grid; gap: 5px; overflow: auto; border: 1px solid rgba(231,197,116,.38); border-radius: var(--radius-sm); padding: 7px; color: var(--ink); background: var(--surface); box-shadow: var(--shadow-lg); }
     .portal-context-option, .portal-context-option button { width: 100%; min-width: 0; }
     .portal-context-option { margin: 0; }
     .portal-context-option button, .portal-context-option-current { min-height: 48px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; border: 0; border-radius: var(--radius-xs); padding: 8px 10px; color: var(--ink); background: transparent; text-align: left; }
@@ -1257,9 +1259,9 @@ const PageTemplates = `
     .portal-context-option button:hover { background: var(--panel-soft); }
     .portal-context-option-current { background: #f3efe4; }
     .portal-context-option-copy { min-width: 0; display: grid; gap: 2px; }
-    .portal-context-option-copy strong, .portal-context-option-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .portal-context-option-copy strong { font-size: 12px; }
-    .portal-context-option-copy small { color: var(--muted); font-size: 10.5px; }
+    .portal-context-option-copy strong, .portal-context-option-copy small { overflow-wrap: anywhere; }
+    .portal-context-option-copy strong { font-size: 12px; line-height: 1.25; }
+    .portal-context-option-copy small { color: var(--muted); font-size: 10.5px; line-height: 1.3; }
     .portal-context-role { color: var(--gold-ink); font-size: 10px; font-weight: 850; }
     .portal-context-active { color: var(--leaf); font-size: 9px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
     .side-map-attribution { min-width: 0; justify-self: start; margin-left: 54px; color: rgba(255,255,255,.38); font-size: 9px; line-height: 1.2; text-decoration: none; }
@@ -3409,11 +3411,13 @@ const PageTemplates = `
       .side-map-pin-mark { top: 7px; width: 20px; height: 18px; }
       .side-map-pin-mark svg { width: 20px; height: 17px; }
       .side-address-label small, .side-ruler, .side-portal { display: none; }
+      .side-map-top { padding-top: 9px; }
+      .portal-context-switch > summary { min-height: 50px; }
     }
     @media (min-width: 901px) and (max-height: 1040px) {
       .sidebar { gap: 10px; padding-top: 14px; padding-bottom: 12px; }
       .side-brand { margin-top: -14px; padding-bottom: 3px; }
-      .side-map-card { height: 220px; }
+      .side-map-card { height: 236px; }
       .side-place-copy { gap: 5px; padding-bottom: 8px; }
       .side-address-label strong { font-size: 17px; }
       .side-address-label small { font-size: 9.5px; }
@@ -3555,8 +3559,9 @@ const PageTemplates = `
 	      .side-map-pin { width: 24px; height: 31px; }
 	      .side-map-pin-mark { top: 5px; width: 14px; height: 13px; }
 	      .side-map-pin-mark svg { width: 14px; height: 12px; stroke-width: 2.5; }
+	      .side-map-top { position: static; min-width: 0; padding: 0; background: transparent; }
 	      .side-place-copy { position: static; min-width: 0; min-height: 44px; align-content: center; gap: 3px; padding: 0; }
-	      .side-place-copy.has-context-switch .side-address-label { display: none; }
+	      .side-place-copy.has-context-switch { display: none; }
 	      .side-address-label { max-width: 100%; }
 	      .side-address-label strong { font-size: 13px; }
 	      .side-address-label small { font-size: 9px; }
@@ -3565,7 +3570,7 @@ const PageTemplates = `
 	      .portal-context-switch > summary { min-height: 44px; grid-template-columns: minmax(0,1fr) 14px; gap: 5px; border: 0; padding: 2px 3px; background: transparent; backdrop-filter: none; }
 	      .portal-context-icon { display: none; }
 	      .portal-context-current small { font-size: 8px; }
-	      .portal-context-current strong { font-size: 11px; }
+	      .portal-context-current strong { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	      .portal-context-menu { position: fixed; left: 14px; right: 14px; top: 70px; max-height: min(420px,70vh); }
 	      .mobile-menu-toggle { min-height: 44px; max-width: min(230px,44vw); align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); padding: 7px 10px; color: rgba(255,255,255,.92); background: rgba(255,255,255,.07); font-size: 12px; font-weight: 850; letter-spacing: .01em; cursor: pointer; }
 	      .mobile-menu-toggle::before { content: ""; width: 14px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; box-shadow: 0 4px 0 currentColor inset; }
@@ -3883,13 +3888,12 @@ const PageTemplates = `
 	        </span>
 	        {{else}}<span class="side-map-fallback">Standort nicht hinterlegt</span>{{end}}
 	      </a>
-	      <div class="side-place-copy{{if .CanSwitchPortalContext}} has-context-switch{{end}}">
-	        <a class="side-address-label" href="/app" aria-label="Hausportal {{.HouseName}} öffnen"><strong>{{.HouseName}}</strong><small>{{.SidebarAddress.Full}}</small></a>
-	        {{if .CanSwitchPortalContext}}
+	      {{if .CanSwitchPortalContext}}
+	      <div class="side-map-top">
 	        <details class="portal-context-switch">
 	          <summary aria-label="Liegenschaft oder Ansicht wechseln">
 	            <span class="portal-context-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9 20v-6h6v6"/></svg></span>
-	            <span class="portal-context-current"><small>Portal wechseln</small><strong>{{.HouseName}} · {{.Role}}</strong></span>
+	            <span class="portal-context-current"><small>Portal wechseln · {{.Role}}</small><strong>{{.HouseName}}</strong></span>
 	            <span class="portal-context-chevron" aria-hidden="true"></span>
 	          </summary>
 	          <div class="portal-context-menu" role="list" aria-label="Freigegebene Portal-Kontexte">
@@ -3902,7 +3906,10 @@ const PageTemplates = `
 	            {{end}}
 	          </div>
 	        </details>
-	        {{end}}
+	      </div>
+	      {{end}}
+	      <div class="side-place-copy{{if .CanSwitchPortalContext}} has-context-switch{{end}}">
+	        {{if not .CanSwitchPortalContext}}<a class="side-address-label" href="/app" aria-label="Hausportal {{.HouseName}} öffnen"><strong>{{.HouseName}}</strong><small>{{.SidebarAddress.Full}}</small></a>{{end}}
 	        <span class="side-ruler" aria-hidden="true"></span>
 	        <a class="side-portal" href="/app"><strong>Hausportal</strong><span>· hausv.org</span></a>
 	      </div>
