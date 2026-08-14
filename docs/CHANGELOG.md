@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.90.0] - 2026-08-14
+
+### Neu
+
+- **Portalbereiche lassen sich je Liegenschaft auswählen.** Verwaltungen blenden Energie, Kommunikation, Dokumente, Anliegen und weitere Funktionen passend zum Haus ein oder aus.
+- **Hausüberblick und Einstellungen bleiben immer erreichbar.** Die beiden zentralen Bereiche bilden eine verlässliche Basis, unabhängig von der gewählten Ausstattung.
+
+### Verbessert
+
+- **Ausgeblendete Funktionen verschwinden vollständig.** Navigation, Startseite, Einstellungen und direkte Links folgen derselben Konfiguration.
+- **Bestehende Portale behalten ihren Umfang.** Ohne bewusste Änderung bleiben alle bisherigen Bereiche sichtbar.
+
 ## [0.89.1] - 2026-08-14
 
 ### Verbessert

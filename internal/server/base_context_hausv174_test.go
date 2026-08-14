@@ -22,8 +22,8 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	}
 
 	got := a.baseContext(ac)
-	if len(got) != 18 {
-		t.Fatalf("baseContext keys = %d, want 18: %#v", len(got), got)
+	if len(got) != 19 {
+		t.Fatalf("baseContext keys = %d, want 19: %#v", len(got), got)
 	}
 	if got["Tenant"] != ac.tenant || got["Email"] != ac.email || got["Role"] != ac.role {
 		t.Fatalf("baseContext identity = %#v", got)
@@ -47,6 +47,10 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	}
 	if got["IsAdmin"] != false || got["CanSeeParking"] != true {
 		t.Fatalf("baseContext capabilities = %#v", got)
+	}
+	modules, ok := got["PortalModules"].(portalModuleFlags)
+	if !ok || !modules.Energy || !modules.Announcements || !modules.Help {
+		t.Fatalf("baseContext portal modules = %#v", got["PortalModules"])
 	}
 	// An unclaimed/deleted energy profile is owner/admin-only. Delegated or
 	// resident access begins only after the owner has completed onboarding.

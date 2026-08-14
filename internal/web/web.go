@@ -3882,22 +3882,22 @@ const PageTemplates = `
 	      {{if .CanUseResidentAreas}}
 	      <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="nav-label">Hausüberblick</span></a>
 	      {{if .CanViewEnergy}}<a class="nav-item {{if eq .ActivePage "energy"}}active{{end}}" href="/app/energie" data-home-identity="nav" aria-label="{{.HomeIdentity.AriaLabel}}"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 13h5l2-7 3 12 2-5h4"/><path d="M5 20h14"/></svg></span><span class="nav-label"><span class="nav-home-identity"><strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<small data-home-unit-label>{{.HomeIdentity.UnitLabel}}</small>{{end}}</span></span></a>{{end}}
-	      <a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>
-	      <a class="nav-item {{if eq .ActivePage "events"}}active{{end}}" href="/app/events"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></span><span class="nav-label">Termine</span></a>
-	      <a class="nav-item {{if eq .ActivePage "contacts"}}active{{end}}" href="/app/kontakte"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg></span><span class="nav-label">Kontakte</span></a>
-	      <a class="nav-item {{if eq .ActivePage "documents"}}active{{end}}" href="/app/dokumente"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span><span class="nav-label">Dokumente</span></a>
+	      {{if .PortalModules.Announcements}}<a class="nav-item {{if eq .ActivePage "announcements"}}active{{end}}" href="/app/announcements"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg></span><span class="nav-label">Aushang</span>{{if .HasUnreadAnnouncements}}<span class="nav-badge">{{.UnreadAnnouncements}}</span>{{end}}</a>{{end}}
+	      {{if .PortalModules.Events}}<a class="nav-item {{if eq .ActivePage "events"}}active{{end}}" href="/app/events"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg></span><span class="nav-label">Termine</span></a>{{end}}
+	      {{if .PortalModules.Contacts}}<a class="nav-item {{if eq .ActivePage "contacts"}}active{{end}}" href="/app/kontakte"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5v13A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H8"/><path d="M8.5 3.5h7v4h-7z"/><path d="M9 13a3 3 0 1 0 6 0"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg></span><span class="nav-label">Kontakte</span></a>{{end}}
+	      {{if .PortalModules.Documents}}<a class="nav-item {{if eq .ActivePage "documents"}}active{{end}}" href="/app/dokumente"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/></svg></span><span class="nav-label">Dokumente</span></a>{{end}}
 	      {{end}}
-	      <a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span><span class="nav-label">Anliegen</span>{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>
+	      {{if .PortalModules.Issues}}<a class="nav-item {{if eq .ActivePage "issues"}}active{{end}}" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 18.5V6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H10l-5 3.5z"/></svg></span><span class="nav-label">Anliegen</span>{{if .HasOpenIssues}}<span class="nav-badge">{{.OpenIssues}}</span>{{end}}</a>{{end}}
 	      {{if .CanUseResidentAreas}}
-	      <a class="nav-item {{if eq .ActivePage "abstimmungen"}}active{{end}}" href="/app/abstimmungen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span><span class="nav-label">Abstimmungen</span></a>
-	      {{if or .CanSeeParking .CanManageHandovers .CanManageUsers}}<span class="nav-group-label">{{if or .CanManageHandovers .CanManageUsers}}Verwaltung{{else}}Weitere Bereiche{{end}}</span>{{end}}
-	      {{if .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span><span class="nav-label">Parkplatznutzung</span></a>{{end}}
-	      {{if .CanManageHandovers}}<a class="nav-item {{if eq .ActivePage "handovers"}}active{{end}}" href="/app/uebergaben"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg></span><span class="nav-label">Übergaben</span></a>{{end}}
-	      {{if .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span><span class="nav-label">Benutzer &amp; Rechte</span></a>{{end}}
-	      {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="nav-label">Verlauf</span></a>{{end}}
+	      {{if .PortalModules.Votes}}<a class="nav-item {{if eq .ActivePage "abstimmungen"}}active{{end}}" href="/app/abstimmungen"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3.5 19h17"/></svg></span><span class="nav-label">Abstimmungen</span></a>{{end}}
+	      {{if or (and .PortalModules.Parking .CanSeeParking) (and .PortalModules.Handovers .CanManageHandovers) (and .PortalModules.Users .CanManageUsers)}}<span class="nav-group-label">{{if or (and .PortalModules.Handovers .CanManageHandovers) (and .PortalModules.Users .CanManageUsers)}}Verwaltung{{else}}Weitere Bereiche{{end}}</span>{{end}}
+	      {{if and .PortalModules.Parking .CanSeeParking}}<a class="nav-item {{if eq .ActivePage "parking"}}active{{end}}" href="/app/parking"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/><path d="M7 19h1M16 19h1"/></svg></span><span class="nav-label">Parkplatznutzung</span></a>{{end}}
+	      {{if and .PortalModules.Handovers .CanManageHandovers}}<a class="nav-item {{if eq .ActivePage "handovers"}}active{{end}}" href="/app/uebergaben"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/><path d="m9.5 16 1.5 1.5 3.5-4"/></svg></span><span class="nav-label">Übergaben</span></a>{{end}}
+	      {{if and .PortalModules.Users .CanManageUsers}}<a class="nav-item {{if eq .ActivePage "users"}}active{{end}}" href="/app/settings/users"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/><path d="M17 15a4 4 0 0 1 3.5 4"/></svg></span><span class="nav-label">Benutzer &amp; Rechte</span></a>{{end}}
+	      {{if and .PortalModules.Audit .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="nav-label">Verlauf</span></a>{{end}}
 	      <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span><span class="nav-label">Einstellungen</span></a>
 	      {{end}}
-	      <a class="nav-item {{if eq .ActivePage "help"}}active{{end}}" href="/app/hilfe"><span class="nav-icon"><span class="energy-ui-icon energy-ui-icon-circle-help" aria-hidden="true"></span></span><span class="nav-label">Hilfe</span></a>
+	      {{if .PortalModules.Help}}<a class="nav-item {{if eq .ActivePage "help"}}active{{end}}" href="/app/hilfe"><span class="nav-icon"><span class="energy-ui-icon energy-ui-icon-circle-help" aria-hidden="true"></span></span><span class="nav-label">Hilfe</span></a>{{end}}
     </nav>
     <div id="portal-account" class="side-foot">
       {{if .CanSwitchPortalContext}}
@@ -4047,16 +4047,17 @@ const PageTemplates = `
           </div>
         </section>
 
-        <section class="portal-section" aria-labelledby="portal-board-title">
-          <header class="portal-section-head{{if .CanCreateResidentIssue}} has-action{{end}}">
+        {{if or .PortalModules.Events .PortalModules.Announcements .PortalModules.Issues .HasPortalEnergy}}<section class="portal-section" aria-labelledby="portal-board-title">
+          {{if or .PortalModules.Events .PortalModules.Announcements .PortalModules.Issues}}<header class="portal-section-head{{if and .PortalModules.Issues .CanCreateResidentIssue}} has-action{{end}}">
             <div>
               <p class="home-eyebrow">Im Haus</p>
               <h2 id="portal-board-title">Der aktuelle Stand</h2>
             </div>
-            {{if .CanCreateResidentIssue}}<a class="portal-quiet-action" href="/app/anliegen?new=1#issue-new" aria-label="Neues Anliegen melden" title="Mangel, Frage oder Vorschlag melden"><span aria-hidden="true">+</span>Anliegen melden</a>{{end}}
-          </header>
+            {{if and .PortalModules.Issues .CanCreateResidentIssue}}<a class="portal-quiet-action" href="/app/anliegen?new=1#issue-new" aria-label="Neues Anliegen melden" title="Mangel, Frage oder Vorschlag melden"><span aria-hidden="true">+</span>Anliegen melden</a>{{end}}
+          </header>{{end}}
+          {{if or .PortalModules.Events .PortalModules.Announcements .PortalModules.Issues}}
           <div class="portal-board-grid">
-            <article class="portal-card">
+            {{if .PortalModules.Events}}<article class="portal-card">
               <header class="portal-card-head">
                 <h3>Nächste Termine</h3>
                 {{if .PortalEventTotalLabel}}<span class="portal-card-tag">{{.PortalEventTotalLabel}}</span>{{end}}
@@ -4084,9 +4085,9 @@ const PageTemplates = `
               </div>
               {{end}}
               <a class="portal-card-action" href="/app/events">{{if .CanManageEvents}}Termin eintragen{{else}}Alle Termine ansehen{{end}} <span aria-hidden="true">→</span></a>
-            </article>
+            </article>{{end}}
 
-            <article class="portal-card">
+            {{if .PortalModules.Announcements}}<article class="portal-card">
               <header class="portal-card-head">
                 <h3>Am Aushang</h3>
                 {{if .PortalUnreadLabel}}<span class="portal-card-tag">{{.PortalUnreadLabel}}</span>{{end}}
@@ -4109,9 +4110,9 @@ const PageTemplates = `
               </div>
               {{end}}
               <a class="portal-card-action" href="/app/announcements">{{if .CanManageAnnouncements}}Beitrag schreiben{{else}}Zum Aushang{{end}} <span aria-hidden="true">→</span></a>
-            </article>
+            </article>{{end}}
 
-            <article class="portal-card">
+            {{if .PortalModules.Issues}}<article class="portal-card">
               <header class="portal-card-head">
                 <h3>Anliegen</h3>
                 {{if .HasPortalOpenIssues}}<span class="portal-card-tag">{{.PortalOpenIssueLabel}}</span>{{end}}
@@ -4141,8 +4142,8 @@ const PageTemplates = `
               {{if .CanManageIssues}}<a class="portal-card-action" href="{{.PortalIssuesURL}}">Anliegen bearbeiten <span aria-hidden="true">→</span></a>
               {{else if and .CanCreateResidentIssue (or .HasPortalIssues .PortalIssuesInFocus)}}<a class="portal-card-action" href="/app/anliegen">Anliegen ansehen <span aria-hidden="true">→</span></a>
               {{else if not .CanCreateResidentIssue}}<a class="portal-card-action" href="{{.PortalIssuesURL}}">Anliegen ansehen <span aria-hidden="true">→</span></a>{{end}}
-            </article>
-          </div>
+            </article>{{end}}
+          </div>{{end}}
 
           {{if .HasPortalEnergy}}
           <article class="portal-energy{{if not .PortalEnergy.Stats}} setup{{end}}" aria-labelledby="portal-energy-title">
@@ -4163,7 +4164,7 @@ const PageTemplates = `
             </div>
           </article>
           {{end}}
-        </section>
+        </section>{{end}}
 
         <section class="home-utilities" aria-labelledby="home-utilities-title">
           <header class="portal-section-head">
@@ -7263,7 +7264,7 @@ const PageTemplates = `
           <div class="settings-account-copy"><h2>{{.SettingsDisplayName}}</h2><p>{{.Email}}</p></div>
           <span class="pill">{{.Role}}</span>
         </section>
-        {{$mgmt := ""}}{{if .CanManageBuilding}}{{$mgmt = print $mgmt "bb"}}{{end}}{{if .CanManageUsers}}{{$mgmt = print $mgmt "uu"}}{{end}}{{if .CanManageDocuments}}{{$mgmt = print $mgmt "d"}}{{end}}{{if .CanManageHandovers}}{{$mgmt = print $mgmt "h"}}{{end}}{{if .CanViewAudit}}{{$mgmt = print $mgmt "a"}}{{end}}{{if .IsAdmin}}{{$mgmt = print $mgmt "p"}}{{end}}
+        {{$mgmt := ""}}{{if .CanManageBuilding}}{{$mgmt = print $mgmt "bbm"}}{{end}}{{if and .PortalModules.Users .CanManageUsers}}{{$mgmt = print $mgmt "uu"}}{{end}}{{if and .PortalModules.Documents .CanManageDocuments}}{{$mgmt = print $mgmt "d"}}{{end}}{{if and .PortalModules.Handovers .CanManageHandovers}}{{$mgmt = print $mgmt "h"}}{{end}}{{if and .PortalModules.Audit .CanViewAudit}}{{$mgmt = print $mgmt "a"}}{{end}}{{if and .PortalModules.Parking .IsAdmin}}{{$mgmt = print $mgmt "p"}}{{end}}
         <div class="settings-layout">
         <div class="settings-sections">
           {{if .CanManageHomeIdentity}}<section class="panel settings-section settings-home-profile">
@@ -7301,18 +7302,19 @@ const PageTemplates = `
               </a>{{end}}
             </div>
           </section>
-          {{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .CanViewAudit .IsAdmin}}
+          {{if or .CanManageBuilding (and .PortalModules.Users .CanManageUsers) (and .PortalModules.Documents .CanManageDocuments) (and .PortalModules.Handovers .CanManageHandovers) (and .PortalModules.Audit .CanViewAudit) (and .PortalModules.Parking .IsAdmin)}}
           <section class="panel settings-section{{if gt (len $mgmt) 1}} settings-management{{end}}">
             <div class="settings-section-head">{{if or .CanManageUsers .CanManageBuilding .CanManageDocuments .CanManageHandovers .IsAdmin}}<h2>Verwaltung</h2><span class="settings-tag house">Verwaltungsrechte</span><p>Nur Bereiche, für die Sie berechtigt sind. Änderungen wirken für das ganze Haus.</p>{{else}}<h2>Verlauf</h2><span class="settings-tag read">Nur lesen</span><p>Eigene Änderungen nachvollziehen. Es wird nichts verändert.</p>{{end}}</div>
             <div class="settings-links">
               {{if .CanManageBuilding}}<a class="settings-link" href="/app/settings/building"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/></svg></span><span class="settings-link-copy"><strong>Gebäude &amp; Einheiten</strong><span>Hausdaten und Einheiten pflegen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
-              {{if .CanManageUsers}}<a class="settings-link" href="/app/settings/users"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/></svg></span><span class="settings-link-copy"><strong>Benutzer &amp; Rechte</strong><span>Einladungen und Rollen verwalten</span></span><span class="settings-link-arrow">›</span></a>
-              <a class="settings-link" href="/app/settings/parking-access"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/></svg></span><span class="settings-link-copy"><strong>Parkplatz-Zugriff</strong><span>Nutzung freigeben oder entziehen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
-              {{if .CanManageDocuments}}<a class="settings-link" href="/app/dokumente"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/></svg></span><span class="settings-link-copy"><strong>Dokumente</strong><span>Unterlagen verwalten</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if .CanManageBuilding}}<a class="settings-link" href="/app/settings/modules"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></span><span class="settings-link-copy"><strong>Portalbereiche</strong><span>Menüpunkte und Funktionen ein- oder ausblenden</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if and .PortalModules.Users .CanManageUsers}}<a class="settings-link" href="/app/settings/users"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3.5 20a5 5 0 0 1 10 0"/><path d="M16 11.5a2.5 2.5 0 1 0 0-5"/></svg></span><span class="settings-link-copy"><strong>Benutzer &amp; Rechte</strong><span>Einladungen und Rollen verwalten</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if and .PortalModules.Parking .CanManageUsers}}<a class="settings-link" href="/app/settings/parking-access"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/><path d="M7 16v3M17 16v3"/></svg></span><span class="settings-link-copy"><strong>Parkplatz-Zugriff</strong><span>Nutzung freigeben oder entziehen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if and .PortalModules.Documents .CanManageDocuments}}<a class="settings-link" href="/app/dokumente"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/></svg></span><span class="settings-link-copy"><strong>Dokumente</strong><span>Unterlagen verwalten</span></span><span class="settings-link-arrow">›</span></a>{{end}}
               {{if .CanManageBuilding}}<a class="settings-link" href="/app/settings/data-export"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M5 19h14"/></svg></span><span class="settings-link-copy"><strong>Datenübergabe</strong><span>Ausgewählte Rohdaten sicher weitergeben</span></span><span class="settings-link-arrow">›</span></a>{{end}}
-              {{if .CanManageHandovers}}<a class="settings-link" href="/app/uebergaben"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/></svg></span><span class="settings-link-copy"><strong>Übergaben</strong><span>Protokolle vorbereiten und ablegen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
-              {{if .CanViewAudit}}<a class="settings-link" href="/app/audit"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="settings-link-copy"><strong>Aktivitätsverlauf</strong><span>Änderungen nachvollziehen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
-              {{if .IsAdmin}}<a class="settings-link" href="/app/parking/settings"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/></svg></span><span class="settings-link-copy"><strong>Parkplatz-Abrechnung</strong><span>Tarife und Abrechnungswerte</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if and .PortalModules.Handovers .CanManageHandovers}}<a class="settings-link" href="/app/uebergaben"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h4"/></svg></span><span class="settings-link-copy"><strong>Übergaben</strong><span>Protokolle vorbereiten und ablegen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if and .PortalModules.Audit .CanViewAudit}}<a class="settings-link" href="/app/audit"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="settings-link-copy"><strong>Aktivitätsverlauf</strong><span>Änderungen nachvollziehen</span></span><span class="settings-link-arrow">›</span></a>{{end}}
+              {{if and .PortalModules.Parking .IsAdmin}}<a class="settings-link" href="/app/parking/settings"><span class="settings-link-icon"><svg viewBox="0 0 24 24"><path d="M5 16h14"/><path d="m7 16 1.5-5h7L17 16"/></svg></span><span class="settings-link-copy"><strong>Parkplatz-Abrechnung</strong><span>Tarife und Abrechnungswerte</span></span><span class="settings-link-arrow">›</span></a>{{end}}
             </div>
           </section>
           {{end}}
@@ -7330,6 +7332,59 @@ const PageTemplates = `
           </details>
         </aside>
         </div>
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "portalModuleSettings"}}
+{{template "appOpen" .}}
+    <style>
+      .module-settings-page { width: min(980px,100%); gap: 18px; }
+      .module-settings-head { display: grid; gap: 6px; max-width: 760px; }
+      .module-core { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+      .module-core-card { min-height: 90px; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 16px; }
+      .module-core-icon, .module-option-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: rgba(47,107,74,.1); color: var(--leaf); }
+      .module-core-icon svg, .module-option-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+      .module-core-copy strong, .module-option-copy strong { display: block; font-family: var(--font-serif); font-size: 18px; }
+      .module-core-copy span, .module-option-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .module-fixed { border-radius: 999px; padding: 5px 9px; background: rgba(47,107,74,.1); color: var(--leaf); font-size: 10px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+      .module-form { display: grid; gap: 14px; }
+      .module-form-head { display: flex; justify-content: space-between; gap: 16px; align-items: end; }
+      .module-form-head p { max-width: 620px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+      .module-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+      .module-option { position: relative; min-height: 90px; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 15px; background: var(--panel); cursor: pointer; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease; }
+      .module-option:hover { border-color: rgba(47,107,74,.4); }
+      .module-option:has(input:checked) { border-color: rgba(47,107,74,.48); background: rgba(47,107,74,.035); box-shadow: inset 3px 0 0 var(--leaf); }
+      .module-option input { position: absolute; opacity: 0; pointer-events: none; }
+      .module-switch { width: 42px; height: 24px; position: relative; border-radius: 999px; background: #d6d2c8; transition: background .16s ease; }
+      .module-switch::after { content: ""; position: absolute; width: 18px; height: 18px; top: 3px; left: 3px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.18); transition: transform .16s ease; }
+      .module-option input:focus-visible + .module-switch { outline: 3px solid rgba(47,107,74,.24); outline-offset: 3px; }
+      .module-option input:checked + .module-switch { background: var(--leaf); }
+      .module-option input:checked + .module-switch::after { transform: translateX(18px); }
+      .module-actions { position: sticky; bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: rgba(255,253,248,.96); box-shadow: 0 10px 28px rgba(36,42,36,.12); backdrop-filter: blur(10px); }
+      .module-actions span { color: var(--muted); font-size: 12.5px; }
+      @media (max-width: 720px) { .module-core, .module-grid { grid-template-columns: 1fr; } .module-form-head { display: grid; } .module-actions { align-items: stretch; flex-direction: column; } .module-actions .button { width: 100%; } }
+    </style>
+    <main id="main-content" tabindex="-1" class="app-main">
+      <div class="content-top">
+        <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Portalbereiche</span></span>
+      </div>
+      <section class="page module-settings-page">
+        <header class="module-settings-head"><span class="eyebrow">Liegenschaft · Navigation</span><h1>Portalbereiche</h1><p class="lede">Zeigen Sie nur Funktionen, die in {{.HouseName}} tatsächlich gebraucht werden.</p></header>
+        {{if .PortalModulesSaved}}<div class="message success">Die sichtbaren Portalbereiche wurden gespeichert.</div>{{end}}
+        {{if .PortalModulesError}}<div class="message error">Die Portalbereiche konnten nicht gespeichert werden.</div>{{end}}
+        <section class="module-core" aria-label="Immer sichtbare Bereiche">
+          <article class="panel module-core-card"><span class="module-core-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/></svg></span><span class="module-core-copy"><strong>Hausüberblick</strong><span>Der zentrale Einstieg bleibt immer sichtbar.</span></span><span class="module-fixed">Immer aktiv</span></article>
+          <article class="panel module-core-card"><span class="module-core-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1M5.1 11l-2-1.5 2-3.5 2.4 1"/></svg></span><span class="module-core-copy"><strong>Einstellungen</strong><span>Die Verwaltung bleibt jederzeit erreichbar.</span></span><span class="module-fixed">Immer aktiv</span></article>
+        </section>
+        <form class="module-form" method="post" action="/app/settings/modules">
+          <div class="module-form-head"><div><h2>Sichtbare Bereiche</h2><p>Ausgeschaltete Bereiche verschwinden aus Navigation, Hausüberblick und Einstellungen. Direkte Links sind anschließend ebenfalls gesperrt.</p></div></div>
+          <div class="module-grid">
+            {{range .PortalModuleOptions}}<label class="module-option"><span class="module-option-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z"/><path d="M9 9h6M9 13h6"/></svg></span><span class="module-option-copy"><strong>{{.Label}}</strong><span>{{.Description}}</span></span><input type="checkbox" name="modules" value="{{.ID}}"{{if .Enabled}} checked{{end}}><span class="module-switch" aria-hidden="true"></span></label>{{end}}
+          </div>
+          <div class="module-actions"><span>Die Änderung gilt für alle Personen in dieser Liegenschaft.</span><button class="button primary" type="submit">Portalbereiche speichern</button></div>
+        </form>
       </section>
     </main>
 {{template "appClose" .}}

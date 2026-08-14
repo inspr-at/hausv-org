@@ -30,6 +30,7 @@ const (
 	AuditActionInviteUpdate        = "invite.update"
 	AuditActionInviteDelete        = "invite.delete"
 	AuditActionBuildingUpdate      = "building.update"
+	AuditActionPortalModulesUpdate = "building.portal-modules.update"
 	AuditActionHeroUpdate          = "building.hero"
 	AuditActionUnitSave            = "building.unit.save"
 	AuditActionUnitDelete          = "building.unit.delete"
@@ -1925,7 +1926,7 @@ func NormalizeAuditAction(raw string) string {
 	raw = strings.ToLower(strings.TrimSpace(raw))
 	switch raw {
 	case AuditActionLogin, AuditActionContextSwitch, AuditActionInviteCreate, AuditActionInviteUpdate, AuditActionInviteDelete,
-		AuditActionBuildingUpdate, AuditActionHeroUpdate, AuditActionUnitSave, AuditActionUnitDelete,
+		AuditActionBuildingUpdate, AuditActionPortalModulesUpdate, AuditActionHeroUpdate, AuditActionUnitSave, AuditActionUnitDelete,
 		AuditActionUnitPayment,
 		AuditActionDocumentUpload, AuditActionDocumentDownload, AuditActionDocumentReplace,
 		AuditActionAttachmentView, AuditActionAttachmentDelete, AuditActionIntegrationImport, AuditActionIntegrationExport,

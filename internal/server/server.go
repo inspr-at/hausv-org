@@ -470,6 +470,7 @@ var writePrivateFile = store.WritePrivateFile
 // Vocabulary constants now owned by the store; aliased so call sites are unchanged.
 const (
 	auditActionBuildingUpdate          = store.AuditActionBuildingUpdate
+	auditActionPortalModulesUpdate     = store.AuditActionPortalModulesUpdate
 	auditActionContactDelete           = store.AuditActionContactDelete
 	auditActionContactSave             = store.AuditActionContactSave
 	auditActionDocumentDownload        = store.AuditActionDocumentDownload
@@ -867,6 +868,7 @@ type tenantOverride struct {
 	CaretakerEmail    string    `json:"caretaker_email,omitempty"`
 	CaretakerPhone    string    `json:"caretaker_phone,omitempty"`
 	HeroImage         string    `json:"hero_image,omitempty"`
+	DisabledModules   []string  `json:"disabled_modules,omitempty"`
 	UpdatedAt         time.Time `json:"updated_at,omitempty"`
 }
 
@@ -1002,6 +1004,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/parking/charging/telegram/unlink", a.authedAction(capabilityManageParking, a.unlinkTelegramChat))
 	mux.HandleFunc("GET /app/audit", a.page(a.auditLog))
 	mux.HandleFunc("GET /app/settings", a.page(a.settingsHub))
+	mux.HandleFunc("GET /app/settings/modules", a.authed(capabilityManageBuilding, a.portalModuleSettings))
+	mux.HandleFunc("POST /app/settings/modules", a.authedAction(capabilityManageBuilding, a.updatePortalModules))
 	mux.HandleFunc("GET /app/settings/home", a.page(a.withEnergyLifecycleOperation(a.homeIdentitySettings)))
 	mux.HandleFunc("POST /app/settings/home", a.action(a.withEnergyLifecycleOperation(a.updateHomeIdentity)))
 	mux.HandleFunc("GET /app/settings/building", a.page(a.buildingSettings))
@@ -1623,7 +1627,7 @@ func (a *app) calendarFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tenant, ok := a.tenantBySlug(payload.TenantSlug)
-	if !ok || !a.isAllowed(payload.Email, tenant.Slug) {
+	if !ok || !a.isAllowed(payload.Email, tenant.Slug) || !a.portalModulesFor(tenant.Slug).Events {
 		http.NotFound(w, r)
 		return
 	}
@@ -1928,7 +1932,12 @@ func parseBallotReminderBeforeMinutes(rawMinutes string, rawHours string) (int, 
 
 func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
+	modules := a.portalModulesFor(tenant.Slug)
 	if isServiceProviderRole(role) {
+		if !modules.Issues {
+			http.NotFound(w, r)
+			return
+		}
 		http.Redirect(w, r, "/app/anliegen", http.StatusSeeOther)
 		return
 	}
@@ -1938,8 +1947,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if a.announcementReadStore != nil {
 		lastSeen = a.announcementReadStore.LastSeen(tenant.Slug, email)
 	}
-	signals := a.portalSignals(tenant.Slug, email, role, now, lastSeen)
-	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen, signals)
+	signals := a.portalSignals(tenant.Slug, email, role, now, lastSeen, modules)
+	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen, signals, modules)
 	var primary dashboardDigestItem
 	hasPrimary := false
 	followUps := make([]dashboardDigestItem, 0, 3)
@@ -1953,8 +1962,10 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			followUps = append(followUps, item)
 		}
 	}
-	canSeeParking := hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking)
-	hasHomeUtilities := canSeeParking || canManageHandovers(role) || hasCapability(role, capabilityManageUsers)
+	canSeeParking := modules.Parking && (hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking))
+	canManagePortalHandovers := modules.Handovers && canManageHandovers(role)
+	canManagePortalUsers := modules.Users && hasCapability(role, capabilityManageUsers)
+	hasHomeUtilities := canSeeParking || canManagePortalHandovers || canManagePortalUsers
 	canResidentAreas := canUseResidentAreas(role)
 	canManageIssueBoard := hasCapability(role, capabilityManageIssues)
 	// Ein Eintrag, ein Platz: was der Tagesfokus schon beim Namen nennt, lassen
@@ -1982,9 +1993,12 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	boardEvents := eventViews(firstN(remainingEvents, 3), now)
 	boardAnnouncements := announcementViewsWithReadState(firstN(signals.announcements, 3), now, false, lastSeen)
 	boardIssues := issueViewsForActor(firstN(remainingIssues, 3), role, email)
-	energyCard, hasEnergyCard := a.portalEnergyCard(ac, now)
+	energyCard, hasEnergyCard := portalEnergyView{}, false
+	if modules.Energy {
+		energyCard, hasEnergyCard = a.portalEnergyCard(ac, now)
+	}
 	openBallots := 0
-	if canResidentAreas {
+	if canResidentAreas && modules.Votes {
 		openBallots = a.openBallotCount(tenant.Slug, now)
 	}
 	issuesURL := "/app/anliegen"
@@ -2020,7 +2034,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"CanManageAnnouncements": hasCapability(role, capabilityManageAnnouncements),
 		"PortalEnergy":           energyCard,
 		"HasPortalEnergy":        hasEnergyCard,
-		"PortalAreas":            portalAreaViews(canResidentAreas, canSeeParking, canManageHandovers(role), hasCapability(role, capabilityManageUsers), openBallots),
+		"PortalAreas":            portalAreaViews(modules, canResidentAreas, canSeeParking, canManagePortalHandovers, canManagePortalUsers, openBallots),
 	}
 	// The sidebar badges read the same numbers. Passing them explicitly keeps
 	// render() from re-reading announcements and issues for this page.
@@ -2077,16 +2091,16 @@ type portalSignals struct {
 	openIssues          []residentIssue
 }
 
-func (a *app) portalSignals(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time) portalSignals {
+func (a *app) portalSignals(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time, modules portalModuleFlags) portalSignals {
 	signals := portalSignals{}
-	if a.announcementStore != nil {
+	if modules.Announcements && a.announcementStore != nil {
 		signals.announcements = a.announcementStore.Visible(tenantSlug, now)
 		signals.unreadAnnouncements = unreadAnnouncementCount(signals.announcements, lastSeen, now)
 	}
-	if a.eventStore != nil {
+	if modules.Events && a.eventStore != nil {
 		signals.events = a.eventStore.Upcoming(tenantSlug, now)
 	}
-	if a.issueStore != nil {
+	if modules.Issues && a.issueStore != nil {
 		signals.issues = a.visibleIssuesForActor(tenantSlug, email, role)
 		signals.openIssues = make([]residentIssue, 0, len(signals.issues))
 		for _, item := range signals.issues {
@@ -2163,17 +2177,23 @@ func (a *app) openBallotCount(tenantSlug string, now time.Time) int {
 // the overview — the energy card links to "Mein Zuhause", so that area is
 // deliberately absent here. Each entry is role-scoped: a tile only appears when
 // the actor may actually open it.
-func portalAreaViews(canResidentAreas bool, canSeeParking bool, canManageHandovers bool, canManageUsers bool, openBallots int) []portalAreaView {
+func portalAreaViews(modules portalModuleFlags, canResidentAreas bool, canSeeParking bool, canManageHandovers bool, canManageUsers bool, openBallots int) []portalAreaView {
 	areas := make([]portalAreaView, 0, 7)
 	if canResidentAreas {
-		areas = append(areas, portalAreaView{Icon: "document", Label: "Dokumente", Detail: "Protokolle, Verträge und Nachweise.", URL: "/app/dokumente"})
-		ballots := portalAreaView{Icon: "vote", Label: "Abstimmungen", Detail: "Beschlüsse und laufende Entscheidungen.", URL: "/app/abstimmungen"}
-		if openBallots > 0 {
-			ballots.Note = pluralizeCount(openBallots, "Abstimmung läuft", "Abstimmungen laufen")
-			ballots.HasNote = true
+		if modules.Documents {
+			areas = append(areas, portalAreaView{Icon: "document", Label: "Dokumente", Detail: "Protokolle, Verträge und Nachweise.", URL: "/app/dokumente"})
 		}
-		areas = append(areas, ballots)
-		areas = append(areas, portalAreaView{Icon: "contact", Label: "Kontakte", Detail: "Verwaltung, Beirat und Dienstleister.", URL: "/app/kontakte"})
+		if modules.Votes {
+			ballots := portalAreaView{Icon: "vote", Label: "Abstimmungen", Detail: "Beschlüsse und laufende Entscheidungen.", URL: "/app/abstimmungen"}
+			if openBallots > 0 {
+				ballots.Note = pluralizeCount(openBallots, "Abstimmung läuft", "Abstimmungen laufen")
+				ballots.HasNote = true
+			}
+			areas = append(areas, ballots)
+		}
+		if modules.Contacts {
+			areas = append(areas, portalAreaView{Icon: "contact", Label: "Kontakte", Detail: "Verwaltung, Beirat und Dienstleister.", URL: "/app/kontakte"})
+		}
 	}
 	if canSeeParking {
 		areas = append(areas, portalAreaView{Icon: "parking", Label: "Parkplatznutzung", Detail: "Verbrauch und Abrechnung.", URL: "/app/parking", Management: true})
@@ -2249,29 +2269,31 @@ func portalEnergyStatValue(label string, value *float64, fallback string) portal
 	return portalEnergyStat{Label: label, Value: formatEnergyCompact(*value, 1) + " kW"}
 }
 
-func (a *app) dashboardDigestItems(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time, signals portalSignals) []dashboardDigestItem {
+func (a *app) dashboardDigestItems(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time, signals portalSignals, modules portalModuleFlags) []dashboardDigestItem {
 	var paymentItem *dashboardDigestItem
 	var announcementItem *dashboardDigestItem
 	var issueItem *dashboardDigestItem
 	var eventItem *dashboardDigestItem
-	for _, status := range a.unitPaymentStatusViewsForEmail(tenantSlug, email) {
-		if status.StatusValue == unitPaymentStatusPaid {
-			continue
+	if modules.Contacts {
+		for _, status := range a.unitPaymentStatusViewsForEmail(tenantSlug, email) {
+			if status.StatusValue == unitPaymentStatusPaid {
+				continue
+			}
+			title := "Zahlungsstatus prüfen"
+			if status.StatusValue == unitPaymentStatusOverdue {
+				title = "Offenen Zahlungsstatus klären"
+			}
+			item := dashboardDigestItem{
+				Kind:        "Zahlungsstatus",
+				Title:       title,
+				Detail:      status.UnitLabel + " · " + status.Status,
+				URL:         "/app/kontakte",
+				ActionLabel: "Verwaltung kontaktieren",
+				Actionable:  true,
+			}
+			paymentItem = &item
+			break
 		}
-		title := "Zahlungsstatus prüfen"
-		if status.StatusValue == unitPaymentStatusOverdue {
-			title = "Offenen Zahlungsstatus klären"
-		}
-		item := dashboardDigestItem{
-			Kind:        "Zahlungsstatus",
-			Title:       title,
-			Detail:      status.UnitLabel + " · " + status.Status,
-			URL:         "/app/kontakte",
-			ActionLabel: "Verwaltung kontaktieren",
-			Actionable:  true,
-		}
-		paymentItem = &item
-		break
 	}
 	if a.announcementStore != nil {
 		unread := signals.unreadAnnouncements
@@ -3192,12 +3214,15 @@ func (a *app) actorCanSeeCommonIssues(tenantSlug string, email string, role stri
 
 func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
+	modules := a.portalModulesFor(tenant.Slug)
 	if denyServiceProviderArea(w, role) {
 		return
 	}
 	calendarFeedURL := ""
-	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
-		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
+	if modules.Events {
+		if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
+			calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
+		}
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	prefs := defaultNotificationPreferences()
@@ -3205,12 +3230,13 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		prefs = a.notificationPrefs.Get(email)
 	}
 	enabledNotifications := 0
-	for _, option := range notificationEventOptions(prefs) {
+	notificationOptions := notificationOptionsForModules(notificationEventOptions(prefs), modules)
+	for _, option := range notificationOptions {
 		if option.Checked {
 			enabledNotifications++
 		}
 	}
-	notificationSummary := fmt.Sprintf("%d von %d Themen aktiv", enabledNotifications, len(notificationEventCatalog()))
+	notificationSummary := fmt.Sprintf("%d von %d Themen aktiv", enabledNotifications, len(notificationOptions))
 	if prefs.Unsubscribed {
 		notificationSummary = "E-Mails pausiert"
 	}
@@ -3219,7 +3245,7 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if homeProfileErr == nil && homeProfileExists && homeProfile.OnboardingComplete {
 		homeURL = "/app/settings/home"
 	}
-	canManageEnergyData := homeProfileErr == nil &&
+	canManageEnergyData := modules.Energy && homeProfileErr == nil &&
 		homeProfileExists &&
 		!energyProfileUnclaimed(homeProfile) &&
 		a.canManageHomeIdentityProfile(ac, homeProfile, homeProfileExists)
@@ -4180,6 +4206,7 @@ func profileUnitViews(units []unitMembership) []profileUnitView {
 
 func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	email, role := ac.email, ac.role
+	modules := a.portalModulesFor(ac.tenant.Slug)
 	if denyServiceProviderArea(w, role) {
 		return
 	}
@@ -4188,7 +4215,7 @@ func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request, ac au
 		prefs = a.notificationPrefs.Get(email)
 	}
 	notifyMsg, notifyOK := notificationSettingsMessage(r.URL.Query().Get("notify"))
-	events := notificationEventOptions(prefs)
+	events := notificationOptionsForModules(notificationEventOptions(prefs), modules)
 	enabledCount := 0
 	for _, event := range events {
 		if event.Checked {
@@ -4791,8 +4818,9 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 // intentional overrides remain visible at the call site.
 func (a *app) baseContext(ac authCtx) map[string]any {
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
+	modules := a.portalModulesFor(ac.tenant.Slug)
 	isAdmin := hasCapability(ac.role, capabilityPlatformAdmin)
-	canViewEnergy := a.canViewEnergy(ac)
+	canViewEnergy := modules.Energy && a.canViewEnergy(ac)
 	portalContexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
 	return map[string]any{
 		"Tenant":                 ac.tenant,
@@ -4807,11 +4835,12 @@ func (a *app) baseContext(ac authCtx) map[string]any {
 		"IsAdmin":                isAdmin,
 		"DisplayName":            profile.DisplayName(),
 		"Initials":               profile.Initials(),
-		"CanSeeParking":          isAdmin || profile.HasPermission(permissionParking),
+		"PortalModules":          modules,
+		"CanSeeParking":          modules.Parking && (isAdmin || profile.HasPermission(permissionParking)),
 		"CanViewEnergy":          canViewEnergy,
-		"CanManageEnergy":        a.canManageEnergy(ac),
-		"CanManageHomeIdentity":  a.canManageHomeIdentity(ac),
-		"CanControlEnergy":       a.canControlEnergy(ac),
+		"CanManageEnergy":        modules.Energy && a.canManageEnergy(ac),
+		"CanManageHomeIdentity":  modules.Energy && a.canManageHomeIdentity(ac),
+		"CanControlEnergy":       modules.Energy && a.canControlEnergy(ac),
 		"HomeIdentity":           a.homeIdentityForActor(ac, canViewEnergy),
 	}
 }
@@ -5576,8 +5605,29 @@ func (s *tenantOverrideStore) SetMeta(tenantSlug string, meta tenantOverride) er
 	}
 	current := normalizeTenantOverride(s.data.Tenants[tenantSlug])
 	meta.HeroImage = current.HeroImage
+	meta.DisabledModules = append([]string(nil), current.DisabledModules...)
 	meta.UpdatedAt = time.Now().UTC()
 	s.data.Tenants[tenantSlug] = meta
+	return s.saveLocked()
+}
+
+func (s *tenantOverrideStore) SetDisabledModules(tenantSlug string, disabled []string) error {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = normalizeSlug(tenantSlug)
+	if tenantSlug == "" {
+		return fmt.Errorf("invalid tenant")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.Tenants == nil {
+		s.data.Tenants = map[string]tenantOverride{}
+	}
+	override := normalizeTenantOverride(s.data.Tenants[tenantSlug])
+	override.DisabledModules = normalizeDisabledPortalModules(disabled)
+	override.UpdatedAt = time.Now().UTC()
+	s.data.Tenants[tenantSlug] = override
 	return s.saveLocked()
 }
 
@@ -5664,6 +5714,7 @@ func normalizeTenantOverride(override tenantOverride) tenantOverride {
 	override.CaretakerEmail = normalizeEmail(override.CaretakerEmail)
 	override.CaretakerPhone = strings.TrimSpace(override.CaretakerPhone)
 	override.HeroImage = filepath.Base(strings.TrimSpace(override.HeroImage))
+	override.DisabledModules = normalizeDisabledPortalModules(override.DisabledModules)
 	if override.HeroImage == "." || override.HeroImage == string(filepath.Separator) {
 		override.HeroImage = ""
 	}
