@@ -753,6 +753,7 @@ type app struct {
 	profileOverlays         profileOverlayStorage
 	tenantOverrides         *tenantOverrideStore
 	tenantHeroDir           string
+	tenantHeroSeedDir       string
 	// inviteStore serves app-managed user records. Backed by the person/house
 	// N:N model when SQLite is available, otherwise by the JSON store
 	// (HAUSV-169).
@@ -1202,6 +1203,7 @@ func newApp() (*app, error) {
 		return nil, err
 	}
 	tenantHeroDir := env("TENANT_HERO_DIR", filepath.Join(filepath.Dir(tenantDataPath), "tenant-heroes"))
+	tenantHeroSeedDir := env("TENANT_HERO_SEED_DIR", "")
 	inviteDataPath := env("INVITE_DATA_PATH", "tmp/invites.json")
 	invites, err := newInviteStore(inviteDataPath)
 	if err != nil {
@@ -1482,6 +1484,7 @@ func newApp() (*app, error) {
 		profileOverlays:       profileBackend,
 		tenantOverrides:       tenantOverrides,
 		tenantHeroDir:         tenantHeroDir,
+		tenantHeroSeedDir:     tenantHeroSeedDir,
 		inviteStore:           inviteBackend,
 		identityStore:         identity,
 		activityStore:         activityBackend,
@@ -4988,17 +4991,22 @@ func (a *app) tenantHeroImage(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	override, ok := a.tenantOverrides.Get(slug)
-	if !ok || override.HeroImage == "" {
+	filename := ""
+	directory := a.tenantHeroDir
+	if override, ok := a.tenantOverrides.Get(slug); ok {
+		filename = override.HeroImage
+	}
+	if filename == "" {
+		tenant := a.tenants[slug]
+		filename = tenant.HeroImageFile
+		directory = a.tenantHeroSeedDir
+	}
+	filename = filepath.Base(strings.TrimSpace(filename))
+	if directory == "" || filename == "" || filename == "." {
 		http.NotFound(w, r)
 		return
 	}
-	filename := filepath.Base(override.HeroImage)
-	if filename == "" || filename == "." || filename != override.HeroImage {
-		http.NotFound(w, r)
-		return
-	}
-	http.ServeFile(w, r, filepath.Join(a.tenantHeroDir, filename))
+	http.ServeFile(w, r, filepath.Join(directory, filename))
 }
 
 func (a *app) tenantForRequest(r *http.Request) tenantConfig {
@@ -5051,6 +5059,9 @@ func (a *app) tenantBySlug(slug string) (tenantConfig, bool) {
 func (a *app) withTenantOverride(tenant tenantConfig) tenantConfig {
 	if strings.TrimSpace(tenant.HeroImageURL) == "" {
 		tenant.HeroImageURL = defaultTenantHeroImageURL
+	}
+	if tenant.HeroImageFile != "" && a.tenantHeroSeedDir != "" {
+		tenant.HeroImageURL = "/tenant-hero/" + tenant.Slug
 	}
 	tenant.BrandIcon = normalizeTenantBrandIcon(tenant.BrandIcon)
 	if tenant.BrandIcon == "" {

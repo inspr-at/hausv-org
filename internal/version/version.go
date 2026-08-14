@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.81.2",
+			Date:     "14. August 2026",
+			Kind:     "Portalauftritt",
+			Headline: "Standort und Titelbild folgen wieder der Portalinstanz.",
+			Intro:    "Getrennt betriebene Portale können ihre Standortkarte und ihr individuelles Titelbild vollständig in der privaten Instanzkonfiguration verwalten.",
+			Items: []NoteItem{
+				{Label: "Karte", Text: "Der konfigurierte OpenStreetMap-Ausschnitt erscheint auch auf der öffentlichen Anmeldeseite."},
+				{Label: "Titelbild", Text: "Ein privates Instanz-Asset ersetzt zuverlässig das allgemeine Standardbild."},
+				{Label: "Trennung", Text: "Konkrete Standort- und Bilddaten bleiben außerhalb des allgemeinen Produktrepositorys."},
+			},
+		},
+		{
 			Version:  "0.81.1",
 			Date:     "14. August 2026",
 			Kind:     "Portalbetrieb",

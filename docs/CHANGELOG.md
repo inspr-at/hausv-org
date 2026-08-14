@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.81.2] - 2026-08-14
+
+### Verbessert
+
+- **Mandantenspezifische Titelbilder bleiben bei getrennten Instanzkonfigurationen erhalten.** Private Bilddateien können außerhalb des Produktrepositorys eingebunden und weiterhin über den jeweiligen Portalpfad ausgeliefert werden.
+- **Standortkarten werden vollständig aus der Instanzkonfiguration aufgebaut.** Pfadbasierte Portale übernehmen ihre hinterlegten Koordinaten und zeigen den passenden OpenStreetMap-Ausschnitt auch vor der Anmeldung.
+
 ## [0.81.1] - 2026-08-14
 
 ### Verbessert

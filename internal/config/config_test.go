@@ -139,6 +139,29 @@ func TestParseTenantsUsesAddressAsNeutralNameFallback(t *testing.T) {
 	}
 }
 
+func TestParseTenantsValidatesDeclarativeHeroFilename(t *testing.T) {
+	tenant, err := ParseTenants(
+		`[{"slug":"home","hero_image_file":"home-hero.jpg"}]`,
+		"home",
+		homeassistant.Config{},
+	)
+	if err != nil {
+		t.Fatalf("ParseTenants: %v", err)
+	}
+	if got := tenant["home"].HeroImageFile; got != "home-hero.jpg" {
+		t.Fatalf("hero image file = %q", got)
+	}
+	for _, invalid := range []string{"../hero.jpg", "nested/hero.jpg", `nested\\hero.jpg`} {
+		if _, err := ParseTenants(
+			`[{"slug":"home","hero_image_file":`+quoteJSON(invalid)+`}]`,
+			"home",
+			homeassistant.Config{},
+		); err == nil {
+			t.Fatalf("expected invalid hero filename %q to fail", invalid)
+		}
+	}
+}
+
 func quoteJSON(value string) string {
 	out := `"`
 	for _, r := range value {
