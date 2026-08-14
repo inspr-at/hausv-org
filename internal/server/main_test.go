@@ -1684,6 +1684,15 @@ func TestOIDCLoginDefersUnavailableDiscovery(t *testing.T) {
 	}
 }
 
+func TestOIDCRedirectURLUsesStablePlatformCallback(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "owner@example.com"})
+	a.baseURL = "https://hausv.org"
+
+	if got, want := a.oidcRedirectURL(), "https://hausv.org/auth/oidc/callback"; got != want {
+		t.Fatalf("oidcRedirectURL() = %q, want %q", got, want)
+	}
+}
+
 func TestNormalizeRoleAliasesAndCapabilityMatrix(t *testing.T) {
 	aliases := map[string]string{
 		"admin":            roleAdmin,

@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.88.1] - 2026-08-14
+
+### Verbessert
+
+- **Die zentrale Anmeldung funktioniert zuverlässig für alle Zuhause-Portale.** Ein gemeinsamer, dauerhaft registrierter Rücksprungpunkt ersetzt die pfadabhängige Freischaltung einzelner Häuser.
+- **Nach der Anmeldung öffnet sich wieder das richtige Zuhause.** Die sichere Anmeldeanfrage merkt sich den Ausgangspunkt und führt anschließend gezielt in das zugehörige Portal zurück.
+
 ## [0.88.0] - 2026-08-14
 
 ### Neu
