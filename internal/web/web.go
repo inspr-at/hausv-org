@@ -1127,7 +1127,7 @@ const PageTemplates = `
       <li>Aushänge, Termine, Dokumente, Anliegen, Kommentare, Anhänge und Abstimmungen für Kommunikation und Verwaltung des Hauses.</li>
       <li>Anmelde- und Auditdaten für Sicherheit, Fehlerklärung und nachvollziehbare Änderungen.</li>
       <li>Parkplatz- und Ladedaten nur für berechtigte Personen des jeweiligen Hauses.</li>
-      <li>Der einmalige Beginn des dreijährigen kostenlosen Nutzungszeitraums bleibt als Vertrags- und Anspruchsmerkmal erhalten, damit eine Neueinrichtung den Zeitraum nicht neu startet. Dieses Datum enthält keine Messwerte.</li>
+      <li>Beginn und fixes Ende des kostenlosen Nutzungszeitraums bleiben als Vertrags- und Anspruchsmerkmale des Zuhauses erhalten, damit eine Neueinrichtung oder ein Eigentümerwechsel den Zeitraum nicht neu startet. Neue HAUSV-Home-Portale erhalten zwölf Monate; bestehende Pilot-Enddaten werden nicht verkürzt. Diese Angaben enthalten keine Messwerte.</li>
       {{if .EnergyProfileExists}}<li>Energieprofil mit Wohnform, Anzeigename, verknüpfter Einheit, Anlagen, Wartungsplänen und bestätigten Messwert-Zuordnungen.</li>
       <li>Bei einer direkt betriebenen Home-Assistant-Verbindung werden verfügbare Entitäten zur Auswahl gelesen; dauerhaft gespeichert werden nur bestätigte Zuordnungen. Beim lokalen Self-Service-Connector wird zusätzlich der jeweils letzte ausgewählte Messwert gespeichert und im Energieexport ausgewiesen. Vollständige Home-Assistant-Verläufe werden nicht als eigene Kopie gespeichert.</li>
       <li>Ist der Netzbezug bestätigt, wird er laufend gelesen und je abgeschlossener Viertelstunde ein Mittelwert aufgezeichnet. Gespeichert wird nur dieser Viertelstundenwert mit seiner Güte, nicht der einzelne Messwert.</li>
@@ -1162,7 +1162,7 @@ const PageTemplates = `
       <li>Geschlossene Anliegen samt Kommentaren und Anhängen: jährliche Prüfung, regulär Löschung nach {{.ServiceProviderRetentionYears}} Jahren, sofern keine offene Gewährleistungs-, Rechts- oder Dokumentationspflicht entgegensteht.</li>
       {{if .EnergyProfileExists}}<li>Smart-Meter-Originaldateien werden nach 30 Tagen, normalisierte Viertelstundenwerte nach 13 Monaten und festgehaltene Tarifbewertungen nach drei Jahren zur Löschung fällig. Die technische Löschung erfolgt beim Start und danach alle sechs Stunden, also spätestens innerhalb weiterer sechs Stunden.</li>
       <li>Energieprofil, Anlagen und bestätigte Zuordnungen: bis zur Korrektur, Trennung oder ausdrücklichen Löschung des Energieprofils. Beim lokalen Connector bleiben der begrenzte Sensorkatalog und der letzte Wert je ausgewähltem Sensor bis zum Widerruf oder zur Profillöschung gespeichert; vollständige Home-Assistant-Historien werden nicht kopiert. Aufgezeichnete Viertelstundenmittelwerte unterliegen der Frist von 13 Monaten.</li>{{end}}
-      <li>Der Beginn des kostenlosen Anspruchs bleibt bis zum Ende des Anspruchs- beziehungsweise Portalverhältnisses erhalten, auch wenn das übrige Energieprofil gelöscht wird.</li>
+      <li>Beginn und fixes Ende des kostenlosen Anspruchs bleiben bis zum Ende des Anspruchs- beziehungsweise Portalverhältnisses erhalten, auch wenn das übrige Energieprofil gelöscht wird.</li>
       <li>Auditdaten werden nach drei Jahren zur Löschung fällig und spätestens beim nächsten sechsstündlichen Bereinigungslauf entfernt; das laufende Protokoll rotiert zusätzlich nach Größe oder Alter.</li>
       <li>Gelöschte Daten können bis zum Ablauf des dokumentierten betrieblichen Backup-Zyklus noch in verschlüsselten Sicherungskopien enthalten sein. Diese Kopien bleiben gesperrt und werden ausschließlich für eine kontrollierte Wiederherstellung verwendet.</li>
     </ul>
@@ -9675,7 +9675,7 @@ const PageTemplates = `
           <header class="onboarding-card-head" data-home-identity="onboarding-summary"{{if .HasHomeUnit}} aria-label="{{.Profile.HouseholdName}}, offizielle Einheit {{.HomeUnitLabel}}"{{end}}><span class="eyebrow">Ihr Zuhause ist startklar</span><h1 data-home-display-name>{{.Profile.HouseholdName}}</h1>{{if .HasHomeUnit}}<span class="onboarding-home-unit" data-home-unit-label>{{.HomeUnitLabel}}</span>{{end}}<p>Alles bleibt im sicheren Beobachtungsmodus. Sie gehen in Ihrem Tempo weiter.</p></header>
           <form class="onboarding-body" method="post" action="/app/zuhause/onboarding">
             <div class="onboarding-trust"><span aria-hidden="true">→</span><div><strong>Als Nächstes: {{.FinishRecommendation.Title}}</strong><p>{{.FinishRecommendation.Reason}}</p></div></div>
-            <div class="onboarding-trust"><span aria-hidden="true">✓</span><div><strong>Drei Jahre voller Produktumfang kostenlos</strong><p>Danach gilt nach heutigem Modell: 1 € pro Monat, jährlich als 12 € verrechnet. Noch gibt es keine Zahlung und keine versteckte Einschränkung.</p></div></div>
+            <div class="onboarding-trust"><span aria-hidden="true">✓</span><div><strong>Zwölf Monate voller Produktumfang kostenlos</strong><p>Danach gilt nach heutigem Modell: 1 € pro Monat, jährlich als 12 € verrechnet. Noch gibt es keine Zahlung und keine versteckte Einschränkung.</p></div></div>
             <div class="onboarding-actions"><button class="button" type="submit" name="action" value="back">Noch einmal prüfen</button><button class="button primary" type="submit" name="action" value="finish">Mein Zuhause öffnen</button></div>
           </form>
         {{end}}
@@ -9909,7 +9909,7 @@ const PageTemplates = `
         {{if .HasSystemAssets}}<div class="energy-system-assets">{{range .SystemAssets}}<span class="energy-system-asset"><span class="energy-ui-icon {{if eq .Kind "pv"}}energy-ui-icon-solar-panel{{else}}energy-ui-icon-battery{{end}}" aria-hidden="true"></span>{{.Name}}</span>{{end}}</div>{{else}}<p class="muted">Noch keine Erzeugung oder Speicher erfasst.</p>{{end}}
         <p class="energy-system-helper">Verbraucher verwalten Sie direkt oben in „Energie jetzt“.</p>
         <nav class="energy-related-links" aria-label="Service und Unterlagen"><a href="/app/dokumente">Unterlagen</a><a href="/app/events">Wartungstermine</a><a href="/app/anliegen?new=1">Aufgabe melden</a><a href="/app/kontakte">Fachkontakte</a></nav>
-        <div class="energy-business-note"><span aria-hidden="true">◎</span><p><strong>Kostenmodell:</strong> voller Produktumfang drei Jahre kostenlos{{if .FreeUntil}} bis {{.FreeUntil}}{{end}}, danach nach heutigem Modell 12 € pro Jahr. Kein Zahlungszwang während des Piloten.</p></div>
+        <div class="energy-business-note"><span aria-hidden="true">◎</span><p><strong>Kostenmodell:</strong> voller Produktumfang {{if .FreeUntil}}kostenlos bis {{.FreeUntil}}{{else}}zwölf Monate kostenlos{{end}}, danach nach heutigem Modell 12 € pro Jahr. Bestehende Pilot-Enddaten bleiben erhalten; aktuell gibt es keine Zahlung.</p></div>
       </section>
       <div class="energy-admin">
       <div class="energy-admin-head"><h2>Verwalten und nachweisen</h2><span>Wartung, Messwerte, Zugriff und Fachhilfe – geöffnet, wenn Sie sie brauchen.</span></div>
@@ -10098,7 +10098,7 @@ const PageTemplates = `
           </form>
         </details>
         <details class="energy-delete-action">
-          <summary><span><strong>Ganzes Energieprofil löschen</strong><small>Zusätzlich Haus-Anzeigename, Wohnform, verknüpfte Einheit, Anlagen, Zuordnungen, Wartungspläne und Maßnahmen-Metadaten. Nur der Beginn des kostenlosen Anspruchs bleibt erhalten, damit eine Neueinrichtung die drei Jahre nicht neu startet.</small></span></summary>
+          <summary><span><strong>Ganzes Energieprofil löschen</strong><small>Zusätzlich Haus-Anzeigename, Wohnform, verknüpfte Einheit, Anlagen, Zuordnungen, Wartungspläne und Maßnahmen-Metadaten. Beginn und Ende des kostenlosen Anspruchs bleiben erhalten, damit eine Neueinrichtung den Zeitraum nicht neu startet.</small></span></summary>
           <form class="energy-delete-form" method="post" action="/app/settings/energy-data/profile/delete">
             <label>Zur Bestätigung <strong>ENERGIEPROFIL LÖSCHEN</strong> eingeben
               <input name="confirmation" autocomplete="off" spellcheck="false" required>

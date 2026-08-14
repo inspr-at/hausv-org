@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.87.0] - 2026-08-14
+
+### Verbessert
+
+- **HAUSV Home hat einen klaren kostenlosen Nutzungszeitraum.** Neue Zuhause-Portale erhalten ab abgeschlossener Einrichtung zwölf Monate den vollen Produktumfang; danach bleibt der heutige Richtwert bei 12 € pro Jahr.
+- **Bestehende Pilot-Zusagen bleiben vollständig erhalten.** Das bereits angezeigte dreijährige Enddatum wird dauerhaft festgeschrieben und durch Löschen, Neueinrichtung oder einen Eigentümerwechsel nicht verkürzt oder neu gestartet.
+- **Portal, Datenschutzinformation und Datenexport stimmen überein.** Beginn und Ende des Anspruchs werden je Zuhause nachvollziehbar ausgewiesen; eine Paywall oder Zahlung ist weiterhin nicht aktiv.
+
 ## [0.86.0] - 2026-08-14
 
 ### Neu

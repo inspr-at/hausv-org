@@ -69,12 +69,16 @@ func TestHomeOnboardingCompletesInObserveMode(t *testing.T) {
 	if !profile.OnboardingComplete || profile.OperatingMode != energy.ModeObserve || profile.HouseholdName != "Zuhause Test" {
 		t.Fatalf("profile = %+v", profile)
 	}
+	if profile.FreeStartedAt == nil || profile.FreeUntilAt == nil ||
+		!profile.FreeUntilAt.Equal(profile.FreeStartedAt.AddDate(1, 0, 0)) {
+		t.Fatalf("new home entitlement = start %v end %v", profile.FreeStartedAt, profile.FreeUntilAt)
+	}
 	assets, err := a.energyStore.ListAssets("demo")
 	if err != nil || len(assets) != 3 {
 		t.Fatalf("assets = %+v err=%v", assets, err)
 	}
 	cockpit := authedRequest(t, a, "owner@example.com", "/demo/app/energie")
-	if cockpit.Code != http.StatusOK || !strings.Contains(cockpit.Body.String(), "drei Jahre") {
+	if cockpit.Code != http.StatusOK || !strings.Contains(cockpit.Body.String(), "Bestehende Pilot-Enddaten bleiben erhalten") {
 		t.Fatalf("cockpit pricing missing: status=%d", cockpit.Code)
 	}
 }

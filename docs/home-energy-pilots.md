@@ -83,10 +83,16 @@ ganz ohne Buchstaben und Ziffern. Seeding läuft genau einmal pro Zuhause; ein
 still verworfener Eintrag käme nie wieder.
 
 `complete` ist optional und hat eine Nebenwirkung, die man kennen muss: es
-überspringt das Onboarding auf Schritt 5 **und startet die drei Jahre
+überspringt das Onboarding auf Schritt 5 **und startet die zwölf Monate
 kostenfreie Nutzung**. Ohne das Feld beginnt der Haushalt regulär bei Schritt 1.
 Eine Betriebsart kann ein Seed nie setzen — er kann keine Steuerung
 freischalten.
+
+Beginn und Ende des Anspruchs werden je Zuhause als unveränderliche
+Vertragsmetadaten gespeichert. Profile, deren Anspruch vor Migration 0031
+begonnen hat, behalten ihr bisheriges Enddatum drei Jahre nach dem Start.
+Löschen, Neueinrichtung, zusätzliche Berechtigte oder ein Eigentümerwechsel
+setzen den Zeitraum nicht zurück.
 
 Genau dafür führt `scripts/snapshot/env.sh` einen vierten Mandanten `cockpit`
 mit `complete: true`. Die drei anderen QA-Mandanten fahren im Prüflauf den

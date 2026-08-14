@@ -69,6 +69,7 @@ type HomeProfile struct {
 	RecommendationID     string
 	RecommendationStatus string
 	FreeStartedAt        *time.Time
+	FreeUntilAt          *time.Time
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -215,6 +216,21 @@ func NormalizeProfile(profile HomeProfile, now time.Time) HomeProfile {
 		} else {
 			profile.AgreedPowerKW = &value
 		}
+	}
+	if profile.FreeStartedAt != nil {
+		started := profile.FreeStartedAt.UTC()
+		profile.FreeStartedAt = &started
+		if profile.FreeUntilAt == nil {
+			// Profiles that predate the explicit end marker keep the original
+			// three-year pilot promise. New onboarding always supplies both
+			// timestamps and therefore receives the current twelve-month term.
+			until := started.AddDate(3, 0, 0)
+			profile.FreeUntilAt = &until
+		}
+	}
+	if profile.FreeUntilAt != nil {
+		until := profile.FreeUntilAt.UTC()
+		profile.FreeUntilAt = &until
 	}
 	if profile.CreatedAt.IsZero() {
 		profile.CreatedAt = now.UTC()

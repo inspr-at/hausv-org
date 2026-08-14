@@ -795,7 +795,9 @@ func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac au
 		profile.OnboardingComplete = true
 		if profile.FreeStartedAt == nil {
 			started := time.Now().UTC()
+			until := started.AddDate(1, 0, 0)
 			profile.FreeStartedAt = &started
+			profile.FreeUntilAt = &until
 		}
 		nextStep = 5
 	case "back":
@@ -1129,8 +1131,8 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	measures, _ := a.energyStore.ListMeasures(ac.tenant.Slug)
 	measureViews := buildEnergyMeasureViews(measures, contactNames)
 	freeUntil := ""
-	if profile.FreeStartedAt != nil {
-		freeUntil = profile.FreeStartedAt.AddDate(3, 0, 0).In(time.Local).Format("02.01.2006")
+	if profile.FreeUntilAt != nil {
+		freeUntil = profile.FreeUntilAt.In(time.Local).Format("02.01.2006")
 	}
 	homeUnitLabel, hasHomeUnit := a.energyHomeUnitLabel(profile)
 	chargingCtx, cancelCharging := context.WithTimeout(r.Context(), 5*time.Second)
