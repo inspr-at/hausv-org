@@ -1,45 +1,56 @@
-# hausv.org
+# HAUSV
 
-Multi-tenant platform with two product surfaces on one secure core; the core is
-open source under the GNU AGPL-3.0 (see [LICENSE](LICENSE)), while production
-deployments and tenant data remain private:
+HAUSV is an open source portal for property communication, administration, and energy management. It supports self-managed homes, resident communities, and professional property managers in one multi-tenant application.
 
-- **HAUSV Gemeinschaft** supports communication, transparency, and self-service
-  for WEGs and other multi-unit buildings.
-- **HAUSV Zuhause** helps private apartments and houses understand their current
-  state and identify the next sensible task, including read-only energy insights.
+## Products
 
-Both surfaces share houses, people, roles, assets, documents, tasks,
-measurements, recommendations, and audit. The Janischhofweg 22 tenant is the
-first production deployment and includes both community workflows and the first
-private-home energy pilot.
+| Product | Operation | Price | Support |
+| --- | --- | --- | --- |
+| **HAUSV Free** | Self-hosted | Free under the GNU AGPL-3.0 | [GitHub issues](https://github.com/inspr-at/hausv-org/issues) and [pull requests](https://github.com/inspr-at/hausv-org/pulls) |
+| **HAUSV Home** | Hosted | 12 months free, then 12 EUR per year | Email |
+| **HAUSV Professional** | Hosted or self-hosted | First 25 units free, then 3 EUR per additional unit and month | Email and phone |
 
-hausv.org deliberately complements existing accounting and property-management
-systems. It does not implement bookkeeping, tax logic, dunning, or payment
-orders.
+## Features
 
-## Local Development
+- Central overview of tasks, appointments, announcements, open issues, and energy status
+- Announcements and targeted resident communication
+- Appointments with personal calendar feeds
+- Issue and damage workflows with files, photos, priorities, assignments, and resolution confirmation
+- Protected document storage with visibility rules, previews, downloads, and version history
+- Digital apartment handovers with rooms, condition, meter readings, keys, parties, and attachments
+- Voting with traceable results and records
+- Role-based access for managers, boards, residents, owners, and service providers
+- Live energy flows through Home Assistant for solar, grid, batteries, homes, and individual consumers
+- Parking, charging, CAMT, ebInterface, and structured data exchange with specialist systems
 
-```fish
+## Scope
+
+HAUSV is a communication and energy management portal. It does not replace property accounting software and does not produce annual statements, bookkeeping records, dunning notices, or payment orders. Structured data can be exchanged with existing systems such as BMD.
+
+## Development
+
+Requirements:
+
+- Go 1.26.6
+- A local `.env.local` file for development settings
+
+Run the application:
+
+```sh
 go test ./...
 go run ./cmd/hausv-org
 ```
 
-Local-only environment belongs in `.env.local`; it is intentionally ignored.
+`.env.local` is ignored by Git. Do not commit credentials or production configuration.
 
-The repeatable Playwright role check for the main portal flows is documented in
-[`docs/playwright-main-flow-qa.md`](docs/playwright-main-flow-qa.md).
+## Documentation
 
-## Production
+- [Deployment](docs/csb1-deploy.md)
+- [Browser QA](docs/playwright-main-flow-qa.md)
+- [Service provider privacy](docs/service-provider-privacy.md)
+- [Structured logging QA](docs/structured-log-qa.md)
+- [Supply chain pins](docs/supply-chain-pins.md)
 
-csb1 deployment notes live in `docs/csb1-deploy.md`. Secrets stay in agenix and
-must not be committed.
+## License
 
-## Security Notes
-
-External service-provider access and attachment privacy are documented in
-`docs/service-provider-privacy.md`.
-
-Repeatable role-aware browser QA and the privacy-safe structured-log check are
-documented in `docs/playwright-main-flow-qa.md` and
-`docs/structured-log-qa.md`.
+The open source core is licensed under the [GNU AGPL-3.0](LICENSE).
