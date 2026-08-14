@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.80.0",
+			Date:     "14. August 2026",
+			Kind:     "Produkte & Navigation",
+			Headline: "HAUSV Free macht den freien Einstieg sichtbar.",
+			Intro:    "Die Produktfamilie reicht jetzt von der dauerhaft kostenlosen, selbst betriebenen Open-Source-Lösung bis zu den betreuten Home- und Professional-Angeboten.",
+			Items: []NoteItem{
+				{Label: "HAUSV Free", Text: "Der vollständige AGPL-3.0-Kern bleibt kostenlos und darf frei selbst betrieben werden; Support erfolgt über GitHub-Tickets und Pull Requests."},
+				{Label: "Support", Text: "HAUSV Home umfasst E-Mail-Support, HAUSV Professional Telefon- und E-Mail-Support."},
+				{Label: "Mobiles Menü", Text: "Ein korrektes Lucide-SVG sorgt im schmalen Layout für ein ruhiges, gleichmäßiges Menüsymbol."},
+			},
+		},
+		{
 			Version:  "0.79.0",
 			Date:     "14. August 2026",
 			Kind:     "Produkte & Startseite",

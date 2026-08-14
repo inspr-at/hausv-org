@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.80.0] - 2026-08-14
+
+### Neu
+
+- **HAUSV Free ergänzt die Produktfamilie.** Die vollständige Open-Source-Lösung kann dauerhaft kostenlos selbst betrieben werden; Support und Mitarbeit laufen transparent über Tickets und Pull Requests auf GitHub.
+- **Jedes Produkt zeigt seinen passenden Supportweg.** HAUSV Home umfasst E-Mail-Support, HAUSV Professional Telefon- und E-Mail-Support.
+
+### Verbessert
+
+- **Das mobile Menü verwendet ein klares Lucide-Symbol.** Drei gleichmäßige, sauber gerundete Linien ersetzen die bisherige CSS-Konstruktion.
+
 ## [0.79.0] - 2026-08-14
 
 ### Neu

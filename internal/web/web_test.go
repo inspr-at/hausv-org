@@ -344,10 +344,11 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		}
 	}
 	for _, want := range []string{
-		`data-landing-menu-toggle aria-expanded="false" aria-controls="landing-navigation"`,
+		`data-landing-menu-toggle aria-expanded="false" aria-controls="landing-navigation"><svg viewBox="0 0 24 24"`,
 		`<noscript><style>`,
 		`@media (prefers-reduced-motion: reduce)`,
 		`<h1>Ein Hausportal. Alles, was Menschen und Gebäude verbindet.</h1>`,
+		`<h3>HAUSV Free</h3>`,
 		`<h3>HAUSV Home</h3>`,
 		`<h3>HAUSV Professional</h3>`,
 		`<h2>{{if .Sent}}E-Mail prüfen`,

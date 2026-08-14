@@ -1362,9 +1362,10 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 	body := rr.Body.String()
 	for _, want := range []string{
 		"Ein Hausportal. Alles, was Menschen und Gebäude verbindet.",
+		"HAUSV Free",
 		"HAUSV Home",
 		"HAUSV Professional",
-		"Vertrauen verbindet beide Wege.",
+		"Vertrauen verbindet alle drei Wege.",
 		"Zentraler Hausüberblick",
 		"Aushänge, die ankommen",
 		"Kalender, der mitgeht",
@@ -1377,9 +1378,14 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Parken, Laden und anbinden",
 		"hello [at] hausv [dot] org",
 		"wahlweise hosted oder selbst betrieben",
-		"Open-Source-Kern",
+		"Open-Source-Lösung",
 		"quelloffen",
 		"AGPL-3.0",
+		"0&nbsp;€ für immer",
+		"Tickets &amp; Pull Requests auf GitHub",
+		"E-Mail-Support",
+		"Telefon- &amp; E-Mail-Support",
+		"https://github.com/inspr-at/hausv-org",
 		"12 Monate kostenlos",
 		"12&nbsp;€ pro Jahr",
 		"25 Einheiten kostenlos",
@@ -1420,8 +1426,8 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
 	}
-	if got := strings.Count(body, `class="product-path `); got != 2 {
-		t.Fatalf("product path count = %d, want 2", got)
+	if got := strings.Count(body, `class="product-path `); got != 3 {
+		t.Fatalf("product path count = %d, want 3", got)
 	}
 	if got := strings.Count(body, `class="feature-card"`); got != 10 {
 		t.Fatalf("feature card count = %d, want 10", got)

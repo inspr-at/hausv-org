@@ -330,7 +330,7 @@ const PageTemplates = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
-  <meta name="description" content="HAUSV verbindet Hauskommunikation, Verwaltung und Live-Energie in einem sicheren Portal – als HAUSV Home für die Selbstverwaltung und HAUSV Professional für Hausverwaltungen.">
+  <meta name="description" content="HAUSV verbindet Hauskommunikation, Verwaltung und Live-Energie in einem sicheren Portal – frei self-hosted mit HAUSV Free, bequem mit HAUSV Home oder professionell mit HAUSV Professional.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
   <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
@@ -415,12 +415,14 @@ const PageTemplates = `
        One panel language for the whole page: hairline border, 12px radius,
        hairline dividers instead of gaps, so every row shares an edge. */
     .price-panel { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
-    .product-paths { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+    .product-paths { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
     .product-path { min-width: 0; display: grid; grid-template-rows: auto auto 1fr auto; border: 2px solid var(--line); border-radius: var(--radius-lg); padding: clamp(24px,3vw,34px); background: var(--panel); box-shadow: var(--shadow-panel); }
+    .product-path.free { border-color: rgba(79,91,80,.32); }
     .product-path.home { border-color: rgba(47,107,74,.42); }
     .product-path.professional { border-color: rgba(200,153,63,.5); }
     .product-path-head { display: grid; grid-template-columns: 54px minmax(0,1fr); gap: 16px; align-items: center; }
     .product-path-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 50%; background: rgba(47,107,74,.1); color: var(--leaf); }
+    .product-path.free .product-path-icon { background: rgba(79,91,80,.09); color: var(--muted); }
     .product-path.professional .product-path-icon { background: rgba(200,153,63,.13); color: var(--gold-ink); }
     .product-path-icon svg { width: 27px; height: 27px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .product-path-kicker { display: block; margin-bottom: 5px; color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
@@ -429,9 +431,11 @@ const PageTemplates = `
     .product-capabilities { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; margin: 24px 0 0; padding: 0; list-style: none; }
     .product-capabilities li { min-height: 44px; display: flex; align-items: center; gap: 9px; border-top: 1px solid var(--line); padding: 10px 0; font-size: 14px; font-weight: 760; }
     .product-capabilities li::before { content: "✓"; color: var(--leaf); font-weight: 900; }
+    .product-path.free .product-capabilities li::before { color: var(--muted); }
     .product-path.professional .product-capabilities li::before { color: var(--gold-ink); }
     .product-path-status { margin-top: 22px; display: flex; align-items: center; gap: 9px; color: var(--soft); font-size: 12px; font-weight: 800; }
     .product-path-status::before { content: ""; width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(200,153,63,.12); }
+    .product-path-status a { color: inherit; text-underline-offset: 3px; }
     .feature-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
     .feature-card { min-width: 0; display: grid; grid-template-columns: 168px minmax(0,1fr); min-height: 210px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
     .feature-card:nth-child(1), .feature-card:nth-child(9) { border-color: rgba(47,107,74,.42); }
@@ -478,16 +482,19 @@ const PageTemplates = `
     .trust-line p { margin: 7px 0 0; color: var(--muted); font-size: 15px; line-height: 1.55; text-wrap: pretty; }
 
     /* ---- Price ----------------------------------------------------------- */
-    .offer-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+    .offer-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
     .offer-card { min-width: 0; display: grid; grid-template-rows: auto auto 1fr auto; border: 2px solid var(--line); border-radius: var(--radius-lg); padding: clamp(26px,3vw,36px); background: var(--panel); box-shadow: var(--shadow-md); }
+    .offer-card.free { border-color: rgba(79,91,80,.32); }
     .offer-card.home { border-color: rgba(47,107,74,.42); }
     .offer-card.professional { border-color: rgba(200,153,63,.5); }
     .offer-label { color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+    .offer-card.free .offer-label { color: var(--muted); }
     .offer-card.home .offer-label { color: var(--leaf); }
     .offer-card h3 { margin: 10px 0 0; font-family: var(--font-serif); font-size: clamp(31px,3.2vw,42px); font-weight: 600; line-height: 1; }
     .offer-card ul { margin: 25px 0 0; padding: 0; list-style: none; }
     .offer-card li { display: flex; gap: 10px; border-top: 1px solid var(--line); padding: 11px 0; color: var(--muted); line-height: 1.45; }
     .offer-card li::before { content: "✓"; color: var(--leaf); font-weight: 900; }
+    .offer-card.free li::before { color: var(--muted); }
     .offer-card.professional li::before { color: var(--gold-ink); }
     .offer-price { margin-top: 24px; border-radius: var(--radius-md); padding: 18px 20px; background: var(--panel-soft); }
     .offer-price strong { display: block; font-family: var(--font-serif); font-size: clamp(25px,2.6vw,34px); font-weight: 600; line-height: 1.1; }
@@ -528,7 +535,7 @@ const PageTemplates = `
          gold mark and the menu button with nothing behind them. */
       .landing-navbar { background: rgba(12,18,13,.58); backdrop-filter: blur(12px); }
       .landing-menu-toggle { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,.3); border-radius: var(--radius-sm); padding: 8px 13px; color: #fff; background: rgba(12,18,13,.42); backdrop-filter: blur(6px); font-size: 13px; font-weight: 850; cursor: pointer; }
-      .landing-menu-toggle::before { content: ""; width: 15px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; box-shadow: 0 4px 0 currentColor inset; }
+      .landing-menu-toggle svg { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
       .landing-menu-toggle[aria-expanded="true"] { border-color: rgba(231,197,116,.62); background: rgba(231,197,116,.16); }
       /* Panel drops out of the bar; .landing-nav is already position:relative. */
       .landing-nav[data-menu-open="true"] .landing-links { display: grid; position: absolute; top: 100%; left: 0; right: 0; gap: 2px; padding: 8px clamp(20px,4vw,42px) 14px; border-radius: 0 0 12px 12px; background: #0f150f; box-shadow: 0 18px 40px rgba(0,0,0,.34); }
@@ -538,6 +545,7 @@ const PageTemplates = `
       .landing-copy { padding-top: 64px; }
       .section-head { grid-template-columns: minmax(0,1fr); gap: 16px; align-items: start; }
       .section h2 { max-width: 24ch; }
+      .product-paths, .offer-grid { grid-template-columns: minmax(0,1fr); }
       .imprint-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       /* Three cards in two columns would leave a half-width orphan. */
       .imprint-card:last-child { grid-column: 1 / -1; }
@@ -612,7 +620,7 @@ const PageTemplates = `
       <!-- Empty on desktop while the hero shows the rotating mark; landing.js
            reveals the flat white mark once the hero mark scrolls out of view. -->
       <a class="landing-brand" href="/" aria-label="hausv.org"><span class="landing-mark">{{template "hausvLandingMark" .}}</span></a>
-      <button class="landing-menu-toggle" type="button" data-landing-menu-toggle aria-expanded="false" aria-controls="landing-navigation">Menü</button>
+      <button class="landing-menu-toggle" type="button" data-landing-menu-toggle aria-expanded="false" aria-controls="landing-navigation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg><span>Menü</span></button>
       <nav id="landing-navigation" class="landing-links" aria-label="Navigation">
         <a href="#produkte">Produkte</a>
         <a href="#leistungen">Leistungen</a>
@@ -652,27 +660,33 @@ const PageTemplates = `
     <div class="section-inner">
       <div class="section-head">
         <div>
-          <p class="section-kicker">Zwei Produkte</p>
+          <p class="section-kicker">Drei Produkte</p>
           <h2>Passend zur Art, wie Sie verwalten.</h2>
         </div>
-        <p class="section-lead">HAUSV Home macht Selbstverwaltung einfach. HAUSV Professional gibt Hausverwaltungen dieselbe Klarheit über viele Einheiten hinweg.</p>
+        <p class="section-lead">Vom freien Self-Hosting über die bequeme Selbstverwaltung bis zum professionellen Betrieb: Sie wählen den passenden Weg.</p>
       </div>
       <div class="product-paths">
+        <article class="product-path free" id="free">
+          <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg></span><div><span class="product-path-kicker">Open Source · Self-Hosted</span><h3>HAUSV Free</h3></div></header>
+          <p>Die freie Open-Source-Lösung für alle, die HAUSV selbst betreiben und vollständig in der eigenen technischen Verantwortung halten möchten.</p>
+          <ul class="product-capabilities"><li>Für immer kostenlos</li><li>Frei selbst betreiben</li><li>GNU AGPL-3.0</li><li>Community-Support</li></ul>
+          <span class="product-path-status"><a href="https://github.com/inspr-at/hausv-org" rel="noopener noreferrer">Tickets &amp; Pull Requests auf GitHub</a></span>
+        </article>
         <article class="product-path home" id="home">
           <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-6h6v6"/></svg></span><div><span class="product-path-kicker">Für die Selbstverwaltung</span><h3>HAUSV Home</h3></div></header>
           <p>Der gehostete Einstieg für Eigentümer und Hausgemeinschaften, die Kommunikation, Aufgaben und Energie selbst übersichtlich organisieren möchten.</p>
-          <ul class="product-capabilities"><li>Hosted Service</li><li>Einfach selbst verwalten</li><li>Alle Portal-Kernfunktionen</li><li>12 Monate kostenlos</li></ul>
+          <ul class="product-capabilities"><li>Hosted Service</li><li>Einfach selbst verwalten</li><li>E-Mail-Support</li><li>12 Monate kostenlos</li></ul>
           <span class="product-path-status">Danach 12&nbsp;€ pro Jahr</span>
         </article>
         <article class="product-path professional" id="professional">
           <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M6 21V5l6-3 6 3v16"/><path d="M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1"/></svg></span><div><span class="product-path-kicker">Für Hausverwaltungen</span><h3>HAUSV Professional</h3></div></header>
           <p>Für professionelle Verwalter, die ihre Prozesse digital, nachvollziehbar und mit klar getrennten Rollen abbilden wollen – hosted oder im eigenen Betrieb.</p>
-          <ul class="product-capabilities"><li>Hosted oder Self-Hosted</li><li>Mandanten &amp; Berechtigungen</li><li>Strukturierte Schnittstellen</li><li>25 Einheiten kostenlos</li></ul>
+          <ul class="product-capabilities"><li>Hosted oder Self-Hosted</li><li>Mandanten &amp; Berechtigungen</li><li>Telefon- &amp; E-Mail-Support</li><li>25 Einheiten kostenlos</li></ul>
           <span class="product-path-status">Danach 3&nbsp;€ je Einheit und Monat</span>
         </article>
       </div>
       <div class="shared-core" aria-label="Gemeinsamer Vertrauenskern">
-        <div class="shared-core-head"><span>Ein gemeinsamer Kern</span><strong>Vertrauen verbindet beide Wege.</strong></div>
+        <div class="shared-core-head"><span>Ein gemeinsamer Kern</span><strong>Vertrauen verbindet alle drei Wege.</strong></div>
         <div class="shared-core-item"><strong>Rollen &amp; Rechte</strong><span>Nur sehen, was zur eigenen Aufgabe gehört.</span></div>
         <div class="shared-core-item"><strong>Dokumente</strong><span>Geschützt und passend freigegeben.</span></div>
         <div class="shared-core-item"><strong>Messwerte</strong><span>Lesend, bestätigt und nachvollziehbar.</span></div>
@@ -737,25 +751,31 @@ const PageTemplates = `
           <p class="section-kicker">Einfach kalkulierbar</p>
           <h2>Klein starten. Erst mit dem Nutzen wachsen.</h2>
         </div>
-        <p class="section-lead">Beide Produkte starten kostenlos. Danach bleibt die Preislogik bewusst einfach und ohne versteckte Funktionspakete.</p>
+        <p class="section-lead">Alle drei Produkte starten kostenlos. Danach bleibt die Preislogik bewusst einfach und ohne versteckte Funktionspakete.</p>
       </div>
       <div class="offer-grid" aria-label="Produkte und Preise">
+        <article class="offer-card free">
+          <span class="offer-label">Open Source</span>
+          <h3>HAUSV Free</h3>
+          <ul><li>Self-Hosted in eigener Verantwortung</li><li>Der vollständige AGPL-3.0-Kern</li><li>Support über Tickets und Pull Requests auf GitHub</li></ul>
+          <div class="offer-price"><strong>0&nbsp;€ für immer</strong><span>frei verwenden, anpassen und selbst betreiben</span></div>
+        </article>
         <article class="offer-card home">
           <span class="offer-label">Selbstverwaltung</span>
           <h3>HAUSV Home</h3>
-          <ul><li>Als Hosted Service verfügbar</li><li>Für Wohnung, Haus und kleine Gemeinschaft</li><li>12 Monate mit vollem Umfang kostenlos</li></ul>
+          <ul><li>Als Hosted Service verfügbar</li><li>Für Wohnung, Haus und kleine Gemeinschaft</li><li>E-Mail-Support inklusive</li><li>12 Monate mit vollem Umfang kostenlos</li></ul>
           <div class="offer-price"><strong>12&nbsp;€ pro Jahr</strong><span>nach dem kostenlosen ersten Jahr</span></div>
         </article>
         <article class="offer-card professional">
           <span class="offer-label">Hausverwaltungen</span>
           <h3>HAUSV Professional</h3>
-          <ul><li>Hosted oder Self-Hosted</li><li>Für professionelle Hausverwaltungen</li><li>Die ersten 25 Einheiten kostenlos</li></ul>
+          <ul><li>Hosted oder Self-Hosted</li><li>Für professionelle Hausverwaltungen</li><li>Telefon- und E-Mail-Support inklusive</li><li>Die ersten 25 Einheiten kostenlos</li></ul>
           <div class="offer-price"><strong>3&nbsp;€ je Einheit / Monat</strong><span>ab der 26. verwalteten Einheit</span></div>
         </article>
       </div>
       <div class="open-source-note">
-        <div><strong>Der Open-Source-Kern bleibt kostenlos.</strong><p>Die technische Basis ist quelloffen und steht unter der GNU AGPL-3.0. Professioneller Betrieb, Einrichtung und Support sind davon getrennte Services.</p></div>
-        <a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener noreferrer">AGPL-3.0 ansehen</a>
+        <div><strong>HAUSV Free bleibt dauerhaft kostenlos.</strong><p>Die technische Basis ist quelloffen und steht unter der GNU AGPL-3.0. Hosting und direkter Support sind davon getrennte Services.</p></div>
+        <a href="https://github.com/inspr-at/hausv-org" rel="noopener noreferrer">GitHub-Repository öffnen</a>
       </div>
       <div class="boundary-strip" aria-label="Klare Produktgrenzen">
         <div><strong>Kommunikation &amp; Energie</strong><span>HAUSV bündelt Hausalltag, Zusammenarbeit und Energieverwaltung.</span></div>
