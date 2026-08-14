@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.83.0",
+			Date:     "14. August 2026",
+			Kind:     "HAUSV Home",
+			Headline: "Home Assistant lässt sich sicher aus dem eigenen Netzwerk koppeln.",
+			Intro:    "Ein lokaler Connector verbindet das Zuhause ausgehend mit HAUSV, ohne die Home-Assistant-Adresse oder den Zugangstoken an das Portal zu übertragen.",
+			Items: []NoteItem{
+				{Label: "Einmal-Code", Text: "Die Kopplung beginnt mit einem zehn Minuten gültigen Code, der nur einmal verwendet werden kann."},
+				{Label: "Lokal geschützt", Text: "Home-Assistant-Adresse und Zugangstoken bleiben auf dem eigenen System; HAUSV erhält nur den Connector-Status."},
+				{Label: "Unter Kontrolle", Text: "Der Zugang kann erneuert oder sofort widerrufen werden; Messwerte und Gerätesteuerung sind noch nicht freigeschaltet."},
+			},
+		},
+		{
 			Version:  "0.82.0",
 			Date:     "14. August 2026",
 			Kind:     "HAUSV Home",

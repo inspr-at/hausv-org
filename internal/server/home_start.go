@@ -150,30 +150,60 @@ func (a *app) verifyHomeStart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) homeConnectorStart(w http.ResponseWriter, r *http.Request) {
-	if !a.isMarketingHost(r) || a.homeReservations == nil || a.homeSetupSessions == nil {
-		http.NotFound(w, r)
+	reservation, ok := a.homeSetupReservation(r)
+	if !ok || a.homeConnectors == nil {
+		http.Redirect(w, r, "/start", http.StatusSeeOther)
 		return
 	}
-	cookie, err := r.Cookie(homeSetupCookieName)
+	connector, _, err := a.homeConnectors.Get(reservation.Slug)
 	if err != nil {
-		http.Redirect(w, r, "/start", http.StatusSeeOther)
+		logWarn("home connector status failed", "error_type", "store")
+		http.Error(w, "Verbindungsstatus konnte nicht geladen werden", http.StatusInternalServerError)
 		return
 	}
-	email, slug, _, ok := a.homeSetupSessions.Get(cookie.Value)
-	if !ok {
-		http.Redirect(w, r, "/start", http.StatusSeeOther)
-		return
+	a.renderHomeConnectorStart(w, reservation, connector, false, "", time.Now())
+}
+
+func (a *app) renderHomeConnectorStart(w http.ResponseWriter, reservation store.HomeReservation, connector store.HomeConnector, pairingCreated bool, pairingCode string, now time.Time) {
+	connected := connector.Status == store.HomeConnectorConnected && connector.LastSeenAt != nil
+	fresh := connected && now.Sub(*connector.LastSeenAt) <= homeConnectorFreshFor
+	state := "Noch nicht gekoppelt"
+	detail := "Der lokale Connector hat sich noch nicht bei HAUSV gemeldet."
+	if connected && fresh {
+		state = "Verbunden · nur lesen"
+		detail = "Die lokale Verbindung ist aktuell. Messwerte werden in diesem Schritt noch nicht übernommen."
+	} else if connected {
+		state = "Verbindung nicht aktuell"
+		detail = "Der lokale Connector hat sich länger nicht gemeldet. Bestehende Zugangsdaten bleiben unverändert."
+	} else if connector.Status == store.HomeConnectorRevoked {
+		state = "Verbindung widerrufen"
+		detail = "Der bisherige Connector-Zugang ist nicht mehr gültig."
 	}
-	reservation, found, err := a.homeReservations.Get(slug)
-	if err != nil || !found || reservation.OwnerEmail != normalizeEmail(email) || reservation.Status != store.HomeReservationEmailConfirmed {
-		http.Redirect(w, r, "/start", http.StatusSeeOther)
-		return
+	pairingPending := connector.PairingExpiresAt != nil && connector.PairingExpiresAt.After(now)
+	data := map[string]any{
+		"Title":                "Zuhause bestätigt",
+		"HouseholdName":        reservation.HouseholdName,
+		"PublicPath":           "/" + reservation.Slug,
+		"ConnectorState":       state,
+		"ConnectorDetail":      detail,
+		"Connected":            connected,
+		"Fresh":                fresh,
+		"PairingPending":       pairingPending,
+		"PairingCreated":       pairingCreated,
+		"PairingCode":          pairingCode,
+		"EntityCount":          connector.EntityCount,
+		"HomeAssistantVersion": connector.HomeAssistantVersion,
+		"LastSeen": func() string {
+			if connector.LastSeenAt == nil {
+				return ""
+			}
+			return formatLocalDateTime(*connector.LastSeenAt)
+		}(),
 	}
-	a.render(w, "homeConnectorStart", map[string]any{
-		"Title":         "Zuhause bestätigt",
-		"HouseholdName": reservation.HouseholdName,
-		"PublicPath":    "/" + reservation.Slug,
-	})
+	if pairingCreated {
+		data["PairingExpires"] = formatLocalTime(now.Add(homeConnectorPairingTTL))
+	}
+	a.render(w, "homeConnectorStart", data)
 }
 
 func (a *app) homePathAvailable(slug string) bool {

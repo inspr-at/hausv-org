@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/homeconnector"
 	"github.com/inspr-at/hausv-org/internal/server"
 )
 
@@ -48,6 +49,16 @@ func main() {
 	// Structured JSON logs to stderr; the request/panic middleware uses the
 	// default logger (HAUSV-141).
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, nil)))
+
+	if len(os.Args) > 1 && os.Args[1] == "connector" {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := homeconnector.Run(ctx, os.Args[2:], os.Stdout, os.Stderr); err != nil {
+			slog.Error("connector stopped", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
 
 	if len(os.Args) > 1 && os.Args[1] == "charging-mode" {
 		if err := runChargingMode(os.Args[2:]); err != nil {
