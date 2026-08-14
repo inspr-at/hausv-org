@@ -3,7 +3,7 @@
 
 The release gate binds a deployment to one exact commit. That guarantee is
 only worth as much as the inputs behind it: a floating `actions/checkout@v6`
-or a `FROM golang:1.26.5-alpine` without digest lets the very same commit
+or a `FROM golang:1.26.6-alpine` without digest lets the very same commit
 build from different bytes tomorrow.
 
 This check is deliberately dumb and textual. It runs in CI and locally, needs

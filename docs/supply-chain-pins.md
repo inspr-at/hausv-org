@@ -2,7 +2,7 @@
 
 Die Release-Freigabe bindet ein Deployment an genau einen Commit. Diese Zusage
 ist nur so viel wert wie die Eingaben dahinter: ein bewegliches
-`actions/checkout@v6` oder ein `FROM golang:1.26.5-alpine` ohne Digest lässt
+`actions/checkout@v6` oder ein `FROM golang:1.26.6-alpine` ohne Digest lässt
 denselben Commit morgen aus anderen Bytes bauen.
 
 Deshalb sind die extern aufgelösten CI- und Build-Eingaben festgelegt — bis auf
@@ -70,7 +70,7 @@ führenden `v` schlägt `check-supply-chain-pins.py` fehl.
 ### Docker-Basisimage
 
 ```fish
-docker buildx imagetools inspect golang:1.26.5-alpine --format '{{.Manifest.Digest}}'
+docker buildx imagetools inspect golang:1.26.6-alpine --format '{{.Manifest.Digest}}'
 ```
 
 Tag und Digest gehören zusammen in dieselbe `FROM`-Zeile: der Tag erklärt, was

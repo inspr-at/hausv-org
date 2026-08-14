@@ -100,6 +100,7 @@ func Notes() []Note {
 				{Label: "Top-Funktionen", Text: "Hausüberblick, Kommunikation, Termine, Anliegen, Dokumente, Übergaben, Abstimmungen, Rechte, Energie und Integrationen erhalten jeweils eine eigene anschauliche Einführung."},
 				{Label: "HAUSV Home", Text: "Der gehostete Weg für die Selbstverwaltung startet zwölf Monate kostenlos und kostet danach 12 Euro pro Jahr."},
 				{Label: "HAUSV Professional", Text: "Hausverwaltungen können hosted oder selbst betrieben starten; 25 Einheiten sind kostenlos, darüber gelten 3 Euro je Einheit und Monat."},
+				{Label: "Sicherer Build", Text: "Die Anwendung wird mit Go 1.26.6 und den aktuellen Sicherheitskorrekturen gebaut."},
 			},
 		},
 		{

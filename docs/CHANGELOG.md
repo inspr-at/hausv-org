@@ -13,6 +13,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 
 - **Preise und Produktgrenzen sind sofort verständlich.** HAUSV Home startet zwölf Monate kostenlos und kostet danach 12 Euro pro Jahr; HAUSV Professional umfasst 25 Einheiten kostenlos und kostet darüber 3 Euro je Einheit und Monat.
 - **Die Positionierung bleibt eindeutig.** HAUSV verbindet Kommunikation und Energieverwaltung, während Jahresabrechnung und Buchhaltung weiterhin über bestehende Fachsysteme erfolgen.
+- **Der Build verwendet die aktuellen Go-Sicherheitskorrekturen.** Die produktive Anwendung und ihre automatischen Prüfungen laufen mit Go 1.26.6.
 
 ## [0.78.0] - 2026-08-13
 

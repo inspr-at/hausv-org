@@ -16,7 +16,7 @@
           # go.mod and Node 24. Kein fish mehr — scripts/*.sh laufen unter der
           # bash, die jedes System ohnehin mitbringt (HAUSV-427).
           #
-          # nixpkgs-unstable currently ships the exact Go in go.mod (1.26.5).
+          # nixpkgs-unstable currently ships the exact Go in go.mod (1.26.6).
           # If the two ever drift, Go's own GOTOOLCHAIN fetches the pinned
           # version on demand, so builds stay correct either way.
           packages = with pkgs; [
