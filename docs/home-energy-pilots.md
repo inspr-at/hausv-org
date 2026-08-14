@@ -118,7 +118,19 @@ ausgehende Verbindung aus dem privaten Netzwerk.
 
 ### Lokaler Self-Service-Connector
 
-Nach bestätigter Reservierung erzeugt die Eigentümerin oder der Eigentümer im
+Nach bestätigter Reservierung aktiviert die Eigentümerin oder der Eigentümer im
+geschützten Einrichtungsbereich das private Portal. HAUSV speichert den neuen
+Mandanten und die hausbezogene Eigentümer-Mitgliedschaft atomar in SQLite,
+startet eine Portalsitzung und leitet direkt auf `/<slug>/app` weiter. Der
+Mandant wird danach bei jeder Anfrage aus SQLite aufgelöst und bleibt ohne
+Eintrag in `WEG_TENANTS_JSON` über Neustarts und Deployments erhalten.
+
+Die Aktivierung ist idempotent. Eine erneute E-Mail-Bestätigung lässt einen
+bereits aktiven Bereich aktiv. Eine bestehende globale Person behält Namen,
+Anmeldeverfahren und Mitgliedschaften anderer Häuser unverändert; ergänzt wird
+nur die Eigentümer-Mitgliedschaft für den neuen Pfad.
+
+Unabhängig von der Portalaktivierung erzeugt die Eigentümerin oder der Eigentümer im
 geschützten Einrichtungsbereich einen zehn Minuten gültigen Einmal-Code. Der
 lokale Connector wird für Linux amd64 oder arm64 heruntergeladen und erhält die
 Home-Assistant-Adresse sowie den Long-Lived Access Token ausschließlich über

@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.84.0] - 2026-08-14
+
+### Neu
+
+- **Ein reserviertes HAUSV Home lässt sich direkt als privates Portal aktivieren.** Nach der E-Mail-Bestätigung genügt eine eindeutige Aktion; anschließend öffnet sich der persönliche Hausüberblick bereits angemeldet.
+- **Der persönliche Pfad bleibt dauerhaft verfügbar.** Aktivierte Zuhause-Bereiche werden sicher gespeichert und nach Neustarts oder Aktualisierungen automatisch wieder erkannt.
+
+### Verbessert
+
+- **Eigentümerzugriff und Portal entstehen gemeinsam.** HAUSV veröffentlicht keinen Bereich ohne den dazugehörigen, hausbezogenen Eigentümerzugang.
+- **Einrichtung und Energieverbindung bleiben unabhängig.** Das private Portal kann sofort genutzt werden; der lokale Home-Assistant-Connector lässt sich davor oder danach koppeln.
+
 ## [0.83.0] - 2026-08-14
 
 ### Neu

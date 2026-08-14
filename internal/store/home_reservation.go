@@ -14,6 +14,7 @@ import (
 const (
 	HomeReservationEmailPending   = "email-pending"
 	HomeReservationEmailConfirmed = "email-confirmed"
+	HomeReservationActive         = "active"
 )
 
 var ErrHomeReservationConflict = errors.New("home path already reserved")
@@ -76,7 +77,9 @@ func (s *MemoryHomeReservationStore) Confirm(slug, ownerEmail string, at time.Ti
 		return HomeReservation{}, false, nil
 	}
 	at = homeReservationTime(at)
-	item.Status = HomeReservationEmailConfirmed
+	if item.Status != HomeReservationActive {
+		item.Status = HomeReservationEmailConfirmed
+	}
 	item.UpdatedAt = at
 	item.ConfirmedAt = &at
 	s.items[slug] = item
@@ -88,6 +91,20 @@ func (s *MemoryHomeReservationStore) Get(slug string) (HomeReservation, bool, er
 	defer s.mu.Unlock()
 	item, ok := s.items[textutil.Slug(slug)]
 	return item, ok, nil
+}
+
+func (s *MemoryHomeReservationStore) markActive(slug, ownerEmail string, at time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	item, ok := s.items[textutil.Slug(slug)]
+	if !ok || item.OwnerEmail != textutil.Email(ownerEmail) ||
+		(item.Status != HomeReservationEmailConfirmed && item.Status != HomeReservationActive) {
+		return ErrHomePortalActivationDenied
+	}
+	item.Status = HomeReservationActive
+	item.UpdatedAt = homeReservationTime(at)
+	s.items[item.Slug] = item
+	return nil
 }
 
 func (s *MemoryHomeReservationStore) PurgePendingBefore(before time.Time) (int64, error) {
@@ -169,8 +186,9 @@ func (s *SQLHomeReservationStore) Confirm(slug, ownerEmail string, at time.Time)
 	ownerEmail = textutil.Email(ownerEmail)
 	at = homeReservationTime(at)
 	result, err := s.db.Exec(`UPDATE home_reservations
-		SET status=?, confirmed_at=?, updated_at=? WHERE slug=? AND owner_email=?`,
-		HomeReservationEmailConfirmed, homeReservationTimestamp(at), homeReservationTimestamp(at), slug, ownerEmail)
+		SET status=CASE WHEN status=? THEN status ELSE ? END, confirmed_at=COALESCE(confirmed_at,?), updated_at=?
+		WHERE slug=? AND owner_email=?`, HomeReservationActive, HomeReservationEmailConfirmed,
+		homeReservationTimestamp(at), homeReservationTimestamp(at), slug, ownerEmail)
 	if err != nil {
 		return HomeReservation{}, false, err
 	}

@@ -74,7 +74,7 @@ func (a *app) requestHomeStart(w http.ResponseWriter, r *http.Request) {
 	if !a.allowAuthRequest(w, r, homeStartSourcePolicy, homeStartAccountPolicy, accountKey) {
 		return
 	}
-	if !validHomeStartName(r.FormValue("household_name")) || !a.homePathAvailable(slug) ||
+	if !validHomeStartName(r.FormValue("household_name")) || !a.homePathReservableBy(slug, email) ||
 		r.FormValue("authority") != "1" || !validHomeStartEmail(email) || a.homeReservations == nil ||
 		a.homeSetupTokens == nil || a.homeSetupSessions == nil || a.mailer == nil || !a.mailer.Configured() {
 		http.Redirect(w, r, "/start?sent=1", http.StatusSeeOther)
@@ -165,6 +165,10 @@ func (a *app) homeConnectorStart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) renderHomeConnectorStart(w http.ResponseWriter, reservation store.HomeReservation, connector store.HomeConnector, pairingCreated bool, pairingCode string, now time.Time) {
+	portalActive := false
+	if a.homePortals != nil {
+		_, portalActive, _ = a.homePortals.Get(reservation.Slug)
+	}
 	connected := connector.Status == store.HomeConnectorConnected && connector.LastSeenAt != nil
 	fresh := connected && now.Sub(*connector.LastSeenAt) <= homeConnectorFreshFor
 	state := "Noch nicht gekoppelt"
@@ -184,6 +188,7 @@ func (a *app) renderHomeConnectorStart(w http.ResponseWriter, reservation store.
 		"Title":                "Zuhause bestätigt",
 		"HouseholdName":        reservation.HouseholdName,
 		"PublicPath":           "/" + reservation.Slug,
+		"PortalActive":         portalActive,
 		"ConnectorState":       state,
 		"ConnectorDetail":      detail,
 		"Connected":            connected,
@@ -206,6 +211,34 @@ func (a *app) renderHomeConnectorStart(w http.ResponseWriter, reservation store.
 	a.render(w, "homeConnectorStart", data)
 }
 
+func (a *app) activateHomePortal(w http.ResponseWriter, r *http.Request) {
+	reservation, ok := a.homeSetupReservation(r)
+	if !ok || a.homePortals == nil {
+		http.Redirect(w, r, "/start", http.StatusSeeOther)
+		return
+	}
+	if !sameOriginPost(r) {
+		http.Error(w, "Bad request", http.StatusForbidden)
+		return
+	}
+	if _, configured := a.tenants[reservation.Slug]; configured {
+		http.Error(w, "Pfad ist nicht verfügbar", http.StatusConflict)
+		return
+	}
+	portal, _, err := a.homePortals.Activate(reservation.Slug, reservation.OwnerEmail, time.Now())
+	if err != nil {
+		logWarn("home portal activation failed", "error_type", "store")
+		http.Error(w, "Portal konnte nicht aktiviert werden", http.StatusInternalServerError)
+		return
+	}
+	if err := a.startSession(w, reservation.OwnerEmail, portal.Slug, authMethodEmail); err != nil {
+		logWarn("home portal session failed", "error_type", "session")
+		http.Error(w, "Portal wurde aktiviert. Bitte melden Sie sich über Ihren Portalpfad an.", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/"+portal.Slug+"/app?activated=1", http.StatusSeeOther)
+}
+
 func (a *app) homePathAvailable(slug string) bool {
 	if !homePathPattern.MatchString(slug) {
 		return false
@@ -215,6 +248,26 @@ func (a *app) homePathAvailable(slug string) bool {
 	}
 	_, configured := a.tenantBySlug(slug)
 	return !configured
+}
+
+func (a *app) homePathReservableBy(slug, ownerEmail string) bool {
+	if !homePathPattern.MatchString(slug) {
+		return false
+	}
+	if _, reserved := homeReservedPaths[slug]; reserved {
+		return false
+	}
+	if _, configured := a.tenants[slug]; configured {
+		return false
+	}
+	if a.homePortals == nil {
+		return true
+	}
+	portal, active, err := a.homePortals.Get(slug)
+	if err != nil || !active {
+		return err == nil
+	}
+	return portal.OwnerEmail == normalizeEmail(ownerEmail)
 }
 
 func validHomeStartName(value string) bool {

@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.84.0",
+			Date:     "14. August 2026",
+			Kind:     "HAUSV Home",
+			Headline: "Der reservierte Zuhause-Bereich wird mit einem Klick zum privaten Portal.",
+			Intro:    "Nach der E-Mail-Bestätigung aktiviert HAUSV den persönlichen Pfad und meldet die Eigentümerin oder den Eigentümer direkt im Hausüberblick an.",
+			Items: []NoteItem{
+				{Label: "Direkter Einstieg", Text: "Die Aktivierung führt ohne weiteren Anmeldeschritt in das neue private Portal."},
+				{Label: "Dauerhafter Pfad", Text: "Der Zuhause-Bereich bleibt auch nach Neustarts und Aktualisierungen automatisch erreichbar."},
+				{Label: "Sicher verbunden", Text: "Portal und hausbezogener Eigentümerzugang werden gemeinsam gespeichert; die Energieverbindung bleibt optional."},
+			},
+		},
+		{
 			Version:  "0.83.0",
 			Date:     "14. August 2026",
 			Kind:     "HAUSV Home",
