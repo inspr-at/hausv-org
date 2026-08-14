@@ -88,6 +88,7 @@ fixture() {
             HAUSV_DEPLOY_COMPOSE_DIR="/srv/hausv/compose" \
             HAUSV_DEPLOY_COMPOSE_FILE="/srv/hausv/compose/docker-compose.yml" \
             HAUSV_DEPLOY_COMPOSE_PROJECT=hausv \
+            HAUSV_DEPLOY_CONTAINER=hausv-demo \
             HAUSV_DEPLOY_COMPOSE_LOCK="/run/lock/compose-hausv.lock" \
             HAUSV_DEPLOY_FLOCK_BIN="/run/current-system/sw/bin/flock" \
             HAUSV_DEPLOY_BASE64_BIN="$deploy_fixture_base64_bin" \
@@ -109,6 +110,7 @@ fixture() {
             HAUSV_DEPLOY_COMPOSE_DIR="/srv/hausv/compose" \
             HAUSV_DEPLOY_COMPOSE_FILE="/srv/hausv/compose/docker-compose.yml" \
             HAUSV_DEPLOY_COMPOSE_PROJECT=hausv \
+            HAUSV_DEPLOY_CONTAINER=hausv-demo \
             HAUSV_DEPLOY_COMPOSE_LOCK="/run/lock/compose-hausv.lock" \
             HAUSV_DEPLOY_FLOCK_BIN="/run/current-system/sw/bin/flock" \
             HAUSV_DEPLOY_BASE64_BIN="$deploy_fixture_base64_bin" \

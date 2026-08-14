@@ -164,6 +164,10 @@ base64_bin=${HAUSV_DEPLOY_BASE64_BIN:-/usr/bin/base64}
 mktemp_bin=${HAUSV_DEPLOY_MKTEMP_BIN:-/usr/bin/mktemp}
 compose_command="docker compose --project-directory $compose_dir -p $compose_project -f $compose_file"
 service=hausv-org
+container=${HAUSV_DEPLOY_CONTAINER:-$service}
+case $container in
+    ""|*[!A-Za-z0-9_.-]*) fail_before_change "HAUSV_DEPLOY_CONTAINER must be a valid Docker container name" ;;
+esac
 build_dir=/tmp/hausv-build
 data_dir=$(required_deploy_env HAUSV_DEPLOY_DATA_DIR)
 snapshot_root=$(required_deploy_env HAUSV_DEPLOY_SNAPSHOT_ROOT)
@@ -343,11 +347,11 @@ preflight_body="\
     locked_close=\"\$(printf \"\\051\")\"; \
     locked_build_marker=\"$live_version \${locked_open}$live_commit\${locked_close}\"; \
     printf \"%s\" \"\$locked_live_page\" | grep -F \"\$locked_build_marker\" >/dev/null; \
-    test \"\$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $service)\" = healthy; \
-    running_image_id=\"\$(docker inspect --format '{{.Image}}' $service)\"; \
+    test \"\$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $container)\" = healthy; \
+    running_image_id=\"\$(docker inspect --format '{{.Image}}' $container)\"; \
     latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\"; \
-    compose_project_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.project\"}}' $service)\"; \
-    compose_service_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.service\"}}' $service)\"; \
+    compose_project_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.project\"}}' $container)\"; \
+    compose_service_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.service\"}}' $container)\"; \
     test -n \"\$running_image_id\"; \
     test \"\$running_image_id\" = \"\$latest_image_id\"; \
     test \"\$compose_project_label\" = $compose_project; \
@@ -401,7 +405,7 @@ if [ "$schema_changed" -eq 1 ]; then
     snapshot_helper=$(< "$repo/scripts/create-predeploy-snapshot.py") \
         || fail_before_change "cannot read the pre-deploy snapshot helper"
     snapshot_body="\
-        test \"\$(docker inspect --format '{{.Image}}' $service)\" = $expected_running_image_id; \
+        test \"\$(docker inspect --format '{{.Image}}' $container)\" = $expected_running_image_id; \
         test \"\$(docker image inspect --format '{{.Id}}' $image)\" = $expected_running_image_id; \
         sudo -n /run/current-system/sw/bin/python3 - \
         --source $data_dir \
@@ -421,7 +425,7 @@ HAUSV_PREDEPLOY_PY"
     if ! snapshot_proof=$(ssh -p "$ssh_port" "$ssh_host" \
         "$(remote_sh_command "$snapshot_script")"); then
         current_health=$(ssh -p "$ssh_port" "$ssh_host" \
-            "docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $service" 2>/dev/null | tr -d '[:space:]')
+            "docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $container" 2>/dev/null | tr -d '[:space:]')
         if [ "$current_health" = healthy ]; then
             echo "release refused: fresh consistent pre-deploy snapshot failed." >&2
             echo "recovery verified: the current production service is healthy; no new image or schema was activated." >&2
@@ -451,7 +455,7 @@ HAUSV_PREDEPLOY_PY"
 fi
 
 preserve_body="\
-    running_image_id=\"\$(docker inspect --format '{{.Image}}' $service)\"; \
+    running_image_id=\"\$(docker inspect --format '{{.Image}}' $container)\"; \
     latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\"; \
     test -n \"\$running_image_id\"; \
     test \"\$running_image_id\" = $expected_running_image_id; \
@@ -492,12 +496,12 @@ done
 
 echo "replacing the production container…"
 activate_body="\
-    running_image_id=\"\$(docker inspect --format '{{.Image}}' $service)\" || exit 42; \
+    running_image_id=\"\$(docker inspect --format '{{.Image}}' $container)\" || exit 42; \
     latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\" || exit 42; \
     previous_image_id=\"\$(docker image inspect --format '{{.Id}}' $previous_tag)\" || exit 42; \
     release_image_id=\"\$(docker image inspect --format '{{.Id}}' $release_tag)\" || exit 42; \
-    compose_project_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.project\"}}' $service)\" || exit 42; \
-    compose_service_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.service\"}}' $service)\" || exit 42; \
+    compose_project_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.project\"}}' $container)\" || exit 42; \
+    compose_service_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.service\"}}' $container)\" || exit 42; \
     if [ -z \"\$running_image_id\" ] \
         || [ -z \"\$release_image_id\" ] \
         || [ \"\$running_image_id\" != $expected_running_image_id ] \
@@ -528,7 +532,7 @@ post_ok=0
 deployed=""
 container_health=""
 for _ in $(seq "$verify_attempts"); do
-    container_health=$(ssh -p "$ssh_port" "$ssh_host" "docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $service" 2>/dev/null | tr -d '[:space:]')
+    container_health=$(ssh -p "$ssh_port" "$ssh_host" "docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $container" 2>/dev/null | tr -d '[:space:]')
     health_lines=$(curl -fsS --max-time 10 "$health_url" 2>/dev/null)
     page_text=$(curl -fsS --max-time 10 "$live_url" 2>/dev/null)
     deployed_fields=$(visible_build "$page_text")
@@ -553,10 +557,10 @@ fi
 # host and never printed, avoiding accidental disclosure of operational data.
 critical_pattern='application initialization failed|sqlite unavailable|migration .* failed|import to sqlite failed|not atomic|expired (audit|energy) data purge failed|panic|fatal'
 startlog_script="\
-    started=\"\$(docker inspect --format '{{.State.StartedAt}}' $service)\"; \
+    started=\"\$(docker inspect --format '{{.State.StartedAt}}' $container)\"; \
     log_file=\"\$(mktemp)\"; \
     trap 'rm -f \"\$log_file\"' EXIT; \
-    docker logs $service --since \"\$started\" >\"\$log_file\" 2>&1; \
+    docker logs $container --since \"\$started\" >\"\$log_file\" 2>&1; \
     grep -F '\"msg\":\"listening\"' \"\$log_file\" >/dev/null; \
     if grep -qiE '$critical_pattern' \"\$log_file\"; then exit 1; fi"
 ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$startlog_script")" \
