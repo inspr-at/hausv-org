@@ -293,16 +293,16 @@ async function assertMapIntegratedPortalSwitcher() {
   if ((await switcher.count()) !== 1 || await page.locator('.side-foot .portal-context-switch').count()) {
     fail('Portalwechsler ist nicht ausschließlich in die Sidebar-Karte integriert');
   }
-  if ((await page.locator('.side-address-label strong').textContent())?.trim() !== 'Demohaus') {
-    fail('Portalwechsler zeigt vor dem Wechsel nicht den aktiven Portalnamen');
+  if ((await page.locator('.side-map-top .portal-context-current strong').textContent())?.trim() !== 'Demohaus' || await page.locator('.side-address-label').count()) {
+    fail('Portalwechsler zeigt den aktiven Portalnamen nicht eindeutig im Kartenkopf');
   }
   await switcher.locator('summary').click();
   await switcher.locator('form').filter({ hasText: 'Haus B' }).getByRole('button').click();
   await page.waitForLoadState('networkidle');
   if (new URL(page.url()).pathname !== '/haus-b/app' ||
-      (await page.locator('.side-address-label strong').textContent())?.trim() !== 'Haus B' ||
       !(await page.locator('.side-map-tile').count()) ||
-      (await page.locator('.portal-context-current strong').textContent())?.trim() !== 'Haus B · Admin') {
+      (await page.locator('.portal-context-current strong').textContent())?.trim() !== 'Haus B' ||
+      !(await page.locator('.portal-context-current small').textContent())?.includes('Admin')) {
     fail(`Portalwechsel aktualisiert URL, Name, Rolle oder Karte nicht atomar (${page.url()})`);
   }
 

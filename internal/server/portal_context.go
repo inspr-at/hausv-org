@@ -80,6 +80,15 @@ func (a *app) ownTenantSlugs(email string) []string {
 			}
 		}
 	}
+	if a.homePortals != nil {
+		if portals, err := a.homePortals.ListByOwner(email); err == nil {
+			for _, portal := range portals {
+				if slug := normalizeSlug(portal.Slug); slug != "" {
+					seen[slug] = struct{}{}
+				}
+			}
+		}
+	}
 	for slug := range a.tenants {
 		if a.isConfirmedHomePortalOwner(email, slug) {
 			seen[normalizeSlug(slug)] = struct{}{}

@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.91.1",
+			Date:     "14. August 2026",
+			Kind:     "Portalwechsel",
+			Headline: "Der Kartenkopf zeigt alle eigenen Zuhause klar und vollständig.",
+			Intro:    "Der Wechsler sitzt oben auf der Karte, vermeidet doppelte Ortsangaben und behält neu angelegte Portale zuverlässig in der Auswahl.",
+			Items: []NoteItem{
+				{Label: "Übersichtlich", Text: "Die aktive Liegenschaft erscheint einmal im oberen Kartenverlauf; lange Einträge dürfen im Menü umbrechen."},
+				{Label: "Vollständig", Text: "Aktivierte Home-Portale bleiben nach jedem Wechsel auswählbar."},
+			},
+		},
+		{
 			Version:  "0.91.0",
 			Date:     "14. August 2026",
 			Kind:     "Portalwechsel",

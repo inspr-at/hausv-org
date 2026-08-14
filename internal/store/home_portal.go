@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ type HomePortal struct {
 type HomePortalStorage interface {
 	Activate(slug, ownerEmail string, at time.Time) (HomePortal, bool, error)
 	Get(slug string) (HomePortal, bool, error)
+	ListByOwner(ownerEmail string) ([]HomePortal, error)
 }
 
 // MemoryHomePortalStore mirrors the production activation boundary for handler
@@ -114,6 +116,23 @@ func (s *MemoryHomePortalStore) Get(slug string) (HomePortal, bool, error) {
 	defer s.mu.Unlock()
 	item, ok := s.items[textutil.Slug(slug)]
 	return item, ok, nil
+}
+
+func (s *MemoryHomePortalStore) ListByOwner(ownerEmail string) ([]HomePortal, error) {
+	if s == nil {
+		return nil, fmt.Errorf("home portal store unavailable")
+	}
+	ownerEmail = textutil.Email(ownerEmail)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	items := make([]HomePortal, 0)
+	for _, item := range s.items {
+		if item.OwnerEmail == ownerEmail {
+			items = append(items, item)
+		}
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].Slug < items[j].Slug })
+	return items, nil
 }
 
 type SQLHomePortalStore struct {
@@ -210,6 +229,30 @@ func (s *SQLHomePortalStore) Get(slug string) (HomePortal, bool, error) {
 		return HomePortal{}, false, fmt.Errorf("home portal store unavailable")
 	}
 	return getHomePortal(s.db.QueryRow, textutil.Slug(slug))
+}
+
+func (s *SQLHomePortalStore) ListByOwner(ownerEmail string) ([]HomePortal, error) {
+	if s == nil || s.db == nil {
+		return nil, fmt.Errorf("home portal store unavailable")
+	}
+	rows, err := s.db.Query(`SELECT slug,household_name,owner_email,activated_at,updated_at
+		FROM home_portals WHERE owner_email=? ORDER BY slug`, textutil.Email(ownerEmail))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]HomePortal, 0)
+	for rows.Next() {
+		var item HomePortal
+		var activatedAt, updatedAt string
+		if err := rows.Scan(&item.Slug, &item.HouseholdName, &item.OwnerEmail, &activatedAt, &updatedAt); err != nil {
+			return nil, err
+		}
+		item.ActivatedAt = parseHomeReservationTimestamp(activatedAt)
+		item.UpdatedAt = parseHomeReservationTimestamp(updatedAt)
+		items = append(items, item)
+	}
+	return items, rows.Err()
 }
 
 func getHomePortal(query homeReservationQueryRow, slug string) (HomePortal, bool, error) {
