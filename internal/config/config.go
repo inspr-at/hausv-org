@@ -15,6 +15,7 @@ import (
 	"net/mail"
 	"net/url"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -45,6 +46,7 @@ type TenantConfig struct {
 	CaretakerEmail    string                   `json:"caretaker_email,omitempty"`
 	CaretakerPhone    string                   `json:"caretaker_phone,omitempty"`
 	HeroImageURL      string                   `json:"hero_image_url,omitempty"`
+	HeroImageFile     string                   `json:"hero_image_file,omitempty"`
 	HA                homeassistant.Config     `json:"-"`
 	HAConnectors      *HomeAssistantConnectors `json:"-"`
 }
@@ -220,6 +222,10 @@ func ParseTenants(raw string, defaultTenant string, defaultHA homeassistant.Conf
 			tenant.CaretakerName = strings.TrimSpace(tenant.CaretakerName)
 			tenant.CaretakerEmail = textutil.Email(tenant.CaretakerEmail)
 			tenant.CaretakerPhone = strings.TrimSpace(tenant.CaretakerPhone)
+			tenant.HeroImageFile = strings.TrimSpace(tenant.HeroImageFile)
+			if tenant.HeroImageFile != "" && (filepath.Base(tenant.HeroImageFile) != tenant.HeroImageFile || strings.ContainsAny(tenant.HeroImageFile, `/\\`)) {
+				return nil, fmt.Errorf("tenant %s has invalid hero_image_file", tenant.Slug)
+			}
 			if tenant.HeroImageURL == "" {
 				tenant.HeroImageURL = store.DefaultTenantHeroImageURL
 			}
