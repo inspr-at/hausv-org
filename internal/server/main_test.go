@@ -5957,6 +5957,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("vote store: %v", err)
 	}
+	homeReservations := store.NewMemoryHomeReservationStore()
 	a := &app{
 		baseURL:       "http://localhost:8080",
 		rootDomain:    "hausv.org",
@@ -5998,7 +5999,8 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		voteStore:                voteStore,
 		parkingStore:             parkingStore,
 		energyStore:              energy.NewMemoryStore(),
-		homeReservations:         store.NewMemoryHomeReservationStore(),
+		homeReservations:         homeReservations,
+		homePortals:              store.NewMemoryHomePortalStore(homeReservations, inviteStore),
 		homeConnectors:           store.NewMemoryHomeConnectorStore(),
 		homeConnectorDownloadDir: t.TempDir(),
 	}

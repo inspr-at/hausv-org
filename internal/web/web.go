@@ -860,6 +860,10 @@ const PageTemplates = `
     .home-start-path-result { margin-top: 22px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px 18px; background: var(--panel-soft); }
     .home-start-path-result span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
     .home-start-path-result strong { display: block; margin-top: 5px; font-size: 20px; overflow-wrap: anywhere; }
+    .home-portal-activation { margin: 0 0 24px; border: 2px solid var(--leaf); border-radius: var(--radius-md); padding: 18px; background: rgba(47,107,74,.06); }
+    .home-portal-activation strong { display: block; font-size: 19px; }
+    .home-portal-activation p { margin: 7px 0 14px; color: var(--muted); line-height: 1.5; }
+    .home-portal-open { display: inline-flex; min-height: 46px; align-items: center; border-radius: var(--radius-sm); padding: 10px 15px; background: var(--ink); color: #fff; font-weight: 900; text-decoration: none; }
     .home-connector-status { margin: 22px 0; border: 2px solid var(--leaf); border-radius: var(--radius-md); padding: 18px; background: rgba(47,107,74,.06); }
     .home-connector-status span { display: block; color: var(--muted); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
     .home-connector-status strong { display: block; margin-top: 5px; font-size: 20px; }
@@ -943,8 +947,15 @@ const PageTemplates = `
   <div class="home-start-shell">
     <header class="home-start-head"><a class="home-start-brand" href="/">{{template "hausvLandingMark" .}}<span>HAUSV Home</span></a><a class="home-start-back" href="/">Zur Übersicht</a></header>
     <main class="home-start-main">
-      <section class="home-start-copy"><p class="home-start-kicker">E-Mail bestätigt</p><h1>{{.HouseholdName}} ist reserviert.</h1><p class="home-start-lead">Der persönliche Bereich ist eindeutig vorgemerkt. Zugangsdaten wurden dafür weder abgefragt noch gespeichert.</p><div class="home-start-path-result"><span>Reservierter Pfad</span><strong>hausv.org{{.PublicPath}}</strong></div></section>
+      <section class="home-start-copy"><p class="home-start-kicker">E-Mail bestätigt</p><h1>{{.HouseholdName}} {{if .PortalActive}}ist bereit.{{else}}ist reserviert.{{end}}</h1><p class="home-start-lead">{{if .PortalActive}}Ihr persönlicher Bereich ist aktiv und dauerhaft unter seinem eigenen Pfad erreichbar.{{else}}Der persönliche Bereich ist eindeutig vorgemerkt. Aktivieren Sie ihn jetzt, um ihn direkt zu öffnen.{{end}}</p><div class="home-start-path-result"><span>{{if .PortalActive}}Portalpfad{{else}}Reservierter Pfad{{end}}</span><strong>hausv.org{{.PublicPath}}</strong></div></section>
       <section class="home-start-card">
+        <div class="home-portal-activation">
+          {{if .PortalActive}}
+          <strong>Ihr privates Portal ist aktiv.</strong><p>Öffnen Sie es jederzeit über Ihren persönlichen Pfad. Die lokale Energieverbindung können Sie unabhängig davon unten verwalten.</p><a class="home-portal-open" href="{{.PublicPath}}/app">Privates Portal öffnen</a>
+          {{else}}
+          <strong>Privates Portal aktivieren</strong><p>HAUSV legt Ihren Bereich und Ihren Eigentümerzugang gemeinsam an. Danach werden Sie direkt angemeldet.</p><form method="post" action="/start/activate"><button class="home-connector-action primary" type="submit">Portal jetzt aktivieren</button></form>
+          {{end}}
+        </div>
         <h2>Lokale Verbindung</h2>
         <p>Der Connector läuft bei Ihnen zu Hause und arbeitet ausschließlich im Nur-Lese-Modus. HAUSV fragt hier bewusst keinen Token aus Home Assistant und keine lokale Adresse ab.</p>
         <div class="home-connector-status" aria-live="polite"><span>Status</span><strong>{{.ConnectorState}}</strong><p>{{.ConnectorDetail}}</p></div>
@@ -1101,6 +1112,7 @@ const PageTemplates = `
     <ul>
       <li>Identität, Hauszugehörigkeit, Rollen und Rechte für Anmeldung und Zugriffsschutz.</li>
       <li>Für eine HAUSV-Home-Reservierung werden der gewünschte Pfad, der Name des Zuhauses, die Eigentümer-E-Mail und die ausdrückliche Berechtigungsbestätigung gespeichert. In diesem Schritt werden keine Home-Assistant-Adresse und kein Zugangstoken angenommen.</li>
+      <li>Bei der Aktivierung werden der Portalpfad, der Name des Zuhauses, der Aktivierungszeitpunkt und die hausbezogene Eigentümer-Mitgliedschaft dauerhaft gespeichert. Portal und Mitgliedschaft entstehen gemeinsam, damit kein Bereich ohne berechtigten Eigentümerzugang veröffentlicht wird.</li>
       <li>Bei der lokalen Connector-Kopplung speichert HAUSV nur abgeleitete Hashes des Einmal-Codes und Connector-Zugangs sowie Connector-Version, lokale Home-Assistant-Version, Anzahl der Entitäten und Zeitpunkt der letzten Meldung. Home-Assistant-Adresse, Home-Assistant-Token, Entity-IDs, Messwerte und Gerätezustände bleiben lokal.</li>
       <li>Aushänge, Termine, Dokumente, Anliegen, Kommentare, Anhänge und Abstimmungen für Kommunikation und Verwaltung des Hauses.</li>
       <li>Anmelde- und Auditdaten für Sicherheit, Fehlerklärung und nachvollziehbare Änderungen.</li>
@@ -1132,7 +1144,7 @@ const PageTemplates = `
     <h2>Aufbewahrung</h2>
     <ul>
       <li>Einmalige E-Mail-Anmelde- und Reservierungslinks: 15 Minuten; OIDC-Anmeldevorgänge: 10 Minuten; alle nur einmal nutzbar.</li>
-      <li>Unbestätigte HAUSV-Home-Reservierungen: nach 24 Stunden zur Löschung fällig und spätestens im nächsten stündlichen Bereinigungslauf entfernt. Bestätigte Reservierungen: bis zur Aktivierung des angeforderten Bereichs oder bis zum Widerruf beziehungsweise Löschverlangen.</li>
+      <li>Unbestätigte HAUSV-Home-Reservierungen: nach 24 Stunden zur Löschung fällig und spätestens im nächsten stündlichen Bereinigungslauf entfernt. Bestätigte Reservierungen: bis zur Aktivierung des angeforderten Bereichs oder bis zum Widerruf beziehungsweise Löschverlangen. Aktivierter Portalpfad, Zuhause-Name und Eigentümer-Mitgliedschaft: bis zur Beendigung beziehungsweise Löschung des privaten Portals.</li>
       <li>Connector-Einmal-Codes: zehn Minuten gültig und nach erfolgreicher Nutzung verworfen. Der abgeleitete Connector-Zugang und seine Statusdaten bleiben bis zum Widerruf oder zur Löschung des Zuhause-Bereichs gespeichert. Ein Widerruf beendet den Zugang sofort und entfernt die Statusdaten.</li>
       <li>Sitzungscookie: regulär höchstens 30 Tage oder bis zur Abmeldung beziehungsweise Sperre.</li>
       <li>Hauszugehörigkeit und Dienstleister-Zugriff: bis zum Entzug; der Zugriff endet sofort.</li>

@@ -212,7 +212,8 @@ func (a *app) homeSetupReservation(r *http.Request) (store.HomeReservation, bool
 		return store.HomeReservation{}, false
 	}
 	reservation, found, err := a.homeReservations.Get(slug)
-	if err != nil || !found || reservation.OwnerEmail != normalizeEmail(email) || reservation.Status != store.HomeReservationEmailConfirmed {
+	if err != nil || !found || reservation.OwnerEmail != normalizeEmail(email) ||
+		(reservation.Status != store.HomeReservationEmailConfirmed && reservation.Status != store.HomeReservationActive) {
 		return store.HomeReservation{}, false
 	}
 	return reservation, true

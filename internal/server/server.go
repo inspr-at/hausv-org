@@ -779,6 +779,7 @@ type app struct {
 	parkingHistoryStart      time.Time
 	energyStore              energy.Storage
 	homeReservations         store.HomeReservationStorage
+	homePortals              store.HomePortalStorage
 	homeConnectors           store.HomeConnectorStorage
 	homeConnectorDownloadDir string
 	energySampleInterval     time.Duration
@@ -893,6 +894,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /start", a.requestHomeStart)
 	mux.HandleFunc("GET /start/verify", a.verifyHomeStart)
 	mux.HandleFunc("GET /start/connector", a.homeConnectorStart)
+	mux.HandleFunc("POST /start/activate", a.activateHomePortal)
 	mux.HandleFunc("POST /start/connector/pairing", a.startHomeConnectorPairing)
 	mux.HandleFunc("POST /start/connector/revoke", a.revokeHomeConnector)
 	mux.HandleFunc("POST /api/home-connectors/pair", a.pairHomeConnector)
@@ -1373,6 +1375,7 @@ func newApp() (*app, error) {
 	identity := newSQLIdentityStore(database)
 	energyBackend := energy.NewSQLStore(database)
 	homeReservationBackend := store.NewSQLHomeReservationStore(database)
+	homePortalBackend := store.NewSQLHomePortalStore(database)
 	homeConnectorBackend := store.NewSQLHomeConnectorStore(database)
 	if removed, err := homeReservationBackend.PurgePendingBefore(time.Now().Add(-homePendingRetention)); err != nil {
 		return nil, fmt.Errorf("expired home reservation purge failed: %w", err)
@@ -1529,6 +1532,7 @@ func newApp() (*app, error) {
 		parkingHistoryStart:      parkingHistoryStart,
 		energyStore:              energyBackend,
 		homeReservations:         homeReservationBackend,
+		homePortals:              homePortalBackend,
 		homeConnectors:           homeConnectorBackend,
 		homeConnectorDownloadDir: env("HOME_CONNECTOR_DOWNLOAD_DIR", "/connector-downloads"),
 		energySampleInterval:     energySampleInterval,
@@ -5015,7 +5019,8 @@ func (a *app) tenantHeroImage(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if _, ok := a.tenants[slug]; !ok {
+	tenant, ok := a.tenantBySlug(slug)
+	if !ok {
 		http.NotFound(w, r)
 		return
 	}
@@ -5025,7 +5030,6 @@ func (a *app) tenantHeroImage(w http.ResponseWriter, r *http.Request) {
 		filename = override.HeroImage
 	}
 	if filename == "" {
-		tenant := a.tenants[slug]
 		filename = tenant.HeroImageFile
 		directory = a.tenantHeroSeedDir
 	}
@@ -5077,11 +5081,24 @@ func (a *app) isMarketingHost(r *http.Request) bool {
 }
 
 func (a *app) tenantBySlug(slug string) (tenantConfig, bool) {
-	tenant, ok := a.tenants[normalizeSlug(slug)]
-	if !ok {
+	slug = normalizeSlug(slug)
+	if tenant, ok := a.tenants[slug]; ok {
+		return a.withTenantOverride(tenant), true
+	}
+	if a.homePortals == nil {
 		return tenantConfig{}, false
 	}
-	return a.withTenantOverride(tenant), true
+	portal, ok, err := a.homePortals.Get(slug)
+	if err != nil || !ok {
+		return tenantConfig{}, false
+	}
+	return a.withTenantOverride(tenantConfig{
+		Slug:       portal.Slug,
+		Name:       portal.HouseholdName,
+		Address:    portal.HouseholdName,
+		PortalType: config.PortalTypeHouse,
+		BrandIcon:  tenantBrandSingleHome,
+	}), true
 }
 
 func (a *app) withTenantOverride(tenant tenantConfig) tenantConfig {
