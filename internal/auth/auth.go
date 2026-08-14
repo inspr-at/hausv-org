@@ -52,6 +52,7 @@ type Session struct {
 	Email      string `json:"email"`
 	TenantSlug string `json:"tenant_slug"`
 	AuthMethod string `json:"auth_method"`
+	Role       string `json:"role,omitempty"`
 	ExpiresAt  int64  `json:"expires_at"`
 }
 
@@ -172,14 +173,22 @@ func NewSessionStore(secret []byte) *SessionStore {
 }
 
 func (s *SessionStore) Put(email string, tenantSlug string, authMethod string, ttl time.Duration) (string, time.Time, error) {
-	expiresAt := time.Now().Add(ttl)
+	return s.PutSession(email, tenantSlug, authMethod, "", time.Now().Add(ttl))
+}
+
+// PutSession issues a signed session for an already authenticated identity and
+// an explicitly selected tenant/role context. Callers must validate that the
+// identity owns the requested context before calling it. An existing expiry can
+// be retained during a context switch so switching never extends a login.
+func (s *SessionStore) PutSession(email string, tenantSlug string, authMethod string, role string, expiresAt time.Time) (string, time.Time, error) {
 	item := Session{
 		Email:      textutil.Email(email),
 		TenantSlug: textutil.Slug(tenantSlug),
 		AuthMethod: store.NormalizeAuthMethod(authMethod),
+		Role:       store.NormalizeRole(role),
 		ExpiresAt:  expiresAt.Unix(),
 	}
-	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" {
+	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || !validSessionRole(item.Role) || item.ExpiresAt <= time.Now().Unix() {
 		return "", time.Time{}, fmt.Errorf("invalid session")
 	}
 	payload, err := json.Marshal(item)
@@ -204,17 +213,27 @@ func (s *SessionStore) Put(email string, tenantSlug string, authMethod string, t
 }
 
 func (s *SessionStore) Get(token string) (string, string, string, bool) {
-	item, ok := s.verify(token)
+	item, ok := s.GetSession(token)
 	if !ok {
 		return "", "", "", false
+	}
+	return item.Email, item.TenantSlug, item.AuthMethod, true
+}
+
+// GetSession returns the complete signed context. The legacy Get method stays
+// available for callers that only need identity, tenant and login method.
+func (s *SessionStore) GetSession(token string) (Session, bool) {
+	item, ok := s.verify(token)
+	if !ok {
+		return Session{}, false
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.cleanupLocked()
 	if _, revoked := s.revoked[s.revocationKey(token)]; revoked {
-		return "", "", "", false
+		return Session{}, false
 	}
-	return item.Email, item.TenantSlug, item.AuthMethod, true
+	return item, true
 }
 
 func (s *SessionStore) Delete(token string) {
@@ -258,10 +277,20 @@ func (s *SessionStore) verify(token string) (Session, bool) {
 	item.Email = textutil.Email(item.Email)
 	item.TenantSlug = textutil.Slug(item.TenantSlug)
 	item.AuthMethod = store.NormalizeAuthMethod(item.AuthMethod)
-	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || item.ExpiresAt <= time.Now().Unix() {
+	item.Role = store.NormalizeRole(item.Role)
+	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || !validSessionRole(item.Role) || item.ExpiresAt <= time.Now().Unix() {
 		return Session{}, false
 	}
 	return item, true
+}
+
+func validSessionRole(role string) bool {
+	switch role {
+	case "", store.RoleAdmin, store.RoleManager, store.RoleOwner, store.RoleRenter, store.RoleBeirat, store.RoleResident, store.RoleServiceProvider:
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *SessionStore) revocationKey(token string) string {

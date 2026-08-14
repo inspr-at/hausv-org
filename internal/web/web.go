@@ -1235,6 +1235,30 @@ const PageTemplates = `
     .nav-badge { margin-left: auto; min-width: 25px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); padding: 0 7px; background: var(--gold); color: #172019; font-size: 11px; font-weight: 900; line-height: 1; }
     .nav-group-label { margin: 10px 12px 2px; color: rgba(255,255,255,.42); font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
     .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 14px 8px 0; display: grid; gap: 8px; }
+    .portal-context-switch { position: relative; min-width: 0; }
+    .portal-context-switch > summary { min-height: 44px; display: grid; grid-template-columns: 28px minmax(0,1fr) 16px; gap: 9px; align-items: center; border: 1px solid rgba(255,255,255,.18); border-radius: var(--radius-xs); padding: 7px 9px; color: rgba(255,255,255,.9); background: rgba(255,255,255,.045); cursor: pointer; list-style: none; }
+    .portal-context-switch > summary::-webkit-details-marker { display: none; }
+    .portal-context-switch > summary:hover, .portal-context-switch[open] > summary { border-color: rgba(231,197,116,.62); background: rgba(231,197,116,.1); }
+    .portal-context-icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: var(--gold-light); background: rgba(255,255,255,.08); }
+    .portal-context-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+    .portal-context-current { min-width: 0; display: grid; gap: 1px; }
+    .portal-context-current small { color: rgba(255,255,255,.48); font-size: 9px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+    .portal-context-current strong { overflow: hidden; font-size: 11.5px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+    .portal-context-chevron { width: 8px; height: 8px; justify-self: center; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .15s ease; }
+    .portal-context-switch[open] .portal-context-chevron { transform: rotate(225deg) translate(-1px,-1px); }
+    .portal-context-menu { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); z-index: 80; max-height: min(420px,70vh); display: grid; gap: 5px; overflow: auto; border: 1px solid rgba(231,197,116,.38); border-radius: var(--radius-sm); padding: 7px; color: var(--ink); background: var(--surface); box-shadow: var(--shadow-lg); }
+    .portal-context-option, .portal-context-option button { width: 100%; min-width: 0; }
+    .portal-context-option { margin: 0; }
+    .portal-context-option button, .portal-context-option-current { min-height: 48px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; border: 0; border-radius: var(--radius-xs); padding: 8px 10px; color: var(--ink); background: transparent; text-align: left; }
+    .portal-context-option button { cursor: pointer; }
+    .portal-context-option button:hover { background: var(--panel-soft); }
+    .portal-context-option-current { background: #f3efe4; }
+    .portal-context-option-copy { min-width: 0; display: grid; gap: 2px; }
+    .portal-context-option-copy strong, .portal-context-option-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .portal-context-option-copy strong { font-size: 12px; }
+    .portal-context-option-copy small { color: var(--muted); font-size: 10.5px; }
+    .portal-context-role { color: var(--gold-ink); font-size: 10px; font-weight: 850; }
+    .portal-context-active { color: var(--leaf); font-size: 9px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
     .side-map-attribution { min-width: 0; justify-self: start; margin-left: 54px; color: rgba(255,255,255,.38); font-size: 9px; line-height: 1.2; text-decoration: none; }
     .side-map-attribution:hover { color: rgba(255,255,255,.68); }
     .side-user { min-width: 0; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 12px; align-items: center; }
@@ -3827,6 +3851,9 @@ const PageTemplates = `
       .parking-month-essential > div { padding-inline: 6px; }
       .parking-month-essential dt { font-size: 9px; letter-spacing: 0; }
     }
+    @media (max-width: 900px) {
+      .portal-context-menu { position: static; max-height: 42vh; margin-top: 8px; }
+    }
   </style>
 {{end}}
 
@@ -3873,6 +3900,24 @@ const PageTemplates = `
 	      <a class="nav-item {{if eq .ActivePage "help"}}active{{end}}" href="/app/hilfe"><span class="nav-icon"><span class="energy-ui-icon energy-ui-icon-circle-help" aria-hidden="true"></span></span><span class="nav-label">Hilfe</span></a>
     </nav>
     <div id="portal-account" class="side-foot">
+      {{if .CanSwitchPortalContext}}
+      <details class="portal-context-switch">
+        <summary aria-label="Liegenschaft oder Ansicht wechseln">
+          <span class="portal-context-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9 20v-6h6v6"/></svg></span>
+          <span class="portal-context-current"><small>Portal wechseln</small><strong>{{.HouseName}} · {{.Role}}</strong></span>
+          <span class="portal-context-chevron" aria-hidden="true"></span>
+        </summary>
+        <div class="portal-context-menu" role="list" aria-label="Freigegebene Portal-Kontexte">
+          {{range .PortalContexts}}
+            {{if .Current}}
+            <div class="portal-context-option-current" role="listitem" aria-current="true"><span class="portal-context-option-copy"><strong>{{.HouseName}}</strong><small>{{.Address}}</small></span><span><span class="portal-context-role">{{.Role}}</span><span class="portal-context-active">Aktiv</span></span></div>
+            {{else}}
+            <form class="portal-context-option" method="post" action="/app/context" role="listitem"><input type="hidden" name="tenant" value="{{.TenantSlug}}"><input type="hidden" name="role" value="{{.Role}}"><button type="submit"><span class="portal-context-option-copy"><strong>{{.HouseName}}</strong><small>{{.Address}}</small></span><span class="portal-context-role">{{.Role}}</span></button></form>
+            {{end}}
+          {{end}}
+        </div>
+      </details>
+      {{end}}
       <div class="side-user">
         <span class="avatar">{{.Initials}}</span>
         <div class="side-user-copy"><strong>{{.DisplayName}}</strong><span class="side-user-meta"><span>{{.Role}}</span><button class="side-version version-button" type="button" data-dialog="release-history" aria-haspopup="dialog" aria-controls="release-history" aria-label="Version {{.DisplayVersion}} – Versionsverlauf öffnen">v{{.DisplayVersion}}</button></span></div>

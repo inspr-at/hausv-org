@@ -25,6 +25,7 @@ const (
 
 const (
 	AuditActionLogin               = "login"
+	AuditActionContextSwitch       = "session.context.switch"
 	AuditActionInviteCreate        = "invite.create"
 	AuditActionInviteUpdate        = "invite.update"
 	AuditActionInviteDelete        = "invite.delete"
@@ -1923,7 +1924,7 @@ func NormalizeAuditEvent(event AuditEvent) AuditEvent {
 func NormalizeAuditAction(raw string) string {
 	raw = strings.ToLower(strings.TrimSpace(raw))
 	switch raw {
-	case AuditActionLogin, AuditActionInviteCreate, AuditActionInviteUpdate, AuditActionInviteDelete,
+	case AuditActionLogin, AuditActionContextSwitch, AuditActionInviteCreate, AuditActionInviteUpdate, AuditActionInviteDelete,
 		AuditActionBuildingUpdate, AuditActionHeroUpdate, AuditActionUnitSave, AuditActionUnitDelete,
 		AuditActionUnitPayment,
 		AuditActionDocumentUpload, AuditActionDocumentDownload, AuditActionDocumentReplace,

@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.89.0",
+			Date:     "14. August 2026",
+			Kind:     "Portalwechsel",
+			Headline: "Eigene Liegenschaften und Perspektiven sind ohne neue Anmeldung erreichbar.",
+			Intro:    "Ein kompakter Wechsler in der Navigation verbindet alle freigegebenen Zuhause einer Person und hält jeden Kontext sicher getrennt.",
+			Items: []NoteItem{
+				{Label: "Ein Klick", Text: "Der Wechsel öffnet direkt den Hausüberblick der gewählten eigenen Liegenschaft."},
+				{Label: "Eigene Perspektive", Text: "Eigentümer können ihre eigene Mieteransicht prüfen und danach wieder in die Eigentümeransicht zurückkehren."},
+				{Label: "Strikt getrennt", Text: "Tenant und Rolle werden serverseitig validiert; fremde oder höhere Berechtigungen lassen sich nicht auswählen."},
+			},
+		},
+		{
 			Version:  "0.88.1",
 			Date:     "14. August 2026",
 			Kind:     "Stabilität",

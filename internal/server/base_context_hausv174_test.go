@@ -22,8 +22,8 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	}
 
 	got := a.baseContext(ac)
-	if len(got) != 16 {
-		t.Fatalf("baseContext keys = %d, want 16: %#v", len(got), got)
+	if len(got) != 18 {
+		t.Fatalf("baseContext keys = %d, want 18: %#v", len(got), got)
 	}
 	if got["Tenant"] != ac.tenant || got["Email"] != ac.email || got["Role"] != ac.role {
 		t.Fatalf("baseContext identity = %#v", got)
