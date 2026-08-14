@@ -21,6 +21,8 @@ if (!baseURL || !outDir) {
   console.error('usage: capture.mjs <baseURL> <outDir>');
   process.exit(1);
 }
+const tenantSlug = (process.env.DEFAULT_TENANT || 'demo').replace(/^\/+|\/+$/g, '');
+const tenantBaseURL = `${baseURL}/${tenantSlug}`;
 
 // Personas cover the role-gated UI: an Admin sees nav items an Eigentümer never
 // does, so screenshotting only one role would leave most templates uncovered.
@@ -40,6 +42,7 @@ const ROUTES = [
   ['ballots', '/app/abstimmungen'],
   ['handovers', '/app/uebergaben'],
   ['contacts', '/app/kontakte'],
+  ['help', '/app/hilfe'],
   ['settings', '/app/settings'],
   ['settings-profile', '/app/settings/profile'],
   ['settings-notifications', '/app/settings/notifications'],
@@ -88,18 +91,18 @@ for (const persona of PERSONAS) {
 
   // LOCAL_DEV_LOGIN: submitting the email renders a dev magic-link inline
   // instead of mailing it; following that link establishes the session.
-  await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+  await page.goto(`${tenantBaseURL}/`, { waitUntil: 'networkidle' });
   await page.fill('input[name="email"]', persona.email);
-  await page.click('form[action="/auth/request"] button[type="submit"], form[action="/auth/request"] button');
+  await page.click('form[action$="/auth/request"] button[type="submit"], form[action$="/auth/request"] button');
   await page.waitForSelector('a.dev-link', { timeout: 10_000 });
   const link = await page.getAttribute('a.dev-link', 'href');
-  await page.goto(link, { waitUntil: 'networkidle' });
+  await page.goto(new URL(link, `${tenantBaseURL}/`).href, { waitUntil: 'networkidle' });
 
   const dir = path.join(outDir, persona.name);
   await mkdir(dir, { recursive: true });
 
   for (const [name, route] of ROUTES) {
-    const res = await page.goto(`${baseURL}${route}`, { waitUntil: 'networkidle' });
+    const res = await page.goto(`${tenantBaseURL}${route}`, { waitUntil: 'networkidle' });
     const status = res ? res.status() : 0;
     const html = normalise(await page.content());
     await writeFile(path.join(dir, `${name}.html`), `<!-- status:${status} -->\n${html}\n`);

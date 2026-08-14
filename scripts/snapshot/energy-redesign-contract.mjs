@@ -23,6 +23,7 @@ const ownerSidebar = [
   { path: '/app/abstimmungen', label: 'Abstimmungen' },
   { path: '/app/audit', label: 'Verlauf' },
   { path: '/app/settings', label: 'Einstellungen' },
+  { path: '/app/hilfe', label: 'Hilfe' },
 ];
 
 // The flow is rendered client-side (assets/energy-flow.js) into [data-edge]

@@ -1227,6 +1227,7 @@ const PageTemplates = `
     .nav-item.disabled:hover { background: transparent; }
     .nav-icon { width: 23px; height: 23px; display: grid; place-items: center; flex: 0 0 auto; color: currentColor; }
     .nav-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-icon .energy-ui-icon { width: 100%; height: 100%; }
     .nav-label { min-width: 0; }
     .nav-home-identity { min-width: 0; display: grid; gap: 1px; line-height: 1.08; }
     .nav-home-identity strong { min-width: 0; overflow: hidden; color: inherit; font-size: 15px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
@@ -1627,6 +1628,11 @@ const PageTemplates = `
     .energy-ui-icon-play { -webkit-mask-image: url("/assets/icons/lucide/play.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/play.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-pencil { -webkit-mask-image: url("/assets/icons/lucide/pencil.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/pencil.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-log-out { -webkit-mask-image: url("/assets/icons/lucide/log-out.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/log-out.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-circle-help { -webkit-mask-image: url("/assets/icons/lucide/circle-help.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/circle-help.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-shield-check { -webkit-mask-image: url("/assets/icons/lucide/shield-check.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/shield-check.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-workflow { -webkit-mask-image: url("/assets/icons/lucide/workflow.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/workflow.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-server-cog { -webkit-mask-image: url("/assets/icons/lucide/server-cog.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/server-cog.svg?v={{.AssetVersion}}"); }
+    .energy-ui-icon-circle-check { -webkit-mask-image: url("/assets/icons/lucide/circle-check.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/circle-check.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-chevron-right { -webkit-mask-image: url("/assets/icons/lucide/chevron-right.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/chevron-right.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-chevron-down { -webkit-mask-image: url("/assets/icons/lucide/chevron-down.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/chevron-down.svg?v={{.AssetVersion}}"); }
     .energy-ui-icon-ellipsis { -webkit-mask-image: url("/assets/icons/lucide/ellipsis.svg?v={{.AssetVersion}}"); mask-image: url("/assets/icons/lucide/ellipsis.svg?v={{.AssetVersion}}"); }
@@ -3844,7 +3850,7 @@ const PageTemplates = `
         <span class="side-portal"><strong>Hausportal</strong><span>· hausv.org</span></span>
       </a>
 	    </div>
-	    <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-controls="portal-navigation portal-account" aria-expanded="false" aria-label="Navigation öffnen"><span class="mobile-menu-prefix">Menü</span>{{if eq .ActivePage "energy"}}<span class="mobile-home-identity" data-home-identity="mobile-menu" aria-label="{{.HomeIdentity.AriaLabel}}"><strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<small data-home-unit-label>{{.HomeIdentity.UnitLabel}}</small>{{end}}</span>{{else}}<span>{{if eq .ActivePage "home"}}Überblick{{else if eq .ActivePage "announcements"}}Aushang{{else if eq .ActivePage "events"}}Termine{{else if eq .ActivePage "contacts"}}Kontakte{{else if eq .ActivePage "parking"}}Parkplatz{{else if eq .ActivePage "documents"}}Dokumente{{else if eq .ActivePage "handovers"}}Übergaben{{else if eq .ActivePage "issues"}}Anliegen{{else if eq .ActivePage "abstimmungen"}}Abstimmung{{else if eq .ActivePage "users"}}Benutzer{{else if eq .ActivePage "audit"}}Audit{{else}}Einstellungen{{end}}</span>{{end}}</button>
+	    <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-controls="portal-navigation portal-account" aria-expanded="false" aria-label="Navigation öffnen"><span class="mobile-menu-prefix">Menü</span>{{if eq .ActivePage "energy"}}<span class="mobile-home-identity" data-home-identity="mobile-menu" aria-label="{{.HomeIdentity.AriaLabel}}"><strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<small data-home-unit-label>{{.HomeIdentity.UnitLabel}}</small>{{end}}</span>{{else}}<span>{{if eq .ActivePage "home"}}Überblick{{else if eq .ActivePage "announcements"}}Aushang{{else if eq .ActivePage "events"}}Termine{{else if eq .ActivePage "contacts"}}Kontakte{{else if eq .ActivePage "parking"}}Parkplatz{{else if eq .ActivePage "documents"}}Dokumente{{else if eq .ActivePage "handovers"}}Übergaben{{else if eq .ActivePage "issues"}}Anliegen{{else if eq .ActivePage "abstimmungen"}}Abstimmung{{else if eq .ActivePage "users"}}Benutzer{{else if eq .ActivePage "audit"}}Audit{{else if eq .ActivePage "help"}}Hilfe{{else}}Einstellungen{{end}}</span>{{end}}</button>
 	    <nav id="portal-navigation" class="side-nav">
 	      {{if .CanUseResidentAreas}}
 	      <a class="nav-item {{if eq .ActivePage "home"}}active{{end}}" href="/app"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="nav-label">Hausüberblick</span></a>
@@ -3864,6 +3870,7 @@ const PageTemplates = `
 	      {{if .CanViewAudit}}<a class="nav-item {{if eq .ActivePage "audit"}}active{{end}}" href="/app/audit"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="nav-label">Verlauf</span></a>{{end}}
 	      <a class="nav-item {{if eq .ActivePage "settings"}}active{{end}}" href="/app/settings"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg></span><span class="nav-label">Einstellungen</span></a>
 	      {{end}}
+	      <a class="nav-item {{if eq .ActivePage "help"}}active{{end}}" href="/app/hilfe"><span class="nav-icon"><span class="energy-ui-icon energy-ui-icon-circle-help" aria-hidden="true"></span></span><span class="nav-label">Hilfe</span></a>
     </nav>
     <div id="portal-account" class="side-foot">
       <div class="side-user">
@@ -6992,6 +6999,139 @@ const PageTemplates = `
             <p class="mini">Messwerte aus Zählerdifferenz und aWATTar-Preis. {{if .Detail.LastSampleLabel}}Letzter Zählerwert: {{.Detail.LastSampleLabel}}.{{end}}</p>
           </section>
         {{end}}
+      </section>
+    </main>
+{{template "appClose" .}}
+{{end}}
+
+{{define "help"}}
+{{template "appOpen" .}}
+    <style>
+      .help-page { display: grid; gap: 18px; }
+      .help-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: end; }
+      .help-head-copy { display: grid; gap: 6px; }
+      .help-head .lede { max-width: 720px; }
+      .help-eyebrow { color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+      .help-mode { align-self: start; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; color: var(--leaf); background: rgba(47,107,74,.06); font-size: 12px; font-weight: 850; white-space: nowrap; }
+      .help-mode .energy-ui-icon { width: 16px; height: 16px; }
+      .help-status { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 15px; align-items: center; padding: 19px; border: 2px solid var(--line); }
+      .help-status.ready { border-color: rgba(47,107,74,.48); }
+      .help-status.attention { border-color: rgba(200,153,63,.58); }
+      .help-status-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; color: var(--leaf); background: rgba(47,107,74,.1); }
+      .help-status.attention .help-status-icon { color: var(--gold-ink); background: rgba(200,153,63,.14); }
+      .help-status-icon .energy-ui-icon { width: 24px; height: 24px; }
+      .help-status-copy { min-width: 0; }
+      .help-status-copy span { display: block; margin-bottom: 3px; color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+      .help-status-copy strong { display: block; font-family: var(--font-serif); font-size: 22px; }
+      .help-status-copy p { margin: 4px 0 0; max-width: 720px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+      .help-status-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+      .help-status-facts small { border-radius: 999px; padding: 4px 8px; background: var(--panel-soft); color: var(--muted); font-weight: 700; }
+      .help-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+      .help-actions form { margin: 0; }
+      .help-actions .button { min-height: 42px; }
+      .help-pairing { padding: 20px; border: 2px solid var(--leaf); background: rgba(47,107,74,.045); }
+      .help-pairing-head { display: grid; gap: 4px; }
+      .help-pairing h2 { font-size: 25px; }
+      .help-pairing p { margin: 0; color: var(--muted); line-height: 1.5; }
+      .help-pairing-code { display: block; width: 100%; margin: 16px 0; border: 1px solid rgba(47,107,74,.35); border-radius: var(--radius-sm); padding: 14px; background: #fff; color: var(--ink); font-size: clamp(14px,2.2vw,20px); font-weight: 850; overflow-wrap: anywhere; user-select: all; }
+      .help-command { display: block; margin-top: 12px; border-radius: var(--radius-sm); padding: 14px; background: var(--ink); color: #f7f4ed; font: 12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; overflow-x: auto; white-space: nowrap; user-select: all; }
+      .help-downloads { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+      .help-downloads a { color: var(--leaf); font-size: 13px; font-weight: 850; }
+      .help-flow { padding: 20px; }
+      .help-section-head { display: grid; gap: 4px; margin-bottom: 16px; }
+      .help-section-head h2 { font-size: 26px; }
+      .help-section-head p { margin: 0; max-width: 760px; color: var(--muted); line-height: 1.5; }
+      .help-steps { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); margin: 0; padding: 0; list-style: none; counter-reset: help-step; }
+      .help-steps li { position: relative; min-width: 0; padding: 15px 17px 15px 0; counter-increment: help-step; }
+      .help-steps li + li { border-left: 1px solid var(--line); padding-left: 17px; }
+      .help-steps li::before { content: counter(help-step); width: 27px; height: 27px; display: grid; place-items: center; margin-bottom: 10px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 12px; font-weight: 900; }
+      .help-steps strong { display: block; font-size: 15px; }
+      .help-steps span { display: block; margin-top: 5px; color: var(--muted); font-size: 12.5px; line-height: 1.48; }
+      .help-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+      .help-card { padding: 20px; }
+      .help-card-icon { width: 42px; height: 42px; display: grid; place-items: center; margin-bottom: 13px; border-radius: var(--radius-xs); background: rgba(200,153,63,.13); color: var(--gold-ink); }
+      .help-card-icon .energy-ui-icon { width: 22px; height: 22px; }
+      .help-card h2 { font-size: 23px; }
+      .help-list { display: grid; gap: 10px; margin: 13px 0 0; padding: 0; list-style: none; }
+      .help-list li { display: grid; grid-template-columns: 18px minmax(0,1fr); gap: 8px; color: var(--muted); font-size: 13px; line-height: 1.48; }
+      .help-list li::before { content: "✓"; color: var(--leaf); font-weight: 900; }
+      .help-list strong { color: var(--ink); }
+      .help-faq { padding: 0; overflow: hidden; }
+      .help-faq > h2 { padding: 19px 20px 13px; font-size: 25px; }
+      .help-faq details { border-top: 1px solid var(--line); }
+      .help-faq summary { display: flex; align-items: center; gap: 12px; padding: 15px 20px; cursor: pointer; list-style: none; font-weight: 850; }
+      .help-faq summary::-webkit-details-marker { display: none; }
+      .help-faq summary::after { content: "+"; margin-left: auto; color: var(--gold-ink); font-size: 22px; }
+      .help-faq details[open] summary::after { content: "−"; }
+      .help-faq details p { margin: 0; padding: 0 20px 17px; max-width: 850px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+      .help-faq a { color: var(--leaf); font-weight: 800; }
+      @media (max-width: 900px) {
+        .help-steps { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        .help-steps li:nth-child(3) { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
+        .help-steps li:nth-child(4) { border-top: 1px solid var(--line); }
+      }
+      @media (max-width: 700px) {
+        .help-head { grid-template-columns: 1fr; }
+        .help-mode { justify-self: start; }
+        .help-status { grid-template-columns: auto minmax(0,1fr); padding: 16px; }
+        .help-actions { grid-column: 1 / -1; justify-content: stretch; }
+        .help-actions form, .help-actions .button { width: 100%; }
+        .help-grid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 480px) {
+        .help-status { grid-template-columns: 1fr; }
+        .help-status-icon { width: 42px; height: 42px; }
+        .help-steps { grid-template-columns: 1fr; }
+        .help-steps li, .help-steps li + li, .help-steps li:nth-child(3) { border-left: 0; border-top: 1px solid var(--line); padding: 14px 0; }
+        .help-steps li:first-child { border-top: 0; padding-top: 4px; }
+      }
+    </style>
+    <main id="main-content" tabindex="-1" class="app-main">
+      <div class="content-top">
+        <span class="crumb"><span class="energy-ui-icon energy-ui-icon-circle-help" aria-hidden="true"></span><span>/</span><span>Hilfe</span></span>
+      </div>
+      <section class="page help-page">
+        <header class="help-head">
+          <div class="help-head-copy"><span class="help-eyebrow">HAUSV Home verständlich erklärt</span><h1>Hilfe zur Energieverbindung</h1><p class="lede">Der lokale Connector verbindet Home Assistant mit HAUSV. Ihre Zugangsdaten bleiben zu Hause, HAUSV liest nur die Messwerte, die Sie ausdrücklich auswählen.</p></div>
+          <span class="help-mode"><span class="energy-ui-icon energy-ui-icon-shield-check" aria-hidden="true"></span>Standard: nur beobachten</span>
+        </header>
+
+        <section class="panel help-status {{.ConnectorStateTone}}" aria-labelledby="connector-status-title">
+          <span class="help-status-icon"><span class="energy-ui-icon {{if .ConnectorFresh}}energy-ui-icon-circle-check{{else}}energy-ui-icon-house-plug{{end}}" aria-hidden="true"></span></span>
+          <div class="help-status-copy"><span>Connector-Status</span><strong id="connector-status-title">{{.ConnectorState}}</strong><p>{{.ConnectorDetail}}</p>{{if .ConnectorConnected}}<div class="help-status-facts">{{if .ConnectorLastSeen}}<small>Zuletzt gemeldet: {{.ConnectorLastSeen}}</small>{{end}}{{if .HomeAssistantVersion}}<small>Home Assistant {{.HomeAssistantVersion}}</small>{{end}}<small>{{.ConnectorEntityCount}} erkannte Messwerte</small></div>{{end}}</div>
+          {{if and .ConnectorAvailable .CanManageEnergy}}<div class="help-actions"><form method="post" action="/app/hilfe/connector/pairing"><button class="button primary" type="submit">{{if .ConnectorConnected}}Neu verbinden{{else}}Connector einrichten{{end}}</button></form>{{if .ConnectorConnected}}<form method="post" action="/app/hilfe/connector/revoke" data-confirm="Die Verbindung wirklich widerrufen? Zuletzt gepufferte Connector-Messwerte werden entfernt."><button class="button" type="submit">Widerrufen</button></form>{{end}}</div>{{end}}
+        </section>
+
+        {{if .PairingCreated}}<section class="panel help-pairing" aria-labelledby="help-pairing-title">
+          <div class="help-pairing-head"><span class="help-eyebrow">Einmal-Code bis {{.PairingExpires}}</span><h2 id="help-pairing-title">Connector jetzt lokal starten</h2><p>Der Code wird nur jetzt angezeigt. Führen Sie den Befehl auf einem Linux-Gerät aus, das Home Assistant im lokalen Netzwerk erreicht.</p></div>
+          <code class="help-pairing-code" data-pairing-code>{{.PairingCode}}</code>
+          <div class="help-downloads"><a href="/downloads/hausv-connector-linux-amd64">Connector für Intel/AMD Linux</a><a href="/downloads/hausv-connector-linux-arm64">Connector für ARM oder Raspberry Pi</a></div>
+          <code class="help-command">chmod 700 ./hausv-connector-linux-amd64<br>./hausv-connector-linux-amd64 connector --pairing-code {{.PairingCode}} --home-assistant-url http://homeassistant.local:8123 --home-assistant-token-file ./home-assistant.token</code>
+          <p>Für ARM ersetzen Sie den Dateinamen. Legen Sie den Home-Assistant-Token vorher als Datei <code>home-assistant.token</code> mit eingeschränkten Dateirechten auf diesem Gerät ab.</p>
+        </section>{{end}}
+
+        <section class="panel help-flow" aria-labelledby="help-flow-title">
+          <header class="help-section-head"><h2 id="help-flow-title">So läuft es in HAUSV ab</h2><p>Die Kopplung und die Auswahl der Messwerte sind bewusst getrennt. Eine erkannte Entität wird nicht automatisch im Portal verwendet.</p></header>
+          <ol class="help-steps">
+            <li><strong>Einmal verbinden</strong><span>Sie erzeugen hier einen zehn Minuten gültigen Code und starten den Connector bei sich zu Hause.</span></li>
+            <li><strong>Messwerte erkennen</strong><span>Der Connector meldet einen begrenzten Katalog plausibler Energie-, Leistungs- und Ladestandsensoren.</span></li>
+            <li><strong>Bewusst auswählen</strong><span>Unter „Mein Zuhause“ ordnen Sie Netz, PV, Hausverbrauch, Speicher und Verbraucher den richtigen Sensoren zu.</span></li>
+            <li><strong>Live verstehen</strong><span>Das Energieportal zeigt nur bestätigte Werte. Fehlende Sensoren bleiben sichtbar als Datenlücke, ohne erfundene Ersatzwerte.</span></li>
+          </ol>
+        </section>
+
+        <div class="help-grid">
+          <section class="panel help-card" aria-labelledby="help-app-title"><span class="help-card-icon"><span class="energy-ui-icon energy-ui-icon-workflow" aria-hidden="true"></span></span><h2 id="help-app-title">In der App</h2><ul class="help-list"><li><span><strong>Messwerte zuordnen:</strong> Öffnen Sie <a href="/app/zuhause/onboarding?step=4">Mein Zuhause, Schritt 4</a> und wählen Sie nur passende Sensoren.</span></li><li><span><strong>Ergebnis prüfen:</strong> Im <a href="/app/energie">Energieportal</a> sehen Sie Live-Werte, Aktualisierungszeit und Datenlücken.</span></li><li><span><strong>Später ändern:</strong> Zuordnungen, Anlagen und Verbraucher können jederzeit korrigiert werden.</span></li><li><span><strong>Ohne Batterie:</strong> Nicht vorhandene Geräte werden nicht angelegt. Das Portal funktioniert auch mit PV, Netz und Hausverbrauch allein.</span></li></ul></section>
+          <section class="panel help-card" aria-labelledby="help-tech-title"><span class="help-card-icon"><span class="energy-ui-icon energy-ui-icon-server-cog" aria-hidden="true"></span></span><h2 id="help-tech-title">Technisch und datensparsam</h2><ul class="help-list"><li><span><strong>Nur ausgehend:</strong> Der Connector baut verschlüsselte HTTPS-Verbindungen zu hausv.org auf. Sie brauchen keine Portfreigabe und keinen eigenen DNS-Eintrag.</span></li><li><span><strong>Geheimnisse bleiben lokal:</strong> Home-Assistant-Adresse und Token werden nicht an HAUSV übertragen.</span></li><li><span><strong>Keine Steuerbefehle:</strong> Der Connector ruft ausschließlich <code>GET /api/config</code> und <code>GET /api/states</code> ab. Er verwendet keine Home-Assistant-Services.</span></li><li><span><strong>Begrenzte Übertragung:</strong> Vor der Auswahl höchstens 64 plausible Energiesensoren, danach nur bestätigte Entity-IDs, Werte, Einheiten und Zeitstempel.</span></li></ul></section>
+        </div>
+
+        <section class="panel help-faq" aria-labelledby="help-faq-title"><h2 id="help-faq-title">Wenn etwas nicht klappt</h2>
+          <details><summary>Wo bekomme ich den Home-Assistant-Token?</summary><p>Öffnen Sie in Home Assistant Ihr Benutzerprofil, dann „Sicherheit“ und unten „Langlebige Zugriffstoken“. Erzeugen Sie einen eigenen Token für HAUSV und speichern Sie ihn nur in der lokalen Datei. <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token" target="_blank" rel="noopener noreferrer">Offizielle Home-Assistant-Anleitung öffnen</a>.</p></details>
+          <details><summary>Der Status bleibt „Wartet auf Kopplung“</summary><p>Prüfen Sie, ob der Einmal-Code noch gültig ist, der lokale Rechner hausv.org erreicht und die Home-Assistant-Adresse von diesem Rechner aus geöffnet werden kann. Ein verlorener oder abgelaufener Code kann gefahrlos ersetzt werden.</p></details>
+          <details><summary>Der Connector ist verbunden, aber es erscheinen keine Werte</summary><p>Öffnen Sie „Mein Zuhause, Schritt 4“ und bestätigen Sie die passenden Sensoren. Der erste Kontakt übermittelt nur einen sicheren Auswahlkatalog. Live-Werte beginnen erst nach der bewussten Zuordnung.</p></details>
+          <details><summary>Der Status wechselt auf „Verbindung prüfen“</summary><p>Der lokale Prozess hat sich länger als 90 Sekunden nicht gemeldet. Starten Sie ihn neu und prüfen Sie Internetzugang, Systemzeit sowie die Erreichbarkeit von Home Assistant. Die App steuert in dieser Zeit keine Geräte.</p></details>
+          <details><summary>Wie beende ich die Verbindung vollständig?</summary><p>Berechtigte Personen können oben „Widerrufen“ wählen. Der Connector-Zugang wird sofort ungültig und die zuletzt gepufferten Connector-Messwerte werden entfernt. Der lokale Token bleibt bei Ihnen und kann zusätzlich in Home Assistant gelöscht werden.</p></details>
+        </section>
       </section>
     </main>
 {{template "appClose" .}}
