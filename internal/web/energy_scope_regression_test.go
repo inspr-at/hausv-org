@@ -37,7 +37,7 @@ func TestApprovedCompactSidebarFooterStaysStable(t *testing.T) {
 	const (
 		startMarker = `{{define "sidebar"}}`
 		endMarker   = "\n{{define \"releaseHistoryDialog\"}}"
-		wantSHA256  = "d6a934f523a9826f90c4f3f10c4f5e7af42260a42acd2e4721076794ce58be12"
+		wantSHA256  = "5b0b5cae1e51f100d931604a50c98a8d09bad119a415caa28dbafec9a8745926"
 	)
 
 	start := strings.Index(PageTemplates, startMarker)

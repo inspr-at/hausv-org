@@ -856,6 +856,10 @@ type tenantOverride struct {
 	MetaSet           bool      `json:"meta_set,omitempty"`
 	Name              string    `json:"name,omitempty"`
 	Address           string    `json:"address,omitempty"`
+	MapSet            bool      `json:"map_set,omitempty"`
+	MapLatitude       float64   `json:"map_latitude,omitempty"`
+	MapLongitude      float64   `json:"map_longitude,omitempty"`
+	MapZoom           int       `json:"map_zoom,omitempty"`
 	BrandIcon         string    `json:"brand_icon,omitempty"`
 	BrandAbbreviation string    `json:"brand_abbreviation,omitempty"`
 	ContactName       string    `json:"contact_name,omitempty"`
@@ -3586,7 +3590,7 @@ func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request, ac 
 		TargetID:   tenant.Slug,
 		Summary:    "Gebäudedaten geändert",
 		Details: map[string]string{
-			"changed_fields":     "Stammdaten, Marke, Kontaktblock, Notdienst, Hausmeister",
+			"changed_fields":     "Stammdaten, Kartenposition, Marke, Kontaktblock, Notdienst, Hausmeister",
 			"brand_icon":         tenantBrandIconLabel(override.BrandIcon),
 			"brand_abbreviation": override.BrandAbbreviation,
 		},
@@ -3854,10 +3858,18 @@ func (a *app) buildingSettingsContext(w http.ResponseWriter, ac authCtx) (tenant
 }
 
 func tenantOverrideFromForm(values url.Values) (tenantOverride, error) {
+	mapLatitude, mapLongitude, mapZoom, err := mapPositionFromForm(values.Get("map_position"))
+	if err != nil {
+		return tenantOverride{}, err
+	}
 	override := tenantOverride{
 		MetaSet:           true,
 		Name:              strings.TrimSpace(values.Get("name")),
 		Address:           strings.TrimSpace(values.Get("address")),
+		MapSet:            values.Has("map_position"),
+		MapLatitude:       mapLatitude,
+		MapLongitude:      mapLongitude,
+		MapZoom:           mapZoom,
 		BrandIcon:         normalizeTenantBrandIcon(values.Get("brand_icon")),
 		BrandAbbreviation: normalizeTenantBrandAbbreviation(values.Get("brand_abbreviation")),
 		ContactName:       strings.TrimSpace(values.Get("contact_name")),
@@ -3890,6 +3902,29 @@ func tenantOverrideFromForm(values url.Values) (tenantOverride, error) {
 		}
 	}
 	return override, nil
+}
+
+func mapPositionFromForm(raw string) (float64, float64, int, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0, 0, 0, nil
+	}
+	parts := strings.Split(raw, ",")
+	if len(parts) != 2 {
+		return 0, 0, 0, fmt.Errorf("map position must contain latitude and longitude")
+	}
+	latitude, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("invalid map latitude")
+	}
+	longitude, err := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("invalid map longitude")
+	}
+	if _, _, _, ok := tenantMapCoordinates(tenantConfig{MapLatitude: latitude, MapLongitude: longitude, MapZoom: defaultMapZoom}); !ok {
+		return 0, 0, 0, fmt.Errorf("invalid map position")
+	}
+	return latitude, longitude, defaultMapZoom, nil
 }
 
 func buildingUnitFromForm(tenantSlug string, values url.Values) (unit, error) {
@@ -5173,6 +5208,11 @@ func (a *app) withTenantOverride(tenant tenantConfig) tenantConfig {
 		if override.Address != "" {
 			tenant.Address = override.Address
 		}
+		if override.MapSet {
+			tenant.MapLatitude = override.MapLatitude
+			tenant.MapLongitude = override.MapLongitude
+			tenant.MapZoom = override.MapZoom
+		}
 		if override.BrandIcon != "" {
 			tenant.BrandIcon = override.BrandIcon
 		}
@@ -5702,6 +5742,13 @@ func (s *tenantOverrideStore) saveLocked() error {
 func normalizeTenantOverride(override tenantOverride) tenantOverride {
 	override.Name = strings.TrimSpace(override.Name)
 	override.Address = strings.TrimSpace(override.Address)
+	if override.MapSet {
+		if _, _, _, ok := tenantMapCoordinates(tenantConfig{MapLatitude: override.MapLatitude, MapLongitude: override.MapLongitude, MapZoom: override.MapZoom}); !ok {
+			override.MapLatitude = 0
+			override.MapLongitude = 0
+			override.MapZoom = 0
+		}
+	}
 	override.BrandIcon = normalizeTenantBrandIcon(override.BrandIcon)
 	override.BrandAbbreviation = normalizeTenantBrandAbbreviation(override.BrandAbbreviation)
 	override.ContactName = strings.TrimSpace(override.ContactName)

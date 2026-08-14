@@ -1194,25 +1194,28 @@ const PageTemplates = `
     :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
     .app-shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0,1fr); background: var(--paper); }
     .sidebar { position: sticky; top: 0; height: 100vh; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 22px 16px 18px; color: rgba(255,255,255,.86); background: radial-gradient(circle at 20% 0%, rgba(255,255,255,.08), transparent 28%), var(--nav); border-right: 1px solid rgba(255,255,255,.08); }
-    .side-brand { flex: 0 0 auto; display: grid; gap: 0; margin: -22px -16px 0; padding: 0 0 10px; }
-    .side-map { position: relative; width: 100%; height: 210px; overflow: hidden; border: 0; border-radius: 0; background: #d8d2c4; color: inherit; isolation: isolate; }
+    .side-brand { flex: 0 0 auto; display: grid; gap: 0; margin: -22px -16px 0; padding: 0 0 8px; }
+    .side-map-card { position: relative; min-width: 0; height: 244px; }
+    .side-map { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; border: 0; border-radius: 0; background: #d8d2c4; color: inherit; isolation: isolate; }
     .side-map::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(247,243,234,.08) 0%, rgba(23,32,25,.06) 48%, rgba(23,32,25,.48) 73%, rgba(23,32,25,.93) 94%, var(--nav) 100%); box-shadow: inset 0 -18px 28px rgba(23,32,25,.42); }
     .side-map-tiles { position: absolute; inset: 0; z-index: 1; pointer-events: none; filter: saturate(.54) sepia(.1) contrast(.86) brightness(.97); }
     .side-map-tile { position: absolute; width: 256px; height: 256px; max-width: none; display: block; user-select: none; pointer-events: none; }
-    .side-map-fallback { position: absolute; inset: 0; z-index: 1; opacity: .72; background-color: #d9d5c9; background-image: linear-gradient(28deg, transparent 47%, rgba(255,255,255,.9) 48% 52%, transparent 53%), linear-gradient(118deg, transparent 46%, rgba(255,255,255,.72) 47% 51%, transparent 52%), linear-gradient(90deg, rgba(23,38,29,.12) 1px, transparent 1px), linear-gradient(rgba(23,38,29,.12) 1px, transparent 1px); background-size: 120px 90px, 145px 110px, 42px 42px, 42px 42px; }
+    .side-map-fallback { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; padding-bottom: 72px; color: rgba(23,32,25,.68); background: linear-gradient(135deg,rgba(255,255,255,.3),transparent 55%), #d9d5c9; font-size: 10.5px; font-weight: 750; letter-spacing: .03em; }
     .side-map-pin { position: absolute; left: 50%; top: 50%; z-index: 4; width: 44px; height: 56px; color: var(--gold-light); filter: drop-shadow(0 6px 7px rgba(23,32,25,.38)); transform: translate(-50%,-100%); }
     .side-map-pin-shape { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; fill: var(--nav); stroke: rgba(231,216,177,.88); stroke-width: 1.25; stroke-linejoin: round; }
     .side-map-pin-mark { position: absolute; left: 50%; top: 9px; width: 25px; height: 22px; display: grid; place-items: center; transform: translateX(-50%); }
     .side-map-pin-mark svg { width: 25px; height: 21px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .side-place-copy { position: relative; z-index: 6; min-width: 0; display: grid; gap: 12px; margin-top: -54px; padding: 0 22px 15px; color: inherit; text-decoration: none; }
-    .side-address-label { min-width: 0; justify-self: start; color: rgba(255,255,255,.7); font-family: var(--font-sans); font-size: 12.5px; font-weight: 500; line-height: 1.3; }
-    .side-address-short { display: none; }
-    .side-place-copy:hover .side-address-label { color: rgba(255,255,255,.92); }
+    .side-place-copy { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; min-width: 0; display: grid; gap: 8px; padding: 0 18px 14px; color: inherit; }
+    .side-address-label { min-width: 0; display: grid; gap: 2px; justify-self: start; color: inherit; font-family: var(--font-sans); line-height: 1.2; text-decoration: none; }
+    .side-address-label strong { overflow: hidden; color: rgba(255,255,255,.96); font-size: 20px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+    .side-address-label small { overflow: hidden; color: rgba(255,255,255,.6); font-size: 10.5px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+    .side-address-label:hover small { color: rgba(255,255,255,.86); }
     .side-ruler { height: 12px; border-top: 1px solid rgba(207,171,83,.72); background: linear-gradient(rgba(207,171,83,.72),rgba(207,171,83,.72)) 25% 0/1px 6px no-repeat, linear-gradient(rgba(207,171,83,.82),rgba(207,171,83,.82)) 50% 0/1px 11px no-repeat, linear-gradient(rgba(207,171,83,.72),rgba(207,171,83,.72)) 75% 0/1px 6px no-repeat; }
     .side-portal { min-width: 0; display: flex; align-items: baseline; gap: 4px; justify-self: start; color: inherit; }
     .side-portal strong { font-family: var(--font-sans); color: rgba(255,255,255,.9); font-size: 15px; font-weight: 600; line-height: 1; }
     .side-portal span { color: rgba(255,255,255,.48); font-family: var(--font-sans); font-size: 12px; font-weight: 450; }
-    .side-place-copy:hover .side-portal span { color: rgba(255,255,255,.82); }
+    .side-portal { text-decoration: none; }
+    .side-portal:hover span { color: rgba(255,255,255,.82); }
     .side-nav { flex: 1 1 auto; min-height: 0; display: grid; align-content: start; gap: 5px; overflow-y: auto; overflow-x: hidden; padding-right: 3px; }
     .side-nav::-webkit-scrollbar { width: 7px; }
     .side-nav::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: rgba(255,255,255,.16); }
@@ -1236,7 +1239,7 @@ const PageTemplates = `
     .nav-group-label { margin: 10px 12px 2px; color: rgba(255,255,255,.42); font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
     .side-foot { flex: 0 0 auto; margin-top: 0; border-top: 1px solid rgba(255,255,255,.16); padding: 14px 8px 0; display: grid; gap: 8px; }
     .portal-context-switch { position: relative; min-width: 0; }
-    .portal-context-switch > summary { min-height: 44px; display: grid; grid-template-columns: 28px minmax(0,1fr) 16px; gap: 9px; align-items: center; border: 1px solid rgba(255,255,255,.18); border-radius: var(--radius-xs); padding: 7px 9px; color: rgba(255,255,255,.9); background: rgba(255,255,255,.045); cursor: pointer; list-style: none; }
+    .portal-context-switch > summary { min-height: 50px; display: grid; grid-template-columns: 30px minmax(0,1fr) 16px; gap: 9px; align-items: center; border: 1px solid rgba(255,255,255,.22); border-radius: var(--radius-xs); padding: 7px 9px; color: rgba(255,255,255,.92); background: rgba(23,32,25,.52); backdrop-filter: blur(7px); cursor: pointer; list-style: none; }
     .portal-context-switch > summary::-webkit-details-marker { display: none; }
     .portal-context-switch > summary:hover, .portal-context-switch[open] > summary { border-color: rgba(231,197,116,.62); background: rgba(231,197,116,.1); }
     .portal-context-icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: var(--gold-light); background: rgba(255,255,255,.08); }
@@ -1246,7 +1249,7 @@ const PageTemplates = `
     .portal-context-current strong { overflow: hidden; font-size: 11.5px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
     .portal-context-chevron { width: 8px; height: 8px; justify-self: center; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .15s ease; }
     .portal-context-switch[open] .portal-context-chevron { transform: rotate(225deg) translate(-1px,-1px); }
-    .portal-context-menu { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); z-index: 80; max-height: min(420px,70vh); display: grid; gap: 5px; overflow: auto; border: 1px solid rgba(231,197,116,.38); border-radius: var(--radius-sm); padding: 7px; color: var(--ink); background: var(--surface); box-shadow: var(--shadow-lg); }
+    .portal-context-menu { position: absolute; left: 0; right: 0; top: calc(100% + 7px); z-index: 80; max-height: min(420px,70vh); display: grid; gap: 5px; overflow: auto; border: 1px solid rgba(231,197,116,.38); border-radius: var(--radius-sm); padding: 7px; color: var(--ink); background: var(--surface); box-shadow: var(--shadow-lg); }
     .portal-context-option, .portal-context-option button { width: 100%; min-width: 0; }
     .portal-context-option { margin: 0; }
     .portal-context-option button, .portal-context-option-current { min-height: 48px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; border: 0; border-radius: var(--radius-xs); padding: 8px 10px; color: var(--ink); background: transparent; text-align: left; }
@@ -3401,17 +3404,19 @@ const PageTemplates = `
        identifiziert das Haus; die Browser-QA verlangt auf dem Desktop
        mindestens 190 Pixel Höhe und einen 22-Pixel-Pin. */
     @media (min-width: 901px) and (max-height: 800px) {
-      .side-map { height: 144px; }
+      .side-map-card { height: 176px !important; }
       .side-map-pin { width: 35px; height: 45px; }
       .side-map-pin-mark { top: 7px; width: 20px; height: 18px; }
       .side-map-pin-mark svg { width: 20px; height: 17px; }
-      .side-place-copy { margin-top: -42px; }
+      .side-address-label small, .side-ruler, .side-portal { display: none; }
     }
     @media (min-width: 901px) and (max-height: 1040px) {
       .sidebar { gap: 10px; padding-top: 14px; padding-bottom: 12px; }
       .side-brand { margin-top: -14px; padding-bottom: 3px; }
+      .side-map-card { height: 220px; }
       .side-place-copy { gap: 5px; padding-bottom: 8px; }
-      .side-address-label { font-size: 10.5px; }
+      .side-address-label strong { font-size: 17px; }
+      .side-address-label small { font-size: 9.5px; }
       .side-ruler { height: 8px; background-size: 1px 4px,1px 7px,1px 4px; }
       .side-portal strong { font-size: 14.5px; }
       .side-portal span { font-size: 10px; }
@@ -3544,18 +3549,24 @@ const PageTemplates = `
 	      .energy-mode-action-full { display: none; }
 	      .energy-mode-action-compact { display: inline; }
 	      .sidebar { position: sticky; top: 0; z-index: 50; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; height: auto; padding: 10px 14px; box-shadow: 0 10px 28px rgba(23,32,25,.18); }
-	      .side-brand { grid-template-columns: 52px minmax(0,1fr); gap: 7px; align-items: center; margin: 0; padding: 0; min-width: 0; }
-	      .side-map { width: 52px; height: 48px; }
+	      .side-brand { display: block; margin: 0; padding: 0; min-width: 0; }
+	      .side-map-card { height: auto; display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 7px; align-items: center; }
+	      .side-map { position: relative; inset: auto; width: 52px; height: 48px; border-radius: var(--radius-xs); }
 	      .side-map-pin { width: 24px; height: 31px; }
 	      .side-map-pin-mark { top: 5px; width: 14px; height: 13px; }
 	      .side-map-pin-mark svg { width: 14px; height: 12px; stroke-width: 2.5; }
-	      .side-place-copy { position: static; min-width: 0; min-height: 44px; align-content: center; gap: 3px; margin: 0; padding: 0; }
-	      .side-address-label { max-width: 100%; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	      .side-address-full { display: none; }
-	      .side-address-short { display: inline; overflow: hidden; text-overflow: ellipsis; }
+	      .side-place-copy { position: static; min-width: 0; min-height: 44px; align-content: center; gap: 3px; padding: 0; }
+	      .side-place-copy.has-context-switch .side-address-label { display: none; }
+	      .side-address-label { max-width: 100%; }
+	      .side-address-label strong { font-size: 13px; }
+	      .side-address-label small { font-size: 9px; }
 	      .side-ruler { display: none; }
-	      .side-portal strong { font-size: 15px; }
-	      .side-portal span { display: none; }
+	      .side-portal { display: none; }
+	      .portal-context-switch > summary { min-height: 44px; grid-template-columns: minmax(0,1fr) 14px; gap: 5px; border: 0; padding: 2px 3px; background: transparent; backdrop-filter: none; }
+	      .portal-context-icon { display: none; }
+	      .portal-context-current small { font-size: 8px; }
+	      .portal-context-current strong { font-size: 11px; }
+	      .portal-context-menu { position: fixed; left: 14px; right: 14px; top: 70px; max-height: min(420px,70vh); }
 	      .mobile-menu-toggle { min-height: 44px; max-width: min(230px,44vw); align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-xs); padding: 7px 10px; color: rgba(255,255,255,.92); background: rgba(255,255,255,.07); font-size: 12px; font-weight: 850; letter-spacing: .01em; cursor: pointer; }
 	      .mobile-menu-toggle::before { content: ""; width: 14px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; box-shadow: 0 4px 0 currentColor inset; }
 	      .mobile-menu-prefix { color: rgba(255,255,255,.58); font-size: 10px; font-weight: 650; }
@@ -3852,7 +3863,7 @@ const PageTemplates = `
       .parking-month-essential dt { font-size: 9px; letter-spacing: 0; }
     }
     @media (max-width: 900px) {
-      .portal-context-menu { position: static; max-height: 42vh; margin-top: 8px; }
+      .side-map-fallback { padding: 0; font-size: 0; }
     }
   </style>
 {{end}}
@@ -3860,22 +3871,42 @@ const PageTemplates = `
 {{define "sidebar"}}
   <aside class="sidebar" aria-label="Portalnavigation">
     <div class="side-brand">
-      <a class="side-map side-address" href="{{.MapURL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.Tenant.Address}} in OpenStreetMap öffnen" title="In OpenStreetMap öffnen">
-        {{if .SidebarMap.Configured}}
-        <div class="side-map-tiles" aria-hidden="true">
-          {{range .SidebarMap.Tiles}}<img class="side-map-tile" src="{{.URL}}" style="{{.Style}}" width="256" height="256" alt="" draggable="false">{{end}}
-        </div>
-        {{else}}<span class="side-map-fallback" aria-hidden="true"></span>{{end}}
-        <span class="side-map-pin" aria-hidden="true">
-          <svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false"><path d="M22 55C18.7 49.2 4.5 36.7 4.5 22.2A17.5 17.5 0 1 1 39.5 22.2C39.5 36.7 25.3 49.2 22 55Z"/></svg>
-          <span class="side-map-pin-mark">{{template "tenantBrandMark" .}}</span>
-        </span>
-      </a>
-      <a class="side-place-copy" href="/app" aria-label="Hausportal für {{.SidebarAddress.Full}} öffnen">
-        <span class="side-address-label"><span class="side-address-full">{{.SidebarAddress.Full}}</span><span class="side-address-short">{{.SidebarAddress.Primary}}{{if .SidebarAddress.HasLocality}}<span class="side-address-locality"> · {{.SidebarAddress.Locality}}</span>{{end}}</span></span>
-        <span class="side-ruler" aria-hidden="true"></span>
-        <span class="side-portal"><strong>Hausportal</strong><span>· hausv.org</span></span>
-      </a>
+	    <div class="side-map-card">
+	      <a class="side-map side-address" href="{{.MapURL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.Tenant.Address}} in OpenStreetMap öffnen" title="In OpenStreetMap öffnen">
+	        {{if .SidebarMap.Configured}}
+	        <div class="side-map-tiles" aria-hidden="true">
+	          {{range .SidebarMap.Tiles}}<img class="side-map-tile" src="{{.URL}}" style="{{.Style}}" width="256" height="256" alt="" draggable="false">{{end}}
+	        </div>
+	        <span class="side-map-pin" aria-hidden="true">
+	          <svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false"><path d="M22 55C18.7 49.2 4.5 36.7 4.5 22.2A17.5 17.5 0 1 1 39.5 22.2C39.5 36.7 25.3 49.2 22 55Z"/></svg>
+	          <span class="side-map-pin-mark">{{template "tenantBrandMark" .}}</span>
+	        </span>
+	        {{else}}<span class="side-map-fallback">Standort nicht hinterlegt</span>{{end}}
+	      </a>
+	      <div class="side-place-copy{{if .CanSwitchPortalContext}} has-context-switch{{end}}">
+	        <a class="side-address-label" href="/app" aria-label="Hausportal {{.HouseName}} öffnen"><strong>{{.HouseName}}</strong><small>{{.SidebarAddress.Full}}</small></a>
+	        {{if .CanSwitchPortalContext}}
+	        <details class="portal-context-switch">
+	          <summary aria-label="Liegenschaft oder Ansicht wechseln">
+	            <span class="portal-context-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9 20v-6h6v6"/></svg></span>
+	            <span class="portal-context-current"><small>Portal wechseln</small><strong>{{.HouseName}} · {{.Role}}</strong></span>
+	            <span class="portal-context-chevron" aria-hidden="true"></span>
+	          </summary>
+	          <div class="portal-context-menu" role="list" aria-label="Freigegebene Portal-Kontexte">
+	            {{range .PortalContexts}}
+	              {{if .Current}}
+	              <div class="portal-context-option-current" role="listitem" aria-current="true"><span class="portal-context-option-copy"><strong>{{.HouseName}}</strong><small>{{.Address}}</small></span><span><span class="portal-context-role">{{.Role}}</span><span class="portal-context-active">Aktiv</span></span></div>
+	              {{else}}
+	              <form class="portal-context-option" method="post" action="/app/context" role="listitem"><input type="hidden" name="tenant" value="{{.TenantSlug}}"><input type="hidden" name="role" value="{{.Role}}"><button type="submit"><span class="portal-context-option-copy"><strong>{{.HouseName}}</strong><small>{{.Address}}</small></span><span class="portal-context-role">{{.Role}}</span></button></form>
+	              {{end}}
+	            {{end}}
+	          </div>
+	        </details>
+	        {{end}}
+	        <span class="side-ruler" aria-hidden="true"></span>
+	        <a class="side-portal" href="/app"><strong>Hausportal</strong><span>· hausv.org</span></a>
+	      </div>
+	    </div>
 	    </div>
 	    <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-controls="portal-navigation portal-account" aria-expanded="false" aria-label="Navigation öffnen"><span class="mobile-menu-prefix">Menü</span>{{if eq .ActivePage "energy"}}<span class="mobile-home-identity" data-home-identity="mobile-menu" aria-label="{{.HomeIdentity.AriaLabel}}"><strong data-home-display-name>{{.HomeIdentity.DisplayName}}</strong>{{if .HomeIdentity.HasUnit}}<small data-home-unit-label>{{.HomeIdentity.UnitLabel}}</small>{{end}}</span>{{else}}<span>{{if eq .ActivePage "home"}}Überblick{{else if eq .ActivePage "announcements"}}Aushang{{else if eq .ActivePage "events"}}Termine{{else if eq .ActivePage "contacts"}}Kontakte{{else if eq .ActivePage "parking"}}Parkplatz{{else if eq .ActivePage "documents"}}Dokumente{{else if eq .ActivePage "handovers"}}Übergaben{{else if eq .ActivePage "issues"}}Anliegen{{else if eq .ActivePage "abstimmungen"}}Abstimmung{{else if eq .ActivePage "users"}}Benutzer{{else if eq .ActivePage "audit"}}Audit{{else if eq .ActivePage "help"}}Hilfe{{else}}Einstellungen{{end}}</span>{{end}}</button>
 	    <nav id="portal-navigation" class="side-nav">
@@ -3900,24 +3931,6 @@ const PageTemplates = `
 	      {{if .PortalModules.Help}}<a class="nav-item {{if eq .ActivePage "help"}}active{{end}}" href="/app/hilfe"><span class="nav-icon"><span class="energy-ui-icon energy-ui-icon-circle-help" aria-hidden="true"></span></span><span class="nav-label">Hilfe</span></a>{{end}}
     </nav>
     <div id="portal-account" class="side-foot">
-      {{if .CanSwitchPortalContext}}
-      <details class="portal-context-switch">
-        <summary aria-label="Liegenschaft oder Ansicht wechseln">
-          <span class="portal-context-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9 20v-6h6v6"/></svg></span>
-          <span class="portal-context-current"><small>Portal wechseln</small><strong>{{.HouseName}} · {{.Role}}</strong></span>
-          <span class="portal-context-chevron" aria-hidden="true"></span>
-        </summary>
-        <div class="portal-context-menu" role="list" aria-label="Freigegebene Portal-Kontexte">
-          {{range .PortalContexts}}
-            {{if .Current}}
-            <div class="portal-context-option-current" role="listitem" aria-current="true"><span class="portal-context-option-copy"><strong>{{.HouseName}}</strong><small>{{.Address}}</small></span><span><span class="portal-context-role">{{.Role}}</span><span class="portal-context-active">Aktiv</span></span></div>
-            {{else}}
-            <form class="portal-context-option" method="post" action="/app/context" role="listitem"><input type="hidden" name="tenant" value="{{.TenantSlug}}"><input type="hidden" name="role" value="{{.Role}}"><button type="submit"><span class="portal-context-option-copy"><strong>{{.HouseName}}</strong><small>{{.Address}}</small></span><span class="portal-context-role">{{.Role}}</span></button></form>
-            {{end}}
-          {{end}}
-        </div>
-      </details>
-      {{end}}
       <div class="side-user">
         <span class="avatar">{{.Initials}}</span>
         <div class="side-user-copy"><strong>{{.DisplayName}}</strong><span class="side-user-meta"><span>{{.Role}}</span><button class="side-version version-button" type="button" data-dialog="release-history" aria-haspopup="dialog" aria-controls="release-history" aria-label="Version {{.DisplayVersion}} – Versionsverlauf öffnen">v{{.DisplayVersion}}</button></span></div>
@@ -8313,6 +8326,10 @@ const PageTemplates = `
               </label>
               <label class="full" for="building-address">Adresse
                 <textarea id="building-address" form="building-meta-form" name="address" maxlength="500" required>{{.Tenant.Address}}</textarea>
+              </label>
+              <label class="full" for="building-map-position">Kartenposition <span class="mini">optional, Breitengrad und Längengrad</span>
+                <input id="building-map-position" form="building-meta-form" type="text" name="map_position" value="{{if .SidebarMap.Configured}}{{printf "%.6f, %.6f" .Tenant.MapLatitude .Tenant.MapLongitude}}{{end}}" inputmode="decimal" placeholder="48.208200, 16.373800" aria-describedby="building-map-position-help">
+                <span class="mini" id="building-map-position-help">Koordinaten lassen sich in OpenStreetMap über „Wo ist das?“ kopieren. Ohne Position zeigt das Portal ehrlich an, dass kein Standort hinterlegt ist.</span>
               </label>
             </div>
             <div class="section-save"><span class="mini">Gilt für dieses Hausportal.</span><button class="button primary" type="submit" form="building-meta-form">Änderungen speichern</button></div>

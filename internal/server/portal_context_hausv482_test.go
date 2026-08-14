@@ -23,7 +23,7 @@ func newPortalContextTestApp(t *testing.T) *app {
 		},
 		AuthMethods: defaultAuthMethods(),
 	})
-	a.tenants["haus-b"] = tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Nebenweg 2"}
+	a.tenants["haus-b"] = tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Nebenweg 2", MapLatitude: 47.0707, MapLongitude: 15.4395, MapZoom: 17}
 	if err := a.unitStore.SetTenantUnits("demo", []unit{
 		{ID: "top-owner", Label: "Eigentum", OwnerEmails: []string{"multi@example.com"}},
 		{ID: "top-renter", Label: "Miete", RenterEmails: []string{"multi@example.com"}},
@@ -83,8 +83,16 @@ func TestPortalContextSwitchChangesTenantWithoutExtendingLogin(t *testing.T) {
 	req.AddCookie(newCookie)
 	page := httptest.NewRecorder()
 	a.handler().ServeHTTP(page, req)
-	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Haus B") || !strings.Contains(page.Body.String(), roleRenter) {
+	targetTile := sidebarMapForTenant(a.tenants["haus-b"]).Tiles[0].URL
+	sourceTile := sidebarMapForTenant(a.tenants["demo"]).Tiles[0].URL
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Haus B") || !strings.Contains(page.Body.String(), roleRenter) || !strings.Contains(page.Body.String(), targetTile) {
 		t.Fatalf("target portal status=%d body=%s", page.Code, page.Body.String())
+	}
+	if sourceTile != targetTile && strings.Contains(page.Body.String(), sourceTile) {
+		t.Fatal("target portal must not keep the previous tenant map tiles")
+	}
+	if strings.Contains(page.Body.String(), "Standort nicht hinterlegt") {
+		t.Fatal("target portal with coordinates must render its map instead of the fallback")
 	}
 	events := a.auditStore.List(auditFilter{TenantSlug: "haus-b", Action: auditActionContextSwitch, Limit: 10})
 	if len(events) != 1 || events[0].ActorEmail != "multi@example.com" || events[0].ActorRole != roleRenter {

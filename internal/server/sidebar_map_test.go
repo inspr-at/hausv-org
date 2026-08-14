@@ -8,6 +8,45 @@ import (
 	"testing"
 )
 
+func TestMapPositionFromFormAcceptsCoordinatesAndAllowsClear(t *testing.T) {
+	latitude, longitude, zoom, err := mapPositionFromForm("48.208200, 16.373800")
+	if err != nil || latitude != 48.2082 || longitude != 16.3738 || zoom != defaultMapZoom {
+		t.Fatalf("map position = %v, %v, %v, %v", latitude, longitude, zoom, err)
+	}
+	latitude, longitude, zoom, err = mapPositionFromForm("  ")
+	if err != nil || latitude != 0 || longitude != 0 || zoom != 0 {
+		t.Fatalf("cleared map position = %v, %v, %v, %v", latitude, longitude, zoom, err)
+	}
+	for _, raw := range []string{"48.2", "north, east", "91, 16", "0, 0"} {
+		if _, _, _, err := mapPositionFromForm(raw); err == nil {
+			t.Fatalf("map position %q should be rejected", raw)
+		}
+	}
+}
+
+func TestTenantOverridePersistsDynamicPortalMapPosition(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if err := a.tenantOverrides.SetMeta("demo", tenantOverride{
+		MetaSet:      true,
+		Name:         "Aktuelles Haus",
+		Address:      "Neue Adresse 7",
+		MapSet:       true,
+		MapLatitude:  48.2082,
+		MapLongitude: 16.3738,
+		MapZoom:      defaultMapZoom,
+		BrandIcon:    tenantBrandCommunity,
+	}); err != nil {
+		t.Fatalf("SetMeta: %v", err)
+	}
+	tenant, ok := a.tenantBySlug("demo")
+	if !ok || tenant.Name != "Aktuelles Haus" || tenant.Address != "Neue Adresse 7" {
+		t.Fatalf("tenant = %+v, ok=%v", tenant, ok)
+	}
+	if view := sidebarMapForTenant(tenant); !view.Configured || len(view.Tiles) == 0 {
+		t.Fatalf("persisted map view = %+v", view)
+	}
+}
+
 func TestSidebarMapUsesOnlyVisibleTilesAndExactHouseCentre(t *testing.T) {
 	view := sidebarMapForTenant(tenantConfig{
 		Slug:         "home",

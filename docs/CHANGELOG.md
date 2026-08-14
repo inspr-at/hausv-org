@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.91.0] - 2026-08-14
+
+### Neu
+
+- **Die Kartenposition lässt sich je Liegenschaft hinterlegen.** Breitengrad und Längengrad werden in den Gebäudestammdaten gespeichert und aktivieren die passende OpenStreetMap-Ansicht.
+
+### Verbessert
+
+- **Der Portalwechsler ist direkt in den Kartenkopf integriert.** Aktives Portal, Rolle, Haussymbol und Wechselmenü bilden eine kompakte Einheit mit ruhigem Verlauf.
+- **Ein Wechsel aktualisiert den gesamten Ortskontext.** Portalname, Rolle, Adresse, Markierung und Kartenkacheln folgen gemeinsam der gewählten Liegenschaft.
+- **Fehlende Standortdaten sind eindeutig.** Statt einer scheinbaren Karte zeigt das Portal klar an, dass noch kein Standort hinterlegt ist.
+- **Der Kartenkopf bleibt auf kleinen Bildschirmen kompakt.** Portalwechsel und Navigation bleiben ohne zusätzlichen Höhenversatz erreichbar.
+
 ## [0.90.0] - 2026-08-14
 
 ### Neu

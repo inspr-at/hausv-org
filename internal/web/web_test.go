@@ -237,8 +237,9 @@ func TestResidentContentFlowsStayCompactAndProgressivelyDisclosed(t *testing.T) 
 func TestSettingsAndParkingKeepReducedMobileInteractionContracts(t *testing.T) {
 	for _, want := range []string{
 		`<a class="side-map side-address" href="{{.MapURL}}"`,
-		`<a class="side-place-copy" href="/app" aria-label="Hausportal für {{.SidebarAddress.Full}} öffnen">`,
-		`side-address-short`,
+		`<div class="side-place-copy{{if .CanSwitchPortalContext}} has-context-switch{{end}}">`,
+		`<a class="side-address-label" href="/app" aria-label="Hausportal {{.HouseName}} öffnen"><strong>{{.HouseName}}</strong>`,
+		`<details class="portal-context-switch">`,
 		`@media (max-width: 350px)`,
 		`.side-address-label { font-size: 9px; }`,
 		`.content-top .crumb { max-width: 100%; gap: 6px; flex-wrap: wrap; font-size: 13px; }`,
@@ -439,8 +440,10 @@ func TestHomeTypeGuidanceAndSidebarBrandHierarchy(t *testing.T) {
 		`data-description="Mehrere Parteien und gemeinsam genutzte Anlagen.`,
 		`Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern.`,
 		`„Nur beobachten“ bleibt unverändert.`,
-		`.side-map { position: relative; width: 100%; height: 210px;`,
+		`.side-map-card { position: relative; min-width: 0; height: 244px;`,
+		`.side-map { position: absolute; inset: 0; width: 100%; height: 100%;`,
 		`.side-map-pin-mark svg { width: 25px; height: 21px;`,
+		`Standort nicht hinterlegt`,
 		`Kartendaten © OpenStreetMap`,
 		`text-decoration: none;`,
 		`Hausportal</strong><span>· hausv.org`,
