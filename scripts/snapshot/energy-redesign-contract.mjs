@@ -69,7 +69,7 @@ export async function assertOwnerEnergySidebarOrder(page, label) {
     const unit = link.querySelector('[data-home-unit-label]');
     const navLabel = link.querySelector('.nav-label');
     return {
-      path: new URL(link.href, document.baseURI).pathname,
+      path: new URL(link.href, document.baseURI).pathname.replace(/^\/[^/]+(?=\/app(?:\/|$))/, ''),
       label: (homeName || navLabel)?.textContent?.trim().replace(/\s+/g, ' ') || '',
       secondary: unit?.textContent?.trim().replace(/\s+/g, ' ') || '',
     };
@@ -126,12 +126,13 @@ export async function assertEnergyTopContent(page, label) {
     fail(label, 'Verbraucher-Spalte fehlt, hat keine fortlaufenden Prioritäten oder keine Hinzufügen-Kachel', { railTiles, railGhost, railPrios });
   }
 
-  const mapping = diagram.locator('a[href^="/app/zuhause/onboarding"]').filter({ hasText: 'Messwerte zuordnen' });
+  const mapping = diagram.locator('a[href*="/app/zuhause/onboarding"]').filter({ hasText: 'Messwerte zuordnen' });
   if ((await mapping.count()) !== 1) {
     fail(label, 'bestehender Einstieg „Messwerte zuordnen“ fehlt im neuen Kopf');
   }
   const mappingURL = new URL(await mapping.getAttribute('href'), page.url());
-  if (mappingURL.pathname !== '/app/zuhause/onboarding' ||
+  const mappingPath = mappingURL.pathname.replace(/^\/[^/]+(?=\/app(?:\/|$))/, '');
+  if (mappingPath !== '/app/zuhause/onboarding' ||
       mappingURL.searchParams.get('step') !== '4') {
     fail(label, 'bestehender Einstieg „Messwerte zuordnen“ fehlt im neuen Kopf');
   }

@@ -128,14 +128,14 @@ async function localLogin(context, email, origin = baseURL) {
 
   const page = await context.newPage();
   await page.goto(`${origin}/`, { waitUntil: 'networkidle' });
-  const emailDetails = page.locator('details:has(form[action="/auth/request"])');
+  const emailDetails = page.locator('details:has(form[action$="/auth/request"])');
   if (await emailDetails.count()) {
     await emailDetails.evaluate((element) => {
       element.open = true;
     });
   }
   await page.locator('input[name="email"]').fill(email);
-  await page.locator('form[action="/auth/request"] button[type="submit"]').click();
+  await page.locator('form[action$="/auth/request"] button[type="submit"]').click();
   const devLink = page.locator('a.dev-link');
   await devLink.waitFor({ state: 'visible', timeout: 10_000 });
   const href = await devLink.getAttribute('href');
