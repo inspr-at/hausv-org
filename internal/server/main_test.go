@@ -25,6 +25,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/auth"
 	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/version"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
@@ -1416,6 +1417,8 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Klein starten. Erst mit dem Nutzen wachsen.",
 		"Home oder Professional?",
 		"Gespräch anfragen",
+		`href="/start"`,
+		"HAUSV Home starten",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
@@ -1488,7 +1491,7 @@ func TestImprintPageCarriesLegalDetails(t *testing.T) {
 		"Professionelle Services",
 		"HAUSV Professional",
 		"GNU AGPL-3.0",
-		"Betreiber-Selbstprüfung vom 13. August 2026",
+		"Betreiber-Selbstprüfung vom 14. August 2026",
 		"§ 5 ECG",
 		"§ 24 MedienG",
 		"Keine externe Zertifizierung",
@@ -5969,6 +5972,8 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		sessionTTL:            time.Hour,
 		tokens:                auth.NewTokenStore([]byte(strings.Repeat("t", 32))),
 		sessions:              newSessionStore([]byte(strings.Repeat("s", 32))),
+		homeSetupTokens:       auth.NewTokenStore([]byte(strings.Repeat("h", 32))),
+		homeSetupSessions:     newSessionStore([]byte(strings.Repeat("u", 32))),
 		oidc:                  &oidcLogin{},
 		mailer:                smtpMailer{},
 		templates:             tmpl,
@@ -5992,6 +5997,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		voteStore:             voteStore,
 		parkingStore:          parkingStore,
 		energyStore:           energy.NewMemoryStore(),
+		homeReservations:      store.NewMemoryHomeReservationStore(),
 	}
 	t.Cleanup(a.closeMagicLinkDelivery)
 	return a

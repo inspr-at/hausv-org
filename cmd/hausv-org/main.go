@@ -86,6 +86,8 @@ func main() {
 	defer stopTelegram()
 	stopEnergyRetention := app.StartEnergyRetentionWorker()
 	defer stopEnergyRetention()
+	stopHomeReservationRetention := app.StartHomeReservationRetentionWorker()
+	defer stopHomeReservationRetention()
 	stopEnergySampler := app.StartEnergyIntervalSampler()
 	defer stopEnergySampler()
 

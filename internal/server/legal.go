@@ -2,7 +2,7 @@ package server
 
 const (
 	platformContactEmail = "hello@hausv.org"
-	legalReviewDate      = "13. August 2026"
+	legalReviewDate      = "14. August 2026"
 )
 
 func platformOperatorName() string {

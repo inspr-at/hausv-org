@@ -721,16 +721,16 @@ async function assertPublicLanding(viewport) {
   if (!response || response.status() !== 200) {
     fail(`Öffentliche Startseite ${viewport.name}: Status ${response?.status() ?? 0}`);
   }
-  if (!(await page.getByRole('heading', { name: 'Ein Portal. Zwei Wege zu einem besseren Zuhause.' }).count())) {
+  if (!(await page.getByRole('heading', { name: 'Ein Hausportal. Alles, was Menschen und Gebäude verbindet.' }).count())) {
     fail(`Öffentliche Startseite ${viewport.name}: Hauptaussage fehlt`);
   }
   const paths = await page.locator('.product-path').count();
-  if (paths !== 2) fail(`Öffentliche Startseite ${viewport.name}: ${paths} statt 2 Produktwege`);
+  if (paths !== 3) fail(`Öffentliche Startseite ${viewport.name}: ${paths} statt 3 Produktwege`);
   for (const text of [
-    'HAUSV Gemeinschaft',
-    'HAUSV Zuhause',
-    'Fair Use bis 25 Einheiten',
-    'Drei Jahre kostenlos',
+    'HAUSV Free',
+    'HAUSV Home',
+    'HAUSV Professional',
+    '12 Monate kostenlos',
   ]) {
     if (!(await page.getByText(text, { exact: true }).count())) {
       fail(`Öffentliche Startseite ${viewport.name}: „${text}“ fehlt`);
@@ -743,12 +743,12 @@ async function assertPublicLanding(viewport) {
       fullPage: true,
     });
   }
-  const productDetails = page.locator('details.landing-more');
+  const productDetails = page.locator('details.landing-more').first();
   if (await productDetails.evaluate((element) => element.open)) {
     fail(`Öffentliche Startseite ${viewport.name}: Produktdetails sind ungefragt offen`);
   }
   await productDetails.locator('summary').click();
-  if (!(await page.getByRole('heading', { name: 'Keine eigene Verrechnung' }).count())) {
+  if (!(await page.getByRole('heading', { name: 'Kein Verrechnungssystem' }).count())) {
     fail(`Öffentliche Startseite ${viewport.name}: Produktdetails lassen sich nicht öffnen`);
   }
   const metrics = await page.evaluate(() => ({
@@ -756,7 +756,7 @@ async function assertPublicLanding(viewport) {
     height: document.documentElement.scrollHeight,
   }));
   if (metrics.overflow) fail(`Öffentliche Startseite ${viewport.name}: horizontaler Überlauf`);
-  const maxHeight = viewport.name === 'Mobil' ? 7_200 : 5_200;
+  const maxHeight = viewport.name === 'Mobil' ? 12_000 : 8_000;
   if (metrics.height > maxHeight) {
     fail(`Öffentliche Startseite ${viewport.name}: mit ${metrics.height}px unnötig lang (maximal ${maxHeight}px)`);
   }
@@ -774,8 +774,27 @@ async function assertPublicLanding(viewport) {
   if (!(await page.locator('a[href="/datenschutz"]').count())) {
     fail(`Impressum ${viewport.name}: Datenschutz ist nicht erreichbar`);
   }
+
+  const startResponse = await page.goto(new URL('/start', publicURL).href, { waitUntil: 'networkidle' });
+  if (!startResponse || startResponse.status() !== 200 ||
+      !(await page.getByRole('heading', { name: 'Zuhause zuerst sicher anlegen.' }).count()) ||
+      !(await page.getByRole('button', { name: 'Bestätigungslink anfordern' }).count())) {
+    fail(`HAUSV Home Start ${viewport.name}: sicherer Reservierungsweg fehlt`);
+  }
+  const startMetrics = await page.evaluate(() => ({
+    overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+    fields: [...document.querySelectorAll('.home-start-form input, .home-start-form button')].map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { width: rect.width, height: rect.height, right: rect.right };
+    }),
+    tokenFields: document.querySelectorAll('[name="token"], [name="base_url"], [name^="ha_"]').length,
+  }));
+  if (startMetrics.overflow || startMetrics.tokenFields ||
+      startMetrics.fields.some((field) => field.right > viewport.size.width + 1 || field.width < 20 || field.height < 20)) {
+    fail(`HAUSV Home Start ${viewport.name}: Formular läuft über oder fragt Geheimnisse ab (${JSON.stringify(startMetrics)})`);
+  }
   await closeContext(context);
-  process.stdout.write(`  ✓ Öffentliche Startseite · ${viewport.name} · ${metrics.height}px\n`);
+  process.stdout.write(`  ✓ Öffentliche Startseite + HAUSV Home Start · ${viewport.name} · ${metrics.height}px\n`);
 }
 
 async function createIssue(email, title, { verifyResidentAttachmentTarget = false } = {}) {
