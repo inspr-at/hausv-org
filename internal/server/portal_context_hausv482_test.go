@@ -24,6 +24,12 @@ func newPortalContextTestApp(t *testing.T) *app {
 		AuthMethods: defaultAuthMethods(),
 	})
 	a.tenants["haus-b"] = tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Nebenweg 2"}
+	if err := a.unitStore.SetTenantUnits("demo", []unit{
+		{ID: "top-owner", Label: "Eigentum", OwnerEmails: []string{"multi@example.com"}},
+		{ID: "top-renter", Label: "Miete", RenterEmails: []string{"multi@example.com"}},
+	}); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
 	return a
 }
 
@@ -109,7 +115,7 @@ func TestPortalContextSwitchRejectsForeignTenantAndRoleElevation(t *testing.T) {
 	}
 }
 
-func TestOwnerCanChooseOwnRenterPostureButNotElevate(t *testing.T) {
+func TestUserCanChooseOwnAssignedRenterRoleButNotElevate(t *testing.T) {
 	a := newPortalContextTestApp(t)
 	token, _, err := a.sessions.Put("multi@example.com", "demo", authMethodEmail, time.Hour)
 	if err != nil {
@@ -135,6 +141,24 @@ func TestOwnerCanChooseOwnRenterPostureButNotElevate(t *testing.T) {
 	forgedReq.AddCookie(&http.Cookie{Name: "weg_session", Value: forged})
 	if _, _, _, ok := a.currentUser(forgedReq); ok {
 		t.Fatal("a signed but unassigned role must still be rejected server-side")
+	}
+}
+
+func TestPortalContextRejectsUnassignedRenterRole(t *testing.T) {
+	a := newPortalContextTestApp(t)
+	if err := a.unitStore.SetTenantUnits("demo", []unit{{ID: "top-owner", Label: "Eigentum", OwnerEmails: []string{"multi@example.com"}}}); err != nil {
+		t.Fatalf("SetTenantUnits: %v", err)
+	}
+	token, _, err := a.sessions.Put("multi@example.com", "demo", authMethodEmail, time.Hour)
+	if err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	rr := portalContextPost(t, a, token, url.Values{"tenant": {"demo"}, "role": {roleRenter}})
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("unassigned role status = %d, want 403", rr.Code)
+	}
+	if contexts := a.portalContextsFor("multi@example.com", "demo", roleOwner); len(contexts) != 2 {
+		t.Fatalf("actual contexts = %+v, want demo owner and haus-b renter", contexts)
 	}
 }
 

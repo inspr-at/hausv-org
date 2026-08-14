@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.89.1",
+			Date:     "14. August 2026",
+			Kind:     "Portalwechsel",
+			Headline: "Die Rollenwahl entspricht jetzt exakt den hinterlegten Zuordnungen.",
+			Intro:    "Der Portalwechsler verbindet mehrere echte Rollen innerhalb einer Liegenschaft, ohne zusätzliche Perspektiven zu erfinden.",
+			Items: []NoteItem{
+				{Label: "Nachvollziehbar", Text: "Eigentümer- und Mieterrollen werden aus den persönlichen Einheiten-Zuordnungen abgeleitet."},
+				{Label: "Eindeutig", Text: "Nicht zugeordnete Rollen erscheinen nicht im Wechsler."},
+				{Label: "Abgesichert", Text: "Auch direkte Anfragen mit einer fremden Rolle werden serverseitig abgelehnt."},
+			},
+		},
+		{
 			Version:  "0.89.0",
 			Date:     "14. August 2026",
 			Kind:     "Portalwechsel",

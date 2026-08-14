@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.89.1] - 2026-08-14
+
+### Verbessert
+
+- **Die Rollenwahl folgt den tatsächlichen Zuordnungen.** Eigentümer- und Mieteransichten innerhalb derselben Liegenschaft erscheinen nur, wenn die Person über ihre Einheiten auch wirklich beiden Rollen zugeordnet ist.
+- **Nicht zugeordnete Rollen bleiben konsequent gesperrt.** Das gilt sowohl für den sichtbaren Portalwechsler als auch für direkte oder manipulierte Anfragen.
+
 ## [0.89.0] - 2026-08-14
 
 ### Neu

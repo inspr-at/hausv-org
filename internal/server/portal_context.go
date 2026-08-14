@@ -52,8 +52,7 @@ func (a *app) portalContextsFor(email string, currentTenant string, currentRole 
 		if !ok {
 			continue
 		}
-		actualRole := a.roleFor(email, slug)
-		for _, role := range ownRolePostures(actualRole) {
+		for _, role := range a.ownRolesForTenant(email, slug) {
 			contexts = append(contexts, portalContextView{
 				TenantSlug: slug,
 				HouseName:  houseDisplayName(tenant),
@@ -114,16 +113,32 @@ func (a *app) ownsPortalTenant(email string, tenantSlug string) bool {
 	return false
 }
 
-// ownRolePostures are safe self-views, never an elevation. Owners may inspect
-// the ordinary renter experience with their own identity; all other roles keep
-// their assigned role. Viewing another person's identity remains a separate,
-// audited admin feature.
-func ownRolePostures(actualRole string) []string {
-	actualRole = normalizeRole(actualRole)
-	if actualRole == roleOwner {
-		return []string{roleOwner, roleRenter}
+// ownRolesForTenant derives selectable roles only from actual assignments. The
+// directory membership supplies the primary role; unit assignments can add an
+// owner or renter role in the same property. Viewing another person's identity
+// remains a separate, audited admin feature.
+func (a *app) ownRolesForTenant(email string, tenantSlug string) []string {
+	primary := normalizeRole(a.roleFor(email, tenantSlug))
+	roles := make([]string, 0, 2)
+	seen := map[string]struct{}{}
+	add := func(role string) {
+		role = normalizeRole(role)
+		if role == "" {
+			return
+		}
+		if _, ok := seen[role]; ok {
+			return
+		}
+		seen[role] = struct{}{}
+		roles = append(roles, role)
 	}
-	return []string{actualRole}
+	add(primary)
+	if a.unitStore != nil {
+		for _, membership := range a.unitStore.UnitsForEmail(tenantSlug, email) {
+			add(membership.Relation)
+		}
+	}
+	return roles
 }
 
 func (a *app) ownPortalContextAllowed(email string, tenantSlug string, role string, authMethod string) bool {
@@ -131,7 +146,7 @@ func (a *app) ownPortalContextAllowed(email string, tenantSlug string, role stri
 		return false
 	}
 	role = normalizeRole(role)
-	for _, allowed := range ownRolePostures(a.roleFor(email, tenantSlug)) {
+	for _, allowed := range a.ownRolesForTenant(email, tenantSlug) {
 		if role == allowed {
 			return true
 		}
