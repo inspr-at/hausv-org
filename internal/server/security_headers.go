@@ -65,6 +65,9 @@ func (w *securityResponseWriter) shouldPreventCaching(status int) bool {
 	if strings.HasPrefix(path, "/auth/") || strings.HasPrefix(path, "/handover/") || path == "/start" || strings.HasPrefix(path, "/start/") {
 		return true
 	}
+	if strings.HasPrefix(path, "/api/home-connectors/") {
+		return true
+	}
 	if path == "/" && w.app != nil && !w.app.isMarketingHost(w.request) {
 		return true
 	}

@@ -860,8 +860,28 @@ const PageTemplates = `
     .home-start-path-result { margin-top: 22px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px 18px; background: var(--panel-soft); }
     .home-start-path-result span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
     .home-start-path-result strong { display: block; margin-top: 5px; font-size: 20px; overflow-wrap: anywhere; }
+    .home-connector-status { margin: 22px 0; border: 2px solid var(--leaf); border-radius: var(--radius-md); padding: 18px; background: rgba(47,107,74,.06); }
+    .home-connector-status span { display: block; color: var(--muted); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .home-connector-status strong { display: block; margin-top: 5px; font-size: 20px; }
+    .home-connector-status p { margin: 7px 0 0; color: var(--muted); line-height: 1.5; }
+    .home-connector-facts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 14px 0 22px; }
+    .home-connector-facts div { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; background: #fff; }
+    .home-connector-facts span { display: block; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+    .home-connector-facts strong { display: block; margin-top: 4px; overflow-wrap: anywhere; }
+    .home-pairing { margin-top: 22px; border: 1px solid var(--gold-light); border-radius: var(--radius-md); padding: 18px; background: var(--panel-soft); }
+    .home-pairing h3 { margin: 0; font-size: 18px; }
+    .home-pairing-code { display: block; margin: 12px 0; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px; background: #fff; font: 700 14px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace; overflow-wrap: anywhere; user-select: all; }
+    .home-command { display: block; margin: 10px 0; border-radius: var(--radius-sm); padding: 13px; background: var(--ink); color: #fff; font: 12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; overflow-wrap: anywhere; user-select: all; }
+    .home-downloads { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+    .home-downloads a { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; background: #fff; font-size: 13px; font-weight: 800; text-decoration: none; }
+    .home-connector-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .home-connector-actions form { margin: 0; }
+    .home-connector-action { min-height: 46px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 15px; background: #fff; color: var(--ink); font: inherit; font-weight: 900; cursor: pointer; }
+    .home-connector-action.primary { border-color: var(--ink); background: var(--ink); color: #fff; }
+    .home-connector-action.danger { color: #8f352b; }
+    .home-connector-note { color: var(--muted); font-size: 13px; line-height: 1.5; }
     .home-start-foot { padding: 20px 0 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
-    @media (max-width: 760px) { .home-start-main { grid-template-columns: minmax(0,1fr); padding-top: 24px; } .home-start-copy h1 { max-width: none; } }
+    @media (max-width: 760px) { .home-start-main { grid-template-columns: minmax(0,1fr); padding-top: 24px; } .home-start-copy h1 { max-width: none; } .home-connector-facts { grid-template-columns: minmax(0,1fr); } }
 {{end}}
 
 {{define "homeStart"}}
@@ -924,7 +944,32 @@ const PageTemplates = `
     <header class="home-start-head"><a class="home-start-brand" href="/">{{template "hausvLandingMark" .}}<span>HAUSV Home</span></a><a class="home-start-back" href="/">Zur Übersicht</a></header>
     <main class="home-start-main">
       <section class="home-start-copy"><p class="home-start-kicker">E-Mail bestätigt</p><h1>{{.HouseholdName}} ist reserviert.</h1><p class="home-start-lead">Der persönliche Bereich ist eindeutig vorgemerkt. Zugangsdaten wurden dafür weder abgefragt noch gespeichert.</p><div class="home-start-path-result"><span>Reservierter Pfad</span><strong>hausv.org{{.PublicPath}}</strong></div></section>
-      <section class="home-start-card"><h2>Verbindung sicher vorbereiten</h2><p>Home Assistant wird später über einen eigenen, widerrufbaren Lesekanal verbunden. Der Nur-Lese-Ansatz bedeutet: HAUSV fragt hier bewusst noch keinen Token ab.</p><ol class="home-start-steps"><li><span>Der sichere Connector wird Ihrem reservierten Zuhause fest zugeordnet.</span></li><li><span>Sie geben ausschließlich lesende Messwerte frei und können die Verbindung jederzeit widerrufen.</span></li><li><span>Erst nach einer verständlichen Prüfung wird der Bereich aktiviert. Gerätesteuerung bleibt aus.</span></li></ol><div class="home-start-notice"><strong>Vorbereitung abgeschlossen.</strong>Wir informieren Sie per E-Mail, sobald der sichere Connector-Schritt für Ihr Zuhause bereitsteht.</div></section>
+      <section class="home-start-card">
+        <h2>Lokale Verbindung</h2>
+        <p>Der Connector läuft bei Ihnen zu Hause und arbeitet ausschließlich im Nur-Lese-Modus. HAUSV fragt hier bewusst keinen Token aus Home Assistant und keine lokale Adresse ab.</p>
+        <div class="home-connector-status" aria-live="polite"><span>Status</span><strong>{{.ConnectorState}}</strong><p>{{.ConnectorDetail}}</p></div>
+        {{if .Connected}}
+        <div class="home-connector-facts" aria-label="Verbindungsdetails"><div><span>Zuletzt gemeldet</span><strong>{{.LastSeen}}</strong></div><div><span>Lokale Version</span><strong>{{.HomeAssistantVersion}}</strong></div><div><span>Erkannte Einträge</span><strong>{{.EntityCount}}</strong></div></div>
+        {{end}}
+        {{if .PairingCreated}}
+        <div class="home-pairing">
+          <h3>Einmal-Code bis {{.PairingExpires}}</h3>
+          <p class="home-connector-note">Dieser Code funktioniert genau einmal. Er ersetzt eine bestehende Verbindung erst nach erfolgreicher Kopplung.</p>
+          <code class="home-pairing-code">{{.PairingCode}}</code>
+          <div class="home-downloads"><a href="/downloads/hausv-connector-linux-amd64">Linux amd64 laden</a><a href="/downloads/hausv-connector-linux-arm64">Linux arm64 laden</a></div>
+          <ol class="home-start-steps"><li><span>Speichern Sie den in Home Assistant erzeugten Lesetoken lokal in <code>home-assistant.token</code> und schützen Sie die Datei vor anderen Benutzern.</span></li><li><span>Machen Sie den Download ausführbar und starten Sie die passende Zeile unten. Token und lokale Adresse werden nur vom lokalen Connector gelesen.</span></li><li><span>Nach dem ersten erfolgreichen Lauf erscheint hier der aktuelle Verbindungsstatus. Messwerte werden in diesem Schritt noch nicht an HAUSV übertragen.</span></li></ol>
+          <code class="home-command">chmod 700 ./hausv-connector-linux-amd64<br>./hausv-connector-linux-amd64 connector --pairing-code {{.PairingCode}} --home-assistant-url http://homeassistant.local:8123 --home-assistant-token-file ./home-assistant.token</code>
+          <p class="home-connector-note">Für arm64 ersetzen Sie im Befehl den Dateinamen. Der langlebige Connector-Zugang wird lokal mit Dateimodus 0600 gespeichert und im Portal nur gehasht geführt.</p>
+        </div>
+        {{else if .PairingPending}}
+        <div class="home-start-notice"><strong>Eine Kopplung wartet auf den lokalen Connector.</strong>Der Einmal-Code wird aus Sicherheitsgründen nach dieser Ansicht nicht erneut angezeigt. Erstellen Sie bei Bedarf einfach einen neuen.</div>
+        {{end}}
+        <div class="home-connector-actions">
+          <form method="post" action="/start/connector/pairing"><button class="home-connector-action primary" type="submit">{{if .Connected}}Zugang erneuern{{else}}Connector koppeln{{end}}</button></form>
+          {{if .Connected}}<form method="post" action="/start/connector/revoke"><button class="home-connector-action danger" type="submit">Verbindung widerrufen</button></form>{{end}}
+        </div>
+        <p class="home-connector-note">Keine Gerätesteuerung. Keine Home-Assistant-Zugangsdaten im Portal. Der nächste Schritt ordnet ausgewählte Messwerte verständlich zu.</p>
+      </section>
     </main>
     <footer class="home-start-foot">HAUSV Home · keine Geheimnisse im Portal · keine Steuerung ohne Freigabe</footer>
   </div>
@@ -1056,6 +1101,7 @@ const PageTemplates = `
     <ul>
       <li>Identität, Hauszugehörigkeit, Rollen und Rechte für Anmeldung und Zugriffsschutz.</li>
       <li>Für eine HAUSV-Home-Reservierung werden der gewünschte Pfad, der Name des Zuhauses, die Eigentümer-E-Mail und die ausdrückliche Berechtigungsbestätigung gespeichert. In diesem Schritt werden keine Home-Assistant-Adresse und kein Zugangstoken angenommen.</li>
+      <li>Bei der lokalen Connector-Kopplung speichert HAUSV nur abgeleitete Hashes des Einmal-Codes und Connector-Zugangs sowie Connector-Version, lokale Home-Assistant-Version, Anzahl der Entitäten und Zeitpunkt der letzten Meldung. Home-Assistant-Adresse, Home-Assistant-Token, Entity-IDs, Messwerte und Gerätezustände bleiben lokal.</li>
       <li>Aushänge, Termine, Dokumente, Anliegen, Kommentare, Anhänge und Abstimmungen für Kommunikation und Verwaltung des Hauses.</li>
       <li>Anmelde- und Auditdaten für Sicherheit, Fehlerklärung und nachvollziehbare Änderungen.</li>
       <li>Parkplatz- und Ladedaten nur für berechtigte Personen des jeweiligen Hauses.</li>
@@ -1072,6 +1118,7 @@ const PageTemplates = `
     <ul>
       <li>Daten stammen von eingeladenen Personen, der Hausadministration, ausdrücklich verbundenen Home-Assistant-Instanzen und bewusst hochgeladenen Smart-Meter-Dateien.</li>
       <li>Angaben zur HAUSV-Home-Reservierung stammen ausschließlich von der Person, die den Pfad anfordert und ihre E-Mail über den Einmal-Link bestätigt.</li>
+      <li>Der lokale Connector übermittelt ausschließlich seine Version, die lokale Home-Assistant-Version, die Anzahl verfügbarer Entitäten und den Zeitpunkt seiner Meldung. Er übermittelt in diesem Ausbauschritt keine Entity-IDs, Messwerte oder Gerätezustände.</li>
       <li>Innerhalb eines Hauses sehen nur die jeweils berechtigten Rollen die für ihre Aufgabe notwendigen Bereiche. Technische Vertrauenspersonen sehen oder konfigurieren Energie nur im sichtbar erteilten Umfang und dürfen den Haus-Schalter nicht umlegen. Der Zugriff ist widerrufbar.</li>
       <li>{{.IdentityStorageNotice}}</li>
       <li>{{.WebAccessNotice}}</li>
@@ -1086,6 +1133,7 @@ const PageTemplates = `
     <ul>
       <li>Einmalige E-Mail-Anmelde- und Reservierungslinks: 15 Minuten; OIDC-Anmeldevorgänge: 10 Minuten; alle nur einmal nutzbar.</li>
       <li>Unbestätigte HAUSV-Home-Reservierungen: nach 24 Stunden zur Löschung fällig und spätestens im nächsten stündlichen Bereinigungslauf entfernt. Bestätigte Reservierungen: bis zur Aktivierung des angeforderten Bereichs oder bis zum Widerruf beziehungsweise Löschverlangen.</li>
+      <li>Connector-Einmal-Codes: zehn Minuten gültig und nach erfolgreicher Nutzung verworfen. Der abgeleitete Connector-Zugang und seine Statusdaten bleiben bis zum Widerruf oder zur Löschung des Zuhause-Bereichs gespeichert. Ein Widerruf beendet den Zugang sofort und entfernt die Statusdaten.</li>
       <li>Sitzungscookie: regulär höchstens 30 Tage oder bis zur Abmeldung beziehungsweise Sperre.</li>
       <li>Hauszugehörigkeit und Dienstleister-Zugriff: bis zum Entzug; der Zugriff endet sofort.</li>
       <li>Gelöschte Anhangdateien: sofort entfernt; leere Löschmarkierung nach einem Jahr.</li>

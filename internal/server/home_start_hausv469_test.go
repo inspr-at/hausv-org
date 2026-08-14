@@ -206,6 +206,7 @@ func TestHomeStartPrivacyExplainsReservationDataAndRetention(t *testing.T) {
 	}
 	for _, want := range []string{
 		"gewünschte Pfad", "Eigentümer-E-Mail", "keine Home-Assistant-Adresse", "nach 24 Stunden zur Löschung fällig", "nächsten stündlichen Bereinigungslauf", "Reservierungslinks: 15 Minuten",
+		"abgeleitete Hashes des Einmal-Codes", "keine Entity-IDs, Messwerte oder Gerätezustände", "Ein Widerruf beendet den Zugang sofort",
 	} {
 		if !strings.Contains(response.Body.String(), want) {
 			t.Fatalf("privacy page missing %q", want)

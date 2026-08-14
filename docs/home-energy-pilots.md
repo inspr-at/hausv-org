@@ -111,6 +111,34 @@ getrennte Pilot-Haushalte jeweils einen eigenen Tenant.
 
 ## Home Assistant pro Haus
 
+HAUSV unterstützt zwei getrennte Verbindungswege. Bestehende Pilotinstallationen
+nutzen weiterhin die unten beschriebene, vom Betreiber konfigurierte Verbindung.
+HAUSV Home bietet zusätzlich einen lokalen Self-Service-Connector für eine
+ausgehende Verbindung aus dem privaten Netzwerk.
+
+### Lokaler Self-Service-Connector
+
+Nach bestätigter Reservierung erzeugt die Eigentümerin oder der Eigentümer im
+geschützten Einrichtungsbereich einen zehn Minuten gültigen Einmal-Code. Der
+lokale Connector wird für Linux amd64 oder arm64 heruntergeladen und erhält die
+Home-Assistant-Adresse sowie den Long-Lived Access Token ausschließlich über
+lokale Parameter und Dateien. Er ruft nur `GET /api/config` und
+`GET /api/states` auf.
+
+Der Einmal-Code wird einmalig gegen einen langlebigen Connector-Zugang
+getauscht. HAUSV speichert serverseitig nur HMAC-Hashes der Zugangsdaten. Die
+lokale Zugangdatei muss auf Unix-Systemen Modus `0600` haben. Eine regelmäßige
+Statusmeldung enthält ausschließlich Connector-Version, Home-Assistant-Version
+und Anzahl der verfügbaren Entitäten. Sie enthält weder lokale URL und Token
+noch Entity-IDs, Werte oder Gerätezustände.
+
+Eine Rotation lässt den bisherigen Connector-Zugang so lange aktiv, bis der
+neue Einmal-Code erfolgreich eingelöst wurde. Ein Widerruf sperrt ihn sofort.
+Die aktuelle Ausbaustufe koppelt und überwacht den lokalen Connector. Sie
+überträgt noch keine Messwerte und führt keine Gerätesteuerung aus.
+
+### Betreiberkonfigurierte Pilotverbindung
+
 `HA_CONNECTORS_JSON` enthält nur nicht geheime Zuordnung. Genau eine
 Credential-Quelle ist je Haus erforderlich:
 

@@ -736,6 +736,7 @@ type app struct {
 	sessions                *sessionStore
 	homeSetupTokens         *tokenStore
 	homeSetupSessions       *sessionStore
+	homeConnectorHashKey    []byte
 	oidc                    *oidcLogin
 	oidcFlows               *oidcFlowStore
 	mailer                  mailer
@@ -759,34 +760,36 @@ type app struct {
 	// inviteStore serves app-managed user records. Backed by the person/house
 	// N:N model when SQLite is available, otherwise by the JSON store
 	// (HAUSV-169).
-	inviteStore           profileStorage
-	identityStore         *store.SQLIdentityStore
-	activityStore         activityStorage
-	unitStore             unitStorage
-	unitPaymentStore      unitPaymentStatusStorage
-	issueStore            issueStorage
-	attachmentStore       attachmentStorage
-	contactStore          contactBookStorage
-	auditStore            *auditStore
-	documentStore         documentStorage
-	handoverStore         handoverStorage
-	protocolFiler         protocolFiler
-	voteStore             voteStorage
-	voteReminderInterval  time.Duration
-	parkingStore          *parkingStore
-	parkingSampleInterval time.Duration
-	parkingHistoryStart   time.Time
-	energyStore           energy.Storage
-	homeReservations      store.HomeReservationStorage
-	energySampleInterval  time.Duration
-	energySamplerMu       sync.Mutex
-	energySamplers        map[string]*energySamplerState
-	retentionFailure      atomic.Bool
-	energyLifecycleLocks  sync.Map
-	energyChartMu         sync.Mutex
-	energyChartCache      map[string]energyChartCacheEntry
-	mapTileMu             sync.Mutex
-	mapTileBaseURL        string
+	inviteStore              profileStorage
+	identityStore            *store.SQLIdentityStore
+	activityStore            activityStorage
+	unitStore                unitStorage
+	unitPaymentStore         unitPaymentStatusStorage
+	issueStore               issueStorage
+	attachmentStore          attachmentStorage
+	contactStore             contactBookStorage
+	auditStore               *auditStore
+	documentStore            documentStorage
+	handoverStore            handoverStorage
+	protocolFiler            protocolFiler
+	voteStore                voteStorage
+	voteReminderInterval     time.Duration
+	parkingStore             *parkingStore
+	parkingSampleInterval    time.Duration
+	parkingHistoryStart      time.Time
+	energyStore              energy.Storage
+	homeReservations         store.HomeReservationStorage
+	homeConnectors           store.HomeConnectorStorage
+	homeConnectorDownloadDir string
+	energySampleInterval     time.Duration
+	energySamplerMu          sync.Mutex
+	energySamplers           map[string]*energySamplerState
+	retentionFailure         atomic.Bool
+	energyLifecycleLocks     sync.Map
+	energyChartMu            sync.Mutex
+	energyChartCache         map[string]energyChartCacheEntry
+	mapTileMu                sync.Mutex
+	mapTileBaseURL           string
 
 	chargingTickInterval   time.Duration
 	chargingStaleAfter     time.Duration
@@ -890,6 +893,11 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /start", a.requestHomeStart)
 	mux.HandleFunc("GET /start/verify", a.verifyHomeStart)
 	mux.HandleFunc("GET /start/connector", a.homeConnectorStart)
+	mux.HandleFunc("POST /start/connector/pairing", a.startHomeConnectorPairing)
+	mux.HandleFunc("POST /start/connector/revoke", a.revokeHomeConnector)
+	mux.HandleFunc("POST /api/home-connectors/pair", a.pairHomeConnector)
+	mux.HandleFunc("POST /api/home-connectors/heartbeat", a.heartbeatHomeConnector)
+	mux.HandleFunc("GET /downloads/{filename}", a.downloadHomeConnector)
 	mux.HandleFunc("GET /", a.home)
 	mux.HandleFunc("POST /auth/request", a.requestLogin)
 	mux.HandleFunc("GET /auth/verify", a.publicPage(a.verifyLogin))
@@ -1365,6 +1373,7 @@ func newApp() (*app, error) {
 	identity := newSQLIdentityStore(database)
 	energyBackend := energy.NewSQLStore(database)
 	homeReservationBackend := store.NewSQLHomeReservationStore(database)
+	homeConnectorBackend := store.NewSQLHomeConnectorStore(database)
 	if removed, err := homeReservationBackend.PurgePendingBefore(time.Now().Add(-homePendingRetention)); err != nil {
 		return nil, fmt.Errorf("expired home reservation purge failed: %w", err)
 	} else if removed > 0 {
@@ -1469,59 +1478,62 @@ func newApp() (*app, error) {
 	var filer protocolFiler = sqlFiler
 
 	return &app{
-		baseURL:               baseURL,
-		addr:                  env("ADDR", ":8080"),
-		rootDomain:            rootDomain,
-		defaultTenant:         defaultTenant,
-		tenants:               tenants,
-		sessionSecure:         parsed.Scheme == "https",
-		allowed:               allowed,
-		admins:                admins,
-		profiles:              profiles,
-		localDevLogin:         localDevLogin,
-		serviceAccessEnabled:  serviceProviderAccessEnabled(),
-		sessionTTL:            sessionTTL,
-		tokens:                auth.NewTokenStore(secret),
-		sessions:              newSessionStore(secret),
-		homeSetupTokens:       auth.NewTokenStore(homeSetupSecret(secret)),
-		homeSetupSessions:     newSessionStore(homeSetupSecret(secret)),
-		oidc:                  oidcLogin,
-		oidcFlows:             auth.NewOIDCFlowStore(),
-		mailer:                mailTransport,
-		trustedProxies:        trustedProxies,
-		templates:             tmpl,
-		db:                    database,
-		dataDir:               filepath.Dir(dbPath),
-		announcementStore:     annBackend,
-		announcementReadStore: annReadBackend,
-		eventStore:            eventBackend,
-		notificationPrefs:     notificationBackend,
-		profileOverlays:       profileBackend,
-		tenantOverrides:       tenantOverrides,
-		tenantHeroDir:         tenantHeroDir,
-		tenantHeroSeedDir:     tenantHeroSeedDir,
-		inviteStore:           inviteBackend,
-		identityStore:         identity,
-		activityStore:         activityBackend,
-		unitStore:             unitBackend,
-		unitPaymentStore:      unitPaymentBackend,
-		issueStore:            issueBackend,
-		attachmentStore:       attachmentBackend,
-		contactStore:          contactBackend,
-		auditStore:            auditStore,
-		documentStore:         documentBackend,
-		handoverStore:         handoverBackend,
-		protocolFiler:         filer,
-		voteStore:             voteBackend,
-		voteReminderInterval:  voteReminderInterval,
-		parkingStore:          parkingStore,
-		parkingSampleInterval: parkingSampleInterval,
-		parkingHistoryStart:   parkingHistoryStart,
-		energyStore:           energyBackend,
-		homeReservations:      homeReservationBackend,
-		energySampleInterval:  energySampleInterval,
-		energySamplers:        map[string]*energySamplerState{},
-		mapTileBaseURL:        env("MAP_TILE_BASE_URL", ""),
+		baseURL:                  baseURL,
+		addr:                     env("ADDR", ":8080"),
+		rootDomain:               rootDomain,
+		defaultTenant:            defaultTenant,
+		tenants:                  tenants,
+		sessionSecure:            parsed.Scheme == "https",
+		allowed:                  allowed,
+		admins:                   admins,
+		profiles:                 profiles,
+		localDevLogin:            localDevLogin,
+		serviceAccessEnabled:     serviceProviderAccessEnabled(),
+		sessionTTL:               sessionTTL,
+		tokens:                   auth.NewTokenStore(secret),
+		sessions:                 newSessionStore(secret),
+		homeSetupTokens:          auth.NewTokenStore(homeSetupSecret(secret)),
+		homeSetupSessions:        newSessionStore(homeSetupSecret(secret)),
+		homeConnectorHashKey:     homeConnectorSecret(secret),
+		oidc:                     oidcLogin,
+		oidcFlows:                auth.NewOIDCFlowStore(),
+		mailer:                   mailTransport,
+		trustedProxies:           trustedProxies,
+		templates:                tmpl,
+		db:                       database,
+		dataDir:                  filepath.Dir(dbPath),
+		announcementStore:        annBackend,
+		announcementReadStore:    annReadBackend,
+		eventStore:               eventBackend,
+		notificationPrefs:        notificationBackend,
+		profileOverlays:          profileBackend,
+		tenantOverrides:          tenantOverrides,
+		tenantHeroDir:            tenantHeroDir,
+		tenantHeroSeedDir:        tenantHeroSeedDir,
+		inviteStore:              inviteBackend,
+		identityStore:            identity,
+		activityStore:            activityBackend,
+		unitStore:                unitBackend,
+		unitPaymentStore:         unitPaymentBackend,
+		issueStore:               issueBackend,
+		attachmentStore:          attachmentBackend,
+		contactStore:             contactBackend,
+		auditStore:               auditStore,
+		documentStore:            documentBackend,
+		handoverStore:            handoverBackend,
+		protocolFiler:            filer,
+		voteStore:                voteBackend,
+		voteReminderInterval:     voteReminderInterval,
+		parkingStore:             parkingStore,
+		parkingSampleInterval:    parkingSampleInterval,
+		parkingHistoryStart:      parkingHistoryStart,
+		energyStore:              energyBackend,
+		homeReservations:         homeReservationBackend,
+		homeConnectors:           homeConnectorBackend,
+		homeConnectorDownloadDir: env("HOME_CONNECTOR_DOWNLOAD_DIR", "/connector-downloads"),
+		energySampleInterval:     energySampleInterval,
+		energySamplers:           map[string]*energySamplerState{},
+		mapTileBaseURL:           env("MAP_TILE_BASE_URL", ""),
 
 		chargingTickInterval:   chargingTickInterval,
 		chargingStaleAfter:     chargingStaleAfter,

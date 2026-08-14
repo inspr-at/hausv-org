@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.83.0] - 2026-08-14
+
+### Neu
+
+- **Home Assistant kann sicher aus dem privaten Netzwerk gekoppelt werden.** Ein lokaler Linux-Connector verbindet einen bestätigten HAUSV-Home-Bereich, ohne Home-Assistant-Adresse oder Zugangstoken an das Portal zu übertragen.
+- **Geprüfte Downloads stehen für Linux amd64 und arm64 bereit.** Der Einrichtungsbereich zeigt den passenden Startbefehl und den aktuellen Connector-Status.
+
+### Verbessert
+
+- **Einmal-Codes und Connector-Zugänge bleiben unter Kontrolle.** Codes laufen nach zehn Minuten ab und sind nur einmal nutzbar; Zugänge lassen sich ohne Unterbrechung erneuern oder sofort widerrufen.
+- **Der aktuelle Umfang wird klar benannt.** Die Kopplung meldet nur technische Metadaten; Messwertübertragung und Gerätesteuerung sind noch nicht aktiv.
+
 ## [0.82.0] - 2026-08-14
 
 ### Neu
