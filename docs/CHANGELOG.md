@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.79.0] - 2026-08-14
+
+### Neu
+
+- **Zehn zentrale Portal-Funktionen werden anschaulich erklärt.** Eine zusammenhängende Bildserie führt von Hausüberblick und Kommunikation über Dokumente, Übergaben und Abstimmungen bis zu Energie, Laden und Schnittstellen.
+- **HAUSV Home und HAUSV Professional erhalten ein klares Profil.** Selbstverwaltung und professionelle Hausverwaltung finden auf der Startseite jeweils den passenden Betriebsweg, Funktionsumfang und Einstiegspreis.
+
+### Verbessert
+
+- **Preise und Produktgrenzen sind sofort verständlich.** HAUSV Home startet zwölf Monate kostenlos und kostet danach 12 Euro pro Jahr; HAUSV Professional umfasst 25 Einheiten kostenlos und kostet darüber 3 Euro je Einheit und Monat.
+- **Die Positionierung bleibt eindeutig.** HAUSV verbindet Kommunikation und Energieverwaltung, während Jahresabrechnung und Buchhaltung weiterhin über bestehende Fachsysteme erfolgen.
+
 ## [0.78.0] - 2026-08-13
 
 ### Neu

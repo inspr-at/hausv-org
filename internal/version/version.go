@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.79.0",
+			Date:     "14. August 2026",
+			Kind:     "Produkte & Startseite",
+			Headline: "HAUSV Home und Professional zeigen ihren Nutzen auf den ersten Blick.",
+			Intro:    "Zehn visuell erklärte Funktionen, zwei klar getrennte Produkte und eine einfache Preislogik machen den Einstieg für Selbstverwaltung und Hausverwaltungen leichter.",
+			Items: []NoteItem{
+				{Label: "Top-Funktionen", Text: "Hausüberblick, Kommunikation, Termine, Anliegen, Dokumente, Übergaben, Abstimmungen, Rechte, Energie und Integrationen erhalten jeweils eine eigene anschauliche Einführung."},
+				{Label: "HAUSV Home", Text: "Der gehostete Weg für die Selbstverwaltung startet zwölf Monate kostenlos und kostet danach 12 Euro pro Jahr."},
+				{Label: "HAUSV Professional", Text: "Hausverwaltungen können hosted oder selbst betrieben starten; 25 Einheiten sind kostenlos, darüber gelten 3 Euro je Einheit und Monat."},
+			},
+		},
+		{
 			Version:  "0.78.0",
 			Date:     "13. August 2026",
 			Kind:     "Energie & Zuhause",

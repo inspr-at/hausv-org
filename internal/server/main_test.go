@@ -1361,25 +1361,32 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 	}
 	body := rr.Body.String()
 	for _, want := range []string{
-		"Ein Portal. Zwei Wege zu einem besseren Zuhause.",
-		"HAUSV Gemeinschaft",
-		"HAUSV Zuhause",
+		"Ein Hausportal. Alles, was Menschen und Gebäude verbindet.",
+		"HAUSV Home",
+		"HAUSV Professional",
 		"Vertrauen verbindet beide Wege.",
-		"Hauszustand",
-		"Wartung &amp; Unterlagen",
-		"Energiebeobachtung",
-		"Verständlicher Fahrplan",
-		"Mehrparteien",
+		"Zentraler Hausüberblick",
+		"Aushänge, die ankommen",
+		"Kalender, der mitgeht",
+		"Schäden sauber lösen",
+		"Geschützt und auffindbar",
+		"Wohnungen digital übergeben",
+		"Abstimmungen mit Verlauf",
+		"Kontakte, Rollen und Rechte",
+		"Live-Energie verständlich",
+		"Parken, Laden und anbinden",
 		"hello [at] hausv [dot] org",
-		"Privat · Zugang nach Abstimmung",
+		"wahlweise hosted oder selbst betrieben",
 		"Open-Source-Kern",
 		"quelloffen",
 		"AGPL-3.0",
-		"Fair Use bis 25 Einheiten",
-		"1 € je weiterer Einheit und Monat",
-		"Drei Jahre kostenlos",
-		"12 € pro Jahr",
-		"unverbindliche Hypothese",
+		"12 Monate kostenlos",
+		"12&nbsp;€ pro Jahr",
+		"25 Einheiten kostenlos",
+		"3&nbsp;€ je Einheit und Monat",
+		"Hosted oder Self-Hosted",
+		"Home Assistant",
+		"CAMT und ebInterface",
 		"Impressum",
 		"Ing. Markus Barta",
 		"natürliche Person",
@@ -1391,31 +1398,33 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Keine Jahresabrechnung oder Buchhaltung",
 		"Kein Mahnwesen",
 		"keine Zahlungsaufträge",
-		"Keine allgemeine aktive Energiesteuerung",
-		"Keine offenen Dienstleister-Zugänge",
-		"Kein öffentlicher Marktplatz oder Zahlungsfluss",
+		"Aktive Energiesteuerung nur nach bewusster Freigabe",
+		"Dienstleister-Zugänge ausschließlich rollenbasiert",
+		"Kein öffentlicher Marktplatz oder eigener Zahlungsfluss",
 		"Übergabe an bestehende Fachsysteme statt Nachbau",
 		`/assets/landing.js`,
 		"/assets/hausv-landing-hero.png",
 		"mark3d-stage",
 		"mark3d-fallback",
 		"Sicherheit & Datenschutz",
-		"Transparent, aber noch unverbindlich.",
-		"Zubehör wie Keller oder Stellplätze",
-		"Welcher Weg passt zu Ihnen?",
-		"Pilot anfragen",
+		"Klein starten. Erst mit dem Nutzen wachsen.",
+		"Home oder Professional?",
+		"Gespräch anfragen",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
 		}
 	}
-	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Home Assistant", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "500 €", "900 €", "Ladungsfähige Anschrift", "Janischhofweg 22/11", "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "ebInterface", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
+	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "500 €", "900 €", "Ladungsfähige Anschrift", "Janischhofweg 22/11", "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
 	}
 	if got := strings.Count(body, `class="product-path `); got != 2 {
 		t.Fatalf("product path count = %d, want 2", got)
+	}
+	if got := strings.Count(body, `class="feature-card"`); got != 10 {
+		t.Fatalf("feature card count = %d, want 10", got)
 	}
 	if strings.Count(body, `class="shared-core"`) != 1 {
 		t.Fatal("landing should show the shared trust core exactly once")

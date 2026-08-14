@@ -57,7 +57,7 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) marketingLanding(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "landing", map[string]any{
-		"Title":          "hausv.org - Gemeinschaft und Zuhause",
+		"Title":          "hausv.org - Home und Professional",
 		"ContactLocal":   "hello",
 		"ContactDomain":  "hausv.org",
 		"ContactDisplay": "hello [at] hausv [dot] org",
