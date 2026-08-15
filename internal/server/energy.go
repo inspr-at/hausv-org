@@ -947,7 +947,7 @@ func (a *app) updateHomeIdentity(w http.ResponseWriter, r *http.Request, ac auth
 	case "energy":
 		http.Redirect(w, r, "/app/energie?profile=1", http.StatusSeeOther)
 	case "building":
-		http.Redirect(w, r, "/app/settings/building?home=saved#units", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?section=units&home=saved", http.StatusSeeOther)
 	default:
 		http.Redirect(w, r, "/app/settings/home?saved=1", http.StatusSeeOther)
 	}
@@ -1001,7 +1001,7 @@ func homeIdentityBackLink(from string) (string, string) {
 	case "energy":
 		return "/app/energie", "Zurück zu Mein Zuhause"
 	case "building":
-		return "/app/settings/building#units", "Zurück zu Gebäude & Einheiten"
+		return "/app/settings/building?section=units", "Zurück zu Gebäude & Einheiten"
 	default:
 		return "/app/settings", "Zurück zu Einstellungen"
 	}

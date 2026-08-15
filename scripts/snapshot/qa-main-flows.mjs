@@ -703,7 +703,7 @@ async function assertResponsiveAdminWidths() {
     }
   }
 
-  await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/app/settings/building?section=units`, { waitUntil: 'networkidle' });
   for (const width of [901, 920, 959, 1024, 1050, 1075, 1100, 1120, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const result = await page.evaluate(async (compact) => {
@@ -1064,7 +1064,7 @@ async function seedManagedContent() {
   await documentForm.locator('button[type="submit"]').click();
   await page.waitForURL(/\/app\/dokumente/);
 
-  await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/app/settings/building?section=units`, { waitUntil: 'networkidle' });
   if (!(await page.getByText('Einheit 12', { exact: true }).count())) {
     const unitPanel = page.locator('#unit-add');
     if (!(await unitPanel.evaluate((element) => element.open))) {
@@ -1082,9 +1082,9 @@ async function seedManagedContent() {
   if (await officialUnit.count()) {
     await officialUnit.selectOption('einheit-12');
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
-    await page.waitForURL(/\/app\/settings\/building\?home=saved/);
+    await page.waitForURL(/\/app\/settings\/building\?section=units&home=saved/);
   }
-  await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/app/settings/building?section=units`, { waitUntil: 'networkidle' });
   await assertHomeIdentityPair(page, 'building-context', 'QA Zuhause', 'Einheit 12', 'Gebäude-Einstellungen');
   await assertHomeIdentityPair(page, 'building-unit', 'QA Zuhause', 'Einheit 12', 'Verknüpfte Einheit');
   if (!(await page.locator('[data-home-identity="building-context"]').getByText('QA Zuhause', { exact: true }).count()) ||
@@ -1273,12 +1273,12 @@ async function assertResidentContentClickFlows() {
   await page.goto(`${baseURL}/app/announcements`, { waitUntil: 'networkidle' });
   await page.locator('#announcement-search').fill('nicht vorhandener QA Aushang');
   await Promise.all([
-    page.waitForURL((url) => url.pathname === '/app/announcements' && url.searchParams.has('q')),
+    page.waitForURL((url) => url.pathname.endsWith('/app/announcements') && url.searchParams.has('q')),
     page.getByRole('button', { name: 'Suchen' }).click(),
   ]);
   if (!(await page.locator('.announce-filtered-empty').isVisible())) fail('Aushang-Suche: verständlicher Kein-Treffer-Zustand fehlt');
   await page.getByRole('link', { name: 'Filter zurücksetzen' }).click();
-  await page.waitForURL((url) => url.pathname === '/app/announcements' && !url.search);
+  await page.waitForURL((url) => url.pathname.endsWith('/app/announcements') && !url.search);
   const announcement = page.locator('.announcement-entry').filter({ hasText: 'QA Hausinformation' }).first();
   const announcementBody = announcement.locator('.announcement-body');
   if (!(await announcementBody.evaluate((node) => node.open))) await announcementBody.locator('summary').click();
@@ -1303,7 +1303,7 @@ async function assertResidentContentClickFlows() {
   await page.goto(`${baseURL}/app/dokumente`, { waitUntil: 'networkidle' });
   await page.locator('#document-search').fill('QA Hausordnung');
   await Promise.all([
-    page.waitForURL((url) => url.pathname === '/app/dokumente' && url.searchParams.get('q') === 'QA Hausordnung'),
+    page.waitForURL((url) => url.pathname.endsWith('/app/dokumente') && url.searchParams.get('q') === 'QA Hausordnung'),
     page.getByRole('button', { name: 'Anzeigen' }).click(),
   ]);
   const document = page.locator('.document-row').filter({ hasText: 'QA Hausordnung' }).first();
@@ -1320,14 +1320,14 @@ async function assertResidentContentClickFlows() {
   if (!(await auditFilter.evaluate((node) => node.open))) await auditFilter.locator(':scope > summary').click();
   await page.locator('#audit-search').fill('nicht vorhandener QA Vorgang');
   await Promise.all([
-    page.waitForURL((url) => url.pathname === '/app/audit' && url.searchParams.has('q')),
+    page.waitForURL((url) => url.pathname.endsWith('/app/audit') && url.searchParams.has('q')),
     page.getByRole('button', { name: 'Ergebnisse zeigen' }).click(),
   ]);
   if (!(await page.getByRole('heading', { name: 'Kein Eintrag passt zu dieser Auswahl' }).isVisible())) {
     fail('Verlauf: Kein-Treffer-Zustand fehlt');
   }
   await page.getByRole('link', { name: 'Filter zurücksetzen' }).first().click();
-  await page.waitForURL((url) => url.pathname === '/app/audit' && !url.search);
+  await page.waitForURL((url) => url.pathname.endsWith('/app/audit') && !url.search);
   const auditHelp = page.locator('.audit-help-disclosure');
   const auditHelpSummary = await auditHelp.locator(':scope > summary').boundingBox();
   if (await auditHelp.evaluate((node) => node.open) || !auditHelpSummary || auditHelpSummary.height < 43.5) {
@@ -1615,7 +1615,7 @@ async function ensureFocusedEnergyUnit() {
   if (await officialUnit.count()) {
     await officialUnit.selectOption('einheit-12');
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
-    await page.waitForURL(/\/app\/settings\/building\?home=saved/);
+    await page.waitForURL(/\/app\/settings\/building\?section=units&home=saved/);
   }
   await page.goto(`${baseURL}/app/kontakte`, { waitUntil: 'networkidle' });
   if (!(await page.getByText('QA Energiehilfe', { exact: true }).count())) {

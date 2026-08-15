@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.92.0",
+			Date:     "15. August 2026",
+			Kind:     "Gebäudeeinstellungen",
+			Headline: "Hausdaten und Kontakte lassen sich jetzt klar und direkt pflegen.",
+			Intro:    "Eigene Arbeitsbereiche ersetzen die lange Einstellungsseite; eine bewusste Adresssuche verbindet Stammdaten und Kartenposition.",
+			Items: []NoteItem{
+				{Label: "Direkt", Text: "Stammdaten, Kontakte, Einheiten und Erscheinungsbild öffnen als getrennte Ansichten ohne Seitensprünge."},
+				{Label: "Einfach verortet", Text: "Die Adresse lässt sich per Klick über OpenStreetMap suchen, prüfen und erst danach speichern."},
+				{Label: "Aufgeräumt", Text: "Hausverwaltung, Notdienst und Hausmeister stehen in drei klaren Kontaktkarten."},
+			},
+		},
+		{
 			Version:  "0.91.1",
 			Date:     "14. August 2026",
 			Kind:     "Portalwechsel",

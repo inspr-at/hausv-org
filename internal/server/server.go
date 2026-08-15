@@ -794,6 +794,9 @@ type app struct {
 	energyChartCache         map[string]energyChartCacheEntry
 	mapTileMu                sync.Mutex
 	mapTileBaseURL           string
+	geocoder                 addressGeocoder
+	mapPreviewMu             sync.Mutex
+	mapPreviewTiles          map[string]map[mapTileKey]time.Time
 
 	chargingTickInterval   time.Duration
 	chargingStaleAfter     time.Duration
@@ -1014,6 +1017,9 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/home", a.action(a.withEnergyLifecycleOperation(a.updateHomeIdentity)))
 	mux.HandleFunc("GET /app/settings/building", a.page(a.buildingSettings))
 	mux.HandleFunc("POST /app/settings/building", a.action(a.updateBuildingSettings))
+	mux.HandleFunc("POST /app/settings/building/contacts", a.action(a.updateBuildingContacts))
+	mux.HandleFunc("POST /app/settings/building/appearance", a.action(a.updateBuildingAppearance))
+	mux.HandleFunc("POST /app/settings/building/geocode", a.authedAction(capabilityManageBuilding, a.geocodeBuildingAddress))
 	mux.HandleFunc("POST /app/settings/building/hero", a.action(a.updateBuildingHero))
 	mux.HandleFunc("POST /app/settings/building/hero/delete", a.action(a.deleteBuildingHero))
 	mux.HandleFunc("POST /app/settings/building/units", a.action(a.upsertBuildingUnit))
@@ -1554,6 +1560,8 @@ func newApp() (*app, error) {
 		energySampleInterval:     energySampleInterval,
 		energySamplers:           map[string]*energySamplerState{},
 		mapTileBaseURL:           env("MAP_TILE_BASE_URL", ""),
+		geocoder:                 newNominatimGeocoder(env("GEOCODING_BASE_URL", "")),
+		mapPreviewTiles:          map[string]map[mapTileKey]time.Time{},
 
 		chargingTickInterval:   chargingTickInterval,
 		chargingStaleAfter:     chargingStaleAfter,
@@ -3271,6 +3279,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		return
 	}
 	buildingMsg, buildingOK := buildingSettingsMessage(r.URL.Query().Get("building"))
+	section := normalizeBuildingSettingsSection(r.URL.Query().Get("section"))
 	heroMsg, heroOK := buildingHeroMessage(r.URL.Query().Get("hero"))
 	unitMsg, unitOK := buildingUnitMessage(r.URL.Query().Get("unit"))
 	paymentMsg, paymentOK := unitPaymentStatusMessage(r.URL.Query().Get("payment"))
@@ -3294,6 +3303,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"ActivePage":            "settings",
 		"BuildingMsg":           buildingMsg,
 		"BuildingOK":            buildingOK,
+		"BuildingSection":       section,
 		"BrandIconOptions":      tenantBrandIconOptions(tenant.BrandIcon),
 		"BrandIconLabel":        tenantBrandIconLabel(tenant.BrandIcon),
 		"HeroMsg":               heroMsg,
@@ -3318,6 +3328,15 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"HomeProfileScopeLabel": homeProfileScopeLabel,
 		"HomeProfileSaved":      r.URL.Query().Get("home") == "saved",
 	}))
+}
+
+func normalizeBuildingSettingsSection(section string) string {
+	switch strings.TrimSpace(strings.ToLower(section)) {
+	case "contacts", "units", "appearance":
+		return strings.TrimSpace(strings.ToLower(section))
+	default:
+		return "overview"
+	}
 }
 
 func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -3569,15 +3588,28 @@ func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request, ac 
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	override, err := tenantOverrideFromForm(r.Form)
+	override, err := tenantBuildingOverrideFromForm(tenant, r.Form)
+	// Keep the original combined form contract for older clients and bookmarks.
+	// The current UI uses separate, safer forms for each tab.
+	if r.Form.Has("brand_icon") {
+		override, err = tenantOverrideFromForm(r.Form)
+	} else if r.Form.Has("contact_name") || r.Form.Has("emergency_name") || r.Form.Has("caretaker_name") {
+		var contacts tenantOverride
+		contacts, err = tenantContactsOverrideFromForm(tenant, r.Form)
+		if err == nil {
+			contacts.Name, contacts.Address = override.Name, override.Address
+			contacts.MapSet, contacts.MapLatitude, contacts.MapLongitude, contacts.MapZoom = override.MapSet, override.MapLatitude, override.MapLongitude, override.MapZoom
+			override = contacts
+		}
+	}
 	if err != nil {
-		http.Redirect(w, r, "/app/settings/building?building=invalid#overview", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?section=overview&building=invalid", http.StatusSeeOther)
 		return
 	}
 	if a.tenantOverrides != nil {
 		if err := a.tenantOverrides.SetMeta(tenant.Slug, override); err != nil {
 			logError("building settings save failed", err, "tenant", tenant.Slug)
-			http.Redirect(w, r, "/app/settings/building?building=error#overview", http.StatusSeeOther)
+			http.Redirect(w, r, "/app/settings/building?section=overview&building=error", http.StatusSeeOther)
 			return
 		}
 	}
@@ -3589,13 +3621,59 @@ func (a *app) updateBuildingSettings(w http.ResponseWriter, r *http.Request, ac 
 		TargetType: "building",
 		TargetID:   tenant.Slug,
 		Summary:    "Gebäudedaten geändert",
-		Details: map[string]string{
-			"changed_fields":     "Stammdaten, Kartenposition, Marke, Kontaktblock, Notdienst, Hausmeister",
-			"brand_icon":         tenantBrandIconLabel(override.BrandIcon),
-			"brand_abbreviation": override.BrandAbbreviation,
-		},
+		Details:    map[string]string{"changed_fields": "Stammdaten, Kartenposition"},
 	})
-	http.Redirect(w, r, "/app/settings/building?building=saved#overview", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/settings/building?section=overview&building=saved", http.StatusSeeOther)
+}
+
+func (a *app) updateBuildingContacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
+	if !ok {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	override, err := tenantContactsOverrideFromForm(tenant, r.Form)
+	if err != nil {
+		http.Redirect(w, r, "/app/settings/building?section=contacts&building=invalid", http.StatusSeeOther)
+		return
+	}
+	if a.tenantOverrides != nil {
+		if err := a.tenantOverrides.SetMeta(tenant.Slug, override); err != nil {
+			logError("building contacts save failed", err, "tenant", tenant.Slug)
+			http.Redirect(w, r, "/app/settings/building?section=contacts&building=error", http.StatusSeeOther)
+			return
+		}
+	}
+	a.recordAudit(auditEvent{TenantSlug: tenant.Slug, ActorEmail: actorEmail, ActorRole: role, Action: auditActionBuildingUpdate, TargetType: "building", TargetID: tenant.Slug, Summary: "Hauskontakte geändert", Details: map[string]string{"changed_fields": "Verwaltung, Notdienst, Hausmeister"}})
+	http.Redirect(w, r, "/app/settings/building?section=contacts&building=saved", http.StatusSeeOther)
+}
+
+func (a *app) updateBuildingAppearance(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
+	if !ok {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	override, err := tenantAppearanceOverrideFromForm(tenant, r.Form)
+	if err != nil {
+		http.Redirect(w, r, "/app/settings/building?section=appearance&building=invalid", http.StatusSeeOther)
+		return
+	}
+	if a.tenantOverrides != nil {
+		if err := a.tenantOverrides.SetMeta(tenant.Slug, override); err != nil {
+			logError("building appearance save failed", err, "tenant", tenant.Slug)
+			http.Redirect(w, r, "/app/settings/building?section=appearance&building=error", http.StatusSeeOther)
+			return
+		}
+	}
+	a.recordAudit(auditEvent{TenantSlug: tenant.Slug, ActorEmail: actorEmail, ActorRole: role, Action: auditActionBuildingUpdate, TargetType: "building", TargetID: tenant.Slug, Summary: "Erscheinungsbild geändert", Details: map[string]string{"changed_fields": "Portal-Symbol, Kurzkennung"}})
+	http.Redirect(w, r, "/app/settings/building?section=appearance&building=saved", http.StatusSeeOther)
 }
 
 func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -3604,12 +3682,12 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 		return
 	}
 	if err := r.ParseMultipartForm(maxTenantHeroFormBytes); err != nil {
-		http.Redirect(w, r, "/app/settings/building?hero=invalid#appearance", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?section=appearance&hero=invalid", http.StatusSeeOther)
 		return
 	}
 	header, ok := tenantHeroHeader(r)
 	if !ok {
-		http.Redirect(w, r, "/app/settings/building?hero=invalid#appearance", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?section=appearance&hero=invalid", http.StatusSeeOther)
 		return
 	}
 	previous := ""
@@ -3621,14 +3699,14 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 	filename, err := a.saveTenantHeroImage(tenant.Slug, header)
 	if err != nil {
 		logError("tenant hero upload failed", err, "tenant", tenant.Slug)
-		http.Redirect(w, r, "/app/settings/building?hero=invalid#appearance", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/building?section=appearance&hero=invalid", http.StatusSeeOther)
 		return
 	}
 	if a.tenantOverrides != nil {
 		if err := a.tenantOverrides.SetHeroImage(tenant.Slug, filename); err != nil {
 			_ = a.removeTenantHeroImage(filename)
 			logError("tenant hero save failed", err, "tenant", tenant.Slug)
-			http.Redirect(w, r, "/app/settings/building?hero=error#appearance", http.StatusSeeOther)
+			http.Redirect(w, r, "/app/settings/building?section=appearance&hero=error", http.StatusSeeOther)
 			return
 		}
 	}
@@ -3646,7 +3724,7 @@ func (a *app) updateBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 		TargetID:   tenant.Slug,
 		Summary:    "Hero-Bild geändert",
 	})
-	http.Redirect(w, r, "/app/settings/building?hero=saved#appearance", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/settings/building?section=appearance&hero=saved", http.StatusSeeOther)
 }
 
 func (a *app) deleteBuildingHero(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -3664,7 +3742,7 @@ func (a *app) deleteBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 		previous, err = a.tenantOverrides.ClearHeroImage(tenant.Slug)
 		if err != nil {
 			logError("tenant hero reset failed", err, "tenant", tenant.Slug)
-			http.Redirect(w, r, "/app/settings/building?hero=error#appearance", http.StatusSeeOther)
+			http.Redirect(w, r, "/app/settings/building?section=appearance&hero=error", http.StatusSeeOther)
 			return
 		}
 	}
@@ -3682,7 +3760,7 @@ func (a *app) deleteBuildingHero(w http.ResponseWriter, r *http.Request, ac auth
 			Summary:    "Hero-Bild entfernt",
 		})
 	}
-	http.Redirect(w, r, "/app/settings/building?hero=removed#appearance", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/settings/building?section=appearance&hero=removed", http.StatusSeeOther)
 }
 
 func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -3855,6 +3933,69 @@ func (a *app) buildingSettingsContext(w http.ResponseWriter, ac authCtx) (tenant
 		return tenantConfig{}, "", "", userProfile{}, false
 	}
 	return ac.tenant, ac.email, ac.role, a.profileForTenant(ac.email, ac.tenant.Slug), true
+}
+
+func tenantOverrideFromTenant(tenant tenantConfig) tenantOverride {
+	return tenantOverride{
+		MetaSet: true, Name: strings.TrimSpace(tenant.Name), Address: strings.TrimSpace(tenant.Address),
+		MapSet: true, MapLatitude: tenant.MapLatitude, MapLongitude: tenant.MapLongitude, MapZoom: tenant.MapZoom,
+		BrandIcon: normalizeTenantBrandIcon(tenant.BrandIcon), BrandAbbreviation: normalizeTenantBrandAbbreviation(tenant.BrandAbbreviation),
+		ContactName: tenant.ContactName, ContactAddress: tenant.ContactAddress, ContactEmail: tenant.ContactEmail, ContactPhone: tenant.ContactPhone,
+		EmergencyName: tenant.EmergencyName, EmergencyPhone: tenant.EmergencyPhone,
+		CaretakerName: tenant.CaretakerName, CaretakerEmail: tenant.CaretakerEmail, CaretakerPhone: tenant.CaretakerPhone,
+	}
+}
+
+func tenantBuildingOverrideFromForm(tenant tenantConfig, values url.Values) (tenantOverride, error) {
+	override := tenantOverrideFromTenant(tenant)
+	override.Name = strings.TrimSpace(values.Get("name"))
+	override.Address = strings.TrimSpace(values.Get("address"))
+	latitude, longitude, zoom, err := mapPositionFromForm(values.Get("map_position"))
+	if err != nil {
+		return tenantOverride{}, err
+	}
+	// The form always submits this field. An empty value deliberately stores a
+	// zero position so an inherited/configured map can be removed as well.
+	override.MapSet = values.Has("map_position")
+	override.MapLatitude, override.MapLongitude, override.MapZoom = latitude, longitude, zoom
+	if override.Name == "" || override.Address == "" || len([]rune(override.Name)) > 160 || len([]rune(override.Address)) > 500 {
+		return tenantOverride{}, fmt.Errorf("invalid building metadata")
+	}
+	return override, nil
+}
+
+func tenantContactsOverrideFromForm(tenant tenantConfig, values url.Values) (tenantOverride, error) {
+	override := tenantOverrideFromTenant(tenant)
+	override.ContactName = strings.TrimSpace(values.Get("contact_name"))
+	override.ContactAddress = strings.TrimSpace(values.Get("contact_address"))
+	override.ContactEmail = normalizeEmail(values.Get("contact_email"))
+	override.ContactPhone = strings.TrimSpace(values.Get("contact_phone"))
+	override.EmergencyName = strings.TrimSpace(values.Get("emergency_name"))
+	override.EmergencyPhone = strings.TrimSpace(values.Get("emergency_phone"))
+	override.CaretakerName = strings.TrimSpace(values.Get("caretaker_name"))
+	override.CaretakerEmail = normalizeEmail(values.Get("caretaker_email"))
+	override.CaretakerPhone = strings.TrimSpace(values.Get("caretaker_phone"))
+	if len([]rune(override.ContactName)) > 160 || len([]rune(override.ContactAddress)) > 500 || len([]rune(override.ContactPhone)) > 80 || len([]rune(override.EmergencyName)) > 160 || len([]rune(override.EmergencyPhone)) > 80 || len([]rune(override.CaretakerName)) > 160 || len([]rune(override.CaretakerPhone)) > 80 {
+		return tenantOverride{}, fmt.Errorf("building contact too long")
+	}
+	for _, candidate := range []struct{ raw, normalized string }{{values.Get("contact_email"), override.ContactEmail}, {values.Get("caretaker_email"), override.CaretakerEmail}} {
+		if strings.TrimSpace(candidate.raw) != "" {
+			if _, err := mail.ParseAddress(candidate.raw); err != nil || candidate.normalized == "" {
+				return tenantOverride{}, fmt.Errorf("invalid contact email")
+			}
+		}
+	}
+	return override, nil
+}
+
+func tenantAppearanceOverrideFromForm(tenant tenantConfig, values url.Values) (tenantOverride, error) {
+	override := tenantOverrideFromTenant(tenant)
+	override.BrandIcon = normalizeTenantBrandIcon(values.Get("brand_icon"))
+	override.BrandAbbreviation = normalizeTenantBrandAbbreviation(values.Get("brand_abbreviation"))
+	if override.BrandIcon == "" || override.BrandAbbreviation == "" {
+		return tenantOverride{}, fmt.Errorf("invalid building appearance")
+	}
+	return override, nil
 }
 
 func tenantOverrideFromForm(values url.Values) (tenantOverride, error) {

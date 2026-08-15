@@ -38,12 +38,12 @@ func newPortalContextTestApp(t *testing.T) *app {
 func TestPortalContextListsActivatedDynamicHomeAfterSwitchingAway(t *testing.T) {
 	const (
 		email = "multi@example.com"
-		slug  = "ww87"
+		slug  = "waldweg"
 	)
 	a := newPortalContextTestApp(t)
 	now := time.Date(2026, time.August, 14, 20, 0, 0, 0, time.UTC)
 	if _, err := a.homeReservations.Reserve(store.HomeReservation{
-		Slug: slug, HouseholdName: "Wolfgangweg 87", OwnerEmail: email, AuthorizationConfirmed: true,
+		Slug: slug, HouseholdName: "Waldweg 87", OwnerEmail: email, AuthorizationConfirmed: true,
 	}, now); err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestPortalContextListsActivatedDynamicHomeAfterSwitchingAway(t *testing.T) 
 	contexts := a.portalContextsFor(email, "demo", roleOwner)
 	found := false
 	for _, context := range contexts {
-		if context.TenantSlug == slug && context.HouseName == "Wolfgangweg 87" && context.Role == roleOwner {
+		if context.TenantSlug == slug && context.HouseName == "Waldweg 87" && context.Role == roleOwner {
 			found = true
 		}
 	}

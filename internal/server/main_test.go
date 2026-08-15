@@ -2055,7 +2055,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if strings.Contains(appPage.Body.String(), `class="side-code"`) || strings.Contains(appPage.Body.String(), ">SUN-ECK<") {
 		t.Fatal("app sidebar should not repeat the internal brand abbreviation")
 	}
-	settingsPage := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building")
+	settingsPage := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=appearance")
 	for _, want := range []string{`name="brand_icon"`, `value="mixed-use" selected`, `value="SUN-ECK"`, `Gemischt genutzt`} {
 		if !strings.Contains(settingsPage.Body.String(), want) {
 			t.Fatalf("building settings should render brand control %q:\n%s", want, settingsPage.Body.String())
@@ -2066,7 +2066,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		"address":    {"Neue Gasse 7"},
 		"brand_icon": {"<svg onload=alert(1)>"},
 	})
-	if invalidBrand.Code != http.StatusSeeOther || invalidBrand.Result().Header.Get("Location") != "/demo/app/settings/building?building=invalid#overview" {
+	if invalidBrand.Code != http.StatusSeeOther || invalidBrand.Result().Header.Get("Location") != "/demo/app/settings/building?section=overview&building=invalid" {
 		t.Fatalf("invalid brand save should redirect invalid, status=%d location=%q", invalidBrand.Code, invalidBrand.Result().Header.Get("Location"))
 	}
 
@@ -2112,7 +2112,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if !strings.Contains(portal.Body.String(), "/tenant-hero/demo") {
 		t.Fatalf("portal should render uploaded hero path:\n%s", portal.Body.String())
 	}
-	settingsAfterHero := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building")
+	settingsAfterHero := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=appearance")
 	if !strings.Contains(settingsAfterHero.Body.String(), `/demo/app/settings/building/hero/delete`) {
 		t.Fatalf("building settings should offer hero reset after upload:\n%s", settingsAfterHero.Body.String())
 	}
@@ -2151,7 +2151,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if len(units) != 1 || units[0].ID != "top-1" || units[0].UnitType != unitTypeResidential || units[0].BillableWeightPPM != unitBillableFullPPM || units[0].MiteigentumsanteilPPM != 12345 || len(units[0].OwnerEmails) != 2 || units[0].RenterEmails[0] != "resident@example.com" {
 		t.Fatalf("units after add = %+v", units)
 	}
-	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=units")
 	for _, want := range []string{"WEG Sonneneck", "Neue Gasse 7", "Top 1", "Wohnung", "zählt als 1 WE", "1</strong> von 25 Wohneinheit (Fair Use)", "12.345 / 1.000.000", `value="owner@example.com, second@example.com"`} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("building page should contain %q", want)
@@ -5235,7 +5235,7 @@ func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
 	if err := a.unitStore.SetTenantUnits("demo", mkUnits(25)); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	page := authedRequest(t, a, "admin@example.com", "/demo/app/settings/building").Body.String()
+	page := authedRequest(t, a, "admin@example.com", "/demo/app/settings/building?section=units").Body.String()
 	if !strings.Contains(page, "von 25") {
 		t.Fatalf("building settings should show 'von 25':\n%s", page)
 	}
@@ -5247,14 +5247,14 @@ func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
 	if err := a.unitStore.SetTenantUnits("demo", withParking); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	if page = authedRequest(t, a, "admin@example.com", "/demo/app/settings/building").Body.String(); strings.Contains(page, "Über dem inkludierten Rahmen") {
+	if page = authedRequest(t, a, "admin@example.com", "/demo/app/settings/building?section=units").Body.String(); strings.Contains(page, "Über dem inkludierten Rahmen") {
 		t.Fatal("a Stellplatz must not push the billable count over the fair-use limit")
 	}
 
 	if err := a.unitStore.SetTenantUnits("demo", mkUnits(26)); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	if page = authedRequest(t, a, "admin@example.com", "/demo/app/settings/building").Body.String(); !strings.Contains(page, "Über dem inkludierten Rahmen") {
+	if page = authedRequest(t, a, "admin@example.com", "/demo/app/settings/building?section=units").Body.String(); !strings.Contains(page, "Über dem inkludierten Rahmen") {
 		t.Fatalf("26 billable units should trigger the over-limit hint:\n%s", page)
 	}
 }
@@ -5511,7 +5511,7 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 		t.Fatalf("owner page leaked other unit payment status:\n%s", ownerPage)
 	}
 
-	buildingPage := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building").Body.String()
+	buildingPage := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=units").Body.String()
 	if !strings.Contains(buildingPage, "Zahlungsstatus") || !strings.Contains(buildingPage, "Top 1") || !strings.Contains(buildingPage, "Top 2") || !strings.Contains(buildingPage, "Überfällig") || !strings.Contains(buildingPage, "Bezahlt") {
 		t.Fatalf("manager building settings missing payment status overview:\n%s", buildingPage)
 	}

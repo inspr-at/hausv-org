@@ -117,6 +117,9 @@ func (a *app) mapTile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !allowed {
+		allowed = a.mapPreviewTileAllowed(tenant.Slug, mapTileKey{Z: z, X: x, Y: y})
+	}
+	if !allowed {
 		http.NotFound(w, r)
 		return
 	}

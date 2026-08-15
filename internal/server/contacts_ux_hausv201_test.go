@@ -60,7 +60,7 @@ func TestContactsUXPrioritizesOfficialActionsAndProgressiveManagement(t *testing
 		`<details class="contact-add" id="contact-add"`,
 		`<summary>Kontakt hinzufügen</summary>`,
 		`<summary>Inaktive Kontakte (1)</summary>`,
-		`href="/demo/app/settings/building#building-contact"`,
+		`href="/demo/app/settings/building?section=contacts"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("contacts UX missing %q", want)
