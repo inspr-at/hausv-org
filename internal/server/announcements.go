@@ -1,11 +1,17 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/inspr-at/hausv-org/internal/version"
+	"github.com/inspr-at/hausv-org/internal/view"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -35,7 +41,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	views := a.announcementViewsWithReadState(tenant.Slug, filtered, now, true, lastSeen, email, role)
 	pinned, latest := splitPinnedAnnouncements(views)
 	newCount := unreadAnnouncementViewCount(views)
-	a.render(w, "announcements", a.withBase(ac, map[string]any{
+	pageData := map[string]any{
 		"Title":                  "Aushang",
 		"CanManageAnnouncements": canManage,
 		"ActivePage":             "announcements",
@@ -57,12 +63,89 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"CategoryFilters":        announcementFilterViews(searchQuery, selectedCategory),
 		"UnreadAnnouncements":    0,
 		"HasUnreadAnnouncements": false,
-	}))
+	}
+	if a.portalTemplEnabled {
+		a.renderAnnouncementsTempl(w, r, ac, web.AnnouncementsPageData{
+			Portal:                 a.announcementPortalContext(ac),
+			AssetVersion:           version.AssetVersion(),
+			CanManageAnnouncements: canManage,
+			CanManageIssues:        ac.can(capabilityManageIssues),
+			Announcements:          views,
+			PinnedAnnouncements:    pinned,
+			LatestAnnouncements:    latest,
+			NewAnnouncements:       newCount,
+			AnnounceMessage:        announcementMessage(r.URL.Query().Get("announce")),
+			NowInput:               formatLocalDateTimeInput(now),
+			SearchQuery:            searchQuery,
+			SelectedCategory:       selectedCategory,
+			CategoryFilters:        announcementFilterViews(searchQuery, selectedCategory),
+			AnnouncementsEmpty:     emptyState("Keine Beiträge", "Für diese Suche oder Kategorie gibt es keinen Aushang."),
+			AnnouncementsBlank:     emptyState("Noch keine Beiträge", "Sobald ein Aushang veröffentlicht ist, erscheint er hier."),
+			HasAnyAnnouncements:    len(archive) > 0,
+		})
+	} else {
+		a.render(w, "announcements", a.withBase(ac, pageData))
+	}
 	if announcementReads != nil {
 		if err := announcementReads.MarkSeen(email, now); err != nil {
 			logError("announcement read mark failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 		}
 	}
+}
+
+func (a *app) announcementPortalContext(ac authCtx) web.PortalPageData {
+	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
+	modules := a.portalModulesFor(ac.tenant.Slug)
+	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
+	portalContexts := make([]web.PortalContext, 0, len(contexts))
+	for _, context := range contexts {
+		portalContexts = append(portalContexts, web.PortalContext{
+			TenantSlug: context.TenantSlug,
+			HouseName:  context.HouseName,
+			Address:    context.Address,
+			Role:       context.Role,
+			Current:    context.Current,
+		})
+	}
+	openIssues := 0
+	if a.issueStore != nil {
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenant.Slug, ac.email, ac.role))
+	}
+	return web.PortalPageData{
+		Title:               "Aushang · " + houseDisplayName(ac.tenant) + " · " + ac.role,
+		TenantSlug:          ac.tenant.Slug,
+		HouseName:           houseDisplayName(ac.tenant),
+		Address:             ac.tenant.Address,
+		MapURL:              tenantMapURL(ac.tenant.Address),
+		DisplayName:         profile.DisplayName(),
+		Initials:            profile.Initials(),
+		Role:                ac.role,
+		DisplayVersion:      version.DisplayVersion(version.Version),
+		ActivePage:          "announcements",
+		Modules:             web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
+		CanUseResidentAreas: roleCanUseResidentAreas(ac.role),
+		CanViewEnergy:       modules.Energy && a.canViewEnergy(ac),
+		CanManageIssues:     ac.can(capabilityManageIssues),
+		CanSeeParking:       modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)),
+		CanManageHandovers:  canManageHandovers(ac.actor(), ac.resource()),
+		CanManageUsers:      ac.can(capabilityManageUsers),
+		CanViewAudit:        canViewAudit(ac.actor(), ac.resource()),
+		Issues:              make([]view.IssueView, openIssues),
+		UnreadAnnouncements: 0,
+		Contexts:            portalContexts,
+		ReleaseNotes:        version.Notes(),
+	}
+}
+
+func (a *app) renderAnnouncementsTempl(w http.ResponseWriter, r *http.Request, ac authCtx, data web.AnnouncementsPageData) {
+	var rendered bytes.Buffer
+	if err := web.AnnouncementsPage(data).Render(r.Context(), &rendered); err != nil {
+		logError("templ announcements render failed", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), ac.tenant.Slug))
 }
 
 func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request, ac authCtx) {
