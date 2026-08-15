@@ -14,7 +14,7 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	profile := a.profileForTenant(ac.email, tenant.Slug)
-	canManageContacts := canManageContacts(role)
+	canManageContacts := canManageContacts(ac.actor(), ac.resource())
 	managerContacts := managerContactViews(tenant)
 	emergencyContacts := emergencyContactViews(tenant)
 	contacts := ac.repositories.contacts
@@ -73,7 +73,7 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
-	if !canManageContacts(role) {
+	if !canManageContacts(ac.actor(), ac.resource()) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -131,7 +131,7 @@ func (a *app) isExistingServiceProviderContact(contacts contactBookRepository, i
 
 func (a *app) deactivateManagedContact(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
-	if !canManageContacts(role) {
+	if !canManageContacts(ac.actor(), ac.resource()) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}

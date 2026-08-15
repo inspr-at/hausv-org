@@ -20,11 +20,11 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
-	if !hasCapability(role, capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
+	if !ac.can(capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
 		return
 	}
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
+	isAdmin := ac.can(capabilityPlatformAdmin)
 	telemetry := a.parkingTelemetry(r.Context(), tenant)
 	parkingMsg, parkingOK := parkingMessage(r.URL.Query().Get("month"), r.URL.Query().Get("reminder"))
 	if parkingMsg == "" {
@@ -45,8 +45,8 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	live := a.chargingLiveView(r.Context(), tenant, isAdmin, true)
 	a.render(w, "parking", a.withBase(ac, map[string]any{
 		"Title":                    "Parkplatznutzung",
-		"CanManageParkingPayments": hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking),
-		"CanMarkParkingPayment":    isAdmin || hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking) || profile.HasPermission(permissionParking),
+		"CanManageParkingPayments": ac.can(capabilityManageUsers) || ac.can(capabilityManageParking),
+		"CanMarkParkingPayment":    isAdmin || ac.can(capabilityManageUsers) || ac.can(capabilityManageParking) || profile.HasPermission(permissionParking),
 		// The parking page is reachable through the explicit per-user parking
 		// permission too, so keep this intentional base-context override.
 		"CanSeeParking":       true,
@@ -128,7 +128,7 @@ func parkingAdminSection(requested string, chargingStatus string) string {
 func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
 	profile := a.profileForTenant(email, tenant.Slug)
-	if !hasCapability(role, capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
+	if !ac.can(capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
 		return
 	}
@@ -147,8 +147,8 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	a.render(w, "parkingMonth", a.withBase(ac, map[string]any{
 		"Title":                    "Parkplatznutzung · " + view.MonthLabel,
 		"CanSeeParking":            true,
-		"CanManageParkingPayments": hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking),
-		"CanMarkParkingPayment":    hasCapability(role, capabilityPlatformAdmin) || hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking) || profile.HasPermission(permissionParking),
+		"CanManageParkingPayments": ac.can(capabilityManageUsers) || ac.can(capabilityManageParking),
+		"CanMarkParkingPayment":    ac.can(capabilityPlatformAdmin) || ac.can(capabilityManageUsers) || ac.can(capabilityManageParking) || profile.HasPermission(permissionParking),
 		"ActivePage":               "parking",
 		"Detail":                   view,
 		"ParkingMsg":               parkingMsg,
@@ -203,9 +203,9 @@ func (a *app) parkingStatement(w http.ResponseWriter, r *http.Request, ac authCt
 }
 
 func (a *app) parkingMonthExport(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
+	tenant, email := ac.tenant, ac.email
 	profile := a.profileForTenant(email, tenant.Slug)
-	if !hasCapability(role, capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
+	if !ac.can(capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
 		return
 	}
@@ -241,7 +241,9 @@ func (a *app) parkingStatementTarget(tenantSlug string, actorEmail string, actor
 	if tenantSlug == "" || targetEmail == "" {
 		return userProfile{}, false
 	}
-	isManager := hasCapability(actorRole, capabilityManageUsers) || hasCapability(actorRole, capabilityPlatformAdmin)
+	authorizationActor := actorFor(actorEmail, tenantSlug, actorRole)
+	resource := resourceFor(tenantSlug)
+	isManager := can(authorizationActor, capabilityManageUsers, resource) || can(authorizationActor, capabilityPlatformAdmin, resource)
 	if targetEmail != normalizeEmail(actorEmail) && !isManager {
 		return userProfile{}, false
 	}
@@ -249,13 +251,13 @@ func (a *app) parkingStatementTarget(tenantSlug string, actorEmail string, actor
 	if !target.HasTenant(tenantSlug) {
 		return userProfile{}, false
 	}
-	targetIsAdmin := hasCapability(target.Role, capabilityPlatformAdmin)
+	targetIsAdmin := roleHasCapability(target.Role, capabilityPlatformAdmin)
 	targetCanPark := targetIsAdmin || target.HasPermission(permissionParking)
 	if !targetCanPark {
 		return userProfile{}, false
 	}
 	if !isManager {
-		actorCanPark := hasCapability(actorRole, capabilityPlatformAdmin) || actor.HasPermission(permissionParking)
+		actorCanPark := can(authorizationActor, capabilityPlatformAdmin, resource) || actor.HasPermission(permissionParking)
 		if !actorCanPark || targetEmail != normalizeEmail(actorEmail) {
 			return userProfile{}, false
 		}
@@ -380,7 +382,7 @@ func parkingTariffFromForm(values url.Values) (parkingTariff, error) {
 func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
 	actor := a.profileForTenant(actorEmail, tenant.Slug)
-	canManagePayment := hasCapability(role, capabilityManageUsers) || hasCapability(role, capabilityManageParking) || hasCapability(role, capabilityPlatformAdmin)
+	canManagePayment := ac.can(capabilityManageUsers) || ac.can(capabilityManageParking) || ac.can(capabilityPlatformAdmin)
 	canMarkPayment := canManagePayment || actor.HasPermission(permissionParking)
 	if !canMarkPayment {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
@@ -464,7 +466,7 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac auth
 
 func (a *app) sendParkingReminders(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageUsers) && !hasCapability(role, capabilityManageParking) {
+	if !ac.can(capabilityManageUsers) && !ac.can(capabilityManageParking) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -627,7 +629,7 @@ func parkingSettingsMessage(status string) (string, bool) {
 }
 
 func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, _, role, _, ok := a.parkingAccessContext(w, ac)
+	tenant, _, _, _, ok := a.parkingAccessContext(w, ac)
 	if !ok {
 		return
 	}
@@ -637,7 +639,7 @@ func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request, ac a
 		"Title":                  "Parkplatz-Zugriff",
 		"ActivePage":             "settings",
 		"ParkingSection":         "access",
-		"CanManageParkingConfig": hasCapability(role, capabilityManageParking),
+		"CanManageParkingConfig": ac.can(capabilityManageParking),
 		"AccessRows":             rows,
 		"HasAccessRows":          len(rows) > 0,
 		"AccessRowsEmpty":        emptyState("Noch keine Zugänge", "Sobald Personen eingeladen sind, kann der Parkplatz-Zugriff hier gepflegt werden."),
@@ -676,7 +678,7 @@ func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request, ac aut
 		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
 		return
 	}
-	if normalizeRole(effectiveProfile.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
+	if normalizeRole(effectiveProfile.Role) == roleAdmin && !ac.can(capabilityPlatformAdmin) {
 		http.Redirect(w, r, "/app/settings/parking-access?parking_access=not_editable", http.StatusSeeOther)
 		return
 	}
@@ -721,7 +723,7 @@ func (a *app) updateParkingAccess(w http.ResponseWriter, r *http.Request, ac aut
 }
 
 func (a *app) parkingAccessContext(w http.ResponseWriter, ac authCtx) (tenantConfig, string, string, userProfile, bool) {
-	if !hasCapability(ac.role, capabilityManageUsers) {
+	if !ac.can(capabilityManageUsers) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return tenantConfig{}, "", "", userProfile{}, false
 	}

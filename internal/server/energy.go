@@ -384,7 +384,7 @@ func (a *app) canViewEnergy(ac authCtx) bool {
 // and background handlers. Returning the already-scoped store makes it hard to
 // authorize one home and accidentally query another one afterwards.
 func (a *app) energyStoreForHome(ac authCtx, homeKey string) (energy.Storage, bool) {
-	if !canUseResidentAreas(ac.role) {
+	if !roleCanUseResidentAreas(ac.role) {
 		return nil, false
 	}
 	store := a.energyStore.ForHome(homeKey)
@@ -464,7 +464,7 @@ func (a *app) canControlEnergy(ac authCtx) bool {
 }
 
 func (a *app) isEnergyHouseAdmin(ac authCtx) bool {
-	return hasCapability(ac.role, capabilityManageBuilding)
+	return ac.can(capabilityManageBuilding)
 }
 
 func (a *app) energyResidentialUnits(tenantSlug string) []unit {
@@ -858,7 +858,7 @@ func (a *app) homeIdentitySettings(w http.ResponseWriter, r *http.Request, ac au
 		http.Redirect(w, r, "/app/zuhause/onboarding?step=2", http.StatusSeeOther)
 		return
 	}
-	from := normalizeHomeIdentityReturn(r.URL.Query().Get("from"), hasCapability(ac.role, capabilityManageBuilding))
+	from := normalizeHomeIdentityReturn(r.URL.Query().Get("from"), ac.can(capabilityManageBuilding))
 	backURL, backLabel := homeIdentityBackLink(from)
 	unitOptions := a.homeIdentityUnitOptions(ac, profile)
 	unitTitle, unitSummary := a.homeIdentityUnitContext(ac, profile)
@@ -884,7 +884,7 @@ func (a *app) homeIdentitySettings(w http.ResponseWriter, r *http.Request, ac au
 		"HasUnitOptions":      len(unitOptions) > 0,
 		"HomeTypeLocked":      a.homeIdentityTypeLocked(profile),
 		"HomeTypeDescription": energyHomeTypeDescription(profile.HomeType),
-		"CanManageBuilding":   hasCapability(ac.role, capabilityManageBuilding),
+		"CanManageBuilding":   ac.can(capabilityManageBuilding),
 		"Saved":               r.URL.Query().Get("saved") == "1",
 		"Invalid":             r.URL.Query().Get("invalid") == "1",
 	}))
@@ -908,7 +908,7 @@ func (a *app) updateHomeIdentity(w http.ResponseWriter, r *http.Request, ac auth
 		http.Redirect(w, r, "/app/zuhause/onboarding?step=2", http.StatusSeeOther)
 		return
 	}
-	from := normalizeHomeIdentityReturn(r.FormValue("from"), hasCapability(ac.role, capabilityManageBuilding))
+	from := normalizeHomeIdentityReturn(r.FormValue("from"), ac.can(capabilityManageBuilding))
 	name := cleanEnergyText(r.FormValue("household_name"), 100)
 	homeType := strings.TrimSpace(r.FormValue("home_type"))
 	if name == "" || !validEnergyHomeType(homeType) {
@@ -1909,7 +1909,7 @@ func (a *app) updateEnergyRecommendation(w http.ResponseWriter, r *http.Request,
 }
 
 func (a *app) createEnergyMeasure(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	if !a.canViewEnergy(ac) || !canCreateResidentIssue(ac.role) {
+	if !a.canViewEnergy(ac) || !canCreateResidentIssue(ac.actor(), ac.resource()) {
 		http.Error(w, "Kein Zugriff", http.StatusForbidden)
 		return
 	}

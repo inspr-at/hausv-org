@@ -303,7 +303,9 @@ const (
 // ── extracted to authz ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	capability = authz.Capability
+	authorizationActor    = authz.Actor
+	authorizationResource = authz.Resource
+	capability            = authz.Capability
 )
 
 var canAssignUserRole = authz.CanAssignUserRole
@@ -314,11 +316,12 @@ var canManageEvents = authz.CanManageEvents
 var canManageHandovers = authz.CanManageHandovers
 var canResidentTransition = authz.CanResidentTransition
 var canServiceProviderTransition = authz.CanServiceProviderTransition
-var canUseResidentAreas = authz.CanUseResidentAreas
 var canViewAudit = authz.CanViewAudit
 var canViewFullAudit = authz.CanViewFullAudit
-var hasCapability = authz.HasCapability
+var can = authz.Can
+var roleHasCapability = authz.RoleHasCapability
 var isServiceProviderRole = authz.IsServiceProviderRole
+var roleCanUseResidentAreas = authz.RoleCanUseResidentAreas
 
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
@@ -1897,7 +1900,7 @@ func (a *app) renderCalendarFeed(tenant tenantConfig, profile userProfile, role 
 	calendarLine(&b, "METHOD", "PUBLISH")
 	calendarLine(&b, "X-WR-CALNAME", "hausv.org "+tenant.Name)
 	calendarLine(&b, "X-WR-CALDESC", "Termine und freigegebene Vorgänge für "+tenant.Address)
-	if canUseResidentAreas(role) && events != nil {
+	if roleCanUseResidentAreas(role) && events != nil {
 		for _, item := range events.Upcoming(now) {
 			a.writeCalendarEvent(&b, tenant, item, now)
 		}
@@ -2130,12 +2133,12 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			followUps = append(followUps, item)
 		}
 	}
-	canSeeParking := modules.Parking && (hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking))
-	canManagePortalHandovers := modules.Handovers && canManageHandovers(role)
-	canManagePortalUsers := modules.Users && hasCapability(role, capabilityManageUsers)
+	canSeeParking := modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking))
+	canManagePortalHandovers := modules.Handovers && canManageHandovers(ac.actor(), ac.resource())
+	canManagePortalUsers := modules.Users && ac.can(capabilityManageUsers)
 	hasHomeUtilities := canSeeParking || canManagePortalHandovers || canManagePortalUsers
-	canResidentAreas := canUseResidentAreas(role)
-	canManageIssueBoard := hasCapability(role, capabilityManageIssues)
+	canResidentAreas := roleCanUseResidentAreas(role)
+	canManageIssueBoard := ac.can(capabilityManageIssues)
 	// Ein Eintrag, ein Platz: was der Tagesfokus schon beim Namen nennt, lassen
 	// die Karten darunter weg. Die Zahlen in den Kartenköpfen bleiben trotzdem
 	// die echten Gesamtwerte und sagen das auch.
@@ -2160,7 +2163,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	boardEvents := eventViews(firstN(remainingEvents, 3), now)
 	boardAnnouncements := announcementViewsWithReadState(firstN(signals.announcements, 3), now, false, lastSeen)
-	boardIssues := issueViewsForActor(firstN(remainingIssues, 3), role, email)
+	boardIssues := issueViewsForActor(tenant.Slug, firstN(remainingIssues, 3), role, email)
 	energyCard, hasEnergyCard := portalEnergyView{}, false
 	if modules.Energy {
 		energyCard, hasEnergyCard = a.portalEnergyCard(ac, now)
@@ -2197,9 +2200,9 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"PortalOpenIssueLabel":   portalOpenIssueLabel(len(signals.openIssues), len(boardIssues)),
 		"PortalIssuesInFocus":    len(boardIssues) == 0 && len(signals.openIssues) > 0,
 		"PortalIssuesURL":        issuesURL,
-		"CanCreateResidentIssue": canCreateResidentIssue(role),
-		"CanManageEvents":        canManageEvents(role),
-		"CanManageAnnouncements": hasCapability(role, capabilityManageAnnouncements),
+		"CanCreateResidentIssue": canCreateResidentIssue(ac.actor(), ac.resource()),
+		"CanManageEvents":        canManageEvents(ac.actor(), ac.resource()),
+		"CanManageAnnouncements": ac.can(capabilityManageAnnouncements),
 		"PortalEnergy":           energyCard,
 		"HasPortalEnergy":        hasEnergyCard,
 		"PortalAreas":            portalAreaViews(modules, canResidentAreas, canSeeParking, canManagePortalHandovers, canManagePortalUsers, openBallots),
@@ -2438,6 +2441,8 @@ func portalEnergyStatValue(label string, value *float64, fallback string) portal
 }
 
 func (a *app) dashboardDigestItems(repositories requestRepositories, tenantSlug string, email string, role string, now time.Time, lastSeen time.Time, signals portalSignals, modules portalModuleFlags) []dashboardDigestItem {
+	actor := actorFor(email, tenantSlug, role)
+	resource := resourceFor(tenantSlug)
 	var paymentItem *dashboardDigestItem
 	var announcementItem *dashboardDigestItem
 	var issueItem *dashboardDigestItem
@@ -2481,7 +2486,7 @@ func (a *app) dashboardDigestItems(repositories requestRepositories, tenantSlug 
 	}
 	if a.issueStore != nil {
 		visible := signals.issues
-		if hasCapability(role, capabilityManageIssues) {
+		if can(actor, capabilityManageIssues, resource) {
 			openIssues := signals.openIssues
 			if len(openIssues) > 0 {
 				views := a.issueViewsForActor(tenantSlug, openIssues, role, email)
@@ -2575,7 +2580,7 @@ func (a *app) dashboardDigestItems(repositories requestRepositories, tenantSlug 
 			items = append(items, *item)
 		}
 	}
-	if hasCapability(role, capabilityManageIssues) {
+	if can(actor, capabilityManageIssues, resource) {
 		appendItem(issueItem)
 		appendItem(announcementItem)
 	} else if paymentItem != nil {
@@ -3505,7 +3510,7 @@ func normalizeBuildingSettingsSection(section string) string {
 
 func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, role := ac.tenant, ac.role
-	if !canViewAudit(role) {
+	if !canViewAudit(ac.actor(), ac.resource()) {
 		http.Error(w, "Dieser Bereich ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
 		return
 	}
@@ -3518,7 +3523,7 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			Limit:      500,
 		})
 	}
-	fullAudit := canViewFullAudit(role)
+	fullAudit := canViewFullAudit(ac.actor(), ac.resource())
 	if !fullAudit {
 		events = a.scopedAuditEvents(ac, events)
 	}
@@ -4114,7 +4119,7 @@ func (a *app) updateUnitPaymentStatus(w http.ResponseWriter, r *http.Request, ac
 }
 
 func (a *app) buildingSettingsContext(w http.ResponseWriter, ac authCtx) (tenantConfig, string, string, userProfile, bool) {
-	if !hasCapability(ac.role, capabilityManageBuilding) {
+	if !ac.can(capabilityManageBuilding) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return tenantConfig{}, "", "", userProfile{}, false
 	}
@@ -4492,7 +4497,7 @@ func (a *app) profileSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 	profileMsg, profileOK := profileSettingsMessage(r.URL.Query().Get("profile"))
 	a.render(w, "profileSettings", a.withBase(ac, map[string]any{
 		"Title":                  "Profil",
-		"CanManageAnnouncements": canManageAnnouncements(role),
+		"CanManageAnnouncements": canManageAnnouncements(ac.actor(), ac.resource()),
 		"ActivePage":             "settings",
 		"Profile":                profile,
 		"ProfileMsg":             profileMsg,
@@ -4782,7 +4787,7 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
 		return
 	}
-	if !canAssignUserRole(role, inviteRole) {
+	if !canAssignUserRole(ac.actor(), inviteRole, ac.resource()) {
 		a.redirectInvite(w, r, "forbidden_role")
 		return
 	}
@@ -4899,7 +4904,7 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		}
 		effectiveProfile = env.ForTenant(tenant.Slug)
 	}
-	if normalizeRole(effectiveProfile.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
+	if normalizeRole(effectiveProfile.Role) == roleAdmin && !ac.can(capabilityPlatformAdmin) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
@@ -4907,7 +4912,7 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	// Global identity (email, title, name) belongs to the PERSON, not to a house.
 	// A house admin manages only their own membership; changing identity is a
 	// separate, explicitly authorized platform-admin workflow (HAUSV-169 AC8).
-	canEditIdentity := hasCapability(role, capabilityPlatformAdmin)
+	canEditIdentity := ac.can(capabilityPlatformAdmin)
 
 	// Config-sourced users keep their configured email as a fixed identity; only
 	// pure app invites may be renamed.
@@ -4934,7 +4939,7 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
 		return
 	}
-	if !canAssignUserRole(role, newRole) {
+	if !canAssignUserRole(ac.actor(), newRole, ac.resource()) {
 		a.redirectInvite(w, r, "forbidden_role")
 		return
 	}
@@ -5095,7 +5100,7 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
 		return
 	}
-	if normalizeRole(effectiveProfile.Role) == roleAdmin && !hasCapability(role, capabilityPlatformAdmin) {
+	if normalizeRole(effectiveProfile.Role) == roleAdmin && !ac.can(capabilityPlatformAdmin) {
 		a.redirectInvite(w, r, "not_editable")
 		return
 	}
@@ -5198,7 +5203,7 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 func (a *app) baseContext(ac authCtx) map[string]any {
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
 	modules := a.portalModulesFor(ac.tenant.Slug)
-	isAdmin := hasCapability(ac.role, capabilityPlatformAdmin)
+	isAdmin := ac.can(capabilityPlatformAdmin)
 	canViewEnergy := modules.Energy && a.canViewEnergy(ac)
 	portalContexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
 	return map[string]any{
@@ -5352,35 +5357,39 @@ func enrichCapabilityData(data map[string]any) {
 	if role == "" {
 		return
 	}
+	tenant, _ := data["Tenant"].(tenantConfig)
+	person, _ := data["Email"].(string)
+	actor := actorFor(person, tenant.Slug, role)
+	resource := resourceFor(tenant.Slug)
 	if _, ok := data["IsAdmin"]; !ok {
-		data["IsAdmin"] = hasCapability(role, capabilityPlatformAdmin)
+		data["IsAdmin"] = can(actor, capabilityPlatformAdmin, resource)
 	}
 	if _, ok := data["IsServiceProvider"]; !ok {
 		data["IsServiceProvider"] = isServiceProviderRole(role)
 	}
 	if _, ok := data["CanUseResidentAreas"]; !ok {
-		data["CanUseResidentAreas"] = canUseResidentAreas(role)
+		data["CanUseResidentAreas"] = roleCanUseResidentAreas(role)
 	}
 	if _, ok := data["CanManageUsers"]; !ok {
-		data["CanManageUsers"] = hasCapability(role, capabilityManageUsers)
+		data["CanManageUsers"] = can(actor, capabilityManageUsers, resource)
 	}
 	if _, ok := data["CanManageAnnouncements"]; !ok {
-		data["CanManageAnnouncements"] = hasCapability(role, capabilityManageAnnouncements)
+		data["CanManageAnnouncements"] = can(actor, capabilityManageAnnouncements, resource)
 	}
 	if _, ok := data["CanManageIssues"]; !ok {
-		data["CanManageIssues"] = hasCapability(role, capabilityManageIssues)
+		data["CanManageIssues"] = can(actor, capabilityManageIssues, resource)
 	}
 	if _, ok := data["CanManageDocuments"]; !ok {
-		data["CanManageDocuments"] = hasCapability(role, capabilityManageDocuments)
+		data["CanManageDocuments"] = can(actor, capabilityManageDocuments, resource)
 	}
 	if _, ok := data["CanManageBuilding"]; !ok {
-		data["CanManageBuilding"] = hasCapability(role, capabilityManageBuilding)
+		data["CanManageBuilding"] = can(actor, capabilityManageBuilding, resource)
 	}
 	if _, ok := data["CanManageHandovers"]; !ok {
-		data["CanManageHandovers"] = canManageHandovers(role)
+		data["CanManageHandovers"] = canManageHandovers(actor, resource)
 	}
 	if _, ok := data["CanViewAudit"]; !ok {
-		data["CanViewAudit"] = canViewAudit(role)
+		data["CanViewAudit"] = canViewAudit(actor, resource)
 	}
 }
 

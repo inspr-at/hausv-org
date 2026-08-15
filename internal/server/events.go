@@ -13,7 +13,7 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if denyServiceProviderArea(w, role) {
 		return
 	}
-	canManage := canManageEvents(role)
+	canManage := canManageEvents(ac.actor(), ac.resource())
 	now := time.Now()
 	events := ac.repositories.events
 	upcoming := []houseEvent{}
@@ -39,7 +39,7 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	pastViews := a.eventViews(tenant.Slug, past, now, email, role)
 	a.render(w, "events", a.withBase(ac, map[string]any{
 		"Title":                  "Termine",
-		"CanManageAnnouncements": canManageAnnouncements(role),
+		"CanManageAnnouncements": canManageAnnouncements(ac.actor(), ac.resource()),
 		"CanManageEvents":        canManage,
 		"ActivePage":             "events",
 		"Events":                 upcomingViews,
@@ -57,8 +57,8 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 }
 
 func (a *app) createEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !canManageEvents(role) {
+	tenant, email := ac.tenant, ac.email
+	if !canManageEvents(ac.actor(), ac.resource()) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -101,8 +101,8 @@ func (a *app) createEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 }
 
 func (a *app) editEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !canManageEvents(role) {
+	tenant, email := ac.tenant, ac.email
+	if !canManageEvents(ac.actor(), ac.resource()) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -155,8 +155,8 @@ func (a *app) editEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 }
 
 func (a *app) deleteEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, role := ac.tenant, ac.role
-	if !canManageEvents(role) {
+	tenant := ac.tenant
+	if !canManageEvents(ac.actor(), ac.resource()) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -313,7 +313,7 @@ func eventViews(items []houseEvent, now time.Time) []houseEventView {
 func (a *app) eventViews(tenantSlug string, items []houseEvent, now time.Time, actorEmail string, role string) []houseEventView {
 	views := eventViews(items, now)
 	for i := range views {
-		views[i].CanManage = canManageEvents(role)
+		views[i].CanManage = canManageEvents(actorFor(actorEmail, tenantSlug, role), resourceFor(items[i].TenantSlug))
 		if a == nil || a.attachmentStore == nil {
 			continue
 		}

@@ -22,7 +22,7 @@ func (a *app) issueBoard(w http.ResponseWriter, r *http.Request, ac authCtx) {
 }
 
 func (a *app) issueTriage(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	if !hasCapability(ac.role, capabilityManageIssues) {
+	if !ac.can(capabilityManageIssues) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -72,7 +72,7 @@ func (a *app) issueResidentDetail(w http.ResponseWriter, r *http.Request, ac aut
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
 	}
-	if hasCapability(ac.role, capabilityManageIssues) {
+	if ac.can(capabilityManageIssues) {
 		http.Redirect(w, r, "/app/anliegen/board/"+url.PathEscape(item.ID), http.StatusSeeOther)
 		return
 	}
@@ -89,8 +89,8 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 	issues := []issueView{}
 	manageIssues := []issueView{}
 	manageIssuePreview := []issueView{}
-	canManageIssues := hasCapability(role, capabilityManageIssues)
-	canCreateIssue := canCreateResidentIssue(role)
+	canManageIssues := ac.can(capabilityManageIssues)
+	canCreateIssue := canCreateResidentIssue(ac.actor(), ac.resource())
 	totalIssueCount := 0
 	openIssueCount := 0
 	urgentIssueCount := 0
@@ -132,7 +132,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 	serviceContacts := a.serviceContactOptions(ac.repositories.contacts)
 	a.render(w, "issues", a.withBase(ac, map[string]any{
 		"Title":                      "Anliegen",
-		"CanManageAnnouncements":     canManageAnnouncements(role),
+		"CanManageAnnouncements":     canManageAnnouncements(ac.actor(), ac.resource()),
 		"CanManageIssues":            canManageIssues,
 		"CanCreateIssue":             canCreateIssue,
 		"ActivePage":                 "issues",
@@ -184,8 +184,8 @@ func issueMessage(status string) (string, bool) {
 }
 
 func (a *app) createIssue(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !canCreateResidentIssue(role) {
+	tenant, email := ac.tenant, ac.email
+	if !canCreateResidentIssue(ac.actor(), ac.resource()) {
 		http.Error(w, "Dieser Zugang kann keine neuen Anliegen anlegen.", http.StatusForbidden)
 		return
 	}
@@ -253,8 +253,10 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
 	}
-	canManage := hasCapability(role, capabilityManageIssues)
-	readOnly := hasCapability(role, capabilityOversight) && !canManage
+	actor := actorFor(email, tenant.Slug, role)
+	resource := resourceFor(existing.TenantSlug)
+	canManage := can(actor, capabilityManageIssues, resource)
+	readOnly := can(actor, capabilityOversight, resource) && !canManage
 	if !a.canViewIssueForActor(tenant.Slug, existing, email, role) {
 		http.Error(w, "Dieser Kommentar ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
@@ -423,7 +425,7 @@ func (a *app) confirmIssueResolution(w http.ResponseWriter, r *http.Request, ac 
 		return
 	}
 	isOwner := normalizeEmail(existing.AuthorEmail) == normalizeEmail(ac.email)
-	if !isOwner || hasCapability(ac.role, capabilityManageIssues) || normalizeIssueStatus(existing.Status) != issueStatusDone {
+	if !isOwner || ac.can(capabilityManageIssues) || normalizeIssueStatus(existing.Status) != issueStatusDone {
 		http.Error(w, "Diese Rückmeldung ist nur für die meldende Person möglich.", http.StatusForbidden)
 		return
 	}
@@ -481,8 +483,10 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		return
 	}
 
-	canManage := hasCapability(role, capabilityManageIssues)
-	readOnly := hasCapability(role, capabilityOversight) && !canManage
+	actor := actorFor(email, tenant.Slug, role)
+	resource := resourceFor(existing.TenantSlug)
+	canManage := can(actor, capabilityManageIssues, resource)
+	readOnly := can(actor, capabilityOversight, resource) && !canManage
 	if !a.canViewIssueForActor(tenant.Slug, existing, email, role) {
 		http.Error(w, "Dieser Statuswechsel ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
@@ -661,8 +665,11 @@ func (a *app) issueManagerEmails(tenantSlug string) []string {
 	tenantSlug = normalizeSlug(tenantSlug)
 	recipients := []string{}
 	for email, profile := range a.profiles {
-		if profile.HasTenant(tenantSlug) && hasCapability(profile.ForTenant(tenantSlug).Role, capabilityManageIssues) {
-			recipients = append(recipients, email)
+		if profile.HasTenant(tenantSlug) {
+			membership := profile.ForTenant(tenantSlug)
+			if can(actorFor(email, tenantSlug, membership.Role), capabilityManageIssues, resourceFor(tenantSlug)) {
+				recipients = append(recipients, email)
+			}
 		}
 	}
 	for email := range a.admins {
@@ -670,8 +677,11 @@ func (a *app) issueManagerEmails(tenantSlug string) []string {
 	}
 	if a.inviteStore != nil {
 		for _, profile := range a.inviteStore.List() {
-			if profile.HasTenant(tenantSlug) && hasCapability(profile.ForTenant(tenantSlug).Role, capabilityManageIssues) {
-				recipients = append(recipients, profile.Email)
+			if profile.HasTenant(tenantSlug) {
+				membership := profile.ForTenant(tenantSlug)
+				if can(actorFor(profile.Email, tenantSlug, membership.Role), capabilityManageIssues, resourceFor(tenantSlug)) {
+					recipients = append(recipients, profile.Email)
+				}
 			}
 		}
 	}
@@ -954,7 +964,9 @@ func (a *app) canViewIssueForActor(tenantSlug string, item residentIssue, email 
 	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug || email == "" {
 		return false
 	}
-	if hasCapability(role, capabilityManageIssues) || hasCapability(role, capabilityOversight) {
+	actor := actorFor(email, tenantSlug, role)
+	resource := resourceFor(item.TenantSlug)
+	if can(actor, capabilityManageIssues, resource) || can(actor, capabilityOversight, resource) {
 		return true
 	}
 	if isServiceProviderRole(role) {
@@ -975,7 +987,9 @@ func (a *app) canDeleteIssueComment(tenantSlug string, issue residentIssue, comm
 	if email == "" || !a.canViewIssueForActor(tenantSlug, issue, email, role) {
 		return false
 	}
-	if hasCapability(role, capabilityManageIssues) || hasCapability(role, capabilityPlatformAdmin) {
+	actor := actorFor(email, tenantSlug, role)
+	resource := resourceFor(issue.TenantSlug)
+	if can(actor, capabilityManageIssues, resource) || can(actor, capabilityPlatformAdmin, resource) {
 		return true
 	}
 	return normalizeEmail(comment.AuthorEmail) == email
@@ -1004,7 +1018,7 @@ func (a *app) issueCommentTarget(tenantSlug string, commentID string) (residentI
 }
 
 func (a *app) issueViewsForActor(tenantSlug string, items []residentIssue, role string, actorEmail string) []issueView {
-	views := issueViewsForActor(items, role, actorEmail)
+	views := issueViewsForActor(tenantSlug, items, role, actorEmail)
 	if a == nil {
 		return views
 	}
@@ -1063,15 +1077,17 @@ func issueCommentByID(comments []issueComment, id string) (issueComment, bool) {
 }
 
 func issueViews(items []residentIssue) []issueView {
-	return issueViewsForActor(items, "", "")
+	return issueViewsForActor("", items, "", "")
 }
 
-func issueViewsForActor(items []residentIssue, role string, actorEmail string) []issueView {
+func issueViewsForActor(tenantSlug string, items []residentIssue, role string, actorEmail string) []issueView {
 	views := make([]issueView, 0, len(items))
 	actorEmail = normalizeEmail(actorEmail)
-	canManage := hasCapability(role, capabilityManageIssues)
-	readOnly := hasCapability(role, capabilityOversight) && !canManage
 	for _, item := range items {
+		actor := actorFor(actorEmail, tenantSlug, role)
+		resource := resourceFor(item.TenantSlug)
+		canManage := can(actor, capabilityManageIssues, resource)
+		readOnly := can(actor, capabilityOversight, resource) && !canManage
 		photoCount := 0
 		comments := issueCommentViews(item.Comments)
 		status := normalizeIssueStatus(item.Status)

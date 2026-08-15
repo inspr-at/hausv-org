@@ -18,7 +18,7 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if denyServiceProviderArea(w, role) {
 		return
 	}
-	canManage := hasCapability(role, capabilityManageDocuments)
+	canManage := ac.can(capabilityManageDocuments)
 	visible := []documentRecord{}
 	if ac.repositories.documents != nil {
 		visible = a.visibleDocumentsForActor(tenant.Slug, email, role)
@@ -400,7 +400,7 @@ func (a *app) canViewDocument(tenantSlug string, item documentRecord, email stri
 	if isServiceProviderRole(role) {
 		return false
 	}
-	if hasCapability(role, capabilityManageDocuments) {
+	if can(actorFor(email, tenantSlug, role), capabilityManageDocuments, resourceFor(item.TenantSlug)) {
 		return true
 	}
 	switch normalizeDocumentVisibility(item.Visibility) {
@@ -479,6 +479,8 @@ func (a *app) canViewAttachment(tenantSlug string, item attachmentRecord, email 
 		return false
 	}
 	entityType := normalizeAttachmentEntity(item.EntityType)
+	actor := actorFor(email, tenantSlug, role)
+	resource := resourceFor(item.TenantSlug)
 	if isServiceProviderRole(role) && entityType != "issue" && entityType != "issue-comment" && entityType != "issue-estimate" {
 		return false
 	}
@@ -503,11 +505,11 @@ func (a *app) canViewAttachment(tenantSlug string, item attachmentRecord, email 
 	case "announcement", "event", "building":
 		return true
 	case "ballot":
-		return hasCapability(role, capabilityManageVotes) || hasCapability(role, capabilityVote) || hasCapability(role, capabilityOversight)
+		return can(actor, capabilityManageVotes, resource) || can(actor, capabilityVote, resource) || can(actor, capabilityOversight, resource)
 	case "handover":
-		return canManageHandovers(role)
+		return canManageHandovers(actorFor(email, tenantSlug, role), resourceFor(item.TenantSlug))
 	case "parking":
-		return hasCapability(role, capabilityManageParking) || hasCapability(role, capabilityPlatformAdmin) || a.profileForTenant(email, tenantSlug).HasPermission(permissionParking)
+		return can(actor, capabilityManageParking, resource) || can(actor, capabilityPlatformAdmin, resource) || a.profileForTenant(email, tenantSlug).HasPermission(permissionParking)
 	default:
 		return false
 	}
@@ -519,12 +521,14 @@ func (a *app) canDeleteAttachment(tenantSlug string, item attachmentRecord, emai
 	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug || email == "" {
 		return false
 	}
-	if hasCapability(role, capabilityPlatformAdmin) || normalizeEmail(item.UploadedBy) == email {
+	actor := actorFor(email, tenantSlug, role)
+	resource := resourceFor(item.TenantSlug)
+	if can(actor, capabilityPlatformAdmin, resource) || normalizeEmail(item.UploadedBy) == email {
 		return true
 	}
 	switch normalizeAttachmentEntity(item.EntityType) {
 	case "issue", "issue-estimate":
-		if hasCapability(role, capabilityManageIssues) {
+		if can(actor, capabilityManageIssues, resource) {
 			return true
 		}
 		issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
@@ -534,25 +538,25 @@ func (a *app) canDeleteAttachment(tenantSlug string, item attachmentRecord, emai
 		issue, found := issues.Get(item.EntityID)
 		return found && normalizeEmail(issue.AuthorEmail) == email
 	case "issue-comment":
-		if hasCapability(role, capabilityManageIssues) {
+		if can(actor, capabilityManageIssues, resource) {
 			return true
 		}
 		issue, comment, found := a.issueCommentTarget(tenantSlug, item.EntityID)
 		return found && (normalizeEmail(issue.AuthorEmail) == email || normalizeEmail(comment.AuthorEmail) == email)
 	case "document":
-		return hasCapability(role, capabilityManageDocuments)
+		return can(actor, capabilityManageDocuments, resource)
 	case "announcement":
-		return canManageAnnouncements(role)
+		return canManageAnnouncements(actorFor(email, tenantSlug, role), resourceFor(item.TenantSlug))
 	case "event":
-		return canManageEvents(role)
+		return canManageEvents(actorFor(email, tenantSlug, role), resourceFor(item.TenantSlug))
 	case "ballot":
-		return hasCapability(role, capabilityManageVotes)
+		return can(actor, capabilityManageVotes, resource)
 	case "handover":
-		return canManageHandovers(role)
+		return canManageHandovers(actorFor(email, tenantSlug, role), resourceFor(item.TenantSlug))
 	case "parking":
-		return hasCapability(role, capabilityManageParking)
+		return can(actor, capabilityManageParking, resource)
 	case "building":
-		return hasCapability(role, capabilityManageBuilding)
+		return can(actor, capabilityManageBuilding, resource)
 	default:
 		return false
 	}

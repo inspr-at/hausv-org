@@ -38,22 +38,63 @@ func TestServiceProviderHasNoCapabilities(t *testing.T) {
 		CapabilityVote, CapabilityOversight,
 	}
 	for _, c := range caps {
-		if HasCapability(store.RoleServiceProvider, c) {
+		if RoleHasCapability(store.RoleServiceProvider, c) {
 			t.Errorf("service provider unexpectedly has capability %q", c)
 		}
 	}
 }
 
 func TestServiceProviderExcludedFromResidentAreasAndIssueCreation(t *testing.T) {
-	if CanUseResidentAreas(store.RoleServiceProvider) {
+	resource := Resource{Tenant: "demo"}
+	provider := Actor{Person: "provider@example.invalid", Tenant: "demo", Role: store.RoleServiceProvider}
+	resident := Actor{Person: "resident@example.invalid", Tenant: "demo", Role: store.RoleResident}
+	if RoleCanUseResidentAreas(store.RoleServiceProvider) {
 		t.Error("service provider must not be able to use resident areas")
 	}
-	if CanCreateResidentIssue(store.RoleServiceProvider) {
+	if CanCreateResidentIssue(provider, resource) {
 		t.Error("service provider must not be able to create issues")
 	}
 	// Sanity: a resident is not excluded.
-	if !CanUseResidentAreas(store.RoleResident) {
+	if !RoleCanUseResidentAreas(store.RoleResident) {
 		t.Error("resident should be able to use resident areas")
+	}
+	if !CanCreateResidentIssue(resident, resource) {
+		t.Error("resident should be able to create issues")
+	}
+}
+
+func TestCanRefusesResourceFromAnotherTenant(t *testing.T) {
+	actor := Actor{Person: "manager@example.invalid", Tenant: "demo", Role: store.RoleManager}
+	if !Can(actor, CapabilityManageDocuments, Resource{Tenant: "demo"}) {
+		t.Fatal("manager should be allowed to manage documents in their tenant")
+	}
+	if Can(actor, CapabilityManageDocuments, Resource{Tenant: "other-house"}) {
+		t.Fatal("manager must not be allowed to manage a resource from another tenant")
+	}
+	if CanCreateResidentIssue(actor, Resource{Tenant: "other-house"}) {
+		t.Fatal("composite authorization helpers must also refuse another tenant")
+	}
+}
+
+func TestCanPreservesRoleCapabilityMatrixWithinTenant(t *testing.T) {
+	roles := []string{
+		store.RoleAdmin, store.RoleManager, store.RoleOwner, store.RoleRenter,
+		store.RoleBeirat, store.RoleResident, store.RoleServiceProvider, "", "unknown",
+	}
+	capabilities := []Capability{
+		CapabilityPlatformAdmin, CapabilityManageUsers, CapabilityManageParking,
+		CapabilityManageAnnouncements, CapabilityManageDocuments, CapabilityManageIssues,
+		CapabilityManageVotes, CapabilityManageBuilding, CapabilityOwnerDocuments,
+		CapabilityVote, CapabilityOversight, CapabilityManageEnergy, CapabilityControlEnergy,
+	}
+	resource := Resource{Tenant: "demo"}
+	for _, role := range roles {
+		actor := Actor{Person: "person@example.invalid", Tenant: "demo", Role: role}
+		for _, capability := range capabilities {
+			if got, want := Can(actor, capability, resource), RoleHasCapability(role, capability); got != want {
+				t.Errorf("Can(role=%q, capability=%q) = %v, want existing role decision %v", role, capability, got, want)
+			}
+		}
 	}
 }
 
@@ -106,21 +147,22 @@ func TestServiceProviderTransitionFullChain(t *testing.T) {
 }
 
 func TestAuditVisibilitySeparatesAccessFromFullTenantHistory(t *testing.T) {
+	resource := Resource{Tenant: "demo"}
 	for _, role := range []string{
 		store.RoleAdmin, store.RoleManager, store.RoleOwner, store.RoleRenter,
 		store.RoleBeirat, store.RoleResident, store.RoleServiceProvider,
 	} {
-		if !CanViewAudit(role) {
+		if !CanViewAudit(Actor{Person: "person@example.invalid", Tenant: "demo", Role: role}, resource) {
 			t.Errorf("CanViewAudit(%q) = false, want true", role)
 		}
 	}
 	for _, role := range []string{store.RoleAdmin, store.RoleManager} {
-		if !CanViewFullAudit(role) {
+		if !CanViewFullAudit(Actor{Person: "person@example.invalid", Tenant: "demo", Role: role}, resource) {
 			t.Errorf("CanViewFullAudit(%q) = false, want true", role)
 		}
 	}
 	for _, role := range []string{store.RoleOwner, store.RoleRenter, store.RoleBeirat, store.RoleResident, store.RoleServiceProvider, "", "unknown"} {
-		if CanViewFullAudit(role) {
+		if CanViewFullAudit(Actor{Person: "person@example.invalid", Tenant: "demo", Role: role}, resource) {
 			t.Errorf("CanViewFullAudit(%q) = true, want false", role)
 		}
 	}

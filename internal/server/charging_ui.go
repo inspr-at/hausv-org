@@ -358,20 +358,20 @@ func (a *app) telegramAdminView(tenant tenantConfig, query url.Values) telegramS
 
 // ── handlers ────────────────────────────────────────────────────────────────
 
-func (a *app) canUseCharging(role string, profile userProfile) bool {
-	return hasCapability(role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking)
+func (a *app) canUseCharging(ac authCtx, profile userProfile) bool {
+	return ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)
 }
 
 // chargingStatus serves the live card as an HTML fragment (default) or JSON
 // (?format=json) for the polling enhancer.
 func (a *app) chargingStatus(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
+	tenant, email := ac.tenant, ac.email
 	profile := a.profileForTenant(email, tenant.Slug)
-	if !a.canUseCharging(role, profile) {
+	if !a.canUseCharging(ac, profile) {
 		http.NotFound(w, r)
 		return
 	}
-	isAdmin := hasCapability(role, capabilityPlatformAdmin)
+	isAdmin := ac.can(capabilityPlatformAdmin)
 	live := a.chargingLiveView(r.Context(), tenant, isAdmin, true)
 	if r.URL.Query().Get("format") == "json" {
 		w.Header().Set("Content-Type", "application/json")
@@ -396,9 +396,9 @@ func (a *app) chargingStatus(w http.ResponseWriter, r *http.Request, ac authCtx)
 }
 
 func (a *app) chargingManualAction(w http.ResponseWriter, r *http.Request, ac authCtx, mode string) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
+	tenant, email := ac.tenant, ac.email
 	profile := a.profileForTenant(email, tenant.Slug)
-	if !a.canUseCharging(role, profile) {
+	if !a.canUseCharging(ac, profile) {
 		http.NotFound(w, r)
 		return
 	}

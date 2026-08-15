@@ -16,7 +16,7 @@ import (
 
 func (a *app) createBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageVotes) {
+	if !ac.can(capabilityManageVotes) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -85,7 +85,7 @@ func (a *app) closeBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 func (a *app) updateBallotStatus(w http.ResponseWriter, r *http.Request, ac authCtx, status string) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityManageVotes) {
+	if !ac.can(capabilityManageVotes) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -203,8 +203,8 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if denyServiceProviderArea(w, role) {
 		return
 	}
-	canManage := hasCapability(role, capabilityManageVotes)
-	canOversight := hasCapability(role, capabilityOversight)
+	canManage := ac.can(capabilityManageVotes)
+	canOversight := ac.can(capabilityOversight)
 	now := time.Now()
 	all := []ballot{}
 	if a.voteStore != nil {
@@ -300,7 +300,7 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	a.render(w, "ballots", a.withBase(ac, map[string]any{
 		"Title":             "Abstimmungen",
 		"CanManageVotes":    canManage,
-		"CanVote":           hasCapability(role, capabilityVote),
+		"CanVote":           ac.can(capabilityVote),
 		"CanOversightVotes": canOversight,
 		"ActivePage":        "abstimmungen",
 		"Ballots":           views,
@@ -329,7 +329,7 @@ func (a *app) submitBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 func (a *app) castVote(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityVote) {
+	if !ac.can(capabilityVote) {
 		http.Error(w, "Dieser Zugang ist für Abstimmungen lesend.", http.StatusForbidden)
 		return
 	}
@@ -370,7 +370,7 @@ func (a *app) castVote(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !hasCapability(role, capabilityVote) && !hasCapability(role, capabilityOversight) && !hasCapability(role, capabilityManageVotes) {
+	if !ac.can(capabilityVote) && !ac.can(capabilityOversight) && !ac.can(capabilityManageVotes) {
 		http.Error(w, "Dieses Protokoll ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
 		return
 	}
@@ -460,6 +460,11 @@ func (a *app) ballotViewsForActor(repositories requestRepositories, tenantSlug s
 
 func (a *app) ballotViewForActor(repositories requestRepositories, tenantSlug string, email string, role string, item ballot, now time.Time, includeResults bool) ballotView {
 	item = normalizeBallot(item)
+	actor := actorFor(email, tenantSlug, role)
+	resource := resourceFor(item.TenantSlug)
+	canManage := can(actor, capabilityManageVotes, resource)
+	canVote := can(actor, capabilityVote, resource)
+	canOversight := can(actor, capabilityOversight, resource)
 	weight, eligible := a.ballotVoteWeight(repositories.units, tenantSlug, email, item)
 	status, statusClass, active := ballotStatusForView(item, now)
 	vote, hasVote := item.Votes[normalizeEmail(email)]
@@ -482,14 +487,14 @@ func (a *app) ballotViewForActor(repositories requestRepositories, tenantSlug st
 		IsClosed:            rawStatus == ballotStatusClosed,
 		CreatedAt:           formatLocalDateTime(item.CreatedAt),
 		UpdatedAt:           formatLocalDateTime(item.UpdatedAt),
-		CanManage:           hasCapability(role, capabilityManageVotes),
-		CanVote:             hasCapability(role, capabilityVote) && eligible && active,
+		CanManage:           canManage,
+		CanVote:             canVote && eligible && active,
 		CanOpen:             rawStatus == ballotStatusDraft,
 		CanClose:            rawStatus == ballotStatusOpen,
 		HasVote:             hasVote,
 		VoteOption:          vote.Option,
 		VoteWeight:          formatBallotWeight(weight),
-		ReadOnlyMessage:     ballotReadOnlyMessage(role, item, eligible, active, hasVote),
+		ReadOnlyMessage:     ballotReadOnlyMessage(canVote, canOversight, item, eligible, active, hasVote),
 		TotalVotes:          tally.TotalVotes,
 		TotalWeight:         tally.TotalWeight,
 		TotalWeightLabel:    tally.TotalWeightLabel,
@@ -500,7 +505,7 @@ func (a *app) ballotViewForActor(repositories requestRepositories, tenantSlug st
 		WinnerLabel:         tally.WinnerLabel,
 		HasWinner:           tally.WinnerLabel != "",
 		ProtocolURL:         "/app/abstimmungen/" + url.PathEscape(item.ID) + "/protokoll",
-		HasProtocol:         rawStatus == ballotStatusClosed && (hasCapability(role, capabilityVote) || hasCapability(role, capabilityOversight) || hasCapability(role, capabilityManageVotes)),
+		HasProtocol:         rawStatus == ballotStatusClosed && (canVote || canOversight || canManage),
 		EditDialogID:        "ballot-" + item.ID,
 	}
 	view.NeedsVote = view.CanVote && !view.HasVote
@@ -653,7 +658,7 @@ func ballotStatusForView(item ballot, now time.Time) (string, string, bool) {
 	}
 }
 
-func ballotReadOnlyMessage(role string, item ballot, eligible bool, active bool, hasVote bool) string {
+func ballotReadOnlyMessage(canVote bool, canOversight bool, item ballot, eligible bool, active bool, hasVote bool) string {
 	if !active {
 		switch normalizeBallotStatus(item.Status) {
 		case ballotStatusDraft:
@@ -669,7 +674,7 @@ func ballotReadOnlyMessage(role string, item ballot, eligible bool, active bool,
 			}
 		}
 	}
-	if hasCapability(role, capabilityVote) {
+	if canVote {
 		if eligible {
 			if hasVote {
 				return "Stimme abgegeben; bis zur Schließung änderbar."
@@ -678,7 +683,7 @@ func ballotReadOnlyMessage(role string, item ballot, eligible bool, active bool,
 		}
 		return "Kein Stimmgewicht für diesen Zugang hinterlegt."
 	}
-	if hasCapability(role, capabilityOversight) {
+	if canOversight {
 		return "Beirat: lesende Übersicht."
 	}
 	return "Nur Eigentümer können abstimmen."
