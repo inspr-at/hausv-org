@@ -342,6 +342,10 @@ type BuildingUnitView struct {
 	ShareValue         string
 	OwnerEmails        string
 	RenterEmails       string
+	OwnerSummary       string
+	RenterSummary      string
+	HasOwners          bool
+	HasRenters         bool
 	MembersLabel       string
 	PaymentStatus      string
 	PaymentStatusClass string

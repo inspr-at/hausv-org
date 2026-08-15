@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.93.0",
+			Date:     "15. August 2026",
+			Kind:     "Einheitenverwaltung",
+			Headline: "Einheiten lassen sich jetzt übersichtlich und ohne Seitensprünge verwalten.",
+			Intro:    "Eine klare Liste und ein eigener Bearbeitungsdialog verbinden Stammdaten, Zuordnungen und Zahlungsstatus in einem ruhigen Ablauf.",
+			Items: []NoteItem{
+				{Label: "Auf einen Blick", Text: "Typ, Personen, Anteil und Zahlungsstatus stehen direkt in der Einheitenliste."},
+				{Label: "Im Kontext", Text: "Hinzufügen und Bearbeiten öffnen als eigener Dialog, ohne die Seite zu verschieben."},
+				{Label: "Gemeinsam gespeichert", Text: "Stammdaten, Zuordnungen und Zahlungsstatus werden in einem Schritt übernommen."},
+			},
+		},
+		{
 			Version:  "0.92.0",
 			Date:     "15. August 2026",
 			Kind:     "Gebäudeeinstellungen",
