@@ -1228,8 +1228,9 @@ const PageTemplates = `
     .skip-link:focus { transform: none; }
     .nav-item { position: relative; min-height: 44px; display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: var(--radius-xs); color: rgba(255,255,255,.78); text-decoration: none; font-size: 15px; font-weight: 600; }
     .nav-item:hover { color: #fff; background: rgba(255,255,255,.06); }
-    .nav-item.active { color: #fff; background: rgba(255,255,255,.08); }
-    .nav-item.active::before { content: ""; position: absolute; left: -16px; top: 0; bottom: 0; width: 4px; background: var(--gold); }
+    .nav-item.active { color: var(--panel); background: var(--nav-2); }
+    .nav-item.active .nav-icon { color: var(--gold); }
+    .nav-item.active .nav-label { color: var(--panel); font-weight: 700; }
     .nav-item.disabled { color: rgba(255,255,255,.38); cursor: default; }
     .nav-item.disabled:hover { background: transparent; }
     .nav-icon { width: 23px; height: 23px; display: grid; place-items: center; flex: 0 0 auto; color: currentColor; }
@@ -3586,7 +3587,6 @@ const PageTemplates = `
 	      .sidebar.nav-open .side-nav, .sidebar.nav-open .side-foot { display: grid; }
 	      .side-nav { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.14); }
 	      .nav-item { min-height: 44px; padding: 8px 9px; gap: 8px; font-size: 12.5px; }
-	      .nav-item.active::before { left: -14px; width: 3px; }
 	      .nav-icon { width: 18px; height: 18px; }
 	      .nav-icon svg { width: 17px; height: 17px; }
 	      .nav-badge { min-width: 20px; height: 18px; padding: 0 6px; font-size: 10px; }
@@ -8278,8 +8278,8 @@ const PageTemplates = `
       .building .preview-sidebar-portal span { color: rgba(255,255,255,.48); font-weight: 500; }
       .building .preview-sidebar-nav { display: grid; align-content: start; gap: 2px; padding: 9px 11px; overflow: hidden; }
       .building .preview-sidebar-nav-item { min-height: 31px; display: flex; align-items: center; gap: 8px; border-radius: 6px; padding: 5px 8px; color: rgba(255,255,255,.74); font-size: 10px; font-weight: 650; }
-      .building .preview-sidebar-nav-item.active { position: relative; color: #fff; background: rgba(255,255,255,.08); }
-      .building .preview-sidebar-nav-item.active::before { content: ""; position: absolute; left: -11px; top: 0; bottom: 0; width: 3px; background: var(--gold); }
+      .building .preview-sidebar-nav-item.active { color: var(--panel); background: var(--nav-2); font-weight: 700; }
+      .building .preview-sidebar-nav-item.active svg { color: var(--gold); }
       .building .preview-sidebar-nav-item svg { width: 16px; height: 16px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
       .building .preview-sidebar-group { margin: 5px 8px 1px; color: rgba(255,255,255,.4); font-size: 7px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
       .building .preview-sidebar-foot { display: grid; grid-template-columns: 30px minmax(0,1fr) 30px; gap: 8px; align-items: center; margin: 0 11px; border-top: 1px solid rgba(255,255,255,.16); padding: 9px 0 11px; }
