@@ -1116,6 +1116,22 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 			t.Fatalf("handover page missing %q:\n%s", want, page.Body.String())
 		}
 	}
+	a.portalTemplEnabled = true
+	templPage := authedRequest(t, a, "manager@example.com", "/demo/app/uebergaben")
+	for _, want := range []string{
+		"data-templ-handovers",
+		"Übergabe Einheit 12",
+		"bad.png",
+		"data-lightbox-src",
+		"PDF exportieren",
+		`action="/demo/app/uebergaben/attachments"`,
+		`name="redirect" value="/demo/app/uebergaben#handover-` + item.ID + `"`,
+	} {
+		if !strings.Contains(templPage.Body.String(), want) {
+			t.Fatalf("templ handover page missing %q:\n%s", want, templPage.Body.String())
+		}
+	}
+	a.portalTemplEnabled = false
 
 	attachmentPath, _, _, ok := attachmentRepositoryForTest(a, "demo").FilePath(attachments[0], "")
 	if !ok {

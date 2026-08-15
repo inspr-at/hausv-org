@@ -1,0 +1,285 @@
+package web
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/inspr-at/hausv-org/internal/view"
+)
+
+type HandoverRoom struct {
+	Name, Condition, Defects string
+}
+
+type HandoverMeter struct {
+	Label, Value, Unit string
+}
+
+type HandoverKey struct {
+	Label string
+	Count int
+}
+
+type HandoverConfirmation struct {
+	Role, Name, Email, Status, StatusClass string
+	ConfirmedAt                           string
+	HasConfirmed                          bool
+}
+
+type HandoverItem struct {
+	ID, Title, Type, UnitLabel, ScheduledAt, Status, StatusClass string
+	NextStep, NextStepDetail, Outgoing, Incoming, Notes          string
+	ProtocolURL, FileURL, FiledDocumentURL, CreatedAt, UpdatedAt string
+	ConfirmedCount, ConfirmationCount                            int
+	HasUnit, HasScheduledAt, IsReady, IsFiled                    bool
+	CanFile, CanChangeFiles, CanManageDocuments                  bool
+	HasFiledDocument                                             bool
+	Rooms                                                        []HandoverRoom
+	Meters                                                       []HandoverMeter
+	Keys                                                         []HandoverKey
+	Confirmations                                                []HandoverConfirmation
+	Attachments                                                  []view.AttachmentView
+}
+
+type HandoverSection struct {
+	Title, Description string
+	Items              []HandoverItem
+	Open               bool
+}
+
+type HandoversPageData struct {
+	Portal                                                    PortalPageData
+	AssetVersion, NowInput, Message                           string
+	MessageOK, HasHandovers, CanManageBuilding                bool
+	OpenCount, ReadyCount, FiledCount                         int
+	Sections                                                  []HandoverSection
+	Empty                                                     view.EmptyStateView
+	UnitOptions                                               []view.SelectOption
+}
+
+templ HandoversPage(data HandoversPageData) {
+	<!doctype html>
+	<html lang="de-AT">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+			<title>{ data.Portal.Title }</title>
+			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+			<script src={ "/assets/app.js?v=" + data.AssetVersion } defer></script>
+			<script src={ "/assets/attachments.js?v=" + data.AssetVersion } defer></script>
+			@HandoversStyles()
+		</head>
+		<body data-authenticated-app data-templ-handovers>
+			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+			<div class="handovers-shell">
+				@PortalSidebar(data.Portal)
+				@HandoversContent(data)
+			</div>
+			@PortalMobileHeader(data.Portal, "Übergaben")
+			@HandoverCreateDialog(data.NowInput, data.UnitOptions)
+		</body>
+	</html>
+}
+
+templ HandoversContent(data HandoversPageData) {
+	<main id="main-content" tabindex="-1" class="handovers-main">
+		<div class="page-top"><span class="crumb"><span class="crumb-icon">@PortalIcon("handover")</span><span>/</span><span>Übergaben</span></span>
+			if data.HasHandovers {
+				@HandoverCreateButton("Übergabe anlegen")
+			}
+		</div>
+		<section class="page handover-page">
+			<header class="handover-page-head"><div><h1>Übergaben</h1><p class="lede">Überblick und nächste Schritte.</p></div><p class="handover-scope">Zustand und Bestätigungen – ohne Kautions- oder Schadenabrechnung.</p></header>
+			if data.Message != "" {
+				<p class={ "flash", templ.KV("ok", data.MessageOK) }>{ data.Message }</p>
+			}
+			if data.HasHandovers {
+				<div class="handover-metrics" aria-label="Übergabeübersicht"><div><strong>{ data.OpenCount }</strong><span>Offen</span></div><div class="ready"><strong>{ data.ReadyCount }</strong><span>Ablagebereit</span></div><div class="done"><strong>{ data.FiledCount }</strong><span>Abgelegt</span></div></div>
+				<div class="handover-sections">
+					for _, section := range data.Sections {
+						if len(section.Items) > 0 {
+							<details class="handover-section" open?={ section.Open }><summary><span><strong>{ section.Title }</strong><small>{ section.Description }</small></span><span class="handover-section-count">{ len(section.Items) }</span></summary><div class="handover-list">
+								for _, item := range section.Items {
+									@HandoverCard(item)
+								}
+							</div></details>
+						}
+					}
+				</div>
+			} else {
+				@HandoverBlank(data.Empty, data.CanManageBuilding)
+			}
+		</section>
+	</main>
+}
+
+templ HandoverCard(item HandoverItem) {
+	<article class="panel handover-card" id={ "handover-" + item.ID }>
+		<header class="handover-head"><div><div class="handover-meta"><span class={ "pill", item.StatusClass }>{ item.Status }</span><span>{ item.Type }</span></div><h3>{ item.Title }</h3><p class="handover-place">
+			if item.HasUnit {
+				<span class="handover-unit">{ item.UnitLabel }</span>
+			}
+			if item.HasScheduledAt {
+				<span>{ item.ScheduledAt }</span>
+			}
+		</p></div>
+		if len(item.Confirmations) > 0 {
+			<div class="handover-confirm-progress" aria-label={ handoverConfirmationLabel(item) }><strong>{ item.ConfirmedCount }/{ item.ConfirmationCount }</strong><span>bestätigt</span></div>
+		}
+		</header>
+		<div class={ "handover-next", templ.KV("ready", item.IsReady), templ.KV("done", item.IsFiled) }><div><span>Als Nächstes</span><strong>{ item.NextStep }</strong><small>{ item.NextStepDetail }</small></div>
+			if item.HasFiledDocument {
+				<a class="button primary small" href={ templ.SafeURL(item.FiledDocumentURL) }>Dokument öffnen</a>
+			} else if item.CanFile && item.CanManageDocuments {
+				<form method="post" action={ templ.SafeURL(item.FileURL) }><input type="hidden" name="id" value={ item.ID }/><button class="button primary small" type="submit">Jetzt ablegen</button></form>
+			}
+		</div>
+		<details class="handover-details"><summary><strong>Details</strong><small>{ handoverDetailsLabel(item) }</small></summary>
+			<div class="handover-parties"><div><span>Ausziehend</span><strong>{ item.Outgoing }</strong></div><div><span>Einziehend</span><strong>{ item.Incoming }</strong></div></div>
+			<div class="handover-detail-grid">
+				<section class="handover-detail"><h4>Räume</h4>
+					if len(item.Rooms) > 0 {
+						<ul>
+						for _, room := range item.Rooms {
+								<li><strong>{ room.Name }</strong>
+									if room.Condition != "" {
+										<span>{ room.Condition }</span>
+									}
+									if room.Defects != "" {
+										<em>{ room.Defects }</em>
+									}
+								</li>
+							}
+						</ul>
+					} else {
+						<p>Keine Räume erfasst.</p>
+					}
+				</section>
+				<section class="handover-detail"><h4>Zählerstände</h4>
+					if len(item.Meters) > 0 {
+						<ul>
+							for _, meter := range item.Meters {
+								<li><strong>{ meter.Label }</strong><span>{ meter.Value }
+									if meter.Unit != "" {
+										{ " " + meter.Unit }
+									}
+								</span></li>
+							}
+						</ul>
+					} else {
+						<p>Keine Zählerstände erfasst.</p>
+					}
+				</section>
+				<section class="handover-detail"><h4>Schlüssel</h4>
+					if len(item.Keys) > 0 {
+						<ul>
+							for _, key := range item.Keys {
+								<li><strong>{ key.Label }</strong><span>{ key.Count } Stk.</span></li>
+							}
+						</ul>
+					} else {
+						<p>Keine Schlüssel erfasst.</p>
+					}
+				</section>
+				<section class="handover-detail"><h4>Bestätigungen</h4>
+					if len(item.Confirmations) > 0 {
+						<ul>
+							for _, confirmation := range item.Confirmations {
+								<li><strong>{ confirmation.Role }</strong><span>{ handoverConfirmationParty(confirmation) }</span><span class={ "pill", confirmation.StatusClass }>{ confirmation.Status }</span></li>
+							}
+						</ul>
+					} else {
+						<p>Keine externen Bestätigungen vorgesehen.</p>
+					}
+				</section>
+			</div>
+			if item.Notes != "" {
+				<div class="handover-note"><strong>Notiz</strong><p>{ item.Notes }</p></div>
+			}
+			@HandoverAttachments(item.Attachments)
+			if item.CanChangeFiles {
+				<form class="handover-add-files" method="post" action="/app/uebergaben/attachments" enctype="multipart/form-data"><input type="hidden" name="id" value={ item.ID }/><label for={ "handover-files-" + item.ID }>Fotos oder PDF ergänzen<span class="file-control"><input id={ "handover-files-" + item.ID } type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple required/><span>Dateien auswählen</span></span></label><button class="button small" type="submit">Dateien ergänzen</button></form>
+			}
+			<footer class="handover-detail-actions"><a class="button small ghost" href={ templ.SafeURL(item.ProtocolURL) }>PDF exportieren</a><span>Angelegt { item.CreatedAt } · Aktualisiert { item.UpdatedAt }</span></footer>
+		</details>
+	</article>
+}
+
+templ HandoverAttachments(attachments []view.AttachmentView) {
+	if len(attachments) > 0 {
+		<div class="attachment-strip" aria-label="Anhänge">
+			for _, attachment := range attachments {
+				<div class="attachment-item">
+					if attachment.IsImage {
+						<button class="attachment-open" type="button" data-lightbox-src={ attachment.PreviewURL } data-lightbox-full={ attachment.URL } data-lightbox-caption={ attachment.Filename }><img src={ attachment.ThumbURL } alt={ attachment.Filename } loading="lazy" decoding="async"/><span class="attachment-name">{ attachment.Filename }</span></button>
+					} else {
+						<a class="attachment-open" href={ templ.SafeURL(attachment.URL) } target="_blank" rel="noopener"><span class="attachment-file-icon">{ handoverAttachmentKind(attachment) }</span><span class="attachment-name">{ attachment.Filename }</span></a>
+					}
+					if attachment.CanDelete {
+						<form class="attachment-delete" method="post" action={ templ.SafeURL(attachment.DeleteURL) } data-confirm="Diesen Anhang entfernen?"><input type="hidden" name="id" value={ attachment.ID }/>
+							if attachment.DeleteRedirect != "" {
+								<input type="hidden" name="redirect" value={ attachment.DeleteRedirect }/>
+							}
+							<button type="submit" aria-label="Anhang entfernen">×</button>
+						</form>
+					}
+				</div>
+			}
+		</div>
+	}
+}
+
+templ HandoverBlank(empty view.EmptyStateView, canManageBuilding bool) {
+	<section class="handover-blank" aria-labelledby="handover-blank-title"><div class="handover-blank-main"><div class="handover-blank-lead"><span class="handover-blank-icon" aria-hidden="true">@PortalIcon("handover")</span><h2 id="handover-blank-title">{ empty.Title }</h2><p>Räume, Zählerstände, Schlüssel und Fotos an einem Ort. Beide Parteien bestätigen über ihren persönlichen Link.</p></div><div class="handover-blank-actions">@HandoverCreateButton("Erste Übergabe anlegen")
+		if canManageBuilding {
+			<a class="button ghost" href="/app/settings/building?section=units" title="Einheiten in den Gebäude-Einstellungen öffnen">Einheiten prüfen</a>
+		}
+	</div></div><aside class="handover-blank-side"><h2>In drei Schritten</h2><ol class="handover-blank-steps"><li><strong>Erfassen</strong><span>Einheit und Zustand festhalten.</span></li><li><strong>Bestätigen</strong><span>Persönliche Links an beide Parteien senden.</span></li><li><strong>Ablegen</strong><span>Als PDF in den Dokumenten sichern.</span></li></ol></aside></section>
+}
+
+templ HandoverCreateButton(label string) {
+	<button class="button primary" type="button" data-dialog="handover-create" aria-haspopup="dialog" aria-controls="handover-create">{ label }</button>
+}
+
+templ HandoverCreateDialog(nowInput string, units []view.SelectOption) {
+	<dialog id="handover-create" class="dialog handover-dialog" aria-labelledby="handover-create-title"><form method="post" action="/app/uebergaben" enctype="multipart/form-data"><div class="dialog-head"><h2 id="handover-create-title">Übergabe anlegen</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body"><p class="document-dialog-intro">Für den Start reichen Einheit und ein Raum. Alles Weitere ist optional.</p><div class="handover-form-step"><span>1</span><div><strong>Übergabe</strong><small>Einheit, Anlass und Termin</small></div></div><div class="dialog-grid"><label for="handover-unit">Einheit<select id="handover-unit" name="unit_id" required>
+		for _, unit := range units {
+			<option value={ unit.Value } selected?={ unit.Selected }>{ unit.Label }</option>
+		}
+	</select></label><label for="handover-type">Anlass<select id="handover-type" name="handover_type"><option>Nutzerwechsel</option><option>Einzug</option><option>Auszug</option></select></label><label class="full" for="handover-title">Titel<input id="handover-title" name="title" required maxlength="160" placeholder="Nutzerwechsel Einheit 12"/></label><label class="full" for="handover-time">Termin<input id="handover-time" type="datetime-local" name="scheduled_at" value={ nowInput }/></label></div><div class="handover-form-step"><span>2</span><div><strong>Zustand</strong><small>Raum | Zustand | Mangel · eine Zeile pro Raum</small></div></div><label for="handover-rooms">Räume<textarea id="handover-rooms" name="rooms_text" required placeholder="Wohnzimmer | gut | keine Mängel"></textarea></label>
+	<details class="dialog-optional"><summary>Personen für Bestätigung</summary><p class="dialog-optional-copy">Eine E-Mail-Adresse erzeugt den persönlichen Bestätigungslink.</p><div class="dialog-optional-grid"><label for="handover-out-name">Ausziehend – Name<input id="handover-out-name" name="outgoing_name" autocomplete="name"/></label><label for="handover-out-email">Ausziehend – E-Mail<input id="handover-out-email" type="email" name="outgoing_email" autocomplete="email"/></label><label for="handover-in-name">Einziehend – Name<input id="handover-in-name" name="incoming_name" autocomplete="name"/></label><label for="handover-in-email">Einziehend – E-Mail<input id="handover-in-email" type="email" name="incoming_email" autocomplete="email"/></label></div></details>
+	<details class="dialog-optional"><summary>Zähler, Schlüssel und Notiz</summary><div class="dialog-optional-grid"><label class="full" for="handover-meters">Zählerstände <small>Bezeichnung | Wert | Einheit</small><textarea id="handover-meters" name="meters_text" placeholder="Strom | 12345,6 | kWh"></textarea></label><label class="full" for="handover-keys">Schlüssel <small>Bezeichnung | Anzahl</small><textarea id="handover-keys" name="keys_text" placeholder="Wohnungsschlüssel | 3"></textarea></label><label class="full" for="handover-notes">Notiz<textarea id="handover-notes" name="notes" placeholder="Zusätzliche Beobachtungen"></textarea></label></div></details>
+	<details class="dialog-optional"><summary>Fotos und PDF</summary><div class="dialog-optional-grid"><label class="full" for="handover-attachments">Dateien<span class="file-control"><input id="handover-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple/><span>Bis zu 10 Dateien auswählen</span></span></label></div></details></div><footer class="dialog-footer handover-dialog-submit"><span>Bestätigungslinks entstehen nur für angegebene E-Mail-Adressen.</span><button class="button primary" type="submit">Übergabe anlegen</button></footer></form></dialog>
+}
+
+func handoverConfirmationLabel(item HandoverItem) string { return fmt.Sprintf("%d von %d Bestätigungen", item.ConfirmedCount, item.ConfirmationCount) }
+func handoverConfirmationParty(item HandoverConfirmation) string { if item.Name != "" { return item.Name }; return item.Email }
+func handoverAttachmentKind(item view.AttachmentView) string { if item.IsPDF { return "PDF" }; return "Datei" }
+func handoverDetailsLabel(item HandoverItem) string {
+	parts := make([]string, 0, 4)
+	if len(item.Rooms) > 0 { word := "Räume"; if len(item.Rooms) == 1 { word = "Raum" }; parts = append(parts, fmt.Sprintf("%d %s", len(item.Rooms), word)) }
+	if len(item.Meters) > 0 { parts = append(parts, fmt.Sprintf("%d Zähler", len(item.Meters))) }
+	if len(item.Keys) > 0 { parts = append(parts, fmt.Sprintf("%d Schlüssel", len(item.Keys))) }
+	if len(item.Attachments) > 0 { word := "Dateien"; if len(item.Attachments) == 1 { word = "Datei" }; parts = append(parts, fmt.Sprintf("%d %s", len(item.Attachments), word)) }
+	return strings.Join(parts, " · ")
+}
+
+templ HandoversStyles() {
+	<style>
+		:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--font-serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);font-family:var(--font-sans)}
+		*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}button{cursor:pointer}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,h4,p{margin:0}h1,h2,h3,h4{font-family:var(--font-serif);font-weight:600}.skip-link{position:fixed;top:var(--space-2);left:var(--space-2);z-index:300;padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.skip-link:focus{transform:translateY(0)}
+		.handovers-shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);background:var(--nav);color:var(--panel);overflow:auto}.house-name{display:block;font-family:var(--font-serif);font-size:27px;line-height:1}.house-address{display:block;margin-top:var(--space-2);color:var(--soft);font-size:12px}.map{display:block;height:74px;margin-top:var(--space-4);overflow:hidden;background:var(--nav-2);border:1px solid var(--muted);border-radius:var(--radius-md)}.map svg{display:block;width:100%;height:100%}.map-streets{fill:none;stroke:var(--muted);stroke-width:1;opacity:.42}.map-pin{fill:var(--gold-light);stroke:var(--gold)}.map-hole{fill:var(--nav)}.context-switch{margin-top:var(--space-3);font-size:11px}.context-switch summary{cursor:pointer;color:var(--gold-light)}.context-menu{display:grid;gap:var(--space-2);margin-top:var(--space-2);padding:var(--space-2);background:var(--nav-2);border-radius:var(--radius-sm)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.context-menu small{color:var(--soft)}
+		.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-icon svg,.crumb-icon svg,.handover-blank-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-label{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-notes>summary{margin-top:2px;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}.release-notes>summary::-webkit-details-marker{display:none}.release-panel{position:fixed;z-index:250;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.release-panel h2{font-size:24px}.release-entry{padding-top:var(--space-4)}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}
+		.handovers-main{min-width:0;padding:var(--space-6)}.page-top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}.crumb{display:flex;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}.page{max-width:1180px;margin:var(--space-5) auto 0}.handover-page{display:grid;gap:var(--space-5)}.handover-page-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,430px);gap:var(--space-6);align-items:end;padding-bottom:var(--space-5);border-bottom:1px solid var(--line)}.handover-page-head h1{font-size:42px;line-height:1}.lede{margin-top:var(--space-2);color:var(--muted);font-size:14px}.handover-scope,.handover-note{border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);background:var(--panel-soft);color:var(--muted);font-size:13px;line-height:1.45}.handover-note strong{color:var(--ink)}.handover-note p{margin-top:var(--space-1);overflow-wrap:anywhere}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:34px;padding:var(--space-1) var(--space-3)}.flash{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}.flash.ok{border-color:var(--gold)}
+		.handover-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3)}.handover-metrics>div{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);padding:var(--space-4);box-shadow:var(--shadow-panel)}.handover-metrics strong{display:block;font-family:var(--font-serif);font-size:27px}.handover-metrics span{display:block;margin-top:var(--space-1);color:var(--muted);font-size:12px;font-weight:750}.handover-sections,.handover-list{display:grid;gap:var(--space-3)}.handover-section{border-top:1px solid var(--line)}.handover-section>summary{min-height:62px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-3);cursor:pointer;list-style:none}.handover-section>summary::-webkit-details-marker{display:none}.handover-section>summary>span:first-child{display:grid;gap:3px}.handover-section>summary strong{font-family:var(--font-serif);font-size:21px}.handover-section>summary small{color:var(--muted);font-size:12px}.handover-section-count{min-width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-weight:900}
+		.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.handover-card{display:grid;gap:var(--space-3);padding:18px}.handover-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center}.handover-meta{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;color:var(--soft);font-size:12px;font-weight:800}.pill{display:inline-flex;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:800}.pill.ok{border-color:var(--leaf);color:var(--leaf)}.pill.unread{border-color:var(--gold);color:var(--gold-ink)}.handover-card h3{margin-top:var(--space-1);font-size:27px;overflow-wrap:anywhere}.handover-place{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-3);margin-top:var(--space-1);color:var(--muted);font-size:13px;font-weight:700}.handover-place span+span::before{content:"·";margin-right:var(--space-3);color:var(--soft)}.handover-confirm-progress{min-width:74px;display:grid;justify-items:end;gap:2px}.handover-confirm-progress strong{font-family:var(--font-serif);font-size:22px}.handover-confirm-progress span{color:var(--muted);font-size:11px}.handover-next{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);background:var(--panel-soft)}.handover-next div{display:grid;gap:2px}.handover-next span{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.handover-next strong{font-size:14px}.handover-next small{color:var(--muted);font-size:12px}.handover-next form{margin:0}
+		.handover-details{border-top:1px solid var(--line);padding-top:var(--space-2)}.handover-details>summary{min-height:44px;display:flex;align-items:center;gap:var(--space-2);cursor:pointer;color:var(--gold-ink);font-size:13px;font-weight:850}.handover-details>summary small{color:var(--muted);font-size:11px}.handover-details[open]>summary{margin-bottom:var(--space-3)}.handover-parties{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-2);margin-bottom:var(--space-3)}.handover-parties div,.handover-detail{border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-3);background:var(--panel-soft);min-width:0}.handover-parties span{display:block;color:var(--soft);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.06em}.handover-parties strong{display:block;margin-top:3px;font-size:12px;overflow-wrap:anywhere}.handover-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-2)}.handover-detail h4{font-size:15px}.handover-detail ul{list-style:none;padding:0;margin:var(--space-2) 0 0;display:grid;gap:var(--space-2)}.handover-detail li{display:grid;gap:3px;color:var(--muted);font-size:13px;line-height:1.35;overflow-wrap:anywhere}.handover-detail li strong{color:var(--ink);font-size:14px}.handover-detail li em{color:var(--gold-ink);font-style:normal}.handover-detail p{margin-top:var(--space-2);color:var(--muted);font-size:13px}.handover-note{margin-top:var(--space-3)}
+		.attachment-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:var(--space-2);margin-top:var(--space-3)}.attachment-item{position:relative;min-width:0}.attachment-open{width:100%;min-height:100%;display:grid;gap:6px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px;background:var(--panel);color:var(--ink);text-align:left}.attachment-open img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius-xs);background:var(--line)}.attachment-file-icon{width:100%;aspect-ratio:4/3;display:grid;place-items:center;border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--gold-ink);font-size:11px;font-weight:900}.attachment-name{min-width:0;color:var(--muted);font-size:11px;font-weight:700;overflow-wrap:anywhere}.attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1);margin:0}.attachment-delete button{width:30px;height:30px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.attachment-picker{display:none;gap:var(--space-2);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.attachment-picker.has-files{display:grid}.attachment-picker-head,.attachment-picker-item{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:11px}.attachment-picker-list{display:grid;gap:var(--space-2)}.attachment-picker-thumb{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);overflow:hidden}.attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}.attachment-picker-copy{min-width:0;display:grid;flex:1}.attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.attachment-picker-meta{color:var(--soft)}.attachment-picker-remove{width:34px;height:34px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.attachment-picker-progress{display:none}.attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:48px minmax(0,1fr) 48px;grid-template-rows:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}.attachment-lightbox.open{display:grid}.attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-3);min-width:0;min-height:0;margin:0}.attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm);background:var(--nav-2)}.attachment-lightbox figcaption{text-align:center;font-size:12px;overflow-wrap:anywhere}.lightbox-close,.lightbox-prev,.lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}.lightbox-close{grid-column:3;grid-row:1;width:42px;height:42px}.lightbox-prev,.lightbox-next{width:46px;height:70px;font-size:26px}.lightbox-prev{grid-column:1;grid-row:2}.lightbox-next{grid-column:3;grid-row:2}
+		.handover-add-files{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-3);align-items:end;border-top:1px solid var(--line);margin-top:var(--space-3);padding-top:var(--space-3)}.handover-add-files label,.dialog label{min-width:0;display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;font-weight:700}.file-control{position:relative;min-height:44px;display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.file-control span{color:var(--gold-ink)}.handover-detail-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-3);margin-top:var(--space-3);color:var(--soft);font-size:11px}
+		.handover-blank{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(286px,.75fr);gap:var(--space-4)}.handover-blank-main{display:grid;align-content:center;gap:var(--space-5);border:1px dashed var(--gold);border-radius:var(--radius-sm);background:var(--panel-soft);padding:var(--space-6)}.handover-blank-lead{display:grid;justify-items:start;gap:var(--space-3)}.handover-blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--gold-ink)}.handover-blank-icon svg{width:26px;height:26px}.handover-blank-main h2{font-size:30px}.handover-blank-main p{max-width:50ch;color:var(--muted);font-size:15px;line-height:1.5}.handover-blank-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.handover-blank-side{align-self:start;display:grid;gap:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);padding:var(--space-5);box-shadow:var(--shadow-panel)}.handover-blank-side h2{color:var(--gold-ink);font-family:var(--font-sans);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.handover-blank-steps{display:grid;gap:var(--space-3);margin:0;padding:0;list-style:none;counter-reset:step}.handover-blank-steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:2px var(--space-3);counter-increment:step}.handover-blank-steps li::before{content:counter(step);grid-row:1/span 2;width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-size:12px;font-weight:850}.handover-blank-steps strong,.handover-blank-steps span{grid-column:2}.handover-blank-steps strong{font-size:13px}.handover-blank-steps span{color:var(--muted);font-size:12px;line-height:1.4}
+		.dialog{width:min(680px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog form{display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-height:inherit}.dialog-head,.dialog-footer{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-5);border-bottom:1px solid var(--line)}.dialog-footer{border-top:1px solid var(--line);border-bottom:0}.dialog-head h2{font-size:25px}.dialog-close{width:36px;height:36px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px}.dialog-body{min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto}.document-dialog-intro,.dialog-optional-copy{color:var(--muted);font-size:12px}.dialog-grid,.dialog-optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.dialog-grid .full,.dialog-optional-grid .full{grid-column:1/-1}.dialog input,.dialog select,.dialog textarea{width:100%;min-height:42px;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel);color:var(--ink)}.dialog textarea{min-height:94px;resize:vertical}.dialog-optional{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.dialog-optional>summary{padding:var(--space-3);cursor:pointer;font-size:12px;font-weight:800}.dialog-optional-copy{padding:0 var(--space-3)}.dialog-optional-grid{padding:var(--space-3);border-top:1px solid var(--line)}.handover-form-step{display:grid;grid-template-columns:34px minmax(0,1fr);gap:var(--space-3);align-items:center}.handover-form-step>span{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-weight:900}.handover-form-step div{display:grid}.handover-form-step strong{font-family:var(--font-serif);font-size:18px}.handover-form-step small,.handover-dialog-submit span{color:var(--muted);font-size:12px}
+		.mobile-head{display:none}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}
+		@media(max-width:1050px){.handovers-shell{grid-template-columns:210px minmax(0,1fr)}.handover-page-head{grid-template-columns:minmax(0,1fr)}.handover-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+		@media(max-width:700px){.handovers-shell{display:block}.sidebar{display:none}.mobile-head{position:relative;z-index:100;height:76px;display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:var(--space-3);padding:0 var(--space-4);background:var(--nav);color:var(--panel)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:21px}.mobile-identity small{margin-top:4px;color:var(--soft);font-size:10px}.mobile-head>.avatar{width:40px;height:40px}.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:"";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:76px;left:0;right:0;max-height:calc(100vh - 76px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);box-shadow:var(--shadow-dialog)}.menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.menu-panel .nav a{min-height:44px;display:flex;margin:0;padding:0 var(--space-3)}.menu-panel .nav-label{grid-column:1/-1}.menu-panel .release-notes{padding:var(--space-3)}.menu-panel .logout-form button{min-height:44px}.handovers-main{padding:var(--space-4)}.page-top{display:none}.page{margin-top:0}.handover-page-head h1{font-size:34px}.handover-metrics{gap:6px}.handover-metrics>div{padding:var(--space-3) var(--space-2)}.handover-metrics strong{font-size:23px}.handover-metrics span{font-size:10px}.handover-section>summary small{display:none}.handover-card{padding:var(--space-3)}.handover-card h3{font-size:21px}.handover-head{gap:var(--space-2)}.handover-place span{flex-basis:100%}.handover-place span+span::before{display:none}.handover-next,.handover-detail-grid,.handover-parties,.handover-add-files,.dialog-grid,.dialog-optional-grid,.handover-dialog-submit{grid-template-columns:minmax(0,1fr)}.handover-next .button,.handover-next form,.handover-next form button,.handover-add-files .button{width:100%}.handover-blank{grid-template-columns:minmax(0,1fr)}.handover-blank-main{padding:var(--space-5)}.handover-blank-actions{display:grid}.handover-dialog-submit span{display:none}.handover-dialog-submit .button{width:100%}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}
+	</style>
+}

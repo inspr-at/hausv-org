@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"mime"
 	"net/http"
 	"net/mail"
@@ -14,6 +16,8 @@ import (
 	"github.com/inspr-at/hausv-org/internal/pdf"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/version"
+	"github.com/inspr-at/hausv-org/internal/view"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 // The audit vocabulary lives in the store (it is what gets persisted and
@@ -121,6 +125,24 @@ func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	msg, okMsg := handoverMessage(r.URL.Query().Get("handover"))
 	views := a.handoverViewsForActor(tenant.Slug, email, role, items)
 	sections := handoverSections(views)
+	if a.portalTemplEnabled {
+		a.renderHandoversTempl(w, r, web.HandoversPageData{
+			Portal:            a.handoverPortalContext(ac),
+			AssetVersion:      version.AssetVersion(),
+			NowInput:          formatLocalDateTimeInput(time.Now()),
+			Message:           msg,
+			MessageOK:         okMsg,
+			HasHandovers:      len(items) > 0,
+			CanManageBuilding: ac.can(capabilityManageBuilding),
+			OpenCount:         sections[0].Count,
+			ReadyCount:        sections[1].Count,
+			FiledCount:        sections[2].Count,
+			Sections:          handoverTemplSections(sections),
+			Empty:             emptyState("Noch keine Übergaben", "Neue Nutzerwechsel werden hier mit Räumen, Zählern, Schlüsseln, Fotos und Bestätigung dokumentiert."),
+			UnitOptions:       handoverUnitOptions(ac.repositories.units.List(), ""),
+		})
+		return
+	}
 	a.render(w, "handovers", a.withBase(ac, map[string]any{
 		"Title":              "Übergaben",
 		"CanManageHandovers": true,
@@ -137,6 +159,114 @@ func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"UnitOptions":        handoverUnitOptions(ac.repositories.units.List(), ""),
 		"NowInput":           formatLocalDateTimeInput(time.Now()),
 	}))
+}
+
+func (a *app) handoverPortalContext(ac authCtx) web.PortalPageData {
+	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
+	modules := a.portalModulesFor(ac.tenant.Slug)
+	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
+	portalContexts := make([]web.PortalContext, 0, len(contexts))
+	for _, context := range contexts {
+		portalContexts = append(portalContexts, web.PortalContext{
+			TenantSlug: context.TenantSlug,
+			HouseName:  context.HouseName,
+			Address:    context.Address,
+			Role:       context.Role,
+			Current:    context.Current,
+		})
+	}
+	unreadAnnouncements := 0
+	if ac.repositories.announcements != nil && ac.repositories.announcementReads != nil && strings.TrimSpace(ac.email) != "" {
+		now := time.Now()
+		unreadAnnouncements = unreadAnnouncementCount(ac.repositories.announcements.Visible(now), ac.repositories.announcementReads.LastSeen(ac.email), now)
+	}
+	openIssues := 0
+	if a.issueStore != nil {
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenant.Slug, ac.email, ac.role))
+	}
+	return web.PortalPageData{
+		Title:               "Übergaben · " + houseDisplayName(ac.tenant) + " · " + ac.role,
+		TenantSlug:          ac.tenant.Slug,
+		HouseName:           houseDisplayName(ac.tenant),
+		Address:             ac.tenant.Address,
+		MapURL:              tenantMapURL(ac.tenant.Address),
+		DisplayName:         profile.DisplayName(),
+		Initials:            profile.Initials(),
+		Role:                ac.role,
+		DisplayVersion:      version.DisplayVersion(version.Version),
+		ActivePage:          "handovers",
+		Modules:             web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
+		CanUseResidentAreas: roleCanUseResidentAreas(ac.role),
+		CanViewEnergy:       modules.Energy && a.canViewEnergy(ac),
+		CanManageIssues:     ac.can(capabilityManageIssues),
+		CanSeeParking:       modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)),
+		CanManageHandovers:  modules.Handovers && canManageHandovers(ac.actor(), ac.resource()),
+		CanManageUsers:      modules.Users && ac.can(capabilityManageUsers),
+		CanViewAudit:        modules.Audit && canViewAudit(ac.actor(), ac.resource()),
+		Issues:              make([]view.IssueView, openIssues),
+		UnreadAnnouncements: unreadAnnouncements,
+		Contexts:            portalContexts,
+		ReleaseNotes:        version.Notes(),
+	}
+}
+
+func (a *app) renderHandoversTempl(w http.ResponseWriter, r *http.Request, data web.HandoversPageData) {
+	var rendered bytes.Buffer
+	if err := web.HandoversPage(data).Render(r.Context(), &rendered); err != nil {
+		logError("templ handovers render failed", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), data.Portal.TenantSlug))
+}
+
+func handoverTemplSections(sections []handoverSectionView) []web.HandoverSection {
+	result := make([]web.HandoverSection, 0, len(sections))
+	for _, section := range sections {
+		items := make([]web.HandoverItem, 0, len(section.Items))
+		for _, item := range section.Items {
+			items = append(items, handoverTemplItem(item))
+		}
+		result = append(result, web.HandoverSection{Title: section.Title, Description: section.Description, Items: items, Open: section.Open})
+	}
+	return result
+}
+
+func handoverTemplItem(item handoverView) web.HandoverItem {
+	rooms := make([]web.HandoverRoom, 0, len(item.Rooms))
+	for _, room := range item.Rooms {
+		rooms = append(rooms, web.HandoverRoom{Name: room.Name, Condition: room.Condition, Defects: room.Defects})
+	}
+	meters := make([]web.HandoverMeter, 0, len(item.Meters))
+	for _, meter := range item.Meters {
+		meters = append(meters, web.HandoverMeter{Label: meter.Label, Value: meter.Value, Unit: meter.Unit})
+	}
+	keys := make([]web.HandoverKey, 0, len(item.Keys))
+	for _, key := range item.Keys {
+		keys = append(keys, web.HandoverKey{Label: key.Label, Count: key.Count})
+	}
+	confirmations := make([]web.HandoverConfirmation, 0, len(item.Confirmations))
+	for _, confirmation := range item.Confirmations {
+		confirmations = append(confirmations, web.HandoverConfirmation{
+			Role: confirmation.Role, Name: confirmation.Name, Email: confirmation.Email,
+			Status: confirmation.Status, StatusClass: confirmation.StatusClass,
+			ConfirmedAt: confirmation.ConfirmedAt, HasConfirmed: confirmation.HasConfirmed,
+		})
+	}
+	return web.HandoverItem{
+		ID: item.ID, Title: item.Title, Type: item.Type, UnitLabel: item.UnitLabel,
+		ScheduledAt: item.ScheduledAt, Status: item.Status, StatusClass: item.StatusClass,
+		NextStep: item.NextStep, NextStepDetail: item.NextStepDetail,
+		Outgoing: item.Outgoing, Incoming: item.Incoming, Notes: item.Notes,
+		ProtocolURL: item.ProtocolURL, FileURL: item.FileURL, FiledDocumentURL: item.FiledDocumentURL,
+		CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt,
+		ConfirmedCount: item.ConfirmedCount, ConfirmationCount: item.ConfirmationCount,
+		HasUnit: item.HasUnit, HasScheduledAt: item.HasScheduledAt, IsReady: item.IsReady, IsFiled: item.IsFiled,
+		CanFile: item.CanFile, CanChangeFiles: item.CanChangeFiles, CanManageDocuments: item.CanManageDocuments,
+		HasFiledDocument: item.HasFiledDocument, Rooms: rooms, Meters: meters, Keys: keys,
+		Confirmations: confirmations, Attachments: item.Attachments,
+	}
 }
 
 func handoverMessage(status string) (string, bool) {
