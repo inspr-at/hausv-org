@@ -13,6 +13,7 @@ type ContactsPageData struct {
 	Portal                       PortalPageData
 	AssetVersion                 string
 	ContactMessage               string
+	ContactOK                    bool
 	CanManageContacts            bool
 	CanManageIssues              bool
 	CanJoinDirectory             bool
@@ -72,7 +73,7 @@ templ ContactsContent(data ContactsPageData) {
 		<section class="page">
 			<header class="page-heading"><div><h1>Kontakte</h1><p class="lede">Schnell die richtige Ansprechperson für { data.Portal.Address } erreichen.</p></div></header>
 			if data.ContactMessage != "" {
-				<p class={ "flash", templ.KV("ok", !data.ContactFormOpen) }>{ data.ContactMessage }</p>
+				<p class={ "flash", templ.KV("ok", data.ContactOK) }>{ data.ContactMessage }</p>
 			}
 			<div class="contacts-layout"><div class="contacts-column">
 				if contactsHaveQuick(data) {

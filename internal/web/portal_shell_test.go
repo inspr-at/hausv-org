@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -75,14 +76,23 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			if appScript < 0 || strings.Count(html, `/assets/app.js?v=`) != 1 {
 				t.Fatalf("app.js must be loaded exactly once")
 			}
-			if strings.Contains(html, "data-confirm") && appScript < 0 {
-				t.Fatalf("data-confirm rendered without app.js")
+			// The script set must match the legacy route EXACTLY. A superset check
+			// passes a page that gained a script, and a stray issues.js binds
+			// listeners to markup that was never written for it.
+			var loaded []string
+			for _, m := range regexp.MustCompile(`/assets/([a-z-]+\.js)\?v=`).FindAllStringSubmatch(html, -1) {
+				if m[1] != "app.js" {
+					loaded = append(loaded, m[1])
+				}
+			}
+			want := append([]string(nil), page.extraScripts...)
+			sort.Strings(want)
+			sort.Strings(loaded)
+			if !reflect.DeepEqual(want, loaded) {
+				t.Errorf("script set mismatch: want %v, got %v", want, loaded)
 			}
 			for _, script := range page.extraScripts {
-				scriptIndex := strings.Index(html, "/assets/"+script+"?v=")
-				if scriptIndex < 0 {
-					t.Errorf("required script %s missing", script)
-				} else if scriptIndex < appScript {
+				if scriptIndex := strings.Index(html, "/assets/"+script+"?v="); scriptIndex >= 0 && scriptIndex < appScript {
 					t.Errorf("%s loaded before app.js", script)
 				}
 			}
@@ -111,13 +121,22 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 
 func TestContactsFlashDistinguishesSuccessAndFailure(t *testing.T) {
 	portal := PortalPageData{Title: "Kontakte"}
-	success := renderComponent(t, ContactsPage(ContactsPageData{Portal: portal, AssetVersion: "test", ContactMessage: "Kontakt gespeichert."}))
+	// Keyed on ContactOK, the value the server actually computes — not inferred
+	// from ContactFormOpen. Those agree across today's four statuses, which makes
+	// an inference test assert a coincidence rather than the contract.
+	success := renderComponent(t, ContactsPage(ContactsPageData{Portal: portal, AssetVersion: "test", ContactMessage: "Kontakt gespeichert.", ContactOK: true}))
 	if !strings.Contains(success, `<p class="flash ok">Kontakt gespeichert.</p>`) || !strings.Contains(success, ".flash.ok{") {
 		t.Fatal("successful contact flash lacks its styled success state")
 	}
 	failure := renderComponent(t, ContactsPage(ContactsPageData{Portal: portal, AssetVersion: "test", ContactMessage: "Fehler", ContactFormOpen: true}))
 	if strings.Contains(failure, `<p class="flash ok">Fehler</p>`) || !strings.Contains(failure, `<p class="flash">Fehler</p>`) {
 		t.Fatal("failed contact flash must not use the success state")
+	}
+	// A failure that leaves the form closed must still not read as success. This
+	// is the case the ContactFormOpen inference got wrong.
+	closedFailure := renderComponent(t, ContactsPage(ContactsPageData{Portal: portal, AssetVersion: "test", ContactMessage: "Fehler"}))
+	if strings.Contains(closedFailure, `<p class="flash ok">Fehler</p>`) {
+		t.Fatal("a failure with the form closed must not render as success")
 	}
 }
 
@@ -130,6 +149,34 @@ func TestMobileContextSwitchIsHiddenForOneContext(t *testing.T) {
 	}))
 	if strings.Contains(html, `class="context-switch mobile-context-switch"`) || strings.Contains(html, `action="/app/context"`) {
 		t.Fatal("context switch must stay hidden when there is only one context")
+	}
+}
+
+func TestOnlyPortalDocumentOwnsTheDocument(t *testing.T) {
+	// Rendering the right output is not the same as sharing a shell: fifteen
+	// copied document shells would satisfy every other test here, and would drift
+	// apart again exactly as they did the first time. So assert the structure, by
+	// reading the sources.
+	sources, err := filepath.Glob("*.templ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) < 10 {
+		t.Fatalf("expected the templ sources next to this test, found %d", len(sources))
+	}
+	for _, source := range sources {
+		if source == "portal.templ" || source == "templ_example.templ" {
+			continue // portal.templ defines PortalDocument; the example is not a portal page
+		}
+		body, err := os.ReadFile(source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, owned := range []string{"<!doctype", "<html ", "<head>", "<body"} {
+			if bytes.Contains(bytes.ToLower(body), []byte(owned)) {
+				t.Errorf("%s builds its own %s — the document belongs to PortalDocument alone", source, owned)
+			}
+		}
 	}
 }
 
@@ -167,10 +214,12 @@ func TestUserCardsKeepRoleAndStatusOnNarrowScreens(t *testing.T) {
 	if !strings.Contains(html, ">Admin</span>") || !strings.Contains(html, ">Aktiv</span>") {
 		t.Fatal("user card must render the role and status values")
 	}
-	for _, rule := range regexp.MustCompile(`[^{};]+\{display:none\}`).FindAllString(html, -1) {
-		if strings.Contains(rule, ".user-card>.pill") {
-			t.Errorf("narrow-screen rule hides the role/status pill: %s", rule)
-		}
+	// Match any way a rule can take the pills off the screen, not just the exact
+	// shape the bug happened to use. `display:none` was how HAUSV-545 did it;
+	// `!important`, `visibility:hidden` and zero sizing hide just as completely.
+	hide := regexp.MustCompile(`[^{};]*\.user-card>\.pill[^{}]*\{[^{}]*(display:\s*none|visibility:\s*hidden|opacity:\s*0)[^{}]*\}`)
+	for _, rule := range hide.FindAllString(html, -1) {
+		t.Errorf("narrow-screen rule hides the role/status pill: %s", rule)
 	}
 }
 

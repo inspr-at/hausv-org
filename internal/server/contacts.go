@@ -53,6 +53,7 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			Portal:                       a.contactsPortalContext(ac),
 			AssetVersion:                 version.AssetVersion(),
 			ContactMessage:               contactMsg,
+			ContactOK:                    contactOK,
 			CanManageContacts:            canManageContacts,
 			CanManageIssues:              ac.can(capabilityManageIssues),
 			CanJoinDirectory:             residentDirectoryRole(role),
