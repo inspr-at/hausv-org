@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.94.1] - 2026-08-15
+
+### Verbessert
+
+- **Die Seitenleisten-Vorschau entspricht dem echten Portal.** Kartenkopf, Portalwechsel, Navigation und Kontobereich zeigen bereits vor dem Speichern das tatsächliche Zusammenspiel.
+- **Für die Portal-Kennung steht die vollständige Lucide-Bibliothek bereit.** Neben den bewährten Vorgaben lässt sich jedes lokal eingebundene SVG suchen, auswählen und dauerhaft verwenden.
+
 ## [0.94.0] - 2026-08-15
 
 ### Verbessert

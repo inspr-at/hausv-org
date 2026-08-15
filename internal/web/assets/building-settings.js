@@ -54,7 +54,17 @@
     const abbreviationPreviews = appearance.querySelectorAll("[data-brand-preview-abbreviation]");
     const count = appearance.querySelector("[data-abbreviation-count]");
     const markPreviews = appearance.querySelectorAll("[data-brand-preview-mark]");
-    const iconInputs = appearance.querySelectorAll('input[name="brand_icon"]');
+    const iconValue = appearance.querySelector("[data-brand-icon-value]");
+    const iconSearch = appearance.querySelector("[data-brand-icon-search]");
+    const iconResults = appearance.querySelector("[data-brand-icon-results]");
+    const iconResultNote = appearance.querySelector("[data-brand-icon-result-note]");
+    const iconManifest = document.getElementById("brand-lucide-icon-names");
+    let lucideIconNames = [];
+    try {
+      lucideIconNames = JSON.parse(iconManifest?.textContent || "[]").filter((name) => /^[a-z0-9-]+$/.test(name));
+    } catch (_) {
+      lucideIconNames = [];
+    }
     const heroInput = appearance.querySelector("#hero-image");
     const heroPreviews = appearance.querySelectorAll("[data-hero-preview], [data-hero-stage]");
     const heroFileName = appearance.querySelector("[data-hero-file-name]");
@@ -67,12 +77,74 @@
     };
     abbreviation?.addEventListener("input", updateAbbreviation);
 
-    iconInputs.forEach((input) => input.addEventListener("change", () => {
-      if (!input.checked) return;
-      const source = input.closest(".brand-icon-choice")?.querySelector("svg");
+    const lucideGlyph = (name) => {
+      const glyph = document.createElement("span");
+      glyph.className = "brand-lucide-glyph";
+      glyph.setAttribute("aria-hidden", "true");
+      glyph.style.setProperty("--brand-lucide-icon", `url("/assets/icons/lucide/${name}.svg")`);
+      return glyph;
+    };
+    const chooseIcon = (input) => {
+      if (!input.checked || !iconValue) return;
+      iconValue.value = input.value;
+      appearance.querySelectorAll('input[name="brand_icon_choice"]').forEach((candidate) => {
+        if (candidate !== input) candidate.checked = false;
+      });
+      const name = input.value.startsWith("lucide:") ? input.value.slice(7) : "";
+      const source = name ? lucideGlyph(name) : input.closest(".brand-icon-choice")?.querySelector("svg");
       if (!source) return;
       markPreviews.forEach((node) => node.replaceChildren(source.cloneNode(true)));
-    }));
+    };
+    appearance.addEventListener("change", (event) => {
+      if (event.target?.name === "brand_icon_choice") chooseIcon(event.target);
+    });
+
+    const renderIconSearch = () => {
+      if (!iconSearch || !iconResults || !iconResultNote) return;
+      const query = iconSearch.value.trim().toLocaleLowerCase("de");
+      iconResults.replaceChildren();
+      if (!query) {
+        const selected = iconValue?.value.startsWith("lucide:") ? iconValue.value.slice(7) : "";
+        if (selected) {
+          const choice = document.createElement("label");
+          choice.className = "brand-icon-choice";
+          const radio = document.createElement("input");
+          radio.type = "radio";
+          radio.name = "brand_icon_choice";
+          radio.value = `lucide:${selected}`;
+          radio.checked = true;
+          const label = document.createElement("strong");
+          label.textContent = selected;
+          choice.append(radio, lucideGlyph(selected), label);
+          iconResults.append(choice);
+        }
+        iconResults.hidden = !selected;
+        iconResultNote.hidden = !selected;
+        iconResultNote.textContent = selected ? `Aktuell ausgewählt: ${selected}` : "";
+        return;
+      }
+      const matches = lucideIconNames.filter((name) => name.includes(query));
+      matches.slice(0, 100).forEach((name) => {
+        const choice = document.createElement("label");
+        choice.className = "brand-icon-choice";
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "brand_icon_choice";
+        radio.value = `lucide:${name}`;
+        radio.checked = iconValue?.value === radio.value;
+        const label = document.createElement("strong");
+        label.textContent = name;
+        choice.append(radio, lucideGlyph(name), label);
+        iconResults.append(choice);
+      });
+      iconResults.hidden = false;
+      iconResultNote.hidden = false;
+      iconResultNote.textContent = matches.length > 100
+        ? `${matches.length} Treffer · die ersten 100 werden gezeigt.`
+        : `${matches.length} ${matches.length === 1 ? "Symbol gefunden" : "Symbole gefunden"}.`;
+    };
+    iconSearch?.addEventListener("input", renderIconSearch);
+    renderIconSearch();
 
     heroInput?.addEventListener("change", () => {
       const file = heroInput.files?.[0];
