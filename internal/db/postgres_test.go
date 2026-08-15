@@ -52,6 +52,9 @@ func TestBeginTenantTxRejectsInvalidTenantBeforeOpeningTransaction(t *testing.T)
 func TestPostgresTargetSchemaAndRLS(t *testing.T) {
 	baseDSN := strings.TrimSpace(os.Getenv("HAUSV_TEST_POSTGRES_DSN"))
 	if baseDSN == "" {
+		if os.Getenv("HAUSV_TEST_POSTGRES_REQUIRED") == "true" {
+			t.Fatal("HAUSV_TEST_POSTGRES_DSN is required when HAUSV_TEST_POSTGRES_REQUIRED=true")
+		}
 		t.Skip("set HAUSV_TEST_POSTGRES_DSN to a disposable database owned by a NOSUPERUSER NOBYPASSRLS role")
 	}
 	dsn := isolatedPostgresSchema(t, baseDSN)
