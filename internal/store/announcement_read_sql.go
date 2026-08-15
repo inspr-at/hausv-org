@@ -7,18 +7,62 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
-// AnnouncementReadStorage is the behaviour both the JSON AnnouncementReadStore
-// and the SQLite SQLAnnouncementReadStore satisfy (HAUSV-168). Key is
-// (tenant, email).
+// AnnouncementReadRepository is an announcement-read store already bound to
+// one tenant. Tenant selection deliberately sits below this API: callers can
+// ask only about an email, so accidentally querying another tenant is not a
+// call that can be written.
+type AnnouncementReadRepository interface {
+	LastSeen(email string) time.Time
+	MarkSeen(email string, seenAt time.Time) error
+}
+
+// AnnouncementReadStorage is the unbound backend implemented by both the JSON
+// and SQLite stores. Its marker method keeps the raw, tenant-aware operations
+// inside this package; HTTP code receives only AnnouncementReadRepository.
 type AnnouncementReadStorage interface {
-	LastSeen(tenantSlug string, email string) time.Time
-	MarkSeen(tenantSlug string, email string, seenAt time.Time) error
+	announcementReadStorage()
 }
 
 var (
 	_ AnnouncementReadStorage = (*AnnouncementReadStore)(nil)
 	_ AnnouncementReadStorage = (*SQLAnnouncementReadStore)(nil)
 )
+
+type boundAnnouncementReadRepository struct {
+	storage    announcementReadBackend
+	tenantSlug string
+}
+
+type announcementReadBackend interface {
+	lastSeen(tenantSlug string, email string) time.Time
+	markSeen(tenantSlug string, email string, seenAt time.Time) error
+}
+
+// BindAnnouncementReadRepository is the boundary used by tenant middleware.
+// An empty tenant is rejected, so even incorrect middleware wiring fails
+// closed instead of producing an unscoped repository.
+func BindAnnouncementReadRepository(storage AnnouncementReadStorage, tenantSlug string) (AnnouncementReadRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(announcementReadBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundAnnouncementReadRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundAnnouncementReadRepository) LastSeen(email string) time.Time {
+	if r == nil || r.storage == nil {
+		return time.Time{}
+	}
+	return r.storage.lastSeen(r.tenantSlug, email)
+}
+
+func (r *boundAnnouncementReadRepository) MarkSeen(email string, seenAt time.Time) error {
+	if r == nil || r.storage == nil {
+		return nil
+	}
+	return r.storage.markSeen(r.tenantSlug, email, seenAt)
+}
 
 // SQLAnnouncementReadStore records the per-user last-seen announcement time.
 // Table from migration 0007.
@@ -30,7 +74,9 @@ func NewSQLAnnouncementReadStore(db *sql.DB) *SQLAnnouncementReadStore {
 	return &SQLAnnouncementReadStore{db: db}
 }
 
-func (s *SQLAnnouncementReadStore) LastSeen(tenantSlug string, email string) time.Time {
+func (*SQLAnnouncementReadStore) announcementReadStorage() {}
+
+func (s *SQLAnnouncementReadStore) lastSeen(tenantSlug string, email string) time.Time {
 	if s == nil {
 		return time.Time{}
 	}
@@ -52,7 +98,7 @@ func (s *SQLAnnouncementReadStore) LastSeen(tenantSlug string, email string) tim
 	return t.UTC()
 }
 
-func (s *SQLAnnouncementReadStore) MarkSeen(tenantSlug string, email string, seenAt time.Time) error {
+func (s *SQLAnnouncementReadStore) markSeen(tenantSlug string, email string, seenAt time.Time) error {
 	if s == nil {
 		return nil
 	}

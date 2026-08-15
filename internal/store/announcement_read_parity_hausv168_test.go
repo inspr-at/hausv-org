@@ -28,31 +28,38 @@ func TestAnnouncementReadStorageParity(t *testing.T) {
 	}
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
-			s := build(t)
-			if !s.LastSeen("demo", "nobody@example.com").IsZero() {
+			storage := build(t)
+			demo, ok := BindAnnouncementReadRepository(storage, "demo")
+			if !ok {
+				t.Fatal("bind demo repository")
+			}
+			other, ok := BindAnnouncementReadRepository(storage, "other")
+			if !ok {
+				t.Fatal("bind other repository")
+			}
+			if !demo.LastSeen("nobody@example.com").IsZero() {
 				t.Fatal("unseen must be zero time")
 			}
 			when := time.Date(2026, 7, 20, 10, 0, 0, 500, time.UTC)
-			if err := s.MarkSeen("demo", "Person@Example.com", when); err != nil {
+			if err := demo.MarkSeen("Person@Example.com", when); err != nil {
 				t.Fatalf("mark: %v", err)
 			}
-			if got := s.LastSeen("demo", "person@example.com"); !got.Equal(when) {
+			if got := demo.LastSeen("person@example.com"); !got.Equal(when) {
 				t.Fatalf("last seen = %v, want %v", got, when)
 			}
 			// Different tenant is isolated.
-			if !s.LastSeen("other", "person@example.com").IsZero() {
+			if !other.LastSeen("person@example.com").IsZero() {
 				t.Fatal("other tenant must be isolated")
 			}
 			// MarkSeen upserts to the newer time.
 			later := when.Add(time.Hour)
-			_ = s.MarkSeen("demo", "person@example.com", later)
-			if got := s.LastSeen("demo", "person@example.com"); !got.Equal(later) {
+			_ = demo.MarkSeen("person@example.com", later)
+			if got := demo.LastSeen("person@example.com"); !got.Equal(later) {
 				t.Fatalf("upsert last seen = %v, want %v", got, later)
 			}
-			// Empty inputs are no-ops.
-			_ = s.MarkSeen("", "x@example.com", when)
-			if !s.LastSeen("", "x@example.com").IsZero() {
-				t.Fatal("empty tenant must be a no-op")
+			// An unscoped repository cannot be constructed.
+			if unscoped, ok := BindAnnouncementReadRepository(storage, ""); ok || unscoped != nil {
+				t.Fatal("empty tenant must not produce a repository")
 			}
 		})
 	}

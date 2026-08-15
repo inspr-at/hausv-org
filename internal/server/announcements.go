@@ -18,8 +18,9 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	selectedCategory := selectedAnnouncementCategory(r.URL.Query().Get("category"))
 	searchQuery := strings.TrimSpace(r.URL.Query().Get("q"))
 	lastSeen := time.Time{}
-	if a.announcementReadStore != nil {
-		lastSeen = a.announcementReadStore.LastSeen(tenant.Slug, email)
+	announcementReads := ac.repositories.announcementReads
+	if announcementReads != nil {
+		lastSeen = announcementReads.LastSeen(email)
 	}
 	archive := []announcement{}
 	filtered := []announcement{}
@@ -56,8 +57,8 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		"UnreadAnnouncements":    0,
 		"HasUnreadAnnouncements": false,
 	}))
-	if a.announcementReadStore != nil {
-		if err := a.announcementReadStore.MarkSeen(tenant.Slug, email, now); err != nil {
+	if announcementReads != nil {
+		if err := announcementReads.MarkSeen(email, now); err != nil {
 			logError("announcement read mark failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 		}
 	}
@@ -324,7 +325,7 @@ func (a *app) announcementViewsWithReadState(tenantSlug string, items []announce
 	return views
 }
 
-func (a *app) enrichUnreadAnnouncementData(data map[string]any) {
+func (a *app) enrichUnreadAnnouncementData(data map[string]any, announcementReads announcementReadRepository) {
 	if _, ok := data["UnreadAnnouncements"]; ok {
 		if _, hasFlag := data["HasUnreadAnnouncements"]; !hasFlag {
 			if count, ok := data["UnreadAnnouncements"].(int); ok {
@@ -334,7 +335,7 @@ func (a *app) enrichUnreadAnnouncementData(data map[string]any) {
 		return
 	}
 	tenant, ok := data["Tenant"].(tenantConfig)
-	if !ok || tenant.Slug == "" || a.announcementStore == nil || a.announcementReadStore == nil {
+	if !ok || tenant.Slug == "" || a.announcementStore == nil || announcementReads == nil {
 		data["UnreadAnnouncements"] = 0
 		data["HasUnreadAnnouncements"] = false
 		return
@@ -346,7 +347,7 @@ func (a *app) enrichUnreadAnnouncementData(data map[string]any) {
 		return
 	}
 	now := time.Now()
-	lastSeen := a.announcementReadStore.LastSeen(tenant.Slug, email)
+	lastSeen := announcementReads.LastSeen(email)
 	count := unreadAnnouncementCount(a.announcementStore.Visible(tenant.Slug, now), lastSeen, now)
 	data["UnreadAnnouncements"] = count
 	data["HasUnreadAnnouncements"] = count > 0

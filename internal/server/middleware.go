@@ -17,13 +17,16 @@ func (a *app) recoverAndLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		reqID := newRequestID()
-		tenantSlug := ""
-		if a != nil {
-			tenantSlug = a.tenantForRequest(r).Slug
-		}
 		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 
 		defer func() {
+			tenantSlug := ""
+			if a != nil {
+				tenantSlug = normalizeSlug(a.defaultTenant)
+			}
+			if resolved, ok := resolvedTenantFromContext(r.Context()); ok {
+				tenantSlug = resolved.tenant.Slug
+			}
 			if rec := recover(); rec != nil {
 				// If nothing has been written yet, send a clean 500. If a partial
 				// response already went out, we can only log.
@@ -75,9 +78,10 @@ func requestLogRoute(r *http.Request) string {
 // tenantSlug != tenant.Slug line was forgotten: with the check hoisted into the
 // wrapper, a handler can no longer be written without it.
 type authCtx struct {
-	email  string
-	role   string
-	tenant tenantConfig
+	email        string
+	role         string
+	tenant       tenantConfig
+	repositories requestRepositories
 }
 
 // authedHandler is a handler that requires an authenticated request. Its authCtx
@@ -94,13 +98,18 @@ func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, boo
 		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
 		return authCtx{}, false
 	}
-	tenant := a.tenantForRequest(r)
+	resolved, resolvedOK := resolvedTenantFromContext(r.Context())
+	if !resolvedOK {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return authCtx{}, false
+	}
+	tenant := resolved.tenant
 	email, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return authCtx{}, false
 	}
-	return authCtx{email: email, role: role, tenant: tenant}, true
+	return authCtx{email: email, role: role, tenant: tenant, repositories: resolved.repositories}, true
 }
 
 func (a *app) closedServiceProviderSession(r *http.Request) bool {

@@ -246,7 +246,9 @@ func NewAnnouncementReadStore(path string) (*AnnouncementReadStore, error) {
 	return store, nil
 }
 
-func (s *AnnouncementReadStore) LastSeen(tenantSlug string, email string) time.Time {
+func (*AnnouncementReadStore) announcementReadStorage() {}
+
+func (s *AnnouncementReadStore) lastSeen(tenantSlug string, email string) time.Time {
 	if s == nil {
 		return time.Time{}
 	}
@@ -260,7 +262,7 @@ func (s *AnnouncementReadStore) LastSeen(tenantSlug string, email string) time.T
 	return s.data.Seen[tenantSlug][email]
 }
 
-func (s *AnnouncementReadStore) MarkSeen(tenantSlug string, email string, seenAt time.Time) error {
+func (s *AnnouncementReadStore) markSeen(tenantSlug string, email string, seenAt time.Time) error {
 	if s == nil {
 		return nil
 	}
