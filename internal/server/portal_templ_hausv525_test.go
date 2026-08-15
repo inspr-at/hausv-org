@@ -63,7 +63,7 @@ func TestPortalTemplSelectsDensityByRoleAndKeepsRoleScopedNavigation(t *testing.
 			body := authedRequest(t, a, email, "/demo/app").Body.String()
 			for _, want := range []string{
 				"data-templ-portal", `class="portal-page ` + test.wantClass + `"`,
-				`href="` + test.issuesPath + `"`, "Hausüberblick", "Aushang", "Termine", "Kontakte", "Dokumente", "Abstimmungen", "Hilfe",
+				`href="` + test.issuesPath + `"`, "Hausüberblick", "Aushang", "Termine", "Kontakte", "Dokumente", "Abstimmungen", "Hilfe", "Versionsverlauf",
 			} {
 				if !strings.Contains(body, want) {
 					t.Fatalf("templ portal for %s should contain %q", test.role, want)

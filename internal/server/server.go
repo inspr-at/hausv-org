@@ -2278,6 +2278,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			HasEnergy:              hasEnergyCard,
 			Areas:                  portalAreas,
 			Contexts:               portalContexts,
+			ReleaseNotes:           version.Notes(),
 		})
 		return
 	}
