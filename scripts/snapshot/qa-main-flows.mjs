@@ -1066,15 +1066,14 @@ async function seedManagedContent() {
 
   await page.goto(`${baseURL}/app/settings/building?section=units`, { waitUntil: 'networkidle' });
   if (!(await page.getByText('Einheit 12', { exact: true }).count())) {
+    await page.getByRole('link', { name: 'Einheit hinzufügen' }).click();
     const unitPanel = page.locator('#unit-add');
-    if (!(await unitPanel.evaluate((element) => element.open))) {
-      await unitPanel.locator('summary').click();
-    }
+    await unitPanel.waitFor({ state: 'visible' });
     const unitForm = unitPanel.locator('form');
     await unitForm.locator('input[name="label"]').fill('Einheit 12');
     await unitForm.locator('input[name="owner_emails"]').fill('owner@example.com');
     await unitForm.locator('input[name="renter_emails"]').fill('resident@example.com');
-    await unitForm.getByRole('button', { name: 'Einheit anlegen' }).click();
+    await unitPanel.getByRole('button', { name: 'Einheit anlegen' }).click();
     await page.waitForURL(/\/app\/settings\/building/);
   }
   await page.goto(`${baseURL}/app/settings/home?from=building`, { waitUntil: 'networkidle' });
@@ -1085,12 +1084,16 @@ async function seedManagedContent() {
     await page.waitForURL(/\/app\/settings\/building\?section=units&home=saved/);
   }
   await page.goto(`${baseURL}/app/settings/building?section=units`, { waitUntil: 'networkidle' });
-  await assertHomeIdentityPair(page, 'building-context', 'QA Zuhause', 'Einheit 12', 'Gebäude-Einstellungen');
-  await assertHomeIdentityPair(page, 'building-unit', 'QA Zuhause', 'Einheit 12', 'Verknüpfte Einheit');
-  if (!(await page.locator('[data-home-identity="building-context"]').getByText('QA Zuhause', { exact: true }).count()) ||
-      !(await page.getByText('Offizielle Bezeichnung', { exact: true }).count())) {
+  const linkedUnit = page.locator('.unit-row').filter({ hasText: 'Einheit 12' });
+  if (!(await linkedUnit.getByText('Mein Zuhause · QA Zuhause', { exact: true }).count()) ||
+      !(await linkedUnit.getByText('Einheit 12', { exact: true }).count())) {
     fail('Gebäude-Einstellungen: „Mein Zuhause“ und offizielle Einheit werden nicht klar getrennt');
   }
+  await linkedUnit.getByRole('link', { name: 'Einheit 12 bearbeiten' }).click();
+  if (!(await page.locator('#unit-einheit-12').getByLabel('Offizielle Bezeichnung').count())) {
+    fail('Gebäude-Einstellungen: offizielle Bezeichnung fehlt im Einheiten-Dialog');
+  }
+  await page.keyboard.press('Escape');
   if (process.env.HV_QA_SCREENSHOT_DIR) {
     mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
     await page.locator('#units').screenshot({
@@ -1597,17 +1600,16 @@ async function assertHomeOnboarding() {
 async function ensureFocusedEnergyUnit() {
   const context = await newContext({ width: 1440, height: 900 });
   const page = await localLogin(context, 'admin@example.com');
-  await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/app/settings/building?section=units`, { waitUntil: 'networkidle' });
   if (!(await page.getByText('Einheit 12', { exact: true }).count())) {
+    await page.getByRole('link', { name: 'Einheit hinzufügen' }).click();
     const unitPanel = page.locator('#unit-add');
-    if (!(await unitPanel.evaluate((element) => element.open))) {
-      await unitPanel.locator('summary').click();
-    }
+    await unitPanel.waitFor({ state: 'visible' });
     const unitForm = unitPanel.locator('form');
     await unitForm.locator('input[name="label"]').fill('Einheit 12');
     await unitForm.locator('input[name="owner_emails"]').fill('owner@example.com');
     await unitForm.locator('input[name="renter_emails"]').fill('resident@example.com');
-    await unitForm.getByRole('button', { name: 'Einheit anlegen' }).click();
+    await unitPanel.getByRole('button', { name: 'Einheit anlegen' }).click();
     await page.waitForURL(/\/app\/settings\/building/);
   }
   await page.goto(`${baseURL}/app/settings/home?from=building`, { waitUntil: 'networkidle' });
