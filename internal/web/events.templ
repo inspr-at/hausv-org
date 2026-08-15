@@ -1,0 +1,257 @@
+package web
+
+import (
+	"github.com/inspr-at/hausv-org/internal/view"
+)
+
+type EventsMonth struct {
+	Label  string
+	Events []view.HouseEventView
+}
+
+type EventsPageData struct {
+	Portal             PortalPageData
+	AssetVersion       string
+	NowInput           string
+	CalendarFeedURL    string
+	Message            string
+	MessageOK          bool
+	CanManageEvents    bool
+	CanManageIssues    bool
+	Upcoming           []view.HouseEventView
+	Months             []EventsMonth
+	Past               []view.HouseEventView
+}
+
+templ EventsPage(data EventsPageData) {
+	<!doctype html>
+	<html lang="de-AT">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+			<title>{ data.Portal.Title }</title>
+			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+			<script src={ "/assets/announcements.js?v=" + data.AssetVersion } defer></script>
+			<script src={ "/assets/attachments.js?v=" + data.AssetVersion } defer></script>
+			@EventsStyles()
+		</head>
+		<body data-authenticated-app data-templ-events>
+			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+			<div class="events-shell">
+				@PortalSidebar(data.Portal)
+				@EventsContent(data)
+			</div>
+			@EventsMobileHeader(data.Portal)
+			if data.CanManageEvents {
+				@EventCreateDialog(data.NowInput)
+			}
+		</body>
+	</html>
+}
+
+templ EventsStyles() {
+	<style>
+		:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--font-serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);--shadow-md:0 18px 44px rgba(32,37,31,.08);font-family:var(--font-sans)}
+		*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}button{cursor:pointer}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.skip-link{position:fixed;top:var(--space-2);left:var(--space-2);z-index:300;padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.skip-link:focus{transform:translateY(0)}
+		.events-shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);background:var(--nav);color:var(--panel);overflow:auto}.house-name{display:block;font-family:var(--font-serif);font-size:27px;line-height:1}.house-address{display:block;margin-top:var(--space-2);color:var(--soft);font-size:12px}.map{display:block;height:74px;margin-top:var(--space-4);overflow:hidden;background:var(--nav-2);border:1px solid var(--muted);border-radius:var(--radius-md)}.map svg{display:block;width:100%;height:100%}.map-streets{fill:none;stroke:var(--muted);stroke-width:1;opacity:.42}.map-pin{fill:var(--gold-light);stroke:var(--gold)}.map-hole{fill:var(--nav)}.context-switch{margin-top:var(--space-3);font-size:11px}.context-switch summary{cursor:pointer;color:var(--gold-light)}.context-menu{display:grid;gap:var(--space-2);margin-top:var(--space-2);padding:var(--space-2);background:var(--nav-2);border-radius:var(--radius-sm)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.context-menu small{color:var(--soft)}
+		.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-label{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-notes>summary{margin-top:2px;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}.release-notes>summary::-webkit-details-marker{display:none}.release-panel{position:fixed;z-index:250;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.release-panel h2{font-size:24px}.release-entry{padding-top:var(--space-4)}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}
+		.events-main{min-width:0;padding:var(--space-6)}.page-top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}.crumb{display:flex;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}.crumb svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6}.page{max-width:1180px;margin:var(--space-5) auto 0}.page-heading{display:flex;align-items:end;justify-content:space-between;gap:var(--space-5);padding-bottom:var(--space-5);border-bottom:1px solid var(--line)}.page-heading h1{font-size:42px;line-height:1}.lede{max-width:600px;color:var(--muted);font-size:14px;line-height:1.5}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:34px;padding:var(--space-1) var(--space-3)}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.flash{margin-top:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}.flash.ok{border-color:var(--gold)}
+		.events-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--space-5);margin-top:var(--space-5);align-items:start}.events-column,.events-aside{min-width:0;display:grid;gap:var(--space-4)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.agenda-panel{padding:var(--space-5)}.section-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-4)}.kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.section-head h2{margin-top:var(--space-1);font-size:26px}.section-head p{margin-top:var(--space-2);color:var(--muted);font-size:12px}.count{color:var(--muted);font-size:11px;white-space:nowrap}.event-month{margin-top:var(--space-4)}.month-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3);padding-bottom:var(--space-2);border-bottom:1px solid var(--line)}.month-head h3{color:var(--gold-ink);font-family:var(--font-sans);font-size:11px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}.month-head span{color:var(--soft);font-size:11px}.agenda-list{display:grid}.event-card{display:grid;grid-template-columns:54px minmax(0,1fr);gap:var(--space-4);padding:var(--space-4) 0}.event-card+.event-card{border-top:1px solid var(--line)}.date-badge{width:52px;height:52px;display:grid;place-content:center;border-radius:var(--radius-sm);background:var(--leaf);color:var(--panel);text-align:center}.event-card.past .date-badge{background:var(--muted)}.date-badge strong{font-family:var(--font-serif);font-size:22px;line-height:.85}.date-badge span{margin-top:5px;font-size:8px;font-weight:850;text-transform:uppercase}.event-copy{min-width:0}.event-card-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-3)}.event-card-head h3{font-size:20px}.next-label{display:block;margin-bottom:var(--space-1);color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.event-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2) var(--space-3);margin-top:var(--space-2);color:var(--muted);font-size:11px}.tag{display:inline-flex;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-size:9px;font-weight:800}.event-details{margin-top:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.event-details>summary{min-height:42px;display:flex;align-items:center;padding:0 var(--space-3);cursor:pointer;color:var(--muted);font-size:11px;font-weight:800}.event-details-body{display:grid;gap:var(--space-3);padding:0 var(--space-3) var(--space-3);border-top:1px solid var(--line)}.entry-body{padding-top:var(--space-3);font-size:13px;line-height:1.55;white-space:normal}.event-actions{display:flex;gap:var(--space-2);margin-top:var(--space-3)}.event-actions form{margin:0}.history{border-top:1px solid var(--line)}.history>summary{min-height:48px;display:flex;align-items:center;cursor:pointer;color:var(--muted);font-size:12px;font-weight:800}.blank{min-height:320px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);text-align:center}.blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink)}.blank h2{font-size:27px}.blank p{max-width:48ch;color:var(--muted);font-size:13px;line-height:1.5}.blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2)}
+		.aside-panel{display:grid;gap:var(--space-3);padding:var(--space-4)}.aside-panel h2{margin-top:var(--space-1);font-size:20px}.aside-panel>p{color:var(--muted);font-size:12px;line-height:1.5}.feed-note{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:11px;line-height:1.45}.guide>summary{cursor:pointer;list-style:none}.guide>summary::-webkit-details-marker{display:none}.legend{display:grid;gap:var(--space-3);margin:0;padding:var(--space-3) 0 0;list-style:none;border-top:1px solid var(--line)}.legend li{display:grid;gap:var(--space-1)}.legend li>span:last-child{color:var(--muted);font-size:11px;line-height:1.45}
+		.attachment-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:var(--space-2)}.attachment-item{position:relative;min-width:0}.attachment-open{width:100%;min-height:100%;display:grid;gap:6px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px;background:var(--panel);color:var(--ink);text-align:left}.attachment-open img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius-xs);background:var(--line)}.attachment-file-icon{width:100%;aspect-ratio:4/3;display:grid;place-items:center;border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--gold-ink);font-size:11px;font-weight:900}.attachment-name{min-width:0;color:var(--muted);font-size:11px;font-weight:700;overflow-wrap:anywhere}.attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1);margin:0}.attachment-delete button{width:30px;height:30px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}
+		.attachment-picker{display:none;gap:var(--space-2);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.attachment-picker.has-files{display:grid}.attachment-picker-head,.attachment-picker-item{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:11px}.attachment-picker-list{display:grid;gap:var(--space-2)}.attachment-picker-thumb{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);overflow:hidden}.attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}.attachment-picker-copy{min-width:0;display:grid;flex:1}.attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.attachment-picker-meta{color:var(--soft)}.attachment-picker-remove{width:34px;height:34px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.attachment-picker-progress{display:none}
+		.attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:48px minmax(0,1fr) 48px;grid-template-rows:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}.attachment-lightbox.open{display:grid}.attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-3);min-width:0;min-height:0;margin:0}.attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm);background:var(--nav-2)}.attachment-lightbox figcaption{text-align:center;font-size:12px;overflow-wrap:anywhere}.lightbox-close,.lightbox-prev,.lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}.lightbox-close{grid-column:3;grid-row:1;width:42px;height:42px}.lightbox-prev,.lightbox-next{width:46px;height:70px;font-size:26px}.lightbox-prev{grid-column:1;grid-row:2}.lightbox-next{grid-column:3;grid-row:2}
+		.dialog{width:min(680px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog form{display:grid;grid-template-rows:auto minmax(0,1fr);max-height:inherit}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-5);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:25px}.dialog-close{width:36px;height:36px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px}.dialog-body{min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto}.dialog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.dialog-grid .full{grid-column:1/-1}.dialog label{display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;font-weight:700}.dialog input,.dialog select,.dialog textarea{width:100%;min-height:42px;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel);color:var(--ink)}.dialog textarea{min-height:110px;resize:vertical}.dialog-optional{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.dialog-optional>summary{padding:var(--space-3);cursor:pointer;font-size:12px;font-weight:800}.dialog-optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line)}.dialog-optional-grid .full{grid-column:1/-1}.file-control{position:relative;min-height:44px;display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.file-control span{color:var(--gold-ink)}
+		.mobile-head{display:none}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}
+		@media(max-width:1050px){.events-shell{grid-template-columns:210px minmax(0,1fr)}.events-layout{grid-template-columns:minmax(0,1fr)}.events-aside{grid-template-columns:repeat(2,minmax(0,1fr))}}
+		@media(max-width:700px){.events-shell{display:block}.sidebar{display:none}.mobile-head{position:relative;z-index:100;height:76px;display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:var(--space-3);padding:0 var(--space-4);background:var(--nav);color:var(--panel)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:21px}.mobile-identity small{margin-top:4px;color:var(--soft);font-size:10px}.mobile-head>.avatar{width:40px;height:40px}.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:"";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:76px;left:0;right:0;max-height:calc(100vh - 76px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);box-shadow:var(--shadow-dialog)}.menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.menu-panel .nav a{min-height:44px;display:flex;margin:0;padding:0 var(--space-3)}.menu-panel .nav-label{grid-column:1/-1}.menu-panel .release-notes{padding:var(--space-3)}.menu-panel .logout-form button{min-height:44px}.events-main{padding:var(--space-4)}.page-top{display:none}.page{margin-top:0}.page-heading{align-items:start;display:grid}.page-heading h1{font-size:34px}.events-layout{margin-top:var(--space-4);gap:var(--space-3)}.events-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.agenda-panel{padding:var(--space-4)}.section-head{display:grid}.event-card{grid-template-columns:46px minmax(0,1fr);gap:var(--space-3)}.date-badge{width:46px;height:46px}.event-card-head{display:grid}.event-actions .button{min-height:42px}.blank{min-height:0;padding:var(--space-6) var(--space-4)}.blank-actions{width:100%;display:grid}.dialog-grid,.dialog-optional-grid{grid-template-columns:minmax(0,1fr)}.dialog-grid .full,.dialog-optional-grid .full{grid-column:1}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}
+	</style>
+}
+
+templ EventsMobileHeader(data PortalPageData) {
+	<header class="mobile-head">
+		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
+		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>Termine · { data.Role }</small></a>
+		<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
+	</header>
+}
+
+templ EventsContent(data EventsPageData) {
+	<main id="main-content" tabindex="-1" class="events-main">
+		<div class="page-top"><span class="crumb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4"></path><path d="M4.5 6h15v14h-15z"></path><path d="M4.5 10h15"></path></svg><span>/</span><span>Termine</span></span>
+			if data.CanManageEvents {
+				@EventCreateButton("Termin erstellen")
+			}
+		</div>
+		<section class="page">
+			<header class="page-heading"><div><h1>Termine</h1></div><p class="lede">Was als Nächstes im Haus ansteht – mit Zeitpunkt, Ort und allen nötigen Details.</p></header>
+			if data.Message != "" {
+				<p class={ "flash", templ.KV("ok", data.MessageOK) }>{ data.Message }</p>
+			}
+			<div class="events-layout">
+				<div class="events-column">
+					if len(data.Upcoming) > 0 {
+						<section class="panel agenda-panel" aria-labelledby="events-upcoming-title">
+							<header class="section-head"><div><span class="kicker">Kommende Termine</span><h2 id="events-upcoming-title">Was als Nächstes ansteht</h2><p>Nach Monat geordnet, der nächste Termin steht zuerst.</p></div><span class="count">{ len(data.Upcoming) } geplant</span></header>
+							for _, month := range data.Months {
+								<section class="event-month"><header class="month-head"><h3>{ month.Label }</h3><span>{ len(month.Events) } { eventCountWord(len(month.Events)) }</span></header><div class="agenda-list">
+									for _, event := range month.Events {
+										@EventCard(event)
+									}
+								</div></section>
+							}
+							if len(data.Past) > 0 {
+								@EventHistory(data.Past)
+							}
+						</section>
+					} else {
+						<section class="panel blank" aria-label="Termine des Hauses"><span class="blank-icon" aria-hidden="true">◇</span><h2>Noch keine kommenden Termine</h2><p>Geplante Versammlungen, Wartungen und Fristen erscheinen hier.</p><div class="blank-actions">
+							if data.CanManageEvents {
+								@EventCreateButton("Ersten Termin erstellen")
+							} else {
+								<a class="button primary" href="/app/announcements">Aushang ansehen</a>
+								<a class="button ghost" href={ templ.SafeURL(eventsIssuesURL(data.CanManageIssues)) }>Anliegen melden</a>
+							}
+						</div></section>
+						if len(data.Past) > 0 {
+							<section class="panel agenda-panel">@EventHistory(data.Past)</section>
+						}
+					}
+				</div>
+				<aside class="events-aside" aria-label="Hinweise zu Terminen">
+					if data.CalendarFeedURL != "" {
+						<section class="panel aside-panel" aria-labelledby="events-feed-title"><div><span class="kicker">Eigener Kalender</span><h2 id="events-feed-title">Einmal abonnieren</h2></div><p>Neue und geänderte Haustermine erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p><a class="button primary" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a><p class="feed-note">Der Link ist persönlich. Bitte nicht weitergeben.</p></section>
+					}
+					<details class="panel aside-panel guide" aria-labelledby="events-legend-title"><summary><span class="kicker">Was hier erscheint</span><h2 id="events-legend-title">Termine im Haus</h2></summary><ul class="legend"><li><span class="tag">Eigentümerversammlung</span><span>Beschlüsse der Gemeinschaft. Teilnahme oder Vollmacht einplanen.</span></li><li><span class="tag">Wartung</span><span>Lift, Heizung oder Technik. Zugang kann kurz eingeschränkt sein.</span></li><li><span class="tag">Ablesung</span><span>Zählerstände. Meist ist Zutritt zur Wohnung nötig.</span></li><li><span class="tag">Frist</span><span>Letzter Tag für eine Rückmeldung oder Zahlung.</span></li><li><span class="tag">Reinigung</span><span>Wiederkehrende Arbeiten in Haus, Hof und Grünflächen.</span></li></ul></details>
+				</aside>
+			</div>
+		</section>
+	</main>
+}
+
+templ EventCreateButton(label string) {
+	<button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>{ label }</button>
+}
+
+templ EventHistory(events []view.HouseEventView) {
+	<details class="history"><summary>Vergangene Termine · { len(events) }</summary><div class="agenda-list">
+		for _, event := range events {
+			@EventCard(event)
+		}
+	</div></details>
+}
+
+templ EventCard(event view.HouseEventView) {
+	<article id={ "event-" + event.ID } class={ "event-card", templ.KV("past", event.Past) }>
+		<time class="date-badge"><strong>{ event.DateBadgeDay }</strong><span>{ event.DateBadgeMonth }</span></time>
+		<div class="event-copy"><header class="event-card-head"><div>
+			if event.IsNext {
+				<span class="next-label">Als Nächstes</span>
+			}
+			<h3>{ event.Title }</h3></div>
+			if event.Status != "" && event.Status != "Geplant" {
+				<span class="tag">{ event.Status }</span>
+			}
+		</header><div class="event-meta"><span class="tag">{ event.Category }</span><strong>{ event.DateLabel }</strong><span>{ event.TimeRange }</span>
+			if event.HasLocation {
+				<span>{ event.Location }</span>
+			}
+		</div>
+		if event.HasBody || event.HasAttachments {
+			<details class="event-details"><summary>Details
+				if event.HasAttachments {
+					<span>&nbsp;&amp; Anhänge</span>
+				}
+			</summary><div class="event-details-body">
+				if event.HasBody {
+					<div class="entry-body">@templ.Raw(string(event.BodyHTML))</div>
+				}
+				@EventAttachments(event.Attachments)
+			</div></details>
+		}
+		if event.CanManage {
+			<div class="event-actions"><button class="button small" type="button" data-dialog={ event.EditDialogID } aria-haspopup="dialog" aria-controls={ event.EditDialogID }>Bearbeiten</button><form method="post" action="/app/events/delete" data-confirm={ event.DeleteConfirmLabel }><input type="hidden" name="id" value={ event.ID }/><button class="button small ghost" type="submit">Löschen</button></form></div>
+		}
+		</div>
+	</article>
+	if event.CanManage {
+		@EventEditDialog(event)
+	}
+}
+
+templ EventAttachments(attachments []view.AttachmentView) {
+	if len(attachments) > 0 {
+		<div class="attachment-strip" aria-label="Anhänge">
+			for _, attachment := range attachments {
+				<div class="attachment-item">
+					if attachment.IsImage {
+						<button class="attachment-open" type="button" data-lightbox-src={ attachment.PreviewURL } data-lightbox-full={ attachment.URL } data-lightbox-caption={ attachment.Filename }>
+							<img src={ attachment.ThumbURL } alt={ attachment.Filename } loading="lazy" decoding="async"/>
+							<span class="attachment-name">{ attachment.Filename }</span>
+						</button>
+					}
+					if !attachment.IsImage {
+						<a class="attachment-open" href={ templ.SafeURL(attachment.URL) } target="_blank" rel="noopener"><span class="attachment-file-icon">
+							if attachment.IsPDF {
+								<span>PDF</span>
+							}
+							if !attachment.IsPDF {
+								<span>Datei</span>
+							}
+						</span><span class="attachment-name">{ attachment.Filename }</span></a>
+					}
+					if attachment.CanDelete {
+						<form class="attachment-delete" method="post" action={ templ.SafeURL(attachment.DeleteURL) } data-confirm="Diesen Anhang entfernen?"><input type="hidden" name="id" value={ attachment.ID }/>
+							if attachment.DeleteRedirect != "" {
+								<input type="hidden" name="redirect" value={ attachment.DeleteRedirect }/>
+							}
+						<button type="submit" aria-label="Anhang entfernen">×</button></form>
+					}
+				</div>
+			}
+		</div>
+	}
+}
+
+templ EventCreateDialog(nowInput string) {
+	<dialog id="event-create" class="dialog" aria-labelledby="event-create-title"><form method="post" action="/app/events" enctype="multipart/form-data"><div class="dialog-head"><h2 id="event-create-title">Termin erstellen</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body">@EventFormFields(view.HouseEventView{StartsAtInput: nowInput}, false)<button class="button primary" type="submit">Termin veröffentlichen</button></div></form></dialog>
+}
+
+templ EventEditDialog(event view.HouseEventView) {
+	<dialog id={ event.EditDialogID } class="dialog" aria-labelledby={ event.EditDialogID + "-title" }><form method="post" action="/app/events/edit" enctype="multipart/form-data"><input type="hidden" name="id" value={ event.ID }/><div class="dialog-head"><h2 id={ event.EditDialogID + "-title" }>Termin bearbeiten</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body">@EventFormFields(event, true)<button class="button primary" type="submit">Änderungen speichern</button></div></form></dialog>
+}
+
+templ EventFormFields(event view.HouseEventView, editing bool) {
+	<div class="dialog-grid"><label class="full" for={ eventFieldID("event-title", event.ID, editing) }>Titel<input id={ eventFieldID("event-title", event.ID, editing) } name="title" value={ event.Title } required maxlength="140" placeholder="Was findet statt?"/></label><label for={ eventFieldID("event-category", event.ID, editing) }>Kategorie<select id={ eventFieldID("event-category", event.ID, editing) } name="category">@EventCategoryOptions(event.Category)</select></label><label for={ eventFieldID("event-start", event.ID, editing) }>Beginn<input id={ eventFieldID("event-start", event.ID, editing) } type="datetime-local" name="starts_at" value={ event.StartsAtInput } required/></label><label class="full" for={ eventFieldID("event-location", event.ID, editing) }>Ort<input id={ eventFieldID("event-location", event.ID, editing) } name="location" value={ event.Location } maxlength="160" placeholder="Optional"/></label><details class="dialog-optional full"><summary>Ende, Details oder Anhang</summary><div class="dialog-optional-grid"><label class="full" for={ eventFieldID("event-end", event.ID, editing) }>Ende optional<input id={ eventFieldID("event-end", event.ID, editing) } type="datetime-local" name="ends_at" value={ event.EndsAtInput }/></label><label class="full" for={ eventFieldID("event-body", event.ID, editing) }>Details<textarea id={ eventFieldID("event-body", event.ID, editing) } name="body" placeholder="Was müssen Bewohner wissen?">{ event.Body }</textarea></label><label class="full" for={ eventFieldID("event-attachments", event.ID, editing) }>
+		if editing {
+			<span>Anhänge ergänzen</span>
+		}
+		if !editing {
+			<span>Anhänge</span>
+		}
+		<span class="file-control"><input id={ eventFieldID("event-attachments", event.ID, editing) } type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple/><span>Fotos oder PDF auswählen</span></span></label></div></details></div>
+}
+
+templ EventCategoryOptions(selected string) {
+	<option value="Eigentümerversammlung" selected?={ selected == "" || selected == "Eigentümerversammlung" }>Eigentümerversammlung</option>
+	<option value="Reinigung" selected?={ selected == "Reinigung" }>Reinigung</option>
+	<option value="Wartung" selected?={ selected == "Wartung" }>Wartung</option>
+	<option value="Ablesung" selected?={ selected == "Ablesung" }>Ablesung</option>
+	<option value="Frist" selected?={ selected == "Frist" }>Frist</option>
+	<option value="Sonstiges" selected?={ selected == "Sonstiges" }>Sonstiges</option>
+}
+
+func eventCountWord(count int) string {
+	if count == 1 { return "Termin" }
+	return "Termine"
+}
+
+func eventsIssuesURL(canManage bool) string {
+	if canManage { return "/app/anliegen/board" }
+	return "/app/anliegen"
+}
+
+func eventFieldID(base, id string, editing bool) string {
+	if editing { return base + "-" + id }
+	return base
+}

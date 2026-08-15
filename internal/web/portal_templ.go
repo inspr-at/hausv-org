@@ -36,7 +36,7 @@ type PortalEnergy struct {
 type PortalPageData struct {
 	Title, TenantSlug, HouseName, Address, MapURL     string
 	GreetingName, Today, DisplayName, Initials, Role  string
-	DisplayVersion                                    string
+	DisplayVersion, ActivePage                        string
 	Dense, CanUseResidentAreas, CanViewEnergy         bool
 	CanManageIssues, CanCreateResidentIssue           bool
 	CanSeeParking, CanManageHandovers, CanManageUsers bool
@@ -428,25 +428,25 @@ func PortalNavigation(data PortalPageData, icons bool) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.CanUseResidentAreas {
-			templ_7745c5c3_Err = PortalNavItem("home", "Hausüberblick", "/app", true, 0, icons).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = PortalNavItem("home", "Hausüberblick", "/app", portalPageActive(data, "home"), 0, icons).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.CanUseResidentAreas && data.CanViewEnergy {
-			templ_7745c5c3_Err = PortalNavItem("energy", "Mein Zuhause", "/app/energie", false, 0, icons).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = PortalNavItem("energy", "Mein Zuhause", "/app/energie", portalPageActive(data, "energy"), 0, icons).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.CanUseResidentAreas && data.Modules.Announcements {
-			templ_7745c5c3_Err = PortalNavItem("announcement", "Aushang", "/app/announcements", false, data.UnreadAnnouncements, icons).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = PortalNavItem("announcement", "Aushang", "/app/announcements", portalPageActive(data, "announcements"), data.UnreadAnnouncements, icons).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.CanUseResidentAreas && data.Modules.Events {
-			templ_7745c5c3_Err = PortalNavItem("calendar", "Termine", "/app/events", false, 0, icons).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = PortalNavItem("calendar", "Termine", "/app/events", portalPageActive(data, "events"), 0, icons).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2966,6 +2966,14 @@ func portalIssuesURL(data PortalPageData) string {
 		return "/app/anliegen/board"
 	}
 	return "/app/anliegen"
+}
+
+func portalPageActive(data PortalPageData, page string) bool {
+	active := data.ActivePage
+	if active == "" {
+		active = "home"
+	}
+	return active == page
 }
 
 func calmAnswer(data PortalPageData) string {
