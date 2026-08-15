@@ -84,6 +84,26 @@ type authCtx struct {
 	repositories requestRepositories
 }
 
+func (ac authCtx) actor() authorizationActor {
+	return authorizationActor{Person: ac.email, Tenant: ac.tenant.Slug, Role: ac.role}
+}
+
+func (ac authCtx) resource() authorizationResource {
+	return authorizationResource{Tenant: ac.tenant.Slug}
+}
+
+func (ac authCtx) can(action capability) bool {
+	return can(ac.actor(), action, ac.resource())
+}
+
+func actorFor(person string, tenantSlug string, role string) authorizationActor {
+	return authorizationActor{Person: person, Tenant: tenantSlug, Role: role}
+}
+
+func resourceFor(tenantSlug string) authorizationResource {
+	return authorizationResource{Tenant: tenantSlug}
+}
+
 // authedHandler is a handler that requires an authenticated request. Its authCtx
 // parameter is only obtainable from the combinators, so the type itself enforces
 // that the route went through the guard.
@@ -196,7 +216,7 @@ func (a *app) action(h authedHandler) http.HandlerFunc {
 // stay in the handler body on purpose (HAUSV-138).
 func (a *app) authed(cap capability, h authedHandler) http.HandlerFunc {
 	return a.page(func(w http.ResponseWriter, r *http.Request, ac authCtx) {
-		if !hasCapability(ac.role, cap) {
+		if !ac.can(cap) {
 			http.Error(w, capabilityForbiddenMessage(cap), http.StatusForbidden)
 			return
 		}
@@ -209,7 +229,7 @@ func (a *app) authed(cap capability, h authedHandler) http.HandlerFunc {
 // applied inline.
 func (a *app) authedAction(cap capability, h authedHandler) http.HandlerFunc {
 	return a.action(func(w http.ResponseWriter, r *http.Request, ac authCtx) {
-		if !hasCapability(ac.role, cap) {
+		if !ac.can(cap) {
 			http.Error(w, capabilityForbiddenMessage(cap), http.StatusForbidden)
 			return
 		}

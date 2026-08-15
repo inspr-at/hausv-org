@@ -1787,8 +1787,8 @@ func TestNormalizeRoleAliasesAndCapabilityMatrix(t *testing.T) {
 		{roleServiceProvider, capabilityVote, false},
 	}
 	for _, tc := range cases {
-		if got := hasCapability(tc.role, tc.cap); got != tc.want {
-			t.Fatalf("hasCapability(%q, %q) = %v, want %v", tc.role, tc.cap, got, tc.want)
+		if got := roleHasCapability(tc.role, tc.cap); got != tc.want {
+			t.Fatalf("roleHasCapability(%q, %q) = %v, want %v", tc.role, tc.cap, got, tc.want)
 		}
 	}
 }

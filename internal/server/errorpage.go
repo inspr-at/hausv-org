@@ -238,19 +238,19 @@ type errorPageLink struct {
 // and leak.
 func errorPageOnwardLinks(role string, canSeeParking bool) []errorPageLink {
 	links := []errorPageLink{}
-	if canUseResidentAreas(role) {
+	if roleCanUseResidentAreas(role) {
 		links = append(links,
 			errorPageLink{URL: "/app/announcements", Label: "Aushang", Hint: "Mitteilungen des Hauses"},
 			errorPageLink{URL: "/app/events", Label: "Termine", Hint: "Was als Nächstes ansteht"},
 			errorPageLink{URL: "/app/dokumente", Label: "Dokumente", Hint: "Freigegebene Unterlagen"},
 		)
 	}
-	if hasCapability(role, capabilityManageIssues) {
+	if roleHasCapability(role, capabilityManageIssues) {
 		links = append(links, errorPageLink{URL: "/app/anliegen/board", Label: "Anliegen", Hint: "Meldungen bearbeiten"})
 	} else {
 		links = append(links, errorPageLink{URL: "/app/anliegen", Label: "Anliegen", Hint: "Melden und nachverfolgen"})
 	}
-	if canUseResidentAreas(role) {
+	if roleCanUseResidentAreas(role) {
 		links = append(links,
 			errorPageLink{URL: "/app/abstimmungen", Label: "Abstimmungen", Hint: "Beschlüsse und laufende Entscheidungen"},
 			errorPageLink{URL: "/app/kontakte", Label: "Kontakte", Hint: "Verwaltung, Beirat und Dienstleister"},
@@ -259,7 +259,7 @@ func errorPageOnwardLinks(role string, canSeeParking bool) []errorPageLink {
 	if canSeeParking {
 		links = append(links, errorPageLink{URL: "/app/parking", Label: "Parkplatznutzung", Hint: "Verbrauch und Abrechnung"})
 	}
-	if canUseResidentAreas(role) {
+	if roleCanUseResidentAreas(role) {
 		links = append(links, errorPageLink{URL: "/app/settings", Label: "Einstellungen", Hint: "Profil und Benachrichtigungen"})
 	}
 	return links
@@ -306,11 +306,11 @@ func (a *app) writeErrorPage(w http.ResponseWriter, r *http.Request, ac authCtx,
 	}
 	if authenticated {
 		profile := a.profileForTenant(ac.email, ac.tenant.Slug)
-		canSeeParking := hasCapability(ac.role, capabilityPlatformAdmin) || profile.HasPermission(permissionParking)
+		canSeeParking := ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)
 		links := errorPageOnwardLinks(ac.role, canSeeParking)
 		data["ErrorLinks"] = links
 		data["HasErrorLinks"] = len(links) > 0
-		if canUseResidentAreas(ac.role) {
+		if roleCanUseResidentAreas(ac.role) {
 			data["ErrorPrimaryURL"] = "/app"
 			data["ErrorPrimaryLabel"] = "Zum Hausüberblick"
 		} else {

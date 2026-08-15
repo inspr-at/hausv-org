@@ -1,15 +1,31 @@
 // Package authz is the policy layer: who may do what.
 //
-// It is deliberately PURE — every function takes a role (and sometimes a
-// record) and returns a decision. No *app, no HTTP, no stores. That is what
+// It is deliberately PURE — every authorization decision takes an actor and
+// resource and returns a decision. No *app, no HTTP, no stores. That is what
 // makes the rules testable in isolation and impossible to bypass by accident.
 package authz
 
 import (
+	"strings"
+
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 type Capability string
+
+// Actor is the authenticated person and their membership in one tenant.
+// Person is deliberately carried even though today's role policy does not use
+// it yet: callers must present the complete authorization subject.
+type Actor struct {
+	Person string
+	Tenant string
+	Role   string
+}
+
+// Resource identifies the tenant that owns an object being authorized.
+type Resource struct {
+	Tenant string
+}
 
 const (
 	CapabilityPlatformAdmin       Capability = "platform-admin"
@@ -27,19 +43,29 @@ const (
 	CapabilityControlEnergy       Capability = "control-energy"
 )
 
-func CanManageContacts(role string) bool {
-	return HasCapability(role, CapabilityManageUsers) || HasCapability(role, CapabilityManageBuilding) || HasCapability(role, CapabilityManageIssues)
+func Can(actor Actor, action Capability, resource Resource) bool {
+	if !sameTenant(actor, resource) {
+		return false
+	}
+	return RoleHasCapability(actor.Role, action)
 }
 
-func CanManageAnnouncements(role string) bool {
-	return HasCapability(role, CapabilityManageAnnouncements)
+func CanManageContacts(actor Actor, resource Resource) bool {
+	return Can(actor, CapabilityManageUsers, resource) || Can(actor, CapabilityManageBuilding, resource) || Can(actor, CapabilityManageIssues, resource)
 }
 
-func CanManageEvents(role string) bool {
-	return HasCapability(role, CapabilityManageAnnouncements)
+func CanManageAnnouncements(actor Actor, resource Resource) bool {
+	return Can(actor, CapabilityManageAnnouncements, resource)
 }
 
-func HasCapability(role string, action Capability) bool {
+func CanManageEvents(actor Actor, resource Resource) bool {
+	return Can(actor, CapabilityManageAnnouncements, resource)
+}
+
+// RoleHasCapability is the explicitly resource-free policy check. Use Can
+// whenever an object is involved so role and tenant ownership are decided
+// together.
+func RoleHasCapability(role string, action Capability) bool {
 	role = store.NormalizeRole(role)
 	if role == store.RoleAdmin {
 		return true
@@ -64,12 +90,15 @@ func IsServiceProviderRole(role string) bool {
 	return store.NormalizeRole(role) == store.RoleServiceProvider
 }
 
-func CanUseResidentAreas(role string) bool {
+func RoleCanUseResidentAreas(role string) bool {
 	return !IsServiceProviderRole(role)
 }
 
-func CanCreateResidentIssue(role string) bool {
-	return CanUseResidentAreas(role) && (!HasCapability(role, CapabilityOversight) || HasCapability(role, CapabilityManageIssues))
+func CanCreateResidentIssue(actor Actor, resource Resource) bool {
+	if !sameTenant(actor, resource) {
+		return false
+	}
+	return RoleCanUseResidentAreas(actor.Role) && (!Can(actor, CapabilityOversight, resource) || Can(actor, CapabilityManageIssues, resource))
 }
 
 func CanResidentTransition(from string, to string) bool {
@@ -120,8 +149,11 @@ func CanServiceProviderTransition(from string, to string) bool {
 	return toRank >= fromRank
 }
 
-func CanViewAudit(role string) bool {
-	switch store.NormalizeRole(role) {
+func CanViewAudit(actor Actor, resource Resource) bool {
+	if !sameTenant(actor, resource) {
+		return false
+	}
+	switch store.NormalizeRole(actor.Role) {
 	case store.RoleAdmin, store.RoleManager, store.RoleOwner, store.RoleRenter, store.RoleBeirat, store.RoleResident, store.RoleServiceProvider:
 		return true
 	default:
@@ -129,19 +161,28 @@ func CanViewAudit(role string) bool {
 	}
 }
 
-func CanViewFullAudit(role string) bool {
-	role = store.NormalizeRole(role)
+func CanViewFullAudit(actor Actor, resource Resource) bool {
+	if !sameTenant(actor, resource) {
+		return false
+	}
+	role := store.NormalizeRole(actor.Role)
 	return role == store.RoleAdmin || role == store.RoleManager
 }
 
-func CanAssignUserRole(actorRole string, targetRole string) bool {
+func CanAssignUserRole(actor Actor, targetRole string, resource Resource) bool {
 	targetRole = store.NormalizeRole(targetRole)
 	if targetRole == store.RoleAdmin {
-		return HasCapability(actorRole, CapabilityPlatformAdmin)
+		return Can(actor, CapabilityPlatformAdmin, resource)
 	}
-	return HasCapability(actorRole, CapabilityManageUsers)
+	return Can(actor, CapabilityManageUsers, resource)
 }
 
-func CanManageHandovers(role string) bool {
-	return HasCapability(role, CapabilityManageDocuments) || HasCapability(role, CapabilityManageBuilding) || HasCapability(role, CapabilityManageUsers)
+func CanManageHandovers(actor Actor, resource Resource) bool {
+	return Can(actor, CapabilityManageDocuments, resource) || Can(actor, CapabilityManageBuilding, resource) || Can(actor, CapabilityManageUsers, resource)
+}
+
+func sameTenant(actor Actor, resource Resource) bool {
+	actorTenant := strings.TrimSpace(actor.Tenant)
+	resourceTenant := strings.TrimSpace(resource.Tenant)
+	return strings.TrimSpace(actor.Person) != "" && actorTenant != "" && resourceTenant != "" && actorTenant == resourceTenant
 }

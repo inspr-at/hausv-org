@@ -110,7 +110,7 @@ func handoverUnitOptions(units []unit, selected string) []selectOption {
 
 func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !canManageHandovers(role) {
+	if !canManageHandovers(ac.actor(), ac.resource()) {
 		http.Error(w, "Übergabeprotokolle sind der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -165,8 +165,8 @@ func handoverMessage(status string) (string, bool) {
 }
 
 func (a *app) addHandoverAttachments(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !canManageHandovers(role) {
+	tenant, email := ac.tenant, ac.email
+	if !canManageHandovers(ac.actor(), ac.resource()) {
 		http.Error(w, "Übergabeprotokolle sind der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -203,7 +203,7 @@ func (a *app) addHandoverAttachments(w http.ResponseWriter, r *http.Request, ac 
 
 func (a *app) createHandover(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !canManageHandovers(role) {
+	if !canManageHandovers(ac.actor(), ac.resource()) {
 		http.Error(w, "Übergabeprotokolle sind der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -607,7 +607,7 @@ func (a *app) confirmHandover(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) handoverProtocol(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !canManageHandovers(role) {
+	if !canManageHandovers(ac.actor(), ac.resource()) {
 		http.Error(w, "Dieses Protokoll ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -652,7 +652,7 @@ func (a *app) filerOrFallback() protocolFiler {
 
 func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !canManageHandovers(role) || !hasCapability(role, capabilityManageDocuments) {
+	if !canManageHandovers(ac.actor(), ac.resource()) || !ac.can(capabilityManageDocuments) {
 		http.Error(w, "Ablage im Dokumentenbereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -809,7 +809,7 @@ func (a *app) handoverViewForActor(tenantSlug string, email string, role string,
 		IsFiled:            status == handoverStatusFiled,
 		CanFile:            status == handoverStatusConfirmed || status == handoverStatusDraft,
 		CanChangeFiles:     handoverCanChangeFiles(item),
-		CanManageDocuments: hasCapability(role, capabilityManageDocuments),
+		CanManageDocuments: can(actorFor(email, tenantSlug, role), capabilityManageDocuments, resourceFor(item.TenantSlug)),
 		Outgoing:           handoverPartyLabel(item.OutgoingName, item.OutgoingEmail),
 		Incoming:           handoverPartyLabel(item.IncomingName, item.IncomingEmail),
 		Rooms:              item.Rooms,

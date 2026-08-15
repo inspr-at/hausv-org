@@ -13,7 +13,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	if denyServiceProviderArea(w, role) {
 		return
 	}
-	canManage := canManageAnnouncements(role)
+	canManage := canManageAnnouncements(ac.actor(), ac.resource())
 	now := time.Now()
 	selectedCategory := selectedAnnouncementCategory(r.URL.Query().Get("category"))
 	searchQuery := strings.TrimSpace(r.URL.Query().Get("q"))
@@ -66,8 +66,8 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 }
 
 func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !canManageAnnouncements(role) {
+	tenant, email := ac.tenant, ac.email
+	if !canManageAnnouncements(ac.actor(), ac.resource()) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -110,8 +110,8 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request, ac auth
 }
 
 func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
-	if !canManageAnnouncements(role) {
+	tenant, email := ac.tenant, ac.email
+	if !canManageAnnouncements(ac.actor(), ac.resource()) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -163,8 +163,8 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request, ac authCt
 }
 
 func (a *app) deleteAnnouncement(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, role := ac.tenant, ac.role
-	if !canManageAnnouncements(role) {
+	tenant := ac.tenant
+	if !canManageAnnouncements(ac.actor(), ac.resource()) {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -311,7 +311,7 @@ func announcementViewsWithReadState(items []announcement, now time.Time, include
 func (a *app) announcementViewsWithReadState(tenantSlug string, items []announcement, now time.Time, includeStatus bool, lastSeen time.Time, actorEmail string, role string) []announcementView {
 	views := announcementViewsWithReadState(items, now, includeStatus, lastSeen)
 	for i := range views {
-		views[i].CanManage = canManageAnnouncements(role)
+		views[i].CanManage = canManageAnnouncements(actorFor(actorEmail, tenantSlug, role), resourceFor(items[i].TenantSlug))
 	}
 	if a == nil || a.attachmentStore == nil {
 		return views

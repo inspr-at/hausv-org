@@ -75,7 +75,7 @@ type structuredExportPreviewView struct {
 }
 
 func (a *app) structuredExportPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	sources := a.structuredExportSourceViews(ac.repositories, ac.tenant.Slug, ac.role)
+	sources := a.structuredExportSourceViews(ac.repositories, ac)
 	resultMessage, resultOK := structuredExportResultMessage(r.URL.Query().Get("result"))
 	var previewView *structuredExportPreviewView
 	if token := strings.TrimSpace(r.URL.Query().Get("preview")); token != "" {
@@ -110,7 +110,7 @@ func (a *app) previewStructuredExport(w http.ResponseWriter, r *http.Request, ac
 		a.redirectStructuredExport(w, r, "", "selection")
 		return
 	}
-	sources, ok := normalizeStructuredExportSources(r.Form["source"], hasCapability(ac.role, capabilityPlatformAdmin))
+	sources, ok := normalizeStructuredExportSources(r.Form["source"], ac.can(capabilityPlatformAdmin))
 	if !ok {
 		a.redirectStructuredExport(w, r, "", "selection")
 		return
@@ -331,7 +331,7 @@ func buildStructuredExportPackage(ctx context.Context, tenantSlug string, source
 	return packageData.Bytes(), manifest, filename, nil
 }
 
-func (a *app) structuredExportSourceViews(repositories requestRepositories, tenantSlug, role string) []structuredExportSourceView {
+func (a *app) structuredExportSourceViews(repositories requestRepositories, ac authCtx) []structuredExportSourceView {
 	paymentCount := 0
 	if repositories.unitPayments != nil {
 		paymentCount = len(repositories.unitPayments.List())
@@ -342,10 +342,10 @@ func (a *app) structuredExportSourceViews(repositories requestRepositories, tena
 		Description: "Einheit, Status und letzter Änderungszeitpunkt",
 		Count:       paymentCount,
 	}}
-	if hasCapability(role, capabilityPlatformAdmin) {
+	if ac.can(capabilityPlatformAdmin) {
 		parkingCount := 0
 		if a.parkingStore != nil {
-			parkingCount = len(calculateParkingMonths(a.parkingStore.TenantData(tenantSlug), time.Now(), time.Local))
+			parkingCount = len(calculateParkingMonths(a.parkingStore.TenantData(ac.tenant.Slug), time.Now(), time.Local))
 		}
 		sources = append(sources, structuredExportSourceView{
 			Value:       structuredExportSourceParking,
