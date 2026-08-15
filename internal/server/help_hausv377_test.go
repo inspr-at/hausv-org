@@ -82,3 +82,38 @@ func TestConnectorHelpIsReadableButSetupNeedsEnergyPermission(t *testing.T) {
 		t.Fatalf("setup without permission = %d, want 403", post.Code)
 	}
 }
+
+func TestConnectorHelpTemplUsesSharedPortalForEveryResidentRole(t *testing.T) {
+	roles := []string{roleAdmin, roleManager, roleOwner, roleResident}
+	for _, role := range roles {
+		t.Run(role, func(t *testing.T) {
+			email := strings.ToLower(role) + "@example.com"
+			a := newTestPortalApp(t, userProfile{
+				Email: email, Role: role,
+				Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
+			})
+			a.portalTemplEnabled = true
+
+			page := authedRequest(t, a, email, "/demo/app/hilfe")
+			if page.Code != http.StatusOK {
+				t.Fatalf("templ help status = %d, want 200", page.Code)
+			}
+			body := page.Body.String()
+			for _, want := range []string{
+				`data-templ-help`,
+				`href="/demo/app/hilfe" class="active" aria-current="page"`,
+				`Hilfe zur Energieverbindung`,
+				`So läuft es in HAUSV ab`,
+				`Technisch und datensparsam`,
+				`Versionsverlauf`,
+			} {
+				if !strings.Contains(body, want) {
+					t.Errorf("templ help page missing %q", want)
+				}
+			}
+			if strings.Contains(body, `class="nav-item`) {
+				t.Error("templ help rendered the legacy navigation instead of the shared templ navigation")
+			}
+		})
+	}
+}
