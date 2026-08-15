@@ -597,39 +597,40 @@ const (
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	activityRecord            = store.ActivityRecord
-	activityStore             = store.ActivityStore
-	activityStorage           = store.ActivityStorage
-	profileOverlayStorage     = store.ProfileOverlayStorage
-	notificationPrefStorage   = store.NotificationPrefStorage
-	unitPaymentStatusStorage  = store.UnitPaymentStatusStorage
-	contactBookStorage        = store.ContactBookStorage
-	announcementReadStorage   = store.AnnouncementReadStorage
-	announcementStorage       = store.AnnouncementStorage
-	eventStorage              = store.EventStorage
-	handoverStorage           = store.HandoverStorage
-	documentStorage           = store.DocumentStorage
-	protocolFiler             = store.ProtocolFiler
-	attachmentStorage         = store.AttachmentStorage
-	telegramStorage           = store.TelegramStorage
-	unitStorage               = store.UnitStorage
-	voteStorage               = store.VoteStorage
-	issueStorage              = store.IssueStorage
-	profileStorage            = store.ProfileStorage
-	announcementReadStore     = store.AnnouncementReadStore
-	announcementReadStoreData = store.AnnouncementReadStoreData
-	contactBookStore          = store.ContactBookStore
-	contactBookStoreData      = store.ContactBookStoreData
-	managedContact            = store.ManagedContact
-	notificationPrefStore     = store.NotificationPrefStore
-	notificationPrefStoreData = store.NotificationPrefStoreData
-	notificationPreferences   = store.NotificationPreferences
-	profileOverlay            = store.ProfileOverlay
-	profileOverlayStore       = store.ProfileOverlayStore
-	profileOverlayStoreData   = store.ProfileOverlayStoreData
-	unitPaymentStatus         = store.UnitPaymentStatus
-	unitPaymentStatusData     = store.UnitPaymentStatusData
-	unitPaymentStatusStore    = store.UnitPaymentStatusStore
+	activityRecord             = store.ActivityRecord
+	activityStore              = store.ActivityStore
+	activityStorage            = store.ActivityStorage
+	profileOverlayStorage      = store.ProfileOverlayStorage
+	notificationPrefStorage    = store.NotificationPrefStorage
+	unitPaymentStatusStorage   = store.UnitPaymentStatusStorage
+	contactBookStorage         = store.ContactBookStorage
+	announcementReadRepository = store.AnnouncementReadRepository
+	announcementReadStorage    = store.AnnouncementReadStorage
+	announcementStorage        = store.AnnouncementStorage
+	eventStorage               = store.EventStorage
+	handoverStorage            = store.HandoverStorage
+	documentStorage            = store.DocumentStorage
+	protocolFiler              = store.ProtocolFiler
+	attachmentStorage          = store.AttachmentStorage
+	telegramStorage            = store.TelegramStorage
+	unitStorage                = store.UnitStorage
+	voteStorage                = store.VoteStorage
+	issueStorage               = store.IssueStorage
+	profileStorage             = store.ProfileStorage
+	announcementReadStore      = store.AnnouncementReadStore
+	announcementReadStoreData  = store.AnnouncementReadStoreData
+	contactBookStore           = store.ContactBookStore
+	contactBookStoreData       = store.ContactBookStoreData
+	managedContact             = store.ManagedContact
+	notificationPrefStore      = store.NotificationPrefStore
+	notificationPrefStoreData  = store.NotificationPrefStoreData
+	notificationPreferences    = store.NotificationPreferences
+	profileOverlay             = store.ProfileOverlay
+	profileOverlayStore        = store.ProfileOverlayStore
+	profileOverlayStoreData    = store.ProfileOverlayStoreData
+	unitPaymentStatus          = store.UnitPaymentStatus
+	unitPaymentStatusData      = store.UnitPaymentStatusData
+	unitPaymentStatusStore     = store.UnitPaymentStatusStore
 )
 
 var defaultNotificationPreferences = store.DefaultNotificationPreferences
@@ -1106,6 +1107,36 @@ func (a *app) handler() http.Handler {
 
 type tenantPathContextKey struct{}
 
+// requestRepositories contains only repositories bound to the tenant resolved
+// for this request. It is deliberately unexported and can only be constructed
+// together with a resolvedTenantRequest by tenantPaths.
+type requestRepositories struct {
+	announcementReads store.AnnouncementReadRepository
+}
+
+type resolvedTenantRequest struct {
+	tenant       tenantConfig
+	repositories requestRepositories
+	pathPrefixed bool
+}
+
+func (a *app) repositoriesForTenant(tenant tenantConfig) requestRepositories {
+	repositories := requestRepositories{}
+	if a == nil || a.announcementReadStore == nil {
+		return repositories
+	}
+	repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant.Slug)
+	return repositories
+}
+
+func resolvedTenantFromContext(ctx context.Context) (resolvedTenantRequest, bool) {
+	if ctx == nil {
+		return resolvedTenantRequest{}, false
+	}
+	resolved, ok := ctx.Value(tenantPathContextKey{}).(resolvedTenantRequest)
+	return resolved, ok && resolved.tenant.Slug != ""
+}
+
 // tenantPaths resolves /<tenant>/... before the standard mux sees the request
 // and keeps redirects inside the same tenant prefix.
 func (a *app) tenantPaths(next http.Handler) http.Handler {
@@ -1114,11 +1145,31 @@ func (a *app) tenantPaths(next http.Handler) http.Handler {
 		first, rest, _ := strings.Cut(path, "/")
 		tenant, ok := a.tenantBySlug(first)
 		if !ok {
+			// Unprefixed routes keep their established default-tenant behaviour,
+			// but the resolution still happens here rather than in handlers.
+			tenant, ok = a.tenantBySlug(a.defaultTenant)
+			if !ok {
+				next.ServeHTTP(w, r)
+				return
+			}
+			resolved := resolvedTenantRequest{
+				tenant:       tenant,
+				repositories: a.repositoriesForTenant(tenant),
+			}
+			ctx := context.WithValue(r.Context(), tenantPathContextKey{}, resolved)
+			*r = *r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		cloned := r.Clone(context.WithValue(r.Context(), tenantPathContextKey{}, tenant.Slug))
+		resolved := resolvedTenantRequest{
+			tenant:       tenant,
+			repositories: a.repositoriesForTenant(tenant),
+			pathPrefixed: true,
+		}
+		ctx := context.WithValue(r.Context(), tenantPathContextKey{}, resolved)
+		*r = *r.WithContext(ctx)
+		cloned := r.Clone(ctx)
 		cloned.URL.Path = "/" + rest
 		if rest == "" {
 			cloned.URL.Path = "/"
@@ -1932,8 +1983,8 @@ func internalTenantPath(r *http.Request, raw string) string {
 	if r == nil {
 		return raw
 	}
-	slug, _ := r.Context().Value(tenantPathContextKey{}).(string)
-	return stripTenantPath(raw, slug)
+	resolved, _ := resolvedTenantFromContext(r.Context())
+	return stripTenantPath(raw, resolved.tenant.Slug)
 }
 
 func stripTenantPath(raw string, tenantSlug string) string {
@@ -2005,8 +2056,9 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	profile := a.profileForTenant(email, tenant.Slug)
 	now := time.Now()
 	lastSeen := time.Time{}
-	if a.announcementReadStore != nil {
-		lastSeen = a.announcementReadStore.LastSeen(tenant.Slug, email)
+	announcementReads := ac.repositories.announcementReads
+	if announcementReads != nil {
+		lastSeen = announcementReads.LastSeen(email)
 	}
 	signals := a.portalSignals(tenant.Slug, email, role, now, lastSeen, modules)
 	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen, signals, modules)
@@ -2099,7 +2151,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	// The sidebar badges read the same numbers. Passing them explicitly keeps
 	// render() from re-reading announcements and issues for this page.
-	if a.announcementStore != nil && a.announcementReadStore != nil && strings.TrimSpace(email) != "" {
+	if a.announcementStore != nil && announcementReads != nil && strings.TrimSpace(email) != "" {
 		data["UnreadAnnouncements"] = signals.unreadAnnouncements
 		data["HasUnreadAnnouncements"] = signals.unreadAnnouncements > 0
 	}
@@ -5077,7 +5129,7 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	enrichCapabilityData(data)
 	// These two read from the announcement and issue stores. They are the reason
 	// render() cannot itself live in a pure rendering package.
-	a.enrichUnreadAnnouncementData(data)
+	a.enrichUnreadAnnouncementData(data, nil)
 	a.enrichIssueData(data)
 	a.executeTemplate(w, name, data)
 }
@@ -5155,6 +5207,7 @@ func (a *app) withBase(ac authCtx, pageData map[string]any) map[string]any {
 	for key, value := range pageData {
 		data[key] = value
 	}
+	a.enrichUnreadAnnouncementData(data, ac.repositories.announcementReads)
 	return data
 }
 
@@ -5352,11 +5405,12 @@ func (a *app) tenantHeroImage(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) tenantForRequest(r *http.Request) tenantConfig {
 	if r != nil {
-		if slug, ok := r.Context().Value(tenantPathContextKey{}).(string); ok {
-			if tenant, ok := a.tenantBySlug(slug); ok {
-				return tenant
-			}
+		if resolved, ok := resolvedTenantFromContext(r.Context()); ok {
+			return resolved.tenant
 		}
+		// Direct handler unit tests and non-routed helper calls predate the
+		// middleware stack. This compatibility path does not mint repositories;
+		// authenticated handlers still require resolvedTenantRequest above.
 		path := strings.TrimPrefix(r.URL.Path, "/")
 		if first, _, _ := strings.Cut(path, "/"); first != "" {
 			if tenant, ok := a.tenantBySlug(first); ok {
@@ -5372,13 +5426,15 @@ func (a *app) isMarketingHost(r *http.Request) bool {
 	if a == nil || r == nil {
 		return false
 	}
-	if _, ok := r.Context().Value(tenantPathContextKey{}).(string); ok {
+	if resolved, ok := resolvedTenantFromContext(r.Context()); ok && resolved.pathPrefixed {
 		return false
 	}
-	path := strings.TrimPrefix(r.URL.Path, "/")
-	if first, _, _ := strings.Cut(path, "/"); first != "" {
-		if _, ok := a.tenantBySlug(first); ok {
-			return false
+	if _, ok := resolvedTenantFromContext(r.Context()); !ok {
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		if first, _, _ := strings.Cut(path, "/"); first != "" {
+			if _, found := a.tenantBySlug(first); found {
+				return false
+			}
 		}
 	}
 	host := normalizeHost(r.Host)

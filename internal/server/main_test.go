@@ -3218,12 +3218,16 @@ func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 
 func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "announcement_reads.json")
-	store, err := newAnnouncementReadStore(path)
+	storage, err := newAnnouncementReadStore(path)
 	if err != nil {
 		t.Fatalf("newAnnouncementReadStore: %v", err)
 	}
+	repository, ok := store.BindAnnouncementReadRepository(storage, "demo")
+	if !ok {
+		t.Fatal("bind announcement read repository")
+	}
 	seenAt := time.Date(2026, 7, 6, 12, 30, 0, 0, time.UTC)
-	if err := store.MarkSeen("demo", "Resident@Example.com", seenAt); err != nil {
+	if err := repository.MarkSeen("Resident@Example.com", seenAt); err != nil {
 		t.Fatalf("mark seen: %v", err)
 	}
 	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
@@ -3233,7 +3237,11 @@ func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen read store: %v", err)
 	}
-	if got := reopened.LastSeen("demo", "resident@example.com"); !got.Equal(seenAt) {
+	reopenedRepository, ok := store.BindAnnouncementReadRepository(reopened, "demo")
+	if !ok {
+		t.Fatal("bind reopened announcement read repository")
+	}
+	if got := reopenedRepository.LastSeen("resident@example.com"); !got.Equal(seenAt) {
 		t.Fatalf("last seen = %v, want %v", got, seenAt)
 	}
 }
@@ -5844,7 +5852,11 @@ func TestAnnouncementUnreadBadgeClearsAfterArchiveView(t *testing.T) {
 	if archive.Code != http.StatusOK {
 		t.Fatalf("archive status = %d", archive.Code)
 	}
-	if got := a.announcementReadStore.LastSeen("demo", "resident@example.com"); got.IsZero() {
+	repository, ok := store.BindAnnouncementReadRepository(a.announcementReadStore, "demo")
+	if !ok {
+		t.Fatal("bind announcement read repository")
+	}
+	if got := repository.LastSeen("resident@example.com"); got.IsZero() {
 		t.Fatal("archive view should mark announcements as seen")
 	}
 
