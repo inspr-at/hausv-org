@@ -3522,7 +3522,7 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		homeProfileExists &&
 		!energyProfileUnclaimed(homeProfile) &&
 		a.canManageHomeIdentityProfile(ac, homeProfile, homeProfileExists)
-	a.render(w, "settingsHub", a.withBase(ac, map[string]any{
+	pageData := map[string]any{
 		"Title":                       "Einstellungen",
 		"ActivePage":                  "settings",
 		"CalendarFeedURL":             calendarFeedURL,
@@ -3531,7 +3531,12 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"SettingsNotificationSummary": notificationSummary,
 		"SettingsHomeURL":             homeURL,
 		"SettingsCanManageEnergyData": canManageEnergyData,
-	}))
+	}
+	if a.portalTemplEnabled {
+		a.renderSettingsHubTempl(w, r, ac, pageData)
+		return
+	}
+	a.render(w, "settingsHub", a.withBase(ac, pageData))
 }
 
 func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -3563,7 +3568,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 	if err != nil {
 		lucideIconNamesJSON = []byte("[]")
 	}
-	a.render(w, "buildingSettings", a.withBase(ac, map[string]any{
+	pageData := map[string]any{
 		"Title":                 "Gebäude & Einheiten",
 		"ActivePage":            "settings",
 		"BuildingMsg":           buildingMsg,
@@ -3596,7 +3601,12 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"HasHomeProfileUnit":    hasHomeProfileUnit,
 		"HomeProfileScopeLabel": homeProfileScopeLabel,
 		"HomeProfileSaved":      r.URL.Query().Get("home") == "saved",
-	}))
+	}
+	if a.portalTemplEnabled {
+		a.renderBuildingSettingsTempl(w, r, ac, pageData)
+		return
+	}
+	a.render(w, "buildingSettings", a.withBase(ac, pageData))
 }
 
 func normalizeBuildingSettingsSection(section string) string {
@@ -4612,7 +4622,7 @@ func (a *app) profileSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 	profile := a.profileForTenant(email, tenant.Slug)
 	units := profileUnitViews(ac.repositories.units.UnitsForEmail(email))
 	profileMsg, profileOK := profileSettingsMessage(r.URL.Query().Get("profile"))
-	a.render(w, "profileSettings", a.withBase(ac, map[string]any{
+	pageData := map[string]any{
 		"Title":                  "Profil",
 		"CanManageAnnouncements": canManageAnnouncements(ac.actor(), ac.resource()),
 		"ActivePage":             "settings",
@@ -4623,7 +4633,12 @@ func (a *app) profileSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 		"AuthList":               authMethodsLabelList(profile.AuthMethods),
 		"Units":                  units,
 		"HasUnits":               len(units) > 0,
-	}))
+	}
+	if a.portalTemplEnabled {
+		a.renderProfileSettingsTempl(w, r, ac, pageData)
+		return
+	}
+	a.render(w, "profileSettings", a.withBase(ac, pageData))
 }
 
 func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -4720,7 +4735,7 @@ func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request, ac au
 			enabledCount++
 		}
 	}
-	a.render(w, "notificationSettings", a.withBase(ac, map[string]any{
+	pageData := map[string]any{
 		"Title":                     "Benachrichtigungen",
 		"ActivePage":                "settings",
 		"NotifyMsg":                 notifyMsg,
@@ -4729,7 +4744,12 @@ func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request, ac au
 		"NotificationEvents":        events,
 		"NotificationEnabledCount":  enabledCount,
 		"NotificationEventCount":    len(events),
-	}))
+	}
+	if a.portalTemplEnabled {
+		a.renderNotificationSettingsTempl(w, r, ac, pageData)
+		return
+	}
+	a.render(w, "notificationSettings", a.withBase(ac, pageData))
 }
 
 func (a *app) updateNotificationSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -4786,7 +4806,7 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	users := a.userRows(tenant.Slug)
 	activeUsers, invitedUsers, deactivatedUsers := userStatusCounts(users)
 	inviteMsg, inviteOK := inviteMessage(r.URL.Query().Get("invite"))
-	a.render(w, "userSettings", a.withBase(ac, map[string]any{
+	pageData := map[string]any{
 		"Title":             "Benutzer & Rechte",
 		"Users":             users,
 		"HasUsers":          len(users) > 0,
@@ -4798,7 +4818,12 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"InviteMsg":         inviteMsg,
 		"InviteOK":          inviteOK,
 		"ActivePage":        "users",
-	}))
+	}
+	if a.portalTemplEnabled {
+		a.renderUserSettingsTempl(w, r, ac, pageData)
+		return
+	}
+	a.render(w, "userSettings", a.withBase(ac, pageData))
 }
 
 func userStatusCounts(users []userRow) (active int, invited int, deactivated int) {

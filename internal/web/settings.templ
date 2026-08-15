@@ -1,0 +1,586 @@
+package web
+
+import (
+	"strconv"
+
+	"github.com/inspr-at/hausv-org/internal/view"
+)
+
+type SettingsHubPageData struct {
+	Portal                      PortalPageData
+	Email                       string
+	SettingsDisplayName         string
+	SettingsNotificationSummary string
+	SettingsHomeURL             string
+	CalendarFeedURL             string
+	HasCalendarFeedURL          bool
+	SettingsCanManageEnergyData bool
+	CanManageHomeIdentity       bool
+	CanManageBuilding           bool
+	CanManageDocuments          bool
+	CanManageHandovers          bool
+	CanViewAudit                bool
+	IsAdmin                     bool
+	HomeIdentity                view.HomeIdentityView
+}
+
+type SettingsProfile struct {
+	Title, FirstName, LastName, Phone string
+	DirectoryOptIn                    bool
+}
+
+type ProfileSettingsPageData struct {
+	Portal         PortalPageData
+	Email          string
+	Profile        SettingsProfile
+	ProfileMsg     string
+	ProfileOK      bool
+	PermissionList []string
+	AuthList       []string
+	Units          []view.ProfileUnitView
+}
+
+type NotificationSettingsPageData struct {
+	Portal                    PortalPageData
+	Email                     string
+	NotifyMsg                 string
+	NotifyOK                  bool
+	EmailNotificationsEnabled bool
+	NotificationEvents        []view.NotificationEventOption
+	NotificationEnabledCount  int
+	NotificationEventCount    int
+}
+
+type BuildingTenant struct {
+	Name, Address, BrandIcon, BrandAbbreviation                       string
+	ContactName, ContactAddress, ContactEmail, ContactPhone            string
+	EmergencyName, EmergencyPhone                                     string
+	CaretakerName, CaretakerEmail, CaretakerPhone, HeroImageURL        string
+	MapLatitude, MapLongitude                                          float64
+}
+
+type BuildingSettingsPageData struct {
+	Portal                  PortalPageData
+	Tenant                  BuildingTenant
+	AssetVersion            string
+	BuildingMsg             string
+	BuildingOK              bool
+	BuildingSection         string
+	BrandIconOptions        []view.SelectOption
+	BrandIconLabel          string
+	BrandIconIsLucide       bool
+	LucideIconNamesJSON     string
+	HeroMsg                 string
+	HeroOK                  bool
+	HasCustomHero           bool
+	Units                    []view.BuildingUnitView
+	NewUnitTypeOptions      []view.SelectOption
+	NewUnitPaymentOptions   []view.SelectOption
+	UnitTotal               int
+	BillableUnits           string
+	BillableLabel           string
+	FairUseFreeUnits        int
+	FairUseExceeded         bool
+	UnitsEmpty              view.EmptyStateView
+	UnitMsg                 string
+	UnitOK                  bool
+	PaymentMsg              string
+	PaymentOK               bool
+	HasHomeProfile          bool
+	HomeProfileName         string
+	HomeProfileType         string
+	HasHomeProfileUnit      bool
+	HomeProfileSaved        bool
+	MapConfigured           bool
+}
+
+type UserSettingsPageData struct {
+	Portal                       PortalPageData
+	AssetVersion                 string
+	Users                        []view.UserRow
+	UserCount                    int
+	ActiveUserCount              int
+	InvitedUserCount             int
+	DisabledUserCount            int
+	UsersEmpty                   view.EmptyStateView
+	InviteMsg                    string
+	InviteOK                     bool
+	IsAdmin                      bool
+	ServiceProviderAccessEnabled bool
+}
+
+templ SettingsFrame(portal PortalPageData, label string, body templ.Component) {
+	<!doctype html>
+	<html lang="de-AT">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+			<title>{ portal.Title }</title>
+			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+			@SettingsStyles()
+		</head>
+		<body data-templ-settings>
+			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+			@PortalSectionHeader(portal, label)
+			<div class="shell">
+				@PortalSidebar(portal)
+				@body
+			</div>
+		</body>
+	</html>
+}
+
+templ SettingsHubPage(data SettingsHubPageData) {
+	@SettingsFrame(data.Portal, "Einstellungen", SettingsHubContent(data))
+}
+
+templ SettingsHubContent(data SettingsHubPageData) {
+	<main class="settings-main" id="main-content" tabindex="-1" data-templ-settings-hub>
+		<header class="page-head"><div><span class="eyebrow">Persönlich &amp; verwaltet</span><h1>Einstellungen</h1><p>Konto und Kommunikation für { data.Portal.Address }.</p></div></header>
+		<section class="identity-card panel"><span class="identity-icon">@PortalIcon("users")</span><div><h2>{ data.SettingsDisplayName }</h2><p>{ data.Email }</p></div><span class="pill">{ data.Portal.Role }</span></section>
+		<div class="settings-grid">
+			if data.CanManageHomeIdentity {
+				<section class="settings-group panel span-all"><header><div><h2>Mein Zuhause</h2><p>Anzeigename, Art und zugeordnete Wohnung.</p></div><span class="scope personal">Nur Sie</span></header><nav class="settings-links">
+					<a href={ templ.SafeURL(data.SettingsHomeURL) }><span class="link-icon">@PortalIcon("home")</span><span><strong>{ settingsHomeTitle(data.HomeIdentity) }</strong><small>{ settingsHomeDetail(data.HomeIdentity) }</small></span><b>›</b></a>
+					if data.SettingsCanManageEnergyData {
+						<a href="/app/settings/energy-data"><span class="link-icon">@PortalIcon("energy")</span><span><strong>Energiedaten &amp; Datenschutz</strong><small>Gespeicherte Daten ansehen, exportieren oder löschen</small></span><b>›</b></a>
+					}
+				</nav></section>
+			}
+			<section class="settings-group panel"><header><div><h2>Mein Konto</h2><p>Persönliche Angaben und Sichtbarkeit.</p></div><span class="scope personal">Nur Sie</span></header><nav class="settings-links"><a href="/app/settings/profile"><span class="link-icon">@PortalIcon("users")</span><span><strong>Profil</strong><small>Name, Telefon und Sichtbarkeit verwalten</small></span><b>›</b></a></nav></section>
+			<section class="settings-group panel"><header><div><h2>Kommunikation</h2><p>Was automatisch in Ihrem Postfach ankommt.</p></div><span class="scope personal">Nur Sie</span></header><nav class="settings-links"><a href="/app/settings/notifications"><span class="link-icon">@PortalIcon("announcement")</span><span><strong>Benachrichtigungen</strong><small>{ data.SettingsNotificationSummary }</small></span><b>›</b></a>
+				if data.HasCalendarFeedURL {
+					<a href={ templ.SafeURL(data.CalendarFeedURL) }><span class="link-icon">@PortalIcon("calendar")</span><span><strong>Kalender-Abo</strong><small>Haustermine im eigenen Kalender</small></span><b>›</b></a>
+				}
+			</nav></section>
+			if settingsHasManagement(data) {
+				<section class="settings-group panel span-all"><header><div><h2>Verwaltung</h2><p>Nur Bereiche, für die Sie berechtigt sind. Änderungen wirken für das ganze Haus.</p></div><span class="scope management">Verwaltungsrechte</span></header><nav class="settings-links management-links">
+					if data.CanManageBuilding {
+						@SettingsLink("home", "Gebäude & Einheiten", "Hausdaten und Einheiten pflegen", "/app/settings/building")
+						@SettingsLink("settings", "Portalbereiche", "Menüpunkte und Funktionen ein- oder ausblenden", "/app/settings/modules")
+					}
+					if data.Portal.Modules.Users && data.Portal.CanManageUsers {
+						@SettingsLink("users", "Benutzer & Rechte", "Einladungen und Rollen verwalten", "/app/settings/users")
+					}
+					if data.Portal.Modules.Parking && data.Portal.CanManageUsers {
+						@SettingsLink("parking", "Parkplatz-Zugriff", "Nutzung freigeben oder entziehen", "/app/settings/parking-access")
+					}
+					if data.Portal.Modules.Documents && data.CanManageDocuments {
+						@SettingsLink("document", "Dokumente", "Unterlagen verwalten", "/app/dokumente")
+					}
+					if data.CanManageBuilding {
+						@SettingsLink("document", "Datenübergabe", "Ausgewählte Rohdaten sicher weitergeben", "/app/settings/data-export")
+					}
+					if data.Portal.Modules.Handovers && data.CanManageHandovers {
+						@SettingsLink("handover", "Übergaben", "Protokolle vorbereiten und ablegen", "/app/uebergaben")
+					}
+					if data.Portal.Modules.Audit && data.CanViewAudit {
+						@SettingsLink("audit", "Aktivitätsverlauf", "Änderungen nachvollziehen", "/app/audit")
+					}
+					if data.Portal.Modules.Parking && data.IsAdmin {
+						@SettingsLink("parking", "Parkplatz-Abrechnung", "Tarife und Abrechnungswerte", "/app/parking/settings")
+					}
+				</nav></section>
+			}
+		</div>
+		<details class="note panel"><summary>Berechtigungen erklärt</summary><div><strong>Nur Sie</strong><p>Persönliche Einstellungen wirken allein auf Ihren Zugang.</p>
+			if data.CanManageBuilding || data.Portal.CanManageUsers || data.CanManageDocuments || data.CanManageHandovers || data.IsAdmin {
+				<strong>Verwaltungsrechte</strong><p>Änderungen gelten für die ganze Liegenschaft und werden im Verlauf festgehalten.</p>
+			}
+		</div></details>
+	</main>
+}
+
+templ SettingsLink(icon, title, detail, url string) {
+	<a href={ templ.SafeURL(url) }><span class="link-icon">@PortalIcon(icon)</span><span><strong>{ title }</strong><small>{ detail }</small></span><b>›</b></a>
+}
+
+func settingsHomeTitle(home view.HomeIdentityView) string {
+	if home.HasDisplayName { return home.DisplayName }
+	return "Mein Zuhause einrichten"
+}
+
+func settingsHomeDetail(home view.HomeIdentityView) string {
+	if home.HasUnit { return home.UnitLabel + " · Anzeigename und Zuordnung bearbeiten" }
+	if home.HasDisplayName { return "Anzeigename und Zuordnung bearbeiten" }
+	return "Name, Art und Zuordnung festlegen"
+}
+
+func settingsHasManagement(data SettingsHubPageData) bool {
+	return data.CanManageBuilding || (data.Portal.Modules.Users && data.Portal.CanManageUsers) || (data.Portal.Modules.Documents && data.CanManageDocuments) || (data.Portal.Modules.Handovers && data.CanManageHandovers) || (data.Portal.Modules.Audit && data.CanViewAudit) || (data.Portal.Modules.Parking && data.IsAdmin)
+}
+
+templ ProfileSettingsPage(data ProfileSettingsPageData) {
+	@SettingsFrame(data.Portal, "Profil", ProfileSettingsContent(data))
+}
+
+templ ProfileSettingsContent(data ProfileSettingsPageData) {
+	<main class="settings-main" id="main-content" tabindex="-1" data-templ-profile-settings>
+		<header class="page-head"><div><span class="eyebrow">Einstellungen / Profil</span><h1>Profil</h1><p>Persönliche Angaben und Sichtbarkeit. Änderungen gelten nur für Ihren Zugang.</p></div></header>
+		<div class="two-column"><section class="panel form-card">
+			if data.ProfileMsg != "" {
+				<p class={ "flash", templ.KV("ok", data.ProfileOK) } role="status">{ data.ProfileMsg }</p>
+			}
+			<form method="post" action="/app/settings/profile">
+				<fieldset><legend>Name</legend><p>So werden Sie im Portal angesprochen.</p><div class="form-grid three"><label>Titel <small>optional</small><input name="title" value={ data.Profile.Title } maxlength="40" autocomplete="honorific-prefix" placeholder="z. B. Dr."/></label><label>Vorname<input name="first_name" value={ data.Profile.FirstName } maxlength="120" autocomplete="given-name"/></label><label>Nachname<input name="last_name" value={ data.Profile.LastName } maxlength="120" autocomplete="family-name"/></label></div></fieldset>
+				<fieldset><legend>Kontakt &amp; Sichtbarkeit</legend><p>Ihre Anmeldung bleibt unverändert.</p><div class="form-grid"><label>E-Mail<span class="readonly">{ data.Email }</span></label><label>Telefon <small>optional</small><input name="phone" value={ data.Profile.Phone } maxlength="80" autocomplete="tel"/></label></div><label class="check-card"><input type="checkbox" name="directory_opt_in" checked?={ data.Profile.DirectoryOptIn }/><span><strong>Im Kontakte-Verzeichnis anzeigen</strong><small>Name, E-Mail und Telefon werden für die Hausgemeinschaft sichtbar. Die Freigabe ist freiwillig.</small></span></label></fieldset>
+				<footer class="form-actions"><a class="button ghost" href="/app/settings">Abbrechen</a><button class="button primary" type="submit">Profil speichern</button></footer>
+			</form>
+		</section><aside class="aside-stack">
+			<details class="note panel" open><summary>Was andere sehen</summary><div><ul class="facts"><li><strong>Name</strong><span>Steht an Ihren Beiträgen, Anliegen und Stimmabgaben.</span></li><li><strong>E-Mail und Telefon</strong><span>Nur sichtbar, wenn Sie den Verzeichniseintrag freigeben.</span></li><li><strong>Verzeichniseintrag</strong><span>{ settingsDirectoryStatus(data.Profile.DirectoryOptIn) }</span></li></ul><a class="text-link" href="/app/kontakte">Kontakte ansehen</a></div></details>
+			<details class="note panel"><summary>Konto &amp; Berechtigungen</summary><div class="facts"><strong>Rolle</strong><span>{ data.Portal.Role }</span><div class="chips">
+				for _, item := range data.PermissionList {
+					<span>{ item }</span>
+				}
+			</div><strong>Anmeldung</strong><div class="chips">
+				for _, item := range data.AuthList {
+					<span>{ item }</span>
+				}
+			</div><strong>Einheiten</strong>
+				if len(data.Units) == 0 {
+					<span>Keine Einheit verknüpft.</span>
+				} else {
+					for _, unit := range data.Units {
+						<span><b>{ unit.Label }</b> · { unit.Relation } · { unit.Share }</span>
+					}
+				}
+			</div></details>
+		</aside></div>
+	</main>
+}
+
+func settingsDirectoryStatus(optedIn bool) string {
+	if optedIn { return "Derzeit freigegeben – Ihr Eintrag steht unter Kontakte." }
+	return "Derzeit nicht freigegeben – Ihr Eintrag fehlt unter Kontakte."
+}
+
+templ NotificationSettingsPage(data NotificationSettingsPageData) {
+	@SettingsFrame(data.Portal, "Benachrichtigungen", NotificationSettingsContent(data))
+}
+
+templ NotificationSettingsContent(data NotificationSettingsPageData) {
+	<main class="settings-main" id="main-content" tabindex="-1" data-templ-notification-settings>
+		<header class="page-head"><div><span class="eyebrow">Einstellungen / Kommunikation</span><h1>Benachrichtigungen</h1><p>Festlegen, welche E-Mails Sie erhalten möchten. Die Auswahl gilt nur für Ihr Postfach.</p></div></header>
+		<div class="two-column"><section class="panel form-card">
+			if data.NotifyMsg != "" {
+				<p class={ "flash", templ.KV("ok", data.NotifyOK) } role="status">{ data.NotifyMsg }</p>
+			}
+			<form class={ "notification-form", templ.KV("email-paused", !data.EmailNotificationsEnabled) } method="post" action="/app/settings/notifications" data-notification-form>
+				<label class="master-switch"><span class="link-icon">@PortalIcon("announcement")</span><span><strong>E-Mails erhalten</strong><small>{ notificationStatus(data) }</small></span><span class="switch"><input type="checkbox" name="email_enabled" value="on" checked?={ data.EmailNotificationsEnabled } data-notification-master/><i></i></span></label>
+				<header class="subhead"><div><h2>Wofür?</h2><p>Ihre Auswahl für einzelne Themen.</p></div><span data-notification-count>{ data.NotificationEnabledCount } von { data.NotificationEventCount } aktiv</span></header>
+				<p class="paused-note">Die Themenauswahl bleibt gespeichert und gilt wieder, sobald Sie E-Mails aktivieren.</p>
+				@NotificationGroup("Haus & Kommunikation", data.NotificationEvents, "announcement", "issue")
+				@NotificationGroup("Entscheidungen & Unterlagen", data.NotificationEvents, "vote", "document")
+				@NotificationGroup("Zahlung & Nutzung", data.NotificationEvents, "payment", "charging")
+				<footer class="form-actions"><a class="button ghost" href="/app/settings">Abbrechen</a><button class="button primary" type="submit">Benachrichtigungen speichern</button></footer>
+			</form>
+		</section><aside class="aside-stack"><details class="note panel" open><summary>Empfängeradresse</summary><div><span class="readonly">{ data.Email }</span><p>Die Adresse ist zugleich Ihre Anmeldung und lässt sich hier nicht ändern.</p><a class="text-link" href="/app/settings/profile">Profil ansehen</a></div></details><details class="note panel"><summary>Grundregeln</summary><div><ul class="facts"><li><strong>Anmeldelinks</strong><span>Selbst angeforderte Links erhalten Sie immer.</span></li><li><strong>Keine Werbung</strong><span>Versendet wird ausschließlich, was dieses Haus betrifft.</span></li><li><strong>Im Portal vollständig</strong><span>Alles bleibt im Portal sichtbar.</span></li></ul></div></details></aside></div>
+	</main>
+}
+
+templ NotificationGroup(title string, options []view.NotificationEventOption, first, second string) {
+	<section class="option-group"><h3>{ title }</h3>
+		for _, option := range options {
+			if option.Key == first || option.Key == second {
+				<label><span><strong>{ option.Label }</strong><small>{ option.Description }</small></span><span class="switch"><input type="checkbox" name="events" value={ option.Key } checked?={ option.Checked } data-notification-topic/><i></i></span></label>
+			}
+		}
+	</section>
+}
+
+func notificationStatus(data NotificationSettingsPageData) string {
+	if !data.EmailNotificationsEnabled { return "Der Versand ist derzeit pausiert." }
+	return "Aktuell zu " + strconv.Itoa(data.NotificationEnabledCount) + " von " + strconv.Itoa(data.NotificationEventCount) + " Themen."
+}
+
+templ BuildingSettingsPage(data BuildingSettingsPageData) {
+	@SettingsFrame(data.Portal, "Gebäude & Einheiten", BuildingSettingsContent(data))
+}
+
+templ BuildingSettingsContent(data BuildingSettingsPageData) {
+	<main class="settings-main building" id="main-content" tabindex="-1" data-templ-building-settings>
+		<script src={ "/assets/attachments.js?v=" + data.AssetVersion } defer></script>
+		<script src={ "/assets/building-settings.js?v=" + data.AssetVersion } defer></script>
+		<header class="page-head"><div><span class="eyebrow">Einstellungen / Verwaltung</span><h1>Gebäude &amp; Einheiten</h1><p>Hausdaten, Kontakte und Einheiten an einem Ort.</p></div><a class="button ghost" href="/app/settings">Zurück zu Einstellungen</a></header>
+		<nav class="section-tabs" aria-label="Bereiche">
+			@BuildingTab("overview", "Stammdaten", data.BuildingSection)
+			@BuildingTab("contacts", "Kontakte", data.BuildingSection)
+			@BuildingTab("units", "Einheiten", data.BuildingSection)
+			@BuildingTab("appearance", "Erscheinungsbild", data.BuildingSection)
+		</nav>
+		if data.BuildingSection == "overview" {
+			@BuildingOverview(data)
+		} else if data.BuildingSection == "contacts" {
+			@BuildingContacts(data)
+		} else if data.BuildingSection == "units" {
+			@BuildingUnits(data)
+		} else {
+			@BuildingAppearance(data)
+		}
+	</main>
+}
+
+templ BuildingTab(section, label, active string) {
+	<a href={ templ.SafeURL("/app/settings/building?section=" + section) } class={ templ.KV("active", section == active) } aria-current={ portalAriaCurrent(section == active) }>{ label }</a>
+}
+
+templ BuildingOverview(data BuildingSettingsPageData) {
+	<section class="panel workspace"><header class="workspace-head"><div><h2>Stammdaten</h2><p>Name, Adresse und Kartenposition dieses Portals.</p></div></header>
+		@SettingsFlash(data.BuildingMsg, data.BuildingOK)
+		<form method="post" action="/app/settings/building" data-building-form>
+			<div class="form-grid"><fieldset><legend>Hausadresse</legend><label>Name<input id="building-name" type="text" name="name" value={ data.Tenant.Name } maxlength="160" required/></label><label>Adresse<textarea id="building-address" name="address" maxlength="500" required>{ data.Tenant.Address }</textarea></label><button class="button ghost" type="button" data-geocode-address data-geocode-url="/app/settings/building/geocode">Standort aus Adresse ermitteln</button><span class="muted" data-geocode-status aria-live="polite">Nur bei Klick wird die Adresse an OpenStreetMap übermittelt.</span><div data-geocode-results hidden></div></fieldset>
+			<fieldset><legend>Kartenposition</legend><div class="map-card" data-map-preview><span class="map-pin">@PortalIcon("home")</span><strong data-map-label>{ mapStatus(data.MapConfigured) }</strong><small data-map-coordinates>{ mapCoordinates(data) }</small></div><details class="inline-details"><summary>Koordinaten manuell eingeben</summary><label>Breitengrad, Längengrad<input id="building-map-position" type="text" name="map_position" value={ mapCoordinatesValue(data) } inputmode="decimal" placeholder="48.208200, 16.373800"/></label></details></fieldset></div>
+			<footer class="form-actions"><a class="button ghost" href="/app/settings/building?section=overview">Verwerfen</a><button class="button primary" type="submit">Änderungen speichern</button></footer>
+		</form>
+	</section>
+}
+
+func mapStatus(configured bool) string { if configured { return "Standort hinterlegt" }; return "Kein Standort hinterlegt" }
+func mapCoordinatesValue(data BuildingSettingsPageData) string { if data.MapConfigured { return strconv.FormatFloat(data.Tenant.MapLatitude, 'f', 6, 64) + ", " + strconv.FormatFloat(data.Tenant.MapLongitude, 'f', 6, 64) }; return "" }
+func mapCoordinates(data BuildingSettingsPageData) string { if value := mapCoordinatesValue(data); value != "" { return value }; return "Die Karte wird nach der Auswahl aktualisiert." }
+
+templ BuildingContacts(data BuildingSettingsPageData) {
+	<section class="panel workspace"><header class="workspace-head"><div><h2>Hauskontakte</h2><p>Verwaltung, Notdienst und Hausmeister klar an einem Ort pflegen.</p></div><span class="scope personal">Im Portal sichtbar</span></header>
+		@SettingsFlash(data.BuildingMsg, data.BuildingOK)
+		<form method="post" action="/app/settings/building/contacts"><div class="contact-grid">
+			<fieldset><legend>Hausverwaltung</legend><label>Name oder Firma<input name="contact_name" value={ data.Tenant.ContactName } maxlength="160"/></label><label>Anschrift<textarea name="contact_address" maxlength="500">{ data.Tenant.ContactAddress }</textarea></label><label>E-Mail<input type="email" name="contact_email" value={ data.Tenant.ContactEmail } maxlength="160" autocomplete="email"/></label><label>Telefon<input type="tel" name="contact_phone" value={ data.Tenant.ContactPhone } maxlength="80" autocomplete="tel"/></label></fieldset>
+			<fieldset><legend>Notdienst</legend><label>Bezeichnung<input name="emergency_name" value={ data.Tenant.EmergencyName } maxlength="160" placeholder="Notdienst"/></label><label>Telefon<input type="tel" name="emergency_phone" value={ data.Tenant.EmergencyPhone } maxlength="80" autocomplete="tel"/></label></fieldset>
+			<fieldset><legend>Hausmeister</legend><label>Name<input name="caretaker_name" value={ data.Tenant.CaretakerName } maxlength="160"/></label><label>E-Mail<input type="email" name="caretaker_email" value={ data.Tenant.CaretakerEmail } maxlength="160" autocomplete="email"/></label><label>Telefon<input type="tel" name="caretaker_phone" value={ data.Tenant.CaretakerPhone } maxlength="80" autocomplete="tel"/></label></fieldset>
+		</div><footer class="form-actions"><a class="button ghost" href="/app/settings/building?section=contacts">Verwerfen</a><button class="button primary" type="submit">Kontakte speichern</button></footer></form>
+	</section>
+}
+
+templ BuildingUnits(data BuildingSettingsPageData) {
+	<section class="panel workspace"><header class="workspace-head"><div><h2>Einheiten</h2><p>Stammdaten, Zuordnungen und Zahlungsstatus je Einheit verwalten.</p></div><div class="head-actions"><a class="button ghost" href="/app/settings/payments/import">Bankdatei einlesen</a><a class="button primary" href="#unit-add">Einheit hinzufügen</a></div></header>
+		<div class="metrics"><span><strong>{ data.UnitTotal }</strong><small>Einheiten gesamt</small></span><span><strong>{ data.BillableUnits } von { data.FairUseFreeUnits }</strong><small>{ data.BillableLabel } in Nutzung</small></span></div>
+		if data.FairUseExceeded {
+			<p class="notice">Über dem inkludierten Rahmen von { data.FairUseFreeUnits } Wohneinheiten. Richtwert: 1 € pro Einheit und Monat.</p>
+		}
+		if data.HomeProfileSaved {
+			@SettingsFlash("Der Anzeigename von „Mein Zuhause“ wurde gespeichert.", true)
+		}
+		if data.HasHomeProfile && !data.HasHomeProfileUnit {
+			<aside class="notice"><strong>{ data.HomeProfileName }</strong> ist { homeProfileScope(data.HomeProfileType) }. <a href="/app/settings/home?from=building">Zuhause bearbeiten</a></aside>
+		}
+		@SettingsFlash(data.UnitMsg, data.UnitOK) @SettingsFlash(data.PaymentMsg, data.PaymentOK)
+		if len(data.Units) == 0 {
+			@SettingsEmpty(data.UnitsEmpty)
+		} else {
+			<div class="unit-list">
+				for _, unit := range data.Units {
+					@BuildingUnitRow(unit)
+				}
+			</div>
+		}
+		@BuildingUnitDialog(view.BuildingUnitView{}, data.NewUnitTypeOptions, data.NewUnitPaymentOptions, true)
+		for _, unit := range data.Units {
+			@BuildingUnitDialog(unit, unit.TypeOptions, unit.PaymentOptions, false)
+		}
+	</section>
+}
+
+func homeProfileScope(kind string) string { if kind == "apartment" { return "noch keiner offiziellen Einheit zugeordnet" }; return "als gesamte Liegenschaft angelegt" }
+
+templ BuildingUnitRow(unit view.BuildingUnitView) {
+	<article class="unit-card"><span class="unit-kind">@PortalIcon("home")</span><div class="unit-title"><strong>{ unit.Label }</strong><small>{ unit.UnitTypeLabel } · { unit.BillableLabel }</small>
+		if unit.HasHomeDisplayName {
+			<em>Mein Zuhause · { unit.HomeDisplayName }</em>
+		}
+	</div><div class="assignment"><small>Eigentümer</small><strong>{ unit.OwnerSummary }</strong><small>Mieter</small><strong>{ unit.RenterSummary }</strong></div><div><strong>{ unit.Share }</strong><small>{ unit.MembersLabel }</small></div><div><span class="pill">{ unit.PaymentStatus }</span><small>{ paymentUpdated(unit) }</small></div><a class="icon-button" href={ templ.SafeURL("#unit-" + unit.ID) } aria-label={ unit.Label + " bearbeiten" }>✎</a></article>
+}
+
+func paymentUpdated(unit view.BuildingUnitView) string { if unit.PaymentHasUpdated { return unit.PaymentUpdatedAt }; return "Manuell" }
+
+templ BuildingUnitDialog(unit view.BuildingUnitView, types, payments []view.SelectOption, add bool) {
+	<section class="anchor-dialog" id={ unitDialogID(unit, add) } role="dialog" aria-modal="true" aria-labelledby={ unitDialogID(unit, add) + "-title" } tabindex="-1"><a class="dialog-backdrop" href="?section=units" aria-label="Dialog schließen"></a><div class="dialog-card"><header><div><h2 id={ unitDialogID(unit, add) + "-title" }>{ unitDialogTitle(add) }</h2><p>{ unitDialogDetail(unit, add) }</p></div><a class="icon-button" href="?section=units" aria-label="Dialog schließen">×</a></header><form id={ unitDialogID(unit, add) + "-form" } method="post" action="/app/settings/building/units">
+		if !add {
+			<input type="hidden" name="orig_id" value={ unit.ID }/><input type="hidden" name="id" value={ unit.ID }/>
+		}
+		<fieldset><legend>Stammdaten</legend><label>Offizielle Bezeichnung<input name="label" value={ unit.Label } maxlength="120" required placeholder="Top 1"/></label><label>Typ<select name="unit_type">
+			for _, option := range types {
+				<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+			}
+		</select></label><label>Miteigentumsanteil<input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value={ unitShareValue(unit, add) } inputmode="numeric"/></label></fieldset>
+		<fieldset><legend>Personen &amp; Zuordnung</legend><label>Eigentümer E-Mails<input name="owner_emails" value={ unit.OwnerEmails } placeholder="name@example.com, zweite@example.com"/></label><label>Mieter E-Mails<input name="renter_emails" value={ unit.RenterEmails } placeholder="name@example.com"/></label></fieldset>
+		<fieldset><legend>Zahlungsstatus</legend><label>Status<select name="payment_status">
+			for _, option := range payments {
+				<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+			}
+		</select></label></fieldset>
+	</form><footer>
+		if !add {
+			<form method="post" action="/app/settings/building/units/delete" data-confirm={ unit.DeleteConfirmLabel + "?" }><input type="hidden" name="id" value={ unit.ID }/><button class="button ghost" type="submit">Einheit löschen</button></form>
+		}
+		<a class="button ghost" href="?section=units">Abbrechen</a><button class="button primary" type="submit" form={ unitDialogID(unit, add) + "-form" }>{ unitDialogButton(add) }</button></footer></div></section>
+}
+
+func unitDialogID(unit view.BuildingUnitView, add bool) string { if add { return "unit-add" }; return "unit-" + unit.ID }
+func unitDialogTitle(add bool) string { if add { return "Einheit hinzufügen" }; return "Einheit bearbeiten" }
+func unitDialogButton(add bool) string { if add { return "Einheit anlegen" }; return "Änderungen speichern" }
+func unitDialogDetail(unit view.BuildingUnitView, add bool) string { if add { return "Stammdaten und Zuordnungen an einem Ort erfassen." }; return unit.Label + " · " + unit.UnitTypeLabel }
+func unitShareValue(unit view.BuildingUnitView, add bool) string { if add { return "0" }; return unit.ShareValue }
+
+templ BuildingAppearance(data BuildingSettingsPageData) {
+	<section class="panel workspace"><header class="workspace-head"><div><h2>Erscheinungsbild</h2><p>Portal-Kennung und Titelbild gestalten.</p></div></header>@SettingsFlash(data.BuildingMsg, data.BuildingOK) @SettingsFlash(data.HeroMsg, data.HeroOK)
+		<div class="appearance-grid" data-appearance-workspace><div class="aside-stack"><form class="panel inset" method="post" action="/app/settings/building/appearance"><fieldset><legend>Portal-Symbol</legend><input type="hidden" name="brand_icon" value={ data.Tenant.BrandIcon } data-brand-icon-value/><div class="brand-grid" role="radiogroup" aria-label="Portal-Symbol">
+			for _, option := range data.BrandIconOptions {
+				<label class="brand-icon-choice"><input type="radio" name="brand_icon_choice" value={ option.Value } checked?={ option.Selected }/><span>@PortalIcon(brandPreviewIcon(option.Value))</span><strong>{ option.Label }</strong></label>
+			}
+		</div></fieldset><section class="icon-search"><label>Weitere Symbole aus Lucide<input type="search" placeholder="Symbol suchen" autocomplete="off" data-brand-icon-search/></label><div data-brand-icon-results hidden></div>
+			<p data-brand-icon-result-note hidden?={ !data.BrandIconIsLucide }>
+				if data.BrandIconIsLucide {
+					Aktuell ausgewählt: { data.BrandIconLabel }
+				}
+			</p>
+		</section><label>Kurzkennung<input id="brand-abbreviation" name="brand_abbreviation" value={ data.Tenant.BrandAbbreviation } maxlength="12" placeholder="HAUS"/><span data-abbreviation-count>{ len(data.Tenant.BrandAbbreviation) } / 12</span></label><button class="button primary" type="submit">Portal-Kennung speichern</button></form>
+			<section class="panel inset"><h3>Titelbild</h3><img class="hero-preview" src={ templ.SafeURL(data.Tenant.HeroImageURL) } alt="Aktuelles Titelbild" data-hero-preview/><p data-hero-file-name>{ heroLabel(data.HasCustomHero) }</p><form method="post" action="/app/settings/building/hero" enctype="multipart/form-data"><label>Neues Titelbild<input id="hero-image" type="file" name="hero_image" accept="image/jpeg,image/png,image/webp" required/></label><button class="button" type="submit">Titelbild übernehmen</button></form>
+				if data.HasCustomHero {
+					<form method="post" action="/app/settings/building/hero/delete" data-confirm="Titelbild entfernen und Standardbild verwenden?"><button class="button ghost" type="submit">Standardbild verwenden</button></form>
+				}
+			</section></div>
+			<aside class="preview panel"><span class="eyebrow">Live-Vorschau</span><img src={ templ.SafeURL(data.Tenant.HeroImageURL) } alt="" data-hero-stage/><div><span class="preview-mark" data-brand-preview-mark>@PortalIcon("home")</span><strong data-brand-preview-abbreviation>{ data.Tenant.BrandAbbreviation }</strong><small>{ data.Tenant.Name }</small></div><h3>Alles Wichtige für Ihr Zuhause.</h3><span class="button primary">Anmelden</span><p>Änderungen erscheinen nach dem Speichern im Portal.</p></aside></div>
+		<script id="brand-lucide-icon-names" type="application/json">@templ.Raw(data.LucideIconNamesJSON)</script>
+	</section>
+}
+
+func brandPreviewIcon(value string) string { if value == "parking" { return "parking" }; return "home" }
+func heroLabel(custom bool) string { if custom { return "Individuelles Titelbild" }; return "HAUSV Standardbild" }
+
+templ SettingsFlash(message string, ok bool) {
+	if message != "" {
+		<p class={ "flash", templ.KV("ok", ok) } role="status">{ message }</p>
+	}
+}
+
+templ SettingsEmpty(empty view.EmptyStateView) {
+	<section class="empty"><h2>{ empty.Title }</h2><p>{ empty.Message }</p>
+		if empty.HasAction {
+			<a class="button" href={ templ.SafeURL(empty.ActionURL) }>{ empty.ActionLabel }</a>
+		}
+	</section>
+}
+
+templ UserSettingsPage(data UserSettingsPageData) {
+	@SettingsFrame(data.Portal, "Benutzer & Rechte", UserSettingsContent(data))
+}
+
+templ UserSettingsContent(data UserSettingsPageData) {
+	<main class="settings-main users" id="main-content" tabindex="-1" data-templ-user-settings>
+		<script src={ "/assets/users.js?v=" + data.AssetVersion } defer></script>
+		<header class="page-head"><div><span class="eyebrow">Einstellungen / Verwaltung</span><h1>Benutzer &amp; Rechte</h1><p>Zugänge einladen, prüfen und sicher verwalten.</p></div></header>
+		<section class="panel workspace"><header class="workspace-head"><div><h2>Zugänge</h2><p>{ data.UserCount } { personLabel(data.UserCount) }</p></div></header>
+			<div class="metrics four"><span><strong>{ data.UserCount }</strong><small>Gesamt</small></span><span><strong>{ data.ActiveUserCount }</strong><small>Aktiv</small></span><span><strong>{ data.InvitedUserCount }</strong><small>Eingeladen</small></span><span><strong>{ data.DisabledUserCount }</strong><small>Deaktiviert</small></span></div>
+			@SettingsFlash(data.InviteMsg, data.InviteOK)
+			@UserInvite(data)
+			<header class="subhead"><div><h2>Personen</h2><p>Handlungsbedarf zuerst</p></div></header>
+			if len(data.Users) == 0 {
+				@SettingsEmpty(data.UsersEmpty)
+			} else {
+				<div class="user-list">
+					for _, user := range data.Users {
+						@UserCard(data, user)
+					}
+				</div>
+			}
+		</section>
+	</main>
+}
+
+func personLabel(count int) string { if count == 1 { return "Person" }; return "Personen" }
+
+templ UserInvite(data UserSettingsPageData) {
+	<details id="invite" class="invite"><summary><span>＋</span><strong>Person einladen</strong><small>Neuen Zugang anlegen</small></summary><form method="post" action="/app/settings/users"><div class="form-grid"><label>E-Mail-Adresse<input type="email" name="email" placeholder="name@example.com" autocomplete="email" required/></label><label>Rolle<select class="f-role" name="role">@RoleOptions(data, "")</select></label></div>
+		if !data.ServiceProviderAccessEnabled {
+			<p class="notice">Dienstleister-Zugänge können noch nicht angelegt oder geändert werden.</p>
+		}
+		<details class="inline-details"><summary>Name ergänzen <small>optional</small></summary><div class="form-grid three"><input name="title" placeholder="Titel" aria-label="Titel"/><input name="first_name" placeholder="Vorname" aria-label="Vorname"/><input name="last_name" placeholder="Nachname" aria-label="Nachname"/></div></details>
+		<details class="inline-details"><summary>Zugang anpassen <small>optional</small></summary>@AccessOptions(false, false, true, true)</details>
+		<footer class="form-actions"><button class="button primary" type="submit">Einladung senden</button><a class="text-link" href="/app/settings/building?section=units">Danach bei Bedarf: Einheit verknüpfen</a></footer>
+	</form></details>
+}
+
+templ RoleOptions(data UserSettingsPageData, selected string) {
+	<option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions="" selected?={ selected == "Mieter" }>Mieter</option><option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions="" selected?={ selected == "Eigentümer" }>Eigentümer</option><option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions="" selected?={ selected == "Beirat" }>Beirat</option><option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions="" selected?={ selected == "Verwalter" }>Verwalter</option>
+	if data.IsAdmin {
+		<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking" selected?={ selected == "Admin" }>Admin</option>
+	}
+	if data.ServiceProviderAccessEnabled {
+		<option value="Dienstleister" data-preset-label="Nur zugewiesene Anliegen" data-preset-permissions="" selected?={ selected == "Dienstleister" }>Dienstleister</option>
+	}
+	<option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions="" selected?={ selected == "Bewohner" }>Bewohner</option>
+}
+
+templ UserCard(data UserSettingsPageData, user view.UserRow) {
+	<article class={ "user-card", templ.KV("attention", user.Status == "Eingeladen" || user.Status == "Deaktiviert") }><span class="user-avatar">{ user.Initials }</span><div class="user-identity"><strong>{ user.DisplayName }</strong><a href={ templ.SafeURL("mailto:" + user.Email) }>{ user.Email }</a>
+		if user.Phone != "" {
+			<small>{ user.Phone }</small>
+		}
+		if user.HasUnits {
+			<div class="chips">
+				for _, unit := range user.UnitList {
+					<span>{ unit }</span>
+				}
+			</div>
+		}
+	</div><span class={ "pill", user.RoleClass }>{ user.Role }</span><div class="chips">
+		for _, permission := range user.PermissionList {
+			<span>{ permission }</span>
+		}
+	</div><span class="pill">{ user.Status }</span>
+		if user.Editable || (user.IsConfig && !user.Protected) {
+			if !data.ServiceProviderAccessEnabled && user.Role == "Dienstleister" {
+				<span class="muted">Schreibgeschützt</span>
+			} else {
+				<button class="icon-button row-edit" type="button" data-edit={ user.Email } aria-label={ user.DisplayName + " bearbeiten" } aria-haspopup="dialog" aria-controls={ "edit-" + user.Email }>✎</button>
+				@UserEditDialog(data, user)
+			}
+		}
+	</article>
+}
+
+	templ UserEditDialog(data UserSettingsPageData, user view.UserRow) {
+	<dialog id={ "edit-" + user.Email } class="user-dialog" aria-labelledby={ "edit-title-" + user.Email }><form method="dialog" class="dialog-close"><button aria-label="Schließen">×</button></form><h2 id={ "edit-title-" + user.Email }>Zugang bearbeiten</h2><p>{ user.Email }
+		if user.IsConfig {
+			<span> (aus Konfiguration)</span>
+		}
+	</p><form method="post" action="/app/settings/users/edit"><input type="hidden" name="orig_email" value={ user.Email }/><label>Rolle in diesem Haus<select class="f-role" name="role" autofocus>@RoleOptions(data, user.Role)</select></label>
+		<details class="inline-details"><summary>Personendaten <small>
+			if data.IsAdmin {
+				bearbeiten
+			} else {
+				zentral gepflegt
+			}
+		</small></summary><div class="form-grid three"><input name="title" value={ user.Title } placeholder="Titel" aria-label="Titel" readonly?={ !data.IsAdmin }/><input name="first_name" value={ user.FirstName } placeholder="Vorname" aria-label="Vorname" readonly?={ !data.IsAdmin }/><input name="last_name" value={ user.LastName } placeholder="Nachname" aria-label="Nachname" readonly?={ !data.IsAdmin }/><input type="email" name="email" value={ user.Email } aria-label="E-Mail-Adresse" autocomplete="email" readonly?={ user.IsConfig || !data.IsAdmin } required?={ !user.IsConfig && data.IsAdmin }/></div></details>
+		<details class="inline-details"><summary>Einheiten <small>{ len(user.UnitList) } verknüpft</small></summary><div class="chips">
+			for _, unit := range user.UnitList {
+				<span>{ unit }</span>
+			}
+		</div><a class="text-link" href="/app/settings/building?section=units">Zuordnung verwalten</a></details>
+		<details class="inline-details"><summary>Anmeldung &amp; Sonderrechte</summary>@AccessOptions(user.ParkingChecked, user.EnergyCaretakerChecked, user.EmailAuthChecked, user.OIDCAuthChecked)</details>
+		<label class="check-card"><input type="checkbox" name="deactivated" value="1" checked?={ user.Deactivated }/><span><strong>Zugang deaktivieren</strong><small>Die Anmeldung wird gesperrt; der Eintrag bleibt reaktivierbar.</small></span></label><button class="button primary" type="submit">Änderungen speichern</button></form>
+		if !user.IsConfig {
+			<details class="danger"><summary>Zugang dauerhaft entfernen</summary><form method="post" action="/app/settings/users/delete" data-confirm="Diesen Zugang wirklich dauerhaft entfernen?"><input type="hidden" name="email" value={ user.Email }/><p>Entfernt die Hauszuordnung dauerhaft. Sperren ist weiterhin rückgängig zu machen.</p><button type="submit">Dauerhaft entfernen</button></form></details>
+		}
+	</dialog>
+}
+
+templ AccessOptions(parking, energyCaretaker, emailAuth, oidcAuth bool) {
+	<div class="access-options"><fieldset><legend>Sonderrechte</legend><span class="scope personal" data-preset-label>Gespeicherte Rechte</span><label class="check-card"><input type="checkbox" name="permissions" value="parking" data-permission="parking" checked?={ parking }/><span><strong>Parkplatznutzung</strong><small>Privater Bereich für Stellplatz- und Ladeabrechnung.</small></span></label><label class="check-card"><input type="checkbox" name="permissions" value="energy-caretaker" data-permission="energy-caretaker" checked?={ energyCaretaker }/><span><strong>Technische Vertrauensperson</strong><small>Darf Energiedaten ansehen und die Einrichtung unterstützen.</small></span></label></fieldset><fieldset><legend>Anmeldung</legend><label class="check-card"><input type="checkbox" name="auth_methods" value="email" checked?={ emailAuth }/><span><strong>E-Mail-Link</strong><small>Anmeldung per Magic-Link.</small></span></label><label class="check-card"><input type="checkbox" name="auth_methods" value="oidc" checked?={ oidcAuth }/><span><strong>Sichere Anmeldung</strong><small>Anmeldung über den zentralen Hauszugang.</small></span></label></fieldset></div>
+}
+
+templ SettingsStyles() {
+	<style>
+		:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--font-serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);font-family:var(--font-sans)}
+		*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}button{cursor:pointer}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.skip-link{position:fixed;z-index:70;top:var(--space-2);left:var(--space-2);padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.skip-link:focus{transform:translateY(0)}
+		.shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.house-name{display:block;font-family:var(--font-serif);font-size:27px;line-height:1}.house-address{display:block;margin-top:var(--space-2);color:var(--soft);font-size:12px}.map{display:block;height:74px;margin-top:var(--space-4);overflow:hidden;background:var(--nav-2);border:1px solid var(--muted);border-radius:var(--radius-md)}.map svg{display:block;width:100%;height:100%}.map-streets{fill:none;stroke:var(--muted);stroke-width:1;opacity:.42}.map-pin{fill:var(--gold-light);stroke:var(--gold)}.map-hole{fill:var(--nav)}.context-switch{margin-top:var(--space-3);font-size:11px}.context-switch summary{cursor:pointer;color:var(--gold-light)}.context-menu{display:grid;gap:var(--space-2);margin-top:var(--space-2);padding:var(--space-2);background:var(--nav-2);border-radius:var(--radius-sm)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.context-menu small{color:var(--soft)}.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-label{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-notes>summary{margin-top:2px;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}.release-notes>summary::-webkit-details-marker{display:none}.release-panel{position:fixed;z-index:50;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.release-panel h2{font-size:24px}.release-entry{padding-top:var(--space-4)}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}.mobile-head{display:none}
+		.settings-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.settings-main>*{max-width:1180px;margin-inline:auto}.settings-main>*+*{margin-top:var(--space-5)}.page-head{display:flex;align-items:end;justify-content:space-between;gap:var(--space-5);padding-bottom:var(--space-4);border-bottom:1px solid var(--line)}.page-head>div{display:grid;gap:6px}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.page-head h1{font-size:42px;line-height:1}.page-head p{max-width:720px;color:var(--muted);font-size:14px;line-height:1.5}.panel{border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.button{min-height:42px;display:inline-flex;align-items:center;justify-content:center;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:var(--panel);color:var(--gold-ink);font-size:12px;font-weight:800}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.text-link{color:var(--gold-ink);font-weight:800;text-decoration:underline;text-underline-offset:3px}.muted{color:var(--muted)}
+		.identity-card{display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:var(--space-4);padding:var(--space-4)}.identity-icon,.link-icon,.unit-kind{display:grid;place-items:center;background:var(--panel-soft);border:1px solid var(--line);color:var(--gold-ink);border-radius:var(--radius-sm)}.identity-icon{width:58px;height:58px;background:var(--ink);color:var(--panel)}.identity-icon svg{width:28px}.identity-card h2{font-size:23px}.identity-card p{margin-top:3px;color:var(--muted);font-size:13px}.pill,.scope{display:inline-flex;align-items:center;width:max-content;padding:4px 10px;border-radius:var(--radius-pill);background:var(--panel-soft);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:800}.scope.personal{background:rgba(47,107,74,.08);color:var(--leaf)}.scope.management{background:rgba(200,153,63,.12);color:var(--gold-ink)}.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}.span-all{grid-column:1/-1}.settings-group{overflow:hidden}.settings-group>header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px var(--space-3);align-items:start;padding:var(--space-4)}.settings-group h2{font-size:21px}.settings-group header p{margin-top:4px;color:var(--muted);font-size:12px}.settings-links{display:grid}.settings-links a{min-height:72px;display:grid;grid-template-columns:42px minmax(0,1fr) 16px;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-top:1px solid var(--line)}.settings-links a:hover{background:var(--panel-soft)}.settings-links .link-icon{width:42px;height:42px}.link-icon svg,.unit-kind svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8}.settings-links strong,.settings-links small{display:block}.settings-links strong{font-family:var(--font-serif);font-size:17px}.settings-links small{margin-top:3px;color:var(--muted);font-size:12px}.settings-links b{color:var(--gold-ink);font-size:22px}.management-links{grid-template-columns:repeat(2,minmax(0,1fr))}.management-links a:nth-child(even){border-left:1px solid var(--line)}
+		.two-column{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:var(--space-4);align-items:start}.form-card{padding:var(--space-4)}.form-card form,.workspace form,.user-dialog form{display:grid;gap:var(--space-4)}fieldset{min-width:0;display:grid;gap:var(--space-3);margin:0;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}legend{padding-inline:var(--space-2);font-family:var(--font-serif);font-size:19px;font-weight:700}fieldset>p{color:var(--muted);font-size:12px}.form-grid,.contact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.contact-grid{grid-template-columns:repeat(3,minmax(0,1fr))}label{display:grid;gap:6px;color:var(--gold-ink);font-size:11px;font-weight:800}label small{color:var(--soft);font-weight:600}input,select,textarea,.readonly{width:100%;min-height:42px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}textarea{min-height:92px;resize:vertical}.readonly{display:flex;align-items:center;overflow-wrap:anywhere}.check-card{min-height:64px;display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.check-card input{width:19px;min-height:19px;margin:1px 0 0;accent-color:var(--leaf)}.check-card span{display:grid;gap:3px;color:var(--ink);font-size:13px}.check-card small{color:var(--muted);font-size:12px;line-height:1.4}.form-actions,.dialog-card>footer{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:var(--space-2)}.aside-stack{display:grid;gap:var(--space-3)}.note{overflow:hidden}.note>summary{min-height:52px;display:flex;align-items:center;padding:0 var(--space-4);cursor:pointer;font-weight:850;list-style:none}.note>summary::-webkit-details-marker{display:none}.note>div{display:grid;gap:var(--space-3);padding:0 var(--space-4) var(--space-4);color:var(--muted);font-size:12px}.facts{display:grid;gap:var(--space-2);margin:0;padding:0;list-style:none}.facts li{display:grid;gap:2px}.facts li+li{padding-top:var(--space-2);border-top:1px solid var(--line)}.facts strong{color:var(--ink);font-size:13px}.chips{display:flex;flex-wrap:wrap;gap:5px}.chips span{display:inline-flex;padding:3px 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:11px}.flash,.notice{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:rgba(200,153,63,.09);color:var(--gold-ink);font-size:12px;line-height:1.45}.flash.ok{background:rgba(47,107,74,.08);color:var(--leaf)}
+		.notification-form{display:grid;gap:var(--space-4)}.master-switch{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink)}.master-switch .link-icon{width:48px;height:48px}.master-switch strong,.master-switch small{display:block}.master-switch strong{font-family:var(--font-serif);font-size:18px}.master-switch small{margin-top:3px;color:var(--muted);font-size:12px}.switch{position:relative;width:46px;height:27px}.switch input{position:absolute;opacity:0}.switch i{position:absolute;inset:0;border-radius:var(--radius-pill);background:var(--line);box-shadow:inset 0 0 0 1px rgba(32,37,31,.08)}.switch i::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:var(--panel);box-shadow:0 2px 5px rgba(32,37,31,.18);transition:.16s}.switch input:checked+i{background:var(--leaf)}.switch input:checked+i::after{transform:translateX(19px)}.subhead{display:flex;align-items:end;justify-content:space-between;gap:var(--space-3)}.subhead h2{font-size:21px}.subhead p,.subhead>span{color:var(--muted);font-size:12px}.option-group{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm)}.option-group h3{padding:9px var(--space-3);background:var(--panel-soft);color:var(--gold-ink);font-family:var(--font-sans);font-size:10px;text-transform:uppercase;letter-spacing:.08em}.option-group>label{min-height:62px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line);color:var(--ink)}.option-group strong,.option-group small{display:block}.option-group small{margin-top:3px;color:var(--muted);font-size:12px}.paused-note{display:none}.email-paused .paused-note{display:block}.email-paused .option-group{opacity:.7}
+		.section-tabs{display:flex;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.section-tabs a{min-height:46px;display:grid;place-items:center;padding:0 var(--space-4);border-right:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:800;white-space:nowrap}.section-tabs a.active{background:var(--ink);color:var(--panel)}.workspace{padding:var(--space-4)}.workspace>*+*{margin-top:var(--space-4)}.workspace-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px solid var(--line)}.workspace-head h2{font-size:24px}.workspace-head p{margin-top:3px;color:var(--muted);font-size:12px}.head-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.map-card{min-height:180px;display:grid;place-content:center;justify-items:center;gap:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);text-align:center}.map-card .map-pin{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}.map-card svg{width:23px;fill:none;stroke:currentColor}.map-card small{color:var(--muted)}.inline-details{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.inline-details>summary{cursor:pointer;font-weight:800}.inline-details>*+*{margin-top:var(--space-3)}.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.metrics.four{grid-template-columns:repeat(4,minmax(0,1fr))}.metrics span{display:grid;gap:3px;padding:var(--space-3);border-left:1px solid var(--line)}.metrics span:first-child{border-left:0}.metrics strong{font-family:var(--font-serif);font-size:22px}.metrics small{color:var(--muted);font-size:11px}.unit-list,.user-list{display:grid;gap:var(--space-2)}.unit-card{display:grid;grid-template-columns:42px minmax(150px,1.1fr) minmax(180px,1fr) minmax(100px,.5fr) minmax(120px,.6fr) 42px;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.unit-kind{width:42px;height:42px}.unit-title,.assignment,.unit-card>div{min-width:0;display:grid;gap:3px}.unit-card small{color:var(--muted);font-size:11px}.unit-title em{color:var(--gold-ink);font-size:10px;font-style:normal}.icon-button{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--gold-ink);font-size:20px}.anchor-dialog{position:fixed;z-index:80;inset:0;display:none;place-items:center;padding:var(--space-4)}.anchor-dialog:target{display:grid}.dialog-backdrop{position:absolute;inset:0;background:rgba(32,37,31,.48)}.dialog-card{position:relative;width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;display:grid;gap:var(--space-4);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}.dialog-card>header{display:flex;justify-content:space-between;gap:var(--space-3)}.dialog-card>form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3)}.dialog-card>form fieldset{align-content:start}.dialog-card>footer form{margin-right:auto}.appearance-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.7fr);gap:var(--space-4);align-items:start}.inset{padding:var(--space-4)}.inset>*+*{margin-top:var(--space-3)}.brand-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-2)}.brand-grid label{position:relative;place-items:center;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);text-align:center}.brand-grid input{position:absolute;opacity:0}.brand-grid label:has(input:checked){background:var(--panel-soft);border-color:var(--gold)}.brand-grid svg{width:26px;fill:none;stroke:var(--gold-ink)}.hero-preview{width:100%;aspect-ratio:16/7;object-fit:cover;border-radius:var(--radius-sm)}.preview{position:sticky;top:var(--space-4);overflow:hidden;padding:var(--space-4)}.preview>img{width:100%;aspect-ratio:16/9;object-fit:cover;margin-top:var(--space-3);border-radius:var(--radius-sm)}.preview>div{display:grid;grid-template-columns:38px 1fr;gap:var(--space-2);margin-top:var(--space-3)}.preview-mark{grid-row:1/3;display:grid;place-items:center}.preview-mark svg{width:24px;fill:none;stroke:var(--gold-ink)}.preview small{color:var(--muted)}.preview h3{margin-block:var(--space-5);font-size:27px}.preview p{margin-top:var(--space-3);color:var(--muted);font-size:11px}
+		.invite{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.invite>summary{min-height:54px;display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:var(--space-2);padding:var(--space-3);cursor:pointer;list-style:none}.invite>summary span{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:var(--ink);color:var(--panel)}.invite>summary small{color:var(--muted)}.invite>form{padding:0 var(--space-4) var(--space-4)}.access-options{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-3)}.user-card{display:grid;grid-template-columns:42px minmax(180px,1.25fr) auto minmax(110px,.7fr) auto 42px;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.user-card.attention{background:var(--panel-soft)}.user-avatar{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:rgba(200,153,63,.14);color:var(--gold-ink);font-weight:800}.user-identity{min-width:0;display:grid;gap:2px}.user-identity a,.user-identity small{color:var(--muted);font-size:11px;overflow-wrap:anywhere}.user-dialog{width:min(570px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.user-dialog::backdrop{background:rgba(32,37,31,.48)}.user-dialog>p{margin:3px 0 var(--space-4);color:var(--muted);font-size:12px}.dialog-close{float:right}.dialog-close button{width:42px;height:42px;border:0;background:transparent;font-size:22px}.danger{margin-top:var(--space-4);border-top:1px solid var(--line);padding-top:var(--space-3)}.danger>summary{cursor:pointer;color:#8c3434;font-weight:800}.danger form{margin-top:var(--space-3)}.danger button{justify-self:start;min-height:42px;border:1px solid #8c3434;border-radius:var(--radius-sm);background:var(--panel);color:#8c3434;font-weight:800}
+		.empty{display:grid;justify-items:start;gap:var(--space-2);padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.empty p{color:var(--muted);font-size:12px}
+		@media(max-width:1050px){.shell{grid-template-columns:210px minmax(0,1fr)}.two-column,.appearance-grid{grid-template-columns:1fr}.contact-grid{grid-template-columns:1fr 1fr}.unit-card{grid-template-columns:42px minmax(0,1fr) auto}.unit-card .assignment,.unit-card>div:nth-of-type(3){display:none}.user-card{grid-template-columns:42px minmax(0,1fr) auto 42px}.user-card>.chips,.user-card>.pill:last-of-type{display:none}.preview{position:static}}
+		@media(max-width:760px){.shell{display:block}.sidebar{display:none}.mobile-head{position:sticky;z-index:40;top:0;display:grid;grid-template-columns:42px minmax(0,1fr) 38px;align-items:center;gap:var(--space-3);min-height:74px;padding:var(--space-3) var(--space-4);background:var(--nav);color:var(--panel)}.mobile-menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.mobile-menu>summary::-webkit-details-marker{display:none}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:"";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.mobile-menu-panel{position:absolute;top:74px;right:0;left:0;max-height:calc(100vh - 74px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);border-top:1px solid var(--nav-2);box-shadow:var(--shadow-dialog)}.mobile-menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.mobile-menu-panel .nav a{margin:0;min-height:44px;padding:var(--space-2) var(--space-3)}.mobile-menu-panel .nav-label{grid-column:1/-1}.mobile-menu-panel .logout-form button{min-height:44px;margin-top:var(--space-3)}.mobile-title strong,.mobile-title small{display:block}.mobile-title strong{font-family:var(--font-serif);font-size:21px}.mobile-title small{margin-top:var(--space-1);color:var(--soft);font-size:10px}.mobile-head .avatar{width:38px;height:38px}.settings-main{padding:var(--space-5) var(--space-4) 48px}.page-head{display:grid;align-items:start}.page-head h1{font-size:34px}.page-head .button{justify-self:start}.settings-grid,.management-links,.form-grid,.form-grid.three,.contact-grid,.access-options{grid-template-columns:1fr}.span-all{grid-column:auto}.management-links a:nth-child(even){border-left:0}.identity-card{grid-template-columns:48px minmax(0,1fr)}.identity-icon{width:48px;height:48px}.identity-card>.pill{grid-column:2}.section-tabs{margin-inline:-4px}.section-tabs a{padding-inline:var(--space-3)}.workspace{padding:var(--space-3)}.workspace-head{display:grid}.head-actions{display:grid}.metrics.four{grid-template-columns:repeat(3,1fr)}.metrics.four span:first-child{display:none}.metrics.four span:nth-child(2){border-left:0}.dialog-card>form{grid-template-columns:1fr}.brand-grid{grid-template-columns:repeat(2,1fr)}.unit-card{grid-template-columns:38px minmax(0,1fr) 42px}.unit-card>div:not(.unit-title){display:none}.user-card{grid-template-columns:38px minmax(0,1fr) 42px}.user-card>.pill,.user-card>.chips,.user-card>.muted{display:none}.invite>summary{grid-template-columns:26px 1fr}.invite>summary small{grid-column:2}.form-actions{display:grid;grid-template-columns:1fr}.form-actions .button{width:100%}}
+	</style>
+}
