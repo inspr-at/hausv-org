@@ -149,13 +149,11 @@ var issueLocationLabel = view.IssueLocationLabel
 var issueSelectOptions = view.IssueSelectOptions
 var issueStatusClass = view.IssueStatusClass
 var managedContactViewFrom = view.ManagedContactViewFrom
-var normalizeTenantBrandIcon = view.NormalizeTenantBrandIcon
 var notificationEventOptions = view.NotificationEventOptions
 var paidLabel = view.PaidLabel
 var parkingStatementTariffLabel = view.ParkingStatementTariffLabel
 var permissionLabel = view.PermissionLabel
 var roleClass = view.RoleClass
-var tenantBrandIconLabel = view.TenantBrandIconLabel
 var tenantBrandIconOptions = view.TenantBrandIconOptions
 var togglePaidLabel = view.TogglePaidLabel
 var unitBillableLabel = view.UnitBillableLabel
@@ -886,7 +884,53 @@ const (
 	tenantBrandMixedUse     = "mixed-use"
 	tenantBrandAddressPlate = "address-plaque"
 	tenantBrandParking      = "parking"
+	tenantBrandLucidePrefix = "lucide:"
 )
+
+func normalizeTenantBrandIcon(raw string) string {
+	if preset := view.NormalizeTenantBrandIcon(raw); preset != "" {
+		return preset
+	}
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	if !strings.HasPrefix(raw, tenantBrandLucidePrefix) {
+		return ""
+	}
+	name := strings.TrimSpace(strings.TrimPrefix(raw, tenantBrandLucidePrefix))
+	if !web.IsLucideIcon(name) {
+		return ""
+	}
+	return tenantBrandLucidePrefix + name
+}
+
+func tenantBrandLucideName(icon string) string {
+	icon = normalizeTenantBrandIcon(icon)
+	if !strings.HasPrefix(icon, tenantBrandLucidePrefix) {
+		return ""
+	}
+	return strings.TrimPrefix(icon, tenantBrandLucidePrefix)
+}
+
+func tenantBrandIconLabel(icon string) string {
+	if name := tenantBrandLucideName(icon); name != "" {
+		return name
+	}
+	return view.TenantBrandIconLabel(icon)
+}
+
+func tenantBrandLucideSVG(icon string) template.HTML {
+	name := tenantBrandLucideName(icon)
+	if name == "" {
+		return ""
+	}
+	contents, err := web.Assets.ReadFile("assets/icons/lucide/" + name + ".svg")
+	if err != nil {
+		return ""
+	}
+	svg := string(contents)
+	svg = strings.Replace(svg, "<svg", `<svg aria-hidden="true" focusable="false"`, 1)
+	svg = strings.Replace(svg, `class="`, `class="hausv-mark tenant-brand-mark `, 1)
+	return template.HTML(svg) // #nosec G203 -- only a whitelisted, vendored Lucide SVG can reach this branch.
+}
 
 // routes builds the application's ServeMux. Extracted from main() so that
 // tests exercise the real route patterns instead of calling handler methods
@@ -3298,6 +3342,10 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 			homeProfileScopeLabel = homeProfileUnitLabel
 		}
 	}
+	lucideIconNamesJSON, err := json.Marshal(web.LucideIconNames())
+	if err != nil {
+		lucideIconNamesJSON = []byte("[]")
+	}
 	a.render(w, "buildingSettings", a.withBase(ac, map[string]any{
 		"Title":                 "Gebäude & Einheiten",
 		"ActivePage":            "settings",
@@ -3306,6 +3354,8 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"BuildingSection":       section,
 		"BrandIconOptions":      tenantBrandIconOptions(tenant.BrandIcon),
 		"BrandIconLabel":        tenantBrandIconLabel(tenant.BrandIcon),
+		"BrandIconIsLucide":     tenantBrandLucideName(tenant.BrandIcon) != "",
+		"LucideIconNamesJSON":   template.JS(lucideIconNamesJSON),
 		"HeroMsg":               heroMsg,
 		"HeroOK":                heroOK,
 		"HasCustomHero":         a.hasTenantHero(tenant.Slug),
@@ -5010,6 +5060,9 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	}
 	if _, ok := data["ServiceProviderAccessEnabled"]; !ok {
 		data["ServiceProviderAccessEnabled"] = a.serviceAccessEnabled
+	}
+	if tenant, ok := data["Tenant"].(tenantConfig); ok {
+		data["TenantBrandLucideSVG"] = tenantBrandLucideSVG(tenant.BrandIcon)
 	}
 	if _, ok := data["ReleaseNotes"]; !ok {
 		notes := version.Notes()

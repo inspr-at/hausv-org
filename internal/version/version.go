@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.94.1",
+			Date:     "15. August 2026",
+			Kind:     "Erscheinungsbild",
+			Headline: "Vorschau und Portal-Symbol entsprechen jetzt dem echten Auftritt.",
+			Intro:    "Die Seitenleiste wird realitätsnah dargestellt und die Portal-Kennung kann jedes lokal eingebundene Lucide-SVG verwenden.",
+			Items: []NoteItem{
+				{Label: "Realistisch", Text: "Kartenkopf, Portalwechsel, Navigation und Konto erscheinen in der Vorschau wie im Portal."},
+				{Label: "Freie Symbolwahl", Text: "Die vollständige Lucide-Bibliothek ist durchsuchbar; die bisherigen Vorgaben bleiben erhalten."},
+			},
+		},
+		{
 			Version:  "0.94.0",
 			Date:     "15. August 2026",
 			Kind:     "Erscheinungsbild",

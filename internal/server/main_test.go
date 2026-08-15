@@ -2056,9 +2056,26 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatal("app sidebar should not repeat the internal brand abbreviation")
 	}
 	settingsPage := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=appearance")
-	for _, want := range []string{`name="brand_icon"`, `value="mixed-use" checked`, `value="SUN-ECK"`, `Gemischt genutzt`, `Live-Vorschau`} {
+	for _, want := range []string{`name="brand_icon"`, `value="mixed-use" checked`, `value="SUN-ECK"`, `Gemischt genutzt`, `Weitere Symbole aus Lucide`, `brand-lucide-icon-names`, `Live-Vorschau`} {
 		if !strings.Contains(settingsPage.Body.String(), want) {
 			t.Fatalf("building settings should render brand control %q:\n%s", want, settingsPage.Body.String())
+		}
+	}
+	saveLucideBrand := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/appearance", url.Values{
+		"brand_icon":         {"lucide:tree-pine"},
+		"brand_abbreviation": {"WALD"},
+	})
+	if saveLucideBrand.Code != http.StatusSeeOther || saveLucideBrand.Result().Header.Get("Location") != "/demo/app/settings/building?section=appearance&building=saved" {
+		t.Fatalf("Lucide brand save status=%d location=%q", saveLucideBrand.Code, saveLucideBrand.Result().Header.Get("Location"))
+	}
+	tenant, _ = a.tenantBySlug("demo")
+	if tenant.BrandIcon != "lucide:tree-pine" || tenant.BrandAbbreviation != "WALD" {
+		t.Fatalf("tenant after Lucide brand save = %+v", tenant)
+	}
+	appPage = authedRequest(t, a, "manager@example.com", "/demo/app")
+	for _, want := range []string{`lucide-tree-pine`, `tenant-brand-mark`} {
+		if !strings.Contains(appPage.Body.String(), want) {
+			t.Fatalf("app sidebar should render selected Lucide marker %q:\n%s", want, appPage.Body.String())
 		}
 	}
 	invalidBrand := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building", url.Values{

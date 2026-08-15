@@ -74,7 +74,9 @@ const PageTemplates = `
 </svg>
 {{end}}
 {{define "tenantBrandMark"}}
-{{if eq .Tenant.BrandIcon "single-home"}}
+{{if .TenantBrandLucideSVG}}
+{{.TenantBrandLucideSVG}}
+{{else if eq .Tenant.BrandIcon "single-home"}}
 <svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false">
   <path d="M12 35h40"/>
   <path d="M16 35V22.5L32 11l16 11.5V35"/>
@@ -8207,6 +8209,18 @@ const PageTemplates = `
       .building .brand-icon-choice input { position: absolute; width: 1px; height: 1px; min-height: 0; opacity: 0; pointer-events: none; }
       .building .brand-icon-choice svg { width: 38px; height: 31px; display: block; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
       .building .brand-icon-choice strong { max-width: 100%; font-size: 11px; line-height: 1.25; letter-spacing: .035em; overflow-wrap: anywhere; text-transform: uppercase; }
+      .building .brand-icon-library { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+      .building .brand-icon-library-head { display: flex; justify-content: space-between; gap: 14px; align-items: end; }
+      .building .brand-icon-library-head div { display: grid; gap: 2px; }
+      .building .brand-icon-library-head strong { font-size: 13px; }
+      .building .brand-icon-library-head small, .building .brand-icon-result-note { color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+      .building .brand-icon-search { position: relative; width: min(250px,48%); }
+      .building .brand-icon-search svg { position: absolute; left: 11px; top: 50%; width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; transform: translateY(-50%); pointer-events: none; }
+      .building .brand-icon-search input { width: 100%; min-height: 40px; padding-left: 35px; }
+      .building .brand-icon-search-results[hidden], .building .brand-icon-result-note[hidden] { display: none; }
+      .building .brand-lucide-glyph { width: 28px; height: 28px; display: block; background: currentColor; -webkit-mask-image: var(--brand-lucide-icon); mask-image: var(--brand-lucide-icon); -webkit-mask-position: center; mask-position: center; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; }
+      .building .preview-brand-mark .brand-lucide-glyph { width: 29px; height: 29px; }
+      .building .preview-sidebar-pin-mark .brand-lucide-glyph { width: 17px; height: 17px; }
       .building .abbreviation-field { display: grid; gap: 6px; }
       .building .field-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 11.5px; font-weight: 650; }
       .building .appearance-card-actions { display: flex; justify-content: flex-end; gap: 9px; padding-top: 2px; }
@@ -8224,12 +8238,12 @@ const PageTemplates = `
       .building .preview-tabs { display: inline-flex; gap: 3px; border: 1px solid var(--line); border-radius: 8px; padding: 3px; background: #fffefb; }
       .building .preview-tab { min-height: 30px; border: 0; border-radius: 6px; padding: 0 9px; color: var(--muted); background: transparent; font: inherit; font-size: 10.5px; font-weight: 800; cursor: pointer; }
       .building .preview-tab.is-active { color: #fff; background: var(--ink); }
-      .building .appearance-preview-stage { position: relative; min-height: 390px; border-radius: 11px; overflow: hidden; background: var(--ink); box-shadow: 0 14px 30px rgba(20,29,23,.17); }
-      .building .appearance-preview-stage > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-      .building .appearance-preview-stage::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg,rgba(20,29,23,.2),rgba(20,29,23,.8)); }
-      .building .preview-login, .building .preview-sidebar { position: relative; z-index: 1; min-height: 390px; color: #fff; }
+      .building .appearance-preview-stage { position: relative; min-height: 560px; border-radius: 11px; overflow: hidden; background: var(--nav); box-shadow: 0 14px 30px rgba(20,29,23,.17); }
+      .building .preview-login, .building .preview-sidebar { position: relative; min-height: 560px; color: #fff; }
       .building .appearance-preview [hidden] { display: none; }
-      .building .preview-login { display: grid; grid-template-rows: auto 1fr auto; gap: 20px; padding: 22px; }
+      .building .preview-login { z-index: 1; display: grid; grid-template-rows: auto 1fr auto; gap: 20px; padding: 22px; overflow: hidden; }
+      .building .preview-login > img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+      .building .preview-login::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg,rgba(20,29,23,.2),rgba(20,29,23,.82)); }
       .building .preview-identity { display: flex; align-items: center; gap: 10px; }
       .building .preview-brand-mark { width: 46px; height: 46px; display: grid; place-items: center; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.5); border-radius: 50%; color: #f0c960; background: rgba(20,29,23,.75); }
       .building .preview-brand-mark svg { width: 31px; height: 26px; display: block; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -8239,11 +8253,42 @@ const PageTemplates = `
       .building .preview-message span { color: #f0c960; font-size: 10px; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
       .building .preview-message h4 { max-width: 300px; margin: 8px 0 0; color: #fff; font-family: var(--font-serif); font-size: 34px; line-height: .98; }
       .building .preview-login-action { width: max-content; border-radius: 7px; padding: 9px 13px; color: var(--ink); background: #fffefb; font-size: 11px; font-weight: 850; }
-      .building .preview-sidebar { display: grid; grid-template-rows: auto 1fr auto; padding: 18px; background: linear-gradient(180deg,rgba(20,29,23,.2),rgba(20,29,23,.88)); }
-      .building .preview-sidebar .preview-identity { border: 1px solid rgba(255,255,255,.26); border-radius: 10px; padding: 11px; background: rgba(20,29,23,.5); backdrop-filter: blur(7px); }
-      .building .preview-nav { align-self: center; display: grid; gap: 8px; }
-      .building .preview-nav span { min-height: 36px; display: flex; align-items: center; border-radius: 7px; padding: 0 11px; color: rgba(255,255,255,.72); background: rgba(255,255,255,.07); font-size: 11px; font-weight: 750; }
-      .building .preview-nav span:first-child { color: #fff; background: rgba(255,255,255,.16); }
+      .building .preview-sidebar { display: grid; grid-template-rows: 208px minmax(0,1fr) auto; background: radial-gradient(circle at 20% 0%,rgba(255,255,255,.08),transparent 28%),var(--nav); }
+      .building .preview-sidebar-map { position: relative; min-width: 0; overflow: hidden; background: #d8d2c4; isolation: isolate; }
+      .building .preview-sidebar-map::after { content: ""; position: absolute; inset: 0; z-index: 2; background: linear-gradient(180deg,rgba(247,243,234,.08),rgba(23,32,25,.06) 46%,rgba(23,32,25,.55) 72%,var(--nav) 100%); pointer-events: none; }
+      .building .preview-sidebar-map-tiles { position: absolute; inset: 0; z-index: 1; filter: saturate(.54) sepia(.1) contrast(.86) brightness(.97); }
+      .building .preview-sidebar-map-tiles img { position: absolute; width: 256px; height: 256px; max-width: none; }
+      .building .preview-sidebar-map-fallback { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; padding-bottom: 50px; color: rgba(23,32,25,.68); background: linear-gradient(135deg,rgba(255,255,255,.3),transparent 55%),#d9d5c9; font-size: 10px; font-weight: 750; }
+      .building .preview-sidebar-switch { position: absolute; left: 12px; right: 12px; top: 12px; z-index: 5; min-height: 50px; display: grid; grid-template-columns: 29px minmax(0,1fr) 12px; gap: 9px; align-items: center; border: 1px solid rgba(255,255,255,.3); border-radius: 8px; padding: 7px 9px; background: rgba(23,32,25,.58); backdrop-filter: blur(8px); }
+      .building .preview-sidebar-switch-icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: var(--gold-light); background: rgba(255,255,255,.08); }
+      .building .preview-sidebar-switch-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+      .building .preview-sidebar-switch-copy { min-width: 0; display: grid; gap: 1px; }
+      .building .preview-sidebar-switch-copy small { color: rgba(255,255,255,.58); font-size: 8px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+      .building .preview-sidebar-switch-copy strong { overflow: hidden; color: rgba(255,255,255,.96); font-size: 12px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+      .building .preview-sidebar-chevron { width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); }
+      .building .preview-sidebar-pin { position: absolute; left: 50%; top: 55%; z-index: 4; width: 35px; height: 45px; color: var(--gold-light); filter: drop-shadow(0 5px 6px rgba(23,32,25,.38)); transform: translate(-50%,-100%); }
+      .building .preview-sidebar-pin > svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--nav); stroke: rgba(231,216,177,.88); stroke-width: 1.25; }
+      .building .preview-sidebar-pin-mark { position: absolute; left: 50%; top: 7px; width: 20px; height: 17px; display: grid; place-items: center; transform: translateX(-50%); }
+      .building .preview-sidebar-pin-mark svg { width: 20px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .building .preview-sidebar-place { position: absolute; left: 14px; right: 14px; bottom: 8px; z-index: 5; display: grid; gap: 5px; }
+      .building .preview-sidebar-place strong { overflow: hidden; color: rgba(255,255,255,.96); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+      .building .preview-sidebar-place small { overflow: hidden; color: rgba(255,255,255,.58); font-size: 8.5px; text-overflow: ellipsis; white-space: nowrap; }
+      .building .preview-sidebar-ruler { height: 8px; border-top: 1px solid rgba(207,171,83,.72); background: linear-gradient(rgba(207,171,83,.72),rgba(207,171,83,.72)) 25% 0/1px 4px no-repeat,linear-gradient(rgba(207,171,83,.82),rgba(207,171,83,.82)) 50% 0/1px 7px no-repeat,linear-gradient(rgba(207,171,83,.72),rgba(207,171,83,.72)) 75% 0/1px 4px no-repeat; }
+      .building .preview-sidebar-portal { color: rgba(255,255,255,.86); font-size: 10px; font-weight: 700; }
+      .building .preview-sidebar-portal span { color: rgba(255,255,255,.48); font-weight: 500; }
+      .building .preview-sidebar-nav { display: grid; align-content: start; gap: 2px; padding: 9px 11px; overflow: hidden; }
+      .building .preview-sidebar-nav-item { min-height: 31px; display: flex; align-items: center; gap: 8px; border-radius: 6px; padding: 5px 8px; color: rgba(255,255,255,.74); font-size: 10px; font-weight: 650; }
+      .building .preview-sidebar-nav-item.active { position: relative; color: #fff; background: rgba(255,255,255,.08); }
+      .building .preview-sidebar-nav-item.active::before { content: ""; position: absolute; left: -11px; top: 0; bottom: 0; width: 3px; background: var(--gold); }
+      .building .preview-sidebar-nav-item svg { width: 16px; height: 16px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+      .building .preview-sidebar-group { margin: 5px 8px 1px; color: rgba(255,255,255,.4); font-size: 7px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+      .building .preview-sidebar-foot { display: grid; grid-template-columns: 30px minmax(0,1fr) 30px; gap: 8px; align-items: center; margin: 0 11px; border-top: 1px solid rgba(255,255,255,.16); padding: 9px 0 11px; }
+      .building .preview-sidebar-avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--gold); font-size: 9px; font-weight: 850; }
+      .building .preview-sidebar-user { min-width: 0; display: grid; gap: 1px; }
+      .building .preview-sidebar-user strong { overflow: hidden; color: #fff; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+      .building .preview-sidebar-user span { color: rgba(255,255,255,.58); font-size: 7.5px; }
+      .building .preview-sidebar-logout { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; color: rgba(255,255,255,.72); }
+      .building .preview-sidebar-logout svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
       .building .preview-caption { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
       .building .unit-panel { display: grid; gap: 18px; padding: 22px; }
       .building .unit-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 20px; align-items: start; }
@@ -8348,6 +8393,8 @@ const PageTemplates = `
         .building .hero-delete .button { width: 100%; }
         .building .brand-icon-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
         .building .brand-icon-choice strong { font-size: 8.5px; letter-spacing: 0; }
+        .building .brand-icon-library-head { align-items: stretch; flex-direction: column; }
+        .building .brand-icon-search { width: 100%; }
         .building .appearance-preview-head { align-items: flex-start; flex-direction: column; }
         .building .preview-tabs { width: 100%; }
         .building .preview-tab { flex: 1; }
@@ -8587,10 +8634,11 @@ const PageTemplates = `
                   </header>
                   <fieldset>
                     <legend>Portal-Symbol</legend>
+                    <input type="hidden" name="brand_icon" value="{{.Tenant.BrandIcon}}" data-brand-icon-value>
                     <div class="brand-icon-grid" role="radiogroup" aria-label="Portal-Symbol">
                       {{range .BrandIconOptions}}
                         <label class="brand-icon-choice">
-                          <input type="radio" name="brand_icon" value="{{.Value}}"{{if .Selected}} checked{{end}}>
+                          <input type="radio" name="brand_icon_choice" value="{{.Value}}"{{if .Selected}} checked{{end}}>
                           {{if eq .Value "single-home"}}<svg viewBox="0 0 64 48" aria-hidden="true"><path d="M12 35h40"/><path d="M16 35V22.5L32 11l16 11.5V35"/><path d="M26.5 35v-9h11v9"/><path d="M21.5 27.5h5M37.5 27.5h5"/></svg>
                           {{else if eq .Value "multi-tenant"}}<svg viewBox="0 0 64 48" aria-hidden="true"><path d="M13 36h38"/><path d="M17 36V18h30v18"/><path d="M23 36v-7h6v7M35 36v-7h6v7"/><path d="M22 23h5M37 23h5M22 28h5M37 28h5"/><path d="M19 18l13-8 13 8"/></svg>
                           {{else if eq .Value "mixed-use"}}<svg viewBox="0 0 64 48" aria-hidden="true"><path d="M14 36h36"/><path d="M18 36V17h28v19"/><path d="M18 24h28"/><path d="M22 36v-7h8v7M35 36v-7h7v7"/><path d="M22 21h5M36 21h5"/><path d="M16 17l16-7 16 7"/></svg>
@@ -8602,6 +8650,11 @@ const PageTemplates = `
                       {{end}}
                     </div>
                   </fieldset>
+                  <section class="brand-icon-library">
+                    <div class="brand-icon-library-head"><div><strong>Weitere Symbole aus Lucide</strong><small>Die Suche umfasst die vollständige lokal eingebundene SVG-Library.</small></div><label class="brand-icon-search"><span class="sr-only">Lucide-Symbol suchen</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="search" placeholder="Symbol suchen" autocomplete="off" data-brand-icon-search></label></div>
+                    <div class="brand-icon-grid brand-icon-search-results" data-brand-icon-results hidden></div>
+                    <p class="brand-icon-result-note" data-brand-icon-result-note{{if not .BrandIconIsLucide}} hidden{{end}}>{{if .BrandIconIsLucide}}Aktuell ausgewählt: {{.BrandIconLabel}}{{end}}</p>
+                  </section>
                   <label class="abbreviation-field" for="brand-abbreviation">Kurzkennung
                     <input id="brand-abbreviation" type="text" name="brand_abbreviation" value="{{.Tenant.BrandAbbreviation}}" maxlength="12" placeholder="HAUS">
                     <span class="field-meta"><span>Kurzer Name für Seitenleiste und Anmeldung.</span><span data-abbreviation-count>{{len .Tenant.BrandAbbreviation}} / 12</span></span>
@@ -8640,16 +8693,30 @@ const PageTemplates = `
                   </div>
                 </header>
                 <div class="appearance-preview-stage">
-                  <img src="{{.Tenant.HeroImageURL}}" alt="" data-hero-stage>
                   <div class="preview-login" data-preview-panel="login">
+                    <img src="{{.Tenant.HeroImageURL}}" alt="" data-hero-stage>
                     <div class="preview-identity"><span class="preview-brand-mark" data-brand-preview-mark>{{template "tenantBrandMark" .}}</span><span><strong data-brand-preview-abbreviation>{{.Tenant.BrandAbbreviation}}</strong><span>{{.Tenant.Name}}</span></span></div>
                     <div class="preview-message"><span>Ihr Zuhause-Portal</span><h4>Alles Wichtige für Ihr Zuhause.</h4></div>
                     <span class="preview-login-action">Anmelden</span>
                   </div>
-                  <div class="preview-sidebar" data-preview-panel="sidebar" hidden>
-                    <div class="preview-identity"><span class="preview-brand-mark" data-brand-preview-mark>{{template "tenantBrandMark" .}}</span><span><strong data-brand-preview-abbreviation>{{.Tenant.BrandAbbreviation}}</strong><span>{{.Tenant.Name}}</span></span></div>
-                    <div class="preview-nav"><span>Hausüberblick</span><span>Termine</span><span>Dokumente</span></div>
-                    <span class="mini">Hausportal · hausv.org</span>
+                  <div class="preview-sidebar" data-preview-panel="sidebar" aria-label="Vorschau der tatsächlichen Portal-Seitenleiste" hidden>
+                    <div class="preview-sidebar-map">
+                      {{if .SidebarMap.Configured}}<div class="preview-sidebar-map-tiles" aria-hidden="true">{{range .SidebarMap.Tiles}}<img src="{{.URL}}" style="{{.Style}}" width="256" height="256" alt="">{{end}}</div>{{else}}<span class="preview-sidebar-map-fallback">Standort nicht hinterlegt</span>{{end}}
+                      <div class="preview-sidebar-switch"><span class="preview-sidebar-switch-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9 20v-6h6v6"/></svg></span><span class="preview-sidebar-switch-copy"><small>Portal wechseln · {{.Role}}</small><strong>{{.HouseName}}</strong></span><span class="preview-sidebar-chevron" aria-hidden="true"></span></div>
+                      {{if .SidebarMap.Configured}}<span class="preview-sidebar-pin" aria-hidden="true"><svg viewBox="0 0 44 56"><path d="M22 55C18.7 49.2 4.5 36.7 4.5 22.2A17.5 17.5 0 1 1 39.5 22.2C39.5 36.7 25.3 49.2 22 55Z"/></svg><span class="preview-sidebar-pin-mark" data-brand-preview-mark>{{template "tenantBrandMark" .}}</span></span>{{end}}
+                      <div class="preview-sidebar-place"><span><strong>{{.HouseName}}</strong><small>{{.SidebarAddress.Full}}</small></span><span class="preview-sidebar-ruler" aria-hidden="true"></span><span class="preview-sidebar-portal">Hausportal <span>· hausv.org</span></span></div>
+                    </div>
+                    <div class="preview-sidebar-nav" aria-hidden="true">
+                      <span class="preview-sidebar-nav-item"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg>Hausüberblick</span>
+                      {{if .CanViewEnergy}}<span class="preview-sidebar-nav-item"><svg viewBox="0 0 24 24"><path d="M4 13h5l2-7 3 12 2-5h4"/><path d="M5 20h14"/></svg>{{.HomeIdentity.DisplayName}}</span>{{end}}
+                      {{if .PortalModules.Announcements}}<span class="preview-sidebar-nav-item"><svg viewBox="0 0 24 24"><path d="M4 5h16v13H7l-3 3z"/><path d="M8 9h8M8 13h6"/></svg>Aushang</span>{{end}}
+                      {{if .PortalModules.Events}}<span class="preview-sidebar-nav-item"><svg viewBox="0 0 24 24"><path d="M7 3v4M17 3v4"/><path d="M4.5 6h15v14h-15z"/><path d="M4.5 10h15"/></svg>Termine</span>{{end}}
+                      {{if .PortalModules.Contacts}}<span class="preview-sidebar-nav-item"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Kontakte</span>{{end}}
+                      {{if .PortalModules.Documents}}<span class="preview-sidebar-nav-item"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/></svg>Dokumente</span>{{end}}
+                      <span class="preview-sidebar-group">Verwaltung</span>
+                      <span class="preview-sidebar-nav-item active"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg>Einstellungen</span>
+                    </div>
+                    <div class="preview-sidebar-foot" aria-hidden="true"><span class="preview-sidebar-avatar">{{.Initials}}</span><span class="preview-sidebar-user"><strong>{{.DisplayName}}</strong><span>{{.Role}} · v{{.DisplayVersion}}</span></span><span class="preview-sidebar-logout"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 0 0-2-2h-6"/></svg></span></div>
                   </div>
                 </div>
                 <p class="preview-caption">Änderungen werden hier sofort sichtbar. Im Portal erscheinen sie nach dem Speichern.</p>
@@ -8657,6 +8724,7 @@ const PageTemplates = `
             </div>
           </div>
         </section>
+        <script id="brand-lucide-icon-names" type="application/json">{{.LucideIconNamesJSON}}</script>
         {{end}}
       </section>
     </main>
