@@ -3640,6 +3640,23 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		auditTitle = "Freigegebener Verlauf"
 		auditLede = "Änderungen bei den Vorgängen, auf die Sie aktuell Zugriff haben. Interne Verwaltungsdetails bleiben geschützt."
 	}
+	if a.portalTemplEnabled {
+		a.renderAuditTempl(w, r, web.AuditPageData{
+			Portal:         a.auditPortalContext(ac, auditTitle),
+			Events:         eventViews,
+			HasEvents:      len(eventViews) > 0,
+			HasAnyEvents:   len(availableEvents) > 0,
+			EventsEmpty:    emptyState("Noch nichts im Verlauf", "Relevante Änderungen an Ihrem Zugang und Ihren Vorgängen erscheinen hier."),
+			ActionOptions:  auditActionOptionsForEvents(action, availableEvents),
+			SearchQuery:    query,
+			AuditStats:     stats,
+			AuditPageTitle: auditTitle,
+			AuditLede:      auditLede,
+			AuditIsFull:    fullAudit,
+			CanManageUsers: ac.can(capabilityManageUsers),
+		})
+		return
+	}
 	a.render(w, "auditLog", a.withBase(ac, map[string]any{
 		"Title":          auditTitle,
 		"ActivePage":     "audit",
