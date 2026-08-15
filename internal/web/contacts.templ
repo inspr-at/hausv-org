@@ -1,0 +1,312 @@
+package web
+
+import (
+	"github.com/inspr-at/hausv-org/internal/view"
+)
+
+type ContactKindGroup struct {
+	Kind     string
+	Contacts []view.ManagedContactView
+}
+
+type ContactsPageData struct {
+	Portal                       PortalPageData
+	AssetVersion                 string
+	ContactMessage               string
+	CanManageContacts            bool
+	CanManageIssues              bool
+	CanJoinDirectory             bool
+	DirectoryOptIn               bool
+	ServiceProviderAccessEnabled bool
+	ContactFormOpen              bool
+	ManagerContacts              []view.ContactCardView
+	EmergencyContacts            []view.ContactCardView
+	ManagedContacts              []view.ManagedContactView
+	ManagedGroups                []ContactKindGroup
+	InactiveContacts             []view.ManagedContactView
+	BoardContacts                []view.ContactCardView
+	ResidentContacts             []view.ContactCardView
+	ContactKindOptions           []view.SelectOption
+	ManagedEmpty                 view.EmptyStateView
+}
+
+templ ContactsPage(data ContactsPageData) {
+	<!doctype html>
+	<html lang="de-AT">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+			<title>{ data.Portal.Title }</title>
+			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+			<script src={ "/assets/app.js?v=" + data.AssetVersion } defer></script>
+			@ContactsStyles()
+		</head>
+		<body data-authenticated-app data-templ-contacts>
+			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+			<div class="contacts-shell">
+				@PortalSidebar(data.Portal)
+				@ContactsContent(data)
+			</div>
+			@PortalMobileHeader(data.Portal, "Kontakte · " + data.Portal.Role)
+		</body>
+	</html>
+}
+
+templ ContactsStyles() {
+	<style>
+		:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--font-serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);font-family:var(--font-sans)}
+		*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}button,input,select{font:inherit}button{cursor:pointer}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.skip-link{position:fixed;top:var(--space-2);left:var(--space-2);z-index:300;padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.skip-link:focus{transform:translateY(0)}
+		.contacts-shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);background:var(--nav);color:var(--panel);overflow:auto}.house-name{display:block;font-family:var(--font-serif);font-size:27px;line-height:1}.house-address{display:block;margin-top:var(--space-2);color:var(--soft);font-size:12px}.map{display:block;height:74px;margin-top:var(--space-4);overflow:hidden;background:var(--nav-2);border:1px solid var(--muted);border-radius:var(--radius-md)}.map svg{display:block;width:100%;height:100%}.map-streets{fill:none;stroke:var(--muted);stroke-width:1;opacity:.42}.map-pin{fill:var(--gold-light);stroke:var(--gold)}.map-hole{fill:var(--nav)}.context-switch{margin-top:var(--space-3);font-size:11px}.context-switch summary{cursor:pointer;color:var(--gold-light)}.context-menu{display:grid;gap:var(--space-2);margin-top:var(--space-2);padding:var(--space-2);background:var(--nav-2);border-radius:var(--radius-sm)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.context-menu small{color:var(--soft)}
+		.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-label{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-notes>summary{margin-top:2px;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}.release-notes>summary::-webkit-details-marker{display:none}.release-panel{position:fixed;z-index:250;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.release-panel h2{font-size:24px}.release-entry{padding-top:var(--space-4)}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}
+		.contacts-main{min-width:0;padding:var(--space-6)}.page-top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}.crumb{display:flex;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}.crumb svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6}.page{max-width:1180px;margin:var(--space-5) auto 0}.page-heading{display:flex;align-items:end;justify-content:space-between;gap:var(--space-5);padding-bottom:var(--space-5);border-bottom:1px solid var(--line)}.page-heading h1{font-size:42px;line-height:1}.lede{max-width:620px;margin-top:var(--space-2);color:var(--muted);font-size:14px;line-height:1.5}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:34px;padding:var(--space-1) var(--space-3)}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.flash{margin-top:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}
+		.contacts-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--space-5);margin-top:var(--space-5);align-items:start}.contacts-column,.contacts-aside{min-width:0;display:grid;gap:var(--space-4)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.contact-section{display:grid;gap:var(--space-4);padding:var(--space-5)}.section-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4)}.kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.section-head h2,.aside-panel h2{margin-top:var(--space-1);font-size:25px}.section-head p{margin-top:var(--space-2);color:var(--muted);font-size:12px}.count{color:var(--muted);font-size:11px;white-space:nowrap}.quick-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-3)}.quick-card{min-width:0;display:grid;align-content:start;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.quick-card.urgent{border-color:var(--gold)}.quick-label{display:flex;justify-content:space-between;gap:var(--space-2);color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.quick-card h3{font-size:21px;overflow-wrap:anywhere}.quick-card p,.contact-description{color:var(--muted);font-size:12px;line-height:1.45}.contact-meta{display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-3);color:var(--muted);font-size:11px;overflow-wrap:anywhere}.route-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:auto}.contact-route{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);font-size:11px;font-weight:800}.contact-route svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8}
+		.contact-add{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.contact-add>summary,.inactive-contacts>summary{min-height:46px;display:flex;align-items:center;padding:0 var(--space-4);cursor:pointer;font-size:12px;font-weight:800}.contact-add-body{padding:var(--space-4);border-top:1px solid var(--line)}.contact-add-hint{margin-bottom:var(--space-3);color:var(--muted);font-size:12px}.contact-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);align-items:end}.contact-form label{display:grid;gap:var(--space-2);color:var(--muted);font-size:11px;font-weight:700}.contact-form input,.contact-form select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.contact-form .wide,.contact-form .actions,.contact-form details{grid-column:1/-1}.contact-form .actions{display:flex;justify-content:flex-end}.contact-form details{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.contact-form details>summary{min-height:44px;display:flex;align-items:center;padding:0 var(--space-3);cursor:pointer;font-size:12px;font-weight:800}.optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line)}.optional-grid fieldset{grid-column:1/-1;margin:0;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs)}.optional-grid legend{color:var(--gold-ink);font-size:10px;font-weight:800}.permission-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:var(--space-2) var(--space-3);margin-top:var(--space-2)}.permission-grid label{display:flex;align-items:center;color:var(--ink)}.permission-grid input{width:16px;height:16px;min-height:0}
+		.contact-groups{display:grid;gap:var(--space-5)}.contact-group{display:grid;gap:var(--space-2)}.group-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3);padding-bottom:var(--space-2);border-bottom:1px solid var(--line)}.group-head h3{color:var(--gold-ink);font-family:var(--font-sans);font-size:11px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}.group-head span{color:var(--soft);font-size:11px}.contact-list{display:grid;gap:var(--space-2)}.contact-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.contact-row.inactive{opacity:.72}.contact-copy{min-width:0;display:grid;gap:var(--space-1)}.contact-title{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.contact-title strong{font-family:var(--font-serif);font-size:18px;overflow-wrap:anywhere}.pill{display:inline-flex;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--gold-ink);font-size:9px;font-weight:800}.contact-note{margin-top:var(--space-1);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted);font-size:11px;line-height:1.45}.contact-actions{display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2)}.contact-actions form{margin:0}.inactive-contacts{border-top:1px solid var(--line)}.inactive-contacts .contact-list{padding-top:var(--space-3)}.empty-line{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--muted);font-size:12px}.directory-note{color:var(--muted);font-size:10px}.blank{min-height:320px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);text-align:center}.blank h2{font-size:27px}.blank p{max-width:48ch;color:var(--muted);font-size:13px;line-height:1.5}.blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2)}
+		.aside-panel{display:grid;gap:var(--space-3);padding:var(--space-4)}.aside-panel>summary{cursor:pointer;list-style:none}.aside-panel>summary::-webkit-details-marker{display:none}.guide-list{display:grid;gap:var(--space-3);margin:0;padding:var(--space-3) 0 0;list-style:none;border-top:1px solid var(--line)}.guide-list li{display:grid;gap:var(--space-1)}.guide-list span{color:var(--muted);font-size:11px;line-height:1.45}.portal-links{display:grid}.portal-link{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-2);padding:var(--space-3) 0;border-top:1px solid var(--line)}.portal-link:first-child{border-top:0}.portal-link strong,.portal-link small{display:block}.portal-link strong{font-size:12px}.portal-link small{margin-top:var(--space-1);color:var(--muted);font-size:10px;line-height:1.4}.portal-link::after{content:"›";color:var(--gold-ink);font-size:20px}
+		.dialog{width:min(720px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-5);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:25px}.dialog-close{width:36px;height:36px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px}.dialog-body{max-height:calc(100dvh - 180px);padding:var(--space-5);overflow:auto}.dialog-footer{display:flex;justify-content:flex-end;padding:var(--space-4) var(--space-5);border-top:1px solid var(--line)}.contact-danger,.contact-reactivate{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-top:var(--space-4);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.contact-danger p,.contact-reactivate p{margin-top:var(--space-1);color:var(--muted);font-size:11px}
+		.mobile-head{display:none}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}
+		@media(max-width:1050px){.contacts-shell{grid-template-columns:210px minmax(0,1fr)}.contacts-layout{grid-template-columns:minmax(0,1fr)}.contacts-aside{grid-template-columns:repeat(2,minmax(0,1fr))}}
+		@media(max-width:700px){.contacts-shell{display:block}.sidebar{display:none}.mobile-head{position:relative;z-index:100;height:76px;display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:var(--space-3);padding:0 var(--space-4);background:var(--nav);color:var(--panel)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:21px}.mobile-identity small{margin-top:4px;color:var(--soft);font-size:10px}.mobile-head>.avatar{width:40px;height:40px}.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:"";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:76px;left:0;right:0;max-height:calc(100vh - 76px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);box-shadow:var(--shadow-dialog)}.menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.menu-panel .nav a{min-height:44px;display:flex;margin:0;padding:0 var(--space-3)}.menu-panel .nav-label{grid-column:1/-1}.menu-panel .release-notes{padding:var(--space-3)}.menu-panel .logout-form button{min-height:44px}.contacts-main{padding:var(--space-4)}.page-top{display:none}.page{margin-top:0}.page-heading{display:grid;align-items:start}.page-heading h1{font-size:34px}.contacts-layout{margin-top:var(--space-4);gap:var(--space-3)}.contacts-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.contact-section{padding:var(--space-4)}.section-head{display:grid}.quick-list,.contact-form,.optional-grid{grid-template-columns:minmax(0,1fr)}.contact-form .wide,.contact-form .actions,.contact-form details,.optional-grid fieldset{grid-column:1}.contact-row{grid-template-columns:minmax(0,1fr)}.contact-actions{display:grid;justify-content:stretch}.contact-actions>.button,.contact-actions>form,.contact-actions>form>.button,.route-actions{width:100%}.route-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.blank{min-height:0}.blank-actions{width:100%;display:grid}.contact-danger,.contact-reactivate{align-items:stretch;flex-direction:column}.dialog-footer .button{width:100%}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}
+	</style>
+}
+
+templ ContactsContent(data ContactsPageData) {
+	<main id="main-content" tabindex="-1" class="contacts-main">
+		<div class="page-top"><span class="crumb">@PortalIcon("contact")<span>/</span><span>Kontakte</span></span>
+			if data.CanManageContacts {
+				<a class="button primary" href="#contact-add">Kontakt hinzufügen</a>
+			}
+		</div>
+		<section class="page">
+			<header class="page-heading"><div><h1>Kontakte</h1><p class="lede">Schnell die richtige Ansprechperson für { data.Portal.Address } erreichen.</p></div></header>
+			if data.ContactMessage != "" {
+				<p class="flash">{ data.ContactMessage }</p>
+			}
+			<div class="contacts-layout"><div class="contacts-column">
+				if contactsHaveQuick(data) {
+					@QuickContacts(data)
+				}
+				if data.CanManageContacts || len(data.ManagedContacts) > 0 {
+					@ManagedContacts(data)
+				}
+				if len(data.ResidentContacts) > 0 {
+					@ResidentDirectory(data)
+				}
+				if !contactsHaveAny(data) && !data.CanManageContacts {
+					<section class="blank" aria-label="Kontakte des Hauses"><h2>{ data.ManagedEmpty.Title }</h2><p>{ data.ManagedEmpty.Message }</p><div class="blank-actions"><a class="button primary" href={ templ.SafeURL(contactsIssuesURL(data.CanManageIssues)) }>Anliegen melden</a><a class="button ghost" href="/app/announcements">Aushang ansehen</a></div></section>
+				}
+			</div>@ContactsAside(data)</div>
+		</section>
+	</main>
+}
+
+templ QuickContacts(data ContactsPageData) {
+	<section class="panel contact-section" aria-labelledby="quick-contacts-title"><header class="section-head"><div><p class="kicker">Schnell erreichen</p><h2 id="quick-contacts-title">Hilfe &amp; Haus-Ansprechpersonen</h2></div>
+		if data.CanManageContacts {
+			<a class="button small ghost" href="/app/settings/building?section=contacts">Hauskontakte pflegen</a>
+		}
+	</header><div class="quick-list">
+		for _, item := range data.EmergencyContacts {
+			if item.Role == "Notdienst" {
+				@QuickContact(item, true)
+			}
+		}
+		for _, item := range data.ManagerContacts {
+			@QuickContact(item, false)
+		}
+		for _, item := range data.EmergencyContacts {
+			if item.Role != "Notdienst" {
+				@QuickContact(item, false)
+			}
+		}
+		for _, item := range data.BoardContacts {
+			@QuickContact(item, false)
+		}
+	</div></section>
+}
+
+templ QuickContact(item view.ContactCardView, urgent bool) {
+	<article class={ "quick-card", templ.KV("urgent", urgent) }><div class="quick-label"><span>{ contactRoleLabel(item) }</span>
+		if urgent {
+			<span>Dringend</span>
+		}
+	</div><h3>{ item.Name }</h3>
+		if item.Description != "" {
+			<p>{ item.Description }</p>
+		}
+		@ContactMeta(item.Phone, item.Email, item.HasPhone, item.HasEmail)
+		@ContactRoutes(item.Phone, item.Email, item.HasPhone, item.HasEmail)
+	</article>
+}
+
+templ ManagedContacts(data ContactsPageData) {
+	<section class="panel contact-section" id="contact-book" aria-labelledby="managed-contacts-title"><header class="section-head"><div><p class="kicker">Adressbuch</p><h2 id="managed-contacts-title">Weitere wichtige Kontakte</h2><p>Firmen, Dienste und wiederkehrende Ansprechpartner für das Haus.</p></div>
+		if len(data.ManagedContacts) > 0 {
+			<span class="count">{ len(data.ManagedContacts) } im Adressbuch</span>
+		}
+	</header>
+		if data.CanManageContacts {
+			@ContactCreateForm(data)
+		}
+		if len(data.ManagedContacts) > 0 {
+			<div class="contact-groups">
+				for _, group := range data.ManagedGroups {
+					<section class="contact-group"><header class="group-head"><h3>{ group.Kind }</h3><span>{ len(group.Contacts) }</span></header><div class="contact-list">
+						for _, item := range group.Contacts {
+							@ManagedContact(item, data.CanManageContacts)
+						}
+					</div></section>
+				}
+			</div>
+		} else if data.CanManageContacts {
+			<p class="empty-line">Noch keine weiteren Kontakte. Das Formular oben legt den ersten an – etwa Lift, Heizung oder Elektrik.</p>
+		}
+		if data.CanManageContacts && len(data.InactiveContacts) > 0 {
+			<details class="inactive-contacts"><summary>Inaktive Kontakte ({ len(data.InactiveContacts) })</summary><div class="contact-list">
+				for _, item := range data.InactiveContacts {
+					@ManagedContact(item, true)
+				}
+			</div></details>
+		}
+	</section>
+}
+
+templ ContactCreateForm(data ContactsPageData) {
+	<details class="contact-add" id="contact-add" open?={ data.ContactFormOpen || len(data.ManagedContacts) == 0 }><summary>Kontakt hinzufügen</summary><div class="contact-add-body"><p class="contact-add-hint">Name oder Firma und mindestens Telefon oder E-Mail angeben.
+		if !data.ServiceProviderAccessEnabled {
+			<span> Dienstleister-Zugänge sind derzeit nicht verfügbar.</span>
+		}
+	</p><form class="contact-form" method="post" action="/app/kontakte"><input type="hidden" name="active" value="true"/>@ContactFields(data.ContactKindOptions, view.ManagedContactView{})<div class="actions"><button class="button primary" type="submit">Kontakt anlegen</button></div></form></div></details>
+}
+
+templ ContactFields(options []view.SelectOption, item view.ManagedContactView) {
+	<label>Art<select name="kind" required>
+		for _, option := range options {
+			<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+		}
+	</select></label>
+	<label>Name<input name="name" value={ item.Name } maxlength="120" placeholder="Ansprechperson"/></label>
+	<label>Firma / Organisation<input name="company" value={ item.Company } maxlength="140" placeholder="z. B. Elektro Süd"/></label>
+	<label>Telefon<input name="phone" value={ item.Phone } maxlength="80" placeholder="+43 ..."/></label>
+	<label>E-Mail<input type="email" name="email" value={ item.Email } placeholder="kontakt@example.com"/></label>
+	<label class="wide">Notiz<input name="notes" value={ item.Notes } maxlength="300" placeholder="z. B. Lift, Elektrik oder Erreichbarkeit"/></label>
+	<details><summary>Region, Qualifikation und Energie-Fähigkeiten</summary><div class="optional-grid"><label>Region<input name="service_region" value={ item.ServiceRegion } maxlength="120" placeholder="z. B. Wien und Umgebung"/></label><label>Qualifikation<input name="qualification" value={ item.Qualification } maxlength="240" placeholder="z. B. konzessionierter Elektrobetrieb"/></label><fieldset><legend>Energie-Fähigkeiten (optional, kein Portalzugang)</legend><div class="permission-grid">
+		@CapabilityCheckbox(item, "metering", "Leistungsmessung") @CapabilityCheckbox(item, "smart-meter", "Smart Meter") @CapabilityCheckbox(item, "home-assistant", "Home Assistant") @CapabilityCheckbox(item, "pv", "PV") @CapabilityCheckbox(item, "battery", "Speicher") @CapabilityCheckbox(item, "wallbox", "Wallbox") @CapabilityCheckbox(item, "heat-pump", "Wärmepumpe") @CapabilityCheckbox(item, "electrical", "Elektro-Fachnachweis")
+	</div></fieldset></div></details>
+}
+
+templ CapabilityCheckbox(item view.ManagedContactView, value, label string) {
+	<label><input type="checkbox" name="energy_capabilities" value={ value } checked?={ contactHasCapability(item, value) }/> { label }</label>
+}
+
+templ ManagedContact(item view.ManagedContactView, canManage bool) {
+	<article class={ "contact-row", templ.KV("inactive", !item.Active) }><div class="contact-copy"><span class="contact-title"><strong>{ item.DisplayName }</strong><span class="pill">{ item.Kind }</span>
+		if !item.Active {
+			<span class="pill">Inaktiv</span>
+		}
+	</span>
+		if contactShowsDescription(item) {
+			<span class="contact-description">{ item.Description }</span>
+		}
+		if item.HasEnergyProfile {
+			<span class="contact-description"><strong>Energie-Fachhilfe:</strong> { item.EnergySummary }
+				if item.Qualification != "" {
+					<span> · { item.Qualification }</span>
+				}
+			</span>
+		}
+		if item.Notes != "" {
+			<p class="contact-note">{ item.Notes }</p>
+		}
+		@ContactMeta(item.Phone, item.Email, item.HasPhone, item.HasEmail)
+	</div><div class="contact-actions">
+		if item.Active {
+			@ContactRoutes(item.Phone, item.Email, item.HasPhone, item.HasEmail)
+		}
+		if canManage && item.CanEdit {
+			<button class="button small" type="button" data-dialog={ item.EditDialogID } aria-haspopup="dialog" aria-controls={ item.EditDialogID }>Bearbeiten</button>
+		} else if canManage && item.Active {
+			<form method="post" action="/app/kontakte/delete" data-confirm={ item.DeleteConfirmLabel }><input type="hidden" name="id" value={ item.ID }/><button class="button small" type="submit">Deaktivieren</button></form>
+		}
+	</div></article>
+	if canManage && item.CanEdit {
+		@ContactEditDialog(item)
+	}
+}
+
+templ ContactEditDialog(item view.ManagedContactView) {
+	<dialog id={ item.EditDialogID } class="dialog" aria-labelledby={ item.EditDialogID + "-title" }><div class="dialog-head"><div><p class="kicker">Adressbuch</p><h2 id={ item.EditDialogID + "-title" }>{ item.DisplayName }</h2></div><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body"><form id={ item.EditDialogID + "-form" } class="contact-form" method="post" action="/app/kontakte"><input type="hidden" name="id" value={ item.ID }/><input type="hidden" name="active" value={ contactActiveValue(item.Active) }/>@ContactFields(item.KindOptions, item)</form>
+		if item.Active {
+			<div class="contact-danger"><div><strong>Kontakt deaktivieren</strong><p>Der Eintrag verschwindet für Bewohner, bleibt aber erhalten.</p></div><form method="post" action="/app/kontakte/delete" data-confirm={ item.DeleteConfirmLabel }><input type="hidden" name="id" value={ item.ID }/><button class="button small" type="submit">Deaktivieren</button></form></div>
+		} else {
+			@ContactReactivate(item)
+		}
+	</div><div class="dialog-footer"><button class="button primary" type="submit" form={ item.EditDialogID + "-form" }>Änderungen speichern</button></div></dialog>
+}
+
+templ ContactReactivate(item view.ManagedContactView) {
+	<form class="contact-reactivate" method="post" action="/app/kontakte"><input type="hidden" name="id" value={ item.ID }/><input type="hidden" name="kind" value={ item.Kind }/><input type="hidden" name="name" value={ item.Name }/><input type="hidden" name="company" value={ item.Company }/><input type="hidden" name="email" value={ item.Email }/><input type="hidden" name="phone" value={ item.Phone }/><input type="hidden" name="notes" value={ item.Notes }/><input type="hidden" name="service_region" value={ item.ServiceRegion }/><input type="hidden" name="qualification" value={ item.Qualification }/>
+		for _, capability := range item.EnergyCapabilities {
+			<input type="hidden" name="energy_capabilities" value={ capability }/>
+		}
+		<input type="hidden" name="active" value="true"/><p>Dieser Kontakt ist derzeit nur für die Verwaltung sichtbar.</p><button class="button primary" type="submit">Wieder aktivieren</button></form>
+}
+
+templ ResidentDirectory(data ContactsPageData) {
+	<section class="panel contact-section" aria-labelledby="resident-directory-title"><header class="section-head"><div><p class="kicker">Freiwilliges Verzeichnis</p><h2 id="resident-directory-title">Hausgemeinschaft</h2><p>Nur Bewohner, die ihren Kontakt im Profil ausdrücklich für dieses Haus freigegeben haben.</p></div><span class="directory-note">Freiwillig freigegeben</span></header><div class="contact-list">
+		for _, item := range data.ResidentContacts {
+			@DirectoryContact(item)
+		}
+	</div></section>
+}
+
+templ DirectoryContact(item view.ContactCardView) {
+	<article class="contact-row"><div class="contact-copy"><span class="contact-title"><strong>{ item.Name }</strong><span class="pill">{ item.Role }</span></span>
+		if item.Description != "" {
+			<span class="contact-description">{ item.Description }</span>
+		}
+		@ContactMeta(item.Phone, item.Email, item.HasPhone, item.HasEmail)
+	</div>@ContactRoutes(item.Phone, item.Email, item.HasPhone, item.HasEmail)</article>
+}
+
+templ ContactMeta(phone, email string, hasPhone, hasEmail bool) {
+	<span class="contact-meta">
+		if hasPhone {
+			<span>{ phone }</span>
+		}
+		if hasEmail {
+			<span>{ email }</span>
+		}
+	</span>
+}
+
+templ ContactRoutes(phone, email string, hasPhone, hasEmail bool) {
+	<div class="route-actions">
+		if hasPhone {
+			<a class="contact-route" href={ templ.SafeURL("tel:" + phone) }><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h3l1.5 4-2 1.5a14 14 0 0 0 5 5l1.5-2L20 14v3c0 1.1-.9 2-2 2C10.8 19 5 13.2 5 6c0-1.1.9-2 2-2Z"></path></svg><span>Anrufen</span></a>
+		}
+		if hasEmail {
+			<a class="contact-route" href={ templ.SafeURL("mailto:" + email) }><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"></path><path d="m4 7 8 6 8-6"></path></svg><span>E-Mail</span></a>
+		}
+	</div>
+}
+
+templ ContactsAside(data ContactsPageData) {
+	<aside class="contacts-aside" aria-label="Hilfe zu Kontakten"><details class="panel aside-panel"><summary><p class="kicker">Wegweiser</p><h2>Wer ist wofür zuständig?</h2></summary><ul class="guide-list"><li><strong>Notdienst</strong><span>Gefahr im Verzug, Wasserschaden, Stromausfall oder Personen im Lift.</span></li><li><strong>Hausverwaltung</strong><span>Verträge, Abrechnung, Beschlüsse und alles Kaufmännische.</span></li><li><strong>Hausmeister</strong><span>Schlüssel, Reinigung, Grünflächen und kleine Reparaturen.</span></li><li><strong>Beirat</strong><span>Vertritt die Eigentümergemeinschaft gegenüber der Verwaltung.</span></li><li><strong>Dienstleister</strong><span>Firmen für Lift, Heizung, Elektrik oder Energiethemen im Haus.</span></li></ul></details><section class="panel aside-panel" aria-labelledby="contacts-next-title"><div><p class="kicker">Auch hilfreich</p><h2 id="contacts-next-title">Weiter im Portal</h2></div><nav class="portal-links"><a class="portal-link" href={ templ.SafeURL(contactsIssuesURL(data.CanManageIssues)) }><span><strong>Anliegen melden</strong><small>Bleibt dokumentiert und geht nicht verloren.</small></span></a>
+		if data.CanManageContacts {
+			<a class="portal-link" href="/app/settings/building?section=contacts"><span><strong>Hauskontakte pflegen</strong><small>Verwaltung, Notdienst und Hausmeister bearbeiten.</small></span></a>
+		}
+		if data.CanJoinDirectory {
+			<a class="portal-link" href="/app/settings/profile"><span><strong>Eigener Verzeichniseintrag</strong><small>{ directoryStatus(data.DirectoryOptIn) }</small></span></a>
+		}
+	</nav></section></aside>
+}
+
+func contactsHaveQuick(data ContactsPageData) bool { return len(data.ManagerContacts)+len(data.EmergencyContacts)+len(data.BoardContacts) > 0 }
+func contactsHaveAny(data ContactsPageData) bool { return contactsHaveQuick(data) || len(data.ManagedContacts)+len(data.ResidentContacts)+len(data.InactiveContacts) > 0 }
+func contactsIssuesURL(canManage bool) string { if canManage { return "/app/anliegen/board" }; return "/app/anliegen" }
+func contactRoleLabel(item view.ContactCardView) string { if item.Role == "Verwaltung" { return "Hausverwaltung" }; return item.Role }
+func contactShowsDescription(item view.ManagedContactView) bool { return item.Description != "" && item.Description != item.Notes }
+func contactHasCapability(item view.ManagedContactView, capability string) bool { for _, current := range item.EnergyCapabilities { if current == capability { return true } }; return false }
+func contactActiveValue(active bool) string { if active { return "true" }; return "false" }
+func directoryStatus(optedIn bool) string { if optedIn { return "Ihr Kontakt ist für die Hausgemeinschaft sichtbar." }; return "Ihr Kontakt ist derzeit nicht sichtbar." }

@@ -378,7 +378,7 @@ templ PortalUtilities(data PortalPageData) {
 }
 
 templ PortalMobile(data PortalPageData) {
-	<header class="mobile-head"><details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalNavigation(data, false)@PortalReleaseNotes(data)<form method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details><a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>{ data.Address }</small></a><a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a></header>
+	@PortalMobileHeader(data, data.Address)
 	<main class="mobile-content" id="mobile-main-content"><header class="greeting"><h1>Hallo { data.GreetingName }.</h1><p>{ data.Today }</p></header>
 		<article class="task-card"><p class="eyebrow">Jetzt zu erledigen</p>
 			if data.HasPrimary {
@@ -458,6 +458,10 @@ templ PortalMobile(data PortalPageData) {
 			</div></details>
 		</nav>
 	</div>
+}
+
+templ PortalMobileHeader(data PortalPageData, context string) {
+	<header class="mobile-head"><details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details><a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>{ context }</small></a><a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a></header>
 }
 
 templ PortalReleaseNotes(data PortalPageData) {

@@ -1,11 +1,16 @@
 package server
 
 import (
+	"bytes"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/inspr-at/hausv-org/internal/version"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -38,6 +43,34 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if canManageContacts && len(inactiveManagedContacts) > 0 {
 		hasAnyContacts = true
 	}
+	if a.portalTemplEnabled {
+		groups := groupManagedContactsByKind(activeManagedContacts)
+		templGroups := make([]web.ContactKindGroup, 0, len(groups))
+		for _, group := range groups {
+			templGroups = append(templGroups, web.ContactKindGroup{Kind: group.Kind, Contacts: group.Contacts})
+		}
+		a.renderContactsTempl(w, r, web.ContactsPageData{
+			Portal:                       a.contactsPortalContext(ac),
+			AssetVersion:                 version.AssetVersion(),
+			ContactMessage:               contactMsg,
+			CanManageContacts:            canManageContacts,
+			CanManageIssues:              ac.can(capabilityManageIssues),
+			CanJoinDirectory:             residentDirectoryRole(role),
+			DirectoryOptIn:               profile.DirectoryOptIn,
+			ServiceProviderAccessEnabled: a.serviceAccessEnabled,
+			ContactFormOpen:              r.URL.Query().Get("contact") == "invalid" || r.URL.Query().Get("contact") == "error",
+			ManagerContacts:              managerContacts,
+			EmergencyContacts:            emergencyContacts,
+			ManagedContacts:              activeManagedContacts,
+			ManagedGroups:                templGroups,
+			InactiveContacts:             inactiveManagedContacts,
+			BoardContacts:                boardContacts,
+			ResidentContacts:             residentContacts,
+			ContactKindOptions:           contactKindOptionsForServiceProviderAccess("", a.serviceAccessEnabled),
+			ManagedEmpty:                 managedEmpty,
+		})
+		return
+	}
 	a.render(w, "contacts", a.withBase(ac, map[string]any{
 		"Title":                "Kontakte",
 		"CanManageContacts":    canManageContacts,
@@ -69,6 +102,24 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"DirectoryOptIn":       profile.DirectoryOptIn,
 		"ContactFormOpen":      r.URL.Query().Get("contact") == "invalid" || r.URL.Query().Get("contact") == "error",
 	}))
+}
+
+func (a *app) contactsPortalContext(ac authCtx) web.PortalPageData {
+	data := a.eventsPortalContext(ac)
+	data.Title = "Kontakte · " + houseDisplayName(ac.tenant) + " · " + ac.role
+	data.ActivePage = "contacts"
+	return data
+}
+
+func (a *app) renderContactsTempl(w http.ResponseWriter, r *http.Request, data web.ContactsPageData) {
+	var rendered bytes.Buffer
+	if err := web.ContactsPage(data).Render(r.Context(), &rendered); err != nil {
+		logError("templ contacts render failed", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), data.Portal.TenantSlug))
 }
 
 func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac authCtx) {
