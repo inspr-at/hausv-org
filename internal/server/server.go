@@ -2102,6 +2102,21 @@ func parseBallotReminderBeforeMinutes(rawMinutes string, rawHours string) (int, 
 	return minutes, nil
 }
 
+// portalIsDense decides which composition the Hausüberblick uses.
+//
+// HAUSV-527: density follows content as well as role. Managing roles get the
+// dense composition because they come to the screen to work, but an empty house
+// gives them nothing to be dense about — the dense layout then renders tall
+// empty cards, which reads worse than the calm one and loses the reassurance the
+// previous page carried. Residents never get it: a wall of maintenance tickets
+// that are not theirs is intimidating, not useful.
+func portalIsDense(role string, openIssues, upcomingEvents, unreadAnnouncements int) bool {
+	if role != roleManager && role != roleAdmin {
+		return false
+	}
+	return openIssues > 0 || upcomingEvents > 0 || unreadAnnouncements > 0
+}
+
 func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
 	modules := a.portalModulesFor(tenant.Slug)
@@ -2246,6 +2261,15 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		if !hasEnergyCard {
 			energy = web.PortalEnergy{}
 		}
+		portalIssues := issueViewsForActor(tenant.Slug, signals.openIssues, role, email)
+		portalEvents := eventViews(signals.events, now)
+		portalAnnouncements := announcementViewsWithReadState(signals.announcements, now, false, lastSeen)
+		// HAUSV-527: density follows content as well as role. An empty house gives a
+		// manager nothing to be dense about — the dense composition then renders tall
+		// empty cards, which reads worse than the calm one and loses the reassurance
+		// the old page carried. Calm for everyone when nothing is waiting.
+		portalDense := portalIsDense(role, len(portalIssues), len(portalEvents), signals.unreadAnnouncements)
+
 		a.renderPortalTempl(w, r, web.PortalPageData{
 			Title:                  "Hausüberblick · " + houseDisplayName(tenant) + " · " + role,
 			TenantSlug:             tenant.Slug,
@@ -2258,7 +2282,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			Initials:               profile.Initials(),
 			Role:                   role,
 			DisplayVersion:         version.DisplayVersion(version.Version),
-			Dense:                  role == roleManager || role == roleAdmin,
+			Dense:                  portalDense,
 			Modules:                web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
 			CanUseResidentAreas:    canResidentAreas,
 			CanViewEnergy:          modules.Energy && a.canViewEnergy(ac),
@@ -2270,9 +2294,9 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			CanViewAudit:           modules.Audit && canViewAudit(ac.actor(), ac.resource()),
 			HasPrimary:             hasPrimary,
 			Primary:                primary,
-			Issues:                 issueViewsForActor(tenant.Slug, signals.openIssues, role, email),
-			Events:                 eventViews(signals.events, now),
-			Announcements:          announcementViewsWithReadState(signals.announcements, now, false, lastSeen),
+			Issues:                 portalIssues,
+			Events:                 portalEvents,
+			Announcements:          portalAnnouncements,
 			UnreadAnnouncements:    signals.unreadAnnouncements,
 			Energy:                 energy,
 			HasEnergy:              hasEnergyCard,
