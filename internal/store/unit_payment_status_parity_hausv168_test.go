@@ -28,16 +28,24 @@ func TestUnitPaymentStatusStorageParity(t *testing.T) {
 
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
-			s := build(t)
+			storage := build(t)
+			s, ok := BindUnitPaymentStatusRepository(storage, "demo")
+			if !ok {
+				t.Fatal("bind demo repository")
+			}
+			other, ok := BindUnitPaymentStatusRepository(storage, "other")
+			if !ok {
+				t.Fatal("bind other repository")
+			}
+			if unscoped, ok := BindUnitPaymentStatusRepository(storage, ""); ok || unscoped != nil {
+				t.Fatal("empty tenant must not produce a repository")
+			}
 
-			if _, ok := s.Get("demo", "w-01"); ok {
+			if _, ok := s.Get("w-01"); ok {
 				t.Fatal("unknown (tenant,unit) must not be found")
 			}
-			if _, err := s.Set(UnitPaymentStatus{TenantSlug: "", UnitID: "w-01", Status: "bezahlt"}); err == nil {
-				t.Fatal("missing tenant must error")
-			}
 
-			set, err := s.Set(UnitPaymentStatus{TenantSlug: "demo", UnitID: "W 01", Status: "bezahlt", UpdatedBy: "admin@example.com"})
+			set, err := s.Set(UnitPaymentStatus{TenantSlug: "other", UnitID: "W 01", Status: "bezahlt", UpdatedBy: "admin@example.com"})
 			if err != nil {
 				t.Fatalf("set: %v", err)
 			}
@@ -45,7 +53,7 @@ func TestUnitPaymentStatusStorageParity(t *testing.T) {
 				t.Fatalf("set returned %+v", set)
 			}
 
-			got, ok := s.Get("demo", "w-01") // normalized unit lookup
+			got, ok := s.Get("w-01") // normalized unit lookup
 			if !ok || got.Status != "bezahlt" || got.UpdatedBy != "admin@example.com" {
 				t.Fatalf("get mismatch: %+v ok=%v", got, ok)
 			}
@@ -56,9 +64,9 @@ func TestUnitPaymentStatusStorageParity(t *testing.T) {
 			}
 			// A second unit + a different tenant.
 			_, _ = s.Set(UnitPaymentStatus{TenantSlug: "demo", UnitID: "w-02", Status: "offen"})
-			_, _ = s.Set(UnitPaymentStatus{TenantSlug: "other", UnitID: "w-01", Status: "bezahlt"})
+			_, _ = other.Set(UnitPaymentStatus{UnitID: "w-01", Status: "bezahlt"})
 
-			list := s.ListTenant("demo")
+			list := s.List()
 			if len(list) != 2 {
 				t.Fatalf("ListTenant(demo) = %d rows, want 2 (tenant-scoped): %+v", len(list), list)
 			}
@@ -69,6 +77,9 @@ func TestUnitPaymentStatusStorageParity(t *testing.T) {
 			if byUnit["w-01"] != "teilbezahlt" || byUnit["w-02"] != "offen" {
 				t.Fatalf("ListTenant content mismatch: %+v", byUnit)
 			}
+			if got, ok := other.Get("w-01"); !ok || got.Status != "bezahlt" {
+				t.Fatalf("other tenant record missing: %+v ok=%v", got, ok)
+			}
 		})
 	}
 }
@@ -78,8 +89,9 @@ func TestSQLUnitPaymentImportFromJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json store: %v", err)
 	}
-	_, _ = jsonStore.Set(UnitPaymentStatus{TenantSlug: "demo", UnitID: "w-01", Status: "bezahlt"})
-	_, _ = jsonStore.Set(UnitPaymentStatus{TenantSlug: "demo", UnitID: "w-02", Status: "offen"})
+	jsonRepository, _ := BindUnitPaymentStatusRepository(jsonStore, "demo")
+	_, _ = jsonRepository.Set(UnitPaymentStatus{UnitID: "w-01", Status: "bezahlt"})
+	_, _ = jsonRepository.Set(UnitPaymentStatus{UnitID: "w-02", Status: "offen"})
 
 	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
@@ -87,9 +99,10 @@ func TestSQLUnitPaymentImportFromJSON(t *testing.T) {
 	}
 	defer database.Close()
 	sqlStore := NewSQLUnitPaymentStatusStore(database)
+	sqlRepository, _ := BindUnitPaymentStatusRepository(sqlStore, "demo")
 
 	// Newer SQLite write survives re-import.
-	if _, err := sqlStore.Set(UnitPaymentStatus{TenantSlug: "demo", UnitID: "w-01", Status: "ueberfaellig"}); err != nil {
+	if _, err := sqlRepository.Set(UnitPaymentStatus{UnitID: "w-01", Status: "ueberfaellig"}); err != nil {
 		t.Fatalf("pre-set: %v", err)
 	}
 	for i := 0; i < 2; i++ {
@@ -97,10 +110,10 @@ func TestSQLUnitPaymentImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	if got, _ := sqlStore.Get("demo", "w-01"); got.Status != "ueberfaellig" {
+	if got, _ := sqlRepository.Get("w-01"); got.Status != "ueberfaellig" {
 		t.Fatalf("import clobbered newer SQLite write: %+v", got)
 	}
-	if got, ok := sqlStore.Get("demo", "w-02"); !ok || got.Status != "offen" {
+	if got, ok := sqlRepository.Get("w-02"); !ok || got.Status != "offen" {
 		t.Fatalf("import missed json-only row: %+v ok=%v", got, ok)
 	}
 }

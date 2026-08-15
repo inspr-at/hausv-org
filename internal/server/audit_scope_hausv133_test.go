@@ -12,7 +12,7 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 	a.profiles["service@example.com"] = userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.serviceAccessEnabled = true
 
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID:          "top-1",
 		TenantSlug:  "demo",
 		Label:       "Top 1",

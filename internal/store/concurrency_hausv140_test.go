@@ -79,13 +79,14 @@ func TestUnitPaymentStatusStoreConcurrentSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	repository, _ := BindUnitPaymentStatusRepository(s, "demo")
 	var wg sync.WaitGroup
 	for w := 0; w < 16; w++ {
 		wg.Add(1)
 		go func(w int) {
 			defer wg.Done()
 			for i := 0; i < 50; i++ {
-				if _, err := s.Set(UnitPaymentStatus{
+				if _, err := repository.Set(UnitPaymentStatus{
 					TenantSlug: "demo",
 					UnitID:     fmt.Sprintf("unit-%d", w),
 					Status:     UnitPaymentStatusPaid,
@@ -93,12 +94,12 @@ func TestUnitPaymentStatusStoreConcurrentSet(t *testing.T) {
 					t.Errorf("set: %v", err)
 					return
 				}
-				_ = s.ListTenant("demo")
+				_ = repository.List()
 			}
 		}(w)
 	}
 	wg.Wait()
-	if got := len(s.ListTenant("demo")); got != 16 {
+	if got := len(repository.List()); got != 16 {
 		t.Fatalf("want 16 distinct units, got %d", got)
 	}
 }

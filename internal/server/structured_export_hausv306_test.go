@@ -86,13 +86,13 @@ func TestStructuredExportPackageManifestAndChecksum(t *testing.T) {
 
 func TestStructuredExportPortalSelectionDownloadAuditAndOneTimeToken(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential,
 		OwnerEmails: []string{"owner-secret@example.com"},
 	}}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	if _, err := a.unitPaymentStore.Set(unitPaymentStatus{
+	if _, err := testUnitPaymentRepository(t, a, "demo").Set(unitPaymentStatus{
 		TenantSlug: "demo",
 		UnitID:     "top-1",
 		Status:     unitPaymentStatusPaid,
@@ -168,7 +168,7 @@ func TestStructuredExportAuthorizationAndActorBinding(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if _, err := a.unitPaymentStore.Set(unitPaymentStatus{
+	if _, err := testUnitPaymentRepository(t, a, "demo").Set(unitPaymentStatus{
 		TenantSlug: "demo", UnitID: "top-1", Status: unitPaymentStatusOpen, UpdatedAt: time.Now().UTC(),
 	}); err != nil {
 		t.Fatalf("set payment status: %v", err)

@@ -602,6 +602,7 @@ type (
 	activityStorage            = store.ActivityStorage
 	profileOverlayStorage      = store.ProfileOverlayStorage
 	notificationPrefStorage    = store.NotificationPrefStorage
+	unitPaymentRepository      = store.UnitPaymentStatusRepository
 	unitPaymentStatusStorage   = store.UnitPaymentStatusStorage
 	contactBookStorage         = store.ContactBookStorage
 	announcementReadRepository = store.AnnouncementReadRepository
@@ -614,6 +615,8 @@ type (
 	attachmentStorage          = store.AttachmentStorage
 	telegramStorage            = store.TelegramStorage
 	unitStorage                = store.UnitStorage
+	unitRepository             = store.UnitRepository
+	voteRepository             = store.VoteRepository
 	voteStorage                = store.VoteStorage
 	issueStorage               = store.IssueStorage
 	profileStorage             = store.ProfileStorage
@@ -1112,6 +1115,9 @@ type tenantPathContextKey struct{}
 // together with a resolvedTenantRequest by tenantPaths.
 type requestRepositories struct {
 	announcementReads store.AnnouncementReadRepository
+	unitPayments      store.UnitPaymentStatusRepository
+	units             store.UnitRepository
+	votes             store.VoteRepository
 }
 
 type resolvedTenantRequest struct {
@@ -1122,10 +1128,21 @@ type resolvedTenantRequest struct {
 
 func (a *app) repositoriesForTenant(tenant tenantConfig) requestRepositories {
 	repositories := requestRepositories{}
-	if a == nil || a.announcementReadStore == nil {
+	if a == nil {
 		return repositories
 	}
-	repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant.Slug)
+	if a.announcementReadStore != nil {
+		repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant.Slug)
+	}
+	if a.unitPaymentStore != nil {
+		repositories.unitPayments, _ = store.BindUnitPaymentStatusRepository(a.unitPaymentStore, tenant.Slug)
+	}
+	if a.unitStore != nil {
+		repositories.units, _ = store.BindUnitRepository(a.unitStore, tenant.Slug)
+	}
+	if a.voteStore != nil {
+		repositories.votes, _ = store.BindVoteRepository(a.voteStore, tenant.Slug)
+	}
 	return repositories
 }
 
@@ -2061,7 +2078,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		lastSeen = announcementReads.LastSeen(email)
 	}
 	signals := a.portalSignals(tenant.Slug, email, role, now, lastSeen, modules)
-	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen, signals, modules)
+	digest := a.dashboardDigestItems(ac.repositories, tenant.Slug, email, role, now, lastSeen, signals, modules)
 	var primary dashboardDigestItem
 	hasPrimary := false
 	followUps := make([]dashboardDigestItem, 0, 3)
@@ -2112,7 +2129,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	openBallots := 0
 	if canResidentAreas && modules.Votes {
-		openBallots = a.openBallotCount(tenant.Slug, now)
+		openBallots = openBallotCount(ac.repositories.votes, now)
 	}
 	issuesURL := "/app/anliegen"
 	if canManageIssueBoard {
@@ -2273,12 +2290,12 @@ func portalOpenIssueLabel(total int, shown int) string {
 	return pluralizeCount(total, "offenes Anliegen", "offene Anliegen")
 }
 
-func (a *app) openBallotCount(tenantSlug string, now time.Time) int {
-	if a.voteStore == nil {
+func openBallotCount(votes voteRepository, now time.Time) int {
+	if votes == nil {
 		return 0
 	}
 	count := 0
-	for _, item := range a.voteStore.ListTenant(tenantSlug) {
+	for _, item := range votes.List() {
 		if _, _, active := ballotStatusForView(item, now); active {
 			count++
 		}
@@ -2382,13 +2399,13 @@ func portalEnergyStatValue(label string, value *float64, fallback string) portal
 	return portalEnergyStat{Label: label, Value: formatEnergyCompact(*value, 1) + " kW"}
 }
 
-func (a *app) dashboardDigestItems(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time, signals portalSignals, modules portalModuleFlags) []dashboardDigestItem {
+func (a *app) dashboardDigestItems(repositories requestRepositories, tenantSlug string, email string, role string, now time.Time, lastSeen time.Time, signals portalSignals, modules portalModuleFlags) []dashboardDigestItem {
 	var paymentItem *dashboardDigestItem
 	var announcementItem *dashboardDigestItem
 	var issueItem *dashboardDigestItem
 	var eventItem *dashboardDigestItem
 	if modules.Contacts {
-		for _, status := range a.unitPaymentStatusViewsForEmail(tenantSlug, email) {
+		for _, status := range unitPaymentStatusViewsForEmail(repositories.units, repositories.unitPayments, email) {
 			if status.StatusValue == unitPaymentStatusPaid {
 				continue
 			}
@@ -3317,7 +3334,11 @@ func (a *app) actorCanSeeCommonIssues(tenantSlug string, email string, role stri
 	if normalizeRole(role) == roleOwner {
 		return true
 	}
-	for _, membership := range a.unitStore.UnitsForEmail(tenantSlug, email) {
+	units, ok := store.BindUnitRepository(a.unitStore, tenantSlug)
+	if !ok {
+		return false
+	}
+	for _, membership := range units.UnitsForEmail(email) {
 		if normalizeRole(membership.Relation) == roleOwner {
 			return true
 		}
@@ -3384,7 +3405,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 	heroMsg, heroOK := buildingHeroMessage(r.URL.Query().Get("hero"))
 	unitMsg, unitOK := buildingUnitMessage(r.URL.Query().Get("unit"))
 	paymentMsg, paymentOK := unitPaymentStatusMessage(r.URL.Query().Get("payment"))
-	units := a.unitStore.ListTenant(tenant.Slug)
+	units := ac.repositories.units.List()
 	billableWeight := billableUnitWeight(units)
 	fairUseExceeded := billableWeight > fairUseFreeUnits*unitBillableFullPPM
 	homeProfile, hasHomeProfile, profileErr := a.energyStore.Profile(tenant.Slug)
@@ -3418,7 +3439,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"HasCustomHero":         a.hasTenantHero(tenant.Slug),
 		"UnitMsg":               unitMsg,
 		"UnitOK":                unitOK,
-		"Units":                 a.buildingUnitViewsWithPayments(tenant.Slug, units),
+		"Units":                 a.buildingUnitViewsWithPayments(ac.repositories, tenant.Slug, units),
 		"NewUnitTypeOptions":    unitTypeOptions(unitTypeResidential),
 		"NewUnitPaymentOptions": unitPaymentStatusOptions(""),
 		"UnitTotal":             len(units),
@@ -3469,7 +3490,7 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	availableEvents := events
 	events = filterAuditEvents(events, action, query)
-	eventViews := auditEventViews(a.auditEventsForView(tenant.Slug, events, fullAudit))
+	eventViews := auditEventViews(a.auditEventsForView(ac.repositories, tenant.Slug, events, fullAudit))
 	stats := auditStats(events, action, query)
 	auditTitle := "Mein Verlauf"
 	auditLede := "Was in Ihrem Konto und bei freigegebenen Vorgängen passiert ist. Interne Verwaltungsdetails bleiben geschützt."
@@ -3497,11 +3518,11 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}))
 }
 
-func (a *app) auditEventsForView(tenantSlug string, events []auditEvent, includeTechnicalID bool) []auditEvent {
+func (a *app) auditEventsForView(repositories requestRepositories, tenantSlug string, events []auditEvent, includeTechnicalID bool) []auditEvent {
 	out := make([]auditEvent, 0, len(events))
 	for _, event := range events {
 		event = copyAuditEvent(event)
-		label := a.auditTargetTitle(tenantSlug, event.TargetType, event.TargetID)
+		label := a.auditTargetTitle(repositories, tenantSlug, event.TargetType, event.TargetID)
 		if label != "" {
 			if event.Details == nil {
 				event.Details = map[string]string{}
@@ -3516,7 +3537,7 @@ func (a *app) auditEventsForView(tenantSlug string, events []auditEvent, include
 	return out
 }
 
-func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID string) string {
+func (a *app) auditTargetTitle(repositories requestRepositories, tenantSlug string, targetType string, targetID string) string {
 	targetID = strings.TrimSpace(targetID)
 	if targetID == "" {
 		return ""
@@ -3527,7 +3548,7 @@ func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID st
 			if item, found := a.attachmentStore.Get(tenantSlug, targetID); found {
 				switch normalizeAttachmentEntity(item.EntityType) {
 				case "issue", "issue-estimate":
-					if title := a.auditTargetTitle(tenantSlug, "issue", item.EntityID); title != "" {
+					if title := a.auditTargetTitle(repositories, tenantSlug, "issue", item.EntityID); title != "" {
 						return title
 					}
 				case "issue-comment":
@@ -3535,7 +3556,7 @@ func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID st
 						return strings.TrimSpace(issue.Title)
 					}
 				case "document", "ballot", "handover", "event":
-					if title := a.auditTargetTitle(tenantSlug, item.EntityType, item.EntityID); title != "" {
+					if title := a.auditTargetTitle(repositories, tenantSlug, item.EntityType, item.EntityID); title != "" {
 						return title
 					}
 				}
@@ -3555,8 +3576,8 @@ func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID st
 			}
 		}
 	case "store.Ballot", "ballot":
-		if a.voteStore != nil {
-			if item, found := a.voteStore.Get(tenantSlug, targetID); found {
+		if repositories.votes != nil {
+			if item, found := repositories.votes.Get(targetID); found {
 				return strings.TrimSpace(item.Title)
 			}
 		}
@@ -3575,8 +3596,8 @@ func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID st
 			}
 		}
 	case "store.Unit", "unit":
-		if a.unitStore != nil {
-			for _, item := range a.unitStore.ListTenant(tenantSlug) {
+		if repositories.units != nil {
+			for _, item := range repositories.units.List() {
 				if normalizeUnitID(item.ID) == normalizeUnitID(targetID) {
 					return strings.TrimSpace(item.Label)
 				}
@@ -3915,7 +3936,7 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 	}
 	// Add/replace under one lock so a concurrent unit add/delete isn't lost to a
 	// whole-slice overwrite (HAUSV-145).
-	duplicate, err := a.unitStore.UpsertUnit(tenant.Slug, origID, item)
+	duplicate, err := ac.repositories.units.UpsertUnit(origID, item)
 	if err != nil {
 		logError("unit save failed", err, "tenant", tenant.Slug, "unit_id", item.ID)
 		http.Redirect(w, r, "/app/settings/building?section=units&unit=error"+dialogTarget, http.StatusSeeOther)
@@ -3926,7 +3947,7 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 		return
 	}
 	if paymentStatus != "" {
-		if _, err := a.unitPaymentStore.Set(unitPaymentStatus{TenantSlug: tenant.Slug, UnitID: item.ID, Status: paymentStatus, UpdatedBy: actorEmail}); err != nil {
+		if _, err := ac.repositories.unitPayments.Set(unitPaymentStatus{TenantSlug: tenant.Slug, UnitID: item.ID, Status: paymentStatus, UpdatedBy: actorEmail}); err != nil {
 			logError("unit payment status save failed", err, "tenant", tenant.Slug, "unit_id", item.ID)
 			http.Redirect(w, r, "/app/settings/building?section=units&payment=error"+dialogTarget, http.StatusSeeOther)
 			return
@@ -3980,7 +4001,7 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 		}
 	}
 	// Remove under one lock (HAUSV-145).
-	removed, removedUnit, err := a.unitStore.DeleteUnit(tenant.Slug, deleteID)
+	removed, removedUnit, err := ac.repositories.units.DeleteUnit(deleteID)
 	if err != nil {
 		logError("unit delete failed", err, "tenant", tenant.Slug, "unit_id", deleteID)
 		http.Redirect(w, r, "/app/settings/building?section=units&unit=error#unit-"+deleteID, http.StatusSeeOther)
@@ -4023,12 +4044,12 @@ func (a *app) updateUnitPaymentStatus(w http.ResponseWriter, r *http.Request, ac
 		http.Redirect(w, r, "/app/settings/building?section=units&payment=invalid", http.StatusSeeOther)
 		return
 	}
-	members := a.unitStore.MembersForUnit(tenant.Slug, unitID)
+	members := ac.repositories.units.MembersForUnit(unitID)
 	if !members.Found {
 		http.Redirect(w, r, "/app/settings/building?section=units&payment=missing", http.StatusSeeOther)
 		return
 	}
-	record, err := a.unitPaymentStore.Set(unitPaymentStatus{
+	record, err := ac.repositories.unitPayments.Set(unitPaymentStatus{
 		TenantSlug: tenant.Slug,
 		UnitID:     unitID,
 		Status:     status,
@@ -4286,9 +4307,9 @@ func unitAssignmentSummary(emails []string) string {
 	return emails[0] + " +" + strconv.Itoa(len(emails)-1)
 }
 
-func (a *app) buildingUnitViewsWithPayments(tenantSlug string, units []unit) []buildingUnitView {
+func (a *app) buildingUnitViewsWithPayments(repositories requestRepositories, tenantSlug string, units []unit) []buildingUnitView {
 	views := buildingUnitViews(units)
-	payments := a.unitPaymentStatusViewsForUnits(tenantSlug, units)
+	payments := unitPaymentStatusViewsForUnits(repositories.unitPayments, units)
 	for i := range views {
 		if i >= len(payments) {
 			break
@@ -4329,10 +4350,10 @@ func unitMembersLabel(ownerCount, renterCount int) string {
 	return strings.Join(parts, " · ")
 }
 
-func (a *app) unitPaymentStatusViewsForUnits(tenantSlug string, units []unit) []unitPaymentStatusView {
+func unitPaymentStatusViewsForUnits(payments unitPaymentRepository, units []unit) []unitPaymentStatusView {
 	statuses := map[string]unitPaymentStatus{}
-	if a != nil && a.unitPaymentStore != nil {
-		for _, item := range a.unitPaymentStore.ListTenant(tenantSlug) {
+	if payments != nil {
+		for _, item := range payments.List() {
 			statuses[item.UnitID] = item
 		}
 	}
@@ -4344,14 +4365,14 @@ func (a *app) unitPaymentStatusViewsForUnits(tenantSlug string, units []unit) []
 	return views
 }
 
-func (a *app) unitPaymentStatusViewsForEmail(tenantSlug string, email string) []unitPaymentStatusView {
-	if a == nil || a.unitStore == nil || a.unitPaymentStore == nil {
+func unitPaymentStatusViewsForEmail(units unitRepository, payments unitPaymentRepository, email string) []unitPaymentStatusView {
+	if units == nil || payments == nil {
 		return nil
 	}
-	memberships := a.unitStore.UnitsForEmail(tenantSlug, email)
+	memberships := units.UnitsForEmail(email)
 	views := make([]unitPaymentStatusView, 0, len(memberships))
 	for _, membership := range memberships {
-		record, hasRecord := a.unitPaymentStore.Get(tenantSlug, membership.Unit.ID)
+		record, hasRecord := payments.Get(membership.Unit.ID)
 		if !hasRecord {
 			continue
 		}
@@ -4430,7 +4451,7 @@ func (a *app) profileSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
-	units := profileUnitViews(a.unitStore.UnitsForEmail(tenant.Slug, email))
+	units := profileUnitViews(ac.repositories.units.UnitsForEmail(email))
 	profileMsg, profileOK := profileSettingsMessage(r.URL.Query().Get("profile"))
 	a.render(w, "profileSettings", a.withBase(ac, map[string]any{
 		"Title":                  "Profil",
@@ -5734,6 +5755,7 @@ func (a *app) profileForTenant(email string, tenantSlug string) userProfile {
 func (a *app) userRows(tenantSlug string) []userRow {
 	seen := map[string]struct{}{}
 	rows := make([]userRow, 0, len(a.profiles)+len(a.admins)+len(a.allowed))
+	units, _ := store.BindUnitRepository(a.unitStore, tenantSlug)
 	// App-managed (invite store) rows come first so an adopted config user shows
 	// its editable override rather than the read-only env row (HAUSV-163).
 	if a.inviteStore != nil {
@@ -5829,8 +5851,8 @@ func (a *app) userRows(tenantSlug string) []userRow {
 		if rows[i].Deactivated {
 			rows[i].Status = "Deaktiviert"
 		}
-		if a.unitStore != nil {
-			for _, membership := range a.unitStore.UnitsForEmail(tenantSlug, rows[i].Email) {
+		if units != nil {
+			for _, membership := range units.UnitsForEmail(rows[i].Email) {
 				label := strings.TrimSpace(membership.Unit.Label)
 				if relation := unitPaymentRelationLabel(membership.Relation); relation != "" {
 					label += " · " + relation

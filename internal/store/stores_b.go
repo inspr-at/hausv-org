@@ -361,7 +361,9 @@ func NewVoteStore(path string) (*VoteStore, error) {
 	return store, nil
 }
 
-func (s *VoteStore) Create(item Ballot) (Ballot, error) {
+func (*VoteStore) voteStorage() {}
+
+func (s *VoteStore) create(tenantSlug string, item Ballot) (Ballot, error) {
 	if s == nil {
 		return Ballot{}, fmt.Errorf("vote store unavailable")
 	}
@@ -370,6 +372,7 @@ func (s *VoteStore) Create(item Ballot) (Ballot, error) {
 	if err != nil {
 		return Ballot{}, err
 	}
+	item.TenantSlug = tenantSlug
 	item.ID = id
 	item.Status = BallotStatusDraft
 	item.CreatedAt = now
@@ -392,7 +395,7 @@ func (s *VoteStore) Create(item Ballot) (Ballot, error) {
 	return CopyBallot(item), nil
 }
 
-func (s *VoteStore) Delete(tenantSlug string, id string) (bool, error) {
+func (s *VoteStore) delete(tenantSlug string, id string) (bool, error) {
 	if s == nil {
 		return false, nil
 	}
@@ -416,15 +419,15 @@ func (s *VoteStore) Delete(tenantSlug string, id string) (bool, error) {
 	return false, nil
 }
 
-func (s *VoteStore) Open(tenantSlug string, id string, at time.Time) (Ballot, bool, error) {
+func (s *VoteStore) open(tenantSlug string, id string, at time.Time) (Ballot, bool, error) {
 	return s.setStatus(tenantSlug, id, BallotStatusOpen, at)
 }
 
-func (s *VoteStore) Close(tenantSlug string, id string, at time.Time) (Ballot, bool, error) {
+func (s *VoteStore) close(tenantSlug string, id string, at time.Time) (Ballot, bool, error) {
 	return s.setStatus(tenantSlug, id, BallotStatusClosed, at)
 }
 
-func (s *VoteStore) CloseExpiredTenant(tenantSlug string, at time.Time) ([]Ballot, error) {
+func (s *VoteStore) closeExpiredTenant(tenantSlug string, at time.Time) ([]Ballot, error) {
 	if s == nil {
 		return nil, nil
 	}
@@ -504,7 +507,7 @@ func (s *VoteStore) setStatus(tenantSlug string, id string, status string, at ti
 	return Ballot{}, false, nil
 }
 
-func (s *VoteStore) CastVote(tenantSlug string, id string, email string, option string, weight int, at time.Time) (Ballot, bool, error) {
+func (s *VoteStore) castVote(tenantSlug string, id string, email string, option string, weight int, at time.Time) (Ballot, bool, error) {
 	if s == nil {
 		return Ballot{}, false, nil
 	}
@@ -562,7 +565,7 @@ func (s *VoteStore) CastVote(tenantSlug string, id string, email string, option 
 	return Ballot{}, false, nil
 }
 
-func (s *VoteStore) MarkReminderSent(tenantSlug string, id string, recipients []string, at time.Time) (Ballot, bool, error) {
+func (s *VoteStore) markReminderSent(tenantSlug string, id string, recipients []string, at time.Time) (Ballot, bool, error) {
 	if s == nil {
 		return Ballot{}, false, nil
 	}
@@ -601,7 +604,7 @@ func (s *VoteStore) MarkReminderSent(tenantSlug string, id string, recipients []
 	return Ballot{}, false, nil
 }
 
-func (s *VoteStore) ListTenant(tenantSlug string) []Ballot {
+func (s *VoteStore) listTenant(tenantSlug string) []Ballot {
 	if s == nil {
 		return nil
 	}
@@ -618,7 +621,7 @@ func (s *VoteStore) ListTenant(tenantSlug string) []Ballot {
 	return out
 }
 
-func (s *VoteStore) Get(tenantSlug string, id string) (Ballot, bool) {
+func (s *VoteStore) get(tenantSlug string, id string) (Ballot, bool) {
 	if s == nil {
 		return Ballot{}, false
 	}
@@ -849,7 +852,9 @@ func NewUnitStore(path string) (*UnitStore, error) {
 	return store, nil
 }
 
-func (s *UnitStore) SetTenantUnits(tenantSlug string, units []Unit) error {
+func (*UnitStore) unitStorage() {}
+
+func (s *UnitStore) setTenantUnits(tenantSlug string, units []Unit) error {
 	if s == nil {
 		return nil
 	}
@@ -876,7 +881,7 @@ func (s *UnitStore) SetTenantUnits(tenantSlug string, units []Unit) error {
 // overwrite (HAUSV-145). origID is the unit's previous ID ("" for a new unit).
 // It returns duplicate=true if the target ID collides with a different existing
 // unit — mirroring the handler's original check exactly.
-func (s *UnitStore) UpsertUnit(tenantSlug, origID string, item Unit) (duplicate bool, err error) {
+func (s *UnitStore) upsertUnit(tenantSlug, origID string, item Unit) (duplicate bool, err error) {
 	if s == nil {
 		return false, nil
 	}
@@ -926,7 +931,7 @@ func (s *UnitStore) UpsertUnit(tenantSlug, origID string, item Unit) (duplicate 
 
 // DeleteUnit removes one unit within one lock acquisition (HAUSV-145). Returns
 // removed=false if no unit had that ID.
-func (s *UnitStore) DeleteUnit(tenantSlug, id string) (removed bool, removedUnit Unit, err error) {
+func (s *UnitStore) deleteUnit(tenantSlug, id string) (removed bool, removedUnit Unit, err error) {
 	if s == nil {
 		return false, Unit{}, nil
 	}
@@ -954,7 +959,7 @@ func (s *UnitStore) DeleteUnit(tenantSlug, id string) (removed bool, removedUnit
 	return true, removedUnit, s.saveLocked()
 }
 
-func (s *UnitStore) ListTenant(tenantSlug string) []Unit {
+func (s *UnitStore) listTenant(tenantSlug string) []Unit {
 	if s == nil {
 		return nil
 	}
@@ -971,12 +976,12 @@ func (s *UnitStore) ListTenant(tenantSlug string) []Unit {
 	return out
 }
 
-func (s *UnitStore) UnitCount(tenantSlug string) int {
-	return len(s.ListTenant(tenantSlug))
+func (s *UnitStore) unitCount(tenantSlug string) int {
+	return len(s.listTenant(tenantSlug))
 }
 
-func (s *UnitStore) BillableUnitWeight(tenantSlug string) int {
-	return BillableUnitWeight(s.ListTenant(tenantSlug))
+func (s *UnitStore) billableUnitWeight(tenantSlug string) int {
+	return BillableUnitWeight(s.listTenant(tenantSlug))
 }
 
 func BillableUnitWeight(units []Unit) int {
@@ -987,7 +992,7 @@ func BillableUnitWeight(units []Unit) int {
 	return total
 }
 
-func (s *UnitStore) UnitsForEmail(tenantSlug string, email string) []UnitMembership {
+func (s *UnitStore) unitsForEmail(tenantSlug string, email string) []UnitMembership {
 	if s == nil {
 		return nil
 	}
@@ -1019,7 +1024,7 @@ func (s *UnitStore) UnitsForEmail(tenantSlug string, email string) []UnitMembers
 	return out
 }
 
-func (s *UnitStore) MembersForUnit(tenantSlug string, unitID string) UnitMembers {
+func (s *UnitStore) membersForUnit(tenantSlug string, unitID string) UnitMembers {
 	if s == nil {
 		return UnitMembers{}
 	}

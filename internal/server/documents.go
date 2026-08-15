@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -48,7 +50,7 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"SortOptions":        documentSortOptions(sortMode),
 		"CategoryOptions":    documentCategoryOptions(""),
 		"VisibilityOptions":  documentVisibilityOptions(""),
-		"UnitOptions":        documentUnitOptions(a.unitStore.ListTenant(tenant.Slug), ""),
+		"UnitOptions":        documentUnitOptions(ac.repositories.units.List(), ""),
 		"MaxDocumentSize":    formatBytes(maxDocumentBytes),
 	}))
 }
@@ -417,13 +419,16 @@ func (a *app) isDocumentOwner(tenantSlug string, email string, role string, unit
 		return false
 	}
 	if a != nil && a.unitStore != nil {
-		if unitID != "" {
-			members := a.unitStore.MembersForUnit(tenantSlug, unitID)
+		units, _ := store.BindUnitRepository(a.unitStore, tenantSlug)
+		if units != nil && unitID != "" {
+			members := units.MembersForUnit(unitID)
 			return members.Found && emailListContains(members.Owners, email)
 		}
-		for _, membership := range a.unitStore.UnitsForEmail(tenantSlug, email) {
-			if membership.Relation == roleOwner {
-				return true
+		if units != nil {
+			for _, membership := range units.UnitsForEmail(email) {
+				if membership.Relation == roleOwner {
+					return true
+				}
 			}
 		}
 	}

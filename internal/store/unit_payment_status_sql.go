@@ -7,19 +7,58 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
-// UnitPaymentStatusStorage is the behaviour both the JSON UnitPaymentStatusStore
-// and the SQLite SQLUnitPaymentStatusStore satisfy (HAUSV-168). The key is the
-// (tenant, unit) pair.
-type UnitPaymentStatusStorage interface {
+// UnitPaymentStatusRepository is a payment-status store already bound to one
+// tenant.
+type UnitPaymentStatusRepository interface {
 	Set(item UnitPaymentStatus) (UnitPaymentStatus, error)
-	Get(tenantSlug string, unitID string) (UnitPaymentStatus, bool)
-	ListTenant(tenantSlug string) []UnitPaymentStatus
+	Get(unitID string) (UnitPaymentStatus, bool)
+	List() []UnitPaymentStatus
+}
+
+// UnitPaymentStatusStorage is the unbound backend implemented by the JSON and
+// SQLite stores. HTTP code receives only UnitPaymentStatusRepository.
+type UnitPaymentStatusStorage interface {
+	unitPaymentStatusStorage()
 }
 
 var (
 	_ UnitPaymentStatusStorage = (*UnitPaymentStatusStore)(nil)
 	_ UnitPaymentStatusStorage = (*SQLUnitPaymentStatusStore)(nil)
 )
+
+type boundUnitPaymentStatusRepository struct {
+	storage    unitPaymentStatusBackend
+	tenantSlug string
+}
+
+type unitPaymentStatusBackend interface {
+	set(tenantSlug string, item UnitPaymentStatus) (UnitPaymentStatus, error)
+	get(tenantSlug string, unitID string) (UnitPaymentStatus, bool)
+	listTenant(tenantSlug string) []UnitPaymentStatus
+}
+
+// BindUnitPaymentStatusRepository binds all payment-status operations to one
+// tenant.
+func BindUnitPaymentStatusRepository(storage UnitPaymentStatusStorage, tenantSlug string) (UnitPaymentStatusRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(unitPaymentStatusBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundUnitPaymentStatusRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundUnitPaymentStatusRepository) Set(item UnitPaymentStatus) (UnitPaymentStatus, error) {
+	return r.storage.set(r.tenantSlug, item)
+}
+
+func (r *boundUnitPaymentStatusRepository) Get(unitID string) (UnitPaymentStatus, bool) {
+	return r.storage.get(r.tenantSlug, unitID)
+}
+
+func (r *boundUnitPaymentStatusRepository) List() []UnitPaymentStatus {
+	return r.storage.listTenant(r.tenantSlug)
+}
 
 // SQLUnitPaymentStatusStore is the SQLite-backed manual payment-status marker,
 // one row per (tenant, unit). Table from migration 0005.
@@ -31,10 +70,13 @@ func NewSQLUnitPaymentStatusStore(db *sql.DB) *SQLUnitPaymentStatusStore {
 	return &SQLUnitPaymentStatusStore{db: db}
 }
 
-func (s *SQLUnitPaymentStatusStore) Set(item UnitPaymentStatus) (UnitPaymentStatus, error) {
+func (*SQLUnitPaymentStatusStore) unitPaymentStatusStorage() {}
+
+func (s *SQLUnitPaymentStatusStore) set(tenantSlug string, item UnitPaymentStatus) (UnitPaymentStatus, error) {
 	if s == nil {
 		return UnitPaymentStatus{}, nil
 	}
+	item.TenantSlug = tenantSlug
 	item, err := NormalizeUnitPaymentRecord(item)
 	if err != nil {
 		return UnitPaymentStatus{}, err
@@ -52,7 +94,7 @@ func (s *SQLUnitPaymentStatusStore) Set(item UnitPaymentStatus) (UnitPaymentStat
 	return item, nil
 }
 
-func (s *SQLUnitPaymentStatusStore) Get(tenantSlug string, unitID string) (UnitPaymentStatus, bool) {
+func (s *SQLUnitPaymentStatusStore) get(tenantSlug string, unitID string) (UnitPaymentStatus, bool) {
 	if s == nil {
 		return UnitPaymentStatus{}, false
 	}
@@ -74,7 +116,7 @@ func (s *SQLUnitPaymentStatusStore) Get(tenantSlug string, unitID string) (UnitP
 	return normalized, true
 }
 
-func (s *SQLUnitPaymentStatusStore) ListTenant(tenantSlug string) []UnitPaymentStatus {
+func (s *SQLUnitPaymentStatusStore) listTenant(tenantSlug string) []UnitPaymentStatus {
 	if s == nil {
 		return nil
 	}

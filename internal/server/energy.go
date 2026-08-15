@@ -471,7 +471,11 @@ func (a *app) energyResidentialUnits(tenantSlug string) []unit {
 	if a.unitStore == nil {
 		return nil
 	}
-	all := a.unitStore.ListTenant(tenantSlug)
+	units, ok := store.BindUnitRepository(a.unitStore, tenantSlug)
+	if !ok {
+		return nil
+	}
+	all := units.List()
 	out := make([]unit, 0, len(all))
 	for _, item := range all {
 		if normalizeUnitType(item.UnitType) == unitTypeResidential {
@@ -502,8 +506,16 @@ func (a *app) actorBelongsToEnergyUnit(ac authCtx, unitID string, ownerOnly bool
 	if a.unitStore == nil {
 		return false
 	}
+	units := ac.repositories.units
+	if units == nil {
+		var ok bool
+		units, ok = store.BindUnitRepository(a.unitStore, ac.tenant.Slug)
+		if !ok {
+			return false
+		}
+	}
 	unitID = normalizeUnitID(unitID)
-	for _, membership := range a.unitStore.UnitsForEmail(ac.tenant.Slug, ac.email) {
+	for _, membership := range units.UnitsForEmail(ac.email) {
 		if normalizeUnitID(membership.Unit.ID) != unitID {
 			continue
 		}

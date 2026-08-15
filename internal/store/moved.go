@@ -504,10 +504,13 @@ func NewUnitPaymentStatusStore(path string) (*UnitPaymentStatusStore, error) {
 	return store, nil
 }
 
-func (s *UnitPaymentStatusStore) Set(item UnitPaymentStatus) (UnitPaymentStatus, error) {
+func (*UnitPaymentStatusStore) unitPaymentStatusStorage() {}
+
+func (s *UnitPaymentStatusStore) set(tenantSlug string, item UnitPaymentStatus) (UnitPaymentStatus, error) {
 	if s == nil {
 		return UnitPaymentStatus{}, fmt.Errorf("unit payment status store not configured")
 	}
+	item.TenantSlug = tenantSlug
 	item, err := NormalizeUnitPaymentRecord(item)
 	if err != nil {
 		return UnitPaymentStatus{}, err
@@ -536,7 +539,7 @@ func (s *UnitPaymentStatusStore) Set(item UnitPaymentStatus) (UnitPaymentStatus,
 	return item, nil
 }
 
-func (s *UnitPaymentStatusStore) Get(tenantSlug string, unitID string) (UnitPaymentStatus, bool) {
+func (s *UnitPaymentStatusStore) get(tenantSlug string, unitID string) (UnitPaymentStatus, bool) {
 	if s == nil {
 		return UnitPaymentStatus{}, false
 	}
@@ -559,7 +562,7 @@ func (s *UnitPaymentStatusStore) Get(tenantSlug string, unitID string) (UnitPaym
 	return UnitPaymentStatus{}, false
 }
 
-func (s *UnitPaymentStatusStore) ListTenant(tenantSlug string) []UnitPaymentStatus {
+func (s *UnitPaymentStatusStore) listTenant(tenantSlug string) []UnitPaymentStatus {
 	if s == nil {
 		return nil
 	}
