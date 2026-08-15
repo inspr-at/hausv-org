@@ -28,7 +28,7 @@ type PortalEnergy struct {
 type PortalPageData struct {
 	Title, TenantSlug, HouseName, Address, MapURL     string
 	GreetingName, Today, DisplayName, Initials, Role  string
-	DisplayVersion                                    string
+	DisplayVersion, ActivePage                        string
 	Dense, CanUseResidentAreas, CanViewEnergy         bool
 	CanManageIssues, CanCreateResidentIssue           bool
 	CanSeeParking, CanManageHandovers, CanManageUsers bool
@@ -108,59 +108,66 @@ templ PortalSidebar(data PortalPageData) {
 templ PortalNavigation(data PortalPageData, icons bool) {
 	<nav class="nav" aria-label="Bereiche">
 		if data.CanUseResidentAreas {
-			@PortalNavItem("home", "Hausüberblick", "/app", true, 0, icons)
+			@PortalNavItem("home", "Hausüberblick", "/app", portalNavActive(data, "home"), 0, icons)
 		}
 		if data.CanUseResidentAreas && data.CanViewEnergy {
-			@PortalNavItem("energy", "Mein Zuhause", "/app/energie", false, 0, icons)
+			@PortalNavItem("energy", "Mein Zuhause", "/app/energie", portalNavActive(data, "energy"), 0, icons)
 		}
 		if data.CanUseResidentAreas && data.Modules.Announcements {
-			@PortalNavItem("announcement", "Aushang", "/app/announcements", false, data.UnreadAnnouncements, icons)
+			@PortalNavItem("announcement", "Aushang", "/app/announcements", portalNavActive(data, "announcements"), data.UnreadAnnouncements, icons)
 		}
 		if data.CanUseResidentAreas && data.Modules.Events {
-			@PortalNavItem("calendar", "Termine", "/app/events", false, 0, icons)
+			@PortalNavItem("calendar", "Termine", "/app/events", portalNavActive(data, "events"), 0, icons)
 		}
 		if data.CanUseResidentAreas && data.Modules.Contacts {
-			@PortalNavItem("contact", "Kontakte", "/app/kontakte", false, 0, icons)
+			@PortalNavItem("contact", "Kontakte", "/app/kontakte", portalNavActive(data, "contacts"), 0, icons)
 		}
 		if data.CanUseResidentAreas && data.Modules.Documents {
-			@PortalNavItem("document", "Dokumente", "/app/dokumente", false, 0, icons)
+			@PortalNavItem("document", "Dokumente", "/app/dokumente", portalNavActive(data, "documents"), 0, icons)
 		}
 		if data.Modules.Issues {
 			if data.CanManageIssues {
-				@PortalNavItem("issue", "Anliegen", "/app/anliegen/board", false, len(data.Issues), icons)
+				@PortalNavItem("issue", "Anliegen", "/app/anliegen/board", portalNavActive(data, "issues"), len(data.Issues), icons)
 			} else {
-				@PortalNavItem("issue", "Anliegen", "/app/anliegen", false, len(data.Issues), icons)
+				@PortalNavItem("issue", "Anliegen", "/app/anliegen", portalNavActive(data, "issues"), len(data.Issues), icons)
 			}
 		}
 		if data.CanUseResidentAreas && data.Modules.Votes {
-			@PortalNavItem("vote", "Abstimmungen", "/app/abstimmungen", false, 0, icons)
+			@PortalNavItem("vote", "Abstimmungen", "/app/abstimmungen", portalNavActive(data, "votes"), 0, icons)
 		}
 		if data.CanUseResidentAreas && ((data.Modules.Parking && data.CanSeeParking) || (data.Modules.Handovers && data.CanManageHandovers) || (data.Modules.Users && data.CanManageUsers)) {
 			<span class="nav-label">Verwaltung</span>
 		}
 		if data.CanUseResidentAreas && data.Modules.Parking && data.CanSeeParking {
-			@PortalNavItem("parking", "Parkplatznutzung", "/app/parking", false, 0, icons)
+			@PortalNavItem("parking", "Parkplatznutzung", "/app/parking", portalNavActive(data, "parking"), 0, icons)
 		}
 		if data.CanUseResidentAreas && data.Modules.Handovers && data.CanManageHandovers {
-			@PortalNavItem("handover", "Übergaben", "/app/uebergaben", false, 0, icons)
+			@PortalNavItem("handover", "Übergaben", "/app/uebergaben", portalNavActive(data, "handovers"), 0, icons)
 		}
 		if data.CanUseResidentAreas && data.Modules.Users && data.CanManageUsers {
-			@PortalNavItem("users", "Benutzer & Rechte", "/app/settings/users", false, 0, icons)
+			@PortalNavItem("users", "Benutzer & Rechte", "/app/settings/users", portalNavActive(data, "users"), 0, icons)
 		}
 		if data.CanUseResidentAreas && data.Modules.Audit && data.CanViewAudit {
-			@PortalNavItem("audit", "Verlauf", "/app/audit", false, 0, icons)
+			@PortalNavItem("audit", "Verlauf", "/app/audit", portalNavActive(data, "audit"), 0, icons)
 		}
 		if data.CanUseResidentAreas {
-			@PortalNavItem("settings", "Einstellungen", "/app/settings", false, 0, icons)
+			@PortalNavItem("settings", "Einstellungen", "/app/settings", portalNavActive(data, "settings"), 0, icons)
 		}
 		if data.Modules.Help {
-			@PortalNavItem("help", "Hilfe", "/app/hilfe", false, 0, icons)
+			@PortalNavItem("help", "Hilfe", "/app/hilfe", portalNavActive(data, "help"), 0, icons)
 		}
 	</nav>
 }
 
+func portalNavActive(data PortalPageData, page string) bool {
+	if data.ActivePage == "" {
+		return page == "home"
+	}
+	return data.ActivePage == page
+}
+
 templ PortalNavItem(kind, label, url string, active bool, badge int, icons bool) {
-	<a href={ templ.SafeURL(url) } class={ templ.KV("active", active) } aria-current={ templ.KV("page", active) }>
+	<a href={ templ.SafeURL(url) } class={ templ.KV("active", active) } aria-current={ portalAriaCurrent(active) }>
 		if icons {
 			<span class="nav-icon">@PortalIcon(kind)</span>
 		}
@@ -169,6 +176,13 @@ templ PortalNavItem(kind, label, url string, active bool, badge int, icons bool)
 			<span class="nav-badge">{ badge }</span>
 		}
 	</a>
+}
+
+func portalAriaCurrent(active bool) string {
+	if active {
+		return "page"
+	}
+	return "false"
 }
 
 templ PortalIcon(kind string) {
