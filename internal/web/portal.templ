@@ -528,10 +528,3 @@ func calmAnswer(data PortalPageData) string {
 // PortalMobileHeader is the compact shell used by portal sub-pages. Keeping it
 // in the shared portal template means every route uses the same permission-gated
 // PortalNavigation instead of growing a second mobile navigation tree.
-templ PortalMobileHeader(data PortalPageData) {
-	<header class="mobile-head">
-		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
-		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>{ data.Address }</small></a>
-		<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
-	</header>
-}
