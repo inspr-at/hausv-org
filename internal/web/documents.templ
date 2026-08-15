@@ -1,0 +1,217 @@
+package web
+
+import "github.com/inspr-at/hausv-org/internal/view"
+
+type DocumentGuideEntry struct {
+	Category string
+	Detail   string
+}
+
+type DocumentsPageData struct {
+	Portal                PortalPageData
+	AssetVersion          string
+	CanManageDocuments    bool
+	DocumentSections      []view.DocumentCategoryView
+	HasDocuments          bool
+	HasAnyDocuments       bool
+	DocumentsEmpty        view.EmptyStateView
+	DocumentGuide         []DocumentGuideEntry
+	DocumentCountLabel    string
+	DocumentMessage       string
+	DocumentMessageOK     bool
+	SearchQuery           string
+	HasSearchQuery        bool
+	SortOptions           []view.SelectOption
+	CategoryOptions       []view.SelectOption
+	VisibilityOptions     []view.SelectOption
+	UnitOptions           []view.SelectOption
+	MaxDocumentSize       string
+}
+
+templ DocumentsPage(data DocumentsPageData) {
+	<!doctype html>
+	<html lang="de-AT">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+			<title>{ data.Portal.Title }</title>
+			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+			<script src={ "/assets/announcements.js?v=" + data.AssetVersion } defer></script>
+			<script src={ "/assets/attachments.js?v=" + data.AssetVersion } defer></script>
+			@DocumentsStyles()
+		</head>
+		<body data-authenticated-app data-templ-documents>
+			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+			<div class="documents-shell">
+				@PortalSidebar(data.Portal)
+				@DocumentsContent(data)
+			</div>
+			<header class="mobile-head">
+				<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalNavigation(data.Portal, false)@PortalReleaseNotes(data.Portal)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.Portal.DisplayName } abmelden</button></form></div></details>
+				<a class="mobile-identity" href="/app"><strong>{ data.Portal.HouseName }</strong><small>Dokumente · { data.Portal.Role }</small></a>
+				<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.Portal.DisplayName }>{ data.Portal.Initials }</a>
+			</header>
+			if data.CanManageDocuments {
+				@DocumentUploadDialog(data)
+			}
+		</body>
+	</html>
+}
+
+templ DocumentsStyles() {
+	<style>
+		:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--font-serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);--shadow-md:0 18px 44px rgba(32,37,31,.08);font-family:var(--font-sans)}
+		*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}button,input,select{font:inherit}button{cursor:pointer}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.skip-link{position:fixed;z-index:300;top:var(--space-2);left:var(--space-2);padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.skip-link:focus{transform:translateY(0)}
+		.documents-shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.house-name{display:block;font-family:var(--font-serif);font-size:27px;line-height:1}.house-address{display:block;margin-top:var(--space-2);color:var(--soft);font-size:12px}.map{display:block;height:74px;margin-top:var(--space-4);overflow:hidden;background:var(--nav-2);border:1px solid var(--muted);border-radius:var(--radius-md)}.map svg{display:block;width:100%;height:100%}.map-streets{fill:none;stroke:var(--muted);stroke-width:1;opacity:.42}.map-pin{fill:var(--gold-light);stroke:var(--gold)}.map-hole{fill:var(--nav)}.context-switch{margin-top:var(--space-3);font-size:11px}.context-switch summary{cursor:pointer;color:var(--gold-light)}.context-menu{display:grid;gap:var(--space-2);margin-top:var(--space-2);padding:var(--space-2);background:var(--nav-2);border-radius:var(--radius-sm)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.context-menu small{color:var(--soft)}
+		.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-label{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-notes>summary{margin-top:2px;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}.release-notes>summary::-webkit-details-marker{display:none}.release-panel{position:fixed;z-index:250;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.release-panel h2{font-size:24px}.release-entry{padding-top:var(--space-4)}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}
+		.documents-main{min-width:0;padding:var(--space-6)}.page-top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}.crumb{display:flex;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}.crumb svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6}.page-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.page{max-width:1180px;margin:var(--space-5) auto 0}.page-heading{display:flex;align-items:end;justify-content:space-between;gap:var(--space-5);padding-bottom:var(--space-5);border-bottom:1px solid var(--line)}.page-heading h1{font-size:42px;line-height:1}.lede{max-width:680px;color:var(--muted);font-size:14px;line-height:1.5}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:34px;padding:var(--space-1) var(--space-3)}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.flash{margin-top:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}.flash.ok{border-color:var(--gold)}
+		.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.document-library{display:grid;gap:var(--space-5);margin-top:var(--space-5);padding:var(--space-5)}.library-head{display:flex;align-items:end;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px solid var(--line)}.kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.mini{margin-top:var(--space-1);color:var(--muted);font-size:11px}.pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:750}.document-toolbar{display:grid;grid-template-columns:minmax(240px,1fr) minmax(170px,.3fr) auto;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.document-search{position:relative;min-width:0}.document-search svg{position:absolute;top:50%;left:var(--space-3);width:20px;height:20px;transform:translateY(-50%);fill:none;stroke:var(--muted);stroke-width:1.8;pointer-events:none}.document-search input,.document-sort select{width:100%;min-height:50px;border:0;background:transparent;color:var(--ink)}.document-search input{padding:var(--space-3) var(--space-3) var(--space-3) 42px}.document-sort{border-left:1px solid var(--line)}.document-sort select{padding:var(--space-3);font-weight:750}.document-toolbar .button,.document-reset{min-height:50px;border-width:0 0 0 1px;border-radius:0}.document-reset{display:inline-flex;align-items:center;justify-content:center;padding-inline:var(--space-3);border-left:1px solid var(--line);background:var(--panel-soft);color:var(--gold-ink);font-size:12px;font-weight:800}.document-sections{display:grid;gap:var(--space-5)}.document-section{display:grid;gap:var(--space-2)}.document-section h2{display:flex;align-items:center;gap:var(--space-2);font-size:19px}.section-count{padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-family:var(--font-sans);font-size:10px}.document-list{display:grid;gap:var(--space-2)}.document-row{display:grid;grid-template-columns:50px minmax(0,1fr) minmax(150px,auto);align-items:center;gap:var(--space-3) var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);scroll-margin-top:82px}.document-icon{width:48px;height:56px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--gold-ink)}.document-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7}.document-copy{min-width:0}.document-copy>strong{display:block;font-family:var(--font-serif);font-size:18px;overflow-wrap:anywhere}.document-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px var(--space-2);margin-top:var(--space-2);color:var(--muted);font-size:11px}.document-meta-secondary{color:var(--soft)}.file-details{margin-top:var(--space-1);color:var(--soft);font-size:11px}.file-details summary,.admin-tools>summary,.versions>summary{min-height:40px;display:flex;align-items:center;cursor:pointer;font-weight:800}.document-file{display:block;overflow-wrap:anywhere}.document-actions{min-width:150px;display:grid;gap:var(--space-2)}.document-actions .button{width:100%}.admin-tools,.versions{grid-column:2/-1;padding-top:var(--space-2);border-top:1px solid var(--line)}.admin-tools>summary,.versions>summary{color:var(--gold-ink);font-size:12px}.admin-body{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:var(--space-2)}.version-list{display:grid;gap:var(--space-2);margin-top:var(--space-2)}.version-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:11px}
+		.document-empty{min-height:210px;display:grid;place-items:center;padding:var(--space-6);border:1px dashed var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);text-align:center}.document-empty svg{width:42px;height:42px;fill:none;stroke:var(--gold-ink);stroke-width:1.5}.document-empty h2{margin-top:var(--space-3);font-size:24px}.document-empty p{max-width:52ch;margin-top:var(--space-2);color:var(--muted);font-size:13px;line-height:1.5}.document-empty .button{margin-top:var(--space-4)}.doc-blank{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(270px,.85fr);gap:var(--space-4);margin-top:var(--space-5)}.doc-blank-main{min-height:350px;display:grid;align-content:center;gap:var(--space-5);padding:var(--space-6);border:1px dashed var(--line);border-radius:var(--radius-md);background:var(--panel)}.doc-blank-lead{display:grid;justify-items:start;gap:var(--space-3)}.doc-blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft);color:var(--gold-ink)}.doc-blank-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.5}.doc-blank-main h2{font-size:30px}.doc-blank-main p{max-width:54ch;color:var(--muted);font-size:14px;line-height:1.55}.doc-blank-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.doc-guide{align-self:start;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}.doc-guide>summary{min-height:60px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-4);cursor:pointer;list-style:none}.doc-guide>summary::-webkit-details-marker{display:none}.doc-guide>summary::after{content:"+";color:var(--gold-ink);font-size:20px}.doc-guide[open]>summary{border-bottom:1px solid var(--line)}.doc-guide[open]>summary::after{content:"−"}.doc-guide>summary span{display:grid;gap:2px}.doc-guide>summary small{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.doc-guide-body{display:grid;gap:var(--space-3);padding:var(--space-4)}.doc-guide-list{display:grid;gap:var(--space-2);margin:0;padding:0;list-style:none}.doc-guide-list li{display:grid;gap:2px;padding-top:var(--space-2);border-top:1px solid var(--line)}.doc-guide-list li:first-child{padding-top:0;border-top:0}.doc-guide-list strong{font-size:12px}.doc-guide-list span{color:var(--muted);font-size:11px;line-height:1.4}.doc-notes{display:grid;gap:var(--space-2)}.doc-note{display:grid;gap:2px;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.doc-note strong{font-size:12px}.doc-note span{color:var(--muted);font-size:11px;line-height:1.4}
+		.dialog{width:min(680px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog form{display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-height:inherit}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-5);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:25px}.dialog-close{width:44px;height:44px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px}.dialog-body{min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto}.dialog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.dialog-grid .full{grid-column:1/-1}.dialog label{display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;font-weight:700}.dialog input,.dialog select{width:100%;min-height:44px;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel);color:var(--ink)}.dialog-optional{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.dialog-optional>summary{min-height:44px;padding:var(--space-3);cursor:pointer;font-size:12px;font-weight:800}.dialog-optional-grid{display:grid;gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line)}.file-control{position:relative;min-height:44px;display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.file-control span{color:var(--gold-ink)}.dialog-footer{display:flex;justify-content:flex-end;padding:var(--space-4) var(--space-5);border-top:1px solid var(--line);background:var(--panel)}.dialog-footer .button{min-height:44px}.dialog-intro{color:var(--muted);font-size:12px;line-height:1.5}.replace-context{display:grid;gap:var(--space-1);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.replace-context strong{font-family:var(--font-serif);font-size:17px}.attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:48px minmax(0,1fr) 48px;grid-template-rows:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}.attachment-lightbox.open{display:grid}.attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-3);min-width:0;min-height:0;margin:0}.attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm);background:var(--nav-2)}.attachment-lightbox figcaption{text-align:center;font-size:12px;overflow-wrap:anywhere}.lightbox-close,.lightbox-prev,.lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}.lightbox-close{grid-column:3;grid-row:1;width:44px;height:44px}.lightbox-prev,.lightbox-next{width:46px;height:70px;font-size:26px}.lightbox-prev{grid-column:1;grid-row:2}.lightbox-next{grid-column:3;grid-row:2}
+		.mobile-head{display:none}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}@media(max-width:1050px){.documents-shell{grid-template-columns:210px minmax(0,1fr)}}@media(max-width:760px){.documents-shell{display:block}.sidebar{display:none}.mobile-head{position:sticky;z-index:100;top:0;min-height:76px;display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:var(--space-3);padding:0 var(--space-4);background:var(--nav);color:var(--panel)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:21px}.mobile-identity small{margin-top:var(--space-1);color:var(--soft);font-size:10px}.mobile-head>.avatar{width:40px;height:40px}.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:"";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:76px;right:0;left:0;max-height:calc(100vh - 76px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);box-shadow:var(--shadow-dialog)}.menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.menu-panel .nav a{min-height:44px;display:flex;margin:0;padding:0 var(--space-3)}.menu-panel .nav-label{grid-column:1/-1}.menu-panel .release-notes{padding:var(--space-3)}.menu-panel .logout-form button{min-height:44px}.documents-main{padding:var(--space-4)}.page-top{display:none}.page{margin-top:0}.page-heading{display:grid;align-items:start}.page-heading h1{font-size:34px}.document-toolbar{grid-template-columns:1fr auto}.document-search{grid-column:1/-1;border-bottom:1px solid var(--line)}.document-sort{border-left:0}.document-row{grid-template-columns:44px minmax(0,1fr);padding:var(--space-3)}.document-icon{width:42px;height:49px}.document-actions{grid-column:1/-1;min-width:0;grid-template-columns:1fr 1fr}.document-actions .primary{grid-column:1/-1}.document-actions .button:only-child{grid-column:1/-1}.admin-tools,.versions{grid-column:1/-1}.doc-blank{grid-template-columns:minmax(0,1fr)}.doc-blank-main{min-height:0}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}@media(max-width:520px){.document-library{padding:var(--space-3)}.document-icon{display:none}.document-row{grid-template-columns:minmax(0,1fr)}.document-actions{grid-column:1}.admin-tools,.versions{grid-column:1}.doc-blank-actions{display:grid}.doc-blank-actions .button{width:100%}.dialog-grid{grid-template-columns:minmax(0,1fr)}.dialog-grid .full{grid-column:1}.dialog-footer .button{width:100%}}
+	</style>
+}
+
+templ DocumentsContent(data DocumentsPageData) {
+	<main id="main-content" tabindex="-1" class="documents-main documents-screen">
+		<div class="page-top"><span class="crumb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l3 3v15H7z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg><span>/</span><span>Dokumente</span></span>
+			if data.CanManageDocuments && (data.HasAnyDocuments || data.HasSearchQuery) {
+				<div class="page-actions"><a class="button ghost" href="/app/dokumente/rechnungen/import" aria-label="E-Rechnung einlesen">E-Rechnung</a>@DocumentUploadButton()</div>
+			}
+		</div>
+		<section class="page">
+			<header class="page-heading"><div><h1>Dokumente</h1></div><p class="lede">Die freigegebenen Unterlagen des Hauses – schnell finden, ansehen und herunterladen.</p></header>
+			if data.DocumentMessage != "" {
+				<p class={ "flash", templ.KV("ok", data.DocumentMessageOK) }>{ data.DocumentMessage }</p>
+			}
+			if data.HasAnyDocuments || data.HasSearchQuery {
+				@DocumentLibrary(data)
+			} else {
+				@DocumentsBlank(data)
+			}
+		</section>
+	</main>
+}
+
+templ DocumentUploadButton() {
+	<button class="button primary" type="button" data-dialog="document-upload" aria-haspopup="dialog" aria-controls="document-upload" aria-label="Dokument hochladen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Hochladen</button>
+}
+
+templ DocumentLibrary(data DocumentsPageData) {
+	<section class="panel document-library">
+		<header class="library-head"><div><p class="kicker">Hausablage</p>
+			if data.HasSearchQuery {
+				<p class="mini">Ergebnis für „{ data.SearchQuery }“</p>
+			}
+		</div>
+		if data.HasAnyDocuments {
+			<span class="pill">{ data.DocumentCountLabel }</span>
+		}
+		</header>
+		<form class="document-toolbar" method="get" action="/app/dokumente" role="search">
+			<label class="document-search" for="document-search"><span class="sr-only">Dokumente durchsuchen</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"></path></svg><input id="document-search" name="q" value={ data.SearchQuery } placeholder="Dokument suchen"/></label>
+			<label class="document-sort" for="document-sort"><span class="sr-only">Sortierung</span><select id="document-sort" name="sort">
+				for _, option := range data.SortOptions {
+					<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+				}
+			</select></label>
+			<button class="button" type="submit">Anzeigen</button>
+			if data.HasSearchQuery {
+				<a class="document-reset" href="/app/dokumente">Zurücksetzen</a>
+			}
+		</form>
+		if data.HasDocuments {
+			<div class="document-sections">
+				for _, section := range data.DocumentSections {
+					<section class="document-section"><h2>{ section.Category }<span class="section-count">{ len(section.Documents) }</span></h2><div class="document-list">
+						for _, document := range section.Documents {
+							@DocumentRow(document, data.CanManageDocuments)
+						}
+					</div></section>
+				}
+			</div>
+		} else {
+			<div class="document-empty"><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l3 3v15H7z"></path><path d="M14 3v4h4"></path><circle cx="10" cy="14" r="3.5"></circle><path d="m12.5 16.5 3 3"></path></svg><h2>Keine Dokumente gefunden</h2><p>Versuchen Sie einen anderen Suchbegriff oder zeigen Sie wieder alle Dokumente.</p><a class="button" href="/app/dokumente">Alle Dokumente zeigen</a></div></div>
+		}
+	</section>
+}
+
+templ DocumentRow(document view.DocumentView, canManage bool) {
+	<article class="document-row" id={ "document-" + document.ID }>
+		<span class="document-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"></path><path d="M14 3v4h4"></path><path d="M9 12h6M9 16h6"></path></svg></span>
+		<div class="document-copy"><strong>{ document.Title }</strong><div class="document-meta"><span class={ "pill", document.VisibilityClass }>{ document.Visibility }</span>
+			if document.HasUnit {
+				<span class="pill">Einheit { document.UnitLabel }</span>
+			}
+			<span>{ document.VersionLabel }</span><span class="document-meta-secondary">{ document.UploadedDate } · { document.Size }</span></div><details class="file-details"><summary>Dateidetails</summary><span class="document-file">{ document.Filename } · hochgeladen { document.UploadedAt }</span></details></div>
+		<div class="document-actions">
+			if document.CanPreview {
+				if document.IsImage {
+					<button class="button primary" type="button" data-lightbox-src={ document.PreviewURL } data-lightbox-caption={ document.Filename }>Vorschau</button>
+				} else {
+					<a class="button primary" href={ templ.SafeURL(document.PreviewURL) } target="_blank" rel="noopener">Vorschau</a>
+				}
+				<a class="button small ghost" href={ templ.SafeURL(document.DownloadURL) }>Herunterladen</a>
+			} else {
+				<a class="button primary" href={ templ.SafeURL(document.DownloadURL) }>Herunterladen</a>
+			}
+		</div>
+		if canManage {
+			<details class="admin-tools"><summary>Dokument verwalten</summary><div class="admin-body"><button class="button small ghost" type="button" data-dialog={ document.ReplaceDialogID } aria-haspopup="dialog" aria-controls={ document.ReplaceDialogID }>Neue Version hochladen</button><span class="mini">Kategorie, Sichtbarkeit und Einheit bleiben dabei erhalten.</span></div></details>
+		}
+		if document.HasVersions {
+			<details class="versions"><summary>Versionsverlauf</summary><div class="version-list">
+				for _, version := range document.Versions {
+					<div class="version-row"><span>{ version.Version } · { version.UploadedAt } · { version.Size } · { version.Filename }</span><a class="button small ghost" href={ templ.SafeURL(version.DownloadURL) }>Herunterladen</a></div>
+				}
+			</div></details>
+		}
+	</article>
+	if canManage {
+		@DocumentReplaceDialog(document)
+	}
+}
+
+templ DocumentReplaceDialog(document view.DocumentView) {
+	<dialog id={ document.ReplaceDialogID } class="dialog" aria-labelledby={ document.ReplaceDialogID + "-title" }><form method="post" action="/app/dokumente/replace" enctype="multipart/form-data"><input type="hidden" name="id" value={ document.ID }/><div class="dialog-head"><h2 id={ document.ReplaceDialogID + "-title" }>Neue Version speichern</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body"><div class="replace-context"><strong>{ document.Title }</strong><span class="mini">Aktuell { document.VersionLabel } · { document.Visibility }
+		if document.HasUnit {
+			<span> · Einheit { document.UnitLabel }</span>
+		}
+	</span></div><div class="dialog-grid"><label class="full" for={ document.ReplaceDialogID + "-file" }>Neue Datei<span class="file-control"><input id={ document.ReplaceDialogID + "-file" } type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required/><span>PDF oder Bild auswählen</span></span></label></div></div><footer class="dialog-footer"><button class="button primary" type="submit">Neue Version speichern</button></footer></form></dialog>
+}
+
+templ DocumentsBlank(data DocumentsPageData) {
+	<section class="doc-blank" aria-labelledby="doc-blank-title"><div class="doc-blank-main"><div class="doc-blank-lead"><span class="doc-blank-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"></path><path d="M14 3v4h4"></path><circle cx="10" cy="14" r="3.5"></circle><path d="m12.5 16.5 3 3"></path></svg></span><h2 id="doc-blank-title">{ data.DocumentsEmpty.Title }</h2>
+		if data.CanManageDocuments {
+			<p>Erste Unterlage hochladen, einordnen und für die passende Gruppe freigeben.</p>
+		} else {
+			<p>{ data.DocumentsEmpty.Message }</p>
+		}
+	</div><div class="doc-blank-actions">
+		if data.CanManageDocuments {
+			@DocumentUploadButton()<a class="button ghost" href="/app/dokumente/rechnungen/import" aria-label="E-Rechnung einlesen">E-Rechnung</a>
+		} else {
+			<a class="button primary" href="/app/anliegen?new=1">Unterlage anfragen</a><a class="button ghost" href="/app/kontakte">Verwaltung im Kontaktverzeichnis</a>
+		}
+	</div></div><details class="doc-guide"><summary><span><small>Orientierung</small><strong>Was hier abgelegt wird</strong></span></summary><div class="doc-guide-body"><ul class="doc-guide-list">
+		for _, entry := range data.DocumentGuide {
+			<li><strong>{ entry.Category }</strong><span>{ entry.Detail }</span></li>
+		}
+	</ul><div class="doc-notes"><p class="doc-note"><strong>Freigaben</strong><span>Jede Person sieht nur die für sie bestimmten Unterlagen.</span></p><p class="doc-note"><strong>Versionen</strong><span>Frühere Fassungen bleiben im Verlauf abrufbar.</span></p></div></div></details></section>
+}
+
+templ DocumentUploadDialog(data DocumentsPageData) {
+	<dialog id="document-upload" class="dialog" aria-labelledby="document-upload-title"><form method="post" action="/app/dokumente" enctype="multipart/form-data"><div class="dialog-head"><h2 id="document-upload-title">Dokument hochladen</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body"><p class="dialog-intro">Die Freigabe legt fest, wer die Unterlage sieht. Erlaubt sind PDF oder Bild bis { data.MaxDocumentSize }.</p><div class="dialog-grid"><label class="full" for="document-title">Titel<input id="document-title" name="title" required maxlength="160" autocomplete="off" placeholder="Zum Beispiel Hausordnung 2026"/></label><label for="document-category">Kategorie<select id="document-category" name="category" required>
+		for _, option := range data.CategoryOptions {
+			<option value={ option.Value } selected?={ option.Selected } disabled?={ option.Value == "" }>{ option.Label }</option>
+		}
+	</select></label><label for="document-visibility">Sichtbarkeit<select id="document-visibility" name="visibility" required>
+		for _, option := range data.VisibilityOptions {
+			<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+		}
+	</select></label><label class="full" for="document-file">Datei<span class="file-control"><input id="document-file" type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required/><span>PDF oder Bild auswählen</span></span></label><details class="dialog-optional full"><summary>Optional: bestimmte Einheit</summary><div class="dialog-optional-grid"><label class="full" for="document-unit">Einheit <span class="mini">gilt bei „Nur Eigentümer“</span><select id="document-unit" name="unit_id">
+		for _, option := range data.UnitOptions {
+			<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+		}
+	</select></label></div></details></div></div><footer class="dialog-footer"><button class="button primary" type="submit">Hochladen</button></footer></form></dialog>
+}
