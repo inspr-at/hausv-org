@@ -744,6 +744,7 @@ type app struct {
 	localDevLogin           bool
 	serviceAccessEnabled    bool
 	templExampleEnabled     bool
+	portalTemplEnabled      bool
 	sessionTTL              time.Duration
 	tokens                  *tokenStore
 	sessions                *sessionStore
@@ -1670,6 +1671,7 @@ func newApp() (*app, error) {
 		localDevLogin:            localDevLogin,
 		serviceAccessEnabled:     serviceProviderAccessEnabled(),
 		templExampleEnabled:      parseBool(env("TEMPL_EXAMPLE_ENABLED", "false")),
+		portalTemplEnabled:       parseBool(env("TEMPL_PORTAL_ENABLED", "false")),
 		sessionTTL:               sessionTTL,
 		tokens:                   auth.NewTokenStore(secret),
 		sessions:                 newSessionStore(secret),
@@ -2217,7 +2219,81 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		data["OpenIssues"] = len(signals.openIssues)
 		data["HasOpenIssues"] = len(signals.openIssues) > 0
 	}
+	if a.portalTemplEnabled {
+		contexts := a.portalContextsFor(email, tenant.Slug, role)
+		portalContexts := make([]web.PortalContext, 0, len(contexts))
+		for _, context := range contexts {
+			portalContexts = append(portalContexts, web.PortalContext{
+				TenantSlug: context.TenantSlug,
+				HouseName:  context.HouseName,
+				Address:    context.Address,
+				Role:       context.Role,
+				Current:    context.Current,
+			})
+		}
+		areas := portalAreaViews(modules, canResidentAreas, canSeeParking, canManagePortalHandovers, canManagePortalUsers, openBallots)
+		portalAreas := make([]web.PortalArea, 0, len(areas))
+		for _, area := range areas {
+			portalAreas = append(portalAreas, web.PortalArea{Label: area.Label, URL: area.URL})
+		}
+		energy := web.PortalEnergy{
+			Ready:       energyCard.Ready,
+			HomeName:    energyCard.HomeName,
+			Message:     energyCard.Message,
+			ActionLabel: energyCard.ActionLabel,
+			ActionURL:   energyCard.ActionURL,
+		}
+		if !hasEnergyCard {
+			energy = web.PortalEnergy{}
+		}
+		a.renderPortalTempl(w, r, web.PortalPageData{
+			Title:                  "Hausüberblick · " + houseDisplayName(tenant) + " · " + role,
+			TenantSlug:             tenant.Slug,
+			HouseName:              houseDisplayName(tenant),
+			Address:                tenant.Address,
+			MapURL:                 tenantMapURL(tenant.Address),
+			GreetingName:           firstNonEmpty(profile.FirstName, profile.DisplayName()),
+			Today:                  germanDateLong(now.In(time.Local)),
+			DisplayName:            profile.DisplayName(),
+			Initials:               profile.Initials(),
+			Role:                   role,
+			DisplayVersion:         version.DisplayVersion(version.Version),
+			Dense:                  role == roleManager || role == roleAdmin,
+			Modules:                web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
+			CanUseResidentAreas:    canResidentAreas,
+			CanViewEnergy:          modules.Energy && a.canViewEnergy(ac),
+			CanManageIssues:        canManageIssueBoard,
+			CanCreateResidentIssue: canCreateResidentIssue(ac.actor(), ac.resource()),
+			CanSeeParking:          canSeeParking,
+			CanManageHandovers:     canManagePortalHandovers,
+			CanManageUsers:         canManagePortalUsers,
+			CanViewAudit:           modules.Audit && canViewAudit(ac.actor(), ac.resource()),
+			HasPrimary:             hasPrimary,
+			Primary:                primary,
+			Issues:                 issueViewsForActor(tenant.Slug, signals.openIssues, role, email),
+			Events:                 eventViews(signals.events, now),
+			Announcements:          announcementViewsWithReadState(signals.announcements, now, false, lastSeen),
+			UnreadAnnouncements:    signals.unreadAnnouncements,
+			Energy:                 energy,
+			HasEnergy:              hasEnergyCard,
+			Areas:                  portalAreas,
+			Contexts:               portalContexts,
+			ReleaseNotes:           version.Notes(),
+		})
+		return
+	}
 	a.render(w, "portal", a.withBase(ac, data))
+}
+
+func (a *app) renderPortalTempl(w http.ResponseWriter, r *http.Request, data web.PortalPageData) {
+	var rendered bytes.Buffer
+	if err := web.PortalPage(data).Render(r.Context(), &rendered); err != nil {
+		logError("templ portal render failed", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), data.TenantSlug))
 }
 
 // portalAreaView is one entry-point tile on the overview. Detail says what the
