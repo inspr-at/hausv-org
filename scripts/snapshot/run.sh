@@ -47,8 +47,29 @@ if ! ( cd "$src" && go build -o "$tmp/app" "$pkg" ); then
     exit 1
 fi
 
+# HV_QA_HA_PORT must be set BEFORE env.sh, because env.sh bakes it into
+# HA_CONNECTORS_JSON and MAP_TILE_BASE_URL.
+export HV_QA_HA_PORT=${HV_QA_HA_PORT:-$((port + 100))}
+
 # shellcheck source=scripts/snapshot/env.sh
 . "$repo/scripts/snapshot/env.sh"
+
+# env.sh points MAP_TILE_BASE_URL and HA_CONNECTORS_JSON at this fixture. Without
+# it the sidebar map renders as a BROKEN IMAGE in every captured page — which
+# looks exactly like a product bug and was once reported as one. qa-main-flows.sh
+# has always started it; this harness never did.
+if command -v node >/dev/null 2>&1; then
+    node "$repo/scripts/snapshot/fake-ha.mjs" "$HV_QA_HA_PORT" >"$tmp/fake-ha.log" 2>&1 &
+    ha_pid=$!
+    disown %% 2>/dev/null || true
+    for _ in $(seq 40); do
+        curl -sf "http://127.0.0.1:$HV_QA_HA_PORT/map-tiles/0/0/0.png" -o /dev/null 2>/dev/null && break
+        sleep 0.25
+    done
+else
+    ha_pid=""
+    echo "node missing; map tiles and HA fixtures will be unavailable" >&2
+fi
 
 echo "── booting on :$port"
 # `exec` so $! is the app itself and the kill below reaches it.
@@ -69,6 +90,7 @@ if [ "$ready" -eq 0 ]; then
     echo "app did not become healthy; log:" >&2
     cat "$tmp/app.log" >&2
     kill "$pid" 2>/dev/null
+    [ -n "$ha_pid" ] && kill "$ha_pid" 2>/dev/null
     exit 1
 fi
 
@@ -77,6 +99,7 @@ node "$repo/scripts/snapshot/capture.mjs" "http://localhost:$port" "$out"
 rc=$?
 
 kill "$pid" 2>/dev/null
+[ -n "$ha_pid" ] && kill "$ha_pid" 2>/dev/null
 if [ "$ref" != WORKTREE ]; then
     git -C "$repo" worktree remove --force "$src" 2>/dev/null
 fi
