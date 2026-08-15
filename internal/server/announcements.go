@@ -94,12 +94,12 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request, ac auth
 		return
 	}
 	if len(attachmentHeaders) > 0 {
-		if a.attachmentStore == nil {
+		if ac.repositories.attachments == nil {
 			_, _ = announcements.Delete(created.ID)
 			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 			return
 		}
-		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "announcement", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
+		if _, err := ac.repositories.attachments.CreateUploaded("announcement", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
 			_, _ = announcements.Delete(created.ID)
 			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 			return
@@ -137,7 +137,7 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request, ac authCt
 			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "announcement", id, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
+		uploaded, err = ac.repositories.attachments.CreateUploaded("announcement", id, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
 		if err != nil {
 			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 			return
@@ -146,7 +146,7 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request, ac authCt
 	ok, err := ac.repositories.announcements.Update(id, item)
 	if err != nil {
 		for _, attachment := range uploaded {
-			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 		logError("announcement update failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
@@ -154,7 +154,7 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request, ac authCt
 	}
 	if !ok {
 		for _, attachment := range uploaded {
-			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 		http.Redirect(w, r, "/app/announcements?announce=missing", http.StatusSeeOther)
 		return

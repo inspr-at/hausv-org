@@ -45,12 +45,12 @@ func (a *app) createBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	if len(attachmentHeaders) > 0 {
-		if a.attachmentStore == nil {
+		if ac.repositories.attachments == nil {
 			_, _ = a.voteStore.Delete(tenant.Slug, created.ID)
 			http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 			return
 		}
-		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "ballot", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
+		if _, err := ac.repositories.attachments.CreateUploaded("ballot", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
 			_, _ = a.voteStore.Delete(tenant.Slug, created.ID)
 			http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 			return

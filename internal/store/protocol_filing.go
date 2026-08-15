@@ -56,6 +56,7 @@ func (f *SQLProtocolFiler) FileHandoverProtocol(tenantSlug string, handoverID st
 	if now.IsZero() {
 		now = time.Now()
 	}
+	doc.TenantSlug = tenantSlug
 
 	// The file must exist before the transaction; if the transaction does not
 	// commit we remove it again, so no orphan is left behind.
@@ -136,7 +137,11 @@ func (f *SequentialProtocolFiler) FileHandoverProtocol(tenantSlug string, handov
 	if strings.TrimSpace(existing.FiledDocumentID) != "" {
 		return DocumentRecord{}, existing, true, nil
 	}
-	created, err := f.documents.CreateGenerated(doc, filename, contentType, data, now)
+	documents, ok := BindDocumentRepository(f.documents, tenantSlug)
+	if !ok {
+		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("document store unavailable")
+	}
+	created, err := documents.CreateGenerated(doc, filename, contentType, data, now)
 	if err != nil {
 		return DocumentRecord{}, HandoverRecord{}, false, err
 	}

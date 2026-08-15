@@ -75,7 +75,7 @@ func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
 	if store.Code != http.StatusSeeOther || !strings.Contains(store.Header().Get("Location"), "doc=invoice-imported#document-") {
 		t.Fatalf("store status=%d location=%q body=%s", store.Code, store.Header().Get("Location"), store.Body.String())
 	}
-	documents := a.documentStore.ListTenant("demo")
+	documents := documentRepositoryForTest(a, "demo").List()
 	if len(documents) != 1 {
 		t.Fatalf("documents = %+v", documents)
 	}
@@ -84,7 +84,7 @@ func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
 		created.ContentType != "application/xml" || !strings.Contains(created.Title, "RE-2026-0006") {
 		t.Fatalf("stored document metadata = %+v", created)
 	}
-	storedPath, ok := a.documentStore.FilePath(created)
+	storedPath, ok := documentRepositoryForTest(a, "demo").FilePath(created)
 	if !ok {
 		t.Fatal("stored document path missing")
 	}
@@ -122,7 +122,7 @@ func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
 	if secondStore.Code != http.StatusSeeOther || !strings.Contains(secondStore.Header().Get("Location"), "result=already") {
 		t.Fatalf("repeated store status=%d location=%q", secondStore.Code, secondStore.Header().Get("Location"))
 	}
-	if got := len(a.documentStore.ListTenant("demo")); got != 1 {
+	if got := len(documentRepositoryForTest(a, "demo").List()); got != 1 {
 		t.Fatalf("repeated import created %d documents", got)
 	}
 	if got := len(a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionIntegrationImport, Limit: 20})); got != 1 {

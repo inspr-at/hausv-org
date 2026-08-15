@@ -24,7 +24,7 @@ func TestHandoverFilingIsIdempotent(t *testing.T) {
 		if rr.Code != http.StatusSeeOther {
 			t.Fatalf("file status = %d", rr.Code)
 		}
-		return len(a.documentStore.ListTenant("demo"))
+		return len(documentRepositoryForTest(a, "demo").List())
 	}
 	if got := file(); got != 1 {
 		t.Fatalf("after first filing: %d documents, want 1", got)

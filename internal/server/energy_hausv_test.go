@@ -1063,7 +1063,7 @@ func TestCuratedEnergySpecialistAndMeasureStayClosedUntilExplicitPortalGate(t *t
 	if err != nil || !ok || measure.Status != energy.MeasureAssigned || measure.ContactID != contacts[0].ID {
 		t.Fatalf("assigned measure = %+v ok=%v err=%v", measure, ok, err)
 	}
-	issue, ok := a.issueStore.Get("demo", measure.IssueID)
+	issue, ok := issueRepositoryForTest(a, "demo").Get(measure.IssueID)
 	if !ok || issue.AssigneeEmail != "" {
 		t.Fatalf("closed gate granted issue access: %+v ok=%v", issue, ok)
 	}
@@ -1124,7 +1124,7 @@ func TestEnergyRecommendationCanBecomeDataSparseIssue(t *testing.T) {
 	if response.Code != http.StatusSeeOther {
 		t.Fatalf("measure status = %d body=%s", response.Code, response.Body.String())
 	}
-	issues := a.issueStore.ListTenant("demo")
+	issues := issueRepositoryForTest(a, "demo").List()
 	if len(issues) != 1 {
 		t.Fatalf("issues = %+v", issues)
 	}

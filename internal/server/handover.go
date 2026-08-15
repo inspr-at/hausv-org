@@ -185,15 +185,15 @@ func (a *app) addHandoverAttachments(w http.ResponseWriter, r *http.Request, ac 
 		return
 	}
 	headers, err := attachmentFormHeaders(r, maxIssueAttachmentCount, "attachments")
-	if err != nil || len(headers) == 0 || a.attachmentStore == nil {
+	if err != nil || len(headers) == 0 || ac.repositories.attachments == nil {
 		http.Redirect(w, r, "/app/uebergaben?handover=invalid#handover-"+url.PathEscape(id), http.StatusSeeOther)
 		return
 	}
-	if len(a.attachmentStore.ListEntity(tenant.Slug, "handover", id))+len(headers) > maxIssueAttachmentCount {
+	if len(ac.repositories.attachments.ListEntity("handover", id))+len(headers) > maxIssueAttachmentCount {
 		http.Redirect(w, r, "/app/uebergaben?handover=invalid#handover-"+url.PathEscape(id), http.StatusSeeOther)
 		return
 	}
-	if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "handover", id, email, uploadedFilesFromHeaders(headers), time.Now()); err != nil {
+	if _, err := ac.repositories.attachments.CreateUploaded("handover", id, email, uploadedFilesFromHeaders(headers), time.Now()); err != nil {
 		logHandoverError("attachments", tenant.Slug, id, err)
 		http.Redirect(w, r, "/app/uebergaben?handover=error#handover-"+url.PathEscape(id), http.StatusSeeOther)
 		return
@@ -228,11 +228,11 @@ func (a *app) createHandover(w http.ResponseWriter, r *http.Request, ac authCtx)
 	}
 	var uploaded []attachmentRecord
 	if len(attachmentHeaders) > 0 {
-		if a.attachmentStore == nil {
+		if ac.repositories.attachments == nil {
 			http.Redirect(w, r, "/app/uebergaben?handover=invalid", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "handover", item.ID, email, uploadedFilesFromHeaders(attachmentHeaders), now)
+		uploaded, err = ac.repositories.attachments.CreateUploaded("handover", item.ID, email, uploadedFilesFromHeaders(attachmentHeaders), now)
 		if err != nil {
 			http.Redirect(w, r, "/app/uebergaben?handover=invalid", http.StatusSeeOther)
 			return
@@ -241,7 +241,7 @@ func (a *app) createHandover(w http.ResponseWriter, r *http.Request, ac authCtx)
 	created, err := ac.repositories.handovers.Create(item)
 	if err != nil {
 		for _, attachment := range uploaded {
-			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 		logHandoverError("create", tenant.Slug, item.ID, err)
 		http.Redirect(w, r, "/app/uebergaben?handover=error", http.StatusSeeOther)
@@ -501,7 +501,12 @@ func (a *app) handoverAttachment(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	attachment, found := a.attachmentStore.Get(handover.TenantSlug, strings.TrimSpace(r.PathValue("id")))
+	attachments, ok := store.BindAttachmentRepository(a.attachmentStore, handover.TenantSlug)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	attachment, found := attachments.Get(strings.TrimSpace(r.PathValue("id")))
 	if !found || normalizeAttachmentEntity(attachment.EntityType) != "handover" || attachment.EntityID != handover.ID {
 		http.NotFound(w, r)
 		return
@@ -511,7 +516,7 @@ func (a *app) handoverAttachment(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	path, contentType, _, ok := a.attachmentStore.FilePath(attachment, variant)
+	path, contentType, _, ok := attachments.FilePath(attachment, variant)
 	if !ok {
 		http.NotFound(w, r)
 		return
@@ -612,8 +617,8 @@ func (a *app) handoverProtocol(w http.ResponseWriter, r *http.Request, ac authCt
 		return
 	}
 	attachments := []attachmentRecord{}
-	if a.attachmentStore != nil {
-		attachments = a.attachmentStore.ListEntity(tenant.Slug, "handover", item.ID)
+	if ac.repositories.attachments != nil {
+		attachments = ac.repositories.attachments.ListEntity("handover", item.ID)
 	}
 	pdf := handoverPDF(tenant, item, attachments, time.Now())
 	filename := "uebergabe-" + item.ID + "-protokoll.pdf"
@@ -672,8 +677,8 @@ func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request, ac au
 		return
 	}
 	attachments := []attachmentRecord{}
-	if a.attachmentStore != nil {
-		attachments = a.attachmentStore.ListEntity(tenant.Slug, "handover", item.ID)
+	if ac.repositories.attachments != nil {
+		attachments = ac.repositories.attachments.ListEntity("handover", item.ID)
 	}
 	pdf := handoverPDF(tenant, item, attachments, time.Now())
 	// One call: the document and the link on the handover are written together,
