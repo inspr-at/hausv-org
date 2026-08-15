@@ -48,6 +48,53 @@
   });
   syncUnitDialog();
 
+  const appearance = document.querySelector("[data-appearance-workspace]");
+  if (appearance) {
+    const abbreviation = appearance.querySelector("#brand-abbreviation");
+    const abbreviationPreviews = appearance.querySelectorAll("[data-brand-preview-abbreviation]");
+    const count = appearance.querySelector("[data-abbreviation-count]");
+    const markPreviews = appearance.querySelectorAll("[data-brand-preview-mark]");
+    const iconInputs = appearance.querySelectorAll('input[name="brand_icon"]');
+    const heroInput = appearance.querySelector("#hero-image");
+    const heroPreviews = appearance.querySelectorAll("[data-hero-preview], [data-hero-stage]");
+    const heroFileName = appearance.querySelector("[data-hero-file-name]");
+    let heroObjectURL = "";
+
+    const updateAbbreviation = () => {
+      const value = abbreviation.value.trim() || "HAUS";
+      abbreviationPreviews.forEach((node) => { node.textContent = value; });
+      if (count) count.textContent = `${abbreviation.value.length} / 12`;
+    };
+    abbreviation?.addEventListener("input", updateAbbreviation);
+
+    iconInputs.forEach((input) => input.addEventListener("change", () => {
+      if (!input.checked) return;
+      const source = input.closest(".brand-icon-choice")?.querySelector("svg");
+      if (!source) return;
+      markPreviews.forEach((node) => node.replaceChildren(source.cloneNode(true)));
+    }));
+
+    heroInput?.addEventListener("change", () => {
+      const file = heroInput.files?.[0];
+      if (!file) return;
+      if (heroObjectURL) URL.revokeObjectURL(heroObjectURL);
+      heroObjectURL = URL.createObjectURL(file);
+      heroPreviews.forEach((image) => { image.src = heroObjectURL; });
+      if (heroFileName) heroFileName.textContent = file.name;
+    });
+    window.addEventListener("pagehide", () => { if (heroObjectURL) URL.revokeObjectURL(heroObjectURL); });
+
+    appearance.querySelectorAll("[data-preview-tab]").forEach((tab) => tab.addEventListener("click", () => {
+      const target = tab.dataset.previewTab;
+      appearance.querySelectorAll("[data-preview-tab]").forEach((item) => {
+        const active = item === tab;
+        item.classList.toggle("is-active", active);
+        item.setAttribute("aria-pressed", String(active));
+      });
+      appearance.querySelectorAll("[data-preview-panel]").forEach((panel) => { panel.hidden = panel.dataset.previewPanel !== target; });
+    }));
+  }
+
   const button = document.querySelector("[data-geocode-address]");
   if (!button) return;
 

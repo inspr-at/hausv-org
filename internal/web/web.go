@@ -8191,17 +8191,60 @@ const PageTemplates = `
       .building .contact-group h3 { margin: 0; font-family: var(--font-serif); font-size: 20px; }
       .building .section-save { display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding-top: 2px; }
       .building .section-save .mini { margin-right: auto; }
-      .building .brand-grid { display: grid; grid-template-columns: minmax(0,.9fr) minmax(320px,1.1fr); gap: 18px; align-items: start; }
-      .building .brand-settings, .building .hero-settings { display: grid; gap: 13px; }
-      .building .brand-preview { display: grid; grid-template-columns: 58px minmax(0,1fr); gap: 13px; align-items: center; border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: var(--panel-soft); }
-      .building .brand-preview-mark { width: 52px; height: 52px; border-radius: 8px; display: grid; place-items: center; color: var(--gold-ink); background: #fffefb; border: 1px solid var(--line); }
-      .building .brand-preview-mark svg { width: 39px; height: 34px; display: block; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-      .building .brand-preview strong { display: block; font-family: var(--font-serif); font-size: 18px; }
-      .building .brand-preview span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.35; }
-      .building .hero-preview { width: 100%; aspect-ratio: 16 / 7; object-fit: cover; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-soft); }
-      .building .hero-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: end; }
-      .building .hero-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-      .building .hero-delete { margin: 0; }
+      .building .appearance-workspace { display: grid; grid-template-columns: minmax(0,1.08fr) minmax(340px,.92fr); gap: 18px; align-items: start; }
+      .building .appearance-editor { display: grid; gap: 14px; }
+      .building .appearance-card { display: grid; gap: 16px; border: 1px solid var(--line); border-radius: 12px; padding: 17px; background: #fffefb; }
+      .building .appearance-card-head { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 12px; align-items: center; }
+      .building .appearance-card-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 10px; color: var(--gold-ink); background: var(--panel-soft); }
+      .building .appearance-card-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .building .appearance-card-head h3 { margin: 0; font-family: var(--font-serif); font-size: 21px; }
+      .building .appearance-card-head p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .building .brand-icon-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+      .building .brand-icon-choice { position: relative; min-height: 92px; display: grid; place-items: center; align-content: center; gap: 7px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 7px; color: var(--muted); background: var(--panel); cursor: pointer; text-align: center; transition: border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease; }
+      .building .brand-icon-choice:hover { border-color: var(--gold); background: var(--panel-soft); color: var(--ink); }
+      .building .brand-icon-choice:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+      .building .brand-icon-choice:has(input:checked) { border-color: var(--leaf); color: var(--leaf); background: rgba(47,107,74,.07); box-shadow: inset 0 0 0 1px var(--leaf); }
+      .building .brand-icon-choice input { position: absolute; width: 1px; height: 1px; min-height: 0; opacity: 0; pointer-events: none; }
+      .building .brand-icon-choice svg { width: 38px; height: 31px; display: block; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .building .brand-icon-choice strong { max-width: 100%; font-size: 11px; line-height: 1.25; letter-spacing: .035em; overflow-wrap: anywhere; text-transform: uppercase; }
+      .building .abbreviation-field { display: grid; gap: 6px; }
+      .building .field-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 11.5px; font-weight: 650; }
+      .building .appearance-card-actions { display: flex; justify-content: flex-end; gap: 9px; padding-top: 2px; }
+      .building .hero-upload { display: grid; grid-template-columns: 128px minmax(0,1fr); gap: 13px; align-items: center; }
+      .building .hero-preview { width: 128px; aspect-ratio: 16 / 10; object-fit: cover; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-soft); }
+      .building .hero-upload-copy { min-width: 0; display: grid; gap: 7px; }
+      .building .hero-upload-copy strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+      .building .hero-upload-copy span { color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+      .building .hero-form { display: grid; gap: 10px; }
+      .building .hero-actions { display: flex; justify-content: flex-end; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .building .hero-delete { margin: 0 auto 0 0; }
+      .building .appearance-preview { position: sticky; top: 76px; display: grid; gap: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--panel-soft); }
+      .building .appearance-preview-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+      .building .appearance-preview-head h3 { margin: 0; font-family: var(--font-serif); font-size: 21px; }
+      .building .preview-tabs { display: inline-flex; gap: 3px; border: 1px solid var(--line); border-radius: 8px; padding: 3px; background: #fffefb; }
+      .building .preview-tab { min-height: 30px; border: 0; border-radius: 6px; padding: 0 9px; color: var(--muted); background: transparent; font: inherit; font-size: 10.5px; font-weight: 800; cursor: pointer; }
+      .building .preview-tab.is-active { color: #fff; background: var(--ink); }
+      .building .appearance-preview-stage { position: relative; min-height: 390px; border-radius: 11px; overflow: hidden; background: var(--ink); box-shadow: 0 14px 30px rgba(20,29,23,.17); }
+      .building .appearance-preview-stage > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .building .appearance-preview-stage::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg,rgba(20,29,23,.2),rgba(20,29,23,.8)); }
+      .building .preview-login, .building .preview-sidebar { position: relative; z-index: 1; min-height: 390px; color: #fff; }
+      .building .appearance-preview [hidden] { display: none; }
+      .building .preview-login { display: grid; grid-template-rows: auto 1fr auto; gap: 20px; padding: 22px; }
+      .building .preview-identity { display: flex; align-items: center; gap: 10px; }
+      .building .preview-brand-mark { width: 46px; height: 46px; display: grid; place-items: center; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.5); border-radius: 50%; color: #f0c960; background: rgba(20,29,23,.75); }
+      .building .preview-brand-mark svg { width: 31px; height: 26px; display: block; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .building .preview-identity strong { display: block; font-family: var(--font-serif); font-size: 19px; line-height: 1.1; }
+      .building .preview-identity span { display: block; margin-top: 2px; color: rgba(255,255,255,.78); font-size: 11px; }
+      .building .preview-message { align-self: end; }
+      .building .preview-message span { color: #f0c960; font-size: 10px; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
+      .building .preview-message h4 { max-width: 300px; margin: 8px 0 0; color: #fff; font-family: var(--font-serif); font-size: 34px; line-height: .98; }
+      .building .preview-login-action { width: max-content; border-radius: 7px; padding: 9px 13px; color: var(--ink); background: #fffefb; font-size: 11px; font-weight: 850; }
+      .building .preview-sidebar { display: grid; grid-template-rows: auto 1fr auto; padding: 18px; background: linear-gradient(180deg,rgba(20,29,23,.2),rgba(20,29,23,.88)); }
+      .building .preview-sidebar .preview-identity { border: 1px solid rgba(255,255,255,.26); border-radius: 10px; padding: 11px; background: rgba(20,29,23,.5); backdrop-filter: blur(7px); }
+      .building .preview-nav { align-self: center; display: grid; gap: 8px; }
+      .building .preview-nav span { min-height: 36px; display: flex; align-items: center; border-radius: 7px; padding: 0 11px; color: rgba(255,255,255,.72); background: rgba(255,255,255,.07); font-size: 11px; font-weight: 750; }
+      .building .preview-nav span:first-child { color: #fff; background: rgba(255,255,255,.16); }
+      .building .preview-caption { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
       .building .unit-panel { display: grid; gap: 18px; padding: 22px; }
       .building .unit-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 20px; align-items: start; }
       .building .unit-head h2 { margin: 0 0 4px; }
@@ -8274,7 +8317,8 @@ const PageTemplates = `
       .building .unit-dialog-footer .unit-delete .button { color: #9f3f37; }
       body.unit-dialog-open { overflow: hidden; }
       @media (max-width: 960px) {
-        .building .contact-groups, .building .brand-grid { grid-template-columns: 1fr; }
+        .building .contact-groups, .building .appearance-workspace { grid-template-columns: 1fr; }
+        .building .appearance-preview { position: static; }
         .building .unit-table-head, .building .unit-row { grid-template-columns: minmax(200px,1fr) minmax(210px,1fr) minmax(135px,.7fr) 48px; }
         .building .unit-table-head > :nth-child(3), .building .unit-row > .unit-share { display: none; }
       }
@@ -8299,8 +8343,14 @@ const PageTemplates = `
         .building .section-save { position: sticky; bottom: 8px; z-index: 5; margin: 2px -5px -5px; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,254,251,.97); box-shadow: 0 8px 24px rgba(37,45,38,.16); }
         .building .section-save .mini { display: none; }
         .building .section-save .button { width: 100%; min-height: 46px; }
-        .building .hero-form { grid-template-columns: 1fr; }
         .building .hero-actions .button { width: 100%; }
+        .building .hero-delete { width: 100%; margin: 0; }
+        .building .hero-delete .button { width: 100%; }
+        .building .brand-icon-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        .building .brand-icon-choice strong { font-size: 8.5px; letter-spacing: 0; }
+        .building .appearance-preview-head { align-items: flex-start; flex-direction: column; }
+        .building .preview-tabs { width: 100%; }
+        .building .preview-tab { flex: 1; }
         .building .unit-panel { padding: 16px; }
         .building .unit-head { grid-template-columns: 1fr; gap: 14px; }
         .building .unit-head-actions { display: grid; grid-template-columns: 1fr; justify-content: stretch; }
@@ -8524,41 +8574,86 @@ const PageTemplates = `
         </section>
         {{else}}
         <section class="panel workspace-panel" id="appearance">
-          <header class="workspace-head"><div><h2>Erscheinungsbild</h2><p>Portal-Symbol, Kurzkennung und Titelbild.</p></div></header>
+          <header class="workspace-head"><div><h2>Erscheinungsbild</h2><p>Portal-Kennung und Titelbild mit direkter Vorschau gestalten.</p></div></header>
           <div>
             {{if .BuildingMsg}}<p class="flash {{if .BuildingOK}}ok{{end}}">{{.BuildingMsg}}</p>{{end}}
             {{if .HeroMsg}}<p class="flash {{if .HeroOK}}ok{{end}}">{{.HeroMsg}}</p>{{end}}
-            <div class="brand-grid">
-              <form class="brand-settings settings-card" method="post" action="/app/settings/building/appearance">
-                <div class="brand-preview">
-                  <span class="brand-preview-mark">{{template "tenantBrandMark" .}}</span>
-                  <div><strong>{{.BrandIconLabel}}</strong><span>{{.Tenant.BrandAbbreviation}} erscheint als kurze Kennung in der Seitenleiste.</span></div>
-                </div>
-                <label for="brand-icon">Portal-Symbol
-                  <select id="brand-icon" name="brand_icon">
-                    {{range .BrandIconOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-                  </select>
-                </label>
-                <label for="brand-abbreviation">Kurzkennung
-                  <input id="brand-abbreviation" type="text" name="brand_abbreviation" value="{{.Tenant.BrandAbbreviation}}" maxlength="12" placeholder="DEMO">
-                </label>
-                <div class="section-save"><button class="button primary" type="submit">Darstellung speichern</button></div>
-              </form>
-              <section class="hero-settings settings-card">
-                <img class="hero-preview" src="{{.Tenant.HeroImageURL}}" alt="">
-                <form class="hero-form" method="post" action="/app/settings/building/hero" enctype="multipart/form-data">
-                  <label for="hero-image">Titelbild
-                    <span class="file-control"><input id="hero-image" type="file" name="hero_image" accept="image/jpeg,image/png,image/webp" required><span>Bild auswählen</span></span>
+            <div class="appearance-workspace" data-appearance-workspace>
+              <div class="appearance-editor">
+                <form class="appearance-card" method="post" action="/app/settings/building/appearance">
+                  <header class="appearance-card-head">
+                    <span class="appearance-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/></svg></span>
+                    <div><h3>Portal-Kennung</h3><p>Symbol und Kurzkennung erscheinen an den wichtigsten Stellen des Portals.</p></div>
+                  </header>
+                  <fieldset>
+                    <legend>Portal-Symbol</legend>
+                    <div class="brand-icon-grid" role="radiogroup" aria-label="Portal-Symbol">
+                      {{range .BrandIconOptions}}
+                        <label class="brand-icon-choice">
+                          <input type="radio" name="brand_icon" value="{{.Value}}"{{if .Selected}} checked{{end}}>
+                          {{if eq .Value "single-home"}}<svg viewBox="0 0 64 48" aria-hidden="true"><path d="M12 35h40"/><path d="M16 35V22.5L32 11l16 11.5V35"/><path d="M26.5 35v-9h11v9"/><path d="M21.5 27.5h5M37.5 27.5h5"/></svg>
+                          {{else if eq .Value "multi-tenant"}}<svg viewBox="0 0 64 48" aria-hidden="true"><path d="M13 36h38"/><path d="M17 36V18h30v18"/><path d="M23 36v-7h6v7M35 36v-7h6v7"/><path d="M22 23h5M37 23h5M22 28h5M37 28h5"/><path d="M19 18l13-8 13 8"/></svg>
+                          {{else if eq .Value "mixed-use"}}<svg viewBox="0 0 64 48" aria-hidden="true"><path d="M14 36h36"/><path d="M18 36V17h28v19"/><path d="M18 24h28"/><path d="M22 36v-7h8v7M35 36v-7h7v7"/><path d="M22 21h5M36 21h5"/><path d="M16 17l16-7 16 7"/></svg>
+                          {{else if eq .Value "address-plaque"}}<svg viewBox="0 0 64 48" aria-hidden="true"><path d="M15 12h34a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z"/><path d="M20 21h24M20 28h18"/><path d="M46 28h.01"/></svg>
+                          {{else if eq .Value "parking"}}<svg viewBox="0 0 64 48" aria-hidden="true"><path d="M17 36h30"/><path d="M20 36l2.5-12h19L44 36"/><path d="M23 36v4M41 36v4"/><path d="M24 29h16"/><path d="M28 20h8a5 5 0 0 1 0 10h-8V16"/></svg>
+                          {{else}}<svg viewBox="0 0 64 48" aria-hidden="true"><path d="M13 34h38"/><path d="M14.5 34v-9l7-5.5 7 5.5v9"/><path d="M35.5 34v-9l7-5.5 7 5.5v9"/><path d="M25 34V20.5L32 15l7 5.5V34"/><path d="M29 34v-7h6v7"/><path d="M18 28h3.5M42.5 28H46"/></svg>{{end}}
+                          <strong>{{.Label}}</strong>
+                        </label>
+                      {{end}}
+                    </div>
+                  </fieldset>
+                  <label class="abbreviation-field" for="brand-abbreviation">Kurzkennung
+                    <input id="brand-abbreviation" type="text" name="brand_abbreviation" value="{{.Tenant.BrandAbbreviation}}" maxlength="12" placeholder="HAUS">
+                    <span class="field-meta"><span>Kurzer Name für Seitenleiste und Anmeldung.</span><span data-abbreviation-count>{{len .Tenant.BrandAbbreviation}} / 12</span></span>
                   </label>
-                  <div class="hero-actions"><button class="button" type="submit">Titelbild speichern</button></div>
+                  <div class="appearance-card-actions"><button class="button primary" type="submit">Portal-Kennung speichern</button></div>
                 </form>
-                <span class="mini">JPG, PNG oder WebP bis 5 MB.</span>
-                {{if .HasCustomHero}}
-                  <form class="hero-delete" method="post" action="/app/settings/building/hero/delete" data-confirm="Titelbild entfernen und Standardbild verwenden?">
-                    <button class="button small ghost" type="submit">Standardbild verwenden</button>
+
+                <section class="appearance-card">
+                  <header class="appearance-card-head">
+                    <span class="appearance-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>
+                    <div><h3>Titelbild</h3><p>Das Bild prägt die Anmeldeseite und den ersten Eindruck.</p></div>
+                  </header>
+                  <div class="hero-upload">
+                    <img class="hero-preview" src="{{.Tenant.HeroImageURL}}" alt="Aktuelles Titelbild" data-hero-preview>
+                    <div class="hero-upload-copy"><strong data-hero-file-name>{{if .HasCustomHero}}Individuelles Titelbild{{else}}HAUSV Standardbild{{end}}</strong><span>JPG, PNG oder WebP bis 5 MB. Ein breites Bild mit ruhigem Motiv funktioniert am besten.</span></div>
+                  </div>
+                  <form class="hero-form" method="post" action="/app/settings/building/hero" enctype="multipart/form-data">
+                    <label for="hero-image">Neues Titelbild
+                      <span class="file-control"><input id="hero-image" type="file" name="hero_image" accept="image/jpeg,image/png,image/webp" required><span>Bild auswählen</span></span>
+                    </label>
+                    <div class="hero-actions">
+                      {{if .HasCustomHero}}<button class="button small ghost" type="submit" form="hero-delete-form">Standardbild verwenden</button>{{end}}
+                      <button class="button" type="submit">Titelbild übernehmen</button>
+                    </div>
                   </form>
-                {{end}}
-              </section>
+                  {{if .HasCustomHero}}<form id="hero-delete-form" class="hero-delete" method="post" action="/app/settings/building/hero/delete" data-confirm="Titelbild entfernen und Standardbild verwenden?"></form>{{end}}
+                </section>
+              </div>
+
+              <aside class="appearance-preview" aria-label="Live-Vorschau">
+                <header class="appearance-preview-head">
+                  <h3>Live-Vorschau</h3>
+                  <div class="preview-tabs" role="group" aria-label="Vorschau wählen">
+                    <button class="preview-tab is-active" type="button" data-preview-tab="login" aria-pressed="true">Anmeldung</button>
+                    <button class="preview-tab" type="button" data-preview-tab="sidebar" aria-pressed="false">Seitenleiste</button>
+                  </div>
+                </header>
+                <div class="appearance-preview-stage">
+                  <img src="{{.Tenant.HeroImageURL}}" alt="" data-hero-stage>
+                  <div class="preview-login" data-preview-panel="login">
+                    <div class="preview-identity"><span class="preview-brand-mark" data-brand-preview-mark>{{template "tenantBrandMark" .}}</span><span><strong data-brand-preview-abbreviation>{{.Tenant.BrandAbbreviation}}</strong><span>{{.Tenant.Name}}</span></span></div>
+                    <div class="preview-message"><span>Ihr Zuhause-Portal</span><h4>Alles Wichtige für Ihr Zuhause.</h4></div>
+                    <span class="preview-login-action">Anmelden</span>
+                  </div>
+                  <div class="preview-sidebar" data-preview-panel="sidebar" hidden>
+                    <div class="preview-identity"><span class="preview-brand-mark" data-brand-preview-mark>{{template "tenantBrandMark" .}}</span><span><strong data-brand-preview-abbreviation>{{.Tenant.BrandAbbreviation}}</strong><span>{{.Tenant.Name}}</span></span></div>
+                    <div class="preview-nav"><span>Hausüberblick</span><span>Termine</span><span>Dokumente</span></div>
+                    <span class="mini">Hausportal · hausv.org</span>
+                  </div>
+                </div>
+                <p class="preview-caption">Änderungen werden hier sofort sichtbar. Im Portal erscheinen sie nach dem Speichern.</p>
+              </aside>
             </div>
           </div>
         </section>
