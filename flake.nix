@@ -22,6 +22,7 @@
           packages = with pkgs; [
             go
             nodejs_24
+            templ # 0.3.1020, pinned by flake.lock
 
             # Linters kept alongside the toolchain so they are versioned with it
             # rather than living only in a hand-managed ~/go/bin.
