@@ -170,6 +170,17 @@ templ PortalNavigation(data PortalPageData, icons bool) {
 	</nav>
 }
 
+// PortalMobileHeader is the shared compact shell for route-specific portal
+// pages. Keeping its menu here ensures mobile and desktop use the same
+// permission-gated navigation.
+templ PortalMobileHeader(data PortalPageData, pageLabel string) {
+	<header class="mobile-head">
+		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
+		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>{ pageLabel } · { data.Role }</small></a>
+		<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
+	</header>
+}
+
 func portalNavActive(data PortalPageData, page string) bool {
 	if data.ActivePage == "" {
 		return page == "home"
