@@ -14,6 +14,7 @@
 import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { EXTRACT_CONTRACT } from './contract.mjs';
 
 const baseURL = process.argv[2];
 const outDir = process.argv[3];
@@ -106,6 +107,12 @@ for (const persona of PERSONAS) {
     const status = res ? res.status() : 0;
     const html = normalise(await page.content());
     await writeFile(path.join(dir, `${name}.html`), `<!-- status:${status} -->\n${html}\n`);
+
+    // The parts of the page a user can act on, in DOM terms. contract-diff.mjs
+    // compares two of these; the HTML diff above cannot answer "is this still
+    // wired up", only "did these bytes move".
+    const contract = await page.evaluate(EXTRACT_CONTRACT);
+    await writeFile(path.join(dir, `${name}.contract.json`), `${JSON.stringify(contract, null, 2)}\n`);
 
     // Neutralise volatile TEXT in the DOM before the screenshot. The HTML
     // normaliser only fixes the saved markup — the pixels would still render a
