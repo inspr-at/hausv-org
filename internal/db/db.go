@@ -1,5 +1,4 @@
-// Package db owns the embedded SQLite connection and the forward-only migration
-// runner that the store layer migrates onto (HAUSV-166 / HAUSV-167).
+// Package db owns the database connections and forward-only migrations.
 //
 // Driver: modernc.org/sqlite — pure Go, so the CGO_ENABLED=0 distroless build
 // keeps its static binary (mattn/go-sqlite3 would break it). Pragmas are set via
@@ -7,6 +6,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"fmt"
@@ -23,6 +23,10 @@ var migrationsFS embed.FS
 // sensible pragmas, then applies every pending migration. It is safe to call on
 // each boot: migrations already recorded are skipped.
 func Open(path string) (*sql.DB, error) {
+	return OpenConfig(context.Background(), Config{DSN: path})
+}
+
+func openSQLite(path string) (*sql.DB, error) {
 	if strings.TrimSpace(path) == "" {
 		return nil, fmt.Errorf("db: path required")
 	}

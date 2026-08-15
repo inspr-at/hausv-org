@@ -43,6 +43,21 @@ go run ./cmd/hausv-org
 
 `.env.local` is ignored by Git. Do not commit credentials or production configuration.
 
+### Fixture development loop
+
+For click-through development with a fresh, deterministic local fixture (and
+automatic rebuilds for `.go` and `.templ` files), run:
+
+```sh
+scripts/dev.sh
+```
+
+It opens `http://localhost:8098` with local-development login enabled and
+removes its temporary data when stopped with Ctrl-C. Use another port with
+`HV_DEV_PORT=8100 scripts/dev.sh`. If [`templ`](https://templ.guide/) is
+installed, its generator runs in watch mode too; without it the script keeps
+running and reports that generation is unavailable.
+
 ## Tenant URLs
 
 One installation serves multiple portals below one domain. Each tenant has a

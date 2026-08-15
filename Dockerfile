@@ -5,7 +5,8 @@ ARG GIT_COMMIT=dev
 COPY go.mod ./
 RUN go mod download
 COPY . .
-RUN test -n "${APP_VERSION}" && \
+RUN go run github.com/a-h/templ/cmd/templ@v0.3.1020 generate && \
+    test -n "${APP_VERSION}" && \
     CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w -X github.com/inspr-at/hausv-org/internal/version.Version=${APP_VERSION} -X github.com/inspr-at/hausv-org/internal/version.Commit=${GIT_COMMIT}" -o /out/hausv-org ./cmd/hausv-org && \
     mkdir -p /out/connectors && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w -X github.com/inspr-at/hausv-org/internal/version.Version=${APP_VERSION} -X github.com/inspr-at/hausv-org/internal/version.Commit=${GIT_COMMIT}" -o /out/connectors/hausv-connector-linux-amd64 ./cmd/hausv-org && \

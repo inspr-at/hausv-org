@@ -24,6 +24,13 @@ jobs:
           check-latest: true
           cache: true
 
+      - name: Verify generated templ code
+        run: |
+          go install github.com/a-h/templ/cmd/templ@v0.3.1020
+          templ generate
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=all)"
+
       - name: gofmt
         run: |
           unformatted=$(gofmt -l .)
