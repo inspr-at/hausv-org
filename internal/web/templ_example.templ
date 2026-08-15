@@ -1,0 +1,19 @@
+package web
+
+templ TemplExample(assetVersion string) {
+	<!doctype html>
+	<html lang="de">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>templ-Werkzeugtest</title>
+			<script src={ "/assets/htmx/2.0.10/htmx.min.js?v=" + assetVersion } defer></script>
+		</head>
+		<body data-templ-example>
+			<main>
+				<h1>templ ist bereit</h1>
+				<p>Diese Seite prüft nur die neue Render- und Asset-Werkzeugkette.</p>
+			</main>
+		</body>
+	</html>
+}

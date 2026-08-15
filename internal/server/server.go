@@ -731,6 +731,7 @@ type app struct {
 	profiles                map[string]userProfile
 	localDevLogin           bool
 	serviceAccessEnabled    bool
+	templExampleEnabled     bool
 	sessionTTL              time.Duration
 	tokens                  *tokenStore
 	sessions                *sessionStore
@@ -943,6 +944,9 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /tenant-hero/{tenant}", a.tenantHeroImage)
 	mux.HandleFunc("GET /map-tiles/{z}/{x}/{tile}", a.mapTile)
 	mux.HandleFunc("GET /healthz", a.health)
+	if a.templExampleEnabled {
+		mux.HandleFunc("GET /_templ/example", a.templExample)
+	}
 	mux.HandleFunc("GET /datenschutz", a.privacyNotice)
 	mux.HandleFunc("GET /impressum", a.imprintPage)
 	mux.HandleFunc("GET /start", a.homeStartPage)
@@ -1557,6 +1561,7 @@ func newApp() (*app, error) {
 		profiles:                 profiles,
 		localDevLogin:            localDevLogin,
 		serviceAccessEnabled:     serviceProviderAccessEnabled(),
+		templExampleEnabled:      parseBool(env("TEMPL_EXAMPLE_ENABLED", "false")),
 		sessionTTL:               sessionTTL,
 		tokens:                   auth.NewTokenStore(secret),
 		sessions:                 newSessionStore(secret),

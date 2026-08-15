@@ -22,7 +22,8 @@
           packages = with pkgs; [
             go
             nodejs_24
-            postgresql
+            postgresql # local target for the PostgreSQL/RLS tests (HAUSV-492)
+            templ # 0.3.1020, pinned by flake.lock
 
             # Linters kept alongside the toolchain so they are versioned with it
             # rather than living only in a hand-managed ~/go/bin.
