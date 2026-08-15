@@ -12,7 +12,7 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 	a.profiles["service@example.com"] = userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.serviceAccessEnabled = true
 
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID:          "top-1",
 		TenantSlug:  "demo",
 		Label:       "Top 1",
@@ -20,7 +20,7 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 	}}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	ownIssue, err := a.issueStore.Create(residentIssue{
+	ownIssue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
@@ -32,7 +32,7 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 	if err != nil {
 		t.Fatalf("Create resident issue: %v", err)
 	}
-	providerIssue, err := a.issueStore.Create(residentIssue{
+	providerIssue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
@@ -45,7 +45,7 @@ func TestScopedAuditUsesCurrentAuthorizationAndRedactsPersonalData(t *testing.T)
 	if err != nil {
 		t.Fatalf("Create provider issue: %v", err)
 	}
-	hiddenIssue, err := a.issueStore.Create(residentIssue{
+	hiddenIssue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "other@example.com",
 		AuthorName:   "Other",

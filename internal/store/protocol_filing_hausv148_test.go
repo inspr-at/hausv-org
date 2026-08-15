@@ -15,7 +15,7 @@ import (
 
 type filingBackend struct {
 	filer     ProtocolFiler
-	documents DocumentStorage
+	documents DocumentRepository
 	handovers HandoverStorage
 	fileDir   string
 }
@@ -56,7 +56,8 @@ func TestProtocolFilerParity(t *testing.T) {
 			if err != nil {
 				t.Fatalf("json handovers: %v", err)
 			}
-			return filingBackend{NewSequentialProtocolFiler(docs, hs), docs, hs, fileDir}
+			documents, _ := BindDocumentRepository(docs, "demo")
+			return filingBackend{NewSequentialProtocolFiler(docs, hs), documents, hs, fileDir}
 		},
 		"sqlite-atomic": func(t *testing.T) filingBackend {
 			dir := t.TempDir()
@@ -72,7 +73,8 @@ func TestProtocolFilerParity(t *testing.T) {
 			if filer == nil {
 				t.Fatal("expected an atomic filer when both stores share a db")
 			}
-			return filingBackend{filer, docs, hs, fileDir}
+			documents, _ := BindDocumentRepository(docs, "demo")
+			return filingBackend{filer, documents, hs, fileDir}
 		},
 	}
 
@@ -81,7 +83,8 @@ func TestProtocolFilerParity(t *testing.T) {
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
 			b := build(t)
-			if _, err := b.handovers.Create(sampleHandover("h1")); err != nil {
+			handovers, _ := BindHandoverRepository(b.handovers, "demo")
+			if _, err := handovers.Create(sampleHandover("h1")); err != nil {
 				t.Fatalf("seed handover: %v", err)
 			}
 
@@ -97,10 +100,10 @@ func TestProtocolFilerParity(t *testing.T) {
 				t.Fatalf("handover not linked: %+v", updated)
 			}
 			// Link is persisted, not just returned.
-			if got, _ := b.handovers.Get("demo", "h1"); got.FiledDocumentID != created.ID {
+			if got, _ := handovers.Get("h1"); got.FiledDocumentID != created.ID {
 				t.Fatalf("persisted link = %q, want %q", got.FiledDocumentID, created.ID)
 			}
-			if docs := b.documents.ListTenant("demo"); len(docs) != 1 {
+			if docs := b.documents.List(); len(docs) != 1 {
 				t.Fatalf("want exactly 1 document, got %d", len(docs))
 			}
 
@@ -116,7 +119,7 @@ func TestProtocolFilerParity(t *testing.T) {
 			if again.FiledDocumentID != created.ID {
 				t.Fatalf("refile changed the link: %+v", again)
 			}
-			if docs := b.documents.ListTenant("demo"); len(docs) != 1 {
+			if docs := b.documents.List(); len(docs) != 1 {
 				t.Fatalf("retry created a duplicate document: %d", len(docs))
 			}
 			// And no orphaned file was left by the retry.
@@ -129,7 +132,7 @@ func TestProtocolFilerParity(t *testing.T) {
 				"demo", "does-not-exist", protocolDoc(), "x.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now); err == nil {
 				t.Fatal("filing an unknown handover must error")
 			}
-			if docs := b.documents.ListTenant("demo"); len(docs) != 1 {
+			if docs := b.documents.List(); len(docs) != 1 {
 				t.Fatalf("failed filing left a document behind: %d", len(docs))
 			}
 			if n := countFiles(t, b.fileDir); n != 1 {
@@ -153,7 +156,8 @@ func TestSQLProtocolFilerConcurrentFilingCreatesOneDocument(t *testing.T) {
 	docs := NewSQLDocumentStore(database, fileDir)
 	handovers := NewSQLHandoverStore(database)
 	filer := NewSQLProtocolFiler(docs, handovers)
-	if _, err := handovers.Create(sampleHandover("h1")); err != nil {
+	handoverRepo, _ := BindHandoverRepository(handovers, "demo")
+	if _, err := handoverRepo.Create(sampleHandover("h1")); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
 
@@ -174,11 +178,12 @@ func TestSQLProtocolFilerConcurrentFilingCreatesOneDocument(t *testing.T) {
 	<-done
 	<-done
 
-	list := docs.ListTenant("demo")
+	documents, _ := BindDocumentRepository(docs, "demo")
+	list := documents.List()
 	if len(list) != 1 {
 		t.Fatalf("concurrent filing produced %d documents, want exactly 1", len(list))
 	}
-	linked, _ := handovers.Get("demo", "h1")
+	linked, _ := handoverRepo.Get("h1")
 	if linked.FiledDocumentID != list[0].ID {
 		t.Fatalf("handover links %q but the only document is %q", linked.FiledDocumentID, list[0].ID)
 	}

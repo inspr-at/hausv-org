@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func (a *app) issues(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -25,7 +27,7 @@ func (a *app) issueTriage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	id := strings.TrimSpace(r.PathValue("id"))
-	item, found := a.issueStore.Get(ac.tenant.Slug, id)
+	item, found := ac.repositories.issues.Get(id)
 	if !found {
 		http.Redirect(w, r, "/app/anliegen/board?issue=missing", http.StatusSeeOther)
 		return
@@ -56,7 +58,7 @@ func (a *app) issueTriage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 
 func (a *app) issueResidentDetail(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	id := strings.TrimSpace(r.PathValue("id"))
-	item, found := a.issueStore.Get(ac.tenant.Slug, id)
+	item, found := ac.repositories.issues.Get(id)
 	if !found {
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
@@ -97,14 +99,14 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		return
 	}
 	filters := issueBoardFiltersFromQuery(r.URL.Query())
-	if a.issueStore != nil {
-		allTenantIssues := a.issueStore.ListTenant(tenant.Slug)
+	if ac.repositories.issues != nil {
+		allTenantIssues := ac.repositories.issues.List()
 		totalIssueCount = len(allTenantIssues)
 		openIssueCount = issueOpenCount(allTenantIssues)
 		urgentIssueCount = issuePriorityCount(allTenantIssues, issuePriorityUrgent)
 		if !boardOnly {
 			if canManageIssues {
-				issues = a.issueViewsForActor(tenant.Slug, a.issueStore.ListAuthor(tenant.Slug, email), role, email)
+				issues = a.issueViewsForActor(tenant.Slug, ac.repositories.issues.ListAuthor(email), role, email)
 			} else {
 				issues = a.issueViewsForActor(tenant.Slug, a.visibleIssuesForActor(tenant.Slug, email, role), role, email)
 			}
@@ -127,7 +129,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
-	serviceContacts := a.serviceContactOptions(tenant.Slug)
+	serviceContacts := a.serviceContactOptions(ac.repositories.contacts)
 	a.render(w, "issues", a.withBase(ac, map[string]any{
 		"Title":                      "Anliegen",
 		"CanManageAnnouncements":     canManageAnnouncements(role),
@@ -210,18 +212,18 @@ func (a *app) createIssue(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue", item.ID, email, uploadedFilesFromHeaders(attachmentHeaders), now)
+		uploaded, err = ac.repositories.attachments.CreateUploaded("issue", item.ID, email, uploadedFilesFromHeaders(attachmentHeaders), now)
 		if err != nil {
 			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
 			return
 		}
 	}
 	createdID := item.ID
-	if a.issueStore != nil {
-		created, err := a.issueStore.Create(item)
+	if ac.repositories.issues != nil {
+		created, err := ac.repositories.issues.Create(item)
 		if err != nil {
 			for _, attachment := range uploaded {
-				_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+				_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 			}
 			logError("issue create failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 			http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
@@ -246,7 +248,7 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 		return
 	}
 	id := strings.TrimSpace(r.FormValue("id"))
-	existing, found := a.issueStore.Get(tenant.Slug, id)
+	existing, found := ac.repositories.issues.Get(id)
 	if !found {
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
@@ -290,7 +292,7 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue-comment", commentID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
+		uploaded, err = ac.repositories.attachments.CreateUploaded("issue-comment", commentID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
 		if err != nil {
 			http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
 			return
@@ -308,7 +310,7 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 			commentKind = issueCommentKindAnswer
 		}
 	}
-	updated, ok, err := a.issueStore.AddComment(tenant.Slug, id, issueComment{
+	updated, ok, err := ac.repositories.issues.AddComment(id, issueComment{
 		ID:          commentID,
 		AuthorEmail: email,
 		AuthorName:  profile.DisplayName(),
@@ -318,7 +320,7 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 	})
 	if err != nil {
 		for _, attachment := range uploaded {
-			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 		logError("issue comment failed", err, "tenant", tenant.Slug, "issue_id", id)
 		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
@@ -326,7 +328,7 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 	}
 	if !ok {
 		for _, attachment := range uploaded {
-			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
@@ -378,7 +380,7 @@ func (a *app) deleteIssueComment(w http.ResponseWriter, r *http.Request, ac auth
 		http.Error(w, "Dieser Kommentar kann mit diesem Zugang nicht gelöscht werden.", http.StatusForbidden)
 		return
 	}
-	updated, deleted, err := a.issueStore.DeleteComment(tenant.Slug, issue.ID, comment.ID, time.Now())
+	updated, deleted, err := ac.repositories.issues.DeleteComment(issue.ID, comment.ID, time.Now())
 	if err != nil {
 		logError("issue comment delete failed", err, "tenant", tenant.Slug, "issue_id", issue.ID, "comment_id", comment.ID)
 		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
@@ -388,9 +390,9 @@ func (a *app) deleteIssueComment(w http.ResponseWriter, r *http.Request, ac auth
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
 	}
-	if a.attachmentStore != nil {
-		for _, attachment := range a.attachmentStore.ListEntity(tenant.Slug, "issue-comment", comment.ID) {
-			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+	if ac.repositories.attachments != nil {
+		for _, attachment := range ac.repositories.attachments.ListEntity("issue-comment", comment.ID) {
+			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 	}
 	a.recordAudit(auditEvent{
@@ -415,7 +417,7 @@ func (a *app) confirmIssueResolution(w http.ResponseWriter, r *http.Request, ac 
 		return
 	}
 	id := strings.TrimSpace(r.FormValue("id"))
-	existing, found := a.issueStore.Get(ac.tenant.Slug, id)
+	existing, found := ac.repositories.issues.Get(id)
 	if !found {
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
@@ -435,7 +437,7 @@ func (a *app) confirmIssueResolution(w http.ResponseWriter, r *http.Request, ac 
 		status = issueStatusNew
 	}
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
-	updated, ok, err := a.issueStore.UpdateWorkflow(ac.tenant.Slug, id, issueWorkflowUpdate{
+	updated, ok, err := ac.repositories.issues.UpdateWorkflow(id, issueWorkflowUpdate{
 		Status:              status,
 		Priority:            existing.Priority,
 		AssigneeEmail:       existing.AssigneeEmail,
@@ -473,7 +475,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		return
 	}
 	id := strings.TrimSpace(r.FormValue("id"))
-	existing, found := a.issueStore.Get(tenant.Slug, id)
+	existing, found := ac.repositories.issues.Get(id)
 	if !found {
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
@@ -560,14 +562,14 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	profile := a.profileForTenant(email, tenant.Slug)
 	var uploadedEstimates []attachmentRecord
 	if len(estimateHeaders) > 0 {
-		uploadedEstimates, err = a.attachmentStore.CreateUploaded(tenant.Slug, "issue-estimate", id, email, uploadedFilesFromHeaders(estimateHeaders), time.Now())
+		uploadedEstimates, err = ac.repositories.attachments.CreateUploaded("issue-estimate", id, email, uploadedFilesFromHeaders(estimateHeaders), time.Now())
 		if err != nil {
 			logError("issue estimate upload failed", err, "tenant", tenant.Slug, "issue_id", id)
 			http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 			return
 		}
 	}
-	updated, _, err := a.issueStore.UpdateWorkflow(tenant.Slug, id, issueWorkflowUpdate{
+	updated, _, err := ac.repositories.issues.UpdateWorkflow(id, issueWorkflowUpdate{
 		Status:                status,
 		Priority:              priority,
 		AssigneeEmail:         assignee,
@@ -584,7 +586,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	})
 	if err != nil {
 		for _, attachment := range uploadedEstimates {
-			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 		logError("issue workflow update failed", err, "tenant", tenant.Slug, "issue_id", id)
 		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
@@ -928,13 +930,17 @@ func issueIsOpen(item residentIssue) bool {
 }
 
 func (a *app) visibleIssuesForActor(tenantSlug string, email string, role string) []residentIssue {
-	if a.issueStore == nil {
+	if a == nil {
 		return nil
 	}
-	all := a.issueStore.ListTenant(tenantSlug)
+	issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+	if !ok {
+		return nil
+	}
+	all := issues.List()
 	out := make([]residentIssue, 0, len(all))
 	for _, item := range all {
-		if a.canViewIssueForActor(tenantSlug, item, email, role) {
+		if a.canViewIssueForActor(item.TenantSlug, item, email, role) {
 			out = append(out, item)
 		}
 	}
@@ -976,14 +982,18 @@ func (a *app) canDeleteIssueComment(tenantSlug string, issue residentIssue, comm
 }
 
 func (a *app) issueCommentTarget(tenantSlug string, commentID string) (residentIssue, issueComment, bool) {
-	if a == nil || a.issueStore == nil {
+	if a == nil {
+		return residentIssue{}, issueComment{}, false
+	}
+	issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+	if !ok {
 		return residentIssue{}, issueComment{}, false
 	}
 	commentID = strings.TrimSpace(commentID)
 	if commentID == "" {
 		return residentIssue{}, issueComment{}, false
 	}
-	for _, issue := range a.issueStore.ListTenant(tenantSlug) {
+	for _, issue := range issues.List() {
 		for _, comment := range issue.Comments {
 			if comment.ID == commentID {
 				return issue, comment, true

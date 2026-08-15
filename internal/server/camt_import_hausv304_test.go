@@ -17,7 +17,7 @@ import (
 
 func TestCAMT053PortalPreviewApplyAndIdempotency(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID:         "top-1",
 		TenantSlug: "demo",
 		Label:      "Top 1",
@@ -26,7 +26,7 @@ func TestCAMT053PortalPreviewApplyAndIdempotency(t *testing.T) {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	period := "2026-07"
-	candidates, err := unitPaymentReferenceCandidates("demo", period, a.unitStore.ListTenant("demo"), nil)
+	candidates, err := unitPaymentReferenceCandidates("demo", period, testUnitRepository(t, a, "demo").List(), nil)
 	if err != nil || len(candidates) != 1 {
 		t.Fatalf("reference candidates = %+v err=%v", candidates, err)
 	}
@@ -74,7 +74,7 @@ func TestCAMT053PortalPreviewApplyAndIdempotency(t *testing.T) {
 	if apply.Code != http.StatusSeeOther || !strings.Contains(apply.Header().Get("Location"), "result=applied") || !strings.Contains(apply.Header().Get("Location"), "changed=1") {
 		t.Fatalf("apply status=%d location=%q", apply.Code, apply.Header().Get("Location"))
 	}
-	status, ok := a.unitPaymentStore.Get("demo", "top-1")
+	status, ok := testUnitPaymentRepository(t, a, "demo").Get("top-1")
 	if !ok || status.Status != unitPaymentStatusPaid || status.UpdatedBy != "manager@example.com" {
 		t.Fatalf("payment status after import = %+v ok=%v", status, ok)
 	}
@@ -112,7 +112,7 @@ func TestCAMT053PortalRejectsUnauthorizedCrossOriginAndInvalidInput(t *testing.T
 	}
 
 	a = newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential}}); err != nil {
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential}}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	if cross := paymentImportMultipartRequest(t, a, "manager@example.com", "https://evil.example", []byte("<Document/>")); cross.Code != http.StatusForbidden {
@@ -135,7 +135,7 @@ func TestCAMT053PortalRejectsUnauthorizedCrossOriginAndInvalidInput(t *testing.T
 
 func TestCAMT053PortalShowsUnsupportedProfileWithoutApply(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential}}); err != nil {
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential}}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	preview := authedMultipartFileRequest(t, a, "manager@example.com", "/demo/app/settings/payments/import/preview", map[string]string{

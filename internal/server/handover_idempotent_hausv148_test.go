@@ -13,7 +13,7 @@ func TestHandoverFilingIsIdempotent(t *testing.T) {
 		Email: "manager@example.com", Role: roleManager,
 		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
-	h, err := a.handoverStore.Create(handoverRecord{
+	h, err := testRepositories(a, "demo").handovers.Create(handoverRecord{
 		ID: "hv-test-1", TenantSlug: "demo", Title: "Whg 1", HandoverType: "auszug", CreatedBy: "manager@example.com",
 	})
 	if err != nil {
@@ -24,7 +24,7 @@ func TestHandoverFilingIsIdempotent(t *testing.T) {
 		if rr.Code != http.StatusSeeOther {
 			t.Fatalf("file status = %d", rr.Code)
 		}
-		return len(a.documentStore.ListTenant("demo"))
+		return len(documentRepositoryForTest(a, "demo").List())
 	}
 	if got := file(); got != 1 {
 		t.Fatalf("after first filing: %d documents, want 1", got)

@@ -43,7 +43,11 @@ func TestHandoverStorageParity(t *testing.T) {
 
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
-			s := build(t)
+			storage := build(t)
+			s, ok := BindHandoverRepository(storage, "demo")
+			if !ok {
+				t.Fatal("bind handover repository")
+			}
 
 			// Invalid: missing title.
 			if _, err := s.Create(HandoverRecord{ID: "x", TenantSlug: "demo", CreatedBy: "a@example.com"}); err == nil {
@@ -63,27 +67,27 @@ func TestHandoverStorageParity(t *testing.T) {
 				t.Fatal("duplicate handover must error")
 			}
 
-			if got := s.ListTenant("demo"); len(got) != 1 || got[0].ID != "h1" {
+			if got := s.List(); len(got) != 1 || got[0].ID != "h1" {
 				t.Fatalf("list = %+v", got)
 			}
 
-			if got, ok := s.Get("demo", "h1"); !ok || got.Title != "Übergabe h1" {
+			if got, ok := s.Get("h1"); !ok || got.Title != "Übergabe h1" {
 				t.Fatalf("get = %+v ok=%v", got, ok)
 			}
-			if _, ok := s.Get("demo", "nope"); ok {
+			if _, ok := s.Get("nope"); ok {
 				t.Fatal("get unknown must be false")
 			}
 
 			// Global token lookup.
-			if got, idx, ok := s.GetByToken("token-h1"); !ok || idx != 0 || got.ID != "h1" {
+			if got, idx, ok := storage.GetByToken("token-h1"); !ok || idx != 0 || got.ID != "h1" {
 				t.Fatalf("GetByToken = %+v idx=%d ok=%v", got, idx, ok)
 			}
-			if _, _, ok := s.GetByToken("wrong"); ok {
+			if _, _, ok := storage.GetByToken("wrong"); ok {
 				t.Fatal("GetByToken unknown must be false")
 			}
 
 			// Confirm via token: sets ConfirmedAt + ConfirmedBy from name.
-			rec, conf, ok, err := s.ConfirmByToken("token-h1", "Max Muster", "alles gut", now)
+			rec, conf, ok, err := storage.ConfirmByToken("token-h1", "Max Muster", "alles gut", now)
 			if err != nil || !ok {
 				t.Fatalf("confirm: err=%v ok=%v", err, ok)
 			}
@@ -96,7 +100,7 @@ func TestHandoverStorageParity(t *testing.T) {
 
 			// Idempotent: confirming again is a no-op that still reports ok, no error,
 			// and does not overwrite ConfirmedBy.
-			rec2, _, ok2, err2 := s.ConfirmByToken("token-h1", "Someone Else", "neu", now.Add(time.Hour))
+			rec2, _, ok2, err2 := storage.ConfirmByToken("token-h1", "Someone Else", "neu", now.Add(time.Hour))
 			if err2 != nil || !ok2 {
 				t.Fatalf("re-confirm: err=%v ok=%v", err2, ok2)
 			}
@@ -105,19 +109,19 @@ func TestHandoverStorageParity(t *testing.T) {
 			}
 
 			// Unknown token: not found.
-			if _, _, ok, _ := s.ConfirmByToken("no-such", "", "", now); ok {
+			if _, _, ok, _ := storage.ConfirmByToken("no-such", "", "", now); ok {
 				t.Fatal("confirm unknown token must be false")
 			}
 
 			// File a document id.
-			filed, ok, err := s.SetFiledDocument("demo", "h1", "doc-99", now)
+			filed, ok, err := s.SetFiledDocument("h1", "doc-99", now)
 			if err != nil || !ok || filed.FiledDocumentID != "doc-99" {
 				t.Fatalf("SetFiledDocument: err=%v ok=%v filed=%+v", err, ok, filed)
 			}
-			if got, _ := s.Get("demo", "h1"); got.FiledDocumentID != "doc-99" {
+			if got, _ := s.Get("h1"); got.FiledDocumentID != "doc-99" {
 				t.Fatalf("filed doc not persisted: %+v", got)
 			}
-			if _, ok, _ := s.SetFiledDocument("demo", "missing", "d", now); ok {
+			if _, ok, _ := s.SetFiledDocument("missing", "d", now); ok {
 				t.Fatal("SetFiledDocument unknown must be false")
 			}
 		})
@@ -129,10 +133,11 @@ func TestSQLHandoverImportFromJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json store: %v", err)
 	}
-	if _, err := jsonStore.Create(sampleHandover("h1")); err != nil {
+	jsonRepo, _ := BindHandoverRepository(jsonStore, "demo")
+	if _, err := jsonRepo.Create(sampleHandover("h1")); err != nil {
 		t.Fatalf("seed h1: %v", err)
 	}
-	if _, err := jsonStore.Create(sampleHandover("h2")); err != nil {
+	if _, err := jsonRepo.Create(sampleHandover("h2")); err != nil {
 		t.Fatalf("seed h2: %v", err)
 	}
 
@@ -148,7 +153,8 @@ func TestSQLHandoverImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	if got := sqlStore.ListTenant("demo"); len(got) != 2 {
+	sqlRepo, _ := BindHandoverRepository(sqlStore, "demo")
+	if got := sqlRepo.List(); len(got) != 2 {
 		t.Fatalf("imported %d, want 2: %+v", len(got), got)
 	}
 	// Token lookup works on imported data.

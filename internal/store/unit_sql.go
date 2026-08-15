@@ -8,23 +8,86 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
-// UnitStorage is the behaviour both the JSON UnitStore and the SQLite
-// SQLUnitStore satisfy (HAUSV-168).
+// UnitRepository is a unit store already bound to one tenant.
+type UnitRepository interface {
+	SetUnits(units []Unit) error
+	UpsertUnit(origID string, item Unit) (duplicate bool, err error)
+	DeleteUnit(id string) (removed bool, removedUnit Unit, err error)
+	List() []Unit
+	UnitCount() int
+	BillableUnitWeight() int
+	UnitsForEmail(email string) []UnitMembership
+	MembersForUnit(unitID string) UnitMembers
+}
+
+// UnitStorage is the unbound backend implemented by the JSON and SQLite
+// stores. HTTP code receives only UnitRepository.
 type UnitStorage interface {
-	SetTenantUnits(tenantSlug string, units []Unit) error
-	UpsertUnit(tenantSlug string, origID string, item Unit) (duplicate bool, err error)
-	DeleteUnit(tenantSlug string, id string) (removed bool, removedUnit Unit, err error)
-	ListTenant(tenantSlug string) []Unit
-	UnitCount(tenantSlug string) int
-	BillableUnitWeight(tenantSlug string) int
-	UnitsForEmail(tenantSlug string, email string) []UnitMembership
-	MembersForUnit(tenantSlug string, unitID string) UnitMembers
+	unitStorage()
 }
 
 var (
 	_ UnitStorage = (*UnitStore)(nil)
 	_ UnitStorage = (*SQLUnitStore)(nil)
 )
+
+type boundUnitRepository struct {
+	storage    unitBackend
+	tenantSlug string
+}
+
+type unitBackend interface {
+	setTenantUnits(tenantSlug string, units []Unit) error
+	upsertUnit(tenantSlug string, origID string, item Unit) (duplicate bool, err error)
+	deleteUnit(tenantSlug string, id string) (removed bool, removedUnit Unit, err error)
+	listTenant(tenantSlug string) []Unit
+	unitCount(tenantSlug string) int
+	billableUnitWeight(tenantSlug string) int
+	unitsForEmail(tenantSlug string, email string) []UnitMembership
+	membersForUnit(tenantSlug string, unitID string) UnitMembers
+}
+
+// BindUnitRepository binds all unit operations to one tenant.
+func BindUnitRepository(storage UnitStorage, tenantSlug string) (UnitRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(unitBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundUnitRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundUnitRepository) SetUnits(units []Unit) error {
+	return r.storage.setTenantUnits(r.tenantSlug, units)
+}
+
+func (r *boundUnitRepository) UpsertUnit(origID string, item Unit) (bool, error) {
+	return r.storage.upsertUnit(r.tenantSlug, origID, item)
+}
+
+func (r *boundUnitRepository) DeleteUnit(id string) (bool, Unit, error) {
+	return r.storage.deleteUnit(r.tenantSlug, id)
+}
+
+func (r *boundUnitRepository) List() []Unit {
+	return r.storage.listTenant(r.tenantSlug)
+}
+
+func (r *boundUnitRepository) UnitCount() int {
+	return r.storage.unitCount(r.tenantSlug)
+}
+
+func (r *boundUnitRepository) BillableUnitWeight() int {
+	return r.storage.billableUnitWeight(r.tenantSlug)
+}
+
+func (r *boundUnitRepository) UnitsForEmail(email string) []UnitMembership {
+	return r.storage.unitsForEmail(r.tenantSlug, email)
+}
+
+func (r *boundUnitRepository) MembersForUnit(unitID string) UnitMembers {
+	return r.storage.membersForUnit(r.tenantSlug, unitID)
+}
 
 // SQLUnitStore keeps each unit as a JSON document keyed by (tenant, id). Table
 // from migration 0014.
@@ -35,6 +98,8 @@ type SQLUnitStore struct {
 func NewSQLUnitStore(db *sql.DB) *SQLUnitStore {
 	return &SQLUnitStore{db: db}
 }
+
+func (*SQLUnitStore) unitStorage() {}
 
 // replaceTenantTx rewrites a tenant's whole unit set inside a transaction. The
 // JSON store re-normalizes the full tenant slice on every write (which also
@@ -103,7 +168,7 @@ func tenantUnitsTx(tx *sql.Tx, tenantSlug string) ([]Unit, error) {
 	return out, nil
 }
 
-func (s *SQLUnitStore) SetTenantUnits(tenantSlug string, units []Unit) error {
+func (s *SQLUnitStore) setTenantUnits(tenantSlug string, units []Unit) error {
 	if s == nil {
 		return nil
 	}
@@ -126,7 +191,7 @@ func (s *SQLUnitStore) SetTenantUnits(tenantSlug string, units []Unit) error {
 // add/delete of a different unit is not clobbered (HAUSV-145). origID is the
 // unit's previous ID ("" for a new unit); duplicate=true means the target ID
 // collides with a different existing unit.
-func (s *SQLUnitStore) UpsertUnit(tenantSlug string, origID string, item Unit) (bool, error) {
+func (s *SQLUnitStore) upsertUnit(tenantSlug string, origID string, item Unit) (bool, error) {
 	if s == nil {
 		return false, nil
 	}
@@ -172,7 +237,7 @@ func (s *SQLUnitStore) UpsertUnit(tenantSlug string, origID string, item Unit) (
 }
 
 // DeleteUnit removes one unit. Returns removed=false if no unit had that ID.
-func (s *SQLUnitStore) DeleteUnit(tenantSlug string, id string) (bool, Unit, error) {
+func (s *SQLUnitStore) deleteUnit(tenantSlug string, id string) (bool, Unit, error) {
 	if s == nil {
 		return false, Unit{}, nil
 	}
@@ -202,7 +267,7 @@ func (s *SQLUnitStore) DeleteUnit(tenantSlug string, id string) (bool, Unit, err
 	return true, removed, nil
 }
 
-func (s *SQLUnitStore) ListTenant(tenantSlug string) []Unit {
+func (s *SQLUnitStore) listTenant(tenantSlug string) []Unit {
 	if s == nil {
 		return nil
 	}
@@ -215,15 +280,15 @@ func (s *SQLUnitStore) ListTenant(tenantSlug string) []Unit {
 	return out
 }
 
-func (s *SQLUnitStore) UnitCount(tenantSlug string) int {
-	return len(s.ListTenant(tenantSlug))
+func (s *SQLUnitStore) unitCount(tenantSlug string) int {
+	return len(s.listTenant(tenantSlug))
 }
 
-func (s *SQLUnitStore) BillableUnitWeight(tenantSlug string) int {
-	return BillableUnitWeight(s.ListTenant(tenantSlug))
+func (s *SQLUnitStore) billableUnitWeight(tenantSlug string) int {
+	return BillableUnitWeight(s.listTenant(tenantSlug))
 }
 
-func (s *SQLUnitStore) UnitsForEmail(tenantSlug string, email string) []UnitMembership {
+func (s *SQLUnitStore) unitsForEmail(tenantSlug string, email string) []UnitMembership {
 	if s == nil {
 		return nil
 	}
@@ -250,7 +315,7 @@ func (s *SQLUnitStore) UnitsForEmail(tenantSlug string, email string) []UnitMemb
 	return out
 }
 
-func (s *SQLUnitStore) MembersForUnit(tenantSlug string, unitID string) UnitMembers {
+func (s *SQLUnitStore) membersForUnit(tenantSlug string, unitID string) UnitMembers {
 	if s == nil {
 		return UnitMembers{}
 	}

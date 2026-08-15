@@ -12,7 +12,7 @@ func TestEnergyHomeScopeAuthorizationDoesNotCrossUnits(t *testing.T) {
 		userProfile{Email: "owner11@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()},
 	)
 	a.profiles["owner12@example.com"] = userProfile{Email: "owner12@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "einheit-12", TenantSlug: "demo", Label: "Einheit 12", UnitType: unitTypeResidential, OwnerEmails: []string{"owner11@example.com"}},
 		{ID: "top-12", TenantSlug: "demo", Label: "Top 12", UnitType: unitTypeResidential, OwnerEmails: []string{"owner12@example.com"}},
 	}); err != nil {

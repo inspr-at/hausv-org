@@ -36,7 +36,7 @@ func TestEventMutationsWritePrivacySafeAuditTrail(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("create status = %d, want redirect", create.Code)
 	}
-	items := a.eventStore.ListTenant("demo")
+	items := testRepositories(a, "demo").events.List()
 	if len(items) != 1 {
 		t.Fatalf("created events = %+v", items)
 	}

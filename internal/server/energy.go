@@ -471,7 +471,11 @@ func (a *app) energyResidentialUnits(tenantSlug string) []unit {
 	if a.unitStore == nil {
 		return nil
 	}
-	all := a.unitStore.ListTenant(tenantSlug)
+	units, ok := store.BindUnitRepository(a.unitStore, tenantSlug)
+	if !ok {
+		return nil
+	}
+	all := units.List()
 	out := make([]unit, 0, len(all))
 	for _, item := range all {
 		if normalizeUnitType(item.UnitType) == unitTypeResidential {
@@ -502,8 +506,16 @@ func (a *app) actorBelongsToEnergyUnit(ac authCtx, unitID string, ownerOnly bool
 	if a.unitStore == nil {
 		return false
 	}
+	units := ac.repositories.units
+	if units == nil {
+		var ok bool
+		units, ok = store.BindUnitRepository(a.unitStore, ac.tenant.Slug)
+		if !ok {
+			return false
+		}
+	}
 	unitID = normalizeUnitID(unitID)
-	for _, membership := range a.unitStore.UnitsForEmail(ac.tenant.Slug, ac.email) {
+	for _, membership := range units.UnitsForEmail(ac.email) {
 		if normalizeUnitID(membership.Unit.ID) != unitID {
 			continue
 		}
@@ -1122,7 +1134,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	if maintenanceRecommendation, ok := energy.MaintenanceRecommendation(time.Now(), maintenance); ok {
 		recommendation = maintenanceRecommendation
 	}
-	contactOptions, contactNames := a.energyContactOptions(ac.tenant.Slug)
+	contactOptions, contactNames := a.energyContactOptions(ac.repositories.contacts)
 	documentOptions, documentNames := a.energyDocumentOptions(ac.tenant.Slug)
 	issueOptions, issueNames := a.energyIssueOptions(ac.tenant.Slug)
 	maintenanceViews := buildEnergyMaintenanceViews(maintenance, assets, contactNames, documentNames, issueNames, time.Now())
@@ -1315,13 +1327,13 @@ func recommendationURL(id string) string {
 	}
 }
 
-func (a *app) energyContactOptions(tenantSlug string) ([]energyOption, map[string]string) {
+func (a *app) energyContactOptions(contacts contactBookRepository) ([]energyOption, map[string]string) {
 	options := []energyOption{}
 	names := map[string]string{}
-	if a.contactStore == nil {
+	if contacts == nil {
 		return options, names
 	}
-	for _, item := range a.contactStore.ListTenant(tenantSlug, false) {
+	for _, item := range contacts.List(false) {
 		label := managedContactDisplayName(item)
 		if item.Company != "" && !strings.EqualFold(item.Company, label) {
 			label += " · " + item.Company
@@ -1336,11 +1348,11 @@ func (a *app) energyContactOptions(tenantSlug string) ([]energyOption, map[strin
 	return options, names
 }
 
-func (a *app) energyContact(tenantSlug, id string) (managedContact, bool) {
-	if a.contactStore == nil || strings.TrimSpace(id) == "" {
+func (a *app) energyContact(contacts contactBookRepository, id string) (managedContact, bool) {
+	if contacts == nil || strings.TrimSpace(id) == "" {
 		return managedContact{}, false
 	}
-	for _, item := range a.contactStore.ListTenant(tenantSlug, false) {
+	for _, item := range contacts.List(false) {
 		if item.ID == id {
 			return item, true
 		}
@@ -1351,10 +1363,11 @@ func (a *app) energyContact(tenantSlug, id string) (managedContact, bool) {
 func (a *app) energyDocumentOptions(tenantSlug string) ([]energyOption, map[string]string) {
 	options := []energyOption{}
 	names := map[string]string{}
-	if a.documentStore == nil {
+	documents, ok := store.BindDocumentRepository(a.documentStore, tenantSlug)
+	if !ok {
 		return options, names
 	}
-	for _, item := range a.documentStore.ListCurrentTenant(tenantSlug) {
+	for _, item := range documents.ListCurrent() {
 		names[item.ID] = item.Title
 		options = append(options, energyOption{Value: item.ID, Label: item.Title})
 	}
@@ -1365,10 +1378,11 @@ func (a *app) energyDocumentOptions(tenantSlug string) ([]energyOption, map[stri
 func (a *app) energyIssueOptions(tenantSlug string) ([]energyOption, map[string]string) {
 	options := []energyOption{}
 	names := map[string]string{}
-	if a.issueStore == nil {
+	issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+	if !ok {
 		return options, names
 	}
-	for _, item := range a.issueStore.ListTenant(tenantSlug) {
+	for _, item := range issues.List() {
 		names[item.ID] = item.Title
 		options = append(options, energyOption{Value: item.ID, Label: item.Title})
 	}
@@ -1548,25 +1562,27 @@ func findMaintenancePlanByAsset(storage energy.Storage, tenantSlug, assetID stri
 	return energy.MaintenancePlan{}, false
 }
 
-func (a *app) validEnergyReferences(tenantSlug, contactID, documentID, issueID string) bool {
+func (a *app) validEnergyReferences(tenantSlug string, contacts contactBookRepository, contactID, documentID, issueID string) bool {
 	if contactID != "" {
-		if _, ok := a.energyContact(tenantSlug, contactID); !ok {
+		if _, ok := a.energyContact(contacts, contactID); !ok {
 			return false
 		}
 	}
 	if documentID != "" {
-		if a.documentStore == nil {
+		documents, ok := store.BindDocumentRepository(a.documentStore, tenantSlug)
+		if !ok {
 			return false
 		}
-		if _, ok := a.documentStore.Get(tenantSlug, documentID); !ok {
+		if _, ok := documents.Get(documentID); !ok {
 			return false
 		}
 	}
 	if issueID != "" {
-		if a.issueStore == nil {
+		issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+		if !ok {
 			return false
 		}
-		if _, ok := a.issueStore.Get(tenantSlug, issueID); !ok {
+		if _, ok := issues.Get(issueID); !ok {
 			return false
 		}
 	}
@@ -1935,7 +1951,7 @@ func (a *app) createEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		"\n\nOffene Vor-Ort-Fragen:\n- " + strings.Join(pkg.OpenSiteQuestions, "\n- ") +
 		"\n\nKeine automatische Beauftragung, Preiszusage oder Vermittlungsprovision."
 	now := time.Now().UTC()
-	created, err := a.issueStore.Create(residentIssue{
+	created, err := ac.repositories.issues.Create(residentIssue{
 		TenantSlug:     ac.tenant.Slug,
 		AuthorEmail:    normalizeEmail(ac.email),
 		AuthorName:     a.profileForTenant(ac.email, ac.tenant.Slug).DisplayName(),
@@ -2095,7 +2111,7 @@ func (a *app) upsertEnergyMaintenance(w http.ResponseWriter, r *http.Request, ac
 	contactID := strings.TrimSpace(r.FormValue("contact_id"))
 	documentID := strings.TrimSpace(r.FormValue("document_id"))
 	issueID := strings.TrimSpace(r.FormValue("issue_id"))
-	if !a.validEnergyReferences(ac.tenant.Slug, contactID, documentID, issueID) {
+	if !a.validEnergyReferences(ac.tenant.Slug, ac.repositories.contacts, contactID, documentID, issueID) {
 		http.Error(w, "Verknüpfung gehört nicht zu diesem Haus.", http.StatusBadRequest)
 		return
 	}
@@ -2159,7 +2175,7 @@ func (a *app) completeEnergyMaintenance(w http.ResponseWriter, r *http.Request, 
 	plan.NextDueAt = completed.AddDate(0, plan.IntervalMonths, 0)
 	plan.EvidenceNote = cleanEnergyText(r.FormValue("evidence_note"), 500)
 	if issueID := strings.TrimSpace(r.FormValue("issue_id")); issueID != "" {
-		if _, found := a.issueStore.Get(ac.tenant.Slug, issueID); !found {
+		if _, found := ac.repositories.issues.Get(issueID); !found {
 			http.Error(w, "Nachweis-Aufgabe gehört nicht zu diesem Haus.", http.StatusBadRequest)
 			return
 		}
@@ -2240,7 +2256,7 @@ func (a *app) updateEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		http.Error(w, "Maßnahme nicht gefunden.", http.StatusNotFound)
 		return
 	}
-	issue, found := a.issueStore.Get(ac.tenant.Slug, item.IssueID)
+	issue, found := ac.repositories.issues.Get(item.IssueID)
 	if !found {
 		http.Error(w, "Verknüpftes Anliegen nicht gefunden.", http.StatusConflict)
 		return
@@ -2254,7 +2270,7 @@ func (a *app) updateEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		return
 	}
 	item.ContactID = strings.TrimSpace(r.FormValue("contact_id"))
-	contact, contactOK := a.energyContact(ac.tenant.Slug, item.ContactID)
+	contact, contactOK := a.energyContact(ac.repositories.contacts, item.ContactID)
 	if item.ContactID != "" && !contactOK {
 		http.Error(w, "Fachkontakt gehört nicht zu diesem Haus.", http.StatusBadRequest)
 		return
@@ -2291,7 +2307,7 @@ func (a *app) updateEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		return
 	}
 	if contactOK && a.serviceAccessEnabled && normalizeEmail(contact.Email) != "" {
-		updated, changed, updateErr := a.issueStore.UpdateWorkflow(ac.tenant.Slug, issue.ID, issueWorkflowUpdate{
+		updated, changed, updateErr := ac.repositories.issues.UpdateWorkflow(issue.ID, issueWorkflowUpdate{
 			Status: issue.Status, Priority: issue.Priority, AssigneeEmail: normalizeEmail(contact.Email),
 			ActorEmail: ac.email, ActorName: a.profileForTenant(ac.email, ac.tenant.Slug).DisplayName(), ChangedAt: time.Now(),
 		})

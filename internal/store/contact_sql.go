@@ -10,18 +10,50 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
-// ContactBookStorage is the behaviour both the JSON ContactBookStore and the
-// SQLite SQLContactBookStore satisfy (HAUSV-168). Key is (tenant, id).
-type ContactBookStorage interface {
+type ContactBookRepository interface {
 	Upsert(item ManagedContact) (ManagedContact, bool, error)
-	Deactivate(tenantSlug string, id string, at time.Time) (ManagedContact, error)
-	ListTenant(tenantSlug string, includeInactive bool) []ManagedContact
+	Deactivate(id string, at time.Time) (ManagedContact, error)
+	List(includeInactive bool) []ManagedContact
+}
+
+type ContactBookStorage interface {
+	contactBookStorage()
 }
 
 var (
 	_ ContactBookStorage = (*ContactBookStore)(nil)
 	_ ContactBookStorage = (*SQLContactBookStore)(nil)
 )
+
+type boundContactBookRepository struct {
+	storage    contactBookBackend
+	tenantSlug string
+}
+
+type contactBookBackend interface {
+	upsert(tenantSlug string, item ManagedContact) (ManagedContact, bool, error)
+	deactivate(tenantSlug string, id string, at time.Time) (ManagedContact, error)
+	list(tenantSlug string, includeInactive bool) []ManagedContact
+}
+
+func BindContactBookRepository(storage ContactBookStorage, tenantSlug string) (ContactBookRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(contactBookBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundContactBookRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundContactBookRepository) Upsert(item ManagedContact) (ManagedContact, bool, error) {
+	return r.storage.upsert(r.tenantSlug, item)
+}
+func (r *boundContactBookRepository) Deactivate(id string, at time.Time) (ManagedContact, error) {
+	return r.storage.deactivate(r.tenantSlug, id, at)
+}
+func (r *boundContactBookRepository) List(includeInactive bool) []ManagedContact {
+	return r.storage.list(r.tenantSlug, includeInactive)
+}
 
 // SQLContactBookStore keeps each contact as a JSON document plus the columns it
 // is filtered by (tenant, active). Read-modify-write (upsert preserving
@@ -34,6 +66,8 @@ type SQLContactBookStore struct {
 func NewSQLContactBookStore(db *sql.DB) *SQLContactBookStore {
 	return &SQLContactBookStore{db: db}
 }
+
+func (*SQLContactBookStore) contactBookStorage() {}
 
 func writeContactTx(tx *sql.Tx, item ManagedContact) error {
 	blob, err := json.Marshal(item)
@@ -52,10 +86,11 @@ func writeContactTx(tx *sql.Tx, item ManagedContact) error {
 	return err
 }
 
-func (s *SQLContactBookStore) Upsert(item ManagedContact) (ManagedContact, bool, error) {
+func (s *SQLContactBookStore) upsert(tenantSlug string, item ManagedContact) (ManagedContact, bool, error) {
 	if s == nil {
 		return ManagedContact{}, false, fmt.Errorf("contact store not configured")
 	}
+	item.TenantSlug = tenantSlug
 	item, err := NormalizeManagedContact(item)
 	if err != nil {
 		return ManagedContact{}, false, err
@@ -106,7 +141,7 @@ func (s *SQLContactBookStore) Upsert(item ManagedContact) (ManagedContact, bool,
 	return item, true, nil
 }
 
-func (s *SQLContactBookStore) Deactivate(tenantSlug string, id string, at time.Time) (ManagedContact, error) {
+func (s *SQLContactBookStore) deactivate(tenantSlug string, id string, at time.Time) (ManagedContact, error) {
 	if s == nil {
 		return ManagedContact{}, fmt.Errorf("contact store not configured")
 	}
@@ -144,7 +179,7 @@ func (s *SQLContactBookStore) Deactivate(tenantSlug string, id string, at time.T
 	return existing, nil
 }
 
-func (s *SQLContactBookStore) ListTenant(tenantSlug string, includeInactive bool) []ManagedContact {
+func (s *SQLContactBookStore) list(tenantSlug string, includeInactive bool) []ManagedContact {
 	if s == nil {
 		return nil
 	}

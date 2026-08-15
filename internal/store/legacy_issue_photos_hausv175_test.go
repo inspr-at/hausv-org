@@ -15,6 +15,8 @@ import (
 type legacyPhotoFixture struct {
 	issues      IssueStorage
 	attachments AttachmentStorage
+	issueRepo   IssueRepository
+	attachRepo  AttachmentRepository
 	photoDir    string
 	issueID     string
 }
@@ -56,11 +58,13 @@ func newLegacyPhotoFixture(t *testing.T, backend string) legacyPhotoFixture {
 
 	issue := sampleIssue()
 	issue.PhotoPaths = []string{"issue-attachments/demo/abc-photo.png"}
-	created, err := issues.Create(issue)
+	issueRepo, _ := BindIssueRepository(issues, "demo")
+	attachRepo, _ := BindAttachmentRepository(attachments, "demo")
+	created, err := issueRepo.Create(issue)
 	if err != nil {
 		t.Fatalf("seed issue: %v", err)
 	}
-	return legacyPhotoFixture{issues, attachments, photoDir, created.ID}
+	return legacyPhotoFixture{issues, attachments, issueRepo, attachRepo, photoDir, created.ID}
 }
 
 func TestMigrateLegacyIssuePhotos(t *testing.T) {
@@ -75,14 +79,14 @@ func TestMigrateLegacyIssuePhotos(t *testing.T) {
 			}
 
 			// The photo is now a normal attachment on the issue.
-			got := f.attachments.ListEntity("demo", "issue", f.issueID)
+			got := f.attachRepo.ListEntity("issue", f.issueID)
 			if len(got) != 1 {
 				t.Fatalf("expected 1 attachment, got %d", len(got))
 			}
 			if got[0].ContentType != "image/png" {
 				t.Fatalf("content type = %q", got[0].ContentType)
 			}
-			path, _, _, ok := f.attachments.FilePath(got[0], "")
+			path, _, _, ok := f.attachRepo.FilePath(got[0], "")
 			if !ok {
 				t.Fatal("attachment path not resolvable")
 			}
@@ -91,7 +95,7 @@ func TestMigrateLegacyIssuePhotos(t *testing.T) {
 			}
 
 			// The legacy field is cleared, so the old read path has nothing left.
-			issue, _ := f.issues.Get("demo", f.issueID)
+			issue, _ := f.issueRepo.Get(f.issueID)
 			if len(issue.PhotoPaths) != 0 {
 				t.Fatalf("PhotoPaths not cleared: %+v", issue.PhotoPaths)
 			}
@@ -101,7 +105,7 @@ func TestMigrateLegacyIssuePhotos(t *testing.T) {
 			if err != nil || n2 != 0 {
 				t.Fatalf("second run: n=%d err=%v", n2, err)
 			}
-			if got := f.attachments.ListEntity("demo", "issue", f.issueID); len(got) != 1 {
+			if got := f.attachRepo.ListEntity("issue", f.issueID); len(got) != 1 {
 				t.Fatalf("second run duplicated attachments: %d", len(got))
 			}
 		})
@@ -123,7 +127,7 @@ func TestMigrateLegacyIssuePhotosKeepsReferenceWhenFileMissing(t *testing.T) {
 	if n != 0 {
 		t.Fatalf("nothing should have migrated, got %d", n)
 	}
-	issue, _ := f.issues.Get("demo", f.issueID)
+	issue, _ := f.issueRepo.Get(f.issueID)
 	if len(issue.PhotoPaths) != 1 {
 		t.Fatalf("the legacy reference must survive so it is not lost: %+v", issue.PhotoPaths)
 	}

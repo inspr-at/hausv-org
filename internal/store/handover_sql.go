@@ -10,22 +10,57 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
-// HandoverStorage is the behaviour both the JSON HandoverStore and the SQLite
-// SQLHandoverStore satisfy (HAUSV-168). Confirmation tokens are looked up
-// globally (across tenants), matching the JSON store.
-type HandoverStorage interface {
+type HandoverRepository interface {
 	Create(item HandoverRecord) (HandoverRecord, error)
-	ListTenant(tenantSlug string) []HandoverRecord
-	Get(tenantSlug string, id string) (HandoverRecord, bool)
+	List() []HandoverRecord
+	Get(id string) (HandoverRecord, bool)
+	SetFiledDocument(id string, documentID string, at time.Time) (HandoverRecord, bool, error)
+}
+
+// HandoverStorage retains only the deliberately global confirmation-token
+// operations. Tenant-scoped access is available only through a bound repository.
+type HandoverStorage interface {
+	handoverStorage()
 	GetByToken(token string) (HandoverRecord, int, bool)
 	ConfirmByToken(token string, name string, note string, at time.Time) (HandoverRecord, HandoverConfirmation, bool, error)
-	SetFiledDocument(tenantSlug string, id string, documentID string, at time.Time) (HandoverRecord, bool, error)
 }
 
 var (
 	_ HandoverStorage = (*HandoverStore)(nil)
 	_ HandoverStorage = (*SQLHandoverStore)(nil)
 )
+
+type boundHandoverRepository struct {
+	storage    handoverBackend
+	tenantSlug string
+}
+
+type handoverBackend interface {
+	create(tenantSlug string, item HandoverRecord) (HandoverRecord, error)
+	list(tenantSlug string) []HandoverRecord
+	get(tenantSlug string, id string) (HandoverRecord, bool)
+	setFiledDocument(tenantSlug string, id string, documentID string, at time.Time) (HandoverRecord, bool, error)
+}
+
+func BindHandoverRepository(storage HandoverStorage, tenantSlug string) (HandoverRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(handoverBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundHandoverRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundHandoverRepository) Create(item HandoverRecord) (HandoverRecord, error) {
+	return r.storage.create(r.tenantSlug, item)
+}
+func (r *boundHandoverRepository) List() []HandoverRecord { return r.storage.list(r.tenantSlug) }
+func (r *boundHandoverRepository) Get(id string) (HandoverRecord, bool) {
+	return r.storage.get(r.tenantSlug, id)
+}
+func (r *boundHandoverRepository) SetFiledDocument(id string, documentID string, at time.Time) (HandoverRecord, bool, error) {
+	return r.storage.setFiledDocument(r.tenantSlug, id, documentID, at)
+}
 
 // SQLHandoverStore keeps each handover as a JSON document keyed by (tenant, id).
 // Table from migration 0010. Foundation for the atomic PDF-filing flow once the
@@ -37,6 +72,8 @@ type SQLHandoverStore struct {
 func NewSQLHandoverStore(db *sql.DB) *SQLHandoverStore {
 	return &SQLHandoverStore{db: db}
 }
+
+func (*SQLHandoverStore) handoverStorage() {}
 
 func (s *SQLHandoverStore) writeTx(tx *sql.Tx, item HandoverRecord) error {
 	blob, err := json.Marshal(item)
@@ -51,10 +88,11 @@ func (s *SQLHandoverStore) writeTx(tx *sql.Tx, item HandoverRecord) error {
 	return err
 }
 
-func (s *SQLHandoverStore) Create(item HandoverRecord) (HandoverRecord, error) {
+func (s *SQLHandoverStore) create(tenantSlug string, item HandoverRecord) (HandoverRecord, error) {
 	if s == nil {
 		return HandoverRecord{}, fmt.Errorf("handover store unavailable")
 	}
+	item.TenantSlug = tenantSlug
 	item = NormalizeHandover(item)
 	if item.ID == "" || item.TenantSlug == "" || item.Title == "" || item.CreatedBy == "" {
 		return HandoverRecord{}, fmt.Errorf("invalid handover")
@@ -81,7 +119,7 @@ func (s *SQLHandoverStore) Create(item HandoverRecord) (HandoverRecord, error) {
 	return CopyHandover(item), nil
 }
 
-func (s *SQLHandoverStore) ListTenant(tenantSlug string) []HandoverRecord {
+func (s *SQLHandoverStore) list(tenantSlug string) []HandoverRecord {
 	if s == nil {
 		return nil
 	}
@@ -107,7 +145,7 @@ func (s *SQLHandoverStore) ListTenant(tenantSlug string) []HandoverRecord {
 	return out
 }
 
-func (s *SQLHandoverStore) Get(tenantSlug string, id string) (HandoverRecord, bool) {
+func (s *SQLHandoverStore) get(tenantSlug string, id string) (HandoverRecord, bool) {
 	if s == nil {
 		return HandoverRecord{}, false
 	}
@@ -206,7 +244,7 @@ func (s *SQLHandoverStore) ConfirmByToken(token string, name string, note string
 	return HandoverRecord{}, HandoverConfirmation{}, false, nil
 }
 
-func (s *SQLHandoverStore) SetFiledDocument(tenantSlug string, id string, documentID string, at time.Time) (HandoverRecord, bool, error) {
+func (s *SQLHandoverStore) setFiledDocument(tenantSlug string, id string, documentID string, at time.Time) (HandoverRecord, bool, error) {
 	if s == nil {
 		return HandoverRecord{}, false, fmt.Errorf("handover store unavailable")
 	}

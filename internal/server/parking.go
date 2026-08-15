@@ -416,7 +416,7 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac auth
 			http.Redirect(w, r, returnPath+"?month=invalid", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "parking", month, actorEmail, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
+		uploaded, err = ac.repositories.attachments.CreateUploaded("parking", month, actorEmail, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
 		if err != nil {
 			logError("parking attachment upload failed", err, "tenant", tenant.Slug, "month", month, "actor", redactedEmail(actorEmail))
 			http.Redirect(w, r, returnPath+"?month=invalid", http.StatusSeeOther)
@@ -425,7 +425,7 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac auth
 	}
 	if err := a.parkingStore.SetMonthPayment(tenant.Slug, month, payment); err != nil {
 		for _, attachment := range uploaded {
-			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 		logError("parking month save failed", err, "tenant", tenant.Slug)
 		http.Error(w, "Could not save parking month", http.StatusInternalServerError)

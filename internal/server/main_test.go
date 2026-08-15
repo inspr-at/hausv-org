@@ -25,10 +25,14 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/auth"
 	"github.com/inspr-at/hausv-org/internal/energy"
-	"github.com/inspr-at/hausv-org/internal/store"
+	storepkg "github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/version"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
+
+func testRepositories(a *app, tenantSlug string) requestRepositories {
+	return a.repositoriesForTenant(tenantConfig{Slug: tenantSlug})
+}
 
 type sentNotification struct {
 	To      string
@@ -46,6 +50,42 @@ type recordingMailer struct {
 	magicLinks    []sentMagicLink
 	invites       []string
 	notifications []sentNotification
+}
+
+func testUnitRepository(t testing.TB, a *app, tenantSlug string) unitRepository {
+	t.Helper()
+	repository, ok := storepkg.BindUnitRepository(a.unitStore, tenantSlug)
+	if !ok {
+		t.Fatalf("bind unit repository for %q", tenantSlug)
+	}
+	return repository
+}
+
+func testUnitPaymentRepository(t testing.TB, a *app, tenantSlug string) unitPaymentRepository {
+	t.Helper()
+	repository, ok := storepkg.BindUnitPaymentStatusRepository(a.unitPaymentStore, tenantSlug)
+	if !ok {
+		t.Fatalf("bind unit payment repository for %q", tenantSlug)
+	}
+	return repository
+}
+
+func testVoteRepository(t testing.TB, a *app, tenantSlug string) voteRepository {
+	t.Helper()
+	repository, ok := storepkg.BindVoteRepository(a.voteStore, tenantSlug)
+	if !ok {
+		t.Fatalf("bind vote repository for %q", tenantSlug)
+	}
+	return repository
+}
+
+func testRequestRepositories(t testing.TB, a *app, tenantSlug string) requestRepositories {
+	t.Helper()
+	tenant, ok := a.tenants[tenantSlug]
+	if !ok {
+		t.Fatalf("tenant %q not configured", tenantSlug)
+	}
+	return a.repositoriesForTenant(tenant)
 }
 
 func (m *recordingMailer) SendMagicLink(to string, link string, _ string) error {
@@ -162,11 +202,12 @@ func TestInviteStoreAddDedupeGetList(t *testing.T) {
 
 func TestUnitStoreSetListResolvePersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "units.json")
-	store, err := newUnitStore(path)
+	unitStore, err := newUnitStore(path)
 	if err != nil {
 		t.Fatalf("newUnitStore: %v", err)
 	}
-	if err := store.SetTenantUnits("demo", []unit{
+	repository, _ := storepkg.BindUnitRepository(unitStore, "demo")
+	if err := repository.SetUnits([]unit{
 		{
 			ID:                    "Top_2",
 			Label:                 "Top 2",
@@ -187,7 +228,7 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 
-	units := store.ListTenant("DEMO")
+	units := repository.List()
 	if len(units) != 3 {
 		t.Fatalf("ListTenant len = %d, want 3", len(units))
 	}
@@ -207,15 +248,15 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 		t.Fatalf("legacy unit should default to residential/full billable: %+v", units[1])
 	}
 
-	memberships := store.UnitsForEmail("demo", "OWNER@example.com")
+	memberships := repository.UnitsForEmail("OWNER@example.com")
 	if len(memberships) != 1 || memberships[0].Unit.ID != "top-2" || memberships[0].Relation != roleOwner {
 		t.Fatalf("owner memberships = %+v", memberships)
 	}
-	renterMemberships := store.UnitsForEmail("demo", "renter@example.com")
+	renterMemberships := repository.UnitsForEmail("renter@example.com")
 	if len(renterMemberships) != 1 || renterMemberships[0].Relation != roleRenter {
 		t.Fatalf("renter memberships = %+v", renterMemberships)
 	}
-	members := store.MembersForUnit("demo", "top-2")
+	members := repository.MembersForUnit("top-2")
 	if !members.Found || len(members.Owners) != 1 || members.Owners[0] != "owner@example.com" || len(members.Renters) != 1 || members.Renters[0] != "renter@example.com" {
 		t.Fatalf("members = %+v", members)
 	}
@@ -228,21 +269,23 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	if got := reopened.UnitCount("demo"); got != 3 {
+	reopenedRepository, _ := storepkg.BindUnitRepository(reopened, "demo")
+	if got := reopenedRepository.UnitCount(); got != 3 {
 		t.Fatalf("reopened UnitCount = %d, want 3", got)
 	}
-	if got := reopened.BillableUnitWeight("demo"); got != 2*unitBillableFullPPM {
+	if got := reopenedRepository.BillableUnitWeight(); got != 2*unitBillableFullPPM {
 		t.Fatalf("reopened BillableUnitWeight = %d, want %d", got, 2*unitBillableFullPPM)
 	}
 }
 
 func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "votes.json")
-	store, err := newVoteStore(path)
+	voteStore, err := newVoteStore(path)
 	if err != nil {
 		t.Fatalf("newVoteStore: %v", err)
 	}
-	created, err := store.Create(ballot{
+	repository, _ := storepkg.BindVoteRepository(voteStore, "demo")
+	created, err := repository.Create(ballot{
 		TenantSlug:  "DEMO",
 		Title:       "Ladestation beschließen",
 		Description: "Soll eine Wallbox angeschafft werden?",
@@ -259,26 +302,26 @@ func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
 	if created.ID == "" || created.Status != ballotStatusDraft || created.TenantSlug != "demo" || len(created.Options) != 2 || created.CreatedBy != "manager@example.com" {
 		t.Fatalf("created ballot = %+v", created)
 	}
-	opened, found, err := store.Open("demo", created.ID, time.Now())
+	opened, found, err := repository.Open(created.ID, time.Now())
 	if err != nil || !found || opened.Status != ballotStatusOpen {
 		t.Fatalf("Open = %+v found=%v err=%v", opened, found, err)
 	}
-	voted, found, err := store.CastVote("demo", created.ID, "Owner@Example.com", "Ja", 12345, time.Now())
+	voted, found, err := repository.CastVote(created.ID, "Owner@Example.com", "Ja", 12345, time.Now())
 	if err != nil || !found {
 		t.Fatalf("CastVote first found=%v err=%v", found, err)
 	}
 	if vote := voted.Votes["owner@example.com"]; vote.Option != "Ja" || vote.Weight != 12345 {
 		t.Fatalf("first vote = %+v", vote)
 	}
-	voted, found, err = store.CastVote("demo", created.ID, "owner@example.com", "Nein", 12345, time.Now())
+	voted, found, err = repository.CastVote(created.ID, "owner@example.com", "Nein", 12345, time.Now())
 	if err != nil || !found || len(voted.Votes) != 1 || voted.Votes["owner@example.com"].Option != "Nein" {
 		t.Fatalf("mutable vote = %+v found=%v err=%v", voted.Votes, found, err)
 	}
-	closed, found, err := store.Close("demo", created.ID, time.Now())
+	closed, found, err := repository.Close(created.ID, time.Now())
 	if err != nil || !found || closed.Status != ballotStatusClosed {
 		t.Fatalf("Close = %+v found=%v err=%v", closed, found, err)
 	}
-	if _, _, err := store.CastVote("demo", created.ID, "owner@example.com", "Ja", 12345, time.Now()); err == nil {
+	if _, _, err := repository.CastVote(created.ID, "owner@example.com", "Ja", 12345, time.Now()); err == nil {
 		t.Fatal("closed ballot should reject votes")
 	}
 	info, err := os.Stat(path)
@@ -289,7 +332,8 @@ func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	loaded, ok := reopened.Get("demo", created.ID)
+	reopenedRepository, _ := storepkg.BindVoteRepository(reopened, "demo")
+	loaded, ok := reopenedRepository.Get(created.ID)
 	if !ok || loaded.Status != ballotStatusClosed || loaded.Votes["owner@example.com"].Option != "Nein" {
 		t.Fatalf("loaded ballot = %+v ok=%v", loaded, ok)
 	}
@@ -299,13 +343,13 @@ func TestBallotVoteWeightUsesOwnerUnits(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 12345, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
 		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", MiteigentumsanteilPPM: 22222, OwnerEmails: []string{"owner@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	shareBallot, err := a.voteStore.Create(ballot{
+	shareBallot, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug: "demo",
 		Title:      "Sanierung",
 		Options:    []string{"Ja", "Nein"},
@@ -316,20 +360,20 @@ func TestBallotVoteWeightUsesOwnerUnits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create share ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", shareBallot.ID, time.Now()); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(shareBallot.ID, time.Now()); err != nil {
 		t.Fatalf("Open share ballot: %v", err)
 	}
-	updated, found, err := a.castBallotVote("demo", "owner@example.com", shareBallot.ID, "Ja", time.Now())
+	updated, found, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner@example.com", shareBallot.ID, "Ja", time.Now())
 	if err != nil || !found {
 		t.Fatalf("owner cast share vote found=%v err=%v", found, err)
 	}
 	if got := updated.Votes["owner@example.com"].Weight; got != 34567 {
 		t.Fatalf("owner share vote weight = %d, want 34567", got)
 	}
-	if _, _, err := a.castBallotVote("demo", "renter@example.com", shareBallot.ID, "Ja", time.Now()); err == nil {
+	if _, _, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "renter@example.com", shareBallot.ID, "Ja", time.Now()); err == nil {
 		t.Fatal("renter should not be eligible for owner ballot")
 	}
-	headBallot, err := a.voteStore.Create(ballot{
+	headBallot, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug: "demo",
 		Title:      "Pro Kopf",
 		Options:    []string{"Ja", "Nein"},
@@ -340,10 +384,10 @@ func TestBallotVoteWeightUsesOwnerUnits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create head ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", headBallot.ID, time.Now()); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(headBallot.ID, time.Now()); err != nil {
 		t.Fatalf("Open head ballot: %v", err)
 	}
-	updated, found, err = a.castBallotVote("demo", "owner@example.com", headBallot.ID, "Nein", time.Now())
+	updated, found, err = a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner@example.com", headBallot.ID, "Nein", time.Now())
 	if err != nil || !found || updated.Votes["owner@example.com"].Weight != 1 {
 		t.Fatalf("owner cast head vote = %+v found=%v err=%v", updated.Votes["owner@example.com"], found, err)
 	}
@@ -353,12 +397,12 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	created, err := a.voteStore.Create(ballot{
+	created, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug: "demo",
 		Title:      "Dachsanierung",
 		Options:    []string{"Ja", "Nein"},
@@ -369,7 +413,7 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", created.ID, time.Now()); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(created.ID, time.Now()); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
 
@@ -400,7 +444,7 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	if location := vote.Header().Get("Location"); location != "/demo/app/abstimmungen?vote=cast#ballot-"+created.ID {
 		t.Fatalf("owner vote redirect = %q, want ballot anchor", location)
 	}
-	stored, _ := a.voteStore.Get("demo", created.ID)
+	stored, _ := testVoteRepository(t, a, "demo").Get(created.ID)
 	if got := stored.Votes["owner@example.com"].Weight; got != 400000 {
 		t.Fatalf("owner vote weight = %d, want 400000", got)
 	}
@@ -458,11 +502,11 @@ func TestBallotCreateShowsAttachmentPreview(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("ballot create status = %d, want redirect", create.Code)
 	}
-	ballots := a.voteStore.ListTenant("demo")
+	ballots := testVoteRepository(t, a, "demo").List()
 	if len(ballots) != 1 {
 		t.Fatalf("ballots = %+v", ballots)
 	}
-	attachments := a.attachmentStore.ListEntity("demo", "ballot", ballots[0].ID)
+	attachments := attachmentRepositoryForTest(a, "demo").ListEntity("ballot", ballots[0].ID)
 	if len(attachments) != 1 || attachments[0].ContentType != "application/pdf" {
 		t.Fatalf("ballot attachments = %+v", attachments)
 	}
@@ -486,14 +530,14 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 	a.profiles["owner2@example.com"] = userProfile{Email: "owner2@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner1@example.com"}, RenterEmails: []string{"renter@example.com"}},
 		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", MiteigentumsanteilPPM: 600000, OwnerEmails: []string{"owner2@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	deadline := time.Now().Add(time.Hour)
-	created, err := a.voteStore.Create(ballot{
+	created, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug: "demo",
 		Title:      "Fassade",
 		Options:    []string{"Ja", "Nein"},
@@ -506,22 +550,22 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", created.ID, time.Now()); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(created.ID, time.Now()); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
-	if _, _, err := a.castBallotVote("demo", "owner1@example.com", created.ID, "Ja", time.Now()); err != nil {
+	if _, _, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner1@example.com", created.ID, "Ja", time.Now()); err != nil {
 		t.Fatalf("owner1 vote: %v", err)
 	}
-	item, _ := a.voteStore.Get("demo", created.ID)
-	view := a.ballotViewForActor("demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
+	item, _ := testVoteRepository(t, a, "demo").Get(created.ID)
+	view := a.ballotViewForActor(testRequestRepositories(t, a, "demo"), "demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
 	if view.TotalWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 400000) || view.EligibleWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 1000000) || view.Participation != "40,0 %" || view.QuorumStatus != "Quorum offen" || view.WinnerLabel != "Ja" {
 		t.Fatalf("single-vote tally = %+v", view)
 	}
-	if _, _, err := a.castBallotVote("demo", "owner2@example.com", created.ID, "Nein", time.Now()); err != nil {
+	if _, _, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner2@example.com", created.ID, "Nein", time.Now()); err != nil {
 		t.Fatalf("owner2 vote: %v", err)
 	}
-	item, _ = a.voteStore.Get("demo", created.ID)
-	view = a.ballotViewForActor("demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
+	item, _ = testVoteRepository(t, a, "demo").Get(created.ID)
+	view = a.ballotViewForActor(testRequestRepositories(t, a, "demo"), "demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
 	if view.TotalWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 1000000) || view.Participation != "100,0 %" || view.QuorumStatus != "Quorum erreicht" || view.WinnerLabel != "Nein" {
 		t.Fatalf("full tally = %+v", view)
 	}
@@ -530,7 +574,7 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 	if openProtocol.Code != http.StatusConflict {
 		t.Fatalf("open protocol status = %d, want 409", openProtocol.Code)
 	}
-	closed, err := a.voteStore.CloseExpiredTenant("demo", deadline.Add(time.Minute))
+	closed, err := testVoteRepository(t, a, "demo").CloseExpired(deadline.Add(time.Minute))
 	if err != nil || len(closed) != 1 || closed[0].Status != ballotStatusClosed {
 		t.Fatalf("CloseExpiredTenant = %+v err=%v", closed, err)
 	}
@@ -555,13 +599,13 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 
 func TestBallotVoteAfterDeadlineAutoCloses(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 1000000, OwnerEmails: []string{"owner@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	now := time.Now()
-	created, err := a.voteStore.Create(ballot{
+	created, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug: "demo",
 		Title:      "Deadline",
 		Options:    []string{"Ja", "Nein"},
@@ -574,13 +618,13 @@ func TestBallotVoteAfterDeadlineAutoCloses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", created.ID, now.Add(-2*time.Hour)); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(created.ID, now.Add(-2*time.Hour)); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
-	if _, _, err := a.castBallotVote("demo", "owner@example.com", created.ID, "Ja", now); err == nil {
+	if _, _, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner@example.com", created.ID, "Ja", now); err == nil {
 		t.Fatal("vote after deadline should fail")
 	}
-	closed, _ := a.voteStore.Get("demo", created.ID)
+	closed, _ := testVoteRepository(t, a, "demo").Get(created.ID)
 	if closed.Status != ballotStatusClosed {
 		t.Fatalf("deadline vote should auto-close ballot: %+v", closed)
 	}
@@ -595,7 +639,7 @@ func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
 	a.profiles["owner1@example.com"] = userProfile{Email: "owner1@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["owner2@example.com"] = userProfile{Email: "owner2@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["owner3@example.com"] = userProfile{Email: "owner3@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 300000, OwnerEmails: []string{"owner1@example.com"}},
 		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", MiteigentumsanteilPPM: 300000, OwnerEmails: []string{"owner2@example.com"}},
 		{ID: "top-3", TenantSlug: "demo", Label: "Top 3", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner3@example.com"}},
@@ -608,7 +652,7 @@ func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
 		t.Fatalf("Set owner3 prefs: %v", err)
 	}
 	now := time.Now()
-	created, err := a.voteStore.Create(ballot{
+	created, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug:            "demo",
 		Title:                 "Reminder",
 		Options:               []string{"Ja", "Nein"},
@@ -621,10 +665,10 @@ func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", created.ID, now); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(created.ID, now); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
-	if _, _, err := a.castBallotVote("demo", "owner1@example.com", created.ID, "Ja", now); err != nil {
+	if _, _, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner1@example.com", created.ID, "Ja", now); err != nil {
 		t.Fatalf("owner1 vote: %v", err)
 	}
 
@@ -634,7 +678,7 @@ func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
 	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "owner2@example.com" || !strings.Contains(mailer.notifications[0].Subject, "Reminder") || !strings.Contains(mailer.notifications[0].Body, "/demo/app/abstimmungen#ballot-"+created.ID) {
 		t.Fatalf("reminder notifications = %+v", mailer.notifications)
 	}
-	updated, _ := a.voteStore.Get("demo", created.ID)
+	updated, _ := testVoteRepository(t, a, "demo").Get(created.ID)
 	if _, ok := updated.ReminderSentAt["owner2@example.com"]; !ok {
 		t.Fatalf("owner2 should be marked reminded: %+v", updated.ReminderSentAt)
 	}
@@ -661,7 +705,8 @@ func TestDocumentStoreCreatePersistAndValidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newDocumentStore: %v", err)
 	}
-	created, err := store.Create(documentRecord{
+	documents := documentRepositoryForStorageTest(store, "demo")
+	created, err := documents.Create(documentRecord{
 		TenantSlug: "DEMO",
 		Title:      "Hausordnung",
 		Category:   documentCategoryRules,
@@ -677,7 +722,7 @@ func TestDocumentStoreCreatePersistAndValidate(t *testing.T) {
 	if created.ContentType != "application/pdf" || created.UploadedBy != "manager@example.com" || created.Size <= 0 {
 		t.Fatalf("created document metadata = %+v", created)
 	}
-	storedPath, ok := store.FilePath(created)
+	storedPath, ok := documents.FilePath(created)
 	if !ok {
 		t.Fatal("FilePath not available")
 	}
@@ -691,11 +736,12 @@ func TestDocumentStoreCreatePersistAndValidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	docs := reopened.ListTenant("DEMO")
+	reopenedDocuments := documentRepositoryForStorageTest(reopened, "demo")
+	docs := reopenedDocuments.List()
 	if len(docs) != 1 || docs[0].Title != "Hausordnung" {
 		t.Fatalf("reopened docs = %+v", docs)
 	}
-	if _, err := store.Create(documentRecord{
+	if _, err := documents.Create(documentRecord{
 		TenantSlug: "demo",
 		Title:      "Script",
 		Category:   documentCategoryOther,
@@ -712,7 +758,8 @@ func TestDocumentStoreReplaceKeepsVersionHistory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newDocumentStore: %v", err)
 	}
-	created, err := store.Create(documentRecord{
+	documents := documentRepositoryForStorageTest(store, "demo")
+	created, err := documents.Create(documentRecord{
 		TenantSlug: "demo",
 		Title:      "Hausordnung",
 		Category:   documentCategoryRules,
@@ -722,7 +769,7 @@ func TestDocumentStoreReplaceKeepsVersionHistory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	replacement, replaced, err := store.Replace("demo", created.ID, "manager@example.com", testMultipartHeader(t, "document", "hausordnung-v2.pdf", []byte("%PDF-1.4\nv2\n")), time.Date(2026, 2, 1, 9, 0, 0, 0, time.UTC))
+	replacement, replaced, err := documents.Replace(created.ID, "manager@example.com", testMultipartHeader(t, "document", "hausordnung-v2.pdf", []byte("%PDF-1.4\nv2\n")), time.Date(2026, 2, 1, 9, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatalf("Replace: %v", err)
 	}
@@ -732,20 +779,20 @@ func TestDocumentStoreReplaceKeepsVersionHistory(t *testing.T) {
 	if replaced.Current || replaced.ReplacedByID != replacement.ID {
 		t.Fatalf("replaced metadata = %+v", replaced)
 	}
-	current := store.ListCurrentTenant("demo")
+	current := documents.ListCurrent()
 	if len(current) != 1 || current[0].ID != replacement.ID {
 		t.Fatalf("current docs = %+v", current)
 	}
-	versions := store.Versions("demo", created.SeriesID)
+	versions := documents.Versions(created.SeriesID)
 	if len(versions) != 2 || versions[0].Version != 2 || versions[1].Version != 1 {
 		t.Fatalf("versions = %+v", versions)
 	}
-	if oldPath, ok := store.FilePath(replaced); !ok {
+	if oldPath, ok := documents.FilePath(replaced); !ok {
 		t.Fatal("old version path missing")
 	} else if _, err := os.Stat(oldPath); err != nil {
 		t.Fatalf("old version file missing: %v", err)
 	}
-	if newPath, ok := store.FilePath(replacement); !ok {
+	if newPath, ok := documents.FilePath(replacement); !ok {
 		t.Fatal("new version path missing")
 	} else if _, err := os.Stat(newPath); err != nil {
 		t.Fatalf("new version file missing: %v", err)
@@ -754,11 +801,12 @@ func TestDocumentStoreReplaceKeepsVersionHistory(t *testing.T) {
 
 func TestIssueStoreCreateListPersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "issues.json")
-	store, err := newIssueStore(path, filepath.Join(t.TempDir(), "issue-attachments"))
+	issueStorage, err := newIssueStore(path, filepath.Join(t.TempDir(), "issue-attachments"))
 	if err != nil {
 		t.Fatalf("newIssueStore: %v", err)
 	}
-	created, err := store.Create(residentIssue{
+	issues, _ := storepkg.BindIssueRepository(issueStorage, "demo")
+	created, err := issues.Create(residentIssue{
 		TenantSlug:     "DEMO",
 		AuthorEmail:    "Resident@Example.com",
 		AuthorName:     "Resident",
@@ -782,7 +830,8 @@ func TestIssueStoreCreateListPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	byAuthor := reopened.ListAuthor("demo", "resident@example.com")
+	reopenedIssues, _ := storepkg.BindIssueRepository(reopened, "demo")
+	byAuthor := reopenedIssues.ListAuthor("resident@example.com")
 	if len(byAuthor) != 1 || byAuthor[0].Title != "Licht im Stiegenhaus" || byAuthor[0].TenantSlug != "demo" {
 		t.Fatalf("ListAuthor = %+v", byAuthor)
 	}
@@ -1008,7 +1057,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	mailer := &recordingMailer{}
 	a.mailer = mailer
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "einheit-12", Label: "Einheit 12", OwnerEmails: []string{"owner@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
@@ -1032,7 +1081,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		t.Fatalf("handover create status = %d, want redirect", create.Code)
 	}
 
-	items := a.handoverStore.ListTenant("demo")
+	items := testRepositories(a, "demo").handovers.List()
 	if len(items) != 1 {
 		t.Fatalf("handovers = %+v", items)
 	}
@@ -1050,7 +1099,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		t.Fatalf("handover notifications = %+v", mailer.notifications)
 	}
 
-	attachments := a.attachmentStore.ListEntity("demo", "handover", item.ID)
+	attachments := attachmentRepositoryForTest(a, "demo").ListEntity("handover", item.ID)
 	if len(attachments) != 1 || attachments[0].ContentType != "image/png" || attachments[0].ThumbFilename == "" {
 		t.Fatalf("handover attachments = %+v", attachments)
 	}
@@ -1068,7 +1117,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		}
 	}
 
-	attachmentPath, _, _, ok := a.attachmentStore.FilePath(attachments[0], "")
+	attachmentPath, _, _, ok := attachmentRepositoryForTest(a, "demo").FilePath(attachments[0], "")
 	if !ok {
 		t.Fatal("handover attachment file path missing")
 	}
@@ -1079,7 +1128,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	if deleted.Code != http.StatusSeeOther || deleted.Header().Get("Location") != "/demo/app/uebergaben#handover-"+item.ID {
 		t.Fatalf("handover attachment delete = %d %q", deleted.Code, deleted.Header().Get("Location"))
 	}
-	if got := a.attachmentStore.ListEntity("demo", "handover", item.ID); len(got) != 0 {
+	if got := attachmentRepositoryForTest(a, "demo").ListEntity("handover", item.ID); len(got) != 0 {
 		t.Fatalf("handover attachments after delete = %+v, want none", got)
 	}
 	if _, err := os.Stat(attachmentPath); !errors.Is(err, os.ErrNotExist) {
@@ -1104,7 +1153,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	if addedFiles.Code != http.StatusSeeOther || !strings.Contains(addedFiles.Header().Get("Location"), "handover=attachments") {
 		t.Fatalf("handover add files = %d %q", addedFiles.Code, addedFiles.Header().Get("Location"))
 	}
-	addedAttachments := a.attachmentStore.ListEntity("demo", "handover", item.ID)
+	addedAttachments := attachmentRepositoryForTest(a, "demo").ListEntity("handover", item.ID)
 	if len(addedAttachments) != 1 {
 		t.Fatalf("handover attachments after add = %+v, want one", addedAttachments)
 	}
@@ -1135,7 +1184,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	if wrongTokenAttachmentRR.Code != http.StatusNotFound {
 		t.Fatalf("wrong handover token opened attachment: %d", wrongTokenAttachmentRR.Code)
 	}
-	unrelatedAttachments, err := a.attachmentStore.CreateUploaded("demo", "handover", "another-handover", "manager@example.com", []uploadedFile{
+	unrelatedAttachments, err := attachmentRepositoryForTest(a, "demo").CreateUploaded("handover", "another-handover", "manager@example.com", []uploadedFile{
 		testMultipartHeader(t, "attachments", "fremd.png", minimalPNG()),
 	}, time.Now())
 	if err != nil || len(unrelatedAttachments) != 1 {
@@ -1153,7 +1202,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	if prematureFile.Code != http.StatusSeeOther || !strings.Contains(prematureFile.Header().Get("Location"), "handover=pending") {
 		t.Fatalf("pending handover file = %d %q", prematureFile.Code, prematureFile.Header().Get("Location"))
 	}
-	if docs := a.documentStore.ListTenant("demo"); len(docs) != 0 {
+	if docs := documentRepositoryForTest(a, "demo").List(); len(docs) != 0 {
 		t.Fatalf("pending handover created documents: %+v", docs)
 	}
 	for idx, token := range tokens {
@@ -1176,12 +1225,12 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 			if lockedDelete.Code != http.StatusConflict {
 				t.Fatalf("confirmed handover attachment delete = %d, want conflict", lockedDelete.Code)
 			}
-			if got := a.attachmentStore.ListEntity("demo", "handover", item.ID); len(got) != 1 {
+			if got := attachmentRepositoryForTest(a, "demo").ListEntity("handover", item.ID); len(got) != 1 {
 				t.Fatalf("confirmed handover attachments = %+v, want immutable file", got)
 			}
 		}
 	}
-	afterConfirm, found := a.handoverStore.Get("demo", item.ID)
+	afterConfirm, found := testRepositories(a, "demo").handovers.Get(item.ID)
 	if !found || handoverStatus(afterConfirm) != handoverStatusConfirmed {
 		t.Fatalf("handover after both confirmations = found %v item %+v", found, afterConfirm)
 	}
@@ -1203,11 +1252,11 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	if filed.Code != http.StatusSeeOther {
 		t.Fatalf("handover file status = %d, want redirect", filed.Code)
 	}
-	updated, found := a.handoverStore.Get("demo", item.ID)
+	updated, found := testRepositories(a, "demo").handovers.Get(item.ID)
 	if !found || updated.FiledDocumentID == "" {
 		t.Fatalf("handover not filed: found=%v item=%+v", found, updated)
 	}
-	docs := a.documentStore.ListTenant("demo")
+	docs := documentRepositoryForTest(a, "demo").List()
 	if len(docs) != 1 || docs[0].Category != documentCategoryProtocol || docs[0].UnitID != "einheit-12" || docs[0].ContentType != "application/pdf" {
 		t.Fatalf("filed document = %+v", docs)
 	}
@@ -1216,7 +1265,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 func TestHandoverPublicConfirmationToken(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	token := "confirm-secret-token"
-	item, err := a.handoverStore.Create(handoverRecord{
+	item, err := testRepositories(a, "demo").handovers.Create(handoverRecord{
 		ID:           "handover-1",
 		TenantSlug:   "demo",
 		UnitID:       "top-1",
@@ -1260,7 +1309,7 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 	if postRR.Code != http.StatusSeeOther {
 		t.Fatalf("confirm post status = %d, want redirect", postRR.Code)
 	}
-	updated, found := a.handoverStore.Get("demo", item.ID)
+	updated, found := testRepositories(a, "demo").handovers.Get(item.ID)
 	if !found || len(updated.Confirmations) != 1 || updated.Confirmations[0].ConfirmedAt.IsZero() || updated.Confirmations[0].Note != "geprüft" {
 		t.Fatalf("updated confirmation = found %v item %+v", found, updated)
 	}
@@ -1272,7 +1321,7 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 	repeat.SetPathValue("token", token)
 	repeatRR := httptest.NewRecorder()
 	a.confirmHandover(repeatRR, repeat)
-	afterRepeat, _ := a.handoverStore.Get("demo", item.ID)
+	afterRepeat, _ := testRepositories(a, "demo").handovers.Get(item.ID)
 	confirmEventsAfter := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionHandoverConfirm, Limit: 20})
 	if repeatRR.Code != http.StatusSeeOther || afterRepeat.Confirmations[0].Note != "geprüft" ||
 		len(confirmEventsAfter) != len(confirmEventsBefore) {
@@ -1890,7 +1939,7 @@ func TestTenantOverrideStoreLayersOverEnvDefaults(t *testing.T) {
 
 func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID:                    "top-1",
 		Label:                 "Top 1",
 		MiteigentumsanteilPPM: 12345,
@@ -2165,11 +2214,11 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if addUnit.Code != http.StatusSeeOther {
 		t.Fatalf("unit add status = %d", addUnit.Code)
 	}
-	units := a.unitStore.ListTenant("demo")
+	units := testUnitRepository(t, a, "demo").List()
 	if len(units) != 1 || units[0].ID != "top-1" || units[0].UnitType != unitTypeResidential || units[0].BillableWeightPPM != unitBillableFullPPM || units[0].MiteigentumsanteilPPM != 12345 || len(units[0].OwnerEmails) != 2 || units[0].RenterEmails[0] != "resident@example.com" {
 		t.Fatalf("units after add = %+v", units)
 	}
-	if payment, ok := a.unitPaymentStore.Get("demo", "top-1"); !ok || payment.Status != unitPaymentStatusOverdue {
+	if payment, ok := testUnitPaymentRepository(t, a, "demo").Get("top-1"); !ok || payment.Status != unitPaymentStatusOverdue {
 		t.Fatalf("payment status after add = %+v, found=%t", payment, ok)
 	}
 	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=units")
@@ -2191,7 +2240,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if editUnit.Code != http.StatusSeeOther {
 		t.Fatalf("unit edit status = %d", editUnit.Code)
 	}
-	units = a.unitStore.ListTenant("demo")
+	units = testUnitRepository(t, a, "demo").List()
 	if len(units) != 1 || units[0].Label != "Top 1A" || units[0].UnitType != unitTypeParking || units[0].BillableWeightPPM != 0 || units[0].MiteigentumsanteilPPM != 23456 || len(units[0].RenterEmails) != 0 {
 		t.Fatalf("units after edit = %+v", units)
 	}
@@ -2200,7 +2249,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if deleteUnit.Code != http.StatusSeeOther {
 		t.Fatalf("unit delete status = %d", deleteUnit.Code)
 	}
-	if units := a.unitStore.ListTenant("demo"); len(units) != 0 {
+	if units := testUnitRepository(t, a, "demo").List(); len(units) != 0 {
 		t.Fatalf("units after delete = %+v", units)
 	}
 }
@@ -2685,7 +2734,7 @@ func TestDocumentUploadRecordsMetadataAndAudit(t *testing.T) {
 	if upload.Code != http.StatusSeeOther {
 		t.Fatalf("upload status = %d, want redirect", upload.Code)
 	}
-	docs := a.documentStore.ListTenant("demo")
+	docs := documentRepositoryForTest(a, "demo").List()
 	if len(docs) != 1 || docs[0].Title != "Hausordnung" || docs[0].Visibility != documentVisibilityAllResidents {
 		t.Fatalf("stored docs = %+v", docs)
 	}
@@ -2722,7 +2771,7 @@ func TestDocumentUploadRecordsMetadataAndAudit(t *testing.T) {
 func TestDocumentsPageFiltersManagerOnlyMetadata(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if _, err := a.documentStore.Create(documentRecord{
+	if _, err := documentRepositoryForTest(a, "demo").Create(documentRecord{
 		TenantSlug: "demo",
 		Title:      "Internes Protokoll",
 		Category:   documentCategoryProtocol,
@@ -2731,7 +2780,7 @@ func TestDocumentsPageFiltersManagerOnlyMetadata(t *testing.T) {
 	}, testMultipartHeader(t, "document", "intern.pdf", []byte("%PDF-1.4\n% intern\n")), time.Now()); err != nil {
 		t.Fatalf("create manager-only doc: %v", err)
 	}
-	if _, err := a.documentStore.Create(documentRecord{
+	if _, err := documentRepositoryForTest(a, "demo").Create(documentRecord{
 		TenantSlug: "demo",
 		Title:      "Hausordnung",
 		Category:   documentCategoryRules,
@@ -2759,7 +2808,7 @@ func TestDocumentsPageFiltersManagerOnlyMetadata(t *testing.T) {
 
 func TestDocumentsPageSearchSortAndCategoryEmptyStates(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	oldDoc, err := a.documentStore.Create(documentRecord{
+	oldDoc, err := documentRepositoryForTest(a, "demo").Create(documentRecord{
 		TenantSlug: "demo",
 		Title:      "Abrechnung 2025",
 		Category:   documentCategoryBilling,
@@ -2769,7 +2818,7 @@ func TestDocumentsPageSearchSortAndCategoryEmptyStates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create old doc: %v", err)
 	}
-	newDoc, err := a.documentStore.Create(documentRecord{
+	newDoc, err := documentRepositoryForTest(a, "demo").Create(documentRecord{
 		TenantSlug: "demo",
 		Title:      "Abrechnung 2026",
 		Category:   documentCategoryBilling,
@@ -2830,12 +2879,12 @@ func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
 	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 10000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	publicDoc, err := a.documentStore.Create(documentRecord{
+	publicDoc, err := documentRepositoryForTest(a, "demo").Create(documentRecord{
 		TenantSlug: "demo",
 		Title:      "Hausordnung",
 		Category:   documentCategoryRules,
@@ -2845,7 +2894,7 @@ func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create public doc: %v", err)
 	}
-	ownerDoc, err := a.documentStore.Create(documentRecord{
+	ownerDoc, err := documentRepositoryForTest(a, "demo").Create(documentRecord{
 		TenantSlug: "demo",
 		Title:      "Top 1 Abrechnung",
 		Category:   documentCategoryBilling,
@@ -2856,7 +2905,7 @@ func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create owner doc: %v", err)
 	}
-	managerDoc, err := a.documentStore.Create(documentRecord{
+	managerDoc, err := documentRepositoryForTest(a, "demo").Create(documentRecord{
 		TenantSlug: "demo",
 		Title:      "Interne Notiz",
 		Category:   documentCategoryOther,
@@ -2909,7 +2958,7 @@ func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
 
 func TestDocumentReplaceShowsHistoryAndDownloadAuditVersion(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	created, err := a.documentStore.Create(documentRecord{
+	created, err := documentRepositoryForTest(a, "demo").Create(documentRecord{
 		TenantSlug: "demo",
 		Title:      "Hausordnung",
 		Category:   documentCategoryRules,
@@ -2923,7 +2972,7 @@ func TestDocumentReplaceShowsHistoryAndDownloadAuditVersion(t *testing.T) {
 	if replace.Code != http.StatusSeeOther {
 		t.Fatalf("replace status = %d, want redirect", replace.Code)
 	}
-	current := a.documentStore.ListCurrentTenant("demo")
+	current := documentRepositoryForTest(a, "demo").ListCurrent()
 	if len(current) != 1 || current[0].Version != 2 {
 		t.Fatalf("current docs = %+v", current)
 	}
@@ -3008,7 +3057,7 @@ func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	if ballotCreate.Code != http.StatusSeeOther {
 		t.Fatalf("manager ballot create status = %d, want redirect", ballotCreate.Code)
 	}
-	ballots := a.voteStore.ListTenant("demo")
+	ballots := testVoteRepository(t, a, "demo").List()
 	if len(ballots) != 1 || ballots[0].Title != "Dachsanierung" || ballots[0].QuorumPPM != 500000 || ballots[0].ReminderBeforeMinutes != 720 {
 		t.Fatalf("created ballots = %+v", ballots)
 	}
@@ -3029,7 +3078,7 @@ func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	if location := close.Header().Get("Location"); location != "/demo/app/abstimmungen?vote=closed#ballot-"+ballots[0].ID {
 		t.Fatalf("manager ballot close redirect = %q, want ballot anchor", location)
 	}
-	closed, _ := a.voteStore.Get("demo", ballots[0].ID)
+	closed, _ := testVoteRepository(t, a, "demo").Get(ballots[0].ID)
 	if closed.Status != ballotStatusClosed {
 		t.Fatalf("closed ballot = %+v", closed)
 	}
@@ -3163,22 +3212,24 @@ func TestParkingSettingsSavesEffectiveTariffHistory(t *testing.T) {
 
 func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "announcements.json")
-	store, err := newAnnouncementStore(path)
+	backend, err := newAnnouncementStore(path)
 	if err != nil {
 		t.Fatalf("newAnnouncementStore: %v", err)
 	}
+	repository, _ := storepkg.BindAnnouncementRepository(backend, "demo")
+	otherRepository, _ := storepkg.BindAnnouncementRepository(backend, "other")
 	now := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	expiredAt := now.Add(-time.Hour)
-	future, err := store.Create(announcement{TenantSlug: "demo", Title: "Future", Body: "Later", Category: "Info", PublishedAt: now.Add(time.Hour)})
+	future, err := repository.Create(announcement{TenantSlug: "demo", Title: "Future", Body: "Later", Category: "Info", PublishedAt: now.Add(time.Hour)})
 	if err != nil || future.ID == "" {
 		t.Fatalf("create future: item=%+v err=%v", future, err)
 	}
-	expired, _ := store.Create(announcement{TenantSlug: "demo", Title: "Expired", Body: "Old", Category: "Info", PublishedAt: now.Add(-2 * time.Hour), ExpiresAt: &expiredAt})
-	normal, _ := store.Create(announcement{TenantSlug: "demo", Title: "Normal", Body: "Visible", Category: "Termin", PublishedAt: now.Add(-30 * time.Minute)})
-	pinned, _ := store.Create(announcement{TenantSlug: "demo", Title: "Pinned", Body: "Top", Category: "Dringend", Pinned: true, PublishedAt: now.Add(-2 * time.Hour)})
-	_, _ = store.Create(announcement{TenantSlug: "other", Title: "Other", Body: "Hidden", Category: "Info", PublishedAt: now.Add(-time.Hour)})
+	expired, _ := repository.Create(announcement{TenantSlug: "demo", Title: "Expired", Body: "Old", Category: "Info", PublishedAt: now.Add(-2 * time.Hour), ExpiresAt: &expiredAt})
+	normal, _ := repository.Create(announcement{TenantSlug: "demo", Title: "Normal", Body: "Visible", Category: "Termin", PublishedAt: now.Add(-30 * time.Minute)})
+	pinned, _ := repository.Create(announcement{TenantSlug: "demo", Title: "Pinned", Body: "Top", Category: "Dringend", Pinned: true, PublishedAt: now.Add(-2 * time.Hour)})
+	_, _ = otherRepository.Create(announcement{TenantSlug: "other", Title: "Other", Body: "Hidden", Category: "Info", PublishedAt: now.Add(-time.Hour)})
 
-	visible := store.Visible("demo", now)
+	visible := repository.Visible(now)
 	if len(visible) != 2 {
 		t.Fatalf("visible len = %d, want 2 (future=%s expired=%s normal=%s pinned=%s)", len(visible), future.ID, expired.ID, normal.ID, pinned.ID)
 	}
@@ -3188,10 +3239,10 @@ func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 
 	updated := normal
 	updated.Title = "Updated"
-	if ok, err := store.Update(normal.ID, updated); !ok || err != nil {
+	if ok, err := repository.Update(normal.ID, updated); !ok || err != nil {
 		t.Fatalf("update: ok=%v err=%v", ok, err)
 	}
-	if removed, err := store.Delete("demo", pinned.ID); !removed || err != nil {
+	if removed, err := repository.Delete(pinned.ID); !removed || err != nil {
 		t.Fatalf("delete: removed=%v err=%v", removed, err)
 	}
 	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
@@ -3201,7 +3252,8 @@ func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	all := reopened.ListTenant("demo")
+	reopenedRepository, _ := storepkg.BindAnnouncementRepository(reopened, "demo")
+	all := reopenedRepository.List()
 	if len(all) != 3 {
 		t.Fatalf("reopened list len = %d, want 3 after delete", len(all))
 	}
@@ -3222,7 +3274,7 @@ func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newAnnouncementReadStore: %v", err)
 	}
-	repository, ok := store.BindAnnouncementReadRepository(storage, "demo")
+	repository, ok := storepkg.BindAnnouncementReadRepository(storage, "demo")
 	if !ok {
 		t.Fatal("bind announcement read repository")
 	}
@@ -3237,7 +3289,7 @@ func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen read store: %v", err)
 	}
-	reopenedRepository, ok := store.BindAnnouncementReadRepository(reopened, "demo")
+	reopenedRepository, ok := storepkg.BindAnnouncementReadRepository(reopened, "demo")
 	if !ok {
 		t.Fatal("bind reopened announcement read repository")
 	}
@@ -3248,22 +3300,24 @@ func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
 
 func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "events.json")
-	store, err := newEventStore(path)
+	backend, err := newEventStore(path)
 	if err != nil {
 		t.Fatalf("newEventStore: %v", err)
 	}
+	repository, _ := storepkg.BindEventRepository(backend, "demo")
+	otherRepository, _ := storepkg.BindEventRepository(backend, "other")
 	now := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
-	past, err := store.Create(houseEvent{TenantSlug: "demo", Title: "Alte Reinigung", Category: "Reinigung", StartsAt: now.AddDate(0, 0, -2)})
+	past, err := repository.Create(houseEvent{TenantSlug: "demo", Title: "Alte Reinigung", Category: "Reinigung", StartsAt: now.AddDate(0, 0, -2)})
 	if err != nil {
 		t.Fatalf("create past: %v", err)
 	}
-	future, err := store.Create(houseEvent{TenantSlug: "demo", Title: "Eigentümerversammlung", Category: "meeting", Location: "Hof", StartsAt: now.Add(48 * time.Hour)})
+	future, err := repository.Create(houseEvent{TenantSlug: "demo", Title: "Eigentümerversammlung", Category: "meeting", Location: "Hof", StartsAt: now.Add(48 * time.Hour)})
 	if err != nil {
 		t.Fatalf("create future: %v", err)
 	}
-	_, _ = store.Create(houseEvent{TenantSlug: "other", Title: "Other", Category: "Wartung", StartsAt: now.Add(24 * time.Hour)})
+	_, _ = otherRepository.Create(houseEvent{TenantSlug: "other", Title: "Other", Category: "Wartung", StartsAt: now.Add(24 * time.Hour)})
 
-	upcoming := store.Upcoming("demo", now)
+	upcoming := repository.Upcoming(now)
 	if len(upcoming) != 1 || upcoming[0].ID != future.ID || upcoming[0].Category != "Eigentümerversammlung" {
 		t.Fatalf("upcoming = %+v, want only normalized future event", upcoming)
 	}
@@ -3271,10 +3325,10 @@ func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 	updated := future
 	updated.Title = "Versammlung aktualisiert"
 	updated.StartsAt = now.Add(72 * time.Hour)
-	if ok, err := store.Update(future.ID, updated); !ok || err != nil {
+	if ok, err := repository.Update(future.ID, updated); !ok || err != nil {
 		t.Fatalf("update: ok=%v err=%v", ok, err)
 	}
-	if removed, err := store.Delete("demo", past.ID); !removed || err != nil {
+	if removed, err := repository.Delete(past.ID); !removed || err != nil {
 		t.Fatalf("delete past: removed=%v err=%v", removed, err)
 	}
 	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
@@ -3285,7 +3339,8 @@ func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	events := reopened.ListTenant("demo")
+	reopenedRepository, _ := storepkg.BindEventRepository(reopened, "demo")
+	events := reopenedRepository.List()
 	if len(events) != 1 || events[0].Title != "Versammlung aktualisiert" {
 		t.Fatalf("reopened events = %+v", events)
 	}
@@ -3341,10 +3396,10 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	now := time.Now()
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now.Add(-time.Hour)})
-	_, _ = a.eventStore.Create(houseEvent{TenantSlug: "demo", Title: "Versammlung", Category: "Eigentümerversammlung", StartsAt: now.Add(48 * time.Hour)})
-	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Eigenes Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
-	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Privates Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now.Add(-time.Hour)})
+	_, _ = testRepositories(a, "demo").events.Create(houseEvent{TenantSlug: "demo", Title: "Versammlung", Category: "Eigentümerversammlung", StartsAt: now.Add(48 * time.Hour)})
+	_, _ = testRepositories(a, "demo").issues.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Eigenes Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
+	_, _ = testRepositories(a, "demo").issues.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Privates Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
 
 	resident := authedRequest(t, a, "resident@example.com", "/demo/app").Body.String()
 	for _, want := range []string{"Was ist als Nächstes zu tun?", "Neuen Aushang lesen", "ungelesener Beitrag", "Anliegen bleibt im Blick", "Eigenes Anliegen", "Nächster Termin: Versammlung"} {
@@ -3373,10 +3428,10 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 func TestPortalDoesNotRepeatFocusItemsInBoardCards(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now()
-	if _, err := a.eventStore.Create(houseEvent{TenantSlug: "demo", Title: "Dachbegehung", Category: "Sonstiges", StartsAt: now.Add(48 * time.Hour)}); err != nil {
+	if _, err := testRepositories(a, "demo").events.Create(houseEvent{TenantSlug: "demo", Title: "Dachbegehung", Category: "Sonstiges", StartsAt: now.Add(48 * time.Hour)}); err != nil {
 		t.Fatalf("create event: %v", err)
 	}
-	if _, err := a.issueStore.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Wasserdruck im Bad zu niedrig", Body: "Kaum Druck", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm}); err != nil {
+	if _, err := issueRepositoryForTest(a, "demo").Create(residentIssue{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Wasserdruck im Bad zu niedrig", Body: "Kaum Druck", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm}); err != nil {
 		t.Fatalf("create issue: %v", err)
 	}
 
@@ -3453,7 +3508,7 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("create event status = %d, want redirect", create.Code)
 	}
-	events := a.eventStore.ListTenant("demo")
+	events := testRepositories(a, "demo").events.List()
 	if len(events) != 1 || events[0].Title != "Liftwartung" || events[0].Category != "Wartung" {
 		t.Fatalf("stored events = %+v", events)
 	}
@@ -3492,7 +3547,7 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	if edit.Code != http.StatusSeeOther {
 		t.Fatalf("edit event status = %d, want redirect", edit.Code)
 	}
-	events = a.eventStore.ListTenant("demo")
+	events = testRepositories(a, "demo").events.List()
 	if len(events) != 1 || events[0].Title != "Hofreinigung" || events[0].Category != "Reinigung" || events[0].Location != "Hof" {
 		t.Fatalf("edited events = %+v", events)
 	}
@@ -3504,7 +3559,7 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	if deleteResp.Code != http.StatusSeeOther {
 		t.Fatalf("delete event status = %d, want redirect", deleteResp.Code)
 	}
-	if got := a.eventStore.Upcoming("demo", time.Now()); len(got) != 0 {
+	if got := testRepositories(a, "demo").events.Upcoming(time.Now()); len(got) != 0 {
 		t.Fatalf("events after delete = %+v, want none", got)
 	}
 	empty := authedRequest(t, a, "resident@example.com", "/demo/app/events")
@@ -3523,7 +3578,7 @@ func TestEventsPageKeepsPastEventsProgressiveAndDashboardPreviewsUpcomingOnly(t 
 		{TenantSlug: "demo", Title: "Spätere Wartung", Category: "Wartung", StartsAt: now.Add(72 * time.Hour)},
 	}
 	for _, item := range items {
-		if _, err := a.eventStore.Create(item); err != nil {
+		if _, err := testRepositories(a, "demo").events.Create(item); err != nil {
 			t.Fatalf("create event: %v", err)
 		}
 	}
@@ -3563,11 +3618,11 @@ func TestEventCreateShowsAttachmentPreview(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("event create status = %d, want redirect", create.Code)
 	}
-	events := a.eventStore.ListTenant("demo")
+	events := testRepositories(a, "demo").events.List()
 	if len(events) != 1 {
 		t.Fatalf("events = %+v", events)
 	}
-	attachments := a.attachmentStore.ListEntity("demo", "event", events[0].ID)
+	attachments := attachmentRepositoryForTest(a, "demo").ListEntity("event", events[0].ID)
 	if len(attachments) != 1 || attachments[0].ContentType != "image/png" {
 		t.Fatalf("event attachments = %+v", attachments)
 	}
@@ -3584,10 +3639,10 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now().Add(-2 * time.Hour)
 	expiredAt := now.Add(time.Hour)
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Normaler Hinweis", Body: "Nur im Beitrag 4711", Category: "Info", PublishedAt: now.Add(time.Hour)})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Fixierter Hinweis", Body: "Nur im Beitrag 4712", Category: "Dringend", Pinned: true, PublishedAt: now})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Alter Hinweis", Body: "Abgelaufen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Geplanter Hinweis", Body: "Zukunft", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Normaler Hinweis", Body: "Nur im Beitrag 4711", Category: "Info", PublishedAt: now.Add(time.Hour)})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Fixierter Hinweis", Body: "Nur im Beitrag 4712", Category: "Dringend", Pinned: true, PublishedAt: now})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Alter Hinweis", Body: "Abgelaufen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Geplanter Hinweis", Body: "Zukunft", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
 
 	rr := authedRequest(t, a, "resident@example.com", "/demo/app")
 	if rr.Code != http.StatusOK {
@@ -3629,11 +3684,11 @@ func TestAnnouncementCreateShowsAttachmentPreview(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("announcement create status = %d, want redirect", create.Code)
 	}
-	items := a.announcementStore.ListTenant("demo")
+	items := testRepositories(a, "demo").announcements.List()
 	if len(items) != 1 {
 		t.Fatalf("announcements = %+v", items)
 	}
-	attachments := a.attachmentStore.ListEntity("demo", "announcement", items[0].ID)
+	attachments := attachmentRepositoryForTest(a, "demo").ListEntity("announcement", items[0].ID)
 	if len(attachments) != 1 || attachments[0].ContentType != "application/pdf" {
 		t.Fatalf("announcement attachments = %+v", attachments)
 	}
@@ -3702,7 +3757,7 @@ func TestIssueTitleFallbackIsServerOwnedAndBounded(t *testing.T) {
 	if created.Code != http.StatusSeeOther {
 		t.Fatalf("create without title status = %d", created.Code)
 	}
-	issues := a.issueStore.ListAuthor("demo", "resident@example.com")
+	issues := issueRepositoryForTest(a, "demo").ListAuthor("resident@example.com")
 	if len(issues) != 1 || issues[0].Title != "Warum läuft die Lüftung" {
 		t.Fatalf("server-derived issue = %+v", issues)
 	}
@@ -3721,7 +3776,7 @@ func TestIssueTitleFallbackIsServerOwnedAndBounded(t *testing.T) {
 		t.Fatalf("exact issue limits status = %d", limits.Code)
 	}
 	foundLimit := false
-	for _, issue := range a.issueStore.ListAuthor("demo", "resident@example.com") {
+	for _, issue := range issueRepositoryForTest(a, "demo").ListAuthor("resident@example.com") {
 		if issue.Title == limitTitle && len([]rune(issue.Body)) == 4000 {
 			foundLimit = true
 			break
@@ -3769,7 +3824,8 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	if loc := rr.Header().Get("Location"); !strings.HasPrefix(loc, "/demo/app/anliegen/") || !strings.HasSuffix(loc, "?created=1") {
 		t.Fatalf("redirect = %q", loc)
 	}
-	issues := store.ListAuthor("demo", "resident@example.com")
+	issueRepository, _ := storepkg.BindIssueRepository(store, "demo")
+	issues := issueRepository.ListAuthor("resident@example.com")
 	if len(issues) != 1 {
 		t.Fatalf("stored issues = %+v", issues)
 	}
@@ -3783,14 +3839,15 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	if len(issue.PhotoPaths) != 0 {
 		t.Fatalf("legacy photo paths = %+v, want none", issue.PhotoPaths)
 	}
-	attachments := managedAttachments.ListEntity("demo", "issue", issue.ID)
+	attachmentRepository, _ := storepkg.BindAttachmentRepository(managedAttachments, "demo")
+	attachments := attachmentRepository.ListEntity("issue", issue.ID)
 	if len(attachments) != 1 {
 		t.Fatalf("managed attachments = %+v, want one", attachments)
 	}
 	if attachments[0].ContentType != "image/png" || attachments[0].ThumbFilename == "" || attachments[0].PreviewFilename == "" {
 		t.Fatalf("attachment metadata = %+v", attachments[0])
 	}
-	photoPath, _, _, ok := managedAttachments.FilePath(attachments[0], "")
+	photoPath, _, _, ok := attachmentRepository.FilePath(attachments[0], "")
 	if !ok {
 		t.Fatal("managed attachment file path missing")
 	}
@@ -3801,7 +3858,7 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	if info.Mode().Perm() != 0o600 {
 		t.Fatalf("photo mode = %v, want 0600", info.Mode().Perm())
 	}
-	thumbPath, _, _, ok := managedAttachments.FilePath(attachments[0], "thumb")
+	thumbPath, _, _, ok := attachmentRepository.FilePath(attachments[0], "thumb")
 	if !ok {
 		t.Fatal("managed thumbnail file path missing")
 	}
@@ -3851,7 +3908,8 @@ func TestMigratedLegacyIssuePhotoStillRendersOnTheIssue(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(legacyDir, "demo", legacyFilename), minimalPNG(), 0o600); err != nil {
 		t.Fatalf("write legacy photo: %v", err)
 	}
-	if _, err := issues.Create(residentIssue{
+	issueRepository, _ := storepkg.BindIssueRepository(issues, "demo")
+	if _, err := issueRepository.Create(residentIssue{
 		ID:           "legacy-1",
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
@@ -3898,11 +3956,11 @@ func TestResidentCanSubmitIssueWithMultipleAttachments(t *testing.T) {
 	if rr.Code != http.StatusSeeOther {
 		t.Fatalf("submit issue status = %d, want redirect", rr.Code)
 	}
-	issues := a.issueStore.ListAuthor("demo", "resident@example.com")
+	issues := issueRepositoryForTest(a, "demo").ListAuthor("resident@example.com")
 	if len(issues) != 1 {
 		t.Fatalf("stored issues = %+v", issues)
 	}
-	attachments := a.attachmentStore.ListEntity("demo", "issue", issues[0].ID)
+	attachments := attachmentRepositoryForTest(a, "demo").ListEntity("issue", issues[0].ID)
 	if len(attachments) != 2 {
 		t.Fatalf("attachments = %+v, want two", attachments)
 	}
@@ -3929,15 +3987,15 @@ func TestIssueAttachmentCreatorCanDelete(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("create status = %d", create.Code)
 	}
-	issues := a.issueStore.ListAuthor("demo", "resident@example.com")
+	issues := issueRepositoryForTest(a, "demo").ListAuthor("resident@example.com")
 	if len(issues) != 1 {
 		t.Fatalf("issues = %+v", issues)
 	}
-	attachments := a.attachmentStore.ListEntity("demo", "issue", issues[0].ID)
+	attachments := attachmentRepositoryForTest(a, "demo").ListEntity("issue", issues[0].ID)
 	if len(attachments) != 1 {
 		t.Fatalf("attachments = %+v", attachments)
 	}
-	path, _, _, ok := a.attachmentStore.FilePath(attachments[0], "")
+	path, _, _, ok := attachmentRepositoryForTest(a, "demo").FilePath(attachments[0], "")
 	if !ok {
 		t.Fatal("attachment file path missing")
 	}
@@ -3956,7 +4014,7 @@ func TestIssueAttachmentCreatorCanDelete(t *testing.T) {
 	if delete.Code != http.StatusSeeOther {
 		t.Fatalf("delete status = %d", delete.Code)
 	}
-	if got := a.attachmentStore.ListEntity("demo", "issue", issues[0].ID); len(got) != 0 {
+	if got := attachmentRepositoryForTest(a, "demo").ListEntity("issue", issues[0].ID); len(got) != 0 {
 		t.Fatalf("attachments after delete = %+v, want none", got)
 	}
 	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
@@ -3997,14 +4055,15 @@ func TestIssueSubmitRejectsInvalidPhotoType(t *testing.T) {
 	if loc := rr.Header().Get("Location"); loc != "/demo/app/anliegen?issue=photo" {
 		t.Fatalf("redirect = %q", loc)
 	}
-	if got := store.ListAuthor("demo", "resident@example.com"); len(got) != 0 {
+	issueRepository, _ := storepkg.BindIssueRepository(store, "demo")
+	if got := issueRepository.ListAuthor("resident@example.com"); len(got) != 0 {
 		t.Fatalf("invalid photo must not create issue, got %+v", got)
 	}
 }
 
 func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
@@ -4029,7 +4088,7 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 	if loc := update.Header().Get("Location"); loc != "/demo/app/anliegen/board?issue=updated#issue-"+issue.ID {
 		t.Fatalf("manager workflow redirect = %q", loc)
 	}
-	updated, ok := a.issueStore.Get("demo", issue.ID)
+	updated, ok := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !ok {
 		t.Fatal("updated issue not found")
 	}
@@ -4079,7 +4138,7 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 func TestManagerIssueTriageKeepsTheIssueContextAcrossBothSteps(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
@@ -4128,7 +4187,7 @@ func TestManagerIssueTriageKeepsTheIssueContextAcrossBothSteps(t *testing.T) {
 	if stepTwo.Code != http.StatusSeeOther || stepTwo.Header().Get("Location") != doneRedirect {
 		t.Fatalf("triage step two redirect = %d %q", stepTwo.Code, stepTwo.Header().Get("Location"))
 	}
-	updated, found := a.issueStore.Get("demo", issue.ID)
+	updated, found := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !found || updated.Status != issueStatusProgress || updated.Priority != issuePriorityHigh || updated.AssigneeEmail != "manager@example.com" {
 		t.Fatalf("triaged issue = %+v found=%v", updated, found)
 	}
@@ -4143,7 +4202,7 @@ func TestManagerIssueTriageKeepsTheIssueContextAcrossBothSteps(t *testing.T) {
 func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", FirstName: "Resi", LastName: "Dent", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resi Dent",
@@ -4176,7 +4235,7 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 	if question.Code != http.StatusSeeOther || question.Header().Get("Location") != sentRedirect {
 		t.Fatalf("question redirect = %d %q", question.Code, question.Header().Get("Location"))
 	}
-	stored, found := a.issueStore.Get("demo", issue.ID)
+	stored, found := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !found || len(stored.Comments) != 1 || stored.Comments[0].Kind != issueCommentKindQuestion {
 		t.Fatalf("stored question = %+v found=%v", stored.Comments, found)
 	}
@@ -4223,7 +4282,7 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 	if answer.Code != http.StatusSeeOther || answer.Header().Get("Location") != detailURL {
 		t.Fatalf("answer redirect = %d %q", answer.Code, answer.Header().Get("Location"))
 	}
-	stored, _ = a.issueStore.Get("demo", issue.ID)
+	stored, _ = issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if len(stored.Comments) != 2 || stored.Comments[1].Kind != issueCommentKindAnswer {
 		t.Fatalf("stored answer kind = %+v", stored.Comments)
 	}
@@ -4241,7 +4300,7 @@ func TestIssueQuestionCreatesExactlyOneResidentAnswerTaskAndAuditKind(t *testing
 	if info.Code != http.StatusSeeOther {
 		t.Fatalf("information status = %d", info.Code)
 	}
-	stored, _ = a.issueStore.Get("demo", issue.ID)
+	stored, _ = issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if got := stored.Comments[len(stored.Comments)-1].Kind; got != issueCommentKindInformation {
 		t.Fatalf("stored information kind = %q", got)
 	}
@@ -4255,7 +4314,7 @@ func TestResidentConfirmsOrRejectsProposedIssueResolution(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	createDone := func(title string) residentIssue {
-		item, err := a.issueStore.Create(residentIssue{
+		item, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 			TenantSlug:   "demo",
 			AuthorEmail:  "resident@example.com",
 			AuthorName:   "Resident",
@@ -4294,7 +4353,7 @@ func TestResidentConfirmsOrRejectsProposedIssueResolution(t *testing.T) {
 	if confirm.Code != http.StatusSeeOther || confirm.Header().Get("Location") != detailURL {
 		t.Fatalf("confirm redirect = %d %q", confirm.Code, confirm.Header().Get("Location"))
 	}
-	confirmed, _ := a.issueStore.Get("demo", confirmedIssue.ID)
+	confirmed, _ := issueRepositoryForTest(a, "demo").Get(confirmedIssue.ID)
 	if confirmed.Status != issueStatusDone || confirmed.ResolutionConfirmedAt.IsZero() || confirmed.ResolutionConfirmedBy != "resident@example.com" {
 		t.Fatalf("confirmed resolution = %+v", confirmed)
 	}
@@ -4311,7 +4370,7 @@ func TestResidentConfirmsOrRejectsProposedIssueResolution(t *testing.T) {
 	if reopen.Code != http.StatusSeeOther {
 		t.Fatalf("reopen status = %d", reopen.Code)
 	}
-	reopened, _ := a.issueStore.Get("demo", reopenedIssue.ID)
+	reopened, _ := issueRepositoryForTest(a, "demo").Get(reopenedIssue.ID)
 	if reopened.Status != issueStatusNew || !reopened.ResolutionConfirmedAt.IsZero() {
 		t.Fatalf("reopened resolution = %+v", reopened)
 	}
@@ -4323,7 +4382,7 @@ func TestResidentConfirmsOrRejectsProposedIssueResolution(t *testing.T) {
 
 func TestResidentCanCloseAndReopenOwnIssueOnly(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	own, err := a.issueStore.Create(residentIssue{
+	own, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
@@ -4335,7 +4394,7 @@ func TestResidentCanCloseAndReopenOwnIssueOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create own issue: %v", err)
 	}
-	other, err := a.issueStore.Create(residentIssue{
+	other, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "other@example.com",
 		AuthorName:   "Other",
@@ -4355,7 +4414,7 @@ func TestResidentCanCloseAndReopenOwnIssueOnly(t *testing.T) {
 	if closeOwn.Code != http.StatusSeeOther {
 		t.Fatalf("resident close status = %d, want redirect", closeOwn.Code)
 	}
-	closed, _ := a.issueStore.Get("demo", own.ID)
+	closed, _ := issueRepositoryForTest(a, "demo").Get(own.ID)
 	if closed.Status != issueStatusDone {
 		t.Fatalf("closed status = %q", closed.Status)
 	}
@@ -4366,7 +4425,7 @@ func TestResidentCanCloseAndReopenOwnIssueOnly(t *testing.T) {
 	if reopenOwn.Code != http.StatusSeeOther {
 		t.Fatalf("resident reopen status = %d, want redirect", reopenOwn.Code)
 	}
-	reopened, _ := a.issueStore.Get("demo", own.ID)
+	reopened, _ := issueRepositoryForTest(a, "demo").Get(own.ID)
 	if reopened.Status != issueStatusNew {
 		t.Fatalf("reopened status = %q", reopened.Status)
 	}
@@ -4403,7 +4462,7 @@ func TestIssueCommentsRenderAndNotify(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("create status = %d", create.Code)
 	}
-	issues := a.issueStore.ListAuthor("demo", "resident@example.com")
+	issues := issueRepositoryForTest(a, "demo").ListAuthor("resident@example.com")
 	if len(issues) != 1 {
 		t.Fatalf("issues = %+v", issues)
 	}
@@ -4418,7 +4477,7 @@ func TestIssueCommentsRenderAndNotify(t *testing.T) {
 	if managerComment.Code != http.StatusSeeOther {
 		t.Fatalf("manager comment status = %d", managerComment.Code)
 	}
-	updated, _ := a.issueStore.Get("demo", issues[0].ID)
+	updated, _ := issueRepositoryForTest(a, "demo").Get(issues[0].ID)
 	if len(updated.Comments) != 1 || updated.Comments[0].AuthorEmail != "manager@example.com" {
 		t.Fatalf("comments after manager = %+v", updated.Comments)
 	}
@@ -4433,7 +4492,7 @@ func TestIssueCommentsRenderAndNotify(t *testing.T) {
 	if residentComment.Code != http.StatusSeeOther {
 		t.Fatalf("resident comment status = %d", residentComment.Code)
 	}
-	updated, _ = a.issueStore.Get("demo", issues[0].ID)
+	updated, _ = issueRepositoryForTest(a, "demo").Get(issues[0].ID)
 	if len(updated.Comments) != 2 {
 		t.Fatalf("comments after resident = %+v", updated.Comments)
 	}
@@ -4461,7 +4520,7 @@ func TestIssueCommentsRenderAndNotify(t *testing.T) {
 	if deleteManagerAsResident.Code != http.StatusForbidden {
 		t.Fatalf("resident delete manager comment status = %d, want 403", deleteManagerAsResident.Code)
 	}
-	unchanged, _ := a.issueStore.Get("demo", issues[0].ID)
+	unchanged, _ := issueRepositoryForTest(a, "demo").Get(issues[0].ID)
 	if len(unchanged.Comments) != 2 {
 		t.Fatalf("forbidden delete changed comments: %+v", unchanged.Comments)
 	}
@@ -4471,7 +4530,7 @@ func TestIssueCommentsRenderAndNotify(t *testing.T) {
 	if deleteOwn.Code != http.StatusSeeOther {
 		t.Fatalf("resident delete own comment status = %d", deleteOwn.Code)
 	}
-	afterOwnDelete, _ := a.issueStore.Get("demo", issues[0].ID)
+	afterOwnDelete, _ := issueRepositoryForTest(a, "demo").Get(issues[0].ID)
 	if len(afterOwnDelete.Comments) != 1 || afterOwnDelete.Comments[0].ID != managerCommentID {
 		t.Fatalf("own comment delete result = %+v", afterOwnDelete.Comments)
 	}
@@ -4481,7 +4540,7 @@ func TestIssueCommentsRenderAndNotify(t *testing.T) {
 	if deleteManager.Code != http.StatusSeeOther {
 		t.Fatalf("manager delete comment status = %d", deleteManager.Code)
 	}
-	afterManagerDelete, _ := a.issueStore.Get("demo", issues[0].ID)
+	afterManagerDelete, _ := issueRepositoryForTest(a, "demo").Get(issues[0].ID)
 	if len(afterManagerDelete.Comments) != 0 {
 		t.Fatalf("manager delete result = %+v", afterManagerDelete.Comments)
 	}
@@ -4492,7 +4551,7 @@ func TestIssueCommentsRenderAndNotify(t *testing.T) {
 
 func TestResidentCannotCommentOnOtherIssue(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	other, err := a.issueStore.Create(residentIssue{
+	other, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "other@example.com",
 		AuthorName:   "Other",
@@ -4512,7 +4571,7 @@ func TestResidentCannotCommentOnOtherIssue(t *testing.T) {
 	if comment.Code != http.StatusForbidden {
 		t.Fatalf("other comment status = %d, want 403", comment.Code)
 	}
-	unchanged, _ := a.issueStore.Get("demo", other.ID)
+	unchanged, _ := issueRepositoryForTest(a, "demo").Get(other.ID)
 	if len(unchanged.Comments) != 0 {
 		t.Fatalf("other issue comments = %+v", unchanged.Comments)
 	}
@@ -4529,7 +4588,7 @@ func TestIssueVisibilityByPersona(t *testing.T) {
 		{TenantSlug: "demo", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Common roof", Body: "Shared.", LocationType: issueLocationCommon},
 		{TenantSlug: "demo", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Other private", Body: "Hidden.", LocationType: issueLocationUnit},
 	} {
-		if _, err := a.issueStore.Create(item); err != nil {
+		if _, err := issueRepositoryForTest(a, "demo").Create(item); err != nil {
 			t.Fatalf("Create issue %q: %v", item.Title, err)
 		}
 	}
@@ -4553,7 +4612,7 @@ func TestIssueVisibilityByPersona(t *testing.T) {
 	}
 
 	boardComment := authedFormRequest(t, a, "board@example.com", "/demo/app/anliegen/comment", url.Values{
-		"id":   {a.issueStore.ListAuthor("demo", "owner@example.com")[0].ID},
+		"id":   {issueRepositoryForTest(a, "demo").ListAuthor("owner@example.com")[0].ID},
 		"body": {"Read-only should fail."},
 	})
 	if boardComment.Code != http.StatusForbidden {
@@ -4566,7 +4625,7 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 	a.serviceAccessEnabled = true
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	assigned, err := a.issueStore.Create(residentIssue{
+	assigned, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
@@ -4579,7 +4638,7 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create assigned issue: %v", err)
 	}
-	unassigned, err := a.issueStore.Create(residentIssue{
+	unassigned, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
@@ -4667,7 +4726,7 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	mailer := &recordingMailer{}
 	a.mailer = mailer
 
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
@@ -4690,7 +4749,7 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	if assign.Code != http.StatusForbidden || !strings.Contains(assign.Body.String(), "Dienstleister-Zugänge sind derzeit nicht verfügbar") {
 		t.Fatalf("closed assignment = %d %q, want clear 403", assign.Code, assign.Body.String())
 	}
-	unchanged, ok := a.issueStore.Get("demo", issue.ID)
+	unchanged, ok := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !ok || unchanged.Status != issueStatusOpen || unchanged.Priority != issuePriorityNorm || unchanged.AssigneeEmail != "" || len(unchanged.StatusHistory) != 0 {
 		t.Fatalf("rejected assignment changed issue: %+v ok=%v", unchanged, ok)
 	}
@@ -4707,17 +4766,17 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	createContact := authedFormRequest(t, a, "manager@example.com", "/demo/app/kontakte", url.Values{
 		"kind": {"Dienstleister"}, "name": {"Extern GmbH"}, "email": {"contact@example.com"}, "active": {"true"},
 	})
-	if createContact.Code != http.StatusForbidden || len(a.contactStore.ListTenant("demo", true)) != 0 {
-		t.Fatalf("closed contact create = %d contacts=%+v", createContact.Code, a.contactStore.ListTenant("demo", true))
+	if createContact.Code != http.StatusForbidden || len(testRepositories(a, "demo").contacts.List(true)) != 0 {
+		t.Fatalf("closed contact create = %d contacts=%+v", createContact.Code, testRepositories(a, "demo").contacts.List(true))
 	}
-	existingContact, _, err := a.contactStore.Upsert(managedContact{TenantSlug: "demo", Kind: roleServiceProvider, Name: "Alt GmbH", Email: "old-contact@example.com", Active: true})
+	existingContact, _, err := testRepositories(a, "demo").contacts.Upsert(managedContact{TenantSlug: "demo", Kind: roleServiceProvider, Name: "Alt GmbH", Email: "old-contact@example.com", Active: true})
 	if err != nil {
 		t.Fatalf("seed service contact: %v", err)
 	}
 	editContact := authedFormRequest(t, a, "manager@example.com", "/demo/app/kontakte", url.Values{
 		"id": {existingContact.ID}, "kind": {"Hausmeister"}, "name": {"Neu GmbH"}, "email": {"new-contact@example.com"}, "active": {"true"},
 	})
-	contacts := a.contactStore.ListTenant("demo", true)
+	contacts := testRepositories(a, "demo").contacts.List(true)
 	if editContact.Code != http.StatusForbidden || len(contacts) != 1 || contacts[0].Name != "Alt GmbH" || contacts[0].Email != "old-contact@example.com" {
 		t.Fatalf("closed contact edit = %d contacts=%+v", editContact.Code, contacts)
 	}
@@ -4897,7 +4956,7 @@ func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testin
 	mailer := &recordingMailer{}
 	a.mailer = mailer
 
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
@@ -4948,7 +5007,7 @@ func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testin
 	if closeIssue.Code != http.StatusSeeOther {
 		t.Fatalf("close issue status = %d, want redirect", closeIssue.Code)
 	}
-	closed, ok := a.issueStore.Get("demo", issue.ID)
+	closed, ok := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !ok {
 		t.Fatal("closed issue not found")
 	}
@@ -4965,7 +5024,7 @@ func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testin
 	if revoke.Code != http.StatusSeeOther {
 		t.Fatalf("revoke service provider status = %d, want redirect", revoke.Code)
 	}
-	revoked, ok := a.issueStore.Get("demo", issue.ID)
+	revoked, ok := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !ok {
 		t.Fatal("revoked issue not found")
 	}
@@ -4993,7 +5052,7 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 	a.serviceAccessEnabled = true
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
@@ -5021,11 +5080,11 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 	if comment.Code != http.StatusSeeOther {
 		t.Fatalf("service comment status = %d, want redirect", comment.Code)
 	}
-	updated, ok := a.issueStore.Get("demo", issue.ID)
+	updated, ok := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !ok || len(updated.Comments) != 1 || updated.Comments[0].AuthorEmail != "service@example.com" {
 		t.Fatalf("service comment not saved: %+v ok=%v", updated.Comments, ok)
 	}
-	if attachments := a.attachmentStore.ListEntity("demo", "issue-comment", updated.Comments[0].ID); len(attachments) != 1 {
+	if attachments := attachmentRepositoryForTest(a, "demo").ListEntity("issue-comment", updated.Comments[0].ID); len(attachments) != 1 {
 		t.Fatalf("service comment attachments = %+v, want one", attachments)
 	}
 
@@ -5047,7 +5106,7 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 	if proposal.Code != http.StatusSeeOther {
 		t.Fatalf("service proposal status = %d, want redirect", proposal.Code)
 	}
-	updated, ok = a.issueStore.Get("demo", issue.ID)
+	updated, ok = issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !ok || updated.Status != issueStatusProgress || updated.Priority != issuePriorityNorm || updated.AssigneeEmail != "service@example.com" || updated.ServiceProposal != "Dienstag, 14. Juli, 9-11 Uhr" {
 		t.Fatalf("service workflow update = %+v ok=%v", updated, ok)
 	}
@@ -5064,7 +5123,7 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 	if done.Code != http.StatusSeeOther {
 		t.Fatalf("service done status = %d, want redirect", done.Code)
 	}
-	closed, ok := a.issueStore.Get("demo", issue.ID)
+	closed, ok := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !ok || closed.Status != issueStatusDone || closed.ServiceProposal != "Erledigt am Dienstagvormittag" {
 		t.Fatalf("service done update = %+v ok=%v", closed, ok)
 	}
@@ -5080,7 +5139,7 @@ func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
 
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
@@ -5132,7 +5191,7 @@ func TestServiceProviderCommentPhotoAndStatusAreAudited(t *testing.T) {
 func TestIssueCommentAllowsPhotoOnlyButRejectsEmpty(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resident",
 		Category: "Reparatur", Title: "Foto-only", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
 		AssigneeEmail: "service@example.com",
@@ -5147,11 +5206,11 @@ func TestIssueCommentAllowsPhotoOnlyButRejectsEmpty(t *testing.T) {
 	if photoOnly.Code != http.StatusSeeOther || photoOnly.Header().Get("Location") != "/demo/app/anliegen?issue=updated" {
 		t.Fatalf("photo-only comment = %d loc=%q, want redirect to updated", photoOnly.Code, photoOnly.Header().Get("Location"))
 	}
-	updated, ok := a.issueStore.Get("demo", issue.ID)
+	updated, ok := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !ok || len(updated.Comments) != 1 || updated.Comments[0].Body != "" {
 		t.Fatalf("photo-only comment not saved with empty body: %+v", updated.Comments)
 	}
-	if atts := a.attachmentStore.ListEntity("demo", "issue-comment", updated.Comments[0].ID); len(atts) != 1 {
+	if atts := attachmentRepositoryForTest(a, "demo").ListEntity("issue-comment", updated.Comments[0].ID); len(atts) != 1 {
 		t.Fatalf("photo-only attachment = %+v, want one", atts)
 	}
 
@@ -5159,7 +5218,7 @@ func TestIssueCommentAllowsPhotoOnlyButRejectsEmpty(t *testing.T) {
 	if empty.Code != http.StatusSeeOther || empty.Header().Get("Location") != "/demo/app/anliegen?issue=invalid" {
 		t.Fatalf("empty comment = %d loc=%q, want redirect to invalid", empty.Code, empty.Header().Get("Location"))
 	}
-	if again, _ := a.issueStore.Get("demo", issue.ID); len(again.Comments) != 1 {
+	if again, _ := issueRepositoryForTest(a, "demo").Get(issue.ID); len(again.Comments) != 1 {
 		t.Fatalf("empty comment must not be saved: now %d comments", len(again.Comments))
 	}
 }
@@ -5169,7 +5228,7 @@ func TestIssueCommentAllowsPhotoOnlyButRejectsEmpty(t *testing.T) {
 func TestServiceProviderCanAcceptButNotReopen(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resident",
 		Category: "Reparatur", Title: "Annehmen", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
 		AssigneeEmail: "service@example.com",
@@ -5185,7 +5244,7 @@ func TestServiceProviderCanAcceptButNotReopen(t *testing.T) {
 	if accept.Code != http.StatusSeeOther {
 		t.Fatalf("accept status = %d, want redirect", accept.Code)
 	}
-	updated, ok := a.issueStore.Get("demo", issue.ID)
+	updated, ok := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !ok || updated.Status != issueStatusAccepted {
 		t.Fatalf("status after accept = %q, want %q", updated.Status, issueStatusAccepted)
 	}
@@ -5207,7 +5266,7 @@ func TestServiceProviderCanAcceptButNotReopen(t *testing.T) {
 func TestServiceProviderScheduledRequiresDateAndEmitsEvent(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resident",
 		Category: "Reparatur", Title: "Termin", Body: "Bitte prüfen.", LocationType: issueLocationCommon,
 		AssigneeEmail: "service@example.com",
@@ -5223,7 +5282,7 @@ func TestServiceProviderScheduledRequiresDateAndEmitsEvent(t *testing.T) {
 	if noDate.Code != http.StatusSeeOther || noDate.Header().Get("Location") != "/demo/app/anliegen?issue=termin" {
 		t.Fatalf("scheduled without date = %d loc=%q, want redirect to termin", noDate.Code, noDate.Header().Get("Location"))
 	}
-	if u, _ := a.issueStore.Get("demo", issue.ID); u.Status == issueStatusScheduled {
+	if u, _ := issueRepositoryForTest(a, "demo").Get(issue.ID); u.Status == issueStatusScheduled {
 		t.Fatal("status must not become Termin vereinbart without a date")
 	}
 
@@ -5236,7 +5295,7 @@ func TestServiceProviderScheduledRequiresDateAndEmitsEvent(t *testing.T) {
 	if withDate.Code != http.StatusSeeOther || withDate.Header().Get("Location") != "/demo/app/anliegen?issue=updated" {
 		t.Fatalf("scheduled with date = %d loc=%q, want redirect to updated", withDate.Code, withDate.Header().Get("Location"))
 	}
-	updated, ok := a.issueStore.Get("demo", issue.ID)
+	updated, ok := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !ok || updated.Status != issueStatusScheduled || updated.ServiceProposedStart.IsZero() {
 		t.Fatalf("scheduled issue = %+v, want status scheduled + start set", updated)
 	}
@@ -5261,7 +5320,7 @@ func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
 		return out
 	}
 
-	if err := a.unitStore.SetTenantUnits("demo", mkUnits(25)); err != nil {
+	if err := testUnitRepository(t, a, "demo").SetUnits(mkUnits(25)); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	page := authedRequest(t, a, "admin@example.com", "/demo/app/settings/building?section=units").Body.String()
@@ -5273,14 +5332,14 @@ func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
 	}
 
 	withParking := append(mkUnits(25), unit{ID: "p1", TenantSlug: "demo", Label: "Stellplatz", UnitType: unitTypeParking})
-	if err := a.unitStore.SetTenantUnits("demo", withParking); err != nil {
+	if err := testUnitRepository(t, a, "demo").SetUnits(withParking); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	if page = authedRequest(t, a, "admin@example.com", "/demo/app/settings/building?section=units").Body.String(); strings.Contains(page, "Über dem inkludierten Rahmen") {
 		t.Fatal("a Stellplatz must not push the billable count over the fair-use limit")
 	}
 
-	if err := a.unitStore.SetTenantUnits("demo", mkUnits(26)); err != nil {
+	if err := testUnitRepository(t, a, "demo").SetUnits(mkUnits(26)); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	if page = authedRequest(t, a, "admin@example.com", "/demo/app/settings/building?section=units").Body.String(); !strings.Contains(page, "Über dem inkludierten Rahmen") {
@@ -5296,7 +5355,7 @@ func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 	a.profiles["other-service@example.com"] = userProfile{Email: "other-service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
 	start := time.Now().Add(48 * time.Hour).UTC().Truncate(time.Second)
-	if _, err := a.eventStore.Create(houseEvent{
+	if _, err := testRepositories(a, "demo").events.Create(houseEvent{
 		TenantSlug:  "demo",
 		Title:       "Hausversammlung",
 		Body:        "Beschlüsse und offene Punkte.",
@@ -5308,7 +5367,7 @@ func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("create event: %v", err)
 	}
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:      "demo",
 		AuthorEmail:     "owner@example.com",
 		AuthorName:      "Owner",
@@ -5418,7 +5477,7 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 	if save.Code != http.StatusSeeOther {
 		t.Fatalf("contact save status = %d, want redirect", save.Code)
 	}
-	contacts := a.contactStore.ListTenant("demo", true)
+	contacts := testRepositories(a, "demo").contacts.List(true)
 	if len(contacts) != 1 || contacts[0].Kind != "Dienstleister" || contacts[0].Email != "eva@example.com" || !contacts[0].Active {
 		t.Fatalf("saved contacts = %+v", contacts)
 	}
@@ -5426,7 +5485,7 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 		t.Fatalf("contact save audit events = %+v", events)
 	}
 
-	if _, _, err := a.contactStore.Upsert(managedContact{
+	if _, _, err := testRepositories(a, "other").contacts.Upsert(managedContact{
 		TenantSlug: "other",
 		Kind:       "Notdienst",
 		Name:       "Fremder Notdienst",
@@ -5444,7 +5503,7 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 		t.Fatalf("resident contacts leaked other tenant, inactive, or management UI:\n%s", residentPage)
 	}
 
-	if _, err := a.issueStore.Create(residentIssue{
+	if _, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
 		AuthorName:   "Resident",
@@ -5476,7 +5535,7 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 	if deleteReq.Code != http.StatusSeeOther {
 		t.Fatalf("contact deactivate status = %d, want redirect", deleteReq.Code)
 	}
-	contacts = a.contactStore.ListTenant("demo", true)
+	contacts = testRepositories(a, "demo").contacts.List(true)
 	if len(contacts) != 1 || contacts[0].Active {
 		t.Fatalf("deactivated contacts = %+v", contacts)
 	}
@@ -5497,7 +5556,7 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential, MiteigentumsanteilPPM: 100000, OwnerEmails: []string{"owner@example.com"}},
 		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", UnitType: unitTypeResidential, MiteigentumsanteilPPM: 100000, OwnerEmails: []string{"other@example.com"}},
 	}); err != nil {
@@ -5527,7 +5586,7 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 		t.Fatalf("top-2 payment status update = %d, want redirect", saveTop2.Code)
 	}
 
-	records := a.unitPaymentStore.ListTenant("demo")
+	records := testUnitPaymentRepository(t, a, "demo").List()
 	if len(records) != 2 || records[0].UnitID != "top-1" || records[0].Status != unitPaymentStatusOverdue || records[1].Status != unitPaymentStatusPaid {
 		t.Fatalf("payment status records = %+v", records)
 	}
@@ -5560,7 +5619,7 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 	a.profiles["other-service@example.com"] = userProfile{Email: "other-service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
@@ -5573,13 +5632,13 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 	if err != nil {
 		t.Fatalf("Create issue: %v", err)
 	}
-	issueAttachments, err := a.attachmentStore.CreateUploaded("demo", "issue", issue.ID, "resident@example.com", []uploadedFile{
+	issueAttachments, err := attachmentRepositoryForTest(a, "demo").CreateUploaded("issue", issue.ID, "resident@example.com", []uploadedFile{
 		testMultipartHeader(t, "attachments", "schaden.png", minimalPNG()),
 	}, time.Now())
 	if err != nil || len(issueAttachments) != 1 {
 		t.Fatalf("issue attachment = %+v err=%v", issueAttachments, err)
 	}
-	commented, found, err := a.issueStore.AddComment("demo", issue.ID, issueComment{
+	commented, found, err := issueRepositoryForTest(a, "demo").AddComment(issue.ID, issueComment{
 		AuthorEmail: "service@example.com",
 		AuthorName:  "Dienstleister",
 		Body:        "Foto nach Erstbesichtigung.",
@@ -5587,7 +5646,7 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 	if err != nil || !found || len(commented.Comments) != 1 {
 		t.Fatalf("AddComment issue=%+v found=%v err=%v", commented, found, err)
 	}
-	commentAttachments, err := a.attachmentStore.CreateUploaded("demo", "issue-comment", commented.Comments[0].ID, "service@example.com", []uploadedFile{
+	commentAttachments, err := attachmentRepositoryForTest(a, "demo").CreateUploaded("issue-comment", commented.Comments[0].ID, "service@example.com", []uploadedFile{
 		testMultipartHeader(t, "attachments", "bestand.png", minimalPNG()),
 	}, time.Now())
 	if err != nil || len(commentAttachments) != 1 {
@@ -5611,7 +5670,7 @@ func TestServiceProviderAttachmentAccessIsBoundToAssignedOpenIssue(t *testing.T)
 		}
 	}
 
-	_, _, err = a.issueStore.UpdateWorkflow("demo", issue.ID, issueWorkflowUpdate{
+	_, _, err = issueRepositoryForTest(a, "demo").UpdateWorkflow(issue.ID, issueWorkflowUpdate{
 		ActorEmail: "manager@example.com",
 		Status:     issueStatusDone,
 		Priority:   issuePriorityNorm,
@@ -5630,7 +5689,7 @@ func TestIssueEstimateMetadataAndAttachmentUseProtectedRoutes(t *testing.T) {
 	a.serviceAccessEnabled = true
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	issue, err := a.issueStore.Create(residentIssue{
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:    "demo",
 		AuthorEmail:   "resident@example.com",
 		AuthorName:    "Resident",
@@ -5656,11 +5715,11 @@ func TestIssueEstimateMetadataAndAttachmentUseProtectedRoutes(t *testing.T) {
 	if loc := save.Header().Get("Location"); loc != "/demo/app/anliegen?issue=updated" {
 		t.Fatalf("estimate save redirect = %q", loc)
 	}
-	updated, ok := a.issueStore.Get("demo", issue.ID)
+	updated, ok := issueRepositoryForTest(a, "demo").Get(issue.ID)
 	if !ok || updated.EstimateAmountCents != 24050 || updated.EstimateNote != "Material und Anfahrt grob geschätzt." || updated.EstimateUpdatedBy != "service@example.com" {
 		t.Fatalf("stored estimate = %+v ok=%v", updated, ok)
 	}
-	attachments := a.attachmentStore.ListEntity("demo", "issue-estimate", issue.ID)
+	attachments := attachmentRepositoryForTest(a, "demo").ListEntity("issue-estimate", issue.ID)
 	if len(attachments) != 1 || attachments[0].ContentType != "application/pdf" {
 		t.Fatalf("estimate attachments = %+v", attachments)
 	}
@@ -5709,7 +5768,7 @@ func TestIssueTriageBoardFiltersAndOpenCounts(t *testing.T) {
 		{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resident", Category: "Frage", Title: "Regular question", Body: "Question.", LocationType: issueLocationCommon, Status: issueStatusNew, Priority: issuePriorityNorm},
 		{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resident", Category: "Vorschlag", Title: "Closed suggestion", Body: "Done.", LocationType: issueLocationCommon, Status: issueStatusDone, Priority: issuePriorityLow},
 	} {
-		if _, err := a.issueStore.Create(item); err != nil {
+		if _, err := issueRepositoryForTest(a, "demo").Create(item); err != nil {
 			t.Fatalf("Create issue %q: %v", item.Title, err)
 		}
 	}
@@ -5780,7 +5839,7 @@ func TestPublishedAnnouncementNotifiesTenantRecipients(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("announcement create status = %d", create.Code)
 	}
-	items := a.announcementStore.ListTenant("demo")
+	items := testRepositories(a, "demo").announcements.List()
 	if len(items) != 1 {
 		t.Fatalf("announcements = %+v", items)
 	}
@@ -5807,10 +5866,10 @@ func TestAnnouncementArchiveFiltersSearchesAndIncludesPast(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now().Add(-2 * time.Hour)
 	expiredAt := time.Now().Add(-time.Hour)
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Hausfest", Body: "Sommertermin", Category: "Termin", PublishedAt: now})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Alter Hinweis", Body: "Vergangen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Geplant", Body: "Noch nicht sichtbar", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Hausfest", Body: "Sommertermin", Category: "Termin", PublishedAt: now})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Alter Hinweis", Body: "Vergangen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Geplant", Body: "Noch nicht sichtbar", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
 
 	all := authedRequest(t, a, "resident@example.com", "/demo/app/announcements")
 	if all.Code != http.StatusOK {
@@ -5838,7 +5897,7 @@ func TestAnnouncementArchiveFiltersSearchesAndIncludesPast(t *testing.T) {
 
 func TestAnnouncementUnreadBadgeClearsAfterArchiveView(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Neue Wartung", Body: "Heute", Category: "Wartung", PublishedAt: time.Now().Add(-time.Hour)})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Neue Wartung", Body: "Heute", Category: "Wartung", PublishedAt: time.Now().Add(-time.Hour)})
 
 	before := authedRequest(t, a, "resident@example.com", "/demo/app")
 	if before.Code != http.StatusOK {
@@ -5852,7 +5911,7 @@ func TestAnnouncementUnreadBadgeClearsAfterArchiveView(t *testing.T) {
 	if archive.Code != http.StatusOK {
 		t.Fatalf("archive status = %d", archive.Code)
 	}
-	repository, ok := store.BindAnnouncementReadRepository(a.announcementReadStore, "demo")
+	repository, ok := storepkg.BindAnnouncementReadRepository(a.announcementReadStore, "demo")
 	if !ok {
 		t.Fatal("bind announcement read repository")
 	}
@@ -5905,7 +5964,7 @@ func TestAnnouncementCreateRejectsCrossOriginAndPersistsSameOrigin(t *testing.T)
 	if same.Code != http.StatusSeeOther {
 		t.Fatalf("same-origin create status = %d, want redirect", same.Code)
 	}
-	visible := a.announcementStore.Visible("demo", time.Date(2026, 7, 6, 13, 0, 0, 0, time.Local))
+	visible := testRepositories(a, "demo").announcements.Visible(time.Date(2026, 7, 6, 13, 0, 0, 0, time.Local))
 	if len(visible) != 1 || visible[0].Title != "Liftwartung" || !visible[0].Pinned {
 		t.Fatalf("created visible announcement = %+v", visible)
 	}
@@ -5999,7 +6058,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("vote store: %v", err)
 	}
-	homeReservations := store.NewMemoryHomeReservationStore()
+	homeReservations := storepkg.NewMemoryHomeReservationStore()
 	a := &app{
 		baseURL:       "http://localhost:8080",
 		rootDomain:    "hausv.org",
@@ -6042,9 +6101,9 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		parkingStore:             parkingStore,
 		energyStore:              energy.NewMemoryStore(),
 		homeReservations:         homeReservations,
-		homePortals:              store.NewMemoryHomePortalStore(homeReservations, inviteStore),
-		homeConnectors:           store.NewMemoryHomeConnectorStore(),
-		homeConnectorReadings:    store.NewMemoryHomeConnectorReadingStore(),
+		homePortals:              storepkg.NewMemoryHomePortalStore(homeReservations, inviteStore),
+		homeConnectors:           storepkg.NewMemoryHomeConnectorStore(),
+		homeConnectorReadings:    storepkg.NewMemoryHomeConnectorReadingStore(),
 		homeConnectorDownloadDir: t.TempDir(),
 	}
 	t.Cleanup(a.closeMagicLinkDelivery)
@@ -6425,7 +6484,7 @@ func TestParkingPaymentMetadataAndOutstandingVisibility(t *testing.T) {
 	if adminPaymentEvent == nil || adminPaymentEvent.Details["payment_reference"] != "ABC-123" {
 		t.Fatalf("payment audit events = %+v", events)
 	}
-	attachments := a.attachmentStore.ListEntity("demo", "parking", "2026-06")
+	attachments := attachmentRepositoryForTest(a, "demo").ListEntity("parking", "2026-06")
 	if len(attachments) != 1 || attachments[0].ContentType != "application/pdf" {
 		t.Fatalf("parking attachments = %+v", attachments)
 	}

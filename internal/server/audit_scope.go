@@ -44,7 +44,7 @@ func (a *app) canViewAuditIssue(ac authCtx, issueID string) bool {
 	if a == nil || a.issueStore == nil {
 		return false
 	}
-	issue, found := a.issueStore.Get(ac.tenant.Slug, strings.TrimSpace(issueID))
+	issue, found := ac.repositories.issues.Get(strings.TrimSpace(issueID))
 	return found && a.canViewIssueForActor(ac.tenant.Slug, issue, ac.email, ac.role)
 }
 
@@ -52,7 +52,7 @@ func (a *app) canViewAuditUnit(ac authCtx, unitID string) bool {
 	if a == nil || a.unitStore == nil {
 		return false
 	}
-	members := a.unitStore.MembersForUnit(ac.tenant.Slug, unitID)
+	members := ac.repositories.units.MembersForUnit(unitID)
 	return members.Found && (emailListContains(members.Owners, ac.email) || emailListContains(members.Renters, ac.email))
 }
 

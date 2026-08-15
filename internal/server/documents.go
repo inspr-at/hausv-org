@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -18,7 +20,7 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	canManage := hasCapability(role, capabilityManageDocuments)
 	visible := []documentRecord{}
-	if a.documentStore != nil {
+	if ac.repositories.documents != nil {
 		visible = a.visibleDocumentsForActor(tenant.Slug, email, role)
 	}
 	searchQuery := strings.TrimSpace(r.URL.Query().Get("q"))
@@ -48,7 +50,7 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"SortOptions":        documentSortOptions(sortMode),
 		"CategoryOptions":    documentCategoryOptions(""),
 		"VisibilityOptions":  documentVisibilityOptions(""),
-		"UnitOptions":        documentUnitOptions(a.unitStore.ListTenant(tenant.Slug), ""),
+		"UnitOptions":        documentUnitOptions(ac.repositories.units.List(), ""),
 		"MaxDocumentSize":    formatBytes(maxDocumentBytes),
 	}))
 }
@@ -69,7 +71,7 @@ func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
 		return
 	}
-	created, err := a.documentStore.Create(documentRecord{
+	created, err := ac.repositories.documents.Create(documentRecord{
 		TenantSlug: tenant.Slug,
 		Title:      strings.TrimSpace(r.FormValue("title")),
 		Category:   normalizeDocumentCategory(r.FormValue("category")),
@@ -118,7 +120,7 @@ func (a *app) replaceDocument(w http.ResponseWriter, r *http.Request, ac authCtx
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
 		return
 	}
-	replacement, replaced, err := a.documentStore.Replace(tenant.Slug, strings.TrimSpace(r.FormValue("id")), email, uploadedFileFromHeader(header), time.Now())
+	replacement, replaced, err := ac.repositories.documents.Replace(strings.TrimSpace(r.FormValue("id")), email, uploadedFileFromHeader(header), time.Now())
 	if err != nil {
 		logError("document replace failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
@@ -153,7 +155,7 @@ func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request, ac authCt
 		return
 	}
 	id := strings.TrimSpace(r.PathValue("id"))
-	item, found := a.documentStore.Get(tenant.Slug, id)
+	item, found := ac.repositories.documents.Get(id)
 	if !found {
 		http.NotFound(w, r)
 		return
@@ -162,7 +164,7 @@ func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request, ac authCt
 		http.Error(w, "Dieses Dokument ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
 		return
 	}
-	path, ok := a.documentStore.FilePath(item)
+	path, ok := ac.repositories.documents.FilePath(item)
 	if !ok {
 		http.NotFound(w, r)
 		return
@@ -204,7 +206,7 @@ func (a *app) previewDocument(w http.ResponseWriter, r *http.Request, ac authCtx
 		return
 	}
 	id := strings.TrimSpace(r.PathValue("id"))
-	item, found := a.documentStore.Get(tenant.Slug, id)
+	item, found := ac.repositories.documents.Get(id)
 	if !found {
 		http.NotFound(w, r)
 		return
@@ -217,7 +219,7 @@ func (a *app) previewDocument(w http.ResponseWriter, r *http.Request, ac authCtx
 		http.NotFound(w, r)
 		return
 	}
-	path, ok := a.documentStore.FilePath(item)
+	path, ok := ac.repositories.documents.FilePath(item)
 	if !ok {
 		http.NotFound(w, r)
 		return
@@ -250,7 +252,7 @@ func (a *app) serveAttachment(w http.ResponseWriter, r *http.Request, ac authCtx
 		http.NotFound(w, r)
 		return
 	}
-	item, found := a.attachmentStore.Get(tenant.Slug, id)
+	item, found := ac.repositories.attachments.Get(id)
 	if !found {
 		http.NotFound(w, r)
 		return
@@ -259,7 +261,7 @@ func (a *app) serveAttachment(w http.ResponseWriter, r *http.Request, ac authCtx
 		http.Error(w, "Dieser Anhang ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
 		return
 	}
-	path, contentType, _, ok := a.attachmentStore.FilePath(item, variant)
+	path, contentType, _, ok := ac.repositories.attachments.FilePath(item, variant)
 	if !ok {
 		http.NotFound(w, r)
 		return
@@ -312,7 +314,7 @@ func (a *app) deleteAttachment(w http.ResponseWriter, r *http.Request, ac authCt
 		return
 	}
 	id := strings.TrimSpace(r.FormValue("id"))
-	item, found := a.attachmentStore.Get(tenant.Slug, id)
+	item, found := ac.repositories.attachments.Get(id)
 	if !found {
 		http.Redirect(w, r, redirectAfterAttachmentChange(r, "/app/anliegen?issue=missing"), http.StatusSeeOther)
 		return
@@ -321,14 +323,14 @@ func (a *app) deleteAttachment(w http.ResponseWriter, r *http.Request, ac authCt
 		http.Error(w, "Dieser Anhang kann nur von Verwaltung oder Ersteller entfernt werden.", http.StatusForbidden)
 		return
 	}
-	if normalizeAttachmentEntity(item.EntityType) == "handover" && a.handoverStore != nil {
-		handover, found := a.handoverStore.Get(tenant.Slug, item.EntityID)
+	if normalizeAttachmentEntity(item.EntityType) == "handover" && ac.repositories.handovers != nil {
+		handover, found := ac.repositories.handovers.Get(item.EntityID)
 		if !found || !handoverCanChangeFiles(handover) {
 			http.Error(w, "Bestätigte oder abgelegte Protokolle sind unveränderlich.", http.StatusConflict)
 			return
 		}
 	}
-	if _, removed, err := a.attachmentStore.Delete(tenant.Slug, id, time.Now()); err != nil {
+	if _, removed, err := ac.repositories.attachments.Delete(id, time.Now()); err != nil {
 		logError("attachment delete failed", err, "tenant", tenant.Slug, "attachment_id", id)
 		http.Redirect(w, r, redirectAfterAttachmentChange(r, "/app/anliegen?issue=error"), http.StatusSeeOther)
 		return
@@ -374,10 +376,14 @@ func documentFileHeader(r *http.Request) *multipart.FileHeader {
 }
 
 func (a *app) visibleDocumentsForActor(tenantSlug string, email string, role string) []documentRecord {
-	if a == nil || a.documentStore == nil {
+	if a == nil {
 		return nil
 	}
-	all := a.documentStore.ListCurrentTenant(tenantSlug)
+	documents, ok := store.BindDocumentRepository(a.documentStore, tenantSlug)
+	if !ok {
+		return nil
+	}
+	all := documents.ListCurrent()
 	out := make([]documentRecord, 0, len(all))
 	for _, item := range all {
 		if a.canViewDocument(tenantSlug, item, email, role) {
@@ -417,13 +423,16 @@ func (a *app) isDocumentOwner(tenantSlug string, email string, role string, unit
 		return false
 	}
 	if a != nil && a.unitStore != nil {
-		if unitID != "" {
-			members := a.unitStore.MembersForUnit(tenantSlug, unitID)
+		units, _ := store.BindUnitRepository(a.unitStore, tenantSlug)
+		if units != nil && unitID != "" {
+			members := units.MembersForUnit(unitID)
 			return members.Found && emailListContains(members.Owners, email)
 		}
-		for _, membership := range a.unitStore.UnitsForEmail(tenantSlug, email) {
-			if membership.Relation == roleOwner {
-				return true
+		if units != nil {
+			for _, membership := range units.UnitsForEmail(email) {
+				if membership.Relation == roleOwner {
+					return true
+				}
 			}
 		}
 	}
@@ -475,19 +484,21 @@ func (a *app) canViewAttachment(tenantSlug string, item attachmentRecord, email 
 	}
 	switch entityType {
 	case "issue", "issue-estimate":
-		if a.issueStore == nil {
+		issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+		if !ok {
 			return false
 		}
-		issue, found := a.issueStore.Get(tenantSlug, item.EntityID)
+		issue, found := issues.Get(item.EntityID)
 		return found && a.canViewIssueForActor(tenantSlug, issue, email, role)
 	case "issue-comment":
 		issue, _, found := a.issueCommentTarget(tenantSlug, item.EntityID)
 		return found && a.canViewIssueForActor(tenantSlug, issue, email, role)
 	case "document":
-		if a.documentStore == nil {
+		documents, ok := store.BindDocumentRepository(a.documentStore, tenantSlug)
+		if !ok {
 			return false
 		}
-		doc, found := a.documentStore.Get(tenantSlug, item.EntityID)
+		doc, found := documents.Get(item.EntityID)
 		return found && a.canViewDocument(tenantSlug, doc, email, role)
 	case "announcement", "event", "building":
 		return true
@@ -516,10 +527,11 @@ func (a *app) canDeleteAttachment(tenantSlug string, item attachmentRecord, emai
 		if hasCapability(role, capabilityManageIssues) {
 			return true
 		}
-		if a.issueStore == nil {
+		issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+		if !ok {
 			return false
 		}
-		issue, found := a.issueStore.Get(tenantSlug, item.EntityID)
+		issue, found := issues.Get(item.EntityID)
 		return found && normalizeEmail(issue.AuthorEmail) == email
 	case "issue-comment":
 		if hasCapability(role, capabilityManageIssues) {
@@ -547,10 +559,14 @@ func (a *app) canDeleteAttachment(tenantSlug string, item attachmentRecord, emai
 }
 
 func (a *app) attachmentViewsForEntity(tenantSlug string, entityType string, entityID string, actorEmail string, role string) []attachmentView {
-	if a == nil || a.attachmentStore == nil {
+	if a == nil {
 		return nil
 	}
-	records := a.attachmentStore.ListEntity(tenantSlug, entityType, entityID)
+	attachments, ok := store.BindAttachmentRepository(a.attachmentStore, tenantSlug)
+	if !ok {
+		return nil
+	}
+	records := attachments.ListEntity(entityType, entityID)
 	views := make([]attachmentView, 0, len(records))
 	for _, record := range records {
 		views = append(views, attachmentViewFromRecord(record, a.canDeleteAttachment(tenantSlug, record, actorEmail, role)))
@@ -568,10 +584,14 @@ func documentViews(items []documentRecord) []documentView {
 
 func (a *app) documentViewsForActor(tenantSlug string, email string, role string, items []documentRecord) []documentView {
 	views := make([]documentView, 0, len(items))
+	if a == nil {
+		return views
+	}
+	documents, _ := store.BindDocumentRepository(a.documentStore, tenantSlug)
 	for _, item := range items {
 		view := documentViewFrom(item)
-		if a != nil && a.documentStore != nil {
-			for _, version := range a.documentStore.Versions(tenantSlug, item.SeriesID) {
+		if a != nil && documents != nil {
+			for _, version := range documents.Versions(item.SeriesID) {
 				if version.Current || !a.canViewDocument(tenantSlug, version, email, role) {
 					continue
 				}

@@ -56,6 +56,7 @@ func (f *SQLProtocolFiler) FileHandoverProtocol(tenantSlug string, handoverID st
 	if now.IsZero() {
 		now = time.Now()
 	}
+	doc.TenantSlug = tenantSlug
 
 	// The file must exist before the transaction; if the transaction does not
 	// commit we remove it again, so no orphan is left behind.
@@ -115,11 +116,12 @@ func (f *SQLProtocolFiler) FileHandoverProtocol(tenantSlug string, handoverID st
 // orphan a document, which is precisely why the SQL filer is preferred.
 type SequentialProtocolFiler struct {
 	documents DocumentStorage
-	handovers HandoverStorage
+	handovers handoverBackend
 }
 
 func NewSequentialProtocolFiler(documents DocumentStorage, handovers HandoverStorage) *SequentialProtocolFiler {
-	return &SequentialProtocolFiler{documents: documents, handovers: handovers}
+	backend, _ := handovers.(handoverBackend)
+	return &SequentialProtocolFiler{documents: documents, handovers: backend}
 }
 
 func (f *SequentialProtocolFiler) FileHandoverProtocol(tenantSlug string, handoverID string, doc DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, HandoverRecord, bool, error) {
@@ -128,18 +130,22 @@ func (f *SequentialProtocolFiler) FileHandoverProtocol(tenantSlug string, handov
 	}
 	tenantSlug = textutil.Slug(tenantSlug)
 	handoverID = strings.TrimSpace(handoverID)
-	existing, found := f.handovers.Get(tenantSlug, handoverID)
+	existing, found := f.handovers.get(tenantSlug, handoverID)
 	if !found {
 		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("handover not found")
 	}
 	if strings.TrimSpace(existing.FiledDocumentID) != "" {
 		return DocumentRecord{}, existing, true, nil
 	}
-	created, err := f.documents.CreateGenerated(doc, filename, contentType, data, now)
+	documents, ok := BindDocumentRepository(f.documents, tenantSlug)
+	if !ok {
+		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("document store unavailable")
+	}
+	created, err := documents.CreateGenerated(doc, filename, contentType, data, now)
 	if err != nil {
 		return DocumentRecord{}, HandoverRecord{}, false, err
 	}
-	updated, _, err := f.handovers.SetFiledDocument(tenantSlug, handoverID, created.ID, now)
+	updated, _, err := f.handovers.setFiledDocument(tenantSlug, handoverID, created.ID, now)
 	if err != nil {
 		return DocumentRecord{}, HandoverRecord{}, false, err
 	}

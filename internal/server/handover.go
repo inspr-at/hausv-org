@@ -115,8 +115,8 @@ func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	items := []handoverRecord{}
-	if a.handoverStore != nil {
-		items = a.handoverStore.ListTenant(tenant.Slug)
+	if ac.repositories.handovers != nil {
+		items = ac.repositories.handovers.List()
 	}
 	msg, okMsg := handoverMessage(r.URL.Query().Get("handover"))
 	views := a.handoverViewsForActor(tenant.Slug, email, role, items)
@@ -134,7 +134,7 @@ func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"HandoversEmpty":     emptyState("Noch keine Übergaben", "Neue Nutzerwechsel werden hier mit Räumen, Zählern, Schlüsseln, Fotos und Bestätigung dokumentiert."),
 		"HandoverMsg":        msg,
 		"HandoverOK":         okMsg,
-		"UnitOptions":        handoverUnitOptions(a.unitStore.ListTenant(tenant.Slug), ""),
+		"UnitOptions":        handoverUnitOptions(ac.repositories.units.List(), ""),
 		"NowInput":           formatLocalDateTimeInput(time.Now()),
 	}))
 }
@@ -175,7 +175,7 @@ func (a *app) addHandoverAttachments(w http.ResponseWriter, r *http.Request, ac 
 		return
 	}
 	id := strings.TrimSpace(r.FormValue("id"))
-	item, found := a.handoverStore.Get(tenant.Slug, id)
+	item, found := ac.repositories.handovers.Get(id)
 	if !found {
 		http.Redirect(w, r, "/app/uebergaben?handover=missing", http.StatusSeeOther)
 		return
@@ -185,15 +185,15 @@ func (a *app) addHandoverAttachments(w http.ResponseWriter, r *http.Request, ac 
 		return
 	}
 	headers, err := attachmentFormHeaders(r, maxIssueAttachmentCount, "attachments")
-	if err != nil || len(headers) == 0 || a.attachmentStore == nil {
+	if err != nil || len(headers) == 0 || ac.repositories.attachments == nil {
 		http.Redirect(w, r, "/app/uebergaben?handover=invalid#handover-"+url.PathEscape(id), http.StatusSeeOther)
 		return
 	}
-	if len(a.attachmentStore.ListEntity(tenant.Slug, "handover", id))+len(headers) > maxIssueAttachmentCount {
+	if len(ac.repositories.attachments.ListEntity("handover", id))+len(headers) > maxIssueAttachmentCount {
 		http.Redirect(w, r, "/app/uebergaben?handover=invalid#handover-"+url.PathEscape(id), http.StatusSeeOther)
 		return
 	}
-	if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "handover", id, email, uploadedFilesFromHeaders(headers), time.Now()); err != nil {
+	if _, err := ac.repositories.attachments.CreateUploaded("handover", id, email, uploadedFilesFromHeaders(headers), time.Now()); err != nil {
 		logHandoverError("attachments", tenant.Slug, id, err)
 		http.Redirect(w, r, "/app/uebergaben?handover=error#handover-"+url.PathEscape(id), http.StatusSeeOther)
 		return
@@ -207,7 +207,7 @@ func (a *app) createHandover(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.Error(w, "Übergabeprotokolle sind der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
-	if a.handoverStore == nil {
+	if ac.repositories.handovers == nil {
 		http.Redirect(w, r, "/app/uebergaben?handover=error", http.StatusSeeOther)
 		return
 	}
@@ -228,20 +228,20 @@ func (a *app) createHandover(w http.ResponseWriter, r *http.Request, ac authCtx)
 	}
 	var uploaded []attachmentRecord
 	if len(attachmentHeaders) > 0 {
-		if a.attachmentStore == nil {
+		if ac.repositories.attachments == nil {
 			http.Redirect(w, r, "/app/uebergaben?handover=invalid", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "handover", item.ID, email, uploadedFilesFromHeaders(attachmentHeaders), now)
+		uploaded, err = ac.repositories.attachments.CreateUploaded("handover", item.ID, email, uploadedFilesFromHeaders(attachmentHeaders), now)
 		if err != nil {
 			http.Redirect(w, r, "/app/uebergaben?handover=invalid", http.StatusSeeOther)
 			return
 		}
 	}
-	created, err := a.handoverStore.Create(item)
+	created, err := ac.repositories.handovers.Create(item)
 	if err != nil {
 		for _, attachment := range uploaded {
-			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 		logHandoverError("create", tenant.Slug, item.ID, err)
 		http.Redirect(w, r, "/app/uebergaben?handover=error", http.StatusSeeOther)
@@ -501,7 +501,12 @@ func (a *app) handoverAttachment(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	attachment, found := a.attachmentStore.Get(handover.TenantSlug, strings.TrimSpace(r.PathValue("id")))
+	attachments, ok := store.BindAttachmentRepository(a.attachmentStore, handover.TenantSlug)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	attachment, found := attachments.Get(strings.TrimSpace(r.PathValue("id")))
 	if !found || normalizeAttachmentEntity(attachment.EntityType) != "handover" || attachment.EntityID != handover.ID {
 		http.NotFound(w, r)
 		return
@@ -511,7 +516,7 @@ func (a *app) handoverAttachment(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	path, contentType, _, ok := a.attachmentStore.FilePath(attachment, variant)
+	path, contentType, _, ok := attachments.FilePath(attachment, variant)
 	if !ok {
 		http.NotFound(w, r)
 		return
@@ -606,14 +611,14 @@ func (a *app) handoverProtocol(w http.ResponseWriter, r *http.Request, ac authCt
 		http.Error(w, "Dieses Protokoll ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
-	item, found := a.handoverStore.Get(tenant.Slug, strings.TrimSpace(r.PathValue("id")))
+	item, found := ac.repositories.handovers.Get(strings.TrimSpace(r.PathValue("id")))
 	if !found {
 		http.NotFound(w, r)
 		return
 	}
 	attachments := []attachmentRecord{}
-	if a.attachmentStore != nil {
-		attachments = a.attachmentStore.ListEntity(tenant.Slug, "handover", item.ID)
+	if ac.repositories.attachments != nil {
+		attachments = ac.repositories.attachments.ListEntity("handover", item.ID)
 	}
 	pdf := handoverPDF(tenant, item, attachments, time.Now())
 	filename := "uebergabe-" + item.ID + "-protokoll.pdf"
@@ -655,7 +660,7 @@ func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request, ac au
 		http.Redirect(w, r, "/app/uebergaben?handover=invalid", http.StatusSeeOther)
 		return
 	}
-	item, found := a.handoverStore.Get(tenant.Slug, strings.TrimSpace(r.FormValue("id")))
+	item, found := ac.repositories.handovers.Get(strings.TrimSpace(r.FormValue("id")))
 	if !found {
 		http.Redirect(w, r, "/app/uebergaben?handover=missing", http.StatusSeeOther)
 		return
@@ -672,8 +677,8 @@ func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request, ac au
 		return
 	}
 	attachments := []attachmentRecord{}
-	if a.attachmentStore != nil {
-		attachments = a.attachmentStore.ListEntity(tenant.Slug, "handover", item.ID)
+	if ac.repositories.attachments != nil {
+		attachments = ac.repositories.attachments.ListEntity("handover", item.ID)
 	}
 	pdf := handoverPDF(tenant, item, attachments, time.Now())
 	// One call: the document and the link on the handover are written together,
@@ -750,8 +755,11 @@ func (a *app) handoverViewForActor(tenantSlug string, email string, role string,
 	item = normalizeHandover(item)
 	unitLabel := item.UnitID
 	if a != nil && a.unitStore != nil && item.UnitID != "" {
-		if label := handoverUnitLabel(a.unitStore.ListTenant(tenantSlug), item.UnitID); label != "" {
-			unitLabel = label
+		units, _ := store.BindUnitRepository(a.unitStore, tenantSlug)
+		if units != nil {
+			if label := handoverUnitLabel(units.List(), item.UnitID); label != "" {
+				unitLabel = label
+			}
 		}
 	}
 	attachments := a.attachmentViewsForEntity(tenantSlug, "handover", item.ID, email, role)

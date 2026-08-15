@@ -86,10 +86,12 @@ func TestSecondHouseLinksMembershipNotSecondPerson(t *testing.T) {
 		t.Fatalf("expected 2 memberships, got %d", len(got))
 	}
 	// Each house sees only its own member list.
-	if got := s.ListHouseMembers("demo"); len(got) != 1 || got[0].Membership.Role != RoleOwner {
+	demo, _ := BindIdentityRepository(s, "demo")
+	hausBRepo, _ := BindIdentityRepository(s, "haus-b")
+	if got := demo.ListHouseMembers(); len(got) != 1 || got[0].Membership.Role != RoleOwner {
 		t.Fatalf("demo members = %+v", got)
 	}
-	if got := s.ListHouseMembers("haus-b"); len(got) != 1 || got[0].Membership.Role != RoleRenter {
+	if got := hausBRepo.ListHouseMembers(); len(got) != 1 || got[0].Membership.Role != RoleRenter {
 		t.Fatalf("haus-b members = %+v", got)
 	}
 	// A membership needs a real person.
@@ -124,7 +126,8 @@ func TestEditingOneMembershipLeavesOthersUntouched(t *testing.T) {
 		t.Fatalf("edit a: %v", err)
 	}
 
-	afterEdit, ok := s.Membership(person.ID, "haus-b")
+	hausBRepo, _ := BindIdentityRepository(s, "haus-b")
+	afterEdit, ok := hausBRepo.Membership(person.ID)
 	if !ok {
 		t.Fatal("the other membership disappeared")
 	}
@@ -142,21 +145,23 @@ func TestRemoveMembershipKeepsPersonAndOtherHouses(t *testing.T) {
 	_, _ = s.SetMembership(HouseMembership{PersonID: person.ID, TenantSlug: "demo", Role: RoleOwner}, now)
 	_, _ = s.SetMembership(HouseMembership{PersonID: person.ID, TenantSlug: "haus-b", Role: RoleRenter}, now)
 
-	removed, err := s.RemoveMembership(person.ID, "demo")
+	demo, _ := BindIdentityRepository(s, "demo")
+	hausBRepo, _ := BindIdentityRepository(s, "haus-b")
+	removed, err := demo.RemoveMembership(person.ID)
 	if err != nil || !removed {
 		t.Fatalf("remove: removed=%v err=%v", removed, err)
 	}
 	if _, ok := s.PersonByEmail("anna@example.com"); !ok {
 		t.Fatal("removing a membership must NOT delete the person")
 	}
-	if _, ok := s.Membership(person.ID, "haus-b"); !ok {
+	if _, ok := hausBRepo.Membership(person.ID); !ok {
 		t.Fatal("removing one membership must not affect another house")
 	}
-	if got := s.ListHouseMembers("demo"); len(got) != 0 {
+	if got := demo.ListHouseMembers(); len(got) != 0 {
 		t.Fatalf("demo should have no members left: %+v", got)
 	}
 	// Removing again is a no-op, not an error.
-	if removed, err := s.RemoveMembership(person.ID, "demo"); err != nil || removed {
+	if removed, err := demo.RemoveMembership(person.ID); err != nil || removed {
 		t.Fatalf("second remove: removed=%v err=%v", removed, err)
 	}
 
@@ -248,11 +253,13 @@ func TestImportProfilesIsLosslessAndIdempotent(t *testing.T) {
 	if len(memberships) != 2 {
 		t.Fatalf("expected 2 memberships, got %+v", memberships)
 	}
-	demoMembership, ok := s.Membership(person.ID, "demo")
+	demo, _ := BindIdentityRepository(s, "demo")
+	hausBRepo, _ := BindIdentityRepository(s, "haus-b")
+	demoMembership, ok := demo.Membership(person.ID)
 	if !ok || demoMembership.Role != RoleRenter {
 		t.Fatalf("demo membership should inherit the default role: %+v", demoMembership)
 	}
-	hausB, ok := s.Membership(person.ID, "haus-b")
+	hausB, ok := hausBRepo.Membership(person.ID)
 	if !ok || hausB.Role != RoleOwner {
 		t.Fatalf("haus-b membership should use its per-tenant override: %+v", hausB)
 	}
@@ -282,7 +289,8 @@ func TestImportPicksUpMembershipOnlyHouses(t *testing.T) {
 	if !ok {
 		t.Fatal("person missing")
 	}
-	if got, ok := s.Membership(person.ID, "haus-c"); !ok || got.Role != RoleManager {
+	hausC, _ := BindIdentityRepository(s, "haus-c")
+	if got, ok := hausC.Membership(person.ID); !ok || got.Role != RoleManager {
 		t.Fatalf("membership-only house was dropped: %+v ok=%v", got, ok)
 	}
 }

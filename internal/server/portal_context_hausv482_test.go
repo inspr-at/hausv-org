@@ -26,7 +26,7 @@ func newPortalContextTestApp(t *testing.T) *app {
 		AuthMethods: defaultAuthMethods(),
 	})
 	a.tenants["haus-b"] = tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Nebenweg 2", MapLatitude: 47.0707, MapLongitude: 15.4395, MapZoom: 17}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-owner", Label: "Eigentum", OwnerEmails: []string{"multi@example.com"}},
 		{ID: "top-renter", Label: "Miete", RenterEmails: []string{"multi@example.com"}},
 	}); err != nil {
@@ -187,7 +187,7 @@ func TestUserCanChooseOwnAssignedRenterRoleButNotElevate(t *testing.T) {
 
 func TestPortalContextRejectsUnassignedRenterRole(t *testing.T) {
 	a := newPortalContextTestApp(t)
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{ID: "top-owner", Label: "Eigentum", OwnerEmails: []string{"multi@example.com"}}}); err != nil {
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{ID: "top-owner", Label: "Eigentum", OwnerEmails: []string{"multi@example.com"}}}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	token, _, err := a.sessions.Put("multi@example.com", "demo", authMethodEmail, time.Hour)

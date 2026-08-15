@@ -11,22 +11,61 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
-// AttachmentStorage is the behaviour both the JSON AttachmentStore and the
-// SQLite SQLAttachmentStore satisfy (HAUSV-168). Like documents, the file bytes
-// stay on disk; only the metadata record moves to the database. Deletion is a
-// soft delete of the record plus a hard delete of the files.
-type AttachmentStorage interface {
-	CreateUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error)
-	ListEntity(tenantSlug string, entityType string, entityID string) []AttachmentRecord
-	Get(tenantSlug string, id string) (AttachmentRecord, bool)
-	Delete(tenantSlug string, id string, deletedAt time.Time) (AttachmentRecord, bool, error)
+type AttachmentRepository interface {
+	CreateUploaded(entityType string, entityID string, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error)
+	ListEntity(entityType string, entityID string) []AttachmentRecord
+	Get(id string) (AttachmentRecord, bool)
+	Delete(id string, deletedAt time.Time) (AttachmentRecord, bool, error)
 	FilePath(item AttachmentRecord, variant string) (string, string, int64, bool)
 }
+
+type AttachmentStorage interface{ attachmentStorage() }
 
 var (
 	_ AttachmentStorage = (*AttachmentStore)(nil)
 	_ AttachmentStorage = (*SQLAttachmentStore)(nil)
 )
+
+type attachmentStoreBackend interface {
+	createUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error)
+	listEntity(tenantSlug string, entityType string, entityID string) []AttachmentRecord
+	get(tenantSlug string, id string) (AttachmentRecord, bool)
+	delete(tenantSlug string, id string, deletedAt time.Time) (AttachmentRecord, bool, error)
+	filePath(item AttachmentRecord, variant string) (string, string, int64, bool)
+}
+
+type boundAttachmentRepository struct {
+	storage    attachmentStoreBackend
+	tenantSlug string
+}
+
+func BindAttachmentRepository(storage AttachmentStorage, tenantSlug string) (AttachmentRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(attachmentStoreBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundAttachmentRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundAttachmentRepository) CreateUploaded(entityType, entityID, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error) {
+	return r.storage.createUploaded(r.tenantSlug, entityType, entityID, uploadedBy, uploads, now)
+}
+func (r *boundAttachmentRepository) ListEntity(entityType, entityID string) []AttachmentRecord {
+	return r.storage.listEntity(r.tenantSlug, entityType, entityID)
+}
+func (r *boundAttachmentRepository) Get(id string) (AttachmentRecord, bool) {
+	return r.storage.get(r.tenantSlug, id)
+}
+func (r *boundAttachmentRepository) Delete(id string, deletedAt time.Time) (AttachmentRecord, bool, error) {
+	return r.storage.delete(r.tenantSlug, id, deletedAt)
+}
+func (r *boundAttachmentRepository) FilePath(item AttachmentRecord, variant string) (string, string, int64, bool) {
+	if textutil.Slug(item.TenantSlug) != r.tenantSlug {
+		return "", "", 0, false
+	}
+	return r.storage.filePath(item, variant)
+}
 
 // SQLAttachmentStore keeps each attachment's metadata as a JSON document keyed
 // by (tenant, id); the file and its image variants stay on disk. Table from
@@ -39,6 +78,8 @@ type SQLAttachmentStore struct {
 func NewSQLAttachmentStore(db *sql.DB, fileDir string) *SQLAttachmentStore {
 	return &SQLAttachmentStore{db: db, fileDir: fileDir}
 }
+
+func (*SQLAttachmentStore) attachmentStorage() {}
 
 func (s *SQLAttachmentStore) writeTx(tx *sql.Tx, item AttachmentRecord) error {
 	blob, err := json.Marshal(item)
@@ -56,7 +97,7 @@ func (s *SQLAttachmentStore) writeTx(tx *sql.Tx, item AttachmentRecord) error {
 // CreateUploaded writes every accepted upload to disk and then persists ALL
 // records in one transaction, so a batch upload can never land half-recorded.
 // Any failure removes the files written so far.
-func (s *SQLAttachmentStore) CreateUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error) {
+func (s *SQLAttachmentStore) createUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error) {
 	if s == nil || len(uploads) == 0 {
 		return nil, nil
 	}
@@ -155,7 +196,7 @@ func (s *SQLAttachmentStore) allForTenant(tenantSlug string) []AttachmentRecord 
 	return out
 }
 
-func (s *SQLAttachmentStore) ListEntity(tenantSlug string, entityType string, entityID string) []AttachmentRecord {
+func (s *SQLAttachmentStore) listEntity(tenantSlug string, entityType string, entityID string) []AttachmentRecord {
 	if s == nil {
 		return nil
 	}
@@ -177,7 +218,7 @@ func (s *SQLAttachmentStore) ListEntity(tenantSlug string, entityType string, en
 	return items
 }
 
-func (s *SQLAttachmentStore) Get(tenantSlug string, id string) (AttachmentRecord, bool) {
+func (s *SQLAttachmentStore) get(tenantSlug string, id string) (AttachmentRecord, bool) {
 	if s == nil {
 		return AttachmentRecord{}, false
 	}
@@ -199,7 +240,7 @@ func (s *SQLAttachmentStore) Get(tenantSlug string, id string) (AttachmentRecord
 
 // Delete soft-deletes the record and then removes the files. The record is only
 // marked once the transaction commits, so a failure leaves the files intact.
-func (s *SQLAttachmentStore) Delete(tenantSlug string, id string, deletedAt time.Time) (AttachmentRecord, bool, error) {
+func (s *SQLAttachmentStore) delete(tenantSlug string, id string, deletedAt time.Time) (AttachmentRecord, bool, error) {
 	if s == nil {
 		return AttachmentRecord{}, false, nil
 	}
@@ -235,7 +276,7 @@ func (s *SQLAttachmentStore) Delete(tenantSlug string, id string, deletedAt time
 	return item, true, nil
 }
 
-func (s *SQLAttachmentStore) FilePath(item AttachmentRecord, variant string) (string, string, int64, bool) {
+func (s *SQLAttachmentStore) filePath(item AttachmentRecord, variant string) (string, string, int64, bool) {
 	if s == nil {
 		return "", "", 0, false
 	}

@@ -10,20 +10,58 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
-// EventStorage is the behaviour both the JSON EventStore and the SQLite
-// SQLEventStore satisfy (HAUSV-168).
-type EventStorage interface {
+type EventRepository interface {
 	Create(item HouseEvent) (HouseEvent, error)
 	Update(id string, updated HouseEvent) (bool, error)
-	Delete(tenantSlug string, id string) (bool, error)
-	ListTenant(tenantSlug string) []HouseEvent
-	Upcoming(tenantSlug string, now time.Time) []HouseEvent
+	Delete(id string) (bool, error)
+	List() []HouseEvent
+	Upcoming(now time.Time) []HouseEvent
+}
+
+type EventStorage interface {
+	eventStorage()
 }
 
 var (
 	_ EventStorage = (*EventStore)(nil)
 	_ EventStorage = (*SQLEventStore)(nil)
 )
+
+type boundEventRepository struct {
+	storage    eventBackend
+	tenantSlug string
+}
+
+type eventBackend interface {
+	create(tenantSlug string, item HouseEvent) (HouseEvent, error)
+	update(tenantSlug string, id string, updated HouseEvent) (bool, error)
+	delete(tenantSlug string, id string) (bool, error)
+	list(tenantSlug string) []HouseEvent
+	upcoming(tenantSlug string, now time.Time) []HouseEvent
+}
+
+func BindEventRepository(storage EventStorage, tenantSlug string) (EventRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(eventBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundEventRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundEventRepository) Create(item HouseEvent) (HouseEvent, error) {
+	return r.storage.create(r.tenantSlug, item)
+}
+func (r *boundEventRepository) Update(id string, item HouseEvent) (bool, error) {
+	return r.storage.update(r.tenantSlug, id, item)
+}
+func (r *boundEventRepository) Delete(id string) (bool, error) {
+	return r.storage.delete(r.tenantSlug, id)
+}
+func (r *boundEventRepository) List() []HouseEvent { return r.storage.list(r.tenantSlug) }
+func (r *boundEventRepository) Upcoming(now time.Time) []HouseEvent {
+	return r.storage.upcoming(r.tenantSlug, now)
+}
 
 // SQLEventStore keeps each event as a JSON document keyed by (tenant, id).
 // Table from migration 0009.
@@ -34,6 +72,8 @@ type SQLEventStore struct {
 func NewSQLEventStore(db *sql.DB) *SQLEventStore {
 	return &SQLEventStore{db: db}
 }
+
+func (*SQLEventStore) eventStorage() {}
 
 func (s *SQLEventStore) writeTx(tx *sql.Tx, item HouseEvent) error {
 	blob, err := json.Marshal(item)
@@ -48,7 +88,8 @@ func (s *SQLEventStore) writeTx(tx *sql.Tx, item HouseEvent) error {
 	return err
 }
 
-func (s *SQLEventStore) Create(item HouseEvent) (HouseEvent, error) {
+func (s *SQLEventStore) create(tenantSlug string, item HouseEvent) (HouseEvent, error) {
+	item.TenantSlug = tenantSlug
 	now := time.Now().UTC()
 	item.ID = ""
 	item.CreatedAt = now
@@ -76,7 +117,8 @@ func (s *SQLEventStore) Create(item HouseEvent) (HouseEvent, error) {
 	return normalized, nil
 }
 
-func (s *SQLEventStore) Update(id string, updated HouseEvent) (bool, error) {
+func (s *SQLEventStore) update(tenantSlug string, id string, updated HouseEvent) (bool, error) {
+	updated.TenantSlug = tenantSlug
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return false, nil
@@ -117,7 +159,7 @@ func (s *SQLEventStore) Update(id string, updated HouseEvent) (bool, error) {
 	return true, nil
 }
 
-func (s *SQLEventStore) Delete(tenantSlug string, id string) (bool, error) {
+func (s *SQLEventStore) delete(tenantSlug string, id string) (bool, error) {
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
 	if tenantSlug == "" || id == "" {
@@ -153,13 +195,13 @@ func (s *SQLEventStore) allForTenant(tenantSlug string) []HouseEvent {
 	return out
 }
 
-func (s *SQLEventStore) ListTenant(tenantSlug string) []HouseEvent {
+func (s *SQLEventStore) list(tenantSlug string) []HouseEvent {
 	out := s.allForTenant(tenantSlug)
 	SortEvents(out)
 	return out
 }
 
-func (s *SQLEventStore) Upcoming(tenantSlug string, now time.Time) []HouseEvent {
+func (s *SQLEventStore) upcoming(tenantSlug string, now time.Time) []HouseEvent {
 	out := []HouseEvent{}
 	for _, item := range s.allForTenant(tenantSlug) {
 		if EventRollsOffAt(item).After(now) {

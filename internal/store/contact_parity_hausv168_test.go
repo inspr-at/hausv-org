@@ -29,7 +29,10 @@ func TestContactBookStorageParity(t *testing.T) {
 
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
-			s := build(t)
+			s, ok := BindContactBookRepository(build(t), "demo")
+			if !ok {
+				t.Fatal("bind contact repository")
+			}
 
 			if _, _, err := s.Upsert(ManagedContact{TenantSlug: "demo", Kind: "dienstleister"}); err == nil {
 				t.Fatal("contact without name/route must error")
@@ -52,7 +55,7 @@ func TestContactBookStorageParity(t *testing.T) {
 			}
 			id := created.ID
 
-			if got := s.ListTenant("demo", false); len(got) != 1 || got[0].ID != id {
+			if got := s.List(false); len(got) != 1 || got[0].ID != id {
 				t.Fatalf("list active = %+v", got)
 			}
 
@@ -71,19 +74,19 @@ func TestContactBookStorageParity(t *testing.T) {
 			}
 
 			// Deactivate: excluded from active list, present with includeInactive.
-			deact, err := s.Deactivate("demo", id, time.Time{})
+			deact, err := s.Deactivate(id, time.Time{})
 			if err != nil || deact.Active {
 				t.Fatalf("deactivate: err=%v active=%v", err, deact.Active)
 			}
-			if got := s.ListTenant("demo", false); len(got) != 0 {
+			if got := s.List(false); len(got) != 0 {
 				t.Fatalf("deactivated must be excluded from active list: %+v", got)
 			}
-			if got := s.ListTenant("demo", true); len(got) != 1 {
+			if got := s.List(true); len(got) != 1 {
 				t.Fatalf("includeInactive must show it: %+v", got)
 			}
 
 			// Deactivate unknown -> empty, no error.
-			if c, err := s.Deactivate("demo", "does-not-exist", time.Time{}); err != nil || c.ID != "" {
+			if c, err := s.Deactivate("does-not-exist", time.Time{}); err != nil || c.ID != "" {
 				t.Fatalf("deactivate unknown: err=%v c=%+v", err, c)
 			}
 		})
@@ -95,8 +98,9 @@ func TestSQLContactImportFromJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json store: %v", err)
 	}
-	a, _, _ := jsonStore.Upsert(ManagedContact{TenantSlug: "demo", Kind: "dienstleister", Name: "Alpha", Phone: "+43 1 1", Active: true})
-	_, _, _ = jsonStore.Upsert(ManagedContact{TenantSlug: "demo", Kind: "notdienst", Company: "Beta GmbH", Email: "b@example.com", Active: true})
+	jsonRepo, _ := BindContactBookRepository(jsonStore, "demo")
+	a, _, _ := jsonRepo.Upsert(ManagedContact{TenantSlug: "demo", Kind: "dienstleister", Name: "Alpha", Phone: "+43 1 1", Active: true})
+	_, _, _ = jsonRepo.Upsert(ManagedContact{TenantSlug: "demo", Kind: "notdienst", Company: "Beta GmbH", Email: "b@example.com", Active: true})
 
 	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
@@ -110,14 +114,15 @@ func TestSQLContactImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	list := sqlStore.ListTenant("demo", true)
+	sqlRepo, _ := BindContactBookRepository(sqlStore, "demo")
+	list := sqlRepo.List(true)
 	if len(list) != 2 {
 		t.Fatalf("imported %d contacts, want 2: %+v", len(list), list)
 	}
-	if _, err := sqlStore.Deactivate("demo", a.ID, time.Time{}); err != nil {
+	if _, err := sqlRepo.Deactivate(a.ID, time.Time{}); err != nil {
 		t.Fatalf("deactivate imported: %v", err)
 	}
-	if got := sqlStore.ListTenant("demo", false); len(got) != 1 {
+	if got := sqlRepo.List(false); len(got) != 1 {
 		t.Fatalf("after deactivate one, active should be 1: %+v", got)
 	}
 }

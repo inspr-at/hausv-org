@@ -266,7 +266,7 @@ func (s *SQLIdentityStore) SetTenantMembership(email string, tenantSlug string, 
 	}
 	status := ""
 	var directoryOptIn *bool
-	if existing, had := s.Membership(person.ID, tenantSlug); had {
+	if existing, had := s.membership(person.ID, tenantSlug); had {
 		status = existing.Status
 		directoryOptIn = existing.DirectoryOptIn
 	}
@@ -346,7 +346,7 @@ func (s *SQLIdentityStore) RemoveTenant(email string, tenantSlug string) (bool, 
 	if !ok {
 		return false, false, nil
 	}
-	if _, err := s.RemoveMembership(person.ID, tenantSlug); err != nil {
+	if _, err := s.removeMembership(person.ID, tenantSlug); err != nil {
 		return false, true, err
 	}
 	if len(s.MembershipsForPerson(person.ID)) == 0 {
@@ -368,7 +368,7 @@ func (s *SQLIdentityStore) SetTenantDirectoryOptIn(email string, tenantSlug stri
 	if !ok {
 		return false, nil
 	}
-	existing, had := s.Membership(person.ID, tenantSlug)
+	existing, had := s.membership(person.ID, tenantSlug)
 	if !had {
 		return false, nil
 	}

@@ -38,20 +38,20 @@ func (a *app) createBallot(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 		return
 	}
-	created, err := a.voteStore.Create(item)
+	created, err := ac.repositories.votes.Create(item)
 	if err != nil {
 		logError("ballot create failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 		http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 		return
 	}
 	if len(attachmentHeaders) > 0 {
-		if a.attachmentStore == nil {
-			_, _ = a.voteStore.Delete(tenant.Slug, created.ID)
+		if ac.repositories.attachments == nil {
+			_, _ = ac.repositories.votes.Delete(created.ID)
 			http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 			return
 		}
-		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "ballot", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
-			_, _ = a.voteStore.Delete(tenant.Slug, created.ID)
+		if _, err := ac.repositories.attachments.CreateUploaded("ballot", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
+			_, _ = ac.repositories.votes.Delete(created.ID)
 			http.Redirect(w, r, "/app/abstimmungen?vote=invalid", http.StatusSeeOther)
 			return
 		}
@@ -108,12 +108,12 @@ func (a *app) updateBallotStatus(w http.ResponseWriter, r *http.Request, ac auth
 	)
 	switch status {
 	case ballotStatusOpen:
-		updated, found, err = a.voteStore.Open(tenant.Slug, id, time.Now())
+		updated, found, err = ac.repositories.votes.Open(id, time.Now())
 		action = auditActionVoteOpen
 		summary = "Abstimmung geöffnet"
 		statusQ = "opened"
 	case ballotStatusClosed:
-		updated, found, err = a.voteStore.Close(tenant.Slug, id, time.Now())
+		updated, found, err = ac.repositories.votes.Close(id, time.Now())
 		action = auditActionVoteClose
 		summary = "Abstimmung geschlossen"
 		statusQ = "closed"
@@ -208,10 +208,10 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	now := time.Now()
 	all := []ballot{}
 	if a.voteStore != nil {
-		if _, err := a.voteStore.CloseExpiredTenant(tenant.Slug, now); err != nil {
+		if _, err := ac.repositories.votes.CloseExpired(now); err != nil {
 			logError("ballot auto-close failed", err, "tenant", tenant.Slug)
 		}
-		all = a.voteStore.ListTenant(tenant.Slug)
+		all = ac.repositories.votes.List()
 	}
 	visible := make([]ballot, 0, len(all))
 	for _, item := range all {
@@ -224,7 +224,7 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if canManage {
 		pageItems = all
 	}
-	views := a.ballotViewsForActor(tenant.Slug, email, role, pageItems, now, canManage || canOversight)
+	views := a.ballotViewsForActor(ac.repositories, tenant.Slug, email, role, pageItems, now, canManage || canOversight)
 	pendingCount := 0
 	draftCount := 0
 	openCount := 0
@@ -339,7 +339,7 @@ func (a *app) castVote(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	id := strings.TrimSpace(firstNonEmpty(r.FormValue("ballot_id"), r.FormValue("id")))
 	option := strings.TrimSpace(r.FormValue("option"))
-	updated, found, err := a.castBallotVote(tenant.Slug, email, id, option, time.Now())
+	updated, found, err := a.castBallotVote(ac.repositories, tenant.Slug, email, id, option, time.Now())
 	if !found {
 		http.Redirect(w, r, "/app/abstimmungen?vote=missing", http.StatusSeeOther)
 		return
@@ -379,11 +379,11 @@ func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx)
 		return
 	}
 	now := time.Now()
-	if _, err := a.voteStore.CloseExpiredTenant(tenant.Slug, now); err != nil {
+	if _, err := ac.repositories.votes.CloseExpired(now); err != nil {
 		logError("ballot auto-close failed", err, "tenant", tenant.Slug)
 	}
 	id := strings.TrimSpace(r.PathValue("id"))
-	item, found := a.voteStore.Get(tenant.Slug, id)
+	item, found := ac.repositories.votes.Get(id)
 	if !found {
 		http.NotFound(w, r)
 		return
@@ -392,7 +392,7 @@ func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.Error(w, "Protokoll erst nach Abschluss verfügbar.", http.StatusConflict)
 		return
 	}
-	view := a.ballotViewForActor(tenant.Slug, email, role, item, now, true)
+	view := a.ballotViewForActor(ac.repositories, tenant.Slug, email, role, item, now, true)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": "abstimmung-" + item.ID + "-protokoll.html"}))
 	a.executeTemplate(w, "ballotProtocol", map[string]any{
@@ -404,22 +404,22 @@ func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx)
 	})
 }
 
-func (a *app) castBallotVote(tenantSlug string, email string, ballotID string, option string, at time.Time) (ballot, bool, error) {
-	if a == nil || a.voteStore == nil {
+func (a *app) castBallotVote(repositories requestRepositories, tenantSlug string, email string, ballotID string, option string, at time.Time) (ballot, bool, error) {
+	if a == nil || repositories.votes == nil {
 		return ballot{}, false, nil
 	}
-	item, found := a.voteStore.Get(tenantSlug, ballotID)
+	item, found := repositories.votes.Get(ballotID)
 	if !found {
 		return ballot{}, false, nil
 	}
-	weight, eligible := a.ballotVoteWeight(tenantSlug, email, item)
+	weight, eligible := a.ballotVoteWeight(repositories.units, tenantSlug, email, item)
 	if !eligible {
 		return ballot{}, true, fmt.Errorf("not eligible to vote")
 	}
-	return a.voteStore.CastVote(tenantSlug, ballotID, email, option, weight, at)
+	return repositories.votes.CastVote(ballotID, email, option, weight, at)
 }
 
-func (a *app) ballotVoteWeight(tenantSlug string, email string, item ballot) (int, bool) {
+func (a *app) ballotVoteWeight(units unitRepository, tenantSlug string, email string, item ballot) (int, bool) {
 	if a == nil {
 		return 0, false
 	}
@@ -429,8 +429,8 @@ func (a *app) ballotVoteWeight(tenantSlug string, email string, item ballot) (in
 		return 0, false
 	}
 	ownerShare := 0
-	if a != nil && a.unitStore != nil {
-		for _, membership := range a.unitStore.UnitsForEmail(tenantSlug, email) {
+	if units != nil {
+		for _, membership := range units.UnitsForEmail(email) {
 			if membership.Relation == roleOwner {
 				ownerShare += membership.Unit.MiteigentumsanteilPPM
 			}
@@ -450,21 +450,21 @@ func (a *app) ballotVoteWeight(tenantSlug string, email string, item ballot) (in
 	return 0, false
 }
 
-func (a *app) ballotViewsForActor(tenantSlug string, email string, role string, items []ballot, now time.Time, includeResults bool) []ballotView {
+func (a *app) ballotViewsForActor(repositories requestRepositories, tenantSlug string, email string, role string, items []ballot, now time.Time, includeResults bool) []ballotView {
 	out := make([]ballotView, 0, len(items))
 	for _, item := range items {
-		out = append(out, a.ballotViewForActor(tenantSlug, email, role, item, now, includeResults))
+		out = append(out, a.ballotViewForActor(repositories, tenantSlug, email, role, item, now, includeResults))
 	}
 	return out
 }
 
-func (a *app) ballotViewForActor(tenantSlug string, email string, role string, item ballot, now time.Time, includeResults bool) ballotView {
+func (a *app) ballotViewForActor(repositories requestRepositories, tenantSlug string, email string, role string, item ballot, now time.Time, includeResults bool) ballotView {
 	item = normalizeBallot(item)
-	weight, eligible := a.ballotVoteWeight(tenantSlug, email, item)
+	weight, eligible := a.ballotVoteWeight(repositories.units, tenantSlug, email, item)
 	status, statusClass, active := ballotStatusForView(item, now)
 	vote, hasVote := item.Votes[normalizeEmail(email)]
 	rawStatus := normalizeBallotStatus(item.Status)
-	tally := a.computeBallotTally(tenantSlug, item)
+	tally := a.computeBallotTally(repositories.units, tenantSlug, item)
 	view := ballotView{
 		ID:                  item.ID,
 		Title:               item.Title,
@@ -540,7 +540,7 @@ func (a *app) ballotViewForActor(tenantSlug string, email string, role string, i
 	return view
 }
 
-func (a *app) computeBallotTally(tenantSlug string, item ballot) ballotResultSummary {
+func (a *app) computeBallotTally(units unitRepository, tenantSlug string, item ballot) ballotResultSummary {
 	out := ballotResultSummary{Options: map[string]ballotResultCount{}}
 	item = normalizeBallot(item)
 	for _, vote := range item.Votes {
@@ -560,7 +560,7 @@ func (a *app) computeBallotTally(tenantSlug string, item ballot) ballotResultSum
 			out.Options[option] = result
 		}
 	}
-	out.EligibleWeight = a.ballotEligibleWeightTotal(tenantSlug, item)
+	out.EligibleWeight = a.ballotEligibleWeightTotal(units, tenantSlug, item)
 	if out.EligibleWeight < out.TotalWeight {
 		out.EligibleWeight = out.TotalWeight
 	}
@@ -585,21 +585,21 @@ func (a *app) computeBallotTally(tenantSlug string, item ballot) ballotResultSum
 	return out
 }
 
-func (a *app) ballotEligibleWeightTotal(tenantSlug string, item ballot) int {
+func (a *app) ballotEligibleWeightTotal(units unitRepository, tenantSlug string, item ballot) int {
 	total := 0
-	for _, weight := range a.ballotEligibleWeights(tenantSlug, item) {
+	for _, weight := range a.ballotEligibleWeights(units, tenantSlug, item) {
 		total += weight
 	}
 	return total
 }
 
-func (a *app) ballotEligibleWeights(tenantSlug string, item ballot) map[string]int {
+func (a *app) ballotEligibleWeights(units unitRepository, tenantSlug string, item ballot) map[string]int {
 	weights := map[string]int{}
 	tenantSlug = normalizeSlug(tenantSlug)
 	switch normalizeBallotWeighting(item.Weighting) {
 	case ballotWeightingPerHead:
-		if a != nil && a.unitStore != nil {
-			for _, unit := range a.unitStore.ListTenant(tenantSlug) {
+		if units != nil {
+			for _, unit := range units.List() {
 				for _, email := range unit.OwnerEmails {
 					if email = normalizeEmail(email); email != "" {
 						weights[email] = 1
@@ -616,8 +616,8 @@ func (a *app) ballotEligibleWeights(tenantSlug string, item ballot) map[string]i
 			}
 		}
 	case ballotWeightingPerShare:
-		if a != nil && a.unitStore != nil {
-			for _, unit := range a.unitStore.ListTenant(tenantSlug) {
+		if units != nil {
+			for _, unit := range units.List() {
 				if unit.MiteigentumsanteilPPM <= 0 {
 					continue
 				}
@@ -733,14 +733,15 @@ func (a *app) sendDueBallotReminders(now time.Time) int {
 	}
 	sentTotal := 0
 	for _, tenant := range a.tenants {
-		if _, err := a.voteStore.CloseExpiredTenant(tenant.Slug, now); err != nil {
+		repositories := a.repositoriesForTenant(tenant)
+		if _, err := repositories.votes.CloseExpired(now); err != nil {
 			logError("ballot auto-close failed", err, "tenant", tenant.Slug)
 		}
-		for _, item := range a.voteStore.ListTenant(tenant.Slug) {
+		for _, item := range repositories.votes.List() {
 			if !ballotReminderDue(item, now) {
 				continue
 			}
-			recipients := a.ballotReminderRecipients(tenant.Slug, item)
+			recipients := a.ballotReminderRecipients(repositories.units, tenant.Slug, item)
 			if len(recipients) == 0 {
 				continue
 			}
@@ -762,7 +763,7 @@ func (a *app) sendDueBallotReminders(now time.Time) int {
 			if len(sent) == 0 {
 				continue
 			}
-			if _, _, err := a.voteStore.MarkReminderSent(tenant.Slug, item.ID, sent, now); err != nil {
+			if _, _, err := repositories.votes.MarkReminderSent(item.ID, sent, now); err != nil {
 				logError("ballot reminder mark failed", err, "tenant", tenant.Slug, "ballot_id", item.ID)
 				continue
 			}
@@ -798,8 +799,8 @@ func ballotReminderDue(item ballot, now time.Time) bool {
 	return item.ClosesAt.Sub(now) <= time.Duration(item.ReminderBeforeMinutes)*time.Minute
 }
 
-func (a *app) ballotReminderRecipients(tenantSlug string, item ballot) []string {
-	weights := a.ballotEligibleWeights(tenantSlug, item)
+func (a *app) ballotReminderRecipients(units unitRepository, tenantSlug string, item ballot) []string {
+	weights := a.ballotEligibleWeights(units, tenantSlug, item)
 	recipients := make([]string, 0, len(weights))
 	for email := range weights {
 		if _, voted := item.Votes[email]; voted {

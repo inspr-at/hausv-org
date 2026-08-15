@@ -10,24 +10,92 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
-// VoteStorage is the behaviour both the JSON VoteStore and the SQLite
-// SQLVoteStore satisfy (HAUSV-168).
-type VoteStorage interface {
+// VoteRepository is a vote store already bound to one tenant.
+type VoteRepository interface {
 	Create(item Ballot) (Ballot, error)
-	Delete(tenantSlug string, id string) (bool, error)
-	Open(tenantSlug string, id string, at time.Time) (Ballot, bool, error)
-	Close(tenantSlug string, id string, at time.Time) (Ballot, bool, error)
-	CloseExpiredTenant(tenantSlug string, at time.Time) ([]Ballot, error)
-	CastVote(tenantSlug string, id string, email string, option string, weight int, at time.Time) (Ballot, bool, error)
-	MarkReminderSent(tenantSlug string, id string, recipients []string, at time.Time) (Ballot, bool, error)
-	ListTenant(tenantSlug string) []Ballot
-	Get(tenantSlug string, id string) (Ballot, bool)
+	Delete(id string) (bool, error)
+	Open(id string, at time.Time) (Ballot, bool, error)
+	Close(id string, at time.Time) (Ballot, bool, error)
+	CloseExpired(at time.Time) ([]Ballot, error)
+	CastVote(id string, email string, option string, weight int, at time.Time) (Ballot, bool, error)
+	MarkReminderSent(id string, recipients []string, at time.Time) (Ballot, bool, error)
+	List() []Ballot
+	Get(id string) (Ballot, bool)
+}
+
+// VoteStorage is the unbound backend implemented by the JSON and SQLite
+// stores. HTTP code receives only VoteRepository.
+type VoteStorage interface {
+	voteStorage()
 }
 
 var (
 	_ VoteStorage = (*VoteStore)(nil)
 	_ VoteStorage = (*SQLVoteStore)(nil)
 )
+
+type boundVoteRepository struct {
+	storage    voteBackend
+	tenantSlug string
+}
+
+type voteBackend interface {
+	create(tenantSlug string, item Ballot) (Ballot, error)
+	delete(tenantSlug string, id string) (bool, error)
+	open(tenantSlug string, id string, at time.Time) (Ballot, bool, error)
+	close(tenantSlug string, id string, at time.Time) (Ballot, bool, error)
+	closeExpiredTenant(tenantSlug string, at time.Time) ([]Ballot, error)
+	castVote(tenantSlug string, id string, email string, option string, weight int, at time.Time) (Ballot, bool, error)
+	markReminderSent(tenantSlug string, id string, recipients []string, at time.Time) (Ballot, bool, error)
+	listTenant(tenantSlug string) []Ballot
+	get(tenantSlug string, id string) (Ballot, bool)
+}
+
+// BindVoteRepository binds all vote operations to one tenant.
+func BindVoteRepository(storage VoteStorage, tenantSlug string) (VoteRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(voteBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundVoteRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundVoteRepository) Create(item Ballot) (Ballot, error) {
+	return r.storage.create(r.tenantSlug, item)
+}
+
+func (r *boundVoteRepository) Delete(id string) (bool, error) {
+	return r.storage.delete(r.tenantSlug, id)
+}
+
+func (r *boundVoteRepository) Open(id string, at time.Time) (Ballot, bool, error) {
+	return r.storage.open(r.tenantSlug, id, at)
+}
+
+func (r *boundVoteRepository) Close(id string, at time.Time) (Ballot, bool, error) {
+	return r.storage.close(r.tenantSlug, id, at)
+}
+
+func (r *boundVoteRepository) CloseExpired(at time.Time) ([]Ballot, error) {
+	return r.storage.closeExpiredTenant(r.tenantSlug, at)
+}
+
+func (r *boundVoteRepository) CastVote(id string, email string, option string, weight int, at time.Time) (Ballot, bool, error) {
+	return r.storage.castVote(r.tenantSlug, id, email, option, weight, at)
+}
+
+func (r *boundVoteRepository) MarkReminderSent(id string, recipients []string, at time.Time) (Ballot, bool, error) {
+	return r.storage.markReminderSent(r.tenantSlug, id, recipients, at)
+}
+
+func (r *boundVoteRepository) List() []Ballot {
+	return r.storage.listTenant(r.tenantSlug)
+}
+
+func (r *boundVoteRepository) Get(id string) (Ballot, bool) {
+	return r.storage.get(r.tenantSlug, id)
+}
 
 // SQLVoteStore keeps each ballot — votes included — as one JSON document keyed
 // by (tenant, id). Table from migration 0015.
@@ -38,6 +106,8 @@ type SQLVoteStore struct {
 func NewSQLVoteStore(db *sql.DB) *SQLVoteStore {
 	return &SQLVoteStore{db: db}
 }
+
+func (*SQLVoteStore) voteStorage() {}
 
 func (s *SQLVoteStore) writeTx(tx *sql.Tx, item Ballot) error {
 	blob, err := json.Marshal(item)
@@ -65,7 +135,7 @@ func loadBallotTx(tx *sql.Tx, tenantSlug string, id string) (Ballot, bool) {
 	return item, true
 }
 
-func (s *SQLVoteStore) Create(item Ballot) (Ballot, error) {
+func (s *SQLVoteStore) create(tenantSlug string, item Ballot) (Ballot, error) {
 	if s == nil {
 		return Ballot{}, fmt.Errorf("vote store unavailable")
 	}
@@ -74,6 +144,7 @@ func (s *SQLVoteStore) Create(item Ballot) (Ballot, error) {
 	if err != nil {
 		return Ballot{}, err
 	}
+	item.TenantSlug = tenantSlug
 	item.ID = id
 	item.Status = BallotStatusDraft
 	item.CreatedAt = now
@@ -100,7 +171,7 @@ func (s *SQLVoteStore) Create(item Ballot) (Ballot, error) {
 	return CopyBallot(item), nil
 }
 
-func (s *SQLVoteStore) Delete(tenantSlug string, id string) (bool, error) {
+func (s *SQLVoteStore) delete(tenantSlug string, id string) (bool, error) {
 	if s == nil {
 		return false, nil
 	}
@@ -117,11 +188,11 @@ func (s *SQLVoteStore) Delete(tenantSlug string, id string) (bool, error) {
 	return n > 0, nil
 }
 
-func (s *SQLVoteStore) Open(tenantSlug string, id string, at time.Time) (Ballot, bool, error) {
+func (s *SQLVoteStore) open(tenantSlug string, id string, at time.Time) (Ballot, bool, error) {
 	return s.setStatus(tenantSlug, id, BallotStatusOpen, at)
 }
 
-func (s *SQLVoteStore) Close(tenantSlug string, id string, at time.Time) (Ballot, bool, error) {
+func (s *SQLVoteStore) close(tenantSlug string, id string, at time.Time) (Ballot, bool, error) {
 	return s.setStatus(tenantSlug, id, BallotStatusClosed, at)
 }
 
@@ -169,7 +240,7 @@ func (s *SQLVoteStore) setStatus(tenantSlug string, id string, status string, at
 	return CopyBallot(item), true, nil
 }
 
-func (s *SQLVoteStore) CloseExpiredTenant(tenantSlug string, at time.Time) ([]Ballot, error) {
+func (s *SQLVoteStore) closeExpiredTenant(tenantSlug string, at time.Time) ([]Ballot, error) {
 	if s == nil {
 		return nil, nil
 	}
@@ -228,7 +299,7 @@ func (s *SQLVoteStore) CloseExpiredTenant(tenantSlug string, at time.Time) ([]Ba
 	return closed, nil
 }
 
-func (s *SQLVoteStore) CastVote(tenantSlug string, id string, email string, option string, weight int, at time.Time) (Ballot, bool, error) {
+func (s *SQLVoteStore) castVote(tenantSlug string, id string, email string, option string, weight int, at time.Time) (Ballot, bool, error) {
 	if s == nil {
 		return Ballot{}, false, nil
 	}
@@ -291,7 +362,7 @@ func (s *SQLVoteStore) CastVote(tenantSlug string, id string, email string, opti
 	return CopyBallot(item), true, nil
 }
 
-func (s *SQLVoteStore) MarkReminderSent(tenantSlug string, id string, recipients []string, at time.Time) (Ballot, bool, error) {
+func (s *SQLVoteStore) markReminderSent(tenantSlug string, id string, recipients []string, at time.Time) (Ballot, bool, error) {
 	if s == nil {
 		return Ballot{}, false, nil
 	}
@@ -332,7 +403,7 @@ func (s *SQLVoteStore) MarkReminderSent(tenantSlug string, id string, recipients
 	return CopyBallot(item), true, nil
 }
 
-func (s *SQLVoteStore) ListTenant(tenantSlug string) []Ballot {
+func (s *SQLVoteStore) listTenant(tenantSlug string) []Ballot {
 	if s == nil {
 		return nil
 	}
@@ -358,7 +429,7 @@ func (s *SQLVoteStore) ListTenant(tenantSlug string) []Ballot {
 	return out
 }
 
-func (s *SQLVoteStore) Get(tenantSlug string, id string) (Ballot, bool) {
+func (s *SQLVoteStore) get(tenantSlug string, id string) (Ballot, bool) {
 	if s == nil {
 		return Ballot{}, false
 	}

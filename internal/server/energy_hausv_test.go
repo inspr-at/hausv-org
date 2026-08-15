@@ -90,7 +90,7 @@ func TestPartialOnboardingUsesChosenHomeIdentityInSidebar(t *testing.T) {
 		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID:          "einheit-12",
 		TenantSlug:  "demo",
 		Label:       "Einheit 12",
@@ -135,7 +135,7 @@ func TestOfficialUnitOwnerCanContinueFreshOnboardingAfterFirstStep(t *testing.T)
 		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID:           "top-1",
 		TenantSlug:   "demo",
 		Label:        "Top 1",
@@ -194,7 +194,7 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 	if err := a.energyStore.SaveProfile(profile); err != nil {
 		t.Fatalf("SaveProfile: %v", err)
 	}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID:           "einheit-12",
 		TenantSlug:   "demo",
 		Label:        "Einheit 12",
@@ -311,7 +311,7 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 	if err != nil || !ok || updated.HouseholdName != "Sonnendeck" || updated.HomeType != energy.HomeApartment || updated.UnitID != "einheit-12" {
 		t.Fatalf("updated profile = %+v ok=%v err=%v", updated, ok, err)
 	}
-	units := a.unitStore.ListTenant("demo")
+	units := testUnitRepository(t, a, "demo").List()
 	if len(units) != 1 || units[0].Label != "Einheit 12" {
 		t.Fatalf("official unit changed with home identity: %+v", units)
 	}
@@ -344,7 +344,7 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 		t.Fatalf("linked owner changed locked profile: %+v", unchanged)
 	}
 
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{
 			ID:           "einheit-12",
 			TenantSlug:   "demo",
@@ -444,7 +444,7 @@ func TestManagerResolvesAmbiguousLegacyHomeWithoutTransferringIt(t *testing.T) {
 	a.profiles["second@example.com"] = userProfile{
 		Email: "second@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential, OwnerEmails: []string{"first@example.com"}},
 		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", UnitType: unitTypeResidential, OwnerEmails: []string{"second@example.com"}},
 	}); err != nil {
@@ -522,7 +522,7 @@ func TestManagerResolvesAmbiguousLegacyHomeWithoutTransferringIt(t *testing.T) {
 	if response.Code != http.StatusSeeOther || !strings.Contains(response.Header().Get("Location"), "unit=home-linked") {
 		t.Fatalf("linked unit delete status=%d location=%q", response.Code, response.Header().Get("Location"))
 	}
-	if len(a.unitStore.ListTenant("demo")) != 2 {
+	if len(testUnitRepository(t, a, "demo").List()) != 2 {
 		t.Fatal("linked official unit was deleted")
 	}
 }
@@ -534,7 +534,7 @@ func TestLinkedHomeUnitKeepsItsResidentialIdentityInBuildingEditor(t *testing.T)
 		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID:                    "top-1",
 		TenantSlug:            "demo",
 		Label:                 "Top 1",
@@ -573,7 +573,7 @@ func TestLinkedHomeUnitKeepsItsResidentialIdentityInBuildingEditor(t *testing.T)
 				response.Header().Get("Location") != "/demo/app/settings/building?section=units&unit=home-linked#unit-top-1" {
 				t.Fatalf("linked unit mutation status=%d location=%q", response.Code, response.Header().Get("Location"))
 			}
-			units := a.unitStore.ListTenant("demo")
+			units := testUnitRepository(t, a, "demo").List()
 			if len(units) != 1 || units[0].ID != "top-1" || units[0].UnitType != unitTypeResidential {
 				t.Fatalf("linked unit identity changed: %+v", units)
 			}
@@ -596,7 +596,7 @@ func TestLinkedHomeUnitKeepsItsResidentialIdentityInBuildingEditor(t *testing.T)
 		response.Header().Get("Location") != "/demo/app/settings/building?section=units&unit=saved" {
 		t.Fatalf("safe linked unit edit status=%d location=%q", response.Code, response.Header().Get("Location"))
 	}
-	units := a.unitStore.ListTenant("demo")
+	units := testUnitRepository(t, a, "demo").List()
 	if len(units) != 1 || units[0].Label != "Top 1 – Süd" || units[0].MiteigentumsanteilPPM != 25 {
 		t.Fatalf("safe linked unit fields were not saved: %+v", units)
 	}
@@ -612,7 +612,7 @@ func TestAmbiguousLegacyApartmentStaysUnboundAfterUnitInventoryChanges(t *testin
 	a.profiles["first@example.com"] = userProfile{
 		Email: "first@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential, OwnerEmails: []string{"first@example.com"}},
 		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", UnitType: unitTypeResidential},
 	}); err != nil {
@@ -1033,7 +1033,7 @@ func TestCuratedEnergySpecialistAndMeasureStayClosedUntilExplicitPortalGate(t *t
 	if response.Code != http.StatusSeeOther {
 		t.Fatalf("energy contact status = %d body=%s", response.Code, response.Body.String())
 	}
-	contacts := a.contactStore.ListTenant("demo", false)
+	contacts := testRepositories(a, "demo").contacts.List(false)
 	if len(contacts) != 1 || contacts[0].Kind != "Energie-Fachbetrieb" ||
 		len(contacts[0].EnergyCapabilities) != 2 {
 		t.Fatalf("contacts = %+v", contacts)
@@ -1063,7 +1063,7 @@ func TestCuratedEnergySpecialistAndMeasureStayClosedUntilExplicitPortalGate(t *t
 	if err != nil || !ok || measure.Status != energy.MeasureAssigned || measure.ContactID != contacts[0].ID {
 		t.Fatalf("assigned measure = %+v ok=%v err=%v", measure, ok, err)
 	}
-	issue, ok := a.issueStore.Get("demo", measure.IssueID)
+	issue, ok := issueRepositoryForTest(a, "demo").Get(measure.IssueID)
 	if !ok || issue.AssigneeEmail != "" {
 		t.Fatalf("closed gate granted issue access: %+v ok=%v", issue, ok)
 	}
@@ -1124,7 +1124,7 @@ func TestEnergyRecommendationCanBecomeDataSparseIssue(t *testing.T) {
 	if response.Code != http.StatusSeeOther {
 		t.Fatalf("measure status = %d body=%s", response.Code, response.Body.String())
 	}
-	issues := a.issueStore.ListTenant("demo")
+	issues := issueRepositoryForTest(a, "demo").List()
 	if len(issues) != 1 {
 		t.Fatalf("issues = %+v", issues)
 	}

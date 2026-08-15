@@ -10,26 +10,78 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
-// IssueStorage is the behaviour both the JSON IssueStore and the SQLite
-// SQLIssueStore satisfy (HAUSV-168). SavePhoto is deliberately absent: it has
-// no callers left — issue photos go through the attachment store.
-type IssueStorage interface {
+// IssueRepository is an issue store already bound to one tenant.
+type IssueRepository interface {
 	Create(item ResidentIssue) (ResidentIssue, error)
-	ListTenant(tenantSlug string) []ResidentIssue
-	ListAuthor(tenantSlug string, email string) []ResidentIssue
-	Get(tenantSlug string, id string) (ResidentIssue, bool)
-	UpdateWorkflow(tenantSlug string, id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error)
-	AddComment(tenantSlug string, id string, comment IssueComment) (ResidentIssue, bool, error)
-	DeleteComment(tenantSlug string, id string, commentID string, at time.Time) (ResidentIssue, bool, error)
+	List() []ResidentIssue
+	ListAuthor(email string) []ResidentIssue
+	Get(id string) (ResidentIssue, bool)
+	UpdateWorkflow(id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error)
+	AddComment(id string, comment IssueComment) (ResidentIssue, bool, error)
+	DeleteComment(id string, commentID string, at time.Time) (ResidentIssue, bool, error)
 	// ClearPhotoPaths drops the legacy photo list after those photos have been
 	// moved into the attachment store (HAUSV-175).
-	ClearPhotoPaths(tenantSlug string, id string) (bool, error)
+	ClearPhotoPaths(id string) (bool, error)
+}
+
+// IssueStorage is the unbound backend. Tenant-aware operations stay private to
+// this package; request handlers receive only IssueRepository.
+type IssueStorage interface {
+	issueStorage()
 }
 
 var (
 	_ IssueStorage = (*IssueStore)(nil)
 	_ IssueStorage = (*SQLIssueStore)(nil)
 )
+
+type issueBackend interface {
+	create(tenantSlug string, item ResidentIssue) (ResidentIssue, error)
+	listTenant(tenantSlug string) []ResidentIssue
+	listAuthor(tenantSlug string, email string) []ResidentIssue
+	get(tenantSlug string, id string) (ResidentIssue, bool)
+	updateWorkflow(tenantSlug string, id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error)
+	addComment(tenantSlug string, id string, comment IssueComment) (ResidentIssue, bool, error)
+	deleteComment(tenantSlug string, id string, commentID string, at time.Time) (ResidentIssue, bool, error)
+	clearPhotoPaths(tenantSlug string, id string) (bool, error)
+}
+
+type boundIssueRepository struct {
+	storage    issueBackend
+	tenantSlug string
+}
+
+func BindIssueRepository(storage IssueStorage, tenantSlug string) (IssueRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(issueBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundIssueRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundIssueRepository) Create(item ResidentIssue) (ResidentIssue, error) {
+	return r.storage.create(r.tenantSlug, item)
+}
+func (r *boundIssueRepository) List() []ResidentIssue { return r.storage.listTenant(r.tenantSlug) }
+func (r *boundIssueRepository) ListAuthor(email string) []ResidentIssue {
+	return r.storage.listAuthor(r.tenantSlug, email)
+}
+func (r *boundIssueRepository) Get(id string) (ResidentIssue, bool) {
+	return r.storage.get(r.tenantSlug, id)
+}
+func (r *boundIssueRepository) UpdateWorkflow(id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error) {
+	return r.storage.updateWorkflow(r.tenantSlug, id, update)
+}
+func (r *boundIssueRepository) AddComment(id string, comment IssueComment) (ResidentIssue, bool, error) {
+	return r.storage.addComment(r.tenantSlug, id, comment)
+}
+func (r *boundIssueRepository) DeleteComment(id string, commentID string, at time.Time) (ResidentIssue, bool, error) {
+	return r.storage.deleteComment(r.tenantSlug, id, commentID, at)
+}
+func (r *boundIssueRepository) ClearPhotoPaths(id string) (bool, error) {
+	return r.storage.clearPhotoPaths(r.tenantSlug, id)
+}
 
 // SQLIssueStore keeps each issue — comments and status history included — as
 // one JSON document keyed by (tenant, id). Table from migration 0016.
@@ -41,6 +93,8 @@ type SQLIssueStore struct {
 func NewSQLIssueStore(db *sql.DB, attachmentDir string) *SQLIssueStore {
 	return &SQLIssueStore{db: db, attachmentDir: attachmentDir}
 }
+
+func (*SQLIssueStore) issueStorage() {}
 
 func (s *SQLIssueStore) writeTx(tx *sql.Tx, item ResidentIssue) error {
 	blob, err := json.Marshal(item)
@@ -67,7 +121,7 @@ func loadIssueTx(tx *sql.Tx, tenantSlug string, id string) (ResidentIssue, bool)
 	return item, true
 }
 
-func (s *SQLIssueStore) Create(item ResidentIssue) (ResidentIssue, error) {
+func (s *SQLIssueStore) create(tenantSlug string, item ResidentIssue) (ResidentIssue, error) {
 	if s == nil {
 		return item, nil
 	}
@@ -79,7 +133,7 @@ func (s *SQLIssueStore) Create(item ResidentIssue) (ResidentIssue, error) {
 		}
 		item.ID = id
 	}
-	item.TenantSlug = textutil.Slug(item.TenantSlug)
+	item.TenantSlug = textutil.Slug(tenantSlug)
 	item.AuthorEmail = textutil.Email(item.AuthorEmail)
 	item.Category = NormalizeIssueCategory(item.Category)
 	item.LocationType = NormalizeIssueLocation(item.LocationType)
@@ -150,7 +204,7 @@ func (s *SQLIssueStore) allForTenant(tenantSlug string) []ResidentIssue {
 	return out
 }
 
-func (s *SQLIssueStore) ListTenant(tenantSlug string) []ResidentIssue {
+func (s *SQLIssueStore) listTenant(tenantSlug string) []ResidentIssue {
 	if s == nil {
 		return nil
 	}
@@ -162,7 +216,7 @@ func (s *SQLIssueStore) ListTenant(tenantSlug string) []ResidentIssue {
 	return out
 }
 
-func (s *SQLIssueStore) ListAuthor(tenantSlug string, email string) []ResidentIssue {
+func (s *SQLIssueStore) listAuthor(tenantSlug string, email string) []ResidentIssue {
 	if s == nil {
 		return nil
 	}
@@ -177,7 +231,7 @@ func (s *SQLIssueStore) ListAuthor(tenantSlug string, email string) []ResidentIs
 	return out
 }
 
-func (s *SQLIssueStore) Get(tenantSlug string, id string) (ResidentIssue, bool) {
+func (s *SQLIssueStore) get(tenantSlug string, id string) (ResidentIssue, bool) {
 	if s == nil {
 		return ResidentIssue{}, false
 	}
@@ -197,7 +251,7 @@ func (s *SQLIssueStore) Get(tenantSlug string, id string) (ResidentIssue, bool) 
 	return CopyIssue(item), true
 }
 
-func (s *SQLIssueStore) UpdateWorkflow(tenantSlug string, id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error) {
+func (s *SQLIssueStore) updateWorkflow(tenantSlug string, id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error) {
 	if s == nil {
 		return ResidentIssue{}, false, nil
 	}
@@ -298,7 +352,7 @@ func (s *SQLIssueStore) UpdateWorkflow(tenantSlug string, id string, update Issu
 	return CopyIssue(updated), true, nil
 }
 
-func (s *SQLIssueStore) AddComment(tenantSlug string, id string, comment IssueComment) (ResidentIssue, bool, error) {
+func (s *SQLIssueStore) addComment(tenantSlug string, id string, comment IssueComment) (ResidentIssue, bool, error) {
 	if s == nil {
 		return ResidentIssue{}, false, nil
 	}
@@ -345,7 +399,7 @@ func (s *SQLIssueStore) AddComment(tenantSlug string, id string, comment IssueCo
 	return CopyIssue(updated), true, nil
 }
 
-func (s *SQLIssueStore) DeleteComment(tenantSlug string, id string, commentID string, at time.Time) (ResidentIssue, bool, error) {
+func (s *SQLIssueStore) deleteComment(tenantSlug string, id string, commentID string, at time.Time) (ResidentIssue, bool, error) {
 	if s == nil {
 		return ResidentIssue{}, false, nil
 	}
@@ -421,7 +475,7 @@ func (s *SQLIssueStore) ImportIssues(src *IssueStore) error {
 	return nil
 }
 
-func (s *SQLIssueStore) ClearPhotoPaths(tenantSlug string, id string) (bool, error) {
+func (s *SQLIssueStore) clearPhotoPaths(tenantSlug string, id string) (bool, error) {
 	if s == nil {
 		return false, nil
 	}

@@ -33,7 +33,7 @@ func TestEBInterfaceInvoiceCanBeStoredAsProtectedDocument(t *testing.T) {
 	if !strings.Contains(created.Title, "RE-2026-0006") || !strings.Contains(created.Title, "Hausservice Beispiel") {
 		t.Fatalf("document title = %q", created.Title)
 	}
-	storedPath, ok := store.FilePath(created)
+	storedPath, ok := documentRepositoryForStorageTest(store, "demo").FilePath(created)
 	if !ok {
 		t.Fatal("created document missing file path")
 	}
