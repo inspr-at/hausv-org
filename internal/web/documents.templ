@@ -29,33 +29,21 @@ type DocumentsPageData struct {
 }
 
 templ DocumentsPage(data DocumentsPageData) {
-	<!doctype html>
-	<html lang="de-AT">
-		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-			<title>{ data.Portal.Title }</title>
-			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-			<script src={ "/assets/announcements.js?v=" + data.AssetVersion } defer></script>
-			<script src={ "/assets/attachments.js?v=" + data.AssetVersion } defer></script>
-			@DocumentsStyles()
-		</head>
-		<body data-authenticated-app data-templ-documents>
+	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"announcements.js", "attachments.js"}, DocumentsStyles(), templ.Attributes{"data-templ-documents": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
 			<div class="documents-shell">
 				@PortalSidebar(data.Portal)
 				@DocumentsContent(data)
 			</div>
 			<header class="mobile-head">
-				<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalNavigation(data.Portal, false)@PortalReleaseNotes(data.Portal)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.Portal.DisplayName } abmelden</button></form></div></details>
+				<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalMobileContextSwitch(data.Portal)@PortalNavigation(data.Portal, false)@PortalReleaseNotes(data.Portal)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.Portal.DisplayName } abmelden</button></form></div></details>
 				<a class="mobile-identity" href="/app"><strong>{ data.Portal.HouseName }</strong><small>Dokumente · { data.Portal.Role }</small></a>
 				<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.Portal.DisplayName }>{ data.Portal.Initials }</a>
 			</header>
 			if data.CanManageDocuments {
 				@DocumentUploadDialog(data)
 			}
-		</body>
-	</html>
+	}
 }
 
 templ DocumentsStyles() {
