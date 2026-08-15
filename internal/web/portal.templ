@@ -105,6 +105,17 @@ templ PortalSidebar(data PortalPageData) {
 	</aside>
 }
 
+// PortalSectionHeader is the compact counterpart to PortalSidebar for detail
+// routes. Keeping its menu here ensures desktop and mobile use the same gated
+// PortalNavigation instead of letting each route grow a second navigation.
+templ PortalSectionHeader(data PortalPageData, section string) {
+	<header class="mobile-head">
+		<details class="mobile-menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="mobile-menu-panel">@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
+		<a class="mobile-title" href="/app"><strong>{ data.HouseName }</strong><small>{ section } · { data.Role }</small></a>
+		<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
+	</header>
+}
+
 templ PortalNavigation(data PortalPageData, icons bool) {
 	<nav class="nav" aria-label="Bereiche">
 		if data.CanUseResidentAreas {
