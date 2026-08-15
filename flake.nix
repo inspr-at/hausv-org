@@ -22,6 +22,7 @@
           packages = with pkgs; [
             go
             nodejs_24
+            postgresql
 
             # Linters kept alongside the toolchain so they are versioned with it
             # rather than living only in a hand-managed ~/go/bin.
