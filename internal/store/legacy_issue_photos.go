@@ -40,7 +40,12 @@ func MigrateLegacyIssuePhotos(
 		if tenantSlug == "" {
 			continue
 		}
-		for _, issue := range issues.ListTenant(tenantSlug) {
+		issueRepository, issuesOK := BindIssueRepository(issues, tenantSlug)
+		attachmentRepository, attachmentsOK := BindAttachmentRepository(attachments, tenantSlug)
+		if !issuesOK || !attachmentsOK {
+			continue
+		}
+		for _, issue := range issueRepository.List() {
 			if len(issue.PhotoPaths) == 0 {
 				continue
 			}
@@ -81,7 +86,7 @@ func MigrateLegacyIssuePhotos(
 			if createdAt.IsZero() {
 				createdAt = now
 			}
-			created, createErr := attachments.CreateUploaded(tenantSlug, "issue", issue.ID, uploadedBy, uploads, createdAt)
+			created, createErr := attachmentRepository.CreateUploaded("issue", issue.ID, uploadedBy, uploads, createdAt)
 			if createErr != nil {
 				return migrated, fmt.Errorf("issue %s/%s: %w", tenantSlug, issue.ID, createErr)
 			}
@@ -89,7 +94,7 @@ func MigrateLegacyIssuePhotos(
 				return migrated, fmt.Errorf("issue %s/%s: no attachment created", tenantSlug, issue.ID)
 			}
 			// Only now is the legacy field safe to drop.
-			if _, clearErr := issues.ClearPhotoPaths(tenantSlug, issue.ID); clearErr != nil {
+			if _, clearErr := issueRepository.ClearPhotoPaths(issue.ID); clearErr != nil {
 				return migrated, fmt.Errorf("issue %s/%s: clear photo paths: %w", tenantSlug, issue.ID, clearErr)
 			}
 			migrated += len(created)

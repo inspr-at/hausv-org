@@ -1351,10 +1351,11 @@ func (a *app) energyContact(tenantSlug, id string) (managedContact, bool) {
 func (a *app) energyDocumentOptions(tenantSlug string) ([]energyOption, map[string]string) {
 	options := []energyOption{}
 	names := map[string]string{}
-	if a.documentStore == nil {
+	documents, ok := store.BindDocumentRepository(a.documentStore, tenantSlug)
+	if !ok {
 		return options, names
 	}
-	for _, item := range a.documentStore.ListCurrentTenant(tenantSlug) {
+	for _, item := range documents.ListCurrent() {
 		names[item.ID] = item.Title
 		options = append(options, energyOption{Value: item.ID, Label: item.Title})
 	}
@@ -1365,10 +1366,11 @@ func (a *app) energyDocumentOptions(tenantSlug string) ([]energyOption, map[stri
 func (a *app) energyIssueOptions(tenantSlug string) ([]energyOption, map[string]string) {
 	options := []energyOption{}
 	names := map[string]string{}
-	if a.issueStore == nil {
+	issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+	if !ok {
 		return options, names
 	}
-	for _, item := range a.issueStore.ListTenant(tenantSlug) {
+	for _, item := range issues.List() {
 		names[item.ID] = item.Title
 		options = append(options, energyOption{Value: item.ID, Label: item.Title})
 	}
@@ -1555,18 +1557,20 @@ func (a *app) validEnergyReferences(tenantSlug, contactID, documentID, issueID s
 		}
 	}
 	if documentID != "" {
-		if a.documentStore == nil {
+		documents, ok := store.BindDocumentRepository(a.documentStore, tenantSlug)
+		if !ok {
 			return false
 		}
-		if _, ok := a.documentStore.Get(tenantSlug, documentID); !ok {
+		if _, ok := documents.Get(documentID); !ok {
 			return false
 		}
 	}
 	if issueID != "" {
-		if a.issueStore == nil {
+		issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+		if !ok {
 			return false
 		}
-		if _, ok := a.issueStore.Get(tenantSlug, issueID); !ok {
+		if _, ok := issues.Get(issueID); !ok {
 			return false
 		}
 	}
@@ -1935,7 +1939,7 @@ func (a *app) createEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		"\n\nOffene Vor-Ort-Fragen:\n- " + strings.Join(pkg.OpenSiteQuestions, "\n- ") +
 		"\n\nKeine automatische Beauftragung, Preiszusage oder Vermittlungsprovision."
 	now := time.Now().UTC()
-	created, err := a.issueStore.Create(residentIssue{
+	created, err := ac.repositories.issues.Create(residentIssue{
 		TenantSlug:     ac.tenant.Slug,
 		AuthorEmail:    normalizeEmail(ac.email),
 		AuthorName:     a.profileForTenant(ac.email, ac.tenant.Slug).DisplayName(),
@@ -2159,7 +2163,7 @@ func (a *app) completeEnergyMaintenance(w http.ResponseWriter, r *http.Request, 
 	plan.NextDueAt = completed.AddDate(0, plan.IntervalMonths, 0)
 	plan.EvidenceNote = cleanEnergyText(r.FormValue("evidence_note"), 500)
 	if issueID := strings.TrimSpace(r.FormValue("issue_id")); issueID != "" {
-		if _, found := a.issueStore.Get(ac.tenant.Slug, issueID); !found {
+		if _, found := ac.repositories.issues.Get(issueID); !found {
 			http.Error(w, "Nachweis-Aufgabe gehört nicht zu diesem Haus.", http.StatusBadRequest)
 			return
 		}
@@ -2240,7 +2244,7 @@ func (a *app) updateEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		http.Error(w, "Maßnahme nicht gefunden.", http.StatusNotFound)
 		return
 	}
-	issue, found := a.issueStore.Get(ac.tenant.Slug, item.IssueID)
+	issue, found := ac.repositories.issues.Get(item.IssueID)
 	if !found {
 		http.Error(w, "Verknüpftes Anliegen nicht gefunden.", http.StatusConflict)
 		return
@@ -2291,7 +2295,7 @@ func (a *app) updateEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		return
 	}
 	if contactOK && a.serviceAccessEnabled && normalizeEmail(contact.Email) != "" {
-		updated, changed, updateErr := a.issueStore.UpdateWorkflow(ac.tenant.Slug, issue.ID, issueWorkflowUpdate{
+		updated, changed, updateErr := ac.repositories.issues.UpdateWorkflow(issue.ID, issueWorkflowUpdate{
 			Status: issue.Status, Priority: issue.Priority, AssigneeEmail: normalizeEmail(contact.Email),
 			ActorEmail: ac.email, ActorName: a.profileForTenant(ac.email, ac.tenant.Slug).DisplayName(), ChangedAt: time.Now(),
 		})

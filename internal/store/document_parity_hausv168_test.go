@@ -20,23 +20,25 @@ func sampleDocumentRecord() DocumentRecord {
 }
 
 func TestDocumentStorageParity(t *testing.T) {
-	backends := map[string]func(t *testing.T) DocumentStorage{
-		"json": func(t *testing.T) DocumentStorage {
+	backends := map[string]func(t *testing.T) DocumentRepository{
+		"json": func(t *testing.T) DocumentRepository {
 			dir := t.TempDir()
 			s, err := NewDocumentStore(filepath.Join(dir, "documents.json"), filepath.Join(dir, "files"))
 			if err != nil {
 				t.Fatalf("json store: %v", err)
 			}
-			return s
+			repository, _ := BindDocumentRepository(s, "demo")
+			return repository
 		},
-		"sqlite": func(t *testing.T) DocumentStorage {
+		"sqlite": func(t *testing.T) DocumentRepository {
 			dir := t.TempDir()
 			database, err := db.Open(filepath.Join(dir, "test.db"))
 			if err != nil {
 				t.Fatalf("db open: %v", err)
 			}
 			t.Cleanup(func() { database.Close() })
-			return NewSQLDocumentStore(database, filepath.Join(dir, "files"))
+			repository, _ := BindDocumentRepository(NewSQLDocumentStore(database, filepath.Join(dir, "files")), "demo")
+			return repository
 		},
 	}
 
@@ -76,18 +78,18 @@ func TestDocumentStorageParity(t *testing.T) {
 				t.Fatalf("stored file missing: err=%v", err)
 			}
 
-			if got, ok := s.Get("demo", created.ID); !ok || got.Title != "Hausordnung" {
+			if got, ok := s.Get(created.ID); !ok || got.Title != "Hausordnung" {
 				t.Fatalf("get = %+v ok=%v", got, ok)
 			}
-			if _, ok := s.Get("demo", "nope"); ok {
+			if _, ok := s.Get("nope"); ok {
 				t.Fatal("get unknown must be false")
 			}
-			if got := s.ListCurrentTenant("demo"); len(got) != 1 {
+			if got := s.ListCurrent(); len(got) != 1 {
 				t.Fatalf("current list = %+v", got)
 			}
 
 			// Replace: supersede + insert must be consistent.
-			replacement, replaced, err := s.Replace("demo", created.ID, "boss@example.com", uploadFrom("neu.png", onePixelPNG), now.Add(time.Hour))
+			replacement, replaced, err := s.Replace(created.ID, "boss@example.com", uploadFrom("neu.png", onePixelPNG), now.Add(time.Hour))
 			if err != nil {
 				t.Fatalf("replace: %v", err)
 			}
@@ -105,24 +107,24 @@ func TestDocumentStorageParity(t *testing.T) {
 			}
 
 			// Exactly one current version remains.
-			if got := s.ListCurrentTenant("demo"); len(got) != 1 || got[0].ID != replacement.ID {
+			if got := s.ListCurrent(); len(got) != 1 || got[0].ID != replacement.ID {
 				t.Fatalf("after replace current = %+v", got)
 			}
-			if got := s.ListTenant("demo"); len(got) != 2 {
+			if got := s.List(); len(got) != 2 {
 				t.Fatalf("after replace all = %+v", got)
 			}
 
 			// Versions: newest first.
-			versions := s.Versions("demo", created.SeriesID)
+			versions := s.Versions(created.SeriesID)
 			if len(versions) != 2 || versions[0].Version != 2 || versions[1].Version != 1 {
 				t.Fatalf("versions = %+v", versions)
 			}
 
 			// Replacing a superseded (non-current) version is refused.
-			if _, _, err := s.Replace("demo", created.ID, "boss@example.com", uploadFrom("x.png", onePixelPNG), now); err == nil {
+			if _, _, err := s.Replace(created.ID, "boss@example.com", uploadFrom("x.png", onePixelPNG), now); err == nil {
 				t.Fatal("replacing a superseded version must error")
 			}
-			if _, _, err := s.Replace("demo", "missing", "boss@example.com", uploadFrom("x.png", onePixelPNG), now); err == nil {
+			if _, _, err := s.Replace("missing", "boss@example.com", uploadFrom("x.png", onePixelPNG), now); err == nil {
 				t.Fatal("replacing unknown must error")
 			}
 
@@ -153,11 +155,12 @@ func TestSQLDocumentImportFromJSON(t *testing.T) {
 		t.Fatalf("json store: %v", err)
 	}
 	now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
-	first, err := jsonStore.Create(sampleDocumentRecord(), uploadFrom("a.png", onePixelPNG), now)
+	jsonDocuments, _ := BindDocumentRepository(jsonStore, "demo")
+	first, err := jsonDocuments.Create(sampleDocumentRecord(), uploadFrom("a.png", onePixelPNG), now)
 	if err != nil {
 		t.Fatalf("seed a: %v", err)
 	}
-	if _, _, err := jsonStore.Replace("demo", first.ID, "boss@example.com", uploadFrom("b.png", onePixelPNG), now.Add(time.Hour)); err != nil {
+	if _, _, err := jsonDocuments.Replace(first.ID, "boss@example.com", uploadFrom("b.png", onePixelPNG), now.Add(time.Hour)); err != nil {
 		t.Fatalf("seed replace: %v", err)
 	}
 
@@ -174,19 +177,20 @@ func TestSQLDocumentImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	if got := sqlStore.ListTenant("demo"); len(got) != 2 {
+	sqlDocuments, _ := BindDocumentRepository(sqlStore, "demo")
+	if got := sqlDocuments.List(); len(got) != 2 {
 		t.Fatalf("imported %d, want 2: %+v", len(got), got)
 	}
 	// Version history and current-flag survive the import.
-	if got := sqlStore.ListCurrentTenant("demo"); len(got) != 1 || got[0].Version != 2 {
+	if got := sqlDocuments.ListCurrent(); len(got) != 1 || got[0].Version != 2 {
 		t.Fatalf("current after import = %+v", got)
 	}
-	if got := sqlStore.Versions("demo", first.SeriesID); len(got) != 2 {
+	if got := sqlDocuments.Versions(first.SeriesID); len(got) != 2 {
 		t.Fatalf("versions after import = %+v", got)
 	}
 	// The file referenced by imported metadata is still readable.
-	cur := sqlStore.ListCurrentTenant("demo")[0]
-	path, ok := sqlStore.FilePath(cur)
+	cur := sqlDocuments.ListCurrent()[0]
+	path, ok := sqlDocuments.FilePath(cur)
 	if !ok {
 		t.Fatal("FilePath after import failed")
 	}

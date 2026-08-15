@@ -17,15 +17,16 @@ func TestPurgeDeletedAttachmentTombstones(t *testing.T) {
 	}
 	defer database.Close()
 	s := NewSQLAttachmentStore(database, filepath.Join(dir, "files"))
+	attachments, _ := BindAttachmentRepository(s, "demo")
 
 	now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
-	created, err := s.CreateUploaded("demo", "issue", "issue-1", "a@example.com",
+	created, err := attachments.CreateUploaded("issue", "issue-1", "a@example.com",
 		[]UploadedFile{uploadFrom("a.png", onePixelPNG), uploadFrom("b.png", onePixelPNG)}, now)
 	if err != nil || len(created) != 2 {
 		t.Fatalf("seed: err=%v n=%d", err, len(created))
 	}
 	// One is deleted long ago, the other stays live.
-	if _, _, err := s.Delete("demo", created[0].ID, now.Add(-400*24*time.Hour)); err != nil {
+	if _, _, err := attachments.Delete(created[0].ID, now.Add(-400*24*time.Hour)); err != nil {
 		t.Fatalf("delete: %v", err)
 	}
 
@@ -41,7 +42,7 @@ func TestPurgeDeletedAttachmentTombstones(t *testing.T) {
 	}
 
 	// The live attachment is untouched; the tombstone is gone.
-	live := s.ListEntity("demo", "issue", "issue-1")
+	live := attachments.ListEntity("issue", "issue-1")
 	if len(live) != 1 || live[0].ID != created[1].ID {
 		t.Fatalf("purge disturbed the live attachment: %+v", live)
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 type attachmentBackend struct {
-	store   AttachmentStorage
+	store   AttachmentRepository
 	fileDir string
 }
 
@@ -23,7 +23,8 @@ func TestAttachmentStorageParity(t *testing.T) {
 			if err != nil {
 				t.Fatalf("json store: %v", err)
 			}
-			return attachmentBackend{s, fileDir}
+			repository, _ := BindAttachmentRepository(s, "demo")
+			return attachmentBackend{repository, fileDir}
 		},
 		"sqlite": func(t *testing.T) attachmentBackend {
 			dir := t.TempDir()
@@ -33,7 +34,8 @@ func TestAttachmentStorageParity(t *testing.T) {
 				t.Fatalf("db open: %v", err)
 			}
 			t.Cleanup(func() { database.Close() })
-			return attachmentBackend{NewSQLAttachmentStore(database, fileDir), fileDir}
+			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(database, fileDir), "demo")
+			return attachmentBackend{repository, fileDir}
 		},
 	}
 
@@ -45,11 +47,11 @@ func TestAttachmentStorageParity(t *testing.T) {
 			s := b.store
 
 			// Missing target is rejected.
-			if _, err := s.CreateUploaded("demo", "issue", "", "a@example.com", []UploadedFile{uploadFrom("p.png", onePixelPNG)}, now); err == nil {
+			if _, err := s.CreateUploaded("issue", "", "a@example.com", []UploadedFile{uploadFrom("p.png", onePixelPNG)}, now); err == nil {
 				t.Fatal("missing entity id must error")
 			}
 
-			created, err := s.CreateUploaded("demo", "issue", "issue-1", "admin@example.com",
+			created, err := s.CreateUploaded("issue", "issue-1", "admin@example.com",
 				[]UploadedFile{uploadFrom("photo.png", onePixelPNG)}, now)
 			if err != nil || len(created) != 1 {
 				t.Fatalf("create: err=%v n=%d", err, len(created))
@@ -72,36 +74,36 @@ func TestAttachmentStorageParity(t *testing.T) {
 				t.Fatal("thumb variant must resolve")
 			}
 
-			if got := s.ListEntity("demo", "issue", "issue-1"); len(got) != 1 || got[0].ID != rec.ID {
+			if got := s.ListEntity("issue", "issue-1"); len(got) != 1 || got[0].ID != rec.ID {
 				t.Fatalf("list = %+v", got)
 			}
 			// Scoped to its entity.
-			if got := s.ListEntity("demo", "issue", "other"); len(got) != 0 {
+			if got := s.ListEntity("issue", "other"); len(got) != 0 {
 				t.Fatalf("other entity must be empty: %+v", got)
 			}
-			if got, ok := s.Get("demo", rec.ID); !ok || got.ID != rec.ID {
+			if got, ok := s.Get(rec.ID); !ok || got.ID != rec.ID {
 				t.Fatalf("get = %+v ok=%v", got, ok)
 			}
 
 			// Delete: record disappears from reads and the files are removed.
-			deleted, ok, err := s.Delete("demo", rec.ID, now.Add(time.Hour))
+			deleted, ok, err := s.Delete(rec.ID, now.Add(time.Hour))
 			if err != nil || !ok || deleted.ID != rec.ID {
 				t.Fatalf("delete: err=%v ok=%v rec=%+v", err, ok, deleted)
 			}
-			if _, ok := s.Get("demo", rec.ID); ok {
+			if _, ok := s.Get(rec.ID); ok {
 				t.Fatal("deleted attachment must not be gettable")
 			}
-			if got := s.ListEntity("demo", "issue", "issue-1"); len(got) != 0 {
+			if got := s.ListEntity("issue", "issue-1"); len(got) != 0 {
 				t.Fatalf("deleted attachment still listed: %+v", got)
 			}
 			if _, err := os.Stat(path); !os.IsNotExist(err) {
 				t.Fatalf("file must be removed on delete, stat err = %v", err)
 			}
 			// Deleting twice is a no-op, not an error.
-			if _, ok, err := s.Delete("demo", rec.ID, now); ok || err != nil {
+			if _, ok, err := s.Delete(rec.ID, now); ok || err != nil {
 				t.Fatalf("second delete: ok=%v err=%v", ok, err)
 			}
-			if _, ok, err := s.Delete("demo", "does-not-exist", now); ok || err != nil {
+			if _, ok, err := s.Delete("does-not-exist", now); ok || err != nil {
 				t.Fatalf("delete unknown: ok=%v err=%v", ok, err)
 			}
 		})
@@ -119,7 +121,8 @@ func TestAttachmentBatchRollbackParity(t *testing.T) {
 			if err != nil {
 				t.Fatalf("json store: %v", err)
 			}
-			return attachmentBackend{s, fileDir}
+			repository, _ := BindAttachmentRepository(s, "demo")
+			return attachmentBackend{repository, fileDir}
 		},
 		"sqlite": func(t *testing.T) attachmentBackend {
 			dir := t.TempDir()
@@ -129,7 +132,8 @@ func TestAttachmentBatchRollbackParity(t *testing.T) {
 				t.Fatalf("db open: %v", err)
 			}
 			t.Cleanup(func() { database.Close() })
-			return attachmentBackend{NewSQLAttachmentStore(database, fileDir), fileDir}
+			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(database, fileDir), "demo")
+			return attachmentBackend{repository, fileDir}
 		},
 	}
 
@@ -144,10 +148,10 @@ func TestAttachmentBatchRollbackParity(t *testing.T) {
 				uploadFrom("photo.png", onePixelPNG),
 				uploadFrom("notes.txt", []byte("this is not an image")),
 			}
-			if _, err := b.store.CreateUploaded("demo", "issue", "issue-1", "admin@example.com", uploads, now); err == nil {
+			if _, err := b.store.CreateUploaded("issue", "issue-1", "admin@example.com", uploads, now); err == nil {
 				t.Fatal("a batch containing an invalid upload must fail")
 			}
-			if got := b.store.ListEntity("demo", "issue", "issue-1"); len(got) != 0 {
+			if got := b.store.ListEntity("issue", "issue-1"); len(got) != 0 {
 				t.Fatalf("rollback must leave no records, got %d", len(got))
 			}
 			if n := countFiles(t, b.fileDir); n != 0 {
@@ -165,13 +169,14 @@ func TestSQLAttachmentImportFromJSON(t *testing.T) {
 		t.Fatalf("json store: %v", err)
 	}
 	now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
-	created, err := jsonStore.CreateUploaded("demo", "issue", "issue-1", "admin@example.com",
+	jsonAttachments, _ := BindAttachmentRepository(jsonStore, "demo")
+	created, err := jsonAttachments.CreateUploaded("issue", "issue-1", "admin@example.com",
 		[]UploadedFile{uploadFrom("a.png", onePixelPNG), uploadFrom("b.png", onePixelPNG)}, now)
 	if err != nil || len(created) != 2 {
 		t.Fatalf("seed: err=%v n=%d", err, len(created))
 	}
 	// One is deleted before the import: the soft-deleted state must carry over.
-	if _, _, err := jsonStore.Delete("demo", created[1].ID, now.Add(time.Minute)); err != nil {
+	if _, _, err := jsonAttachments.Delete(created[1].ID, now.Add(time.Minute)); err != nil {
 		t.Fatalf("seed delete: %v", err)
 	}
 
@@ -187,15 +192,16 @@ func TestSQLAttachmentImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	live := sqlStore.ListEntity("demo", "issue", "issue-1")
+	sqlAttachments, _ := BindAttachmentRepository(sqlStore, "demo")
+	live := sqlAttachments.ListEntity("issue", "issue-1")
 	if len(live) != 1 || live[0].ID != created[0].ID {
 		t.Fatalf("after import expected only the live attachment, got %+v", live)
 	}
-	if _, ok := sqlStore.Get("demo", created[1].ID); ok {
+	if _, ok := sqlAttachments.Get(created[1].ID); ok {
 		t.Fatal("soft-deleted attachment must stay deleted after import")
 	}
 	// The file behind the surviving record is still readable.
-	path, _, _, ok := sqlStore.FilePath(live[0], "")
+	path, _, _, ok := sqlAttachments.FilePath(live[0], "")
 	if !ok {
 		t.Fatal("FilePath after import failed")
 	}

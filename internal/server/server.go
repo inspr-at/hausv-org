@@ -1112,6 +1112,9 @@ type tenantPathContextKey struct{}
 // together with a resolvedTenantRequest by tenantPaths.
 type requestRepositories struct {
 	announcementReads store.AnnouncementReadRepository
+	attachments       store.AttachmentRepository
+	documents         store.DocumentRepository
+	issues            store.IssueRepository
 }
 
 type resolvedTenantRequest struct {
@@ -1122,10 +1125,13 @@ type resolvedTenantRequest struct {
 
 func (a *app) repositoriesForTenant(tenant tenantConfig) requestRepositories {
 	repositories := requestRepositories{}
-	if a == nil || a.announcementReadStore == nil {
+	if a == nil {
 		return repositories
 	}
 	repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant.Slug)
+	repositories.attachments, _ = store.BindAttachmentRepository(a.attachmentStore, tenant.Slug)
+	repositories.documents, _ = store.BindDocumentRepository(a.documentStore, tenant.Slug)
+	repositories.issues, _ = store.BindIssueRepository(a.issueStore, tenant.Slug)
 	return repositories
 }
 
@@ -1848,8 +1854,9 @@ func (a *app) renderCalendarFeed(tenant tenantConfig, profile userProfile, role 
 			a.writeCalendarEvent(&b, tenant, item, now)
 		}
 	}
-	if a != nil && a.issueStore != nil {
-		for _, item := range a.issueStore.ListTenant(tenantSlug) {
+	issues, _ := store.BindIssueRepository(a.issueStore, tenantSlug)
+	if issues != nil {
+		for _, item := range issues.List() {
 			if (strings.TrimSpace(item.ServiceProposal) == "" && item.ServiceProposedStart.IsZero()) || !a.canViewIssueForActor(tenantSlug, item, email, role) {
 				continue
 			}
@@ -3521,10 +3528,13 @@ func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID st
 	if targetID == "" {
 		return ""
 	}
+	attachments, _ := store.BindAttachmentRepository(a.attachmentStore, tenantSlug)
+	documents, _ := store.BindDocumentRepository(a.documentStore, tenantSlug)
+	issues, _ := store.BindIssueRepository(a.issueStore, tenantSlug)
 	switch strings.TrimSpace(targetType) {
 	case "attachment":
-		if a.attachmentStore != nil {
-			if item, found := a.attachmentStore.Get(tenantSlug, targetID); found {
+		if attachments != nil {
+			if item, found := attachments.Get(targetID); found {
 				switch normalizeAttachmentEntity(item.EntityType) {
 				case "issue", "issue-estimate":
 					if title := a.auditTargetTitle(tenantSlug, "issue", item.EntityID); title != "" {
@@ -3543,14 +3553,14 @@ func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID st
 			}
 		}
 	case "issue":
-		if a.issueStore != nil {
-			if item, found := a.issueStore.Get(tenantSlug, targetID); found {
+		if issues != nil {
+			if item, found := issues.Get(targetID); found {
 				return strings.TrimSpace(item.Title)
 			}
 		}
 	case "document":
-		if a.documentStore != nil {
-			if item, found := a.documentStore.Get(tenantSlug, targetID); found {
+		if documents != nil {
+			if item, found := documents.Get(targetID); found {
 				return strings.TrimSpace(item.Title)
 			}
 		}
@@ -6193,8 +6203,9 @@ func uploadedFilesFromHeaders(hs []*multipart.FileHeader) []uploadedFile {
 	return out
 }
 
-func storeEBInterfaceInvoiceDocument(store documentStorage, invoice integrations.Invoice, uploadedBy string, data []byte, now time.Time) (documentRecord, error) {
-	if store == nil {
+func storeEBInterfaceInvoiceDocument(storage documentStorage, invoice integrations.Invoice, uploadedBy string, data []byte, now time.Time) (documentRecord, error) {
+	documents, ok := store.BindDocumentRepository(storage, invoice.TenantSlug)
+	if !ok {
 		return documentRecord{}, fmt.Errorf("document store unavailable")
 	}
 	title := "E-Rechnung"
@@ -6205,7 +6216,7 @@ func storeEBInterfaceInvoiceDocument(store documentStorage, invoice integrations
 		title += " - " + strings.TrimSpace(invoice.IssuerName)
 	}
 	filenameToken := integrations.SanitizeFilenameToken(firstNonEmpty(invoice.InvoiceNumber, invoice.ExternalID, "rechnung"))
-	return store.CreateGenerated(documentRecord{
+	return documents.CreateGenerated(documentRecord{
 		TenantSlug: invoice.TenantSlug,
 		Title:      title,
 		Category:   documentCategoryBilling,

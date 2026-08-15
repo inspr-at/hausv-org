@@ -12,24 +12,74 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
-// DocumentStorage is the behaviour both the JSON DocumentStore and the SQLite
-// SQLDocumentStore satisfy (HAUSV-168). File bytes always live on disk under
-// fileDir; only the metadata record moves to the database.
-type DocumentStorage interface {
+type DocumentRepository interface {
 	Create(item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error)
 	CreateGenerated(item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error)
-	Replace(tenantSlug string, id string, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error)
-	ListTenant(tenantSlug string) []DocumentRecord
-	ListCurrentTenant(tenantSlug string) []DocumentRecord
-	Versions(tenantSlug string, seriesID string) []DocumentRecord
-	Get(tenantSlug string, id string) (DocumentRecord, bool)
+	Replace(id string, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error)
+	List() []DocumentRecord
+	ListCurrent() []DocumentRecord
+	Versions(seriesID string) []DocumentRecord
+	Get(id string) (DocumentRecord, bool)
 	FilePath(item DocumentRecord) (string, bool)
 }
+
+type DocumentStorage interface{ documentStorage() }
 
 var (
 	_ DocumentStorage = (*DocumentStore)(nil)
 	_ DocumentStorage = (*SQLDocumentStore)(nil)
 )
+
+type documentBackend interface {
+	create(tenantSlug string, item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error)
+	createGenerated(tenantSlug string, item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error)
+	replace(tenantSlug string, id string, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error)
+	listTenant(tenantSlug string) []DocumentRecord
+	listCurrentTenant(tenantSlug string) []DocumentRecord
+	versions(tenantSlug string, seriesID string) []DocumentRecord
+	get(tenantSlug string, id string) (DocumentRecord, bool)
+	filePath(item DocumentRecord) (string, bool)
+}
+
+type boundDocumentRepository struct {
+	storage    documentBackend
+	tenantSlug string
+}
+
+func BindDocumentRepository(storage DocumentStorage, tenantSlug string) (DocumentRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(documentBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundDocumentRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundDocumentRepository) Create(item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
+	return r.storage.create(r.tenantSlug, item, upload, now)
+}
+func (r *boundDocumentRepository) CreateGenerated(item DocumentRecord, filename, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
+	return r.storage.createGenerated(r.tenantSlug, item, filename, contentType, data, now)
+}
+func (r *boundDocumentRepository) Replace(id, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error) {
+	return r.storage.replace(r.tenantSlug, id, uploadedBy, upload, now)
+}
+func (r *boundDocumentRepository) List() []DocumentRecord { return r.storage.listTenant(r.tenantSlug) }
+func (r *boundDocumentRepository) ListCurrent() []DocumentRecord {
+	return r.storage.listCurrentTenant(r.tenantSlug)
+}
+func (r *boundDocumentRepository) Versions(seriesID string) []DocumentRecord {
+	return r.storage.versions(r.tenantSlug, seriesID)
+}
+func (r *boundDocumentRepository) Get(id string) (DocumentRecord, bool) {
+	return r.storage.get(r.tenantSlug, id)
+}
+func (r *boundDocumentRepository) FilePath(item DocumentRecord) (string, bool) {
+	if textutil.Slug(item.TenantSlug) != r.tenantSlug {
+		return "", false
+	}
+	return r.storage.filePath(item)
+}
 
 // SQLDocumentStore keeps each document's metadata as a JSON document keyed by
 // (tenant, id); the file itself stays on disk. Table from migration 0011.
@@ -49,6 +99,8 @@ type SQLDocumentStore struct {
 func NewSQLDocumentStore(db *sql.DB, fileDir string) *SQLDocumentStore {
 	return &SQLDocumentStore{db: db, fileDir: fileDir}
 }
+
+func (*SQLDocumentStore) documentStorage() {}
 
 func (s *SQLDocumentStore) writeTx(tx *sql.Tx, item DocumentRecord) error {
 	blob, err := json.Marshal(item)
@@ -83,13 +135,14 @@ func (s *SQLDocumentStore) insertOne(item DocumentRecord, filePath string) (Docu
 	return CopyDocument(item), nil
 }
 
-func (s *SQLDocumentStore) Create(item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
+func (s *SQLDocumentStore) create(tenantSlug string, item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
 	if s == nil {
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
 	if now.IsZero() {
 		now = time.Now()
 	}
+	item.TenantSlug = textutil.Slug(tenantSlug)
 	item.UploadedAt = now.UTC()
 	fileSave, err := saveUploadedDocumentFileIn(s.fileDir, item.TenantSlug, upload)
 	if err != nil {
@@ -111,10 +164,11 @@ func (s *SQLDocumentStore) Create(item DocumentRecord, upload UploadedFile, now 
 	return s.insertOne(item, fileSave.Path)
 }
 
-func (s *SQLDocumentStore) CreateGenerated(item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
+func (s *SQLDocumentStore) createGenerated(tenantSlug string, item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
 	if s == nil {
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
+	item.TenantSlug = textutil.Slug(tenantSlug)
 	item, path, err := prepareGeneratedDocument(s.fileDir, item, filename, contentType, data, now)
 	if err != nil {
 		return DocumentRecord{}, err
@@ -125,7 +179,7 @@ func (s *SQLDocumentStore) CreateGenerated(item DocumentRecord, filename string,
 // Replace supersedes the current version and inserts the new one in ONE
 // transaction, so a crash can no longer leave both marked current or the old
 // one orphaned (HAUSV-145).
-func (s *SQLDocumentStore) Replace(tenantSlug string, id string, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error) {
+func (s *SQLDocumentStore) replace(tenantSlug string, id string, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error) {
 	if s == nil {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
@@ -135,7 +189,7 @@ func (s *SQLDocumentStore) Replace(tenantSlug string, id string, uploadedBy stri
 	if tenantSlug == "" || id == "" || uploadedBy == "" {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("invalid document replacement")
 	}
-	existing, found := s.Get(tenantSlug, id)
+	existing, found := s.get(tenantSlug, id)
 	if !found || !existing.Current {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document not found")
 	}
@@ -220,7 +274,7 @@ func (s *SQLDocumentStore) allForTenant(tenantSlug string) []DocumentRecord {
 	return out
 }
 
-func (s *SQLDocumentStore) ListTenant(tenantSlug string) []DocumentRecord {
+func (s *SQLDocumentStore) listTenant(tenantSlug string) []DocumentRecord {
 	if s == nil {
 		return nil
 	}
@@ -229,8 +283,8 @@ func (s *SQLDocumentStore) ListTenant(tenantSlug string) []DocumentRecord {
 	return out
 }
 
-func (s *SQLDocumentStore) ListCurrentTenant(tenantSlug string) []DocumentRecord {
-	all := s.ListTenant(tenantSlug)
+func (s *SQLDocumentStore) listCurrentTenant(tenantSlug string) []DocumentRecord {
+	all := s.listTenant(tenantSlug)
 	out := []DocumentRecord{}
 	for _, item := range all {
 		if item.Current {
@@ -241,7 +295,7 @@ func (s *SQLDocumentStore) ListCurrentTenant(tenantSlug string) []DocumentRecord
 	return out
 }
 
-func (s *SQLDocumentStore) Versions(tenantSlug string, seriesID string) []DocumentRecord {
+func (s *SQLDocumentStore) versions(tenantSlug string, seriesID string) []DocumentRecord {
 	if s == nil {
 		return nil
 	}
@@ -265,7 +319,7 @@ func (s *SQLDocumentStore) Versions(tenantSlug string, seriesID string) []Docume
 	return out
 }
 
-func (s *SQLDocumentStore) Get(tenantSlug string, id string) (DocumentRecord, bool) {
+func (s *SQLDocumentStore) get(tenantSlug string, id string) (DocumentRecord, bool) {
 	if s == nil {
 		return DocumentRecord{}, false
 	}
@@ -285,7 +339,7 @@ func (s *SQLDocumentStore) Get(tenantSlug string, id string) (DocumentRecord, bo
 	return CopyDocument(item), true
 }
 
-func (s *SQLDocumentStore) FilePath(item DocumentRecord) (string, bool) {
+func (s *SQLDocumentStore) filePath(item DocumentRecord) (string, bool) {
 	if s == nil {
 		return "", false
 	}

@@ -83,12 +83,12 @@ func (a *app) createEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	if len(attachmentHeaders) > 0 {
-		if a.attachmentStore == nil {
+		if ac.repositories.attachments == nil {
 			_, _ = a.eventStore.Delete(tenant.Slug, created.ID)
 			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
 			return
 		}
-		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "event", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
+		if _, err := ac.repositories.attachments.CreateUploaded("event", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
 			_, _ = a.eventStore.Delete(tenant.Slug, created.ID)
 			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
 			return
@@ -126,7 +126,7 @@ func (a *app) editEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
 			return
 		}
-		uploaded, err = a.attachmentStore.CreateUploaded(tenant.Slug, "event", id, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
+		uploaded, err = ac.repositories.attachments.CreateUploaded("event", id, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now())
 		if err != nil {
 			http.Redirect(w, r, "/app/events?event=invalid", http.StatusSeeOther)
 			return
@@ -135,7 +135,7 @@ func (a *app) editEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	ok, err := a.eventStore.Update(id, item)
 	if err != nil {
 		for _, attachment := range uploaded {
-			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 		logError("event update failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/events?event=error", http.StatusSeeOther)
@@ -143,7 +143,7 @@ func (a *app) editEvent(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	if !ok {
 		for _, attachment := range uploaded {
-			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
+			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 		http.Redirect(w, r, "/app/events?event=missing", http.StatusSeeOther)
 		return
