@@ -11,6 +11,22 @@ permissions:
 jobs:
   test:
     runs-on: blacksmith-2vcpu-ubuntu-2404
+    env:
+      HAUSV_TEST_POSTGRES_DSN: postgres://hausv_ci:hausv_ci@127.0.0.1:5432/hausv_ci?sslmode=disable
+      HAUSV_TEST_POSTGRES_REQUIRED: "true"
+    services:
+      postgres:
+        image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+        env:
+          POSTGRES_DB: hausv_ci
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --username postgres --dbname hausv_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -23,6 +39,27 @@ jobs:
           # (HAUSV-139: the crypto/tls fix shipped in a patch release).
           check-latest: true
           cache: true
+
+      - name: Create unprivileged PostgreSQL test role
+        run: |
+          postgres_image='postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94'
+          docker run --rm --network host --env PGPASSWORD=postgres "$postgres_image" \
+            psql --host 127.0.0.1 --username postgres --dbname postgres --set ON_ERROR_STOP=1 \
+            --command "CREATE ROLE hausv_ci LOGIN PASSWORD 'hausv_ci' NOSUPERUSER NOBYPASSRLS"
+          docker run --rm --network host --env PGPASSWORD=postgres "$postgres_image" \
+            psql --host 127.0.0.1 --username postgres --dbname postgres --set ON_ERROR_STOP=1 \
+            --command "ALTER DATABASE hausv_ci OWNER TO hausv_ci"
+
+      - name: Verify PostgreSQL test cannot skip in CI
+        env:
+          HAUSV_TEST_POSTGRES_DSN: ""
+        run: |
+          if guard_output=$(go test ./internal/db -run '^TestPostgresTargetSchemaAndRLS$' 2>&1); then
+            echo "RLS test unexpectedly passed without HAUSV_TEST_POSTGRES_DSN"
+            exit 1
+          fi
+          echo "$guard_output"
+          grep -Fq "HAUSV_TEST_POSTGRES_DSN is required" <<<"$guard_output"
 
       - name: Verify generated templ code
         run: |
