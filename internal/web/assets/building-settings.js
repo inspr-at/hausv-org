@@ -8,6 +8,46 @@
     return;
   }
 
+  let activeDialog = null;
+  let dialogTrigger = null;
+  const dialogSelector = ".unit-dialog-shell";
+  const syncUnitDialog = () => {
+    const target = window.location.hash ? document.getElementById(decodeURIComponent(window.location.hash.slice(1))) : null;
+    const nextDialog = target?.matches(dialogSelector) ? target : null;
+    activeDialog = nextDialog;
+    document.querySelectorAll(dialogSelector).forEach((dialog) => dialog.classList.toggle("is-open", dialog === activeDialog));
+    document.body.classList.add("unit-dialog-enhanced");
+    document.body.classList.toggle("unit-dialog-open", Boolean(activeDialog));
+    if (activeDialog) {
+      window.setTimeout(() => (activeDialog.querySelector("input:not([type=hidden]), select, button, a") || activeDialog).focus(), 0);
+    } else if (dialogTrigger) {
+      dialogTrigger.focus();
+      dialogTrigger = null;
+    }
+  };
+
+  document.addEventListener("click", (event) => {
+    const opener = event.target.closest('a[href^="#unit-"]');
+    if (opener) dialogTrigger = opener;
+    const closer = event.target.closest("[data-unit-dialog-close]");
+    if (!closer) return;
+    event.preventDefault();
+    const target = new URL(window.location.href);
+    target.hash = "";
+    window.history.replaceState(null, "", target.toString());
+    syncUnitDialog();
+  });
+  window.addEventListener("hashchange", syncUnitDialog);
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !activeDialog) return;
+    event.preventDefault();
+    const target = new URL(window.location.href);
+    target.hash = "";
+    window.history.replaceState(null, "", target.toString());
+    syncUnitDialog();
+  });
+  syncUnitDialog();
+
   const button = document.querySelector("[data-geocode-address]");
   if (!button) return;
 

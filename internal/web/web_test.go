@@ -195,8 +195,8 @@ func TestAdminPagesConstrainKnownResponsiveMinContent(t *testing.T) {
 		`.announce .announce-feed { grid-template-columns: minmax(0,1fr); gap: 14px; }`,
 		`.announce .entry-head { display: grid; grid-template-columns: minmax(0,1fr); }`,
 		`@media (min-width: 761px) and (max-width: 1120px)`,
-		`.building .home-profile-context > p, .building .home-profile-context > .button { grid-column: 2; }`,
-		`.building .home-profile-context > .button { justify-self: start; }`,
+		`.building .unit-table-head, .building .unit-row { grid-template-columns: minmax(190px,1fr) minmax(180px,.9fr) minmax(130px,.7fr) 48px; }`,
+		`.building .unit-dialog { width: 100%; max-height: 92dvh;`,
 	} {
 		if !strings.Contains(PageTemplates, want) {
 			t.Fatalf("responsive admin-page constraint missing %q", want)
@@ -418,8 +418,9 @@ func TestHomeIdentityUXSeparatesFriendlyNameFromOfficialUnits(t *testing.T) {
 		`data-home-identity="nav"`,
 		`data-home-identity="energy-heading"`,
 		`data-home-identity="settings"`,
-		`data-home-identity="building-context"`,
-		`data-home-identity="building-unit"`,
+		`class="home-profile-notice"`,
+		`class="home-badge"`,
+		`Mein Zuhause ·`,
 		`data-home-identity="onboarding-summary"`,
 		`data-home-display-name`,
 		`data-home-unit-label`,

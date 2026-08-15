@@ -8170,10 +8170,10 @@ const PageTemplates = `
       .building .section-nav a:first-child { background: var(--ink); color: #fff; }
       .building .section-nav a:hover, .building .section-nav a:focus-visible { background: var(--panel-soft); color: var(--ink); outline: 2px solid var(--gold); outline-offset: 1px; }
       .building .section-nav a:first-child:hover, .building .section-nav a:first-child:focus-visible { background: var(--ink); color: #fff; }
-      .building #overview, .building #contacts, .building #units, .building #appearance, .building #unit-add { scroll-margin-top: 86px; }
+      .building #overview, .building #contacts, .building #units, .building #appearance { scroll-margin-top: 86px; }
       .building .settings-disclosure { padding: 0; overflow: clip; }
       .building .settings-disclosure > summary { min-height: 92px; display: grid; grid-template-columns: 52px minmax(0,1fr) auto; gap: 15px; align-items: center; padding: 18px 20px; cursor: pointer; list-style: none; }
-      .building .settings-disclosure > summary::-webkit-details-marker, .building .unit-editor > summary::-webkit-details-marker, .building .unit-add > summary::-webkit-details-marker { display: none; }
+      .building .settings-disclosure > summary::-webkit-details-marker { display: none; }
       .building .settings-disclosure[open] > summary { border-bottom: 1px solid var(--line); }
       .building .section-icon { width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--panel-soft); color: var(--gold-ink); font-family: var(--font-serif); font-size: 23px; font-weight: 800; }
       .building .summary-copy { min-width: 0; }
@@ -8202,66 +8202,84 @@ const PageTemplates = `
       .building .hero-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: end; }
       .building .hero-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
       .building .hero-delete { margin: 0; }
-      .building .unit-panel { display: grid; gap: 16px; }
-      .building .unit-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: start; }
-      .building .unit-head-actions { display: flex; gap: 8px; align-items: start; flex-wrap: wrap; justify-content: flex-end; }
-      .building .unit-head h2 { margin-bottom: 4px; }
-      .building .unit-metrics { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-      .building .unit-metric { display: inline-flex; gap: 6px; align-items: baseline; border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; background: var(--panel-soft); color: #6f6a5c; font-size: 12.5px; font-weight: 750; }
-      .building .unit-metric strong { color: var(--ink); font-size: 15px; }
-      .building .home-profile-context { display: grid; grid-template-columns: 48px minmax(150px,.7fr) minmax(260px,1.25fr) auto; gap: 15px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: var(--panel-soft); }
-      .building .home-profile-context-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; color: var(--gold-ink); background: #fffefb; }
-      .building .home-profile-context-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-      .building .home-profile-context-name { min-width: 0; display: grid; gap: 2px; }
-      .building .home-profile-context-name span { color: var(--gold-ink); font-size: 10.5px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
-      .building .home-profile-context-name strong { font-family: var(--font-serif); font-size: 21px; line-height: 1.15; overflow-wrap: anywhere; }
-      .building .home-profile-context-name small, .building .home-profile-context > p { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
-      .building .home-profile-context-name .home-profile-unit { font-weight: 650; }
-      .building .home-profile-context-name .home-profile-meta { margin-top: 1px; color: var(--soft); font-size: 11.5px; }
-      .building .home-profile-context > p { margin: 0; }
-      .building .unit-add { border: 1px solid var(--ink); border-radius: 9px; background: var(--ink); color: #fff; }
-      .building .unit-add > summary { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 15px; cursor: pointer; list-style: none; font-weight: 800; }
-      .building .unit-add > summary::before { content: "+"; width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.55); border-radius: 50%; font-size: 18px; line-height: 1; }
-      .building .unit-add[open] { grid-column: 1 / -1; background: var(--panel-soft); color: var(--ink); border-color: var(--line); }
-      .building .unit-add[open] > summary { justify-content: flex-start; border-bottom: 1px solid var(--line); }
-      .building .unit-add[open] > summary::before { border-color: var(--gold); color: var(--ink); transform: rotate(45deg); }
-      .building .unit-add .unit-form { padding: 16px; }
-      .building .unit-list { display: grid; gap: 8px; }
-      .building .unit-editor { border: 1px solid var(--line); border-radius: 10px; background: #fffefb; overflow: clip; }
-      .building .unit-editor > summary { min-height: 76px; display: grid; grid-template-columns: minmax(145px,1.15fr) minmax(120px,.9fr) minmax(150px,1fr) auto; gap: 14px; align-items: center; padding: 13px 15px; cursor: pointer; list-style: none; }
-      .building .unit-editor[open] > summary { border-bottom: 1px solid var(--line); background: var(--panel-soft); }
-      .building .unit-name { display: grid; gap: 2px; min-width: 0; }
+      .building .unit-panel { display: grid; gap: 18px; padding: 22px; }
+      .building .unit-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 20px; align-items: start; }
+      .building .unit-head h2 { margin: 0 0 4px; }
+      .building .unit-head p { margin: 0; }
+      .building .unit-head-actions { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+      .building .unit-add-button { display: inline-flex; align-items: center; gap: 8px; }
+      .building .unit-add-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+      .building .unit-metrics { display: grid; grid-template-columns: repeat(2,minmax(190px,260px)); gap: 10px; }
+      .building .unit-metric { min-height: 72px; display: grid; grid-template-columns: 40px minmax(0,1fr); gap: 11px; align-items: center; border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; background: var(--panel-soft); }
+      .building .unit-metric-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; color: var(--gold-ink); background: #fffefb; }
+      .building .unit-metric-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .building .unit-metric strong { display: block; color: var(--ink); font-size: 16px; line-height: 1.2; }
+      .building .unit-metric span:last-child { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; line-height: 1.3; }
+      .building .home-profile-notice { display: flex; align-items: center; gap: 11px; border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; background: var(--panel-soft); }
+      .building .home-profile-notice svg { width: 20px; height: 20px; flex: 0 0 auto; fill: none; stroke: var(--gold-ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .building .home-profile-notice p { min-width: 0; margin: 0; color: var(--muted); font-size: 13px; }
+      .building .home-profile-notice strong { color: var(--ink); }
+      .building .home-profile-notice .button { margin-left: auto; flex: 0 0 auto; }
+      .building .unit-table { border: 1px solid var(--line); border-radius: 12px; background: #fffefb; overflow: hidden; }
+      .building .unit-table-head, .building .unit-row { display: grid; grid-template-columns: minmax(210px,1.15fr) minmax(230px,1.2fr) minmax(130px,.6fr) minmax(150px,.7fr) 48px; gap: 16px; align-items: center; }
+      .building .unit-table-head { min-height: 42px; padding: 0 15px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+      .building .unit-row { min-height: 92px; padding: 13px 15px; }
+      .building .unit-row + .unit-row { border-top: 1px solid var(--line); }
+      .building .unit-row:hover { background: #fdfbf5; }
+      .building .unit-identity { min-width: 0; display: grid; grid-template-columns: 46px minmax(0,1fr); gap: 12px; align-items: center; }
+      .building .unit-type-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 10px; color: var(--gold-ink); background: var(--panel-soft); }
+      .building .unit-type-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .building .unit-name { min-width: 0; display: grid; gap: 3px; }
       .building .unit-name strong { font-family: var(--font-serif); font-size: 20px; line-height: 1.15; overflow-wrap: anywhere; }
-      .building .unit-name span, .building .unit-share span, .building .payment-meta { color: var(--muted); font-size: 12.5px; font-weight: 700; line-height: 1.35; }
-      .building .unit-name .unit-official { font-weight: 650; }
-      .building .unit-name .unit-meta { color: var(--soft); font-size: 11.5px; font-weight: 600; line-height: 1.3; }
-      .building .unit-share { display: grid; gap: 2px; min-width: 0; }
-      .building .unit-share strong { font-size: 13.5px; overflow-wrap: anywhere; }
-      .building .unit-open { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 13px; font-weight: 800; }
-      .building .unit-editor[open] .unit-open { border-color: var(--gold); }
-      .building .unit-editor-body { display: grid; gap: 16px; padding: 16px; }
-      .building .unit-form { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 10px; align-items: end; }
-      .building .unit-form .f-label { grid-column: span 4; }
-      .building .unit-form .f-type { grid-column: span 3; }
-      .building .unit-form .f-share { grid-column: span 3; }
+      .building .unit-name small { color: var(--muted); font-size: 12px; font-weight: 700; line-height: 1.3; }
+      .building .home-badge { width: max-content; max-width: 100%; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--gold-ink); background: var(--panel-soft); font-size: 10px; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
+      .building .home-badge svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .building .unit-assignments { min-width: 0; display: grid; gap: 7px; }
+      .building .unit-assignment { min-width: 0; display: grid; grid-template-columns: 18px minmax(0,1fr); gap: 7px; align-items: center; }
+      .building .unit-assignment svg { width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .building .unit-assignment span { min-width: 0; display: grid; gap: 1px; }
+      .building .unit-assignment small { color: var(--soft); font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+      .building .unit-assignment strong { overflow: hidden; color: var(--ink); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+      .building .unit-assignment.unassigned strong { color: var(--muted); font-weight: 650; }
+      .building .unit-share { display: grid; gap: 3px; min-width: 0; }
+      .building .unit-share strong { font-size: 13px; overflow-wrap: anywhere; }
+      .building .unit-share span, .building .payment-meta { color: var(--muted); font-size: 11.5px; line-height: 1.3; }
+      .building .unit-payment { display: grid; justify-items: start; gap: 4px; }
+      .building .unit-edit { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: #fffefb; }
+      .building .unit-edit:hover, .building .unit-edit:focus-visible { border-color: var(--gold); background: var(--panel-soft); }
+      .building .unit-edit svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+      .building .unit-dialog-shell { position: fixed; inset: 0; z-index: 1200; display: none; place-items: center; padding: 24px; }
+      .building .unit-dialog-shell:target { display: grid; }
+      body.unit-dialog-enhanced .building .unit-dialog-shell { display: none; }
+      body.unit-dialog-enhanced .building .unit-dialog-shell.is-open { display: grid; }
+      .building .unit-dialog-backdrop { position: absolute; inset: 0; background: rgba(20,29,23,.62); backdrop-filter: blur(2px); }
+      .building .unit-dialog { position: relative; width: min(820px,100%); max-height: calc(100dvh - 48px); display: grid; grid-template-rows: auto minmax(0,1fr) auto; border: 1px solid var(--line); border-radius: 14px; background: #fffefb; box-shadow: 0 24px 70px rgba(20,29,23,.3); overflow: hidden; }
+      .building .unit-dialog-head { min-height: 74px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 19px; border-bottom: 1px solid var(--line); }
+      .building .unit-dialog-head h2 { margin: 0; font-size: 27px; }
+      .building .unit-dialog-head p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+      .building .unit-dialog-close { width: 40px; height: 40px; display: grid; place-items: center; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); }
+      .building .unit-dialog-close svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+      .building .unit-dialog-scroll { min-height: 0; overflow-y: auto; padding: 18px 19px; }
+      .building .unit-form { display: grid; gap: 18px; }
+      .building .unit-form fieldset { min-width: 0; display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 11px; margin: 0; padding: 0 0 18px; border: 0; border-bottom: 1px solid var(--line); }
+      .building .unit-form fieldset:last-child { padding-bottom: 0; border-bottom: 0; }
+      .building .unit-form legend { grid-column: 1 / -1; margin-bottom: 2px; padding: 0; font-family: var(--font-serif); font-size: 20px; font-weight: 750; }
+      .building .unit-form .f-label { grid-column: span 6; }
+      .building .unit-form .f-type, .building .unit-form .f-share { grid-column: span 3; }
       .building .unit-form .f-owners, .building .unit-form .f-renters { grid-column: span 6; }
-      .building .unit-form .f-actions { grid-column: span 2; display: flex; justify-content: flex-end; }
-      .building .unit-tools { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: end; padding-top: 15px; border-top: 1px solid var(--line); }
-      .building .payment-block { display: grid; gap: 8px; }
-      .building .payment-block h3 { margin: 0; font-family: var(--font-serif); font-size: 18px; }
-      .building .payment-status-form { display: grid; grid-template-columns: minmax(150px,230px) auto minmax(0,1fr); gap: 8px; align-items: center; }
-      .building .payment-status-form .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-      .building .payment-status-form select { min-height: 42px; }
-      .building .unit-delete { margin: 0; }
+      .building .unit-form .f-payment { grid-column: span 5; }
+      .building .unit-form .f-payment-note { grid-column: span 7; align-self: end; padding-bottom: 12px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+      .building .unit-dialog-footer { min-height: 72px; display: flex; align-items: center; gap: 9px; padding: 13px 19px; border-top: 1px solid var(--line); background: #fffefb; }
+      .building .unit-dialog-footer .unit-delete { margin: 0 auto 0 0; }
+      .building .unit-dialog-footer .unit-delete .button { color: #9f3f37; }
+      body.unit-dialog-open { overflow: hidden; }
       @media (max-width: 960px) {
         .building .contact-groups, .building .brand-grid { grid-template-columns: 1fr; }
-        .building .unit-editor > summary { grid-template-columns: minmax(140px,1fr) minmax(120px,.8fr) auto; }
-        .building .unit-editor > summary .unit-share { display: none; }
+        .building .unit-table-head, .building .unit-row { grid-template-columns: minmax(200px,1fr) minmax(210px,1fr) minmax(135px,.7fr) 48px; }
+        .building .unit-table-head > :nth-child(3), .building .unit-row > .unit-share { display: none; }
       }
       @media (min-width: 761px) and (max-width: 1120px) {
-        .building .home-profile-context { grid-template-columns: 48px minmax(0,1fr); }
-        .building .home-profile-context > p, .building .home-profile-context > .button { grid-column: 2; }
-        .building .home-profile-context > .button { justify-self: start; }
+        .building .unit-table-head, .building .unit-row { grid-template-columns: minmax(190px,1fr) minmax(180px,.9fr) minmax(130px,.7fr) 48px; }
       }
       @media (max-width: 760px) {
         .building .page { gap: 14px; }
@@ -8275,28 +8293,37 @@ const PageTemplates = `
         .building .summary-copy p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .building .disclosure-action { font-size: 0; }
         .building .disclosure-body { padding: 15px; }
-        .building .meta-form, .building .unit-form { grid-template-columns: 1fr; }
-        .building .meta-form > *, .building .unit-form .f-label, .building .unit-form .f-type, .building .unit-form .f-share, .building .unit-form .f-owners, .building .unit-form .f-renters, .building .unit-form .f-actions { grid-column: 1 / -1; }
+        .building .meta-form { grid-template-columns: 1fr; }
+        .building .meta-form > *, .building .unit-form .f-label, .building .unit-form .f-type, .building .unit-form .f-share, .building .unit-form .f-owners, .building .unit-form .f-renters, .building .unit-form .f-payment, .building .unit-form .f-payment-note { grid-column: 1 / -1; }
         .building .contact-groups { gap: 10px; }
         .building .section-save { position: sticky; bottom: 8px; z-index: 5; margin: 2px -5px -5px; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,254,251,.97); box-shadow: 0 8px 24px rgba(37,45,38,.16); }
         .building .section-save .mini { display: none; }
         .building .section-save .button { width: 100%; min-height: 46px; }
         .building .hero-form { grid-template-columns: 1fr; }
         .building .hero-actions .button { width: 100%; }
-        .building .unit-head { grid-template-columns: 1fr; gap: 13px; }
+        .building .unit-panel { padding: 16px; }
+        .building .unit-head { grid-template-columns: 1fr; gap: 14px; }
         .building .unit-head-actions { display: grid; grid-template-columns: 1fr; justify-content: stretch; }
         .building .unit-head-actions > .button { width: 100%; min-height: 44px; }
-        .building .home-profile-context { grid-template-columns: 46px minmax(0,1fr); gap: 11px; padding: 14px; }
-        .building .home-profile-context > p, .building .home-profile-context > .button { grid-column: 1 / -1; }
-        .building .home-profile-context > .button { width: 100%; }
-        .building .unit-add { width: 100%; }
-        .building .unit-editor > summary { min-height: 96px; grid-template-columns: minmax(0,1fr) auto; gap: 9px; padding: 13px; }
-        .building .unit-editor > summary .unit-share { display: grid; grid-column: 1 / -1; grid-row: 2; }
-        .building .unit-editor > summary .pill { grid-column: 2; grid-row: 1; }
-        .building .unit-open { grid-column: 2; grid-row: 2; min-height: 38px; }
-        .building .unit-tools { grid-template-columns: 1fr; }
-        .building .payment-status-form { grid-template-columns: 1fr; align-items: stretch; }
-        .building .unit-delete .button { width: 100%; min-height: 44px; }
+        .building .unit-metrics { grid-template-columns: 1fr; }
+        .building .home-profile-notice { align-items: flex-start; flex-wrap: wrap; }
+        .building .home-profile-notice .button { width: 100%; margin-left: 0; }
+        .building .unit-table { border: 0; background: transparent; overflow: visible; }
+        .building .unit-table-head { display: none; }
+        .building .unit-row { min-height: 0; grid-template-columns: minmax(0,1fr) 44px; gap: 13px; padding: 14px; border: 1px solid var(--line); border-radius: 11px; background: #fffefb; }
+        .building .unit-row + .unit-row { margin-top: 9px; border-top: 1px solid var(--line); }
+        .building .unit-row > .unit-assignments, .building .unit-row > .unit-share, .building .unit-row > .unit-payment { grid-column: 1 / -1; }
+        .building .unit-row > .unit-edit { grid-column: 2; grid-row: 1; }
+        .building .unit-row > .unit-assignments { padding-top: 10px; border-top: 1px solid var(--line); }
+        .building .unit-row > .unit-share { display: grid; }
+        .building .unit-row > .unit-payment { display: flex; align-items: center; gap: 8px; }
+        .building .unit-dialog-shell { padding: 0; place-items: end center; }
+        .building .unit-dialog { width: 100%; max-height: 92dvh; border-radius: 16px 16px 0 0; }
+        .building .unit-dialog-head, .building .unit-dialog-scroll, .building .unit-dialog-footer { padding-inline: 15px; }
+        .building .unit-form fieldset { grid-template-columns: 1fr; }
+        .building .unit-dialog-footer { flex-wrap: wrap; }
+        .building .unit-dialog-footer .unit-delete { width: 100%; margin: 0; order: 3; }
+        .building .unit-dialog-footer .unit-delete .button { width: 100%; }
       }
       .building .section-nav a.active { background: var(--ink); color: #fff; }
       .building .section-nav a:first-child:not(.active) { background: transparent; color: var(--ink); }
@@ -8414,110 +8441,85 @@ const PageTemplates = `
           <div class="unit-head">
             <div>
               <h2>Einheiten</h2>
-              <p class="muted">Stammdaten und manueller Zahlungsstatus direkt je Einheit.</p>
-              <div class="unit-metrics" aria-label="Einheiten Übersicht">
-                <span class="unit-metric"><strong>{{.UnitTotal}}</strong> Einträge</span>
-                <span class="unit-metric"><strong>{{.BillableUnits}}</strong> von {{.FairUseFreeUnits}} {{.BillableLabel}} (Fair Use)</span>
-              </div>
-              {{if .FairUseExceeded}}<p class="muted">Über dem inkludierten Rahmen von {{.FairUseFreeUnits}} Wohneinheiten — Richtwert 1 € pro Einheit und Monat.</p>{{end}}
+              <p class="muted">Stammdaten, Zuordnungen und Zahlungsstatus je Einheit verwalten.</p>
             </div>
             <div class="unit-head-actions">
               <a class="button" href="/app/settings/payments/import">Bankdatei einlesen</a>
-              <details class="unit-add" id="unit-add">
-                <summary>Einheit hinzufügen</summary>
-                <form class="unit-form" method="post" action="/app/settings/building/units">
-                <label class="f-label">Offizielle Bezeichnung
-                  <input type="text" name="label" maxlength="120" required placeholder="Top 1">
-                </label>
-                <label class="f-type">Typ
-                  <select name="unit_type">
-                    <option value="residential" selected>Wohnung</option>
-                    <option value="commercial">Geschäftslokal</option>
-                    <option value="parking">Stellplatz</option>
-                    <option value="storage">Keller / Lager</option>
-                    <option value="other">Sonstiges</option>
-                  </select>
-                </label>
-                <label class="f-share">Miteigentumsanteil
-                  <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="0" inputmode="numeric">
-                </label>
-                <label class="f-owners">Eigentümer E-Mails
-                  <input type="text" name="owner_emails" placeholder="name@example.com, zweite@example.com">
-                </label>
-                <label class="f-renters">Mieter E-Mails
-                  <input type="text" name="renter_emails" placeholder="name@example.com">
-                </label>
-                  <div class="f-actions"><button class="button primary" type="submit">Einheit anlegen</button></div>
-                </form>
-              </details>
+              <a class="button primary unit-add-button" href="#unit-add"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Einheit hinzufügen</a>
             </div>
           </div>
-          {{if .HasHomeProfile}}
-            {{if .HomeProfileSaved}}<p class="flash ok">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</p>{{end}}
-            <aside class="home-profile-context" data-home-identity="building-context" aria-label="{{.HomeIdentity.AriaLabel}}">
-              <span class="home-profile-context-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 11 8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-6h4v6"/></svg></span>
-              <span class="home-profile-context-name"><span>Mein Zuhause</span><strong data-home-display-name>{{.HomeProfile.HouseholdName}}</strong>{{if .HasHomeProfileUnit}}<small class="home-profile-unit" data-home-unit-label>{{.HomeProfileUnitLabel}}</small>{{end}}<small class="home-profile-meta">{{.HomeTypeLabel}}{{if not .HasHomeProfileUnit}} · {{.HomeProfileScopeLabel}}{{end}}</small></span>
-              <p>{{if .HasHomeProfileUnit}}„{{.HomeProfileUnitLabel}}“ bleibt die offizielle Stammdatenbezeichnung.{{else if eq .HomeProfile.HomeType "apartment"}}Dieses Wohnungsprofil ist noch keiner offiziellen Einheit zugeordnet.{{else}}Anzeigename für Energie, Wartung und Empfehlungen der Liegenschaft.{{end}}</p>
-              <a class="button" href="/app/settings/home?from=building">Zuhause bearbeiten</a>
+          <div class="unit-metrics" aria-label="Einheiten Übersicht">
+            <span class="unit-metric"><span class="unit-metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21h16M6 21V5h9v16M15 9h3v12M9 9h2M9 13h2M9 17h2"/></svg></span><span><strong>{{.UnitTotal}} Einheiten</strong><span>Gesamt im Gebäude</span></span></span>
+            <span class="unit-metric"><span class="unit-metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span><strong>{{.BillableUnits}} von {{.FairUseFreeUnits}} {{.BillableLabel}}</strong><span>Aktuell in Nutzung (Fair Use)</span></span></span>
+          </div>
+          {{if .FairUseExceeded}}<p class="muted">Über dem inkludierten Rahmen von {{.FairUseFreeUnits}} Wohneinheiten. Richtwert: 1 € pro Einheit und Monat.</p>{{end}}
+          {{if .HomeProfileSaved}}<p class="flash ok">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</p>{{end}}
+          {{if and .HasHomeProfile (not .HasHomeProfileUnit)}}
+            <aside class="home-profile-notice">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-6h4v6"/></svg>
+              <p><strong>{{.HomeProfile.HouseholdName}}</strong> ist {{if eq .HomeProfile.HomeType "apartment"}}noch keiner offiziellen Einheit zugeordnet{{else}}als gesamte Liegenschaft angelegt{{end}}.</p>
+              <a class="button small" href="/app/settings/home?from=building">Zuhause bearbeiten</a>
             </aside>
           {{end}}
           {{if .UnitMsg}}<p class="flash {{if .UnitOK}}ok{{end}}">{{.UnitMsg}}</p>{{end}}
           {{if .PaymentMsg}}<p class="flash {{if .PaymentOK}}ok{{end}}">{{.PaymentMsg}}</p>{{end}}
           {{if .Units}}
-            <div class="unit-list">
+            <div class="unit-table">
+              <div class="unit-table-head" aria-hidden="true"><span>Einheit</span><span>Zuordnung</span><span>Anteil</span><span>Zahlungsstatus</span><span>Aktion</span></div>
               {{range .Units}}
-                <details class="unit-editor" id="unit-{{.ID}}">
-                  <summary>
-                    <span class="unit-name"{{if .HasHomeDisplayName}} data-home-identity="building-unit" aria-label="{{.HomeDisplayName}}, offizielle Einheit {{.Label}}"{{end}}>{{if .HasHomeDisplayName}}<strong data-home-display-name>{{.HomeDisplayName}}</strong><span class="unit-official" data-home-unit-label>{{.Label}}</span><small class="unit-meta">{{.UnitTypeLabel}} · {{.BillableLabel}}</small>{{else}}<strong>{{.Label}}</strong><span>{{.UnitTypeLabel}} · {{.BillableLabel}}</span>{{end}}</span>
-                    <span class="unit-share"><strong>{{.Share}}</strong><span>{{.MembersLabel}}</span></span>
-                    <span class="pill {{.PaymentStatusClass}}">{{.PaymentStatus}}</span>
-                    <span class="unit-open">Bearbeiten</span>
-                  </summary>
-                  <div class="unit-editor-body">
-                    <form class="unit-form" method="post" action="/app/settings/building/units">
-                      <input type="hidden" name="orig_id" value="{{.ID}}">
-                      <input type="hidden" name="id" value="{{.ID}}">
-                      <label class="f-label">Offizielle Bezeichnung
-                        <input type="text" name="label" value="{{.Label}}" maxlength="120" required>
-                      </label>
-                      <label class="f-type">Typ
-                        <select name="unit_type">
-                          {{range .TypeOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
-                        </select>
-                      </label>
-                      <label class="f-share">Miteigentumsanteil
-                        <input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="{{.ShareValue}}" inputmode="numeric">
-                      </label>
-                      <label class="f-owners">Eigentümer E-Mails
-                        <input type="text" name="owner_emails" value="{{.OwnerEmails}}">
-                      </label>
-                      <label class="f-renters">Mieter E-Mails
-                        <input type="text" name="renter_emails" value="{{.RenterEmails}}">
-                      </label>
-                      <div class="f-actions"><button class="button primary" type="submit">Einheit speichern</button></div>
-                    </form>
-                    <div class="unit-tools">
-                      <div class="payment-block">
-                        <h3>Zahlungsstatus</h3>
-                        <form class="payment-status-form" method="post" action="/app/settings/building/payment-status">
-                          <input type="hidden" name="unit_id" value="{{.ID}}">
-                          <label class="sr-only" for="payment-status-{{.ID}}">Status für {{.Label}}</label>
-                          <select id="payment-status-{{.ID}}" name="status">{{range .PaymentOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select>
-                          <button class="button small" type="submit">Status speichern</button>
-                          <span class="payment-meta">{{if .PaymentHasUpdated}}{{.PaymentUpdatedAt}}{{else}}{{.PaymentDetail}}{{end}}</span>
-                        </form>
-                      </div>
-                      <form class="unit-delete" method="post" action="/app/settings/building/units/delete" data-confirm="{{.DeleteConfirmLabel}}?">
-                        <input type="hidden" name="id" value="{{.ID}}">
-                        <button class="button small ghost" type="submit">Einheit entfernen</button>
-                      </form>
-                    </div>
+                <article class="unit-row">
+                  <div class="unit-identity">
+                    <span class="unit-type-icon" aria-hidden="true">{{if eq .UnitType "parking"}}<svg viewBox="0 0 24 24"><path d="M5 17h14l-1.5-5h-11z"/><path d="M7 12l1.5-4h7L17 12M5 17v2M19 17v2M8 16h.01M16 16h.01"/></svg>{{else if eq .UnitType "commercial"}}<svg viewBox="0 0 24 24"><path d="M3 9h18l-2-5H5zM5 9v11h14V9M9 20v-6h6v6"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></svg>{{else if eq .UnitType "storage"}}<svg viewBox="0 0 24 24"><path d="M4 21V7l8-4 8 4v14M8 10h8M8 14h8M8 18h8"/></svg>{{else}}<svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10M9 21v-7h6v7"/></svg>{{end}}</span>
+                    <span class="unit-name"><strong>{{.Label}}</strong><small>{{.UnitTypeLabel}} · {{.BillableLabel}}</small>{{if .HasHomeDisplayName}}<span class="home-badge" title="Anzeigename: {{.HomeDisplayName}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7"/><path d="M6 10v10h12V10"/></svg>Mein Zuhause · {{.HomeDisplayName}}</span>{{end}}</span>
                   </div>
-                </details>
+                  <div class="unit-assignments">
+                    <span class="unit-assignment{{if not .HasOwners}} unassigned{{end}}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span><small>Eigentümer</small><strong title="{{.OwnerEmails}}">{{.OwnerSummary}}</strong></span></span>
+                    <span class="unit-assignment{{if not .HasRenters}} unassigned{{end}}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span><small>Mieter</small><strong title="{{.RenterEmails}}">{{.RenterSummary}}</strong></span></span>
+                  </div>
+                  <span class="unit-share"><strong>{{.Share}}</strong><span>{{.MembersLabel}}</span></span>
+                  <span class="unit-payment"><span class="pill {{.PaymentStatusClass}}">{{.PaymentStatus}}</span><span class="payment-meta">{{if .PaymentHasUpdated}}{{.PaymentUpdatedAt}}{{else}}Manuell{{end}}</span></span>
+                  <a class="unit-edit" href="#unit-{{.ID}}" aria-label="{{.Label}} bearbeiten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/></svg></a>
+                </article>
               {{end}}
             </div>
           {{else}}
             {{template "emptyState" .UnitsEmpty}}
+          {{end}}
+
+          <section class="unit-dialog-shell" id="unit-add" role="dialog" aria-modal="true" aria-labelledby="unit-add-title" tabindex="-1">
+            <a class="unit-dialog-backdrop" href="?section=units" aria-label="Dialog schließen" data-unit-dialog-close></a>
+            <div class="unit-dialog">
+              <header class="unit-dialog-head"><div><h2 id="unit-add-title">Einheit hinzufügen</h2><p>Stammdaten und Zuordnungen an einem Ort erfassen.</p></div><a class="unit-dialog-close" href="?section=units" aria-label="Dialog schließen" data-unit-dialog-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></a></header>
+              <div class="unit-dialog-scroll">
+                <form class="unit-form" id="unit-add-form" method="post" action="/app/settings/building/units">
+                  <fieldset><legend>Stammdaten</legend><label class="f-label">Offizielle Bezeichnung<input type="text" name="label" maxlength="120" required placeholder="Top 1"></label><label class="f-type">Typ<select name="unit_type">{{range .NewUnitTypeOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select></label><label class="f-share">Miteigentumsanteil<input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="0" inputmode="numeric"></label></fieldset>
+                  <fieldset><legend>Personen &amp; Zuordnung</legend><label class="f-owners">Eigentümer E-Mails<input type="text" name="owner_emails" placeholder="name@example.com, zweite@example.com"></label><label class="f-renters">Mieter E-Mails<input type="text" name="renter_emails" placeholder="name@example.com"></label></fieldset>
+                  <fieldset><legend>Zahlungsstatus</legend><label class="f-payment">Status<select name="payment_status">{{range .NewUnitPaymentOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select></label><p class="f-payment-note">Der Status wird manuell geführt und kann später über Bankdaten aktualisiert werden.</p></fieldset>
+                </form>
+              </div>
+              <footer class="unit-dialog-footer"><a class="button ghost" href="?section=units" data-unit-dialog-close>Abbrechen</a><button class="button primary" type="submit" form="unit-add-form">Einheit anlegen</button></footer>
+            </div>
+          </section>
+
+          {{range .Units}}
+            <section class="unit-dialog-shell" id="unit-{{.ID}}" role="dialog" aria-modal="true" aria-labelledby="unit-title-{{.ID}}" tabindex="-1">
+              <a class="unit-dialog-backdrop" href="?section=units" aria-label="Dialog schließen" data-unit-dialog-close></a>
+              <div class="unit-dialog">
+                <header class="unit-dialog-head"><div><h2 id="unit-title-{{.ID}}">Einheit bearbeiten</h2><p>{{.Label}} · {{.UnitTypeLabel}}</p></div><a class="unit-dialog-close" href="?section=units" aria-label="Dialog schließen" data-unit-dialog-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></a></header>
+                <div class="unit-dialog-scroll">
+                  <form class="unit-form" id="unit-form-{{.ID}}" method="post" action="/app/settings/building/units">
+                    <input type="hidden" name="orig_id" value="{{.ID}}"><input type="hidden" name="id" value="{{.ID}}">
+                    <fieldset><legend>Stammdaten</legend><label class="f-label">Offizielle Bezeichnung<input type="text" name="label" value="{{.Label}}" maxlength="120" required></label><label class="f-type">Typ<select name="unit_type">{{range .TypeOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select></label><label class="f-share">Miteigentumsanteil<input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value="{{.ShareValue}}" inputmode="numeric"></label></fieldset>
+                    <fieldset><legend>Personen &amp; Zuordnung</legend><label class="f-owners">Eigentümer E-Mails<input type="text" name="owner_emails" value="{{.OwnerEmails}}"></label><label class="f-renters">Mieter E-Mails<input type="text" name="renter_emails" value="{{.RenterEmails}}"></label></fieldset>
+                    <fieldset><legend>Zahlungsstatus</legend><label class="f-payment">Status<select name="payment_status">{{range .PaymentOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}</select></label><p class="f-payment-note">{{if .PaymentHasUpdated}}Zuletzt {{.PaymentUpdatedAt}} geändert.{{else}}{{.PaymentDetail}}{{end}}</p></fieldset>
+                  </form>
+                </div>
+                <footer class="unit-dialog-footer">
+                  <form class="unit-delete" method="post" action="/app/settings/building/units/delete" data-confirm="{{.DeleteConfirmLabel}}?"><input type="hidden" name="id" value="{{.ID}}"><button class="button ghost" type="submit">Einheit löschen</button></form>
+                  <a class="button ghost" href="?section=units" data-unit-dialog-close>Abbrechen</a><button class="button primary" type="submit" form="unit-form-{{.ID}}">Änderungen speichern</button>
+                </footer>
+              </div>
+            </section>
           {{end}}
         </section>
         {{else}}

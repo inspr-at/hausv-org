@@ -2143,6 +2143,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		"miteigentumsanteil": {"12345"},
 		"owner_emails":       {"owner@example.com; second@example.com"},
 		"renter_emails":      {"resident@example.com"},
+		"payment_status":     {unitPaymentStatusOverdue},
 	})
 	if addUnit.Code != http.StatusSeeOther {
 		t.Fatalf("unit add status = %d", addUnit.Code)
@@ -2151,8 +2152,11 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if len(units) != 1 || units[0].ID != "top-1" || units[0].UnitType != unitTypeResidential || units[0].BillableWeightPPM != unitBillableFullPPM || units[0].MiteigentumsanteilPPM != 12345 || len(units[0].OwnerEmails) != 2 || units[0].RenterEmails[0] != "resident@example.com" {
 		t.Fatalf("units after add = %+v", units)
 	}
+	if payment, ok := a.unitPaymentStore.Get("demo", "top-1"); !ok || payment.Status != unitPaymentStatusOverdue {
+		t.Fatalf("payment status after add = %+v, found=%t", payment, ok)
+	}
 	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=units")
-	for _, want := range []string{"WEG Sonneneck", "Neue Gasse 7", "Top 1", "Wohnung", "zählt als 1 WE", "1</strong> von 25 Wohneinheit (Fair Use)", "12.345 / 1.000.000", `value="owner@example.com, second@example.com"`} {
+	for _, want := range []string{"WEG Sonneneck", "Neue Gasse 7", "Top 1", "Wohnung", "zählt als 1 WE", "1 von 25 Wohneinheit", "Aktuell in Nutzung (Fair Use)", "12.345 / 1.000.000", `value="owner@example.com, second@example.com"`} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("building page should contain %q", want)
 		}

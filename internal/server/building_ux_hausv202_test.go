@@ -57,18 +57,15 @@ func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) 
 		`href="/demo/app/settings/building?section=contacts"`,
 		`href="/demo/app/settings/building?section=units" class="active" aria-current="page"`,
 		`href="/demo/app/settings/building?section=appearance"`,
-		`<details class="unit-add" id="unit-add">`,
-		`<details class="unit-editor" id="unit-top-1">`,
+		`class="unit-dialog-shell" id="unit-add"`,
+		`class="unit-dialog-shell" id="unit-top-1"`,
+		`class="unit-row"`,
+		`href="#unit-top-1"`,
 		`data-confirm="Einheit Top 1 entfernen?"`,
 		`<span class="pill dringend">Überfällig</span>`,
-		`<h3>Zahlungsstatus</h3>`,
-		`data-home-identity="building-context" aria-label="Dachwohnung, offizielle Einheit Top 1"`,
-		`<strong data-home-display-name>Dachwohnung</strong>`,
-		`<small class="home-profile-unit" data-home-unit-label>Top 1</small>`,
-		`„Top 1“ bleibt die offizielle Stammdatenbezeichnung.`,
-		`data-home-identity="building-unit" aria-label="Dachwohnung, offizielle Einheit Top 1"`,
-		`<span class="unit-official" data-home-unit-label>Top 1</span>`,
-		`href="/demo/app/settings/home?from=building"`,
+		`<legend>Zahlungsstatus</legend>`,
+		`Mein Zuhause · Dachwohnung`,
+		`role="dialog" aria-modal="true"`,
 		`Offizielle Bezeichnung`,
 	} {
 		if !strings.Contains(body, want) {
@@ -101,7 +98,7 @@ func TestBuildingSettingsUsesOneEmptyUnitStateAndAnchoredActions(t *testing.T) {
 		t.Fatalf("invalid meta redirect = %q", got)
 	}
 	invalidUnit := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/units", url.Values{})
-	if got := invalidUnit.Header().Get("Location"); got != "/demo/app/settings/building?unit=invalid#unit-add" {
+	if got := invalidUnit.Header().Get("Location"); got != "/demo/app/settings/building?section=units&unit=invalid#unit-add" {
 		t.Fatalf("invalid unit redirect = %q", got)
 	}
 }

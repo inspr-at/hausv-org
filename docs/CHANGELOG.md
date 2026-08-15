@@ -2,6 +2,15 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.93.0] - 2026-08-15
+
+### Verbessert
+
+- **Einheiten sind schneller erfassbar.** Eine klare Verwaltungsansicht bündelt Typ, Zuordnung, Anteil und Zahlungsstatus in gut lesbaren Zeilen.
+- **Bearbeiten bleibt im Kontext.** Hinzufügen und Ändern öffnen in einem eigenen Dialog, ohne die Seite zu verlängern oder Inhalte zu verschieben.
+- **Zuordnungen sind direkt sichtbar.** Eigentümer, Mieter und das persönliche Zuhause stehen unmittelbar bei der jeweiligen Einheit.
+- **Zahlungsstatus und Stammdaten werden gemeinsam gespeichert.** Alle Angaben einer Einheit lassen sich in einem zusammenhängenden Ablauf pflegen.
+
 ## [0.92.0] - 2026-08-15
 
 ### Neu

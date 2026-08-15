@@ -570,7 +570,7 @@ func TestLinkedHomeUnitKeepsItsResidentialIdentityInBuildingEditor(t *testing.T)
 		t.Run(name, func(t *testing.T) {
 			response := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/units", form)
 			if response.Code != http.StatusSeeOther ||
-				response.Header().Get("Location") != "/demo/app/settings/building?unit=home-linked#units" {
+				response.Header().Get("Location") != "/demo/app/settings/building?section=units&unit=home-linked#unit-top-1" {
 				t.Fatalf("linked unit mutation status=%d location=%q", response.Code, response.Header().Get("Location"))
 			}
 			units := a.unitStore.ListTenant("demo")
@@ -593,7 +593,7 @@ func TestLinkedHomeUnitKeepsItsResidentialIdentityInBuildingEditor(t *testing.T)
 		"owner_emails":       {"owner@example.com"},
 	})
 	if response.Code != http.StatusSeeOther ||
-		response.Header().Get("Location") != "/demo/app/settings/building?unit=saved#units" {
+		response.Header().Get("Location") != "/demo/app/settings/building?section=units&unit=saved" {
 		t.Fatalf("safe linked unit edit status=%d location=%q", response.Code, response.Header().Get("Location"))
 	}
 	units := a.unitStore.ListTenant("demo")
@@ -627,7 +627,7 @@ func TestAmbiguousLegacyApartmentStaysUnboundAfterUnitInventoryChanges(t *testin
 
 	response := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/units/delete", url.Values{"id": {"top-2"}})
 	if response.Code != http.StatusSeeOther ||
-		response.Header().Get("Location") != "/demo/app/settings/building?unit=deleted#units" {
+		response.Header().Get("Location") != "/demo/app/settings/building?section=units&unit=deleted" {
 		t.Fatalf("ambiguous unit delete status=%d location=%q", response.Code, response.Header().Get("Location"))
 	}
 	if response := authedRequest(t, a, "first@example.com", "/demo/app/energie"); response.Code != http.StatusForbidden {
@@ -645,7 +645,7 @@ func TestAmbiguousLegacyApartmentStaysUnboundAfterUnitInventoryChanges(t *testin
 		"owner_emails":       {"first@example.com"},
 	})
 	if response.Code != http.StatusSeeOther ||
-		response.Header().Get("Location") != "/demo/app/settings/building?unit=saved#units" {
+		response.Header().Get("Location") != "/demo/app/settings/building?section=units&unit=saved" {
 		t.Fatalf("ambiguous unit add status=%d location=%q", response.Code, response.Header().Get("Location"))
 	}
 	if response := authedRequest(t, a, "first@example.com", "/demo/app/energie"); response.Code != http.StatusForbidden {
