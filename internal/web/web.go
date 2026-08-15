@@ -1147,7 +1147,7 @@ const PageTemplates = `
       <li>{{.BackupStorageNotice}}</li>
       <li>{{.MailDeliveryNotice}}</li>
       <li>Es gibt keine Werbung, keine Analyse-Skripte und keine extern geladenen Web-Schriften.</li>
-      <li>Die festen Kartenausschnitte auf der Anmeldeseite und in der Portalnavigation nutzen OpenStreetMap-Kartenkacheln. hausv.org ruft ausschließlich die für das konfigurierte Haus benötigten Kacheln serverseitig ab und speichert sie mindestens sieben Tage zwischen; OpenStreetMap erhält dabei weder die IP-Adresse noch Anmelde- oder Kontodaten der Portalbesuchenden. Erst beim bewussten Öffnen des Kartenlinks baut der Browser eine direkte Verbindung zu OpenStreetMap auf.</li>
+      <li>Die festen Kartenausschnitte auf der Anmeldeseite und in der Portalnavigation nutzen OpenStreetMap-Kartenkacheln. hausv.org ruft ausschließlich die für das konfigurierte Haus benötigten Kacheln serverseitig ab und speichert sie mindestens sieben Tage zwischen; OpenStreetMap erhält dabei weder die IP-Adresse noch Anmelde- oder Kontodaten der Portalbesuchenden. In den Gebäudeeinstellungen wird eine eingegebene Hausadresse nur nach einem bewussten Klick serverseitig an den OpenStreetMap-Suchdienst Nominatim übermittelt. Erst beim bewussten Öffnen des Kartenlinks baut der Browser eine direkte Verbindung zu OpenStreetMap auf.</li>
       {{if .EnergyProfileExists}}<li>Home-Assistant-Endpunkt und Zugangstoken bleiben in der verschlüsselten Host-Konfiguration. Sie werden weder in der Fachdatenbank noch im Energieexport gespeichert oder angezeigt.</li>{{end}}
     </ul>
 
@@ -4459,7 +4459,7 @@ const PageTemplates = `
             <section class="panel contact-section quick-panel" aria-labelledby="quick-contacts-title">
               <div class="section-head">
                 <div class="section-copy"><div class="kicker">Schnell erreichen</div><h2 id="quick-contacts-title">Hilfe &amp; Haus-Ansprechpersonen</h2></div>
-                {{if .CanManageContacts}}<a class="section-link contact-admin-link" href="/app/settings/building#building-contact">Hauskontakte pflegen</a>{{end}}
+                {{if .CanManageContacts}}<a class="section-link contact-admin-link" href="/app/settings/building?section=contacts">Hauskontakte pflegen</a>{{end}}
               </div>
               <div class="quick-list">
                 {{range .EmergencyContacts}}
@@ -4620,7 +4620,7 @@ const PageTemplates = `
             </div>
             <div class="contacts-links">
               <a class="contacts-link" href="{{if .CanManageIssues}}/app/anliegen/board{{else}}/app/anliegen{{end}}"><span><strong>Anliegen melden</strong><small>Bleibt dokumentiert und geht nicht verloren – anders als ein Anruf.</small></span></a>
-              {{if .CanManageContacts}}<a class="contacts-link" href="/app/settings/building#building-contact"><span><strong>Hauskontakte pflegen</strong><small>Verwaltung, Notdienst und Hausmeister stehen in den Gebäude-Einstellungen.</small></span></a>{{end}}
+              {{if .CanManageContacts}}<a class="contacts-link" href="/app/settings/building?section=contacts"><span><strong>Hauskontakte pflegen</strong><small>Verwaltung, Notdienst und Hausmeister stehen in den Gebäude-Einstellungen.</small></span></a>{{end}}
               {{if .CanJoinDirectory}}<a class="contacts-link" href="/app/settings/profile"><span><strong>Eigener Verzeichniseintrag</strong><small>{{if .DirectoryOptIn}}Ihr Kontakt ist für die Hausgemeinschaft sichtbar.{{else}}Ihr Kontakt ist derzeit nicht sichtbar.{{end}}</small></span></a>{{end}}
             </div>
           </section>
@@ -6598,7 +6598,7 @@ const PageTemplates = `
               </div>
               <div class="handover-blank-actions">
                 <button class="button primary" type="button" data-dialog="handover-create" aria-haspopup="dialog" aria-controls="handover-create">Erste Übergabe anlegen</button>
-                {{if .CanManageBuilding}}<a class="button ghost" href="/app/settings/building#units" title="Einheiten in den Gebäude-Einstellungen öffnen">Einheiten prüfen</a>{{end}}
+                {{if .CanManageBuilding}}<a class="button ghost" href="/app/settings/building?section=units" title="Einheiten in den Gebäude-Einstellungen öffnen">Einheiten prüfen</a>{{end}}
               </div>
             </div>
             <aside class="handover-blank-side">
@@ -8077,7 +8077,7 @@ const PageTemplates = `
     <main id="main-content" tabindex="-1" class="app-main payment-import">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Bankdatei</span></span>
-        <div class="page-actions"><a class="button ghost" href="/app/settings/building#units">Zu den Einheiten</a></div>
+        <div class="page-actions"><a class="button ghost" href="/app/settings/building?section=units">Zu den Einheiten</a></div>
       </div>
       <section class="page wide">
         <div class="page-intro">
@@ -8298,8 +8298,58 @@ const PageTemplates = `
         .building .payment-status-form { grid-template-columns: 1fr; align-items: stretch; }
         .building .unit-delete .button { width: 100%; min-height: 44px; }
       }
+      .building .section-nav a.active { background: var(--ink); color: #fff; }
+      .building .section-nav a:first-child:not(.active) { background: transparent; color: var(--ink); }
+      .building .section-nav a.active:hover, .building .section-nav a.active:focus-visible { background: var(--ink); color: #fff; }
+      .building .workspace-panel { display: grid; gap: 20px; padding: 22px; }
+      .building .workspace-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+      .building .workspace-head h2 { margin: 0 0 4px; }
+      .building .workspace-head p { margin: 0; color: var(--muted); }
+      .building .overview-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(360px,.9fr); gap: 18px; align-items: stretch; }
+      .building .settings-card { display: grid; align-content: start; gap: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: #fffefb; }
+      .building .settings-card-head { display: flex; align-items: center; gap: 11px; }
+      .building .settings-card-icon { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%; color: var(--gold-ink); background: var(--panel-soft); }
+      .building .settings-card-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+      .building .settings-card-head h3 { margin: 0; font-family: var(--font-serif); font-size: 22px; }
+      .building .settings-card-head p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+      .building .geocode-row { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
+      .building .geocode-row .button { min-height: 44px; }
+      .building .geocode-status { color: var(--muted); font-size: 13px; }
+      .building .geocode-status.ok { color: var(--green); font-weight: 750; }
+      .building .geocode-results { display: grid; gap: 7px; }
+      .building .geocode-result { width: 100%; display: grid; gap: 3px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-soft); color: var(--ink); text-align: left; cursor: pointer; }
+      .building .geocode-result:hover, .building .geocode-result:focus-visible { border-color: var(--gold); outline: 2px solid rgba(204,157,61,.18); }
+      .building .geocode-result strong { font-size: 13px; }
+      .building .geocode-result span { color: var(--muted); font-size: 12px; }
+      .building .map-preview { position: relative; min-height: 252px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: linear-gradient(135deg,#e9ece4,#d7d9cf); }
+      .building .map-preview img { position: absolute; width: 256px; height: 256px; max-width: none; }
+      .building .map-preview::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg,rgba(255,255,255,.04),rgba(28,35,29,.08)); pointer-events: none; }
+      .building .map-pin { position: absolute; left: 50%; top: 50%; z-index: 2; width: 42px; height: 42px; display: grid; place-items: center; transform: translate(-50%,-70%); border: 2px solid #e0bc62; border-radius: 50% 50% 50% 8px; rotate: -45deg; background: var(--ink); color: #f1d17c; box-shadow: 0 5px 18px rgba(24,32,26,.26); }
+      .building .map-pin svg { width: 22px; height: 22px; rotate: 45deg; fill: none; stroke: currentColor; stroke-width: 1.8; }
+      .building .map-empty { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; color: var(--muted); text-align: center; }
+      .building .map-meta { display: grid; gap: 5px; }
+      .building .map-meta strong { font-size: 14px; }
+      .building .map-meta span { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .building .manual-position { border-top: 1px solid var(--line); padding-top: 12px; }
+      .building .manual-position summary { cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 750; }
+      .building .manual-position label { margin-top: 10px; }
+      .building .workspace-actions { position: sticky; bottom: 8px; z-index: 6; display: flex; justify-content: flex-end; gap: 9px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,254,251,.96); box-shadow: 0 8px 24px rgba(37,45,38,.12); backdrop-filter: blur(10px); }
+      .building .contact-workspace { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .building .contact-workspace .settings-card { min-width: 0; }
+      .building .contact-visibility { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; color: var(--green); font-size: 11px; font-weight: 850; letter-spacing: .05em; text-transform: uppercase; }
+      .building .contact-visibility::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+      @media (max-width: 960px) {
+        .building .overview-grid, .building .contact-workspace { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 760px) {
+        .building .workspace-panel { padding: 15px; }
+        .building .workspace-head { display: grid; }
+        .building .map-preview { min-height: 220px; }
+        .building .workspace-actions { display: grid; grid-template-columns: 1fr 1fr; }
+      }
     </style>
     <script src="/assets/attachments.js?v={{.AssetVersion}}" defer></script>
+    <script src="/assets/building-settings.js?v={{.AssetVersion}}" defer></script>
     <main id="main-content" tabindex="-1" class="app-main building">
       <div class="content-top">
         <span class="crumb"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg><span>/</span><a href="/app/settings">Einstellungen</a><span>/</span><span>Gebäude &amp; Einheiten</span></span>
@@ -8311,86 +8361,54 @@ const PageTemplates = `
           <p class="lede">Hausdaten, Kontakte und Einheiten an einem Ort.</p>
         </div>
         <nav class="section-nav" aria-label="Bereiche">
-          <a href="#overview">Stammdaten</a>
-          <a href="#contacts">Kontakte</a>
-          <a href="#units">Einheiten</a>
-          <a href="#appearance">Erscheinungsbild</a>
+          <a href="/app/settings/building?section=overview"{{if eq .BuildingSection "overview"}} class="active" aria-current="page"{{end}}>Stammdaten</a>
+          <a href="/app/settings/building?section=contacts"{{if eq .BuildingSection "contacts"}} class="active" aria-current="page"{{end}}>Kontakte</a>
+          <a href="/app/settings/building?section=units"{{if eq .BuildingSection "units"}} class="active" aria-current="page"{{end}}>Einheiten</a>
+          <a href="/app/settings/building?section=appearance"{{if eq .BuildingSection "appearance"}} class="active" aria-current="page"{{end}}>Erscheinungsbild</a>
         </nav>
 
-        <form id="building-meta-form" method="post" action="/app/settings/building"></form>
-
-        <details class="panel settings-disclosure" id="overview" open>
-          <summary>
-            <span class="section-icon" aria-hidden="true">⌂</span>
-            <span class="summary-copy"><h2>Stammdaten</h2><p>{{.Tenant.Name}} · {{.Tenant.Address}}</p></span>
-            <span class="disclosure-action">Bearbeiten</span>
-          </summary>
-          <div class="disclosure-body">
+        {{if eq .BuildingSection "overview"}}
+        <form id="building-meta-form" method="post" action="/app/settings/building" data-building-form>
+          <section class="panel workspace-panel" id="overview">
+            <header class="workspace-head"><div><h2>Stammdaten</h2><p>Name, Adresse und Kartenposition dieses Portals.</p></div></header>
             {{if .BuildingMsg}}<p class="flash {{if .BuildingOK}}ok{{end}}">{{.BuildingMsg}}</p>{{end}}
-            <div class="meta-form">
-              <label class="full" for="building-name">Name
-                <input id="building-name" form="building-meta-form" type="text" name="name" value="{{.Tenant.Name}}" maxlength="160" required>
-              </label>
-              <label class="full" for="building-address">Adresse
-                <textarea id="building-address" form="building-meta-form" name="address" maxlength="500" required>{{.Tenant.Address}}</textarea>
-              </label>
-              <label class="full" for="building-map-position">Kartenposition <span class="mini">optional, Breitengrad und Längengrad</span>
-                <input id="building-map-position" form="building-meta-form" type="text" name="map_position" value="{{if .SidebarMap.Configured}}{{printf "%.6f, %.6f" .Tenant.MapLatitude .Tenant.MapLongitude}}{{end}}" inputmode="decimal" placeholder="48.208200, 16.373800" aria-describedby="building-map-position-help">
-                <span class="mini" id="building-map-position-help">Koordinaten lassen sich in OpenStreetMap über „Wo ist das?“ kopieren. Ohne Position zeigt das Portal ehrlich an, dass kein Standort hinterlegt ist.</span>
-              </label>
-            </div>
-            <div class="section-save"><span class="mini">Gilt für dieses Hausportal.</span><button class="button primary" type="submit" form="building-meta-form">Änderungen speichern</button></div>
-          </div>
-        </details>
-
-        <details class="panel settings-disclosure" id="contacts">
-          <summary>
-            <span class="section-icon" aria-hidden="true">☎</span>
-            <span class="summary-copy"><h2>Hauskontakte</h2><p>Verwaltung, Notdienst und Hausmeister</p></span>
-            <span class="disclosure-action">Bearbeiten</span>
-          </summary>
-          <div class="disclosure-body">
-            <div class="contact-groups">
-              <section class="contact-group">
-                <h3>Verwaltung</h3>
-                <label for="contact-name">Name oder Firma
-                  <input id="contact-name" form="building-meta-form" type="text" name="contact_name" value="{{.Tenant.ContactName}}" maxlength="160">
-                </label>
-                <label for="contact-address">Anschrift
-                  <textarea id="contact-address" form="building-meta-form" name="contact_address" maxlength="500" placeholder="Straße, PLZ Ort">{{.Tenant.ContactAddress}}</textarea>
-                </label>
-                <label for="contact-email">E-Mail
-                  <input id="contact-email" form="building-meta-form" type="email" name="contact_email" value="{{.Tenant.ContactEmail}}" maxlength="160" autocomplete="email">
-                </label>
-                <label for="contact-phone">Telefon
-                  <input id="contact-phone" form="building-meta-form" type="tel" name="contact_phone" value="{{.Tenant.ContactPhone}}" maxlength="80" autocomplete="tel">
-                </label>
+            <div class="overview-grid">
+              <section class="settings-card">
+                <div class="settings-card-head"><span class="settings-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span><div><h3>Hausadresse</h3><p>So erscheint die Liegenschaft im Portal.</p></div></div>
+                <label for="building-name">Name<input id="building-name" type="text" name="name" value="{{.Tenant.Name}}" maxlength="160" required></label>
+                <label for="building-address">Adresse<textarea id="building-address" name="address" maxlength="500" required>{{.Tenant.Address}}</textarea></label>
+                <div class="geocode-row">
+                  <button class="button" type="button" data-geocode-address data-geocode-url="/app/settings/building/geocode"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Standort aus Adresse ermitteln</button>
+                  <span class="geocode-status" data-geocode-status aria-live="polite">Nur bei Klick wird die Adresse an OpenStreetMap übermittelt.</span>
+                </div>
+                <div class="geocode-results" data-geocode-results hidden></div>
               </section>
-              <section class="contact-group">
-                <h3>Notdienst</h3>
-                <label for="emergency-name">Bezeichnung
-                  <input id="emergency-name" form="building-meta-form" type="text" name="emergency_name" value="{{.Tenant.EmergencyName}}" maxlength="160" placeholder="Notdienst">
-                </label>
-                <label for="emergency-phone">Telefon
-                  <input id="emergency-phone" form="building-meta-form" type="tel" name="emergency_phone" value="{{.Tenant.EmergencyPhone}}" maxlength="80" autocomplete="tel">
-                </label>
-              </section>
-              <section class="contact-group">
-                <h3>Hausmeister</h3>
-                <label for="caretaker-name">Name
-                  <input id="caretaker-name" form="building-meta-form" type="text" name="caretaker_name" value="{{.Tenant.CaretakerName}}" maxlength="160">
-                </label>
-                <label for="caretaker-email">E-Mail
-                  <input id="caretaker-email" form="building-meta-form" type="email" name="caretaker_email" value="{{.Tenant.CaretakerEmail}}" maxlength="160" autocomplete="email">
-                </label>
-                <label for="caretaker-phone">Telefon
-                  <input id="caretaker-phone" form="building-meta-form" type="tel" name="caretaker_phone" value="{{.Tenant.CaretakerPhone}}" maxlength="80" autocomplete="tel">
-                </label>
+              <section class="settings-card">
+                <div class="settings-card-head"><span class="settings-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><div><h3>Kartenposition</h3><p>Vorschau des gespeicherten oder gewählten Standorts.</p></div></div>
+                <div class="map-preview" data-map-preview>
+                  {{if .SidebarMap.Configured}}{{range .SidebarMap.Tiles}}<img src="{{.URL}}" style="{{.Style}}" alt="">{{end}}<span class="map-pin" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10"/></svg></span>{{else}}<span class="map-empty">Noch kein Standort hinterlegt.<br>Adresse suchen oder Koordinaten eingeben.</span>{{end}}
+                </div>
+                <div class="map-meta"><strong data-map-label>{{if .SidebarMap.Configured}}Standort hinterlegt{{else}}Kein Standort hinterlegt{{end}}</strong><span data-map-coordinates>{{if .SidebarMap.Configured}}{{printf "%.6f, %.6f" .Tenant.MapLatitude .Tenant.MapLongitude}}{{else}}Die Karte wird nach der Auswahl aktualisiert.{{end}}</span></div>
+                <details class="manual-position"><summary>Koordinaten manuell eingeben</summary><label for="building-map-position">Breitengrad, Längengrad<input id="building-map-position" type="text" name="map_position" value="{{if .SidebarMap.Configured}}{{printf "%.6f, %.6f" .Tenant.MapLatitude .Tenant.MapLongitude}}{{end}}" inputmode="decimal" placeholder="48.208200, 16.373800"></label></details>
               </section>
             </div>
-            <div class="section-save"><span class="mini">Diese Angaben erscheinen bei den Hauskontakten.</span><button class="button primary" type="submit" form="building-meta-form">Änderungen speichern</button></div>
-          </div>
-        </details>
+            <div class="workspace-actions"><a class="button ghost" href="/app/settings/building?section=overview">Verwerfen</a><button class="button primary" type="submit">Änderungen speichern</button></div>
+          </section>
+        </form>
+        {{else if eq .BuildingSection "contacts"}}
+        <form method="post" action="/app/settings/building/contacts">
+          <section class="panel workspace-panel" id="contacts">
+            <header class="workspace-head"><div><h2>Hauskontakte</h2><p>Verwaltung, Notdienst und Hausmeister klar an einem Ort pflegen.</p></div><span class="contact-visibility">Im Portal sichtbar</span></header>
+            {{if .BuildingMsg}}<p class="flash {{if .BuildingOK}}ok{{end}}">{{.BuildingMsg}}</p>{{end}}
+            <div class="contact-groups contact-workspace">
+              <section class="settings-card"><div class="settings-card-head"><span class="settings-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6 21V7l6-4 6 4v14"/><path d="M9 9h1M14 9h1M9 13h1M14 13h1"/></svg></span><div><h3>Hausverwaltung</h3><p>Allgemeine Ansprechstelle.</p></div></div><label for="contact-name">Name oder Firma<input id="contact-name" type="text" name="contact_name" value="{{.Tenant.ContactName}}" maxlength="160"></label><label for="contact-address">Anschrift<textarea id="contact-address" name="contact_address" maxlength="500" placeholder="Straße, PLZ Ort">{{.Tenant.ContactAddress}}</textarea></label><label for="contact-email">E-Mail<input id="contact-email" type="email" name="contact_email" value="{{.Tenant.ContactEmail}}" maxlength="160" autocomplete="email"></label><label for="contact-phone">Telefon<input id="contact-phone" type="tel" name="contact_phone" value="{{.Tenant.ContactPhone}}" maxlength="80" autocomplete="tel"></label></section>
+              <section class="settings-card"><div class="settings-card-head"><span class="settings-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.8 2.2 18a2 2 0 0 0 1.7 3h16.2a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/></svg></span><div><h3>Notdienst</h3><p>Für dringende Fälle.</p></div></div><label for="emergency-name">Bezeichnung<input id="emergency-name" type="text" name="emergency_name" value="{{.Tenant.EmergencyName}}" maxlength="160" placeholder="Notdienst"></label><label for="emergency-phone">Telefon<input id="emergency-phone" type="tel" name="emergency_phone" value="{{.Tenant.EmergencyPhone}}" maxlength="80" autocomplete="tel"></label></section>
+              <section class="settings-card"><div class="settings-card-head"><span class="settings-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5-5l2.1 2.1-8.4 8.4a2 2 0 1 0 2.8 2.8l8.4-8.4 2.1 2.1Z"/><path d="m16 14 6 6-2 2-6-6"/></svg></span><div><h3>Hausmeister</h3><p>Technische Betreuung vor Ort.</p></div></div><label for="caretaker-name">Name<input id="caretaker-name" type="text" name="caretaker_name" value="{{.Tenant.CaretakerName}}" maxlength="160"></label><label for="caretaker-email">E-Mail<input id="caretaker-email" type="email" name="caretaker_email" value="{{.Tenant.CaretakerEmail}}" maxlength="160" autocomplete="email"></label><label for="caretaker-phone">Telefon<input id="caretaker-phone" type="tel" name="caretaker_phone" value="{{.Tenant.CaretakerPhone}}" maxlength="80" autocomplete="tel"></label></section>
+            </div>
+            <div class="workspace-actions"><a class="button ghost" href="/app/settings/building?section=contacts">Verwerfen</a><button class="button primary" type="submit">Kontakte speichern</button></div>
+          </section>
+        </form>
+        {{else if eq .BuildingSection "units"}}
 
         <section id="units" class="panel unit-panel">
           <div class="unit-head">
@@ -8502,32 +8520,29 @@ const PageTemplates = `
             {{template "emptyState" .UnitsEmpty}}
           {{end}}
         </section>
-
-        <details class="panel settings-disclosure" id="appearance">
-          <summary>
-            <span class="section-icon" aria-hidden="true">◇</span>
-            <span class="summary-copy"><h2>Erscheinungsbild</h2><p>Portal-Symbol, Kurzkennung und Titelbild</p></span>
-            <span class="disclosure-action">Bearbeiten</span>
-          </summary>
-          <div class="disclosure-body">
+        {{else}}
+        <section class="panel workspace-panel" id="appearance">
+          <header class="workspace-head"><div><h2>Erscheinungsbild</h2><p>Portal-Symbol, Kurzkennung und Titelbild.</p></div></header>
+          <div>
+            {{if .BuildingMsg}}<p class="flash {{if .BuildingOK}}ok{{end}}">{{.BuildingMsg}}</p>{{end}}
             {{if .HeroMsg}}<p class="flash {{if .HeroOK}}ok{{end}}">{{.HeroMsg}}</p>{{end}}
             <div class="brand-grid">
-              <section class="brand-settings">
+              <form class="brand-settings settings-card" method="post" action="/app/settings/building/appearance">
                 <div class="brand-preview">
                   <span class="brand-preview-mark">{{template "tenantBrandMark" .}}</span>
                   <div><strong>{{.BrandIconLabel}}</strong><span>{{.Tenant.BrandAbbreviation}} erscheint als kurze Kennung in der Seitenleiste.</span></div>
                 </div>
                 <label for="brand-icon">Portal-Symbol
-                  <select id="brand-icon" form="building-meta-form" name="brand_icon">
+                  <select id="brand-icon" name="brand_icon">
                     {{range .BrandIconOptions}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
                   </select>
                 </label>
                 <label for="brand-abbreviation">Kurzkennung
-                  <input id="brand-abbreviation" form="building-meta-form" type="text" name="brand_abbreviation" value="{{.Tenant.BrandAbbreviation}}" maxlength="12" placeholder="DEMO">
+                  <input id="brand-abbreviation" type="text" name="brand_abbreviation" value="{{.Tenant.BrandAbbreviation}}" maxlength="12" placeholder="DEMO">
                 </label>
-                <div class="section-save"><button class="button primary" type="submit" form="building-meta-form">Änderungen speichern</button></div>
-              </section>
-              <section class="hero-settings">
+                <div class="section-save"><button class="button primary" type="submit">Darstellung speichern</button></div>
+              </form>
+              <section class="hero-settings settings-card">
                 <img class="hero-preview" src="{{.Tenant.HeroImageURL}}" alt="">
                 <form class="hero-form" method="post" action="/app/settings/building/hero" enctype="multipart/form-data">
                   <label for="hero-image">Titelbild
@@ -8544,7 +8559,8 @@ const PageTemplates = `
               </section>
             </div>
           </div>
-        </details>
+        </section>
+        {{end}}
       </section>
     </main>
 {{template "appClose" .}}
@@ -9671,7 +9687,7 @@ const PageTemplates = `
               </div>
             </details>
             <button class="f-submit" type="submit">Einladung senden</button>
-            <p class="unit-link-note">Danach bei Bedarf: <a href="/app/settings/building#units">Einheit verknüpfen</a></p>
+            <p class="unit-link-note">Danach bei Bedarf: <a href="/app/settings/building?section=units">Einheit verknüpfen</a></p>
           </form>
         </div>
       </details>
@@ -9761,7 +9777,7 @@ const PageTemplates = `
                       <summary>Einheiten <span>{{if .HasUnits}}{{len .UnitList}} verknüpft{{else}}keine verknüpft{{end}}</span></summary>
                       <div class="unit-context">
                         {{if .HasUnits}}<div class="chips">{{range .UnitList}}<span class="chip">{{.}}</span>{{end}}</div>{{else}}<p>Dieser Zugang ist noch keiner Einheit zugeordnet.</p>{{end}}
-                        <a href="/app/settings/building#units">Zuordnung bei Gebäude &amp; Einheiten verwalten</a>
+                        <a href="/app/settings/building?section=units">Zuordnung bei Gebäude &amp; Einheiten verwalten</a>
                       </div>
                     </details>
                     <details class="form-disclosure dialog-disclosure access-section">

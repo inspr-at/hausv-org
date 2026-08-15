@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.92.0] - 2026-08-15
+
+### Neu
+
+- **Hausadressen lassen sich direkt verorten.** Die Verwaltung sucht den Standort bewusst per Klick über OpenStreetMap, prüft den Treffer in einer Vorschau und übernimmt die Koordinaten erst beim Speichern.
+
+### Verbessert
+
+- **Gebäudeeinstellungen sind in klare Arbeitsbereiche gegliedert.** Stammdaten, Kontakte, Einheiten und Erscheinungsbild öffnen als eigene Ansichten ohne Sprünge auf einer langen Seite.
+- **Stammdaten verbinden Adresse und Karte.** Hausadresse, Standortsuche, Kartenposition und manuelle Koordinaten bilden einen verständlichen Ablauf.
+- **Hauskontakte sind schneller erfassbar.** Hausverwaltung, Notdienst und Hausmeister stehen in drei übersichtlichen Karten und werden unabhängig von anderen Gebäudedaten gespeichert.
+- **Bestehende Direktlinks bleiben funktionsfähig.** Frühere Abschnittslinks führen automatisch in den passenden neuen Arbeitsbereich.
+
 ## [0.91.1] - 2026-08-14
 
 ### Verbessert

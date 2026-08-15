@@ -46,23 +46,22 @@ func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) 
 		t.Fatalf("seed home profile: %v", err)
 	}
 
-	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=units")
 	if page.Code != http.StatusOK {
 		t.Fatalf("building page status = %d", page.Code)
 	}
 	body := page.Body.String()
 	for _, want := range []string{
 		`aria-label="Bereiche"`,
-		`href="#overview"`,
-		`href="#contacts"`,
-		`href="#units"`,
-		`href="#appearance"`,
+		`href="/demo/app/settings/building?section=overview"`,
+		`href="/demo/app/settings/building?section=contacts"`,
+		`href="/demo/app/settings/building?section=units" class="active" aria-current="page"`,
+		`href="/demo/app/settings/building?section=appearance"`,
 		`<details class="unit-add" id="unit-add">`,
 		`<details class="unit-editor" id="unit-top-1">`,
 		`data-confirm="Einheit Top 1 entfernen?"`,
 		`<span class="pill dringend">Überfällig</span>`,
 		`<h3>Zahlungsstatus</h3>`,
-		`form="building-meta-form"`,
 		`data-home-identity="building-context" aria-label="Dachwohnung, offizielle Einheit Top 1"`,
 		`<strong data-home-display-name>Dachwohnung</strong>`,
 		`<small class="home-profile-unit" data-home-unit-label>Top 1</small>`,
@@ -79,10 +78,8 @@ func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) 
 	if strings.Contains(body, `class="panel payment-status-panel"`) {
 		t.Fatal("payment status must not repeat the unit inventory in a second panel")
 	}
-	if strings.Index(body, `id="overview"`) > strings.Index(body, `id="contacts"`) ||
-		strings.Index(body, `id="contacts"`) > strings.Index(body, `id="units"`) ||
-		strings.Index(body, `id="units"`) > strings.Index(body, `id="appearance"`) {
-		t.Fatal("building sections are not in the expected task order")
+	if strings.Contains(body, `id="overview"`) || strings.Contains(body, `id="contacts"`) || strings.Contains(body, `id="appearance"`) {
+		t.Fatal("inactive building sections must not render below the active workspace")
 	}
 }
 
@@ -94,13 +91,13 @@ func TestBuildingSettingsUsesOneEmptyUnitStateAndAnchoredActions(t *testing.T) {
 		AuthMethods: defaultAuthMethods(),
 	})
 
-	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building")
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=units")
 	if got := strings.Count(page.Body.String(), "Noch keine Einheiten"); got != 1 {
 		t.Fatalf("empty unit state count = %d, want 1", got)
 	}
 
 	invalidMeta := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building", url.Values{})
-	if got := invalidMeta.Header().Get("Location"); got != "/demo/app/settings/building?building=invalid#overview" {
+	if got := invalidMeta.Header().Get("Location"); got != "/demo/app/settings/building?section=overview&building=invalid" {
 		t.Fatalf("invalid meta redirect = %q", got)
 	}
 	invalidUnit := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/building/units", url.Values{})
