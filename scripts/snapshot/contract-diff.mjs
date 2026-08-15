@@ -46,7 +46,19 @@ const ACCEPTED_LOSSES = [
     values: ['data-home-identity', 'data-home-display-name'],
     why: 'styling hooks only — no script reads them; the templ sidebar styles its own classes',
   },
+  {
+    aspect: 'hooks',
+    values: ['data-label'],
+    why: 'the users table became a card list, so the stacked-table label pattern no longer applies — what mattered (role and status staying visible on a phone) is CSS, which this tool cannot see, and is covered by TestUserCardsKeepRoleAndStatusOnNarrowScreens instead',
+  },
 ];
+
+// Worth stating plainly, because the check reads more complete than it is: this
+// compares RENDERED MARKUP. An element that is present and then removed by a
+// media query looks identical here to one that is visible. That is not a corner
+// case — it is how HAUSV-545 hid the role and status pills on a phone while
+// every markup-level check stayed green. CSS-visibility contracts need a test
+// that reads the stylesheet, and those live in internal/web.
 
 const accepted = new Map();
 for (const { aspect, values, why } of ACCEPTED_LOSSES) {
