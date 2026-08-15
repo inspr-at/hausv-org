@@ -24,7 +24,7 @@ func TestHAUSV200UserRowsPutAttentionFirstAndExposeUnits(t *testing.T) {
 		Role: roleOwner, Status: "Eingeladen",
 		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID:          "einheit-12",
 		TenantSlug:  "demo",
 		Label:       "Einheit 12",

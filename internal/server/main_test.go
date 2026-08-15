@@ -52,6 +52,42 @@ type recordingMailer struct {
 	notifications []sentNotification
 }
 
+func testUnitRepository(t testing.TB, a *app, tenantSlug string) unitRepository {
+	t.Helper()
+	repository, ok := storepkg.BindUnitRepository(a.unitStore, tenantSlug)
+	if !ok {
+		t.Fatalf("bind unit repository for %q", tenantSlug)
+	}
+	return repository
+}
+
+func testUnitPaymentRepository(t testing.TB, a *app, tenantSlug string) unitPaymentRepository {
+	t.Helper()
+	repository, ok := storepkg.BindUnitPaymentStatusRepository(a.unitPaymentStore, tenantSlug)
+	if !ok {
+		t.Fatalf("bind unit payment repository for %q", tenantSlug)
+	}
+	return repository
+}
+
+func testVoteRepository(t testing.TB, a *app, tenantSlug string) voteRepository {
+	t.Helper()
+	repository, ok := storepkg.BindVoteRepository(a.voteStore, tenantSlug)
+	if !ok {
+		t.Fatalf("bind vote repository for %q", tenantSlug)
+	}
+	return repository
+}
+
+func testRequestRepositories(t testing.TB, a *app, tenantSlug string) requestRepositories {
+	t.Helper()
+	tenant, ok := a.tenants[tenantSlug]
+	if !ok {
+		t.Fatalf("tenant %q not configured", tenantSlug)
+	}
+	return a.repositoriesForTenant(tenant)
+}
+
 func (m *recordingMailer) SendMagicLink(to string, link string, _ string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -166,11 +202,12 @@ func TestInviteStoreAddDedupeGetList(t *testing.T) {
 
 func TestUnitStoreSetListResolvePersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "units.json")
-	store, err := newUnitStore(path)
+	unitStore, err := newUnitStore(path)
 	if err != nil {
 		t.Fatalf("newUnitStore: %v", err)
 	}
-	if err := store.SetTenantUnits("demo", []unit{
+	repository, _ := storepkg.BindUnitRepository(unitStore, "demo")
+	if err := repository.SetUnits([]unit{
 		{
 			ID:                    "Top_2",
 			Label:                 "Top 2",
@@ -191,7 +228,7 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 
-	units := store.ListTenant("DEMO")
+	units := repository.List()
 	if len(units) != 3 {
 		t.Fatalf("ListTenant len = %d, want 3", len(units))
 	}
@@ -211,15 +248,15 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 		t.Fatalf("legacy unit should default to residential/full billable: %+v", units[1])
 	}
 
-	memberships := store.UnitsForEmail("demo", "OWNER@example.com")
+	memberships := repository.UnitsForEmail("OWNER@example.com")
 	if len(memberships) != 1 || memberships[0].Unit.ID != "top-2" || memberships[0].Relation != roleOwner {
 		t.Fatalf("owner memberships = %+v", memberships)
 	}
-	renterMemberships := store.UnitsForEmail("demo", "renter@example.com")
+	renterMemberships := repository.UnitsForEmail("renter@example.com")
 	if len(renterMemberships) != 1 || renterMemberships[0].Relation != roleRenter {
 		t.Fatalf("renter memberships = %+v", renterMemberships)
 	}
-	members := store.MembersForUnit("demo", "top-2")
+	members := repository.MembersForUnit("top-2")
 	if !members.Found || len(members.Owners) != 1 || members.Owners[0] != "owner@example.com" || len(members.Renters) != 1 || members.Renters[0] != "renter@example.com" {
 		t.Fatalf("members = %+v", members)
 	}
@@ -232,21 +269,23 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	if got := reopened.UnitCount("demo"); got != 3 {
+	reopenedRepository, _ := storepkg.BindUnitRepository(reopened, "demo")
+	if got := reopenedRepository.UnitCount(); got != 3 {
 		t.Fatalf("reopened UnitCount = %d, want 3", got)
 	}
-	if got := reopened.BillableUnitWeight("demo"); got != 2*unitBillableFullPPM {
+	if got := reopenedRepository.BillableUnitWeight(); got != 2*unitBillableFullPPM {
 		t.Fatalf("reopened BillableUnitWeight = %d, want %d", got, 2*unitBillableFullPPM)
 	}
 }
 
 func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "votes.json")
-	store, err := newVoteStore(path)
+	voteStore, err := newVoteStore(path)
 	if err != nil {
 		t.Fatalf("newVoteStore: %v", err)
 	}
-	created, err := store.Create(ballot{
+	repository, _ := storepkg.BindVoteRepository(voteStore, "demo")
+	created, err := repository.Create(ballot{
 		TenantSlug:  "DEMO",
 		Title:       "Ladestation beschließen",
 		Description: "Soll eine Wallbox angeschafft werden?",
@@ -263,26 +302,26 @@ func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
 	if created.ID == "" || created.Status != ballotStatusDraft || created.TenantSlug != "demo" || len(created.Options) != 2 || created.CreatedBy != "manager@example.com" {
 		t.Fatalf("created ballot = %+v", created)
 	}
-	opened, found, err := store.Open("demo", created.ID, time.Now())
+	opened, found, err := repository.Open(created.ID, time.Now())
 	if err != nil || !found || opened.Status != ballotStatusOpen {
 		t.Fatalf("Open = %+v found=%v err=%v", opened, found, err)
 	}
-	voted, found, err := store.CastVote("demo", created.ID, "Owner@Example.com", "Ja", 12345, time.Now())
+	voted, found, err := repository.CastVote(created.ID, "Owner@Example.com", "Ja", 12345, time.Now())
 	if err != nil || !found {
 		t.Fatalf("CastVote first found=%v err=%v", found, err)
 	}
 	if vote := voted.Votes["owner@example.com"]; vote.Option != "Ja" || vote.Weight != 12345 {
 		t.Fatalf("first vote = %+v", vote)
 	}
-	voted, found, err = store.CastVote("demo", created.ID, "owner@example.com", "Nein", 12345, time.Now())
+	voted, found, err = repository.CastVote(created.ID, "owner@example.com", "Nein", 12345, time.Now())
 	if err != nil || !found || len(voted.Votes) != 1 || voted.Votes["owner@example.com"].Option != "Nein" {
 		t.Fatalf("mutable vote = %+v found=%v err=%v", voted.Votes, found, err)
 	}
-	closed, found, err := store.Close("demo", created.ID, time.Now())
+	closed, found, err := repository.Close(created.ID, time.Now())
 	if err != nil || !found || closed.Status != ballotStatusClosed {
 		t.Fatalf("Close = %+v found=%v err=%v", closed, found, err)
 	}
-	if _, _, err := store.CastVote("demo", created.ID, "owner@example.com", "Ja", 12345, time.Now()); err == nil {
+	if _, _, err := repository.CastVote(created.ID, "owner@example.com", "Ja", 12345, time.Now()); err == nil {
 		t.Fatal("closed ballot should reject votes")
 	}
 	info, err := os.Stat(path)
@@ -293,7 +332,8 @@ func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	loaded, ok := reopened.Get("demo", created.ID)
+	reopenedRepository, _ := storepkg.BindVoteRepository(reopened, "demo")
+	loaded, ok := reopenedRepository.Get(created.ID)
 	if !ok || loaded.Status != ballotStatusClosed || loaded.Votes["owner@example.com"].Option != "Nein" {
 		t.Fatalf("loaded ballot = %+v ok=%v", loaded, ok)
 	}
@@ -303,13 +343,13 @@ func TestBallotVoteWeightUsesOwnerUnits(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 12345, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
 		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", MiteigentumsanteilPPM: 22222, OwnerEmails: []string{"owner@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	shareBallot, err := a.voteStore.Create(ballot{
+	shareBallot, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug: "demo",
 		Title:      "Sanierung",
 		Options:    []string{"Ja", "Nein"},
@@ -320,20 +360,20 @@ func TestBallotVoteWeightUsesOwnerUnits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create share ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", shareBallot.ID, time.Now()); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(shareBallot.ID, time.Now()); err != nil {
 		t.Fatalf("Open share ballot: %v", err)
 	}
-	updated, found, err := a.castBallotVote("demo", "owner@example.com", shareBallot.ID, "Ja", time.Now())
+	updated, found, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner@example.com", shareBallot.ID, "Ja", time.Now())
 	if err != nil || !found {
 		t.Fatalf("owner cast share vote found=%v err=%v", found, err)
 	}
 	if got := updated.Votes["owner@example.com"].Weight; got != 34567 {
 		t.Fatalf("owner share vote weight = %d, want 34567", got)
 	}
-	if _, _, err := a.castBallotVote("demo", "renter@example.com", shareBallot.ID, "Ja", time.Now()); err == nil {
+	if _, _, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "renter@example.com", shareBallot.ID, "Ja", time.Now()); err == nil {
 		t.Fatal("renter should not be eligible for owner ballot")
 	}
-	headBallot, err := a.voteStore.Create(ballot{
+	headBallot, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug: "demo",
 		Title:      "Pro Kopf",
 		Options:    []string{"Ja", "Nein"},
@@ -344,10 +384,10 @@ func TestBallotVoteWeightUsesOwnerUnits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create head ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", headBallot.ID, time.Now()); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(headBallot.ID, time.Now()); err != nil {
 		t.Fatalf("Open head ballot: %v", err)
 	}
-	updated, found, err = a.castBallotVote("demo", "owner@example.com", headBallot.ID, "Nein", time.Now())
+	updated, found, err = a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner@example.com", headBallot.ID, "Nein", time.Now())
 	if err != nil || !found || updated.Votes["owner@example.com"].Weight != 1 {
 		t.Fatalf("owner cast head vote = %+v found=%v err=%v", updated.Votes["owner@example.com"], found, err)
 	}
@@ -357,12 +397,12 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
-	created, err := a.voteStore.Create(ballot{
+	created, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug: "demo",
 		Title:      "Dachsanierung",
 		Options:    []string{"Ja", "Nein"},
@@ -373,7 +413,7 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", created.ID, time.Now()); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(created.ID, time.Now()); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
 
@@ -404,7 +444,7 @@ func TestBallotsPageOwnerVotingAndReadOnlyPersonas(t *testing.T) {
 	if location := vote.Header().Get("Location"); location != "/demo/app/abstimmungen?vote=cast#ballot-"+created.ID {
 		t.Fatalf("owner vote redirect = %q, want ballot anchor", location)
 	}
-	stored, _ := a.voteStore.Get("demo", created.ID)
+	stored, _ := testVoteRepository(t, a, "demo").Get(created.ID)
 	if got := stored.Votes["owner@example.com"].Weight; got != 400000 {
 		t.Fatalf("owner vote weight = %d, want 400000", got)
 	}
@@ -462,7 +502,7 @@ func TestBallotCreateShowsAttachmentPreview(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("ballot create status = %d, want redirect", create.Code)
 	}
-	ballots := a.voteStore.ListTenant("demo")
+	ballots := testVoteRepository(t, a, "demo").List()
 	if len(ballots) != 1 {
 		t.Fatalf("ballots = %+v", ballots)
 	}
@@ -490,14 +530,14 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 	a.profiles["owner2@example.com"] = userProfile{Email: "owner2@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner1@example.com"}, RenterEmails: []string{"renter@example.com"}},
 		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", MiteigentumsanteilPPM: 600000, OwnerEmails: []string{"owner2@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	deadline := time.Now().Add(time.Hour)
-	created, err := a.voteStore.Create(ballot{
+	created, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug: "demo",
 		Title:      "Fassade",
 		Options:    []string{"Ja", "Nein"},
@@ -510,22 +550,22 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", created.ID, time.Now()); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(created.ID, time.Now()); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
-	if _, _, err := a.castBallotVote("demo", "owner1@example.com", created.ID, "Ja", time.Now()); err != nil {
+	if _, _, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner1@example.com", created.ID, "Ja", time.Now()); err != nil {
 		t.Fatalf("owner1 vote: %v", err)
 	}
-	item, _ := a.voteStore.Get("demo", created.ID)
-	view := a.ballotViewForActor("demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
+	item, _ := testVoteRepository(t, a, "demo").Get(created.ID)
+	view := a.ballotViewForActor(testRequestRepositories(t, a, "demo"), "demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
 	if view.TotalWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 400000) || view.EligibleWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 1000000) || view.Participation != "40,0 %" || view.QuorumStatus != "Quorum offen" || view.WinnerLabel != "Ja" {
 		t.Fatalf("single-vote tally = %+v", view)
 	}
-	if _, _, err := a.castBallotVote("demo", "owner2@example.com", created.ID, "Nein", time.Now()); err != nil {
+	if _, _, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner2@example.com", created.ID, "Nein", time.Now()); err != nil {
 		t.Fatalf("owner2 vote: %v", err)
 	}
-	item, _ = a.voteStore.Get("demo", created.ID)
-	view = a.ballotViewForActor("demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
+	item, _ = testVoteRepository(t, a, "demo").Get(created.ID)
+	view = a.ballotViewForActor(testRequestRepositories(t, a, "demo"), "demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
 	if view.TotalWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 1000000) || view.Participation != "100,0 %" || view.QuorumStatus != "Quorum erreicht" || view.WinnerLabel != "Nein" {
 		t.Fatalf("full tally = %+v", view)
 	}
@@ -534,7 +574,7 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 	if openProtocol.Code != http.StatusConflict {
 		t.Fatalf("open protocol status = %d, want 409", openProtocol.Code)
 	}
-	closed, err := a.voteStore.CloseExpiredTenant("demo", deadline.Add(time.Minute))
+	closed, err := testVoteRepository(t, a, "demo").CloseExpired(deadline.Add(time.Minute))
 	if err != nil || len(closed) != 1 || closed[0].Status != ballotStatusClosed {
 		t.Fatalf("CloseExpiredTenant = %+v err=%v", closed, err)
 	}
@@ -559,13 +599,13 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 
 func TestBallotVoteAfterDeadlineAutoCloses(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 1000000, OwnerEmails: []string{"owner@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	now := time.Now()
-	created, err := a.voteStore.Create(ballot{
+	created, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug: "demo",
 		Title:      "Deadline",
 		Options:    []string{"Ja", "Nein"},
@@ -578,13 +618,13 @@ func TestBallotVoteAfterDeadlineAutoCloses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", created.ID, now.Add(-2*time.Hour)); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(created.ID, now.Add(-2*time.Hour)); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
-	if _, _, err := a.castBallotVote("demo", "owner@example.com", created.ID, "Ja", now); err == nil {
+	if _, _, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner@example.com", created.ID, "Ja", now); err == nil {
 		t.Fatal("vote after deadline should fail")
 	}
-	closed, _ := a.voteStore.Get("demo", created.ID)
+	closed, _ := testVoteRepository(t, a, "demo").Get(created.ID)
 	if closed.Status != ballotStatusClosed {
 		t.Fatalf("deadline vote should auto-close ballot: %+v", closed)
 	}
@@ -599,7 +639,7 @@ func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
 	a.profiles["owner1@example.com"] = userProfile{Email: "owner1@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["owner2@example.com"] = userProfile{Email: "owner2@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["owner3@example.com"] = userProfile{Email: "owner3@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 300000, OwnerEmails: []string{"owner1@example.com"}},
 		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", MiteigentumsanteilPPM: 300000, OwnerEmails: []string{"owner2@example.com"}},
 		{ID: "top-3", TenantSlug: "demo", Label: "Top 3", MiteigentumsanteilPPM: 400000, OwnerEmails: []string{"owner3@example.com"}},
@@ -612,7 +652,7 @@ func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
 		t.Fatalf("Set owner3 prefs: %v", err)
 	}
 	now := time.Now()
-	created, err := a.voteStore.Create(ballot{
+	created, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug:            "demo",
 		Title:                 "Reminder",
 		Options:               []string{"Ja", "Nein"},
@@ -625,10 +665,10 @@ func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", created.ID, now); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(created.ID, now); err != nil {
 		t.Fatalf("Open ballot: %v", err)
 	}
-	if _, _, err := a.castBallotVote("demo", "owner1@example.com", created.ID, "Ja", now); err != nil {
+	if _, _, err := a.castBallotVote(testRequestRepositories(t, a, "demo"), "demo", "owner1@example.com", created.ID, "Ja", now); err != nil {
 		t.Fatalf("owner1 vote: %v", err)
 	}
 
@@ -638,7 +678,7 @@ func TestBallotReminderEmailsOnlyNonVotersAndHonorsPrefs(t *testing.T) {
 	if len(mailer.notifications) != 1 || mailer.notifications[0].To != "owner2@example.com" || !strings.Contains(mailer.notifications[0].Subject, "Reminder") || !strings.Contains(mailer.notifications[0].Body, "/demo/app/abstimmungen#ballot-"+created.ID) {
 		t.Fatalf("reminder notifications = %+v", mailer.notifications)
 	}
-	updated, _ := a.voteStore.Get("demo", created.ID)
+	updated, _ := testVoteRepository(t, a, "demo").Get(created.ID)
 	if _, ok := updated.ReminderSentAt["owner2@example.com"]; !ok {
 		t.Fatalf("owner2 should be marked reminded: %+v", updated.ReminderSentAt)
 	}
@@ -1017,7 +1057,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	mailer := &recordingMailer{}
 	a.mailer = mailer
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "einheit-12", Label: "Einheit 12", OwnerEmails: []string{"owner@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
@@ -1899,7 +1939,7 @@ func TestTenantOverrideStoreLayersOverEnvDefaults(t *testing.T) {
 
 func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID:                    "top-1",
 		Label:                 "Top 1",
 		MiteigentumsanteilPPM: 12345,
@@ -2174,11 +2214,11 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if addUnit.Code != http.StatusSeeOther {
 		t.Fatalf("unit add status = %d", addUnit.Code)
 	}
-	units := a.unitStore.ListTenant("demo")
+	units := testUnitRepository(t, a, "demo").List()
 	if len(units) != 1 || units[0].ID != "top-1" || units[0].UnitType != unitTypeResidential || units[0].BillableWeightPPM != unitBillableFullPPM || units[0].MiteigentumsanteilPPM != 12345 || len(units[0].OwnerEmails) != 2 || units[0].RenterEmails[0] != "resident@example.com" {
 		t.Fatalf("units after add = %+v", units)
 	}
-	if payment, ok := a.unitPaymentStore.Get("demo", "top-1"); !ok || payment.Status != unitPaymentStatusOverdue {
+	if payment, ok := testUnitPaymentRepository(t, a, "demo").Get("top-1"); !ok || payment.Status != unitPaymentStatusOverdue {
 		t.Fatalf("payment status after add = %+v, found=%t", payment, ok)
 	}
 	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=units")
@@ -2200,7 +2240,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if editUnit.Code != http.StatusSeeOther {
 		t.Fatalf("unit edit status = %d", editUnit.Code)
 	}
-	units = a.unitStore.ListTenant("demo")
+	units = testUnitRepository(t, a, "demo").List()
 	if len(units) != 1 || units[0].Label != "Top 1A" || units[0].UnitType != unitTypeParking || units[0].BillableWeightPPM != 0 || units[0].MiteigentumsanteilPPM != 23456 || len(units[0].RenterEmails) != 0 {
 		t.Fatalf("units after edit = %+v", units)
 	}
@@ -2209,7 +2249,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if deleteUnit.Code != http.StatusSeeOther {
 		t.Fatalf("unit delete status = %d", deleteUnit.Code)
 	}
-	if units := a.unitStore.ListTenant("demo"); len(units) != 0 {
+	if units := testUnitRepository(t, a, "demo").List(); len(units) != 0 {
 		t.Fatalf("units after delete = %+v", units)
 	}
 }
@@ -2839,7 +2879,7 @@ func TestDocumentDownloadEnforcesVisibilityAndAudits(t *testing.T) {
 	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["renter@example.com"] = userProfile{Email: "renter@example.com", Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["beirat@example.com"] = userProfile{Email: "beirat@example.com", Role: roleBeirat, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", MiteigentumsanteilPPM: 10000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"renter@example.com"}},
 	}); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
@@ -3017,7 +3057,7 @@ func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	if ballotCreate.Code != http.StatusSeeOther {
 		t.Fatalf("manager ballot create status = %d, want redirect", ballotCreate.Code)
 	}
-	ballots := a.voteStore.ListTenant("demo")
+	ballots := testVoteRepository(t, a, "demo").List()
 	if len(ballots) != 1 || ballots[0].Title != "Dachsanierung" || ballots[0].QuorumPPM != 500000 || ballots[0].ReminderBeforeMinutes != 720 {
 		t.Fatalf("created ballots = %+v", ballots)
 	}
@@ -3038,7 +3078,7 @@ func TestManagerCanManageTenantSurfacesButNotPlatformSettings(t *testing.T) {
 	if location := close.Header().Get("Location"); location != "/demo/app/abstimmungen?vote=closed#ballot-"+ballots[0].ID {
 		t.Fatalf("manager ballot close redirect = %q, want ballot anchor", location)
 	}
-	closed, _ := a.voteStore.Get("demo", ballots[0].ID)
+	closed, _ := testVoteRepository(t, a, "demo").Get(ballots[0].ID)
 	if closed.Status != ballotStatusClosed {
 		t.Fatalf("closed ballot = %+v", closed)
 	}
@@ -5280,7 +5320,7 @@ func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
 		return out
 	}
 
-	if err := a.unitStore.SetTenantUnits("demo", mkUnits(25)); err != nil {
+	if err := testUnitRepository(t, a, "demo").SetUnits(mkUnits(25)); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	page := authedRequest(t, a, "admin@example.com", "/demo/app/settings/building?section=units").Body.String()
@@ -5292,14 +5332,14 @@ func TestFairUseIndicatorOnBuildingSettings(t *testing.T) {
 	}
 
 	withParking := append(mkUnits(25), unit{ID: "p1", TenantSlug: "demo", Label: "Stellplatz", UnitType: unitTypeParking})
-	if err := a.unitStore.SetTenantUnits("demo", withParking); err != nil {
+	if err := testUnitRepository(t, a, "demo").SetUnits(withParking); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	if page = authedRequest(t, a, "admin@example.com", "/demo/app/settings/building?section=units").Body.String(); strings.Contains(page, "Über dem inkludierten Rahmen") {
 		t.Fatal("a Stellplatz must not push the billable count over the fair-use limit")
 	}
 
-	if err := a.unitStore.SetTenantUnits("demo", mkUnits(26)); err != nil {
+	if err := testUnitRepository(t, a, "demo").SetUnits(mkUnits(26)); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	if page = authedRequest(t, a, "admin@example.com", "/demo/app/settings/building?section=units").Body.String(); !strings.Contains(page, "Über dem inkludierten Rahmen") {
@@ -5516,7 +5556,7 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["owner@example.com"] = userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	if err := a.unitStore.SetTenantUnits("demo", []unit{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential, MiteigentumsanteilPPM: 100000, OwnerEmails: []string{"owner@example.com"}},
 		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", UnitType: unitTypeResidential, MiteigentumsanteilPPM: 100000, OwnerEmails: []string{"other@example.com"}},
 	}); err != nil {
@@ -5546,7 +5586,7 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 		t.Fatalf("top-2 payment status update = %d, want redirect", saveTop2.Code)
 	}
 
-	records := a.unitPaymentStore.ListTenant("demo")
+	records := testUnitPaymentRepository(t, a, "demo").List()
 	if len(records) != 2 || records[0].UnitID != "top-1" || records[0].Status != unitPaymentStatusOverdue || records[1].Status != unitPaymentStatusPaid {
 		t.Fatalf("payment status records = %+v", records)
 	}

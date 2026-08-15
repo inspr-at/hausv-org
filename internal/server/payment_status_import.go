@@ -83,9 +83,9 @@ func unitPaymentReferenceCandidates(tenantSlug string, period string, units []un
 	return candidates, nil
 }
 
-func (a *app) applyImportedPaymentsToUnitStatuses(payments []integrations.Payment, candidates []unitPaymentReferenceCandidate, actorEmail string, actorRole string, meta paymentImportAuditMeta) (unitPaymentImportReport, error) {
+func (a *app) applyImportedPaymentsToUnitStatuses(repository unitPaymentRepository, payments []integrations.Payment, candidates []unitPaymentReferenceCandidate, actorEmail string, actorRole string, meta paymentImportAuditMeta) (unitPaymentImportReport, error) {
 	report := reconcileImportedPaymentsWithUnitStatus(payments, candidates)
-	if a == nil || a.unitPaymentStore == nil {
+	if a == nil || repository == nil {
 		return report, fmt.Errorf("unit payment status store not configured")
 	}
 	for _, row := range report.Rows {
@@ -93,10 +93,10 @@ func (a *app) applyImportedPaymentsToUnitStatuses(payments []integrations.Paymen
 			continue
 		}
 		tenantSlug := candidateTenant(candidates, row.Reference)
-		if current, ok := a.unitPaymentStore.Get(tenantSlug, row.UnitID); ok && normalizeUnitPaymentStatus(current.Status) == normalizeUnitPaymentStatus(row.Status) {
+		if current, ok := repository.Get(row.UnitID); ok && normalizeUnitPaymentStatus(current.Status) == normalizeUnitPaymentStatus(row.Status) {
 			continue
 		}
-		record, err := a.unitPaymentStore.Set(unitPaymentStatus{
+		record, err := repository.Set(unitPaymentStatus{
 			TenantSlug: tenantSlug,
 			UnitID:     row.UnitID,
 			Status:     row.Status,

@@ -73,7 +73,7 @@ func (a *app) paymentImportPage(w http.ResponseWriter, r *http.Request, ac authC
 	if period == "" {
 		period = time.Now().In(time.Local).Format("2006-01")
 	}
-	units := a.unitStore.ListTenant(tenant.Slug)
+	units := ac.repositories.units.List()
 	candidates, err := unitPaymentReferenceCandidates(tenant.Slug, period, units, nil)
 	if err != nil {
 		logError("payment import references failed", err, "tenant", tenant.Slug)
@@ -164,7 +164,7 @@ func (a *app) previewPaymentImport(w http.ResponseWriter, r *http.Request, ac au
 	}
 	payments := sanitizedImportPayments(parsed.Payments)
 	parserErrors := sanitizedImportErrors(parsed.Report.Errors)
-	candidates, err := unitPaymentReferenceCandidates(tenant.Slug, period, a.unitStore.ListTenant(tenant.Slug), nil)
+	candidates, err := unitPaymentReferenceCandidates(tenant.Slug, period, ac.repositories.units.List(), nil)
 	if err != nil {
 		logError("payment import preview failed", err, "tenant", tenant.Slug)
 		a.redirectPaymentImport(w, r, period, "", "error")
@@ -216,7 +216,7 @@ func (a *app) applyPaymentImport(w http.ResponseWriter, r *http.Request, ac auth
 		a.redirectPaymentImport(w, r, preview.Period, "", "already")
 		return
 	}
-	candidates, err := unitPaymentReferenceCandidates(tenant.Slug, preview.Period, a.unitStore.ListTenant(tenant.Slug), nil)
+	candidates, err := unitPaymentReferenceCandidates(tenant.Slug, preview.Period, ac.repositories.units.List(), nil)
 	if err != nil {
 		logError("payment import apply references failed", err, "tenant", tenant.Slug)
 		a.redirectPaymentImport(w, r, preview.Period, token, "error")
@@ -230,6 +230,7 @@ func (a *app) applyPaymentImport(w http.ResponseWriter, r *http.Request, ac auth
 		return
 	}
 	report, err = a.applyImportedPaymentsToUnitStatuses(
+		ac.repositories.unitPayments,
 		preview.Payments,
 		candidates,
 		actorEmail,

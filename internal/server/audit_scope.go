@@ -52,7 +52,7 @@ func (a *app) canViewAuditUnit(ac authCtx, unitID string) bool {
 	if a == nil || a.unitStore == nil {
 		return false
 	}
-	members := a.unitStore.MembersForUnit(ac.tenant.Slug, unitID)
+	members := ac.repositories.units.MembersForUnit(unitID)
 	return members.Found && (emailListContains(members.Owners, ac.email) || emailListContains(members.Renters, ac.email))
 }
 

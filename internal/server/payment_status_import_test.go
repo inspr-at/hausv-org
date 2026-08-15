@@ -14,7 +14,7 @@ func TestApplyImportedPaymentsToUnitStatusesReportsAndAppliesOnlyClearMatches(t 
 		{ID: "top-2", TenantSlug: "demo", Label: "Top 2", UnitType: unitTypeResidential},
 		{ID: "top-3", TenantSlug: "demo", Label: "Top 3", UnitType: unitTypeResidential},
 	}
-	if err := a.unitStore.SetTenantUnits("demo", units); err != nil {
+	if err := testUnitRepository(t, a, "demo").SetUnits(units); err != nil {
 		t.Fatalf("SetTenantUnits: %v", err)
 	}
 	candidates, err := unitPaymentReferenceCandidates("demo", "2026-07", units, map[string]integrations.MoneyAmount{
@@ -41,7 +41,7 @@ func TestApplyImportedPaymentsToUnitStatusesReportsAndAppliesOnlyClearMatches(t 
 		{TenantSlug: "demo", ExternalID: "p-5", Reference: "HV-DEMO-UNKNOWN-123", Amount: integrations.MoneyAmount{Currency: "EUR", Cents: 10000}},
 	}
 
-	report, err := a.applyImportedPaymentsToUnitStatuses(payments, candidates, "manager@example.com", roleManager, paymentImportAuditMeta{
+	report, err := a.applyImportedPaymentsToUnitStatuses(testUnitPaymentRepository(t, a, "demo"), payments, candidates, "manager@example.com", roleManager, paymentImportAuditMeta{
 		TargetID:      "camt.053:test",
 		SourceVersion: "2019/camt.053.001.08",
 		FileDigest:    "1234567890abcdef",
@@ -61,15 +61,15 @@ func TestApplyImportedPaymentsToUnitStatusesReportsAndAppliesOnlyClearMatches(t 
 		}
 	}
 
-	top1, ok := a.unitPaymentStore.Get("demo", "top-1")
+	top1, ok := testUnitPaymentRepository(t, a, "demo").Get("top-1")
 	if !ok || top1.Status != unitPaymentStatusPaid {
 		t.Fatalf("top-1 status = %+v ok=%v", top1, ok)
 	}
-	top2, ok := a.unitPaymentStore.Get("demo", "top-2")
+	top2, ok := testUnitPaymentRepository(t, a, "demo").Get("top-2")
 	if !ok || top2.Status != unitPaymentStatusPartial {
 		t.Fatalf("top-2 status = %+v ok=%v", top2, ok)
 	}
-	if _, ok := a.unitPaymentStore.Get("demo", "top-3"); ok {
+	if _, ok := testUnitPaymentRepository(t, a, "demo").Get("top-3"); ok {
 		t.Fatalf("unclear duplicate match should not update top-3")
 	}
 	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionUnitPayment, Limit: 10})

@@ -134,7 +134,7 @@ func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"HandoversEmpty":     emptyState("Noch keine Übergaben", "Neue Nutzerwechsel werden hier mit Räumen, Zählern, Schlüsseln, Fotos und Bestätigung dokumentiert."),
 		"HandoverMsg":        msg,
 		"HandoverOK":         okMsg,
-		"UnitOptions":        handoverUnitOptions(a.unitStore.ListTenant(tenant.Slug), ""),
+		"UnitOptions":        handoverUnitOptions(ac.repositories.units.List(), ""),
 		"NowInput":           formatLocalDateTimeInput(time.Now()),
 	}))
 }
@@ -755,8 +755,11 @@ func (a *app) handoverViewForActor(tenantSlug string, email string, role string,
 	item = normalizeHandover(item)
 	unitLabel := item.UnitID
 	if a != nil && a.unitStore != nil && item.UnitID != "" {
-		if label := handoverUnitLabel(a.unitStore.ListTenant(tenantSlug), item.UnitID); label != "" {
-			unitLabel = label
+		units, _ := store.BindUnitRepository(a.unitStore, tenantSlug)
+		if units != nil {
+			if label := handoverUnitLabel(units.List(), item.UnitID); label != "" {
+				unitLabel = label
+			}
 		}
 	}
 	attachments := a.attachmentViewsForEntity(tenantSlug, "handover", item.ID, email, role)

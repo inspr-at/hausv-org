@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 type portalContextView struct {
@@ -143,8 +145,11 @@ func (a *app) ownRolesForTenant(email string, tenantSlug string) []string {
 	}
 	add(primary)
 	if a.unitStore != nil {
-		for _, membership := range a.unitStore.UnitsForEmail(tenantSlug, email) {
-			add(membership.Relation)
+		units, _ := store.BindUnitRepository(a.unitStore, tenantSlug)
+		if units != nil {
+			for _, membership := range units.UnitsForEmail(email) {
+				add(membership.Relation)
+			}
 		}
 	}
 	return roles

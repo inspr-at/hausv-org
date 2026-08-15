@@ -33,7 +33,7 @@ func TestBallotOverviewExplainsReadOnlyOpenBallotTruthfully(t *testing.T) {
 		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
-	created, err := a.voteStore.Create(ballot{
+	created, err := testVoteRepository(t, a, "demo").Create(ballot{
 		TenantSlug: "demo",
 		Title:      "Innenhof",
 		Options:    []string{"Ja", "Nein"},
@@ -44,7 +44,7 @@ func TestBallotOverviewExplainsReadOnlyOpenBallotTruthfully(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create ballot: %v", err)
 	}
-	if _, _, err := a.voteStore.Open("demo", created.ID, time.Now()); err != nil {
+	if _, _, err := testVoteRepository(t, a, "demo").Open(created.ID, time.Now()); err != nil {
 		t.Fatalf("open ballot: %v", err)
 	}
 

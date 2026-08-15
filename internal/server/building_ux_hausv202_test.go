@@ -17,7 +17,7 @@ func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) 
 		Tenants:     []string{"demo"},
 		AuthMethods: defaultAuthMethods(),
 	})
-	if err := a.unitStore.SetTenantUnits("demo", []unit{{
+	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID:                    "top-1",
 		TenantSlug:            "demo",
 		Label:                 "Top 1",
@@ -29,7 +29,7 @@ func TestBuildingSettingsProgressiveSectionsAndIntegratedPayments(t *testing.T) 
 	}}); err != nil {
 		t.Fatalf("seed unit: %v", err)
 	}
-	if _, err := a.unitPaymentStore.Set(unitPaymentStatus{
+	if _, err := testUnitPaymentRepository(t, a, "demo").Set(unitPaymentStatus{
 		TenantSlug: "demo",
 		UnitID:     "top-1",
 		Status:     unitPaymentStatusOverdue,

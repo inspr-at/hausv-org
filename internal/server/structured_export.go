@@ -75,7 +75,7 @@ type structuredExportPreviewView struct {
 }
 
 func (a *app) structuredExportPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	sources := a.structuredExportSourceViews(ac.tenant.Slug, ac.role)
+	sources := a.structuredExportSourceViews(ac.repositories, ac.tenant.Slug, ac.role)
 	resultMessage, resultOK := structuredExportResultMessage(r.URL.Query().Get("result"))
 	var previewView *structuredExportPreviewView
 	if token := strings.TrimSpace(r.URL.Query().Get("preview")); token != "" {
@@ -115,7 +115,7 @@ func (a *app) previewStructuredExport(w http.ResponseWriter, r *http.Request, ac
 		a.redirectStructuredExport(w, r, "", "selection")
 		return
 	}
-	records, sourceCounts := a.structuredExportRecords(ac.tenant.Slug, sources)
+	records, sourceCounts := a.structuredExportRecords(ac.repositories, ac.tenant.Slug, sources)
 	if len(records) == 0 {
 		a.redirectStructuredExport(w, r, "", "empty")
 		return
@@ -200,17 +200,17 @@ func (a *app) downloadStructuredExport(w http.ResponseWriter, r *http.Request, a
 	_, _ = w.Write(preview.Package)
 }
 
-func (a *app) structuredExportRecords(tenantSlug string, sources []string) ([]integrations.ExportRecord, map[string]int) {
+func (a *app) structuredExportRecords(repositories requestRepositories, tenantSlug string, sources []string) ([]integrations.ExportRecord, map[string]int) {
 	records := make([]integrations.ExportRecord, 0)
 	counts := map[string]int{}
 	for _, source := range sources {
 		switch source {
 		case structuredExportSourcePayments:
 			units := map[string]unit{}
-			for _, item := range a.unitStore.ListTenant(tenantSlug) {
+			for _, item := range repositories.units.List() {
 				units[item.ID] = item
 			}
-			for _, item := range a.unitPaymentStore.ListTenant(tenantSlug) {
+			for _, item := range repositories.unitPayments.List() {
 				label := item.UnitID
 				if entry, ok := units[item.UnitID]; ok && strings.TrimSpace(entry.Label) != "" {
 					label = entry.Label
@@ -331,10 +331,10 @@ func buildStructuredExportPackage(ctx context.Context, tenantSlug string, source
 	return packageData.Bytes(), manifest, filename, nil
 }
 
-func (a *app) structuredExportSourceViews(tenantSlug, role string) []structuredExportSourceView {
+func (a *app) structuredExportSourceViews(repositories requestRepositories, tenantSlug, role string) []structuredExportSourceView {
 	paymentCount := 0
-	if a.unitPaymentStore != nil {
-		paymentCount = len(a.unitPaymentStore.ListTenant(tenantSlug))
+	if repositories.unitPayments != nil {
+		paymentCount = len(repositories.unitPayments.List())
 	}
 	sources := []structuredExportSourceView{{
 		Value:       structuredExportSourcePayments,
