@@ -1043,7 +1043,10 @@ func (s *UnitStore) saveLocked() error {
 	return SaveJSONAtomic(s.path, s.data, "Unit")
 }
 
-func (s *EventStore) Create(item HouseEvent) (HouseEvent, error) {
+func (*EventStore) eventStorage() {}
+
+func (s *EventStore) create(tenantSlug string, item HouseEvent) (HouseEvent, error) {
+	item.TenantSlug = tenantSlug
 	if s == nil {
 		return item, nil
 	}
@@ -1070,7 +1073,8 @@ func (s *EventStore) Create(item HouseEvent) (HouseEvent, error) {
 	return normalized, nil
 }
 
-func (s *EventStore) Update(id string, updated HouseEvent) (bool, error) {
+func (s *EventStore) update(tenantSlug string, id string, updated HouseEvent) (bool, error) {
+	updated.TenantSlug = tenantSlug
 	if s == nil {
 		return false, nil
 	}
@@ -1107,7 +1111,7 @@ func (s *EventStore) Update(id string, updated HouseEvent) (bool, error) {
 	return false, nil
 }
 
-func (s *EventStore) Delete(tenantSlug string, id string) (bool, error) {
+func (s *EventStore) delete(tenantSlug string, id string) (bool, error) {
 	if s == nil {
 		return false, nil
 	}
@@ -1137,7 +1141,7 @@ func (s *EventStore) Delete(tenantSlug string, id string) (bool, error) {
 	return true, nil
 }
 
-func (s *EventStore) ListTenant(tenantSlug string) []HouseEvent {
+func (s *EventStore) list(tenantSlug string) []HouseEvent {
 	if s == nil {
 		return nil
 	}
@@ -1154,9 +1158,9 @@ func (s *EventStore) ListTenant(tenantSlug string) []HouseEvent {
 	return out
 }
 
-func (s *EventStore) Upcoming(tenantSlug string, now time.Time) []HouseEvent {
+func (s *EventStore) upcoming(tenantSlug string, now time.Time) []HouseEvent {
 	tenantSlug = textutil.Slug(tenantSlug)
-	items := s.ListTenant(tenantSlug)
+	items := s.list(tenantSlug)
 	out := []HouseEvent{}
 	for _, item := range items {
 		if EventRollsOffAt(item).After(now) {
@@ -1224,7 +1228,10 @@ func SortEvents(items []HouseEvent) {
 	})
 }
 
-func (s *AnnouncementStore) Create(item Announcement) (Announcement, error) {
+func (*AnnouncementStore) announcementStorage() {}
+
+func (s *AnnouncementStore) create(tenantSlug string, item Announcement) (Announcement, error) {
+	item.TenantSlug = tenantSlug
 	now := time.Now().UTC()
 	item.ID = ""
 	item.CreatedAt = now
@@ -1249,7 +1256,8 @@ func (s *AnnouncementStore) Create(item Announcement) (Announcement, error) {
 	return item, nil
 }
 
-func (s *AnnouncementStore) Update(id string, updated Announcement) (bool, error) {
+func (s *AnnouncementStore) update(tenantSlug string, id string, updated Announcement) (bool, error) {
+	updated.TenantSlug = tenantSlug
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return false, nil
@@ -1281,7 +1289,7 @@ func (s *AnnouncementStore) Update(id string, updated Announcement) (bool, error
 	return false, nil
 }
 
-func (s *AnnouncementStore) Delete(tenantSlug string, id string) (bool, error) {
+func (s *AnnouncementStore) delete(tenantSlug string, id string) (bool, error) {
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -1308,7 +1316,7 @@ func (s *AnnouncementStore) Delete(tenantSlug string, id string) (bool, error) {
 	return true, nil
 }
 
-func (s *AnnouncementStore) Visible(tenantSlug string, now time.Time) []Announcement {
+func (s *AnnouncementStore) visible(tenantSlug string, now time.Time) []Announcement {
 	tenantSlug = textutil.Slug(tenantSlug)
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -1329,7 +1337,7 @@ func (s *AnnouncementStore) Visible(tenantSlug string, now time.Time) []Announce
 	return out
 }
 
-func (s *AnnouncementStore) Archive(tenantSlug string, now time.Time) []Announcement {
+func (s *AnnouncementStore) archive(tenantSlug string, now time.Time) []Announcement {
 	tenantSlug = textutil.Slug(tenantSlug)
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -1347,7 +1355,7 @@ func (s *AnnouncementStore) Archive(tenantSlug string, now time.Time) []Announce
 	return out
 }
 
-func (s *AnnouncementStore) ListTenant(tenantSlug string) []Announcement {
+func (s *AnnouncementStore) list(tenantSlug string) []Announcement {
 	tenantSlug = textutil.Slug(tenantSlug)
 	s.mu.Lock()
 	defer s.mu.Unlock()

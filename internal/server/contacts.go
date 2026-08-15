@@ -17,7 +17,8 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	canManageContacts := canManageContacts(role)
 	managerContacts := managerContactViews(tenant)
 	emergencyContacts := emergencyContactViews(tenant)
-	managedContacts := a.managedContactViews(tenant.Slug, canManageContacts)
+	contacts := ac.repositories.contacts
+	managedContacts := a.managedContactViews(contacts, canManageContacts)
 	activeManagedContacts, inactiveManagedContacts := splitManagedContactViews(managedContacts)
 	boardContacts := a.boardContactViews(tenant.Slug)
 	residentContacts := a.residentDirectoryViews(tenant.Slug)
@@ -85,11 +86,12 @@ func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac au
 		http.Redirect(w, r, "/app/kontakte?contact=invalid#contact-add", http.StatusSeeOther)
 		return
 	}
-	if !a.serviceAccessEnabled && (normalizeContactKind(item.Kind) == roleServiceProvider || a.isExistingServiceProviderContact(tenant.Slug, item.ID)) {
+	contacts := ac.repositories.contacts
+	if !a.serviceAccessEnabled && (normalizeContactKind(item.Kind) == roleServiceProvider || a.isExistingServiceProviderContact(contacts, item.ID)) {
 		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
 		return
 	}
-	saved, created, err := a.contactStore.Upsert(item)
+	saved, created, err := contacts.Upsert(item)
 	if err != nil {
 		logError("contact save failed", err, "tenant", tenant.Slug, "contact", redactedEmail(item.Email))
 		http.Redirect(w, r, "/app/kontakte?contact=error#contact-book", http.StatusSeeOther)
@@ -115,11 +117,11 @@ func (a *app) upsertManagedContact(w http.ResponseWriter, r *http.Request, ac au
 	http.Redirect(w, r, "/app/kontakte?contact=saved#contact-book", http.StatusSeeOther)
 }
 
-func (a *app) isExistingServiceProviderContact(tenantSlug string, id string) bool {
-	if a == nil || a.contactStore == nil || strings.TrimSpace(id) == "" {
+func (a *app) isExistingServiceProviderContact(contacts contactBookRepository, id string) bool {
+	if a == nil || contacts == nil || strings.TrimSpace(id) == "" {
 		return false
 	}
-	for _, item := range a.contactStore.ListTenant(tenantSlug, true) {
+	for _, item := range contacts.List(true) {
 		if item.ID == id {
 			return normalizeContactKind(item.Kind) == roleServiceProvider
 		}
@@ -138,7 +140,7 @@ func (a *app) deactivateManagedContact(w http.ResponseWriter, r *http.Request, a
 		return
 	}
 	id := strings.TrimSpace(r.FormValue("id"))
-	removed, err := a.contactStore.Deactivate(tenant.Slug, id, time.Now())
+	removed, err := ac.repositories.contacts.Deactivate(id, time.Now())
 	if err != nil {
 		http.Redirect(w, r, "/app/kontakte?contact=error#contact-book", http.StatusSeeOther)
 		return
@@ -176,11 +178,11 @@ func contactMessage(status string) (string, bool) {
 	}
 }
 
-func (a *app) managedContactViews(tenantSlug string, includeInactive bool) []managedContactView {
-	if a == nil || a.contactStore == nil {
+func (a *app) managedContactViews(contacts contactBookRepository, includeInactive bool) []managedContactView {
+	if a == nil || contacts == nil {
 		return nil
 	}
-	items := a.contactStore.ListTenant(tenantSlug, includeInactive)
+	items := contacts.List(includeInactive)
 	views := make([]managedContactView, 0, len(items))
 	for _, item := range items {
 		itemView := managedContactViewFrom(item)
@@ -249,11 +251,11 @@ func splitManagedContactViews(items []managedContactView) ([]managedContactView,
 	return active, inactive
 }
 
-func (a *app) serviceContactOptions(tenantSlug string) []contactOptionView {
-	if a == nil || !a.serviceAccessEnabled || a.contactStore == nil {
+func (a *app) serviceContactOptions(contacts contactBookRepository) []contactOptionView {
+	if a == nil || !a.serviceAccessEnabled || contacts == nil {
 		return nil
 	}
-	items := a.contactStore.ListTenant(tenantSlug, false)
+	items := contacts.List(false)
 	options := []contactOptionView{}
 	for _, item := range items {
 		email := normalizeEmail(item.Email)

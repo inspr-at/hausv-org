@@ -29,22 +29,25 @@ func TestAnnouncementStorageParity(t *testing.T) {
 	now := time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC)
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
-			s := build(t)
+			s, ok := BindAnnouncementRepository(build(t), "demo")
+			if !ok {
+				t.Fatal("bind announcement repository")
+			}
 			// Create: gets id, defaults category Info, published now.
 			created, err := s.Create(Announcement{TenantSlug: "demo", Title: "Hallo", Body: "b", AuthorEmail: "a@example.com", PublishedAt: now})
 			if err != nil || created.ID == "" || created.Category != "Info" || created.PublishedAt.IsZero() {
 				t.Fatalf("create: %v %+v", err, created)
 			}
 			id := created.ID
-			if got := s.ListTenant("demo"); len(got) != 1 || got[0].ID != id {
+			if got := s.List(); len(got) != 1 || got[0].ID != id {
 				t.Fatalf("list = %+v", got)
 			}
 			// Update preserves CreatedAt + id, changes title.
-			ok, err := s.Update(id, Announcement{TenantSlug: "demo", Title: "Neu", Body: "b2"})
-			if err != nil || !ok {
-				t.Fatalf("update: %v ok=%v", err, ok)
+			updatedOK, err := s.Update(id, Announcement{TenantSlug: "demo", Title: "Neu", Body: "b2"})
+			if err != nil || !updatedOK {
+				t.Fatalf("update: %v ok=%v", err, updatedOK)
 			}
-			got := s.ListTenant("demo")
+			got := s.List()
 			if got[0].Title != "Neu" || !got[0].CreatedAt.Equal(created.CreatedAt) {
 				t.Fatalf("update result: %+v", got[0])
 			}
@@ -54,8 +57,8 @@ func TestAnnouncementStorageParity(t *testing.T) {
 			past := now.Add(-48 * time.Hour)
 			exp := now.Add(-time.Hour)
 			_, _ = s.Create(Announcement{TenantSlug: "demo", Title: "Old", Body: "x", PublishedAt: past, ExpiresAt: &exp})
-			vis := s.Visible("demo", now) // excludes future + expired
-			arc := s.Archive("demo", now) // excludes future, includes expired
+			vis := s.Visible(now) // excludes future + expired
+			arc := s.Archive(now) // excludes future, includes expired
 			if len(vis) != 1 {
 				t.Fatalf("visible = %d (%+v)", len(vis), titles(vis))
 			}
@@ -63,11 +66,11 @@ func TestAnnouncementStorageParity(t *testing.T) {
 				t.Fatalf("archive = %d (%+v)", len(arc), titles(arc))
 			}
 			// Delete.
-			del, err := s.Delete("demo", id)
+			del, err := s.Delete(id)
 			if err != nil || !del {
 				t.Fatalf("delete: %v %v", err, del)
 			}
-			if d2, _ := s.Delete("demo", "nope"); d2 {
+			if d2, _ := s.Delete("nope"); d2 {
 				t.Fatal("delete unknown must be false")
 			}
 		})

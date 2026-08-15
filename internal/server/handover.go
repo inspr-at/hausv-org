@@ -115,8 +115,8 @@ func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	items := []handoverRecord{}
-	if a.handoverStore != nil {
-		items = a.handoverStore.ListTenant(tenant.Slug)
+	if ac.repositories.handovers != nil {
+		items = ac.repositories.handovers.List()
 	}
 	msg, okMsg := handoverMessage(r.URL.Query().Get("handover"))
 	views := a.handoverViewsForActor(tenant.Slug, email, role, items)
@@ -175,7 +175,7 @@ func (a *app) addHandoverAttachments(w http.ResponseWriter, r *http.Request, ac 
 		return
 	}
 	id := strings.TrimSpace(r.FormValue("id"))
-	item, found := a.handoverStore.Get(tenant.Slug, id)
+	item, found := ac.repositories.handovers.Get(id)
 	if !found {
 		http.Redirect(w, r, "/app/uebergaben?handover=missing", http.StatusSeeOther)
 		return
@@ -207,7 +207,7 @@ func (a *app) createHandover(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.Error(w, "Übergabeprotokolle sind der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
-	if a.handoverStore == nil {
+	if ac.repositories.handovers == nil {
 		http.Redirect(w, r, "/app/uebergaben?handover=error", http.StatusSeeOther)
 		return
 	}
@@ -238,7 +238,7 @@ func (a *app) createHandover(w http.ResponseWriter, r *http.Request, ac authCtx)
 			return
 		}
 	}
-	created, err := a.handoverStore.Create(item)
+	created, err := ac.repositories.handovers.Create(item)
 	if err != nil {
 		for _, attachment := range uploaded {
 			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
@@ -606,7 +606,7 @@ func (a *app) handoverProtocol(w http.ResponseWriter, r *http.Request, ac authCt
 		http.Error(w, "Dieses Protokoll ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
-	item, found := a.handoverStore.Get(tenant.Slug, strings.TrimSpace(r.PathValue("id")))
+	item, found := ac.repositories.handovers.Get(strings.TrimSpace(r.PathValue("id")))
 	if !found {
 		http.NotFound(w, r)
 		return
@@ -655,7 +655,7 @@ func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request, ac au
 		http.Redirect(w, r, "/app/uebergaben?handover=invalid", http.StatusSeeOther)
 		return
 	}
-	item, found := a.handoverStore.Get(tenant.Slug, strings.TrimSpace(r.FormValue("id")))
+	item, found := ac.repositories.handovers.Get(strings.TrimSpace(r.FormValue("id")))
 	if !found {
 		http.Redirect(w, r, "/app/uebergaben?handover=missing", http.StatusSeeOther)
 		return

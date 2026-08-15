@@ -127,7 +127,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
-	serviceContacts := a.serviceContactOptions(tenant.Slug)
+	serviceContacts := a.serviceContactOptions(ac.repositories.contacts)
 	a.render(w, "issues", a.withBase(ac, map[string]any{
 		"Title":                      "Anliegen",
 		"CanManageAnnouncements":     canManageAnnouncements(role),

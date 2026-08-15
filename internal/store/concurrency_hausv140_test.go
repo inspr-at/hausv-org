@@ -20,6 +20,7 @@ func TestAnnouncementStoreConcurrentCreateListDeletePersist(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	repo, _ := BindAnnouncementRepository(s, "demo")
 
 	const workers = 16
 	const perWorker = 40
@@ -29,7 +30,7 @@ func TestAnnouncementStoreConcurrentCreateListDeletePersist(t *testing.T) {
 		go func(w int) {
 			defer wg.Done()
 			for i := 0; i < perWorker; i++ {
-				created, err := s.Create(Announcement{
+				created, err := repo.Create(Announcement{
 					TenantSlug: "demo",
 					Title:      fmt.Sprintf("w%d-%d", w, i),
 					Body:       "x",
@@ -39,9 +40,9 @@ func TestAnnouncementStoreConcurrentCreateListDeletePersist(t *testing.T) {
 					t.Errorf("create: %v", err)
 					return
 				}
-				_ = s.ListTenant("demo")
+				_ = repo.List()
 				if i%3 == 0 {
-					if _, err := s.Delete("demo", created.ID); err != nil {
+					if _, err := repo.Delete(created.ID); err != nil {
 						t.Errorf("delete: %v", err)
 						return
 					}
@@ -67,7 +68,8 @@ func TestAnnouncementStoreConcurrentCreateListDeletePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reload after concurrent writes: %v", err)
 	}
-	if got, want := len(reloaded.ListTenant("demo")), len(s.ListTenant("demo")); got != want {
+	reloadedRepo, _ := BindAnnouncementRepository(reloaded, "demo")
+	if got, want := len(reloadedRepo.List()), len(repo.List()); got != want {
 		t.Fatalf("reloaded count %d != in-memory count %d", got, want)
 	}
 }

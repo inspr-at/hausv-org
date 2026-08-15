@@ -582,7 +582,10 @@ func (s *UnitPaymentStatusStore) saveLocked() error {
 	return SaveJSONAtomic(s.path, s.data, "unit payment status")
 }
 
-func (s *ContactBookStore) Upsert(item ManagedContact) (ManagedContact, bool, error) {
+func (*ContactBookStore) contactBookStorage() {}
+
+func (s *ContactBookStore) upsert(tenantSlug string, item ManagedContact) (ManagedContact, bool, error) {
+	item.TenantSlug = tenantSlug
 	if s == nil {
 		return ManagedContact{}, false, fmt.Errorf("contact store not configured")
 	}
@@ -626,7 +629,7 @@ func (s *ContactBookStore) Upsert(item ManagedContact) (ManagedContact, bool, er
 	return item, true, nil
 }
 
-func (s *ContactBookStore) Deactivate(tenantSlug string, id string, at time.Time) (ManagedContact, error) {
+func (s *ContactBookStore) deactivate(tenantSlug string, id string, at time.Time) (ManagedContact, error) {
 	if s == nil {
 		return ManagedContact{}, fmt.Errorf("contact store not configured")
 	}
@@ -658,7 +661,7 @@ func (s *ContactBookStore) Deactivate(tenantSlug string, id string, at time.Time
 	return ManagedContact{}, nil
 }
 
-func (s *ContactBookStore) ListTenant(tenantSlug string, includeInactive bool) []ManagedContact {
+func (s *ContactBookStore) list(tenantSlug string, includeInactive bool) []ManagedContact {
 	if s == nil {
 		return nil
 	}

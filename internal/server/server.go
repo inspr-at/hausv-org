@@ -600,15 +600,20 @@ type (
 	activityRecord             = store.ActivityRecord
 	activityStore              = store.ActivityStore
 	activityStorage            = store.ActivityStorage
+	announcementRepository     = store.AnnouncementRepository
 	profileOverlayStorage      = store.ProfileOverlayStorage
 	notificationPrefStorage    = store.NotificationPrefStorage
 	unitPaymentStatusStorage   = store.UnitPaymentStatusStorage
+	contactBookRepository      = store.ContactBookRepository
 	contactBookStorage         = store.ContactBookStorage
 	announcementReadRepository = store.AnnouncementReadRepository
 	announcementReadStorage    = store.AnnouncementReadStorage
 	announcementStorage        = store.AnnouncementStorage
+	eventRepository            = store.EventRepository
 	eventStorage               = store.EventStorage
+	handoverRepository         = store.HandoverRepository
 	handoverStorage            = store.HandoverStorage
+	identityRepository         = store.IdentityRepository
 	documentStorage            = store.DocumentStorage
 	protocolFiler              = store.ProtocolFiler
 	attachmentStorage          = store.AttachmentStorage
@@ -1112,6 +1117,11 @@ type tenantPathContextKey struct{}
 // together with a resolvedTenantRequest by tenantPaths.
 type requestRepositories struct {
 	announcementReads store.AnnouncementReadRepository
+	announcements     store.AnnouncementRepository
+	contacts          store.ContactBookRepository
+	events            store.EventRepository
+	handovers         store.HandoverRepository
+	identity          store.IdentityRepository
 }
 
 type resolvedTenantRequest struct {
@@ -1122,10 +1132,27 @@ type resolvedTenantRequest struct {
 
 func (a *app) repositoriesForTenant(tenant tenantConfig) requestRepositories {
 	repositories := requestRepositories{}
-	if a == nil || a.announcementReadStore == nil {
+	if a == nil {
 		return repositories
 	}
-	repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant.Slug)
+	if a.announcementReadStore != nil {
+		repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant.Slug)
+	}
+	if a.announcementStore != nil {
+		repositories.announcements, _ = store.BindAnnouncementRepository(a.announcementStore, tenant.Slug)
+	}
+	if a.contactStore != nil {
+		repositories.contacts, _ = store.BindContactBookRepository(a.contactStore, tenant.Slug)
+	}
+	if a.eventStore != nil {
+		repositories.events, _ = store.BindEventRepository(a.eventStore, tenant.Slug)
+	}
+	if a.handoverStore != nil {
+		repositories.handovers, _ = store.BindHandoverRepository(a.handoverStore, tenant.Slug)
+	}
+	if a.identityStore != nil {
+		repositories.identity, _ = store.BindIdentityRepository(a.identityStore, tenant.Slug)
+	}
 	return repositories
 }
 
@@ -1745,7 +1772,7 @@ func (a *app) calendarFeed(w http.ResponseWriter, r *http.Request) {
 	}
 	role := a.roleFor(payload.Email, tenant.Slug)
 	profile := a.profileForTenant(payload.Email, tenant.Slug)
-	body := a.renderCalendarFeed(tenant, profile, role, time.Now().UTC())
+	body := a.renderCalendarFeed(tenant, profile, role, time.Now().UTC(), a.repositoriesForTenant(tenant).events)
 	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
 	w.Header().Set("Cache-Control", "private, max-age=300")
 	w.Header().Set("Content-Disposition", `inline; filename="hausv-`+tenant.Slug+`.ics"`)
@@ -1832,7 +1859,7 @@ func (a *app) signCalendarFeed(value string) ([]byte, error) {
 	return a.sessions.Sign(value)
 }
 
-func (a *app) renderCalendarFeed(tenant tenantConfig, profile userProfile, role string, now time.Time) string {
+func (a *app) renderCalendarFeed(tenant tenantConfig, profile userProfile, role string, now time.Time, events eventRepository) string {
 	email := normalizeEmail(profile.Email)
 	tenantSlug := normalizeSlug(tenant.Slug)
 	var b strings.Builder
@@ -1843,8 +1870,8 @@ func (a *app) renderCalendarFeed(tenant tenantConfig, profile userProfile, role 
 	calendarLine(&b, "METHOD", "PUBLISH")
 	calendarLine(&b, "X-WR-CALNAME", "hausv.org "+tenant.Name)
 	calendarLine(&b, "X-WR-CALDESC", "Termine und freigegebene Vorgänge für "+tenant.Address)
-	if canUseResidentAreas(role) && a != nil && a.eventStore != nil {
-		for _, item := range a.eventStore.Upcoming(tenantSlug, now) {
+	if canUseResidentAreas(role) && events != nil {
+		for _, item := range events.Upcoming(now) {
 			a.writeCalendarEvent(&b, tenant, item, now)
 		}
 	}
@@ -2060,7 +2087,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if announcementReads != nil {
 		lastSeen = announcementReads.LastSeen(email)
 	}
-	signals := a.portalSignals(tenant.Slug, email, role, now, lastSeen, modules)
+	signals := a.portalSignals(ac.repositories, tenant.Slug, email, role, now, lastSeen, modules)
 	digest := a.dashboardDigestItems(tenant.Slug, email, role, now, lastSeen, signals, modules)
 	var primary dashboardDigestItem
 	hasPrimary := false
@@ -2151,7 +2178,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	// The sidebar badges read the same numbers. Passing them explicitly keeps
 	// render() from re-reading announcements and issues for this page.
-	if a.announcementStore != nil && announcementReads != nil && strings.TrimSpace(email) != "" {
+	if ac.repositories.announcements != nil && announcementReads != nil && strings.TrimSpace(email) != "" {
 		data["UnreadAnnouncements"] = signals.unreadAnnouncements
 		data["HasUnreadAnnouncements"] = signals.unreadAnnouncements > 0
 	}
@@ -2204,14 +2231,14 @@ type portalSignals struct {
 	openIssues          []residentIssue
 }
 
-func (a *app) portalSignals(tenantSlug string, email string, role string, now time.Time, lastSeen time.Time, modules portalModuleFlags) portalSignals {
+func (a *app) portalSignals(repositories requestRepositories, tenantSlug string, email string, role string, now time.Time, lastSeen time.Time, modules portalModuleFlags) portalSignals {
 	signals := portalSignals{}
-	if modules.Announcements && a.announcementStore != nil {
-		signals.announcements = a.announcementStore.Visible(tenantSlug, now)
+	if modules.Announcements && repositories.announcements != nil {
+		signals.announcements = repositories.announcements.Visible(now)
 		signals.unreadAnnouncements = unreadAnnouncementCount(signals.announcements, lastSeen, now)
 	}
-	if modules.Events && a.eventStore != nil {
-		signals.events = a.eventStore.Upcoming(tenantSlug, now)
+	if modules.Events && repositories.events != nil {
+		signals.events = repositories.events.Upcoming(now)
 	}
 	if modules.Issues && a.issueStore != nil {
 		signals.issues = a.visibleIssuesForActor(tenantSlug, email, role)
@@ -2408,23 +2435,21 @@ func (a *app) dashboardDigestItems(tenantSlug string, email string, role string,
 			break
 		}
 	}
-	if a.announcementStore != nil {
-		unread := signals.unreadAnnouncements
-		if unread > 0 {
-			title := "Neue Aushänge lesen"
-			if unread == 1 {
-				title = "Neuen Aushang lesen"
-			}
-			item := dashboardDigestItem{
-				Kind:        "Aushang",
-				Title:       title,
-				Detail:      pluralizeCount(unread, "ungelesener Beitrag", "ungelesene Beiträge"),
-				URL:         "/app/announcements",
-				ActionLabel: "Jetzt lesen",
-				Actionable:  true,
-			}
-			announcementItem = &item
+	unread := signals.unreadAnnouncements
+	if unread > 0 {
+		title := "Neue Aushänge lesen"
+		if unread == 1 {
+			title = "Neuen Aushang lesen"
 		}
+		item := dashboardDigestItem{
+			Kind:        "Aushang",
+			Title:       title,
+			Detail:      pluralizeCount(unread, "ungelesener Beitrag", "ungelesene Beiträge"),
+			URL:         "/app/announcements",
+			ActionLabel: "Jetzt lesen",
+			Actionable:  true,
+		}
+		announcementItem = &item
 	}
 	if a.issueStore != nil {
 		visible := signals.issues
@@ -2499,23 +2524,21 @@ func (a *app) dashboardDigestItems(tenantSlug string, email string, role string,
 			}
 		}
 	}
-	if a.eventStore != nil {
-		upcoming := signals.events
-		if len(upcoming) > 0 {
-			views := a.eventViews(tenantSlug, upcoming[:1], now, email, role)
-			if len(views) > 0 {
-				item := dashboardDigestItem{
-					Kind:        "Termin",
-					Title:       "Nächster Termin: " + views[0].Title,
-					Detail:      views[0].StartsAt,
-					URL:         "/app/events",
-					ActionLabel: "Termine ansehen",
-					Actionable:  false,
-					SourceKind:  "event",
-					SourceID:    views[0].ID,
-				}
-				eventItem = &item
+	upcoming := signals.events
+	if len(upcoming) > 0 {
+		views := a.eventViews(tenantSlug, upcoming[:1], now, email, role)
+		if len(views) > 0 {
+			item := dashboardDigestItem{
+				Kind:        "Termin",
+				Title:       "Nächster Termin: " + views[0].Title,
+				Detail:      views[0].StartsAt,
+				URL:         "/app/events",
+				ActionLabel: "Termine ansehen",
+				Actionable:  false,
+				SourceKind:  "event",
+				SourceID:    views[0].ID,
 			}
+			eventItem = &item
 		}
 	}
 	items := []dashboardDigestItem{}
@@ -3469,7 +3492,7 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	availableEvents := events
 	events = filterAuditEvents(events, action, query)
-	eventViews := auditEventViews(a.auditEventsForView(tenant.Slug, events, fullAudit))
+	eventViews := auditEventViews(a.auditEventsForView(ac.repositories, tenant.Slug, events, fullAudit))
 	stats := auditStats(events, action, query)
 	auditTitle := "Mein Verlauf"
 	auditLede := "Was in Ihrem Konto und bei freigegebenen Vorgängen passiert ist. Interne Verwaltungsdetails bleiben geschützt."
@@ -3497,11 +3520,11 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}))
 }
 
-func (a *app) auditEventsForView(tenantSlug string, events []auditEvent, includeTechnicalID bool) []auditEvent {
+func (a *app) auditEventsForView(repositories requestRepositories, tenantSlug string, events []auditEvent, includeTechnicalID bool) []auditEvent {
 	out := make([]auditEvent, 0, len(events))
 	for _, event := range events {
 		event = copyAuditEvent(event)
-		label := a.auditTargetTitle(tenantSlug, event.TargetType, event.TargetID)
+		label := a.auditTargetTitle(repositories, tenantSlug, event.TargetType, event.TargetID)
 		if label != "" {
 			if event.Details == nil {
 				event.Details = map[string]string{}
@@ -3516,7 +3539,7 @@ func (a *app) auditEventsForView(tenantSlug string, events []auditEvent, include
 	return out
 }
 
-func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID string) string {
+func (a *app) auditTargetTitle(repositories requestRepositories, tenantSlug string, targetType string, targetID string) string {
 	targetID = strings.TrimSpace(targetID)
 	if targetID == "" {
 		return ""
@@ -3527,7 +3550,7 @@ func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID st
 			if item, found := a.attachmentStore.Get(tenantSlug, targetID); found {
 				switch normalizeAttachmentEntity(item.EntityType) {
 				case "issue", "issue-estimate":
-					if title := a.auditTargetTitle(tenantSlug, "issue", item.EntityID); title != "" {
+					if title := a.auditTargetTitle(repositories, tenantSlug, "issue", item.EntityID); title != "" {
 						return title
 					}
 				case "issue-comment":
@@ -3535,7 +3558,7 @@ func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID st
 						return strings.TrimSpace(issue.Title)
 					}
 				case "document", "ballot", "handover", "event":
-					if title := a.auditTargetTitle(tenantSlug, item.EntityType, item.EntityID); title != "" {
+					if title := a.auditTargetTitle(repositories, tenantSlug, item.EntityType, item.EntityID); title != "" {
 						return title
 					}
 				}
@@ -3561,14 +3584,14 @@ func (a *app) auditTargetTitle(tenantSlug string, targetType string, targetID st
 			}
 		}
 	case "handover":
-		if a.handoverStore != nil {
-			if item, found := a.handoverStore.Get(tenantSlug, targetID); found {
+		if repositories.handovers != nil {
+			if item, found := repositories.handovers.Get(targetID); found {
 				return strings.TrimSpace(item.Title)
 			}
 		}
 	case "event":
-		if a.eventStore != nil {
-			for _, item := range a.eventStore.ListTenant(tenantSlug) {
+		if repositories.events != nil {
+			for _, item := range repositories.events.List() {
 				if item.ID == targetID {
 					return strings.TrimSpace(item.Title)
 				}
@@ -5129,7 +5152,7 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	enrichCapabilityData(data)
 	// These two read from the announcement and issue stores. They are the reason
 	// render() cannot itself live in a pure rendering package.
-	a.enrichUnreadAnnouncementData(data, nil)
+	a.enrichUnreadAnnouncementData(data, nil, nil)
 	a.enrichIssueData(data)
 	a.executeTemplate(w, name, data)
 }
@@ -5207,7 +5230,7 @@ func (a *app) withBase(ac authCtx, pageData map[string]any) map[string]any {
 	for key, value := range pageData {
 		data[key] = value
 	}
-	a.enrichUnreadAnnouncementData(data, ac.repositories.announcementReads)
+	a.enrichUnreadAnnouncementData(data, ac.repositories.announcements, ac.repositories.announcementReads)
 	return data
 }
 

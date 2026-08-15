@@ -18,16 +18,17 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	selectedCategory := selectedAnnouncementCategory(r.URL.Query().Get("category"))
 	searchQuery := strings.TrimSpace(r.URL.Query().Get("q"))
 	lastSeen := time.Time{}
+	announcements := ac.repositories.announcements
 	announcementReads := ac.repositories.announcementReads
 	if announcementReads != nil {
 		lastSeen = announcementReads.LastSeen(email)
 	}
 	archive := []announcement{}
 	filtered := []announcement{}
-	if a.announcementStore != nil {
-		archive = a.announcementStore.Archive(tenant.Slug, now)
+	if announcements != nil {
+		archive = announcements.Archive(now)
 		if canManage {
-			archive = a.announcementStore.ListTenant(tenant.Slug)
+			archive = announcements.List()
 		}
 		filtered = filterAnnouncements(archive, selectedCategory, searchQuery)
 	}
@@ -85,7 +86,8 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request, ac auth
 		http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 		return
 	}
-	created, err := a.announcementStore.Create(item)
+	announcements := ac.repositories.announcements
+	created, err := announcements.Create(item)
 	if err != nil {
 		logError("announcement create failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
@@ -93,12 +95,12 @@ func (a *app) createAnnouncement(w http.ResponseWriter, r *http.Request, ac auth
 	}
 	if len(attachmentHeaders) > 0 {
 		if a.attachmentStore == nil {
-			_, _ = a.announcementStore.Delete(tenant.Slug, created.ID)
+			_, _ = announcements.Delete(created.ID)
 			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 			return
 		}
 		if _, err := a.attachmentStore.CreateUploaded(tenant.Slug, "announcement", created.ID, email, uploadedFilesFromHeaders(attachmentHeaders), time.Now()); err != nil {
-			_, _ = a.announcementStore.Delete(tenant.Slug, created.ID)
+			_, _ = announcements.Delete(created.ID)
 			http.Redirect(w, r, "/app/announcements?announce=invalid", http.StatusSeeOther)
 			return
 		}
@@ -141,7 +143,7 @@ func (a *app) editAnnouncement(w http.ResponseWriter, r *http.Request, ac authCt
 			return
 		}
 	}
-	ok, err := a.announcementStore.Update(id, item)
+	ok, err := ac.repositories.announcements.Update(id, item)
 	if err != nil {
 		for _, attachment := range uploaded {
 			_, _, _ = a.attachmentStore.Delete(tenant.Slug, attachment.ID, time.Now())
@@ -170,7 +172,7 @@ func (a *app) deleteAnnouncement(w http.ResponseWriter, r *http.Request, ac auth
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	removed, err := a.announcementStore.Delete(tenant.Slug, strings.TrimSpace(r.FormValue("id")))
+	removed, err := ac.repositories.announcements.Delete(strings.TrimSpace(r.FormValue("id")))
 	if err != nil {
 		logError("announcement delete failed", err, "tenant", tenant.Slug)
 		http.Redirect(w, r, "/app/announcements?announce=error", http.StatusSeeOther)
@@ -325,7 +327,7 @@ func (a *app) announcementViewsWithReadState(tenantSlug string, items []announce
 	return views
 }
 
-func (a *app) enrichUnreadAnnouncementData(data map[string]any, announcementReads announcementReadRepository) {
+func (a *app) enrichUnreadAnnouncementData(data map[string]any, announcements announcementRepository, announcementReads announcementReadRepository) {
 	if _, ok := data["UnreadAnnouncements"]; ok {
 		if _, hasFlag := data["HasUnreadAnnouncements"]; !hasFlag {
 			if count, ok := data["UnreadAnnouncements"].(int); ok {
@@ -335,7 +337,7 @@ func (a *app) enrichUnreadAnnouncementData(data map[string]any, announcementRead
 		return
 	}
 	tenant, ok := data["Tenant"].(tenantConfig)
-	if !ok || tenant.Slug == "" || a.announcementStore == nil || announcementReads == nil {
+	if !ok || tenant.Slug == "" || announcements == nil || announcementReads == nil {
 		data["UnreadAnnouncements"] = 0
 		data["HasUnreadAnnouncements"] = false
 		return
@@ -348,7 +350,7 @@ func (a *app) enrichUnreadAnnouncementData(data map[string]any, announcementRead
 	}
 	now := time.Now()
 	lastSeen := announcementReads.LastSeen(email)
-	count := unreadAnnouncementCount(a.announcementStore.Visible(tenant.Slug, now), lastSeen, now)
+	count := unreadAnnouncementCount(announcements.Visible(now), lastSeen, now)
 	data["UnreadAnnouncements"] = count
 	data["HasUnreadAnnouncements"] = count > 0
 }

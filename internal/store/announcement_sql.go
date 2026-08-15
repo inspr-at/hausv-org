@@ -9,21 +9,73 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
-// AnnouncementStorage is the behaviour both the JSON AnnouncementStore and the
-// SQLite SQLAnnouncementStore satisfy (HAUSV-168).
-type AnnouncementStorage interface {
+// AnnouncementRepository is an announcement store bound to one tenant.
+type AnnouncementRepository interface {
 	Create(item Announcement) (Announcement, error)
 	Update(id string, updated Announcement) (bool, error)
-	Delete(tenantSlug string, id string) (bool, error)
-	Visible(tenantSlug string, now time.Time) []Announcement
-	Archive(tenantSlug string, now time.Time) []Announcement
-	ListTenant(tenantSlug string) []Announcement
+	Delete(id string) (bool, error)
+	Visible(now time.Time) []Announcement
+	Archive(now time.Time) []Announcement
+	List() []Announcement
+}
+
+// AnnouncementStorage is the unbound backend implemented by the JSON and
+// SQLite stores. HTTP code receives only AnnouncementRepository.
+type AnnouncementStorage interface {
+	announcementStorage()
 }
 
 var (
 	_ AnnouncementStorage = (*AnnouncementStore)(nil)
 	_ AnnouncementStorage = (*SQLAnnouncementStore)(nil)
 )
+
+type boundAnnouncementRepository struct {
+	storage    announcementBackend
+	tenantSlug string
+}
+
+type announcementBackend interface {
+	create(tenantSlug string, item Announcement) (Announcement, error)
+	update(tenantSlug string, id string, updated Announcement) (bool, error)
+	delete(tenantSlug string, id string) (bool, error)
+	visible(tenantSlug string, now time.Time) []Announcement
+	archive(tenantSlug string, now time.Time) []Announcement
+	list(tenantSlug string) []Announcement
+}
+
+func BindAnnouncementRepository(storage AnnouncementStorage, tenantSlug string) (AnnouncementRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(announcementBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundAnnouncementRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundAnnouncementRepository) Create(item Announcement) (Announcement, error) {
+	return r.storage.create(r.tenantSlug, item)
+}
+
+func (r *boundAnnouncementRepository) Update(id string, updated Announcement) (bool, error) {
+	return r.storage.update(r.tenantSlug, id, updated)
+}
+
+func (r *boundAnnouncementRepository) Delete(id string) (bool, error) {
+	return r.storage.delete(r.tenantSlug, id)
+}
+
+func (r *boundAnnouncementRepository) Visible(now time.Time) []Announcement {
+	return r.storage.visible(r.tenantSlug, now)
+}
+
+func (r *boundAnnouncementRepository) Archive(now time.Time) []Announcement {
+	return r.storage.archive(r.tenantSlug, now)
+}
+
+func (r *boundAnnouncementRepository) List() []Announcement {
+	return r.storage.list(r.tenantSlug)
+}
 
 // SQLAnnouncementStore keeps each announcement as a JSON document keyed by
 // (tenant, id). Table from migration 0008.
@@ -34,6 +86,8 @@ type SQLAnnouncementStore struct {
 func NewSQLAnnouncementStore(db *sql.DB) *SQLAnnouncementStore {
 	return &SQLAnnouncementStore{db: db}
 }
+
+func (*SQLAnnouncementStore) announcementStorage() {}
 
 func (s *SQLAnnouncementStore) writeTx(tx *sql.Tx, item Announcement) error {
 	blob, err := json.Marshal(item)
@@ -48,7 +102,8 @@ func (s *SQLAnnouncementStore) writeTx(tx *sql.Tx, item Announcement) error {
 	return err
 }
 
-func (s *SQLAnnouncementStore) Create(item Announcement) (Announcement, error) {
+func (s *SQLAnnouncementStore) create(tenantSlug string, item Announcement) (Announcement, error) {
+	item.TenantSlug = tenantSlug
 	now := time.Now().UTC()
 	item.ID = ""
 	item.CreatedAt = now
@@ -78,7 +133,8 @@ func (s *SQLAnnouncementStore) Create(item Announcement) (Announcement, error) {
 	return item, nil
 }
 
-func (s *SQLAnnouncementStore) Update(id string, updated Announcement) (bool, error) {
+func (s *SQLAnnouncementStore) update(tenantSlug string, id string, updated Announcement) (bool, error) {
+	updated.TenantSlug = tenantSlug
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return false, nil
@@ -118,7 +174,7 @@ func (s *SQLAnnouncementStore) Update(id string, updated Announcement) (bool, er
 	return true, nil
 }
 
-func (s *SQLAnnouncementStore) Delete(tenantSlug string, id string) (bool, error) {
+func (s *SQLAnnouncementStore) delete(tenantSlug string, id string) (bool, error) {
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -154,7 +210,7 @@ func (s *SQLAnnouncementStore) allForTenant(tenantSlug string) []Announcement {
 	return out
 }
 
-func (s *SQLAnnouncementStore) Visible(tenantSlug string, now time.Time) []Announcement {
+func (s *SQLAnnouncementStore) visible(tenantSlug string, now time.Time) []Announcement {
 	out := []Announcement{}
 	for _, item := range s.allForTenant(tenantSlug) {
 		if item.PublishedAt.After(now) {
@@ -169,7 +225,7 @@ func (s *SQLAnnouncementStore) Visible(tenantSlug string, now time.Time) []Annou
 	return out
 }
 
-func (s *SQLAnnouncementStore) Archive(tenantSlug string, now time.Time) []Announcement {
+func (s *SQLAnnouncementStore) archive(tenantSlug string, now time.Time) []Announcement {
 	out := []Announcement{}
 	for _, item := range s.allForTenant(tenantSlug) {
 		if item.PublishedAt.After(now) {
@@ -181,7 +237,7 @@ func (s *SQLAnnouncementStore) Archive(tenantSlug string, now time.Time) []Annou
 	return out
 }
 
-func (s *SQLAnnouncementStore) ListTenant(tenantSlug string) []Announcement {
+func (s *SQLAnnouncementStore) list(tenantSlug string) []Announcement {
 	out := s.allForTenant(tenantSlug)
 	SortAnnouncements(out)
 	return out

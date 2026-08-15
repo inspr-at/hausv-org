@@ -30,6 +30,10 @@ import (
 	"github.com/inspr-at/hausv-org/internal/web"
 )
 
+func testRepositories(a *app, tenantSlug string) requestRepositories {
+	return a.repositoriesForTenant(tenantConfig{Slug: tenantSlug})
+}
+
 type sentNotification struct {
 	To      string
 	Subject string
@@ -1032,7 +1036,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 		t.Fatalf("handover create status = %d, want redirect", create.Code)
 	}
 
-	items := a.handoverStore.ListTenant("demo")
+	items := testRepositories(a, "demo").handovers.List()
 	if len(items) != 1 {
 		t.Fatalf("handovers = %+v", items)
 	}
@@ -1181,7 +1185,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 			}
 		}
 	}
-	afterConfirm, found := a.handoverStore.Get("demo", item.ID)
+	afterConfirm, found := testRepositories(a, "demo").handovers.Get(item.ID)
 	if !found || handoverStatus(afterConfirm) != handoverStatusConfirmed {
 		t.Fatalf("handover after both confirmations = found %v item %+v", found, afterConfirm)
 	}
@@ -1203,7 +1207,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 	if filed.Code != http.StatusSeeOther {
 		t.Fatalf("handover file status = %d, want redirect", filed.Code)
 	}
-	updated, found := a.handoverStore.Get("demo", item.ID)
+	updated, found := testRepositories(a, "demo").handovers.Get(item.ID)
 	if !found || updated.FiledDocumentID == "" {
 		t.Fatalf("handover not filed: found=%v item=%+v", found, updated)
 	}
@@ -1216,7 +1220,7 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 func TestHandoverPublicConfirmationToken(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	token := "confirm-secret-token"
-	item, err := a.handoverStore.Create(handoverRecord{
+	item, err := testRepositories(a, "demo").handovers.Create(handoverRecord{
 		ID:           "handover-1",
 		TenantSlug:   "demo",
 		UnitID:       "top-1",
@@ -1260,7 +1264,7 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 	if postRR.Code != http.StatusSeeOther {
 		t.Fatalf("confirm post status = %d, want redirect", postRR.Code)
 	}
-	updated, found := a.handoverStore.Get("demo", item.ID)
+	updated, found := testRepositories(a, "demo").handovers.Get(item.ID)
 	if !found || len(updated.Confirmations) != 1 || updated.Confirmations[0].ConfirmedAt.IsZero() || updated.Confirmations[0].Note != "geprüft" {
 		t.Fatalf("updated confirmation = found %v item %+v", found, updated)
 	}
@@ -1272,7 +1276,7 @@ func TestHandoverPublicConfirmationToken(t *testing.T) {
 	repeat.SetPathValue("token", token)
 	repeatRR := httptest.NewRecorder()
 	a.confirmHandover(repeatRR, repeat)
-	afterRepeat, _ := a.handoverStore.Get("demo", item.ID)
+	afterRepeat, _ := testRepositories(a, "demo").handovers.Get(item.ID)
 	confirmEventsAfter := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionHandoverConfirm, Limit: 20})
 	if repeatRR.Code != http.StatusSeeOther || afterRepeat.Confirmations[0].Note != "geprüft" ||
 		len(confirmEventsAfter) != len(confirmEventsBefore) {
@@ -3163,22 +3167,24 @@ func TestParkingSettingsSavesEffectiveTariffHistory(t *testing.T) {
 
 func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "announcements.json")
-	store, err := newAnnouncementStore(path)
+	backend, err := newAnnouncementStore(path)
 	if err != nil {
 		t.Fatalf("newAnnouncementStore: %v", err)
 	}
+	repository, _ := store.BindAnnouncementRepository(backend, "demo")
+	otherRepository, _ := store.BindAnnouncementRepository(backend, "other")
 	now := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	expiredAt := now.Add(-time.Hour)
-	future, err := store.Create(announcement{TenantSlug: "demo", Title: "Future", Body: "Later", Category: "Info", PublishedAt: now.Add(time.Hour)})
+	future, err := repository.Create(announcement{TenantSlug: "demo", Title: "Future", Body: "Later", Category: "Info", PublishedAt: now.Add(time.Hour)})
 	if err != nil || future.ID == "" {
 		t.Fatalf("create future: item=%+v err=%v", future, err)
 	}
-	expired, _ := store.Create(announcement{TenantSlug: "demo", Title: "Expired", Body: "Old", Category: "Info", PublishedAt: now.Add(-2 * time.Hour), ExpiresAt: &expiredAt})
-	normal, _ := store.Create(announcement{TenantSlug: "demo", Title: "Normal", Body: "Visible", Category: "Termin", PublishedAt: now.Add(-30 * time.Minute)})
-	pinned, _ := store.Create(announcement{TenantSlug: "demo", Title: "Pinned", Body: "Top", Category: "Dringend", Pinned: true, PublishedAt: now.Add(-2 * time.Hour)})
-	_, _ = store.Create(announcement{TenantSlug: "other", Title: "Other", Body: "Hidden", Category: "Info", PublishedAt: now.Add(-time.Hour)})
+	expired, _ := repository.Create(announcement{TenantSlug: "demo", Title: "Expired", Body: "Old", Category: "Info", PublishedAt: now.Add(-2 * time.Hour), ExpiresAt: &expiredAt})
+	normal, _ := repository.Create(announcement{TenantSlug: "demo", Title: "Normal", Body: "Visible", Category: "Termin", PublishedAt: now.Add(-30 * time.Minute)})
+	pinned, _ := repository.Create(announcement{TenantSlug: "demo", Title: "Pinned", Body: "Top", Category: "Dringend", Pinned: true, PublishedAt: now.Add(-2 * time.Hour)})
+	_, _ = otherRepository.Create(announcement{TenantSlug: "other", Title: "Other", Body: "Hidden", Category: "Info", PublishedAt: now.Add(-time.Hour)})
 
-	visible := store.Visible("demo", now)
+	visible := repository.Visible(now)
 	if len(visible) != 2 {
 		t.Fatalf("visible len = %d, want 2 (future=%s expired=%s normal=%s pinned=%s)", len(visible), future.ID, expired.ID, normal.ID, pinned.ID)
 	}
@@ -3188,10 +3194,10 @@ func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 
 	updated := normal
 	updated.Title = "Updated"
-	if ok, err := store.Update(normal.ID, updated); !ok || err != nil {
+	if ok, err := repository.Update(normal.ID, updated); !ok || err != nil {
 		t.Fatalf("update: ok=%v err=%v", ok, err)
 	}
-	if removed, err := store.Delete("demo", pinned.ID); !removed || err != nil {
+	if removed, err := repository.Delete(pinned.ID); !removed || err != nil {
 		t.Fatalf("delete: removed=%v err=%v", removed, err)
 	}
 	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
@@ -3201,7 +3207,8 @@ func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	all := reopened.ListTenant("demo")
+	reopenedRepository, _ := store.BindAnnouncementRepository(reopened, "demo")
+	all := reopenedRepository.List()
 	if len(all) != 3 {
 		t.Fatalf("reopened list len = %d, want 3 after delete", len(all))
 	}
@@ -3248,22 +3255,24 @@ func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
 
 func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "events.json")
-	store, err := newEventStore(path)
+	backend, err := newEventStore(path)
 	if err != nil {
 		t.Fatalf("newEventStore: %v", err)
 	}
+	repository, _ := store.BindEventRepository(backend, "demo")
+	otherRepository, _ := store.BindEventRepository(backend, "other")
 	now := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
-	past, err := store.Create(houseEvent{TenantSlug: "demo", Title: "Alte Reinigung", Category: "Reinigung", StartsAt: now.AddDate(0, 0, -2)})
+	past, err := repository.Create(houseEvent{TenantSlug: "demo", Title: "Alte Reinigung", Category: "Reinigung", StartsAt: now.AddDate(0, 0, -2)})
 	if err != nil {
 		t.Fatalf("create past: %v", err)
 	}
-	future, err := store.Create(houseEvent{TenantSlug: "demo", Title: "Eigentümerversammlung", Category: "meeting", Location: "Hof", StartsAt: now.Add(48 * time.Hour)})
+	future, err := repository.Create(houseEvent{TenantSlug: "demo", Title: "Eigentümerversammlung", Category: "meeting", Location: "Hof", StartsAt: now.Add(48 * time.Hour)})
 	if err != nil {
 		t.Fatalf("create future: %v", err)
 	}
-	_, _ = store.Create(houseEvent{TenantSlug: "other", Title: "Other", Category: "Wartung", StartsAt: now.Add(24 * time.Hour)})
+	_, _ = otherRepository.Create(houseEvent{TenantSlug: "other", Title: "Other", Category: "Wartung", StartsAt: now.Add(24 * time.Hour)})
 
-	upcoming := store.Upcoming("demo", now)
+	upcoming := repository.Upcoming(now)
 	if len(upcoming) != 1 || upcoming[0].ID != future.ID || upcoming[0].Category != "Eigentümerversammlung" {
 		t.Fatalf("upcoming = %+v, want only normalized future event", upcoming)
 	}
@@ -3271,10 +3280,10 @@ func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 	updated := future
 	updated.Title = "Versammlung aktualisiert"
 	updated.StartsAt = now.Add(72 * time.Hour)
-	if ok, err := store.Update(future.ID, updated); !ok || err != nil {
+	if ok, err := repository.Update(future.ID, updated); !ok || err != nil {
 		t.Fatalf("update: ok=%v err=%v", ok, err)
 	}
-	if removed, err := store.Delete("demo", past.ID); !removed || err != nil {
+	if removed, err := repository.Delete(past.ID); !removed || err != nil {
 		t.Fatalf("delete past: removed=%v err=%v", removed, err)
 	}
 	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
@@ -3285,7 +3294,8 @@ func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	events := reopened.ListTenant("demo")
+	reopenedRepository, _ := store.BindEventRepository(reopened, "demo")
+	events := reopenedRepository.List()
 	if len(events) != 1 || events[0].Title != "Versammlung aktualisiert" {
 		t.Fatalf("reopened events = %+v", events)
 	}
@@ -3341,8 +3351,8 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 	a.profiles["manager@example.com"] = userProfile{Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	a.profiles["other@example.com"] = userProfile{Email: "other@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	now := time.Now()
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now.Add(-time.Hour)})
-	_, _ = a.eventStore.Create(houseEvent{TenantSlug: "demo", Title: "Versammlung", Category: "Eigentümerversammlung", StartsAt: now.Add(48 * time.Hour)})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now.Add(-time.Hour)})
+	_, _ = testRepositories(a, "demo").events.Create(houseEvent{TenantSlug: "demo", Title: "Versammlung", Category: "Eigentümerversammlung", StartsAt: now.Add(48 * time.Hour)})
 	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Eigenes Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
 	_, _ = a.issueStore.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Privates Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
 
@@ -3373,7 +3383,7 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 func TestPortalDoesNotRepeatFocusItemsInBoardCards(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now()
-	if _, err := a.eventStore.Create(houseEvent{TenantSlug: "demo", Title: "Dachbegehung", Category: "Sonstiges", StartsAt: now.Add(48 * time.Hour)}); err != nil {
+	if _, err := testRepositories(a, "demo").events.Create(houseEvent{TenantSlug: "demo", Title: "Dachbegehung", Category: "Sonstiges", StartsAt: now.Add(48 * time.Hour)}); err != nil {
 		t.Fatalf("create event: %v", err)
 	}
 	if _, err := a.issueStore.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur", Title: "Wasserdruck im Bad zu niedrig", Body: "Kaum Druck", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm}); err != nil {
@@ -3453,7 +3463,7 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("create event status = %d, want redirect", create.Code)
 	}
-	events := a.eventStore.ListTenant("demo")
+	events := testRepositories(a, "demo").events.List()
 	if len(events) != 1 || events[0].Title != "Liftwartung" || events[0].Category != "Wartung" {
 		t.Fatalf("stored events = %+v", events)
 	}
@@ -3492,7 +3502,7 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	if edit.Code != http.StatusSeeOther {
 		t.Fatalf("edit event status = %d, want redirect", edit.Code)
 	}
-	events = a.eventStore.ListTenant("demo")
+	events = testRepositories(a, "demo").events.List()
 	if len(events) != 1 || events[0].Title != "Hofreinigung" || events[0].Category != "Reinigung" || events[0].Location != "Hof" {
 		t.Fatalf("edited events = %+v", events)
 	}
@@ -3504,7 +3514,7 @@ func TestEventsPageCRUDAndDashboardAgenda(t *testing.T) {
 	if deleteResp.Code != http.StatusSeeOther {
 		t.Fatalf("delete event status = %d, want redirect", deleteResp.Code)
 	}
-	if got := a.eventStore.Upcoming("demo", time.Now()); len(got) != 0 {
+	if got := testRepositories(a, "demo").events.Upcoming(time.Now()); len(got) != 0 {
 		t.Fatalf("events after delete = %+v, want none", got)
 	}
 	empty := authedRequest(t, a, "resident@example.com", "/demo/app/events")
@@ -3523,7 +3533,7 @@ func TestEventsPageKeepsPastEventsProgressiveAndDashboardPreviewsUpcomingOnly(t 
 		{TenantSlug: "demo", Title: "Spätere Wartung", Category: "Wartung", StartsAt: now.Add(72 * time.Hour)},
 	}
 	for _, item := range items {
-		if _, err := a.eventStore.Create(item); err != nil {
+		if _, err := testRepositories(a, "demo").events.Create(item); err != nil {
 			t.Fatalf("create event: %v", err)
 		}
 	}
@@ -3563,7 +3573,7 @@ func TestEventCreateShowsAttachmentPreview(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("event create status = %d, want redirect", create.Code)
 	}
-	events := a.eventStore.ListTenant("demo")
+	events := testRepositories(a, "demo").events.List()
 	if len(events) != 1 {
 		t.Fatalf("events = %+v", events)
 	}
@@ -3584,10 +3594,10 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now().Add(-2 * time.Hour)
 	expiredAt := now.Add(time.Hour)
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Normaler Hinweis", Body: "Nur im Beitrag 4711", Category: "Info", PublishedAt: now.Add(time.Hour)})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Fixierter Hinweis", Body: "Nur im Beitrag 4712", Category: "Dringend", Pinned: true, PublishedAt: now})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Alter Hinweis", Body: "Abgelaufen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Geplanter Hinweis", Body: "Zukunft", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Normaler Hinweis", Body: "Nur im Beitrag 4711", Category: "Info", PublishedAt: now.Add(time.Hour)})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Fixierter Hinweis", Body: "Nur im Beitrag 4712", Category: "Dringend", Pinned: true, PublishedAt: now})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Alter Hinweis", Body: "Abgelaufen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Geplanter Hinweis", Body: "Zukunft", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
 
 	rr := authedRequest(t, a, "resident@example.com", "/demo/app")
 	if rr.Code != http.StatusOK {
@@ -3629,7 +3639,7 @@ func TestAnnouncementCreateShowsAttachmentPreview(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("announcement create status = %d, want redirect", create.Code)
 	}
-	items := a.announcementStore.ListTenant("demo")
+	items := testRepositories(a, "demo").announcements.List()
 	if len(items) != 1 {
 		t.Fatalf("announcements = %+v", items)
 	}
@@ -4707,17 +4717,17 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	createContact := authedFormRequest(t, a, "manager@example.com", "/demo/app/kontakte", url.Values{
 		"kind": {"Dienstleister"}, "name": {"Extern GmbH"}, "email": {"contact@example.com"}, "active": {"true"},
 	})
-	if createContact.Code != http.StatusForbidden || len(a.contactStore.ListTenant("demo", true)) != 0 {
-		t.Fatalf("closed contact create = %d contacts=%+v", createContact.Code, a.contactStore.ListTenant("demo", true))
+	if createContact.Code != http.StatusForbidden || len(testRepositories(a, "demo").contacts.List(true)) != 0 {
+		t.Fatalf("closed contact create = %d contacts=%+v", createContact.Code, testRepositories(a, "demo").contacts.List(true))
 	}
-	existingContact, _, err := a.contactStore.Upsert(managedContact{TenantSlug: "demo", Kind: roleServiceProvider, Name: "Alt GmbH", Email: "old-contact@example.com", Active: true})
+	existingContact, _, err := testRepositories(a, "demo").contacts.Upsert(managedContact{TenantSlug: "demo", Kind: roleServiceProvider, Name: "Alt GmbH", Email: "old-contact@example.com", Active: true})
 	if err != nil {
 		t.Fatalf("seed service contact: %v", err)
 	}
 	editContact := authedFormRequest(t, a, "manager@example.com", "/demo/app/kontakte", url.Values{
 		"id": {existingContact.ID}, "kind": {"Hausmeister"}, "name": {"Neu GmbH"}, "email": {"new-contact@example.com"}, "active": {"true"},
 	})
-	contacts := a.contactStore.ListTenant("demo", true)
+	contacts := testRepositories(a, "demo").contacts.List(true)
 	if editContact.Code != http.StatusForbidden || len(contacts) != 1 || contacts[0].Name != "Alt GmbH" || contacts[0].Email != "old-contact@example.com" {
 		t.Fatalf("closed contact edit = %d contacts=%+v", editContact.Code, contacts)
 	}
@@ -5296,7 +5306,7 @@ func TestCalendarFeedTokenScopesEventsAndServiceProposals(t *testing.T) {
 	a.profiles["other-service@example.com"] = userProfile{Email: "other-service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
 	start := time.Now().Add(48 * time.Hour).UTC().Truncate(time.Second)
-	if _, err := a.eventStore.Create(houseEvent{
+	if _, err := testRepositories(a, "demo").events.Create(houseEvent{
 		TenantSlug:  "demo",
 		Title:       "Hausversammlung",
 		Body:        "Beschlüsse und offene Punkte.",
@@ -5418,7 +5428,7 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 	if save.Code != http.StatusSeeOther {
 		t.Fatalf("contact save status = %d, want redirect", save.Code)
 	}
-	contacts := a.contactStore.ListTenant("demo", true)
+	contacts := testRepositories(a, "demo").contacts.List(true)
 	if len(contacts) != 1 || contacts[0].Kind != "Dienstleister" || contacts[0].Email != "eva@example.com" || !contacts[0].Active {
 		t.Fatalf("saved contacts = %+v", contacts)
 	}
@@ -5426,7 +5436,7 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 		t.Fatalf("contact save audit events = %+v", events)
 	}
 
-	if _, _, err := a.contactStore.Upsert(managedContact{
+	if _, _, err := testRepositories(a, "other").contacts.Upsert(managedContact{
 		TenantSlug: "other",
 		Kind:       "Notdienst",
 		Name:       "Fremder Notdienst",
@@ -5476,7 +5486,7 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 	if deleteReq.Code != http.StatusSeeOther {
 		t.Fatalf("contact deactivate status = %d, want redirect", deleteReq.Code)
 	}
-	contacts = a.contactStore.ListTenant("demo", true)
+	contacts = testRepositories(a, "demo").contacts.List(true)
 	if len(contacts) != 1 || contacts[0].Active {
 		t.Fatalf("deactivated contacts = %+v", contacts)
 	}
@@ -5780,7 +5790,7 @@ func TestPublishedAnnouncementNotifiesTenantRecipients(t *testing.T) {
 	if create.Code != http.StatusSeeOther {
 		t.Fatalf("announcement create status = %d", create.Code)
 	}
-	items := a.announcementStore.ListTenant("demo")
+	items := testRepositories(a, "demo").announcements.List()
 	if len(items) != 1 {
 		t.Fatalf("announcements = %+v", items)
 	}
@@ -5807,10 +5817,10 @@ func TestAnnouncementArchiveFiltersSearchesAndIncludesPast(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now().Add(-2 * time.Hour)
 	expiredAt := time.Now().Add(-time.Hour)
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Hausfest", Body: "Sommertermin", Category: "Termin", PublishedAt: now})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Alter Hinweis", Body: "Vergangen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Geplant", Body: "Noch nicht sichtbar", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Liftwartung", Body: "Lift Freitag", Category: "Wartung", PublishedAt: now})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Hausfest", Body: "Sommertermin", Category: "Termin", PublishedAt: now})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Alter Hinweis", Body: "Vergangen", Category: "Info", PublishedAt: now.Add(-time.Hour), ExpiresAt: &expiredAt})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Geplant", Body: "Noch nicht sichtbar", Category: "Info", PublishedAt: time.Now().Add(time.Hour)})
 
 	all := authedRequest(t, a, "resident@example.com", "/demo/app/announcements")
 	if all.Code != http.StatusOK {
@@ -5838,7 +5848,7 @@ func TestAnnouncementArchiveFiltersSearchesAndIncludesPast(t *testing.T) {
 
 func TestAnnouncementUnreadBadgeClearsAfterArchiveView(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	_, _ = a.announcementStore.Create(announcement{TenantSlug: "demo", Title: "Neue Wartung", Body: "Heute", Category: "Wartung", PublishedAt: time.Now().Add(-time.Hour)})
+	_, _ = testRepositories(a, "demo").announcements.Create(announcement{TenantSlug: "demo", Title: "Neue Wartung", Body: "Heute", Category: "Wartung", PublishedAt: time.Now().Add(-time.Hour)})
 
 	before := authedRequest(t, a, "resident@example.com", "/demo/app")
 	if before.Code != http.StatusOK {
@@ -5905,7 +5915,7 @@ func TestAnnouncementCreateRejectsCrossOriginAndPersistsSameOrigin(t *testing.T)
 	if same.Code != http.StatusSeeOther {
 		t.Fatalf("same-origin create status = %d, want redirect", same.Code)
 	}
-	visible := a.announcementStore.Visible("demo", time.Date(2026, 7, 6, 13, 0, 0, 0, time.Local))
+	visible := testRepositories(a, "demo").announcements.Visible(time.Date(2026, 7, 6, 13, 0, 0, 0, time.Local))
 	if len(visible) != 1 || visible[0].Title != "Liftwartung" || !visible[0].Pinned {
 		t.Fatalf("created visible announcement = %+v", visible)
 	}

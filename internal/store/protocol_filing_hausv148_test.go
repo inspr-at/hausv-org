@@ -81,7 +81,8 @@ func TestProtocolFilerParity(t *testing.T) {
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
 			b := build(t)
-			if _, err := b.handovers.Create(sampleHandover("h1")); err != nil {
+			handovers, _ := BindHandoverRepository(b.handovers, "demo")
+			if _, err := handovers.Create(sampleHandover("h1")); err != nil {
 				t.Fatalf("seed handover: %v", err)
 			}
 
@@ -97,7 +98,7 @@ func TestProtocolFilerParity(t *testing.T) {
 				t.Fatalf("handover not linked: %+v", updated)
 			}
 			// Link is persisted, not just returned.
-			if got, _ := b.handovers.Get("demo", "h1"); got.FiledDocumentID != created.ID {
+			if got, _ := handovers.Get("h1"); got.FiledDocumentID != created.ID {
 				t.Fatalf("persisted link = %q, want %q", got.FiledDocumentID, created.ID)
 			}
 			if docs := b.documents.ListTenant("demo"); len(docs) != 1 {
@@ -153,7 +154,8 @@ func TestSQLProtocolFilerConcurrentFilingCreatesOneDocument(t *testing.T) {
 	docs := NewSQLDocumentStore(database, fileDir)
 	handovers := NewSQLHandoverStore(database)
 	filer := NewSQLProtocolFiler(docs, handovers)
-	if _, err := handovers.Create(sampleHandover("h1")); err != nil {
+	handoverRepo, _ := BindHandoverRepository(handovers, "demo")
+	if _, err := handoverRepo.Create(sampleHandover("h1")); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
 
@@ -178,7 +180,7 @@ func TestSQLProtocolFilerConcurrentFilingCreatesOneDocument(t *testing.T) {
 	if len(list) != 1 {
 		t.Fatalf("concurrent filing produced %d documents, want exactly 1", len(list))
 	}
-	linked, _ := handovers.Get("demo", "h1")
+	linked, _ := handoverRepo.Get("h1")
 	if linked.FiledDocumentID != list[0].ID {
 		t.Fatalf("handover links %q but the only document is %q", linked.FiledDocumentID, list[0].ID)
 	}

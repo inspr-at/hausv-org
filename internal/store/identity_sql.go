@@ -50,6 +50,46 @@ type HouseMember struct {
 	Membership HouseMembership
 }
 
+type IdentityRepository interface {
+	Membership(personID string) (HouseMembership, bool)
+	ListHouseMembers() []HouseMember
+	RemoveMembership(personID string) (bool, error)
+}
+
+type IdentityStorage interface {
+	identityStorage()
+}
+
+type boundIdentityRepository struct {
+	storage    identityBackend
+	tenantSlug string
+}
+
+type identityBackend interface {
+	membership(personID string, tenantSlug string) (HouseMembership, bool)
+	listHouseMembers(tenantSlug string) []HouseMember
+	removeMembership(personID string, tenantSlug string) (bool, error)
+}
+
+func BindIdentityRepository(storage IdentityStorage, tenantSlug string) (IdentityRepository, bool) {
+	tenantSlug = textutil.Slug(tenantSlug)
+	backend, ok := storage.(identityBackend)
+	if !ok || tenantSlug == "" {
+		return nil, false
+	}
+	return &boundIdentityRepository{storage: backend, tenantSlug: tenantSlug}, true
+}
+
+func (r *boundIdentityRepository) Membership(personID string) (HouseMembership, bool) {
+	return r.storage.membership(personID, r.tenantSlug)
+}
+func (r *boundIdentityRepository) ListHouseMembers() []HouseMember {
+	return r.storage.listHouseMembers(r.tenantSlug)
+}
+func (r *boundIdentityRepository) RemoveMembership(personID string) (bool, error) {
+	return r.storage.removeMembership(personID, r.tenantSlug)
+}
+
 // SQLIdentityStore implements the person/house N:N model. Every mutating method
 // is scoped to EITHER the global person OR one membership — there is no
 // whole-profile update or delete, which is exactly the defect HAUSV-135
@@ -61,6 +101,8 @@ type SQLIdentityStore struct {
 func NewSQLIdentityStore(db *sql.DB) *SQLIdentityStore {
 	return &SQLIdentityStore{db: db}
 }
+
+func (*SQLIdentityStore) identityStorage() {}
 
 func identityTime(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }
 
@@ -321,7 +363,7 @@ func (s *SQLIdentityStore) SetMembership(m HouseMembership, at time.Time) (House
 		return HouseMembership{}, err
 	}
 	// Re-read for the same reason as UpsertPerson.
-	if fresh, ok := s.Membership(saved.PersonID, saved.TenantSlug); ok {
+	if fresh, ok := s.membership(saved.PersonID, saved.TenantSlug); ok {
 		return fresh, nil
 	}
 	return saved, nil
@@ -366,7 +408,7 @@ func (s *SQLIdentityStore) setMembershipTx(tx *sql.Tx, m HouseMembership, at tim
 	return m, nil
 }
 
-func (s *SQLIdentityStore) Membership(personID string, tenantSlug string) (HouseMembership, bool) {
+func (s *SQLIdentityStore) membership(personID string, tenantSlug string) (HouseMembership, bool) {
 	if s == nil {
 		return HouseMembership{}, false
 	}
@@ -406,7 +448,7 @@ func (s *SQLIdentityStore) MembershipsForPerson(personID string) []HouseMembersh
 
 // ListHouseMembers returns the people of ONE house with their membership there —
 // the only view a house admin is entitled to manage.
-func (s *SQLIdentityStore) ListHouseMembers(tenantSlug string) []HouseMember {
+func (s *SQLIdentityStore) listHouseMembers(tenantSlug string) []HouseMember {
 	if s == nil {
 		return nil
 	}
@@ -453,7 +495,7 @@ func (s *SQLIdentityStore) ListHouseMembers(tenantSlug string) []HouseMember {
 // RemoveMembership detaches a person from ONE house. The person and every other
 // membership survive — this is what "delete" in a house admin screen must mean
 // (HAUSV-135).
-func (s *SQLIdentityStore) RemoveMembership(personID string, tenantSlug string) (bool, error) {
+func (s *SQLIdentityStore) removeMembership(personID string, tenantSlug string) (bool, error) {
 	if s == nil {
 		return false, nil
 	}
@@ -526,7 +568,7 @@ func (s *SQLIdentityStore) ImportProfiles(src *InviteStore, at time.Time) error 
 			person = created
 		}
 		for _, tenant := range tenantsOfProfile(profile) {
-			if _, already := s.Membership(person.ID, tenant); already {
+			if _, already := s.membership(person.ID, tenant); already {
 				continue
 			}
 			resolved := profile.ForTenant(tenant)

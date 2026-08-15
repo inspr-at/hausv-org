@@ -2379,7 +2379,10 @@ func NewHandoverStore(path string) (*HandoverStore, error) {
 	return store, nil
 }
 
-func (s *HandoverStore) Create(item HandoverRecord) (HandoverRecord, error) {
+func (*HandoverStore) handoverStorage() {}
+
+func (s *HandoverStore) create(tenantSlug string, item HandoverRecord) (HandoverRecord, error) {
+	item.TenantSlug = tenantSlug
 	if s == nil {
 		return HandoverRecord{}, fmt.Errorf("handover store unavailable")
 	}
@@ -2402,7 +2405,7 @@ func (s *HandoverStore) Create(item HandoverRecord) (HandoverRecord, error) {
 	return CopyHandover(item), nil
 }
 
-func (s *HandoverStore) ListTenant(tenantSlug string) []HandoverRecord {
+func (s *HandoverStore) list(tenantSlug string) []HandoverRecord {
 	if s == nil {
 		return nil
 	}
@@ -2419,7 +2422,7 @@ func (s *HandoverStore) ListTenant(tenantSlug string) []HandoverRecord {
 	return out
 }
 
-func (s *HandoverStore) Get(tenantSlug string, id string) (HandoverRecord, bool) {
+func (s *HandoverStore) get(tenantSlug string, id string) (HandoverRecord, bool) {
 	if s == nil {
 		return HandoverRecord{}, false
 	}
@@ -2488,7 +2491,7 @@ func (s *HandoverStore) ConfirmByToken(token string, name string, note string, a
 	return HandoverRecord{}, HandoverConfirmation{}, false, nil
 }
 
-func (s *HandoverStore) SetFiledDocument(tenantSlug string, id string, documentID string, at time.Time) (HandoverRecord, bool, error) {
+func (s *HandoverStore) setFiledDocument(tenantSlug string, id string, documentID string, at time.Time) (HandoverRecord, bool, error) {
 	if s == nil {
 		return HandoverRecord{}, false, fmt.Errorf("handover store unavailable")
 	}

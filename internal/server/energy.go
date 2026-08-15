@@ -1122,7 +1122,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	if maintenanceRecommendation, ok := energy.MaintenanceRecommendation(time.Now(), maintenance); ok {
 		recommendation = maintenanceRecommendation
 	}
-	contactOptions, contactNames := a.energyContactOptions(ac.tenant.Slug)
+	contactOptions, contactNames := a.energyContactOptions(ac.repositories.contacts)
 	documentOptions, documentNames := a.energyDocumentOptions(ac.tenant.Slug)
 	issueOptions, issueNames := a.energyIssueOptions(ac.tenant.Slug)
 	maintenanceViews := buildEnergyMaintenanceViews(maintenance, assets, contactNames, documentNames, issueNames, time.Now())
@@ -1315,13 +1315,13 @@ func recommendationURL(id string) string {
 	}
 }
 
-func (a *app) energyContactOptions(tenantSlug string) ([]energyOption, map[string]string) {
+func (a *app) energyContactOptions(contacts contactBookRepository) ([]energyOption, map[string]string) {
 	options := []energyOption{}
 	names := map[string]string{}
-	if a.contactStore == nil {
+	if contacts == nil {
 		return options, names
 	}
-	for _, item := range a.contactStore.ListTenant(tenantSlug, false) {
+	for _, item := range contacts.List(false) {
 		label := managedContactDisplayName(item)
 		if item.Company != "" && !strings.EqualFold(item.Company, label) {
 			label += " · " + item.Company
@@ -1336,11 +1336,11 @@ func (a *app) energyContactOptions(tenantSlug string) ([]energyOption, map[strin
 	return options, names
 }
 
-func (a *app) energyContact(tenantSlug, id string) (managedContact, bool) {
-	if a.contactStore == nil || strings.TrimSpace(id) == "" {
+func (a *app) energyContact(contacts contactBookRepository, id string) (managedContact, bool) {
+	if contacts == nil || strings.TrimSpace(id) == "" {
 		return managedContact{}, false
 	}
-	for _, item := range a.contactStore.ListTenant(tenantSlug, false) {
+	for _, item := range contacts.List(false) {
 		if item.ID == id {
 			return item, true
 		}
@@ -1548,9 +1548,9 @@ func findMaintenancePlanByAsset(storage energy.Storage, tenantSlug, assetID stri
 	return energy.MaintenancePlan{}, false
 }
 
-func (a *app) validEnergyReferences(tenantSlug, contactID, documentID, issueID string) bool {
+func (a *app) validEnergyReferences(tenantSlug string, contacts contactBookRepository, contactID, documentID, issueID string) bool {
 	if contactID != "" {
-		if _, ok := a.energyContact(tenantSlug, contactID); !ok {
+		if _, ok := a.energyContact(contacts, contactID); !ok {
 			return false
 		}
 	}
@@ -2095,7 +2095,7 @@ func (a *app) upsertEnergyMaintenance(w http.ResponseWriter, r *http.Request, ac
 	contactID := strings.TrimSpace(r.FormValue("contact_id"))
 	documentID := strings.TrimSpace(r.FormValue("document_id"))
 	issueID := strings.TrimSpace(r.FormValue("issue_id"))
-	if !a.validEnergyReferences(ac.tenant.Slug, contactID, documentID, issueID) {
+	if !a.validEnergyReferences(ac.tenant.Slug, ac.repositories.contacts, contactID, documentID, issueID) {
 		http.Error(w, "Verknüpfung gehört nicht zu diesem Haus.", http.StatusBadRequest)
 		return
 	}
@@ -2254,7 +2254,7 @@ func (a *app) updateEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		return
 	}
 	item.ContactID = strings.TrimSpace(r.FormValue("contact_id"))
-	contact, contactOK := a.energyContact(ac.tenant.Slug, item.ContactID)
+	contact, contactOK := a.energyContact(ac.repositories.contacts, item.ContactID)
 	if item.ContactID != "" && !contactOK {
 		http.Error(w, "Fachkontakt gehört nicht zu diesem Haus.", http.StatusBadRequest)
 		return

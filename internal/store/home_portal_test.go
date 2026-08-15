@@ -50,11 +50,13 @@ func TestSQLHomePortalActivationIsAtomicIdempotentAndPersistent(t *testing.T) {
 	if !ok || owner.ID != person.ID || owner.FirstName != "Eva" || len(owner.AuthMethods) != 1 || owner.AuthMethods[0] != store.AuthMethodOIDC {
 		t.Fatalf("existing identity was not preserved: %+v", owner)
 	}
-	membership, ok := identity.Membership(owner.ID, "stadtpark-home")
+	homeIdentity, _ := store.BindIdentityRepository(identity, "stadtpark-home")
+	otherIdentity, _ := store.BindIdentityRepository(identity, "anderes-haus")
+	membership, ok := homeIdentity.Membership(owner.ID)
 	if !ok || membership.Role != store.RoleOwner || membership.Status != "Aktiv" {
 		t.Fatalf("owner membership = %+v ok=%v", membership, ok)
 	}
-	if other, ok := identity.Membership(owner.ID, "anderes-haus"); !ok || other.Role != store.RoleRenter {
+	if other, ok := otherIdentity.Membership(owner.ID); !ok || other.Role != store.RoleRenter {
 		t.Fatalf("other membership changed: %+v ok=%v", other, ok)
 	}
 	reservation, _, _ := reservations.Get("stadtpark-home")

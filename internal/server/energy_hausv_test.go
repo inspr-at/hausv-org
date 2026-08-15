@@ -1033,7 +1033,7 @@ func TestCuratedEnergySpecialistAndMeasureStayClosedUntilExplicitPortalGate(t *t
 	if response.Code != http.StatusSeeOther {
 		t.Fatalf("energy contact status = %d body=%s", response.Code, response.Body.String())
 	}
-	contacts := a.contactStore.ListTenant("demo", false)
+	contacts := testRepositories(a, "demo").contacts.List(false)
 	if len(contacts) != 1 || contacts[0].Kind != "Energie-Fachbetrieb" ||
 		len(contacts[0].EnergyCapabilities) != 2 {
 		t.Fatalf("contacts = %+v", contacts)

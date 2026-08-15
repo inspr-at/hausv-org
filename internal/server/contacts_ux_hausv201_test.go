@@ -35,12 +35,12 @@ func TestContactsUXPrioritizesOfficialActionsAndProgressiveManagement(t *testing
 		Tenants:        []string{"demo"},
 		AuthMethods:    defaultAuthMethods(),
 	}
-	if _, _, err := a.contactStore.Upsert(managedContact{
+	if _, _, err := testRepositories(a, "demo").contacts.Upsert(managedContact{
 		TenantSlug: "demo", Kind: "Dienstleister", Name: "Liftservice", Email: "lift@example.com", Phone: "+43 316 500", Active: true,
 	}); err != nil {
 		t.Fatalf("seed active contact: %v", err)
 	}
-	if _, _, err := a.contactStore.Upsert(managedContact{
+	if _, _, err := testRepositories(a, "demo").contacts.Upsert(managedContact{
 		TenantSlug: "demo", Kind: "Sonstiges", Name: "Alter Kontakt", Email: "alt@example.com", Active: false,
 	}); err != nil {
 		t.Fatalf("seed inactive contact: %v", err)
