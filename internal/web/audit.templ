@@ -18,16 +18,7 @@ type AuditPageData struct {
 }
 
 templ AuditPage(data AuditPageData) {
-	<!doctype html>
-	<html lang="de-AT">
-		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-			<title>{ data.Portal.Title }</title>
-			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-			@AuditStyles()
-		</head>
-		<body data-templ-audit>
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), nil, AuditStyles(), templ.Attributes{"data-templ-audit": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
 			@PortalSectionHeader(data.Portal, "Verlauf")
 			<div class="shell">
@@ -49,8 +40,7 @@ templ AuditPage(data AuditPageData) {
 					</section>
 				</main>
 			</div>
-		</body>
-	</html>
+	}
 }
 
 templ AuditStream(data AuditPageData) {

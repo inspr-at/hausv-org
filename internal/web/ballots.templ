@@ -21,18 +21,7 @@ type BallotsPageData struct {
 }
 
 templ BallotsPage(data BallotsPageData) {
-	<!doctype html>
-	<html lang="de-AT">
-		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-			<title>{ data.Portal.Title }</title>
-			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-			<script src={ "/assets/announcements.js?v=" + data.AssetVersion } defer></script>
-			<script src={ "/assets/attachments.js?v=" + data.AssetVersion } defer></script>
-			@BallotsStyles()
-		</head>
-		<body data-authenticated-app data-templ-ballots>
+	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"announcements.js", "attachments.js"}, BallotsStyles(), templ.Attributes{"data-templ-ballots": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
 			@PortalMobileHeader(data.Portal, "Abstimmungen")
 			<div class="shell">
@@ -75,8 +64,7 @@ templ BallotsPage(data BallotsPageData) {
 			if data.CanManageVotes {
 				@BallotCreateDialog(data.NowInput)
 			}
-		</body>
-	</html>
+	}
 }
 
 templ BallotsBlank(data BallotsPageData) {

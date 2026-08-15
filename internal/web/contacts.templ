@@ -13,6 +13,7 @@ type ContactsPageData struct {
 	Portal                       PortalPageData
 	AssetVersion                 string
 	ContactMessage               string
+	ContactOK                    bool
 	CanManageContacts            bool
 	CanManageIssues              bool
 	CanJoinDirectory             bool
@@ -31,25 +32,14 @@ type ContactsPageData struct {
 }
 
 templ ContactsPage(data ContactsPageData) {
-	<!doctype html>
-	<html lang="de-AT">
-		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-			<title>{ data.Portal.Title }</title>
-			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-			<script src={ "/assets/app.js?v=" + data.AssetVersion } defer></script>
-			@ContactsStyles()
-		</head>
-		<body data-authenticated-app data-templ-contacts>
+	@PortalDocument(data.Portal.Title, data.AssetVersion, nil, ContactsStyles(), templ.Attributes{"data-templ-contacts": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
 			<div class="contacts-shell">
 				@PortalSidebar(data.Portal)
 				@ContactsContent(data)
 			</div>
 			@PortalMobileHeader(data.Portal, "Kontakte · " + data.Portal.Role)
-		</body>
-	</html>
+	}
 }
 
 templ ContactsStyles() {
@@ -68,6 +58,9 @@ templ ContactsStyles() {
 		@media(max-width:1050px){.contacts-shell{grid-template-columns:210px minmax(0,1fr)}.contacts-layout{grid-template-columns:minmax(0,1fr)}.contacts-aside{grid-template-columns:repeat(2,minmax(0,1fr))}}
 		@media(max-width:700px){.contacts-shell{display:block}.sidebar{display:none}.mobile-head{position:relative;z-index:100;height:76px;display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:var(--space-3);padding:0 var(--space-4);background:var(--nav);color:var(--panel)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:21px}.mobile-identity small{margin-top:4px;color:var(--soft);font-size:10px}.mobile-head>.avatar{width:40px;height:40px}.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:"";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:76px;left:0;right:0;max-height:calc(100vh - 76px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);box-shadow:var(--shadow-dialog)}.menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.menu-panel .nav a{min-height:44px;display:flex;margin:0;padding:0 var(--space-3)}.menu-panel .nav-label{grid-column:1/-1}.menu-panel .release-notes{padding:var(--space-3)}.menu-panel .logout-form button{min-height:44px}.contacts-main{padding:var(--space-4)}.page-top{display:none}.page{margin-top:0}.page-heading{display:grid;align-items:start}.page-heading h1{font-size:34px}.contacts-layout{margin-top:var(--space-4);gap:var(--space-3)}.contacts-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.contact-section{padding:var(--space-4)}.section-head{display:grid}.quick-list,.contact-form,.optional-grid{grid-template-columns:minmax(0,1fr)}.contact-form .wide,.contact-form .actions,.contact-form details,.optional-grid fieldset{grid-column:1}.contact-row{grid-template-columns:minmax(0,1fr)}.contact-actions{display:grid;justify-content:stretch}.contact-actions>.button,.contact-actions>form,.contact-actions>form>.button,.route-actions{width:100%}.route-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.blank{min-height:0}.blank-actions{width:100%;display:grid}.contact-danger,.contact-reactivate{align-items:stretch;flex-direction:column}.dialog-footer .button{width:100%}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}
 	</style>
+	<style>
+		.flash.ok{border-color:var(--leaf);background:rgba(47,107,74,.08);color:var(--leaf)}
+	</style>
 }
 
 templ ContactsContent(data ContactsPageData) {
@@ -80,7 +73,7 @@ templ ContactsContent(data ContactsPageData) {
 		<section class="page">
 			<header class="page-heading"><div><h1>Kontakte</h1><p class="lede">Schnell die richtige Ansprechperson für { data.Portal.Address } erreichen.</p></div></header>
 			if data.ContactMessage != "" {
-				<p class="flash">{ data.ContactMessage }</p>
+				<p class={ "flash", templ.KV("ok", data.ContactOK) }>{ data.ContactMessage }</p>
 			}
 			<div class="contacts-layout"><div class="contacts-column">
 				if contactsHaveQuick(data) {

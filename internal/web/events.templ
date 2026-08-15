@@ -24,18 +24,7 @@ type EventsPageData struct {
 }
 
 templ EventsPage(data EventsPageData) {
-	<!doctype html>
-	<html lang="de-AT">
-		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-			<title>{ data.Portal.Title }</title>
-			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-			<script src={ "/assets/announcements.js?v=" + data.AssetVersion } defer></script>
-			<script src={ "/assets/attachments.js?v=" + data.AssetVersion } defer></script>
-			@EventsStyles()
-		</head>
-		<body data-authenticated-app data-templ-events>
+	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"announcements.js", "attachments.js"}, EventsStyles(), templ.Attributes{"data-templ-events": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
 			<div class="events-shell">
 				@PortalSidebar(data.Portal)
@@ -45,8 +34,7 @@ templ EventsPage(data EventsPageData) {
 			if data.CanManageEvents {
 				@EventCreateDialog(data.NowInput)
 			}
-		</body>
-	</html>
+	}
 }
 
 templ EventsStyles() {
@@ -70,7 +58,7 @@ templ EventsStyles() {
 
 templ EventsMobileHeader(data PortalPageData) {
 	<header class="mobile-head">
-		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
+		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalMobileContextSwitch(data)@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
 		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>Termine · { data.Role }</small></a>
 		<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
 	</header>

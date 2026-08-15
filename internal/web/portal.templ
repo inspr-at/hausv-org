@@ -45,14 +45,40 @@ type PortalPageData struct {
 	ReleaseNotes                                      []version.Note
 }
 
-templ PortalPage(data PortalPageData) {
+templ PortalDocument(title, assetVersion string, extraScripts []string, styles templ.Component, bodyAttributes templ.Attributes) {
 	<!doctype html>
 	<html lang="de-AT">
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-			<title>{ data.Title }</title>
+			<title>{ title }</title>
 			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+			<script src={ "/assets/app.js?v=" + assetVersion } defer></script>
+			for _, script := range extraScripts {
+				<script src={ "/assets/" + script + "?v=" + assetVersion } defer></script>
+			}
+			@styles
+			@PortalShellStyles()
+		</head>
+		<body data-authenticated-app { bodyAttributes... }>
+			{ children... }
+		</body>
+	</html>
+}
+
+templ PortalShellStyles() {
+	<style>
+		.mobile-context-switch{margin:0 0 var(--space-2);font-size:11px}.mobile-context-switch>summary{min-height:44px;display:flex;align-items:center;padding:0 var(--space-3);cursor:pointer;color:var(--gold-light)}.mobile-context-switch .context-menu{margin:0 0 var(--space-2)}.mobile-context-switch .context-menu button,.mobile-context-switch .context-current{min-height:44px}
+	</style>
+}
+
+templ PortalPage(data PortalPageData) {
+	@PortalDocument(data.Title, portalAssetVersion(), nil, PortalStyles(), templ.Attributes{"class": templ.Classes("portal-page", templ.KV("dense", data.Dense), templ.KV("calm", !data.Dense)).String(), "data-templ-portal": true}) {
+		@PortalContent(data)
+	}
+}
+
+templ PortalStyles() {
 			<style>
 				:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--font-serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);--shadow-md:0 18px 44px rgba(32,37,31,.08);font-family:var(--font-sans)}
 				*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}button{font:inherit}a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.skip-link{position:fixed;top:var(--space-2);left:var(--space-2);z-index:40;padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.skip-link:focus{transform:translateY(0)}
@@ -63,8 +89,9 @@ templ PortalPage(data PortalPageData) {
 				@media(max-width:1100px) and (min-width:701px){.shell{grid-template-columns:210px minmax(0,1fr)}.dense-main{padding-inline:var(--space-4)}.working-grid{grid-template-columns:minmax(0,1.4fr) minmax(290px,1fr);gap:var(--space-3)}.metric{min-width:72px;padding-inline:var(--space-2)}}
 				@media(max-width:700px){body{padding-bottom:132px}.shell{display:block}.sidebar,.desktop-main{display:none}.mobile-head{position:relative;z-index:5;height:82px;display:grid;grid-template-columns:40px 1fr 42px;align-items:center;gap:var(--space-3);padding:0 var(--space-4);background:var(--nav);color:var(--panel)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:22px}.mobile-identity small{margin-top:6px;color:var(--soft);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.menu>summary{width:40px;height:48px;display:grid;place-content:center;cursor:pointer;list-style:none}.menu>summary::-webkit-details-marker{display:none}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:"";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:82px;left:0;right:0;max-height:calc(100vh - 82px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);border-top:1px solid var(--nav-2);box-shadow:var(--shadow-dialog)}.menu-panel nav{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-1)}.menu-panel a,.menu-panel form button{width:100%;min-height:44px;display:flex;align-items:center;padding:0 var(--space-3);border:0;border-radius:var(--radius-sm);background:transparent;color:var(--line);font-size:12px;text-align:left}.menu-panel .active{background:var(--nav-2);color:var(--panel);font-weight:700}.menu-label{grid-column:1/-1;margin:var(--space-3) var(--space-3) var(--space-1);color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.mobile-content{display:block;padding:var(--space-5) var(--space-4) var(--space-6)}.mobile-content .greeting h1{font-size:34px}.task-card{margin-top:var(--space-5);padding:var(--space-4);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.task-card h2{margin-top:6px;font-size:24px;line-height:1.08}.task-card p{margin-top:var(--space-2);color:var(--muted);font-size:12px}.primary{min-height:48px;display:flex;align-items:center;justify-content:center;margin-top:var(--space-4);background:var(--gold);color:var(--panel);border-radius:var(--radius-sm);font-size:14px;font-weight:750}.counts{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-2);margin-top:var(--space-4)}.count-tile{min-height:72px;display:grid;place-content:center;text-align:center;background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}.count-tile strong{display:block;font-family:var(--font-serif);font-size:27px;font-weight:500;line-height:1}.count-tile span{display:block;margin-top:7px;color:var(--muted);font-size:7px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.mobile-section{margin-top:var(--space-5)}.mobile-section>h2{margin-bottom:var(--space-3);font-size:21px}.mobile-list{margin:0;padding:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);list-style:none}.mobile-list li+li{border-top:1px solid var(--line)}.mobile-event,.mobile-notice{min-height:63px;display:grid;grid-template-columns:42px 1fr 12px;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3)}.mobile-notice{grid-template-columns:9px 1fr 12px}.chevron{color:var(--muted);font-size:20px}.more-data{margin-top:var(--space-2)}.more-data>summary{min-height:34px;display:grid;place-content:center;color:var(--muted);cursor:pointer;font-size:11px;list-style:none;text-decoration:underline;text-underline-offset:3px}.more-data>summary::-webkit-details-marker{display:none}.more-data .mobile-list{margin-top:var(--space-2)}.thumb-zone{position:fixed;z-index:10;right:0;bottom:0;left:0;display:block;padding:var(--space-2) var(--space-3) max(var(--space-2),env(safe-area-inset-bottom));background:var(--paper)}.report{min-height:48px;display:flex;align-items:center;justify-content:center;gap:var(--space-2);background:var(--gold);color:var(--panel);border-radius:var(--radius-sm);font-size:14px;font-weight:800;box-shadow:var(--shadow-md)}.tabs{min-height:62px;display:grid;grid-template-columns:repeat(4,1fr);margin-top:var(--space-2);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.tabs>a,.bottom-more>summary{display:grid;place-content:center;gap:3px;text-align:center;color:var(--muted);font-size:9px;font-weight:700;list-style:none}.tabs>a.active{color:var(--gold)}.tab-icon svg{display:block;width:20px;height:20px;margin:auto;fill:none;stroke:currentColor;stroke-width:1.6}.bottom-more-panel{position:absolute;right:var(--space-3);bottom:72px;left:var(--space-3);display:grid;grid-template-columns:1fr 1fr;gap:var(--space-1);max-height:320px;overflow:auto;padding:var(--space-3);background:var(--nav);border:1px solid var(--nav-2);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.bottom-more-panel a{min-height:42px;display:flex;align-items:center;padding:0 var(--space-3);color:var(--line);font-size:11px}.mobile-head .avatar{width:40px;height:40px}}
 			</style>
-		</head>
-		<body class={ "portal-page", templ.KV("dense", data.Dense), templ.KV("calm", !data.Dense) } data-templ-portal>
+}
+
+templ PortalContent(data PortalPageData) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
 			<div class="shell">
 				@PortalSidebar(data)
@@ -77,9 +104,9 @@ templ PortalPage(data PortalPageData) {
 				</div>
 			</div>
 			@PortalMobile(data)
-		</body>
-	</html>
 }
+
+func portalAssetVersion() string { return version.AssetVersion() }
 
 templ PortalSidebar(data PortalPageData) {
 	<aside class="sidebar" aria-label="Hausnavigation">
@@ -110,7 +137,7 @@ templ PortalSidebar(data PortalPageData) {
 // PortalNavigation instead of letting each route grow a second navigation.
 templ PortalSectionHeader(data PortalPageData, section string) {
 	<header class="mobile-head">
-		<details class="mobile-menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="mobile-menu-panel">@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
+		<details class="mobile-menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="mobile-menu-panel">@PortalMobileContextSwitch(data)@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
 		<a class="mobile-title" href="/app"><strong>{ data.HouseName }</strong><small>{ section } · { data.Role }</small></a>
 		<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
 	</header>
@@ -175,10 +202,24 @@ templ PortalNavigation(data PortalPageData, icons bool) {
 // permission-gated navigation.
 templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 	<header class="mobile-head">
-		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
+		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalMobileContextSwitch(data)@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
 		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>{ pageLabel } · { data.Role }</small></a>
 		<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
 	</header>
+}
+
+templ PortalMobileContextSwitch(data PortalPageData) {
+	if len(data.Contexts) > 1 {
+		<details class="context-switch mobile-context-switch"><summary>Portal wechseln · { data.Role }</summary><div class="context-menu">
+			for _, context := range data.Contexts {
+				if context.Current {
+					<span class="context-current"><strong>{ context.HouseName }</strong><small>{ context.Role } · aktiv</small></span>
+				} else {
+					<form method="post" action="/app/context"><input type="hidden" name="tenant" value={ context.TenantSlug }/><input type="hidden" name="role" value={ context.Role }/><button type="submit"><strong>{ context.HouseName }</strong><small>{ context.Role }</small></button></form>
+				}
+			}
+		</div></details>
+	}
 }
 
 func portalNavActive(data PortalPageData, page string) bool {

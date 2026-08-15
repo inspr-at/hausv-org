@@ -20,16 +20,7 @@ type HelpPageData struct {
 }
 
 templ HelpPage(data HelpPageData) {
-	<!doctype html>
-	<html lang="de-AT">
-		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-			<title>{ data.Portal.Title }</title>
-			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-			@HelpStyles()
-		</head>
-		<body data-templ-help>
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), nil, HelpStyles(), templ.Attributes{"data-templ-help": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
 			@PortalSectionHeader(data.Portal, "Hilfe")
 			<div class="shell">
@@ -100,8 +91,7 @@ templ HelpPage(data HelpPageData) {
 					</section>
 				</main>
 			</div>
-		</body>
-	</html>
+	}
 }
 
 templ HelpStyles() {

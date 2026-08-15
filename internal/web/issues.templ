@@ -21,27 +21,14 @@ type IssuesPageData struct {
 }
 
 templ IssuesPage(data IssuesPageData) {
-	<!doctype html>
-	<html lang="de-AT">
-		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-			<title>{ data.Portal.Title }</title>
-			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-			<script src={ "/assets/app.js?v=" + data.AssetVersion } defer></script>
-			<script src={ "/assets/attachments.js?v=" + data.AssetVersion } defer></script>
-			<script src={ "/assets/issues.js?v=" + data.AssetVersion } defer></script>
-			@IssuesStyles()
-		</head>
-		<body data-authenticated-app data-templ-issues>
+	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"attachments.js", "issues.js"}, IssuesStyles(), templ.Attributes{"data-templ-issues": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
 			<div class="issues-shell">
 				@PortalSidebar(data.Portal)
 				@IssuesContent(data)
 			</div>
 			@PortalMobileHeader(data.Portal, "Anliegen")
-		</body>
-	</html>
+	}
 }
 
 templ IssuesStyles() {

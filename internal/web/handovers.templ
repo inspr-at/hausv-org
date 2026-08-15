@@ -58,18 +58,7 @@ type HandoversPageData struct {
 }
 
 templ HandoversPage(data HandoversPageData) {
-	<!doctype html>
-	<html lang="de-AT">
-		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-			<title>{ data.Portal.Title }</title>
-			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-			<script src={ "/assets/app.js?v=" + data.AssetVersion } defer></script>
-			<script src={ "/assets/attachments.js?v=" + data.AssetVersion } defer></script>
-			@HandoversStyles()
-		</head>
-		<body data-authenticated-app data-templ-handovers>
+	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"attachments.js"}, HandoversStyles(), templ.Attributes{"data-templ-handovers": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
 			<div class="handovers-shell">
 				@PortalSidebar(data.Portal)
@@ -77,8 +66,7 @@ templ HandoversPage(data HandoversPageData) {
 			</div>
 			@PortalMobileHeader(data.Portal, "Übergaben")
 			@HandoverCreateDialog(data.NowInput, data.UnitOptions)
-		</body>
-	</html>
+	}
 }
 
 templ HandoversContent(data HandoversPageData) {
