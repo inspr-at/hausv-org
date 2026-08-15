@@ -2056,7 +2056,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatal("app sidebar should not repeat the internal brand abbreviation")
 	}
 	settingsPage := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=appearance")
-	for _, want := range []string{`name="brand_icon"`, `value="mixed-use" selected`, `value="SUN-ECK"`, `Gemischt genutzt`} {
+	for _, want := range []string{`name="brand_icon"`, `value="mixed-use" checked`, `value="SUN-ECK"`, `Gemischt genutzt`, `Live-Vorschau`} {
 		if !strings.Contains(settingsPage.Body.String(), want) {
 			t.Fatalf("building settings should render brand control %q:\n%s", want, settingsPage.Body.String())
 		}

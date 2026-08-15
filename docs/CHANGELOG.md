@@ -2,6 +2,15 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.94.0] - 2026-08-15
+
+### Verbessert
+
+- **Das Erscheinungsbild lässt sich visuell gestalten.** Alle vorhandenen Portal-Symbole stehen als direkte SVG-Auswahl bereit, statt in einem abstrakten Auswahlfeld verborgen zu sein.
+- **Änderungen werden vor dem Speichern sichtbar.** Eine Live-Vorschau zeigt Portal-Kennung, Symbol und Titelbild wahlweise auf der Anmeldung oder in der Seitenleiste.
+- **Das Titelbild ist klarer eingeordnet.** Aktuelles Bild, Dateiformate, Austausch und Rückkehr zum Standardbild bilden einen verständlichen Ablauf.
+- **Die Gestaltung funktioniert auch auf kleinen Bildschirmen.** Auswahl, Upload und Vorschau ordnen sich ohne abgeschnittene Inhalte untereinander an.
+
 ## [0.93.0] - 2026-08-15
 
 ### Verbessert

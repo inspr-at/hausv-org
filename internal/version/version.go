@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.94.0",
+			Date:     "15. August 2026",
+			Kind:     "Erscheinungsbild",
+			Headline: "Das Portal lässt sich jetzt mit direkter Vorschau gestalten.",
+			Intro:    "Eine sichtbare SVG-Auswahl und realistische Vorschauen verbinden Portal-Kennung, Symbol und Titelbild zu einem verständlichen Arbeitsbereich.",
+			Items: []NoteItem{
+				{Label: "Sichtbar gewählt", Text: "Alle vorhandenen Portal-Symbole stehen als direkte Auswahl bereit."},
+				{Label: "Sofort geprüft", Text: "Anmeldung und Seitenleiste zeigen Änderungen bereits vor dem Speichern."},
+				{Label: "Klar gegliedert", Text: "Kennung und Titelbild bleiben getrennt gespeichert und sind dennoch gemeinsam im Kontext sichtbar."},
+			},
+		},
+		{
 			Version:  "0.93.0",
 			Date:     "15. August 2026",
 			Kind:     "Einheitenverwaltung",
