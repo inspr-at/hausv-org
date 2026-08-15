@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -11,6 +13,8 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/version"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -30,6 +34,34 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	documentCountLabel := fmt.Sprintf("%d Dokumente", len(documents))
 	if len(documents) == 1 {
 		documentCountLabel = "1 Dokument"
+	}
+	if a.portalTemplEnabled {
+		guide := documentCategoryGuide()
+		documentGuide := make([]web.DocumentGuideEntry, 0, len(guide))
+		for _, entry := range guide {
+			documentGuide = append(documentGuide, web.DocumentGuideEntry{Category: entry.Category, Detail: entry.Detail})
+		}
+		a.renderDocumentsTempl(w, r, web.DocumentsPageData{
+			Portal:             a.documentsPortalContext(ac),
+			AssetVersion:       version.AssetVersion(),
+			CanManageDocuments: canManage,
+			DocumentSections:   a.documentCategorySectionsForActor(tenant.Slug, email, role, documents, false),
+			HasDocuments:       len(documents) > 0,
+			HasAnyDocuments:    len(visible) > 0,
+			DocumentsEmpty:     emptyState("Noch keine Dokumente", "Sobald die Verwaltung eine Unterlage freigibt, erscheint sie hier – mit Kategorie, Datum und Download."),
+			DocumentGuide:      documentGuide,
+			DocumentCountLabel: documentCountLabel,
+			DocumentMessage:    documentMsg,
+			DocumentMessageOK:  documentOK,
+			SearchQuery:        searchQuery,
+			HasSearchQuery:     searchQuery != "",
+			SortOptions:        documentSortOptions(sortMode),
+			CategoryOptions:    documentCategoryOptions(""),
+			VisibilityOptions:  documentVisibilityOptions(""),
+			UnitOptions:        documentUnitOptions(ac.repositories.units.List(), ""),
+			MaxDocumentSize:    formatBytes(maxDocumentBytes),
+		})
+		return
 	}
 	a.render(w, "documents", a.withBase(ac, map[string]any{
 		"Title":              "Dokumente",
@@ -53,6 +85,66 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"UnitOptions":        documentUnitOptions(ac.repositories.units.List(), ""),
 		"MaxDocumentSize":    formatBytes(maxDocumentBytes),
 	}))
+}
+
+func (a *app) documentsPortalContext(ac authCtx) web.PortalPageData {
+	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
+	modules := a.portalModulesFor(ac.tenant.Slug)
+	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
+	portalContexts := make([]web.PortalContext, 0, len(contexts))
+	for _, context := range contexts {
+		portalContexts = append(portalContexts, web.PortalContext{
+			TenantSlug: context.TenantSlug,
+			HouseName:  context.HouseName,
+			Address:    context.Address,
+			Role:       context.Role,
+			Current:    context.Current,
+		})
+	}
+	unreadAnnouncements := 0
+	if ac.repositories.announcements != nil && ac.repositories.announcementReads != nil && strings.TrimSpace(ac.email) != "" {
+		now := time.Now()
+		unreadAnnouncements = unreadAnnouncementCount(ac.repositories.announcements.Visible(now), ac.repositories.announcementReads.LastSeen(ac.email), now)
+	}
+	openIssues := 0
+	if a.issueStore != nil {
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenant.Slug, ac.email, ac.role))
+	}
+	return web.PortalPageData{
+		Title:               "Dokumente · " + houseDisplayName(ac.tenant) + " · " + ac.role,
+		TenantSlug:          ac.tenant.Slug,
+		HouseName:           houseDisplayName(ac.tenant),
+		Address:             ac.tenant.Address,
+		MapURL:              tenantMapURL(ac.tenant.Address),
+		DisplayName:         profile.DisplayName(),
+		Initials:            profile.Initials(),
+		Role:                ac.role,
+		DisplayVersion:      version.DisplayVersion(version.Version),
+		ActivePage:          "documents",
+		Modules:             web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
+		CanUseResidentAreas: roleCanUseResidentAreas(ac.role),
+		CanViewEnergy:       modules.Energy && a.canViewEnergy(ac),
+		CanManageIssues:     ac.can(capabilityManageIssues),
+		CanSeeParking:       modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)),
+		CanManageHandovers:  modules.Handovers && canManageHandovers(ac.actor(), ac.resource()),
+		CanManageUsers:      modules.Users && ac.can(capabilityManageUsers),
+		CanViewAudit:        modules.Audit && canViewAudit(ac.actor(), ac.resource()),
+		Issues:              make([]issueView, openIssues),
+		UnreadAnnouncements: unreadAnnouncements,
+		Contexts:            portalContexts,
+		ReleaseNotes:        version.Notes(),
+	}
+}
+
+func (a *app) renderDocumentsTempl(w http.ResponseWriter, r *http.Request, data web.DocumentsPageData) {
+	var rendered bytes.Buffer
+	if err := web.DocumentsPage(data).Render(r.Context(), &rendered); err != nil {
+		logError("templ documents render failed", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), data.Portal.TenantSlug))
 }
 
 func (a *app) uploadDocument(w http.ResponseWriter, r *http.Request, ac authCtx) {
