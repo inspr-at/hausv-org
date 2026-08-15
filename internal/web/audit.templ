@@ -1,0 +1,216 @@
+package web
+
+import "github.com/inspr-at/hausv-org/internal/view"
+
+type AuditPageData struct {
+	Portal         PortalPageData
+	Events         []view.AuditEventView
+	HasEvents      bool
+	HasAnyEvents   bool
+	EventsEmpty    view.EmptyStateView
+	ActionOptions  []view.SelectOption
+	SearchQuery    string
+	AuditStats     view.AuditStatsView
+	AuditPageTitle string
+	AuditLede      string
+	AuditIsFull    bool
+	CanManageUsers bool
+}
+
+templ AuditPage(data AuditPageData) {
+	<!doctype html>
+	<html lang="de-AT">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+			<title>{ data.Portal.Title }</title>
+			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+			@AuditStyles()
+		</head>
+		<body data-templ-audit>
+			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+			@PortalSectionHeader(data.Portal, "Verlauf")
+			<div class="shell">
+				@PortalSidebar(data.Portal)
+				<main class="audit-main" id="main-content" tabindex="-1">
+					<section class="audit-page">
+						<header class="page-head">
+							<div><span class="eyebrow">Nachweisspur</span><h1>{ data.AuditPageTitle }</h1><p>{ data.AuditLede }</p></div>
+							if data.Portal.CanUseResidentAreas {
+								<a class="button ghost" href="/app/settings">Einstellungen</a>
+							}
+						</header>
+						if data.HasAnyEvents {
+							@AuditStream(data)
+							@AuditHelp(data)
+						} else {
+							@AuditBlank(data)
+						}
+					</section>
+				</main>
+			</div>
+		</body>
+	</html>
+}
+
+templ AuditStream(data AuditPageData) {
+	<div class="audit-stream">
+		<details class="filter-panel" open?={ data.AuditStats.HasActiveFilters }>
+			<summary><span class="audit-overview">@PortalIcon("audit")<strong>{ data.AuditStats.TotalEvents } { auditEntryLabel(data.AuditStats.TotalEvents) }</strong><span>· { data.AuditStats.TodayCount } heute</span></span><span class="filter-trigger">@PortalIcon("settings")<span>Filtern</span>
+				if data.AuditStats.HasActiveFilters {
+					<span class="chip">{ len(data.AuditStats.ActiveFilters) }</span>
+				}
+			</span></summary>
+			<div class="filter-content">
+				<header><strong>Filter</strong>
+					if data.AuditIsFull {
+						<span>{ data.AuditStats.ActorCount } sichtbare Personen</span>
+					}
+				</header>
+				<form class="filter-form" method="get" action="/app/audit">
+					<label for="audit-action">Art der Änderung<select id="audit-action" name="action">
+						for _, option := range data.ActionOptions {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></label>
+					<label for="audit-search">Suche<input id="audit-search" type="search" name="q" value={ data.SearchQuery } placeholder="Vorgang, Dokument oder Person"/></label>
+					<button class="button primary" type="submit">Ergebnisse zeigen</button>
+				</form>
+				if data.AuditStats.HasActiveFilters {
+					<div class="active-filters" aria-label="Aktive Filter">
+						for _, filter := range data.AuditStats.ActiveFilters {
+							<span class="chip"><strong>{ filter.Label }:</strong> { filter.Value }</span>
+						}
+					</div>
+					<a class="button ghost reset" href="/app/audit">Filter zurücksetzen</a>
+				}
+			</div>
+		</details>
+		if data.HasEvents {
+			<div class="timeline" aria-label="Aktivitätsverlauf">
+				<div class="audit-columns" aria-hidden="true"><span>Zeit</span><span></span><span>Vorgang</span><span>Person</span><span>Objekt</span><span></span></div>
+				for _, event := range data.Events {
+					if event.ShowDateHeader {
+						<h2 class="audit-day">{ event.DateHeader }</h2>
+					}
+					if event.HasDetails {
+						<details class={ "audit-event", "audit-" + event.ActionTone }>
+							<summary>@AuditRow(event, true)</summary>
+							<dl class="detail-list">
+								for _, detail := range event.Details {
+									<div><dt>{ detail.Key }</dt><dd>{ detail.Value }</dd></div>
+								}
+							</dl>
+						</details>
+					} else {
+						<article class={ "audit-event", "audit-" + event.ActionTone }>@AuditRow(event, false)</article>
+					}
+				}
+			</div>
+		} else {
+			<div class="no-result"><div><h2>Kein Eintrag passt zu dieser Auswahl</h2><p>Wählen Sie eine andere Art der Änderung oder einen anderen Suchbegriff.</p></div><a class="button" href="/app/audit">Filter zurücksetzen</a></div>
+		}
+	</div>
+}
+
+templ AuditRow(event view.AuditEventView, expandable bool) {
+	<div class="audit-row">
+		<time class="audit-time" datetime={ event.AtISO } aria-label={ event.At }><strong>{ event.AtTime }</strong></time>
+		<span class="audit-marker" aria-label={ event.ToneLabel }></span>
+		<span class="audit-copy"><strong>{ event.DisplayTitle }</strong>
+			if event.HasContext {
+				<span class="audit-context">{ event.Context }</span>
+			}
+		</span>
+		<span class="audit-actor">
+			if event.ActorLabel != "" {
+				{ event.ActorLabel }
+			} else {
+				<span class="empty-cell">–</span>
+			}
+		</span>
+		<span class="audit-object">
+			if event.HasObject {
+				{ event.ObjectLabel }
+			} else {
+				<span class="empty-cell">–</span>
+			}
+		</span>
+		if expandable {
+			<span class="chevron" aria-hidden="true">›</span><span class="sr-only">Details zu { event.DisplayTitle }</span>
+		} else {
+			<span></span>
+		}
+	</div>
+}
+
+templ AuditHelp(data AuditPageData) {
+	<details class="help-disclosure"><summary>Einträge verstehen</summary><div class="note-grid">
+		<section class="note"><h2>Lesehilfe</h2><ul class="legend"><li><i class="add"></i><span><strong>Angelegt</strong><small>Ein Eintrag, eine Freigabe oder ein Zugang ist neu entstanden.</small></span></li><li><i></i><span><strong>Geändert oder angesehen</strong><small>Bestehendes wurde bearbeitet, geöffnet oder heruntergeladen.</small></span></li><li><i class="danger"></i><span><strong>Entfernt</strong><small>Etwas wurde gelöscht oder ein Zugriff wurde entzogen.</small></span></li></ul><p>Zeitangaben in Ortszeit. Zeilen mit Pfeil lassen sich für technische Details aufklappen.</p></section>
+		<section class="note"><h2>Umfang</h2><ul class="facts">
+			if data.AuditIsFull {
+				<li><strong>Ganzes Haus</strong><span>Änderungen und Zugriffe aller Zugänge dieser Liegenschaft.</span></li><li><strong>Bis zu 500 Einträge</strong><span>Angezeigt werden die jüngsten Vorgänge, neueste zuerst.</span></li>
+			} else {
+				<li><strong>Ihr Ausschnitt</strong><span>Eigene Vorgänge und alles, worauf Sie aktuell Zugriff haben.</span></li><li><strong>Folgt der Berechtigung</strong><span>Endet ein Zugriff, verschwindet der zugehörige Verlauf hier ebenfalls.</span></li>
+			}
+			<li><strong>Unveränderlich</strong><span>Einträge lassen sich hier weder bearbeiten noch löschen.</span></li>
+		</ul></section>
+		if data.Portal.CanUseResidentAreas {
+			<section class="note"><h2>Weiter im Portal</h2><nav class="audit-links">
+				if data.CanManageUsers {
+					<a href="/app/settings/users"><span><strong>Benutzer &amp; Rechte</strong><small>Rollen prüfen und Zugänge deaktivieren.</small></span><b>›</b></a>
+				}
+				<a href="/app/settings"><span><strong>Einstellungen</strong><small>Konto, Kommunikation und Verwaltungsbereiche.</small></span><b>›</b></a>
+			</nav></section>
+		}
+	</div></details>
+}
+
+templ AuditBlank(data AuditPageData) {
+	<section class="blank" aria-labelledby="audit-blank-title">
+		<div class="blank-main"><span class="blank-icon">@PortalIcon("audit")</span><h2 id="audit-blank-title">{ data.EventsEmpty.Title }</h2>
+			if data.AuditIsFull {
+				<p>Sobald jemand sich anmeldet, eine Unterlage öffnet, eine Rolle ändert oder ein Anliegen bearbeitet, steht der Vorgang hier mit Zeitpunkt, Person und Objekt. Der Verlauf ist die Nachweisspur des Hauses und lässt sich nicht nachträglich ändern.</p>
+			} else {
+				<p>Sobald Sie sich anmelden, eine Unterlage öffnen oder ein Anliegen bearbeiten, steht der Vorgang hier mit Zeitpunkt und Objekt. Sie sehen ausschließlich Ihren eigenen Ausschnitt.</p>
+			}
+			if data.Portal.CanUseResidentAreas {
+				<div class="blank-actions">
+					if data.CanManageUsers {
+						<a class="button primary" href="/app/settings/users">Benutzer &amp; Rechte</a>
+					}
+					<a class="button" href="/app/settings">Zu den Einstellungen</a>
+				</div>
+			}
+		</div>
+		<aside class="blank-side"><h2>Was festgehalten wird</h2><ul class="facts">
+			if data.AuditIsFull {
+				<li><strong>Anmeldungen</strong><span>Wer sich wann und mit welchem Verfahren angemeldet hat.</span></li><li><strong>Zugänge &amp; Rollen</strong><span>Einladungen, Rollenwechsel und entzogene Berechtigungen.</span></li><li><strong>Unterlagen</strong><span>Hochladen, Ersetzen, Ansehen und Herunterladen von Dokumenten.</span></li><li><strong>Entscheidungen</strong><span>Abstimmungen, Anliegen, Termine und Übergaben.</span></li><li><strong>Hausdaten</strong><span>Änderungen an Gebäude, Einheiten und Zahlungsstatus.</span></li>
+			} else {
+				<li><strong>Ihre Anmeldungen</strong><span>Zeitpunkt und Verfahren jeder Anmeldung mit Ihrem Zugang.</span></li><li><strong>Ihre Vorgänge</strong><span>Anliegen, Nachrichten und Unterlagen, die Sie betreffen.</span></li><li><strong>Freigaben</strong><span>Was für Sie freigegeben oder wieder entzogen wurde.</span></li>
+			}
+		</ul></aside>
+		<div class="blank-notes"><article><strong>Unveränderlich</strong><span>Einträge werden angehängt, nie überschrieben. Auch die Verwaltung kann sie hier nicht entfernen.</span></article><article><strong>Sparsam</strong><span>Festgehalten wird der Vorgang selbst – Zeitpunkt, Person, Objekt –, nicht der Inhalt.</span></article><article><strong>Durchsuchbar</strong><span>Ab dem ersten Eintrag stehen Filter nach Art der Änderung und die Suche bereit.</span></article></div>
+	</section>
+}
+
+func auditEntryLabel(count int) string {
+	if count == 1 { return "Eintrag" }
+	return "Einträge"
+}
+
+templ AuditStyles() {
+	<style>
+		:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--font-serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);font-family:var(--font-sans)}
+		*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}button,input,select{font:inherit}button{cursor:pointer}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,p{margin:0}h1,h2{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.skip-link{position:fixed;z-index:60;top:var(--space-2);left:var(--space-2);padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.skip-link:focus{transform:translateY(0)}
+		.shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.house-name{display:block;font-family:var(--font-serif);font-size:27px;line-height:1}.house-address{display:block;margin-top:var(--space-2);color:var(--soft);font-size:12px}.map{display:block;height:74px;margin-top:var(--space-4);overflow:hidden;background:var(--nav-2);border:1px solid var(--muted);border-radius:var(--radius-md)}.map svg{display:block;width:100%;height:100%}.map-streets{fill:none;stroke:var(--muted);stroke-width:1;opacity:.42}.map-pin{fill:var(--gold-light);stroke:var(--gold)}.map-hole{fill:var(--nav)}.context-switch{margin-top:var(--space-3);font-size:11px}.context-switch summary{cursor:pointer;color:var(--gold-light)}.context-menu{display:grid;gap:var(--space-2);margin-top:var(--space-2);padding:var(--space-2);background:var(--nav-2);border-radius:var(--radius-sm)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.context-menu small{color:var(--soft)}.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-label{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-notes>summary{margin-top:2px;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}.release-notes>summary::-webkit-details-marker{display:none}.release-panel{position:fixed;z-index:50;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.release-panel h2{font-size:24px}.release-entry{padding-top:var(--space-4)}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}
+		.mobile-head{display:none}.audit-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.audit-page{max-width:1180px;margin:0 auto;display:grid;gap:var(--space-5)}.page-head{display:flex;align-items:end;justify-content:space-between;gap:var(--space-5);padding-bottom:var(--space-4);border-bottom:1px solid var(--line)}.page-head>div{display:grid;gap:6px}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.page-head h1{font-size:42px;line-height:1}.page-head p{max-width:720px;color:var(--muted);font-size:14px;line-height:1.5}.button{min-height:42px;display:inline-flex;align-items:center;justify-content:center;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:var(--panel);color:var(--gold-ink);font-size:12px;font-weight:800}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}
+		.audit-stream{display:grid;gap:var(--space-4)}.filter-panel,.timeline,.help-disclosure{border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel);overflow:hidden}.filter-panel>summary{min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) var(--space-4);cursor:pointer;list-style:none}.filter-panel>summary::-webkit-details-marker,.help-disclosure>summary::-webkit-details-marker,.audit-event>summary::-webkit-details-marker{display:none}.filter-panel>summary:hover,.audit-event>summary:hover{background:var(--panel-soft)}.audit-overview,.filter-trigger{display:flex;align-items:center;gap:var(--space-2)}.audit-overview svg,.filter-trigger svg{width:18px;height:18px;fill:none;stroke:var(--gold-ink);stroke-width:1.8}.audit-overview{font-size:13px}.audit-overview>span{color:var(--muted)}.filter-trigger{min-height:36px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);font-size:12px;font-weight:800}.chip{display:inline-flex;gap:var(--space-1);padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:11px}.filter-content{display:grid;gap:var(--space-3);padding:var(--space-4);border-top:1px solid var(--line);background:var(--panel-soft)}.filter-content header{display:flex;justify-content:space-between;gap:var(--space-3)}.filter-content header strong{font-family:var(--font-serif);font-size:19px}.filter-content header span{color:var(--muted);font-size:12px}.filter-form{display:grid;grid-template-columns:minmax(180px,.55fr) minmax(240px,1fr) auto;gap:var(--space-3);align-items:end}.filter-form label{display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;font-weight:700}.filter-form input,.filter-form select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.active-filters{display:flex;flex-wrap:wrap;gap:var(--space-2)}.reset{justify-self:start}
+		.timeline{--audit-cols:62px 14px minmax(0,1.35fr) minmax(0,.92fr) minmax(0,1.05fr) 18px}.audit-columns,.audit-row{display:grid;grid-template-columns:var(--audit-cols);gap:var(--space-3)}.audit-columns{padding:9px var(--space-4);border-bottom:1px solid var(--line);background:var(--panel-soft);color:var(--soft);font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}.audit-columns span:first-child{text-align:right}.audit-day{padding:var(--space-3) var(--space-4) var(--space-2);border-bottom:1px solid var(--line);background:var(--panel-soft);color:var(--gold-ink);font-family:var(--font-sans);font-size:12px}.audit-event{display:block;border-bottom:1px solid var(--line)}.audit-event:last-child{border-bottom:0}.audit-event>summary{cursor:pointer;list-style:none}.audit-row{min-height:64px;align-items:start;padding:13px var(--space-4)}.audit-time{text-align:right;font-variant-numeric:tabular-nums}.audit-time strong{font-family:var(--font-serif);font-size:16px}.audit-marker{width:10px;height:10px;margin-top:5px;border-radius:var(--radius-pill);background:var(--gold)}.audit-add .audit-marker{background:var(--leaf)}.audit-danger .audit-marker{background:var(--ink)}.audit-copy{min-width:0;display:grid;gap:var(--space-1)}.audit-copy>strong{font-size:14px;line-height:1.35;overflow-wrap:anywhere}.audit-context{display:none;color:var(--muted);font-size:12px}.audit-actor,.audit-object{min-width:0;color:var(--muted);font-size:12px;line-height:1.4;overflow-wrap:anywhere}.audit-actor{color:var(--ink);font-weight:650}.empty-cell{color:var(--soft)}.chevron{align-self:center;color:var(--gold-ink);font-size:23px;transition:transform .16s ease}.audit-event[open] .chevron{transform:rotate(90deg)}.detail-list{display:grid;margin:-3px var(--space-4) var(--space-3) 88px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);overflow:hidden}.detail-list>div{display:grid;grid-template-columns:minmax(110px,.42fr) minmax(0,1fr);gap:var(--space-3);padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--line);font-size:12px}.detail-list>div:last-child{border-bottom:0}.detail-list dt{color:var(--muted)}.detail-list dd{min-width:0;margin:0;font-weight:700;overflow-wrap:anywhere}.no-result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft)}.no-result h2{font-size:20px}.no-result p{margin-top:var(--space-1);color:var(--muted);font-size:13px}
+		.help-disclosure>summary{min-height:54px;display:flex;align-items:center;padding:0 var(--space-4);cursor:pointer;font-weight:850}.note-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3);padding:0 var(--space-4) var(--space-4)}.note{display:grid;align-content:start;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.note h2,.blank-side h2{color:var(--gold-ink);font-family:var(--font-sans);font-size:11px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.note p{color:var(--muted);font-size:12px;line-height:1.5}.legend,.facts{display:grid;gap:var(--space-2);margin:0;padding:0;list-style:none}.legend li{display:grid;grid-template-columns:10px minmax(0,1fr);gap:var(--space-2)}.legend i{width:10px;height:10px;margin-top:4px;border-radius:var(--radius-pill);background:var(--gold)}.legend i.add{background:var(--leaf)}.legend i.danger{background:var(--ink)}.legend strong,.legend small,.facts strong,.facts span{display:block}.legend small,.facts span{margin-top:2px;color:var(--muted);font-size:12px;line-height:1.42}.facts li+li{padding-top:var(--space-2);border-top:1px solid var(--line)}.facts strong{font-size:13px}.audit-links{display:grid}.audit-links a{min-height:52px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-2);padding:var(--space-2) 0;border-top:1px solid var(--line)}.audit-links a:first-child{border-top:0}.audit-links small{display:block;margin-top:2px;color:var(--muted);font-size:12px}.audit-links b{color:var(--gold-ink);font-size:20px}
+		.blank{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(270px,.8fr);gap:var(--space-4)}.blank-main,.blank-side{padding:clamp(var(--space-5),3vw,36px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}.blank-main{display:grid;align-content:center;justify-items:start;gap:var(--space-3)}.blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft);color:var(--gold-ink)}.blank-icon svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.7}.blank-main h2{font-size:30px}.blank-main p{max-width:56ch;color:var(--muted);font-size:14px;line-height:1.55}.blank-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)}.blank-side{display:grid;align-content:start;gap:var(--space-3);background:var(--panel-soft)}.blank-notes{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3)}.blank-notes article{display:grid;gap:var(--space-1);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.blank-notes span{color:var(--muted);font-size:12px;line-height:1.5}
+		@media(max-width:1050px){.shell{grid-template-columns:210px minmax(0,1fr)}.note-grid{grid-template-columns:1fr}.filter-form{grid-template-columns:1fr 1fr}.filter-form .button{grid-column:1/-1}.timeline{--audit-cols:56px 12px minmax(0,1.3fr) minmax(0,.95fr) minmax(0,1fr) 16px}}
+		@media(max-width:760px){.shell{display:block}.sidebar{display:none}.mobile-head{position:sticky;z-index:40;top:0;display:grid;grid-template-columns:42px minmax(0,1fr) 38px;align-items:center;gap:var(--space-3);min-height:74px;padding:var(--space-3) var(--space-4);background:var(--nav);color:var(--panel)}.mobile-menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.mobile-menu>summary::-webkit-details-marker{display:none}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:"";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.mobile-menu-panel{position:absolute;top:74px;right:0;left:0;max-height:calc(100vh - 74px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);border-top:1px solid var(--nav-2);box-shadow:var(--shadow-dialog)}.mobile-menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.mobile-menu-panel .nav a{margin:0;min-height:44px;padding:var(--space-2) var(--space-3)}.mobile-menu-panel .nav-label{grid-column:1/-1}.mobile-menu-panel .logout-form button{min-height:44px;margin-top:var(--space-3)}.mobile-title strong,.mobile-title small{display:block}.mobile-title strong{font-family:var(--font-serif);font-size:21px}.mobile-title small{margin-top:var(--space-1);color:var(--soft);font-size:10px}.mobile-head .avatar{width:38px;height:38px}.audit-main{padding:var(--space-5) var(--space-4) 48px}.page-head{display:grid;align-items:start}.page-head h1{font-size:34px}.page-head .button{justify-self:start}.filter-form{grid-template-columns:1fr}.filter-form .button{grid-column:auto}.audit-columns{display:none}.timeline{--audit-cols:48px 10px minmax(0,1fr) 16px}.audit-row{gap:9px;padding:var(--space-3)}.audit-actor,.audit-object{display:none}.audit-context{display:block}.detail-list{margin:-2px var(--space-3) var(--space-3) 79px}.detail-list>div{grid-template-columns:1fr;gap:3px}.blank{grid-template-columns:1fr}.blank-notes{grid-template-columns:1fr}.no-result{grid-template-columns:1fr}}
+		@media(max-width:480px){.filter-panel>summary{padding-left:var(--space-3)}.audit-overview{align-items:flex-start;flex-wrap:wrap}.filter-trigger>svg,.filter-trigger>span:first-of-type{display:none}.blank-actions{display:grid;width:100%}.blank-actions .button,.no-result .button{width:100%}.note-grid{padding-inline:var(--space-3)}}
+	</style>
+}
