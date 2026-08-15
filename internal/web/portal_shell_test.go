@@ -133,6 +133,47 @@ func TestMobileContextSwitchIsHiddenForOneContext(t *testing.T) {
 	}
 }
 
+func TestNotificationStatusLineIsAddressableByAppJS(t *testing.T) {
+	// app.js finds [data-notification-status] inside [data-notification-form] and
+	// keeps the sentence current as topics are toggled. The server already renders
+	// the right text; without the hook it simply freezes at its initial value.
+	html := renderComponent(t, NotificationSettingsPage(NotificationSettingsPageData{
+		Portal:                    PortalPageData{Title: "Benachrichtigungen"},
+		EmailNotificationsEnabled: true,
+		NotificationEnabledCount:  1,
+		NotificationEventCount:    2,
+	}))
+	for _, hook := range []string{"data-notification-form", "data-notification-master", "data-notification-status", "data-notification-count"} {
+		if !strings.Contains(html, hook) {
+			t.Errorf("notification settings page is missing %s, so app.js cannot drive it", hook)
+		}
+	}
+}
+
+func TestUserCardsKeepRoleAndStatusOnNarrowScreens(t *testing.T) {
+	// The legacy table stacks on a phone and drops the labels for role and status
+	// on purpose, because the pills say what they are — but it keeps the VALUES.
+	// Hiding the pills instead means a phone cannot tell an Admin from a resident,
+	// which markup-level checks cannot see: the elements are rendered, CSS removes
+	// them.
+	html := renderComponent(t, UserSettingsPage(UserSettingsPageData{
+		Portal:    PortalPageData{Title: "Benutzer"},
+		UserCount: 1,
+		Users: []view.UserRow{{
+			DisplayName: "Ada Beispiel", Email: "ada@example.test",
+			Initials: "AB", Role: "Admin", RoleClass: "role-admin", Status: "Aktiv",
+		}},
+	}))
+	if !strings.Contains(html, ">Admin</span>") || !strings.Contains(html, ">Aktiv</span>") {
+		t.Fatal("user card must render the role and status values")
+	}
+	for _, rule := range regexp.MustCompile(`[^{};]+\{display:none\}`).FindAllString(html, -1) {
+		if strings.Contains(rule, ".user-card>.pill") {
+			t.Errorf("narrow-screen rule hides the role/status pill: %s", rule)
+		}
+	}
+}
+
 func assertPageTableCoversTemplPages(t *testing.T, pages []struct {
 	name         string
 	component    templ.Component
