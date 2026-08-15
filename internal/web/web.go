@@ -2468,7 +2468,7 @@ const PageTemplates = `
     .issue-wizard-progress { color: var(--gold-ink); font-size: 12px; font-weight: 850; letter-spacing: .06em; }
     .issue-wizard-heading h3 { font-family: var(--font-serif); font-size: clamp(30px,4vw,42px); line-height: 1.04; }
     .issue-wizard-heading p { color: var(--muted); font-size: 15px; line-height: 1.45; }
-    .issue-safety-note { display: block; border-left: 3px solid var(--gold); border-radius: 0 var(--radius-xs) var(--radius-xs) 0; padding: 10px 12px; background: rgba(200,153,63,.08); color: var(--muted); font-size: 12.5px; font-weight: 650; line-height: 1.45; }
+    .issue-safety-note { display: block; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 10px 12px; background: rgba(200,153,63,.08); color: var(--muted); font-size: 12.5px; font-weight: 650; line-height: 1.45; }
     .issue-safety-note a { min-height: 44px; display: inline-flex; align-items: center; margin-block: -10px; color: var(--ink); font-weight: 850; text-underline-offset: 3px; }
     .issue-field-error { color: #8f2a2b; font-size: 12.5px; font-weight: 750; letter-spacing: 0; line-height: 1.4; text-transform: none; }
     .issue-field-error[hidden] { display: none; }
@@ -2529,7 +2529,7 @@ const PageTemplates = `
     .issue-progress-fill.status-open { width: 24%; }
     .issue-progress-fill.status-progress { width: 66%; background: var(--leaf); }
     .issue-progress-fill.status-done, .issue-progress-fill.status-closed { width: 100%; background: var(--leaf); }
-    .issue-next-step { border-left: 3px solid var(--gold); padding: 8px 11px; color: var(--ink); background: rgba(200,153,63,.08); font-size: 13.5px; font-weight: 750; line-height: 1.4; }
+    .issue-next-step { border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 8px 11px; color: var(--ink); background: rgba(200,153,63,.08); font-size: 13.5px; font-weight: 750; line-height: 1.4; }
     .issue-card-details { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
     .issue-card-details > summary { min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; list-style: none; padding: 10px 12px; color: var(--ink); font-size: 13px; font-weight: 850; }
     .issue-card-details > summary::-webkit-details-marker { display: none; }
@@ -3255,7 +3255,7 @@ const PageTemplates = `
     .handover-detail li strong { color: var(--ink); font-size: 14px; }
     .handover-detail li em { color: #9b5f54; font-style: normal; }
     .handover-detail p { margin-top: 9px; color: var(--muted); font-size: 13px; line-height: 1.4; }
-    .handover-note { border-left: 3px solid var(--gold); padding: 4px 0 4px 13px; color: var(--muted); }
+    .handover-note { border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 9px 12px; background: rgba(200,153,63,.08); color: var(--muted); }
     .handover-note strong { color: var(--ink); }
     .handover-note p { margin-top: 4px; line-height: 1.45; overflow-wrap: anywhere; }
     .handover-scope { border-left: 3px solid rgba(47,107,74,.35); padding: 9px 12px; background: rgba(47,107,74,.06); color: var(--muted); font-size: 13px; line-height: 1.45; }
@@ -8925,7 +8925,7 @@ const PageTemplates = `
       .notifications .notification-row-copy strong { font-size: 14px; }
       .notifications .notification-row-copy span { color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.35; }
       .notifications .email-paused .notification-topics { opacity: .72; }
-      .notifications .notification-paused-note { display: none; border-left: 3px solid var(--gold); padding: 9px 12px; background: rgba(200,153,63,.09); color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+      .notifications .notification-paused-note { display: none; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 9px 12px; background: rgba(200,153,63,.09); color: var(--muted); font-size: 12.5px; line-height: 1.4; }
       .notifications .email-paused .notification-paused-note { display: block; }
       .notifications .actions { display: flex; justify-content: flex-end; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 14px; }
       .notifications .actions a { color: var(--muted); font-size: 13px; font-weight: 750; }
