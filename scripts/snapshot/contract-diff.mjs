@@ -27,9 +27,16 @@ if (!legacyDir || !templDir) {
 // one is a judgement someone made and had to write down; an entry with no `why`
 // is a silent hole in the check, so `why` is required.
 //
-// Keep this list short and keep it honest. Accepting a value here blinds the
-// comparison to it on EVERY route — that is the price of the entry, and it is why
-// accepted losses are still printed below rather than swallowed.
+// `routes` scopes an entry to the pages the judgement was actually made about.
+// Omitting it waives the value EVERYWHERE, which is almost never what you mean:
+// the same attribute name usually carries different weight on different pages.
+// `data-label` is the worked example — a stacked-table artefact on the users
+// page, but a behavioural hook that app.js reads on the energy chart and the
+// home-type selector. Waiving it globally would have let a real loss through
+// there, silently, forever.
+//
+// Accepted losses are printed rather than swallowed, and reported as stale once
+// they stop matching, so the list cannot outlive the judgement behind it.
 const ACCEPTED_LOSSES = [
   {
     aspect: 'hooks',
@@ -49,7 +56,8 @@ const ACCEPTED_LOSSES = [
   {
     aspect: 'hooks',
     values: ['data-label'],
-    why: 'the users table became a card list, so the stacked-table label pattern no longer applies — what mattered (role and status staying visible on a phone) is CSS, which this tool cannot see, and is covered by TestUserCardsKeepRoleAndStatusOnNarrowScreens instead',
+    routes: ['settings-users'],
+    why: 'the users table became a card list, so the stacked-table label pattern no longer applies — what mattered (role and status staying visible on a phone) is CSS, which this tool cannot see, and is covered by TestUserCardsKeepRoleAndStatusOnNarrowScreens instead. Scoped: app.js also reads data-label on the energy chart and the home-type selector, where losing it IS a regression',
   },
 ];
 
@@ -60,10 +68,24 @@ const ACCEPTED_LOSSES = [
 // every markup-level check stayed green. CSS-visibility contracts need a test
 // that reads the stylesheet, and those live in internal/web.
 
+const keyOf = (aspect, value) => `${aspect} :: ${value}`;
+
+// key -> { why, routes }. routes === null means the entry applies everywhere.
 const accepted = new Map();
-for (const { aspect, values, why } of ACCEPTED_LOSSES) {
+for (const { aspect, values, routes, why } of ACCEPTED_LOSSES) {
   if (!why) throw new Error(`ACCEPTED_LOSSES entry for ${aspect} has no reason`);
-  for (const value of values) accepted.set(`${aspect} ${value}`, why);
+  for (const value of values) {
+    accepted.set(keyOf(aspect, value), { why, routes: routes ? new Set(routes) : null });
+  }
+}
+
+// Returns the waiver that covers this loss on this route, or null. Route scope
+// is checked here rather than at lookup sites so a caller cannot forget it.
+function waiverFor(aspect, value, route) {
+  const entry = accepted.get(keyOf(aspect, value));
+  if (!entry) return null;
+  if (entry.routes && !entry.routes.has(route)) return null;
+  return entry;
 }
 
 // Ordered worst-first: a reader who stops after the first block should have read
@@ -118,10 +140,13 @@ for (const persona of personas) {
       const before = new Set(legacy[aspect] || []);
       const after = new Set(templ[aspect] || []);
       const dropped = [...before].filter((v) => !after.has(v));
-      const lost = dropped.filter((v) => !accepted.has(`${aspect} ${v}`));
-      const waived = dropped.filter((v) => accepted.has(`${aspect} ${v}`));
+      const lost = dropped.filter((v) => !waiverFor(aspect, v, route));
+      const waived = dropped.filter((v) => waiverFor(aspect, v, route));
       const gained = [...after].filter((v) => !before.has(v));
-      for (const v of waived) acceptedSeen.set(`${aspect} ${v}`, (acceptedSeen.get(`${aspect} ${v}`) || 0) + 1);
+      for (const v of waived) {
+        const k = keyOf(aspect, v);
+        acceptedSeen.set(k, (acceptedSeen.get(k) || 0) + 1);
+      }
       if (!lost.length && !gained.length) continue;
       losses += lost.length;
       additions += gained.length;
@@ -147,8 +172,10 @@ console.log(`\ncompared ${compared} page pairs across ${personas.length} persona
 
 if (acceptedSeen.size) {
   console.log('\nwaived by ACCEPTED_LOSSES — judged redesign, not regression:');
-  for (const [key, count] of [...acceptedSeen].sort()) {
-    console.log(`  ${key} (${count} pairs) — ${accepted.get(key)}`);
+  for (const [k, count] of [...acceptedSeen].sort()) {
+    const entry = accepted.get(k);
+    const scope = entry.routes ? ` [only on ${[...entry.routes].sort().join(', ')}]` : '';
+    console.log(`  ${k} (${count} pairs)${scope} — ${entry.why}`);
   }
 }
 // An entry nobody hit is an entry describing a world that no longer exists. Say
