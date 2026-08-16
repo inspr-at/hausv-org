@@ -1,0 +1,112 @@
+#!/usr/bin/env node
+// At every width, does every route still have navigation — and the same kind?
+//
+//   node shell-widths.mjs <baseURL> [outJson]
+//
+// The mobile shell used to hide the sidebar at 700px on six routes and 760px on
+// five, so between those widths some pages showed the sidebar and others the
+// hamburger. Screenshots at one width cannot see that, and screenshots at eleven
+// widths are eleven things to eyeball. Assert it instead.
+//
+// Two properties, both mechanical:
+//   1. every route has exactly one visible navigation at every width — never zero
+//   2. at any given width, every route agrees on which one
+import { chromium } from 'playwright';
+import { writeFile } from 'node:fs/promises';
+
+const baseURL = process.argv[2];
+const outJson = process.argv[3];
+if (!baseURL) {
+  console.error('usage: shell-widths.mjs <baseURL> [outJson]');
+  process.exit(2);
+}
+
+// Straddle every breakpoint in play, plus real device widths.
+const WIDTHS = [360, 390, 699, 700, 701, 744, 759, 760, 761, 768, 899, 900, 1024, 1049, 1050, 1051, 1100, 1440];
+
+const ROUTES = [
+  ['portal', '/app'], ['announcements', '/app/announcements'], ['events', '/app/events'],
+  ['issues', '/app/anliegen'], ['documents', '/app/dokumente'], ['ballots', '/app/abstimmungen'],
+  ['handovers', '/app/uebergaben'], ['contacts', '/app/kontakte'], ['help', '/app/hilfe'],
+  ['settings', '/app/settings'], ['settings-profile', '/app/settings/profile'],
+  ['settings-notifications', '/app/settings/notifications'],
+  ['settings-building', '/app/settings/building'], ['settings-users', '/app/settings/users'],
+  ['audit', '/app/audit'],
+];
+
+const tenant = (process.env.DEFAULT_TENANT || 'demo').replace(/^\/+|\/+$/g, '');
+const tenantURL = `${baseURL}/${tenant}`;
+
+const browser = await chromium.launch({
+  headless: true,
+  ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+    ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}),
+});
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'de-AT', timezoneId: 'Europe/Vienna' });
+const page = await ctx.newPage();
+
+await page.goto(`${tenantURL}/`, { waitUntil: 'networkidle' });
+await page.fill('input[name="email"]', 'admin@example.com');
+await page.click('form[action$="/auth/request"] button');
+await page.waitForSelector('a.dev-link', { timeout: 10_000 });
+await page.goto(new URL(await page.getAttribute('a.dev-link', 'href'), `${tenantURL}/`).href, { waitUntil: 'networkidle' });
+
+const shown = (el) => {
+  if (!el) return false;
+  const s = getComputedStyle(el);
+  return s.display !== 'none' && s.visibility !== 'hidden' && el.getClientRects().length > 0;
+};
+
+const results = [];
+for (const [name, route] of ROUTES) {
+  await page.goto(`${tenantURL}${route}`, { waitUntil: 'domcontentloaded' });
+  for (const w of WIDTHS) {
+    await page.setViewportSize({ width: w, height: 900 });
+    const state = await page.evaluate((visibleSrc) => {
+      const vis = eval(`(${visibleSrc})`);
+      return {
+        sidebar: vis(document.querySelector('.sidebar')),
+        mobile: vis(document.querySelector('.mobile-head')),
+        // The hamburger must be operable, not merely present — and matched by
+        // structure, not by class. Keying this on `.menu` reported eight false
+        // failures on the very code it was written to judge, because those pages
+        // spell it `.mobile-menu`. A probe that only passes the layout it was
+        // built for measures nothing.
+        menu: vis(document.querySelector('.mobile-head details > summary')),
+        links: document.querySelectorAll('.nav a').length,
+      };
+    }, shown.toString());
+    results.push({ route: name, width: w, ...state });
+  }
+}
+await browser.close();
+
+let failures = 0;
+console.log(`${'width'.padStart(6)}  ${'shell'.padEnd(8)} routes`);
+for (const w of WIDTHS) {
+  const at = results.filter((r) => r.width === w);
+  const none = at.filter((r) => !r.sidebar && !r.mobile);
+  const both = at.filter((r) => r.sidebar && r.mobile);
+  const desktop = at.filter((r) => r.sidebar && !r.mobile).map((r) => r.route);
+  const mob = at.filter((r) => r.mobile && !r.sidebar).map((r) => r.route);
+  const noLinks = at.filter((r) => r.links === 0);
+  const noMenu = at.filter((r) => r.mobile && !r.menu);
+
+  let kind = desktop.length && mob.length ? 'SPLIT' : (mob.length ? 'mobile' : 'desktop');
+  console.log(`${String(w).padStart(6)}  ${kind.padEnd(8)} ${desktop.length} desktop / ${mob.length} mobile`);
+
+  for (const [label, list] of [['no navigation at all', none], ['both shells at once', both],
+                               ['no nav links', noLinks], ['mobile head without a usable menu', noMenu]]) {
+    if (list.length) { failures += list.length; console.log(`         ${label}: ${list.map((r) => r.route).join(', ')}`); }
+  }
+  if (desktop.length && mob.length) {
+    failures++;
+    console.log(`         routes disagree — desktop: ${desktop.join(', ')}`);
+    console.log(`                           mobile: ${mob.join(', ')}`);
+  }
+}
+
+if (outJson) await writeFile(outJson, JSON.stringify(results, null, 2));
+console.log(`\n${results.length} route/width combinations checked`);
+if (failures) { console.log(`FAIL — ${failures} problem(s)`); process.exit(1); }
+console.log('PASS — every route has exactly one navigation at every width, and they all agree');
