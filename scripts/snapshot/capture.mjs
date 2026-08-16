@@ -34,16 +34,23 @@ const PERSONAS = [
   { name: 'resident', email: 'resident@example.com' },
 ];
 
+// /app/energie and /app/settings/home are absent on purpose: the demo tenant's
+// seeded profile never completes onboarding, so both redirect there. Capturing
+// them would file the onboarding page under two other routes' names — an
+// artefact that reads like coverage and is worse than the gap. HAUSV-550.
 const ROUTES = [
   ['portal', '/app'],
   ['announcements', '/app/announcements'],
   ['events', '/app/events'],
   ['issues', '/app/anliegen'],
+  ['issue-board', '/app/anliegen/board'],
   ['documents', '/app/dokumente'],
   ['ballots', '/app/abstimmungen'],
   ['handovers', '/app/uebergaben'],
   ['contacts', '/app/kontakte'],
   ['help', '/app/hilfe'],
+  ['parking', '/app/parking'],
+  ['onboarding', '/app/zuhause/onboarding'],
   ['settings', '/app/settings'],
   ['settings-profile', '/app/settings/profile'],
   ['settings-notifications', '/app/settings/notifications'],

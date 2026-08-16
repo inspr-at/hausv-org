@@ -26,12 +26,13 @@ const WIDTHS = [360, 390, 699, 700, 701, 744, 759, 760, 761, 768, 899, 900, 1024
 
 const ROUTES = [
   ['portal', '/app'], ['announcements', '/app/announcements'], ['events', '/app/events'],
-  ['issues', '/app/anliegen'], ['documents', '/app/dokumente'], ['ballots', '/app/abstimmungen'],
-  ['handovers', '/app/uebergaben'], ['contacts', '/app/kontakte'], ['help', '/app/hilfe'],
+  ['issues', '/app/anliegen'], ['issue-board', '/app/anliegen/board'],
+  ['documents', '/app/dokumente'], ['ballots', '/app/abstimmungen'],
+  ['handovers', '/app/uebergaben'], ['contacts', '/app/kontakte'], ['help', '/app/hilfe'], ['parking', '/app/parking'],
+  ['onboarding', '/app/zuhause/onboarding'],
   ['settings', '/app/settings'], ['settings-profile', '/app/settings/profile'],
   ['settings-notifications', '/app/settings/notifications'],
-  ['settings-building', '/app/settings/building'], ['settings-users', '/app/settings/users'],
-  ['audit', '/app/audit'],
+  ['settings-building', '/app/settings/building'], ['settings-users', '/app/settings/users'], ['audit', '/app/audit'],
 ];
 
 const tenant = (process.env.DEFAULT_TENANT || 'demo').replace(/^\/+|\/+$/g, '');
@@ -74,6 +75,11 @@ for (const [name, route] of ROUTES) {
         // built for measures nothing.
         menu: vis(document.querySelector('.mobile-head details > summary')),
         links: document.querySelectorAll('.nav a').length,
+        // Visible is not the same as reachable. Six routes rendered the mobile
+        // header AFTER the content, and one behind an empty 100vh grid, so the
+        // only navigation on the page sat below the fold — off-screen on load,
+        // and this probe called it visible because it had a bounding box.
+        headTop: (() => { const h = document.querySelector('.mobile-head'); return h ? Math.round(h.getBoundingClientRect().top) : null; })(),
       };
     }, shown.toString());
     results.push({ route: name, width: w, ...state });
@@ -91,12 +97,14 @@ for (const w of WIDTHS) {
   const mob = at.filter((r) => r.mobile && !r.sidebar).map((r) => r.route);
   const noLinks = at.filter((r) => r.links === 0);
   const noMenu = at.filter((r) => r.mobile && !r.menu);
+  const buried = at.filter((r) => r.mobile && r.headTop !== null && r.headTop > 0);
 
   let kind = desktop.length && mob.length ? 'SPLIT' : (mob.length ? 'mobile' : 'desktop');
   console.log(`${String(w).padStart(6)}  ${kind.padEnd(8)} ${desktop.length} desktop / ${mob.length} mobile`);
 
   for (const [label, list] of [['no navigation at all', none], ['both shells at once', both],
-                               ['no nav links', noLinks], ['mobile head without a usable menu', noMenu]]) {
+                               ['no nav links', noLinks], ['mobile head without a usable menu', noMenu],
+                               ['mobile header pushed below the top', buried.map((r) => ({ ...r, route: `${r.route} (y=${r.headTop})` }))]]) {
     if (list.length) { failures += list.length; console.log(`         ${label}: ${list.map((r) => r.route).join(', ')}`); }
   }
   if (desktop.length && mob.length) {
@@ -109,4 +117,4 @@ for (const w of WIDTHS) {
 if (outJson) await writeFile(outJson, JSON.stringify(results, null, 2));
 console.log(`\n${results.length} route/width combinations checked`);
 if (failures) { console.log(`FAIL — ${failures} problem(s)`); process.exit(1); }
-console.log('PASS — every route has exactly one navigation at every width, and they all agree');
+console.log('PASS — every route has exactly one navigation at every width, it sits at the top, and they all agree');

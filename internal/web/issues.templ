@@ -23,11 +23,11 @@ type IssuesPageData struct {
 templ IssuesPage(data IssuesPageData) {
 	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"attachments.js", "issues.js"}, IssuesStyles(), templ.Attributes{"data-templ-issues": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+			@PortalMobileHeader(data.Portal, "Anliegen")
 			<div class="shell">
 				@PortalSidebar(data.Portal)
 				@IssuesContent(data)
 			</div>
-			@PortalMobileHeader(data.Portal, "Anliegen")
 	}
 }
 

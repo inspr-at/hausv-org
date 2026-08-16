@@ -1,8 +1,10 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"mime"
 	"net/http"
 	"net/url"
@@ -12,6 +14,8 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/version"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -43,9 +47,28 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		}
 	}
 	live := a.chargingLiveView(r.Context(), tenant, isAdmin, true)
+	canManageParkingPayments := ac.can(capabilityManageUsers) || ac.can(capabilityManageParking)
+	if a.portalTemplEnabled {
+		a.renderParkingTempl(w, r, web.ParkingPageData{
+			Portal:                   a.parkingPortalContext(ac),
+			AssetVersion:             version.AssetVersion(),
+			IsAdmin:                  isAdmin,
+			CanManageParkingPayments: canManageParkingPayments,
+			Message:                  parkingMsg,
+			MessageOK:                parkingOK,
+			StatementYear:            time.Now().In(time.Local).Year(),
+			CurrentMonthHeading:      currentMonthHeading,
+			HasOlderMonths:           len(olderMonths) > 0,
+			Accounting:               accounting,
+			Live:                     live,
+			CurrentMonth:             currentMonth,
+			OlderMonths:              olderMonths,
+		})
+		return
+	}
 	a.render(w, "parking", a.withBase(ac, map[string]any{
 		"Title":                    "Parkplatznutzung",
-		"CanManageParkingPayments": ac.can(capabilityManageUsers) || ac.can(capabilityManageParking),
+		"CanManageParkingPayments": canManageParkingPayments,
 		"CanMarkParkingPayment":    isAdmin || ac.can(capabilityManageUsers) || ac.can(capabilityManageParking) || profile.HasPermission(permissionParking),
 		// The parking page is reachable through the explicit per-user parking
 		// permission too, so keep this intentional base-context override.
@@ -63,6 +86,28 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"TodayInput":          time.Now().In(time.Local).Format("2006-01-02"),
 		"StatementYear":       time.Now().In(time.Local).Year(),
 	}))
+}
+
+// parkingPortalContext mirrors the legacy base-context override: /app/parking
+// is reachable through the explicit per-user parking permission as well as
+// through platform admin, and the handler has already established one of the
+// two. The sidebar entry stays gated on the parking module either way.
+func (a *app) parkingPortalContext(ac authCtx) web.PortalPageData {
+	data := a.auditPortalContext(ac, "Parkplatznutzung")
+	data.ActivePage = "parking"
+	data.CanSeeParking = true
+	return data
+}
+
+func (a *app) renderParkingTempl(w http.ResponseWriter, r *http.Request, data web.ParkingPageData) {
+	var rendered bytes.Buffer
+	if err := web.ParkingPage(data).Render(r.Context(), &rendered); err != nil {
+		logError("templ parking render failed", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), data.Portal.TenantSlug))
 }
 
 // chargingFlashMessage surfaces the redirect outcome of a charging action.

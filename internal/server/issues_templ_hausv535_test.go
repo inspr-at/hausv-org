@@ -154,7 +154,10 @@ func TestIssuesTemplKeepsAssignedServiceProviderToolsReachable(t *testing.T) {
 	}
 }
 
-func TestIssuesTemplSwitchDoesNotConvertManagerBoard(t *testing.T) {
+// HAUSV-538 finished what HAUSV-535 left out: the manager board and its triage
+// detail were the two /app/anliegen/board routes still on the legacy renderer,
+// so a manager with the switch on dropped into the old design mid-session.
+func TestIssueBoardTemplRendersTheManagerBoardOnTheSharedShell(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.portalTemplEnabled = true
 
@@ -163,10 +166,164 @@ func TestIssuesTemplSwitchDoesNotConvertManagerBoard(t *testing.T) {
 		t.Fatalf("manager board status = %d, want 200", response.Code)
 	}
 	body := response.Body.String()
-	if strings.Contains(body, "data-templ-issues") {
-		t.Fatal("HAUSV-535 must leave the separate manager board on its existing renderer")
+	for _, want := range []string{
+		"data-templ-issue-board",
+		`<aside class="sidebar" aria-label="Hausnavigation">`,
+		`<nav class="nav" aria-label="Bereiche">`,
+		"Anliegen bearbeiten",
+		`href="/demo/app/anliegen"`,
+		// The empty board keeps its two onward actions and the explainer.
+		"Der Weg eines Anliegens",
+		`href="/demo/app/anliegen?new=1"`,
+		`href="/demo/app/announcements"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("templ issue board missing %q", want)
+		}
 	}
-	if !strings.Contains(body, "Anliegen bearbeiten") {
-		t.Fatal("manager board content must remain reachable")
+	if strings.Contains(body, `class="app-main"`) {
+		t.Fatal("the manager board must not fall back to the legacy shell")
+	}
+}
+
+func TestIssueBoardTemplKeepsFiltersAndTriageEntryReachable(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.portalTemplEnabled = true
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
+		TenantSlug:   "demo",
+		AuthorEmail:  "resident@example.com",
+		AuthorName:   "Resident",
+		Category:     "Reparatur",
+		Title:        "Tür schließt nicht",
+		Body:         "Die Haustür fällt nicht ins Schloss.",
+		LocationType: issueLocationCommon,
+		Status:       issueStatusNew,
+		Priority:     issuePriorityUrgent,
+	})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+
+	body := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board").Body.String()
+	for _, want := range []string{
+		"Tür schließt nicht",
+		`action="/demo/app/anliegen/board"`,
+		`name="status"`, `name="priority"`, `name="category"`, `name="assignee"`, `name="sort"`,
+		`href="/demo/app/anliegen/board?status=Neu"`,
+		// the address is query-escaped: an unescaped `+` in an email arrives as a space
+		`href="/demo/app/anliegen/board?assignee=manager%40example.com"`,
+		`href="/demo/app/anliegen/board/` + issue.ID + `"`,
+		"1 dringend",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("templ issue board missing %q", want)
+		}
+	}
+
+	filtered := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board?status=Erledigt").Body.String()
+	if !strings.Contains(filtered, "Kein Anliegen passt zu dieser Auswahl") {
+		t.Fatal("an empty filter result must keep its own blank state, not the first-run explainer")
+	}
+	if strings.Contains(filtered, "Der Weg eines Anliegens") {
+		t.Fatal("a filtered-away board must not claim the house has no issues")
+	}
+}
+
+func TestIssueTriageTemplKeepsEveryStepActionable(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.portalTemplEnabled = true
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
+		TenantSlug:   "demo",
+		AuthorEmail:  "resident@example.com",
+		AuthorName:   "Resident",
+		Category:     "Reparatur",
+		Title:        "Tür schließt nicht",
+		Body:         "Die Haustür fällt nicht ins Schloss.",
+		LocationType: issueLocationCommon,
+		Status:       issueStatusNew,
+		Priority:     issuePriorityUrgent,
+	})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	base := "/demo/app/anliegen/board/" + issue.ID
+
+	steps := map[string][]string{
+		"1": {
+			`name="redirect" value="` + base + `?step=2"`,
+			`action="/demo/app/anliegen/workflow"`,
+			`value="Dringend"`, `value="Hoch"`, `value="Niedrig"`,
+		},
+		"2": {
+			`name="redirect" value="` + base + `?step=done"`,
+			`value="In Bearbeitung"`,
+			`name="assignee_email" value="manager@example.com"`,
+		},
+		"done": {
+			`href="` + base + `?step=message"`,
+			`href="` + base + `"`,
+		},
+		"message": {
+			`action="/demo/app/anliegen/comment"`,
+			`name="redirect" value="` + base + `?step=sent"`,
+			`name="message_type" value="information"`,
+			`name="message_type" value="question"`,
+			`name="attachments"`,
+			`name="redirect" value="` + base + `?step=resolution-sent"`,
+			"Lösung zur Prüfung senden",
+		},
+		"sent":            {`href="` + base + `?step=message"`, `href="/demo/app/anliegen/board"`},
+		"resolution-sent": {`href="` + base + `?step=message"`, `href="/demo/app/anliegen/board"`},
+	}
+	for step, wants := range steps {
+		t.Run(step, func(t *testing.T) {
+			response := authedRequest(t, a, "manager@example.com", base+"?step="+step)
+			if response.Code != http.StatusOK {
+				t.Fatalf("triage step %s status = %d, want 200", step, response.Code)
+			}
+			body := response.Body.String()
+			if !strings.Contains(body, "data-templ-issue-triage") {
+				t.Fatalf("triage step %s did not use the templ renderer", step)
+			}
+			for _, want := range append(wants, "Stand des Anliegens", "Tür schließt nicht", `href="/demo/app/anliegen/board"`) {
+				if !strings.Contains(body, want) {
+					t.Fatalf("triage step %s missing %q", step, want)
+				}
+			}
+		})
+	}
+}
+
+func TestIssueTriageTemplStaysClosedToNonManagers(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	a.portalTemplEnabled = true
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
+		TenantSlug:   "demo",
+		AuthorEmail:  "resident@example.com",
+		AuthorName:   "Resident",
+		Category:     "Reparatur",
+		Title:        "Tür schließt nicht",
+		Body:         "Die Haustür fällt nicht ins Schloss.",
+		LocationType: issueLocationCommon,
+		Status:       issueStatusNew,
+		Priority:     issuePriorityNorm,
+	})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	if got := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/board/"+issue.ID).Code; got != http.StatusForbidden {
+		t.Fatalf("resident triage status = %d, want 403", got)
+	}
+	if got := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen/board").Code; got != http.StatusForbidden {
+		t.Fatalf("resident board status = %d, want 403", got)
+	}
+}
+
+func TestIssueBoardTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+
+	board := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board").Body.String()
+	if strings.Contains(board, "data-templ-issue-board") || !strings.Contains(board, `class="app-main"`) {
+		t.Fatal("the manager board must stay on the legacy renderer while the switch is off")
 	}
 }
