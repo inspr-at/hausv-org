@@ -48,6 +48,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		{"BallotsPage", BallotsPage(BallotsPageData{Portal: portal, AssetVersion: assetVersion, CanManageVotes: true}), "data-templ-ballots", []string{"announcements.js", "attachments.js"}},
 		{"ContactsPage", ContactsPage(ContactsPageData{Portal: portal, AssetVersion: assetVersion, CanManageContacts: true}), "data-templ-contacts", nil},
 		{"DocumentsPage", DocumentsPage(DocumentsPageData{Portal: portal, AssetVersion: assetVersion, CanManageDocuments: true}), "data-templ-documents", []string{"announcements.js", "attachments.js"}},
+		{"EnergyPage", EnergyPage(EnergyPageData{Portal: portal, CanManageEnergy: true, HasMetrics: true}), "data-templ-energy", []string{"energy-flow.js"}},
 		{"EventsPage", EventsPage(EventsPageData{Portal: portal, AssetVersion: assetVersion, CanManageEvents: true}), "data-templ-events", []string{"announcements.js", "attachments.js"}},
 		{"HandoversPage", HandoversPage(HandoversPageData{Portal: portal, AssetVersion: assetVersion}), "data-templ-handovers", []string{"attachments.js"}},
 		{"HelpPage", HelpPage(HelpPageData{Portal: portal, ConnectorAvailable: true, ConnectorConnected: true, CanManageEnergy: true}), "data-templ-help", nil},

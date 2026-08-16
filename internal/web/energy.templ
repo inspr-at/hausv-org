@@ -1,0 +1,1298 @@
+package web
+
+import (
+	"encoding/json"
+	"strconv"
+
+	"github.com/inspr-at/hausv-org/internal/view"
+)
+
+// The energy cockpit is the largest page in the product. Its data therefore
+// arrives as explicit view structs rather than a map: every value below is
+// already formatted by the server, so this file only decides where a string
+// belongs, never what it means. Energy readings always arrive as kilowatt
+// strings with a non-breaking space before the unit.
+
+type EnergyOption struct {
+	Value, Label string
+}
+
+type EnergyMetricView struct {
+	Label, Value, Detail string
+}
+
+type EnergyLiveView struct {
+	Main             EnergyMetricView
+	HasMain          bool
+	Flows            []EnergyMetricView
+	Battery          EnergyMetricView
+	HasBattery       bool
+	BatterySOC       EnergyMetricView
+	HasBatterySOC    bool
+	Additional       []EnergyMetricView
+	HasAdditional    bool
+	AdditionalCount  int
+	AdditionalTopics string
+}
+
+type EnergyChartSeriesView struct {
+	Key, Label                                     string
+	Path, MobilePath, AreaPath, MobileAreaPath     string
+	Latest                                         string
+}
+
+type EnergyChartTickView struct {
+	Position, MobilePosition, Label string
+}
+
+type EnergyChartSampleValueView struct {
+	Key, Label, Value, Position, MobilePosition string
+}
+
+type EnergyChartSampleView struct {
+	Index                                                                            int
+	Time, Position, MobilePosition                                                   string
+	HitPosition, HitWidth, MobileHit, MobileHitWidth                                 string
+	Values                                                                           []EnergyChartSampleValueView
+}
+
+type EnergyChartView struct {
+	HasData, IsToday                                                          bool
+	Title, DialogTitle, Summary, Detail, Status, Range                        string
+	Series                                                                    []EnergyChartSeriesView
+	XTicks, YTicks                                                            []EnergyChartTickView
+	Samples                                                                   []EnergyChartSampleView
+	HasThreshold                                                              bool
+	ThresholdLabel, ThresholdValue, ThresholdPosition, ThresholdMobilePosition string
+}
+
+type EnergyQualityView struct {
+	Status, Label, Effect, NextAction string
+}
+
+type EnergyCoverageView struct {
+	Label, Status, Detail, Tone string
+}
+
+type EnergyRoadmapStep struct {
+	Number                     int
+	Title, Detail, State       string
+	Action, URL                string
+	Current                    bool
+}
+
+type EnergySystemAsset struct {
+	Name string
+	IsPV bool
+}
+
+type EnergyAssetOption struct {
+	ID, Name string
+}
+
+type EnergyImportView struct {
+	Filename, Date string
+}
+
+type EnergyPeakView struct {
+	Source, Value string
+}
+
+type EnergyComparisonView struct {
+	Tone, Title, Details string
+}
+
+type EnergyTariffView struct {
+	ID, Version, Status, SourceTitle, SourceURL string
+	HasEstimate                                 bool
+	Disclaimer                                  string
+	PeakKW, BilledKW                            string
+	PeakMeterPercent                            int
+	BelowKW, AboveKW                            string
+	HasTier                                     bool
+	MinimumReason                               string
+	HasAgreed                                   bool
+	AgreedHint, TierHint                        string
+	MonthLabel, CoverageLabel, Basis            string
+	PeakTime                                    string
+	HasPeakTime                                 bool
+	AnnualPowerEUR                              string
+	BelowRateEUR, AboveRateEUR, ThresholdKW     string
+	MissingIsWaiting                            bool
+	MissingReason                               string
+}
+
+type EnergyScenarioView struct {
+	Title, PeakBand, EffectBand, Uncertainty, Assumptions string
+	BilledBand                                           string
+	HasBilledBand                                        bool
+	BaselineNote, FloorNote                              string
+}
+
+type EnergyCaretakerView struct {
+	Email, Name              string
+	CanView, CanConfigure    bool
+	Editable                 bool
+}
+
+type EnergyMaintenanceView struct {
+	ID, AssetID, AssetName, Title string
+	IntervalMonths                int
+	NextDueValue, DueLabel, Tone  string
+	LastCompleted                 string
+	ContactID, ContactName        string
+	DocumentID, DocumentTitle     string
+	IssueID, IssueTitle           string
+	EvidenceNote                  string
+}
+
+type EnergyTariffAssessmentView struct {
+	Month, Profile, Peak, Annual, Quality, Created string
+}
+
+type EnergyMeasureView struct {
+	ID, IssueID, Title                            string
+	Status, StatusLabel                           string
+	ContactID, ContactName                        string
+	OfferNote, AppointmentValue, Appointment      string
+	WorkNote, EvidenceNote                        string
+	BeforeFrom, BeforeTo, AfterFrom, AfterTo      string
+	BeforePeak, AfterPeak                         string
+	BeforeQuality, AfterQuality                   string
+	HasComparison                                 bool
+}
+
+type EnergyRecommendationView struct {
+	ID, Title, Reason, Benefit, Effort, ImpactRange string
+}
+
+type EnergyObservationProgressView struct {
+	Completed, Target, Percent int
+	Label, Title               string
+}
+
+type EnergyPageData struct {
+	Portal PortalPageData
+
+	FlowConfigJSON      json.RawMessage
+	LucideIconNamesJSON json.RawMessage
+
+	HouseholdName string
+	HomeIdentity  view.HomeIdentityView
+	HomeTypeLabel string
+	HomeUnitLabel string
+	HasHomeUnit   bool
+
+	Welcome        bool
+	ModeChanged    bool
+	ProfileChanged bool
+	ConsumerNotice string
+	MeasureCreated bool
+
+	RecommendationDeferred  bool
+	RecommendationDismissed bool
+	Recommendation          EnergyRecommendationView
+	RecommendationURL       string
+	ObservationProgress     EnergyObservationProgressView
+
+	IsActiveMode bool
+	IsShadowMode bool
+
+	CanManageEnergy       bool
+	CanControlEnergy      bool
+	CanManageHomeIdentity bool
+	CanManageEnergyData   bool
+	CanGrantEnergyAccess  bool
+	CanInviteEnergyAccess bool
+
+	MetricCount int
+	HasMetrics  bool
+	Live        EnergyLiveView
+
+	Chart EnergyChartView
+
+	Tariff             EnergyTariffView
+	TargetChanged      bool
+	AgreedPowerChanged bool
+	TargetPeakValue    string
+	AgreedPowerValue   string
+
+	TariffAssessmentStatus string
+	TariffAssessments      []EnergyTariffAssessmentView
+	HasTariffAssessments   bool
+
+	Quality         EnergyQualityView
+	Coverage        []EnergyCoverageView
+	CoverageSummary string
+
+	Roadmap []EnergyRoadmapStep
+
+	SystemAssets    []EnergySystemAsset
+	HasSystemAssets bool
+	FreeUntil       string
+
+	Assets    []EnergyAssetOption
+	HasAssets bool
+
+	Maintenance       []EnergyMaintenanceView
+	HasMaintenance    bool
+	MaintenanceStatus string
+
+	ContactOptions  []EnergyOption
+	DocumentOptions []EnergyOption
+	IssueOptions    []EnergyOption
+
+	ImportStatus  string
+	Imports       []EnergyImportView
+	HasImports    bool
+	Peaks         []EnergyPeakView
+	HasPeaks      bool
+	Comparison    EnergyComparisonView
+	HasComparison bool
+
+	Caretakers       []EnergyCaretakerView
+	HasCaretakers    bool
+	CaretakerChanged bool
+
+	CaretakerInviteStatus string
+
+	Measures      []EnergyMeasureView
+	HasMeasures   bool
+	MeasureStatus string
+
+	Scenarios    []EnergyScenarioView
+	HasScenarios bool
+
+	ConsumerKindOptions []EnergyOption
+	ConsumerIconOptions []EnergyOption
+}
+
+templ EnergyPage(data EnergyPageData) {
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), []string{"energy-flow.js"}, EnergyStyles(), templ.Attributes{"data-templ-energy": true}) {
+		<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+		@PortalMobileHeader(data.Portal, "Mein Zuhause")
+		<div class="shell">
+			@PortalSidebar(data.Portal)
+			<main class="energy-main" id="main-content" tabindex="-1">
+				@EnergyModeStrip(data)
+				<div class="energy-page">
+					<div class="energy-cockpit-top">
+						@EnergyHeading(data)
+						@EnergyFlashes(data)
+						<section class="energy-health">
+							@EnergyLead(data)
+						</section>
+					</div>
+					@EnergyRecommendationDialog(data)
+					if data.CanManageEnergy {
+						@EnergyConsumerDialog(data)
+						@templ.JSONScript("energy-lucide-icon-names", data.LucideIconNamesJSON)
+					}
+					@EnergyChartSection(data)
+					@EnergyTariffSection(data)
+					if data.Chart.HasData {
+						@EnergyChartDialog(data)
+					}
+					@EnergyDataQuality(data)
+					@EnergyRoadmapSection(data)
+					@EnergySystemSection(data)
+					<div class="energy-admin">
+						<div class="energy-admin-head"><h2>Verwalten und nachweisen</h2><span>Wartung, Messwerte, Zugriff und Fachhilfe – geöffnet, wenn Sie sie brauchen.</span></div>
+						@EnergyMaintenanceSection(data)
+						@EnergyMeasurementSection(data)
+						@EnergyCaretakerSection(data)
+						@EnergySupportSection(data)
+					</div>
+				</div>
+			</main>
+		</div>
+	}
+}
+
+templ EnergyModeStrip(data EnergyPageData) {
+	<section class={ "energy-mode-strip", templ.KV("active", data.IsActiveMode) } aria-label="Energiemodus">
+		<div class="energy-mode-state">
+			<span class="energy-mode-icon" aria-hidden="true"><span class={ "energy-ui-icon", energyModeIconClass(data.IsActiveMode) }></span></span>
+			<div class="energy-mode-copy">
+				<strong>{ energyModeTitle(data) }</strong>
+				<span title={ energyModeHint(data) }>{ energyModeState(data) }</span>
+			</div>
+		</div>
+		if data.Tariff.HasEstimate {
+			<a class="energy-peak-chip" href="#tarif" aria-label={ "Monatsspitze " + data.Tariff.PeakKW + ", verrechnet " + data.Tariff.BilledKW + ", " + data.Tariff.AnnualPowerEUR + " pro Jahr — Details öffnen" }><span class="energy-peak-chip-label">Monatsspitze</span><b>{ data.Tariff.PeakKW }</b><span class="sep" aria-hidden="true">·</span><span>verrechnet</span><b>{ data.Tariff.BilledKW }</b><span class="sep" aria-hidden="true">·</span><b>{ data.Tariff.AnnualPowerEUR }</b><span>/ Jahr</span>
+				if data.Tariff.CoverageLabel != "" {
+					<span class="sep energy-peak-chip-coverage-sep" aria-hidden="true">·</span><span class="energy-peak-chip-coverage">{ data.Tariff.CoverageLabel }</span>
+				}
+			</a>
+		}
+		if data.IsActiveMode {
+			if data.CanControlEnergy {
+				<form method="post" action="/app/energie/mode">
+					<input type="hidden" name="mode" value="observe"/>
+					<button class="energy-mode-action" type="submit" aria-label="Sofort zurück zu Nur beobachten"><span class="energy-mode-action-full">Sofort zurück zu „Nur beobachten“</span><span class="energy-mode-action-compact" aria-hidden="true">Nur beobachten</span></button>
+				</form>
+			}
+		} else {
+			if data.CanControlEnergy {
+				<details class="energy-mode-control">
+					<summary class="energy-mode-action" aria-label="Wirkungslosen Testlauf bewusst starten" title="Wirkungslosen Testlauf bewusst starten"><span class="energy-ui-icon energy-ui-icon-play" aria-hidden="true"></span><span class="energy-mode-action-full">Testlauf</span><span class="energy-mode-action-compact" aria-hidden="true">Testlauf</span></summary>
+					<form class="energy-mode-popover" method="post" action="/app/energie/mode">
+						<h3>Wirkungslosen Testlauf starten?</h3>
+						<p>HAUSV protokolliert nur, welche Entscheidungen seine Regeln treffen würden. Es wird kein Gerät geschaltet. Aktive Steuerung ist erst nach einer späteren, gerätespezifischen Freigabe möglich.</p>
+						<label><input type="checkbox" name="confirm" value="yes" required/><span>Ich bin Eigentümer oder Hausadministrator und möchte diesen wirkungslosen Testlauf für diese Liegenschaft bewusst starten.</span></label>
+						<label><span>Zur Bestätigung <strong>TESTLAUF</strong> eingeben</span></label>
+						<input type="text" name="confirmation_text" autocomplete="off" placeholder="TESTLAUF" required/>
+						<input type="hidden" name="mode" value="active"/>
+						<button class="button primary" type="submit">Testlauf starten</button>
+					</form>
+				</details>
+			} else {
+				<span class="energy-mode-capability">Freigabe nur für Eigentümer oder Hausadministration</span>
+			}
+		}
+	</section>
+}
+
+templ EnergyHeading(data EnergyPageData) {
+	<header class="energy-heading">
+		<div class="energy-heading-copy" data-home-identity="energy-heading" aria-label={ data.HomeIdentity.AriaLabel }>
+			<h1 data-home-display-name>{ data.HouseholdName }</h1>
+			if data.HasHomeUnit {
+				<div class="energy-heading-unit-row"><p class="energy-heading-unit" data-home-unit-label>{ data.HomeUnitLabel }</p><span aria-hidden="true">·</span><span>{ data.HomeTypeLabel }</span></div>
+			}
+			<p class="energy-heading-context">{ data.HomeTypeLabel } · { data.Portal.Address }</p>
+		</div>
+		<div class="energy-heading-side">
+			<span class="energy-heading-breadcrumb"><span>Mein Zuhause</span><span aria-hidden="true">·</span><span>{ data.Portal.Address }</span></span>
+			if data.CanManageHomeIdentity {
+				<a class="button energy-heading-action" href="/app/settings/home?from=energy" aria-label="Zuhause bearbeiten"><span class="energy-ui-icon energy-ui-icon-pencil" aria-hidden="true"></span><span>Zuhause bearbeiten</span></a>
+			}
+		</div>
+	</header>
+}
+
+templ EnergyFlashes(data EnergyPageData) {
+	if data.Welcome {
+		<div class="message success">Ihr Hausprofil ist bereit. Der sichere Beobachtungsmodus bleibt aktiv.</div>
+	}
+	if data.ModeChanged {
+		<div class="message success">Der Energiemodus wurde nachvollziehbar geändert.</div>
+	}
+	if data.ProfileChanged {
+		<div class="message success">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</div>
+	}
+	switch data.ConsumerNotice {
+		case "1":
+			<div class="message success">Der Verbraucher wurde angelegt.</div>
+		case "gespeichert":
+			<div class="message success">Der Verbraucher wurde gespeichert.</div>
+		case "weg":
+			<div class="message success">Der Verbraucher wurde entfernt.</div>
+		case "name":
+			<div class="message error">Bitte einen Namen angeben.</div>
+		case "leistung":
+			<div class="message error">Die Leistung muss eine positive kW-Zahl sein.</div>
+		case "messwerte":
+			<div class="message error">Die Messwert-Zuordnung konnte nicht gespeichert werden. Bitte Home Assistant und die gewählten Entities prüfen.</div>
+	}
+	if data.MeasureCreated {
+		<div class="message success">Als nachvollziehbare Hausaufgabe angelegt. Erst dort wählen Sie später bewusst einen bekannten Dienstleister.</div>
+	}
+	if data.RecommendationDeferred {
+		<div class="message">Für später gemerkt. HAUSV aktiviert dadurch nichts.</div>
+	} else if data.RecommendationDismissed {
+		<div class="message">Abgelehnt. Die Entscheidung bleibt nachvollziehbar und löst nichts aus.</div>
+	}
+}
+
+templ EnergyLead(data EnergyPageData) {
+	<div class="energy-lead-side">
+		<aside class="energy-live" aria-label="Energie gerade jetzt" data-energy-flow-diagram data-energy-reading-count={ strconv.Itoa(data.MetricCount) }>
+			<header class="energy-live-head"><div><div class="energy-live-title"><h2>Energie jetzt</h2></div>
+				if data.HasMetrics {
+					<div class="energy-live-meta" data-energy-live-status><span class="energy-live-dot" aria-hidden="true"></span><strong data-energy-live-label>Live</strong><span>Home Assistant</span><span class="energy-live-updated" data-energy-live-updated>Zuletzt aktualisiert vor 0&nbsp;s</span></div>
+				} else {
+					<span class="energy-live-state-offline">Noch nicht verbunden</span>
+				}
+			</div></header>
+			if data.HasMetrics {
+				<div class="energy-flow-area" data-energy-flow>
+					@templ.JSONScript("", data.FlowConfigJSON)
+					<div class="energy-flow-fallback">
+						<div class="energy-help-readings">
+							if data.Live.HasMain {
+								<span>{ data.Live.Main.Label } <strong>{ data.Live.Main.Value }</strong></span>
+							}
+							for _, flow := range data.Live.Flows {
+								<span>{ flow.Label } <strong>{ flow.Value }</strong></span>
+							}
+							if data.Live.HasBattery {
+								<span>{ data.Live.Battery.Label } <strong>{ data.Live.Battery.Value }</strong></span>
+							}
+							if data.Live.HasBatterySOC {
+								<span>Ladestand <strong>{ data.Live.BatterySOC.Value }</strong></span>
+							}
+						</div>
+					</div>
+					<details class="energy-info-disclosure energy-flow-hint" data-energy-disclosure="flow"><summary aria-label="Energiefluss verstehen" aria-controls="energy-flow-help"><span>Energiefluss verstehen</span><span class="energy-info-mark" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-info"></span></span></summary><div id="energy-flow-help"><strong>So lesen Sie den Energiefluss</strong><p>Der Hausverbrauch ist der momentane Verbrauch aus allen Quellen. Die bewegten Punkte zeigen die Richtung, die Breite der ruhigen Flussbahn entspricht der Leistung, und die Farbverläufe zeigen anteilig, wohin die Energie geht. 0&nbsp;kW bedeutet: Diese Verbindung ruht gerade. Werte aktualisieren sich unabhängig und können deshalb kurzzeitig nicht exakt aufgehen.</p><div class="energy-help-readings">
+						if data.Live.HasMain {
+							<span>{ data.Live.Main.Label } <strong>{ data.Live.Main.Value }</strong> <small>{ data.Live.Main.Detail }</small></span>
+						}
+						for _, flow := range data.Live.Flows {
+							<span>{ flow.Label } <strong>{ flow.Value }</strong> <small>{ flow.Detail }</small></span>
+						}
+						if data.Live.HasBattery {
+							<span>{ data.Live.Battery.Label } <strong>{ data.Live.Battery.Value }</strong> <small>{ data.Live.Battery.Detail }</small></span>
+						}
+						if data.Live.HasBatterySOC {
+							<span>Ladestand <strong>{ data.Live.BatterySOC.Value }</strong> <small>{ data.Live.BatterySOC.Detail }</small></span>
+						}
+					</div><small>Live aus Home Assistant · nur gelesen</small>
+						if data.CanManageEnergy {
+							<a href="/app/zuhause/onboarding?step=4">Messwerte zuordnen</a>
+						}
+					</div></details>
+				</div>
+				<footer class="energy-live-footer">
+					if data.Live.HasAdditional {
+						<details class="energy-live-more"><summary><span><strong>Weitere Messwerte ({ strconv.Itoa(data.Live.AdditionalCount) })</strong><small>{ data.Live.AdditionalTopics }</small></span><span class="energy-ui-icon energy-ui-icon-chevron-right" aria-hidden="true"></span></summary><div class="energy-live-more-list">
+							for _, item := range data.Live.Additional {
+								<div class="energy-live-more-row"><span>{ item.Label }</span><strong>{ item.Value }</strong></div>
+							}
+						</div></details>
+					} else {
+						<span></span>
+					}
+					<button class="energy-recommendation-trigger" type="button" data-dialog="energy-recommendation-dialog" aria-haspopup="dialog" aria-controls="energy-recommendation-dialog"><span class="energy-ui-icon energy-ui-icon-binoculars" aria-hidden="true"></span><span>Empfehlung</span></button>
+				</footer>
+			} else {
+				<div class="energy-live-empty"><strong>Noch keine Live-Werte</strong><span>Home Assistant kann später verbunden werden.</span>
+					if data.CanManageEnergy {
+						<a href="/app/zuhause/onboarding?step=4">Messwerte zuordnen</a>
+					}
+				</div>
+			}
+		</aside>
+	</div>
+}
+
+templ EnergyRecommendationDialog(data EnergyPageData) {
+	<dialog id="energy-recommendation-dialog" class="dialog energy-recommendation-dialog" aria-labelledby="energy-recommendation-dialog-title">
+		<header class="dialog-head"><div><div class="kicker">Nächster Schritt</div><h2 id="energy-recommendation-dialog-title">Empfehlung</h2></div><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button></header>
+		<div class="dialog-body">
+			<section class="energy-nextstep" id="naechster-schritt">
+				<div class="energy-recommendation-summary"><span class="energy-nextstep-icon" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-binoculars"></span></span><div class="energy-nextstep-copy">
+					if data.Recommendation.ID == "observe" {
+						<h3>{ data.ObservationProgress.Title }</h3>
+						<div class="energy-next-progress-row"><div class="energy-next-progress" role="progressbar" aria-label="Beobachtungsfortschritt" aria-valuemin="0" aria-valuemax={ strconv.Itoa(data.ObservationProgress.Target) } aria-valuenow={ strconv.Itoa(data.ObservationProgress.Completed) } aria-valuetext={ data.ObservationProgress.Label }><span style={ "width:" + strconv.Itoa(data.ObservationProgress.Percent) + "%" }></span></div><small>{ data.ObservationProgress.Label }</small></div>
+					} else {
+						<h3>{ data.Recommendation.Title }</h3>
+					}
+					<div class="energy-next-status"><span aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-check"></span></span>{ data.Recommendation.Effort } · keine Steuerung</div><details class="energy-next-why" data-energy-disclosure="recommendation"><summary aria-controls="energy-next-explanation">Warum?</summary><div id="energy-next-explanation"><p>{ data.Recommendation.Reason }</p><div class="energy-next-meta"><span>{ data.Recommendation.Benefit }</span><span>Aufwand: { data.Recommendation.Effort }</span><span>{ data.Recommendation.ImpactRange }</span></div></div></details>
+				</div></div>
+				if !data.RecommendationDeferred && !data.RecommendationDismissed {
+					<div class="energy-recommendation-actions">
+						if data.RecommendationURL != "" && data.Recommendation.ID != "simulate" {
+							<a class="button primary" href={ templ.SafeURL(data.RecommendationURL) }>Diesen Schritt öffnen</a>
+						}
+						if data.RecommendationURL == "" {
+							<span class="energy-observation-running"><span aria-hidden="true">●</span>Beobachtung läuft</span>
+						}
+						<form method="post" action="/app/energie/recommendation"><input type="hidden" name="recommendation_id" value={ data.Recommendation.ID }/><button class="button quiet" type="submit" name="status" value="deferred">Später</button></form>
+					</div>
+					<details class="dialog-optional energy-measure-control"><summary>Weitere Optionen</summary><div class="energy-next-menu"><form class="energy-measure-form" method="post" action="/app/energie/measure">
+						<h3>Als Hausaufgabe übernehmen</h3><p>Was darf in die Aufgabe?</p><p>Es entsteht ein normales Anliegen – keine Bestellung und keine Preiszusage.</p>
+						<label><input type="checkbox" name="share" value="inventory"/><span>Anlageninventar beilegen</span></label><label><input type="checkbox" name="share" value="measurements"/><span>Zusammengefasste Messwerte beilegen</span></label><label><input type="checkbox" name="share" value="contact"/><span>Kontaktdaten beilegen</span></label>
+						<input type="hidden" name="recommendation_id" value={ data.Recommendation.ID }/><button class="button primary" type="submit">Hausaufgabe anlegen</button>
+					</form><form class="energy-dismiss-form" method="post" action="/app/energie/recommendation"><input type="hidden" name="recommendation_id" value={ data.Recommendation.ID }/><button class="button quiet" type="submit" name="status" value="dismissed">Nicht für uns</button></form></div></details>
+				}
+			</section>
+			if data.HasScenarios {
+				<section class="energy-recommendation-scenarios" id="szenarien">
+					<header><h3>Was-wäre-wenn</h3><p>Direkt im Dialog simulieren – ohne Sprung auf der Seite.</p></header>
+					for _, scenario := range data.Scenarios {
+						<article class="energy-scenario"><div class="energy-scenario-copy"><strong>{ scenario.Title }</strong><p>{ scenario.EffectBand } · Unsicherheit: { scenario.Uncertainty }</p><p class="energy-scenario-assumptions">{ scenario.Assumptions }</p>
+							if scenario.BaselineNote != "" {
+								<p class="energy-scenario-assumptions">{ scenario.BaselineNote }</p>
+							}
+						</div><div class="energy-scenario-result"><span>Spitze im Modell</span><strong>{ scenario.PeakBand }</strong>
+							if scenario.HasBilledBand {
+								<span class="energy-scenario-billed">davon verrechnet <b>{ scenario.BilledBand }</b></span>
+							}
+						</div></article>
+						if scenario.FloorNote != "" {
+							<p class="energy-scenario-floor"><span aria-hidden="true">!</span>{ scenario.FloorNote }</p>
+						}
+					}
+					<p class="energy-scenario-caveat">Die Bandbreite tritt nur ein, wenn sich die genannten Verbraucher tatsächlich verschieben lassen und nicht ohnehin gleichzeitig laufen. HAUSV rechnet sie bewusst nicht in Euro um: dafür ist der Entwurf zu unsicher und die Messbasis zu jung.</p>
+				</section>
+			}
+		</div>
+	</dialog>
+}
+
+templ EnergyConsumerDialog(data EnergyPageData) {
+	<dialog id="energy-consumer-dialog" class="dialog energy-consumer-dialog" aria-labelledby="energy-consumer-dialog-title">
+		<form method="post" action="/app/energie/verbraucher">
+			<input type="hidden" name="asset_id" value=""/>
+			<input type="hidden" name="node_type" value="consumer"/>
+			<input type="hidden" name="measurements_present" value="1"/>
+			<input type="hidden" name="icon" value="plug" data-consumer-icon-value/>
+			<header class="dialog-head"><div class="energy-consumer-dialog-heading"><h2 id="energy-consumer-dialog-title" data-consumer-dialog-title>Verbraucher bearbeiten</h2><p data-consumer-dialog-context>Name, Priorität, Symbol und Messwerte direkt anpassen.</p></div><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen"><span class="energy-ui-icon energy-ui-icon-x" aria-hidden="true"></span></button></header>
+			<div class="dialog-body">
+				<div class="energy-consumer-primary">
+					<label class="energy-consumer-field"><span>Name</span><input type="text" name="name" maxlength="80" required autocomplete="off" placeholder="z. B. Sauna"/></label>
+					<label class="energy-consumer-field" data-consumer-priority-field><span>Priorität</span><select name="priority" aria-label="Priorität"></select></label>
+				</div>
+				<div class="energy-consumer-display-fields">
+					<label class="energy-consumer-field energy-consumer-color"><span>Farbe</span><input type="color" name="color" value="#3e704c" aria-label="Farbe der Entität"/></label>
+					<label class="energy-consumer-field"><span>Beschriftung zweite Kennzahl</span><input type="text" name="secondary_label" maxlength="60" autocomplete="off" placeholder="z. B. Energie heute"/></label>
+				</div>
+				<section class="energy-icon-picker" aria-labelledby="energy-icon-picker-title">
+					<div class="energy-icon-picker-head"><div><strong id="energy-icon-picker-title">Symbol auswählen</strong><small>Symbole aus der lokal eingebundenen Lucide-Library.</small></div><label class="energy-icon-search"><span class="energy-ui-icon energy-ui-icon-search" aria-hidden="true"></span><span class="sr-only">Symbole durchsuchen</span><input type="search" data-consumer-icon-search placeholder="Symbol suchen"/></label></div>
+					<div class="energy-icon-options energy-icon-presets" data-consumer-icon-presets>
+						for _, option := range data.ConsumerIconOptions {
+							<label class="energy-icon-choice" data-consumer-icon-choice={ option.Label + " " + option.Value }><input type="radio" name="icon_choice" value={ option.Value } checked?={ option.Value == "plug" }/><span class={ "energy-ui-icon", "energy-ui-icon-" + option.Value } aria-hidden="true"></span><span>{ option.Label }</span></label>
+						}
+					</div>
+					<div class="energy-icon-options energy-icon-search-results" data-consumer-icon-results hidden></div>
+					<p class="energy-icon-result-note" data-consumer-icon-result-note hidden></p>
+				</section>
+				<section class="energy-consumer-measurements" aria-labelledby="energy-consumer-measurements-title">
+					<div class="energy-consumer-measurements-head"><div><strong id="energy-consumer-measurements-title">Messwerte</strong><small>Optional pro Verbraucher – Quelle ist Home Assistant und bleibt nur lesend.</small></div><span class="pill">HA</span></div>
+					<div class="energy-consumer-measurement-fields" data-consumer-measurement-fields></div>
+					<p class="energy-consumer-measurement-status" data-consumer-measurement-status>Home-Assistant-Entities werden beim Öffnen geladen.</p>
+				</section>
+				<details class="energy-consumer-recommendations" data-consumer-recommendations><summary>Technische Angaben für Empfehlungen</summary><div class="energy-consumer-recommendation-fields">
+					<label class="energy-consumer-field"><span>Kategorie</span><select name="kind">
+						for _, option := range data.ConsumerKindOptions {
+							<option value={ option.Value }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="energy-consumer-field"><span>Leistung in kW</span><input type="text" name="rated_power_kw" inputmode="decimal" placeholder="z. B. 8,0"/></label>
+					<label class="energy-consumer-field"><span>Flexibilität</span><select name="flexibility"><option value="unknown">noch offen</option><option value="shift">zeitlich verschiebbar</option><option value="throttle">kurz begrenzbar</option><option value="fixed">fest</option></select></label>
+				</div></details>
+			</div>
+			<footer class="dialog-footer"><button class="button quiet energy-consumer-delete" type="button" data-consumer-delete hidden>Verbraucher löschen</button><span class="energy-consumer-delete-confirm" data-consumer-delete-confirm hidden><span>Wirklich löschen?</span><button class="button quiet" type="button" data-consumer-delete-cancel>Nein</button><button class="button" type="submit" formaction="/app/energie/verbraucher/entfernen" formnovalidate>Ja, löschen</button></span><button class="button" type="button" data-close-dialog>Abbrechen</button><button class="button primary" type="submit" data-consumer-submit>Änderungen speichern</button></footer>
+		</form>
+	</dialog>
+}
+
+templ EnergyChartLegend(chart EnergyChartView) {
+	<div class="energy-chart-legend" aria-label="Diagrammlegende">
+		for _, series := range chart.Series {
+			<span class={ series.Key }><i aria-hidden="true"></i>{ series.Label } <strong>{ series.Latest }</strong></span>
+		}
+		if chart.HasThreshold {
+			<span class="threshold"><i aria-hidden="true"></i>{ chart.ThresholdLabel } { chart.ThresholdValue } <small>(konfigurierbar)</small></span>
+		}
+	</div>
+}
+
+templ EnergyChartInteractive(chart EnergyChartView) {
+	<div class="energy-chart-interactive" data-energy-chart-interactive tabindex="0" aria-label={ chart.Title + ": Viertelstundenwerte. Mit der Maus erkunden oder mit den Pfeiltasten durchgehen." }>
+		<svg class="energy-chart-svg desktop" viewBox="0 0 800 236" role="img" aria-label={ "Leistungsverlauf: " + chart.Title }>
+			<title>{ "Leistungsverlauf: " + chart.Title }</title>
+			<desc>Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc>
+			for _, tick := range chart.YTicks {
+				<line class={ "energy-chart-grid", templ.KV("zero", tick.Label == "0 kW") } x1="52" x2="788" y1={ tick.Position } y2={ tick.Position }></line><text class="energy-chart-axis-label" x="44" y={ tick.Position } text-anchor="end" dominant-baseline="middle">{ tick.Label }</text>
+			}
+			for _, tick := range chart.XTicks {
+				<line class="energy-chart-grid" x1={ tick.Position } x2={ tick.Position } y1="16" y2="204"></line><text class="energy-chart-axis-label" x={ tick.Position } y="226" text-anchor="middle">{ tick.Label }</text>
+			}
+			for _, series := range chart.Series {
+				if series.AreaPath != "" {
+					<path class={ "energy-chart-area", series.Key } d={ series.AreaPath }></path>
+				}
+			}
+			if chart.HasThreshold {
+				<line class="energy-chart-threshold" x1="52" x2="788" y1={ chart.ThresholdPosition } y2={ chart.ThresholdPosition }></line><text class="energy-chart-threshold-label" x="782" y={ chart.ThresholdPosition } dy="-6" text-anchor="end">{ chart.ThresholdValue }</text>
+			}
+			for _, series := range chart.Series {
+				<path class={ "energy-chart-line", series.Key } d={ series.Path }></path>
+			}
+			<line class="energy-chart-guide" data-chart-guide x1="52" x2="52" y1="16" y2="204" hidden></line>
+			for _, sample := range chart.Samples {
+				for _, value := range sample.Values {
+					<circle class={ "energy-chart-marker", value.Key } data-chart-marker-index={ strconv.Itoa(sample.Index) } cx={ sample.Position } cy={ value.Position } r="4" hidden></circle>
+				}
+				<rect class="energy-chart-hit" data-chart-hit data-index={ strconv.Itoa(sample.Index) } data-x={ sample.Position } x={ sample.HitPosition } y="16" width={ sample.HitWidth } height="188"></rect>
+			}
+		</svg>
+		<svg class="energy-chart-svg mobile" viewBox="0 0 400 236" role="img" aria-label={ "Leistungsverlauf: " + chart.Title }>
+			<title>{ "Leistungsverlauf: " + chart.Title }</title>
+			<desc>Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc>
+			for _, tick := range chart.YTicks {
+				<line class={ "energy-chart-grid", templ.KV("zero", tick.Label == "0 kW") } x1="44" x2="388" y1={ tick.MobilePosition } y2={ tick.MobilePosition }></line><text class="energy-chart-axis-label" x="37" y={ tick.MobilePosition } text-anchor="end" dominant-baseline="middle">{ tick.Label }</text>
+			}
+			for _, tick := range chart.XTicks {
+				<line class="energy-chart-grid" x1={ tick.MobilePosition } x2={ tick.MobilePosition } y1="16" y2="204"></line><text class="energy-chart-axis-label" x={ tick.MobilePosition } y="226" text-anchor="middle">{ tick.Label }</text>
+			}
+			for _, series := range chart.Series {
+				if series.MobileAreaPath != "" {
+					<path class={ "energy-chart-area", series.Key } d={ series.MobileAreaPath }></path>
+				}
+			}
+			if chart.HasThreshold {
+				<line class="energy-chart-threshold" x1="44" x2="388" y1={ chart.ThresholdMobilePosition } y2={ chart.ThresholdMobilePosition }></line><text class="energy-chart-threshold-label" x="382" y={ chart.ThresholdMobilePosition } dy="-5" text-anchor="end">{ chart.ThresholdValue }</text>
+			}
+			for _, series := range chart.Series {
+				<path class={ "energy-chart-line", series.Key } d={ series.MobilePath }></path>
+			}
+			<line class="energy-chart-guide" data-chart-guide x1="44" x2="44" y1="16" y2="204" hidden></line>
+			for _, sample := range chart.Samples {
+				for _, value := range sample.Values {
+					<circle class={ "energy-chart-marker", value.Key } data-chart-marker-index={ strconv.Itoa(sample.Index) } cx={ sample.MobilePosition } cy={ value.MobilePosition } r="4" hidden></circle>
+				}
+				<rect class="energy-chart-hit" data-chart-hit data-index={ strconv.Itoa(sample.Index) } data-x={ sample.MobilePosition } x={ sample.MobileHit } y="16" width={ sample.MobileHitWidth } height="188"></rect>
+			}
+		</svg>
+		<div class="energy-chart-tooltip" data-chart-tooltip role="status" aria-live="polite" hidden><strong data-chart-tooltip-time></strong><div data-chart-tooltip-values></div></div>
+		<div class="energy-chart-sample-bank" data-chart-sample-bank hidden>
+			for _, sample := range chart.Samples {
+				<div data-chart-sample={ strconv.Itoa(sample.Index) } data-time={ sample.Time }>
+					for _, value := range sample.Values {
+						<span data-key={ value.Key } data-label={ value.Label } data-value={ value.Value }></span>
+					}
+				</div>
+			}
+		</div>
+	</div>
+}
+
+templ EnergyChartSection(data EnergyPageData) {
+	<section class="energy-card energy-chart" id="energieverlauf" aria-labelledby="energy-chart-title">
+		<header class="energy-chart-head"><div><h2 id="energy-chart-title">{ data.Chart.Title }</h2><p>Wann war viel los – und woher kam die Energie?</p></div><div class="energy-chart-head-actions"><small>{ data.Chart.Status }</small><div class="energy-chart-toolbar"><nav class="energy-chart-range" aria-label="Zeitraum auswählen"><a href="/app/energie?zeitraum=letzte-24h#energieverlauf" aria-current={ portalAriaCurrent(!data.Chart.IsToday) }>Letzte 24 h</a><a href="/app/energie?zeitraum=heute#energieverlauf" aria-current={ portalAriaCurrent(data.Chart.IsToday) }>Heute</a></nav>
+			if data.Chart.HasData {
+				<div class="energy-chart-size-actions"><button class="button small energy-chart-size-button" type="button" data-dialog="energy-chart-dialog" aria-haspopup="dialog" aria-controls="energy-chart-dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>Vergrößern</button><button class="button small energy-chart-size-button" type="button" data-dialog="energy-chart-dialog" data-energy-fullscreen aria-haspopup="dialog" aria-controls="energy-chart-dialog" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M9 21H3v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg><span data-fullscreen-label>Vollbild</span></button></div>
+			}
+		</div></div></header>
+		if data.Chart.HasData {
+			<div class="energy-chart-layout">
+				<div class="energy-chart-plot">
+					@EnergyChartLegend(data.Chart)
+					@EnergyChartInteractive(data.Chart)
+					<small class="energy-chart-hint">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. Die Planungsgrenze ist eine änderbare Modellannahme, kein geltender Tarif. { data.Chart.Range }</small>
+				</div>
+				<aside class="energy-chart-note"><span>Auf einen Blick</span><strong>{ data.Chart.Summary }</strong><p>{ data.Chart.Detail }</p></aside>
+			</div>
+		} else {
+			<div class="energy-chart-empty"><strong>Noch kein vollständiger Tagesverlauf</strong><p>{ data.Chart.Status }</p></div>
+		}
+	</section>
+}
+
+templ EnergyChartDialog(data EnergyPageData) {
+	<dialog id="energy-chart-dialog" class="energy-chart-dialog" aria-labelledby="energy-chart-dialog-title"><div class="energy-chart-dialog-shell" data-energy-fullscreen-surface>
+		<header><div><span class="eyebrow">Energieverlauf</span><h2 id="energy-chart-dialog-title">{ data.Chart.DialogTitle }</h2><p>Fahren Sie über die Kurve oder nutzen Sie die Pfeiltasten.</p></div><div class="energy-chart-dialog-actions"><button class="button" type="button" data-dialog="energy-chart-dialog" data-energy-fullscreen aria-controls="energy-chart-dialog" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M9 21H3v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg><span data-fullscreen-label>Vollbild</span></button><button class="button" type="button" data-close-dialog>Schließen</button></div></header>
+		@EnergyChartLegend(data.Chart)
+		<div class="energy-chart-dialog-plot">
+			@EnergyChartInteractive(data.Chart)
+		</div>
+		<small class="energy-chart-hint">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. { data.Chart.Range }</small>
+	</div></dialog>
+}
+
+templ EnergyTariffSection(data EnergyPageData) {
+	<section class="energy-card energy-tariff" id="tarif" aria-labelledby="energy-tariff-title">
+		<header class="energy-card-head">
+			<div class="energy-tariff-heading-copy"><div class="energy-tariff-title-row"><h2 id="energy-tariff-title">Monatsspitze</h2><details class="energy-metric-info energy-tariff-overview-info" name="energy-metric-help" data-energy-help="tariff"><summary aria-label="Monatsspitze und Verrechnung erklären" aria-controls="energy-help-tariff"><span class="energy-ui-icon energy-ui-icon-info" aria-hidden="true"></span></summary><div id="energy-help-tariff"><strong>So setzt sich die Leistung zusammen</strong><p><b>Höchste Viertelstunde:</b> höchste mittlere Bezugsleistung einer abgeschlossenen Viertelstunde dieses Kalendermonats.</p><p><b>Verrechnet:</b> der höchste Wert aus Monatsspitze, 2-kW-Sockel und – falls erfasst – 20 % der vereinbarten Anschlussleistung.</p>
+				if data.Tariff.HasEstimate {
+					if data.Tariff.MinimumReason != "" {
+						<small>{ data.Tariff.MinimumReason }</small>
+					} else {
+						<small>Die gemessene Spitze ist maßgeblich.</small>
+					}
+				}
+				if data.Tariff.Basis != "" {
+					<small>{ data.Tariff.Basis }</small>
+				}
+			</div></details></div><p>{ data.Tariff.MonthLabel }</p></div>
+			<span class="pill" title={ data.Tariff.Status } aria-label={ data.Tariff.Status }>Entwurf</span>
+		</header>
+		if data.TargetChanged {
+			<div class="message success">Ihr persönliches Peak-Ziel wurde gespeichert.</div>
+		}
+		if data.AgreedPowerChanged {
+			<div class="message success">Die vereinbarte Anschlussleistung wurde gespeichert.</div>
+		}
+		if data.Tariff.HasEstimate {
+			<div class="energy-billed" aria-label="Verrechnete Leistung nach dem Entwurf">
+				<div><div class="energy-metric-label"><span>Höchste Viertelstunde</span></div><strong>{ data.Tariff.PeakKW }</strong><progress class="energy-tariff-meter peak" max="100" value={ strconv.Itoa(data.Tariff.PeakMeterPercent) } aria-label={ "Gemessene Spitze relativ zur verrechneten Leistung: " + strconv.Itoa(data.Tariff.PeakMeterPercent) + " Prozent" }></progress>
+					if data.Tariff.HasPeakTime {
+						<small>Ø { data.Tariff.PeakTime }</small>
+					}
+				</div>
+				<div><div class="energy-metric-label"><span>Verrechnet</span></div><strong>{ data.Tariff.BilledKW }</strong><progress class="energy-tariff-meter billed" max="100" value="100" aria-hidden="true"></progress><small>
+					if data.Tariff.MinimumReason != "" {
+						{ data.Tariff.MinimumReason }
+					} else {
+						die gemessene Spitze ist maßgeblich
+					}
+				</small></div>
+			</div>
+			<div class="energy-tariff-cost">
+				<div class="energy-tariff-cost-figure"><div class="energy-metric-label"><span>Leistungsanteil des Netztarifs</span><details class="energy-metric-info" name="energy-metric-help" data-energy-help="annual"><summary aria-label="Jahreswert erklären" aria-controls="energy-help-annual"><span class="energy-ui-icon energy-ui-icon-info" aria-hidden="true"></span></summary><div id="energy-help-annual"><strong>Jahreswert</strong><p>Nur der Leistungsanteil des Netztarifs – nicht die Stromrechnung.</p></div></details></div><p><strong>{ data.Tariff.AnnualPowerEUR }</strong><small>/ Jahr</small></p><small>Modellrechnung</small></div>
+			</div>
+			if data.Tariff.Basis != "" {
+				<p class="energy-tariff-basis" title={ data.Tariff.Basis }><span class="energy-ui-icon energy-ui-icon-clock" aria-hidden="true"></span><span>
+					if data.Tariff.CoverageLabel != "" {
+						{ data.Tariff.CoverageLabel }
+					} else {
+						{ data.Tariff.Basis }
+					}
+				</span></p>
+			}
+		} else {
+			<div class={ "energy-tariff-empty", templ.KV("waiting", data.Tariff.MissingIsWaiting) }>
+				<strong>
+					if data.Tariff.MissingIsWaiting {
+						Noch keine volle Viertelstunde
+					} else {
+						Netzbezug noch nicht zugeordnet
+					}
+				</strong>
+				<p>{ data.Tariff.MissingReason }</p>
+				if !data.Tariff.MissingIsWaiting {
+					<a class="button" href="#messwerte">Netzbezug zuordnen</a>
+				}
+			</div>
+		}
+		switch data.TariffAssessmentStatus {
+			case "saved":
+				<div class="message success">Diese Modellbewertung wurde mit ihrer damaligen Regelversion festgehalten.</div>
+			case "no_data":
+				<div class="message">Für eine historische Bewertung fehlen noch abgeschlossene Viertelstunden.</div>
+		}
+		<details class="energy-tariff-disclosure" data-energy-disclosure="tariff"><summary aria-controls="energy-tariff-details"><span>Mehr erfahren</span><span class="energy-ui-icon energy-ui-icon-chevron-right" aria-hidden="true"></span></summary><div id="energy-tariff-details">
+			<p class="energy-tariff-method">Ab 01.01.2027 bemisst der Netzbetreiber die höchste Viertelstunde jedes Kalendermonats.</p>
+			if data.Tariff.Basis != "" {
+				<p class="energy-tariff-detail-basis"><strong>Grundlage</strong>{ data.Tariff.Basis }</p>
+			}
+			if data.Tariff.HasEstimate {
+				<div class="energy-tariff-cost-copy"><p><strong>Das ist nicht Ihre Stromrechnung.</strong> Der Betrag umfasst ausschließlich den Leistungsanteil des Netztarifs. Arbeitspreis, Energiekosten, Abgaben und Steuern sind darin nicht enthalten.</p><p>Gerechnet mit { data.Tariff.BelowRateEUR } je kW bis { data.Tariff.ThresholdKW } und { data.Tariff.AboveRateEUR } je kW darüber, auf die verrechnete Leistung von { data.Tariff.BilledKW }. Die Sätze stammen aus einem Begutachtungsentwurf und können sich noch ändern.</p></div>
+				if data.Tariff.HasTier {
+					<div class="energy-tariff-tiers"><div><span>Günstigere Stufe</span><strong>{ data.Tariff.BelowKW }</strong><small>{ data.Tariff.BelowRateEUR } je kW und Jahr</small></div><div><span>Höhere Stufe</span><strong>{ data.Tariff.AboveKW }</strong><small>{ data.Tariff.AboveRateEUR } je kW und Jahr</small></div></div>
+				}
+				<ul class="energy-tariff-notes">
+					if data.Tariff.HasTier {
+						<li>{ data.Tariff.TierHint }</li>
+					}
+					<li>Niedertarif-Fenster (SNAP, WiNAP) und Energiegemeinschaften senken den Arbeitspreis, nicht die verrechnete Leistung.</li><li>{ data.Tariff.Disclaimer }</li>
+				</ul>
+			}
+			if data.CanManageEnergy {
+				<details class="energy-tariff-settings">
+					<summary>Ihre Werte für diese Rechnung <span>Peak-Ziel, Anschlussleistung</span></summary>
+					<div class="energy-tariff-forms">
+						<form class="energy-target-form" method="post" action="/app/energie/target"><label><span class="onboarding-legend">Persönliches Peak-Ziel in kW</span><input type="text" name="target_peak_kw" inputmode="decimal" value={ data.TargetPeakValue } placeholder="z. B. 8,0" required/></label><small class="muted">Ein Planungsziel, keine technische Anschlussgrenze.</small><button class="button" type="submit">Ziel speichern</button></form>
+						<form class="energy-target-form" method="post" action="/app/energie/anschlussleistung"><label><span class="onboarding-legend">Vereinbarte Anschlussleistung in kW</span><input type="text" name="agreed_power_kw" inputmode="decimal" value={ data.AgreedPowerValue } placeholder="z. B. 14,0"/></label><small class="muted">{ energyAgreedHint(data.Tariff) }</small><button class="button" type="submit">Anschlussleistung speichern</button></form>
+					</div>
+				</details>
+			}
+			<footer class="energy-tariff-foot">
+				<span>Regelprofil { data.Tariff.ID } · Stand { data.Tariff.Version }</span>
+				<a href={ templ.SafeURL(data.Tariff.SourceURL) } target="_blank" rel="noopener noreferrer">Quelle: { data.Tariff.SourceTitle } →</a>
+				if data.CanManageEnergy && data.Tariff.HasEstimate {
+					<form method="post" action="/app/energie/tariff/assessment"><button class="button quiet" type="submit">Diesen Stand festhalten</button></form>
+				}
+			</footer>
+			if data.HasTariffAssessments {
+				<div class="energy-history"><h4>Festgehaltene Bewertungen</h4><div aria-label="Historische Tarifbewertungen">
+					for _, assessment := range data.TariffAssessments {
+						<article class="energy-history-row"><div><strong>{ assessment.Month } · { assessment.Peak }</strong><span>{ assessment.Profile } · { assessment.Quality }</span></div><strong>{ assessment.Annual }</strong><small>{ assessment.Created }</small></article>
+					}
+				</div></div>
+			}
+		</div></details>
+	</section>
+}
+
+templ EnergyDataQuality(data EnergyPageData) {
+	<div class="energy-pair">
+		<section class="energy-card">
+			<header class="energy-card-head"><div><h2>Datenlage</h2><p>Keine scheinpräzisen Aussagen bei Lücken oder alten Werten.</p></div></header>
+			<div class="energy-quality"><span aria-hidden="true">{ energyQualityMark(data.Quality.Status == "measured") }</span><div><strong>{ data.Quality.Label }</strong><p>{ data.Quality.Effect }</p></div><small>{ data.Quality.NextAction }</small></div>
+			<div class="energy-coverage" aria-label="Messabdeckung"><div class="energy-coverage-head"><strong>Messabdeckung</strong><span>{ data.CoverageSummary }</span></div><div class="energy-coverage-list">
+				for _, item := range data.Coverage {
+					<div class="energy-coverage-row" title={ item.Detail }><strong>{ item.Label }</strong><span class={ "energy-coverage-state", item.Tone }>{ energyCoverageMark(item.Tone == "good") } { item.Status }</span></div>
+				}
+			</div></div>
+		</section>
+	</div>
+}
+
+templ EnergyRoadmapSection(data EnergyPageData) {
+	<section class="energy-card energy-roadmap-card" id="fahrplan">
+		<header class="energy-card-head"><div><h2>Ihr Energie-Fahrplan</h2><p>Ein klarer Schritt nach dem anderen.</p></div></header>
+		<div class="energy-roadmap">
+			for _, step := range data.Roadmap {
+				<article class={ "energy-roadmap-step", templ.KV("current", step.Current) }><span class="energy-roadmap-number">{ strconv.Itoa(step.Number) }</span><span class="energy-roadmap-state">{ step.State }</span><strong>{ step.Title }</strong><p>{ step.Detail }</p>
+					if step.Action != "" {
+						<a href={ templ.SafeURL(step.URL) }>{ step.Action } →</a>
+					}
+				</article>
+			}
+		</div>
+	</section>
+}
+
+templ EnergySystemSection(data EnergyPageData) {
+	<section class="energy-card">
+		<header class="energy-card-head"><div><h2>Ihr Energiesystem</h2><p>Erzeugung und Speicher als Grundlage für Empfehlungen.</p></div>
+			if data.CanManageEnergy {
+				<a class="button" href="/app/zuhause/onboarding?step=3">Anlagen bearbeiten</a>
+			}
+		</header>
+		if data.HasSystemAssets {
+			<div class="energy-system-assets">
+				for _, asset := range data.SystemAssets {
+					<span class="energy-system-asset"><span class={ "energy-ui-icon", energySystemAssetIcon(asset.IsPV) } aria-hidden="true"></span>{ asset.Name }</span>
+				}
+			</div>
+		} else {
+			<p class="muted">Noch keine Erzeugung oder Speicher erfasst.</p>
+		}
+		<p class="energy-system-helper">Verbraucher verwalten Sie direkt oben in „Energie jetzt“.</p>
+		<nav class="energy-related-links" aria-label="Service und Unterlagen"><a href="/app/dokumente">Unterlagen</a><a href="/app/events">Wartungstermine</a><a href="/app/anliegen?new=1">Aufgabe melden</a><a href="/app/kontakte">Fachkontakte</a></nav>
+		<div class="energy-business-note"><span aria-hidden="true">◎</span><p><strong>Kostenmodell:</strong> { energyCostModelSentence(data.FreeUntil) }</p></div>
+	</section>
+}
+
+templ EnergyMaintenanceSection(data EnergyPageData) {
+	<section class="energy-card energy-card-quiet" id="wartung">
+		<header class="energy-card-head"><div><h2>Wartung, ohne daran denken zu müssen</h2><p>Fälligkeit, Kontakt, Unterlage und Nachweis bleiben an der Anlage.</p></div><a href="/app/events">Termine</a></header>
+		switch data.MaintenanceStatus {
+			case "saved":
+				<div class="message success">Wartungsplan gespeichert.</div>
+			case "completed":
+				<div class="message success">Erledigt. Der nächste Termin wurde automatisch vorgemerkt.</div>
+			case "invalid":
+				<div class="message error">Bitte Anlage, Intervall und Fälligkeit prüfen.</div>
+		}
+		if data.HasMaintenance {
+			<div class="energy-maintenance-list">
+				for _, plan := range data.Maintenance {
+					<details class="energy-maintenance-row">
+						<summary class="energy-maintenance-summary"><span><strong>{ plan.Title }</strong><small>{ energyMaintenanceMeta(plan) }</small></span><span class={ "energy-status-" + plan.Tone }>{ plan.DueLabel }</span></summary>
+						<div class="energy-maintenance-body">
+							if plan.ContactName != "" || plan.DocumentTitle != "" || plan.IssueTitle != "" {
+								<nav class="energy-related-links" aria-label="Wartungsnachweise">
+									if plan.ContactName != "" {
+										<a href="/app/kontakte">{ plan.ContactName }</a>
+									}
+									if plan.DocumentTitle != "" {
+										<a href={ templ.SafeURL("/app/dokumente/" + plan.DocumentID + "/preview") }>{ plan.DocumentTitle }</a>
+									}
+									if plan.IssueTitle != "" {
+										<a href={ templ.SafeURL("/app/anliegen/" + plan.IssueID) }>{ plan.IssueTitle }</a>
+									}
+								</nav>
+							}
+							if plan.EvidenceNote != "" {
+								<p class="muted">{ plan.EvidenceNote }</p>
+							}
+							if data.CanManageEnergy {
+								<form class="energy-inline-form" method="post" action="/app/energie/maintenance">
+									<input type="hidden" name="id" value={ plan.ID }/><input type="hidden" name="asset_id" value={ plan.AssetID }/><input type="hidden" name="active" value="true"/>
+									<label>Titel<input name="title" value={ plan.Title } maxlength="140" required/></label><label>Intervall in Monaten<input type="number" name="interval_months" min="1" max="120" value={ strconv.Itoa(plan.IntervalMonths) } required/></label>
+									<label>Nächste Fälligkeit<input type="date" name="next_due" value={ plan.NextDueValue } required/></label>
+									<label>Fachkontakt<select name="contact_id"><option value="">Noch offen</option>
+										for _, option := range data.ContactOptions {
+											<option value={ option.Value } selected?={ option.Value == plan.ContactID }>{ option.Label }</option>
+										}
+									</select></label>
+									<label>Unterlage<select name="document_id"><option value="">Keine verknüpft</option>
+										for _, option := range data.DocumentOptions {
+											<option value={ option.Value } selected?={ option.Value == plan.DocumentID }>{ option.Label }</option>
+										}
+									</select></label>
+									<label>Aufgabe / Nachweis<select name="issue_id"><option value="">Keine verknüpft</option>
+										for _, option := range data.IssueOptions {
+											<option value={ option.Value } selected?={ option.Value == plan.IssueID }>{ option.Label }</option>
+										}
+									</select></label>
+									<label class="wide">Hinweis<input name="evidence_note" value={ plan.EvidenceNote } maxlength="500" placeholder="Was ist beim nächsten Mal wichtig?"/></label>
+									<div class="actions"><button class="button" type="submit">Plan speichern</button></div>
+								</form>
+								<form class="energy-inline-form" method="post" action="/app/energie/maintenance/complete">
+									<input type="hidden" name="id" value={ plan.ID }/>
+									<label>Erledigt am<input type="date" name="completed_at" required/></label><label>Nachweis-Aufgabe<select name="issue_id"><option value="">Keine</option>
+										for _, option := range data.IssueOptions {
+											<option value={ option.Value }>{ option.Label }</option>
+										}
+									</select></label>
+									<label class="wide">Was wurde gemacht?<input name="evidence_note" maxlength="500" placeholder="Kurz und nachvollziehbar"/></label>
+									<div class="actions"><button class="button primary" type="submit">Als erledigt eintragen</button></div>
+								</form>
+							}
+						</div>
+					</details>
+				}
+			</div>
+		} else {
+			<p class="muted">Noch kein wiederkehrender Wartungspunkt hinterlegt.</p>
+		}
+		if data.CanManageEnergy && data.HasAssets {
+			<details class="energy-compact-create"><summary>Wartung an einer Anlage vormerken</summary><form class="energy-inline-form" method="post" action="/app/energie/maintenance">
+				<input type="hidden" name="active" value="true"/>
+				<label>Anlage<select name="asset_id" required>
+					for _, asset := range data.Assets {
+						<option value={ asset.ID }>{ asset.Name }</option>
+					}
+				</select></label>
+				<label>Titel<input name="title" maxlength="140" placeholder="z. B. Wärmepumpe warten" required/></label>
+				<label>Alle wie viele Monate?<input type="number" name="interval_months" min="1" max="120" value="12" required/></label>
+				<label>Erstmals fällig<input type="date" name="next_due" required/></label>
+				<label>Fachkontakt<select name="contact_id"><option value="">Später wählen</option>
+					for _, option := range data.ContactOptions {
+						<option value={ option.Value }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Unterlage<select name="document_id"><option value="">Später verknüpfen</option>
+					for _, option := range data.DocumentOptions {
+						<option value={ option.Value }>{ option.Label }</option>
+					}
+				</select></label>
+				<div class="actions"><button class="button primary" type="submit">Wartung vormerken</button></div>
+			</form></details>
+		}
+	</section>
+}
+
+templ EnergyMeasurementSection(data EnergyPageData) {
+	<details class="energy-card energy-card-quiet energy-collapsible" id="messwerte">
+		<summary class="energy-card-head"><div><h2>Messwerte &amp; Referenz</h2><p>
+			if data.HasPeaks {
+				Referenz vorhanden – Details und Import öffnen.
+			} else {
+				Home Assistant oder Smart Meter später verbinden.
+			}
+		</p></div></summary>
+		<div class="energy-collapsible-body">
+			switch data.ImportStatus {
+				case "added":
+					<div class="message success">Smart-Meter-Datei übernommen. Ein erneuter Import derselben Datei erzeugt keine Duplikate.</div>
+				case "duplicate":
+					<div class="message">Diese Datei war bereits vorhanden; es wurde nichts doppelt gespeichert.</div>
+				case "invalid":
+					<div class="message error">Datei nicht erkannt. Erwartet werden 15-Minuten-Zeilen mit <strong>timestamp</strong> und <strong>import_kwh</strong>.</div>
+			}
+			if data.HasPeaks {
+				<div class="energy-reference-grid">
+					for _, peak := range data.Peaks {
+						<article class="energy-reference-item"><span>Monatsspitze · { peak.Source }</span><strong>{ peak.Value }</strong><span>höchstes abgeschlossenes 15-Minuten-Fenster</span></article>
+					}
+				</div>
+			} else {
+				<p class="muted">Noch keine abgeschlossenen Viertelstunden vorhanden.</p>
+			}
+			if data.HasComparison {
+				<div class={ "energy-quality", data.Comparison.Tone }><span aria-hidden="true">{ energyQualityMark(data.Comparison.Tone == "good") }</span><div><strong>{ data.Comparison.Title }</strong><p>{ data.Comparison.Details }</p></div></div>
+			}
+			if data.HasImports {
+				<div class="energy-assets energy-import-history">
+					for _, item := range data.Imports {
+						<span class="energy-asset">{ item.Filename } · { item.Date }</span>
+					}
+				</div>
+			}
+			if data.CanManageEnergy {
+				<form class="energy-import-form" method="post" action="/app/energie/smart-meter" enctype="multipart/form-data">
+					<label><span class="onboarding-legend">Smart-Meter-CSV auswählen</span><input type="file" name="smart_meter_file" accept=".csv,text/csv" required/></label>
+					<small>Unterstütztes Profil: <strong>timestamp;import_kwh</strong>, exakt um Minute 00, 15, 30 oder 45. Originaldateien werden nach 30 Tagen, Viertelstundenwerte nach 13 Monaten zur Löschung fällig und spätestens sechs Stunden später entfernt.</small>
+					<button class="button" type="submit">Als Referenz importieren</button>
+				</form>
+			}
+			if data.CanManageEnergyData {
+				<nav class="energy-related-links"><a href="/app/settings/energy-data">Energiedaten ansehen, exportieren oder löschen →</a></nav>
+			}
+		</div>
+	</details>
+}
+
+templ EnergyCaretakerSection(data EnergyPageData) {
+	<details class="energy-card energy-card-quiet energy-collapsible" id="betreuung">
+		<summary class="energy-card-head"><div><h2>Technische Betreuung</h2><p>
+			if data.HasCaretakers {
+				Hausbezogene Hilfe ist eingerichtet.
+			} else {
+				Optional eine Vertrauensperson einladen.
+			}
+		</p></div></summary>
+		<div class="energy-collapsible-body">
+			<nav class="energy-related-links"><a href="/app/settings/users">Personen verwalten</a></nav>
+			if data.CaretakerChanged {
+				<div class="message success">Der technische Zugriff für dieses Haus wurde geändert und protokolliert.</div>
+			}
+			switch data.CaretakerInviteStatus {
+				case "invited":
+					<div class="message success">Einladung verschickt. Die Person meldet sich mit ihrem eigenen Konto an.</div>
+				case "saved_no_mail":
+					<div class="message">Zugang gespeichert; die Einladung konnte nicht zugestellt werden.</div>
+				case "exists":
+					<div class="message">Diese Person gehört bereits zum Haus. Rechte können unten geändert werden.</div>
+				case "invalid":
+					<div class="message error">Bitte eine gültige E-Mail-Adresse angeben.</div>
+				case "error":
+					<div class="message error">Der hausbezogene Zugang konnte nicht angelegt werden. Bitte in der Personenverwaltung prüfen.</div>
+			}
+			if data.HasCaretakers {
+				<div class="energy-caretaker-list">
+					for _, caretaker := range data.Caretakers {
+						<form class="energy-caretaker" method="post" action="/app/energie/caretaker">
+							<input type="hidden" name="email" value={ caretaker.Email }/>
+							<div><strong>{ caretaker.Name }</strong><small>{ caretaker.Email }</small></div>
+							<label><input type="checkbox" name="scope" value="view" checked?={ caretaker.CanView } disabled?={ !caretaker.Editable }/> ansehen</label>
+							<label><input type="checkbox" name="scope" value="configure" checked?={ caretaker.CanConfigure } disabled?={ !caretaker.Editable }/> einrichten</label>
+							if data.CanGrantEnergyAccess && caretaker.Editable {
+								<button class="button" type="submit">Zugriff speichern</button>
+							} else if !caretaker.Editable {
+								<a href="/app/settings/users">Zuerst als Portalzugang übernehmen</a>
+							}
+						</form>
+					}
+				</div>
+			} else {
+				<p class="muted">Noch keine weitere Person ist diesem Haus zugeordnet. Laden Sie zuerst ein eigenes Benutzerkonto ein.</p>
+			}
+			if data.CanInviteEnergyAccess {
+				<details class="energy-compact-create"><summary>Technische Vertrauensperson einladen</summary><form class="energy-inline-form" method="post" action="/app/energie/caretaker/invite">
+					<label>Vorname<input name="first_name" maxlength="80"/></label><label>Nachname<input name="last_name" maxlength="80"/></label>
+					<label class="wide">E-Mail<input type="email" name="email" required/></label>
+					<label><input type="checkbox" name="scope" value="configure"/> darf Messwerte und Geräte einrichten</label>
+					<div class="actions"><button class="button primary" type="submit">Hausbezogen einladen</button></div>
+				</form></details>
+			}
+			<div class="energy-business-note"><span aria-hidden="true">i</span><p>Technische Vertrauenspersonen dürfen ansehen und einrichten. Den dauerhaft sichtbaren Haus-Schalter dürfen ausschließlich Eigentümer oder Hausadministration bewusst umlegen.</p></div>
+		</div>
+	</details>
+}
+
+templ EnergySupportSection(data EnergyPageData) {
+	<details class="energy-card energy-card-quiet energy-collapsible" id="fachhilfe">
+		<summary class="energy-card-head"><div><h2>Fachhilfe, wenn sie wirklich nötig ist</h2><p>
+			if data.HasMeasures {
+				Eine Hausaufgabe ist in Bearbeitung.
+			} else {
+				Bekannte Kontakte statt offener Marktplatz.
+			}
+		</p></div></summary>
+		<div class="energy-collapsible-body">
+			<nav class="energy-related-links"><a href="/app/kontakte">Bekannte Kontakte</a></nav>
+			<p>Eine Empfehlung wird zuerst als Hausaufgabe angelegt. Dort bleiben Rückfragen, Angebot, Termin und Nachweis zusammen. Sie entscheiden ausdrücklich, welche Daten geteilt werden.</p>
+			switch data.MeasureStatus {
+				case "saved":
+					<div class="message success">Maßnahmenstand gespeichert und protokolliert.</div>
+				case "appointment":
+					<div class="message error">Für „Termin vereinbart“ bitte einen Termin eintragen.</div>
+				case "ranges":
+					<div class="message error">Für den Abschluss brauchen wir zwei getrennte, gültige Vorher-/Nachher-Zeiträume.</div>
+			}
+			if data.HasMeasures {
+				<div class="energy-measure-list">
+					for _, measure := range data.Measures {
+						<details class="energy-measure-row">
+							<summary class="energy-measure-summary"><span><strong>{ measure.Title }</strong><small>{ energyMeasureMeta(measure) }</small></span><span>Öffnen</span></summary>
+							<div class="energy-measure-body">
+								if measure.HasComparison {
+									<div class="energy-comparison"><div><small>Vorher · { measure.BeforeQuality }</small><strong>{ measure.BeforePeak }</strong></div><span>→ Messbefund →</span><div><small>Nachher · { measure.AfterQuality }</small><strong>{ measure.AfterPeak }</strong></div></div>
+								}
+								<nav class="energy-related-links"><a href={ templ.SafeURL("/app/anliegen/" + measure.IssueID) }>Anliegen, Rückfragen &amp; Anhänge öffnen</a></nav>
+								if data.CanManageEnergy {
+									<form class="energy-inline-form" method="post" action="/app/energie/measure/update">
+										<input type="hidden" name="id" value={ measure.ID }/>
+										<label>Status<select name="status"><option value="requested" selected?={ measure.Status == "requested" }>Anfrage vorbereitet</option><option value="assigned" selected?={ measure.Status == "assigned" }>Kontakt ausgewählt</option><option value="scheduled" selected?={ measure.Status == "scheduled" }>Termin vereinbart</option><option value="completed" selected?={ measure.Status == "completed" }>Abgeschlossen</option><option value="cancelled" selected?={ measure.Status == "cancelled" }>Nicht weiterverfolgt</option></select></label>
+										<label>Bekannter Fachkontakt<select name="contact_id"><option value="">Noch niemand</option>
+											for _, option := range data.ContactOptions {
+												<option value={ option.Value } selected?={ option.Value == measure.ContactID }>{ option.Label }</option>
+											}
+										</select></label>
+										<label>Termin<input type="datetime-local" name="appointment_at" value={ measure.AppointmentValue }/></label>
+										<label>Angebot / Rückfrage<input name="offer_note" value={ measure.OfferNote } maxlength="1000" placeholder="Noch keine Zusage oder Zahlung"/></label>
+										<label class="wide">Ausgeführte Arbeit<input name="work_note" value={ measure.WorkNote } maxlength="1000"/></label>
+										<label class="wide">Nachweis / Fachnachweis<input name="evidence_note" value={ measure.EvidenceNote } maxlength="1000" placeholder="Dateien im verknüpften Anliegen anhängen"/></label>
+										<label>Vorher von<input type="date" name="before_from" value={ measure.BeforeFrom }/></label><label>Vorher bis<input type="date" name="before_to" value={ measure.BeforeTo }/></label>
+										<label>Nachher von<input type="date" name="after_from" value={ measure.AfterFrom }/></label><label>Nachher bis<input type="date" name="after_to" value={ measure.AfterTo }/></label>
+										<div class="actions"><button class="button primary" type="submit">Maßnahmenstand speichern</button></div>
+									</form>
+								}
+							</div>
+						</details>
+					}
+				</div>
+			} else {
+				<p class="muted">Noch keine Energieempfehlung wurde als Hausaufgabe übernommen.</p>
+			}
+			<div class="energy-marketplace-gate"><strong>Marktplatz geschlossen</strong><span>Kein Zahlungsfluss, keine Provision und keine öffentliche Anbieterreihung vor belastbaren Pilotdaten.</span></div>
+		</div>
+	</details>
+}
+
+func energyModeIconClass(active bool) string {
+	if active {
+		return "energy-ui-icon-alert"
+	}
+	return "energy-ui-icon-check"
+}
+
+func energyModeTitle(data EnergyPageData) string {
+	if !data.IsActiveMode {
+		return "Nur beobachten"
+	}
+	if data.IsShadowMode {
+		return "Testlauf aktiv"
+	}
+	return "Aktive Steuerung"
+}
+
+func energyModeState(data EnergyPageData) string {
+	if !data.IsActiveMode {
+		return "Keine Steuerung"
+	}
+	if data.IsShadowMode {
+		return "Keine Gerätewirkung"
+	}
+	return "Geräte freigegeben"
+}
+
+func energyModeHint(data EnergyPageData) string {
+	if !data.IsActiveMode {
+		return "HAUSV liest und empfiehlt, steuert aber kein Gerät."
+	}
+	if data.IsShadowMode {
+		return "HAUSV protokolliert nur und schaltet kein Gerät."
+	}
+	return "Freigegebene Geräte folgen Ihren Regeln."
+}
+
+func energyQualityMark(good bool) string {
+	if good {
+		return "✓"
+	}
+	return "!"
+}
+
+func energyCoverageMark(good bool) string {
+	if good {
+		return "✓"
+	}
+	return "•"
+}
+
+func energySystemAssetIcon(isPV bool) string {
+	if isPV {
+		return "energy-ui-icon-solar-panel"
+	}
+	return "energy-ui-icon-battery"
+}
+
+templ EnergyStyles() {
+	<style>
+		a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[data-energy-chart-interactive]:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,h4,p{margin:0}h1,h2,h3,h4{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.muted{color:var(--muted);font-size:12px;line-height:1.5}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+		.shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.mobile-head{display:none}
+		.energy-main{min-width:0;display:grid;grid-template-rows:auto minmax(0,1fr);align-content:start}
+		.button.primary{background:var(--gold);color:var(--panel)}.button.quiet{border-color:var(--line);color:var(--muted)}.button.small{min-height:36px;padding:6px var(--space-3);font-size:11px}.button:hover{background:var(--panel-soft)}.button.primary:hover{background:var(--gold-ink)}
+		.pill{display:inline-flex;align-items:center;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+		.message{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.message.success{border-color:var(--leaf);background:var(--panel);color:var(--ink)}.message.error{border-color:var(--gold);background:var(--panel);color:var(--ink)}
+		.energy-ui-icon{width:1em;height:1em;display:block;flex:0 0 auto;background:currentColor;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-image:var(--energy-icon);mask-image:var(--energy-icon)}
+		.energy-ui-icon-house-plug{--energy-icon:url("/assets/icons/lucide/house-plug.svg")}.energy-ui-icon-house{--energy-icon:url("/assets/icons/lucide/house.svg")}.energy-ui-icon-solar-panel{--energy-icon:url("/assets/icons/lucide/solar-panel.svg")}.energy-ui-icon-utility-pole{--energy-icon:url("/assets/icons/lucide/utility-pole.svg")}.energy-ui-icon-battery{--energy-icon:url("/assets/icons/lucide/battery.svg")}.energy-ui-icon-binoculars{--energy-icon:url("/assets/icons/lucide/binoculars.svg")}.energy-ui-icon-check{--energy-icon:url("/assets/icons/lucide/check.svg")}.energy-ui-icon-alert{--energy-icon:url("/assets/icons/lucide/triangle-alert.svg")}.energy-ui-icon-info{--energy-icon:url("/assets/icons/lucide/info.svg")}.energy-ui-icon-play{--energy-icon:url("/assets/icons/lucide/play.svg")}.energy-ui-icon-pencil{--energy-icon:url("/assets/icons/lucide/pencil.svg")}.energy-ui-icon-log-out{--energy-icon:url("/assets/icons/lucide/log-out.svg")}.energy-ui-icon-circle-help{--energy-icon:url("/assets/icons/lucide/circle-help.svg")}.energy-ui-icon-shield-check{--energy-icon:url("/assets/icons/lucide/shield-check.svg")}.energy-ui-icon-workflow{--energy-icon:url("/assets/icons/lucide/workflow.svg")}.energy-ui-icon-server-cog{--energy-icon:url("/assets/icons/lucide/server-cog.svg")}.energy-ui-icon-circle-check{--energy-icon:url("/assets/icons/lucide/circle-check.svg")}.energy-ui-icon-chevron-right{--energy-icon:url("/assets/icons/lucide/chevron-right.svg")}.energy-ui-icon-chevron-down{--energy-icon:url("/assets/icons/lucide/chevron-down.svg")}.energy-ui-icon-ellipsis{--energy-icon:url("/assets/icons/lucide/ellipsis.svg")}.energy-ui-icon-clock{--energy-icon:url("/assets/icons/lucide/clock-3.svg")}.energy-ui-icon-car-front{--energy-icon:url("/assets/icons/lucide/car-front.svg")}.energy-ui-icon-plug-zap{--energy-icon:url("/assets/icons/lucide/plug-zap.svg")}.energy-ui-icon-heater{--energy-icon:url("/assets/icons/lucide/heater.svg")}.energy-ui-icon-fan{--energy-icon:url("/assets/icons/lucide/fan.svg")}.energy-ui-icon-washing-machine{--energy-icon:url("/assets/icons/lucide/washing-machine.svg")}.energy-ui-icon-flame{--energy-icon:url("/assets/icons/lucide/flame.svg")}.energy-ui-icon-drill{--energy-icon:url("/assets/icons/lucide/drill.svg")}.energy-ui-icon-waves-ladder{--energy-icon:url("/assets/icons/lucide/waves-ladder.svg")}.energy-ui-icon-square-parking{--energy-icon:url("/assets/icons/lucide/square-parking.svg")}.energy-ui-icon-plug{--energy-icon:url("/assets/icons/lucide/plug.svg")}.energy-ui-icon-grip-vertical{--energy-icon:url("/assets/icons/lucide/grip-vertical.svg")}.energy-ui-icon-plus{--energy-icon:url("/assets/icons/lucide/plus.svg")}.energy-ui-icon-search{--energy-icon:url("/assets/icons/lucide/search.svg")}.energy-ui-icon-x{--energy-icon:url("/assets/icons/lucide/x.svg")}.energy-ui-icon-snowflake{--energy-icon:url("/assets/icons/lucide/snowflake.svg")}.energy-ui-icon-shower-head{--energy-icon:url("/assets/icons/lucide/shower-head.svg")}
+		.energy-mode-strip{min-height:64px;display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-4);padding-block:var(--space-2);padding-inline:max(clamp(var(--space-4),4vw,56px),calc(50% - 580px));background:var(--panel);border-bottom:1px solid var(--line)}.energy-mode-strip.active{background:var(--panel-soft);border-bottom-color:var(--gold)}.energy-mode-state{display:flex;align-items:center;gap:var(--space-3)}.energy-mode-icon{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel)}.energy-mode-strip.active .energy-mode-icon{background:var(--gold)}.energy-mode-icon .energy-ui-icon{width:16px;height:16px}.energy-mode-copy{display:flex;align-items:baseline;gap:var(--space-2)}.energy-mode-copy strong{font-size:13px}.energy-mode-copy span{color:var(--muted);font-size:11px}
+		.energy-peak-chip{min-height:36px;display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto;padding:var(--space-1) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:11px}.energy-peak-chip b{color:var(--ink);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}.energy-peak-chip-label{color:var(--gold-ink);font-weight:800;letter-spacing:.05em;text-transform:uppercase;font-size:9px}.energy-peak-chip .sep{color:var(--soft)}.energy-peak-chip:hover{background:var(--panel)}
+		.energy-mode-action{min-height:40px;display:inline-flex;align-items:center;gap:7px;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800;list-style:none;cursor:pointer}.energy-mode-action::-webkit-details-marker{display:none}.energy-mode-action .energy-ui-icon{width:14px;height:14px}.energy-mode-action-compact{display:none}.energy-mode-control{position:relative}.energy-mode-popover{position:absolute;z-index:60;right:0;top:calc(100% + var(--space-2));width:min(420px,calc(100vw - 32px));display:grid;gap:var(--space-3);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}.energy-mode-popover p{color:var(--muted);font-size:12px;line-height:1.5}.energy-mode-popover label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-2);color:var(--muted);font-size:12px;line-height:1.45}.energy-mode-popover input[type=text]{min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.energy-mode-capability{margin-left:auto;color:var(--muted);font-size:11px}
+		.energy-main>*,.energy-page,.energy-card,.energy-collapsible-body,.energy-maintenance-body,.energy-measure-body,.energy-lead-side,.energy-live,.energy-billed>div,.energy-scenario-copy,.energy-caretaker>div{min-width:0}.energy-caretaker small,.energy-help-readings span,.energy-history-row,.energy-reference-item strong,.energy-live-more-row,.energy-asset,.energy-tariff-foot a{overflow-wrap:anywhere}
+		.energy-page{width:min(1160px,100%);margin:0 auto;display:grid;gap:22px;padding:clamp(var(--space-5),3vw,40px) clamp(var(--space-4),4vw,56px) 64px}.energy-cockpit-top{display:grid;gap:var(--space-4)}
+		.energy-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-6);align-items:end;padding-bottom:var(--space-4);border-bottom:1px solid var(--line)}.energy-heading-copy{min-width:0}.energy-heading h1{font-size:42px;line-height:1.05}.energy-heading-unit-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;margin-top:6px;color:var(--muted);font-size:12px}.energy-heading-unit{font-weight:700}.energy-heading-context{margin-top:6px;color:var(--soft);font-size:12px;font-weight:600}.energy-heading-side{display:grid;justify-items:end;gap:var(--space-2)}.energy-heading-breadcrumb{display:inline-flex;flex-wrap:wrap;gap:6px;color:var(--soft);font-size:11px}.energy-heading-action{gap:7px}.energy-heading-action .energy-ui-icon{width:15px;height:15px}
+		.energy-card{min-width:0;display:grid;gap:var(--space-4);padding:clamp(var(--space-4),2vw,28px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.energy-card-quiet{background:var(--panel-soft);box-shadow:none}.energy-card-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--space-3)}.energy-card-head h2{font-size:26px;line-height:1.1}.energy-card-head p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.5}.energy-card-head>a{color:var(--gold-ink);font-size:11px;font-weight:800}
+		.energy-health{display:grid}.energy-lead-side{min-width:0}.energy-live{min-width:0;display:grid;gap:var(--space-3);padding:clamp(var(--space-4),2vw,26px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.energy-live-head{display:flex;justify-content:space-between;gap:var(--space-3)}.energy-live-title h2{font-size:26px}.energy-live-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:6px;color:var(--muted);font-size:11px}.energy-live-meta strong{color:var(--leaf);font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.energy-live-dot{width:8px;height:8px;border-radius:var(--radius-pill);background:var(--leaf)}.is-stale .energy-live-dot{background:var(--soft)}.energy-live-updated{color:var(--soft)}.energy-live-state-offline{color:var(--soft);font-size:11px}
+		.energy-flow-area{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:0 26px;align-items:start;padding:var(--space-3) var(--space-5) 36px}@media(min-width:1180px){.energy-flow-area.has-rail{grid-template-columns:minmax(0,1fr) 258px}}.energy-flow-area .energy-flow-fallback{padding:6px 0 var(--space-3)}.energy-flow-area.is-enhanced .energy-flow-fallback{display:none}.energy-help-readings{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-help-readings span{display:inline-flex;align-items:baseline;gap:5px;color:var(--muted);font-size:12px}.energy-help-readings strong{color:var(--ink);font-variant-numeric:tabular-nums}.energy-help-readings small{color:var(--soft);font-size:10px}
+		svg.energy-flow-ribbons{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.energy-flow-band{opacity:.2}.energy-flow-dots{opacity:.86;animation:energy-flow-dots 1.15s linear infinite}@keyframes energy-flow-dots{to{stroke-dashoffset:-10.1}}@media(prefers-reduced-motion:reduce){.energy-flow-dots{animation:none}}
+		.energy-flow-grid2{--energy-flow-node-width:258px;--energy-flow-node-height:80px;position:relative;display:grid;grid-template-columns:var(--energy-flow-node-width) minmax(26px,1fr) var(--energy-flow-node-width) minmax(26px,1fr);grid-template-rows:auto 64px auto 64px auto;align-items:center;justify-items:center}.energy-flow-slot-top{grid-column:3;grid-row:1;display:flex;gap:var(--space-3);justify-content:center;width:max-content;justify-self:center}.energy-flow-slot-left{grid-column:1;grid-row:3;width:100%}.energy-flow-slot-bottom{grid-column:3;grid-row:5;display:flex;justify-content:center;width:max-content;justify-self:center}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile{width:var(--energy-flow-node-width)}
+		.energy-flow-tile{position:relative;z-index:1;width:var(--energy-flow-node-width);min-height:var(--energy-flow-node-height);border:2px solid var(--energy-node-color,var(--line));border-radius:var(--radius-lg);background:var(--panel);padding:11px var(--space-3);display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:var(--space-2)}.energy-flow-tile .ico{width:38px;height:38px;border-radius:var(--radius-pill);display:grid;place-items:center;color:var(--energy-node-color,var(--muted));background:var(--panel-soft)}.energy-flow-tile .ico .energy-ui-icon{width:21px;height:21px}.energy-flow-tile strong{font-family:var(--font-serif);font-weight:550;font-size:17px;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}.energy-flow-tile>div{min-width:0}.energy-flow-tile>div>span{display:block;margin-top:4px;overflow:hidden;font-size:11px;line-height:1.25;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}.energy-flow-tile>div>.energy-flow-secondary{margin-top:2px;font-size:10px}.energy-flow-secondary b,.energy-flow-secondary-copy b{display:inline;color:inherit;font-family:var(--font-sans);font-size:inherit;font-weight:750;white-space:nowrap}
+		.energy-flow-tile span.u,.energy-flow-big span.u{display:inline;margin:0;font-family:var(--font-sans);font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--soft);vertical-align:6px}
+		.energy-flow-tile.k-pv,.energy-flow-tile.k-grid,.energy-flow-tile.k-batt{background:var(--panel-soft)}.energy-flow-tile.editable{cursor:pointer;transition:border-color .15s ease,background-color .15s ease}.energy-flow-tile.editable .ico>.energy-ui-icon{grid-area:1/1;transition:opacity .15s ease,transform .15s ease}.energy-flow-tile.editable .energy-flow-icon-edit{opacity:0;transform:scale(.86)}.energy-flow-tile.editable:hover,.energy-flow-tile.editable:focus-visible{background:var(--panel-soft)}.energy-flow-tile.editable:hover .energy-flow-icon-default,.energy-flow-tile.editable:focus-visible .energy-flow-icon-default{opacity:0}.energy-flow-tile.editable:hover .energy-flow-icon-edit,.energy-flow-tile.editable:focus-visible .energy-flow-icon-edit{opacity:1;transform:scale(1)}.energy-flow-hub2{grid-column:3;grid-row:3;width:var(--energy-flow-node-width);z-index:2}
+		.energy-flow-rail{position:relative;z-index:1;align-self:start;display:grid;gap:var(--space-2);align-content:start}.energy-flow-rail>.microlabel{position:absolute;top:-22px;left:2px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+		.energy-flow-big{width:258px;height:80px;border:2px solid var(--energy-node-color,var(--line));border-radius:var(--radius-lg);background:var(--panel);padding:var(--space-2) var(--space-2);display:grid;grid-template-columns:minmax(0,1fr) 16px;align-items:center;gap:9px;transition:background-color .15s ease}.energy-flow-main{min-width:0;width:100%;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:9px;border:0;padding:0;color:inherit;background:transparent;text-align:left;font:inherit}button.energy-flow-main{cursor:pointer}.energy-flow-big .ico{position:relative;width:34px;height:34px;border-radius:var(--radius-pill);display:grid;place-items:center;color:var(--energy-node-color,var(--muted));background:var(--panel-soft)}.energy-flow-big .ico .energy-ui-icon{width:19px;height:19px;grid-area:1/1;transition:opacity .15s ease,transform .15s ease}.energy-flow-big .energy-flow-icon-edit{opacity:0;transform:scale(.86)}.energy-flow-copy{min-width:0;display:grid;gap:3px}.energy-flow-big b{display:block;overflow:hidden;font-size:12px;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}.energy-flow-subtitles{display:grid;min-width:0}.energy-flow-subtitles>span{grid-area:1/1;display:block;overflow:hidden;color:var(--muted);font-size:11px;line-height:1.4;text-overflow:ellipsis;white-space:nowrap;transition:opacity .15s ease}.energy-flow-secondary-copy{display:block;overflow:hidden;color:var(--muted);font-size:10px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}.energy-flow-subtitles .energy-flow-edit-copy{color:var(--gold-ink);font-weight:750;opacity:0}.energy-flow-big.editable:hover,.energy-flow-big.editable:focus-within{background:var(--panel-soft)}.energy-flow-big.editable:hover .energy-flow-icon-default,.energy-flow-big.editable:focus-within .energy-flow-icon-default,.energy-flow-big.editable:hover .energy-flow-state-copy,.energy-flow-big.editable:focus-within .energy-flow-state-copy{opacity:0}.energy-flow-big.editable:hover .energy-flow-icon-edit,.energy-flow-big.editable:focus-within .energy-flow-icon-edit{opacity:1;transform:scale(1)}.energy-flow-big.editable:hover .energy-flow-edit-copy,.energy-flow-big.editable:focus-within .energy-flow-edit-copy{opacity:1}.energy-flow-big.active{background:var(--panel-soft)}.energy-flow-big.active .state{color:var(--energy-node-color,var(--leaf));font-weight:700}.energy-flow-big .rcol{display:grid;justify-items:center;gap:5px;align-self:center}.energy-flow-big .prio{width:13px;height:13px;border-radius:var(--radius-pill);border:1px solid var(--gold-ink);color:var(--gold-ink);font-size:8px;font-weight:800;line-height:1;display:grid;place-items:center;font-variant-numeric:tabular-nums}.energy-flow-big .drag{color:var(--soft);cursor:grab}.energy-flow-big button.drag{border:0;background:none;padding:5px;margin:-5px;display:grid;place-items:center}.energy-flow-big .drag .energy-ui-icon{width:10px;height:16px}.energy-flow-big .drag-static{cursor:default;opacity:.55}.energy-flow-big.dragging{opacity:.55}.energy-flow-big.ghost{border:1.5px dashed var(--line);background:transparent;color:var(--muted);grid-template-columns:minmax(0,1fr);cursor:pointer}.energy-flow-big.ghost .energy-flow-main{cursor:pointer}.energy-flow-big.ghost .plus{width:21px;height:21px;border-radius:var(--radius-pill);border:1.5px dashed var(--soft);display:grid;place-items:center;color:var(--gold-ink);margin:0 auto}.energy-flow-big.ghost .plus .energy-ui-icon{width:11px;height:11px}.energy-flow-big.ghost b{font-size:12px;font-weight:700;color:var(--muted)}
+		.energy-info-disclosure summary{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;cursor:pointer;list-style:none}.energy-info-disclosure summary::-webkit-details-marker{display:none}.energy-info-mark{width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink)}.energy-info-mark .energy-ui-icon{width:11px;height:11px}.energy-flow-hint{position:absolute;left:26px;bottom:10px}.energy-flow-hint[open]>div{display:grid;gap:var(--space-2);margin-top:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-md);padding:var(--space-4) var(--space-5);max-width:460px;position:relative;z-index:3;color:var(--muted);font-size:12px;line-height:1.45}.energy-flow-hint[open]>div>strong{color:var(--ink);font-size:14px}.energy-flow-hint[open]>div>a{min-height:44px;display:inline-flex;align-items:center;justify-self:start;color:var(--gold-ink);font-weight:800}
+		.energy-live-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line)}.energy-live-more{min-width:0}.energy-live-more>summary{display:flex;align-items:center;gap:var(--space-2);cursor:pointer;list-style:none;color:var(--muted);font-size:11px}.energy-live-more>summary::-webkit-details-marker{display:none}.energy-live-more strong{display:block;color:var(--ink);font-size:12px}.energy-live-more small{display:block;color:var(--soft);font-size:10px}.energy-live-more .energy-ui-icon{width:14px;height:14px}.energy-live-more-list{display:grid;gap:2px;margin-top:var(--space-2)}.energy-live-more-row{display:flex;justify-content:space-between;gap:var(--space-3);padding:5px 0;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.energy-live-more-row strong{color:var(--ink);font-variant-numeric:tabular-nums}
+		.energy-recommendation-trigger{min-height:44px;display:inline-flex;align-items:center;gap:7px;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.energy-recommendation-trigger .energy-ui-icon{width:16px;height:16px}.energy-live-empty{display:grid;gap:5px;padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm);color:var(--muted);font-size:12px}.energy-live-empty strong{color:var(--ink);font-family:var(--font-serif);font-size:17px}.energy-live-empty a{color:var(--gold-ink);font-weight:800}
+		.dialog{width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 48px);padding:0;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog>form,.dialog{overflow:auto}.dialog-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding:var(--space-5) var(--space-5) var(--space-3);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:27px}.dialog-head p{margin-top:4px;color:var(--muted);font-size:12px}.kicker{color:var(--gold-ink);font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.dialog-close{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:17px}.dialog-close .energy-ui-icon{width:14px;height:14px}.dialog-body{display:grid;gap:var(--space-4);padding:var(--space-5)}.dialog-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--space-2);padding:var(--space-3) var(--space-5) var(--space-5);border-top:1px solid var(--line)}.dialog-optional>summary{min-height:40px;display:flex;align-items:center;color:var(--muted);cursor:pointer;font-size:11px;list-style:none;text-decoration:underline;text-underline-offset:3px}.dialog-optional>summary::-webkit-details-marker{display:none}
+		.energy-nextstep{display:grid;gap:var(--space-4)}.energy-recommendation-summary{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:start}.energy-nextstep-icon{width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft);color:var(--gold-ink)}.energy-nextstep-icon .energy-ui-icon{width:24px;height:24px}.energy-nextstep-copy{min-width:0;display:grid;gap:var(--space-2)}.energy-nextstep-copy h3{font-size:21px;line-height:1.2}.energy-next-progress-row{display:grid;gap:5px}.energy-next-progress{height:6px;overflow:hidden;border-radius:var(--radius-pill);background:var(--line)}.energy-next-progress>span{display:block;height:100%;background:var(--gold)}.energy-next-progress-row small{color:var(--muted);font-size:11px}.energy-next-status{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-next-status .energy-ui-icon{width:13px;height:13px;color:var(--leaf)}.energy-next-why>summary{color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-next-why>summary::-webkit-details-marker{display:none}.energy-next-why p{margin-top:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.energy-next-meta{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-3);margin-top:var(--space-2);color:var(--soft);font-size:11px}
+		.energy-recommendation-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.energy-observation-running{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-next-menu{display:grid;gap:var(--space-3);margin-top:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-measure-form{display:grid;gap:var(--space-2)}.energy-measure-form h3{font-size:17px}.energy-measure-form p{color:var(--muted);font-size:12px;line-height:1.5}.energy-measure-form label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-2);align-items:center;color:var(--muted);font-size:12px}.energy-measure-form .button{justify-self:start;margin-top:var(--space-2)}.energy-dismiss-form .button{justify-self:start}
+		.energy-recommendation-scenarios{display:grid;gap:var(--space-3);padding-top:var(--space-4);border-top:1px solid var(--line)}.energy-recommendation-scenarios h3{font-size:19px}.energy-recommendation-scenarios header p{margin-top:4px;color:var(--muted);font-size:12px}.energy-scenario{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-scenario-copy strong{display:block;font-family:var(--font-serif);font-size:16px}.energy-scenario-copy p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}.energy-scenario-assumptions{color:var(--soft)}.energy-scenario-result{display:grid;justify-items:end;gap:3px;text-align:right}.energy-scenario-result span{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-scenario-result strong{font-family:var(--font-serif);font-size:19px;font-variant-numeric:tabular-nums}.energy-scenario-billed{color:var(--muted);font-size:10px;font-weight:600;letter-spacing:0;text-transform:none}.energy-scenario-floor{display:flex;gap:var(--space-2);color:var(--muted);font-size:11px;line-height:1.45}.energy-scenario-caveat{color:var(--soft);font-size:11px;line-height:1.5}
+		.energy-consumer-dialog{width:min(760px,calc(100vw - 32px))}.energy-consumer-dialog-heading h2{font-size:24px}.energy-consumer-primary,.energy-consumer-display-fields,.energy-consumer-recommendation-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-3)}.energy-consumer-field{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:700}.energy-consumer-field input,.energy-consumer-field select{min-height:42px;width:100%;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-weight:400}.energy-consumer-color input{padding:4px;min-height:42px}
+		.energy-icon-picker,.energy-consumer-measurements{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-icon-picker-head,.energy-consumer-measurements-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3)}.energy-icon-picker-head small,.energy-consumer-measurements-head small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.energy-icon-search{min-height:40px;display:inline-flex;align-items:center;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted)}.energy-icon-search .energy-ui-icon{width:14px;height:14px}.energy-icon-search input{min-height:38px;border:0;background:transparent;color:var(--ink)}.energy-icon-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:var(--space-2)}.energy-icon-choice{min-height:64px;display:grid;place-items:center;gap:4px;padding:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted);font-size:10px;text-align:center;cursor:pointer}.energy-icon-choice .energy-ui-icon{width:20px;height:20px}.energy-icon-choice input{position:absolute;opacity:0;width:1px;height:1px}.energy-icon-choice:has(input:checked){border-color:var(--gold);background:var(--panel-soft);color:var(--ink);font-weight:800}.energy-icon-result-note{color:var(--muted);font-size:11px}.energy-consumer-measurement-fields{display:grid;gap:var(--space-2)}.energy-consumer-measurement-status{color:var(--muted);font-size:11px}.energy-consumer-recommendations>summary{color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-consumer-recommendations>summary::-webkit-details-marker{display:none}.energy-consumer-recommendations>div{margin-top:var(--space-3)}.energy-consumer-delete-confirm{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-right:auto;color:var(--muted);font-size:11px}.energy-consumer-delete{margin-right:auto}
+		.energy-chart{scroll-margin-top:96px}.energy-chart-head{display:flex;justify-content:space-between;gap:var(--space-4);align-items:end}.energy-chart-head h2{font-size:26px}.energy-chart-head p,.energy-chart-head small{color:var(--muted);font-size:12px}.energy-chart-head p{margin-top:4px}.energy-chart-head small{text-align:right}.energy-chart-head-actions{display:grid;gap:var(--space-2);justify-items:end}.energy-chart-toolbar,.energy-chart-size-actions,.energy-chart-dialog-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}.energy-chart-range{display:inline-flex;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-chart-range a{min-height:44px;display:inline-flex;align-items:center;padding:var(--space-2) var(--space-3);color:var(--muted);font-size:11px;font-weight:800}.energy-chart-range a+a{box-shadow:inset 1px 0 0 var(--line)}.energy-chart-range a[aria-current="page"]{background:var(--nav);color:var(--panel)}.energy-chart-range a:hover:not([aria-current="page"]){background:var(--panel-soft);color:var(--ink)}.energy-chart-size-button{flex:0 0 auto;gap:7px}.energy-chart-size-button svg{width:16px;height:16px}
+		.energy-chart-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.28fr);gap:var(--space-6);align-items:stretch}.energy-chart-plot{min-width:0;display:grid;gap:var(--space-2)}.energy-chart-legend{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-chart-legend span{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}.energy-chart-legend strong{color:var(--ink);font-variant-numeric:tabular-nums}.energy-chart-legend i{width:24px;height:3px;border-radius:3px;background:var(--nav)}.energy-chart-legend .load i{background:var(--ink)}.energy-chart-legend .pv i{background:var(--leaf)}.energy-chart-legend .grid i{background:var(--gold)}.energy-chart-legend .battery i{background:var(--soft)}.energy-chart-legend .threshold i{height:0;border-top:2px dashed var(--muted);background:transparent}.energy-chart-legend .threshold small{font-size:10px}
+		.energy-chart-svg{width:100%;height:auto;min-height:220px;display:block;overflow:visible}.energy-chart-svg.mobile{display:none}.energy-chart-grid{stroke:var(--line);stroke-width:1}.energy-chart-grid.zero{stroke:var(--soft);stroke-width:1.35}.energy-chart-axis-label{fill:var(--muted);font-family:var(--font-sans);font-size:11px}.energy-chart-line{fill:none;stroke:var(--nav);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}.energy-chart-line.load{stroke:var(--ink)}.energy-chart-line.pv{stroke:var(--leaf)}.energy-chart-line.grid{stroke:var(--gold)}.energy-chart-line.battery{stroke:var(--soft);stroke-width:2.1}.energy-chart-area{stroke:none;fill:none}.energy-chart-area.load{fill:var(--line);opacity:.55}.energy-chart-threshold{stroke:var(--muted);stroke-width:1.4;stroke-dasharray:7 5;vector-effect:non-scaling-stroke}.energy-chart-threshold-label{fill:var(--muted);font-family:var(--font-sans);font-size:10px;font-weight:750}
+		.energy-chart-interactive{position:relative;min-width:0;border-radius:var(--radius-xs);outline:none}.energy-chart-hit{fill:transparent;cursor:crosshair;pointer-events:all}.energy-chart-guide{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:3 3;pointer-events:none;vector-effect:non-scaling-stroke}.energy-chart-marker{fill:var(--panel);stroke:var(--nav);stroke-width:2.5;pointer-events:none;vector-effect:non-scaling-stroke}.energy-chart-marker.load{stroke:var(--ink)}.energy-chart-marker.pv{stroke:var(--leaf)}.energy-chart-marker.grid{stroke:var(--gold)}.energy-chart-marker.battery{stroke:var(--soft)}.energy-chart-marker[hidden],.energy-chart-guide[hidden]{display:none}
+		.energy-chart-tooltip{position:absolute;z-index:5;top:12px;width:210px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px var(--space-3);color:var(--ink);background:var(--panel);box-shadow:var(--shadow-md);pointer-events:none}.energy-chart-tooltip>strong{display:block;margin-bottom:7px;font-family:var(--font-serif);font-size:18px}.energy-chart-tooltip [data-chart-tooltip-values]{display:grid;gap:5px}.energy-chart-tooltip-row{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:7px;align-items:center;color:var(--muted);font-size:11px}.energy-chart-tooltip-row b{color:var(--ink);font-size:12px;font-variant-numeric:tabular-nums}.energy-chart-tooltip-row i{width:7px;height:7px;border-radius:var(--radius-pill);background:var(--nav)}.energy-chart-tooltip-row i.load{background:var(--ink)}.energy-chart-tooltip-row i.pv{background:var(--leaf)}.energy-chart-tooltip-row i.grid{background:var(--gold)}.energy-chart-tooltip-row i.battery{background:var(--soft)}
+		.energy-chart-note{display:grid;align-content:center;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-chart-note span{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-chart-note strong{font-family:var(--font-serif);font-size:21px;line-height:1.25}.energy-chart-note p{color:var(--muted);font-size:13px;line-height:1.5}.energy-chart-hint{color:var(--muted);font-size:11px;line-height:1.5}.energy-chart-empty{display:grid;gap:5px;border:1px dashed var(--line);border-radius:var(--radius-sm);padding:var(--space-5)}.energy-chart-empty strong{font-family:var(--font-serif);font-size:17px}.energy-chart-empty p{color:var(--muted);font-size:13px}
+		.energy-chart-dialog{width:min(1320px,calc(100vw - 48px));max-width:none;max-height:calc(100dvh - 48px);border:0;border-radius:var(--radius-md);padding:0;overflow:hidden;color:var(--ink);background:transparent;box-shadow:var(--shadow-dialog)}.energy-chart-dialog::backdrop{background:var(--nav)}.energy-chart-dialog-shell{max-height:calc(100dvh - 48px);display:grid;gap:var(--space-4);overflow:auto;overscroll-behavior:contain;padding:clamp(var(--space-6),3vw,40px);background:var(--paper)}.energy-chart-dialog-shell>header{display:flex;justify-content:space-between;gap:var(--space-6);align-items:start}.energy-chart-dialog-shell>header h2{margin-top:5px;font-size:clamp(28px,3vw,42px)}.energy-chart-dialog-shell>header p{margin-top:5px;color:var(--muted);font-size:14px}.energy-chart-dialog-actions .button{gap:7px}.energy-chart-dialog-actions svg{width:16px;height:16px}.energy-chart-dialog-plot{border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-4) var(--space-5) 4px;background:var(--panel)}.energy-chart-dialog .energy-chart-svg{min-height:min(54vh,520px)}.energy-chart-dialog .energy-chart-tooltip{top:26px}.energy-chart-dialog-shell:fullscreen,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-dialog-shell{width:100vw;height:100dvh;max-height:none;grid-template-rows:auto auto minmax(0,1fr) auto;border-radius:0;padding:clamp(var(--space-5),2.5vw,42px);background:var(--paper)}.energy-chart-dialog.is-fullscreen-fallback{position:fixed;inset:0;width:100vw;height:100dvh;max-height:none;margin:0;border-radius:0}.energy-chart-dialog-shell:fullscreen .energy-chart-dialog-plot,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-dialog-plot{min-height:0;display:grid;align-items:center}.energy-chart-dialog-shell:fullscreen .energy-chart-svg.desktop,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-svg.desktop{min-height:min(66vh,680px)}
+		.energy-tariff{scroll-margin-top:96px}.energy-tariff-heading-copy p{margin-top:4px;color:var(--muted);font-size:12px}.energy-tariff-title-row{display:flex;align-items:center;gap:var(--space-2)}.energy-metric-info>summary{width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink);cursor:pointer;list-style:none}.energy-metric-info>summary::-webkit-details-marker{display:none}.energy-metric-info .energy-ui-icon{width:12px;height:12px}.energy-metric-info>div{display:grid;gap:var(--space-2);margin-top:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5;max-width:520px}.energy-metric-info>div strong{color:var(--ink)}.energy-metric-info>div small{color:var(--soft);font-size:11px}
+		.energy-billed{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4)}.energy-billed>div{display:grid;gap:6px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-billed strong{font-family:var(--font-serif);font-size:31px;line-height:1;font-variant-numeric:tabular-nums}.energy-billed small{color:var(--muted);font-size:11px}.energy-metric-label{display:flex;align-items:center;gap:6px;color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-tariff-meter{width:100%;height:6px;appearance:none;border:0;border-radius:var(--radius-pill);background:var(--line)}.energy-tariff-meter::-webkit-progress-bar{background:var(--line);border-radius:var(--radius-pill)}.energy-tariff-meter::-webkit-progress-value{background:var(--gold);border-radius:var(--radius-pill)}.energy-tariff-meter::-moz-progress-bar{background:var(--gold);border-radius:var(--radius-pill)}.energy-tariff-meter.billed::-webkit-progress-value{background:var(--nav)}.energy-tariff-meter.billed::-moz-progress-bar{background:var(--nav)}
+		.energy-tariff-cost{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-4)}.energy-tariff-cost-figure{display:grid;gap:5px}.energy-tariff-cost-figure p{display:flex;align-items:baseline;gap:5px}.energy-tariff-cost-figure strong{font-family:var(--font-serif);font-size:27px;font-variant-numeric:tabular-nums}.energy-tariff-cost-figure small{color:var(--muted);font-size:11px}.energy-tariff-basis{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-tariff-basis .energy-ui-icon{width:13px;height:13px}
+		.energy-tariff-empty{display:grid;justify-items:start;gap:6px;padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm)}.energy-tariff-empty.waiting{background:var(--panel-soft);border-style:solid}.energy-tariff-empty strong{font-family:var(--font-serif);font-size:18px}.energy-tariff-empty p{color:var(--muted);font-size:12px;line-height:1.5}
+		.energy-tariff-disclosure>summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-tariff-disclosure>summary::-webkit-details-marker{display:none}.energy-tariff-disclosure .energy-ui-icon{width:14px;height:14px}.energy-tariff-disclosure[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0}.energy-tariff-disclosure>div{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-top:0;border-radius:0 0 var(--radius-sm) var(--radius-sm)}.energy-tariff-method,.energy-tariff-detail-basis{color:var(--muted);font-size:12px;line-height:1.5}.energy-tariff-detail-basis strong{display:block;color:var(--ink)}.energy-tariff-cost-copy{display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.energy-tariff-cost-copy strong{color:var(--ink)}.energy-tariff-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--space-3)}.energy-tariff-tiers>div{display:grid;gap:3px;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft)}.energy-tariff-tiers span{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-tariff-tiers strong{font-family:var(--font-serif);font-size:19px}.energy-tariff-tiers small{color:var(--muted);font-size:11px}.energy-tariff-notes{display:grid;gap:var(--space-2);margin:0;padding-left:var(--space-5);color:var(--muted);font-size:11px;line-height:1.5}
+		.energy-tariff-settings>summary{min-height:40px;display:flex;align-items:center;gap:var(--space-2);color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-tariff-settings>summary::-webkit-details-marker{display:none}.energy-tariff-settings>summary span{color:var(--soft);font-weight:600}.energy-tariff-forms{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--space-4);margin-top:var(--space-3)}.energy-target-form{display:grid;gap:6px;justify-items:start;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-target-form label{width:100%;display:grid;gap:5px}.energy-target-form input{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.onboarding-legend{color:var(--muted);font-size:11px;font-weight:800}
+		.energy-tariff-foot{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line);color:var(--soft);font-size:11px}.energy-tariff-foot a{color:var(--gold-ink);font-weight:800}.energy-history{display:grid;gap:var(--space-2)}.energy-history h4{font-size:15px}.energy-history-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:var(--space-3);align-items:center;padding:var(--space-2) 0;border-top:1px solid var(--line);font-size:12px}.energy-history-row span{display:block;color:var(--muted);font-size:11px}.energy-history-row small{color:var(--soft);font-size:10px}
+		.energy-pair{display:grid;gap:22px}.energy-quality{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-3);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-quality>span:first-child{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel);font-weight:900}.energy-quality.warning>span:first-child,.energy-quality.danger>span:first-child{background:var(--gold)}.energy-quality strong{display:block}.energy-quality p{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.45}.energy-quality small{color:var(--gold-ink);font-weight:750;font-size:11px}
+		.energy-coverage{display:grid;gap:var(--space-2)}.energy-coverage-head{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--muted);font-size:11px}.energy-coverage-list{display:grid;gap:2px}.energy-coverage-row{display:flex;justify-content:space-between;gap:var(--space-3);padding:6px 0;border-top:1px solid var(--line);font-size:12px}.energy-coverage-state{color:var(--muted);font-size:11px}.energy-coverage-state.good{color:var(--leaf)}
+		.energy-roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:var(--space-3)}.energy-roadmap-step{display:grid;align-content:start;gap:5px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-roadmap-step.current{border-color:var(--gold);background:var(--panel)}.energy-roadmap-number{width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--nav);color:var(--panel);font-size:11px;font-weight:800}.energy-roadmap-step.current .energy-roadmap-number{background:var(--gold)}.energy-roadmap-state{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-roadmap-step strong{font-family:var(--font-serif);font-size:16px}.energy-roadmap-step p{color:var(--muted);font-size:12px;line-height:1.45}.energy-roadmap-step a{margin-top:4px;color:var(--gold-ink);font-size:11px;font-weight:800}
+		.energy-system-assets{display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-system-asset{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.energy-system-asset .energy-ui-icon{width:20px;height:20px;color:var(--gold-ink)}.energy-system-helper{color:var(--muted);font-size:12px}.energy-related-links{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-related-links a{min-height:32px;display:inline-flex;align-items:center;color:var(--gold-ink);font-size:11px;font-weight:800}.energy-business-note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:start;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.energy-business-note>span{width:26px;height:26px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--nav);color:var(--panel);font-size:12px}.energy-business-note strong{color:var(--ink)}
+		.energy-admin{display:grid;gap:var(--space-3);padding-top:var(--space-5);border-top:1px solid var(--line)}.energy-admin-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--space-3)}.energy-admin-head h2{font-size:23px}.energy-admin-head span{color:var(--muted);font-size:12px}
+		.energy-collapsible{display:block;padding:0;overflow:hidden}.energy-collapsible>summary{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--space-3);padding:var(--space-4) clamp(var(--space-4),2vw,28px);cursor:pointer;list-style:none}.energy-collapsible>summary::-webkit-details-marker{display:none}.energy-collapsible>summary:hover{background:var(--panel)}.energy-collapsible-body{display:grid;gap:var(--space-4);padding:0 clamp(var(--space-4),2vw,28px) clamp(var(--space-4),2vw,28px);border-top:1px solid var(--line);padding-top:var(--space-4)}
+		.energy-maintenance-list,.energy-measure-list{display:grid;gap:var(--space-2)}.energy-maintenance-row,.energy-measure-row{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-maintenance-summary,.energy-measure-summary{min-height:52px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) var(--space-4);cursor:pointer;list-style:none}.energy-maintenance-summary::-webkit-details-marker,.energy-measure-summary::-webkit-details-marker{display:none}.energy-maintenance-summary strong,.energy-measure-summary strong{display:block;font-size:13px}.energy-maintenance-summary small,.energy-measure-summary small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.energy-status-warning{color:var(--gold-ink);font-size:11px;font-weight:800}.energy-status-danger{color:var(--ink);font-size:11px;font-weight:800}.energy-maintenance-summary>span:last-child,.energy-measure-summary>span:last-child{color:var(--muted);font-size:11px;font-weight:800}.energy-maintenance-body,.energy-measure-body{display:grid;gap:var(--space-3);padding:var(--space-3) var(--space-4) var(--space-4);border-top:1px solid var(--line);background:var(--panel-soft)}
+		.energy-inline-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-inline-form label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:700}.energy-inline-form label.wide{grid-column:1/-1}.energy-inline-form input,.energy-inline-form select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-weight:400}.energy-inline-form .actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-compact-create>summary{min-height:40px;display:flex;align-items:center;color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-compact-create>summary::-webkit-details-marker{display:none}.energy-compact-create>form{margin-top:var(--space-3)}
+		.energy-reference-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3)}.energy-reference-item{display:grid;gap:4px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-reference-item span{color:var(--muted);font-size:11px}.energy-reference-item strong{font-family:var(--font-serif);font-size:23px;font-variant-numeric:tabular-nums}.energy-assets{display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-asset{padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:11px}.energy-import-form{display:grid;justify-items:start;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-import-form label{display:grid;gap:5px}.energy-import-form input[type=file]{min-height:42px;padding:var(--space-2);border:1px dashed var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);font-size:12px}.energy-import-form small{color:var(--muted);font-size:11px;line-height:1.5}
+		.energy-caretaker-list{display:grid;gap:var(--space-2)}.energy-caretaker{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:var(--space-3);align-items:center;padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);font-size:12px}.energy-caretaker small{display:block;color:var(--muted);font-size:11px}.energy-caretaker label{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-caretaker a{color:var(--gold-ink);font-size:11px;font-weight:800}
+		.energy-comparison{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:var(--space-3);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-comparison small{display:block;color:var(--muted);font-size:11px}.energy-comparison strong{font-family:var(--font-serif);font-size:21px;font-variant-numeric:tabular-nums}.energy-comparison>span{color:var(--soft);font-size:11px}.energy-marketplace-gate{display:grid;gap:4px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.energy-marketplace-gate strong{color:var(--ink)}
+		@media(max-width:1050px){.shell{grid-template-columns:210px minmax(0,1fr)}.energy-chart-layout{grid-template-columns:1fr;gap:var(--space-4)}.energy-scenario{grid-template-columns:1fr}.energy-scenario-result{justify-items:start;text-align:left}}
+		@media(max-width:760px){body{padding-bottom:0}.shell{display:block}.sidebar{display:none}.mobile-head{position:sticky;z-index:40;top:0;display:grid;grid-template-columns:42px minmax(0,1fr) 38px;align-items:center;gap:var(--space-3);min-height:74px;padding:var(--space-3) var(--space-4);background:var(--nav);color:var(--panel)}.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:"";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:74px;right:0;left:0;max-height:calc(100vh - 74px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);border-top:1px solid var(--nav-2);box-shadow:var(--shadow-dialog)}.menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.menu-panel .nav a{margin:0;min-height:44px;padding:var(--space-2) var(--space-3)}.menu-panel .nav-label{grid-column:1/-1}.menu-panel .logout-form button{min-height:44px;margin-top:var(--space-3)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:21px}.mobile-identity small{margin-top:var(--space-1);color:var(--soft);font-size:10px}.mobile-head .avatar{width:38px;height:38px}
+			.energy-mode-strip{padding-inline:var(--space-4)}.energy-mode-action-full{display:none}.energy-mode-action-compact{display:inline}.energy-peak-chip{margin-left:0;width:100%}.energy-heading{grid-template-columns:1fr}.energy-heading h1{font-size:32px}.energy-heading-side{justify-items:start}.energy-chart{scroll-margin-top:120px}.energy-chart-head{align-items:start;flex-direction:column;gap:4px}.energy-chart-head small{text-align:left}.energy-chart-head-actions{width:100%;justify-items:stretch}.energy-chart-toolbar{width:100%;justify-content:space-between}.energy-chart-range{flex:1 1 auto}.energy-chart-range a{flex:1 1 50%;justify-content:center}.energy-chart-svg.desktop{display:none}.energy-chart-svg.mobile{min-height:0;display:block}.energy-chart-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:var(--radius-sm)}.energy-chart-dialog-shell{max-height:calc(100dvh - 20px);gap:var(--space-3);padding:var(--space-4)}.energy-chart-dialog-shell>header{align-items:start;flex-direction:column}.energy-chart-dialog-shell>header h2{font-size:27px}.energy-chart-dialog-plot{padding:var(--space-2) 6px 0}.energy-chart-dialog .energy-chart-svg.mobile{min-height:0}.energy-chart-tooltip{top:8px;width:190px}
+			.energy-flow-rail{margin-top:34px}.energy-flow-hint{position:static;margin-top:var(--space-3)}.energy-flow-area{padding:28px var(--space-3) 30px}.energy-flow-grid2{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 40px auto 40px auto 40px auto}.energy-flow-slot-top{grid-column:1;grid-row:1;width:100%;flex-wrap:wrap;justify-self:stretch}.energy-flow-slot-left{grid-column:1;grid-row:3;display:flex;justify-content:center}.energy-flow-hub2{grid-column:1;grid-row:5}.energy-flow-slot-bottom{grid-column:1;grid-row:7;width:100%;justify-self:stretch}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile,.energy-flow-slot-left .energy-flow-tile,.energy-flow-hub2{width:min(258px,100%)}.energy-flow-rail{justify-items:center}.energy-flow-rail>.microlabel{left:max(2px,calc((100% - 258px) / 2))}
+			.energy-quality,.energy-comparison,.energy-caretaker,.energy-history-row{grid-template-columns:1fr}.energy-caretaker{justify-items:start}.energy-inline-form{grid-template-columns:1fr}.energy-billed,.energy-tariff-cost,.energy-tariff-forms{grid-template-columns:1fr}.energy-mode-popover{position:static;width:100%;box-shadow:none}}
+	</style>
+}
+
+// The four helpers below build sentences that mix static copy with data. Doing
+// it in Go rather than in the template keeps the exact single spaces the German
+// copy needs: templ emits a text node per line, and a conditional in the middle
+// of a sentence leaves a stray space behind.
+
+func energyAgreedHint(tariff EnergyTariffView) string {
+	if tariff.HasAgreed {
+		return "Steht auf Ihrer Netzrechnung. Der Entwurf bemisst mindestens 20 % davon. Leer lassen, wenn unbekannt."
+	}
+	if tariff.AgreedHint == "" {
+		return "Leer lassen, wenn unbekannt."
+	}
+	return tariff.AgreedHint + " Leer lassen, wenn unbekannt."
+}
+
+func energyCostModelSentence(freeUntil string) string {
+	scope := "zwölf Monate kostenlos"
+	if freeUntil != "" {
+		scope = "kostenlos bis " + freeUntil
+	}
+	return "voller Produktumfang " + scope + ", danach nach heutigem Modell 12 € pro Jahr. Bestehende Pilot-Enddaten bleiben erhalten; aktuell gibt es keine Zahlung."
+}
+
+func energyMaintenanceMeta(plan EnergyMaintenanceView) string {
+	meta := plan.AssetName + " · alle " + strconv.Itoa(plan.IntervalMonths) + " Monate"
+	if plan.LastCompleted != "" {
+		meta += " · zuletzt " + plan.LastCompleted
+	}
+	return meta
+}
+
+func energyMeasureMeta(measure EnergyMeasureView) string {
+	meta := measure.StatusLabel
+	if measure.ContactName != "" {
+		meta += " · " + measure.ContactName
+	}
+	if measure.Appointment != "" {
+		meta += " · " + measure.Appointment
+	}
+	return meta
+}
