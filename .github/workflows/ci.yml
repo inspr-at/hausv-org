@@ -158,6 +158,76 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+  portal-oracles:
+    name: Portal parity and responsive shell
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    # Measured: the parity pass is 1m50s locally for 150 page captures, the
+    # probe about a minute. This runner is slower, so the ceiling is generous
+    # rather than tight — a timeout here reads as a product failure and costs
+    # far more than the minutes it saves.
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          check-latest: true
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.18.1 # exakte Patchversion, siehe docs/supply-chain-pins.md
+          cache: npm
+          cache-dependency-path: scripts/snapshot/package-lock.json
+
+      - name: Install browser QA dependencies
+        run: |
+          npm --prefix scripts/snapshot ci --ignore-scripts --no-audit --no-fund
+          npm --prefix scripts/snapshot exec -- playwright install --with-deps chromium
+
+      # Cheap and self-contained: one boot, 20 routes x 18 widths. Asserts that
+      # every route has exactly one navigation at every width, that it sits at
+      # the top, and that all routes agree on which shell they are in. Six
+      # routes once rendered their only navigation below the fold and every
+      # other check passed.
+      # run.sh hands the output path straight to the probe, which writes a file
+      # rather than creating a tree, so the directory has to exist first.
+      - name: Prepare evidence directory
+        run: mkdir -p "${{ github.workspace }}/artifacts/portal-oracles"
+
+      - name: Responsive shell probe
+        env:
+          CI: "true"
+          TEMPL_PORTAL_ENABLED: "1"
+          HV_CAPTURE: shell-widths.mjs
+        run: bash scripts/snapshot/run.sh WORKTREE "${{ github.workspace }}/artifacts/portal-oracles/widths.json" 8299
+
+      # The expensive one: renders every page BOTH ways and fails if the templ
+      # rendering offers less than the legacy one — a dropped script, body
+      # attribute, POST target, confirmation, required field or DOM hook.
+      #
+      # Where this does NOT reach, stated so nobody reads it as total coverage:
+      #   - it compares rendered markup, so anything hidden by CSS looks present;
+      #     visibility contracts live in Go tests under internal/web
+      #   - data-confirm never appears in the seeded fixtures, so that aspect
+      #     passes vacuously; the structural half is a Go test
+      #   - it only sees routes listed in capture.mjs
+      - name: Contract parity, legacy versus templ
+        run: bash scripts/snapshot/templ-parity.sh WORKTREE "${{ github.workspace }}/artifacts/portal-oracles/parity"
+
+      - name: Upload oracle evidence
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: portal-oracles-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/portal-oracles
+          if-no-files-found: warn
+          retention-days: 7
+
   docker:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
