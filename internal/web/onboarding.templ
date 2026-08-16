@@ -85,6 +85,7 @@ type OnboardingRecommendation struct {
 templ OnboardingPage(data OnboardingPageData) {
 	@PortalDocument(data.Portal.Title, portalAssetVersion(), nil, OnboardingStyles(), templ.Attributes{"data-templ-onboarding": true}) {
 		<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+		@PortalMobileHeader(data.Portal, "Einrichtung")
 		<div class="shell">
 			@PortalSidebar(data.Portal)
 			<main class="onboarding-main" id="main-content" tabindex="-1">
@@ -114,7 +115,6 @@ templ OnboardingPage(data OnboardingPageData) {
 				</div>
 			</main>
 		</div>
-		@PortalMobileHeader(data.Portal, "Einrichtung")
 	}
 }
 

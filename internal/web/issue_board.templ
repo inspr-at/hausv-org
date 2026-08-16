@@ -41,11 +41,11 @@ type IssueTriagePageData struct {
 templ IssueBoardPage(data IssueBoardPageData) {
 	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"attachments.js", "issues.js"}, IssueBoardStyles(), templ.Attributes{"data-templ-issue-board": true}) {
 		<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+		@PortalMobileHeader(data.Portal, "Anliegen")
 		<div class="shell">
 			@PortalSidebar(data.Portal)
 			@IssueBoardContent(data)
 		</div>
-		@PortalMobileHeader(data.Portal, "Anliegen")
 	}
 }
 

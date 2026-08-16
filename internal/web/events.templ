@@ -26,11 +26,11 @@ type EventsPageData struct {
 templ EventsPage(data EventsPageData) {
 	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"announcements.js", "attachments.js"}, EventsStyles(), templ.Attributes{"data-templ-events": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+			@PortalMobileHeader(data.Portal, "Termine")
 			<div class="shell">
 				@PortalSidebar(data.Portal)
 				@EventsContent(data)
 			</div>
-			@PortalMobileHeader(data.Portal, "Termine")
 			if data.CanManageEvents {
 				@EventCreateDialog(data.NowInput)
 			}

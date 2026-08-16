@@ -31,11 +31,11 @@ type DocumentsPageData struct {
 templ DocumentsPage(data DocumentsPageData) {
 	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"announcements.js", "attachments.js"}, DocumentsStyles(), templ.Attributes{"data-templ-documents": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+			@PortalMobileHeader(data.Portal, "Dokumente")
 			<div class="shell">
 				@PortalSidebar(data.Portal)
 				@DocumentsContent(data)
 			</div>
-			@PortalMobileHeader(data.Portal, "Dokumente")
 			if data.CanManageDocuments {
 				@DocumentUploadDialog(data)
 			}

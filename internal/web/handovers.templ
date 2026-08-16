@@ -60,11 +60,11 @@ type HandoversPageData struct {
 templ HandoversPage(data HandoversPageData) {
 	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"attachments.js"}, HandoversStyles(), templ.Attributes{"data-templ-handovers": true}) {
 			<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+			@PortalMobileHeader(data.Portal, "Übergaben")
 			<div class="shell">
 				@PortalSidebar(data.Portal)
 				@HandoversContent(data)
 			</div>
-			@PortalMobileHeader(data.Portal, "Übergaben")
 			@HandoverCreateDialog(data.NowInput, data.UnitOptions)
 	}
 }
