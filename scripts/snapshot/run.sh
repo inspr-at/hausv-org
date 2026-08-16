@@ -94,8 +94,12 @@ if [ "$ready" -eq 0 ]; then
     exit 1
 fi
 
-echo "── capturing"
-node "$repo/scripts/snapshot/capture.mjs" "http://localhost:$port" "$out"
+# Which script gets the booted app. Defaults to the snapshot capture; the
+# responsive probe reuses this whole boot-with-seeded-fixtures dance rather than
+# copying it and drifting from it.
+capture=${HV_CAPTURE:-capture.mjs}
+echo "── running $capture"
+node "$repo/scripts/snapshot/$capture" "http://localhost:$port" "$out"
 rc=$?
 
 kill "$pid" 2>/dev/null
