@@ -693,6 +693,39 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 			connectorMessage = "Home Assistant antwortet gerade nicht. Ihre bisherigen Angaben bleiben erhalten."
 		}
 	}
+	if a.portalTemplEnabled {
+		// The legacy data map never carried an operating mode or tariff, so the
+		// energy mode strip on this route always rendered the observing state.
+		// The templ page keeps that contract rather than inventing a new one.
+		a.renderOnboardingTempl(w, r, web.OnboardingPageData{
+			Portal:               a.onboardingPortalContext(ac),
+			Step:                 step,
+			Progress:             step * 20,
+			ProfileReset:         r.URL.Query().Get("reset") == "1",
+			HouseholdName:        profile.HouseholdName,
+			HomeType:             profile.HomeType,
+			HomeTypeLabel:        energyHomeTypeLabel(profile.HomeType),
+			HomeTypeDescription:  energyHomeTypeDescription(profile.HomeType),
+			HomeTypeLocked:       a.homeIdentityTypeLocked(profile),
+			HasHomeUnit:          hasHomeUnit,
+			HomeUnitID:           homeUnitID,
+			HomeUnitLabel:        homeUnitLabel,
+			HasUnitOptions:       len(unitOptions) > 0,
+			UnitOptions:          onboardingUnitOptions(unitOptions),
+			AssetOptions:         onboardingAssetOptions(buildEnergyAssetOptions(assets)),
+			MappingSlots:         onboardingMappingSlots(mappingSlots),
+			MappingAssetOptions:  onboardingOptions(buildEnergyMappingAssetOptions(assets)),
+			ConnectorMessage:     connectorMessage,
+			Candidates:           onboardingCandidates(discovery.Recommended),
+			HasCandidates:        len(discovery.Recommended) > 0,
+			RecommendedCount:     len(discovery.Recommended),
+			AdditionalCandidates: onboardingCandidates(discovery.Additional),
+			HasAdditional:        len(discovery.Additional) > 0,
+			FinishRecommendation: onboardingRecommendation(finishRecommendation),
+			CanControlEnergy:     a.canControlEnergy(ac),
+		})
+		return
+	}
 	a.render(w, "homeOnboarding", a.withBase(ac, map[string]any{
 		"Title":                 "Mein Zuhause einrichten",
 		"ActivePage":            "energy",
