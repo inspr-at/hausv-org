@@ -34,10 +34,19 @@ const PERSONAS = [
   { name: 'resident', email: 'resident@example.com' },
 ];
 
-// /app/energie and /app/settings/home are absent on purpose: the demo tenant's
-// seeded profile never completes onboarding, so both redirect there. Capturing
-// them would file the onboarding page under two other routes' names — an
-// artefact that reads like coverage and is worse than the gap. HAUSV-550.
+// The demo tenant's seeded profile never completes onboarding, so /app/energie
+// and /app/settings/home redirect there and cannot be captured under their own
+// names. The cockpit tenant seeds `complete: true`, so its owner reaches both.
+// Kept as a separate pass rather than by completing demo's profile, because
+// that would move every existing capture and with it the byte-identical
+// baseline. HAUSV-550.
+const ENERGY_PERSONA = { name: 'cockpit-owner', email: 'cockpit-owner@example.com', tenant: 'cockpit' };
+const ENERGY_ROUTES = [
+  ['energy', '/app/energie'],
+  ['settings-home', '/app/settings/home'],
+  ['onboarding', '/app/zuhause/onboarding'],
+];
+
 const ROUTES = [
   ['portal', '/app'],
   ['announcements', '/app/announcements'],
@@ -87,7 +96,10 @@ const browser = await chromium.launch({
 });
 
 let captured = 0;
-for (const persona of PERSONAS) {
+
+async function capturePersona(persona, routes) {
+  const slug = persona.tenant || tenantSlug;
+  const personaBaseURL = `${baseURL}/${slug}`;
   const ctx = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1,
@@ -99,18 +111,23 @@ for (const persona of PERSONAS) {
 
   // LOCAL_DEV_LOGIN: submitting the email renders a dev magic-link inline
   // instead of mailing it; following that link establishes the session.
-  await page.goto(`${tenantBaseURL}/`, { waitUntil: 'networkidle' });
+  await page.goto(`${personaBaseURL}/`, { waitUntil: 'networkidle' });
   await page.fill('input[name="email"]', persona.email);
   await page.click('form[action$="/auth/request"] button[type="submit"], form[action$="/auth/request"] button');
   await page.waitForSelector('a.dev-link', { timeout: 10_000 });
   const link = await page.getAttribute('a.dev-link', 'href');
-  await page.goto(new URL(link, `${tenantBaseURL}/`).href, { waitUntil: 'networkidle' });
+  await page.goto(new URL(link, `${personaBaseURL}/`).href, { waitUntil: 'networkidle' });
 
   const dir = path.join(outDir, persona.name);
   await mkdir(dir, { recursive: true });
 
-  for (const [name, route] of ROUTES) {
-    const res = await page.goto(`${tenantBaseURL}${route}`, { waitUntil: 'networkidle' });
+  for (const [name, route] of routes) {
+    const res = await page.goto(`${personaBaseURL}${route}`, { waitUntil: 'networkidle' });
+    // A route that redirects is not the route we asked for. Capturing it under
+    // the requested name is how /app/energie came to be "covered" by three
+    // copies of the onboarding page.
+    const landed = new URL(page.url()).pathname.replace(`/${slug}`, '');
+    if (landed !== route) throw new Error(`${persona.name}${route} redirected to ${landed}; capture would file it under the wrong name`);
     const status = res ? res.status() : 0;
     const html = normalise(await page.content());
     await writeFile(path.join(dir, `${name}.html`), `<!-- status:${status} -->\n${html}\n`);
@@ -137,6 +154,9 @@ for (const persona of PERSONAS) {
   }
   await ctx.close();
 }
+
+for (const persona of PERSONAS) await capturePersona(persona, ROUTES);
+await capturePersona(ENERGY_PERSONA, ENERGY_ROUTES);
 
 await browser.close();
 console.log(`captured ${captured} pages into ${outDir}`);

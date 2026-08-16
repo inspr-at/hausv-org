@@ -58,6 +58,10 @@ const shown = (el) => {
   return s.display !== 'none' && s.visibility !== 'hidden' && el.getClientRects().length > 0;
 };
 
+const ENERGY = { tenant: 'cockpit', email: 'cockpit-owner@example.com', routes: [
+  ['energy', '/app/energie'], ['settings-home', '/app/settings/home'],
+] };
+
 const results = [];
 for (const [name, route] of ROUTES) {
   await page.goto(`${tenantURL}${route}`, { waitUntil: 'domcontentloaded' });
@@ -85,6 +89,35 @@ for (const [name, route] of ROUTES) {
     results.push({ route: name, width: w, ...state });
   }
 }
+// Reachable only for the cockpit tenant; see capture.mjs for why.
+{
+  const t2 = `${baseURL}/${ENERGY.tenant}`;
+  const p2 = await ctx.newPage();
+  await p2.goto(`${t2}/`, { waitUntil: 'networkidle' });
+  await p2.fill('input[name="email"]', ENERGY.email);
+  await p2.click('form[action$="/auth/request"] button');
+  await p2.waitForSelector('a.dev-link', { timeout: 10000 });
+  await p2.goto(new URL(await p2.getAttribute('a.dev-link', 'href'), `${t2}/`).href, { waitUntil: 'networkidle' });
+  for (const [name, route] of ENERGY.routes) {
+    await p2.goto(`${t2}${route}`, { waitUntil: 'domcontentloaded' });
+    for (const w of WIDTHS) {
+      await p2.setViewportSize({ width: w, height: 900 });
+      const state = await p2.evaluate((visibleSrc) => {
+        const vis = eval(`(${visibleSrc})`);
+        const h = document.querySelector('.mobile-head');
+        return {
+          sidebar: vis(document.querySelector('.sidebar')),
+          mobile: vis(h),
+          menu: vis(document.querySelector('.mobile-head details > summary')),
+          links: document.querySelectorAll('.nav a').length,
+          headTop: h ? Math.round(h.getBoundingClientRect().top) : null,
+        };
+      }, shown.toString());
+      results.push({ route: name, width: w, ...state });
+    }
+  }
+}
+
 await browser.close();
 
 let failures = 0;

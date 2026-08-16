@@ -13,6 +13,9 @@ const ROUTES = [
 ];
 const tenant = (process.env.DEFAULT_TENANT || 'demo').replace(/^\/+|\/+$/g, '');
 const t = `${baseURL}/${tenant}`;
+const ENERGY = { tenant: 'cockpit', email: 'cockpit-owner@example.com',
+  routes: ['/app/energie', '/app/settings/home', '/app/zuhause/onboarding'] };
+
 const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'de-AT' });
 const page = await ctx.newPage();
@@ -36,6 +39,31 @@ for (const r of ROUTES) {
   const landed = new URL(page.url()).pathname.replace(`/${tenant}`, '');
   rows.push({ route: r, landed, redirected: landed !== r, status: res ? res.status() : 0, ...info });
 }
+// The demo profile never completes onboarding, so these three only render as
+// themselves for the cockpit tenant. Measure them where they exist.
+{
+  const t2 = `${baseURL}/${ENERGY.tenant}`;
+  const p2 = await ctx.newPage();
+  await p2.goto(`${t2}/`, { waitUntil: 'networkidle' });
+  await p2.fill('input[name="email"]', ENERGY.email);
+  await p2.click('form[action$="/auth/request"] button');
+  await p2.waitForSelector('a.dev-link', { timeout: 10000 });
+  await p2.goto(new URL(await p2.getAttribute('a.dev-link', 'href'), `${t2}/`).href, { waitUntil: 'networkidle' });
+  for (const r of ENERGY.routes) {
+    const res = await p2.goto(`${t2}${r}`, { waitUntil: 'domcontentloaded' });
+    const info = await p2.evaluate(() => ({
+      templ: [...document.body.attributes].some((a) => a.name.startsWith('data-templ')),
+      marker: [...document.body.attributes].map((a) => a.name).filter((n) => n.startsWith('data-templ')).join(','),
+      authed: document.body.hasAttribute('data-authenticated-app'),
+      shell: !!document.querySelector('.shell'),
+    }));
+    const landed = new URL(p2.url()).pathname.replace(`/${ENERGY.tenant}`, '');
+    const i = rows.findIndex((x) => x.route === r);
+    const row = { route: r, landed, redirected: landed !== r, status: res ? res.status() : 0, tenant: ENERGY.tenant, ...info };
+    if (i >= 0) rows[i] = row; else rows.push(row);
+  }
+}
+
 await browser.close();
 const legacy = rows.filter((r) => r.status === 200 && !r.templ);
 console.log(`${'route'.padEnd(34)} ${'status'.padStart(6)}  renderer`);
