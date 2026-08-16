@@ -210,7 +210,8 @@ func TestIssueBoardTemplKeepsFiltersAndTriageEntryReachable(t *testing.T) {
 		`action="/demo/app/anliegen/board"`,
 		`name="status"`, `name="priority"`, `name="category"`, `name="assignee"`, `name="sort"`,
 		`href="/demo/app/anliegen/board?status=Neu"`,
-		`href="/demo/app/anliegen/board?assignee=manager@example.com"`,
+		// the address is query-escaped: an unescaped `+` in an email arrives as a space
+		`href="/demo/app/anliegen/board?assignee=manager%40example.com"`,
 		`href="/demo/app/anliegen/board/` + issue.ID + `"`,
 		"1 dringend",
 	} {

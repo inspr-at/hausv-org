@@ -1,6 +1,7 @@
 package web
 
 import (
+	"strings"
 	"encoding/json"
 	"strconv"
 
@@ -268,7 +269,7 @@ type EnergyPageData struct {
 }
 
 templ EnergyPage(data EnergyPageData) {
-	@PortalDocument(data.Portal.Title, portalAssetVersion(), []string{"energy-flow.js"}, EnergyStyles(), templ.Attributes{"data-templ-energy": true}) {
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), []string{"energy-flow.js"}, EnergyStyles(portalAssetVersion()), templ.Attributes{"data-templ-energy": true}) {
 		<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
 		@PortalMobileHeader(data.Portal, "Mein Zuhause")
 		<div class="shell">
@@ -1187,7 +1188,8 @@ func energySystemAssetIcon(isPV bool) string {
 	return "energy-ui-icon-battery"
 }
 
-templ EnergyStyles() {
+templ EnergyStyles(assetVersion string) {
+	@templ.Raw("<style>" + energyIconMaskCSS(assetVersion) + "</style>")
 	<style>
 		a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[data-energy-chart-interactive]:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,h4,p{margin:0}h1,h2,h3,h4{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.muted{color:var(--muted);font-size:12px;line-height:1.5}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
 		.shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.mobile-head{display:none}
@@ -1196,7 +1198,6 @@ templ EnergyStyles() {
 		.pill{display:inline-flex;align-items:center;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
 		.message{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.message.success{border-color:var(--leaf);background:var(--panel);color:var(--ink)}.message.error{border-color:var(--gold);background:var(--panel);color:var(--ink)}
 		.energy-ui-icon{width:1em;height:1em;display:block;flex:0 0 auto;background:currentColor;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-image:var(--energy-icon);mask-image:var(--energy-icon)}
-		.energy-ui-icon-house-plug{--energy-icon:url("/assets/icons/lucide/house-plug.svg")}.energy-ui-icon-house{--energy-icon:url("/assets/icons/lucide/house.svg")}.energy-ui-icon-solar-panel{--energy-icon:url("/assets/icons/lucide/solar-panel.svg")}.energy-ui-icon-utility-pole{--energy-icon:url("/assets/icons/lucide/utility-pole.svg")}.energy-ui-icon-battery{--energy-icon:url("/assets/icons/lucide/battery.svg")}.energy-ui-icon-binoculars{--energy-icon:url("/assets/icons/lucide/binoculars.svg")}.energy-ui-icon-check{--energy-icon:url("/assets/icons/lucide/check.svg")}.energy-ui-icon-alert{--energy-icon:url("/assets/icons/lucide/triangle-alert.svg")}.energy-ui-icon-info{--energy-icon:url("/assets/icons/lucide/info.svg")}.energy-ui-icon-play{--energy-icon:url("/assets/icons/lucide/play.svg")}.energy-ui-icon-pencil{--energy-icon:url("/assets/icons/lucide/pencil.svg")}.energy-ui-icon-log-out{--energy-icon:url("/assets/icons/lucide/log-out.svg")}.energy-ui-icon-circle-help{--energy-icon:url("/assets/icons/lucide/circle-help.svg")}.energy-ui-icon-shield-check{--energy-icon:url("/assets/icons/lucide/shield-check.svg")}.energy-ui-icon-workflow{--energy-icon:url("/assets/icons/lucide/workflow.svg")}.energy-ui-icon-server-cog{--energy-icon:url("/assets/icons/lucide/server-cog.svg")}.energy-ui-icon-circle-check{--energy-icon:url("/assets/icons/lucide/circle-check.svg")}.energy-ui-icon-chevron-right{--energy-icon:url("/assets/icons/lucide/chevron-right.svg")}.energy-ui-icon-chevron-down{--energy-icon:url("/assets/icons/lucide/chevron-down.svg")}.energy-ui-icon-ellipsis{--energy-icon:url("/assets/icons/lucide/ellipsis.svg")}.energy-ui-icon-clock{--energy-icon:url("/assets/icons/lucide/clock-3.svg")}.energy-ui-icon-car-front{--energy-icon:url("/assets/icons/lucide/car-front.svg")}.energy-ui-icon-plug-zap{--energy-icon:url("/assets/icons/lucide/plug-zap.svg")}.energy-ui-icon-heater{--energy-icon:url("/assets/icons/lucide/heater.svg")}.energy-ui-icon-fan{--energy-icon:url("/assets/icons/lucide/fan.svg")}.energy-ui-icon-washing-machine{--energy-icon:url("/assets/icons/lucide/washing-machine.svg")}.energy-ui-icon-flame{--energy-icon:url("/assets/icons/lucide/flame.svg")}.energy-ui-icon-drill{--energy-icon:url("/assets/icons/lucide/drill.svg")}.energy-ui-icon-waves-ladder{--energy-icon:url("/assets/icons/lucide/waves-ladder.svg")}.energy-ui-icon-square-parking{--energy-icon:url("/assets/icons/lucide/square-parking.svg")}.energy-ui-icon-plug{--energy-icon:url("/assets/icons/lucide/plug.svg")}.energy-ui-icon-grip-vertical{--energy-icon:url("/assets/icons/lucide/grip-vertical.svg")}.energy-ui-icon-plus{--energy-icon:url("/assets/icons/lucide/plus.svg")}.energy-ui-icon-search{--energy-icon:url("/assets/icons/lucide/search.svg")}.energy-ui-icon-x{--energy-icon:url("/assets/icons/lucide/x.svg")}.energy-ui-icon-snowflake{--energy-icon:url("/assets/icons/lucide/snowflake.svg")}.energy-ui-icon-shower-head{--energy-icon:url("/assets/icons/lucide/shower-head.svg")}
 		.energy-mode-strip{min-height:64px;display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-4);padding-block:var(--space-2);padding-inline:max(clamp(var(--space-4),4vw,56px),calc(50% - 580px));background:var(--panel);border-bottom:1px solid var(--line)}.energy-mode-strip.active{background:var(--panel-soft);border-bottom-color:var(--gold)}.energy-mode-state{display:flex;align-items:center;gap:var(--space-3)}.energy-mode-icon{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel)}.energy-mode-strip.active .energy-mode-icon{background:var(--gold)}.energy-mode-icon .energy-ui-icon{width:16px;height:16px}.energy-mode-copy{display:flex;align-items:baseline;gap:var(--space-2)}.energy-mode-copy strong{font-size:13px}.energy-mode-copy span{color:var(--muted);font-size:11px}
 		.energy-peak-chip{min-height:36px;display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto;padding:var(--space-1) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:11px}.energy-peak-chip b{color:var(--ink);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}.energy-peak-chip-label{color:var(--gold-ink);font-weight:800;letter-spacing:.05em;text-transform:uppercase;font-size:9px}.energy-peak-chip .sep{color:var(--soft)}.energy-peak-chip:hover{background:var(--panel)}
 		.energy-mode-action{min-height:40px;display:inline-flex;align-items:center;gap:7px;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800;list-style:none;cursor:pointer}.energy-mode-action::-webkit-details-marker{display:none}.energy-mode-action .energy-ui-icon{width:14px;height:14px}.energy-mode-action-compact{display:none}.energy-mode-control{position:relative}.energy-mode-popover{position:absolute;z-index:60;right:0;top:calc(100% + var(--space-2));width:min(420px,calc(100vw - 32px));display:grid;gap:var(--space-3);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}.energy-mode-popover p{color:var(--muted);font-size:12px;line-height:1.5}.energy-mode-popover label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-2);color:var(--muted);font-size:12px;line-height:1.45}.energy-mode-popover input[type=text]{min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.energy-mode-capability{margin-left:auto;color:var(--muted);font-size:11px}
@@ -1295,4 +1296,54 @@ func energyMeasureMeta(measure EnergyMeasureView) string {
 		meta += " · " + measure.Appointment
 	}
 	return meta
+}
+
+// Icon masks carry the asset version exactly as the legacy stylesheet did; without
+// it a changed glyph is served from cache indefinitely. Built in Go because a
+// templ <style> block is static text and cannot interpolate.
+func energyIconMaskCSS(assetVersion string) string {
+	names := []string{
+		"house-plug",
+		"house",
+		"solar-panel",
+		"utility-pole",
+		"battery",
+		"binoculars",
+		"check",
+		"triangle-alert",
+		"info",
+		"play",
+		"pencil",
+		"log-out",
+		"circle-help",
+		"shield-check",
+		"workflow",
+		"server-cog",
+		"circle-check",
+		"chevron-right",
+		"chevron-down",
+		"ellipsis",
+		"clock-3",
+		"car-front",
+		"plug-zap",
+		"heater",
+		"fan",
+		"washing-machine",
+		"flame",
+		"drill",
+		"waves-ladder",
+		"square-parking",
+		"plug",
+		"grip-vertical",
+		"plus",
+		"search",
+		"x",
+		"snowflake",
+		"shower-head",
+	}
+	var b strings.Builder
+	for _, n := range names {
+		b.WriteString(".energy-ui-icon-" + n + "{--energy-icon:url(\"/assets/icons/lucide/" + n + ".svg?v=" + assetVersion + "\")}")
+	}
+	return b.String()
 }

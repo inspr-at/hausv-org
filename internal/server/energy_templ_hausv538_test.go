@@ -37,7 +37,9 @@ func TestEnergyCockpitTemplUsesSharedShellAndKeepsItsScriptAndWritePaths(t *test
 		// icon masks in the page stylesheet.
 		`action="/demo/app/energie/target"`,
 		`action="/demo/app/energie/anschlussleistung"`,
-		`url("/demo/assets/icons/lucide/plug.svg")`,
+		// versioned exactly as the legacy stylesheet did — an unversioned mask is
+		// served from cache forever after the glyph changes
+		`url("/demo/assets/icons/lucide/plug.svg?v=`,
 		`/demo/assets/energy-flow.js?v=`,
 	} {
 		if !strings.Contains(body, want) {
