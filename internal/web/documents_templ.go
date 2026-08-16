@@ -203,7 +203,7 @@ func DocumentsStyles() templ.Component {
 			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<style>\n\t\t:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;--font-serif:ui-serif,Georgia,Cambria,\"Times New Roman\",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);--shadow-md:0 18px 44px rgba(32,37,31,.08);font-family:var(--font-sans)}button,input,select{font:inherit}button{cursor:pointer}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.skip-link{position:fixed;z-index:300;top:var(--space-2);left:var(--space-2);padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}\n\t\t.documents-shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-panel{position:fixed;z-index:250;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}\n\t\t.documents-main{min-width:0;padding:var(--space-6)}.page-top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}.crumb{display:flex;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}.crumb svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6}.page-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.page{max-width:1180px;margin:var(--space-5) auto 0}.page-heading{display:flex;align-items:end;justify-content:space-between;gap:var(--space-5);padding-bottom:var(--space-5);border-bottom:1px solid var(--line)}.page-heading h1{font-size:42px;line-height:1}.lede{max-width:680px;color:var(--muted);font-size:14px;line-height:1.5}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:34px;padding:var(--space-1) var(--space-3)}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.flash{margin-top:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}.flash.ok{border-color:var(--gold)}\n\t\t.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.document-library{display:grid;gap:var(--space-5);margin-top:var(--space-5);padding:var(--space-5)}.library-head{display:flex;align-items:end;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px solid var(--line)}.kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.mini{margin-top:var(--space-1);color:var(--muted);font-size:11px}.pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:750}.document-toolbar{display:grid;grid-template-columns:minmax(240px,1fr) minmax(170px,.3fr) auto;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.document-search{position:relative;min-width:0}.document-search svg{position:absolute;top:50%;left:var(--space-3);width:20px;height:20px;transform:translateY(-50%);fill:none;stroke:var(--muted);stroke-width:1.8;pointer-events:none}.document-search input,.document-sort select{width:100%;min-height:50px;border:0;background:transparent;color:var(--ink)}.document-search input{padding:var(--space-3) var(--space-3) var(--space-3) 42px}.document-sort{border-left:1px solid var(--line)}.document-sort select{padding:var(--space-3);font-weight:750}.document-toolbar .button,.document-reset{min-height:50px;border-width:0 0 0 1px;border-radius:0}.document-reset{display:inline-flex;align-items:center;justify-content:center;padding-inline:var(--space-3);border-left:1px solid var(--line);background:var(--panel-soft);color:var(--gold-ink);font-size:12px;font-weight:800}.document-sections{display:grid;gap:var(--space-5)}.document-section{display:grid;gap:var(--space-2)}.document-section h2{display:flex;align-items:center;gap:var(--space-2);font-size:19px}.section-count{padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-family:var(--font-sans);font-size:10px}.document-list{display:grid;gap:var(--space-2)}.document-row{display:grid;grid-template-columns:50px minmax(0,1fr) minmax(150px,auto);align-items:center;gap:var(--space-3) var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);scroll-margin-top:82px}.document-icon{width:48px;height:56px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--gold-ink)}.document-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7}.document-copy{min-width:0}.document-copy>strong{display:block;font-family:var(--font-serif);font-size:18px;overflow-wrap:anywhere}.document-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px var(--space-2);margin-top:var(--space-2);color:var(--muted);font-size:11px}.document-meta-secondary{color:var(--soft)}.file-details{margin-top:var(--space-1);color:var(--soft);font-size:11px}.file-details summary,.admin-tools>summary,.versions>summary{min-height:40px;display:flex;align-items:center;cursor:pointer;font-weight:800}.document-file{display:block;overflow-wrap:anywhere}.document-actions{min-width:150px;display:grid;gap:var(--space-2)}.document-actions .button{width:100%}.admin-tools,.versions{grid-column:2/-1;padding-top:var(--space-2);border-top:1px solid var(--line)}.admin-tools>summary,.versions>summary{color:var(--gold-ink);font-size:12px}.admin-body{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:var(--space-2)}.version-list{display:grid;gap:var(--space-2);margin-top:var(--space-2)}.version-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:11px}\n\t\t.document-empty{min-height:210px;display:grid;place-items:center;padding:var(--space-6);border:1px dashed var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);text-align:center}.document-empty svg{width:42px;height:42px;fill:none;stroke:var(--gold-ink);stroke-width:1.5}.document-empty h2{margin-top:var(--space-3);font-size:24px}.document-empty p{max-width:52ch;margin-top:var(--space-2);color:var(--muted);font-size:13px;line-height:1.5}.document-empty .button{margin-top:var(--space-4)}.doc-blank{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(270px,.85fr);gap:var(--space-4);margin-top:var(--space-5)}.doc-blank-main{min-height:350px;display:grid;align-content:center;gap:var(--space-5);padding:var(--space-6);border:1px dashed var(--line);border-radius:var(--radius-md);background:var(--panel)}.doc-blank-lead{display:grid;justify-items:start;gap:var(--space-3)}.doc-blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft);color:var(--gold-ink)}.doc-blank-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.5}.doc-blank-main h2{font-size:30px}.doc-blank-main p{max-width:54ch;color:var(--muted);font-size:14px;line-height:1.55}.doc-blank-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.doc-guide{align-self:start;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}.doc-guide>summary{min-height:60px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-4);cursor:pointer;list-style:none}.doc-guide>summary::-webkit-details-marker{display:none}.doc-guide>summary::after{content:\"+\";color:var(--gold-ink);font-size:20px}.doc-guide[open]>summary{border-bottom:1px solid var(--line)}.doc-guide[open]>summary::after{content:\"−\"}.doc-guide>summary span{display:grid;gap:2px}.doc-guide>summary small{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.doc-guide-body{display:grid;gap:var(--space-3);padding:var(--space-4)}.doc-guide-list{display:grid;gap:var(--space-2);margin:0;padding:0;list-style:none}.doc-guide-list li{display:grid;gap:2px;padding-top:var(--space-2);border-top:1px solid var(--line)}.doc-guide-list li:first-child{padding-top:0;border-top:0}.doc-guide-list strong{font-size:12px}.doc-guide-list span{color:var(--muted);font-size:11px;line-height:1.4}.doc-notes{display:grid;gap:var(--space-2)}.doc-note{display:grid;gap:2px;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.doc-note strong{font-size:12px}.doc-note span{color:var(--muted);font-size:11px;line-height:1.4}\n\t\t.dialog{width:min(680px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog form{display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-height:inherit}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-5);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:25px}.dialog-close{width:44px;height:44px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px}.dialog-body{min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto}.dialog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.dialog-grid .full{grid-column:1/-1}.dialog label{display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;font-weight:700}.dialog input,.dialog select{width:100%;min-height:44px;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel);color:var(--ink)}.dialog-optional{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.dialog-optional>summary{min-height:44px;padding:var(--space-3);cursor:pointer;font-size:12px;font-weight:800}.dialog-optional-grid{display:grid;gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line)}.file-control{position:relative;min-height:44px;display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.file-control span{color:var(--gold-ink)}.dialog-footer{display:flex;justify-content:flex-end;padding:var(--space-4) var(--space-5);border-top:1px solid var(--line);background:var(--panel)}.dialog-footer .button{min-height:44px}.dialog-intro{color:var(--muted);font-size:12px;line-height:1.5}.replace-context{display:grid;gap:var(--space-1);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.replace-context strong{font-family:var(--font-serif);font-size:17px}.attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:48px minmax(0,1fr) 48px;grid-template-rows:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}.attachment-lightbox.open{display:grid}.attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-3);min-width:0;min-height:0;margin:0}.attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm);background:var(--nav-2)}.attachment-lightbox figcaption{text-align:center;font-size:12px;overflow-wrap:anywhere}.lightbox-close,.lightbox-prev,.lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}.lightbox-close{grid-column:3;grid-row:1;width:44px;height:44px}.lightbox-prev,.lightbox-next{width:46px;height:70px;font-size:26px}.lightbox-prev{grid-column:1;grid-row:2}.lightbox-next{grid-column:3;grid-row:2}\n\t\t.mobile-head{display:none}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}@media(max-width:1050px){.documents-shell{grid-template-columns:210px minmax(0,1fr)}}@media(max-width:760px){.documents-shell{display:block}.sidebar{display:none}.mobile-head{position:sticky;z-index:100;top:0;min-height:76px;display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:var(--space-3);padding:0 var(--space-4);background:var(--nav);color:var(--panel)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:21px}.mobile-identity small{margin-top:var(--space-1);color:var(--soft);font-size:10px}.mobile-head>.avatar{width:40px;height:40px}.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:\"\";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:76px;right:0;left:0;max-height:calc(100vh - 76px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);box-shadow:var(--shadow-dialog)}.menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.menu-panel .nav a{min-height:44px;display:flex;margin:0;padding:0 var(--space-3)}.menu-panel .nav-label{grid-column:1/-1}.menu-panel .release-notes{padding:var(--space-3)}.menu-panel .logout-form button{min-height:44px}.documents-main{padding:var(--space-4)}.page-top{display:none}.page{margin-top:0}.page-heading{display:grid;align-items:start}.page-heading h1{font-size:34px}.document-toolbar{grid-template-columns:1fr auto}.document-search{grid-column:1/-1;border-bottom:1px solid var(--line)}.document-sort{border-left:0}.document-row{grid-template-columns:44px minmax(0,1fr);padding:var(--space-3)}.document-icon{width:42px;height:49px}.document-actions{grid-column:1/-1;min-width:0;grid-template-columns:1fr 1fr}.document-actions .primary{grid-column:1/-1}.document-actions .button:only-child{grid-column:1/-1}.admin-tools,.versions{grid-column:1/-1}.doc-blank{grid-template-columns:minmax(0,1fr)}.doc-blank-main{min-height:0}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}@media(max-width:520px){.document-library{padding:var(--space-3)}.document-icon{display:none}.document-row{grid-template-columns:minmax(0,1fr)}.document-actions{grid-column:1}.admin-tools,.versions{grid-column:1}.doc-blank-actions{display:grid}.doc-blank-actions .button{width:100%}.dialog-grid{grid-template-columns:minmax(0,1fr)}.dialog-grid .full{grid-column:1}.dialog-footer .button{width:100%}}\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}\n\t\t.documents-shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t.documents-main{min-width:0;padding:var(--space-6)}.page-top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}.crumb{display:flex;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}.crumb svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6}.page-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.page{max-width:1180px;margin:var(--space-5) auto 0}.page-heading{display:flex;align-items:end;justify-content:space-between;gap:var(--space-5);padding-bottom:var(--space-5);border-bottom:1px solid var(--line)}.page-heading h1{font-size:42px;line-height:1}.lede{max-width:680px;color:var(--muted);font-size:14px;line-height:1.5}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:34px;padding:var(--space-1) var(--space-3)}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.flash{margin-top:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}.flash.ok{border-color:var(--gold)}\n\t\t.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.document-library{display:grid;gap:var(--space-5);margin-top:var(--space-5);padding:var(--space-5)}.library-head{display:flex;align-items:end;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px solid var(--line)}.kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.mini{margin-top:var(--space-1);color:var(--muted);font-size:11px}.pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:750}.document-toolbar{display:grid;grid-template-columns:minmax(240px,1fr) minmax(170px,.3fr) auto;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.document-search{position:relative;min-width:0}.document-search svg{position:absolute;top:50%;left:var(--space-3);width:20px;height:20px;transform:translateY(-50%);fill:none;stroke:var(--muted);stroke-width:1.8;pointer-events:none}.document-search input,.document-sort select{width:100%;min-height:50px;border:0;background:transparent;color:var(--ink)}.document-search input{padding:var(--space-3) var(--space-3) var(--space-3) 42px}.document-sort{border-left:1px solid var(--line)}.document-sort select{padding:var(--space-3);font-weight:750}.document-toolbar .button,.document-reset{min-height:50px;border-width:0 0 0 1px;border-radius:0}.document-reset{display:inline-flex;align-items:center;justify-content:center;padding-inline:var(--space-3);border-left:1px solid var(--line);background:var(--panel-soft);color:var(--gold-ink);font-size:12px;font-weight:800}.document-sections{display:grid;gap:var(--space-5)}.document-section{display:grid;gap:var(--space-2)}.document-section h2{display:flex;align-items:center;gap:var(--space-2);font-size:19px}.section-count{padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-family:var(--font-sans);font-size:10px}.document-list{display:grid;gap:var(--space-2)}.document-row{display:grid;grid-template-columns:50px minmax(0,1fr) minmax(150px,auto);align-items:center;gap:var(--space-3) var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);scroll-margin-top:82px}.document-icon{width:48px;height:56px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--gold-ink)}.document-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7}.document-copy{min-width:0}.document-copy>strong{display:block;font-family:var(--font-serif);font-size:18px;overflow-wrap:anywhere}.document-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px var(--space-2);margin-top:var(--space-2);color:var(--muted);font-size:11px}.document-meta-secondary{color:var(--soft)}.file-details{margin-top:var(--space-1);color:var(--soft);font-size:11px}.file-details summary,.admin-tools>summary,.versions>summary{min-height:40px;display:flex;align-items:center;cursor:pointer;font-weight:800}.document-file{display:block;overflow-wrap:anywhere}.document-actions{min-width:150px;display:grid;gap:var(--space-2)}.document-actions .button{width:100%}.admin-tools,.versions{grid-column:2/-1;padding-top:var(--space-2);border-top:1px solid var(--line)}.admin-tools>summary,.versions>summary{color:var(--gold-ink);font-size:12px}.admin-body{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:var(--space-2)}.version-list{display:grid;gap:var(--space-2);margin-top:var(--space-2)}.version-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:11px}\n\t\t.document-empty{min-height:210px;display:grid;place-items:center;padding:var(--space-6);border:1px dashed var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);text-align:center}.document-empty svg{width:42px;height:42px;fill:none;stroke:var(--gold-ink);stroke-width:1.5}.document-empty h2{margin-top:var(--space-3);font-size:24px}.document-empty p{max-width:52ch;margin-top:var(--space-2);color:var(--muted);font-size:13px;line-height:1.5}.document-empty .button{margin-top:var(--space-4)}.doc-blank{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(270px,.85fr);gap:var(--space-4);margin-top:var(--space-5)}.doc-blank-main{min-height:350px;display:grid;align-content:center;gap:var(--space-5);padding:var(--space-6);border:1px dashed var(--line);border-radius:var(--radius-md);background:var(--panel)}.doc-blank-lead{display:grid;justify-items:start;gap:var(--space-3)}.doc-blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft);color:var(--gold-ink)}.doc-blank-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.5}.doc-blank-main h2{font-size:30px}.doc-blank-main p{max-width:54ch;color:var(--muted);font-size:14px;line-height:1.55}.doc-blank-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.doc-guide{align-self:start;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}.doc-guide>summary{min-height:60px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-4);cursor:pointer;list-style:none}.doc-guide>summary::-webkit-details-marker{display:none}.doc-guide>summary::after{content:\"+\";color:var(--gold-ink);font-size:20px}.doc-guide[open]>summary{border-bottom:1px solid var(--line)}.doc-guide[open]>summary::after{content:\"−\"}.doc-guide>summary span{display:grid;gap:2px}.doc-guide>summary small{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.doc-guide-body{display:grid;gap:var(--space-3);padding:var(--space-4)}.doc-guide-list{display:grid;gap:var(--space-2);margin:0;padding:0;list-style:none}.doc-guide-list li{display:grid;gap:2px;padding-top:var(--space-2);border-top:1px solid var(--line)}.doc-guide-list li:first-child{padding-top:0;border-top:0}.doc-guide-list strong{font-size:12px}.doc-guide-list span{color:var(--muted);font-size:11px;line-height:1.4}.doc-notes{display:grid;gap:var(--space-2)}.doc-note{display:grid;gap:2px;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.doc-note strong{font-size:12px}.doc-note span{color:var(--muted);font-size:11px;line-height:1.4}\n\t\t.dialog{width:min(680px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog form{display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-height:inherit}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-5);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:25px}.dialog-close{width:44px;height:44px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px}.dialog-body{min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto}.dialog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.dialog-grid .full{grid-column:1/-1}.dialog label{display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;font-weight:700}.dialog input,.dialog select{width:100%;min-height:44px;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel);color:var(--ink)}.dialog-optional{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.dialog-optional>summary{min-height:44px;padding:var(--space-3);cursor:pointer;font-size:12px;font-weight:800}.dialog-optional-grid{display:grid;gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line)}.file-control{position:relative;min-height:44px;display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.file-control span{color:var(--gold-ink)}.dialog-footer{display:flex;justify-content:flex-end;padding:var(--space-4) var(--space-5);border-top:1px solid var(--line);background:var(--panel)}.dialog-footer .button{min-height:44px}.dialog-intro{color:var(--muted);font-size:12px;line-height:1.5}.replace-context{display:grid;gap:var(--space-1);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.replace-context strong{font-family:var(--font-serif);font-size:17px}.attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:48px minmax(0,1fr) 48px;grid-template-rows:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}.attachment-lightbox.open{display:grid}.attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-3);min-width:0;min-height:0;margin:0}.attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm);background:var(--nav-2)}.attachment-lightbox figcaption{text-align:center;font-size:12px;overflow-wrap:anywhere}.lightbox-close,.lightbox-prev,.lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}.lightbox-close{grid-column:3;grid-row:1;width:44px;height:44px}.lightbox-prev,.lightbox-next{width:46px;height:70px;font-size:26px}.lightbox-prev{grid-column:1;grid-row:2}.lightbox-next{grid-column:3;grid-row:2}\n\t\t.mobile-head{display:none}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}@media(max-width:1050px){.documents-shell{grid-template-columns:210px minmax(0,1fr)}}@media(max-width:760px){.documents-shell{display:block}.sidebar{display:none}.mobile-head{position:sticky;z-index:100;top:0;min-height:76px;display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:var(--space-3);padding:0 var(--space-4);background:var(--nav);color:var(--panel)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:21px}.mobile-identity small{margin-top:var(--space-1);color:var(--soft);font-size:10px}.mobile-head>.avatar{width:40px;height:40px}.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:\"\";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:76px;right:0;left:0;max-height:calc(100vh - 76px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);box-shadow:var(--shadow-dialog)}.menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.menu-panel .nav a{min-height:44px;display:flex;margin:0;padding:0 var(--space-3)}.menu-panel .nav-label{grid-column:1/-1}.menu-panel .release-notes{padding:var(--space-3)}.menu-panel .logout-form button{min-height:44px}.documents-main{padding:var(--space-4)}.page-top{display:none}.page{margin-top:0}.page-heading{display:grid;align-items:start}.page-heading h1{font-size:34px}.document-toolbar{grid-template-columns:1fr auto}.document-search{grid-column:1/-1;border-bottom:1px solid var(--line)}.document-sort{border-left:0}.document-row{grid-template-columns:44px minmax(0,1fr);padding:var(--space-3)}.document-icon{width:42px;height:49px}.document-actions{grid-column:1/-1;min-width:0;grid-template-columns:1fr 1fr}.document-actions .primary{grid-column:1/-1}.document-actions .button:only-child{grid-column:1/-1}.admin-tools,.versions{grid-column:1/-1}.doc-blank{grid-template-columns:minmax(0,1fr)}.doc-blank-main{min-height:0}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}@media(max-width:520px){.document-library{padding:var(--space-3)}.document-icon{display:none}.document-row{grid-template-columns:minmax(0,1fr)}.document-actions{grid-column:1}.admin-tools,.versions{grid-column:1}.doc-blank-actions{display:grid}.doc-blank-actions .button{width:100%}.dialog-grid{grid-template-columns:minmax(0,1fr)}.dialog-grid .full{grid-column:1}.dialog-footer .button{width:100%}}\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -280,7 +280,7 @@ func DocumentsContent(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(data.DocumentMessage)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 71, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 70, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -372,7 +372,7 @@ func DocumentLibrary(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(data.SearchQuery)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 90, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 89, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -395,7 +395,7 @@ func DocumentLibrary(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(data.DocumentCountLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 94, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 93, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -413,7 +413,7 @@ func DocumentLibrary(data DocumentsPageData) templ.Component {
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.SearchQuery)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 98, Col: 288}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 97, Col: 288}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 		if templ_7745c5c3_Err != nil {
@@ -431,7 +431,7 @@ func DocumentLibrary(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 101, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 100, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 			if templ_7745c5c3_Err != nil {
@@ -454,7 +454,7 @@ func DocumentLibrary(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 101, Col: 80}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 100, Col: 80}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -492,7 +492,7 @@ func DocumentLibrary(data DocumentsPageData) templ.Component {
 				var templ_7745c5c3_Var20 string
 				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(section.Category)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 112, Col: 61}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 111, Col: 61}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 				if templ_7745c5c3_Err != nil {
@@ -505,7 +505,7 @@ func DocumentLibrary(data DocumentsPageData) templ.Component {
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(len(section.Documents))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 112, Col: 115}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 111, Col: 115}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
@@ -572,7 +572,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue("document-" + document.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 126, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 125, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 		if templ_7745c5c3_Err != nil {
@@ -585,7 +585,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(document.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 128, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 127, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
@@ -620,7 +620,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 		var templ_7745c5c3_Var27 string
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(document.Visibility)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 128, Col: 161}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 127, Col: 161}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
@@ -638,7 +638,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 			var templ_7745c5c3_Var28 string
 			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(document.UnitLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 130, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 129, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 			if templ_7745c5c3_Err != nil {
@@ -656,7 +656,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 		var templ_7745c5c3_Var29 string
 		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(document.VersionLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 132, Col: 32}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 131, Col: 32}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 		if templ_7745c5c3_Err != nil {
@@ -669,7 +669,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 		var templ_7745c5c3_Var30 string
 		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(document.UploadedDate)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 132, Col: 102}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 131, Col: 102}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
@@ -682,7 +682,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 		var templ_7745c5c3_Var31 string
 		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(document.Size)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 132, Col: 123}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 131, Col: 123}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
@@ -695,7 +695,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(document.Filename)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 132, Col: 246}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 131, Col: 246}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
@@ -708,7 +708,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 		var templ_7745c5c3_Var33 string
 		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(document.UploadedAt)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 132, Col: 285}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 131, Col: 285}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 		if templ_7745c5c3_Err != nil {
@@ -727,7 +727,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 				var templ_7745c5c3_Var34 string
 				templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.ResolveAttributeValue(document.PreviewURL)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 136, Col: 89}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 135, Col: 89}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var34)
 				if templ_7745c5c3_Err != nil {
@@ -740,7 +740,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 				var templ_7745c5c3_Var35 string
 				templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.ResolveAttributeValue(document.Filename)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 136, Col: 133}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 135, Col: 133}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var35)
 				if templ_7745c5c3_Err != nil {
@@ -758,7 +758,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 				var templ_7745c5c3_Var36 templ.SafeURL
 				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(document.PreviewURL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 138, Col: 72}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 137, Col: 72}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 				if templ_7745c5c3_Err != nil {
@@ -776,7 +776,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 			var templ_7745c5c3_Var37 templ.SafeURL
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(document.DownloadURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 140, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 139, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 			if templ_7745c5c3_Err != nil {
@@ -794,7 +794,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 			var templ_7745c5c3_Var38 templ.SafeURL
 			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(document.DownloadURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 142, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 141, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 			if templ_7745c5c3_Err != nil {
@@ -817,7 +817,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 			var templ_7745c5c3_Var39 string
 			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.ResolveAttributeValue(document.ReplaceDialogID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 146, Col: 180}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 145, Col: 180}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
 			if templ_7745c5c3_Err != nil {
@@ -830,7 +830,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 			var templ_7745c5c3_Var40 string
 			templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(document.ReplaceDialogID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 146, Col: 246}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 145, Col: 246}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
 			if templ_7745c5c3_Err != nil {
@@ -854,7 +854,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 				var templ_7745c5c3_Var41 string
 				templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(version.Version)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 151, Col: 53}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 150, Col: 53}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 				if templ_7745c5c3_Err != nil {
@@ -867,7 +867,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 				var templ_7745c5c3_Var42 string
 				templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(version.UploadedAt)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 151, Col: 79}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 150, Col: 79}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 				if templ_7745c5c3_Err != nil {
@@ -880,7 +880,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 				var templ_7745c5c3_Var43 string
 				templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(version.Size)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 151, Col: 99}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 150, Col: 99}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 				if templ_7745c5c3_Err != nil {
@@ -893,7 +893,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 				var templ_7745c5c3_Var44 string
 				templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(version.Filename)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 151, Col: 123}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 150, Col: 123}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 				if templ_7745c5c3_Err != nil {
@@ -906,7 +906,7 @@ func DocumentRow(document view.DocumentView, canManage bool) templ.Component {
 				var templ_7745c5c3_Var45 templ.SafeURL
 				templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(version.DownloadURL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 151, Col: 203}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 150, Col: 203}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 				if templ_7745c5c3_Err != nil {
@@ -964,7 +964,7 @@ func DocumentReplaceDialog(document view.DocumentView) templ.Component {
 		var templ_7745c5c3_Var47 string
 		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.ResolveAttributeValue(document.ReplaceDialogID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 162, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 161, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var47)
 		if templ_7745c5c3_Err != nil {
@@ -977,7 +977,7 @@ func DocumentReplaceDialog(document view.DocumentView) templ.Component {
 		var templ_7745c5c3_Var48 string
 		templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.ResolveAttributeValue(document.ReplaceDialogID + "-title")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 162, Col: 109}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 161, Col: 109}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var48)
 		if templ_7745c5c3_Err != nil {
@@ -990,7 +990,7 @@ func DocumentReplaceDialog(document view.DocumentView) templ.Component {
 		var templ_7745c5c3_Var49 string
 		templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.ResolveAttributeValue(document.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 162, Col: 244}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 161, Col: 244}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var49)
 		if templ_7745c5c3_Err != nil {
@@ -1003,7 +1003,7 @@ func DocumentReplaceDialog(document view.DocumentView) templ.Component {
 		var templ_7745c5c3_Var50 string
 		templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.ResolveAttributeValue(document.ReplaceDialogID + "-title")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 162, Col: 317}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 161, Col: 317}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var50)
 		if templ_7745c5c3_Err != nil {
@@ -1016,7 +1016,7 @@ func DocumentReplaceDialog(document view.DocumentView) templ.Component {
 		var templ_7745c5c3_Var51 string
 		templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(document.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 162, Col: 527}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 161, Col: 527}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 		if templ_7745c5c3_Err != nil {
@@ -1029,7 +1029,7 @@ func DocumentReplaceDialog(document view.DocumentView) templ.Component {
 		var templ_7745c5c3_Var52 string
 		templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(document.VersionLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 162, Col: 588}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 161, Col: 588}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 		if templ_7745c5c3_Err != nil {
@@ -1042,7 +1042,7 @@ func DocumentReplaceDialog(document view.DocumentView) templ.Component {
 		var templ_7745c5c3_Var53 string
 		templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(document.Visibility)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 162, Col: 615}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 161, Col: 615}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 		if templ_7745c5c3_Err != nil {
@@ -1060,7 +1060,7 @@ func DocumentReplaceDialog(document view.DocumentView) templ.Component {
 			var templ_7745c5c3_Var54 string
 			templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(document.UnitLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 164, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 163, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 			if templ_7745c5c3_Err != nil {
@@ -1078,7 +1078,7 @@ func DocumentReplaceDialog(document view.DocumentView) templ.Component {
 		var templ_7745c5c3_Var55 string
 		templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.ResolveAttributeValue(document.ReplaceDialogID + "-file")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 166, Col: 99}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 165, Col: 99}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
 		if templ_7745c5c3_Err != nil {
@@ -1091,7 +1091,7 @@ func DocumentReplaceDialog(document view.DocumentView) templ.Component {
 		var templ_7745c5c3_Var56 string
 		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.ResolveAttributeValue(document.ReplaceDialogID + "-file")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 166, Col: 185}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 165, Col: 185}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var56)
 		if templ_7745c5c3_Err != nil {
@@ -1133,7 +1133,7 @@ func DocumentsBlank(data DocumentsPageData) templ.Component {
 		var templ_7745c5c3_Var58 string
 		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(data.DocumentsEmpty.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 170, Col: 390}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 169, Col: 390}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 		if templ_7745c5c3_Err != nil {
@@ -1156,7 +1156,7 @@ func DocumentsBlank(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var59 string
 			templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(data.DocumentsEmpty.Message)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 174, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 173, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 			if templ_7745c5c3_Err != nil {
@@ -1198,7 +1198,7 @@ func DocumentsBlank(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var60 string
 			templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(entry.Category)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 184, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 183, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 			if templ_7745c5c3_Err != nil {
@@ -1211,7 +1211,7 @@ func DocumentsBlank(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var61 string
 			templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(entry.Detail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 184, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 183, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 			if templ_7745c5c3_Err != nil {
@@ -1258,7 +1258,7 @@ func DocumentUploadDialog(data DocumentsPageData) templ.Component {
 		var templ_7745c5c3_Var63 string
 		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(data.MaxDocumentSize)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 190, Col: 491}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 189, Col: 491}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 		if templ_7745c5c3_Err != nil {
@@ -1276,7 +1276,7 @@ func DocumentUploadDialog(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var64 string
 			templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 192, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 191, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var64)
 			if templ_7745c5c3_Err != nil {
@@ -1305,7 +1305,7 @@ func DocumentUploadDialog(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var65 string
 			templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 192, Col: 111}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 191, Col: 111}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 			if templ_7745c5c3_Err != nil {
@@ -1328,7 +1328,7 @@ func DocumentUploadDialog(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var66 string
 			templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 196, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 195, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var66)
 			if templ_7745c5c3_Err != nil {
@@ -1351,7 +1351,7 @@ func DocumentUploadDialog(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var67 string
 			templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 196, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 195, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 			if templ_7745c5c3_Err != nil {
@@ -1374,7 +1374,7 @@ func DocumentUploadDialog(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var68 string
 			templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 200, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 199, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
 			if templ_7745c5c3_Err != nil {
@@ -1397,7 +1397,7 @@ func DocumentUploadDialog(data DocumentsPageData) templ.Component {
 			var templ_7745c5c3_Var69 string
 			templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 200, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/documents.templ`, Line: 199, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 			if templ_7745c5c3_Err != nil {
