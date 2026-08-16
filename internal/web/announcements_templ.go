@@ -99,7 +99,7 @@ func AnnouncementsStyles() templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t\t\t:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;--font-serif:ui-serif,Georgia,Cambria,\"Times New Roman\",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);--shadow-md:0 18px 44px rgba(32,37,31,.08);font-family:var(--font-sans)}\n\t\t\t\t*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}button,input,textarea,select{font:inherit}button{cursor:pointer}a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.skip-link{position:fixed;z-index:60;top:var(--space-2);left:var(--space-2);padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.skip-link:focus{transform:translateY(0)}\n\t\t\t\t.shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.house-name{display:block;font-family:var(--font-serif);font-size:27px;line-height:1}.house-address{display:block;margin-top:var(--space-2);color:var(--soft);font-size:12px}.map{display:block;height:74px;margin-top:var(--space-4);overflow:hidden;background:var(--nav-2);border:1px solid var(--muted);border-radius:var(--radius-md)}.map svg{display:block;width:100%;height:100%}.map-streets{fill:none;stroke:var(--muted);stroke-width:1;opacity:.42}.map-pin{fill:var(--gold-light);stroke:var(--gold)}.map-hole{fill:var(--nav)}.context-switch{margin-top:var(--space-3);font-size:11px}.context-switch summary{cursor:pointer;color:var(--gold-light)}.context-menu{display:grid;gap:var(--space-2);margin-top:var(--space-2);padding:var(--space-2);background:var(--nav-2);border-radius:var(--radius-sm)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.context-menu small{color:var(--soft)}.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-label{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-notes>summary{margin-top:2px;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}.release-notes>summary::-webkit-details-marker{display:none}.release-panel{position:fixed;z-index:50;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.release-panel h2{font-size:24px}.release-entry{padding-top:var(--space-4)}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}\n\t\t\t\t.page-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-5);margin-bottom:var(--space-6)}.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.page-head h1{margin-top:var(--space-1);font-size:42px;line-height:1}.lede{max-width:62ch;margin-top:var(--space-2);color:var(--muted);font-size:13px;line-height:1.5}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:750}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:36px;padding-inline:var(--space-3);font-size:11px}.flash{margin-bottom:var(--space-5);padding:var(--space-3) var(--space-4);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:var(--space-5);align-items:start}.feed,.aside-panel,.blank{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.feed{padding:var(--space-5)}.section-head{display:flex;align-items:baseline;gap:var(--space-3)}.section-head h2{font-size:26px}.counts{display:flex;gap:var(--space-2);margin-left:auto}.pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:10px;font-weight:750}.pill.unread{border-color:var(--leaf);color:var(--leaf)}.pill.dringend,.pill.wartung,.pill.termin,.pill.info{color:var(--gold-ink)}.archive-tools{display:grid;gap:var(--space-3);margin-top:var(--space-5);padding:var(--space-4);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}.filter-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-3);align-items:end}.filter-form label,.dialog-grid label{display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:700}.filter-form input,.dialog-grid input,.dialog-grid textarea,.dialog-grid select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.dialog-grid textarea{min-height:130px;resize:vertical}.filter-tabs{display:flex;flex-wrap:wrap;gap:var(--space-2)}.filter-tab{min-height:34px;display:inline-flex;align-items:center;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:11px}.filter-tab.active{background:var(--nav-2);border-color:var(--nav-2);color:var(--panel);font-weight:700}.group{display:grid;gap:var(--space-3);margin-top:var(--space-5)}.group-head{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:var(--space-2);border-bottom:1px solid var(--line)}.group-head h3{font-family:var(--font-sans);color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.group-head span{color:var(--soft);font-size:11px}.entries{display:grid;gap:var(--space-3)}.announcement-entry{padding:var(--space-4);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm)}.announcement-entry.is-unread{background:var(--panel-soft)}.announcement-entry.is-pinned{border-color:var(--gold)}.entry-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4)}.entry-head h3{font-size:21px;overflow-wrap:anywhere}.entry-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:var(--space-2);color:var(--muted);font-size:11px}.entry-actions{display:flex;align-items:center;gap:var(--space-2);flex:0 0 auto}.announcement-body{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line)}.announcement-body>summary{min-height:38px;display:inline-flex;align-items:center;color:var(--gold-ink);font-size:12px;font-weight:800;cursor:pointer}.announcement-body-content{display:grid;gap:var(--space-3);padding-top:var(--space-2)}.entry-body{font-size:13px;line-height:1.6;white-space:normal}.empty-filter{display:grid;gap:var(--space-3);margin-top:var(--space-5);justify-items:start}.empty-state{display:grid;gap:var(--space-2);color:var(--muted);font-size:13px}.empty-state strong{color:var(--ink);font-family:var(--font-serif);font-size:20px}.blank{min-height:330px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);text-align:center}.blank .empty-state{justify-items:center}.blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2)}.aside{display:grid;gap:var(--space-4)}.aside-panel{padding:var(--space-5)}.aside-panel h2{margin-top:var(--space-1);font-size:20px}.aside-panel>p{margin-top:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.guide>summary{cursor:pointer;list-style:none}.guide>summary::-webkit-details-marker{display:none}.legend{display:grid;gap:var(--space-3);margin:var(--space-4) 0 0;padding:0;list-style:none}.legend li{display:grid;gap:var(--space-1);justify-items:start}.legend li>span:last-child{color:var(--muted);font-size:11px;line-height:1.45}.portal-links{display:grid;margin-top:var(--space-3)}.portal-link{min-height:54px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-2);border-top:1px solid var(--line);font-size:12px}.portal-link:first-child{border-top:0}.portal-link small{display:block;margin-top:2px;color:var(--muted);font-size:10px;line-height:1.4}.portal-link::after{content:\"›\";color:var(--gold-ink);font-size:20px}\n\t\t\t\t.dialog{width:min(680px,calc(100vw - 32px));max-height:90vh;padding:0;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog-head{position:sticky;z-index:2;top:0;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--panel);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:24px}.dialog-close{width:40px;height:40px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:24px}.dialog-body{display:grid;gap:var(--space-5);padding:var(--space-5)}.dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)}.dialog-grid .full{grid-column:1/-1}.dialog-optional{grid-column:1/-1;padding:var(--space-3);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}.dialog-optional>summary{color:var(--gold-ink);font-size:12px;font-weight:750;cursor:pointer}.dialog-optional-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-top:var(--space-4)}.check-row{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;justify-content:start}.check-row input{width:auto;min-height:auto}.file-control{display:block;position:relative;min-height:42px;padding:var(--space-3);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-xs)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.attachment-picker{margin-top:var(--space-2)}.attachment-picker-head{display:flex;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:10px}.attachment-picker-list{display:grid;gap:var(--space-2);margin-top:var(--space-2)}.attachment-picker-item{display:grid;grid-template-columns:42px minmax(0,1fr) 32px;align-items:center;gap:var(--space-2);padding:var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}.attachment-picker-thumb{display:grid;place-items:center;width:42px;height:42px;overflow:hidden;background:var(--line);border-radius:var(--radius-xs);font-size:9px}.attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}.attachment-picker-copy span{display:block}.attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.attachment-picker-meta{color:var(--muted);font-size:10px}.attachment-picker-remove{border:0;background:transparent;color:var(--muted);font-size:20px}.attachment-strip{display:flex;flex-wrap:wrap;gap:var(--space-2)}.attachment-item{position:relative;width:112px;overflow:hidden;background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}.attachment-open{width:100%;display:grid;gap:var(--space-1);padding:var(--space-2);border:0;background:transparent;color:var(--ink);text-align:left}.attachment-open img{width:100%;height:70px;object-fit:cover;border-radius:var(--radius-xs)}.attachment-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}.attachment-file-icon{display:grid;place-content:center;height:70px;color:var(--gold-ink);font-weight:800}.attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1)}.attachment-delete button{width:28px;height:28px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted)}.attachment-lightbox{position:fixed;inset:0;z-index:200;display:none;grid-template-columns:56px minmax(0,1fr) 56px;grid-template-rows:56px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}.attachment-lightbox.open{display:grid}.attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-2);min-width:0;min-height:0;margin:0}.attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm)}.attachment-lightbox figcaption{text-align:center}.lightbox-close,.lightbox-prev,.lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}.lightbox-close{grid-column:3;grid-row:1;justify-self:end;width:42px;height:42px;font-size:24px}.lightbox-prev,.lightbox-next{width:46px;height:70px;font-size:28px}.lightbox-prev{grid-column:1;grid-row:2}.lightbox-next{grid-column:3;grid-row:2}\n\t\t\t\t.mobile-head{display:none}@media(max-width:1050px){.layout{grid-template-columns:minmax(0,1fr)}.aside{grid-template-columns:1fr 1fr}}@media(max-width:760px){.shell{display:block}.sidebar{display:none}.mobile-head{position:sticky;z-index:40;top:0;display:grid;grid-template-columns:42px minmax(0,1fr) 38px;align-items:center;gap:var(--space-3);min-height:74px;padding:var(--space-3) var(--space-4);background:var(--nav);color:var(--panel)}.mobile-menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.mobile-menu>summary::-webkit-details-marker{display:none}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:\"\";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.mobile-menu-panel{position:absolute;top:74px;right:0;left:0;max-height:calc(100vh - 74px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);border-top:1px solid var(--nav-2)}.mobile-menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.mobile-menu-panel .nav a{margin:0;min-height:44px;padding:var(--space-2) var(--space-3)}.mobile-menu-panel .nav-label{grid-column:1/-1}.mobile-menu-panel .logout-form button{min-height:44px;margin-top:var(--space-3)}.mobile-title strong,.mobile-title small{display:block}.mobile-title strong{font-family:var(--font-serif);font-size:21px}.mobile-title small{margin-top:var(--space-1);color:var(--soft);font-size:10px}.mobile-head .avatar{width:38px;height:38px}.page-main{padding:var(--space-5) var(--space-4) 48px}.page-head{align-items:flex-start}.page-head h1{font-size:34px}.page-head .button{min-height:44px}.layout{gap:var(--space-3)}.feed{padding:var(--space-4)}.aside{grid-template-columns:1fr;gap:var(--space-3)}.section-head{align-items:flex-start;flex-wrap:wrap}.counts{width:100%;margin-left:0}.filter-form{grid-template-columns:1fr}.entry-head{display:grid}.entry-actions{justify-content:flex-start}.dialog-grid,.dialog-optional-grid{grid-template-columns:1fr}.dialog-grid .full,.dialog-optional-grid .full{grid-column:1}.blank-actions{width:100%}.blank-actions .button{width:100%}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}\n\t\t\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t\t\t:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;--font-serif:ui-serif,Georgia,Cambria,\"Times New Roman\",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);--shadow-md:0 18px 44px rgba(32,37,31,.08);font-family:var(--font-sans)}button,input,textarea,select{font:inherit}button{cursor:pointer}a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.skip-link{position:fixed;z-index:60;top:var(--space-2);left:var(--space-2);padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}\n\t\t\t\t.shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-panel{position:fixed;z-index:50;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}\n\t\t\t\t.page-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-5);margin-bottom:var(--space-6)}.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.page-head h1{margin-top:var(--space-1);font-size:42px;line-height:1}.lede{max-width:62ch;margin-top:var(--space-2);color:var(--muted);font-size:13px;line-height:1.5}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:750}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:36px;padding-inline:var(--space-3);font-size:11px}.flash{margin-bottom:var(--space-5);padding:var(--space-3) var(--space-4);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:var(--space-5);align-items:start}.feed,.aside-panel,.blank{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.feed{padding:var(--space-5)}.section-head{display:flex;align-items:baseline;gap:var(--space-3)}.section-head h2{font-size:26px}.counts{display:flex;gap:var(--space-2);margin-left:auto}.pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:10px;font-weight:750}.pill.unread{border-color:var(--leaf);color:var(--leaf)}.pill.dringend,.pill.wartung,.pill.termin,.pill.info{color:var(--gold-ink)}.archive-tools{display:grid;gap:var(--space-3);margin-top:var(--space-5);padding:var(--space-4);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}.filter-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-3);align-items:end}.filter-form label,.dialog-grid label{display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:700}.filter-form input,.dialog-grid input,.dialog-grid textarea,.dialog-grid select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.dialog-grid textarea{min-height:130px;resize:vertical}.filter-tabs{display:flex;flex-wrap:wrap;gap:var(--space-2)}.filter-tab{min-height:34px;display:inline-flex;align-items:center;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:11px}.filter-tab.active{background:var(--nav-2);border-color:var(--nav-2);color:var(--panel);font-weight:700}.group{display:grid;gap:var(--space-3);margin-top:var(--space-5)}.group-head{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:var(--space-2);border-bottom:1px solid var(--line)}.group-head h3{font-family:var(--font-sans);color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.group-head span{color:var(--soft);font-size:11px}.entries{display:grid;gap:var(--space-3)}.announcement-entry{padding:var(--space-4);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm)}.announcement-entry.is-unread{background:var(--panel-soft)}.announcement-entry.is-pinned{border-color:var(--gold)}.entry-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4)}.entry-head h3{font-size:21px;overflow-wrap:anywhere}.entry-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:var(--space-2);color:var(--muted);font-size:11px}.entry-actions{display:flex;align-items:center;gap:var(--space-2);flex:0 0 auto}.announcement-body{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line)}.announcement-body>summary{min-height:38px;display:inline-flex;align-items:center;color:var(--gold-ink);font-size:12px;font-weight:800;cursor:pointer}.announcement-body-content{display:grid;gap:var(--space-3);padding-top:var(--space-2)}.entry-body{font-size:13px;line-height:1.6;white-space:normal}.empty-filter{display:grid;gap:var(--space-3);margin-top:var(--space-5);justify-items:start}.empty-state{display:grid;gap:var(--space-2);color:var(--muted);font-size:13px}.empty-state strong{color:var(--ink);font-family:var(--font-serif);font-size:20px}.blank{min-height:330px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);text-align:center}.blank .empty-state{justify-items:center}.blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2)}.aside{display:grid;gap:var(--space-4)}.aside-panel{padding:var(--space-5)}.aside-panel h2{margin-top:var(--space-1);font-size:20px}.aside-panel>p{margin-top:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.guide>summary{cursor:pointer;list-style:none}.guide>summary::-webkit-details-marker{display:none}.legend{display:grid;gap:var(--space-3);margin:var(--space-4) 0 0;padding:0;list-style:none}.legend li{display:grid;gap:var(--space-1);justify-items:start}.legend li>span:last-child{color:var(--muted);font-size:11px;line-height:1.45}.portal-links{display:grid;margin-top:var(--space-3)}.portal-link{min-height:54px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-2);border-top:1px solid var(--line);font-size:12px}.portal-link:first-child{border-top:0}.portal-link small{display:block;margin-top:2px;color:var(--muted);font-size:10px;line-height:1.4}.portal-link::after{content:\"›\";color:var(--gold-ink);font-size:20px}\n\t\t\t\t.dialog{width:min(680px,calc(100vw - 32px));max-height:90vh;padding:0;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog-head{position:sticky;z-index:2;top:0;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--panel);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:24px}.dialog-close{width:40px;height:40px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:24px}.dialog-body{display:grid;gap:var(--space-5);padding:var(--space-5)}.dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)}.dialog-grid .full{grid-column:1/-1}.dialog-optional{grid-column:1/-1;padding:var(--space-3);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}.dialog-optional>summary{color:var(--gold-ink);font-size:12px;font-weight:750;cursor:pointer}.dialog-optional-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-top:var(--space-4)}.check-row{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;justify-content:start}.check-row input{width:auto;min-height:auto}.file-control{display:block;position:relative;min-height:42px;padding:var(--space-3);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-xs)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.attachment-picker{margin-top:var(--space-2)}.attachment-picker-head{display:flex;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:10px}.attachment-picker-list{display:grid;gap:var(--space-2);margin-top:var(--space-2)}.attachment-picker-item{display:grid;grid-template-columns:42px minmax(0,1fr) 32px;align-items:center;gap:var(--space-2);padding:var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}.attachment-picker-thumb{display:grid;place-items:center;width:42px;height:42px;overflow:hidden;background:var(--line);border-radius:var(--radius-xs);font-size:9px}.attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}.attachment-picker-copy span{display:block}.attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.attachment-picker-meta{color:var(--muted);font-size:10px}.attachment-picker-remove{border:0;background:transparent;color:var(--muted);font-size:20px}.attachment-strip{display:flex;flex-wrap:wrap;gap:var(--space-2)}.attachment-item{position:relative;width:112px;overflow:hidden;background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}.attachment-open{width:100%;display:grid;gap:var(--space-1);padding:var(--space-2);border:0;background:transparent;color:var(--ink);text-align:left}.attachment-open img{width:100%;height:70px;object-fit:cover;border-radius:var(--radius-xs)}.attachment-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}.attachment-file-icon{display:grid;place-content:center;height:70px;color:var(--gold-ink);font-weight:800}.attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1)}.attachment-delete button{width:28px;height:28px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted)}.attachment-lightbox{position:fixed;inset:0;z-index:200;display:none;grid-template-columns:56px minmax(0,1fr) 56px;grid-template-rows:56px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}.attachment-lightbox.open{display:grid}.attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-2);min-width:0;min-height:0;margin:0}.attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm)}.attachment-lightbox figcaption{text-align:center}.lightbox-close,.lightbox-prev,.lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}.lightbox-close{grid-column:3;grid-row:1;justify-self:end;width:42px;height:42px;font-size:24px}.lightbox-prev,.lightbox-next{width:46px;height:70px;font-size:28px}.lightbox-prev{grid-column:1;grid-row:2}.lightbox-next{grid-column:3;grid-row:2}\n\t\t\t\t.mobile-head{display:none}@media(max-width:1050px){.layout{grid-template-columns:minmax(0,1fr)}.aside{grid-template-columns:1fr 1fr}}@media(max-width:760px){.shell{display:block}.sidebar{display:none}.mobile-head{position:sticky;z-index:40;top:0;display:grid;grid-template-columns:42px minmax(0,1fr) 38px;align-items:center;gap:var(--space-3);min-height:74px;padding:var(--space-3) var(--space-4);background:var(--nav);color:var(--panel)}.mobile-menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.mobile-menu>summary::-webkit-details-marker{display:none}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:\"\";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.mobile-menu-panel{position:absolute;top:74px;right:0;left:0;max-height:calc(100vh - 74px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);border-top:1px solid var(--nav-2)}.mobile-menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.mobile-menu-panel .nav a{margin:0;min-height:44px;padding:var(--space-2) var(--space-3)}.mobile-menu-panel .nav-label{grid-column:1/-1}.mobile-menu-panel .logout-form button{min-height:44px;margin-top:var(--space-3)}.mobile-title strong,.mobile-title small{display:block}.mobile-title strong{font-family:var(--font-serif);font-size:21px}.mobile-title small{margin-top:var(--space-1);color:var(--soft);font-size:10px}.mobile-head .avatar{width:38px;height:38px}.page-main{padding:var(--space-5) var(--space-4) 48px}.page-head{align-items:flex-start}.page-head h1{font-size:34px}.page-head .button{min-height:44px}.layout{gap:var(--space-3)}.feed{padding:var(--space-4)}.aside{grid-template-columns:1fr;gap:var(--space-3)}.section-head{align-items:flex-start;flex-wrap:wrap}.counts{width:100%;margin-left:0}.filter-form{grid-template-columns:1fr}.entry-head{display:grid}.entry-actions{justify-content:flex-start}.dialog-grid,.dialog-optional-grid{grid-template-columns:1fr}.dialog-grid .full,.dialog-optional-grid .full{grid-column:1}.blank-actions{width:100%}.blank-actions .button{width:100%}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}\n\t\t\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -166,7 +166,7 @@ func AnnouncementsContent(data AnnouncementsPageData) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(data.AnnounceMessage)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 56, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 55, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -262,7 +262,7 @@ func AnnouncementsMobileHeader(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(data.DisplayName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 77, Col: 356}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 76, Col: 356}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -275,7 +275,7 @@ func AnnouncementsMobileHeader(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(data.HouseName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 78, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 77, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -288,7 +288,7 @@ func AnnouncementsMobileHeader(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(data.Role)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 78, Col: 102}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 77, Col: 102}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -301,7 +301,7 @@ func AnnouncementsMobileHeader(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.ResolveAttributeValue("Profil von " + data.DisplayName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 79, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 78, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
 		if templ_7745c5c3_Err != nil {
@@ -314,7 +314,7 @@ func AnnouncementsMobileHeader(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(data.Initials)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 79, Col: 104}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 78, Col: 104}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -361,7 +361,7 @@ func AnnouncementsFeed(data AnnouncementsPageData) templ.Component {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(data.NewAnnouncements)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 87, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 86, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -379,7 +379,7 @@ func AnnouncementsFeed(data AnnouncementsPageData) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Announcements))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 89, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 88, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -397,7 +397,7 @@ func AnnouncementsFeed(data AnnouncementsPageData) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.SelectedCategory)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 93, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 92, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
 			if templ_7745c5c3_Err != nil {
@@ -415,7 +415,7 @@ func AnnouncementsFeed(data AnnouncementsPageData) templ.Component {
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.SearchQuery)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 95, Col: 106}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 94, Col: 106}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 		if templ_7745c5c3_Err != nil {
@@ -451,7 +451,7 @@ func AnnouncementsFeed(data AnnouncementsPageData) templ.Component {
 			var templ_7745c5c3_Var19 templ.SafeURL
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(filter.URL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 98, Col: 97}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 97, Col: 97}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -464,7 +464,7 @@ func AnnouncementsFeed(data AnnouncementsPageData) templ.Component {
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalAriaCurrent(filter.Active))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 98, Col: 147}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 97, Col: 147}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 			if templ_7745c5c3_Err != nil {
@@ -477,7 +477,7 @@ func AnnouncementsFeed(data AnnouncementsPageData) templ.Component {
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(filter.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 98, Col: 164}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 97, Col: 164}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
@@ -566,7 +566,7 @@ func AnnouncementGroup(id, title string, items []view.AnnouncementView) templ.Co
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 119, Col: 44}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 118, Col: 44}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 		if templ_7745c5c3_Err != nil {
@@ -579,7 +579,7 @@ func AnnouncementGroup(id, title string, items []view.AnnouncementView) templ.Co
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 119, Col: 85}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 118, Col: 85}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 		if templ_7745c5c3_Err != nil {
@@ -592,7 +592,7 @@ func AnnouncementGroup(id, title string, items []view.AnnouncementView) templ.Co
 		var templ_7745c5c3_Var25 string
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 119, Col: 95}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 118, Col: 95}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
@@ -605,7 +605,7 @@ func AnnouncementGroup(id, title string, items []view.AnnouncementView) templ.Co
 		var templ_7745c5c3_Var26 string
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(len(items))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 119, Col: 120}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 118, Col: 120}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
@@ -675,7 +675,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var30 string
 		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.ResolveAttributeValue("announcement-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 127, Col: 143}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 126, Col: 143}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var30)
 		if templ_7745c5c3_Err != nil {
@@ -688,7 +688,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var31 string
 		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(item.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 128, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 127, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
@@ -723,7 +723,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var34 string
 		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(item.Category)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 128, Col: 139}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 127, Col: 139}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 		if templ_7745c5c3_Err != nil {
@@ -747,7 +747,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 			var templ_7745c5c3_Var35 string
 			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(item.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 133, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 132, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 			if templ_7745c5c3_Err != nil {
@@ -765,7 +765,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var36 string
 		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(item.PublishedAt)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 135, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 134, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 		if templ_7745c5c3_Err != nil {
@@ -783,7 +783,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 			var templ_7745c5c3_Var37 string
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(item.ExpiresAt)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 137, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 136, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 			if templ_7745c5c3_Err != nil {
@@ -806,7 +806,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 			var templ_7745c5c3_Var38 string
 			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 141, Col: 104}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 140, Col: 104}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var38)
 			if templ_7745c5c3_Err != nil {
@@ -819,7 +819,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 			var templ_7745c5c3_Var39 string
 			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 141, Col: 163}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 140, Col: 163}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
 			if templ_7745c5c3_Err != nil {
@@ -832,7 +832,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 			var templ_7745c5c3_Var40 string
 			templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.DeleteConfirmLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 141, Col: 278}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 140, Col: 278}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
 			if templ_7745c5c3_Err != nil {
@@ -845,7 +845,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 			var templ_7745c5c3_Var41 string
 			templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 141, Col: 327}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 140, Col: 327}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var41)
 			if templ_7745c5c3_Err != nil {
@@ -873,7 +873,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var42 string
 		templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(announcementReadLabel(item.Unread))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 144, Col: 104}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 143, Col: 104}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 		if templ_7745c5c3_Err != nil {
@@ -948,7 +948,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 					var templ_7745c5c3_Var44 string
 					templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.PreviewURL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 157, Col: 93}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 156, Col: 93}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var44)
 					if templ_7745c5c3_Err != nil {
@@ -961,7 +961,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 					var templ_7745c5c3_Var45 string
 					templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.URL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 157, Col: 131}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 156, Col: 131}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var45)
 					if templ_7745c5c3_Err != nil {
@@ -974,7 +974,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 					var templ_7745c5c3_Var46 string
 					templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 157, Col: 177}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 156, Col: 177}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var46)
 					if templ_7745c5c3_Err != nil {
@@ -987,7 +987,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 					var templ_7745c5c3_Var47 string
 					templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ThumbURL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 157, Col: 210}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 156, Col: 210}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var47)
 					if templ_7745c5c3_Err != nil {
@@ -1000,7 +1000,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 					var templ_7745c5c3_Var48 string
 					templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 157, Col: 238}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 156, Col: 238}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var48)
 					if templ_7745c5c3_Err != nil {
@@ -1013,7 +1013,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 					var templ_7745c5c3_Var49 string
 					templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 157, Col: 325}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 156, Col: 325}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 					if templ_7745c5c3_Err != nil {
@@ -1031,7 +1031,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 					var templ_7745c5c3_Var50 templ.SafeURL
 					templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.URL))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 159, Col: 69}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 158, Col: 69}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 					if templ_7745c5c3_Err != nil {
@@ -1044,7 +1044,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 					var templ_7745c5c3_Var51 string
 					templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(attachmentKind(attachment))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 159, Col: 166}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 158, Col: 166}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 					if templ_7745c5c3_Err != nil {
@@ -1057,7 +1057,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 					var templ_7745c5c3_Var52 string
 					templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 159, Col: 226}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 158, Col: 226}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 					if templ_7745c5c3_Err != nil {
@@ -1076,7 +1076,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 					var templ_7745c5c3_Var53 templ.SafeURL
 					templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.DeleteURL))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 162, Col: 96}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 161, Col: 96}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 					if templ_7745c5c3_Err != nil {
@@ -1089,7 +1089,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 					var templ_7745c5c3_Var54 string
 					templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 162, Col: 191}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 161, Col: 191}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var54)
 					if templ_7745c5c3_Err != nil {
@@ -1107,7 +1107,7 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 						var templ_7745c5c3_Var55 string
 						templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.DeleteRedirect)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 164, Col: 78}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 163, Col: 78}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
 						if templ_7745c5c3_Err != nil {
@@ -1183,7 +1183,7 @@ func AnnouncementsBlank(data AnnouncementsPageData) templ.Component {
 			var templ_7745c5c3_Var57 templ.SafeURL
 			templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(announcementIssuesURL(data.CanManageIssues)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 179, Col: 156}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 178, Col: 156}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 			if templ_7745c5c3_Err != nil {
@@ -1230,7 +1230,7 @@ func AnnouncementEmptyState(data view.EmptyStateView) templ.Component {
 		var templ_7745c5c3_Var59 string
 		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(data.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 184, Col: 102}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 183, Col: 102}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 		if templ_7745c5c3_Err != nil {
@@ -1243,7 +1243,7 @@ func AnnouncementEmptyState(data view.EmptyStateView) templ.Component {
 		var templ_7745c5c3_Var60 string
 		templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(data.Message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 184, Col: 130}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 183, Col: 130}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 		if templ_7745c5c3_Err != nil {
@@ -1322,7 +1322,7 @@ func AnnouncementCreateDialog(nowInput string) templ.Component {
 		var templ_7745c5c3_Var63 string
 		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.ResolveAttributeValue(nowInput)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 194, Col: 1027}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 193, Col: 1027}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var63)
 		if templ_7745c5c3_Err != nil {
@@ -1364,7 +1364,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var65 string
 		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var65)
 		if templ_7745c5c3_Err != nil {
@@ -1377,7 +1377,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var66 string
 		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID + "-title")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 95}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 95}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var66)
 		if templ_7745c5c3_Err != nil {
@@ -1390,7 +1390,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var67 string
 		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 227}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 227}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var67)
 		if templ_7745c5c3_Err != nil {
@@ -1403,7 +1403,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var68 string
 		templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID + "-title")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 293}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 293}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
 		if templ_7745c5c3_Err != nil {
@@ -1416,7 +1416,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var69 string
 		templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.ResolveAttributeValue("title-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 515}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 515}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
 		if templ_7745c5c3_Err != nil {
@@ -1429,7 +1429,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var70 string
 		templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.ResolveAttributeValue("title-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 553}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 553}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var70)
 		if templ_7745c5c3_Err != nil {
@@ -1442,7 +1442,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var71 string
 		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 587}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 587}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var71)
 		if templ_7745c5c3_Err != nil {
@@ -1455,7 +1455,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var72 string
 		templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.ResolveAttributeValue("body-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 667}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 667}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var72)
 		if templ_7745c5c3_Err != nil {
@@ -1468,7 +1468,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var73 string
 		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.ResolveAttributeValue("body-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 706}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 706}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var73)
 		if templ_7745c5c3_Err != nil {
@@ -1481,7 +1481,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var74 string
 		templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(item.Body)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 741}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 741}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
 		if templ_7745c5c3_Err != nil {
@@ -1502,7 +1502,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var75 string
 		templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.ResolveAttributeValue("published-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 862}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 862}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var75)
 		if templ_7745c5c3_Err != nil {
@@ -1515,7 +1515,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var76 string
 		templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.ResolveAttributeValue("published-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 915}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 915}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
 		if templ_7745c5c3_Err != nil {
@@ -1528,7 +1528,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var77 string
 		templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.PublishedAtInput)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 989}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 989}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var77)
 		if templ_7745c5c3_Err != nil {
@@ -1541,7 +1541,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var78 string
 		templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.ResolveAttributeValue("expires-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 1034}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 1034}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var78)
 		if templ_7745c5c3_Err != nil {
@@ -1554,7 +1554,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var79 string
 		templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.ResolveAttributeValue("expires-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 1084}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 1084}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var79)
 		if templ_7745c5c3_Err != nil {
@@ -1567,7 +1567,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var80 string
 		templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ExpiresAtInput)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 1154}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 1154}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var80)
 		if templ_7745c5c3_Err != nil {
@@ -1590,7 +1590,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var81 string
 		templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.ResolveAttributeValue("attachments-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 1346}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 1346}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var81)
 		if templ_7745c5c3_Err != nil {
@@ -1603,7 +1603,7 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var82 string
 		templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.ResolveAttributeValue("attachments-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 198, Col: 1430}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 197, Col: 1430}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var82)
 		if templ_7745c5c3_Err != nil {
@@ -1645,7 +1645,7 @@ func AnnouncementCategorySelect(id, selected string) templ.Component {
 		var templ_7745c5c3_Var84 string
 		templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 201, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var84)
 		if templ_7745c5c3_Err != nil {
@@ -1658,7 +1658,7 @@ func AnnouncementCategorySelect(id, selected string) templ.Component {
 		var templ_7745c5c3_Var85 string
 		templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 201, Col: 98}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 98}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var85)
 		if templ_7745c5c3_Err != nil {
