@@ -55,6 +55,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		{"IssueBoardPage", IssueBoardPage(IssueBoardPageData{Portal: portal, AssetVersion: assetVersion, BoardAction: "/app/anliegen/board", CanCreateIssue: true, CanManageAnnouncements: true, TotalIssueCount: 1, OpenIssueCount: 1, UrgentIssueCount: 1, Issues: []view.IssueView{{ID: "1", Title: "Kellerlicht defekt", StatusClass: "status-open"}}}), "data-templ-issue-board", []string{"attachments.js", "issues.js"}},
 		{"IssueTriagePage", IssueTriagePage(IssueTriagePageData{Portal: portal, AssetVersion: assetVersion, TriageStep: "1", Issue: view.IssueView{ID: "1", Title: "Kellerlicht defekt", StatusClass: "status-open"}}), "data-templ-issue-triage", []string{"attachments.js"}},
 		{"IssuesPage", IssuesPage(IssuesPageData{Portal: portal, AssetVersion: assetVersion, CanCreateIssue: true, OpenIssueCreate: true}), "data-templ-issues", []string{"attachments.js", "issues.js"}},
+		{"ParkingPage", ParkingPage(ParkingPageData{Portal: portal, AssetVersion: assetVersion, IsAdmin: true, CanManageParkingPayments: true, StatementYear: 2026}), "data-templ-parking", []string{"attachments.js"}},
 		{"SettingsHubPage", SettingsHubPage(SettingsHubPageData{Portal: portal}), "data-templ-settings", nil},
 		{"ProfileSettingsPage", ProfileSettingsPage(ProfileSettingsPageData{Portal: portal}), "data-templ-settings", nil},
 		{"NotificationSettingsPage", NotificationSettingsPage(NotificationSettingsPageData{Portal: portal}), "data-templ-settings", nil},
