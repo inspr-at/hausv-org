@@ -152,6 +152,29 @@ func TestMobileContextSwitchIsHiddenForOneContext(t *testing.T) {
 	}
 }
 
+func TestBaseStylesAreEmittedBeforePageStyles(t *testing.T) {
+	// Order is load-bearing, and specificity does not save us. Hoisted rules sit
+	// at (0,1,0) and their @media counterparts in the page block sit at (0,1,0)
+	// too, so whichever comes last wins. Put the shared block after the page
+	// block and rules the pages rely on start losing — in states a screenshot
+	// never reaches, because they live behind a breakpoint or a closed <details>.
+	html := renderComponent(t, SettingsHubPage(SettingsHubPageData{Portal: PortalPageData{Title: "Einstellungen"}}))
+
+	base := strings.Index(html, ".house-name{")    // only PortalBaseStyles defines this
+	page := strings.Index(html, ".settings-main{") // only the settings page block does
+	shell := strings.Index(html, ".mobile-context-switch{")
+
+	if base < 0 || page < 0 || shell < 0 {
+		t.Fatalf("markers missing: base=%d page=%d shell=%d", base, page, shell)
+	}
+	if base > page {
+		t.Error("PortalBaseStyles must be emitted BEFORE the page styles, so page rules keep winning")
+	}
+	if shell < page {
+		t.Error("PortalShellStyles must stay AFTER the page styles; it exists to override them")
+	}
+}
+
 func TestOnlyPortalDocumentOwnsTheDocument(t *testing.T) {
 	// Rendering the right output is not the same as sharing a shell: fifteen
 	// copied document shells would satisfy every other test here, and would drift
