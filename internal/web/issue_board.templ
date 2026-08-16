@@ -1,0 +1,471 @@
+package web
+
+import (
+	"strconv"
+
+	"github.com/inspr-at/hausv-org/internal/view"
+)
+
+// IssueBoardPageData carries the management view of /app/anliegen/board. It is
+// the manager counterpart to IssuesPageData and deliberately reuses the card,
+// pill and attachment components from issues.templ so both views of the same
+// object keep one visual language.
+type IssueBoardPageData struct {
+	Portal                  PortalPageData
+	AssetVersion            string
+	ActorEmail              string
+	BoardAction             string
+	CalendarFeedURL         string
+	CanCreateIssue          bool
+	CanManageAnnouncements  bool
+	IsServiceProvider       bool
+	Filters                 view.IssueBoardFilterView
+	ServiceProviderContacts []view.ContactOptionView
+	Issues                  []view.IssueView
+	TotalIssueCount         int
+	OpenIssueCount          int
+	UrgentIssueCount        int
+	IssuesEmpty             view.EmptyStateView
+}
+
+// IssueTriagePageData carries /app/anliegen/board/{id}, the two-step triage and
+// the follow-up steps that come after it.
+type IssueTriagePageData struct {
+	Portal       PortalPageData
+	AssetVersion string
+	ActorEmail   string
+	Issue        view.IssueView
+	TriageStep   string
+}
+
+templ IssueBoardPage(data IssueBoardPageData) {
+	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"attachments.js", "issues.js"}, IssueBoardStyles(), templ.Attributes{"data-templ-issue-board": true}) {
+		<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+		<div class="shell">
+			@PortalSidebar(data.Portal)
+			@IssueBoardContent(data)
+		</div>
+		@PortalMobileHeader(data.Portal, "Anliegen")
+	}
+}
+
+templ IssueTriagePage(data IssueTriagePageData) {
+	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"attachments.js"}, IssueTriageStyles(), templ.Attributes{"data-templ-issue-triage": true}) {
+		<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+		<div class="shell">
+			@PortalSidebar(data.Portal)
+			@IssueTriageContent(data)
+		</div>
+		@PortalMobileHeader(data.Portal, "Anliegen")
+	}
+}
+
+templ IssueBoardStyles() {
+	@IssuesStyles()
+	@IssueBoardBlock()
+}
+
+templ IssueTriageStyles() {
+	@IssuesStyles()
+	@IssueTriageBlock()
+}
+
+templ IssueBoardBlock() {
+	<style>.board-panel{max-width:1120px;margin:0 auto;display:grid;gap:var(--space-4)}.board-toolbar{display:grid;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.board-summary{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--line)}.board-summary .pill{min-height:28px;padding-inline:var(--space-3);font-size:11px}.pill.dringend{border-color:var(--gold);background:var(--panel);color:var(--gold-ink)}
+		.board-tools>summary{min-height:56px;display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);cursor:pointer;list-style:none}.board-tools>summary::-webkit-details-marker{display:none}.board-tools>summary strong{font-size:13px}.board-tools>summary>span{min-width:0;color:var(--muted);font-size:12px}.board-tools>summary::after{content:"Filter öffnen";margin-left:auto;color:var(--gold-ink);font-size:12px;font-weight:800}.board-tools[open]>summary::after{content:"Filter schließen"}.board-tools[open]>summary{border-bottom:1px solid var(--line)}
+		.board-filter{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--space-3);align-items:end;padding:var(--space-4)}.board-filter label{display:grid;grid-column:span 2;gap:var(--space-2);color:var(--gold-ink);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.board-filter label.assignee,.board-filter label.sort{grid-column:span 3}.board-filter input,.board-filter select{width:100%;min-height:40px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-size:12px;font-weight:600;letter-spacing:0;text-transform:none}.board-filter-actions{display:flex;grid-column:span 2;align-items:center;gap:var(--space-2)}.board-filter-actions button{min-height:40px;padding:var(--space-2) var(--space-4);border:1px solid var(--ink);border-radius:var(--radius-xs);background:var(--ink);color:var(--panel);font-size:12px;font-weight:800}.board-filter-actions a{min-height:40px;display:inline-flex;align-items:center;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);color:var(--muted);font-size:12px;font-weight:800}
+		.board-quick{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);padding:var(--space-3) var(--space-4);border-top:1px solid var(--line);background:var(--panel-soft)}.board-quick>span{margin-right:var(--space-1);color:var(--gold-ink);font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.board-quick a{min-height:32px;display:inline-flex;align-items:center;padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:12px;font-weight:800}.board-quick a:hover{border-color:var(--gold);color:var(--gold-ink)}.board-quick a[aria-current="true"]{border-color:var(--ink);background:var(--ink);color:var(--panel)}
+		.issue-work-card{box-shadow:var(--shadow-panel)}.issue-work-card.status-open{border-color:var(--gold);background:var(--panel-soft)}.issue-work-card.status-progress,.issue-work-card.status-done,.issue-work-card.status-closed{border-color:var(--leaf)}.issue-work-card .issue-card-head{align-items:center}.issue-card-foot{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding-top:var(--space-3);border-top:1px solid var(--line)}.issue-description-preview p{display:-webkit-box;max-height:3em;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical}.issue-triage-link{min-width:118px}
+		.board-filter-blank{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft)}.board-filter-blank h2{font-size:21px}.board-filter-blank p{margin-top:var(--space-1);max-width:62ch;color:var(--muted);font-size:13px;line-height:1.5}
+		.board-blank{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(286px,.9fr);gap:var(--space-4)}.board-blank-main{display:grid;align-content:center;gap:var(--space-5);padding:clamp(22px,3.2vw,36px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.board-blank-lead{display:grid;justify-items:start;gap:var(--space-3)}.board-blank-main h2{font-size:clamp(25px,3vw,31px)}.board-blank-main p{max-width:56ch;color:var(--muted);font-size:14px;line-height:1.55}.board-blank-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.board-blank-actions .button{min-height:44px}
+		.board-blank-side{display:grid;align-content:start;gap:var(--space-3);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft)}.board-blank-side h2{font-family:var(--font-sans);color:var(--gold-ink);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.board-blank-steps{display:grid;gap:var(--space-3);margin:0;padding:0;list-style:none;counter-reset:board-step}.board-blank-steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:2px var(--space-3);align-items:start;counter-increment:board-step}.board-blank-steps li::before{content:counter(board-step);grid-row:1/span 2;width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-size:12px;font-weight:800}.board-blank-steps strong{grid-column:2;font-size:13px}.board-blank-steps span{grid-column:2;color:var(--muted);font-size:12px;line-height:1.4}.board-blank-note{padding-top:var(--space-3);border-top:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.5}
+		.board-blank-facts{display:grid;grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4);margin:0;padding:0;list-style:none}.board-blank-facts li{display:grid;gap:var(--space-1);padding-top:var(--space-3);border-top:2px solid var(--ink)}.board-blank-facts strong{font-size:13px}.board-blank-facts span{color:var(--muted);font-size:12px;line-height:1.5}
+		@media(max-width:1050px){.board-blank{grid-template-columns:minmax(0,1fr)}.board-filter label,.board-filter label.assignee,.board-filter label.sort,.board-filter-actions{grid-column:1/-1}.board-blank-facts{grid-template-columns:minmax(0,1fr)}}
+		@media(max-width:760px){.board-filter{grid-template-columns:minmax(0,1fr);padding:var(--space-3)}.board-summary,.board-quick,.board-tools>summary{padding-inline:var(--space-3)}.issue-card-foot{grid-template-columns:minmax(0,1fr)}.issue-triage-link{width:100%}.board-filter-blank{grid-template-columns:minmax(0,1fr);justify-items:start;padding:var(--space-4)}.board-filter-blank .button{width:100%}.board-blank-main,.board-blank-side{padding:var(--space-4)}.board-blank-actions{display:grid}.board-blank-actions .button{width:100%}}
+	</style>
+}
+
+templ IssueTriageBlock() {
+	<style>.triage-page{max-width:1120px;margin:0 auto;display:grid;gap:var(--space-5)}.issue-triage-context{display:grid;gap:var(--space-3);padding-bottom:var(--space-5);border-bottom:1px solid var(--line)}.issue-triage-back{width:max-content;min-height:44px;display:inline-flex;align-items:center;color:var(--muted);font-size:12px;font-weight:800}.issue-triage-back:hover{color:var(--ink)}.issue-triage-context h1{font-size:clamp(34px,4.4vw,50px);line-height:1.05}.issue-triage-context>p{max-width:72ch;color:var(--muted);font-size:14px;line-height:1.6}.issue-triage-facts{display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-5);color:var(--muted);font-size:12px;font-weight:700}
+		.issue-triage-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(286px,330px);gap:var(--space-5);align-items:start}.issue-triage-main{min-width:0;display:grid;gap:var(--space-5)}.issue-triage-card{width:min(780px,100%);display:grid;gap:var(--space-6);padding:clamp(20px,3.4vw,36px);border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--panel);box-shadow:var(--shadow-panel)}
+		.issue-triage-progress{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);color:var(--gold-ink);font-size:11px;font-weight:800}.issue-triage-progress>span:last-child{display:flex;gap:6px}.issue-triage-progress i{width:26px;height:4px;border-radius:var(--radius-pill);background:var(--line)}.issue-triage-progress i.active{background:var(--gold)}
+		.issue-triage-card fieldset{min-width:0;display:grid;gap:var(--space-3);padding:0;border:0}.issue-triage-card legend{margin-bottom:var(--space-5);color:var(--ink);font-family:var(--font-serif);font-size:clamp(25px,3.2vw,34px);font-weight:600;line-height:1.15}
+		.issue-triage-choice{position:relative;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);cursor:pointer}.issue-triage-choice:hover{border-color:var(--gold)}.issue-triage-choice:has(input:checked){border-color:var(--leaf);background:var(--panel-soft)}.issue-triage-choice.urgent:has(input:checked){border-color:var(--gold);background:var(--panel-soft)}.issue-triage-choice.calm:has(input:checked){border-color:var(--muted)}.issue-triage-choice>span{min-width:0;display:grid;gap:3px}.issue-triage-choice strong{font-size:15px}.issue-triage-choice small{color:var(--muted);font-size:12px;font-weight:600;line-height:1.4}.issue-triage-choice input{grid-column:2;grid-row:1;width:20px;height:20px;margin:0;accent-color:var(--leaf)}
+		.issue-triage-actions{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding-top:var(--space-5);border-top:1px solid var(--line)}.issue-triage-actions>a:not(.button){color:var(--muted);font-size:12px;font-weight:800}.issue-triage-actions button{min-width:132px;min-height:44px;padding:var(--space-2) var(--space-4);border:1px solid var(--ink);border-radius:var(--radius-xs);background:var(--ink);color:var(--panel);font-weight:800}.issue-triage-actions button.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+		.issue-triage-done{grid-template-columns:auto minmax(0,1fr);align-items:start}.issue-triage-done-mark{width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--leaf);border-radius:var(--radius-pill);color:var(--leaf);font-size:20px;font-weight:800}.issue-triage-done .kicker{color:var(--gold-ink);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.issue-triage-done h2{margin-top:var(--space-2);font-size:clamp(23px,2.8vw,31px)}.issue-triage-done p{margin-top:var(--space-2);color:var(--muted);font-size:13px;line-height:1.5}.issue-triage-done .issue-triage-actions{grid-column:1/-1;width:100%}
+		.issue-message-form{display:grid;gap:var(--space-5)}.issue-message-body{display:grid;gap:var(--space-2);color:var(--gold-ink);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.issue-message-body textarea{min-height:130px;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-size:13px;font-weight:500;letter-spacing:0;line-height:1.5;text-transform:none;resize:vertical}.issue-resolution-propose{display:flex;align-items:center;justify-content:space-between;gap:var(--space-5);padding-top:var(--space-5);border-top:1px solid var(--line)}.issue-resolution-propose>span{display:grid;gap:3px;font-size:13px}.issue-resolution-propose small{color:var(--muted);font-size:12px}.issue-resolution-propose button{min-height:44px;padding:var(--space-2) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-xs);background:transparent;color:var(--ink);font-weight:800}
+		.issue-triage-aside{min-width:0;display:grid;align-content:start;gap:var(--space-3)}.issue-triage-state{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.issue-triage-state h2{font-family:var(--font-sans);color:var(--gold-ink);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.issue-triage-state dl{display:grid;margin:0}.issue-triage-state dl>div{min-width:0;display:grid;grid-template-columns:84px minmax(0,1fr);gap:var(--space-3);align-items:baseline;padding:var(--space-2) 0;border-top:1px solid var(--line)}.issue-triage-state dl>div:first-child{align-items:center;padding-top:0;border-top:0}.issue-triage-state dt{color:var(--muted);font-size:11px;font-weight:750}.issue-triage-state dd{min-width:0;margin:0;font-size:13px;font-weight:750;overflow-wrap:anywhere}.issue-triage-state-line{color:var(--muted);font-size:12px;line-height:1.45}.issue-triage-state-line strong{color:var(--ink)}.issue-triage-state-next{padding-top:var(--space-3);border-top:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.45}
+		.issue-triage-more{border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}.issue-triage-more>summary{min-height:44px;display:flex;align-items:center;padding:var(--space-3) var(--space-4);color:var(--muted);cursor:pointer;font-size:12px;font-weight:800;list-style:none}.issue-triage-more>summary::-webkit-details-marker{display:none}.issue-triage-more>summary::after{content:"+";margin-left:auto;color:var(--gold-ink);font-size:17px}.issue-triage-more[open]>summary::after{content:"−"}.issue-triage-more-body{display:grid;gap:var(--space-4);padding:var(--space-4);border-top:1px solid var(--line)}
+		@media(max-width:1050px){.issue-triage-layout{grid-template-columns:minmax(0,1fr)}.issue-triage-state dl{grid-template-columns:repeat(auto-fit,minmax(164px,1fr));gap:0 var(--space-5)}.issue-triage-state dl>div{grid-template-columns:minmax(0,1fr);gap:2px;align-items:start;padding:var(--space-2) 0;border-top:0;border-bottom:1px solid var(--line)}.issue-triage-state dl>div:first-child{align-items:start;padding-top:var(--space-2)}}
+		@media(max-width:760px){.triage-page{gap:var(--space-4)}.issue-triage-context{gap:var(--space-2);padding-bottom:var(--space-4)}.issue-triage-context h1{font-size:32px}.issue-triage-card{gap:var(--space-5);padding:var(--space-4)}.issue-triage-card legend{margin-bottom:var(--space-4);font-size:25px}.issue-triage-choice{gap:var(--space-3);padding:var(--space-3)}.issue-triage-actions{align-items:stretch;display:grid}.issue-triage-actions button,.issue-triage-actions .button{min-width:0;width:100%}.issue-triage-done{grid-template-columns:minmax(0,1fr)}.issue-triage-done .issue-triage-actions{grid-column:1}.issue-resolution-propose{align-items:stretch;flex-direction:column}.issue-resolution-propose button{width:100%}}
+	</style>
+}
+
+templ IssueBoardContent(data IssueBoardPageData) {
+	<main class="issues-main" id="main-content" tabindex="-1">
+		<header class="page-head">
+			<div><p class="eyebrow">Verwaltung</p><h1>Anliegen bearbeiten</h1><p class="lede">Offene Meldungen priorisieren und in den nächsten Schritt bringen.</p></div>
+			<div class="page-actions">
+				if data.IsServiceProvider && data.CalendarFeedURL != "" {
+					<a class="button" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a>
+				}
+				<a class="button" href="/app/anliegen">Zurück zu Anliegen</a>
+			</div>
+		</header>
+		if len(data.ServiceProviderContacts) > 0 {
+			<datalist id="service-provider-contacts">
+				for _, contact := range data.ServiceProviderContacts {
+					<option value={ contact.Email }>{ contact.Label }</option>
+				}
+			</datalist>
+		}
+		<section class="board-panel" id="issue-manage" aria-label="Anliegen im Haus">
+			if data.TotalIssueCount > 0 {
+				@IssueBoardToolbar(data)
+			}
+			if len(data.Issues) > 0 {
+				<div class="issue-list">
+					for _, issue := range data.Issues {
+						@IssueWorkCard(issue)
+					}
+				</div>
+			} else if data.TotalIssueCount > 0 {
+				@IssueBoardFilterBlank(data)
+			} else {
+				@IssueBoardBlank(data)
+			}
+		</section>
+	</main>
+}
+
+templ IssueBoardToolbar(data IssueBoardPageData) {
+	<div class="board-toolbar">
+		<div class="board-summary" aria-label="Anliegen-Überblick"><span class="pill">{ strconv.Itoa(data.OpenIssueCount) } offen</span>
+			if data.UrgentIssueCount > 0 {
+				<span class="pill dringend">{ strconv.Itoa(data.UrgentIssueCount) } dringend</span>
+			}
+			<span class="pill">{ strconv.Itoa(data.TotalIssueCount) } gesamt</span>
+		</div>
+		<details class="board-tools" open?={ data.Filters.HasActive }>
+			<summary><strong>Filter &amp; Sortierung</strong><span>{ boardFilterState(data.Filters) }</span></summary>
+			<form class="board-filter" method="get" action={ templ.SafeURL(data.BoardAction) }>
+				<label>Status<select name="status">
+					for _, option := range data.Filters.StatusOptions {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Priorität<select name="priority">
+					for _, option := range data.Filters.PriorityOptions {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Kategorie<select name="category">
+					for _, option := range data.Filters.CategoryOptions {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label class="assignee">Zuständig
+					if len(data.ServiceProviderContacts) > 0 {
+						<input type="email" name="assignee" value={ data.Filters.Assignee } placeholder="name@example.com" list="service-provider-contacts"/>
+					} else {
+						<input type="email" name="assignee" value={ data.Filters.Assignee } placeholder="name@example.com"/>
+					}
+				</label>
+				<label class="sort">Sortierung<select name="sort">
+					for _, option := range data.Filters.SortOptions {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<div class="board-filter-actions"><button type="submit">Anwenden</button>
+					if data.Filters.HasActive {
+						<a href={ templ.SafeURL(data.BoardAction) }>Zurücksetzen</a>
+					}
+				</div>
+			</form>
+		</details>
+		<nav class="board-quick" aria-label="Schnellauswahl"><span>Ansicht</span>
+			<a href={ templ.SafeURL(data.BoardAction) } aria-current={ boardQuickCurrent(!data.Filters.HasActive) }>Alle</a>
+			<a href={ templ.SafeURL(data.BoardAction + "?status=Neu") } aria-current={ boardQuickCurrent(data.Filters.Status == "Neu") }>Neu</a>
+			<a href={ templ.SafeURL(data.BoardAction + "?status=In+Bearbeitung") } aria-current={ boardQuickCurrent(data.Filters.Status == "In Bearbeitung") }>In Bearbeitung</a>
+			<a href={ templ.SafeURL(data.BoardAction + "?priority=Dringend") } aria-current={ boardQuickCurrent(data.Filters.Priority == "Dringend") }>Dringend</a>
+			<a href={ templ.SafeURL(data.BoardAction + "?assignee=" + data.ActorEmail) } aria-current={ boardQuickCurrent(data.Filters.Assignee == data.ActorEmail) }>Mir zugewiesen</a>
+			<a href={ templ.SafeURL(data.BoardAction + "?sort=age") } aria-current={ boardQuickCurrent(data.Filters.Sort == "age") }>Älteste zuerst</a>
+		</nav>
+	</div>
+}
+
+templ IssueWorkCard(issue view.IssueView) {
+	<article class={ "issue-card", "issue-work-card", issue.StatusClass } id={ "issue-" + issue.ID }>
+		<header class="issue-card-head"><div><h3>{ issue.Title }</h3><p class="issue-location">{ issue.Author } · { issue.Location }
+			if issue.HasAssignee {
+				<span> · Zuständig: { issue.AssigneeEmail }</span>
+			}
+			<span> · { issue.CreatedAt }</span></p></div><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.Status }</span><span class="pill">{ issue.Priority }</span><span class="pill">{ issue.Category }</span></div></header>
+		<div class="issue-progress" aria-label="Bearbeitungsfortschritt"><span class={ "issue-progress-fill", issue.StatusClass }></span></div>
+		<p class="issue-next-step">{ issue.NextStep }</p>
+		if issue.HasServiceAppointment {
+			<p class="issue-proposal"><strong>Termin:</strong> { issue.ServiceAppointment }</p>
+		}
+		if issue.HasServiceProposal {
+			<p class="issue-proposal"><strong>Hinweis:</strong> { issue.ServiceProposal }</p>
+		}
+		<div class="issue-card-foot">
+			<div class="issue-description issue-description-preview"><p>{ issue.Body }</p></div>
+			<a class="button primary issue-triage-link" href={ templ.SafeURL("/app/anliegen/board/" + issue.ID) }>Bearbeiten</a>
+		</div>
+	</article>
+}
+
+templ IssueBoardFilterBlank(data IssueBoardPageData) {
+	<div class="board-filter-blank">
+		<div><h2>Kein Anliegen passt zu dieser Auswahl</h2><p>Im Haus sind { strconv.Itoa(data.TotalIssueCount) } Anliegen erfasst, davon { strconv.Itoa(data.OpenIssueCount) } offen. Setzen Sie die Auswahl zurück oder wählen Sie einen anderen Filter.</p></div>
+		<a class="button primary" href={ templ.SafeURL(data.BoardAction) }>Auswahl zurücksetzen</a>
+	</div>
+}
+
+templ IssueBoardBlank(data IssueBoardPageData) {
+	<section class="board-blank" aria-labelledby="board-blank-title">
+		<div class="board-blank-main">
+			<div class="board-blank-lead">
+				<h2 id="board-blank-title">{ data.IssuesEmpty.Title }</h2>
+				<p>Sobald jemand im Haus etwas meldet, steht es hier: Titel, meldende Person, Ort, Status, Priorität und der nächste Schritt. Zuletzt aktualisierte Anliegen stehen oben; die Bearbeitung öffnen Sie direkt aus der Zeile.</p>
+			</div>
+			if data.CanCreateIssue || data.CanManageAnnouncements {
+				<div class="board-blank-actions">
+					if data.CanCreateIssue {
+						<a class="button primary" href="/app/anliegen?new=1">Anliegen selbst anlegen</a>
+					}
+					if data.CanManageAnnouncements {
+						<a class="button" href="/app/announcements">Meldeweg am Aushang erklären</a>
+					}
+				</div>
+			}
+		</div>
+		<aside class="board-blank-side">
+			<h2>Der Weg eines Anliegens</h2>
+			<ol class="board-blank-steps">
+				<li><strong>Neu</strong><span>Die Meldung ist eingegangen. Erster Schritt: Dringlichkeit festlegen.</span></li>
+				<li><strong>Angenommen</strong><span>Die Zuständigkeit ist vergeben, die Bearbeitung übernommen.</span></li>
+				<li><strong>Termin vereinbart</strong><span>Ein Termin mit Bewohnerschaft oder Dienstleister steht fest.</span></li>
+				<li><strong>In Bearbeitung</strong><span>Die Arbeit läuft. Informationen und Rückfragen gehen von hier an die meldende Person.</span></li>
+				<li><strong>Erledigt</strong><span>Die Lösung geht zur Prüfung; bestätigt wird von der meldenden Person.</span></li>
+			</ol>
+			<p class="board-blank-note">Meldungen, die nicht bearbeitet werden, schließen Sie als „Abgelehnt“ oder „Duplikat“.</p>
+		</aside>
+		<ul class="board-blank-facts">
+			<li><strong>Reihenfolge</strong><span>Standard ist „zuletzt aktualisiert“. Ab dem ersten Anliegen stehen zusätzlich Älteste zuerst, Priorität, Status, Kategorie und Zuständigkeit als Sortierung bereit.</span></li>
+			<li><strong>Priorität</strong><span>Dringend, Hoch, Mittel und Niedrig. Der erste Triage-Schritt setzt sie; die Zählung über der Liste zeigt offene und dringende Anliegen.</span></li>
+			<li><strong>Zuständigkeit</strong><span>Der zweite Schritt ordnet das Anliegen Ihnen zu oder lässt es offen. Danach lässt sich die Liste auf Ihre eigenen Fälle einschränken.</span></li>
+		</ul>
+	</section>
+}
+
+templ IssueTriageContent(data IssueTriagePageData) {
+	<main class="issues-main" id="main-content" tabindex="-1">
+		<section class="triage-page">
+			<header class="issue-triage-context">
+				<a class="issue-triage-back" href="/app/anliegen/board">← Zurück zur Liste</a>
+				<h1>{ data.Issue.Title }</h1>
+				<div class="issue-triage-facts"><span>{ data.Issue.Author }</span><span>{ data.Issue.Location }</span><span>{ data.Issue.CreatedAt }</span><span>{ data.Issue.Category }</span></div>
+				<p>{ data.Issue.Body }</p>
+			</header>
+			<div class="issue-triage-layout">
+				<div class="issue-triage-main">
+					switch data.TriageStep {
+						case "1":
+							@IssueTriagePriorityStep(data)
+						case "2":
+							@IssueTriageAssigneeStep(data)
+						case "done":
+							@IssueTriageSaved(data)
+						case "message":
+							@IssueTriageMessage(data)
+						case "sent":
+							@IssueTriageMessageSent(data)
+						default:
+							@IssueTriageResolutionSent(data)
+					}
+				</div>
+				@IssueTriageAside(data)
+			</div>
+		</section>
+	</main>
+}
+
+templ IssueTriagePriorityStep(data IssueTriagePageData) {
+	<form class="issue-triage-card" method="post" action="/app/anliegen/workflow">
+		<input type="hidden" name="id" value={ data.Issue.ID }/>
+		<input type="hidden" name="status" value={ data.Issue.Status }/>
+		<input type="hidden" name="assignee_email" value={ data.Issue.AssigneeEmail }/>
+		<input type="hidden" name="redirect" value={ "/app/anliegen/board/" + data.Issue.ID + "?step=2" }/>
+		<div class="issue-triage-progress"><span>Schritt 1 von 2</span><span aria-hidden="true"><i class="active"></i><i></i></span></div>
+		<fieldset>
+			<legend>Wie dringend ist das Anliegen?</legend>
+			<label class="issue-triage-choice urgent"><input type="radio" name="priority" value="Dringend" checked?={ data.Issue.Priority == "Dringend" } required/><span><strong>Heute kümmern</strong><small>Sicherheitsrisiko oder akuter Schaden</small></span></label>
+			<label class="issue-triage-choice"><input type="radio" name="priority" value="Hoch" checked?={ data.Issue.Priority == "Hoch" } required/><span><strong>Diese Woche</strong><small>Bald bearbeiten, aber nicht akut</small></span></label>
+			<label class="issue-triage-choice calm"><input type="radio" name="priority" value="Niedrig" checked?={ data.Issue.Priority == "Niedrig" } required/><span><strong>Kann warten</strong><small>Bei Gelegenheit einplanen</small></span></label>
+		</fieldset>
+		<div class="issue-triage-actions"><a href="/app/anliegen/board">Abbrechen</a><button type="submit">Weiter</button></div>
+	</form>
+}
+
+templ IssueTriageAssigneeStep(data IssueTriagePageData) {
+	<form class="issue-triage-card" method="post" action="/app/anliegen/workflow">
+		<input type="hidden" name="id" value={ data.Issue.ID }/>
+		<input type="hidden" name="status" value="In Bearbeitung"/>
+		<input type="hidden" name="priority" value={ data.Issue.Priority }/>
+		<input type="hidden" name="redirect" value={ "/app/anliegen/board/" + data.Issue.ID + "?step=done" }/>
+		<div class="issue-triage-progress"><span>Schritt 2 von 2</span><span aria-hidden="true"><i class="active"></i><i class="active"></i></span></div>
+		<fieldset>
+			<legend>Wer kümmert sich als Nächstes?</legend>
+			<label class="issue-triage-choice"><input type="radio" name="assignee_email" value={ data.ActorEmail } checked?={ data.Issue.AssigneeEmail == data.ActorEmail } required/><span><strong>Ich übernehme</strong><small>Das Anliegen wird Ihnen zugeordnet</small></span></label>
+			<label class="issue-triage-choice calm"><input type="radio" name="assignee_email" value="" checked?={ !data.Issue.HasAssignee } required/><span><strong>Noch offen lassen</strong><small>Die Zuständigkeit wird später festgelegt</small></span></label>
+			if data.Issue.HasAssignee && data.Issue.AssigneeEmail != data.ActorEmail {
+				<label class="issue-triage-choice"><input type="radio" name="assignee_email" value={ data.Issue.AssigneeEmail } checked required/><span><strong>Bestehende Zuordnung behalten</strong><small>{ data.Issue.AssigneeEmail }</small></span></label>
+			}
+		</fieldset>
+		<div class="issue-triage-actions"><a href={ templ.SafeURL("/app/anliegen/board/" + data.Issue.ID) }>Zurück</a><button type="submit">Bearbeitung starten</button></div>
+	</form>
+}
+
+templ IssueTriageSaved(data IssueTriagePageData) {
+	<section class="issue-triage-card issue-triage-done">
+		<div class="issue-triage-done-mark" aria-hidden="true">✓</div>
+		<div><span class="kicker">Gespeichert</span><h2>Der nächste Schritt ist festgelegt.</h2><p><strong>{ data.Issue.Priority }</strong>
+			if data.Issue.HasAssignee {
+				<span> · Zuständig: { data.Issue.AssigneeEmail }</span>
+			} else {
+				<span> · Zuständigkeit noch offen</span>
+			}
+		</p></div>
+		<div class="issue-triage-actions"><a href={ templ.SafeURL("/app/anliegen/board/" + data.Issue.ID) }>Entscheidung ändern</a><a class="button primary" href={ templ.SafeURL("/app/anliegen/board/" + data.Issue.ID + "?step=message") }>Bewohner kontaktieren</a></div>
+	</section>
+}
+
+templ IssueTriageMessage(data IssueTriagePageData) {
+	<section class="issue-triage-card issue-message-card">
+		<div class="issue-triage-progress"><span>Nächster Schritt</span></div>
+		<form class="issue-message-form" method="post" action="/app/anliegen/comment" enctype="multipart/form-data">
+			<input type="hidden" name="id" value={ data.Issue.ID }/>
+			<input type="hidden" name="redirect" value={ "/app/anliegen/board/" + data.Issue.ID + "?step=sent" }/>
+			<fieldset>
+				<legend>Was soll der Bewohner wissen?</legend>
+				<label class="issue-triage-choice calm"><input type="radio" name="message_type" value="information" checked required/><span><strong>Information senden</strong><small>Nur informieren, keine Antwort nötig</small></span></label>
+				<label class="issue-triage-choice"><input type="radio" name="message_type" value="question" required/><span><strong>Rückfrage stellen</strong><small>Der Bewohner erhält eine klare Antwort-Aufgabe</small></span></label>
+			</fieldset>
+			<label class="issue-message-body">Nachricht<textarea name="body" maxlength="3000" required placeholder="Kurz und konkret formulieren" aria-label="Nachricht an Bewohner"></textarea></label>
+			<label class="comment-upload"><span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple/><span>Datei optional hinzufügen</span></span></label>
+			<div class="issue-triage-actions"><a href="/app/anliegen/board">Zur Liste</a><button type="submit">Nachricht senden</button></div>
+		</form>
+		if data.Issue.Status != "Erledigt" {
+			<form class="issue-resolution-propose" method="post" action="/app/anliegen/workflow">
+				<input type="hidden" name="id" value={ data.Issue.ID }/>
+				<input type="hidden" name="status" value="Erledigt"/>
+				<input type="hidden" name="priority" value={ data.Issue.Priority }/>
+				<input type="hidden" name="assignee_email" value={ data.Issue.AssigneeEmail }/>
+				<input type="hidden" name="redirect" value={ "/app/anliegen/board/" + data.Issue.ID + "?step=resolution-sent" }/>
+				<span><strong>Arbeit abgeschlossen?</strong><small>Der Bewohner prüft und bestätigt die Lösung.</small></span>
+				<button class="ghost" type="submit">Lösung zur Prüfung senden</button>
+			</form>
+		}
+	</section>
+}
+
+templ IssueTriageMessageSent(data IssueTriagePageData) {
+	<section class="issue-triage-card issue-triage-done">
+		<div class="issue-triage-done-mark" aria-hidden="true">✓</div>
+		<div><span class="kicker">Nachricht gesendet</span>
+			if data.Issue.HasOpenQuestion {
+				<h2>Der Bewohner sieht jetzt „Antworten“.</h2><p>Bis zur Antwort ist keine weitere Aktion nötig.</p>
+			} else {
+				<h2>Die Information ist im Verlauf sichtbar.</h2><p>Der Bewohner muss darauf nicht reagieren.</p>
+			}
+		</div>
+		<div class="issue-triage-actions"><a href={ templ.SafeURL("/app/anliegen/board/" + data.Issue.ID + "?step=message") }>Weitere Nachricht</a><a class="button primary" href="/app/anliegen/board">Zur Liste</a></div>
+	</section>
+}
+
+templ IssueTriageResolutionSent(data IssueTriagePageData) {
+	<section class="issue-triage-card issue-triage-done">
+		<div class="issue-triage-done-mark" aria-hidden="true">✓</div>
+		<div><span class="kicker">Lösung vorgeschlagen</span><h2>Der Bewohner prüft jetzt das Ergebnis.</h2><p>Er kann „Ja, erledigt“ bestätigen oder das Anliegen wieder öffnen.</p></div>
+		<div class="issue-triage-actions"><a href={ templ.SafeURL("/app/anliegen/board/" + data.Issue.ID + "?step=message") }>Nachricht senden</a><a class="button primary" href="/app/anliegen/board">Zur Liste</a></div>
+	</section>
+}
+
+templ IssueTriageAside(data IssueTriagePageData) {
+	<aside class="issue-triage-aside">
+		<section class="issue-triage-state">
+			<h2>Stand des Anliegens</h2>
+			<dl>
+				<div><dt>Status</dt><dd><span class={ "pill", data.Issue.StatusClass }>{ data.Issue.Status }</span></dd></div>
+				<div><dt>Priorität</dt><dd>{ data.Issue.Priority }</dd></div>
+				<div><dt>Zuständig</dt><dd>
+					if data.Issue.HasAssignee {
+						{ data.Issue.AssigneeEmail }
+					} else {
+						noch offen
+					}
+				</dd></div>
+				<div><dt>Kategorie</dt><dd>{ data.Issue.Category }</dd></div>
+				<div><dt>Gemeldet</dt><dd>{ data.Issue.CreatedAt }</dd></div>
+			</dl>
+			if data.Issue.HasServiceAppointment {
+				<p class="issue-triage-state-line"><strong>Termin:</strong> { data.Issue.ServiceAppointment }</p>
+			}
+			if data.Issue.HasServiceProposal {
+				<p class="issue-triage-state-line"><strong>Hinweis:</strong> { data.Issue.ServiceProposal }</p>
+			}
+			<p class="issue-triage-state-next">{ data.Issue.NextStep }</p>
+		</section>
+		<details class="issue-triage-more">
+			<summary>{ issueTriageMoreSummary(data.Issue) }</summary>
+			<div class="issue-triage-more-body">
+				@IssueAttachments(data.Issue.Attachments)
+				if data.Issue.HasComments {
+					<div class="comment-thread">
+						for _, comment := range data.Issue.Comments {
+							@IssueComment(comment)
+						}
+					</div>
+				} else {
+					<p class="muted">Noch keine Rückmeldung.</p>
+				}
+				@IssueEstimate(data.Issue)
+			</div>
+		</details>
+	</aside>
+}
+
+func boardQuickCurrent(active bool) string {
+	if active {
+		return "true"
+	}
+	return "false"
+}
+
+func boardFilterState(filters view.IssueBoardFilterView) string {
+	if filters.HasActive {
+		return "Aktive Auswahl"
+	}
+	return "Alle Anliegen · zuletzt aktualisiert"
+}
+
+func issueTriageMoreSummary(issue view.IssueView) string {
+	label := "Verlauf und Unterlagen"
+	if issue.HasComments {
+		label += " · " + strconv.Itoa(len(issue.Comments))
+		if len(issue.Comments) == 1 {
+			label += " Beitrag"
+		} else {
+			label += " Beiträge"
+		}
+	}
+	if issue.HasPhotos {
+		label += " · " + strconv.Itoa(issue.PhotoCount) + " Foto"
+		if issue.PhotoCount != 1 {
+			label += "s"
+		}
+	}
+	return label
+}

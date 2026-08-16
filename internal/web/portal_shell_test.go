@@ -51,6 +51,8 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		{"EventsPage", EventsPage(EventsPageData{Portal: portal, AssetVersion: assetVersion, CanManageEvents: true}), "data-templ-events", []string{"announcements.js", "attachments.js"}},
 		{"HandoversPage", HandoversPage(HandoversPageData{Portal: portal, AssetVersion: assetVersion}), "data-templ-handovers", []string{"attachments.js"}},
 		{"HelpPage", HelpPage(HelpPageData{Portal: portal, ConnectorAvailable: true, ConnectorConnected: true, CanManageEnergy: true}), "data-templ-help", nil},
+		{"IssueBoardPage", IssueBoardPage(IssueBoardPageData{Portal: portal, AssetVersion: assetVersion, BoardAction: "/app/anliegen/board", CanCreateIssue: true, CanManageAnnouncements: true, TotalIssueCount: 1, OpenIssueCount: 1, UrgentIssueCount: 1, Issues: []view.IssueView{{ID: "1", Title: "Kellerlicht defekt", StatusClass: "status-open"}}}), "data-templ-issue-board", []string{"attachments.js", "issues.js"}},
+		{"IssueTriagePage", IssueTriagePage(IssueTriagePageData{Portal: portal, AssetVersion: assetVersion, TriageStep: "1", Issue: view.IssueView{ID: "1", Title: "Kellerlicht defekt", StatusClass: "status-open"}}), "data-templ-issue-triage", []string{"attachments.js"}},
 		{"IssuesPage", IssuesPage(IssuesPageData{Portal: portal, AssetVersion: assetVersion, CanCreateIssue: true, OpenIssueCreate: true}), "data-templ-issues", []string{"attachments.js", "issues.js"}},
 		{"SettingsHubPage", SettingsHubPage(SettingsHubPageData{Portal: portal}), "data-templ-settings", nil},
 		{"ProfileSettingsPage", ProfileSettingsPage(ProfileSettingsPageData{Portal: portal}), "data-templ-settings", nil},

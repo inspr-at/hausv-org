@@ -52,6 +52,18 @@ func (a *app) issueTriage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			step = "message"
 		}
 	}
+	if a.portalTemplEnabled {
+		portal := a.issuesPortalContext(ac)
+		portal.Title = views[0].Title + " · " + portal.Title
+		a.renderIssueTriageTempl(w, r, web.IssueTriagePageData{
+			Portal:       portal,
+			AssetVersion: version.AssetVersion(),
+			ActorEmail:   normalizeEmail(ac.email),
+			Issue:        views[0],
+			TriageStep:   step,
+		})
+		return
+	}
 	a.render(w, "issueTriage", a.withBase(ac, map[string]any{
 		"Title":      "Anliegen bearbeiten",
 		"ActivePage": "issues",
@@ -135,7 +147,27 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
 	serviceContacts := a.serviceContactOptions(ac.repositories.contacts)
-	if a.portalTemplEnabled && !boardOnly {
+	if a.portalTemplEnabled && boardOnly {
+		a.renderIssueBoardTempl(w, r, web.IssueBoardPageData{
+			Portal:                  a.issuesPortalContext(ac),
+			AssetVersion:            version.AssetVersion(),
+			ActorEmail:              email,
+			BoardAction:             issueBoardAction(boardOnly),
+			CalendarFeedURL:         calendarFeedURL,
+			CanCreateIssue:          canCreateIssue,
+			CanManageAnnouncements:  canManageAnnouncements(ac.actor(), ac.resource()),
+			IsServiceProvider:       isServiceProviderRole(role),
+			Filters:                 issueBoardFilterOptions(filters),
+			ServiceProviderContacts: serviceContacts,
+			Issues:                  manageIssues,
+			TotalIssueCount:         totalIssueCount,
+			OpenIssueCount:          openIssueCount,
+			UrgentIssueCount:        urgentIssueCount,
+			IssuesEmpty:             emptyState("Keine Anliegen im Haus", "Sobald ein Anliegen gemeldet wird, erscheint es hier für die Bearbeitung."),
+		})
+		return
+	}
+	if a.portalTemplEnabled {
 		a.renderIssuesTempl(w, r, web.IssuesPageData{
 			Portal:            a.issuesPortalContext(ac),
 			AssetVersion:      version.AssetVersion(),
@@ -237,6 +269,28 @@ func (a *app) renderIssuesTempl(w http.ResponseWriter, r *http.Request, data web
 	var rendered bytes.Buffer
 	if err := web.IssuesPage(data).Render(r.Context(), &rendered); err != nil {
 		logError("templ issues render failed", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), data.Portal.TenantSlug))
+}
+
+func (a *app) renderIssueBoardTempl(w http.ResponseWriter, r *http.Request, data web.IssueBoardPageData) {
+	var rendered bytes.Buffer
+	if err := web.IssueBoardPage(data).Render(r.Context(), &rendered); err != nil {
+		logError("templ issue board render failed", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), data.Portal.TenantSlug))
+}
+
+func (a *app) renderIssueTriageTempl(w http.ResponseWriter, r *http.Request, data web.IssueTriagePageData) {
+	var rendered bytes.Buffer
+	if err := web.IssueTriagePage(data).Render(r.Context(), &rendered); err != nil {
+		logError("templ issue triage render failed", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
