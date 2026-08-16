@@ -19,6 +19,11 @@ set -u
 
 BASE=${1:-http://100.64.0.4:8099}
 TENANT=${2:-demo}
+# Must be a SEEDED user (see WEG_USERS_JSON in /etc/hausv-next/fixture.conf).
+# An unknown address does not fail — anti-enumeration means the app answers
+# "mail sent" either way: a clean 303, nothing in the sink, and no log line at
+# all. That is the most misleading state in this whole flow, because it reads
+# exactly like a broken mail sink.
 USER_EMAIL=${VERIFY_EMAIL:-admin@example.com}
 
 ROUTES="/app /app/announcements /app/events /app/anliegen /app/anliegen/board
@@ -57,7 +62,7 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
     [ -n "$link" ] && break
     sleep 2
 done
-[ -n "$link" ] || fail "no magic link arrived in the mail sink within 20s"
+[ -n "$link" ] || fail "no magic link arrived in the mail sink within 20s — if the sink is running, check that $USER_EMAIL is a seeded user; an unknown address returns a clean 303 and sends nothing"
 
 curl -sL -s -m 10 -c "$jar" -b "$jar" -o /dev/null "$link" || fail "magic link did not establish a session"
 
