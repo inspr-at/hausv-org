@@ -68,10 +68,24 @@ if not m:
 base_rules = parse(m.group(1))
 
 # PortalBaseStyles lives inside portal.templ, so strip it from portal's own blocks.
+BASE_RE = r"templ PortalBaseStyles\(\) \{\s*<style>(.*?)</style>"
+
+
+def split_base(src):
+    """(base rules, page rules) for a portal.templ that may carry PortalBaseStyles."""
+    bm = re.search(BASE_RE, src, re.S)
+    if not bm:
+        return [], parse(blocks(src))
+    return parse(bm.group(1)), parse(blocks(src.replace(bm.group(0), "")))
+
+
+base_before = split_base(at(BASE_REF, "internal/web/portal.templ"))[0]
+
+
 def page_rules_now(name):
     src = (d / name).read_text(encoding="utf8")
     if name == "portal.templ":
-        src = src.replace(m.group(0), "")
+        return split_base(src)[1]
     return parse(blocks(src))
 
 
@@ -82,9 +96,10 @@ for p in sorted(d.glob("*.templ")):
     before_src = at(BASE_REF, f"internal/web/{p.name}")
     if not before_src:
         continue
-    before = parse(blocks(before_src))
-    if not before:
+    before_page = parse(blocks(before_src)) if p.name != "portal.templ" else split_base(before_src)[1]
+    if not before_page:
         continue
+    before = base_before + before_page
     after = base_rules + page_rules_now(p.name)
 
     cb, ca = collections.Counter(before), collections.Counter(after)
