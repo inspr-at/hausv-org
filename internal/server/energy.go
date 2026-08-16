@@ -867,7 +867,7 @@ func (a *app) homeIdentitySettings(w http.ResponseWriter, r *http.Request, ac au
 	if linked, ok := a.effectiveEnergyUnit(profile); ok {
 		unitID = linked.ID
 	}
-	a.render(w, "homeIdentitySettings", a.withBase(ac, map[string]any{
+	pageData := map[string]any{
 		"Title":               profile.HouseholdName + " · Mein Zuhause",
 		"ActivePage":          "settings",
 		"Profile":             profile,
@@ -887,7 +887,12 @@ func (a *app) homeIdentitySettings(w http.ResponseWriter, r *http.Request, ac au
 		"CanManageBuilding":   ac.can(capabilityManageBuilding),
 		"Saved":               r.URL.Query().Get("saved") == "1",
 		"Invalid":             r.URL.Query().Get("invalid") == "1",
-	}))
+	}
+	if a.portalTemplEnabled {
+		a.renderHomeIdentitySettingsTempl(w, r, ac, profile, pageData)
+		return
+	}
+	a.render(w, "homeIdentitySettings", a.withBase(ac, pageData))
 }
 
 func (a *app) updateHomeIdentity(w http.ResponseWriter, r *http.Request, ac authCtx) {
