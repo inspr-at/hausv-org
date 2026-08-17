@@ -70,6 +70,33 @@ function fail(message) {
   throw new Error(message);
 }
 
+// The mobile menu is opened by whatever the page provides: legacy ships a
+// scripted button (.mobile-menu-toggle), templ ships a native <details>
+// disclosure that works with JavaScript disabled. What this file asserts is that
+// the menu OPENS and carries the household identity — not which widget does it.
+// Pinning the widget would have forced the scripted button back for the test's
+// sake, which is the tail wagging the dog.
+// Which element IS the mobile navigation depends on the shell: legacy turns the
+// sidebar into a sticky top bar, templ hides the sidebar and shows .mobile-head.
+// The property under test is that the mode strip sits directly beneath the
+// navigation — not which element provides it.
+async function mobileNavBox(page) {
+  const sidebar = await page.locator('.sidebar').boundingBox();
+  if (sidebar) return sidebar;
+  return page.locator('.mobile-head').boundingBox();
+}
+
+async function toggleMobileMenu(page) {
+  const legacy = page.locator('.mobile-menu-toggle');
+  if (await legacy.count()) {
+    await legacy.click();
+    return;
+  }
+  const summary = page.locator('.mobile-head details > summary').first();
+  if (!(await summary.count())) fail('Mobiles Menü: kein Bedienelement gefunden');
+  await summary.click();
+}
+
 async function assertHomeIdentityPair(page, scope, displayName, unitLabel, label) {
   const identity = page.locator(`[data-home-identity="${scope}"]`).first();
   if (!(await identity.count())) fail(`${label}: Zuhause-Identität fehlt`);
@@ -1589,7 +1616,7 @@ async function assertHomeOnboarding() {
   if (smallTargets.length) fail(`Onboarding Mobil: Touch-Ziele unter 44px: ${smallTargets.join(', ')}`);
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   const box = await page.locator('.energy-mode-strip').boundingBox();
-  const mobileNav = await page.locator('.sidebar').boundingBox();
+  const mobileNav = await mobileNavBox(page);
   if (!box || !mobileNav || Math.abs(box.y - (mobileNav.y + mobileNav.height)) > 1) {
     fail(`Onboarding Mobil: Beobachtungsmodus nicht sauber unter der Navigation (${JSON.stringify({ box, mobileNav })})`);
   }
@@ -1923,8 +1950,11 @@ async function assertEnergySafetyAndFlow(viewport) {
   await page.goto(`${baseURL}/app/energie`, { waitUntil: 'networkidle' });
   await assertHomeIdentityPair(page, 'energy-heading', 'QA Zuhause', 'Einheit 12', `Energie ${viewport.name}`);
   if (viewport.name === 'Mobil') {
-    await page.locator('.mobile-menu-toggle').click();
-    await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Einheit 12', `Navigation ${viewport.name}`);
+    await toggleMobileMenu(page);
+    // At mobile width the "nav" scope IS the desktop sidebar, and the responsive
+    // shell hides it on purpose — shell-widths.mjs asserts exactly one navigation
+    // per width, so requiring the sidebar to be visible here would contradict it.
+    // The mobile equivalent is the menu, asserted next.
     await assertHomeIdentityPair(page, 'mobile-menu', 'QA Zuhause', 'Einheit 12', `Mobiler Menükopf ${viewport.name}`);
     if (process.env.HV_QA_SCREENSHOT_DIR) {
       mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
@@ -1932,7 +1962,7 @@ async function assertEnergySafetyAndFlow(viewport) {
         path: join(process.env.HV_QA_SCREENSHOT_DIR, 'home-name-nav-mobile-open.png'),
       });
     }
-    await page.locator('.mobile-menu-toggle').click();
+    await toggleMobileMenu(page);
   } else {
     await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Einheit 12', `Navigation ${viewport.name}`);
   }
@@ -1979,8 +2009,8 @@ async function assertEnergySafetyAndFlow(viewport) {
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await page.waitForURL(/\/app\/energie/);
     await assertHomeIdentityPair(page, 'energy-heading', longDisplayName, 'Einheit 12', 'Langer Anzeigename Mobil');
-    await page.locator('.mobile-menu-toggle').click();
-    await assertHomeIdentityPair(page, 'nav', longDisplayName, 'Einheit 12', 'Langer Navigationsname Mobil');
+    await toggleMobileMenu(page);
+    await assertHomeIdentityPair(page, 'mobile-menu', longDisplayName, 'Einheit 12', 'Langer Navigationsname Mobil');
     const longNameOverflow = await page.evaluate(() => ({
       viewport: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,
@@ -2002,7 +2032,7 @@ async function assertEnergySafetyAndFlow(viewport) {
     if (longNameOverflow.documentWidth > longNameOverflow.viewport + 1) {
       fail(`Langer Anzeigename Mobil: Darstellung läuft horizontal über (${JSON.stringify(longNameOverflow)})`);
     }
-    await page.locator('.mobile-menu-toggle').click();
+    await toggleMobileMenu(page);
     await page.getByRole('link', { name: 'Zuhause bearbeiten' }).click();
     await page.locator('input[name="household_name"]').fill('QA Zuhause');
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
@@ -2389,7 +2419,7 @@ async function assertEnergySafetyAndFlow(viewport) {
   if (viewport.name === 'Mobil') {
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
     const box = await strip.boundingBox();
-    const mobileNav = await page.locator('.sidebar').boundingBox();
+    const mobileNav = await mobileNavBox(page);
     if (!box || !mobileNav || Math.abs(box.y - (mobileNav.y + mobileNav.height)) > 1) {
       fail(`Energie Mobil: Modus nicht sauber unter der Navigation (${JSON.stringify({ box, mobileNav })})`);
     }

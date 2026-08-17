@@ -21,7 +21,6 @@ func TestEnergyCockpitTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
 func TestEnergyCockpitTemplUsesSharedShellAndKeepsItsScriptAndWritePaths(t *testing.T) {
 	a := energyCockpitAppHAUSV425(t, 16, "14,0")
 	a.portalTemplEnabled = true
-	a.energyTemplEnabled = true
 
 	response := authedRequest(t, a, "owner@example.com", "/demo/app/energie")
 	if response.Code != http.StatusOK {
@@ -63,7 +62,6 @@ func TestEnergyCockpitTemplUsesSharedShellAndKeepsItsScriptAndWritePaths(t *test
 func TestEnergyCockpitTemplKeepsTheHouseholdNameAsItsDocumentTitle(t *testing.T) {
 	a := energyCockpitAppHAUSV425(t, 16, "")
 	a.portalTemplEnabled = true
-	a.energyTemplEnabled = true
 
 	body := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
 	if !strings.Contains(body, "<title>Zuhause Test</title>") {
