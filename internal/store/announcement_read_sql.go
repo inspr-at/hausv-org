@@ -29,8 +29,8 @@ var (
 )
 
 type boundAnnouncementReadRepository struct {
-	storage    announcementReadBackend
-	tenantSlug string
+	storage announcementReadBackend
+	tenant  TenantRef
 }
 
 type announcementReadBackend interface {
@@ -41,27 +41,27 @@ type announcementReadBackend interface {
 // BindAnnouncementReadRepository is the boundary used by tenant middleware.
 // An empty tenant is rejected, so even incorrect middleware wiring fails
 // closed instead of producing an unscoped repository.
-func BindAnnouncementReadRepository(storage AnnouncementReadStorage, tenantSlug string) (AnnouncementReadRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindAnnouncementReadRepository(storage AnnouncementReadStorage, tenant TenantRef) (AnnouncementReadRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(announcementReadBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundAnnouncementReadRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundAnnouncementReadRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundAnnouncementReadRepository) LastSeen(email string) time.Time {
 	if r == nil || r.storage == nil {
 		return time.Time{}
 	}
-	return r.storage.lastSeen(r.tenantSlug, email)
+	return r.storage.lastSeen(r.tenant.Slug, email)
 }
 
 func (r *boundAnnouncementReadRepository) MarkSeen(email string, seenAt time.Time) error {
 	if r == nil || r.storage == nil {
 		return nil
 	}
-	return r.storage.markSeen(r.tenantSlug, email, seenAt)
+	return r.storage.markSeen(r.tenant.Slug, email, seenAt)
 }
 
 // SQLAnnouncementReadStore records the per-user last-seen announcement time.

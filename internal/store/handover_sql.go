@@ -31,8 +31,8 @@ var (
 )
 
 type boundHandoverRepository struct {
-	storage    handoverBackend
-	tenantSlug string
+	storage handoverBackend
+	tenant  TenantRef
 }
 
 type handoverBackend interface {
@@ -42,24 +42,24 @@ type handoverBackend interface {
 	setFiledDocument(tenantSlug string, id string, documentID string, at time.Time) (HandoverRecord, bool, error)
 }
 
-func BindHandoverRepository(storage HandoverStorage, tenantSlug string) (HandoverRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindHandoverRepository(storage HandoverStorage, tenant TenantRef) (HandoverRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(handoverBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundHandoverRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundHandoverRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundHandoverRepository) Create(item HandoverRecord) (HandoverRecord, error) {
-	return r.storage.create(r.tenantSlug, item)
+	return r.storage.create(r.tenant.Slug, item)
 }
-func (r *boundHandoverRepository) List() []HandoverRecord { return r.storage.list(r.tenantSlug) }
+func (r *boundHandoverRepository) List() []HandoverRecord { return r.storage.list(r.tenant.Slug) }
 func (r *boundHandoverRepository) Get(id string) (HandoverRecord, bool) {
-	return r.storage.get(r.tenantSlug, id)
+	return r.storage.get(r.tenant.Slug, id)
 }
 func (r *boundHandoverRepository) SetFiledDocument(id string, documentID string, at time.Time) (HandoverRecord, bool, error) {
-	return r.storage.setFiledDocument(r.tenantSlug, id, documentID, at)
+	return r.storage.setFiledDocument(r.tenant.Slug, id, documentID, at)
 }
 
 // SQLHandoverStore keeps each handover as a JSON document keyed by (tenant, id).

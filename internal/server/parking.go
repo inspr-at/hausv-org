@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/version"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
@@ -35,7 +36,7 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		parkingMsg, parkingOK = chargingFlashMessage(r.URL.Query())
 	}
 	accounting := a.parkingAccounting(r.Context(), tenant)
-	accounting.Months = a.hydrateParkingMonths(tenant.Slug, email, role, accounting.Months)
+	accounting.Months = a.hydrateParkingMonths(ac.tenantRef, email, role, accounting.Months)
 	var currentMonth parkingMonthView
 	var olderMonths []parkingMonthView
 	currentMonthHeading := "Neuester Monat"
@@ -183,7 +184,7 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	view := a.parkingMonthDetails(r.Context(), tenant, month)
-	view.Summary = a.hydrateParkingMonth(tenant.Slug, email, role, view.Summary)
+	view.Summary = a.hydrateParkingMonth(ac.tenantRef, email, role, view.Summary)
 	if !view.HasHours && view.Summary.Month == "" {
 		http.NotFound(w, r)
 		return
@@ -201,18 +202,18 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}))
 }
 
-func (a *app) hydrateParkingMonths(tenantSlug string, email string, role string, months []parkingMonthView) []parkingMonthView {
+func (a *app) hydrateParkingMonths(tenant store.TenantRef, email string, role string, months []parkingMonthView) []parkingMonthView {
 	for i := range months {
-		months[i] = a.hydrateParkingMonth(tenantSlug, email, role, months[i])
+		months[i] = a.hydrateParkingMonth(tenant, email, role, months[i])
 	}
 	return months
 }
 
-func (a *app) hydrateParkingMonth(tenantSlug string, email string, role string, month parkingMonthView) parkingMonthView {
+func (a *app) hydrateParkingMonth(tenant store.TenantRef, email string, role string, month parkingMonthView) parkingMonthView {
 	if a == nil || a.attachmentStore == nil || month.Month == "" {
 		return month
 	}
-	attachments := a.attachmentViewsForEntity(tenantSlug, "parking", month.Month, email, role)
+	attachments := a.attachmentViewsForEntity(tenant, "parking", month.Month, email, role)
 	if len(attachments) == 0 {
 		return month
 	}
@@ -516,7 +517,7 @@ func (a *app) sendParkingReminders(w http.ResponseWriter, r *http.Request, ac au
 		return
 	}
 	returnToAccess := r.FormValue("return_to") == "parking_access"
-	sent := a.sendParkingPaymentReminders(tenant, actorEmail, role, time.Now())
+	sent := a.sendParkingPaymentReminders(tenant, ac.tenantRef, actorEmail, role, time.Now())
 	status := "none"
 	if sent > 0 {
 		status = "sent"
@@ -528,7 +529,7 @@ func (a *app) sendParkingReminders(w http.ResponseWriter, r *http.Request, ac au
 	http.Redirect(w, r, "/app/parking?reminder="+status, http.StatusSeeOther)
 }
 
-func (a *app) sendParkingPaymentReminders(tenant tenantConfig, actorEmail string, actorRole string, now time.Time) int {
+func (a *app) sendParkingPaymentReminders(tenant tenantConfig, tenantRef store.TenantRef, actorEmail string, actorRole string, now time.Time) int {
 	if a == nil || a.parkingStore == nil {
 		return 0
 	}
@@ -541,7 +542,7 @@ func (a *app) sendParkingPaymentReminders(tenant tenantConfig, actorEmail string
 		return 0
 	}
 	sentTotal := 0
-	for _, row := range a.userRows(tenant.Slug) {
+	for _, row := range a.userRows(tenantRef) {
 		if !row.ParkingChecked {
 			continue
 		}
@@ -674,12 +675,12 @@ func parkingSettingsMessage(status string) (string, bool) {
 }
 
 func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, _, _, _, ok := a.parkingAccessContext(w, ac)
+	_, _, _, _, ok := a.parkingAccessContext(w, ac)
 	if !ok {
 		return
 	}
 	accessMsg, accessOK := parkingAccessMessage(r.URL.Query().Get("parking_access"))
-	rows := a.parkingAccessRows(tenant.Slug)
+	rows := a.parkingAccessRows(ac.tenantRef)
 	a.render(w, "parkingAccessSettings", a.withBase(ac, map[string]any{
 		"Title":                  "Parkplatz-Zugriff",
 		"ActivePage":             "settings",
@@ -796,9 +797,9 @@ func parkingAccessMessage(status string) (string, bool) {
 	}
 }
 
-func (a *app) parkingAccessRows(tenantSlug string) []userRow {
-	rows := a.userRows(tenantSlug)
-	balance := a.parkingBalance(tenantSlug)
+func (a *app) parkingAccessRows(tenant store.TenantRef) []userRow {
+	rows := a.userRows(tenant)
+	balance := a.parkingBalance(tenant.Slug)
 	for i := range rows {
 		if !rows[i].ParkingChecked || balance.Outstanding <= 0 {
 			continue

@@ -26,15 +26,15 @@ func TestUnitStorageParity(t *testing.T) {
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
 			storage := build(t)
-			s, ok := BindUnitRepository(storage, "demo")
+			s, ok := BindUnitRepository(storage, testTenantRef("demo"))
 			if !ok {
 				t.Fatal("bind demo repository")
 			}
-			other, ok := BindUnitRepository(storage, "other")
+			other, ok := BindUnitRepository(storage, testTenantRef("other"))
 			if !ok {
 				t.Fatal("bind other repository")
 			}
-			if unscoped, ok := BindUnitRepository(storage, ""); ok || unscoped != nil {
+			if unscoped, ok := BindUnitRepository(storage, testTenantRef("")); ok || unscoped != nil {
 				t.Fatal("empty tenant must not produce a repository")
 			}
 
@@ -138,7 +138,7 @@ func TestSQLUnitImportFromJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json store: %v", err)
 	}
-	jsonRepository, _ := BindUnitRepository(jsonStore, "demo")
+	jsonRepository, _ := BindUnitRepository(jsonStore, testTenantRef("demo"))
 	if err := jsonRepository.SetUnits([]Unit{
 		{ID: "top-1", Label: "Top 1", MiteigentumsanteilPPM: 500000, OwnerEmails: []string{"a@example.com"}},
 		{ID: "top-2", Label: "Top 2", MiteigentumsanteilPPM: 500000},
@@ -149,7 +149,7 @@ func TestSQLUnitImportFromJSON(t *testing.T) {
 	database := dbtest.Open(t)
 	defer database.Close()
 	sqlStore := NewSQLUnitStore(database)
-	sqlRepository, _ := BindUnitRepository(sqlStore, "demo")
+	sqlRepository, _ := BindUnitRepository(sqlStore, testTenantRef("demo"))
 
 	for i := 0; i < 2; i++ {
 		if err := sqlStore.ImportUnits(jsonStore); err != nil {

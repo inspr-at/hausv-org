@@ -23,7 +23,7 @@ func TestAttachmentStorageParity(t *testing.T) {
 			if err != nil {
 				t.Fatalf("json store: %v", err)
 			}
-			repository, _ := BindAttachmentRepository(s, "demo")
+			repository, _ := BindAttachmentRepository(s, testTenantRef("demo"))
 			return attachmentBackend{repository, fileDir}
 		},
 		"sqlite": func(t *testing.T) attachmentBackend {
@@ -31,7 +31,7 @@ func TestAttachmentStorageParity(t *testing.T) {
 			fileDir := filepath.Join(dir, "files")
 			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
-			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(database, fileDir), "demo")
+			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(database, fileDir), testTenantRef("demo"))
 			return attachmentBackend{repository, fileDir}
 		},
 	}
@@ -118,7 +118,7 @@ func TestAttachmentBatchRollbackParity(t *testing.T) {
 			if err != nil {
 				t.Fatalf("json store: %v", err)
 			}
-			repository, _ := BindAttachmentRepository(s, "demo")
+			repository, _ := BindAttachmentRepository(s, testTenantRef("demo"))
 			return attachmentBackend{repository, fileDir}
 		},
 		"sqlite": func(t *testing.T) attachmentBackend {
@@ -126,7 +126,7 @@ func TestAttachmentBatchRollbackParity(t *testing.T) {
 			fileDir := filepath.Join(dir, "files")
 			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
-			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(database, fileDir), "demo")
+			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(database, fileDir), testTenantRef("demo"))
 			return attachmentBackend{repository, fileDir}
 		},
 	}
@@ -163,7 +163,7 @@ func TestSQLAttachmentImportFromJSON(t *testing.T) {
 		t.Fatalf("json store: %v", err)
 	}
 	now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
-	jsonAttachments, _ := BindAttachmentRepository(jsonStore, "demo")
+	jsonAttachments, _ := BindAttachmentRepository(jsonStore, testTenantRef("demo"))
 	created, err := jsonAttachments.CreateUploaded("issue", "issue-1", "admin@example.com",
 		[]UploadedFile{uploadFrom("a.png", onePixelPNG), uploadFrom("b.png", onePixelPNG)}, now)
 	if err != nil || len(created) != 2 {
@@ -183,7 +183,7 @@ func TestSQLAttachmentImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	sqlAttachments, _ := BindAttachmentRepository(sqlStore, "demo")
+	sqlAttachments, _ := BindAttachmentRepository(sqlStore, testTenantRef("demo"))
 	live := sqlAttachments.ListEntity("issue", "issue-1")
 	if len(live) != 1 || live[0].ID != created[0].ID {
 		t.Fatalf("after import expected only the live attachment, got %+v", live)

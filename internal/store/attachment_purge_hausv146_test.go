@@ -14,7 +14,7 @@ func TestPurgeDeletedAttachmentTombstones(t *testing.T) {
 	database := dbtest.Open(t)
 	defer database.Close()
 	s := NewSQLAttachmentStore(database, filepath.Join(dir, "files"))
-	attachments, _ := BindAttachmentRepository(s, "demo")
+	attachments, _ := BindAttachmentRepository(s, testTenantRef("demo"))
 
 	now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
 	created, err := attachments.CreateUploaded("issue", "issue-1", "a@example.com",

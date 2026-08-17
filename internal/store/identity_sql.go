@@ -61,8 +61,8 @@ type IdentityStorage interface {
 }
 
 type boundIdentityRepository struct {
-	storage    identityBackend
-	tenantSlug string
+	storage identityBackend
+	tenant  TenantRef
 }
 
 type identityBackend interface {
@@ -71,23 +71,23 @@ type identityBackend interface {
 	removeMembership(personID string, tenantSlug string) (bool, error)
 }
 
-func BindIdentityRepository(storage IdentityStorage, tenantSlug string) (IdentityRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindIdentityRepository(storage IdentityStorage, tenant TenantRef) (IdentityRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(identityBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundIdentityRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundIdentityRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundIdentityRepository) Membership(personID string) (HouseMembership, bool) {
-	return r.storage.membership(personID, r.tenantSlug)
+	return r.storage.membership(personID, r.tenant.Slug)
 }
 func (r *boundIdentityRepository) ListHouseMembers() []HouseMember {
-	return r.storage.listHouseMembers(r.tenantSlug)
+	return r.storage.listHouseMembers(r.tenant.Slug)
 }
 func (r *boundIdentityRepository) RemoveMembership(personID string) (bool, error) {
-	return r.storage.removeMembership(personID, r.tenantSlug)
+	return r.storage.removeMembership(personID, r.tenant.Slug)
 }
 
 // SQLIdentityStore implements the person/house N:N model. Every mutating method
@@ -140,13 +140,13 @@ func decodeStringList(raw string) []string {
 func scanPerson(scan func(dest ...any) error) (Person, error) {
 	var p Person
 	var authMethods, createdAt, updatedAt string
-	var deactivated, adopted int
+	var deactivated, adopted bool
 	if err := scan(&p.ID, &p.Email, &p.Title, &p.FirstName, &p.LastName, &authMethods, &deactivated, &adopted, &createdAt, &updatedAt); err != nil {
 		return Person{}, err
 	}
 	p.AuthMethods = decodeStringList(authMethods)
-	p.Deactivated = deactivated != 0
-	p.Adopted = adopted != 0
+	p.Deactivated = deactivated
+	p.Adopted = adopted
 	p.CreatedAt = parseIdentityTime(createdAt)
 	p.UpdatedAt = parseIdentityTime(updatedAt)
 	return p, nil
@@ -273,7 +273,7 @@ func (s *SQLIdentityStore) upsertPersonTx(tx *sql.Tx, p Person, at time.Time) (P
 		   deactivated=excluded.deactivated, adopted=excluded.adopted,
 		   updated_at=excluded.updated_at`,
 		p.ID, p.Email, strings.TrimSpace(p.Title), strings.TrimSpace(p.FirstName), strings.TrimSpace(p.LastName),
-		encodeStringList(p.AuthMethods), boolToInt(p.Deactivated), boolToInt(p.Adopted),
+		encodeStringList(p.AuthMethods), p.Deactivated, p.Adopted,
 		identityTime(p.CreatedAt), identityTime(p.UpdatedAt),
 	); err != nil {
 		return Person{}, err
@@ -324,12 +324,12 @@ func (s *SQLIdentityStore) ChangePersonEmail(personID string, newEmail string, a
 func scanMembership(scan func(dest ...any) error) (HouseMembership, error) {
 	var m HouseMembership
 	var permissions, createdAt, updatedAt string
-	var directoryOptIn *int64
+	var directoryOptIn *bool
 	if err := scan(&m.PersonID, &m.TenantSlug, &m.Role, &permissions, &m.Status, &directoryOptIn, &createdAt, &updatedAt); err != nil {
 		return HouseMembership{}, err
 	}
 	if directoryOptIn != nil {
-		v := *directoryOptIn != 0
+		v := *directoryOptIn
 		m.DirectoryOptIn = &v
 	}
 	m.Permissions = decodeStringList(permissions)
@@ -391,7 +391,7 @@ func (s *SQLIdentityStore) setMembershipTx(tx *sql.Tx, m HouseMembership, at tim
 	m.UpdatedAt = at
 	var directoryOptIn any
 	if m.DirectoryOptIn != nil {
-		directoryOptIn = boolToInt(*m.DirectoryOptIn)
+		directoryOptIn = *m.DirectoryOptIn
 	}
 	if _, err := tx.Exec(
 		`INSERT INTO house_memberships(`+membershipColumns+`) VALUES($1, $2, $3, $4, $5, $6, $7, $8)
@@ -469,8 +469,8 @@ func (s *SQLIdentityStore) listHouseMembers(tenantSlug string) []HouseMember {
 		var p Person
 		var m HouseMembership
 		var authMethods, pCreated, pUpdated, permissions, mCreated, mUpdated string
-		var deactivated, adopted int
-		var mDirectory *int64
+		var deactivated, adopted bool
+		var mDirectory *bool
 		if err := rows.Scan(
 			&p.ID, &p.Email, &p.Title, &p.FirstName, &p.LastName, &authMethods, &deactivated, &adopted, &pCreated, &pUpdated,
 			&m.PersonID, &m.TenantSlug, &m.Role, &permissions, &m.Status, &mDirectory, &mCreated, &mUpdated,
@@ -478,12 +478,12 @@ func (s *SQLIdentityStore) listHouseMembers(tenantSlug string) []HouseMember {
 			continue
 		}
 		p.AuthMethods = decodeStringList(authMethods)
-		p.Deactivated = deactivated != 0
-		p.Adopted = adopted != 0
+		p.Deactivated = deactivated
+		p.Adopted = adopted
 		p.CreatedAt, p.UpdatedAt = parseIdentityTime(pCreated), parseIdentityTime(pUpdated)
 		m.Permissions = decodeStringList(permissions)
 		if mDirectory != nil {
-			v := *mDirectory != 0
+			v := *mDirectory
 			m.DirectoryOptIn = &v
 		}
 		m.CreatedAt, m.UpdatedAt = parseIdentityTime(mCreated), parseIdentityTime(mUpdated)
@@ -523,13 +523,6 @@ func (s *SQLIdentityStore) DeletePerson(personID string) (bool, error) {
 	}
 	n, _ := res.RowsAffected()
 	return n > 0, nil
-}
-
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
 }
 
 // ImportProfiles migrates the email-keyed UserProfile records into person +

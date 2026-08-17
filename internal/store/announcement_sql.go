@@ -31,8 +31,8 @@ var (
 )
 
 type boundAnnouncementRepository struct {
-	storage    announcementBackend
-	tenantSlug string
+	storage announcementBackend
+	tenant  TenantRef
 }
 
 type announcementBackend interface {
@@ -44,37 +44,37 @@ type announcementBackend interface {
 	list(tenantSlug string) []Announcement
 }
 
-func BindAnnouncementRepository(storage AnnouncementStorage, tenantSlug string) (AnnouncementRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindAnnouncementRepository(storage AnnouncementStorage, tenant TenantRef) (AnnouncementRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(announcementBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundAnnouncementRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundAnnouncementRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundAnnouncementRepository) Create(item Announcement) (Announcement, error) {
-	return r.storage.create(r.tenantSlug, item)
+	return r.storage.create(r.tenant.Slug, item)
 }
 
 func (r *boundAnnouncementRepository) Update(id string, updated Announcement) (bool, error) {
-	return r.storage.update(r.tenantSlug, id, updated)
+	return r.storage.update(r.tenant.Slug, id, updated)
 }
 
 func (r *boundAnnouncementRepository) Delete(id string) (bool, error) {
-	return r.storage.delete(r.tenantSlug, id)
+	return r.storage.delete(r.tenant.Slug, id)
 }
 
 func (r *boundAnnouncementRepository) Visible(now time.Time) []Announcement {
-	return r.storage.visible(r.tenantSlug, now)
+	return r.storage.visible(r.tenant.Slug, now)
 }
 
 func (r *boundAnnouncementRepository) Archive(now time.Time) []Announcement {
-	return r.storage.archive(r.tenantSlug, now)
+	return r.storage.archive(r.tenant.Slug, now)
 }
 
 func (r *boundAnnouncementRepository) List() []Announcement {
-	return r.storage.list(r.tenantSlug)
+	return r.storage.list(r.tenant.Slug)
 }
 
 // SQLAnnouncementStore keeps each announcement as a JSON document keyed by

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/inspr-at/hausv-org/internal/config"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 // HAUSV-141: a panicking handler must yield a 500, not crash the request.
@@ -50,6 +51,9 @@ func TestRequestLogIncludesTenant(t *testing.T) {
 		tenants: map[string]config.TenantConfig{
 			"demo": {Slug: "demo"},
 		},
+		tenantIdentities: map[string]store.TenantIdentity{
+			"demo": {ID: testTenantRef("demo").ID, Slug: "demo"},
+		},
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /app", func(w http.ResponseWriter, _ *http.Request) {
@@ -83,7 +87,13 @@ func TestRequestLogNeverStoresPathTokensOrQueryData(t *testing.T) {
 	mux.HandleFunc("GET /auth/verify", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	a := &app{defaultTenant: "demo", tenants: map[string]config.TenantConfig{"demo": {Slug: "demo"}}}
+	a := &app{
+		defaultTenant: "demo",
+		tenants:       map[string]config.TenantConfig{"demo": {Slug: "demo"}},
+		tenantIdentities: map[string]store.TenantIdentity{
+			"demo": {ID: testTenantRef("demo").ID, Slug: "demo"},
+		},
+	}
 	h := a.recoverAndLog(a.tenantPaths(mux))
 
 	secrets := []string{

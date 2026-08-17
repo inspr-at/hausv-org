@@ -183,7 +183,7 @@ func (a *app) storeEBInterfaceImport(w http.ResponseWriter, r *http.Request, ac 
 		a.redirectEBInterfaceImport(w, r, "", "changed")
 		return
 	}
-	created, err := storeEBInterfaceInvoiceDocument(a.documentStore, verified.Invoice, ac.email, verified.RawXML, time.Now())
+	created, err := storeEBInterfaceInvoiceDocument(a.documentStore, ac.tenantRef, verified.Invoice, ac.email, verified.RawXML, time.Now())
 	if err != nil {
 		logError("ebInterface document storage failed", err, "tenant", ac.tenant.Slug)
 		a.redirectEBInterfaceImport(w, r, token, "error")

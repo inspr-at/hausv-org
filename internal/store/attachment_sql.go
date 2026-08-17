@@ -35,33 +35,33 @@ type attachmentStoreBackend interface {
 }
 
 type boundAttachmentRepository struct {
-	storage    attachmentStoreBackend
-	tenantSlug string
+	storage attachmentStoreBackend
+	tenant  TenantRef
 }
 
-func BindAttachmentRepository(storage AttachmentStorage, tenantSlug string) (AttachmentRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindAttachmentRepository(storage AttachmentStorage, tenant TenantRef) (AttachmentRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(attachmentStoreBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundAttachmentRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundAttachmentRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundAttachmentRepository) CreateUploaded(entityType, entityID, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error) {
-	return r.storage.createUploaded(r.tenantSlug, entityType, entityID, uploadedBy, uploads, now)
+	return r.storage.createUploaded(r.tenant.Slug, entityType, entityID, uploadedBy, uploads, now)
 }
 func (r *boundAttachmentRepository) ListEntity(entityType, entityID string) []AttachmentRecord {
-	return r.storage.listEntity(r.tenantSlug, entityType, entityID)
+	return r.storage.listEntity(r.tenant.Slug, entityType, entityID)
 }
 func (r *boundAttachmentRepository) Get(id string) (AttachmentRecord, bool) {
-	return r.storage.get(r.tenantSlug, id)
+	return r.storage.get(r.tenant.Slug, id)
 }
 func (r *boundAttachmentRepository) Delete(id string, deletedAt time.Time) (AttachmentRecord, bool, error) {
-	return r.storage.delete(r.tenantSlug, id, deletedAt)
+	return r.storage.delete(r.tenant.Slug, id, deletedAt)
 }
 func (r *boundAttachmentRepository) FilePath(item AttachmentRecord, variant string) (string, string, int64, bool) {
-	if textutil.Slug(item.TenantSlug) != r.tenantSlug {
+	if textutil.Slug(item.TenantSlug) != r.tenant.Slug {
 		return "", "", 0, false
 	}
 	return r.storage.filePath(item, variant)

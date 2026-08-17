@@ -26,11 +26,11 @@ func TestAnnouncementReadStorageParity(t *testing.T) {
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
 			storage := build(t)
-			demo, ok := BindAnnouncementReadRepository(storage, "demo")
+			demo, ok := BindAnnouncementReadRepository(storage, testTenantRef("demo"))
 			if !ok {
 				t.Fatal("bind demo repository")
 			}
-			other, ok := BindAnnouncementReadRepository(storage, "other")
+			other, ok := BindAnnouncementReadRepository(storage, testTenantRef("other"))
 			if !ok {
 				t.Fatal("bind other repository")
 			}
@@ -55,7 +55,7 @@ func TestAnnouncementReadStorageParity(t *testing.T) {
 				t.Fatalf("upsert last seen = %v, want %v", got, later)
 			}
 			// An unscoped repository cannot be constructed.
-			if unscoped, ok := BindAnnouncementReadRepository(storage, ""); ok || unscoped != nil {
+			if unscoped, ok := BindAnnouncementReadRepository(storage, testTenantRef("")); ok || unscoped != nil {
 				t.Fatal("empty tenant must not produce a repository")
 			}
 		})

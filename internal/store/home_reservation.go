@@ -151,7 +151,7 @@ func (s *SQLHomeReservationStore) Reserve(item HomeReservation, at time.Time) (H
 			return HomeReservation{}, ErrHomeReservationConflict
 		}
 		if _, err := tx.Exec(`UPDATE home_reservations
-			SET household_name=$1, authorization_confirmed=1, updated_at=$2 WHERE slug=$3`,
+			SET household_name=$1, authorization_confirmed=TRUE, updated_at=$2 WHERE slug=$3`,
 			item.HouseholdName, homeReservationTimestamp(item.UpdatedAt), item.Slug); err != nil {
 			return HomeReservation{}, err
 		}
@@ -165,7 +165,7 @@ func (s *SQLHomeReservationStore) Reserve(item HomeReservation, at time.Time) (H
 	}
 	if _, err := tx.Exec(`INSERT INTO home_reservations
 		(slug,household_name,owner_email,authorization_confirmed,status,created_at,updated_at)
-		VALUES($1,$2,$3,$4,$5,$6,$7)`, item.Slug, item.HouseholdName, item.OwnerEmail, 1, item.Status,
+		VALUES($1,$2,$3,$4,$5,$6,$7)`, item.Slug, item.HouseholdName, item.OwnerEmail, true, item.Status,
 		homeReservationTimestamp(item.CreatedAt), homeReservationTimestamp(item.UpdatedAt)); err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return HomeReservation{}, ErrHomeReservationConflict
@@ -223,7 +223,7 @@ type homeReservationQueryRow func(string, ...any) *sql.Row
 
 func getHomeReservation(query homeReservationQueryRow, slug string) (HomeReservation, bool, error) {
 	var item HomeReservation
-	var authorization int
+	var authorization bool
 	var createdAt, updatedAt string
 	var confirmedAt sql.NullString
 	err := query(`SELECT slug,household_name,owner_email,authorization_confirmed,status,created_at,updated_at,confirmed_at
@@ -235,7 +235,7 @@ func getHomeReservation(query homeReservationQueryRow, slug string) (HomeReserva
 	if err != nil {
 		return HomeReservation{}, false, err
 	}
-	item.AuthorizationConfirmed = authorization != 0
+	item.AuthorizationConfirmed = authorization
 	item.CreatedAt = parseHomeReservationTimestamp(createdAt)
 	item.UpdatedAt = parseHomeReservationTimestamp(updatedAt)
 	if confirmedAt.Valid {

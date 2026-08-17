@@ -180,7 +180,7 @@ func (a *app) helpPortalContext(ac authCtx) web.PortalPageData {
 	}
 	openIssues := 0
 	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(tenant.Slug, email, role))
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, email, role))
 	}
 	return web.PortalPageData{
 		Title:               "Hilfe · " + houseDisplayName(tenant) + " · " + role,

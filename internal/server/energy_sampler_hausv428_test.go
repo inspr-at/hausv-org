@@ -435,7 +435,7 @@ func TestSamplerRecordsNothingWithoutConfirmedMappingHAUSV428(t *testing.T) {
 
 func TestSamplerKeepsHousesApartHAUSV428(t *testing.T) {
 	a := samplerAppHAUSV428(t)
-	a.tenants["haus-a"] = tenantConfig{Slug: "haus-a", Name: "Haus A"}
+	addTestTenant(a, tenantConfig{Slug: "haus-a", Name: "Haus A"})
 	firstHA := newFakeHomeAssistantHAUSV428(t)
 	secondHA := newFakeHomeAssistantHAUSV428(t)
 	confirmGridImportHAUSV428(t, a, "demo", gridEntityHAUSV428)

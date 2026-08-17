@@ -33,7 +33,7 @@ func TestHAUSV200UserRowsPutAttentionFirstAndExposeUnits(t *testing.T) {
 		t.Fatalf("seed unit: %v", err)
 	}
 
-	rows := a.userRows("demo")
+	rows := a.userRows(testTenantRef("demo"))
 	if len(rows) < 3 {
 		t.Fatalf("rows = %+v, want seeded users and admin", rows)
 	}

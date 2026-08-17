@@ -18,14 +18,14 @@ import (
 )
 
 func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
+	email, role := ac.email, ac.role
 	if denyServiceProviderArea(w, role) {
 		return
 	}
 	canManage := ac.can(capabilityManageDocuments)
 	visible := []documentRecord{}
 	if ac.repositories.documents != nil {
-		visible = a.visibleDocumentsForActor(tenant.Slug, email, role)
+		visible = a.visibleDocumentsForActor(ac.tenantRef, email, role)
 	}
 	searchQuery := strings.TrimSpace(r.URL.Query().Get("q"))
 	sortMode := selectedDocumentSort(r.URL.Query().Get("sort"))
@@ -45,7 +45,7 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			Portal:             a.documentsPortalContext(ac),
 			AssetVersion:       version.AssetVersion(),
 			CanManageDocuments: canManage,
-			DocumentSections:   a.documentCategorySectionsForActor(tenant.Slug, email, role, documents, false),
+			DocumentSections:   a.documentCategorySectionsForActor(ac.tenantRef, email, role, documents, false),
 			HasDocuments:       len(documents) > 0,
 			HasAnyDocuments:    len(visible) > 0,
 			DocumentsEmpty:     emptyState("Noch keine Dokumente", "Sobald die Verwaltung eine Unterlage freigibt, erscheint sie hier – mit Kategorie, Datum und Download."),
@@ -67,8 +67,8 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"Title":              "Dokumente",
 		"CanManageDocuments": canManage,
 		"ActivePage":         "documents",
-		"Documents":          a.documentViewsForActor(tenant.Slug, email, role, documents),
-		"DocumentSections":   a.documentCategorySectionsForActor(tenant.Slug, email, role, documents, false),
+		"Documents":          a.documentViewsForActor(ac.tenantRef, email, role, documents),
+		"DocumentSections":   a.documentCategorySectionsForActor(ac.tenantRef, email, role, documents, false),
 		"HasDocuments":       len(documents) > 0,
 		"HasAnyDocuments":    len(visible) > 0,
 		"DocumentsEmpty":     emptyState("Noch keine Dokumente", "Sobald die Verwaltung eine Unterlage freigibt, erscheint sie hier – mit Kategorie, Datum und Download."),
@@ -108,7 +108,7 @@ func (a *app) documentsPortalContext(ac authCtx) web.PortalPageData {
 	}
 	openIssues := 0
 	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenant.Slug, ac.email, ac.role))
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, ac.email, ac.role))
 	}
 	return web.PortalPageData{
 		Title:               "Dokumente · " + houseDisplayName(ac.tenant) + " · " + ac.role,
@@ -252,7 +252,7 @@ func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request, ac authCt
 		http.NotFound(w, r)
 		return
 	}
-	if !a.canViewDocument(tenant.Slug, item, email, role) {
+	if !a.canViewDocument(ac.tenantRef, item, email, role) {
 		http.Error(w, "Dieses Dokument ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
 		return
 	}
@@ -303,7 +303,7 @@ func (a *app) previewDocument(w http.ResponseWriter, r *http.Request, ac authCtx
 		http.NotFound(w, r)
 		return
 	}
-	if !a.canViewDocument(tenant.Slug, item, email, role) {
+	if !a.canViewDocument(ac.tenantRef, item, email, role) {
 		http.Error(w, "Dieses Dokument ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
 		return
 	}
@@ -349,7 +349,7 @@ func (a *app) serveAttachment(w http.ResponseWriter, r *http.Request, ac authCtx
 		http.NotFound(w, r)
 		return
 	}
-	if !a.canViewAttachment(tenant.Slug, item, email, role) {
+	if !a.canViewAttachment(ac.tenantRef, item, email, role) {
 		http.Error(w, "Dieser Anhang ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
 		return
 	}
@@ -411,7 +411,7 @@ func (a *app) deleteAttachment(w http.ResponseWriter, r *http.Request, ac authCt
 		http.Redirect(w, r, redirectAfterAttachmentChange(r, "/app/anliegen?issue=missing"), http.StatusSeeOther)
 		return
 	}
-	if !a.canDeleteAttachment(tenant.Slug, item, email, role) {
+	if !a.canDeleteAttachment(ac.tenantRef, item, email, role) {
 		http.Error(w, "Dieser Anhang kann nur von Verwaltung oder Ersteller entfernt werden.", http.StatusForbidden)
 		return
 	}
@@ -467,25 +467,26 @@ func documentFileHeader(r *http.Request) *multipart.FileHeader {
 	return nil
 }
 
-func (a *app) visibleDocumentsForActor(tenantSlug string, email string, role string) []documentRecord {
+func (a *app) visibleDocumentsForActor(tenant store.TenantRef, email string, role string) []documentRecord {
 	if a == nil {
 		return nil
 	}
-	documents, ok := store.BindDocumentRepository(a.documentStore, tenantSlug)
+	documents, ok := store.BindDocumentRepository(a.documentStore, tenant)
 	if !ok {
 		return nil
 	}
 	all := documents.ListCurrent()
 	out := make([]documentRecord, 0, len(all))
 	for _, item := range all {
-		if a.canViewDocument(tenantSlug, item, email, role) {
+		if a.canViewDocument(tenant, item, email, role) {
 			out = append(out, item)
 		}
 	}
 	return out
 }
 
-func (a *app) canViewDocument(tenantSlug string, item documentRecord, email string, role string) bool {
+func (a *app) canViewDocument(tenant store.TenantRef, item documentRecord, email string, role string) bool {
+	tenantSlug := tenant.Slug
 	if normalizeSlug(item.TenantSlug) != normalizeSlug(tenantSlug) {
 		return false
 	}
@@ -499,7 +500,7 @@ func (a *app) canViewDocument(tenantSlug string, item documentRecord, email stri
 	case documentVisibilityAllResidents:
 		return true
 	case documentVisibilityOwnersOnly:
-		return a.isDocumentOwner(tenantSlug, email, role, item.UnitID)
+		return a.isDocumentOwner(tenant, email, role, item.UnitID)
 	case documentVisibilityManagerOnly:
 		return false
 	default:
@@ -507,15 +508,15 @@ func (a *app) canViewDocument(tenantSlug string, item documentRecord, email stri
 	}
 }
 
-func (a *app) isDocumentOwner(tenantSlug string, email string, role string, unitID string) bool {
-	tenantSlug = normalizeSlug(tenantSlug)
+func (a *app) isDocumentOwner(tenant store.TenantRef, email string, role string, unitID string) bool {
+	tenantSlug := normalizeSlug(tenant.Slug)
 	email = normalizeEmail(email)
 	unitID = normalizeUnitID(unitID)
 	if tenantSlug == "" || email == "" {
 		return false
 	}
 	if a != nil && a.unitStore != nil {
-		units, _ := store.BindUnitRepository(a.unitStore, tenantSlug)
+		units, _ := store.BindUnitRepository(a.unitStore, tenant)
 		if units != nil && unitID != "" {
 			members := units.MembersForUnit(unitID)
 			return members.Found && emailListContains(members.Owners, email)
@@ -565,8 +566,8 @@ func attachmentFormHeaders(r *http.Request, maxCount int, names ...string) ([]*m
 	return out, nil
 }
 
-func (a *app) canViewAttachment(tenantSlug string, item attachmentRecord, email string, role string) bool {
-	tenantSlug = normalizeSlug(tenantSlug)
+func (a *app) canViewAttachment(tenant store.TenantRef, item attachmentRecord, email string, role string) bool {
+	tenantSlug := normalizeSlug(tenant.Slug)
 	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug || normalizeEmail(email) == "" {
 		return false
 	}
@@ -578,22 +579,22 @@ func (a *app) canViewAttachment(tenantSlug string, item attachmentRecord, email 
 	}
 	switch entityType {
 	case "issue", "issue-estimate":
-		issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+		issues, ok := store.BindIssueRepository(a.issueStore, tenant)
 		if !ok {
 			return false
 		}
 		issue, found := issues.Get(item.EntityID)
-		return found && a.canViewIssueForActor(tenantSlug, issue, email, role)
+		return found && a.canViewIssueForActor(tenant, issue, email, role)
 	case "issue-comment":
-		issue, _, found := a.issueCommentTarget(tenantSlug, item.EntityID)
-		return found && a.canViewIssueForActor(tenantSlug, issue, email, role)
+		issue, _, found := a.issueCommentTarget(tenant, item.EntityID)
+		return found && a.canViewIssueForActor(tenant, issue, email, role)
 	case "document":
-		documents, ok := store.BindDocumentRepository(a.documentStore, tenantSlug)
+		documents, ok := store.BindDocumentRepository(a.documentStore, tenant)
 		if !ok {
 			return false
 		}
 		doc, found := documents.Get(item.EntityID)
-		return found && a.canViewDocument(tenantSlug, doc, email, role)
+		return found && a.canViewDocument(tenant, doc, email, role)
 	case "announcement", "event", "building":
 		return true
 	case "ballot":
@@ -607,8 +608,8 @@ func (a *app) canViewAttachment(tenantSlug string, item attachmentRecord, email 
 	}
 }
 
-func (a *app) canDeleteAttachment(tenantSlug string, item attachmentRecord, email string, role string) bool {
-	tenantSlug = normalizeSlug(tenantSlug)
+func (a *app) canDeleteAttachment(tenant store.TenantRef, item attachmentRecord, email string, role string) bool {
+	tenantSlug := normalizeSlug(tenant.Slug)
 	email = normalizeEmail(email)
 	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug || email == "" {
 		return false
@@ -623,7 +624,7 @@ func (a *app) canDeleteAttachment(tenantSlug string, item attachmentRecord, emai
 		if can(actor, capabilityManageIssues, resource) {
 			return true
 		}
-		issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+		issues, ok := store.BindIssueRepository(a.issueStore, tenant)
 		if !ok {
 			return false
 		}
@@ -633,7 +634,7 @@ func (a *app) canDeleteAttachment(tenantSlug string, item attachmentRecord, emai
 		if can(actor, capabilityManageIssues, resource) {
 			return true
 		}
-		issue, comment, found := a.issueCommentTarget(tenantSlug, item.EntityID)
+		issue, comment, found := a.issueCommentTarget(tenant, item.EntityID)
 		return found && (normalizeEmail(issue.AuthorEmail) == email || normalizeEmail(comment.AuthorEmail) == email)
 	case "document":
 		return can(actor, capabilityManageDocuments, resource)
@@ -654,18 +655,18 @@ func (a *app) canDeleteAttachment(tenantSlug string, item attachmentRecord, emai
 	}
 }
 
-func (a *app) attachmentViewsForEntity(tenantSlug string, entityType string, entityID string, actorEmail string, role string) []attachmentView {
+func (a *app) attachmentViewsForEntity(tenant store.TenantRef, entityType string, entityID string, actorEmail string, role string) []attachmentView {
 	if a == nil {
 		return nil
 	}
-	attachments, ok := store.BindAttachmentRepository(a.attachmentStore, tenantSlug)
+	attachments, ok := store.BindAttachmentRepository(a.attachmentStore, tenant)
 	if !ok {
 		return nil
 	}
 	records := attachments.ListEntity(entityType, entityID)
 	views := make([]attachmentView, 0, len(records))
 	for _, record := range records {
-		views = append(views, attachmentViewFromRecord(record, a.canDeleteAttachment(tenantSlug, record, actorEmail, role)))
+		views = append(views, attachmentViewFromRecord(record, a.canDeleteAttachment(tenant, record, actorEmail, role)))
 	}
 	return views
 }
@@ -678,17 +679,17 @@ func documentViews(items []documentRecord) []documentView {
 	return views
 }
 
-func (a *app) documentViewsForActor(tenantSlug string, email string, role string, items []documentRecord) []documentView {
+func (a *app) documentViewsForActor(tenant store.TenantRef, email string, role string, items []documentRecord) []documentView {
 	views := make([]documentView, 0, len(items))
 	if a == nil {
 		return views
 	}
-	documents, _ := store.BindDocumentRepository(a.documentStore, tenantSlug)
+	documents, _ := store.BindDocumentRepository(a.documentStore, tenant)
 	for _, item := range items {
 		view := documentViewFrom(item)
 		if a != nil && documents != nil {
 			for _, version := range documents.Versions(item.SeriesID) {
-				if version.Current || !a.canViewDocument(tenantSlug, version, email, role) {
+				if version.Current || !a.canViewDocument(tenant, version, email, role) {
 					continue
 				}
 				view.Versions = append(view.Versions, documentVersionView{
@@ -707,7 +708,7 @@ func (a *app) documentViewsForActor(tenantSlug string, email string, role string
 	return views
 }
 
-func (a *app) documentCategorySectionsForActor(tenantSlug string, email string, role string, items []documentRecord, includeEmpty bool) []documentCategoryView {
+func (a *app) documentCategorySectionsForActor(tenant store.TenantRef, email string, role string, items []documentRecord, includeEmpty bool) []documentCategoryView {
 	byCategory := map[string][]documentRecord{}
 	for _, item := range items {
 		byCategory[item.Category] = append(byCategory[item.Category], item)
@@ -720,7 +721,7 @@ func (a *app) documentCategorySectionsForActor(tenantSlug string, email string, 
 		}
 		sections = append(sections, documentCategoryView{
 			Category:     category,
-			Documents:    a.documentViewsForActor(tenantSlug, email, role, docs),
+			Documents:    a.documentViewsForActor(tenant, email, role, docs),
 			HasDocuments: len(docs) > 0,
 			EmptyMessage: "Keine passenden Dokumente in dieser Kategorie.",
 		})

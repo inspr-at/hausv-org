@@ -33,8 +33,8 @@ func (a *app) canViewScopedAuditEvent(ac authCtx, event auditEvent) bool {
 		case "issue", "issue-estimate":
 			return a.canViewAuditIssue(ac, entityID)
 		case "issue-comment":
-			issue, _, found := a.issueCommentTarget(ac.tenant.Slug, entityID)
-			return found && a.canViewIssueForActor(ac.tenant.Slug, issue, ac.email, ac.role)
+			issue, _, found := a.issueCommentTarget(ac.tenantRef, entityID)
+			return found && a.canViewIssueForActor(ac.tenantRef, issue, ac.email, ac.role)
 		}
 	}
 	return false
@@ -45,7 +45,7 @@ func (a *app) canViewAuditIssue(ac authCtx, issueID string) bool {
 		return false
 	}
 	issue, found := ac.repositories.issues.Get(strings.TrimSpace(issueID))
-	return found && a.canViewIssueForActor(ac.tenant.Slug, issue, ac.email, ac.role)
+	return found && a.canViewIssueForActor(ac.tenantRef, issue, ac.email, ac.role)
 }
 
 func (a *app) canViewAuditUnit(ac authCtx, unitID string) bool {

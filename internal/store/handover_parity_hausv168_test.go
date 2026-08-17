@@ -41,7 +41,7 @@ func TestHandoverStorageParity(t *testing.T) {
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
 			storage := build(t)
-			s, ok := BindHandoverRepository(storage, "demo")
+			s, ok := BindHandoverRepository(storage, testTenantRef("demo"))
 			if !ok {
 				t.Fatal("bind handover repository")
 			}
@@ -130,7 +130,7 @@ func TestSQLHandoverImportFromJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json store: %v", err)
 	}
-	jsonRepo, _ := BindHandoverRepository(jsonStore, "demo")
+	jsonRepo, _ := BindHandoverRepository(jsonStore, testTenantRef("demo"))
 	if _, err := jsonRepo.Create(sampleHandover("h1")); err != nil {
 		t.Fatalf("seed h1: %v", err)
 	}
@@ -147,7 +147,7 @@ func TestSQLHandoverImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	sqlRepo, _ := BindHandoverRepository(sqlStore, "demo")
+	sqlRepo, _ := BindHandoverRepository(sqlStore, testTenantRef("demo"))
 	if got := sqlRepo.List(); len(got) != 2 {
 		t.Fatalf("imported %d, want 2: %+v", len(got), got)
 	}

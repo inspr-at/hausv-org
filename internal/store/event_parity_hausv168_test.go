@@ -26,7 +26,7 @@ func TestEventStorageParity(t *testing.T) {
 	now := time.Now().UTC()
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
-			s, ok := BindEventRepository(build(t), "demo")
+			s, ok := BindEventRepository(build(t), testTenantRef("demo"))
 			if !ok {
 				t.Fatal("bind event repository")
 			}

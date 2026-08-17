@@ -9,6 +9,7 @@ import (
 	"github.com/inspr-at/hausv-org/internal/db"
 	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/ulid"
 )
 
 func TestSQLHomePortalActivationIsAtomicIdempotentAndPersistent(t *testing.T) {
@@ -47,12 +48,16 @@ func TestSQLHomePortalActivationIsAtomicIdempotentAndPersistent(t *testing.T) {
 	if err != nil || !created || portal.HouseholdName != "Zuhause am Stadtpark" {
 		t.Fatalf("activation portal=%+v created=%v err=%v", portal, created, err)
 	}
+	var tenantID string
+	if err := database.QueryRow(`SELECT tenant_id FROM tenant WHERE slug=$1`, portal.Slug).Scan(&tenantID); err != nil || !ulid.Valid(tenantID) {
+		t.Fatalf("activation tenant identity=%q err=%v", tenantID, err)
+	}
 	owner, ok := identity.PersonByEmail("owner@example.com")
 	if !ok || owner.ID != person.ID || owner.FirstName != "Eva" || len(owner.AuthMethods) != 1 || owner.AuthMethods[0] != store.AuthMethodOIDC {
 		t.Fatalf("existing identity was not preserved: %+v", owner)
 	}
-	homeIdentity, _ := store.BindIdentityRepository(identity, "stadtpark-home")
-	otherIdentity, _ := store.BindIdentityRepository(identity, "anderes-haus")
+	homeIdentity, _ := store.BindIdentityRepository(identity, store.TenantRef{ID: "01ARZ3NDEKTSV4RRFFQ69G5FAV", Slug: "stadtpark-home"})
+	otherIdentity, _ := store.BindIdentityRepository(identity, store.TenantRef{ID: "01ARZ3NDEKTSV4RRFFQ69G5FAV", Slug: "anderes-haus"})
 	membership, ok := homeIdentity.Membership(owner.ID)
 	if !ok || membership.Role != store.RoleOwner || membership.Status != "Aktiv" {
 		t.Fatalf("owner membership = %+v ok=%v", membership, ok)
@@ -121,8 +126,15 @@ func TestSQLHomePortalRejectsForeignUnconfirmedAndRollsBack(t *testing.T) {
 	if _, ok, err := reservations.Confirm("sicheres-home", "owner@example.com", now.Add(time.Minute)); err != nil || !ok {
 		t.Fatalf("confirm ok=%v err=%v", ok, err)
 	}
-	if _, err := database.Exec(`CREATE TRIGGER reject_home_owner BEFORE INSERT ON house_memberships
-		BEGIN SELECT RAISE(ABORT, 'test membership failure'); END`); err != nil {
+	rejectMembershipSQL := `CREATE TRIGGER reject_home_owner BEFORE INSERT ON house_memberships
+		BEGIN SELECT RAISE(ABORT, 'test membership failure'); END`
+	if dbtest.Backend() == db.BackendPostgres {
+		rejectMembershipSQL = `CREATE FUNCTION reject_home_owner_fn() RETURNS trigger LANGUAGE plpgsql AS $$
+		BEGIN RAISE EXCEPTION 'test membership failure'; END; $$;
+		CREATE TRIGGER reject_home_owner BEFORE INSERT ON house_memberships
+		FOR EACH ROW EXECUTE FUNCTION reject_home_owner_fn()`
+	}
+	if _, err := database.Exec(rejectMembershipSQL); err != nil {
 		t.Fatal(err)
 	}
 	if _, _, err := portals.Activate("sicheres-home", "owner@example.com", now.Add(2*time.Minute)); err == nil {

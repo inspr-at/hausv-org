@@ -57,7 +57,7 @@ func TestProtocolFilerParity(t *testing.T) {
 			if err != nil {
 				t.Fatalf("json handovers: %v", err)
 			}
-			documents, _ := BindDocumentRepository(docs, "demo")
+			documents, _ := BindDocumentRepository(docs, testTenantRef("demo"))
 			return filingBackend{NewSequentialProtocolFiler(docs, hs), documents, hs, fileDir}
 		},
 		"sqlite-atomic": func(t *testing.T) filingBackend {
@@ -71,7 +71,7 @@ func TestProtocolFilerParity(t *testing.T) {
 			if filer == nil {
 				t.Fatal("expected an atomic filer when both stores share a db")
 			}
-			documents, _ := BindDocumentRepository(docs, "demo")
+			documents, _ := BindDocumentRepository(docs, testTenantRef("demo"))
 			return filingBackend{filer, documents, hs, fileDir}
 		},
 	}
@@ -81,13 +81,13 @@ func TestProtocolFilerParity(t *testing.T) {
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
 			b := build(t)
-			handovers, _ := BindHandoverRepository(b.handovers, "demo")
+			handovers, _ := BindHandoverRepository(b.handovers, testTenantRef("demo"))
 			if _, err := handovers.Create(sampleHandover("h1")); err != nil {
 				t.Fatalf("seed handover: %v", err)
 			}
 
 			created, updated, already, err := b.filer.FileHandoverProtocol(
-				"demo", "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now)
+				testTenantRef("demo"), "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now)
 			if err != nil || already {
 				t.Fatalf("file: err=%v already=%v", err, already)
 			}
@@ -107,7 +107,7 @@ func TestProtocolFilerParity(t *testing.T) {
 
 			// Retry: must NOT create a second protocol document.
 			_, again, already2, err := b.filer.FileHandoverProtocol(
-				"demo", "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now.Add(time.Hour))
+				testTenantRef("demo"), "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now.Add(time.Hour))
 			if err != nil {
 				t.Fatalf("refile: %v", err)
 			}
@@ -127,7 +127,7 @@ func TestProtocolFilerParity(t *testing.T) {
 
 			// Unknown handover: no document, no file left behind.
 			if _, _, _, err := b.filer.FileHandoverProtocol(
-				"demo", "does-not-exist", protocolDoc(), "x.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now); err == nil {
+				testTenantRef("demo"), "does-not-exist", protocolDoc(), "x.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now); err == nil {
 				t.Fatal("filing an unknown handover must error")
 			}
 			if docs := b.documents.List(); len(docs) != 1 {
@@ -151,7 +151,7 @@ func TestSQLProtocolFilerConcurrentFilingCreatesOneDocument(t *testing.T) {
 	docs := NewSQLDocumentStore(database, fileDir)
 	handovers := NewSQLHandoverStore(database)
 	filer := NewSQLProtocolFiler(docs, handovers)
-	handoverRepo, _ := BindHandoverRepository(handovers, "demo")
+	handoverRepo, _ := BindHandoverRepository(handovers, testTenantRef("demo"))
 	if _, err := handoverRepo.Create(sampleHandover("h1")); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -166,14 +166,14 @@ func TestSQLProtocolFilerConcurrentFilingCreatesOneDocument(t *testing.T) {
 			// Errors are acceptable for the loser of the race; the invariant
 			// below is what must hold.
 			_, _, _, _ = filer.FileHandoverProtocol(
-				"demo", "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now)
+				testTenantRef("demo"), "h1", protocolDoc(), "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 fake"), now)
 		}()
 	}
 	close(start)
 	<-done
 	<-done
 
-	documents, _ := BindDocumentRepository(docs, "demo")
+	documents, _ := BindDocumentRepository(docs, testTenantRef("demo"))
 	list := documents.List()
 	if len(list) != 1 {
 		t.Fatalf("concurrent filing produced %d documents, want exactly 1", len(list))

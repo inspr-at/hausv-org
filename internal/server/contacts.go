@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/version"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
@@ -25,8 +26,8 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	contacts := ac.repositories.contacts
 	managedContacts := a.managedContactViews(contacts, canManageContacts)
 	activeManagedContacts, inactiveManagedContacts := splitManagedContactViews(managedContacts)
-	boardContacts := a.boardContactViews(tenant.Slug)
-	residentContacts := a.residentDirectoryViews(tenant.Slug)
+	boardContacts := a.boardContactViews(ac.tenantRef)
+	residentContacts := a.residentDirectoryViews(ac.tenantRef)
 	managedEmptyTitle := "Noch kein Adressbucheintrag"
 	managedEmptyMessage := "Dienstleister, Hausmeister und Notdienste können hier zentral hinterlegt werden."
 	if !a.serviceAccessEnabled {
@@ -337,9 +338,9 @@ func contactKindOptionsForServiceProviderAccess(selected string, enabled bool) [
 	return filtered
 }
 
-func (a *app) boardContactViews(tenantSlug string) []contactCardView {
+func (a *app) boardContactViews(tenant store.TenantRef) []contactCardView {
 	contacts := []contactCardView{}
-	for _, row := range a.userRows(tenantSlug) {
+	for _, row := range a.userRows(tenant) {
 		if row.Role != roleBeirat || normalizeEmail(row.Email) == "" {
 			continue
 		}
@@ -356,9 +357,9 @@ func (a *app) boardContactViews(tenantSlug string) []contactCardView {
 	return contacts
 }
 
-func (a *app) residentDirectoryViews(tenantSlug string) []contactCardView {
+func (a *app) residentDirectoryViews(tenant store.TenantRef) []contactCardView {
 	contacts := []contactCardView{}
-	for _, row := range a.userRows(tenantSlug) {
+	for _, row := range a.userRows(tenant) {
 		if !row.DirectoryOptIn || !residentDirectoryRole(row.Role) || normalizeEmail(row.Email) == "" {
 			continue
 		}

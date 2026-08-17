@@ -37,7 +37,7 @@ func (a *app) issueTriage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.Redirect(w, r, "/app/anliegen/board?issue=missing", http.StatusSeeOther)
 		return
 	}
-	views := a.issueViewsForActor(ac.tenant.Slug, []residentIssue{item}, ac.role, ac.email)
+	views := a.issueViewsForActor(ac.tenantRef, []residentIssue{item}, ac.role, ac.email)
 	if len(views) != 1 {
 		http.Redirect(w, r, "/app/anliegen/board?issue=missing", http.StatusSeeOther)
 		return
@@ -80,11 +80,11 @@ func (a *app) issueResidentDetail(w http.ResponseWriter, r *http.Request, ac aut
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
 	}
-	if !a.canViewIssueForActor(ac.tenant.Slug, item, ac.email, ac.role) {
+	if !a.canViewIssueForActor(ac.tenantRef, item, ac.email, ac.role) {
 		http.Error(w, "Dieses Anliegen ist für diesen Zugang nicht sichtbar.", http.StatusForbidden)
 		return
 	}
-	views := a.issueViewsForActor(ac.tenant.Slug, []residentIssue{item}, ac.role, ac.email)
+	views := a.issueViewsForActor(ac.tenantRef, []residentIssue{item}, ac.role, ac.email)
 	if len(views) != 1 {
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
@@ -123,21 +123,21 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		urgentIssueCount = issuePriorityCount(allTenantIssues, issuePriorityUrgent)
 		if !boardOnly {
 			if canManageIssues {
-				issues = a.issueViewsForActor(tenant.Slug, ac.repositories.issues.ListAuthor(email), role, email)
+				issues = a.issueViewsForActor(ac.tenantRef, ac.repositories.issues.ListAuthor(email), role, email)
 			} else {
-				issues = a.issueViewsForActor(tenant.Slug, a.visibleIssuesForActor(tenant.Slug, email, role), role, email)
+				issues = a.issueViewsForActor(ac.tenantRef, a.visibleIssuesForActor(ac.tenantRef, email, role), role, email)
 			}
 		}
 		if canManageIssues {
 			filteredIssues := filterIssueBoard(allTenantIssues, filters)
 			if boardOnly {
-				manageIssues = a.issueViewsForActor(tenant.Slug, filteredIssues, role, email)
+				manageIssues = a.issueViewsForActor(ac.tenantRef, filteredIssues, role, email)
 			}
 			previewIssues := filterIssueBoard(allTenantIssues, issueBoardFilterView{Sort: "updated"})
 			if len(previewIssues) > 3 {
 				previewIssues = previewIssues[:3]
 			}
-			manageIssuePreview = a.issueViewsForActor(tenant.Slug, previewIssues, role, email)
+			manageIssuePreview = a.issueViewsForActor(ac.tenantRef, previewIssues, role, email)
 		}
 	}
 	msg, msgOK := issueMessage(r.URL.Query().Get("issue"))
@@ -237,7 +237,7 @@ func (a *app) issuesPortalContext(ac authCtx) web.PortalPageData {
 	}
 	openIssues := 0
 	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(tenant.Slug, email, role))
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, email, role))
 	}
 	return web.PortalPageData{
 		Title:               "Anliegen · " + houseDisplayName(tenant) + " · " + role,
@@ -393,7 +393,7 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 	resource := resourceFor(existing.TenantSlug)
 	canManage := can(actor, capabilityManageIssues, resource)
 	readOnly := can(actor, capabilityOversight, resource) && !canManage
-	if !a.canViewIssueForActor(tenant.Slug, existing, email, role) {
+	if !a.canViewIssueForActor(ac.tenantRef, existing, email, role) {
 		http.Error(w, "Dieser Kommentar ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -509,12 +509,12 @@ func (a *app) deleteIssueComment(w http.ResponseWriter, r *http.Request, ac auth
 		return
 	}
 	commentID := strings.TrimSpace(r.FormValue("comment_id"))
-	issue, comment, found := a.issueCommentTarget(tenant.Slug, commentID)
+	issue, comment, found := a.issueCommentTarget(ac.tenantRef, commentID)
 	if !found {
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
 	}
-	if !a.canDeleteIssueComment(tenant.Slug, issue, comment, email, role) {
+	if !a.canDeleteIssueComment(ac.tenantRef, issue, comment, email, role) {
 		http.Error(w, "Dieser Kommentar kann mit diesem Zugang nicht gelöscht werden.", http.StatusForbidden)
 		return
 	}
@@ -623,7 +623,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	resource := resourceFor(existing.TenantSlug)
 	canManage := can(actor, capabilityManageIssues, resource)
 	readOnly := can(actor, capabilityOversight, resource) && !canManage
-	if !a.canViewIssueForActor(tenant.Slug, existing, email, role) {
+	if !a.canViewIssueForActor(ac.tenantRef, existing, email, role) {
 		http.Error(w, "Dieser Statuswechsel ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
@@ -1075,18 +1075,18 @@ func issueIsOpen(item residentIssue) bool {
 	}
 }
 
-func (a *app) visibleIssuesForActor(tenantSlug string, email string, role string) []residentIssue {
+func (a *app) visibleIssuesForActor(tenant store.TenantRef, email string, role string) []residentIssue {
 	if a == nil {
 		return nil
 	}
-	issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+	issues, ok := store.BindIssueRepository(a.issueStore, tenant)
 	if !ok {
 		return nil
 	}
 	all := issues.List()
 	out := make([]residentIssue, 0, len(all))
 	for _, item := range all {
-		if a.canViewIssueForActor(item.TenantSlug, item, email, role) {
+		if a.canViewIssueForActor(tenant, item, email, role) {
 			out = append(out, item)
 		}
 	}
@@ -1094,8 +1094,8 @@ func (a *app) visibleIssuesForActor(tenantSlug string, email string, role string
 	return out
 }
 
-func (a *app) canViewIssueForActor(tenantSlug string, item residentIssue, email string, role string) bool {
-	tenantSlug = normalizeSlug(tenantSlug)
+func (a *app) canViewIssueForActor(tenant store.TenantRef, item residentIssue, email string, role string) bool {
+	tenantSlug := normalizeSlug(tenant.Slug)
 	email = normalizeEmail(email)
 	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug || email == "" {
 		return false
@@ -1111,16 +1111,17 @@ func (a *app) canViewIssueForActor(tenantSlug string, item residentIssue, email 
 	if normalizeEmail(item.AuthorEmail) == email {
 		return true
 	}
-	return normalizeIssueLocation(item.LocationType) == issueLocationCommon && a.actorCanSeeCommonIssues(tenantSlug, email, role)
+	return normalizeIssueLocation(item.LocationType) == issueLocationCommon && a.actorCanSeeCommonIssues(tenant, email, role)
 }
 
 func issueAssignedToActor(item residentIssue, email string) bool {
 	return normalizeEmail(item.AssigneeEmail) != "" && normalizeEmail(item.AssigneeEmail) == normalizeEmail(email)
 }
 
-func (a *app) canDeleteIssueComment(tenantSlug string, issue residentIssue, comment issueComment, email string, role string) bool {
+func (a *app) canDeleteIssueComment(tenant store.TenantRef, issue residentIssue, comment issueComment, email string, role string) bool {
+	tenantSlug := tenant.Slug
 	email = normalizeEmail(email)
-	if email == "" || !a.canViewIssueForActor(tenantSlug, issue, email, role) {
+	if email == "" || !a.canViewIssueForActor(tenant, issue, email, role) {
 		return false
 	}
 	actor := actorFor(email, tenantSlug, role)
@@ -1131,11 +1132,11 @@ func (a *app) canDeleteIssueComment(tenantSlug string, issue residentIssue, comm
 	return normalizeEmail(comment.AuthorEmail) == email
 }
 
-func (a *app) issueCommentTarget(tenantSlug string, commentID string) (residentIssue, issueComment, bool) {
+func (a *app) issueCommentTarget(tenant store.TenantRef, commentID string) (residentIssue, issueComment, bool) {
 	if a == nil {
 		return residentIssue{}, issueComment{}, false
 	}
-	issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+	issues, ok := store.BindIssueRepository(a.issueStore, tenant)
 	if !ok {
 		return residentIssue{}, issueComment{}, false
 	}
@@ -1153,13 +1154,13 @@ func (a *app) issueCommentTarget(tenantSlug string, commentID string) (residentI
 	return residentIssue{}, issueComment{}, false
 }
 
-func (a *app) issueViewsForActor(tenantSlug string, items []residentIssue, role string, actorEmail string) []issueView {
-	views := issueViewsForActor(tenantSlug, items, role, actorEmail)
+func (a *app) issueViewsForActor(tenant store.TenantRef, items []residentIssue, role string, actorEmail string) []issueView {
+	views := issueViewsForActor(tenant.Slug, items, role, actorEmail)
 	if a == nil {
 		return views
 	}
 	for i := range views {
-		attachments := a.attachmentViewsForEntity(tenantSlug, "issue", views[i].ID, actorEmail, role)
+		attachments := a.attachmentViewsForEntity(tenant, "issue", views[i].ID, actorEmail, role)
 		photoCount := 0
 		for _, attachment := range attachments {
 			if attachment.IsImage {
@@ -1170,7 +1171,7 @@ func (a *app) issueViewsForActor(tenantSlug string, items []residentIssue, role 
 			views[i].Attachments = attachments
 			views[i].HasAttachments = true
 		}
-		estimateAttachments := a.attachmentViewsForEntity(tenantSlug, "issue-estimate", views[i].ID, actorEmail, role)
+		estimateAttachments := a.attachmentViewsForEntity(tenant, "issue-estimate", views[i].ID, actorEmail, role)
 		if len(estimateAttachments) > 0 {
 			views[i].EstimateAttachments = estimateAttachments
 			views[i].HasEstimateAttachments = true
@@ -1181,11 +1182,11 @@ func (a *app) issueViewsForActor(tenantSlug string, items []residentIssue, role 
 		views[i].HasPhotos = photoCount > 0
 		for j := range views[i].Comments {
 			comment, found := issueCommentByID(items[i].Comments, views[i].Comments[j].ID)
-			if found && a.canDeleteIssueComment(tenantSlug, items[i], comment, actorEmail, role) {
+			if found && a.canDeleteIssueComment(tenant, items[i], comment, actorEmail, role) {
 				views[i].Comments[j].CanDelete = true
 				views[i].Comments[j].DeleteURL = "/app/anliegen/comment/delete"
 			}
-			commentAttachments := a.attachmentViewsForEntity(tenantSlug, "issue-comment", views[i].Comments[j].ID, actorEmail, role)
+			commentAttachments := a.attachmentViewsForEntity(tenant, "issue-comment", views[i].Comments[j].ID, actorEmail, role)
 			if len(commentAttachments) == 0 {
 				continue
 			}

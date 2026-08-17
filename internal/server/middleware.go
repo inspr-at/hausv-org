@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 // recoverAndLog is the outermost middleware. It recovers panics (so a nil-map or
@@ -81,6 +83,7 @@ type authCtx struct {
 	email        string
 	role         string
 	tenant       tenantConfig
+	tenantRef    store.TenantRef
 	repositories requestRepositories
 }
 
@@ -129,7 +132,7 @@ func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, boo
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return authCtx{}, false
 	}
-	return authCtx{email: email, role: role, tenant: tenant, repositories: resolved.repositories}, true
+	return authCtx{email: email, role: role, tenant: tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories}, true
 }
 
 func (a *app) closedServiceProviderSession(r *http.Request) bool {

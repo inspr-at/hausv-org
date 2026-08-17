@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/version"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
@@ -227,7 +228,7 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if canManage {
 		pageItems = all
 	}
-	views := a.ballotViewsForActor(ac.repositories, tenant.Slug, email, role, pageItems, now, canManage || canOversight)
+	views := a.ballotViewsForActor(ac.repositories, ac.tenantRef, email, role, pageItems, now, canManage || canOversight)
 	pendingCount := 0
 	draftCount := 0
 	openCount := 0
@@ -358,7 +359,7 @@ func (a *app) ballotsPortalContext(ac authCtx) web.PortalPageData {
 	}
 	openIssues := 0
 	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(tenant.Slug, email, role))
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, email, role))
 	}
 	canUseResidentAreas := roleCanUseResidentAreas(role)
 	canSeeParking := modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking))
@@ -476,7 +477,7 @@ func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.Error(w, "Protokoll erst nach Abschluss verfügbar.", http.StatusConflict)
 		return
 	}
-	view := a.ballotViewForActor(ac.repositories, tenant.Slug, email, role, item, now, true)
+	view := a.ballotViewForActor(ac.repositories, ac.tenantRef, email, role, item, now, true)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": "abstimmung-" + item.ID + "-protokoll.html"}))
 	a.executeTemplate(w, "ballotProtocol", map[string]any{
@@ -534,15 +535,16 @@ func (a *app) ballotVoteWeight(units unitRepository, tenantSlug string, email st
 	return 0, false
 }
 
-func (a *app) ballotViewsForActor(repositories requestRepositories, tenantSlug string, email string, role string, items []ballot, now time.Time, includeResults bool) []ballotView {
+func (a *app) ballotViewsForActor(repositories requestRepositories, tenant store.TenantRef, email string, role string, items []ballot, now time.Time, includeResults bool) []ballotView {
 	out := make([]ballotView, 0, len(items))
 	for _, item := range items {
-		out = append(out, a.ballotViewForActor(repositories, tenantSlug, email, role, item, now, includeResults))
+		out = append(out, a.ballotViewForActor(repositories, tenant, email, role, item, now, includeResults))
 	}
 	return out
 }
 
-func (a *app) ballotViewForActor(repositories requestRepositories, tenantSlug string, email string, role string, item ballot, now time.Time, includeResults bool) ballotView {
+func (a *app) ballotViewForActor(repositories requestRepositories, tenant store.TenantRef, email string, role string, item ballot, now time.Time, includeResults bool) ballotView {
+	tenantSlug := tenant.Slug
 	item = normalizeBallot(item)
 	actor := actorFor(email, tenantSlug, role)
 	resource := resourceFor(item.TenantSlug)
@@ -553,7 +555,7 @@ func (a *app) ballotViewForActor(repositories requestRepositories, tenantSlug st
 	status, statusClass, active := ballotStatusForView(item, now)
 	vote, hasVote := item.Votes[normalizeEmail(email)]
 	rawStatus := normalizeBallotStatus(item.Status)
-	tally := a.computeBallotTally(repositories.units, tenantSlug, item)
+	tally := a.computeBallotTally(repositories.units, tenant, item)
 	view := ballotView{
 		ID:                  item.ID,
 		Title:               item.Title,
@@ -608,7 +610,7 @@ func (a *app) ballotViewForActor(repositories requestRepositories, tenantSlug st
 	if includeResults || rawStatus == ballotStatusClosed {
 		view.HasResults = true
 	}
-	attachments := a.attachmentViewsForEntity(tenantSlug, "ballot", item.ID, email, role)
+	attachments := a.attachmentViewsForEntity(tenant, "ballot", item.ID, email, role)
 	if len(attachments) > 0 {
 		view.Attachments = attachments
 		view.HasAttachments = true
@@ -629,7 +631,7 @@ func (a *app) ballotViewForActor(repositories requestRepositories, tenantSlug st
 	return view
 }
 
-func (a *app) computeBallotTally(units unitRepository, tenantSlug string, item ballot) ballotResultSummary {
+func (a *app) computeBallotTally(units unitRepository, tenant store.TenantRef, item ballot) ballotResultSummary {
 	out := ballotResultSummary{Options: map[string]ballotResultCount{}}
 	item = normalizeBallot(item)
 	for _, vote := range item.Votes {
@@ -649,7 +651,7 @@ func (a *app) computeBallotTally(units unitRepository, tenantSlug string, item b
 			out.Options[option] = result
 		}
 	}
-	out.EligibleWeight = a.ballotEligibleWeightTotal(units, tenantSlug, item)
+	out.EligibleWeight = a.ballotEligibleWeightTotal(units, tenant, item)
 	if out.EligibleWeight < out.TotalWeight {
 		out.EligibleWeight = out.TotalWeight
 	}
@@ -674,17 +676,16 @@ func (a *app) computeBallotTally(units unitRepository, tenantSlug string, item b
 	return out
 }
 
-func (a *app) ballotEligibleWeightTotal(units unitRepository, tenantSlug string, item ballot) int {
+func (a *app) ballotEligibleWeightTotal(units unitRepository, tenant store.TenantRef, item ballot) int {
 	total := 0
-	for _, weight := range a.ballotEligibleWeights(units, tenantSlug, item) {
+	for _, weight := range a.ballotEligibleWeights(units, tenant, item) {
 		total += weight
 	}
 	return total
 }
 
-func (a *app) ballotEligibleWeights(units unitRepository, tenantSlug string, item ballot) map[string]int {
+func (a *app) ballotEligibleWeights(units unitRepository, tenant store.TenantRef, item ballot) map[string]int {
 	weights := map[string]int{}
-	tenantSlug = normalizeSlug(tenantSlug)
 	switch normalizeBallotWeighting(item.Weighting) {
 	case ballotWeightingPerHead:
 		if units != nil {
@@ -697,7 +698,7 @@ func (a *app) ballotEligibleWeights(units unitRepository, tenantSlug string, ite
 			}
 		}
 		if a != nil {
-			for _, row := range a.userRows(tenantSlug) {
+			for _, row := range a.userRows(tenant) {
 				email := normalizeEmail(row.Email)
 				if email != "" && normalizeRole(row.Role) == roleOwner {
 					weights[email] = 1
@@ -822,7 +823,12 @@ func (a *app) sendDueBallotReminders(now time.Time) int {
 	}
 	sentTotal := 0
 	for _, tenant := range a.tenants {
-		repositories := a.repositoriesForTenant(tenant)
+		identity, ok := a.tenantIdentity(tenant.Slug)
+		if !ok {
+			continue
+		}
+		tenantRef := identity.Ref()
+		repositories := a.repositoriesForTenant(tenantRef)
 		if _, err := repositories.votes.CloseExpired(now); err != nil {
 			logError("ballot auto-close failed", err, "tenant", tenant.Slug)
 		}
@@ -830,7 +836,7 @@ func (a *app) sendDueBallotReminders(now time.Time) int {
 			if !ballotReminderDue(item, now) {
 				continue
 			}
-			recipients := a.ballotReminderRecipients(repositories.units, tenant.Slug, item)
+			recipients := a.ballotReminderRecipients(repositories.units, tenantRef, item)
 			if len(recipients) == 0 {
 				continue
 			}
@@ -888,8 +894,8 @@ func ballotReminderDue(item ballot, now time.Time) bool {
 	return item.ClosesAt.Sub(now) <= time.Duration(item.ReminderBeforeMinutes)*time.Minute
 }
 
-func (a *app) ballotReminderRecipients(units unitRepository, tenantSlug string, item ballot) []string {
-	weights := a.ballotEligibleWeights(units, tenantSlug, item)
+func (a *app) ballotReminderRecipients(units unitRepository, tenant store.TenantRef, item ballot) []string {
+	weights := a.ballotEligibleWeights(units, tenant, item)
 	recipients := make([]string, 0, len(weights))
 	for email := range weights {
 		if _, voted := item.Votes[email]; voted {

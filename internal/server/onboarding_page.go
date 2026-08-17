@@ -37,7 +37,7 @@ func (a *app) onboardingPortalContext(ac authCtx) web.PortalPageData {
 	}
 	openIssues := 0
 	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenant.Slug, ac.email, ac.role))
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, ac.email, ac.role))
 	}
 	return web.PortalPageData{
 		Title:               "Mein Zuhause einrichten · " + houseDisplayName(ac.tenant) + " · " + ac.role,

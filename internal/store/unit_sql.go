@@ -32,8 +32,8 @@ var (
 )
 
 type boundUnitRepository struct {
-	storage    unitBackend
-	tenantSlug string
+	storage unitBackend
+	tenant  TenantRef
 }
 
 type unitBackend interface {
@@ -48,45 +48,45 @@ type unitBackend interface {
 }
 
 // BindUnitRepository binds all unit operations to one tenant.
-func BindUnitRepository(storage UnitStorage, tenantSlug string) (UnitRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindUnitRepository(storage UnitStorage, tenant TenantRef) (UnitRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(unitBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundUnitRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundUnitRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundUnitRepository) SetUnits(units []Unit) error {
-	return r.storage.setTenantUnits(r.tenantSlug, units)
+	return r.storage.setTenantUnits(r.tenant.Slug, units)
 }
 
 func (r *boundUnitRepository) UpsertUnit(origID string, item Unit) (bool, error) {
-	return r.storage.upsertUnit(r.tenantSlug, origID, item)
+	return r.storage.upsertUnit(r.tenant.Slug, origID, item)
 }
 
 func (r *boundUnitRepository) DeleteUnit(id string) (bool, Unit, error) {
-	return r.storage.deleteUnit(r.tenantSlug, id)
+	return r.storage.deleteUnit(r.tenant.Slug, id)
 }
 
 func (r *boundUnitRepository) List() []Unit {
-	return r.storage.listTenant(r.tenantSlug)
+	return r.storage.listTenant(r.tenant.Slug)
 }
 
 func (r *boundUnitRepository) UnitCount() int {
-	return r.storage.unitCount(r.tenantSlug)
+	return r.storage.unitCount(r.tenant.Slug)
 }
 
 func (r *boundUnitRepository) BillableUnitWeight() int {
-	return r.storage.billableUnitWeight(r.tenantSlug)
+	return r.storage.billableUnitWeight(r.tenant.Slug)
 }
 
 func (r *boundUnitRepository) UnitsForEmail(email string) []UnitMembership {
-	return r.storage.unitsForEmail(r.tenantSlug, email)
+	return r.storage.unitsForEmail(r.tenant.Slug, email)
 }
 
 func (r *boundUnitRepository) MembersForUnit(unitID string) UnitMembers {
-	return r.storage.membersForUnit(r.tenantSlug, unitID)
+	return r.storage.membersForUnit(r.tenant.Slug, unitID)
 }
 
 // SQLUnitStore keeps each unit as a JSON document keyed by (tenant, id). Table

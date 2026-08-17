@@ -26,15 +26,15 @@ func TestUnitPaymentStatusStorageParity(t *testing.T) {
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
 			storage := build(t)
-			s, ok := BindUnitPaymentStatusRepository(storage, "demo")
+			s, ok := BindUnitPaymentStatusRepository(storage, testTenantRef("demo"))
 			if !ok {
 				t.Fatal("bind demo repository")
 			}
-			other, ok := BindUnitPaymentStatusRepository(storage, "other")
+			other, ok := BindUnitPaymentStatusRepository(storage, testTenantRef("other"))
 			if !ok {
 				t.Fatal("bind other repository")
 			}
-			if unscoped, ok := BindUnitPaymentStatusRepository(storage, ""); ok || unscoped != nil {
+			if unscoped, ok := BindUnitPaymentStatusRepository(storage, testTenantRef("")); ok || unscoped != nil {
 				t.Fatal("empty tenant must not produce a repository")
 			}
 
@@ -86,14 +86,14 @@ func TestSQLUnitPaymentImportFromJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json store: %v", err)
 	}
-	jsonRepository, _ := BindUnitPaymentStatusRepository(jsonStore, "demo")
+	jsonRepository, _ := BindUnitPaymentStatusRepository(jsonStore, testTenantRef("demo"))
 	_, _ = jsonRepository.Set(UnitPaymentStatus{UnitID: "w-01", Status: "bezahlt"})
 	_, _ = jsonRepository.Set(UnitPaymentStatus{UnitID: "w-02", Status: "offen"})
 
 	database := dbtest.Open(t)
 	defer database.Close()
 	sqlStore := NewSQLUnitPaymentStatusStore(database)
-	sqlRepository, _ := BindUnitPaymentStatusRepository(sqlStore, "demo")
+	sqlRepository, _ := BindUnitPaymentStatusRepository(sqlStore, testTenantRef("demo"))
 
 	// Newer SQLite write survives re-import.
 	if _, err := sqlRepository.Set(UnitPaymentStatus{UnitID: "w-01", Status: "ueberfaellig"}); err != nil {

@@ -737,6 +737,7 @@ type app struct {
 	rootDomain              string
 	defaultTenant           string
 	tenants                 map[string]tenantConfig
+	tenantIdentities        map[string]store.TenantIdentity
 	sessionSecure           bool
 	allowed                 map[string]struct{}
 	admins                  map[string]struct{}
@@ -1139,52 +1140,88 @@ type requestRepositories struct {
 
 type resolvedTenantRequest struct {
 	tenant       tenantConfig
+	tenantRef    store.TenantRef
 	repositories requestRepositories
 	pathPrefixed bool
 }
 
-func (a *app) repositoriesForTenant(tenant tenantConfig) requestRepositories {
+func (a *app) repositoriesForTenant(tenant store.TenantRef) requestRepositories {
 	repositories := requestRepositories{}
 	if a == nil {
 		return repositories
 	}
 	if a.announcementReadStore != nil {
-		repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant.Slug)
+		repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant)
 	}
 	if a.announcementStore != nil {
-		repositories.announcements, _ = store.BindAnnouncementRepository(a.announcementStore, tenant.Slug)
+		repositories.announcements, _ = store.BindAnnouncementRepository(a.announcementStore, tenant)
 	}
 	if a.attachmentStore != nil {
-		repositories.attachments, _ = store.BindAttachmentRepository(a.attachmentStore, tenant.Slug)
+		repositories.attachments, _ = store.BindAttachmentRepository(a.attachmentStore, tenant)
 	}
 	if a.contactStore != nil {
-		repositories.contacts, _ = store.BindContactBookRepository(a.contactStore, tenant.Slug)
+		repositories.contacts, _ = store.BindContactBookRepository(a.contactStore, tenant)
 	}
 	if a.documentStore != nil {
-		repositories.documents, _ = store.BindDocumentRepository(a.documentStore, tenant.Slug)
+		repositories.documents, _ = store.BindDocumentRepository(a.documentStore, tenant)
 	}
 	if a.eventStore != nil {
-		repositories.events, _ = store.BindEventRepository(a.eventStore, tenant.Slug)
+		repositories.events, _ = store.BindEventRepository(a.eventStore, tenant)
 	}
 	if a.handoverStore != nil {
-		repositories.handovers, _ = store.BindHandoverRepository(a.handoverStore, tenant.Slug)
+		repositories.handovers, _ = store.BindHandoverRepository(a.handoverStore, tenant)
 	}
 	if a.identityStore != nil {
-		repositories.identity, _ = store.BindIdentityRepository(a.identityStore, tenant.Slug)
+		repositories.identity, _ = store.BindIdentityRepository(a.identityStore, tenant)
 	}
 	if a.issueStore != nil {
-		repositories.issues, _ = store.BindIssueRepository(a.issueStore, tenant.Slug)
+		repositories.issues, _ = store.BindIssueRepository(a.issueStore, tenant)
 	}
 	if a.unitPaymentStore != nil {
-		repositories.unitPayments, _ = store.BindUnitPaymentStatusRepository(a.unitPaymentStore, tenant.Slug)
+		repositories.unitPayments, _ = store.BindUnitPaymentStatusRepository(a.unitPaymentStore, tenant)
 	}
 	if a.unitStore != nil {
-		repositories.units, _ = store.BindUnitRepository(a.unitStore, tenant.Slug)
+		repositories.units, _ = store.BindUnitRepository(a.unitStore, tenant)
 	}
 	if a.voteStore != nil {
-		repositories.votes, _ = store.BindVoteRepository(a.voteStore, tenant.Slug)
+		repositories.votes, _ = store.BindVoteRepository(a.voteStore, tenant)
 	}
 	return repositories
+}
+
+func (a *app) tenantIdentity(slug string) (store.TenantIdentity, bool) {
+	if a == nil {
+		return store.TenantIdentity{}, false
+	}
+	slug = normalizeSlug(slug)
+	identity, ok := a.tenantIdentities[slug]
+	if ok && identity.Ref().Valid() {
+		return identity, true
+	}
+	if a.homePortals == nil {
+		return store.TenantIdentity{}, false
+	}
+	portal, found, err := a.homePortals.Get(slug)
+	if err != nil || !found {
+		return store.TenantIdentity{}, false
+	}
+	identity = store.TenantIdentity{ID: portal.TenantID, Slug: portal.Slug, Name: portal.HouseholdName}
+	return identity, identity.Ref().Valid()
+
+}
+
+func (a *app) resolveTenantRequest(tenant tenantConfig, pathPrefixed bool) (resolvedTenantRequest, bool) {
+	identity, ok := a.tenantIdentity(tenant.Slug)
+	if !ok {
+		return resolvedTenantRequest{}, false
+	}
+	tenantRef := identity.Ref()
+	return resolvedTenantRequest{
+		tenant:       tenant,
+		tenantRef:    tenantRef,
+		repositories: a.repositoriesForTenant(tenantRef),
+		pathPrefixed: pathPrefixed,
+	}, true
 }
 
 func resolvedTenantFromContext(ctx context.Context) (resolvedTenantRequest, bool) {
@@ -1210,9 +1247,10 @@ func (a *app) tenantPaths(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
-			resolved := resolvedTenantRequest{
-				tenant:       tenant,
-				repositories: a.repositoriesForTenant(tenant),
+			resolved, ok := a.resolveTenantRequest(tenant, false)
+			if !ok {
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
 			}
 			ctx := context.WithValue(r.Context(), tenantPathContextKey{}, resolved)
 			*r = *r.WithContext(ctx)
@@ -1220,10 +1258,10 @@ func (a *app) tenantPaths(next http.Handler) http.Handler {
 			return
 		}
 
-		resolved := resolvedTenantRequest{
-			tenant:       tenant,
-			repositories: a.repositoriesForTenant(tenant),
-			pathPrefixed: true,
+		resolved, ok := a.resolveTenantRequest(tenant, true)
+		if !ok {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
 		}
 		ctx := context.WithValue(r.Context(), tenantPathContextKey{}, resolved)
 		*r = *r.WithContext(ctx)
@@ -1544,6 +1582,15 @@ func newApp() (*app, error) {
 		}
 		return nil, fmt.Errorf("open sqlite at %s: %w", dbPath, err)
 	}
+	configuredIdentities := make([]store.TenantIdentity, 0, len(tenants))
+	for _, tenant := range tenants {
+		configuredIdentities = append(configuredIdentities, store.TenantIdentity{Slug: tenant.Slug, Name: tenant.Name})
+	}
+	tenantIdentities, err := store.EnsureTenantIdentities(context.Background(), database, configuredIdentities)
+	if err != nil {
+		_ = database.Close()
+		return nil, fmt.Errorf("ensure tenant identities: %w", err)
+	}
 
 	// Every migrated store is served from SQLite. Imports stay in place because
 	// they are idempotent and clobber-safe: on an already-migrated database they
@@ -1651,11 +1698,16 @@ func newApp() (*app, error) {
 	// it has run. Deliberately NON-fatal: the legacy read path is still in place,
 	// so a failure here degrades to "photo still served the old way" rather than
 	// blocking boot.
-	tenantSlugs := make([]string, 0, len(tenants))
+	tenantRefs := make([]store.TenantRef, 0, len(tenants))
 	for _, t := range tenants {
-		tenantSlugs = append(tenantSlugs, t.Slug)
+		identity, ok := tenantIdentities[t.Slug]
+		if !ok || !identity.Ref().Valid() {
+			_ = database.Close()
+			return nil, fmt.Errorf("tenant identity unavailable for %s", t.Slug)
+		}
+		tenantRefs = append(tenantRefs, identity.Ref())
 	}
-	if n, err := migrateLegacyIssuePhotos(issueBackend, attachmentBackend, issueAttachmentDir, tenantSlugs, time.Now()); err != nil {
+	if n, err := migrateLegacyIssuePhotos(issueBackend, attachmentBackend, issueAttachmentDir, tenantRefs, time.Now()); err != nil {
 		logError("legacy issue photo migration incomplete", err, "fallback", "legacy_path")
 	} else if n > 0 {
 		logInfo("legacy issue photos migrated", "count", n)
@@ -1679,6 +1731,7 @@ func newApp() (*app, error) {
 		rootDomain:               rootDomain,
 		defaultTenant:            defaultTenant,
 		tenants:                  tenants,
+		tenantIdentities:         tenantIdentities,
 		sessionSecure:            parsed.Scheme == "https",
 		allowed:                  allowed,
 		admins:                   admins,
@@ -1819,7 +1872,13 @@ func (a *app) calendarFeed(w http.ResponseWriter, r *http.Request) {
 	}
 	role := a.roleFor(payload.Email, tenant.Slug)
 	profile := a.profileForTenant(payload.Email, tenant.Slug)
-	body := a.renderCalendarFeed(tenant, profile, role, time.Now().UTC(), a.repositoriesForTenant(tenant).events)
+	identity, ok := a.tenantIdentity(tenant.Slug)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	tenantRef := identity.Ref()
+	body := a.renderCalendarFeed(tenant, tenantRef, profile, role, time.Now().UTC(), a.repositoriesForTenant(tenantRef).events)
 	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
 	w.Header().Set("Cache-Control", "private, max-age=300")
 	w.Header().Set("Content-Disposition", `inline; filename="hausv-`+tenant.Slug+`.ics"`)
@@ -1906,9 +1965,8 @@ func (a *app) signCalendarFeed(value string) ([]byte, error) {
 	return a.sessions.Sign(value)
 }
 
-func (a *app) renderCalendarFeed(tenant tenantConfig, profile userProfile, role string, now time.Time, events eventRepository) string {
+func (a *app) renderCalendarFeed(tenant tenantConfig, tenantRef store.TenantRef, profile userProfile, role string, now time.Time, events eventRepository) string {
 	email := normalizeEmail(profile.Email)
-	tenantSlug := normalizeSlug(tenant.Slug)
 	var b strings.Builder
 	calendarLine(&b, "BEGIN", "VCALENDAR")
 	calendarLine(&b, "VERSION", "2.0")
@@ -1922,10 +1980,10 @@ func (a *app) renderCalendarFeed(tenant tenantConfig, profile userProfile, role 
 			a.writeCalendarEvent(&b, tenant, item, now)
 		}
 	}
-	issues, _ := store.BindIssueRepository(a.issueStore, tenantSlug)
+	issues, _ := store.BindIssueRepository(a.issueStore, tenantRef)
 	if issues != nil {
 		for _, item := range issues.List() {
-			if (strings.TrimSpace(item.ServiceProposal) == "" && item.ServiceProposedStart.IsZero()) || !a.canViewIssueForActor(tenantSlug, item, email, role) {
+			if (strings.TrimSpace(item.ServiceProposal) == "" && item.ServiceProposedStart.IsZero()) || !a.canViewIssueForActor(tenantRef, item, email, role) {
 				continue
 			}
 			writeCalendarIssueProposal(&b, tenant, item, now)
@@ -2150,8 +2208,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if announcementReads != nil {
 		lastSeen = announcementReads.LastSeen(email)
 	}
-	signals := a.portalSignals(ac.repositories, tenant.Slug, email, role, now, lastSeen, modules)
-	digest := a.dashboardDigestItems(ac.repositories, tenant.Slug, email, role, now, lastSeen, signals, modules)
+	signals := a.portalSignals(ac.repositories, ac.tenantRef, email, role, now, lastSeen, modules)
+	digest := a.dashboardDigestItems(ac.repositories, ac.tenantRef, email, role, now, lastSeen, signals, modules)
 	var primary dashboardDigestItem
 	hasPrimary := false
 	followUps := make([]dashboardDigestItem, 0, 3)
@@ -2377,7 +2435,7 @@ type portalSignals struct {
 	openIssues          []residentIssue
 }
 
-func (a *app) portalSignals(repositories requestRepositories, tenantSlug string, email string, role string, now time.Time, lastSeen time.Time, modules portalModuleFlags) portalSignals {
+func (a *app) portalSignals(repositories requestRepositories, tenant store.TenantRef, email string, role string, now time.Time, lastSeen time.Time, modules portalModuleFlags) portalSignals {
 	signals := portalSignals{}
 	if modules.Announcements && repositories.announcements != nil {
 		signals.announcements = repositories.announcements.Visible(now)
@@ -2387,7 +2445,7 @@ func (a *app) portalSignals(repositories requestRepositories, tenantSlug string,
 		signals.events = repositories.events.Upcoming(now)
 	}
 	if modules.Issues && a.issueStore != nil {
-		signals.issues = a.visibleIssuesForActor(tenantSlug, email, role)
+		signals.issues = a.visibleIssuesForActor(tenant, email, role)
 		signals.openIssues = make([]residentIssue, 0, len(signals.issues))
 		for _, item := range signals.issues {
 			if issueIsOpen(item) {
@@ -2555,7 +2613,8 @@ func portalEnergyStatValue(label string, value *float64, fallback string) portal
 	return portalEnergyStat{Label: label, Value: formatEnergyCompact(*value, 1) + " kW"}
 }
 
-func (a *app) dashboardDigestItems(repositories requestRepositories, tenantSlug string, email string, role string, now time.Time, lastSeen time.Time, signals portalSignals, modules portalModuleFlags) []dashboardDigestItem {
+func (a *app) dashboardDigestItems(repositories requestRepositories, tenant store.TenantRef, email string, role string, now time.Time, lastSeen time.Time, signals portalSignals, modules portalModuleFlags) []dashboardDigestItem {
+	tenantSlug := tenant.Slug
 	actor := actorFor(email, tenantSlug, role)
 	resource := resourceFor(tenantSlug)
 	var paymentItem *dashboardDigestItem
@@ -2604,7 +2663,7 @@ func (a *app) dashboardDigestItems(repositories requestRepositories, tenantSlug 
 		if can(actor, capabilityManageIssues, resource) {
 			openIssues := signals.openIssues
 			if len(openIssues) > 0 {
-				views := a.issueViewsForActor(tenantSlug, openIssues, role, email)
+				views := a.issueViewsForActor(tenant, openIssues, role, email)
 				first := views[0]
 				// Der Fokus nennt den Fall beim Namen; die Gesamtzahl steht im
 				// Kopf der Anliegen-Karte. Sonst stünden dieselbe Zahl und
@@ -2622,7 +2681,7 @@ func (a *app) dashboardDigestItems(repositories requestRepositories, tenantSlug 
 				issueItem = &item
 			}
 		} else {
-			views := a.issueViewsForActor(tenantSlug, visible, role, email)
+			views := a.issueViewsForActor(tenant, visible, role, email)
 			var waiting *issueView
 			for i := range views {
 				item := &views[i]
@@ -2674,7 +2733,7 @@ func (a *app) dashboardDigestItems(repositories requestRepositories, tenantSlug 
 	}
 	upcoming := signals.events
 	if len(upcoming) > 0 {
-		views := a.eventViews(tenantSlug, upcoming[:1], now, email, role)
+		views := a.eventViews(tenant, upcoming[:1], now, email, role)
 		if len(views) > 0 {
 			item := dashboardDigestItem{
 				Kind:        "Termin",
@@ -3484,11 +3543,11 @@ func sortIssueBoard(items []residentIssue, sortMode string) {
 	})
 }
 
-func (a *app) actorCanSeeCommonIssues(tenantSlug string, email string, role string) bool {
+func (a *app) actorCanSeeCommonIssues(tenant store.TenantRef, email string, role string) bool {
 	if normalizeRole(role) == roleOwner {
 		return true
 	}
-	units, ok := store.BindUnitRepository(a.unitStore, tenantSlug)
+	units, ok := store.BindUnitRepository(a.unitStore, tenant)
 	if !ok {
 		return false
 	}
@@ -3571,7 +3630,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 	if profileErr != nil || !homeProfile.OnboardingComplete {
 		hasHomeProfile = false
 	}
-	homeProfileUnitLabel, hasHomeProfileUnit := a.energyHomeUnitLabel(homeProfile)
+	homeProfileUnitLabel, hasHomeProfileUnit := a.energyHomeUnitLabel(ac.tenantRef, homeProfile)
 	homeProfileScopeLabel := "gesamte Liegenschaft"
 	if homeProfile.HomeType == energy.HomeApartment {
 		homeProfileScopeLabel = "noch nicht zugeordnet"
@@ -3598,7 +3657,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"HasCustomHero":         a.hasTenantHero(tenant.Slug),
 		"UnitMsg":               unitMsg,
 		"UnitOK":                unitOK,
-		"Units":                 a.buildingUnitViewsWithPayments(ac.repositories, tenant.Slug, units),
+		"Units":                 a.buildingUnitViewsWithPayments(ac.repositories, ac.tenantRef, units),
 		"NewUnitTypeOptions":    unitTypeOptions(unitTypeResidential),
 		"NewUnitPaymentOptions": unitPaymentStatusOptions(""),
 		"UnitTotal":             len(units),
@@ -3654,7 +3713,7 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	availableEvents := events
 	events = filterAuditEvents(events, action, query)
-	eventViews := auditEventViews(a.auditEventsForView(ac.repositories, tenant.Slug, events, fullAudit))
+	eventViews := auditEventViews(a.auditEventsForView(ac.repositories, ac.tenantRef, events, fullAudit))
 	stats := auditStats(events, action, query)
 	auditTitle := "Mein Verlauf"
 	auditLede := "Was in Ihrem Konto und bei freigegebenen Vorgängen passiert ist. Interne Verwaltungsdetails bleiben geschützt."
@@ -3699,11 +3758,11 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}))
 }
 
-func (a *app) auditEventsForView(repositories requestRepositories, tenantSlug string, events []auditEvent, includeTechnicalID bool) []auditEvent {
+func (a *app) auditEventsForView(repositories requestRepositories, tenant store.TenantRef, events []auditEvent, includeTechnicalID bool) []auditEvent {
 	out := make([]auditEvent, 0, len(events))
 	for _, event := range events {
 		event = copyAuditEvent(event)
-		label := a.auditTargetTitle(repositories, tenantSlug, event.TargetType, event.TargetID)
+		label := a.auditTargetTitle(repositories, tenant, event.TargetType, event.TargetID)
 		if label != "" {
 			if event.Details == nil {
 				event.Details = map[string]string{}
@@ -3718,29 +3777,29 @@ func (a *app) auditEventsForView(repositories requestRepositories, tenantSlug st
 	return out
 }
 
-func (a *app) auditTargetTitle(repositories requestRepositories, tenantSlug string, targetType string, targetID string) string {
+func (a *app) auditTargetTitle(repositories requestRepositories, tenant store.TenantRef, targetType string, targetID string) string {
 	targetID = strings.TrimSpace(targetID)
 	if targetID == "" {
 		return ""
 	}
-	attachments, _ := store.BindAttachmentRepository(a.attachmentStore, tenantSlug)
-	documents, _ := store.BindDocumentRepository(a.documentStore, tenantSlug)
-	issues, _ := store.BindIssueRepository(a.issueStore, tenantSlug)
+	attachments, _ := store.BindAttachmentRepository(a.attachmentStore, tenant)
+	documents, _ := store.BindDocumentRepository(a.documentStore, tenant)
+	issues, _ := store.BindIssueRepository(a.issueStore, tenant)
 	switch strings.TrimSpace(targetType) {
 	case "attachment":
 		if attachments != nil {
 			if item, found := attachments.Get(targetID); found {
 				switch normalizeAttachmentEntity(item.EntityType) {
 				case "issue", "issue-estimate":
-					if title := a.auditTargetTitle(repositories, tenantSlug, "issue", item.EntityID); title != "" {
+					if title := a.auditTargetTitle(repositories, tenant, "issue", item.EntityID); title != "" {
 						return title
 					}
 				case "issue-comment":
-					if issue, _, found := a.issueCommentTarget(tenantSlug, item.EntityID); found {
+					if issue, _, found := a.issueCommentTarget(tenant, item.EntityID); found {
 						return strings.TrimSpace(issue.Title)
 					}
 				case "document", "ballot", "handover", "event":
-					if title := a.auditTargetTitle(repositories, tenantSlug, item.EntityType, item.EntityID); title != "" {
+					if title := a.auditTargetTitle(repositories, tenant, item.EntityType, item.EntityID); title != "" {
 						return title
 					}
 				}
@@ -4175,7 +4234,7 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 	} else if exists && profile.HomeType == energy.HomeApartment {
 		linkedID := normalizeUnitID(profile.UnitID)
 		if linkedID == "" {
-			if linked, ok := a.effectiveEnergyUnit(profile); ok {
+			if linked, ok := a.effectiveEnergyUnit(ac.tenantRef, profile); ok {
 				linkedID = normalizeUnitID(linked.ID)
 			}
 		}
@@ -4491,7 +4550,8 @@ func unitAssignmentSummary(emails []string) string {
 	return emails[0] + " +" + strconv.Itoa(len(emails)-1)
 }
 
-func (a *app) buildingUnitViewsWithPayments(repositories requestRepositories, tenantSlug string, units []unit) []buildingUnitView {
+func (a *app) buildingUnitViewsWithPayments(repositories requestRepositories, tenant store.TenantRef, units []unit) []buildingUnitView {
+	tenantSlug := tenant.Slug
 	views := buildingUnitViews(units)
 	payments := unitPaymentStatusViewsForUnits(repositories.unitPayments, units)
 	for i := range views {
@@ -4506,7 +4566,7 @@ func (a *app) buildingUnitViewsWithPayments(repositories requestRepositories, te
 		views[i].PaymentOptions = payments[i].StatusOptions
 	}
 	if profile, exists, err := a.energyStore.Profile(tenantSlug); err == nil && exists && profile.OnboardingComplete {
-		if linked, ok := a.effectiveEnergyUnit(profile); ok {
+		if linked, ok := a.effectiveEnergyUnit(tenant, profile); ok {
 			displayName := strings.TrimSpace(profile.HouseholdName)
 			for i := range views {
 				if displayName != "" && normalizeUnitID(views[i].ID) == normalizeUnitID(linked.ID) {
@@ -4817,8 +4877,7 @@ func notificationPreferencesFromForm(values url.Values) notificationPreferences 
 }
 
 func (a *app) userSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant := ac.tenant
-	users := a.userRows(tenant.Slug)
+	users := a.userRows(ac.tenantRef)
 	activeUsers, invitedUsers, deactivatedUsers := userStatusCounts(users)
 	inviteMsg, inviteOK := inviteMessage(r.URL.Query().Get("invite"))
 	pageData := map[string]any{
@@ -5114,7 +5173,7 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	// Last-admin guard: never let the final active admin lose admin access, whether
 	// by demotion or deactivation.
 	if wasAdmin && (newRole != roleAdmin || newDeactivated) {
-		remaining := a.adminEmails(tenant.Slug)
+		remaining := a.adminEmails(ac.tenantRef)
 		delete(remaining, orig)
 		if len(remaining) == 0 {
 			a.redirectInvite(w, r, "last_admin")
@@ -5275,7 +5334,7 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			a.redirectInvite(w, r, "self_lockout")
 			return
 		}
-		remaining := a.adminEmails(tenant.Slug)
+		remaining := a.adminEmails(ac.tenantRef)
 		delete(remaining, deleteEmail)
 		if len(remaining) == 0 {
 			a.redirectInvite(w, r, "last_admin")
@@ -5395,7 +5454,7 @@ func (a *app) homeIdentityForActor(ac authCtx, canViewEnergy bool) homeIdentityV
 	if err != nil || !exists || (!profile.OnboardingComplete && profile.OnboardingStep < 3) {
 		return identity
 	}
-	return a.homeIdentityFromProfile(profile)
+	return a.homeIdentityFromProfile(ac.tenantRef, profile)
 }
 
 func defaultHomeIdentityView() homeIdentityView {
@@ -5405,7 +5464,7 @@ func defaultHomeIdentityView() homeIdentityView {
 	}
 }
 
-func (a *app) homeIdentityFromProfile(profile energy.HomeProfile) homeIdentityView {
+func (a *app) homeIdentityFromProfile(tenant store.TenantRef, profile energy.HomeProfile) homeIdentityView {
 	identity := defaultHomeIdentityView()
 	displayName := strings.TrimSpace(profile.HouseholdName)
 	if displayName == "" {
@@ -5414,7 +5473,7 @@ func (a *app) homeIdentityFromProfile(profile energy.HomeProfile) homeIdentityVi
 	identity.DisplayName = displayName
 	identity.AriaLabel = displayName
 	identity.HasDisplayName = true
-	if unitLabel, ok := a.energyHomeUnitLabel(profile); ok {
+	if unitLabel, ok := a.energyHomeUnitLabel(tenant, profile); ok {
 		identity.UnitLabel = unitLabel
 		identity.HasUnit = true
 		identity.AriaLabel = displayName + ", offizielle Einheit " + unitLabel
@@ -5567,7 +5626,13 @@ func (a *app) enrichIssueData(data map[string]any) {
 	}
 	email, _ := data["Email"].(string)
 	role, _ := data["Role"].(string)
-	count := issueOpenCount(a.visibleIssuesForActor(tenant.Slug, email, role))
+	identity, identityOK := a.tenantIdentity(tenant.Slug)
+	if !identityOK {
+		data["OpenIssues"] = 0
+		data["HasOpenIssues"] = false
+		return
+	}
+	count := issueOpenCount(a.visibleIssuesForActor(identity.Ref(), email, role))
 	data["OpenIssues"] = count
 	data["HasOpenIssues"] = count > 0
 }
@@ -5955,10 +6020,11 @@ func (a *app) profileForTenant(email string, tenantSlug string) userProfile {
 	}
 }
 
-func (a *app) userRows(tenantSlug string) []userRow {
+func (a *app) userRows(tenant store.TenantRef) []userRow {
+	tenantSlug := tenant.Slug
 	seen := map[string]struct{}{}
 	rows := make([]userRow, 0, len(a.profiles)+len(a.admins)+len(a.allowed))
-	units, _ := store.BindUnitRepository(a.unitStore, tenantSlug)
+	units, _ := store.BindUnitRepository(a.unitStore, tenant)
 	// App-managed (invite store) rows come first so an adopted config user shows
 	// its editable override rather than the read-only env row (HAUSV-163).
 	if a.inviteStore != nil {
@@ -6418,8 +6484,8 @@ func uploadedFilesFromHeaders(hs []*multipart.FileHeader) []uploadedFile {
 	return out
 }
 
-func storeEBInterfaceInvoiceDocument(storage documentStorage, invoice integrations.Invoice, uploadedBy string, data []byte, now time.Time) (documentRecord, error) {
-	documents, ok := store.BindDocumentRepository(storage, invoice.TenantSlug)
+func storeEBInterfaceInvoiceDocument(storage documentStorage, tenant store.TenantRef, invoice integrations.Invoice, uploadedBy string, data []byte, now time.Time) (documentRecord, error) {
+	documents, ok := store.BindDocumentRepository(storage, tenant)
 	if !ok {
 		return documentRecord{}, fmt.Errorf("document store unavailable")
 	}
@@ -7009,9 +7075,9 @@ func parseAuthMethodForm(values url.Values) []string {
 // for the tenant, across env config and app-managed overrides. It backs the
 // last-admin / self-lockout guard so the portal can never be left adminless
 // (HAUSV-163).
-func (a *app) adminEmails(tenantSlug string) map[string]struct{} {
+func (a *app) adminEmails(tenant store.TenantRef) map[string]struct{} {
 	admins := map[string]struct{}{}
-	for _, row := range a.userRows(tenantSlug) {
+	for _, row := range a.userRows(tenant) {
 		if row.Deactivated {
 			continue
 		}

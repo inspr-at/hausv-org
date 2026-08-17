@@ -47,40 +47,40 @@ type issueBackend interface {
 }
 
 type boundIssueRepository struct {
-	storage    issueBackend
-	tenantSlug string
+	storage issueBackend
+	tenant  TenantRef
 }
 
-func BindIssueRepository(storage IssueStorage, tenantSlug string) (IssueRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindIssueRepository(storage IssueStorage, tenant TenantRef) (IssueRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(issueBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundIssueRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundIssueRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundIssueRepository) Create(item ResidentIssue) (ResidentIssue, error) {
-	return r.storage.create(r.tenantSlug, item)
+	return r.storage.create(r.tenant.Slug, item)
 }
-func (r *boundIssueRepository) List() []ResidentIssue { return r.storage.listTenant(r.tenantSlug) }
+func (r *boundIssueRepository) List() []ResidentIssue { return r.storage.listTenant(r.tenant.Slug) }
 func (r *boundIssueRepository) ListAuthor(email string) []ResidentIssue {
-	return r.storage.listAuthor(r.tenantSlug, email)
+	return r.storage.listAuthor(r.tenant.Slug, email)
 }
 func (r *boundIssueRepository) Get(id string) (ResidentIssue, bool) {
-	return r.storage.get(r.tenantSlug, id)
+	return r.storage.get(r.tenant.Slug, id)
 }
 func (r *boundIssueRepository) UpdateWorkflow(id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error) {
-	return r.storage.updateWorkflow(r.tenantSlug, id, update)
+	return r.storage.updateWorkflow(r.tenant.Slug, id, update)
 }
 func (r *boundIssueRepository) AddComment(id string, comment IssueComment) (ResidentIssue, bool, error) {
-	return r.storage.addComment(r.tenantSlug, id, comment)
+	return r.storage.addComment(r.tenant.Slug, id, comment)
 }
 func (r *boundIssueRepository) DeleteComment(id string, commentID string, at time.Time) (ResidentIssue, bool, error) {
-	return r.storage.deleteComment(r.tenantSlug, id, commentID, at)
+	return r.storage.deleteComment(r.tenant.Slug, id, commentID, at)
 }
 func (r *boundIssueRepository) ClearPhotoPaths(id string) (bool, error) {
-	return r.storage.clearPhotoPaths(r.tenantSlug, id)
+	return r.storage.clearPhotoPaths(r.tenant.Slug, id)
 }
 
 // SQLIssueStore keeps each issue — comments and status history included — as

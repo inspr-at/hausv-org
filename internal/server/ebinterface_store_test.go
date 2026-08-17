@@ -23,7 +23,7 @@ func TestEBInterfaceInvoiceCanBeStoredAsProtectedDocument(t *testing.T) {
 	if err != nil {
 		t.Fatalf("document store: %v", err)
 	}
-	created, err := storeEBInterfaceInvoiceDocument(store, result.Invoices[0], "manager@example.com", data, time.Date(2026, 7, 8, 12, 0, 0, 0, time.UTC))
+	created, err := storeEBInterfaceInvoiceDocument(store, testTenantRef("demo"), result.Invoices[0], "manager@example.com", data, time.Date(2026, 7, 8, 12, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatalf("storeEBInterfaceInvoiceDocument: %v", err)
 	}

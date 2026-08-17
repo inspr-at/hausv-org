@@ -402,7 +402,7 @@ func (a *app) energyStoreForHome(ac authCtx, homeKey string) (energy.Storage, bo
 		return store, a.ownerCanAccessEnergyProfile(ac, profile, exists)
 	}
 	if energy.NormalizeHomeKey(homeKey) != energy.DefaultHomeKey && profile.HomeType == energy.HomeApartment {
-		linked, ok := a.effectiveEnergyUnit(profile)
+		linked, ok := a.effectiveEnergyUnit(ac.tenantRef, profile)
 		if !ok {
 			return nil, false
 		}
@@ -421,10 +421,10 @@ func (a *app) energyStoreForHome(ac authCtx, homeKey string) (energy.Storage, bo
 	if profile.HomeType != energy.HomeApartment {
 		return store, ac.role == roleOwner || ac.role == roleRenter || ac.role == roleResident || ac.role == roleBeirat
 	}
-	if linked, ok := a.effectiveEnergyUnit(profile); ok {
+	if linked, ok := a.effectiveEnergyUnit(ac.tenantRef, profile); ok {
 		return store, a.actorBelongsToEnergyUnit(ac, linked.ID, false)
 	}
-	if len(a.energyResidentialUnits(ac.tenant.Slug)) == 0 && strings.TrimSpace(profile.UnitID) == "" {
+	if len(a.energyResidentialUnits(ac.tenantRef)) == 0 && strings.TrimSpace(profile.UnitID) == "" {
 		return store, ac.role == roleOwner || ac.role == roleRenter || ac.role == roleResident || ac.role == roleBeirat
 	}
 	return nil, false
@@ -467,11 +467,11 @@ func (a *app) isEnergyHouseAdmin(ac authCtx) bool {
 	return ac.can(capabilityManageBuilding)
 }
 
-func (a *app) energyResidentialUnits(tenantSlug string) []unit {
+func (a *app) energyResidentialUnits(tenant store.TenantRef) []unit {
 	if a.unitStore == nil {
 		return nil
 	}
-	units, ok := store.BindUnitRepository(a.unitStore, tenantSlug)
+	units, ok := store.BindUnitRepository(a.unitStore, tenant)
 	if !ok {
 		return nil
 	}
@@ -485,11 +485,11 @@ func (a *app) energyResidentialUnits(tenantSlug string) []unit {
 	return out
 }
 
-func (a *app) effectiveEnergyUnit(profile energy.HomeProfile) (unit, bool) {
+func (a *app) effectiveEnergyUnit(tenant store.TenantRef, profile energy.HomeProfile) (unit, bool) {
 	if profile.HomeType != energy.HomeApartment {
 		return unit{}, false
 	}
-	units := a.energyResidentialUnits(profile.TenantSlug)
+	units := a.energyResidentialUnits(tenant)
 	unitID := normalizeUnitID(profile.UnitID)
 	if unitID == "" {
 		return unit{}, false
@@ -509,7 +509,7 @@ func (a *app) actorBelongsToEnergyUnit(ac authCtx, unitID string, ownerOnly bool
 	units := ac.repositories.units
 	if units == nil {
 		var ok bool
-		units, ok = store.BindUnitRepository(a.unitStore, ac.tenant.Slug)
+		units, ok = store.BindUnitRepository(a.unitStore, ac.tenantRef)
 		if !ok {
 			return false
 		}
@@ -525,7 +525,7 @@ func (a *app) actorBelongsToEnergyUnit(ac authCtx, unitID string, ownerOnly bool
 }
 
 func (a *app) ownerCanAccessEnergyProfile(ac authCtx, profile energy.HomeProfile, exists bool) bool {
-	units := a.energyResidentialUnits(ac.tenant.Slug)
+	units := a.energyResidentialUnits(ac.tenantRef)
 	if !exists || energyProfileUnclaimed(profile) {
 		if len(units) == 0 {
 			return normalizeRole(ac.role) == roleOwner
@@ -544,7 +544,7 @@ func (a *app) ownerCanAccessEnergyProfile(ac authCtx, profile energy.HomeProfile
 		}
 		return false
 	}
-	if linked, ok := a.effectiveEnergyUnit(profile); ok {
+	if linked, ok := a.effectiveEnergyUnit(ac.tenantRef, profile); ok {
 		return a.actorBelongsToEnergyUnit(ac, linked.ID, true)
 	}
 	return normalizeRole(ac.role) == roleOwner &&
@@ -569,12 +569,12 @@ func (a *app) canManageHomeIdentityProfile(ac authCtx, profile energy.HomeProfil
 func (a *app) homeIdentityUnitOptions(ac authCtx, profile energy.HomeProfile) []energyHomeUnitOption {
 	selectedID := normalizeUnitID(profile.UnitID)
 	if selectedID == "" {
-		if linked, ok := a.effectiveEnergyUnit(profile); ok {
+		if linked, ok := a.effectiveEnergyUnit(ac.tenantRef, profile); ok {
 			selectedID = normalizeUnitID(linked.ID)
 		}
 	}
 	options := make([]energyHomeUnitOption, 0)
-	for _, item := range a.energyResidentialUnits(ac.tenant.Slug) {
+	for _, item := range a.energyResidentialUnits(ac.tenantRef) {
 		if !a.isEnergyHouseAdmin(ac) && !a.actorBelongsToEnergyUnit(ac, item.ID, true) {
 			continue
 		}
@@ -594,7 +594,7 @@ func (a *app) resolveHomeIdentityUnitID(ac authCtx, profile energy.HomeProfile, 
 	if homeType != energy.HomeApartment {
 		return "", true
 	}
-	if linked, ok := a.effectiveEnergyUnit(profile); ok {
+	if linked, ok := a.effectiveEnergyUnit(ac.tenantRef, profile); ok {
 		requested := normalizeUnitID(raw)
 		if requested == "" || requested == normalizeUnitID(linked.ID) {
 			return linked.ID, true
@@ -622,8 +622,8 @@ func (a *app) resolveHomeIdentityUnitID(ac authCtx, profile energy.HomeProfile, 
 	return "", false
 }
 
-func (a *app) homeIdentityTypeLocked(profile energy.HomeProfile) bool {
-	_, linked := a.effectiveEnergyUnit(profile)
+func (a *app) homeIdentityTypeLocked(tenant store.TenantRef, profile energy.HomeProfile) bool {
+	_, linked := a.effectiveEnergyUnit(tenant, profile)
 	return profile.OnboardingComplete && linked
 }
 
@@ -645,14 +645,14 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		// A brand-new or deliberately reset profile has no history that could be
 		// exposed. Preselect the sole official apartment; the first POST persists
 		// this exact relation while preserving contract metadata on a reset marker.
-		if units := a.energyResidentialUnits(ac.tenant.Slug); len(units) == 1 {
+		if units := a.energyResidentialUnits(ac.tenantRef); len(units) == 1 {
 			profile.UnitID = units[0].ID
 		}
 	}
 	unitOptions := a.homeIdentityUnitOptions(ac, profile)
 	homeUnitID := ""
-	homeUnitLabel, hasHomeUnit := a.energyHomeUnitLabel(profile)
-	if linked, ok := a.effectiveEnergyUnit(profile); ok {
+	homeUnitLabel, hasHomeUnit := a.energyHomeUnitLabel(ac.tenantRef, profile)
+	if linked, ok := a.effectiveEnergyUnit(ac.tenantRef, profile); ok {
 		homeUnitID = linked.ID
 	}
 	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
@@ -672,7 +672,7 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 	}
 	onboardingIdentity := defaultHomeIdentityView()
 	if exists && profile.OnboardingStep >= 3 {
-		onboardingIdentity = a.homeIdentityFromProfile(profile)
+		onboardingIdentity = a.homeIdentityFromProfile(ac.tenantRef, profile)
 	}
 	discovery := energyDiscoveryView{}
 	connectorMessage := "Home Assistant ist noch nicht verbunden. Das ist okay – Sie können später weitermachen."
@@ -706,7 +706,7 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 			HomeType:             profile.HomeType,
 			HomeTypeLabel:        energyHomeTypeLabel(profile.HomeType),
 			HomeTypeDescription:  energyHomeTypeDescription(profile.HomeType),
-			HomeTypeLocked:       a.homeIdentityTypeLocked(profile),
+			HomeTypeLocked:       a.homeIdentityTypeLocked(ac.tenantRef, profile),
 			HasHomeUnit:          hasHomeUnit,
 			HomeUnitID:           homeUnitID,
 			HomeUnitLabel:        homeUnitLabel,
@@ -748,7 +748,7 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		"CanControlEnergy":      a.canControlEnergy(ac),
 		"HomeTypeLabel":         energyHomeTypeLabel(profile.HomeType),
 		"HomeTypeDescription":   energyHomeTypeDescription(profile.HomeType),
-		"HomeTypeLocked":        a.homeIdentityTypeLocked(profile),
+		"HomeTypeLocked":        a.homeIdentityTypeLocked(ac.tenantRef, profile),
 		"UnitOptions":           unitOptions,
 		"HasUnitOptions":        len(unitOptions) > 0,
 		"HomeUnitID":            homeUnitID,
@@ -783,7 +783,7 @@ func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac au
 		// Persist the sole official apartment with a fresh or reset profile so
 		// step two remains reachable. A retained free-period start stays intact.
 		// The unfinished profile may still deliberately choose another type.
-		if units := a.energyResidentialUnits(ac.tenant.Slug); len(units) == 1 {
+		if units := a.energyResidentialUnits(ac.tenantRef); len(units) == 1 {
 			profile.UnitID = units[0].ID
 		}
 	}
@@ -803,7 +803,7 @@ func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac au
 			http.Error(w, "Name und Art des Zuhauses sind erforderlich.", http.StatusBadRequest)
 			return
 		}
-		if a.homeIdentityTypeLocked(profile) && homeType != profile.HomeType {
+		if a.homeIdentityTypeLocked(ac.tenantRef, profile) && homeType != profile.HomeType {
 			http.Error(w, "Die Zuhause-Art ist an die offizielle Wohnung gebunden.", http.StatusForbidden)
 			return
 		}
@@ -895,9 +895,9 @@ func (a *app) homeIdentitySettings(w http.ResponseWriter, r *http.Request, ac au
 	backURL, backLabel := homeIdentityBackLink(from)
 	unitOptions := a.homeIdentityUnitOptions(ac, profile)
 	unitTitle, unitSummary := a.homeIdentityUnitContext(ac, profile)
-	unitLabel, hasUnit := a.energyHomeUnitLabel(profile)
+	unitLabel, hasUnit := a.energyHomeUnitLabel(ac.tenantRef, profile)
 	unitID := ""
-	if linked, ok := a.effectiveEnergyUnit(profile); ok {
+	if linked, ok := a.effectiveEnergyUnit(ac.tenantRef, profile); ok {
 		unitID = linked.ID
 	}
 	pageData := map[string]any{
@@ -915,7 +915,7 @@ func (a *app) homeIdentitySettings(w http.ResponseWriter, r *http.Request, ac au
 		"HasHomeUnit":         hasUnit,
 		"UnitOptions":         unitOptions,
 		"HasUnitOptions":      len(unitOptions) > 0,
-		"HomeTypeLocked":      a.homeIdentityTypeLocked(profile),
+		"HomeTypeLocked":      a.homeIdentityTypeLocked(ac.tenantRef, profile),
 		"HomeTypeDescription": energyHomeTypeDescription(profile.HomeType),
 		"CanManageBuilding":   ac.can(capabilityManageBuilding),
 		"Saved":               r.URL.Query().Get("saved") == "1",
@@ -953,7 +953,7 @@ func (a *app) updateHomeIdentity(w http.ResponseWriter, r *http.Request, ac auth
 		http.Redirect(w, r, "/app/settings/home?invalid=1&from="+from, http.StatusSeeOther)
 		return
 	}
-	if a.homeIdentityTypeLocked(profile) && homeType != profile.HomeType {
+	if a.homeIdentityTypeLocked(ac.tenantRef, profile) && homeType != profile.HomeType {
 		http.Error(w, "Die Zuhause-Art ist an die offizielle Wohnung gebunden.", http.StatusForbidden)
 		return
 	}
@@ -1057,8 +1057,8 @@ func homeIdentityBackLink(from string) (string, string) {
 	}
 }
 
-func (a *app) energyHomeUnitLabel(profile energy.HomeProfile) (string, bool) {
-	linked, ok := a.effectiveEnergyUnit(profile)
+func (a *app) energyHomeUnitLabel(tenant store.TenantRef, profile energy.HomeProfile) (string, bool) {
+	linked, ok := a.effectiveEnergyUnit(tenant, profile)
 	if !ok {
 		return "", false
 	}
@@ -1073,7 +1073,7 @@ func (a *app) homeIdentityUnitContext(ac authCtx, profile energy.HomeProfile) (s
 	if profile.HomeType != energy.HomeApartment {
 		return "Geltungsbereich", "Gesamte Liegenschaft"
 	}
-	if label, ok := a.energyHomeUnitLabel(profile); ok {
+	if label, ok := a.energyHomeUnitLabel(ac.tenantRef, profile); ok {
 		return "Offizielle Einheit", label
 	}
 	if len(a.homeIdentityUnitOptions(ac, profile)) > 0 {
@@ -1173,8 +1173,8 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		recommendation = maintenanceRecommendation
 	}
 	contactOptions, contactNames := a.energyContactOptions(ac.repositories.contacts)
-	documentOptions, documentNames := a.energyDocumentOptions(ac.tenant.Slug)
-	issueOptions, issueNames := a.energyIssueOptions(ac.tenant.Slug)
+	documentOptions, documentNames := a.energyDocumentOptions(ac.tenantRef)
+	issueOptions, issueNames := a.energyIssueOptions(ac.tenantRef)
 	maintenanceViews := buildEnergyMaintenanceViews(maintenance, assets, contactNames, documentNames, issueNames, time.Now())
 	assessments, _ := a.energyStore.ListTariffAssessments(ac.tenant.Slug)
 	assessmentViews := buildEnergyTariffAssessmentViews(assessments)
@@ -1184,7 +1184,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	if profile.FreeUntilAt != nil {
 		freeUntil = profile.FreeUntilAt.In(time.Local).Format("02.01.2006")
 	}
-	homeUnitLabel, hasHomeUnit := a.energyHomeUnitLabel(profile)
+	homeUnitLabel, hasHomeUnit := a.energyHomeUnitLabel(ac.tenantRef, profile)
 	chargingCtx, cancelCharging := context.WithTimeout(r.Context(), 5*time.Second)
 	charging := a.chargingLiveView(chargingCtx, ac.tenant, false, false)
 	cancelCharging()
@@ -1204,7 +1204,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 			FlowConfigJSON:          energyWebJSON(flowConfigJSON, "null"),
 			LucideIconNamesJSON:     energyWebJSON(lucideIconNamesJSON, "[]"),
 			HouseholdName:           profile.HouseholdName,
-			HomeIdentity:            a.homeIdentityFromProfile(profile),
+			HomeIdentity:            a.homeIdentityFromProfile(ac.tenantRef, profile),
 			HomeTypeLabel:           energyHomeTypeLabel(profile.HomeType),
 			HomeUnitLabel:           homeUnitLabel,
 			HasHomeUnit:             hasHomeUnit,
@@ -1484,10 +1484,10 @@ func (a *app) energyContact(contacts contactBookRepository, id string) (managedC
 	return managedContact{}, false
 }
 
-func (a *app) energyDocumentOptions(tenantSlug string) ([]energyOption, map[string]string) {
+func (a *app) energyDocumentOptions(tenant store.TenantRef) ([]energyOption, map[string]string) {
 	options := []energyOption{}
 	names := map[string]string{}
-	documents, ok := store.BindDocumentRepository(a.documentStore, tenantSlug)
+	documents, ok := store.BindDocumentRepository(a.documentStore, tenant)
 	if !ok {
 		return options, names
 	}
@@ -1499,10 +1499,10 @@ func (a *app) energyDocumentOptions(tenantSlug string) ([]energyOption, map[stri
 	return options, names
 }
 
-func (a *app) energyIssueOptions(tenantSlug string) ([]energyOption, map[string]string) {
+func (a *app) energyIssueOptions(tenant store.TenantRef) ([]energyOption, map[string]string) {
 	options := []energyOption{}
 	names := map[string]string{}
-	issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+	issues, ok := store.BindIssueRepository(a.issueStore, tenant)
 	if !ok {
 		return options, names
 	}
@@ -1686,14 +1686,14 @@ func findMaintenancePlanByAsset(storage energy.Storage, tenantSlug, assetID stri
 	return energy.MaintenancePlan{}, false
 }
 
-func (a *app) validEnergyReferences(tenantSlug string, contacts contactBookRepository, contactID, documentID, issueID string) bool {
+func (a *app) validEnergyReferences(tenant store.TenantRef, contacts contactBookRepository, contactID, documentID, issueID string) bool {
 	if contactID != "" {
 		if _, ok := a.energyContact(contacts, contactID); !ok {
 			return false
 		}
 	}
 	if documentID != "" {
-		documents, ok := store.BindDocumentRepository(a.documentStore, tenantSlug)
+		documents, ok := store.BindDocumentRepository(a.documentStore, tenant)
 		if !ok {
 			return false
 		}
@@ -1702,7 +1702,7 @@ func (a *app) validEnergyReferences(tenantSlug string, contacts contactBookRepos
 		}
 	}
 	if issueID != "" {
-		issues, ok := store.BindIssueRepository(a.issueStore, tenantSlug)
+		issues, ok := store.BindIssueRepository(a.issueStore, tenant)
 		if !ok {
 			return false
 		}
@@ -2235,7 +2235,7 @@ func (a *app) upsertEnergyMaintenance(w http.ResponseWriter, r *http.Request, ac
 	contactID := strings.TrimSpace(r.FormValue("contact_id"))
 	documentID := strings.TrimSpace(r.FormValue("document_id"))
 	issueID := strings.TrimSpace(r.FormValue("issue_id"))
-	if !a.validEnergyReferences(ac.tenant.Slug, ac.repositories.contacts, contactID, documentID, issueID) {
+	if !a.validEnergyReferences(ac.tenantRef, ac.repositories.contacts, contactID, documentID, issueID) {
 		http.Error(w, "Verknüpfung gehört nicht zu diesem Haus.", http.StatusBadRequest)
 		return
 	}

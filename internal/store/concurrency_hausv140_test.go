@@ -20,7 +20,7 @@ func TestAnnouncementStoreConcurrentCreateListDeletePersist(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	repo, _ := BindAnnouncementRepository(s, "demo")
+	repo, _ := BindAnnouncementRepository(s, testTenantRef("demo"))
 
 	const workers = 16
 	const perWorker = 40
@@ -68,7 +68,7 @@ func TestAnnouncementStoreConcurrentCreateListDeletePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reload after concurrent writes: %v", err)
 	}
-	reloadedRepo, _ := BindAnnouncementRepository(reloaded, "demo")
+	reloadedRepo, _ := BindAnnouncementRepository(reloaded, testTenantRef("demo"))
 	if got, want := len(reloadedRepo.List()), len(repo.List()); got != want {
 		t.Fatalf("reloaded count %d != in-memory count %d", got, want)
 	}
@@ -81,7 +81,7 @@ func TestUnitPaymentStatusStoreConcurrentSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	repository, _ := BindUnitPaymentStatusRepository(s, "demo")
+	repository, _ := BindUnitPaymentStatusRepository(s, testTenantRef("demo"))
 	var wg sync.WaitGroup
 	for w := 0; w < 16; w++ {
 		wg.Add(1)

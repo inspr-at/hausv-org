@@ -42,40 +42,40 @@ type documentBackend interface {
 }
 
 type boundDocumentRepository struct {
-	storage    documentBackend
-	tenantSlug string
+	storage documentBackend
+	tenant  TenantRef
 }
 
-func BindDocumentRepository(storage DocumentStorage, tenantSlug string) (DocumentRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindDocumentRepository(storage DocumentStorage, tenant TenantRef) (DocumentRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(documentBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundDocumentRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundDocumentRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundDocumentRepository) Create(item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
-	return r.storage.create(r.tenantSlug, item, upload, now)
+	return r.storage.create(r.tenant.Slug, item, upload, now)
 }
 func (r *boundDocumentRepository) CreateGenerated(item DocumentRecord, filename, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
-	return r.storage.createGenerated(r.tenantSlug, item, filename, contentType, data, now)
+	return r.storage.createGenerated(r.tenant.Slug, item, filename, contentType, data, now)
 }
 func (r *boundDocumentRepository) Replace(id, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error) {
-	return r.storage.replace(r.tenantSlug, id, uploadedBy, upload, now)
+	return r.storage.replace(r.tenant.Slug, id, uploadedBy, upload, now)
 }
-func (r *boundDocumentRepository) List() []DocumentRecord { return r.storage.listTenant(r.tenantSlug) }
+func (r *boundDocumentRepository) List() []DocumentRecord { return r.storage.listTenant(r.tenant.Slug) }
 func (r *boundDocumentRepository) ListCurrent() []DocumentRecord {
-	return r.storage.listCurrentTenant(r.tenantSlug)
+	return r.storage.listCurrentTenant(r.tenant.Slug)
 }
 func (r *boundDocumentRepository) Versions(seriesID string) []DocumentRecord {
-	return r.storage.versions(r.tenantSlug, seriesID)
+	return r.storage.versions(r.tenant.Slug, seriesID)
 }
 func (r *boundDocumentRepository) Get(id string) (DocumentRecord, bool) {
-	return r.storage.get(r.tenantSlug, id)
+	return r.storage.get(r.tenant.Slug, id)
 }
 func (r *boundDocumentRepository) FilePath(item DocumentRecord) (string, bool) {
-	if textutil.Slug(item.TenantSlug) != r.tenantSlug {
+	if textutil.Slug(item.TenantSlug) != r.tenant.Slug {
 		return "", false
 	}
 	return r.storage.filePath(item)

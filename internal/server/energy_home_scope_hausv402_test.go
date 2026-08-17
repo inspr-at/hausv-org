@@ -29,7 +29,7 @@ func TestEnergyHomeScopeAuthorizationDoesNotCrossUnits(t *testing.T) {
 		}
 	}
 
-	owner11 := authCtx{email: "owner11@example.com", role: roleResident, tenant: a.tenants["demo"]}
+	owner11 := authCtx{email: "owner11@example.com", role: roleResident, tenant: a.tenants["demo"], tenantRef: testTenantRef("demo")}
 	if store, ok := a.energyStoreForHome(owner11, "einheit-12"); !ok || store == nil {
 		t.Fatal("owner of einheit-12 denied their home")
 	}
