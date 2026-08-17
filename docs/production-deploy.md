@@ -20,21 +20,36 @@ a quiesced SQLite and blob snapshot before building the new image.
 
 ## Private deployment environment
 
-Load these values from a password manager, secret mount or untracked local file:
+These are host paths, a container name and public URLs — **not credentials**.
+Access is by your own SSH key, so this file can live in a normal config
+location; `~/.config/hausv/deploy.env` with mode `600` is the convention.
+
+The values below are the **actual csb1 production target**, not placeholders.
+Every one of them was wrong in an earlier version of this document, and each
+wrong value cost a failed deploy attempt to discover:
 
 ```sh
-HAUSV_DEPLOY_SSH_HOST=deployer@host.example
-HAUSV_DEPLOY_SSH_PORT=22
-HAUSV_DEPLOY_COMPOSE_DIR=/srv/hausv/compose
-HAUSV_DEPLOY_COMPOSE_FILE=/srv/hausv/compose/docker-compose.yml
-HAUSV_DEPLOY_COMPOSE_PROJECT=hausv
-HAUSV_DEPLOY_CONTAINER=hausv-demo
-HAUSV_DEPLOY_COMPOSE_LOCK=/run/lock/hausv-compose.lock
-HAUSV_DEPLOY_DATA_DIR=/var/lib/hausv
+HAUSV_DEPLOY_SSH_HOST=mba@csb1
+# 2222, not 22: deploy.sh passes -p explicitly, which OVERRIDES the port your
+# ~/.ssh/config sets for the csb1 alias. Getting this wrong times out.
+HAUSV_DEPLOY_SSH_PORT=2222
+HAUSV_DEPLOY_COMPOSE_DIR=/home/mba/Code/hausv-jhw22
+HAUSV_DEPLOY_COMPOSE_FILE=/home/mba/Code/hausv-jhw22/compose.yml
+HAUSV_DEPLOY_COMPOSE_PROJECT=hausv-jhw22
+HAUSV_DEPLOY_CONTAINER=hausv-org
+# /run/lock is root-owned and the deploy user cannot create there. The per-user
+# runtime dir is right: /tmp would let any process on the box hold the lock.
+HAUSV_DEPLOY_COMPOSE_LOCK=/run/user/1000/hausv-compose.lock
+HAUSV_DEPLOY_DATA_DIR=/var/lib/csb1-docker/hausv-org
 HAUSV_DEPLOY_SNAPSHOT_ROOT=/var/backups/hausv-predeploy
-HAUSV_DEPLOY_LIVE_URL=https://hausv.org/demo/
+# The live tenant is jhw22. https://hausv.org/demo/ returns 404.
+HAUSV_DEPLOY_LIVE_URL=https://hausv.org/jhw22/
 HAUSV_DEPLOY_HEALTH_URL=https://hausv.org/healthz
 ```
+
+If you are ever unsure of a value, read it off the running host rather than
+guessing — `docker inspect hausv-org` carries the compose project, working
+directory, config file and mounts.
 
 `HAUSV_DEPLOY_CONTAINER` identifies the unique container created by the
 configured Compose service. It may differ from the stable service name
@@ -42,11 +57,15 @@ configured Compose service. It may differ from the stable service name
 
 Optional overrides:
 
+csb1 is NixOS: **there is no `/usr/bin`**, so the three binary overrides are
+required there, not optional. The defaults below are FHS paths and fail with
+`No such file or directory`.
+
 ```sh
 HAUSV_DEPLOY_IMAGE=ghcr.io/inspr-at/hausv-org:latest
-HAUSV_DEPLOY_FLOCK_BIN=/usr/bin/flock
-HAUSV_DEPLOY_BASE64_BIN=/usr/bin/base64
-HAUSV_DEPLOY_MKTEMP_BIN=/usr/bin/mktemp
+HAUSV_DEPLOY_FLOCK_BIN=/run/current-system/sw/bin/flock
+HAUSV_DEPLOY_BASE64_BIN=/run/current-system/sw/bin/base64
+HAUSV_DEPLOY_MKTEMP_BIN=/run/current-system/sw/bin/mktemp
 ```
 
 The application runtime must separately configure its public URL, operator
@@ -55,9 +74,19 @@ details, tenant directory, mail or OIDC login and secrets. Tenant URLs use
 
 ## Run
 
+`set -a` is **bash**. In fish it is a different builtin and fails with
+`expected >= 1 arguments; got 0`, so wrap the whole thing in one `bash -c`:
+
+```fish
+direnv exec . bash -c 'set -a; . ~/.config/hausv/deploy.env; set +a; bash scripts/deploy.sh --dry-run'
+direnv exec . bash -c 'set -a; . ~/.config/hausv/deploy.env; set +a; bash scripts/deploy.sh'
+```
+
+From bash the original form works:
+
 ```sh
 set -a
-. /secure/path/hausv-deploy.env
+. ~/.config/hausv/deploy.env
 set +a
 
 scripts/deploy.sh --dry-run
