@@ -31,13 +31,13 @@ var (
 )
 
 type documentBackend interface {
-	create(tenantSlug string, item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error)
-	createGenerated(tenantSlug string, item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error)
-	replace(tenantSlug string, id string, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error)
-	listTenant(tenantSlug string) []DocumentRecord
-	listCurrentTenant(tenantSlug string) []DocumentRecord
-	versions(tenantSlug string, seriesID string) []DocumentRecord
-	get(tenantSlug string, id string) (DocumentRecord, bool)
+	create(tenant TenantRef, item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error)
+	createGenerated(tenant TenantRef, item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error)
+	replace(tenant TenantRef, id string, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error)
+	listTenant(tenant TenantRef) []DocumentRecord
+	listCurrentTenant(tenant TenantRef) []DocumentRecord
+	versions(tenant TenantRef, seriesID string) []DocumentRecord
+	get(tenant TenantRef, id string) (DocumentRecord, bool)
 	filePath(item DocumentRecord) (string, bool)
 }
 
@@ -56,23 +56,23 @@ func BindDocumentRepository(storage DocumentStorage, tenant TenantRef) (Document
 }
 
 func (r *boundDocumentRepository) Create(item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
-	return r.storage.create(r.tenant.Slug, item, upload, now)
+	return r.storage.create(r.tenant, item, upload, now)
 }
 func (r *boundDocumentRepository) CreateGenerated(item DocumentRecord, filename, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
-	return r.storage.createGenerated(r.tenant.Slug, item, filename, contentType, data, now)
+	return r.storage.createGenerated(r.tenant, item, filename, contentType, data, now)
 }
 func (r *boundDocumentRepository) Replace(id, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error) {
-	return r.storage.replace(r.tenant.Slug, id, uploadedBy, upload, now)
+	return r.storage.replace(r.tenant, id, uploadedBy, upload, now)
 }
-func (r *boundDocumentRepository) List() []DocumentRecord { return r.storage.listTenant(r.tenant.Slug) }
+func (r *boundDocumentRepository) List() []DocumentRecord { return r.storage.listTenant(r.tenant) }
 func (r *boundDocumentRepository) ListCurrent() []DocumentRecord {
-	return r.storage.listCurrentTenant(r.tenant.Slug)
+	return r.storage.listCurrentTenant(r.tenant)
 }
 func (r *boundDocumentRepository) Versions(seriesID string) []DocumentRecord {
-	return r.storage.versions(r.tenant.Slug, seriesID)
+	return r.storage.versions(r.tenant, seriesID)
 }
 func (r *boundDocumentRepository) Get(id string) (DocumentRecord, bool) {
-	return r.storage.get(r.tenant.Slug, id)
+	return r.storage.get(r.tenant, id)
 }
 func (r *boundDocumentRepository) FilePath(item DocumentRecord) (string, bool) {
 	if textutil.Slug(item.TenantSlug) != r.tenant.Slug {
@@ -102,29 +102,30 @@ func NewSQLDocumentStore(db *sql.DB, fileDir string) *SQLDocumentStore {
 
 func (*SQLDocumentStore) documentStorage() {}
 
-func (s *SQLDocumentStore) writeTx(tx *sql.Tx, item DocumentRecord) error {
+func (s *SQLDocumentStore) writeTx(tx *sql.Tx, tenant TenantRef, item DocumentRecord) error {
 	blob, err := json.Marshal(item)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO documents(tenant_slug, id, data) VALUES($1, $2, $3)
-		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
-		textutil.Slug(item.TenantSlug), item.ID, string(blob),
+		`INSERT INTO documents(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4)
+		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data,
+		   tenant_id=coalesce(documents.tenant_id, excluded.tenant_id)`,
+		tenant.ID, tenant.Slug, item.ID, string(blob),
 	)
 	return err
 }
 
 // insertOne persists a freshly created record, removing the stored file if the
 // metadata write fails (mirrors the JSON store's rollback).
-func (s *SQLDocumentStore) insertOne(item DocumentRecord, filePath string) (DocumentRecord, error) {
+func (s *SQLDocumentStore) insertOne(tenant TenantRef, item DocumentRecord, filePath string) (DocumentRecord, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		_ = os.Remove(filePath)
 		return DocumentRecord{}, err
 	}
 	defer tx.Rollback()
-	if err := s.writeTx(tx, item); err != nil {
+	if err := s.writeTx(tx, tenant, item); err != nil {
 		_ = os.Remove(filePath)
 		return DocumentRecord{}, err
 	}
@@ -135,7 +136,8 @@ func (s *SQLDocumentStore) insertOne(item DocumentRecord, filePath string) (Docu
 	return CopyDocument(item), nil
 }
 
-func (s *SQLDocumentStore) create(tenantSlug string, item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
+func (s *SQLDocumentStore) create(tenant TenantRef, item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
@@ -161,10 +163,11 @@ func (s *SQLDocumentStore) create(tenantSlug string, item DocumentRecord, upload
 		_ = os.Remove(fileSave.Path)
 		return DocumentRecord{}, fmt.Errorf("invalid document metadata")
 	}
-	return s.insertOne(item, fileSave.Path)
+	return s.insertOne(tenant, item, fileSave.Path)
 }
 
-func (s *SQLDocumentStore) createGenerated(tenantSlug string, item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
+func (s *SQLDocumentStore) createGenerated(tenant TenantRef, item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
@@ -173,13 +176,14 @@ func (s *SQLDocumentStore) createGenerated(tenantSlug string, item DocumentRecor
 	if err != nil {
 		return DocumentRecord{}, err
 	}
-	return s.insertOne(item, path)
+	return s.insertOne(tenant, item, path)
 }
 
 // Replace supersedes the current version and inserts the new one in ONE
 // transaction, so a crash can no longer leave both marked current or the old
 // one orphaned (HAUSV-145).
-func (s *SQLDocumentStore) replace(tenantSlug string, id string, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error) {
+func (s *SQLDocumentStore) replace(tenant TenantRef, id string, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
@@ -189,7 +193,7 @@ func (s *SQLDocumentStore) replace(tenantSlug string, id string, uploadedBy stri
 	if tenantSlug == "" || id == "" || uploadedBy == "" {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("invalid document replacement")
 	}
-	existing, found := s.get(tenantSlug, id)
+	existing, found := s.get(tenant, id)
 	if !found || !existing.Current {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document not found")
 	}
@@ -210,7 +214,7 @@ func (s *SQLDocumentStore) replace(tenantSlug string, id string, uploadedBy stri
 
 	// Re-read inside the transaction: the row must still be the current version.
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM documents WHERE tenant_slug=$1 AND id=$2`, tenantSlug, existing.ID).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM documents WHERE tenant_id=$1 AND id=$2`, tenant.ID, existing.ID).Scan(&data); err != nil {
 		_ = os.Remove(fileSave.Path)
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document not current")
 	}
@@ -238,11 +242,11 @@ func (s *SQLDocumentStore) replace(tenantSlug string, id string, uploadedBy stri
 	current.ReplacedByID = replacement.ID
 	replaced := NormalizeDocumentRecord(current)
 
-	if err := s.writeTx(tx, replaced); err != nil {
+	if err := s.writeTx(tx, tenant, replaced); err != nil {
 		_ = os.Remove(fileSave.Path)
 		return DocumentRecord{}, DocumentRecord{}, err
 	}
-	if err := s.writeTx(tx, replacement); err != nil {
+	if err := s.writeTx(tx, tenant, replacement); err != nil {
 		_ = os.Remove(fileSave.Path)
 		return DocumentRecord{}, DocumentRecord{}, err
 	}
@@ -253,8 +257,8 @@ func (s *SQLDocumentStore) replace(tenantSlug string, id string, uploadedBy stri
 	return CopyDocument(replacement), CopyDocument(replaced), nil
 }
 
-func (s *SQLDocumentStore) allForTenant(tenantSlug string) []DocumentRecord {
-	rows, err := s.db.Query(`SELECT data FROM documents WHERE tenant_slug=$1`, tenantSlug)
+func (s *SQLDocumentStore) allForTenant(tenant TenantRef) []DocumentRecord {
+	rows, err := s.db.Query(`SELECT data FROM documents WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return []DocumentRecord{}
 	}
@@ -274,17 +278,17 @@ func (s *SQLDocumentStore) allForTenant(tenantSlug string) []DocumentRecord {
 	return out
 }
 
-func (s *SQLDocumentStore) listTenant(tenantSlug string) []DocumentRecord {
+func (s *SQLDocumentStore) listTenant(tenant TenantRef) []DocumentRecord {
 	if s == nil {
 		return nil
 	}
-	out := s.allForTenant(textutil.Slug(tenantSlug))
+	out := s.allForTenant(tenant)
 	SortDocuments(out)
 	return out
 }
 
-func (s *SQLDocumentStore) listCurrentTenant(tenantSlug string) []DocumentRecord {
-	all := s.listTenant(tenantSlug)
+func (s *SQLDocumentStore) listCurrentTenant(tenant TenantRef) []DocumentRecord {
+	all := s.listTenant(tenant)
 	out := []DocumentRecord{}
 	for _, item := range all {
 		if item.Current {
@@ -295,7 +299,8 @@ func (s *SQLDocumentStore) listCurrentTenant(tenantSlug string) []DocumentRecord
 	return out
 }
 
-func (s *SQLDocumentStore) versions(tenantSlug string, seriesID string) []DocumentRecord {
+func (s *SQLDocumentStore) versions(tenant TenantRef, seriesID string) []DocumentRecord {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -305,7 +310,7 @@ func (s *SQLDocumentStore) versions(tenantSlug string, seriesID string) []Docume
 		return nil
 	}
 	out := []DocumentRecord{}
-	for _, item := range s.allForTenant(tenantSlug) {
+	for _, item := range s.allForTenant(tenant) {
 		if item.SeriesID == seriesID {
 			out = append(out, item)
 		}
@@ -319,7 +324,8 @@ func (s *SQLDocumentStore) versions(tenantSlug string, seriesID string) []Docume
 	return out
 }
 
-func (s *SQLDocumentStore) get(tenantSlug string, id string) (DocumentRecord, bool) {
+func (s *SQLDocumentStore) get(tenant TenantRef, id string) (DocumentRecord, bool) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return DocumentRecord{}, false
 	}
@@ -329,7 +335,7 @@ func (s *SQLDocumentStore) get(tenantSlug string, id string) (DocumentRecord, bo
 		return DocumentRecord{}, false
 	}
 	var data string
-	if err := s.db.QueryRow(`SELECT data FROM documents WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
+	if err := s.db.QueryRow(`SELECT data FROM documents WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return DocumentRecord{}, false
 	}
 	var item DocumentRecord
@@ -356,17 +362,22 @@ func (s *SQLDocumentStore) ImportDocuments(src *DocumentStore) error {
 	src.mu.Lock()
 	snapshot := append([]DocumentRecord(nil), src.data.Documents...)
 	src.mu.Unlock()
+	tenants := newTenantIDCache(s.db)
 	for _, item := range snapshot {
 		if strings.TrimSpace(item.ID) == "" || textutil.Slug(item.TenantSlug) == "" {
 			continue
+		}
+		tenant, err := tenants.ref(item.TenantSlug)
+		if err != nil {
+			return err
 		}
 		blob, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO documents(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
-			textutil.Slug(item.TenantSlug), item.ID, string(blob),
+			`INSERT INTO documents(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {
 			return err
 		}

@@ -27,10 +27,10 @@ var (
 )
 
 type attachmentStoreBackend interface {
-	createUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error)
-	listEntity(tenantSlug string, entityType string, entityID string) []AttachmentRecord
-	get(tenantSlug string, id string) (AttachmentRecord, bool)
-	delete(tenantSlug string, id string, deletedAt time.Time) (AttachmentRecord, bool, error)
+	createUploaded(tenant TenantRef, entityType string, entityID string, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error)
+	listEntity(tenant TenantRef, entityType string, entityID string) []AttachmentRecord
+	get(tenant TenantRef, id string) (AttachmentRecord, bool)
+	delete(tenant TenantRef, id string, deletedAt time.Time) (AttachmentRecord, bool, error)
 	filePath(item AttachmentRecord, variant string) (string, string, int64, bool)
 }
 
@@ -49,16 +49,16 @@ func BindAttachmentRepository(storage AttachmentStorage, tenant TenantRef) (Atta
 }
 
 func (r *boundAttachmentRepository) CreateUploaded(entityType, entityID, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error) {
-	return r.storage.createUploaded(r.tenant.Slug, entityType, entityID, uploadedBy, uploads, now)
+	return r.storage.createUploaded(r.tenant, entityType, entityID, uploadedBy, uploads, now)
 }
 func (r *boundAttachmentRepository) ListEntity(entityType, entityID string) []AttachmentRecord {
-	return r.storage.listEntity(r.tenant.Slug, entityType, entityID)
+	return r.storage.listEntity(r.tenant, entityType, entityID)
 }
 func (r *boundAttachmentRepository) Get(id string) (AttachmentRecord, bool) {
-	return r.storage.get(r.tenant.Slug, id)
+	return r.storage.get(r.tenant, id)
 }
 func (r *boundAttachmentRepository) Delete(id string, deletedAt time.Time) (AttachmentRecord, bool, error) {
-	return r.storage.delete(r.tenant.Slug, id, deletedAt)
+	return r.storage.delete(r.tenant, id, deletedAt)
 }
 func (r *boundAttachmentRepository) FilePath(item AttachmentRecord, variant string) (string, string, int64, bool) {
 	if textutil.Slug(item.TenantSlug) != r.tenant.Slug {
@@ -81,15 +81,16 @@ func NewSQLAttachmentStore(db *sql.DB, fileDir string) *SQLAttachmentStore {
 
 func (*SQLAttachmentStore) attachmentStorage() {}
 
-func (s *SQLAttachmentStore) writeTx(tx *sql.Tx, item AttachmentRecord) error {
+func (s *SQLAttachmentStore) writeTx(tx *sql.Tx, tenant TenantRef, item AttachmentRecord) error {
 	blob, err := json.Marshal(item)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO attachments(tenant_slug, id, data) VALUES($1, $2, $3)
-		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
-		textutil.Slug(item.TenantSlug), item.ID, string(blob),
+		`INSERT INTO attachments(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4)
+		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data,
+		   tenant_id=coalesce(attachments.tenant_id, excluded.tenant_id)`,
+		tenant.ID, tenant.Slug, item.ID, string(blob),
 	)
 	return err
 }
@@ -97,7 +98,8 @@ func (s *SQLAttachmentStore) writeTx(tx *sql.Tx, item AttachmentRecord) error {
 // CreateUploaded writes every accepted upload to disk and then persists ALL
 // records in one transaction, so a batch upload can never land half-recorded.
 // Any failure removes the files written so far.
-func (s *SQLAttachmentStore) createUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error) {
+func (s *SQLAttachmentStore) createUploaded(tenant TenantRef, entityType string, entityID string, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error) {
+	tenantSlug := tenant.Slug
 	if s == nil || len(uploads) == 0 {
 		return nil, nil
 	}
@@ -163,7 +165,7 @@ func (s *SQLAttachmentStore) createUploaded(tenantSlug string, entityType string
 	}
 	defer tx.Rollback()
 	for _, item := range created {
-		if err := s.writeTx(tx, item); err != nil {
+		if err := s.writeTx(tx, tenant, item); err != nil {
 			rollback()
 			return nil, err
 		}
@@ -175,8 +177,8 @@ func (s *SQLAttachmentStore) createUploaded(tenantSlug string, entityType string
 	return created, nil
 }
 
-func (s *SQLAttachmentStore) allForTenant(tenantSlug string) []AttachmentRecord {
-	rows, err := s.db.Query(`SELECT data FROM attachments WHERE tenant_slug=$1`, tenantSlug)
+func (s *SQLAttachmentStore) allForTenant(tenant TenantRef) []AttachmentRecord {
+	rows, err := s.db.Query(`SELECT data FROM attachments WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return nil
 	}
@@ -196,7 +198,8 @@ func (s *SQLAttachmentStore) allForTenant(tenantSlug string) []AttachmentRecord 
 	return out
 }
 
-func (s *SQLAttachmentStore) listEntity(tenantSlug string, entityType string, entityID string) []AttachmentRecord {
+func (s *SQLAttachmentStore) listEntity(tenant TenantRef, entityType string, entityID string) []AttachmentRecord {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -204,7 +207,7 @@ func (s *SQLAttachmentStore) listEntity(tenantSlug string, entityType string, en
 	entityType = NormalizeAttachmentEntity(entityType)
 	entityID = strings.TrimSpace(entityID)
 	items := []AttachmentRecord{}
-	for _, item := range s.allForTenant(tenantSlug) {
+	for _, item := range s.allForTenant(tenant) {
 		if item.DeletedAt != nil {
 			continue
 		}
@@ -218,14 +221,15 @@ func (s *SQLAttachmentStore) listEntity(tenantSlug string, entityType string, en
 	return items
 }
 
-func (s *SQLAttachmentStore) get(tenantSlug string, id string) (AttachmentRecord, bool) {
+func (s *SQLAttachmentStore) get(tenant TenantRef, id string) (AttachmentRecord, bool) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return AttachmentRecord{}, false
 	}
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
 	var data string
-	if err := s.db.QueryRow(`SELECT data FROM attachments WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
+	if err := s.db.QueryRow(`SELECT data FROM attachments WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return AttachmentRecord{}, false
 	}
 	var item AttachmentRecord
@@ -240,7 +244,8 @@ func (s *SQLAttachmentStore) get(tenantSlug string, id string) (AttachmentRecord
 
 // Delete soft-deletes the record and then removes the files. The record is only
 // marked once the transaction commits, so a failure leaves the files intact.
-func (s *SQLAttachmentStore) delete(tenantSlug string, id string, deletedAt time.Time) (AttachmentRecord, bool, error) {
+func (s *SQLAttachmentStore) delete(tenant TenantRef, id string, deletedAt time.Time) (AttachmentRecord, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return AttachmentRecord{}, false, nil
 	}
@@ -253,7 +258,7 @@ func (s *SQLAttachmentStore) delete(tenantSlug string, id string, deletedAt time
 	}
 	defer tx.Rollback()
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM attachments WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM attachments WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return AttachmentRecord{}, false, nil
 	}
 	var item AttachmentRecord
@@ -266,7 +271,7 @@ func (s *SQLAttachmentStore) delete(tenantSlug string, id string, deletedAt time
 	deleted := deletedAt.UTC()
 	marked := item
 	marked.DeletedAt = &deleted
-	if err := s.writeTx(tx, marked); err != nil {
+	if err := s.writeTx(tx, tenant, marked); err != nil {
 		return AttachmentRecord{}, false, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -293,17 +298,22 @@ func (s *SQLAttachmentStore) ImportAttachments(src *AttachmentStore) error {
 	src.mu.Lock()
 	snapshot := append([]AttachmentRecord(nil), src.data.Attachments...)
 	src.mu.Unlock()
+	tenants := newTenantIDCache(s.db)
 	for _, item := range snapshot {
 		if strings.TrimSpace(item.ID) == "" || textutil.Slug(item.TenantSlug) == "" {
 			continue
+		}
+		tenant, err := tenants.ref(item.TenantSlug)
+		if err != nil {
+			return err
 		}
 		blob, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO attachments(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
-			textutil.Slug(item.TenantSlug), item.ID, string(blob),
+			`INSERT INTO attachments(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {
 			return err
 		}
@@ -328,7 +338,7 @@ func (s *SQLAttachmentStore) PurgeDeletedBefore(cutoff time.Time) (int, error) {
 	if s == nil {
 		return 0, nil
 	}
-	rows, err := s.db.Query(`SELECT tenant_slug, id, data FROM attachments`)
+	rows, err := s.db.Query(`SELECT tenant_id, id, data FROM attachments`)
 	if err != nil {
 		return 0, err
 	}
@@ -361,7 +371,7 @@ func (s *SQLAttachmentStore) PurgeDeletedBefore(cutoff time.Time) (int, error) {
 	}
 	defer tx.Rollback()
 	for _, k := range stale {
-		if _, err := tx.Exec(`DELETE FROM attachments WHERE tenant_slug=$1 AND id=$2`, k.tenant, k.id); err != nil {
+		if _, err := tx.Exec(`DELETE FROM attachments WHERE tenant_id=$1 AND id=$2`, k.tenant, k.id); err != nil {
 			return 0, err
 		}
 	}

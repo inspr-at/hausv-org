@@ -2,15 +2,13 @@ package store
 
 import (
 	"testing"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 // This is intentionally an actual migrated boolean column, not a driver-only
 // probe. It proves the one representation the stores use works unchanged on
 // SQLite and PostgreSQL.
 func TestSQLBoolRoundTrip(t *testing.T) {
-	database := dbtest.Open(t)
+	database := testDB(t)
 	for _, want := range []bool{true, false} {
 		email := "false@example.com"
 		if want {

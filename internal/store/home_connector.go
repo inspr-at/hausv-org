@@ -156,13 +156,21 @@ func (s *SQLHomeConnectorStore) StartPairing(slug string, pairingHash []byte, ex
 	if slug == "" || len(pairingHash) == 0 || !expiresAt.After(now) {
 		return HomeConnector{}, fmt.Errorf("invalid home connector pairing")
 	}
-	_, err := s.db.Exec(`INSERT INTO home_connectors
-		(slug,status,credential_hash,generation,pairing_hash,pairing_expires_at,created_at,updated_at)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+	// Pairing only ever starts for an already-activated house, so the identity
+	// exists; ensureTenantID is here so that a connector row can never be the
+	// one row in the database without one.
+	tenantID, err := ensureTenantID(s.db, slug)
+	if err != nil {
+		return HomeConnector{}, err
+	}
+	_, err = s.db.Exec(`INSERT INTO home_connectors
+		(tenant_id,slug,status,credential_hash,generation,pairing_hash,pairing_expires_at,created_at,updated_at)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
 		ON CONFLICT(slug) DO UPDATE SET
 		status=CASE WHEN home_connectors.credential_hash IS NULL THEN excluded.status ELSE home_connectors.status END,
-		pairing_hash=excluded.pairing_hash,pairing_expires_at=excluded.pairing_expires_at,updated_at=excluded.updated_at`,
-		slug, HomeConnectorPairing, nil, 0, pairingHash, homeReservationTimestamp(expiresAt), homeReservationTimestamp(now), homeReservationTimestamp(now))
+		pairing_hash=excluded.pairing_hash,pairing_expires_at=excluded.pairing_expires_at,updated_at=excluded.updated_at,
+		tenant_id=coalesce(home_connectors.tenant_id,excluded.tenant_id)`,
+		tenantID, slug, HomeConnectorPairing, nil, 0, pairingHash, homeReservationTimestamp(expiresAt), homeReservationTimestamp(now), homeReservationTimestamp(now))
 	if err != nil {
 		return HomeConnector{}, err
 	}

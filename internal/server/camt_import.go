@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/integrations"
+	"github.com/inspr-at/hausv-org/internal/tenantid"
 )
 
 const (
@@ -384,14 +385,21 @@ func (a *app) paymentImportAlreadyApplied(tenantSlug, fileDigest string) bool {
 	tenantSlug = normalizeSlug(tenantSlug)
 	fileDigest = strings.TrimSpace(fileDigest)
 	if a != nil && a.db != nil && tenantSlug != "" && fileDigest != "" {
+		// No identity means no rows can reference it, so an unknown slug is a
+		// clean "not imported" rather than a lookup that silently matches on a
+		// label the tenant may since have renamed.
+		tenantID, known := tenantid.Lookup(a.db, tenantSlug)
 		var exists int
-		err := a.db.QueryRow(
-			`SELECT EXISTS(
-				SELECT 1 FROM integration_imports
-				WHERE tenant_slug = ? AND format = ? AND file_digest = ?
-			)`,
-			tenantSlug, string(integrations.FormatCAMT053), fileDigest,
-		).Scan(&exists)
+		var err error
+		if known {
+			err = a.db.QueryRow(
+				`SELECT EXISTS(
+					SELECT 1 FROM integration_imports
+					WHERE tenant_id = ? AND format = ? AND file_digest = ?
+				)`,
+				tenantID, string(integrations.FormatCAMT053), fileDigest,
+			).Scan(&exists)
+		}
 		if err == nil && exists == 1 {
 			return true
 		}
@@ -407,12 +415,25 @@ func (a *app) recordPaymentImportLedger(tenantSlug, actorEmail string, preview c
 	if a == nil || a.db == nil {
 		return nil
 	}
-	_, err := a.db.Exec(
+	tenantID, err := tenantid.Ensure(a.db, tenantSlug)
+	if err != nil {
+		return err
+	}
+	// DO NOTHING on everything EXCEPT tenant_id. The ledger records when a file
+	// was FIRST applied, so a re-upload must not rewrite applied_at, applied_by
+	// or the counts — but a row written by the previous release carries no
+	// identity, and the lookup above filters on tenant_id, so leaving it unowned
+	// means the ledger can never see its own row and every re-upload is applied
+	// again. coalesce keeps an owned row untouched, which is also the only shape
+	// PostgreSQL's tenant_id_immutable trigger accepts.
+	_, err = a.db.Exec(
 		`INSERT INTO integration_imports(
-			tenant_slug, format, file_digest, source_version, applied_at, applied_by,
+			tenant_id, tenant_slug, format, file_digest, source_version, applied_at, applied_by,
 			assigned, changed, unclear, rejected
-		) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(tenant_slug, format, file_digest) DO NOTHING`,
+		) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(tenant_slug, format, file_digest) DO UPDATE SET
+		  tenant_id=coalesce(integration_imports.tenant_id, excluded.tenant_id)`,
+		tenantID,
 		normalizeSlug(tenantSlug),
 		string(integrations.FormatCAMT053),
 		strings.TrimSpace(preview.FileDigest),

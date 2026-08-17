@@ -3,8 +3,6 @@ package store
 import (
 	"path/filepath"
 	"testing"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func TestUnitPaymentStatusStorageParity(t *testing.T) {
@@ -17,7 +15,7 @@ func TestUnitPaymentStatusStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) UnitPaymentStatusStorage {
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLUnitPaymentStatusStore(database)
 		},
@@ -90,7 +88,7 @@ func TestSQLUnitPaymentImportFromJSON(t *testing.T) {
 	_, _ = jsonRepository.Set(UnitPaymentStatus{UnitID: "w-01", Status: "bezahlt"})
 	_, _ = jsonRepository.Set(UnitPaymentStatus{UnitID: "w-02", Status: "offen"})
 
-	database := dbtest.Open(t)
+	database := testDB(t)
 	defer database.Close()
 	sqlStore := NewSQLUnitPaymentStatusStore(database)
 	sqlRepository, _ := BindUnitPaymentStatusRepository(sqlStore, testTenantRef("demo"))

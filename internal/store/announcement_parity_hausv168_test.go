@@ -4,8 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func TestAnnouncementStorageParity(t *testing.T) {
@@ -18,7 +16,7 @@ func TestAnnouncementStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) AnnouncementStorage {
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLAnnouncementStore(database)
 		},

@@ -3,8 +3,6 @@ package store
 import (
 	"path/filepath"
 	"testing"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func TestNotificationPrefStorageParity(t *testing.T) {
@@ -17,7 +15,7 @@ func TestNotificationPrefStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) NotificationPrefStorage {
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLNotificationPrefStore(database)
 		},
@@ -77,7 +75,7 @@ func TestSQLNotificationPrefImportFromJSON(t *testing.T) {
 	_ = jsonStore.Set("a@example.com", NotificationPreferences{Unsubscribed: true})
 	_ = jsonStore.Set("b@example.com", NotificationPreferences{Email: map[string]bool{"issue": false}})
 
-	database := dbtest.Open(t)
+	database := testDB(t)
 	defer database.Close()
 	sqlStore := NewSQLNotificationPrefStore(database)
 

@@ -36,12 +36,12 @@ type boundAnnouncementRepository struct {
 }
 
 type announcementBackend interface {
-	create(tenantSlug string, item Announcement) (Announcement, error)
-	update(tenantSlug string, id string, updated Announcement) (bool, error)
-	delete(tenantSlug string, id string) (bool, error)
-	visible(tenantSlug string, now time.Time) []Announcement
-	archive(tenantSlug string, now time.Time) []Announcement
-	list(tenantSlug string) []Announcement
+	create(tenant TenantRef, item Announcement) (Announcement, error)
+	update(tenant TenantRef, id string, updated Announcement) (bool, error)
+	delete(tenant TenantRef, id string) (bool, error)
+	visible(tenant TenantRef, now time.Time) []Announcement
+	archive(tenant TenantRef, now time.Time) []Announcement
+	list(tenant TenantRef) []Announcement
 }
 
 func BindAnnouncementRepository(storage AnnouncementStorage, tenant TenantRef) (AnnouncementRepository, bool) {
@@ -54,27 +54,27 @@ func BindAnnouncementRepository(storage AnnouncementStorage, tenant TenantRef) (
 }
 
 func (r *boundAnnouncementRepository) Create(item Announcement) (Announcement, error) {
-	return r.storage.create(r.tenant.Slug, item)
+	return r.storage.create(r.tenant, item)
 }
 
 func (r *boundAnnouncementRepository) Update(id string, updated Announcement) (bool, error) {
-	return r.storage.update(r.tenant.Slug, id, updated)
+	return r.storage.update(r.tenant, id, updated)
 }
 
 func (r *boundAnnouncementRepository) Delete(id string) (bool, error) {
-	return r.storage.delete(r.tenant.Slug, id)
+	return r.storage.delete(r.tenant, id)
 }
 
 func (r *boundAnnouncementRepository) Visible(now time.Time) []Announcement {
-	return r.storage.visible(r.tenant.Slug, now)
+	return r.storage.visible(r.tenant, now)
 }
 
 func (r *boundAnnouncementRepository) Archive(now time.Time) []Announcement {
-	return r.storage.archive(r.tenant.Slug, now)
+	return r.storage.archive(r.tenant, now)
 }
 
 func (r *boundAnnouncementRepository) List() []Announcement {
-	return r.storage.list(r.tenant.Slug)
+	return r.storage.list(r.tenant)
 }
 
 // SQLAnnouncementStore keeps each announcement as a JSON document keyed by
@@ -89,20 +89,22 @@ func NewSQLAnnouncementStore(db *sql.DB) *SQLAnnouncementStore {
 
 func (*SQLAnnouncementStore) announcementStorage() {}
 
-func (s *SQLAnnouncementStore) writeTx(tx *sql.Tx, item Announcement) error {
+func (s *SQLAnnouncementStore) writeTx(tx *sql.Tx, tenant TenantRef, item Announcement) error {
 	blob, err := json.Marshal(item)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO announcements(tenant_slug, id, data) VALUES($1, $2, $3)
-		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
-		textutil.Slug(item.TenantSlug), item.ID, string(blob),
+		`INSERT INTO announcements(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4)
+		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data,
+		   tenant_id=coalesce(announcements.tenant_id, excluded.tenant_id)`,
+		tenant.ID, tenant.Slug, item.ID, string(blob),
 	)
 	return err
 }
 
-func (s *SQLAnnouncementStore) create(tenantSlug string, item Announcement) (Announcement, error) {
+func (s *SQLAnnouncementStore) create(tenant TenantRef, item Announcement) (Announcement, error) {
+	tenantSlug := tenant.Slug
 	item.TenantSlug = tenantSlug
 	now := time.Now().UTC()
 	item.ID = ""
@@ -124,7 +126,7 @@ func (s *SQLAnnouncementStore) create(tenantSlug string, item Announcement) (Ann
 		return Announcement{}, err
 	}
 	defer tx.Rollback()
-	if err := s.writeTx(tx, item); err != nil {
+	if err := s.writeTx(tx, tenant, item); err != nil {
 		return Announcement{}, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -133,20 +135,20 @@ func (s *SQLAnnouncementStore) create(tenantSlug string, item Announcement) (Ann
 	return item, nil
 }
 
-func (s *SQLAnnouncementStore) update(tenantSlug string, id string, updated Announcement) (bool, error) {
+func (s *SQLAnnouncementStore) update(tenant TenantRef, id string, updated Announcement) (bool, error) {
+	tenantSlug := tenant.Slug
 	updated.TenantSlug = tenantSlug
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return false, nil
 	}
-	tenant := textutil.Slug(updated.TenantSlug)
 	tx, err := s.db.Begin()
 	if err != nil {
 		return false, err
 	}
 	defer tx.Rollback()
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM announcements WHERE tenant_slug=$1 AND id=$2`, tenant, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM announcements WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return false, nil
 	}
 	var existing Announcement
@@ -165,7 +167,7 @@ func (s *SQLAnnouncementStore) update(tenantSlug string, id string, updated Anno
 	if updated.AuthorName == "" {
 		updated.AuthorName = existing.AuthorName
 	}
-	if err := s.writeTx(tx, updated); err != nil {
+	if err := s.writeTx(tx, tenant, updated); err != nil {
 		return false, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -174,13 +176,14 @@ func (s *SQLAnnouncementStore) update(tenantSlug string, id string, updated Anno
 	return true, nil
 }
 
-func (s *SQLAnnouncementStore) delete(tenantSlug string, id string) (bool, error) {
+func (s *SQLAnnouncementStore) delete(tenant TenantRef, id string) (bool, error) {
+	tenantSlug := tenant.Slug
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return false, nil
 	}
-	res, err := s.db.Exec(`DELETE FROM announcements WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id)
+	res, err := s.db.Exec(`DELETE FROM announcements WHERE tenant_id=$1 AND id=$2`, tenant.ID, id)
 	if err != nil {
 		return false, err
 	}
@@ -188,9 +191,10 @@ func (s *SQLAnnouncementStore) delete(tenantSlug string, id string) (bool, error
 	return n > 0, nil
 }
 
-func (s *SQLAnnouncementStore) allForTenant(tenantSlug string) []Announcement {
+func (s *SQLAnnouncementStore) allForTenant(tenant TenantRef) []Announcement {
+	tenantSlug := tenant.Slug
 	tenantSlug = textutil.Slug(tenantSlug)
-	rows, err := s.db.Query(`SELECT data FROM announcements WHERE tenant_slug=$1`, tenantSlug)
+	rows, err := s.db.Query(`SELECT data FROM announcements WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return []Announcement{}
 	}
@@ -210,9 +214,9 @@ func (s *SQLAnnouncementStore) allForTenant(tenantSlug string) []Announcement {
 	return out
 }
 
-func (s *SQLAnnouncementStore) visible(tenantSlug string, now time.Time) []Announcement {
+func (s *SQLAnnouncementStore) visible(tenant TenantRef, now time.Time) []Announcement {
 	out := []Announcement{}
-	for _, item := range s.allForTenant(tenantSlug) {
+	for _, item := range s.allForTenant(tenant) {
 		if item.PublishedAt.After(now) {
 			continue
 		}
@@ -225,9 +229,9 @@ func (s *SQLAnnouncementStore) visible(tenantSlug string, now time.Time) []Annou
 	return out
 }
 
-func (s *SQLAnnouncementStore) archive(tenantSlug string, now time.Time) []Announcement {
+func (s *SQLAnnouncementStore) archive(tenant TenantRef, now time.Time) []Announcement {
 	out := []Announcement{}
-	for _, item := range s.allForTenant(tenantSlug) {
+	for _, item := range s.allForTenant(tenant) {
 		if item.PublishedAt.After(now) {
 			continue
 		}
@@ -237,8 +241,8 @@ func (s *SQLAnnouncementStore) archive(tenantSlug string, now time.Time) []Annou
 	return out
 }
 
-func (s *SQLAnnouncementStore) list(tenantSlug string) []Announcement {
-	out := s.allForTenant(tenantSlug)
+func (s *SQLAnnouncementStore) list(tenant TenantRef) []Announcement {
+	out := s.allForTenant(tenant)
 	SortAnnouncements(out)
 	return out
 }
@@ -252,17 +256,22 @@ func (s *SQLAnnouncementStore) ImportAnnouncements(src *AnnouncementStore) error
 	src.mu.Lock()
 	snapshot := append([]Announcement(nil), src.data.Announcements...)
 	src.mu.Unlock()
+	tenants := newTenantIDCache(s.db)
 	for _, item := range snapshot {
 		if strings.TrimSpace(item.ID) == "" {
 			continue
+		}
+		tenant, err := tenants.ref(item.TenantSlug)
+		if err != nil {
+			return err
 		}
 		blob, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO announcements(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
-			textutil.Slug(item.TenantSlug), item.ID, string(blob),
+			`INSERT INTO announcements(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {
 			return err
 		}

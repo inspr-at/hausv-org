@@ -37,14 +37,14 @@ type boundUnitRepository struct {
 }
 
 type unitBackend interface {
-	setTenantUnits(tenantSlug string, units []Unit) error
-	upsertUnit(tenantSlug string, origID string, item Unit) (duplicate bool, err error)
-	deleteUnit(tenantSlug string, id string) (removed bool, removedUnit Unit, err error)
-	listTenant(tenantSlug string) []Unit
-	unitCount(tenantSlug string) int
-	billableUnitWeight(tenantSlug string) int
-	unitsForEmail(tenantSlug string, email string) []UnitMembership
-	membersForUnit(tenantSlug string, unitID string) UnitMembers
+	setTenantUnits(tenant TenantRef, units []Unit) error
+	upsertUnit(tenant TenantRef, origID string, item Unit) (duplicate bool, err error)
+	deleteUnit(tenant TenantRef, id string) (removed bool, removedUnit Unit, err error)
+	listTenant(tenant TenantRef) []Unit
+	unitCount(tenant TenantRef) int
+	billableUnitWeight(tenant TenantRef) int
+	unitsForEmail(tenant TenantRef, email string) []UnitMembership
+	membersForUnit(tenant TenantRef, unitID string) UnitMembers
 }
 
 // BindUnitRepository binds all unit operations to one tenant.
@@ -58,35 +58,35 @@ func BindUnitRepository(storage UnitStorage, tenant TenantRef) (UnitRepository, 
 }
 
 func (r *boundUnitRepository) SetUnits(units []Unit) error {
-	return r.storage.setTenantUnits(r.tenant.Slug, units)
+	return r.storage.setTenantUnits(r.tenant, units)
 }
 
 func (r *boundUnitRepository) UpsertUnit(origID string, item Unit) (bool, error) {
-	return r.storage.upsertUnit(r.tenant.Slug, origID, item)
+	return r.storage.upsertUnit(r.tenant, origID, item)
 }
 
 func (r *boundUnitRepository) DeleteUnit(id string) (bool, Unit, error) {
-	return r.storage.deleteUnit(r.tenant.Slug, id)
+	return r.storage.deleteUnit(r.tenant, id)
 }
 
 func (r *boundUnitRepository) List() []Unit {
-	return r.storage.listTenant(r.tenant.Slug)
+	return r.storage.listTenant(r.tenant)
 }
 
 func (r *boundUnitRepository) UnitCount() int {
-	return r.storage.unitCount(r.tenant.Slug)
+	return r.storage.unitCount(r.tenant)
 }
 
 func (r *boundUnitRepository) BillableUnitWeight() int {
-	return r.storage.billableUnitWeight(r.tenant.Slug)
+	return r.storage.billableUnitWeight(r.tenant)
 }
 
 func (r *boundUnitRepository) UnitsForEmail(email string) []UnitMembership {
-	return r.storage.unitsForEmail(r.tenant.Slug, email)
+	return r.storage.unitsForEmail(r.tenant, email)
 }
 
 func (r *boundUnitRepository) MembersForUnit(unitID string) UnitMembers {
-	return r.storage.membersForUnit(r.tenant.Slug, unitID)
+	return r.storage.membersForUnit(r.tenant, unitID)
 }
 
 // SQLUnitStore keeps each unit as a JSON document keyed by (tenant, id). Table
@@ -104,19 +104,22 @@ func (*SQLUnitStore) unitStorage() {}
 // replaceTenantTx rewrites a tenant's whole unit set inside a transaction. The
 // JSON store re-normalizes the full tenant slice on every write (which also
 // deduplicates), so mirroring that keeps the two backends byte-identical.
-func (s *SQLUnitStore) replaceTenantTx(tx *sql.Tx, tenantSlug string, units []Unit) error {
-	if _, err := tx.Exec(`DELETE FROM units WHERE tenant_slug=$1`, tenantSlug); err != nil {
+func (s *SQLUnitStore) replaceTenantTx(tx *sql.Tx, tenant TenantRef, units []Unit) error {
+	// A whole-tenant wipe: getting this predicate wrong destroys a house's unit
+	// set, which is why it is keyed on the identity rather than the label.
+	if _, err := tx.Exec(`DELETE FROM units WHERE tenant_id=$1`, tenant.ID); err != nil {
 		return err
 	}
-	for _, item := range NormalizeUnits(units, tenantSlug) {
+	for _, item := range NormalizeUnits(units, tenant.Slug) {
 		blob, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
 		if _, err := tx.Exec(
-			`INSERT INTO units(tenant_slug, id, data) VALUES($1, $2, $3)
-			 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
-			textutil.Slug(item.TenantSlug), item.ID, string(blob),
+			`INSERT INTO units(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4)
+			 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data,
+			   tenant_id=coalesce(units.tenant_id, excluded.tenant_id)`,
+			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {
 			return err
 		}
@@ -124,8 +127,8 @@ func (s *SQLUnitStore) replaceTenantTx(tx *sql.Tx, tenantSlug string, units []Un
 	return nil
 }
 
-func (s *SQLUnitStore) tenantUnits(tenantSlug string) []Unit {
-	rows, err := s.db.Query(`SELECT data FROM units WHERE tenant_slug=$1`, tenantSlug)
+func (s *SQLUnitStore) tenantUnits(tenant TenantRef) []Unit {
+	rows, err := s.db.Query(`SELECT data FROM units WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return nil
 	}
@@ -146,8 +149,8 @@ func (s *SQLUnitStore) tenantUnits(tenantSlug string) []Unit {
 	return out
 }
 
-func tenantUnitsTx(tx *sql.Tx, tenantSlug string) ([]Unit, error) {
-	rows, err := tx.Query(`SELECT data FROM units WHERE tenant_slug=$1`, tenantSlug)
+func tenantUnitsTx(tx *sql.Tx, tenant TenantRef) ([]Unit, error) {
+	rows, err := tx.Query(`SELECT data FROM units WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +171,8 @@ func tenantUnitsTx(tx *sql.Tx, tenantSlug string) ([]Unit, error) {
 	return out, nil
 }
 
-func (s *SQLUnitStore) setTenantUnits(tenantSlug string, units []Unit) error {
+func (s *SQLUnitStore) setTenantUnits(tenant TenantRef, units []Unit) error {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -181,7 +185,7 @@ func (s *SQLUnitStore) setTenantUnits(tenantSlug string, units []Unit) error {
 		return err
 	}
 	defer tx.Rollback()
-	if err := s.replaceTenantTx(tx, tenantSlug, units); err != nil {
+	if err := s.replaceTenantTx(tx, tenant, units); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -191,7 +195,8 @@ func (s *SQLUnitStore) setTenantUnits(tenantSlug string, units []Unit) error {
 // add/delete of a different unit is not clobbered (HAUSV-145). origID is the
 // unit's previous ID ("" for a new unit); duplicate=true means the target ID
 // collides with a different existing unit.
-func (s *SQLUnitStore) upsertUnit(tenantSlug string, origID string, item Unit) (bool, error) {
+func (s *SQLUnitStore) upsertUnit(tenant TenantRef, origID string, item Unit) (bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return false, nil
 	}
@@ -207,7 +212,7 @@ func (s *SQLUnitStore) upsertUnit(tenantSlug string, origID string, item Unit) (
 		return false, err
 	}
 	defer tx.Rollback()
-	mine, err := tenantUnitsTx(tx, tenantSlug)
+	mine, err := tenantUnitsTx(tx, tenant)
 	if err != nil {
 		return false, err
 	}
@@ -230,14 +235,15 @@ func (s *SQLUnitStore) upsertUnit(tenantSlug string, origID string, item Unit) (
 	if !replaced {
 		mine = append(mine, item)
 	}
-	if err := s.replaceTenantTx(tx, tenantSlug, mine); err != nil {
+	if err := s.replaceTenantTx(tx, tenant, mine); err != nil {
 		return false, err
 	}
 	return false, tx.Commit()
 }
 
 // DeleteUnit removes one unit. Returns removed=false if no unit had that ID.
-func (s *SQLUnitStore) deleteUnit(tenantSlug string, id string) (bool, Unit, error) {
+func (s *SQLUnitStore) deleteUnit(tenant TenantRef, id string) (bool, Unit, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return false, Unit{}, nil
 	}
@@ -251,14 +257,14 @@ func (s *SQLUnitStore) deleteUnit(tenantSlug string, id string) (bool, Unit, err
 	}
 	defer tx.Rollback()
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM units WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM units WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return false, Unit{}, nil
 	}
 	var removed Unit
 	if err := json.Unmarshal([]byte(data), &removed); err != nil {
 		return false, Unit{}, nil
 	}
-	if _, err := tx.Exec(`DELETE FROM units WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id); err != nil {
+	if _, err := tx.Exec(`DELETE FROM units WHERE tenant_id=$1 AND id=$2`, tenant.ID, id); err != nil {
 		return false, Unit{}, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -267,11 +273,11 @@ func (s *SQLUnitStore) deleteUnit(tenantSlug string, id string) (bool, Unit, err
 	return true, removed, nil
 }
 
-func (s *SQLUnitStore) listTenant(tenantSlug string) []Unit {
+func (s *SQLUnitStore) listTenant(tenant TenantRef) []Unit {
 	if s == nil {
 		return nil
 	}
-	units := s.tenantUnits(textutil.Slug(tenantSlug))
+	units := s.tenantUnits(tenant)
 	out := []Unit{}
 	for _, item := range units {
 		out = append(out, CopyUnit(item))
@@ -280,15 +286,16 @@ func (s *SQLUnitStore) listTenant(tenantSlug string) []Unit {
 	return out
 }
 
-func (s *SQLUnitStore) unitCount(tenantSlug string) int {
-	return len(s.listTenant(tenantSlug))
+func (s *SQLUnitStore) unitCount(tenant TenantRef) int {
+	return len(s.listTenant(tenant))
 }
 
-func (s *SQLUnitStore) billableUnitWeight(tenantSlug string) int {
-	return BillableUnitWeight(s.listTenant(tenantSlug))
+func (s *SQLUnitStore) billableUnitWeight(tenant TenantRef) int {
+	return BillableUnitWeight(s.listTenant(tenant))
 }
 
-func (s *SQLUnitStore) unitsForEmail(tenantSlug string, email string) []UnitMembership {
+func (s *SQLUnitStore) unitsForEmail(tenant TenantRef, email string) []UnitMembership {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -298,7 +305,7 @@ func (s *SQLUnitStore) unitsForEmail(tenantSlug string, email string) []UnitMemb
 		return nil
 	}
 	out := []UnitMembership{}
-	for _, item := range s.tenantUnits(tenantSlug) {
+	for _, item := range s.tenantUnits(tenant) {
 		relation := ""
 		if EmailListContains(item.OwnerEmails, email) {
 			relation = RoleOwner
@@ -315,7 +322,8 @@ func (s *SQLUnitStore) unitsForEmail(tenantSlug string, email string) []UnitMemb
 	return out
 }
 
-func (s *SQLUnitStore) membersForUnit(tenantSlug string, unitID string) UnitMembers {
+func (s *SQLUnitStore) membersForUnit(tenant TenantRef, unitID string) UnitMembers {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return UnitMembers{}
 	}
@@ -324,7 +332,7 @@ func (s *SQLUnitStore) membersForUnit(tenantSlug string, unitID string) UnitMemb
 	if tenantSlug == "" || unitID == "" {
 		return UnitMembers{}
 	}
-	for _, item := range s.tenantUnits(tenantSlug) {
+	for _, item := range s.tenantUnits(tenant) {
 		if textutil.Slug(item.ID) == unitID {
 			item = CopyUnit(item)
 			return UnitMembers{Unit: item, Owners: append([]string(nil), item.OwnerEmails...), Renters: append([]string(nil), item.RenterEmails...), Found: true}
@@ -342,18 +350,23 @@ func (s *SQLUnitStore) ImportUnits(src *UnitStore) error {
 	src.mu.Lock()
 	snapshot := append([]Unit(nil), src.data.Units...)
 	src.mu.Unlock()
+	tenants := newTenantIDCache(s.db)
 	for _, item := range snapshot {
-		tenant := textutil.Slug(item.TenantSlug)
-		if tenant == "" || item.ID == "" {
+		slug := textutil.Slug(item.TenantSlug)
+		if slug == "" || item.ID == "" {
 			continue
+		}
+		tenant, err := tenants.ref(slug)
+		if err != nil {
+			return err
 		}
 		blob, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO units(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
-			tenant, item.ID, string(blob),
+			`INSERT INTO units(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {
 			return err
 		}

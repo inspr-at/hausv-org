@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,8 +35,31 @@ func testRepositories(a *app, tenantSlug string) requestRepositories {
 	return a.repositoriesForTenant(testTenantRef(tenantSlug))
 }
 
+// Every tenant used to be handed the SAME hard-coded ULID. That was harmless
+// while queries filtered on the slug and actively misleading once they filter on
+// the identity: "demo", "other" and "haus-b" would collapse into one tenant, and
+// every cross-tenant test in this package would quietly stop testing isolation
+// while still passing.
+//
+// So each slug gets its own identity, derived from the slug so it is stable
+// across runs and legible in a failure message. Most of this package's tests run
+// against the in-memory stores, which key on the slug and never see the id — the
+// distinctness matters for the handful that reach SQL, and for not lying to the
+// next person who reads this helper.
 func testTenantRef(tenantSlug string) storepkg.TenantRef {
-	return storepkg.TenantRef{ID: "01ARZ3NDEKTSV4RRFFQ69G5FAV", Slug: tenantSlug}
+	return storepkg.TenantRef{ID: testTenantID(tenantSlug), Slug: tenantSlug}
+}
+
+const testTenantAlphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+
+func testTenantID(tenantSlug string) string {
+	sum := sha256.Sum256([]byte("hausv-test-tenant:" + tenantSlug))
+	out := make([]byte, 26)
+	out[0] = testTenantAlphabet[int(sum[0])%8]
+	for i := 1; i < 26; i++ {
+		out[i] = testTenantAlphabet[int(sum[i])%len(testTenantAlphabet)]
+	}
+	return string(out)
 }
 
 func addTestTenant(a *app, tenant tenantConfig) {

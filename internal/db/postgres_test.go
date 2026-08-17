@@ -92,8 +92,8 @@ func TestPostgresTargetSchemaAndRLS(t *testing.T) {
 		Scan(&migrationCount, &distinctMigrationCount); err != nil {
 		t.Fatalf("count migrations: %v", err)
 	}
-	if migrationCount != 2 || distinctMigrationCount != 2 {
-		t.Fatalf("migration records = %d/%d, want 2/2", migrationCount, distinctMigrationCount)
+	if migrationCount != 4 || distinctMigrationCount != 4 {
+		t.Fatalf("migration records = %d/%d, want 4/4", migrationCount, distinctMigrationCount)
 	}
 
 	assertApplicationRoleCannotBypassRLS(t, database)
@@ -103,9 +103,11 @@ func TestPostgresTargetSchemaAndRLS(t *testing.T) {
 		t.Fatal("target schema has no tenant-bound tables")
 	}
 	seedEveryTenantTable(t, database, tables)
-	assertEveryTenantTableFailsClosed(t, database, tables)
+	assertUnscopedSessionIsTheMaintenanceView(t, database, tables)
 	assertPooledConnectionLosesTenantScope(t, database)
 	assertOtherTenantCannotSeeRows(t, database, tables)
+	assertRowsWithoutAnIdentityBelongToNobody(t, database)
+	assertOrphanRowCanBeAdoptedOnceAndNeverRepointed(t, database)
 }
 
 func isolatedPostgresSchema(t *testing.T, dsn string) string {
@@ -235,16 +237,74 @@ func seedEveryTenantTable(t *testing.T, database *sql.DB, tables []string) {
 	}
 }
 
-func assertEveryTenantTableFailsClosed(t *testing.T, database *sql.DB, tables []string) {
+// assertUnscopedSessionIsTheMaintenanceView pins what migration 0003 changed.
+//
+// Under 0002 an unscoped session saw only rows with a NULL tenant_id, which read
+// as "fail closed" but was an accident: it was true only because nothing wrote
+// tenant_id. Now that every writer does, the same policy would have hidden the
+// entire database from the application, which issues every query on an unscoped
+// pooled connection.
+//
+// So the escape moved from the row to the session, and this is the assertion
+// that says so out loud: an unscoped session is the maintenance view and sees
+// everything. It is NOT fail-closed, and pretending otherwise in a test name
+// would be the more dangerous mistake. The isolation that matters — one scoped
+// session cannot see another tenant, and un-owned rows belong to nobody — is
+// asserted separately below.
+func assertUnscopedSessionIsTheMaintenanceView(t *testing.T, database *sql.DB, tables []string) {
 	t.Helper()
 	for _, table := range tables {
 		var count int
 		if err := database.QueryRow(`SELECT count(*) FROM ` + table).Scan(&count); err != nil {
 			t.Fatalf("unscoped query %s: %v", table, err)
 		}
-		if count != 0 {
-			t.Fatalf("unscoped %s returned %d rows, want zero", table, count)
+		if count != 1 {
+			t.Fatalf("unscoped %s returned %d rows, want the single seeded row", table, count)
 		}
+	}
+}
+
+// assertRowsWithoutAnIdentityBelongToNobody is the leak 0002 had. A row with a
+// NULL tenant_id used to satisfy every scoped tenant's policy, so tenant B was
+// served tenant A's un-backfilled rows.
+func assertRowsWithoutAnIdentityBelongToNobody(t *testing.T, database *sql.DB) {
+	t.Helper()
+	if _, err := database.Exec(`INSERT INTO contacts(tenant_id, id) VALUES(NULL, 'orphan')`); err != nil {
+		t.Fatalf("seed orphan row: %v", err)
+	}
+	for _, tenant := range []string{tenantA, tenantB} {
+		tx, err := BeginTenantTx(t.Context(), database, tenant, nil)
+		if err != nil {
+			t.Fatalf("begin scoped transaction: %v", err)
+		}
+		var count int
+		if err := tx.QueryRow(`SELECT count(*) FROM contacts WHERE id='orphan'`).Scan(&count); err != nil {
+			tx.Rollback()
+			t.Fatalf("scoped orphan query: %v", err)
+		}
+		tx.Rollback()
+		if count != 0 {
+			t.Fatalf("tenant %s saw %d rows it does not own", tenant, count)
+		}
+	}
+}
+
+// assertOrphanRowCanBeAdoptedOnceAndNeverRepointed covers the other half of
+// migration 0003: the immutability trigger used to reject NULL -> value, which
+// made a row the backfill missed permanently unrepairable.
+func assertOrphanRowCanBeAdoptedOnceAndNeverRepointed(t *testing.T, database *sql.DB) {
+	t.Helper()
+	if _, err := database.Exec(`UPDATE contacts SET tenant_id=$1 WHERE id='orphan'`, tenantB); err != nil {
+		t.Fatalf("an un-owned row must be adoptable: %v", err)
+	}
+	if _, err := database.Exec(`UPDATE contacts SET tenant_id=$1 WHERE id='orphan'`, tenantA); err == nil {
+		t.Fatal("re-pointing an owned row at another tenant must stay rejected")
+	}
+	if _, err := database.Exec(`UPDATE contacts SET tenant_id=NULL WHERE id='orphan'`); err == nil {
+		t.Fatal("erasing an identity must stay rejected")
+	}
+	if _, err := database.Exec(`DELETE FROM contacts WHERE id='orphan'`); err != nil {
+		t.Fatalf("clean up orphan row: %v", err)
 	}
 }
 
@@ -264,15 +324,21 @@ func assertPooledConnectionLosesTenantScope(t *testing.T, database *sql.DB) {
 	if err := tx.Commit(); err != nil {
 		t.Fatalf("commit scoped transaction: %v", err)
 	}
+	// The scope itself is now the thing to probe. Counting rows no longer
+	// distinguishes "scope was dropped" from "scope survived", because an
+	// unscoped session legitimately sees the same row; the setting does.
 	var reusedPID int
-	if err := database.QueryRow(`SELECT pg_backend_pid(), (SELECT count(*) FROM contacts)`).Scan(&reusedPID, &count); err != nil {
+	var leakedScope string
+	if err := database.QueryRow(
+		`SELECT pg_backend_pid(), coalesce(current_setting('hausv.tenant_id', true), '')`,
+	).Scan(&reusedPID, &leakedScope); err != nil {
 		t.Fatalf("unscoped reused-connection query: %v", err)
 	}
 	if reusedPID != scopedPID {
 		t.Fatalf("pool did not reuse connection: scoped pid=%d next pid=%d", scopedPID, reusedPID)
 	}
-	if count != 0 {
-		t.Fatalf("reused pooled connection leaked previous tenant scope: %d rows", count)
+	if leakedScope != "" {
+		t.Fatalf("reused pooled connection kept the previous tenant scope: %q", leakedScope)
 	}
 
 	tx, err = database.BeginTx(context.Background(), nil)

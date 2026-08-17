@@ -23,15 +23,16 @@ import (
 	"github.com/inspr-at/hausv-org/internal/db"
 )
 
-// The store layer still addresses rows by tenant_slug while the target schema
-// uses tenant_id, so 55 store tests fail on PostgreSQL for that one structural
-// reason (HAUSV-555). CI sets HAUSV_TEST_POSTGRES_DSN globally for the
-// PostgreSQL tests in internal/db, which are ready; keying the store suite on
-// the same variable would turn CI red for work that is tracked and unfinished.
+// The structural reason this second switch existed is gone: the store layer now
+// addresses rows by tenant_id, and the whole store suite passes against
+// PostgreSQL. It is kept as a separate switch rather than removed because
+// turning it on changes what CI runs, and that is a deliberate decision with a
+// cost (every store test then needs a database) rather than a side effect of a
+// code change.
 //
-// So the store suite opts in separately. This is deliberately a second switch
-// and not a skip: a test that always skips reports a pass it never earned.
-// Turning this on is an acceptance criterion of HAUSV-555.
+// It is deliberately a switch and not a skip: a test that always skips reports a
+// pass it never earned. Setting HAUSV_STORE_TEST_POSTGRES alongside
+// HAUSV_TEST_POSTGRES_DSN is what closes HAUSV-555's last acceptance criterion.
 const storeOptIn = "HAUSV_STORE_TEST_POSTGRES"
 
 // Backend reports which engine Open will use, for tests that need to skip a

@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"testing"
 	"time"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 // HAUSV-172: multi-part operations must be all-or-nothing. Inviting someone
@@ -14,7 +12,7 @@ import (
 
 func identityStoreWithDB(t *testing.T) (*SQLIdentityStore, *sql.DB) {
 	t.Helper()
-	database := dbtest.Open(t)
+	database := testDB(t)
 	t.Cleanup(func() { database.Close() })
 	return NewSQLIdentityStore(database), database
 }

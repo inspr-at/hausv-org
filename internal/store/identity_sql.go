@@ -31,7 +31,11 @@ type Person struct {
 // HouseMembership is the person<->house join: everything that is true of a
 // person *within one house* and nowhere else (HAUSV-169).
 type HouseMembership struct {
-	PersonID    string
+	PersonID string
+	// TenantID is the immutable identity every membership query filters on.
+	// TenantSlug remains the renameable label and is still written, so the
+	// rollback window stays open.
+	TenantID    string
 	TenantSlug  string
 	Role        string
 	Permissions []string
@@ -66,9 +70,9 @@ type boundIdentityRepository struct {
 }
 
 type identityBackend interface {
-	membership(personID string, tenantSlug string) (HouseMembership, bool)
-	listHouseMembers(tenantSlug string) []HouseMember
-	removeMembership(personID string, tenantSlug string) (bool, error)
+	membership(personID string, tenant TenantRef) (HouseMembership, bool)
+	listHouseMembers(tenant TenantRef) []HouseMember
+	removeMembership(personID string, tenant TenantRef) (bool, error)
 }
 
 func BindIdentityRepository(storage IdentityStorage, tenant TenantRef) (IdentityRepository, bool) {
@@ -81,13 +85,13 @@ func BindIdentityRepository(storage IdentityStorage, tenant TenantRef) (Identity
 }
 
 func (r *boundIdentityRepository) Membership(personID string) (HouseMembership, bool) {
-	return r.storage.membership(personID, r.tenant.Slug)
+	return r.storage.membership(personID, r.tenant)
 }
 func (r *boundIdentityRepository) ListHouseMembers() []HouseMember {
-	return r.storage.listHouseMembers(r.tenant.Slug)
+	return r.storage.listHouseMembers(r.tenant)
 }
 func (r *boundIdentityRepository) RemoveMembership(personID string) (bool, error) {
-	return r.storage.removeMembership(personID, r.tenant.Slug)
+	return r.storage.removeMembership(personID, r.tenant)
 }
 
 // SQLIdentityStore implements the person/house N:N model. Every mutating method
@@ -325,7 +329,7 @@ func scanMembership(scan func(dest ...any) error) (HouseMembership, error) {
 	var m HouseMembership
 	var permissions, createdAt, updatedAt string
 	var directoryOptIn *bool
-	if err := scan(&m.PersonID, &m.TenantSlug, &m.Role, &permissions, &m.Status, &directoryOptIn, &createdAt, &updatedAt); err != nil {
+	if err := scan(&m.PersonID, &m.TenantID, &m.TenantSlug, &m.Role, &permissions, &m.Status, &directoryOptIn, &createdAt, &updatedAt); err != nil {
 		return HouseMembership{}, err
 	}
 	if directoryOptIn != nil {
@@ -338,7 +342,11 @@ func scanMembership(scan func(dest ...any) error) (HouseMembership, error) {
 	return m, nil
 }
 
-const membershipColumns = `person_id, tenant_slug, role, permissions, status, directory_opt_in, created_at, updated_at`
+// membershipColumns is concatenated into five statements across two files, so
+// its arity is a contract: adding tenant_id here changed every VALUES list and
+// every scan that reads it. The compiler catches the scans; the placeholder
+// count is checked by TestMembershipColumnsArity.
+const membershipColumns = `person_id, tenant_id, tenant_slug, role, permissions, status, directory_opt_in, created_at, updated_at`
 
 // SetMembership creates or updates exactly ONE person<->house relation. Other
 // houses' memberships are not read, not rewritten and not touched.
@@ -363,8 +371,10 @@ func (s *SQLIdentityStore) SetMembership(m HouseMembership, at time.Time) (House
 		return HouseMembership{}, err
 	}
 	// Re-read for the same reason as UpsertPerson.
-	if fresh, ok := s.membership(saved.PersonID, saved.TenantSlug); ok {
-		return fresh, nil
+	if ref, ok := validTenantRef(TenantRef{ID: saved.TenantID, Slug: saved.TenantSlug}); ok {
+		if fresh, found := s.membership(saved.PersonID, ref); found {
+			return fresh, nil
+		}
 	}
 	return saved, nil
 }
@@ -376,13 +386,22 @@ func (s *SQLIdentityStore) setMembershipTx(tx *sql.Tx, m HouseMembership, at tim
 	if m.PersonID == "" || m.TenantSlug == "" {
 		return HouseMembership{}, fmt.Errorf("membership requires a person and a house")
 	}
+	// A membership can be the first row a house ever has — the home portal
+	// grants one at activation — so the identity is minted here when the slug
+	// has none yet. Writing it without one would leave a row the query layer
+	// can no longer see.
+	tenantID, identityErr := ensureTenantID(tx, m.TenantSlug)
+	if identityErr != nil {
+		return HouseMembership{}, identityErr
+	}
+	m.TenantID = tenantID
 	var personExists int
 	if err := tx.QueryRow(`SELECT 1 FROM persons WHERE id=$1`, m.PersonID).Scan(&personExists); err != nil {
 		return HouseMembership{}, fmt.Errorf("person not found")
 	}
 	var createdAt string
 	if err := tx.QueryRow(
-		`SELECT created_at FROM house_memberships WHERE person_id=$1 AND tenant_slug=$2`, m.PersonID, m.TenantSlug,
+		`SELECT created_at FROM house_memberships WHERE person_id=$1 AND tenant_id=$2`, m.PersonID, m.TenantID,
 	).Scan(&createdAt); err == nil {
 		m.CreatedAt = parseIdentityTime(createdAt)
 	} else {
@@ -394,11 +413,12 @@ func (s *SQLIdentityStore) setMembershipTx(tx *sql.Tx, m HouseMembership, at tim
 		directoryOptIn = *m.DirectoryOptIn
 	}
 	if _, err := tx.Exec(
-		`INSERT INTO house_memberships(`+membershipColumns+`) VALUES($1, $2, $3, $4, $5, $6, $7, $8)
+		`INSERT INTO house_memberships(`+membershipColumns+`) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		 ON CONFLICT(person_id, tenant_slug) DO UPDATE SET
 		   role=excluded.role, permissions=excluded.permissions, status=excluded.status,
-		   directory_opt_in=excluded.directory_opt_in, updated_at=excluded.updated_at`,
-		m.PersonID, m.TenantSlug, NormalizeRole(m.Role), encodeStringList(NormalizePermissions(m.Permissions)),
+		   directory_opt_in=excluded.directory_opt_in, updated_at=excluded.updated_at,
+		   tenant_id=coalesce(house_memberships.tenant_id, excluded.tenant_id)`,
+		m.PersonID, m.TenantID, m.TenantSlug, NormalizeRole(m.Role), encodeStringList(NormalizePermissions(m.Permissions)),
 		strings.TrimSpace(m.Status), directoryOptIn, identityTime(m.CreatedAt), identityTime(m.UpdatedAt),
 	); err != nil {
 		return HouseMembership{}, err
@@ -408,13 +428,39 @@ func (s *SQLIdentityStore) setMembershipTx(tx *sql.Tx, m HouseMembership, at tim
 	return m, nil
 }
 
-func (s *SQLIdentityStore) membership(personID string, tenantSlug string) (HouseMembership, bool) {
+// membershipBySlug is the slug-facing wrapper around the identity-keyed lookup.
+// Public callers still address a house by its URL label; resolving it to the
+// identity happens here, once, instead of in every query.
+func (s *SQLIdentityStore) membershipBySlug(personID string, slug string) (HouseMembership, bool) {
+	if s == nil {
+		return HouseMembership{}, false
+	}
+	tenantID, ok := lookupTenantID(s.db, slug)
+	if !ok {
+		return HouseMembership{}, false
+	}
+	return s.membership(personID, TenantRef{ID: tenantID, Slug: textutil.Slug(slug)})
+}
+
+// removeMembershipBySlug is the slug-facing counterpart of removeMembership.
+func (s *SQLIdentityStore) removeMembershipBySlug(personID string, slug string) (bool, error) {
+	if s == nil {
+		return false, nil
+	}
+	tenantID, ok := lookupTenantID(s.db, slug)
+	if !ok {
+		return false, nil
+	}
+	return s.removeMembership(personID, TenantRef{ID: tenantID, Slug: textutil.Slug(slug)})
+}
+
+func (s *SQLIdentityStore) membership(personID string, tenant TenantRef) (HouseMembership, bool) {
 	if s == nil {
 		return HouseMembership{}, false
 	}
 	row := s.db.QueryRow(
-		`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=$1 AND tenant_slug=$2`,
-		strings.TrimSpace(personID), textutil.Slug(tenantSlug),
+		`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=$1 AND tenant_id=$2`,
+		strings.TrimSpace(personID), tenant.ID,
 	)
 	m, err := scanMembership(row.Scan)
 	if err != nil {
@@ -428,6 +474,9 @@ func (s *SQLIdentityStore) MembershipsForPerson(personID string) []HouseMembersh
 		return nil
 	}
 	rows, err := s.db.Query(
+		// Cross-tenant by design: this answers "which houses is this person in?".
+		// ORDER BY stays on the slug because the result is a user-visible list;
+		// ordering by ULID would reorder it from alphabetical to creation order.
 		`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=$1 ORDER BY tenant_slug`,
 		strings.TrimSpace(personID),
 	)
@@ -448,18 +497,17 @@ func (s *SQLIdentityStore) MembershipsForPerson(personID string) []HouseMembersh
 
 // ListHouseMembers returns the people of ONE house with their membership there —
 // the only view a house admin is entitled to manage.
-func (s *SQLIdentityStore) listHouseMembers(tenantSlug string) []HouseMember {
+func (s *SQLIdentityStore) listHouseMembers(tenant TenantRef) []HouseMember {
 	if s == nil {
 		return nil
 	}
-	tenantSlug = textutil.Slug(tenantSlug)
 	rows, err := s.db.Query(
 		`SELECT p.id, p.email, p.title, p.first_name, p.last_name, p.auth_methods,
 		        p.deactivated, p.adopted, p.created_at, p.updated_at,
-		        m.person_id, m.tenant_slug, m.role, m.permissions, m.status,
+		        m.person_id, m.tenant_id, m.tenant_slug, m.role, m.permissions, m.status,
 		        m.directory_opt_in, m.created_at, m.updated_at
 		   FROM house_memberships m JOIN persons p ON p.id = m.person_id
-		  WHERE m.tenant_slug=$1 ORDER BY p.email`, tenantSlug)
+		  WHERE m.tenant_id=$1 ORDER BY p.email`, tenant.ID)
 	if err != nil {
 		return []HouseMember{}
 	}
@@ -473,7 +521,7 @@ func (s *SQLIdentityStore) listHouseMembers(tenantSlug string) []HouseMember {
 		var mDirectory *bool
 		if err := rows.Scan(
 			&p.ID, &p.Email, &p.Title, &p.FirstName, &p.LastName, &authMethods, &deactivated, &adopted, &pCreated, &pUpdated,
-			&m.PersonID, &m.TenantSlug, &m.Role, &permissions, &m.Status, &mDirectory, &mCreated, &mUpdated,
+			&m.PersonID, &m.TenantID, &m.TenantSlug, &m.Role, &permissions, &m.Status, &mDirectory, &mCreated, &mUpdated,
 		); err != nil {
 			continue
 		}
@@ -495,13 +543,13 @@ func (s *SQLIdentityStore) listHouseMembers(tenantSlug string) []HouseMember {
 // RemoveMembership detaches a person from ONE house. The person and every other
 // membership survive — this is what "delete" in a house admin screen must mean
 // (HAUSV-135).
-func (s *SQLIdentityStore) removeMembership(personID string, tenantSlug string) (bool, error) {
+func (s *SQLIdentityStore) removeMembership(personID string, tenant TenantRef) (bool, error) {
 	if s == nil {
 		return false, nil
 	}
 	res, err := s.db.Exec(
-		`DELETE FROM house_memberships WHERE person_id=$1 AND tenant_slug=$2`,
-		strings.TrimSpace(personID), textutil.Slug(tenantSlug),
+		`DELETE FROM house_memberships WHERE person_id=$1 AND tenant_id=$2`,
+		strings.TrimSpace(personID), tenant.ID,
 	)
 	if err != nil {
 		return false, err
@@ -561,7 +609,7 @@ func (s *SQLIdentityStore) ImportProfiles(src *InviteStore, at time.Time) error 
 			person = created
 		}
 		for _, tenant := range tenantsOfProfile(profile) {
-			if _, already := s.membership(person.ID, tenant); already {
+			if _, already := s.membershipBySlug(person.ID, tenant); already {
 				continue
 			}
 			resolved := profile.ForTenant(tenant)

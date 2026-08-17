@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func sampleDocumentRecord() DocumentRecord {
@@ -32,7 +30,7 @@ func TestDocumentStorageParity(t *testing.T) {
 		},
 		"sqlite": func(t *testing.T) DocumentRepository {
 			dir := t.TempDir()
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			repository, _ := BindDocumentRepository(NewSQLDocumentStore(database, filepath.Join(dir, "files")), testTenantRef("demo"))
 			return repository
@@ -161,7 +159,7 @@ func TestSQLDocumentImportFromJSON(t *testing.T) {
 		t.Fatalf("seed replace: %v", err)
 	}
 
-	database := dbtest.Open(t)
+	database := testDB(t)
 	defer database.Close()
 	// Same fileDir: files already live on disk, only metadata is imported.
 	sqlStore := NewSQLDocumentStore(database, fileDir)

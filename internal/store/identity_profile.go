@@ -169,8 +169,8 @@ func (s *SQLIdentityStore) writeProfileTx(tx *sql.Tx, profile UserProfile, at ti
 	for _, existing := range stale {
 		if _, keep := wanted[existing.TenantSlug]; !keep {
 			if _, err := tx.Exec(
-				`DELETE FROM house_memberships WHERE person_id=$1 AND tenant_slug=$2`,
-				person.ID, existing.TenantSlug,
+				`DELETE FROM house_memberships WHERE person_id=$1 AND tenant_id=$2`,
+				person.ID, existing.TenantID,
 			); err != nil {
 				return err
 			}
@@ -266,7 +266,7 @@ func (s *SQLIdentityStore) SetTenantMembership(email string, tenantSlug string, 
 	}
 	status := ""
 	var directoryOptIn *bool
-	if existing, had := s.membership(person.ID, tenantSlug); had {
+	if existing, had := s.membershipBySlug(person.ID, tenantSlug); had {
 		status = existing.Status
 		directoryOptIn = existing.DirectoryOptIn
 	}
@@ -302,13 +302,17 @@ func (s *SQLIdentityStore) MutateTenantPermissions(email string, tenantSlug stri
 		return UserProfile{}, false, err
 	}
 	defer tx.Rollback()
+	tenantID, hasTenant := lookupTenantID(tx, tenantSlug)
+	if !hasTenant {
+		return UserProfile{}, false, nil
+	}
 	var personID, rawPermissions string
 	if err := tx.QueryRow(
 		`SELECT p.id, m.permissions
 		   FROM persons p
 		   JOIN house_memberships m ON m.person_id=p.id
-		  WHERE p.email=$1 AND m.tenant_slug=$2`,
-		email, tenantSlug,
+		  WHERE p.email=$1 AND m.tenant_id=$2`,
+		email, tenantID,
 	).Scan(&personID, &rawPermissions); err != nil {
 		if err == sql.ErrNoRows {
 			return UserProfile{}, false, nil
@@ -317,8 +321,8 @@ func (s *SQLIdentityStore) MutateTenantPermissions(email string, tenantSlug stri
 	}
 	permissions := NormalizePermissions(fn(decodeStringList(rawPermissions)))
 	if _, err := tx.Exec(
-		`UPDATE house_memberships SET permissions=$1, updated_at=$2 WHERE person_id=$3 AND tenant_slug=$4`,
-		encodeStringList(permissions), identityTime(time.Now()), personID, tenantSlug,
+		`UPDATE house_memberships SET permissions=$1, updated_at=$2 WHERE person_id=$3 AND tenant_id=$4`,
+		encodeStringList(permissions), identityTime(time.Now()), personID, tenantID,
 	); err != nil {
 		return UserProfile{}, false, err
 	}
@@ -346,7 +350,7 @@ func (s *SQLIdentityStore) RemoveTenant(email string, tenantSlug string) (bool, 
 	if !ok {
 		return false, false, nil
 	}
-	if _, err := s.removeMembership(person.ID, tenantSlug); err != nil {
+	if _, err := s.removeMembershipBySlug(person.ID, tenantSlug); err != nil {
 		return false, true, err
 	}
 	if len(s.MembershipsForPerson(person.ID)) == 0 {
@@ -368,7 +372,7 @@ func (s *SQLIdentityStore) SetTenantDirectoryOptIn(email string, tenantSlug stri
 	if !ok {
 		return false, nil
 	}
-	existing, had := s.membership(person.ID, tenantSlug)
+	existing, had := s.membershipBySlug(person.ID, tenantSlug)
 	if !had {
 		return false, nil
 	}

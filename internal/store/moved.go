@@ -248,7 +248,8 @@ func NewAnnouncementReadStore(path string) (*AnnouncementReadStore, error) {
 
 func (*AnnouncementReadStore) announcementReadStorage() {}
 
-func (s *AnnouncementReadStore) lastSeen(tenantSlug string, email string) time.Time {
+func (s *AnnouncementReadStore) lastSeen(tenant TenantRef, email string) time.Time {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return time.Time{}
 	}
@@ -262,7 +263,8 @@ func (s *AnnouncementReadStore) lastSeen(tenantSlug string, email string) time.T
 	return s.data.Seen[tenantSlug][email]
 }
 
-func (s *AnnouncementReadStore) markSeen(tenantSlug string, email string, seenAt time.Time) error {
+func (s *AnnouncementReadStore) markSeen(tenant TenantRef, email string, seenAt time.Time) error {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -506,7 +508,8 @@ func NewUnitPaymentStatusStore(path string) (*UnitPaymentStatusStore, error) {
 
 func (*UnitPaymentStatusStore) unitPaymentStatusStorage() {}
 
-func (s *UnitPaymentStatusStore) set(tenantSlug string, item UnitPaymentStatus) (UnitPaymentStatus, error) {
+func (s *UnitPaymentStatusStore) set(tenant TenantRef, item UnitPaymentStatus) (UnitPaymentStatus, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return UnitPaymentStatus{}, fmt.Errorf("unit payment status store not configured")
 	}
@@ -539,7 +542,8 @@ func (s *UnitPaymentStatusStore) set(tenantSlug string, item UnitPaymentStatus) 
 	return item, nil
 }
 
-func (s *UnitPaymentStatusStore) get(tenantSlug string, unitID string) (UnitPaymentStatus, bool) {
+func (s *UnitPaymentStatusStore) get(tenant TenantRef, unitID string) (UnitPaymentStatus, bool) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return UnitPaymentStatus{}, false
 	}
@@ -562,7 +566,8 @@ func (s *UnitPaymentStatusStore) get(tenantSlug string, unitID string) (UnitPaym
 	return UnitPaymentStatus{}, false
 }
 
-func (s *UnitPaymentStatusStore) listTenant(tenantSlug string) []UnitPaymentStatus {
+func (s *UnitPaymentStatusStore) listTenant(tenant TenantRef) []UnitPaymentStatus {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -587,7 +592,8 @@ func (s *UnitPaymentStatusStore) saveLocked() error {
 
 func (*ContactBookStore) contactBookStorage() {}
 
-func (s *ContactBookStore) upsert(tenantSlug string, item ManagedContact) (ManagedContact, bool, error) {
+func (s *ContactBookStore) upsert(tenant TenantRef, item ManagedContact) (ManagedContact, bool, error) {
+	tenantSlug := tenant.Slug
 	item.TenantSlug = tenantSlug
 	if s == nil {
 		return ManagedContact{}, false, fmt.Errorf("contact store not configured")
@@ -632,7 +638,8 @@ func (s *ContactBookStore) upsert(tenantSlug string, item ManagedContact) (Manag
 	return item, true, nil
 }
 
-func (s *ContactBookStore) deactivate(tenantSlug string, id string, at time.Time) (ManagedContact, error) {
+func (s *ContactBookStore) deactivate(tenant TenantRef, id string, at time.Time) (ManagedContact, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return ManagedContact{}, fmt.Errorf("contact store not configured")
 	}
@@ -664,7 +671,8 @@ func (s *ContactBookStore) deactivate(tenantSlug string, id string, at time.Time
 	return ManagedContact{}, nil
 }
 
-func (s *ContactBookStore) list(tenantSlug string, includeInactive bool) []ManagedContact {
+func (s *ContactBookStore) list(tenant TenantRef, includeInactive bool) []ManagedContact {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}

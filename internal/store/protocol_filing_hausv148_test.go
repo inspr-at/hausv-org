@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/db"
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 // HAUSV-148: filing a handover protocol writes a document AND the link on the
@@ -63,7 +62,7 @@ func TestProtocolFilerParity(t *testing.T) {
 		"sqlite-atomic": func(t *testing.T) filingBackend {
 			dir := t.TempDir()
 			fileDir := filepath.Join(dir, "files")
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			docs := NewSQLDocumentStore(database, fileDir)
 			hs := NewSQLHandoverStore(database)
@@ -146,7 +145,7 @@ func TestProtocolFilerParity(t *testing.T) {
 func TestSQLProtocolFilerConcurrentFilingCreatesOneDocument(t *testing.T) {
 	dir := t.TempDir()
 	fileDir := filepath.Join(dir, "files")
-	database := dbtest.Open(t)
+	database := testDB(t)
 	defer database.Close()
 	docs := NewSQLDocumentStore(database, fileDir)
 	handovers := NewSQLHandoverStore(database)

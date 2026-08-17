@@ -65,31 +65,34 @@ func EnsureTenantIdentities(ctx context.Context, database *sql.DB, configured []
 
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	for _, tenant := range configured {
+		// Canonicalise here as well as in configuration. Every other resolver —
+		// tenantid.Ensure, the backfill, validTenantRef — keys on textutil.Slug,
+		// and a `tenant` row whose slug is not canonical is a row none of them
+		// can ever find.
+		tenant.Slug = textutil.Slug(tenant.Slug)
 		if tenant.Slug == "" {
 			return nil, fmt.Errorf("store: tenant identity requires a slug")
 		}
-		var existing string
-		err := tx.QueryRowContext(ctx, `SELECT tenant_id FROM tenant WHERE slug=$1`, tenant.Slug).Scan(&existing)
-		switch {
-		case err == nil:
-			// Keep the ID; refresh only the display name.
-			if _, err := tx.ExecContext(ctx,
-				`UPDATE tenant SET name=$1, updated_at=$2 WHERE tenant_id=$3`,
-				tenant.Name, now, existing); err != nil {
-				return nil, fmt.Errorf("store: update tenant %s: %w", tenant.Slug, err)
-			}
-		case err == sql.ErrNoRows:
-			id, mintErr := ulid.New()
-			if mintErr != nil {
-				return nil, fmt.Errorf("store: mint tenant id for %s: %w", tenant.Slug, mintErr)
-			}
-			if _, err := tx.ExecContext(ctx,
-				`INSERT INTO tenant(tenant_id,slug,name,created_at,updated_at) VALUES($1,$2,$3,$4,$5)`,
-				id, tenant.Slug, tenant.Name, now, now); err != nil {
-				return nil, fmt.Errorf("store: insert tenant %s: %w", tenant.Slug, err)
-			}
-		default:
-			return nil, fmt.Errorf("store: look up tenant %s: %w", tenant.Slug, err)
+		// The mint is tenantid.Ensure, not a SELECT-then-INSERT written here.
+		// This loop used to do its own, with a bare INSERT and no recovery: two
+		// replicas booting against one PostgreSQL both found no row, both
+		// inserted, and the loser took a unique violation on tenant.slug that
+		// aborted the whole boot. Eight concurrent boots reproduced it one time
+		// in eight. tenantid.Ensure inserts with ON CONFLICT DO NOTHING and
+		// answers a lost race by re-reading the winner's row, which is the
+		// resolution rather than a retry — and the row it re-reads is the one
+		// every already-written tenant_id points at.
+		id, err := ensureTenantID(tx, tenant.Slug)
+		if err != nil {
+			return nil, fmt.Errorf("store: mint tenant id for %s: %w", tenant.Slug, err)
+		}
+		// The display name is the only thing configuration owns. The ID never
+		// moves — if a boot re-minted it, every row referencing the old one
+		// would be orphaned.
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE tenant SET name=$1, updated_at=$2 WHERE tenant_id=$3`,
+			tenant.Name, now, id); err != nil {
+			return nil, fmt.Errorf("store: update tenant %s: %w", tenant.Slug, err)
 		}
 	}
 
@@ -117,6 +120,13 @@ func EnsureTenantIdentities(ctx context.Context, database *sql.DB, configured []
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("store: commit tenant identity: %w", err)
+	}
+	// Only now can the rows be linked: migration 0033 ran before a single
+	// identity existed, so its backfill resolved to NULL everywhere. Doing this
+	// here rather than leaving it to the caller means the order — mint, link,
+	// verify — is not something a boot sequence can get wrong.
+	if err := BackfillTenantIDs(ctx, database); err != nil {
+		return nil, err
 	}
 	return out, nil
 }

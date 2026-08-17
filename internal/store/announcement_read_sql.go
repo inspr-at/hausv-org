@@ -34,8 +34,8 @@ type boundAnnouncementReadRepository struct {
 }
 
 type announcementReadBackend interface {
-	lastSeen(tenantSlug string, email string) time.Time
-	markSeen(tenantSlug string, email string, seenAt time.Time) error
+	lastSeen(tenant TenantRef, email string) time.Time
+	markSeen(tenant TenantRef, email string, seenAt time.Time) error
 }
 
 // BindAnnouncementReadRepository is the boundary used by tenant middleware.
@@ -54,14 +54,14 @@ func (r *boundAnnouncementReadRepository) LastSeen(email string) time.Time {
 	if r == nil || r.storage == nil {
 		return time.Time{}
 	}
-	return r.storage.lastSeen(r.tenant.Slug, email)
+	return r.storage.lastSeen(r.tenant, email)
 }
 
 func (r *boundAnnouncementReadRepository) MarkSeen(email string, seenAt time.Time) error {
 	if r == nil || r.storage == nil {
 		return nil
 	}
-	return r.storage.markSeen(r.tenant.Slug, email, seenAt)
+	return r.storage.markSeen(r.tenant, email, seenAt)
 }
 
 // SQLAnnouncementReadStore records the per-user last-seen announcement time.
@@ -76,7 +76,8 @@ func NewSQLAnnouncementReadStore(db *sql.DB) *SQLAnnouncementReadStore {
 
 func (*SQLAnnouncementReadStore) announcementReadStorage() {}
 
-func (s *SQLAnnouncementReadStore) lastSeen(tenantSlug string, email string) time.Time {
+func (s *SQLAnnouncementReadStore) lastSeen(tenant TenantRef, email string) time.Time {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return time.Time{}
 	}
@@ -87,7 +88,7 @@ func (s *SQLAnnouncementReadStore) lastSeen(tenantSlug string, email string) tim
 	}
 	var raw string
 	if err := s.db.QueryRow(
-		`SELECT seen_at FROM announcement_reads WHERE tenant_slug = $1 AND email = $2`, tenantSlug, email,
+		`SELECT seen_at FROM announcement_reads WHERE tenant_id = $1 AND email = $2`, tenant.ID, email,
 	).Scan(&raw); err != nil {
 		return time.Time{}
 	}
@@ -98,7 +99,8 @@ func (s *SQLAnnouncementReadStore) lastSeen(tenantSlug string, email string) tim
 	return t.UTC()
 }
 
-func (s *SQLAnnouncementReadStore) markSeen(tenantSlug string, email string, seenAt time.Time) error {
+func (s *SQLAnnouncementReadStore) markSeen(tenant TenantRef, email string, seenAt time.Time) error {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -108,9 +110,10 @@ func (s *SQLAnnouncementReadStore) markSeen(tenantSlug string, email string, see
 		return nil
 	}
 	_, err := s.db.Exec(
-		`INSERT INTO announcement_reads(tenant_slug, email, seen_at) VALUES($1, $2, $3)
-		 ON CONFLICT(tenant_slug, email) DO UPDATE SET seen_at = excluded.seen_at`,
-		tenantSlug, email, seenAt.UTC().Format(time.RFC3339Nano),
+		`INSERT INTO announcement_reads(tenant_id, tenant_slug, email, seen_at) VALUES($1, $2, $3, $4)
+		 ON CONFLICT(tenant_slug, email) DO UPDATE SET seen_at = excluded.seen_at,
+		   tenant_id = coalesce(announcement_reads.tenant_id, excluded.tenant_id)`,
+		tenant.ID, tenantSlug, email, seenAt.UTC().Format(time.RFC3339Nano),
 	)
 	return err
 }
@@ -133,16 +136,21 @@ func (s *SQLAnnouncementReadStore) ImportReads(src *AnnouncementReadStore) error
 		}
 	}
 	src.mu.Unlock()
+	tenants := newTenantIDCache(s.db)
 	for _, p := range pairs {
-		tenant := textutil.Slug(p.tenant)
+		slug := textutil.Slug(p.tenant)
 		email := textutil.Email(p.email)
-		if tenant == "" || email == "" {
+		if slug == "" || email == "" {
 			continue
 		}
+		tenant, err := tenants.ref(slug)
+		if err != nil {
+			return err
+		}
 		if _, err := s.db.Exec(
-			`INSERT INTO announcement_reads(tenant_slug, email, seen_at) VALUES($1, $2, $3)
+			`INSERT INTO announcement_reads(tenant_id, tenant_slug, email, seen_at) VALUES($1, $2, $3, $4)
 			 ON CONFLICT(tenant_slug, email) DO NOTHING`,
-			tenant, email, p.at.UTC().Format(time.RFC3339Nano),
+			tenant.ID, tenant.Slug, email, p.at.UTC().Format(time.RFC3339Nano),
 		); err != nil {
 			return err
 		}
