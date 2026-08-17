@@ -1671,7 +1671,7 @@ func newApp() (*app, error) {
 		localDevLogin:            localDevLogin,
 		serviceAccessEnabled:     serviceProviderAccessEnabled(),
 		templExampleEnabled:      parseBool(env("TEMPL_EXAMPLE_ENABLED", "false")),
-		portalTemplEnabled:       parseBool(env("TEMPL_PORTAL_ENABLED", "false")),
+		portalTemplEnabled:       parseBool(env("TEMPL_PORTAL_ENABLED", "true")),
 		sessionTTL:               sessionTTL,
 		tokens:                   auth.NewTokenStore(secret),
 		sessions:                 newSessionStore(secret),

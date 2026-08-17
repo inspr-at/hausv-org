@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.95.0",
+			Date:     "17. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Das Portal läuft durchgehend auf der neuen Oberfläche.",
+			Intro:    "Alle Bereiche werden einheitlich dargestellt, und die mobile Bedienung ist auf jeder Seite gleich aufgebaut.",
+			Items: []NoteItem{
+				{Label: "Einheitlich", Text: "Schaltflächen, Abstände und Navigation sehen in jedem Bereich gleich aus."},
+				{Label: "Unterwegs", Text: "Die Navigation steht oben, und Haus und Rolle lassen sich auch am Telefon wechseln."},
+			},
+		},
+		{
 			Version:  "0.94.1",
 			Date:     "15. August 2026",
 			Kind:     "Erscheinungsbild",

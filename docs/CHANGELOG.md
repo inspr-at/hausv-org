@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.95.0] - 2026-08-17
+
+### Verbessert
+
+- **Das Portal läuft auf der neuen Oberfläche.** Alle Bereiche — Hausüberblick, Aushang, Termine, Anliegen, Dokumente, Abstimmungen, Übergaben, Kontakte, Parkplatz, Einstellungen und Verlauf — werden jetzt einheitlich dargestellt.
+- **Ein Auftritt statt vieler.** Schaltflächen, Abstände und Navigation sehen auf jeder Seite gleich aus; kleinere Abweichungen zwischen einzelnen Bereichen sind verschwunden.
+- **Auf dem Telefon zuverlässig bedienbar.** Die Navigation steht auf jeder Seite oben, der Wechsel zwischen Haus und Rolle ist unterwegs erreichbar, und alle Bereiche wechseln bei derselben Bildschirmbreite in die mobile Ansicht.
+
 ## [0.94.1] - 2026-08-15
 
 ### Verbessert
