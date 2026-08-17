@@ -1198,7 +1198,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		lucideIconNamesJSON = []byte("[]")
 	}
 	systemAssets := energySystemAssets(assets)
-	if a.portalTemplEnabled && a.energyTemplEnabled {
+	if a.portalTemplEnabled {
 		a.renderEnergyTempl(w, r, web.EnergyPageData{
 			Portal:                  a.energyPortalContext(ac, profile.HouseholdName),
 			FlowConfigJSON:          energyWebJSON(flowConfigJSON, "null"),
