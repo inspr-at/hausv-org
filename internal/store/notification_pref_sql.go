@@ -43,7 +43,7 @@ func (s *SQLNotificationPrefStore) Get(email string) NotificationPreferences {
 		return prefs
 	}
 	var raw string
-	if err := s.db.QueryRow(`SELECT prefs FROM notification_prefs WHERE email = ?`, email).Scan(&raw); err != nil {
+	if err := s.db.QueryRow(`SELECT prefs FROM notification_prefs WHERE email = $1`, email).Scan(&raw); err != nil {
 		return prefs // not found (or read error) -> default, matching the JSON store
 	}
 	var stored NotificationPreferences
@@ -67,7 +67,7 @@ func (s *SQLNotificationPrefStore) Set(email string, prefs NotificationPreferenc
 		return err
 	}
 	_, err = s.db.Exec(
-		`INSERT INTO notification_prefs(email, prefs) VALUES(?, ?)
+		`INSERT INTO notification_prefs(email, prefs) VALUES($1, $2)
 		 ON CONFLICT(email) DO UPDATE SET prefs = excluded.prefs`,
 		email, string(raw),
 	)
@@ -118,7 +118,7 @@ func (s *SQLNotificationPrefStore) ImportPrefs(src *NotificationPrefStore) error
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO notification_prefs(email, prefs) VALUES(?, ?) ON CONFLICT(email) DO NOTHING`,
+			`INSERT INTO notification_prefs(email, prefs) VALUES($1, $2) ON CONFLICT(email) DO NOTHING`,
 			email, string(blob),
 		); err != nil {
 			return err

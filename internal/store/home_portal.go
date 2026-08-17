@@ -176,7 +176,7 @@ func (s *SQLHomePortalStore) Activate(slug, ownerEmail string, at time.Time) (Ho
 	}
 
 	identity := NewSQLIdentityStore(s.db)
-	person, err := scanPerson(tx.QueryRow(`SELECT `+personColumns+` FROM persons WHERE email=?`, ownerEmail).Scan)
+	person, err := scanPerson(tx.QueryRow(`SELECT `+personColumns+` FROM persons WHERE email=$1`, ownerEmail).Scan)
 	if errors.Is(err, sql.ErrNoRows) {
 		person, err = identity.upsertPersonTx(tx, Person{Email: ownerEmail, AuthMethods: DefaultAuthMethods()}, at)
 	}
@@ -185,7 +185,7 @@ func (s *SQLHomePortalStore) Activate(slug, ownerEmail string, at time.Time) (Ho
 	}
 	membership, membershipFound := HouseMembership{}, false
 	if item, scanErr := scanMembership(tx.QueryRow(
-		`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=? AND tenant_slug=?`, person.ID, slug,
+		`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=$1 AND tenant_slug=$2`, person.ID, slug,
 	).Scan); scanErr == nil {
 		membership, membershipFound = item, true
 	} else if !errors.Is(scanErr, sql.ErrNoRows) {
@@ -205,13 +205,13 @@ func (s *SQLHomePortalStore) Activate(slug, ownerEmail string, at time.Time) (Ho
 		activatedAt = existing.ActivatedAt
 	}
 	if _, err := tx.Exec(`INSERT INTO home_portals(slug,household_name,owner_email,activated_at,updated_at)
-		VALUES(?,?,?,?,?) ON CONFLICT(slug) DO UPDATE SET household_name=excluded.household_name,
+		VALUES($1,$2,$3,$4,$5) ON CONFLICT(slug) DO UPDATE SET household_name=excluded.household_name,
 		owner_email=excluded.owner_email, updated_at=excluded.updated_at`,
 		slug, strings.TrimSpace(reservation.HouseholdName), ownerEmail,
 		homeReservationTimestamp(activatedAt), homeReservationTimestamp(at)); err != nil {
 		return HomePortal{}, false, err
 	}
-	if _, err := tx.Exec(`UPDATE home_reservations SET status=?, updated_at=? WHERE slug=? AND owner_email=?`,
+	if _, err := tx.Exec(`UPDATE home_reservations SET status=$1, updated_at=$2 WHERE slug=$3 AND owner_email=$4`,
 		HomeReservationActive, homeReservationTimestamp(at), slug, ownerEmail); err != nil {
 		return HomePortal{}, false, err
 	}
@@ -236,7 +236,7 @@ func (s *SQLHomePortalStore) ListByOwner(ownerEmail string) ([]HomePortal, error
 		return nil, fmt.Errorf("home portal store unavailable")
 	}
 	rows, err := s.db.Query(`SELECT slug,household_name,owner_email,activated_at,updated_at
-		FROM home_portals WHERE owner_email=? ORDER BY slug`, textutil.Email(ownerEmail))
+		FROM home_portals WHERE owner_email=$1 ORDER BY slug`, textutil.Email(ownerEmail))
 	if err != nil {
 		return nil, err
 	}
@@ -258,7 +258,7 @@ func (s *SQLHomePortalStore) ListByOwner(ownerEmail string) ([]HomePortal, error
 func getHomePortal(query homeReservationQueryRow, slug string) (HomePortal, bool, error) {
 	var item HomePortal
 	var activatedAt, updatedAt string
-	err := query(`SELECT slug,household_name,owner_email,activated_at,updated_at FROM home_portals WHERE slug=?`, slug).
+	err := query(`SELECT slug,household_name,owner_email,activated_at,updated_at FROM home_portals WHERE slug=$1`, slug).
 		Scan(&item.Slug, &item.HouseholdName, &item.OwnerEmail, &activatedAt, &updatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return HomePortal{}, false, nil

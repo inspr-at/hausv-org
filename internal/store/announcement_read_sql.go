@@ -87,7 +87,7 @@ func (s *SQLAnnouncementReadStore) lastSeen(tenantSlug string, email string) tim
 	}
 	var raw string
 	if err := s.db.QueryRow(
-		`SELECT seen_at FROM announcement_reads WHERE tenant_slug = ? AND email = ?`, tenantSlug, email,
+		`SELECT seen_at FROM announcement_reads WHERE tenant_slug = $1 AND email = $2`, tenantSlug, email,
 	).Scan(&raw); err != nil {
 		return time.Time{}
 	}
@@ -108,7 +108,7 @@ func (s *SQLAnnouncementReadStore) markSeen(tenantSlug string, email string, see
 		return nil
 	}
 	_, err := s.db.Exec(
-		`INSERT INTO announcement_reads(tenant_slug, email, seen_at) VALUES(?, ?, ?)
+		`INSERT INTO announcement_reads(tenant_slug, email, seen_at) VALUES($1, $2, $3)
 		 ON CONFLICT(tenant_slug, email) DO UPDATE SET seen_at = excluded.seen_at`,
 		tenantSlug, email, seenAt.UTC().Format(time.RFC3339Nano),
 	)
@@ -140,7 +140,7 @@ func (s *SQLAnnouncementReadStore) ImportReads(src *AnnouncementReadStore) error
 			continue
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO announcement_reads(tenant_slug, email, seen_at) VALUES(?, ?, ?)
+			`INSERT INTO announcement_reads(tenant_slug, email, seen_at) VALUES($1, $2, $3)
 			 ON CONFLICT(tenant_slug, email) DO NOTHING`,
 			tenant, email, p.at.UTC().Format(time.RFC3339Nano),
 		); err != nil {

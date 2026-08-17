@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 type attachmentBackend struct {
@@ -29,10 +29,7 @@ func TestAttachmentStorageParity(t *testing.T) {
 		"sqlite": func(t *testing.T) attachmentBackend {
 			dir := t.TempDir()
 			fileDir := filepath.Join(dir, "files")
-			database, err := db.Open(filepath.Join(dir, "test.db"))
-			if err != nil {
-				t.Fatalf("db open: %v", err)
-			}
+			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
 			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(database, fileDir), "demo")
 			return attachmentBackend{repository, fileDir}
@@ -127,10 +124,7 @@ func TestAttachmentBatchRollbackParity(t *testing.T) {
 		"sqlite": func(t *testing.T) attachmentBackend {
 			dir := t.TempDir()
 			fileDir := filepath.Join(dir, "files")
-			database, err := db.Open(filepath.Join(dir, "test.db"))
-			if err != nil {
-				t.Fatalf("db open: %v", err)
-			}
+			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
 			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(database, fileDir), "demo")
 			return attachmentBackend{repository, fileDir}
@@ -180,10 +174,7 @@ func TestSQLAttachmentImportFromJSON(t *testing.T) {
 		t.Fatalf("seed delete: %v", err)
 	}
 
-	database, err := db.Open(filepath.Join(dir, "test.db"))
-	if err != nil {
-		t.Fatalf("db open: %v", err)
-	}
+	database := dbtest.Open(t)
 	defer database.Close()
 	sqlStore := NewSQLAttachmentStore(database, fileDir)
 

@@ -1,19 +1,15 @@
 package store
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func hausv516DB(t *testing.T) *SQLIdentityStore {
 	t.Helper()
-	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	database := dbtest.Open(t)
 	t.Cleanup(func() { database.Close() })
 	return NewSQLIdentityStore(database)
 }

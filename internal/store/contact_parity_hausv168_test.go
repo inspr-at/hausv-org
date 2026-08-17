@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func TestContactBookStorageParity(t *testing.T) {
@@ -18,10 +18,7 @@ func TestContactBookStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) ContactBookStorage {
-			database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-			if err != nil {
-				t.Fatalf("db open: %v", err)
-			}
+			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLContactBookStore(database)
 		},
@@ -102,10 +99,7 @@ func TestSQLContactImportFromJSON(t *testing.T) {
 	a, _, _ := jsonRepo.Upsert(ManagedContact{TenantSlug: "demo", Kind: "dienstleister", Name: "Alpha", Phone: "+43 1 1", Active: true})
 	_, _, _ = jsonRepo.Upsert(ManagedContact{TenantSlug: "demo", Kind: "notdienst", Company: "Beta GmbH", Email: "b@example.com", Active: true})
 
-	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("db open: %v", err)
-	}
+	database := dbtest.Open(t)
 	defer database.Close()
 	sqlStore := NewSQLContactBookStore(database)
 

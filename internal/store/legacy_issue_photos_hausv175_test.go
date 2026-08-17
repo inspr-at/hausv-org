@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 // HAUSV-175: legacy issue photos move into the attachment store so the old
@@ -47,10 +47,7 @@ func newLegacyPhotoFixture(t *testing.T, backend string) legacyPhotoFixture {
 		}
 		issues, attachments = is, as
 	default:
-		database, err := db.Open(filepath.Join(dir, "test.db"))
-		if err != nil {
-			t.Fatalf("db open: %v", err)
-		}
+		database := dbtest.Open(t)
 		t.Cleanup(func() { database.Close() })
 		issues = NewSQLIssueStore(database, photoDir)
 		attachments = NewSQLAttachmentStore(database, filepath.Join(dir, "files"))

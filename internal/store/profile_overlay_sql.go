@@ -45,7 +45,7 @@ func (s *SQLProfileOverlayStore) Get(email string) (ProfileOverlay, bool) {
 	)
 	if err := s.db.QueryRow(
 		`SELECT title, first_name, last_name, phone, directory_opt_in, updated_at
-		 FROM profile_overlays WHERE email = ?`, email,
+		 FROM profile_overlays WHERE email = $1`, email,
 	).Scan(&o.Title, &o.FirstName, &o.LastName, &o.Phone, &optIn, &updatedAt); err != nil {
 		return ProfileOverlay{}, false
 	}
@@ -76,7 +76,7 @@ func (s *SQLProfileOverlayStore) upsert(email string, o ProfileOverlay) error {
 	}
 	_, err := s.db.Exec(
 		`INSERT INTO profile_overlays(email, title, first_name, last_name, phone, directory_opt_in, updated_at)
-		 VALUES(?, ?, ?, ?, ?, ?, ?)
+		 VALUES($1, $2, $3, $4, $5, $6, $7)
 		 ON CONFLICT(email) DO UPDATE SET
 		   title=excluded.title, first_name=excluded.first_name, last_name=excluded.last_name,
 		   phone=excluded.phone, directory_opt_in=excluded.directory_opt_in, updated_at=excluded.updated_at`,
@@ -113,7 +113,7 @@ func (s *SQLProfileOverlayStore) ImportOverlays(src *ProfileOverlayStore) error 
 		}
 		if _, err := s.db.Exec(
 			`INSERT INTO profile_overlays(email, title, first_name, last_name, phone, directory_opt_in, updated_at)
-			 VALUES(?, ?, ?, ?, ?, ?, ?) ON CONFLICT(email) DO NOTHING`,
+			 VALUES($1, $2, $3, $4, $5, $6, $7) ON CONFLICT(email) DO NOTHING`,
 			email, o.Title, o.FirstName, o.LastName, o.Phone, optIn, updatedAt,
 		); err != nil {
 			return err

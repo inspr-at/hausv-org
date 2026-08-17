@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func TestEventStorageParity(t *testing.T) {
@@ -18,10 +18,7 @@ func TestEventStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) EventStorage {
-			database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-			if err != nil {
-				t.Fatalf("db: %v", err)
-			}
+			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLEventStore(database)
 		},

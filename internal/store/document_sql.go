@@ -108,7 +108,7 @@ func (s *SQLDocumentStore) writeTx(tx *sql.Tx, item DocumentRecord) error {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO documents(tenant_slug, id, data) VALUES(?, ?, ?)
+		`INSERT INTO documents(tenant_slug, id, data) VALUES($1, $2, $3)
 		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
 		textutil.Slug(item.TenantSlug), item.ID, string(blob),
 	)
@@ -210,7 +210,7 @@ func (s *SQLDocumentStore) replace(tenantSlug string, id string, uploadedBy stri
 
 	// Re-read inside the transaction: the row must still be the current version.
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM documents WHERE tenant_slug=? AND id=?`, tenantSlug, existing.ID).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM documents WHERE tenant_slug=$1 AND id=$2`, tenantSlug, existing.ID).Scan(&data); err != nil {
 		_ = os.Remove(fileSave.Path)
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document not current")
 	}
@@ -254,7 +254,7 @@ func (s *SQLDocumentStore) replace(tenantSlug string, id string, uploadedBy stri
 }
 
 func (s *SQLDocumentStore) allForTenant(tenantSlug string) []DocumentRecord {
-	rows, err := s.db.Query(`SELECT data FROM documents WHERE tenant_slug=?`, tenantSlug)
+	rows, err := s.db.Query(`SELECT data FROM documents WHERE tenant_slug=$1`, tenantSlug)
 	if err != nil {
 		return []DocumentRecord{}
 	}
@@ -329,7 +329,7 @@ func (s *SQLDocumentStore) get(tenantSlug string, id string) (DocumentRecord, bo
 		return DocumentRecord{}, false
 	}
 	var data string
-	if err := s.db.QueryRow(`SELECT data FROM documents WHERE tenant_slug=? AND id=?`, tenantSlug, id).Scan(&data); err != nil {
+	if err := s.db.QueryRow(`SELECT data FROM documents WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
 		return DocumentRecord{}, false
 	}
 	var item DocumentRecord
@@ -365,7 +365,7 @@ func (s *SQLDocumentStore) ImportDocuments(src *DocumentStore) error {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO documents(tenant_slug, id, data) VALUES(?, ?, ?) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			`INSERT INTO documents(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			textutil.Slug(item.TenantSlug), item.ID, string(blob),
 		); err != nil {
 			return err

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 // HAUSV-169 / HAUSV-135: person and house are separate aggregates joined N:N.
@@ -15,10 +15,7 @@ import (
 
 func newIdentityStore(t *testing.T) *SQLIdentityStore {
 	t.Helper()
-	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("db open: %v", err)
-	}
+	database := dbtest.Open(t)
 	t.Cleanup(func() { database.Close() })
 	return NewSQLIdentityStore(database)
 }

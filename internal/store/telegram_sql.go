@@ -56,7 +56,7 @@ func (s *SQLTelegramStore) Offset() int64 {
 		return 0
 	}
 	var raw string
-	if err := s.db.QueryRow(`SELECT value FROM telegram_state WHERE key=?`, telegramOffsetKey).Scan(&raw); err != nil {
+	if err := s.db.QueryRow(`SELECT value FROM telegram_state WHERE key=$1`, telegramOffsetKey).Scan(&raw); err != nil {
 		return 0
 	}
 	n, err := strconv.ParseInt(raw, 10, 64)
@@ -74,7 +74,7 @@ func (s *SQLTelegramStore) SetOffset(offset int64) error {
 		return nil
 	}
 	_, err := s.db.Exec(
-		`INSERT INTO telegram_state(key, value) VALUES(?, ?)
+		`INSERT INTO telegram_state(key, value) VALUES($1, $2)
 		 ON CONFLICT(key) DO UPDATE SET value=excluded.value`,
 		telegramOffsetKey, strconv.FormatInt(offset, 10),
 	)
@@ -121,7 +121,7 @@ func (s *SQLTelegramStore) LinkByChat(chatID int64) (TelegramLink, bool) {
 	var link TelegramLink
 	var linkedAt string
 	if err := s.db.QueryRow(
-		`SELECT chat_id, email, name, linked_at FROM telegram_links WHERE chat_id=?`, chatID,
+		`SELECT chat_id, email, name, linked_at FROM telegram_links WHERE chat_id=$1`, chatID,
 	).Scan(&link.ChatID, &link.Email, &link.Name, &linkedAt); err != nil {
 		return TelegramLink{}, false
 	}
@@ -134,7 +134,7 @@ func (s *SQLTelegramStore) ChatsByEmail(email string) []int64 {
 		return nil
 	}
 	email = textutil.Email(email)
-	rows, err := s.db.Query(`SELECT chat_id FROM telegram_links WHERE email=? ORDER BY chat_id`, email)
+	rows, err := s.db.Query(`SELECT chat_id FROM telegram_links WHERE email=$1 ORDER BY chat_id`, email)
 	if err != nil {
 		return []int64{}
 	}
@@ -176,11 +176,11 @@ func (s *SQLTelegramStore) CreateLinkCode(email string, createdBy string, ttl ti
 	if err := pruneTelegramCodesTx(tx, now); err != nil {
 		return "", err
 	}
-	if _, err := tx.Exec(`DELETE FROM telegram_link_codes WHERE email=?`, email); err != nil {
+	if _, err := tx.Exec(`DELETE FROM telegram_link_codes WHERE email=$1`, email); err != nil {
 		return "", err
 	}
 	if _, err := tx.Exec(
-		`INSERT INTO telegram_link_codes(code, email, created_by, expires_at) VALUES(?, ?, ?, ?)`,
+		`INSERT INTO telegram_link_codes(code, email, created_by, expires_at) VALUES($1, $2, $3, $4)`,
 		code, email, textutil.Email(createdBy), telegramTime(now.Add(ttl)),
 	); err != nil {
 		return "", err
@@ -210,7 +210,7 @@ func pruneTelegramCodesTx(tx *sql.Tx, now time.Time) error {
 	}
 	rows.Close()
 	for _, code := range stale {
-		if _, err := tx.Exec(`DELETE FROM telegram_link_codes WHERE code=?`, code); err != nil {
+		if _, err := tx.Exec(`DELETE FROM telegram_link_codes WHERE code=$1`, code); err != nil {
 			return err
 		}
 	}
@@ -236,7 +236,7 @@ func (s *SQLTelegramStore) ConsumeLinkCode(code string, chatID int64, name strin
 
 	email := ""
 	var expires string
-	if err := tx.QueryRow(`SELECT email, expires_at FROM telegram_link_codes WHERE code=?`, code).Scan(&email, &expires); err == nil {
+	if err := tx.QueryRow(`SELECT email, expires_at FROM telegram_link_codes WHERE code=$1`, code).Scan(&email, &expires); err == nil {
 		if !parseTelegramTime(expires).After(now) {
 			email = ""
 		}
@@ -251,12 +251,12 @@ func (s *SQLTelegramStore) ConsumeLinkCode(code string, chatID int64, name strin
 		_ = tx.Commit()
 		return TelegramLink{}, fmt.Errorf("unknown or expired link code")
 	}
-	if _, err := tx.Exec(`DELETE FROM telegram_link_codes WHERE code=?`, code); err != nil {
+	if _, err := tx.Exec(`DELETE FROM telegram_link_codes WHERE code=$1`, code); err != nil {
 		return TelegramLink{}, err
 	}
 	link := TelegramLink{ChatID: chatID, Email: email, Name: strings.TrimSpace(name), LinkedAt: now.UTC()}
 	if _, err := tx.Exec(
-		`INSERT INTO telegram_links(chat_id, email, name, linked_at) VALUES(?, ?, ?, ?)
+		`INSERT INTO telegram_links(chat_id, email, name, linked_at) VALUES($1, $2, $3, $4)
 		 ON CONFLICT(chat_id) DO UPDATE SET email=excluded.email, name=excluded.name, linked_at=excluded.linked_at`,
 		link.ChatID, link.Email, link.Name, telegramTime(link.LinkedAt),
 	); err != nil {
@@ -272,7 +272,7 @@ func (s *SQLTelegramStore) Unlink(chatID int64) error {
 	if s == nil {
 		return nil
 	}
-	_, err := s.db.Exec(`DELETE FROM telegram_links WHERE chat_id=?`, chatID)
+	_, err := s.db.Exec(`DELETE FROM telegram_links WHERE chat_id=$1`, chatID)
 	return err
 }
 
@@ -290,7 +290,7 @@ func (s *SQLTelegramStore) ImportTelegram(src *TelegramStore) error {
 
 	if offset != 0 {
 		if _, err := s.db.Exec(
-			`INSERT INTO telegram_state(key, value) VALUES(?, ?) ON CONFLICT(key) DO NOTHING`,
+			`INSERT INTO telegram_state(key, value) VALUES($1, $2) ON CONFLICT(key) DO NOTHING`,
 			telegramOffsetKey, strconv.FormatInt(offset, 10),
 		); err != nil {
 			return err
@@ -301,7 +301,7 @@ func (s *SQLTelegramStore) ImportTelegram(src *TelegramStore) error {
 			continue
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO telegram_links(chat_id, email, name, linked_at) VALUES(?, ?, ?, ?)
+			`INSERT INTO telegram_links(chat_id, email, name, linked_at) VALUES($1, $2, $3, $4)
 			 ON CONFLICT(chat_id) DO NOTHING`,
 			link.ChatID, textutil.Email(link.Email), strings.TrimSpace(link.Name), telegramTime(link.LinkedAt),
 		); err != nil {
@@ -313,7 +313,7 @@ func (s *SQLTelegramStore) ImportTelegram(src *TelegramStore) error {
 			continue
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO telegram_link_codes(code, email, created_by, expires_at) VALUES(?, ?, ?, ?)
+			`INSERT INTO telegram_link_codes(code, email, created_by, expires_at) VALUES($1, $2, $3, $4)
 			 ON CONFLICT(code) DO NOTHING`,
 			code.Code, textutil.Email(code.Email), textutil.Email(code.CreatedBy), telegramTime(code.ExpiresAt),
 		); err != nil {

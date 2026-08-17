@@ -163,7 +163,7 @@ func (s *SQLIdentityStore) PersonByEmail(email string) (Person, bool) {
 	if email == "" {
 		return Person{}, false
 	}
-	row := s.db.QueryRow(`SELECT `+personColumns+` FROM persons WHERE email=?`, email)
+	row := s.db.QueryRow(`SELECT `+personColumns+` FROM persons WHERE email=$1`, email)
 	p, err := scanPerson(row.Scan)
 	if err != nil {
 		return Person{}, false
@@ -179,7 +179,7 @@ func (s *SQLIdentityStore) PersonByID(id string) (Person, bool) {
 	if id == "" {
 		return Person{}, false
 	}
-	row := s.db.QueryRow(`SELECT `+personColumns+` FROM persons WHERE id=?`, id)
+	row := s.db.QueryRow(`SELECT `+personColumns+` FROM persons WHERE id=$1`, id)
 	p, err := scanPerson(row.Scan)
 	if err != nil {
 		return Person{}, false
@@ -246,7 +246,7 @@ func (s *SQLIdentityStore) upsertPersonTx(tx *sql.Tx, p Person, at time.Time) (P
 		return Person{}, fmt.Errorf("person requires an email")
 	}
 	var existingID, createdAt string
-	err := tx.QueryRow(`SELECT id, created_at FROM persons WHERE email=?`, p.Email).Scan(&existingID, &createdAt)
+	err := tx.QueryRow(`SELECT id, created_at FROM persons WHERE email=$1`, p.Email).Scan(&existingID, &createdAt)
 	switch {
 	case err == nil:
 		p.ID = existingID
@@ -266,7 +266,7 @@ func (s *SQLIdentityStore) upsertPersonTx(tx *sql.Tx, p Person, at time.Time) (P
 	p.UpdatedAt = at
 
 	if _, err := tx.Exec(
-		`INSERT INTO persons(`+personColumns+`) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`INSERT INTO persons(`+personColumns+`) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		 ON CONFLICT(id) DO UPDATE SET
 		   email=excluded.email, title=excluded.title, first_name=excluded.first_name,
 		   last_name=excluded.last_name, auth_methods=excluded.auth_methods,
@@ -304,10 +304,10 @@ func (s *SQLIdentityStore) ChangePersonEmail(personID string, newEmail string, a
 	}
 	defer tx.Rollback()
 	var otherID string
-	if err := tx.QueryRow(`SELECT id FROM persons WHERE email=?`, newEmail).Scan(&otherID); err == nil && otherID != personID {
+	if err := tx.QueryRow(`SELECT id FROM persons WHERE email=$1`, newEmail).Scan(&otherID); err == nil && otherID != personID {
 		return Person{}, fmt.Errorf("email already belongs to another person")
 	}
-	res, err := tx.Exec(`UPDATE persons SET email=?, updated_at=? WHERE id=?`, newEmail, identityTime(at), personID)
+	res, err := tx.Exec(`UPDATE persons SET email=$1, updated_at=$2 WHERE id=$3`, newEmail, identityTime(at), personID)
 	if err != nil {
 		return Person{}, err
 	}
@@ -377,12 +377,12 @@ func (s *SQLIdentityStore) setMembershipTx(tx *sql.Tx, m HouseMembership, at tim
 		return HouseMembership{}, fmt.Errorf("membership requires a person and a house")
 	}
 	var personExists int
-	if err := tx.QueryRow(`SELECT 1 FROM persons WHERE id=?`, m.PersonID).Scan(&personExists); err != nil {
+	if err := tx.QueryRow(`SELECT 1 FROM persons WHERE id=$1`, m.PersonID).Scan(&personExists); err != nil {
 		return HouseMembership{}, fmt.Errorf("person not found")
 	}
 	var createdAt string
 	if err := tx.QueryRow(
-		`SELECT created_at FROM house_memberships WHERE person_id=? AND tenant_slug=?`, m.PersonID, m.TenantSlug,
+		`SELECT created_at FROM house_memberships WHERE person_id=$1 AND tenant_slug=$2`, m.PersonID, m.TenantSlug,
 	).Scan(&createdAt); err == nil {
 		m.CreatedAt = parseIdentityTime(createdAt)
 	} else {
@@ -394,7 +394,7 @@ func (s *SQLIdentityStore) setMembershipTx(tx *sql.Tx, m HouseMembership, at tim
 		directoryOptIn = boolToInt(*m.DirectoryOptIn)
 	}
 	if _, err := tx.Exec(
-		`INSERT INTO house_memberships(`+membershipColumns+`) VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+		`INSERT INTO house_memberships(`+membershipColumns+`) VALUES($1, $2, $3, $4, $5, $6, $7, $8)
 		 ON CONFLICT(person_id, tenant_slug) DO UPDATE SET
 		   role=excluded.role, permissions=excluded.permissions, status=excluded.status,
 		   directory_opt_in=excluded.directory_opt_in, updated_at=excluded.updated_at`,
@@ -413,7 +413,7 @@ func (s *SQLIdentityStore) membership(personID string, tenantSlug string) (House
 		return HouseMembership{}, false
 	}
 	row := s.db.QueryRow(
-		`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=? AND tenant_slug=?`,
+		`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=$1 AND tenant_slug=$2`,
 		strings.TrimSpace(personID), textutil.Slug(tenantSlug),
 	)
 	m, err := scanMembership(row.Scan)
@@ -428,7 +428,7 @@ func (s *SQLIdentityStore) MembershipsForPerson(personID string) []HouseMembersh
 		return nil
 	}
 	rows, err := s.db.Query(
-		`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=? ORDER BY tenant_slug`,
+		`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=$1 ORDER BY tenant_slug`,
 		strings.TrimSpace(personID),
 	)
 	if err != nil {
@@ -459,7 +459,7 @@ func (s *SQLIdentityStore) listHouseMembers(tenantSlug string) []HouseMember {
 		        m.person_id, m.tenant_slug, m.role, m.permissions, m.status,
 		        m.directory_opt_in, m.created_at, m.updated_at
 		   FROM house_memberships m JOIN persons p ON p.id = m.person_id
-		  WHERE m.tenant_slug=? ORDER BY p.email`, tenantSlug)
+		  WHERE m.tenant_slug=$1 ORDER BY p.email`, tenantSlug)
 	if err != nil {
 		return []HouseMember{}
 	}
@@ -500,7 +500,7 @@ func (s *SQLIdentityStore) removeMembership(personID string, tenantSlug string) 
 		return false, nil
 	}
 	res, err := s.db.Exec(
-		`DELETE FROM house_memberships WHERE person_id=? AND tenant_slug=?`,
+		`DELETE FROM house_memberships WHERE person_id=$1 AND tenant_slug=$2`,
 		strings.TrimSpace(personID), textutil.Slug(tenantSlug),
 	)
 	if err != nil {
@@ -517,7 +517,7 @@ func (s *SQLIdentityStore) DeletePerson(personID string) (bool, error) {
 	if s == nil {
 		return false, nil
 	}
-	res, err := s.db.Exec(`DELETE FROM persons WHERE id=?`, strings.TrimSpace(personID))
+	res, err := s.db.Exec(`DELETE FROM persons WHERE id=$1`, strings.TrimSpace(personID))
 	if err != nil {
 		return false, err
 	}
@@ -616,7 +616,7 @@ func tenantsOfProfile(profile UserProfile) []string {
 // membershipsForPersonTx lists memberships inside a transaction, so a reconcile
 // sees its own uncommitted writes (HAUSV-172).
 func membershipsForPersonTx(tx *sql.Tx, personID string) ([]HouseMembership, error) {
-	rows, err := tx.Query(`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=? ORDER BY tenant_slug`,
+	rows, err := tx.Query(`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=$1 ORDER BY tenant_slug`,
 		strings.TrimSpace(personID))
 	if err != nil {
 		return nil, err

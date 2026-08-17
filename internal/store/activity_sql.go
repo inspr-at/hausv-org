@@ -38,7 +38,7 @@ func (s *SQLActivityStore) Touch(email string, at time.Time, authMethod string) 
 		return nil
 	}
 	_, err := s.db.Exec(
-		`INSERT INTO login_activity(email, last_login, auth_method) VALUES(?, ?, ?)
+		`INSERT INTO login_activity(email, last_login, auth_method) VALUES($1, $2, $3)
 		 ON CONFLICT(email) DO UPDATE SET last_login = excluded.last_login, auth_method = excluded.auth_method`,
 		email, at.UTC().Format(time.RFC3339Nano), authMethod,
 	)
@@ -52,7 +52,7 @@ func (s *SQLActivityStore) Get(email string) (ActivityRecord, bool) {
 	}
 	var lastLogin, authMethod string
 	if err := s.db.QueryRow(
-		`SELECT last_login, auth_method FROM login_activity WHERE email = ?`, email,
+		`SELECT last_login, auth_method FROM login_activity WHERE email = $1`, email,
 	).Scan(&lastLogin, &authMethod); err != nil {
 		return ActivityRecord{}, false
 	}
@@ -83,7 +83,7 @@ func (s *SQLActivityStore) ImportActivity(src *ActivityStore) error {
 			continue
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO login_activity(email, last_login, auth_method) VALUES(?, ?, ?)
+			`INSERT INTO login_activity(email, last_login, auth_method) VALUES($1, $2, $3)
 			 ON CONFLICT(email) DO NOTHING`,
 			email, rec.LastLogin.UTC().Format(time.RFC3339Nano), rec.AuthMethod,
 		); err != nil {

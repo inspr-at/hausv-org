@@ -79,7 +79,7 @@ func writeContactTx(tx *sql.Tx, item ManagedContact) error {
 		active = 1
 	}
 	_, err = tx.Exec(
-		`INSERT INTO contacts(tenant_slug, id, active, data) VALUES(?, ?, ?, ?)
+		`INSERT INTO contacts(tenant_slug, id, active, data) VALUES($1, $2, $3, $4)
 		 ON CONFLICT(tenant_slug, id) DO UPDATE SET active=excluded.active, data=excluded.data`,
 		item.TenantSlug, item.ID, active, string(blob),
 	)
@@ -104,7 +104,7 @@ func (s *SQLContactBookStore) upsert(tenantSlug string, item ManagedContact) (Ma
 
 	if item.ID != "" {
 		var data string
-		if err := tx.QueryRow(`SELECT data FROM contacts WHERE tenant_slug=? AND id=?`, item.TenantSlug, item.ID).Scan(&data); err == nil {
+		if err := tx.QueryRow(`SELECT data FROM contacts WHERE tenant_slug=$1 AND id=$2`, item.TenantSlug, item.ID).Scan(&data); err == nil {
 			var existing ManagedContact
 			if json.Unmarshal([]byte(data), &existing) == nil {
 				item.CreatedAt = existing.CreatedAt
@@ -161,7 +161,7 @@ func (s *SQLContactBookStore) deactivate(tenantSlug string, id string, at time.T
 	}
 	defer tx.Rollback()
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM contacts WHERE tenant_slug=? AND id=?`, tenantSlug, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM contacts WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
 		return ManagedContact{}, nil // not found -> empty, matching the JSON store
 	}
 	var existing ManagedContact
@@ -184,7 +184,7 @@ func (s *SQLContactBookStore) list(tenantSlug string, includeInactive bool) []Ma
 		return nil
 	}
 	tenantSlug = textutil.Slug(tenantSlug)
-	query := `SELECT data FROM contacts WHERE tenant_slug = ?`
+	query := `SELECT data FROM contacts WHERE tenant_slug = $1`
 	if !includeInactive {
 		query += ` AND active = 1`
 	}
@@ -239,7 +239,7 @@ func (s *SQLContactBookStore) ImportContacts(src *ContactBookStore) error {
 			active = 1
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO contacts(tenant_slug, id, active, data) VALUES(?, ?, ?, ?) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			`INSERT INTO contacts(tenant_slug, id, active, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			item.TenantSlug, item.ID, active, string(blob),
 		); err != nil {
 			return err

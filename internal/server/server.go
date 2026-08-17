@@ -1525,8 +1525,23 @@ func newApp() (*app, error) {
 	if dbPath == "" {
 		dbPath = filepath.Join(filepath.Dir(parkingDataPath), "hausv.db")
 	}
-	database, err := db.Open(dbPath)
+	// Backend selection lives here and nowhere else: stores take a *sql.DB and do
+	// not know which engine served it. DB_BACKEND unset keeps SQLite, so an
+	// existing deployment is unchanged by this being wired at all.
+	backend := db.Backend(strings.ToLower(strings.TrimSpace(env("DB_BACKEND", ""))))
+	dbDSN := dbPath
+	if backend == db.BackendPostgres {
+		dbDSN = strings.TrimSpace(env("DATABASE_URL", ""))
+		if dbDSN == "" {
+			return nil, fmt.Errorf("DB_BACKEND=postgres requires DATABASE_URL")
+		}
+	}
+	database, err := db.OpenConfig(context.Background(), db.Config{Backend: backend, DSN: dbDSN})
 	if err != nil {
+		if backend == db.BackendPostgres {
+			// Never echo the DSN: it carries the role password.
+			return nil, fmt.Errorf("open postgres: %w", err)
+		}
 		return nil, fmt.Errorf("open sqlite at %s: %w", dbPath, err)
 	}
 

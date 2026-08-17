@@ -169,7 +169,7 @@ func (s *SQLIdentityStore) writeProfileTx(tx *sql.Tx, profile UserProfile, at ti
 	for _, existing := range stale {
 		if _, keep := wanted[existing.TenantSlug]; !keep {
 			if _, err := tx.Exec(
-				`DELETE FROM house_memberships WHERE person_id=? AND tenant_slug=?`,
+				`DELETE FROM house_memberships WHERE person_id=$1 AND tenant_slug=$2`,
 				person.ID, existing.TenantSlug,
 			); err != nil {
 				return err
@@ -205,7 +205,7 @@ func (s *SQLIdentityStore) Update(oldEmail string, updated UserProfile) (bool, e
 	defer tx.Rollback()
 	now := time.Now().UTC()
 	if newEmail != oldEmail {
-		if _, err := tx.Exec(`UPDATE persons SET email=?, updated_at=? WHERE id=?`,
+		if _, err := tx.Exec(`UPDATE persons SET email=$1, updated_at=$2 WHERE id=$3`,
 			newEmail, identityTime(now), person.ID); err != nil {
 			return false, err
 		}
@@ -307,7 +307,7 @@ func (s *SQLIdentityStore) MutateTenantPermissions(email string, tenantSlug stri
 		`SELECT p.id, m.permissions
 		   FROM persons p
 		   JOIN house_memberships m ON m.person_id=p.id
-		  WHERE p.email=? AND m.tenant_slug=?`,
+		  WHERE p.email=$1 AND m.tenant_slug=$2`,
 		email, tenantSlug,
 	).Scan(&personID, &rawPermissions); err != nil {
 		if err == sql.ErrNoRows {
@@ -317,7 +317,7 @@ func (s *SQLIdentityStore) MutateTenantPermissions(email string, tenantSlug stri
 	}
 	permissions := NormalizePermissions(fn(decodeStringList(rawPermissions)))
 	if _, err := tx.Exec(
-		`UPDATE house_memberships SET permissions=?, updated_at=? WHERE person_id=? AND tenant_slug=?`,
+		`UPDATE house_memberships SET permissions=$1, updated_at=$2 WHERE person_id=$3 AND tenant_slug=$4`,
 		encodeStringList(permissions), identityTime(time.Now()), personID, tenantSlug,
 	); err != nil {
 		return UserProfile{}, false, err

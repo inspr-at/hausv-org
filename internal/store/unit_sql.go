@@ -105,7 +105,7 @@ func (*SQLUnitStore) unitStorage() {}
 // JSON store re-normalizes the full tenant slice on every write (which also
 // deduplicates), so mirroring that keeps the two backends byte-identical.
 func (s *SQLUnitStore) replaceTenantTx(tx *sql.Tx, tenantSlug string, units []Unit) error {
-	if _, err := tx.Exec(`DELETE FROM units WHERE tenant_slug=?`, tenantSlug); err != nil {
+	if _, err := tx.Exec(`DELETE FROM units WHERE tenant_slug=$1`, tenantSlug); err != nil {
 		return err
 	}
 	for _, item := range NormalizeUnits(units, tenantSlug) {
@@ -114,7 +114,7 @@ func (s *SQLUnitStore) replaceTenantTx(tx *sql.Tx, tenantSlug string, units []Un
 			return err
 		}
 		if _, err := tx.Exec(
-			`INSERT INTO units(tenant_slug, id, data) VALUES(?, ?, ?)
+			`INSERT INTO units(tenant_slug, id, data) VALUES($1, $2, $3)
 			 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
 			textutil.Slug(item.TenantSlug), item.ID, string(blob),
 		); err != nil {
@@ -125,7 +125,7 @@ func (s *SQLUnitStore) replaceTenantTx(tx *sql.Tx, tenantSlug string, units []Un
 }
 
 func (s *SQLUnitStore) tenantUnits(tenantSlug string) []Unit {
-	rows, err := s.db.Query(`SELECT data FROM units WHERE tenant_slug=?`, tenantSlug)
+	rows, err := s.db.Query(`SELECT data FROM units WHERE tenant_slug=$1`, tenantSlug)
 	if err != nil {
 		return nil
 	}
@@ -147,7 +147,7 @@ func (s *SQLUnitStore) tenantUnits(tenantSlug string) []Unit {
 }
 
 func tenantUnitsTx(tx *sql.Tx, tenantSlug string) ([]Unit, error) {
-	rows, err := tx.Query(`SELECT data FROM units WHERE tenant_slug=?`, tenantSlug)
+	rows, err := tx.Query(`SELECT data FROM units WHERE tenant_slug=$1`, tenantSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -251,14 +251,14 @@ func (s *SQLUnitStore) deleteUnit(tenantSlug string, id string) (bool, Unit, err
 	}
 	defer tx.Rollback()
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM units WHERE tenant_slug=? AND id=?`, tenantSlug, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM units WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
 		return false, Unit{}, nil
 	}
 	var removed Unit
 	if err := json.Unmarshal([]byte(data), &removed); err != nil {
 		return false, Unit{}, nil
 	}
-	if _, err := tx.Exec(`DELETE FROM units WHERE tenant_slug=? AND id=?`, tenantSlug, id); err != nil {
+	if _, err := tx.Exec(`DELETE FROM units WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id); err != nil {
 		return false, Unit{}, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -352,7 +352,7 @@ func (s *SQLUnitStore) ImportUnits(src *UnitStore) error {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO units(tenant_slug, id, data) VALUES(?, ?, ?) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			`INSERT INTO units(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant, item.ID, string(blob),
 		); err != nil {
 			return err

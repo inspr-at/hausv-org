@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 // TestProfileOverlayStorageParity runs the JSON and SQLite backends through
@@ -19,10 +19,7 @@ func TestProfileOverlayStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) ProfileOverlayStorage {
-			database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-			if err != nil {
-				t.Fatalf("db open: %v", err)
-			}
+			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLProfileOverlayStore(database)
 		},
@@ -75,10 +72,7 @@ func TestSQLProfileOverlayImportFromJSON(t *testing.T) {
 	_ = jsonStore.Set("a@example.com", ProfileOverlay{FirstName: "Aa", DirectoryOptIn: true})
 	_ = jsonStore.Set("b@example.com", ProfileOverlay{Title: "Mag.", LastName: "Bee"})
 
-	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("db open: %v", err)
-	}
+	database := dbtest.Open(t)
 	defer database.Close()
 	sqlStore := NewSQLProfileOverlayStore(database)
 

@@ -7,15 +7,13 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func TestHomeConnectorStoreParityPairRotateAndRevoke(t *testing.T) {
 	now := time.Date(2026, 8, 14, 12, 0, 0, 0, time.UTC)
-	database, err := db.Open(filepath.Join(t.TempDir(), "hausv.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	database := dbtest.Open(t)
 	defer database.Close()
 	reservations := store.NewSQLHomeReservationStore(database)
 	if _, err := reservations.Reserve(store.HomeReservation{

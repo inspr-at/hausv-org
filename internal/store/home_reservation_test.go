@@ -7,14 +7,12 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func TestHomeReservationStoreParity(t *testing.T) {
-	database, err := db.Open(filepath.Join(t.TempDir(), "hausv.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	database := dbtest.Open(t)
 	t.Cleanup(func() { _ = database.Close() })
 
 	stores := map[string]store.HomeReservationStorage{

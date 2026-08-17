@@ -95,7 +95,7 @@ func (s *SQLAnnouncementStore) writeTx(tx *sql.Tx, item Announcement) error {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO announcements(tenant_slug, id, data) VALUES(?, ?, ?)
+		`INSERT INTO announcements(tenant_slug, id, data) VALUES($1, $2, $3)
 		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
 		textutil.Slug(item.TenantSlug), item.ID, string(blob),
 	)
@@ -146,7 +146,7 @@ func (s *SQLAnnouncementStore) update(tenantSlug string, id string, updated Anno
 	}
 	defer tx.Rollback()
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM announcements WHERE tenant_slug=? AND id=?`, tenant, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM announcements WHERE tenant_slug=$1 AND id=$2`, tenant, id).Scan(&data); err != nil {
 		return false, nil
 	}
 	var existing Announcement
@@ -180,7 +180,7 @@ func (s *SQLAnnouncementStore) delete(tenantSlug string, id string) (bool, error
 	if id == "" {
 		return false, nil
 	}
-	res, err := s.db.Exec(`DELETE FROM announcements WHERE tenant_slug=? AND id=?`, tenantSlug, id)
+	res, err := s.db.Exec(`DELETE FROM announcements WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id)
 	if err != nil {
 		return false, err
 	}
@@ -190,7 +190,7 @@ func (s *SQLAnnouncementStore) delete(tenantSlug string, id string) (bool, error
 
 func (s *SQLAnnouncementStore) allForTenant(tenantSlug string) []Announcement {
 	tenantSlug = textutil.Slug(tenantSlug)
-	rows, err := s.db.Query(`SELECT data FROM announcements WHERE tenant_slug=?`, tenantSlug)
+	rows, err := s.db.Query(`SELECT data FROM announcements WHERE tenant_slug=$1`, tenantSlug)
 	if err != nil {
 		return []Announcement{}
 	}
@@ -261,7 +261,7 @@ func (s *SQLAnnouncementStore) ImportAnnouncements(src *AnnouncementStore) error
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO announcements(tenant_slug, id, data) VALUES(?, ?, ?) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			`INSERT INTO announcements(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			textutil.Slug(item.TenantSlug), item.ID, string(blob),
 		); err != nil {
 			return err

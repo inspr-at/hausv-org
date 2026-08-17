@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func sampleHandover(id string) HandoverRecord {
@@ -30,10 +30,7 @@ func TestHandoverStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) HandoverStorage {
-			database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-			if err != nil {
-				t.Fatalf("db open: %v", err)
-			}
+			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLHandoverStore(database)
 		},
@@ -141,10 +138,7 @@ func TestSQLHandoverImportFromJSON(t *testing.T) {
 		t.Fatalf("seed h2: %v", err)
 	}
 
-	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("db open: %v", err)
-	}
+	database := dbtest.Open(t)
 	defer database.Close()
 	sqlStore := NewSQLHandoverStore(database)
 
