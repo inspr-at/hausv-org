@@ -181,6 +181,29 @@ func TestBaseStylesAreEmittedBeforePageStyles(t *testing.T) {
 	}
 }
 
+func TestEnergyNavCarriesTheHouseholdIdentity(t *testing.T) {
+	// The page about a household should say which household. Legacy rendered the
+	// name and unit here; the conversion replaced both with a static label, and
+	// qa-main-flows.mjs asserts the pair — which is how it was found, one CI run
+	// after templ became the default.
+	html := renderComponent(t, PortalPage(PortalPageData{
+		Title: "Portal", CanUseResidentAreas: true, CanViewEnergy: true,
+		Modules: PortalModules{Energy: true},
+		HomeIdentity: view.HomeIdentityView{
+			DisplayName: "Haus Musterweg", UnitLabel: "Top 4",
+			AriaLabel: "Haus Musterweg, Top 4", HasDisplayName: true, HasUnit: true,
+		},
+	}))
+	for _, want := range []string{
+		`data-home-identity="nav"`, "data-home-display-name", "data-home-unit-label",
+		"Haus Musterweg", "Top 4",
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("energy nav entry is missing %q", want)
+		}
+	}
+}
+
 func TestOnlyPortalDocumentOwnsTheDocument(t *testing.T) {
 	// Rendering the right output is not the same as sharing a shell: fifteen
 	// copied document shells would satisfy every other test here, and would drift

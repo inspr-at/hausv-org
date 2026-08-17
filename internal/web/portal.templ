@@ -1,6 +1,7 @@
 package web
 
 import (
+	"strings"
 	"github.com/inspr-at/hausv-org/internal/version"
 	"github.com/inspr-at/hausv-org/internal/view"
 )
@@ -40,6 +41,7 @@ type PortalPageData struct {
 	Announcements                                     []view.AnnouncementView
 	UnreadAnnouncements                               int
 	Energy                                            PortalEnergy
+	HomeIdentity                                      view.HomeIdentityView
 	Areas                                             []PortalArea
 	Contexts                                          []PortalContext
 	ReleaseNotes                                      []version.Note
@@ -147,7 +149,7 @@ templ PortalNavigation(data PortalPageData, icons bool) {
 			@PortalNavItem("home", "Hausüberblick", "/app", portalNavActive(data, "home"), 0, icons)
 		}
 		if data.CanUseResidentAreas && data.CanViewEnergy {
-			@PortalNavItem("energy", "Mein Zuhause", "/app/energie", portalNavActive(data, "energy"), 0, icons)
+			@PortalEnergyNavItem(data, icons)
 		}
 		if data.CanUseResidentAreas && data.Modules.Announcements {
 			@PortalNavItem("announcement", "Aushang", "/app/announcements", portalNavActive(data, "announcements"), data.UnreadAnnouncements, icons)
@@ -225,6 +227,37 @@ func portalNavActive(data PortalPageData, page string) bool {
 		return page == "home"
 	}
 	return data.ActivePage == page
+}
+
+templ PortalEnergyNavItem(data PortalPageData, icons bool) {
+	<a
+		href="/app/energie"
+		class={ templ.KV("active", portalNavActive(data, "energy")) }
+		aria-current={ portalAriaCurrent(portalNavActive(data, "energy")) }
+		data-home-identity="nav"
+		aria-label={ portalEnergyNavAria(data) }
+	>
+		if icons {
+			<span class="nav-icon">@PortalIcon("energy")</span>
+		}
+		if data.HomeIdentity.HasDisplayName {
+			<span class="nav-home-identity">
+				<strong data-home-display-name>{ data.HomeIdentity.DisplayName }</strong>
+				if data.HomeIdentity.HasUnit {
+					<small data-home-unit-label>{ data.HomeIdentity.UnitLabel }</small>
+				}
+			</span>
+		} else {
+			<span>Mein Zuhause</span>
+		}
+	</a>
+}
+
+func portalEnergyNavAria(data PortalPageData) string {
+	if strings.TrimSpace(data.HomeIdentity.AriaLabel) != "" {
+		return data.HomeIdentity.AriaLabel
+	}
+	return "Mein Zuhause"
 }
 
 templ PortalNavItem(kind, label, url string, active bool, badge int, icons bool) {
