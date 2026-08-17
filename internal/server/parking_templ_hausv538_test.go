@@ -40,7 +40,7 @@ func TestParkingTemplKeepsEveryActionForManagers(t *testing.T) {
 	body := response.Body.String()
 	for _, want := range []string{
 		"data-templ-parking",
-		`href="/demo/app/parking" class="active" aria-current="page"`,
+		`href="/demo/app/parking" class="nav-item active" aria-current="page"`,
 		// Every action the legacy overview carried, including the two that no
 		// reachability check can see: the reminder POST and the export.
 		`action="/demo/app/parking/reminders"`,

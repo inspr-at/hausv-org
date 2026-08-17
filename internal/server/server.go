@@ -745,6 +745,7 @@ type app struct {
 	serviceAccessEnabled    bool
 	templExampleEnabled     bool
 	portalTemplEnabled      bool
+	energyTemplEnabled      bool
 	sessionTTL              time.Duration
 	tokens                  *tokenStore
 	sessions                *sessionStore
@@ -1659,19 +1660,24 @@ func newApp() (*app, error) {
 	var filer protocolFiler = sqlFiler
 
 	return &app{
-		baseURL:                  baseURL,
-		addr:                     env("ADDR", ":8080"),
-		rootDomain:               rootDomain,
-		defaultTenant:            defaultTenant,
-		tenants:                  tenants,
-		sessionSecure:            parsed.Scheme == "https",
-		allowed:                  allowed,
-		admins:                   admins,
-		profiles:                 profiles,
-		localDevLogin:            localDevLogin,
-		serviceAccessEnabled:     serviceProviderAccessEnabled(),
-		templExampleEnabled:      parseBool(env("TEMPL_EXAMPLE_ENABLED", "false")),
-		portalTemplEnabled:       parseBool(env("TEMPL_PORTAL_ENABLED", "false")),
+		baseURL:              baseURL,
+		addr:                 env("ADDR", ":8080"),
+		rootDomain:           rootDomain,
+		defaultTenant:        defaultTenant,
+		tenants:              tenants,
+		sessionSecure:        parsed.Scheme == "https",
+		allowed:              allowed,
+		admins:               admins,
+		profiles:             profiles,
+		localDevLogin:        localDevLogin,
+		serviceAccessEnabled: serviceProviderAccessEnabled(),
+		templExampleEnabled:  parseBool(env("TEMPL_EXAMPLE_ENABLED", "false")),
+		portalTemplEnabled:   parseBool(env("TEMPL_PORTAL_ENABLED", "true")),
+		// The energy cockpit is the one route whose conversion is not yet
+		// faithful: 14 selectors its own contract asserts are absent, including
+		// the consumer-configuration dialog and the flow diagram edges. It stays
+		// on the legacy renderer until energy-redesign-contract.mjs passes.
+		energyTemplEnabled:       parseBool(env("TEMPL_ENERGY_ENABLED", "false")),
 		sessionTTL:               sessionTTL,
 		tokens:                   auth.NewTokenStore(secret),
 		sessions:                 newSessionStore(secret),

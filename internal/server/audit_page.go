@@ -49,6 +49,7 @@ func (a *app) auditPortalContext(ac authCtx, title string) web.PortalPageData {
 		Modules:             web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
 		CanUseResidentAreas: roleCanUseResidentAreas(ac.role),
 		CanViewEnergy:       modules.Energy && a.canViewEnergy(ac),
+		HomeIdentity:        a.homeIdentityForActor(ac, modules.Energy && a.canViewEnergy(ac)),
 		CanManageIssues:     ac.can(capabilityManageIssues),
 		CanSeeParking:       modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)),
 		CanManageHandovers:  modules.Handovers && canManageHandovers(ac.actor(), ac.resource()),

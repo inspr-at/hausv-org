@@ -21,6 +21,7 @@ func TestEnergyCockpitTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
 func TestEnergyCockpitTemplUsesSharedShellAndKeepsItsScriptAndWritePaths(t *testing.T) {
 	a := energyCockpitAppHAUSV425(t, 16, "14,0")
 	a.portalTemplEnabled = true
+	a.energyTemplEnabled = true
 
 	response := authedRequest(t, a, "owner@example.com", "/demo/app/energie")
 	if response.Code != http.StatusOK {
@@ -30,8 +31,8 @@ func TestEnergyCockpitTemplUsesSharedShellAndKeepsItsScriptAndWritePaths(t *test
 	for _, want := range []string{
 		"data-templ-energy",
 		`<aside class="sidebar" aria-label="Hausnavigation">`,
-		`href="/demo/app/energie" class="active" aria-current="page"`,
-		`<nav class="nav" aria-label="Bereiche">`,
+		`href="/demo/app/energie" class="nav-item active" aria-current="page"`,
+		`<nav class="nav" aria-label="Bereiche"`,
 		"Versionsverlauf",
 		// Tenant prefixing must reach the cockpit's own write paths and the
 		// icon masks in the page stylesheet.
@@ -62,6 +63,7 @@ func TestEnergyCockpitTemplUsesSharedShellAndKeepsItsScriptAndWritePaths(t *test
 func TestEnergyCockpitTemplKeepsTheHouseholdNameAsItsDocumentTitle(t *testing.T) {
 	a := energyCockpitAppHAUSV425(t, 16, "")
 	a.portalTemplEnabled = true
+	a.energyTemplEnabled = true
 
 	body := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
 	if !strings.Contains(body, "<title>Zuhause Test</title>") {

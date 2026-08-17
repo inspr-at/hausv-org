@@ -66,7 +66,7 @@ func TestHomeIdentityTemplKeepsLockedUnitContract(t *testing.T) {
 		"data-templ-settings",
 		"data-templ-home-settings",
 		`<aside class="sidebar" aria-label="Hausnavigation">`,
-		`<nav class="nav" aria-label="Bereiche">`,
+		`<nav class="nav" aria-label="Bereiche"`,
 		// The editor identity hooks other views mirror.
 		`data-home-identity="editor-heading"`,
 		`data-home-identity="editor-summary"`,

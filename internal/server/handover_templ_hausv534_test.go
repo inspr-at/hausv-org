@@ -24,7 +24,7 @@ func TestHandoversTemplUsesSharedPermissionGatedPortalShell(t *testing.T) {
 	body := authedRequest(t, a, "manager@example.com", "/demo/app/uebergaben").Body.String()
 	for _, want := range []string{
 		"data-templ-handovers",
-		`href="/demo/app/uebergaben" class="active" aria-current="page"`,
+		`href="/demo/app/uebergaben" class="nav-item active" aria-current="page"`,
 		`aria-label="Hausnavigation"`,
 		`aria-label="Navigation öffnen"`,
 		`id="handover-create"`,

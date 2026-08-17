@@ -34,8 +34,8 @@ func TestContactsTemplUsesSharedPermissionGatedShellForEveryPortalRole(t *testin
 			for _, want := range []string{
 				"data-templ-contacts",
 				`<aside class="sidebar" aria-label="Hausnavigation">`,
-				`href="/demo/app/kontakte" class="active" aria-current="page"`,
-				`<nav class="nav" aria-label="Bereiche">`,
+				`href="/demo/app/kontakte" class="nav-item active" aria-current="page"`,
+				`<nav class="nav" aria-label="Bereiche"`,
 				"Versionsverlauf",
 			} {
 				if !strings.Contains(body, want) {

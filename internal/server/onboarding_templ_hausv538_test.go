@@ -31,8 +31,8 @@ func TestOnboardingTemplUsesSharedPermissionGatedShell(t *testing.T) {
 	for _, want := range []string{
 		"data-templ-onboarding",
 		`<aside class="sidebar" aria-label="Hausnavigation">`,
-		`href="/demo/app/energie" class="active" aria-current="page"`,
-		`<nav class="nav" aria-label="Bereiche">`,
+		`href="/demo/app/energie" class="nav-item active" aria-current="page"`,
+		`<nav class="nav" aria-label="Bereiche"`,
 		`<header class="mobile-head">`,
 		"Versionsverlauf",
 	} {

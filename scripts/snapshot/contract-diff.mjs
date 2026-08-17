@@ -50,11 +50,6 @@ const ACCEPTED_LOSSES = [
   },
   {
     aspect: 'hooks',
-    values: ['data-home-identity', 'data-home-display-name'],
-    why: 'styling hooks only — no script reads them; the templ sidebar styles its own classes',
-  },
-  {
-    aspect: 'hooks',
     values: ['data-label'],
     routes: ['settings-users'],
     why: 'the users table became a card list, so the stacked-table label pattern no longer applies — what mattered (role and status staying visible on a phone) is CSS, which this tool cannot see, and is covered by TestUserCardsKeepRoleAndStatusOnNarrowScreens instead. Scoped: app.js also reads data-label on the energy chart and the home-type selector, where losing it IS a regression',

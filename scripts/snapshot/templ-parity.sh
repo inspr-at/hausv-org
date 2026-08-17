@@ -3,7 +3,7 @@
 #
 #   templ-parity.sh <git-ref|WORKTREE> [out-dir]
 #
-# Captures the SAME code twice — once with TEMPL_PORTAL_ENABLED off, once on —
+# Captures the SAME code twice — once with TEMPL_PORTAL_ENABLED=false, once on —
 # and diffs the interactive contract of every page against itself.
 #
 # This is the oracle Phase 3 was missing. The byte diff only ever runs with the
@@ -30,8 +30,11 @@ if [ -z "$out" ]; then
 fi
 mkdir -p "$out"
 
-echo "══ legacy rendering (TEMPL_PORTAL_ENABLED unset)"
-TEMPL_PORTAL_ENABLED= "$repo/scripts/snapshot/run.sh" "$ref" "$out/legacy" 8099 || exit 1
+echo "══ legacy rendering (TEMPL_PORTAL_ENABLED=false)"
+# Explicitly false, never empty: config.Env returns the FALLBACK for an empty
+# value, and the fallback is now true. An empty value here would render templ
+# on both sides and the comparison would pass without comparing anything.
+TEMPL_PORTAL_ENABLED=false "$repo/scripts/snapshot/run.sh" "$ref" "$out/legacy" 8099 || exit 1
 
 echo
 echo "══ templ rendering (TEMPL_PORTAL_ENABLED=1)"
