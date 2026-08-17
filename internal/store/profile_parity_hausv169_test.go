@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 // HAUSV-169 phase 3: the JSON profile store and the SQLite person/house model
@@ -21,10 +21,7 @@ func profileBackends() map[string]func(t *testing.T) ProfileStorage {
 			return s
 		},
 		"sqlite": func(t *testing.T) ProfileStorage {
-			database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-			if err != nil {
-				t.Fatalf("db open: %v", err)
-			}
+			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLIdentityStore(database)
 		},

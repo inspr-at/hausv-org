@@ -81,7 +81,7 @@ func (s *SQLHandoverStore) writeTx(tx *sql.Tx, item HandoverRecord) error {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO handovers(tenant_slug, id, data) VALUES(?, ?, ?)
+		`INSERT INTO handovers(tenant_slug, id, data) VALUES($1, $2, $3)
 		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
 		textutil.Slug(item.TenantSlug), item.ID, string(blob),
 	)
@@ -104,7 +104,7 @@ func (s *SQLHandoverStore) create(tenantSlug string, item HandoverRecord) (Hando
 	defer tx.Rollback()
 	var exists int
 	if err := tx.QueryRow(
-		`SELECT 1 FROM handovers WHERE tenant_slug=? AND id=?`, item.TenantSlug, item.ID,
+		`SELECT 1 FROM handovers WHERE tenant_slug=$1 AND id=$2`, item.TenantSlug, item.ID,
 	).Scan(&exists); err == nil {
 		return HandoverRecord{}, fmt.Errorf("handover exists")
 	} else if err != sql.ErrNoRows {
@@ -124,7 +124,7 @@ func (s *SQLHandoverStore) list(tenantSlug string) []HandoverRecord {
 		return nil
 	}
 	tenantSlug = textutil.Slug(tenantSlug)
-	rows, err := s.db.Query(`SELECT data FROM handovers WHERE tenant_slug=?`, tenantSlug)
+	rows, err := s.db.Query(`SELECT data FROM handovers WHERE tenant_slug=$1`, tenantSlug)
 	if err != nil {
 		return []HandoverRecord{}
 	}
@@ -153,7 +153,7 @@ func (s *SQLHandoverStore) get(tenantSlug string, id string) (HandoverRecord, bo
 	id = strings.TrimSpace(id)
 	var data string
 	if err := s.db.QueryRow(
-		`SELECT data FROM handovers WHERE tenant_slug=? AND id=?`, tenantSlug, id,
+		`SELECT data FROM handovers WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id,
 	).Scan(&data); err != nil {
 		return HandoverRecord{}, false
 	}
@@ -257,7 +257,7 @@ func (s *SQLHandoverStore) setFiledDocument(tenantSlug string, id string, docume
 	}
 	defer tx.Rollback()
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM handovers WHERE tenant_slug=? AND id=?`, tenantSlug, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM handovers WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
 		return HandoverRecord{}, false, nil
 	}
 	var item HandoverRecord
@@ -297,7 +297,7 @@ func (s *SQLHandoverStore) ImportHandovers(src *HandoverStore) error {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO handovers(tenant_slug, id, data) VALUES(?, ?, ?) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			`INSERT INTO handovers(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			textutil.Slug(item.TenantSlug), item.ID, string(blob),
 		); err != nil {
 			return err

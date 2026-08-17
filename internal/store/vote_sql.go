@@ -115,7 +115,7 @@ func (s *SQLVoteStore) writeTx(tx *sql.Tx, item Ballot) error {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO ballots(tenant_slug, id, data) VALUES(?, ?, ?)
+		`INSERT INTO ballots(tenant_slug, id, data) VALUES($1, $2, $3)
 		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
 		textutil.Slug(item.TenantSlug), item.ID, string(blob),
 	)
@@ -125,7 +125,7 @@ func (s *SQLVoteStore) writeTx(tx *sql.Tx, item Ballot) error {
 // loadTx reads one ballot inside a transaction for a read-modify-write.
 func loadBallotTx(tx *sql.Tx, tenantSlug string, id string) (Ballot, bool) {
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM ballots WHERE tenant_slug=? AND id=?`, tenantSlug, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM ballots WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
 		return Ballot{}, false
 	}
 	var item Ballot
@@ -180,7 +180,7 @@ func (s *SQLVoteStore) delete(tenantSlug string, id string) (bool, error) {
 	if tenantSlug == "" || id == "" {
 		return false, nil
 	}
-	res, err := s.db.Exec(`DELETE FROM ballots WHERE tenant_slug=? AND id=?`, tenantSlug, id)
+	res, err := s.db.Exec(`DELETE FROM ballots WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id)
 	if err != nil {
 		return false, err
 	}
@@ -257,7 +257,7 @@ func (s *SQLVoteStore) closeExpiredTenant(tenantSlug string, at time.Time) ([]Ba
 		return nil, err
 	}
 	defer tx.Rollback()
-	rows, err := tx.Query(`SELECT data FROM ballots WHERE tenant_slug=?`, tenantSlug)
+	rows, err := tx.Query(`SELECT data FROM ballots WHERE tenant_slug=$1`, tenantSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -408,7 +408,7 @@ func (s *SQLVoteStore) listTenant(tenantSlug string) []Ballot {
 		return nil
 	}
 	tenantSlug = textutil.Slug(tenantSlug)
-	rows, err := s.db.Query(`SELECT data FROM ballots WHERE tenant_slug=?`, tenantSlug)
+	rows, err := s.db.Query(`SELECT data FROM ballots WHERE tenant_slug=$1`, tenantSlug)
 	if err != nil {
 		return []Ballot{}
 	}
@@ -439,7 +439,7 @@ func (s *SQLVoteStore) get(tenantSlug string, id string) (Ballot, bool) {
 		return Ballot{}, false
 	}
 	var data string
-	if err := s.db.QueryRow(`SELECT data FROM ballots WHERE tenant_slug=? AND id=?`, tenantSlug, id).Scan(&data); err != nil {
+	if err := s.db.QueryRow(`SELECT data FROM ballots WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
 		return Ballot{}, false
 	}
 	var item Ballot
@@ -468,7 +468,7 @@ func (s *SQLVoteStore) ImportBallots(src *VoteStore) error {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO ballots(tenant_slug, id, data) VALUES(?, ?, ?) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			`INSERT INTO ballots(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant, item.ID, string(blob),
 		); err != nil {
 			return err

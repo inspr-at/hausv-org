@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 // TestActivityStorageParity runs the JSON and SQLite backends through identical
@@ -21,10 +21,7 @@ func TestActivityStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) ActivityStorage {
-			database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-			if err != nil {
-				t.Fatalf("db open: %v", err)
-			}
+			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLActivityStore(database)
 		},
@@ -86,10 +83,7 @@ func TestSQLActivityImportFromJSON(t *testing.T) {
 	_ = jsonStore.Touch("a@example.com", a, "email")
 	_ = jsonStore.Touch("b@example.com", b, "oidc")
 
-	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("db open: %v", err)
-	}
+	database := dbtest.Open(t)
 	defer database.Close()
 	sqlStore := NewSQLActivityStore(database)
 

@@ -158,7 +158,7 @@ func (s *SQLHomeConnectorStore) StartPairing(slug string, pairingHash []byte, ex
 	}
 	_, err := s.db.Exec(`INSERT INTO home_connectors
 		(slug,status,credential_hash,generation,pairing_hash,pairing_expires_at,created_at,updated_at)
-		VALUES(?,?,?,?,?,?,?,?)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8)
 		ON CONFLICT(slug) DO UPDATE SET
 		status=CASE WHEN home_connectors.credential_hash IS NULL THEN excluded.status ELSE home_connectors.status END,
 		pairing_hash=excluded.pairing_hash,pairing_expires_at=excluded.pairing_expires_at,updated_at=excluded.updated_at`,
@@ -188,7 +188,7 @@ func (s *SQLHomeConnectorStore) ExchangePairing(pairingHash, credentialHash []by
 	defer tx.Rollback()
 	var slug string
 	var pairingExpires string
-	err = tx.QueryRow(`SELECT slug,pairing_expires_at FROM home_connectors WHERE pairing_hash=?`,
+	err = tx.QueryRow(`SELECT slug,pairing_expires_at FROM home_connectors WHERE pairing_hash=$1`,
 		pairingHash).Scan(&slug, &pairingExpires)
 	if errors.Is(err, sql.ErrNoRows) {
 		return HomeConnector{}, false, nil
@@ -199,9 +199,9 @@ func (s *SQLHomeConnectorStore) ExchangePairing(pairingHash, credentialHash []by
 	if !parseHomeReservationTimestamp(pairingExpires).After(now) {
 		return HomeConnector{}, false, nil
 	}
-	result, err := tx.Exec(`UPDATE home_connectors SET status=?,credential_hash=?,generation=generation+1,
-		pairing_hash=NULL,pairing_expires_at=NULL,connector_version=?,ha_version=?,entity_count=?,
-		paired_at=?,last_seen_at=?,updated_at=? WHERE slug=? AND pairing_hash=?`,
+	result, err := tx.Exec(`UPDATE home_connectors SET status=$1,credential_hash=$2,generation=generation+1,
+		pairing_hash=NULL,pairing_expires_at=NULL,connector_version=$3,ha_version=$4,entity_count=$5,
+		paired_at=$6,last_seen_at=$7,updated_at=$8 WHERE slug=$9 AND pairing_hash=$10`,
 		HomeConnectorConnected, credentialHash, heartbeat.ConnectorVersion, heartbeat.HomeAssistantVersion,
 		heartbeat.EntityCount, homeReservationTimestamp(now), homeReservationTimestamp(now), homeReservationTimestamp(now), slug, pairingHash)
 	if err != nil {
@@ -223,8 +223,8 @@ func (s *SQLHomeConnectorStore) Heartbeat(credentialHash []byte, heartbeat HomeC
 		return HomeConnector{}, false, fmt.Errorf("home connector store unavailable")
 	}
 	now = homeReservationTime(now)
-	result, err := s.db.Exec(`UPDATE home_connectors SET connector_version=?,ha_version=?,entity_count=?,last_seen_at=?,updated_at=?
-		WHERE status=? AND credential_hash=?`, heartbeat.ConnectorVersion, heartbeat.HomeAssistantVersion, heartbeat.EntityCount,
+	result, err := s.db.Exec(`UPDATE home_connectors SET connector_version=$1,ha_version=$2,entity_count=$3,last_seen_at=$4,updated_at=$5
+		WHERE status=$6 AND credential_hash=$7`, heartbeat.ConnectorVersion, heartbeat.HomeAssistantVersion, heartbeat.EntityCount,
 		homeReservationTimestamp(now), homeReservationTimestamp(now), HomeConnectorConnected, credentialHash)
 	if err != nil {
 		return HomeConnector{}, false, err
@@ -248,8 +248,8 @@ func (s *SQLHomeConnectorStore) Revoke(slug string, now time.Time) (HomeConnecto
 		return HomeConnector{}, false, fmt.Errorf("home connector store unavailable")
 	}
 	slug = textutil.Slug(slug)
-	result, err := s.db.Exec(`UPDATE home_connectors SET status=?,credential_hash=NULL,pairing_hash=NULL,
-		pairing_expires_at=NULL,connector_version='',ha_version='',entity_count=0,last_seen_at=NULL,updated_at=? WHERE slug=?`,
+	result, err := s.db.Exec(`UPDATE home_connectors SET status=$1,credential_hash=NULL,pairing_hash=NULL,
+		pairing_expires_at=NULL,connector_version='',ha_version='',entity_count=0,last_seen_at=NULL,updated_at=$2 WHERE slug=$3`,
 		HomeConnectorRevoked, homeReservationTimestamp(now), slug)
 	if err != nil {
 		return HomeConnector{}, false, err

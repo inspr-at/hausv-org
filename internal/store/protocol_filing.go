@@ -74,7 +74,7 @@ func (f *SQLProtocolFiler) FileHandoverProtocol(tenantSlug string, handoverID st
 
 	var raw string
 	if err := tx.QueryRow(
-		`SELECT data FROM handovers WHERE tenant_slug=? AND id=?`, tenantSlug, handoverID,
+		`SELECT data FROM handovers WHERE tenant_slug=$1 AND id=$2`, tenantSlug, handoverID,
 	).Scan(&raw); err != nil {
 		_ = os.Remove(path)
 		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("handover not found")

@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func TestNotificationPrefStorageParity(t *testing.T) {
@@ -17,10 +17,7 @@ func TestNotificationPrefStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) NotificationPrefStorage {
-			database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-			if err != nil {
-				t.Fatalf("db open: %v", err)
-			}
+			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLNotificationPrefStore(database)
 		},
@@ -80,10 +77,7 @@ func TestSQLNotificationPrefImportFromJSON(t *testing.T) {
 	_ = jsonStore.Set("a@example.com", NotificationPreferences{Unsubscribed: true})
 	_ = jsonStore.Set("b@example.com", NotificationPreferences{Email: map[string]bool{"issue": false}})
 
-	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("db open: %v", err)
-	}
+	database := dbtest.Open(t)
 	defer database.Close()
 	sqlStore := NewSQLNotificationPrefStore(database)
 

@@ -81,7 +81,7 @@ func (s *SQLEventStore) writeTx(tx *sql.Tx, item HouseEvent) error {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO events(tenant_slug, id, data) VALUES(?, ?, ?)
+		`INSERT INTO events(tenant_slug, id, data) VALUES($1, $2, $3)
 		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
 		textutil.Slug(item.TenantSlug), item.ID, string(blob),
 	)
@@ -134,7 +134,7 @@ func (s *SQLEventStore) update(tenantSlug string, id string, updated HouseEvent)
 	}
 	defer tx.Rollback()
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM events WHERE tenant_slug=? AND id=?`, tenant, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM events WHERE tenant_slug=$1 AND id=$2`, tenant, id).Scan(&data); err != nil {
 		return false, nil
 	}
 	var existing HouseEvent
@@ -165,7 +165,7 @@ func (s *SQLEventStore) delete(tenantSlug string, id string) (bool, error) {
 	if tenantSlug == "" || id == "" {
 		return false, nil
 	}
-	res, err := s.db.Exec(`DELETE FROM events WHERE tenant_slug=? AND id=?`, tenantSlug, id)
+	res, err := s.db.Exec(`DELETE FROM events WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id)
 	if err != nil {
 		return false, err
 	}
@@ -175,7 +175,7 @@ func (s *SQLEventStore) delete(tenantSlug string, id string) (bool, error) {
 
 func (s *SQLEventStore) allForTenant(tenantSlug string) []HouseEvent {
 	tenantSlug = textutil.Slug(tenantSlug)
-	rows, err := s.db.Query(`SELECT data FROM events WHERE tenant_slug=?`, tenantSlug)
+	rows, err := s.db.Query(`SELECT data FROM events WHERE tenant_slug=$1`, tenantSlug)
 	if err != nil {
 		return []HouseEvent{}
 	}
@@ -230,7 +230,7 @@ func (s *SQLEventStore) ImportEvents(src *EventStore) error {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO events(tenant_slug, id, data) VALUES(?, ?, ?) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			`INSERT INTO events(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			textutil.Slug(item.TenantSlug), item.ID, string(blob),
 		); err != nil {
 			return err

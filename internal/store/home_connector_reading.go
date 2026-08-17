@@ -105,7 +105,7 @@ func (s *SQLHomeConnectorReadingStore) Upsert(slug string, readings []HomeConnec
 	for _, reading := range readings {
 		_, err = tx.Exec(`INSERT INTO home_connector_readings
 			(slug,entity_id,state,display_name,unit,device_class,state_class,last_updated,received_at)
-			VALUES(?,?,?,?,?,?,?,?,?)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
 			ON CONFLICT(slug,entity_id) DO UPDATE SET state=excluded.state,
 			display_name=excluded.display_name,unit=excluded.unit,device_class=excluded.device_class,
 			state_class=excluded.state_class,last_updated=excluded.last_updated,received_at=excluded.received_at`,
@@ -124,7 +124,7 @@ func (s *SQLHomeConnectorReadingStore) List(slug string) ([]HomeConnectorReading
 		return nil, fmt.Errorf("home connector reading store unavailable")
 	}
 	rows, err := s.db.Query(`SELECT slug,entity_id,state,display_name,unit,device_class,state_class,last_updated,received_at
-		FROM home_connector_readings WHERE slug=? ORDER BY entity_id`, textutil.Slug(slug))
+		FROM home_connector_readings WHERE slug=$1 ORDER BY entity_id`, textutil.Slug(slug))
 	if err != nil {
 		return nil, err
 	}
@@ -148,6 +148,6 @@ func (s *SQLHomeConnectorReadingStore) Clear(slug string) error {
 	if s == nil || s.db == nil {
 		return fmt.Errorf("home connector reading store unavailable")
 	}
-	_, err := s.db.Exec(`DELETE FROM home_connector_readings WHERE slug=?`, textutil.Slug(slug))
+	_, err := s.db.Exec(`DELETE FROM home_connector_readings WHERE slug=$1`, textutil.Slug(slug))
 	return err
 }

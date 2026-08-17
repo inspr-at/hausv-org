@@ -87,7 +87,7 @@ func (s *SQLAttachmentStore) writeTx(tx *sql.Tx, item AttachmentRecord) error {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO attachments(tenant_slug, id, data) VALUES(?, ?, ?)
+		`INSERT INTO attachments(tenant_slug, id, data) VALUES($1, $2, $3)
 		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
 		textutil.Slug(item.TenantSlug), item.ID, string(blob),
 	)
@@ -176,7 +176,7 @@ func (s *SQLAttachmentStore) createUploaded(tenantSlug string, entityType string
 }
 
 func (s *SQLAttachmentStore) allForTenant(tenantSlug string) []AttachmentRecord {
-	rows, err := s.db.Query(`SELECT data FROM attachments WHERE tenant_slug=?`, tenantSlug)
+	rows, err := s.db.Query(`SELECT data FROM attachments WHERE tenant_slug=$1`, tenantSlug)
 	if err != nil {
 		return nil
 	}
@@ -225,7 +225,7 @@ func (s *SQLAttachmentStore) get(tenantSlug string, id string) (AttachmentRecord
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
 	var data string
-	if err := s.db.QueryRow(`SELECT data FROM attachments WHERE tenant_slug=? AND id=?`, tenantSlug, id).Scan(&data); err != nil {
+	if err := s.db.QueryRow(`SELECT data FROM attachments WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
 		return AttachmentRecord{}, false
 	}
 	var item AttachmentRecord
@@ -253,7 +253,7 @@ func (s *SQLAttachmentStore) delete(tenantSlug string, id string, deletedAt time
 	}
 	defer tx.Rollback()
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM attachments WHERE tenant_slug=? AND id=?`, tenantSlug, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM attachments WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
 		return AttachmentRecord{}, false, nil
 	}
 	var item AttachmentRecord
@@ -302,7 +302,7 @@ func (s *SQLAttachmentStore) ImportAttachments(src *AttachmentStore) error {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO attachments(tenant_slug, id, data) VALUES(?, ?, ?) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			`INSERT INTO attachments(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			textutil.Slug(item.TenantSlug), item.ID, string(blob),
 		); err != nil {
 			return err
@@ -361,7 +361,7 @@ func (s *SQLAttachmentStore) PurgeDeletedBefore(cutoff time.Time) (int, error) {
 	}
 	defer tx.Rollback()
 	for _, k := range stale {
-		if _, err := tx.Exec(`DELETE FROM attachments WHERE tenant_slug=? AND id=?`, k.tenant, k.id); err != nil {
+		if _, err := tx.Exec(`DELETE FROM attachments WHERE tenant_slug=$1 AND id=$2`, k.tenant, k.id); err != nil {
 			return 0, err
 		}
 	}

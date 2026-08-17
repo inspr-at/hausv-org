@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
@@ -101,10 +102,7 @@ func TestSQLHomePortalActivationIsAtomicIdempotentAndPersistent(t *testing.T) {
 }
 
 func TestSQLHomePortalRejectsForeignUnconfirmedAndRollsBack(t *testing.T) {
-	database, err := db.Open(filepath.Join(t.TempDir(), "hausv.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	database := dbtest.Open(t)
 	t.Cleanup(func() { _ = database.Close() })
 	reservations := store.NewSQLHomeReservationStore(database)
 	portals := store.NewSQLHomePortalStore(database)

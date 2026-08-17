@@ -102,7 +102,7 @@ func (s *SQLIssueStore) writeTx(tx *sql.Tx, item ResidentIssue) error {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO issues(tenant_slug, id, data) VALUES(?, ?, ?)
+		`INSERT INTO issues(tenant_slug, id, data) VALUES($1, $2, $3)
 		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
 		textutil.Slug(item.TenantSlug), item.ID, string(blob),
 	)
@@ -111,7 +111,7 @@ func (s *SQLIssueStore) writeTx(tx *sql.Tx, item ResidentIssue) error {
 
 func loadIssueTx(tx *sql.Tx, tenantSlug string, id string) (ResidentIssue, bool) {
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM issues WHERE tenant_slug=? AND id=?`, tenantSlug, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM issues WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
 		return ResidentIssue{}, false
 	}
 	var item ResidentIssue
@@ -184,7 +184,7 @@ func (s *SQLIssueStore) create(tenantSlug string, item ResidentIssue) (ResidentI
 }
 
 func (s *SQLIssueStore) allForTenant(tenantSlug string) []ResidentIssue {
-	rows, err := s.db.Query(`SELECT data FROM issues WHERE tenant_slug=?`, tenantSlug)
+	rows, err := s.db.Query(`SELECT data FROM issues WHERE tenant_slug=$1`, tenantSlug)
 	if err != nil {
 		return []ResidentIssue{}
 	}
@@ -241,7 +241,7 @@ func (s *SQLIssueStore) get(tenantSlug string, id string) (ResidentIssue, bool) 
 		return ResidentIssue{}, false
 	}
 	var data string
-	if err := s.db.QueryRow(`SELECT data FROM issues WHERE tenant_slug=? AND id=?`, tenantSlug, id).Scan(&data); err != nil {
+	if err := s.db.QueryRow(`SELECT data FROM issues WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
 		return ResidentIssue{}, false
 	}
 	var item ResidentIssue
@@ -466,7 +466,7 @@ func (s *SQLIssueStore) ImportIssues(src *IssueStore) error {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO issues(tenant_slug, id, data) VALUES(?, ?, ?) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			`INSERT INTO issues(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant, item.ID, string(blob),
 		); err != nil {
 			return err

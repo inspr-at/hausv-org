@@ -5,16 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 // HAUSV-146: soft-deleted attachment records must not accumulate forever.
 func TestPurgeDeletedAttachmentTombstones(t *testing.T) {
 	dir := t.TempDir()
-	database, err := db.Open(filepath.Join(dir, "test.db"))
-	if err != nil {
-		t.Fatalf("db open: %v", err)
-	}
+	database := dbtest.Open(t)
 	defer database.Close()
 	s := NewSQLAttachmentStore(database, filepath.Join(dir, "files"))
 	attachments, _ := BindAttachmentRepository(s, "demo")

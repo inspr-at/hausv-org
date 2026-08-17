@@ -84,7 +84,7 @@ func (s *SQLUnitPaymentStatusStore) set(tenantSlug string, item UnitPaymentStatu
 	item.UpdatedAt = time.Now().UTC().Truncate(time.Second)
 	if _, err := s.db.Exec(
 		`INSERT INTO unit_payment_status(tenant_slug, unit_id, status, updated_at, updated_by)
-		 VALUES(?, ?, ?, ?, ?)
+		 VALUES($1, $2, $3, $4, $5)
 		 ON CONFLICT(tenant_slug, unit_id) DO UPDATE SET
 		   status=excluded.status, updated_at=excluded.updated_at, updated_by=excluded.updated_by`,
 		item.TenantSlug, item.UnitID, item.Status, item.UpdatedAt.Format(time.RFC3339Nano), item.UpdatedBy,
@@ -105,7 +105,7 @@ func (s *SQLUnitPaymentStatusStore) get(tenantSlug string, unitID string) (UnitP
 	}
 	item, ok := scanUnitPaymentRow(s.db.QueryRow(
 		`SELECT tenant_slug, unit_id, status, updated_at, updated_by
-		 FROM unit_payment_status WHERE tenant_slug = ? AND unit_id = ?`, tenantSlug, unitID))
+		 FROM unit_payment_status WHERE tenant_slug = $1 AND unit_id = $2`, tenantSlug, unitID))
 	if !ok {
 		return UnitPaymentStatus{}, false
 	}
@@ -123,7 +123,7 @@ func (s *SQLUnitPaymentStatusStore) listTenant(tenantSlug string) []UnitPaymentS
 	tenantSlug = textutil.Slug(tenantSlug)
 	rows, err := s.db.Query(
 		`SELECT tenant_slug, unit_id, status, updated_at, updated_by
-		 FROM unit_payment_status WHERE tenant_slug = ?`, tenantSlug)
+		 FROM unit_payment_status WHERE tenant_slug = $1`, tenantSlug)
 	if err != nil {
 		return []UnitPaymentStatus{}
 	}
@@ -164,7 +164,7 @@ func (s *SQLUnitPaymentStatusStore) ImportStatuses(src *UnitPaymentStatusStore) 
 		}
 		if _, err := s.db.Exec(
 			`INSERT INTO unit_payment_status(tenant_slug, unit_id, status, updated_at, updated_by)
-			 VALUES(?, ?, ?, ?, ?) ON CONFLICT(tenant_slug, unit_id) DO NOTHING`,
+			 VALUES($1, $2, $3, $4, $5) ON CONFLICT(tenant_slug, unit_id) DO NOTHING`,
 			item.TenantSlug, item.UnitID, item.Status, updatedAt, item.UpdatedBy,
 		); err != nil {
 			return err

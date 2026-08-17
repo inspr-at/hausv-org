@@ -151,7 +151,7 @@ func (s *SQLHomeReservationStore) Reserve(item HomeReservation, at time.Time) (H
 			return HomeReservation{}, ErrHomeReservationConflict
 		}
 		if _, err := tx.Exec(`UPDATE home_reservations
-			SET household_name=?, authorization_confirmed=1, updated_at=? WHERE slug=?`,
+			SET household_name=$1, authorization_confirmed=1, updated_at=$2 WHERE slug=$3`,
 			item.HouseholdName, homeReservationTimestamp(item.UpdatedAt), item.Slug); err != nil {
 			return HomeReservation{}, err
 		}
@@ -165,7 +165,7 @@ func (s *SQLHomeReservationStore) Reserve(item HomeReservation, at time.Time) (H
 	}
 	if _, err := tx.Exec(`INSERT INTO home_reservations
 		(slug,household_name,owner_email,authorization_confirmed,status,created_at,updated_at)
-		VALUES(?,?,?,?,?,?,?)`, item.Slug, item.HouseholdName, item.OwnerEmail, 1, item.Status,
+		VALUES($1,$2,$3,$4,$5,$6,$7)`, item.Slug, item.HouseholdName, item.OwnerEmail, 1, item.Status,
 		homeReservationTimestamp(item.CreatedAt), homeReservationTimestamp(item.UpdatedAt)); err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return HomeReservation{}, ErrHomeReservationConflict
@@ -186,8 +186,8 @@ func (s *SQLHomeReservationStore) Confirm(slug, ownerEmail string, at time.Time)
 	ownerEmail = textutil.Email(ownerEmail)
 	at = homeReservationTime(at)
 	result, err := s.db.Exec(`UPDATE home_reservations
-		SET status=CASE WHEN status=? THEN status ELSE ? END, confirmed_at=COALESCE(confirmed_at,?), updated_at=?
-		WHERE slug=? AND owner_email=?`, HomeReservationActive, HomeReservationEmailConfirmed,
+		SET status=CASE WHEN status=$1 THEN status ELSE $2 END, confirmed_at=COALESCE(confirmed_at,$3), updated_at=$4
+		WHERE slug=$5 AND owner_email=$6`, HomeReservationActive, HomeReservationEmailConfirmed,
 		homeReservationTimestamp(at), homeReservationTimestamp(at), slug, ownerEmail)
 	if err != nil {
 		return HomeReservation{}, false, err
@@ -211,7 +211,7 @@ func (s *SQLHomeReservationStore) PurgePendingBefore(before time.Time) (int64, e
 	if s == nil || s.db == nil {
 		return 0, fmt.Errorf("home reservation store unavailable")
 	}
-	result, err := s.db.Exec(`DELETE FROM home_reservations WHERE status=? AND updated_at<?`,
+	result, err := s.db.Exec(`DELETE FROM home_reservations WHERE status=$1 AND updated_at<$2`,
 		HomeReservationEmailPending, homeReservationTimestamp(before))
 	if err != nil {
 		return 0, err
@@ -227,7 +227,7 @@ func getHomeReservation(query homeReservationQueryRow, slug string) (HomeReserva
 	var createdAt, updatedAt string
 	var confirmedAt sql.NullString
 	err := query(`SELECT slug,household_name,owner_email,authorization_confirmed,status,created_at,updated_at,confirmed_at
-		FROM home_reservations WHERE slug=?`, slug).Scan(&item.Slug, &item.HouseholdName, &item.OwnerEmail,
+		FROM home_reservations WHERE slug=$1`, slug).Scan(&item.Slug, &item.HouseholdName, &item.OwnerEmail,
 		&authorization, &item.Status, &createdAt, &updatedAt, &confirmedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return HomeReservation{}, false, nil

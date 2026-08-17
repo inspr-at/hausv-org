@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func TestUnitStorageParity(t *testing.T) {
@@ -17,10 +17,7 @@ func TestUnitStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) UnitStorage {
-			database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-			if err != nil {
-				t.Fatalf("db open: %v", err)
-			}
+			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLUnitStore(database)
 		},
@@ -149,10 +146,7 @@ func TestSQLUnitImportFromJSON(t *testing.T) {
 		t.Fatalf("seed: %v", err)
 	}
 
-	database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("db open: %v", err)
-	}
+	database := dbtest.Open(t)
 	defer database.Close()
 	sqlStore := NewSQLUnitStore(database)
 	sqlRepository, _ := BindUnitRepository(sqlStore, "demo")
