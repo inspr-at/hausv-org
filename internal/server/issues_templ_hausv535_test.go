@@ -41,8 +41,8 @@ func TestIssuesTemplUsesSharedPermissionGatedShellWithoutNewRoleDenials(t *testi
 			for _, want := range []string{
 				"data-templ-issues",
 				`<aside class="sidebar" aria-label="Hausnavigation">`,
-				`<nav class="nav" aria-label="Bereiche">`,
-				`href="` + issuesNavURL + `" class="active" aria-current="page"`,
+				`<nav class="nav" aria-label="Bereiche"`,
+				`href="` + issuesNavURL + `" class="nav-item active" aria-current="page"`,
 				"Versionsverlauf",
 			} {
 				if !strings.Contains(body, want) {
@@ -169,7 +169,7 @@ func TestIssueBoardTemplRendersTheManagerBoardOnTheSharedShell(t *testing.T) {
 	for _, want := range []string{
 		"data-templ-issue-board",
 		`<aside class="sidebar" aria-label="Hausnavigation">`,
-		`<nav class="nav" aria-label="Bereiche">`,
+		`<nav class="nav" aria-label="Bereiche"`,
 		"Anliegen bearbeiten",
 		`href="/demo/app/anliegen"`,
 		// The empty board keeps its two onward actions and the explainer.

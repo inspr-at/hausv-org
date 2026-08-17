@@ -101,7 +101,7 @@ func TestConnectorHelpTemplUsesSharedPortalForEveryResidentRole(t *testing.T) {
 			body := page.Body.String()
 			for _, want := range []string{
 				`data-templ-help`,
-				`href="/demo/app/hilfe" class="active" aria-current="page"`,
+				`href="/demo/app/hilfe" class="nav-item active" aria-current="page"`,
 				`Hilfe zur Energieverbindung`,
 				`So läuft es in HAUSV ab`,
 				`Technisch und datensparsam`,
@@ -111,7 +111,7 @@ func TestConnectorHelpTemplUsesSharedPortalForEveryResidentRole(t *testing.T) {
 					t.Errorf("templ help page missing %q", want)
 				}
 			}
-			if strings.Contains(body, `class="nav-item`) {
+			if strings.Contains(body, `class="app-shell"`) {
 				t.Error("templ help rendered the legacy navigation instead of the shared templ navigation")
 			}
 		})

@@ -34,7 +34,7 @@ func TestAuditTemplUsesSharedPortalNavigationForFourRoles(t *testing.T) {
 			body := response.Body.String()
 			for _, want := range []string{
 				"data-templ-audit",
-				`href="/demo/app/audit" class="active" aria-current="page"`,
+				`href="/demo/app/audit" class="nav-item active" aria-current="page"`,
 				"Noch nichts im Verlauf",
 				"Was festgehalten wird",
 			} {

@@ -33,7 +33,7 @@ func TestSettingsTemplRendersAllFiveRoutesWithSharedNavigation(t *testing.T) {
 	a.portalTemplEnabled = true
 
 	cases := map[string][]string{
-		"/demo/app/settings":               {"Einstellungen", `href="/demo/app/settings" class="active"`, `href="/demo/app/settings/building"`, `href="/demo/app/settings/users"`},
+		"/demo/app/settings":               {"Einstellungen", `href="/demo/app/settings" class="nav-item active"`, `href="/demo/app/settings/building"`, `href="/demo/app/settings/users"`},
 		"/demo/app/settings/profile":       {"Profil speichern", `action="/demo/app/settings/profile"`, `name="directory_opt_in"`},
 		"/demo/app/settings/notifications": {"Benachrichtigungen speichern", `action="/demo/app/settings/notifications"`, `name="email_enabled"`},
 		"/demo/app/settings/building":      {"Gebäude &amp; Einheiten", `data-building-form`, `href="/demo/app/settings/building?section=units"`},
@@ -46,7 +46,7 @@ func TestSettingsTemplRendersAllFiveRoutesWithSharedNavigation(t *testing.T) {
 				t.Fatalf("templ %s status = %d, want 200", route, response.Code)
 			}
 			body := response.Body.String()
-			for _, want := range append([]string{"data-templ-settings", `<aside class="sidebar" aria-label="Hausnavigation">`, `<nav class="nav" aria-label="Bereiche">`}, wants...) {
+			for _, want := range append([]string{"data-templ-settings", `<aside class="sidebar" aria-label="Hausnavigation">`, `<nav class="nav" aria-label="Bereiche"`}, wants...) {
 				if !strings.Contains(body, want) {
 					t.Fatalf("templ %s should contain %q", route, want)
 				}

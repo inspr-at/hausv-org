@@ -55,7 +55,7 @@ func TestBallotsTemplKeepsSharedNavigationAndRoleAccess(t *testing.T) {
 			body := page.Body.String()
 			for _, want := range []string{
 				"data-templ-ballots",
-				`href="/demo/app/abstimmungen" class="active" aria-current="page"`,
+				`href="/demo/app/abstimmungen" class="nav-item active" aria-current="page"`,
 				"Innenhof begrünen",
 				"Details zur Abstimmung",
 			} {

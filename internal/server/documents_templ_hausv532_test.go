@@ -80,7 +80,7 @@ func TestDocumentsTemplUsesSharedPortalNavigationForEveryResidentRole(t *testing
 			body := response.Body.String()
 			for _, want := range []string{
 				"data-templ-documents",
-				`href="/demo/app/dokumente" class="active" aria-current="page"`,
+				`href="/demo/app/dokumente" class="nav-item active" aria-current="page"`,
 				"Noch keine Dokumente",
 				"Was hier abgelegt wird",
 			} {
