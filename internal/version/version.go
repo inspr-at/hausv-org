@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.97.0",
+			Date:     "18. August 2026",
+			Kind:     "Technik",
+			Headline: "Jedes Haus hat jetzt eine dauerhafte Kennung.",
+			Intro:    "Bisher war der Kurzname eines Hauses zugleich seine Kennung in der Datenbank. Ab jetzt trägt jedes Haus eine eigene, unveränderliche Kennung — die Grundlage dafür, ein Haus später umbenennen zu können, ohne dass Daten verloren gehen.",
+			Items: []NoteItem{
+				{Label: "Dauerhaft", Text: "Die Kennung eines Hauses bleibt gleich, auch wenn sich sein Name ändert."},
+				{Label: "Sicher", Text: "Die Trennung zwischen Häusern wird jetzt strukturell erzwungen und nicht mehr an jeder einzelnen Stelle neu hergestellt."},
+				{Label: "Geprüft", Text: "Automatische Prüfungen schlagen fehl, sobald eine Abfrage die Haustrennung vergisst."},
+			},
+		},
+		{
 			Version:  "0.96.0",
 			Date:     "17. August 2026",
 			Kind:     "Oberfläche",

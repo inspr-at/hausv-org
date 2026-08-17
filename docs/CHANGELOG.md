@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.97.0] - 2026-08-18
+
+### Verbessert
+
+- Jedes Haus trägt jetzt eine dauerhafte, unveränderliche Kennung. Damit lässt sich ein Haus
+  künftig umbenennen, ohne dass Daten neu zugeordnet werden müssen.
+- Die Trennung der Daten zwischen Häusern wird strukturell erzwungen; sie kann an einer
+  einzelnen Stelle nicht mehr versehentlich entfallen.
+- Die nächtliche Testprüfung ist stabiler geworden, sodass Veröffentlichungen nicht mehr
+  grundlos warten müssen.
+
 ## [0.96.0] - 2026-08-17
 
 ### Verbessert
