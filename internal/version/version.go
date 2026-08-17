@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.96.0",
+			Date:     "17. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Auch „Mein Zuhause“ läuft jetzt auf der neuen Oberfläche.",
+			Intro:    "Der Energiebereich war der letzte Bereich in der alten Darstellung; damit ist das Portal durchgehend einheitlich.",
+			Items: []NoteItem{
+				{Label: "Vollständig", Text: "Alle Bereiche des Portals nutzen dieselbe Oberfläche."},
+				{Label: "Bedienbar", Text: "Aufklappbare Inhalte reagieren wieder überall, und Tastziele sind am Telefon groß genug."},
+				{Label: "Robust", Text: "Lange Haus- und Wohnungsnamen werden gekürzt statt die Ansicht zu verbreitern."},
+			},
+		},
+		{
 			Version:  "0.95.0",
 			Date:     "17. August 2026",
 			Kind:     "Oberfläche",

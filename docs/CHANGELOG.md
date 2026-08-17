@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.96.0] - 2026-08-17
+
+### Verbessert
+
+- **„Mein Zuhause“ läuft auf der neuen Oberfläche.** Der Energiebereich ist damit der letzte Bereich, der umgestellt wurde — das Portal sieht jetzt überall gleich aus.
+- **Ein- und ausklappbare Bereiche reagieren wieder überall.** Hilfetexte, Auswahllisten und Detailansichten öffnen und schließen sich zuverlässig.
+- **Auf dem Telefon gut zu treffen.** Schaltflächen, Info-Symbole und Aufklapp-Punkte sind durchgehend groß genug für den Daumen.
+- **Lange Haus- und Wohnungsnamen sprengen die Ansicht nicht mehr.** Sie werden sauber gekürzt, statt die Seite in die Breite zu ziehen.
+- **Die Statusleiste im Energiebereich bleibt am Kopf stehen** und verdeckt beim Springen nicht mehr die Überschrift darunter.
+
 ## [0.95.0] - 2026-08-17
 
 ### Verbessert
