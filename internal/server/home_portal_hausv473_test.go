@@ -90,7 +90,7 @@ func TestHomePortalActivationRejectsForeignSessionAndStaticCollision(t *testing.
 
 	// A path that becomes statically configured after reservation still wins and
 	// cannot be shadowed by a self-service portal.
-	a.tenants["sicheres-home"] = tenantConfig{Slug: "sicheres-home", Name: "Konfiguriert", Address: "Fix"}
+	addTestTenant(a, tenantConfig{Slug: "sicheres-home", Name: "Konfiguriert", Address: "Fix"})
 	collision := homeConnectorSetupRequestHAUSV471(t, handler, http.MethodPost, "/start/activate", ownerCookie, url.Values{})
 	if collision.Code != http.StatusConflict {
 		t.Fatalf("static collision status=%d body=%q", collision.Code, collision.Body.String())

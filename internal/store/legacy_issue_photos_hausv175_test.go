@@ -55,8 +55,8 @@ func newLegacyPhotoFixture(t *testing.T, backend string) legacyPhotoFixture {
 
 	issue := sampleIssue()
 	issue.PhotoPaths = []string{"issue-attachments/demo/abc-photo.png"}
-	issueRepo, _ := BindIssueRepository(issues, "demo")
-	attachRepo, _ := BindAttachmentRepository(attachments, "demo")
+	issueRepo, _ := BindIssueRepository(issues, testTenantRef("demo"))
+	attachRepo, _ := BindAttachmentRepository(attachments, testTenantRef("demo"))
 	created, err := issueRepo.Create(issue)
 	if err != nil {
 		t.Fatalf("seed issue: %v", err)
@@ -70,7 +70,7 @@ func TestMigrateLegacyIssuePhotos(t *testing.T) {
 			f := newLegacyPhotoFixture(t, backend)
 			now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
 
-			n, err := MigrateLegacyIssuePhotos(f.issues, f.attachments, f.photoDir, []string{"demo"}, now)
+			n, err := MigrateLegacyIssuePhotos(f.issues, f.attachments, f.photoDir, []TenantRef{testTenantRef("demo")}, now)
 			if err != nil || n != 1 {
 				t.Fatalf("migrate: n=%d err=%v", n, err)
 			}
@@ -98,7 +98,7 @@ func TestMigrateLegacyIssuePhotos(t *testing.T) {
 			}
 
 			// Idempotent: a second run migrates nothing and creates no duplicate.
-			n2, err := MigrateLegacyIssuePhotos(f.issues, f.attachments, f.photoDir, []string{"demo"}, now)
+			n2, err := MigrateLegacyIssuePhotos(f.issues, f.attachments, f.photoDir, []TenantRef{testTenantRef("demo")}, now)
 			if err != nil || n2 != 0 {
 				t.Fatalf("second run: n=%d err=%v", n2, err)
 			}
@@ -117,7 +117,7 @@ func TestMigrateLegacyIssuePhotosKeepsReferenceWhenFileMissing(t *testing.T) {
 		t.Fatalf("remove: %v", err)
 	}
 
-	n, err := MigrateLegacyIssuePhotos(f.issues, f.attachments, f.photoDir, []string{"demo"}, time.Now())
+	n, err := MigrateLegacyIssuePhotos(f.issues, f.attachments, f.photoDir, []TenantRef{testTenantRef("demo")}, time.Now())
 	if err == nil {
 		t.Fatal("a missing legacy file must be reported, not skipped silently")
 	}

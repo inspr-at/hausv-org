@@ -27,8 +27,8 @@ var (
 )
 
 type boundUnitPaymentStatusRepository struct {
-	storage    unitPaymentStatusBackend
-	tenantSlug string
+	storage unitPaymentStatusBackend
+	tenant  TenantRef
 }
 
 type unitPaymentStatusBackend interface {
@@ -39,25 +39,25 @@ type unitPaymentStatusBackend interface {
 
 // BindUnitPaymentStatusRepository binds all payment-status operations to one
 // tenant.
-func BindUnitPaymentStatusRepository(storage UnitPaymentStatusStorage, tenantSlug string) (UnitPaymentStatusRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindUnitPaymentStatusRepository(storage UnitPaymentStatusStorage, tenant TenantRef) (UnitPaymentStatusRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(unitPaymentStatusBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundUnitPaymentStatusRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundUnitPaymentStatusRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundUnitPaymentStatusRepository) Set(item UnitPaymentStatus) (UnitPaymentStatus, error) {
-	return r.storage.set(r.tenantSlug, item)
+	return r.storage.set(r.tenant.Slug, item)
 }
 
 func (r *boundUnitPaymentStatusRepository) Get(unitID string) (UnitPaymentStatus, bool) {
-	return r.storage.get(r.tenantSlug, unitID)
+	return r.storage.get(r.tenant.Slug, unitID)
 }
 
 func (r *boundUnitPaymentStatusRepository) List() []UnitPaymentStatus {
-	return r.storage.listTenant(r.tenantSlug)
+	return r.storage.listTenant(r.tenant.Slug)
 }
 
 // SQLUnitPaymentStatusStore is the SQLite-backed manual payment-status marker,

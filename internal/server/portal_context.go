@@ -54,7 +54,11 @@ func (a *app) portalContextsFor(email string, currentTenant string, currentRole 
 		if !ok {
 			continue
 		}
-		for _, role := range a.ownRolesForTenant(email, slug) {
+		identity, ok := a.tenantIdentity(slug)
+		if !ok {
+			continue
+		}
+		for _, role := range a.ownRolesForTenant(email, identity.Ref()) {
 			contexts = append(contexts, portalContextView{
 				TenantSlug: slug,
 				HouseName:  houseDisplayName(tenant),
@@ -128,7 +132,8 @@ func (a *app) ownsPortalTenant(email string, tenantSlug string) bool {
 // directory membership supplies the primary role; unit assignments can add an
 // owner or renter role in the same property. Viewing another person's identity
 // remains a separate, audited admin feature.
-func (a *app) ownRolesForTenant(email string, tenantSlug string) []string {
+func (a *app) ownRolesForTenant(email string, tenant store.TenantRef) []string {
+	tenantSlug := tenant.Slug
 	primary := normalizeRole(a.roleFor(email, tenantSlug))
 	roles := make([]string, 0, 2)
 	seen := map[string]struct{}{}
@@ -145,7 +150,7 @@ func (a *app) ownRolesForTenant(email string, tenantSlug string) []string {
 	}
 	add(primary)
 	if a.unitStore != nil {
-		units, _ := store.BindUnitRepository(a.unitStore, tenantSlug)
+		units, _ := store.BindUnitRepository(a.unitStore, tenant)
 		if units != nil {
 			for _, membership := range units.UnitsForEmail(email) {
 				add(membership.Relation)
@@ -160,7 +165,11 @@ func (a *app) ownPortalContextAllowed(email string, tenantSlug string, role stri
 		return false
 	}
 	role = normalizeRole(role)
-	for _, allowed := range a.ownRolesForTenant(email, tenantSlug) {
+	identity, ok := a.tenantIdentity(tenantSlug)
+	if !ok {
+		return false
+	}
+	for _, allowed := range a.ownRolesForTenant(email, identity.Ref()) {
 		if role == allowed {
 			return true
 		}

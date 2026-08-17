@@ -40,15 +40,15 @@ func TestVoteStorageParity(t *testing.T) {
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
 			storage := build(t)
-			s, ok := BindVoteRepository(storage, "demo")
+			s, ok := BindVoteRepository(storage, testTenantRef("demo"))
 			if !ok {
 				t.Fatal("bind demo repository")
 			}
-			other, ok := BindVoteRepository(storage, "other")
+			other, ok := BindVoteRepository(storage, testTenantRef("other"))
 			if !ok {
 				t.Fatal("bind other repository")
 			}
-			if unscoped, ok := BindVoteRepository(storage, ""); ok || unscoped != nil {
+			if unscoped, ok := BindVoteRepository(storage, testTenantRef("")); ok || unscoped != nil {
 				t.Fatal("empty tenant must not produce a repository")
 			}
 
@@ -173,7 +173,7 @@ func TestVoteCastAfterCloseTimePersistsClosureParity(t *testing.T) {
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
 			storage := build(t)
-			s, ok := BindVoteRepository(storage, "demo")
+			s, ok := BindVoteRepository(storage, testTenantRef("demo"))
 			if !ok {
 				t.Fatal("bind demo repository")
 			}
@@ -219,7 +219,7 @@ func TestVoteCloseExpiredTenantParity(t *testing.T) {
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
 			storage := build(t)
-			s, ok := BindVoteRepository(storage, "demo")
+			s, ok := BindVoteRepository(storage, testTenantRef("demo"))
 			if !ok {
 				t.Fatal("bind demo repository")
 			}
@@ -275,7 +275,7 @@ func TestSQLVoteImportFromJSON(t *testing.T) {
 		t.Fatalf("json store: %v", err)
 	}
 	now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
-	jsonRepository, _ := BindVoteRepository(jsonStore, "demo")
+	jsonRepository, _ := BindVoteRepository(jsonStore, testTenantRef("demo"))
 	created, err := jsonRepository.Create(sampleBallot())
 	if err != nil {
 		t.Fatalf("seed: %v", err)
@@ -290,7 +290,7 @@ func TestSQLVoteImportFromJSON(t *testing.T) {
 	database := dbtest.Open(t)
 	defer database.Close()
 	sqlStore := NewSQLVoteStore(database)
-	sqlRepository, _ := BindVoteRepository(sqlStore, "demo")
+	sqlRepository, _ := BindVoteRepository(sqlStore, testTenantRef("demo"))
 
 	for i := 0; i < 2; i++ {
 		if err := sqlStore.ImportBallots(jsonStore); err != nil {

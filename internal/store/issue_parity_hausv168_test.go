@@ -42,7 +42,7 @@ func TestIssueStorageParity(t *testing.T) {
 
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
-			s, ok := BindIssueRepository(build(t), "demo")
+			s, ok := BindIssueRepository(build(t), testTenantRef("demo"))
 			if !ok {
 				t.Fatal("bind issue repository")
 			}
@@ -174,7 +174,7 @@ func TestSQLIssueImportFromJSON(t *testing.T) {
 		t.Fatalf("json store: %v", err)
 	}
 	now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
-	jsonIssues, _ := BindIssueRepository(jsonStore, "demo")
+	jsonIssues, _ := BindIssueRepository(jsonStore, testTenantRef("demo"))
 	created, err := jsonIssues.Create(sampleIssue())
 	if err != nil {
 		t.Fatalf("seed: %v", err)
@@ -200,7 +200,7 @@ func TestSQLIssueImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	sqlIssues, _ := BindIssueRepository(sqlStore, "demo")
+	sqlIssues, _ := BindIssueRepository(sqlStore, testTenantRef("demo"))
 	if got := sqlIssues.List(); len(got) != 1 {
 		t.Fatalf("imported %d issues, want 1", len(got))
 	}

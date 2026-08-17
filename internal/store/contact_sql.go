@@ -26,8 +26,8 @@ var (
 )
 
 type boundContactBookRepository struct {
-	storage    contactBookBackend
-	tenantSlug string
+	storage contactBookBackend
+	tenant  TenantRef
 }
 
 type contactBookBackend interface {
@@ -36,23 +36,23 @@ type contactBookBackend interface {
 	list(tenantSlug string, includeInactive bool) []ManagedContact
 }
 
-func BindContactBookRepository(storage ContactBookStorage, tenantSlug string) (ContactBookRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindContactBookRepository(storage ContactBookStorage, tenant TenantRef) (ContactBookRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(contactBookBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundContactBookRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundContactBookRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundContactBookRepository) Upsert(item ManagedContact) (ManagedContact, bool, error) {
-	return r.storage.upsert(r.tenantSlug, item)
+	return r.storage.upsert(r.tenant.Slug, item)
 }
 func (r *boundContactBookRepository) Deactivate(id string, at time.Time) (ManagedContact, error) {
-	return r.storage.deactivate(r.tenantSlug, id, at)
+	return r.storage.deactivate(r.tenant.Slug, id, at)
 }
 func (r *boundContactBookRepository) List(includeInactive bool) []ManagedContact {
-	return r.storage.list(r.tenantSlug, includeInactive)
+	return r.storage.list(r.tenant.Slug, includeInactive)
 }
 
 // SQLContactBookStore keeps each contact as a JSON document plus the columns it
@@ -74,14 +74,10 @@ func writeContactTx(tx *sql.Tx, item ManagedContact) error {
 	if err != nil {
 		return err
 	}
-	active := 0
-	if item.Active {
-		active = 1
-	}
 	_, err = tx.Exec(
 		`INSERT INTO contacts(tenant_slug, id, active, data) VALUES($1, $2, $3, $4)
 		 ON CONFLICT(tenant_slug, id) DO UPDATE SET active=excluded.active, data=excluded.data`,
-		item.TenantSlug, item.ID, active, string(blob),
+		item.TenantSlug, item.ID, item.Active, string(blob),
 	)
 	return err
 }
@@ -186,7 +182,7 @@ func (s *SQLContactBookStore) list(tenantSlug string, includeInactive bool) []Ma
 	tenantSlug = textutil.Slug(tenantSlug)
 	query := `SELECT data FROM contacts WHERE tenant_slug = $1`
 	if !includeInactive {
-		query += ` AND active = 1`
+		query += ` AND active = TRUE`
 	}
 	rows, err := s.db.Query(query, tenantSlug)
 	if err != nil {
@@ -234,13 +230,9 @@ func (s *SQLContactBookStore) ImportContacts(src *ContactBookStore) error {
 		if err != nil {
 			return err
 		}
-		active := 0
-		if item.Active {
-			active = 1
-		}
 		if _, err := s.db.Exec(
 			`INSERT INTO contacts(tenant_slug, id, active, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
-			item.TenantSlug, item.ID, active, string(blob),
+			item.TenantSlug, item.ID, item.Active, string(blob),
 		); err != nil {
 			return err
 		}

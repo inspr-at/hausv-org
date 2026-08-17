@@ -217,17 +217,19 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 		AuthMethods: defaultAuthMethods(),
 	}
 	residentIdentity := a.baseContext(authCtx{
-		email:  "resident@example.com",
-		role:   roleResident,
-		tenant: a.tenants["demo"],
+		email:     "resident@example.com",
+		role:      roleResident,
+		tenant:    a.tenants["demo"],
+		tenantRef: testTenantRef("demo"),
 	})["HomeIdentity"].(homeIdentityView)
 	if residentIdentity.DisplayName != "Dachwohnung" || residentIdentity.UnitLabel != "Einheit 12" || !residentIdentity.HasDisplayName || !residentIdentity.HasUnit {
 		t.Fatalf("linked resident home identity = %+v", residentIdentity)
 	}
 	foreignIdentity := a.baseContext(authCtx{
-		email:  "other@example.com",
-		role:   roleOwner,
-		tenant: a.tenants["demo"],
+		email:     "other@example.com",
+		role:      roleOwner,
+		tenant:    a.tenants["demo"],
+		tenantRef: testTenantRef("demo"),
 	})["HomeIdentity"].(homeIdentityView)
 	if foreignIdentity.HasDisplayName || foreignIdentity.HasUnit || strings.Contains(foreignIdentity.AriaLabel, "Dachwohnung") || strings.Contains(foreignIdentity.AriaLabel, "Einheit 12") {
 		t.Fatalf("foreign owner leaked home identity = %+v", foreignIdentity)

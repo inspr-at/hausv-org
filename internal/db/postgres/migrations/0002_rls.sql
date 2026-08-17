@@ -19,7 +19,7 @@ BEGIN
         EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', table_name);
         EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', table_name);
         EXECUTE format(
-            'CREATE POLICY tenant_isolation ON %I USING (tenant_id = current_setting(''hausv.tenant_id'', true)) WITH CHECK (tenant_id = current_setting(''hausv.tenant_id'', true))',
+            'CREATE POLICY tenant_isolation ON %I USING (tenant_id IS NULL OR tenant_id = current_setting(''hausv.tenant_id'', true)) WITH CHECK (tenant_id IS NULL OR tenant_id = current_setting(''hausv.tenant_id'', true))',
             table_name
         );
         EXECUTE format('DROP TRIGGER IF EXISTS tenant_id_immutable ON %I', table_name);

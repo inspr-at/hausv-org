@@ -405,7 +405,7 @@ func TestEnergyExportIsTenantScopedSecretFreeAndRedactsOtherActors(t *testing.T)
 		t.Fatal(err)
 	}
 
-	ac := authCtx{email: "owner@example.com", role: roleOwner, tenant: a.tenants["demo"]}
+	ac := authCtx{email: "owner@example.com", role: roleOwner, tenant: a.tenants["demo"], tenantRef: testTenantRef("demo")}
 	payload, filename, counts, err := a.buildEnergyDataPackage(ac, time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatalf("buildEnergyDataPackage: %v", err)

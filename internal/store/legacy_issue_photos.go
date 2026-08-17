@@ -26,7 +26,7 @@ func MigrateLegacyIssuePhotos(
 	issues IssueStorage,
 	attachments AttachmentStorage,
 	issueAttachmentDir string,
-	tenantSlugs []string,
+	tenants []TenantRef,
 	now time.Time,
 ) (migrated int, err error) {
 	if issues == nil || attachments == nil || strings.TrimSpace(issueAttachmentDir) == "" {
@@ -35,13 +35,14 @@ func MigrateLegacyIssuePhotos(
 	if now.IsZero() {
 		now = time.Now()
 	}
-	for _, rawSlug := range tenantSlugs {
-		tenantSlug := textutil.Slug(rawSlug)
-		if tenantSlug == "" {
+	for _, tenant := range tenants {
+		resolvedTenant, ok := validTenantRef(tenant)
+		if !ok {
 			continue
 		}
-		issueRepository, issuesOK := BindIssueRepository(issues, tenantSlug)
-		attachmentRepository, attachmentsOK := BindAttachmentRepository(attachments, tenantSlug)
+		tenantSlug := resolvedTenant.Slug
+		issueRepository, issuesOK := BindIssueRepository(issues, resolvedTenant)
+		attachmentRepository, attachmentsOK := BindAttachmentRepository(attachments, resolvedTenant)
 		if !issuesOK || !attachmentsOK {
 			continue
 		}

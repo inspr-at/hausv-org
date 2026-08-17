@@ -26,7 +26,7 @@ func TestAnnouncementStorageParity(t *testing.T) {
 	now := time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC)
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
-			s, ok := BindAnnouncementRepository(build(t), "demo")
+			s, ok := BindAnnouncementRepository(build(t), testTenantRef("demo"))
 			if !ok {
 				t.Fatal("bind announcement repository")
 			}

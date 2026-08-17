@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/textutil"
 	"github.com/inspr-at/hausv-org/internal/ulid"
 )
 
@@ -15,6 +16,34 @@ type TenantIdentity struct {
 	ID   string
 	Slug string
 	Name string
+}
+
+// TenantRef is the complete tenant identity required at every repository
+// boundary. Keeping both halves in one value makes swapping ID and slug a
+// compile-time error while the query layer continues to use Slug during the
+// tenant_id rollback window.
+type TenantRef struct {
+	ID   string
+	Slug string
+}
+
+// Ref drops display-only identity data before entering the repository layer.
+func (t TenantIdentity) Ref() TenantRef {
+	return TenantRef{ID: t.ID, Slug: t.Slug}
+}
+
+// Valid reports whether both identity halves are present and well-formed.
+func (t TenantRef) Valid() bool {
+	_, ok := validTenantRef(t)
+	return ok
+}
+
+func validTenantRef(tenant TenantRef) (TenantRef, bool) {
+	tenant.Slug = textutil.Slug(tenant.Slug)
+	if tenant.Slug == "" || tenant.ID == "" || !ulid.Valid(tenant.ID) {
+		return TenantRef{}, false
+	}
+	return tenant, true
 }
 
 // EnsureTenantIdentities mints an ID for every configured slug that does not

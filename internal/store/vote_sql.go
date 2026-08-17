@@ -35,8 +35,8 @@ var (
 )
 
 type boundVoteRepository struct {
-	storage    voteBackend
-	tenantSlug string
+	storage voteBackend
+	tenant  TenantRef
 }
 
 type voteBackend interface {
@@ -52,49 +52,49 @@ type voteBackend interface {
 }
 
 // BindVoteRepository binds all vote operations to one tenant.
-func BindVoteRepository(storage VoteStorage, tenantSlug string) (VoteRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindVoteRepository(storage VoteStorage, tenant TenantRef) (VoteRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(voteBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundVoteRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundVoteRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundVoteRepository) Create(item Ballot) (Ballot, error) {
-	return r.storage.create(r.tenantSlug, item)
+	return r.storage.create(r.tenant.Slug, item)
 }
 
 func (r *boundVoteRepository) Delete(id string) (bool, error) {
-	return r.storage.delete(r.tenantSlug, id)
+	return r.storage.delete(r.tenant.Slug, id)
 }
 
 func (r *boundVoteRepository) Open(id string, at time.Time) (Ballot, bool, error) {
-	return r.storage.open(r.tenantSlug, id, at)
+	return r.storage.open(r.tenant.Slug, id, at)
 }
 
 func (r *boundVoteRepository) Close(id string, at time.Time) (Ballot, bool, error) {
-	return r.storage.close(r.tenantSlug, id, at)
+	return r.storage.close(r.tenant.Slug, id, at)
 }
 
 func (r *boundVoteRepository) CloseExpired(at time.Time) ([]Ballot, error) {
-	return r.storage.closeExpiredTenant(r.tenantSlug, at)
+	return r.storage.closeExpiredTenant(r.tenant.Slug, at)
 }
 
 func (r *boundVoteRepository) CastVote(id string, email string, option string, weight int, at time.Time) (Ballot, bool, error) {
-	return r.storage.castVote(r.tenantSlug, id, email, option, weight, at)
+	return r.storage.castVote(r.tenant.Slug, id, email, option, weight, at)
 }
 
 func (r *boundVoteRepository) MarkReminderSent(id string, recipients []string, at time.Time) (Ballot, bool, error) {
-	return r.storage.markReminderSent(r.tenantSlug, id, recipients, at)
+	return r.storage.markReminderSent(r.tenant.Slug, id, recipients, at)
 }
 
 func (r *boundVoteRepository) List() []Ballot {
-	return r.storage.listTenant(r.tenantSlug)
+	return r.storage.listTenant(r.tenant.Slug)
 }
 
 func (r *boundVoteRepository) Get(id string) (Ballot, bool) {
-	return r.storage.get(r.tenantSlug, id)
+	return r.storage.get(r.tenant.Slug, id)
 }
 
 // SQLVoteStore keeps each ballot — votes included — as one JSON document keyed

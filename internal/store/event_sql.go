@@ -28,8 +28,8 @@ var (
 )
 
 type boundEventRepository struct {
-	storage    eventBackend
-	tenantSlug string
+	storage eventBackend
+	tenant  TenantRef
 }
 
 type eventBackend interface {
@@ -40,27 +40,27 @@ type eventBackend interface {
 	upcoming(tenantSlug string, now time.Time) []HouseEvent
 }
 
-func BindEventRepository(storage EventStorage, tenantSlug string) (EventRepository, bool) {
-	tenantSlug = textutil.Slug(tenantSlug)
+func BindEventRepository(storage EventStorage, tenant TenantRef) (EventRepository, bool) {
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	backend, ok := storage.(eventBackend)
-	if !ok || tenantSlug == "" {
+	if !ok || !tenantOK {
 		return nil, false
 	}
-	return &boundEventRepository{storage: backend, tenantSlug: tenantSlug}, true
+	return &boundEventRepository{storage: backend, tenant: resolvedTenant}, true
 }
 
 func (r *boundEventRepository) Create(item HouseEvent) (HouseEvent, error) {
-	return r.storage.create(r.tenantSlug, item)
+	return r.storage.create(r.tenant.Slug, item)
 }
 func (r *boundEventRepository) Update(id string, item HouseEvent) (bool, error) {
-	return r.storage.update(r.tenantSlug, id, item)
+	return r.storage.update(r.tenant.Slug, id, item)
 }
 func (r *boundEventRepository) Delete(id string) (bool, error) {
-	return r.storage.delete(r.tenantSlug, id)
+	return r.storage.delete(r.tenant.Slug, id)
 }
-func (r *boundEventRepository) List() []HouseEvent { return r.storage.list(r.tenantSlug) }
+func (r *boundEventRepository) List() []HouseEvent { return r.storage.list(r.tenant.Slug) }
 func (r *boundEventRepository) Upcoming(now time.Time) []HouseEvent {
-	return r.storage.upcoming(r.tenantSlug, now)
+	return r.storage.upcoming(r.tenant.Slug, now)
 }
 
 // SQLEventStore keeps each event as a JSON document keyed by (tenant, id).

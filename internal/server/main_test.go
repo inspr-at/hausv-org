@@ -31,7 +31,22 @@ import (
 )
 
 func testRepositories(a *app, tenantSlug string) requestRepositories {
-	return a.repositoriesForTenant(tenantConfig{Slug: tenantSlug})
+	return a.repositoriesForTenant(testTenantRef(tenantSlug))
+}
+
+func testTenantRef(tenantSlug string) storepkg.TenantRef {
+	return storepkg.TenantRef{ID: "01ARZ3NDEKTSV4RRFFQ69G5FAV", Slug: tenantSlug}
+}
+
+func addTestTenant(a *app, tenant tenantConfig) {
+	if a.tenants == nil {
+		a.tenants = map[string]tenantConfig{}
+	}
+	if a.tenantIdentities == nil {
+		a.tenantIdentities = map[string]storepkg.TenantIdentity{}
+	}
+	a.tenants[tenant.Slug] = tenant
+	a.tenantIdentities[tenant.Slug] = storepkg.TenantIdentity{ID: testTenantRef(tenant.Slug).ID, Slug: tenant.Slug, Name: tenant.Name}
 }
 
 type sentNotification struct {
@@ -54,7 +69,7 @@ type recordingMailer struct {
 
 func testUnitRepository(t testing.TB, a *app, tenantSlug string) unitRepository {
 	t.Helper()
-	repository, ok := storepkg.BindUnitRepository(a.unitStore, tenantSlug)
+	repository, ok := storepkg.BindUnitRepository(a.unitStore, testTenantRef(tenantSlug))
 	if !ok {
 		t.Fatalf("bind unit repository for %q", tenantSlug)
 	}
@@ -63,7 +78,7 @@ func testUnitRepository(t testing.TB, a *app, tenantSlug string) unitRepository 
 
 func testUnitPaymentRepository(t testing.TB, a *app, tenantSlug string) unitPaymentRepository {
 	t.Helper()
-	repository, ok := storepkg.BindUnitPaymentStatusRepository(a.unitPaymentStore, tenantSlug)
+	repository, ok := storepkg.BindUnitPaymentStatusRepository(a.unitPaymentStore, testTenantRef(tenantSlug))
 	if !ok {
 		t.Fatalf("bind unit payment repository for %q", tenantSlug)
 	}
@@ -72,7 +87,7 @@ func testUnitPaymentRepository(t testing.TB, a *app, tenantSlug string) unitPaym
 
 func testVoteRepository(t testing.TB, a *app, tenantSlug string) voteRepository {
 	t.Helper()
-	repository, ok := storepkg.BindVoteRepository(a.voteStore, tenantSlug)
+	repository, ok := storepkg.BindVoteRepository(a.voteStore, testTenantRef(tenantSlug))
 	if !ok {
 		t.Fatalf("bind vote repository for %q", tenantSlug)
 	}
@@ -85,7 +100,7 @@ func testRequestRepositories(t testing.TB, a *app, tenantSlug string) requestRep
 	if !ok {
 		t.Fatalf("tenant %q not configured", tenantSlug)
 	}
-	return a.repositoriesForTenant(tenant)
+	return a.repositoriesForTenant(testTenantRef(tenant.Slug))
 }
 
 func (m *recordingMailer) SendMagicLink(to string, link string, _ string) error {
@@ -206,7 +221,7 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newUnitStore: %v", err)
 	}
-	repository, _ := storepkg.BindUnitRepository(unitStore, "demo")
+	repository, _ := storepkg.BindUnitRepository(unitStore, testTenantRef("demo"))
 	if err := repository.SetUnits([]unit{
 		{
 			ID:                    "Top_2",
@@ -269,7 +284,7 @@ func TestUnitStoreSetListResolvePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	reopenedRepository, _ := storepkg.BindUnitRepository(reopened, "demo")
+	reopenedRepository, _ := storepkg.BindUnitRepository(reopened, testTenantRef("demo"))
 	if got := reopenedRepository.UnitCount(); got != 3 {
 		t.Fatalf("reopened UnitCount = %d, want 3", got)
 	}
@@ -284,7 +299,7 @@ func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newVoteStore: %v", err)
 	}
-	repository, _ := storepkg.BindVoteRepository(voteStore, "demo")
+	repository, _ := storepkg.BindVoteRepository(voteStore, testTenantRef("demo"))
 	created, err := repository.Create(ballot{
 		TenantSlug:  "DEMO",
 		Title:       "Ladestation beschließen",
@@ -332,7 +347,7 @@ func TestVoteStoreCreateOpenCastClosePersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	reopenedRepository, _ := storepkg.BindVoteRepository(reopened, "demo")
+	reopenedRepository, _ := storepkg.BindVoteRepository(reopened, testTenantRef("demo"))
 	loaded, ok := reopenedRepository.Get(created.ID)
 	if !ok || loaded.Status != ballotStatusClosed || loaded.Votes["owner@example.com"].Option != "Nein" {
 		t.Fatalf("loaded ballot = %+v ok=%v", loaded, ok)
@@ -557,7 +572,7 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 		t.Fatalf("owner1 vote: %v", err)
 	}
 	item, _ := testVoteRepository(t, a, "demo").Get(created.ID)
-	view := a.ballotViewForActor(testRequestRepositories(t, a, "demo"), "demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
+	view := a.ballotViewForActor(testRequestRepositories(t, a, "demo"), testTenantRef("demo"), "beirat@example.com", roleBeirat, item, time.Now(), true)
 	if view.TotalWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 400000) || view.EligibleWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 1000000) || view.Participation != "40,0 %" || view.QuorumStatus != "Quorum offen" || view.WinnerLabel != "Ja" {
 		t.Fatalf("single-vote tally = %+v", view)
 	}
@@ -565,7 +580,7 @@ func TestBallotTallyQuorumAutoCloseAndProtocol(t *testing.T) {
 		t.Fatalf("owner2 vote: %v", err)
 	}
 	item, _ = testVoteRepository(t, a, "demo").Get(created.ID)
-	view = a.ballotViewForActor(testRequestRepositories(t, a, "demo"), "demo", "beirat@example.com", roleBeirat, item, time.Now(), true)
+	view = a.ballotViewForActor(testRequestRepositories(t, a, "demo"), testTenantRef("demo"), "beirat@example.com", roleBeirat, item, time.Now(), true)
 	if view.TotalWeightLabel != formatBallotResultWeight(ballotWeightingPerShare, 1000000) || view.Participation != "100,0 %" || view.QuorumStatus != "Quorum erreicht" || view.WinnerLabel != "Nein" {
 		t.Fatalf("full tally = %+v", view)
 	}
@@ -805,7 +820,7 @@ func TestIssueStoreCreateListPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newIssueStore: %v", err)
 	}
-	issues, _ := storepkg.BindIssueRepository(issueStorage, "demo")
+	issues, _ := storepkg.BindIssueRepository(issueStorage, testTenantRef("demo"))
 	created, err := issues.Create(residentIssue{
 		TenantSlug:     "DEMO",
 		AuthorEmail:    "Resident@Example.com",
@@ -830,7 +845,7 @@ func TestIssueStoreCreateListPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	reopenedIssues, _ := storepkg.BindIssueRepository(reopened, "demo")
+	reopenedIssues, _ := storepkg.BindIssueRepository(reopened, testTenantRef("demo"))
 	byAuthor := reopenedIssues.ListAuthor("resident@example.com")
 	if len(byAuthor) != 1 || byAuthor[0].Title != "Licht im Stiegenhaus" || byAuthor[0].TenantSlug != "demo" {
 		t.Fatalf("ListAuthor = %+v", byAuthor)
@@ -964,7 +979,7 @@ func TestUserRowsDeriveStatusFromActivity(t *testing.T) {
 	a := &app{defaultTenant: "demo", profiles: map[string]userProfile{}, inviteStore: inv, activityStore: act}
 
 	byEmail := map[string]userRow{}
-	for _, r := range a.userRows("demo") {
+	for _, r := range a.userRows(testTenantRef("demo")) {
 		byEmail[r.Email] = r
 	}
 	if got := byEmail["loggedin@example.com"]; got.Status != "Aktiv" || !strings.Contains(got.LastSeen, "zuletzt angemeldet") {
@@ -1669,7 +1684,7 @@ func TestRoleForUsesTenantMembershipOverride(t *testing.T) {
 		},
 		AuthMethods: defaultAuthMethods(),
 	})
-	a.tenants["haus-b"] = tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Haus B"}
+	addTestTenant(a, tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Haus B"})
 
 	if got := a.roleFor("multi@example.com", "demo"); got != roleManager {
 		t.Fatalf("roleFor demo = %q, want %q", got, roleManager)
@@ -1698,11 +1713,11 @@ func TestRoleForUsesTenantMembershipOverride(t *testing.T) {
 		t.Fatalf("currentUser ok=%v tenant=%q role=%q, want demo manager", ok, tenantSlug, role)
 	}
 
-	demoRow := userRowForEmail(t, a.userRows("demo"), "multi@example.com")
+	demoRow := userRowForEmail(t, a.userRows(testTenantRef("demo")), "multi@example.com")
 	if demoRow.Role != roleManager || !demoRow.ParkingChecked {
 		t.Fatalf("demo row = %+v, want manager with parking checked", demoRow)
 	}
-	otherRow := userRowForEmail(t, a.userRows("haus-b"), "multi@example.com")
+	otherRow := userRowForEmail(t, a.userRows(testTenantRef("haus-b")), "multi@example.com")
 	if otherRow.Role != roleResident || otherRow.ParkingChecked {
 		t.Fatalf("haus-b row = %+v, want resident without parking", otherRow)
 	}
@@ -2004,7 +2019,7 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 			t.Fatalf("profile page should contain %q", want)
 		}
 	}
-	row := userRowForEmail(t, a.userRows("demo"), "resident@example.com")
+	row := userRowForEmail(t, a.userRows(testTenantRef("demo")), "resident@example.com")
 	if row.DisplayName != "Dr. Resi Dent" || row.Phone != "+43 1 234" || !row.DirectoryOptIn || row.Role != roleResident || row.ParkingChecked {
 		t.Fatalf("roster row = %+v, want overlay display without authz escalation", row)
 	}
@@ -2309,7 +2324,7 @@ func TestUserRowsDoesNotInjectSyntheticEmptyRow(t *testing.T) {
 	a.allowed = map[string]struct{}{}
 	a.admins = map[string]struct{}{}
 
-	rows := a.userRows("demo")
+	rows := a.userRows(testTenantRef("demo"))
 	if len(rows) != 0 {
 		t.Fatalf("empty userRows = %+v, want no synthetic rows", rows)
 	}
@@ -3232,8 +3247,8 @@ func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newAnnouncementStore: %v", err)
 	}
-	repository, _ := storepkg.BindAnnouncementRepository(backend, "demo")
-	otherRepository, _ := storepkg.BindAnnouncementRepository(backend, "other")
+	repository, _ := storepkg.BindAnnouncementRepository(backend, testTenantRef("demo"))
+	otherRepository, _ := storepkg.BindAnnouncementRepository(backend, testTenantRef("other"))
 	now := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	expiredAt := now.Add(-time.Hour)
 	future, err := repository.Create(announcement{TenantSlug: "demo", Title: "Future", Body: "Later", Category: "Info", PublishedAt: now.Add(time.Hour)})
@@ -3268,7 +3283,7 @@ func TestAnnouncementStoreCRUDVisibleSortPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	reopenedRepository, _ := storepkg.BindAnnouncementRepository(reopened, "demo")
+	reopenedRepository, _ := storepkg.BindAnnouncementRepository(reopened, testTenantRef("demo"))
 	all := reopenedRepository.List()
 	if len(all) != 3 {
 		t.Fatalf("reopened list len = %d, want 3 after delete", len(all))
@@ -3290,7 +3305,7 @@ func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newAnnouncementReadStore: %v", err)
 	}
-	repository, ok := storepkg.BindAnnouncementReadRepository(storage, "demo")
+	repository, ok := storepkg.BindAnnouncementReadRepository(storage, testTenantRef("demo"))
 	if !ok {
 		t.Fatal("bind announcement read repository")
 	}
@@ -3305,7 +3320,7 @@ func TestAnnouncementReadStorePersistsSeenState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen read store: %v", err)
 	}
-	reopenedRepository, ok := storepkg.BindAnnouncementReadRepository(reopened, "demo")
+	reopenedRepository, ok := storepkg.BindAnnouncementReadRepository(reopened, testTenantRef("demo"))
 	if !ok {
 		t.Fatal("bind reopened announcement read repository")
 	}
@@ -3320,8 +3335,8 @@ func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newEventStore: %v", err)
 	}
-	repository, _ := storepkg.BindEventRepository(backend, "demo")
-	otherRepository, _ := storepkg.BindEventRepository(backend, "other")
+	repository, _ := storepkg.BindEventRepository(backend, testTenantRef("demo"))
+	otherRepository, _ := storepkg.BindEventRepository(backend, testTenantRef("other"))
 	now := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	past, err := repository.Create(houseEvent{TenantSlug: "demo", Title: "Alte Reinigung", Category: "Reinigung", StartsAt: now.AddDate(0, 0, -2)})
 	if err != nil {
@@ -3355,7 +3370,7 @@ func TestEventStoreCRUDUpcomingPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	reopenedRepository, _ := storepkg.BindEventRepository(reopened, "demo")
+	reopenedRepository, _ := storepkg.BindEventRepository(reopened, testTenantRef("demo"))
 	events := reopenedRepository.List()
 	if len(events) != 1 || events[0].Title != "Versammlung aktualisiert" {
 		t.Fatalf("reopened events = %+v", events)
@@ -3840,7 +3855,7 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	if loc := rr.Header().Get("Location"); !strings.HasPrefix(loc, "/demo/app/anliegen/") || !strings.HasSuffix(loc, "?created=1") {
 		t.Fatalf("redirect = %q", loc)
 	}
-	issueRepository, _ := storepkg.BindIssueRepository(store, "demo")
+	issueRepository, _ := storepkg.BindIssueRepository(store, testTenantRef("demo"))
 	issues := issueRepository.ListAuthor("resident@example.com")
 	if len(issues) != 1 {
 		t.Fatalf("stored issues = %+v", issues)
@@ -3855,7 +3870,7 @@ func TestResidentCanSubmitIssueWithPhoto(t *testing.T) {
 	if len(issue.PhotoPaths) != 0 {
 		t.Fatalf("legacy photo paths = %+v, want none", issue.PhotoPaths)
 	}
-	attachmentRepository, _ := storepkg.BindAttachmentRepository(managedAttachments, "demo")
+	attachmentRepository, _ := storepkg.BindAttachmentRepository(managedAttachments, testTenantRef("demo"))
 	attachments := attachmentRepository.ListEntity("issue", issue.ID)
 	if len(attachments) != 1 {
 		t.Fatalf("managed attachments = %+v, want one", attachments)
@@ -3924,7 +3939,7 @@ func TestMigratedLegacyIssuePhotoStillRendersOnTheIssue(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(legacyDir, "demo", legacyFilename), minimalPNG(), 0o600); err != nil {
 		t.Fatalf("write legacy photo: %v", err)
 	}
-	issueRepository, _ := storepkg.BindIssueRepository(issues, "demo")
+	issueRepository, _ := storepkg.BindIssueRepository(issues, testTenantRef("demo"))
 	if _, err := issueRepository.Create(residentIssue{
 		ID:           "legacy-1",
 		TenantSlug:   "demo",
@@ -3940,7 +3955,7 @@ func TestMigratedLegacyIssuePhotoStillRendersOnTheIssue(t *testing.T) {
 		t.Fatalf("create legacy issue: %v", err)
 	}
 
-	n, err := migrateLegacyIssuePhotos(issues, attachments, legacyDir, []string{"demo"}, time.Now())
+	n, err := migrateLegacyIssuePhotos(issues, attachments, legacyDir, []storepkg.TenantRef{testTenantRef("demo")}, time.Now())
 	if err != nil || n != 1 {
 		t.Fatalf("migrate: n=%d err=%v", n, err)
 	}
@@ -4071,7 +4086,7 @@ func TestIssueSubmitRejectsInvalidPhotoType(t *testing.T) {
 	if loc := rr.Header().Get("Location"); loc != "/demo/app/anliegen?issue=photo" {
 		t.Fatalf("redirect = %q", loc)
 	}
-	issueRepository, _ := storepkg.BindIssueRepository(store, "demo")
+	issueRepository, _ := storepkg.BindIssueRepository(store, testTenantRef("demo"))
 	if got := issueRepository.ListAuthor("resident@example.com"); len(got) != 0 {
 		t.Fatalf("invalid photo must not create issue, got %+v", got)
 	}
@@ -4680,10 +4695,10 @@ func TestServiceProviderOnlySeesAssignedIssues(t *testing.T) {
 			t.Fatalf("service provider page should not expose %q:\n%s", hidden, body)
 		}
 	}
-	if !a.canViewIssueForActor("demo", assigned, "service@example.com", roleServiceProvider) {
+	if !a.canViewIssueForActor(testTenantRef("demo"), assigned, "service@example.com", roleServiceProvider) {
 		t.Fatal("service provider should be able to view assigned issue")
 	}
-	if a.canViewIssueForActor("demo", unassigned, "service@example.com", roleServiceProvider) {
+	if a.canViewIssueForActor(testTenantRef("demo"), unassigned, "service@example.com", roleServiceProvider) {
 		t.Fatal("service provider should not be able to view unassigned issue")
 	}
 	if emailListContains(a.tenantNotificationEmails("demo"), "service@example.com") {
@@ -5027,7 +5042,7 @@ func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testin
 	if !ok {
 		t.Fatal("closed issue not found")
 	}
-	if a.canViewIssueForActor("demo", closed, "service@example.com", roleServiceProvider) {
+	if a.canViewIssueForActor(testTenantRef("demo"), closed, "service@example.com", roleServiceProvider) {
 		t.Fatal("closed issue should lock service provider out")
 	}
 
@@ -5044,7 +5059,7 @@ func TestExplicitlyEnabledServiceProviderAccessSupportsInviteAndRevoke(t *testin
 	if !ok {
 		t.Fatal("revoked issue not found")
 	}
-	if a.canViewIssueForActor("demo", revoked, "service@example.com", roleServiceProvider) {
+	if a.canViewIssueForActor(testTenantRef("demo"), revoked, "service@example.com", roleServiceProvider) {
 		t.Fatal("unassigned issue should lock service provider out")
 	}
 
@@ -5143,7 +5158,7 @@ func TestServiceProviderCanWorkAssignedIssueWithCommentPhotoAndProposal(t *testi
 	if !ok || closed.Status != issueStatusDone || closed.ServiceProposal != "Erledigt am Dienstagvormittag" {
 		t.Fatalf("service done update = %+v ok=%v", closed, ok)
 	}
-	if a.canViewIssueForActor("demo", closed, "service@example.com", roleServiceProvider) {
+	if a.canViewIssueForActor(testTenantRef("demo"), closed, "service@example.com", roleServiceProvider) {
 		t.Fatal("service provider should lose access after marking issue done")
 	}
 }
@@ -5264,7 +5279,7 @@ func TestServiceProviderCanAcceptButNotReopen(t *testing.T) {
 	if !ok || updated.Status != issueStatusAccepted {
 		t.Fatalf("status after accept = %q, want %q", updated.Status, issueStatusAccepted)
 	}
-	if !a.canViewIssueForActor("demo", updated, "service@example.com", roleServiceProvider) {
+	if !a.canViewIssueForActor(testTenantRef("demo"), updated, "service@example.com", roleServiceProvider) {
 		t.Fatal("Angenommen must keep the issue open and accessible to the provider")
 	}
 
@@ -5479,7 +5494,7 @@ func TestContactBookCRUDTenantVisibilityAndServiceProviderDatalist(t *testing.T)
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.serviceAccessEnabled = true
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
-	a.tenants["other"] = tenantConfig{Slug: "other", Name: "Other Portal", Address: "Andere Gasse 1"}
+	addTestTenant(a, tenantConfig{Slug: "other", Name: "Other Portal", Address: "Andere Gasse 1"})
 
 	save := authedFormRequest(t, a, "manager@example.com", "/demo/app/kontakte", url.Values{
 		"kind":    {"Dienstleister"},
@@ -5927,7 +5942,7 @@ func TestAnnouncementUnreadBadgeClearsAfterArchiveView(t *testing.T) {
 	if archive.Code != http.StatusOK {
 		t.Fatalf("archive status = %d", archive.Code)
 	}
-	repository, ok := storepkg.BindAnnouncementReadRepository(a.announcementReadStore, "demo")
+	repository, ok := storepkg.BindAnnouncementReadRepository(a.announcementReadStore, testTenantRef("demo"))
 	if !ok {
 		t.Fatal("bind announcement read repository")
 	}
@@ -6081,6 +6096,9 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		defaultTenant: "demo",
 		tenants: map[string]tenantConfig{
 			"demo": {Slug: "demo", Name: "WEG Portal", Address: "Musterweg 1", MapLatitude: 48.2082, MapLongitude: 16.3738, MapZoom: 17, HeroImageURL: defaultTenantHeroImageURL},
+		},
+		tenantIdentities: map[string]storepkg.TenantIdentity{
+			"demo": {ID: testTenantRef("demo").ID, Slug: "demo", Name: "WEG Portal"},
 		},
 		profiles: map[string]userProfile{
 			profile.Email: profile,
@@ -6545,7 +6563,7 @@ func TestParkingPaymentRemindersRespectPreferencesAndDedupe(t *testing.T) {
 	}
 
 	now := time.Date(2026, 7, 7, 12, 0, 0, 0, time.Local)
-	sent := a.sendParkingPaymentReminders(a.tenants["demo"], "manager@example.com", roleManager, now)
+	sent := a.sendParkingPaymentReminders(a.tenants["demo"], testTenantRef("demo"), "manager@example.com", roleManager, now)
 	if sent != 1 || len(mailer.notifications) != 1 {
 		t.Fatalf("reminders sent=%d notifications=%+v", sent, mailer.notifications)
 	}
@@ -6560,7 +6578,7 @@ func TestParkingPaymentRemindersRespectPreferencesAndDedupe(t *testing.T) {
 	if _, ok := state.ReminderSentAt["muted@example.com"]; ok {
 		t.Fatalf("muted recipient should not be marked reminded: %+v", state)
 	}
-	again := a.sendParkingPaymentReminders(a.tenants["demo"], "manager@example.com", roleManager, now.Add(time.Hour))
+	again := a.sendParkingPaymentReminders(a.tenants["demo"], testTenantRef("demo"), "manager@example.com", roleManager, now.Add(time.Hour))
 	if again != 0 || len(mailer.notifications) != 1 {
 		t.Fatalf("duplicate reminders sent=%d notifications=%+v", again, mailer.notifications)
 	}

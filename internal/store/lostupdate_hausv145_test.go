@@ -14,7 +14,7 @@ func TestUnitStoreConcurrentUpsertKeepsAll(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	repository, _ := BindUnitRepository(s, "demo")
+	repository, _ := BindUnitRepository(s, testTenantRef("demo"))
 	const n = 50
 	var wg sync.WaitGroup
 	for i := 0; i < n; i++ {
@@ -36,7 +36,7 @@ func TestUnitStoreConcurrentUpsertKeepsAll(t *testing.T) {
 // Duplicate semantics preserved: a second create with the same ID is rejected.
 func TestUnitStoreUpsertDuplicateDetection(t *testing.T) {
 	s, _ := NewUnitStore(filepath.Join(t.TempDir(), "units.json"))
-	repository, _ := BindUnitRepository(s, "demo")
+	repository, _ := BindUnitRepository(s, testTenantRef("demo"))
 	if dup, _ := repository.UpsertUnit("", Unit{ID: "a", TenantSlug: "demo", Label: "A"}); dup {
 		t.Fatal("first create must not be a duplicate")
 	}

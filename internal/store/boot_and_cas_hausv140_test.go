@@ -102,7 +102,7 @@ func TestAttachmentCreateRollsBackOnPartialFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new attachment store: %v", err)
 	}
-	attachments, _ := BindAttachmentRepository(store, "demo")
+	attachments, _ := BindAttachmentRepository(store, testTenantRef("demo"))
 	now := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
 
 	// First upload is a valid PNG (its file gets written); the second is a text
@@ -139,7 +139,7 @@ func TestDocumentReplaceCASVersioning(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new document store: %v", err)
 	}
-	documents, _ := BindDocumentRepository(store, "demo")
+	documents, _ := BindDocumentRepository(store, testTenantRef("demo"))
 	now := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
 
 	created, err := documents.Create(

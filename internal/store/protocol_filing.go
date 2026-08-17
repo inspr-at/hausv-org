@@ -7,8 +7,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 // ProtocolFiler files a generated handover protocol as a document AND links it
@@ -19,7 +17,7 @@ import (
 // should treat that as success and must NOT retry, because a retry is exactly
 // what produced duplicates.
 type ProtocolFiler interface {
-	FileHandoverProtocol(tenantSlug string, handoverID string, doc DocumentRecord, filename string, contentType string, data []byte, now time.Time) (created DocumentRecord, updated HandoverRecord, alreadyFiled bool, err error)
+	FileHandoverProtocol(tenant TenantRef, handoverID string, doc DocumentRecord, filename string, contentType string, data []byte, now time.Time) (created DocumentRecord, updated HandoverRecord, alreadyFiled bool, err error)
 }
 
 var (
@@ -44,15 +42,16 @@ func NewSQLProtocolFiler(documents *SQLDocumentStore, handovers *SQLHandoverStor
 	return &SQLProtocolFiler{db: documents.db, documents: documents, handovers: handovers}
 }
 
-func (f *SQLProtocolFiler) FileHandoverProtocol(tenantSlug string, handoverID string, doc DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, HandoverRecord, bool, error) {
+func (f *SQLProtocolFiler) FileHandoverProtocol(tenant TenantRef, handoverID string, doc DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, HandoverRecord, bool, error) {
 	if f == nil {
 		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("protocol filer unavailable")
 	}
-	tenantSlug = textutil.Slug(tenantSlug)
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	handoverID = strings.TrimSpace(handoverID)
-	if tenantSlug == "" || handoverID == "" {
+	if !tenantOK || handoverID == "" {
 		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("invalid handover reference")
 	}
+	tenantSlug := resolvedTenant.Slug
 	if now.IsZero() {
 		now = time.Now()
 	}
@@ -71,6 +70,19 @@ func (f *SQLProtocolFiler) FileHandoverProtocol(tenantSlug string, handoverID st
 		return DocumentRecord{}, HandoverRecord{}, false, err
 	}
 	defer tx.Rollback()
+
+	// Acquire the handover row's write lock before reading it. SQLite already
+	// serialized these writers at the database level; PostgreSQL otherwise lets
+	// both transactions observe an empty FiledDocumentID and create duplicates.
+	locked, err := tx.Exec(`UPDATE handovers SET data=data WHERE tenant_slug=$1 AND id=$2`, tenantSlug, handoverID)
+	if err != nil {
+		_ = os.Remove(path)
+		return DocumentRecord{}, HandoverRecord{}, false, err
+	}
+	if count, err := locked.RowsAffected(); err != nil || count == 0 {
+		_ = os.Remove(path)
+		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("handover not found")
+	}
 
 	var raw string
 	if err := tx.QueryRow(
@@ -124,12 +136,16 @@ func NewSequentialProtocolFiler(documents DocumentStorage, handovers HandoverSto
 	return &SequentialProtocolFiler{documents: documents, handovers: backend}
 }
 
-func (f *SequentialProtocolFiler) FileHandoverProtocol(tenantSlug string, handoverID string, doc DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, HandoverRecord, bool, error) {
+func (f *SequentialProtocolFiler) FileHandoverProtocol(tenant TenantRef, handoverID string, doc DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, HandoverRecord, bool, error) {
 	if f == nil || f.documents == nil || f.handovers == nil {
 		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("protocol filer unavailable")
 	}
-	tenantSlug = textutil.Slug(tenantSlug)
+	resolvedTenant, tenantOK := validTenantRef(tenant)
 	handoverID = strings.TrimSpace(handoverID)
+	if !tenantOK || handoverID == "" {
+		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("invalid handover reference")
+	}
+	tenantSlug := resolvedTenant.Slug
 	existing, found := f.handovers.get(tenantSlug, handoverID)
 	if !found {
 		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("handover not found")
@@ -137,7 +153,7 @@ func (f *SequentialProtocolFiler) FileHandoverProtocol(tenantSlug string, handov
 	if strings.TrimSpace(existing.FiledDocumentID) != "" {
 		return DocumentRecord{}, existing, true, nil
 	}
-	documents, ok := BindDocumentRepository(f.documents, tenantSlug)
+	documents, ok := BindDocumentRepository(f.documents, resolvedTenant)
 	if !ok {
 		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("document store unavailable")
 	}

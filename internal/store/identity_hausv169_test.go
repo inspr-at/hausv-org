@@ -83,8 +83,8 @@ func TestSecondHouseLinksMembershipNotSecondPerson(t *testing.T) {
 		t.Fatalf("expected 2 memberships, got %d", len(got))
 	}
 	// Each house sees only its own member list.
-	demo, _ := BindIdentityRepository(s, "demo")
-	hausBRepo, _ := BindIdentityRepository(s, "haus-b")
+	demo, _ := BindIdentityRepository(s, testTenantRef("demo"))
+	hausBRepo, _ := BindIdentityRepository(s, testTenantRef("haus-b"))
 	if got := demo.ListHouseMembers(); len(got) != 1 || got[0].Membership.Role != RoleOwner {
 		t.Fatalf("demo members = %+v", got)
 	}
@@ -123,7 +123,7 @@ func TestEditingOneMembershipLeavesOthersUntouched(t *testing.T) {
 		t.Fatalf("edit a: %v", err)
 	}
 
-	hausBRepo, _ := BindIdentityRepository(s, "haus-b")
+	hausBRepo, _ := BindIdentityRepository(s, testTenantRef("haus-b"))
 	afterEdit, ok := hausBRepo.Membership(person.ID)
 	if !ok {
 		t.Fatal("the other membership disappeared")
@@ -142,8 +142,8 @@ func TestRemoveMembershipKeepsPersonAndOtherHouses(t *testing.T) {
 	_, _ = s.SetMembership(HouseMembership{PersonID: person.ID, TenantSlug: "demo", Role: RoleOwner}, now)
 	_, _ = s.SetMembership(HouseMembership{PersonID: person.ID, TenantSlug: "haus-b", Role: RoleRenter}, now)
 
-	demo, _ := BindIdentityRepository(s, "demo")
-	hausBRepo, _ := BindIdentityRepository(s, "haus-b")
+	demo, _ := BindIdentityRepository(s, testTenantRef("demo"))
+	hausBRepo, _ := BindIdentityRepository(s, testTenantRef("haus-b"))
 	removed, err := demo.RemoveMembership(person.ID)
 	if err != nil || !removed {
 		t.Fatalf("remove: removed=%v err=%v", removed, err)
@@ -250,8 +250,8 @@ func TestImportProfilesIsLosslessAndIdempotent(t *testing.T) {
 	if len(memberships) != 2 {
 		t.Fatalf("expected 2 memberships, got %+v", memberships)
 	}
-	demo, _ := BindIdentityRepository(s, "demo")
-	hausBRepo, _ := BindIdentityRepository(s, "haus-b")
+	demo, _ := BindIdentityRepository(s, testTenantRef("demo"))
+	hausBRepo, _ := BindIdentityRepository(s, testTenantRef("haus-b"))
 	demoMembership, ok := demo.Membership(person.ID)
 	if !ok || demoMembership.Role != RoleRenter {
 		t.Fatalf("demo membership should inherit the default role: %+v", demoMembership)
@@ -286,7 +286,7 @@ func TestImportPicksUpMembershipOnlyHouses(t *testing.T) {
 	if !ok {
 		t.Fatal("person missing")
 	}
-	hausC, _ := BindIdentityRepository(s, "haus-c")
+	hausC, _ := BindIdentityRepository(s, testTenantRef("haus-c"))
 	if got, ok := hausC.Membership(person.ID); !ok || got.Role != RoleManager {
 		t.Fatalf("membership-only house was dropped: %+v ok=%v", got, ok)
 	}

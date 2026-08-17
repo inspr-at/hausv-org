@@ -25,7 +25,7 @@ func newPortalContextTestApp(t *testing.T) *app {
 		},
 		AuthMethods: defaultAuthMethods(),
 	})
-	a.tenants["haus-b"] = tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Nebenweg 2", MapLatitude: 47.0707, MapLongitude: 15.4395, MapZoom: 17}
+	addTestTenant(a, tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Nebenweg 2", MapLatitude: 47.0707, MapLongitude: 15.4395, MapZoom: 17})
 	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{
 		{ID: "top-owner", Label: "Eigentum", OwnerEmails: []string{"multi@example.com"}},
 		{ID: "top-renter", Label: "Miete", RenterEmails: []string{"multi@example.com"}},
@@ -205,7 +205,7 @@ func TestPortalContextRejectsUnassignedRenterRole(t *testing.T) {
 
 func TestPortalContextSwitcherListsOnlyOwnedContexts(t *testing.T) {
 	a := newPortalContextTestApp(t)
-	a.tenants["foreign"] = tenantConfig{Slug: "foreign", Name: "Fremdes Haus", Address: "Fremdweg 9"}
+	addTestTenant(a, tenantConfig{Slug: "foreign", Name: "Fremdes Haus", Address: "Fremdweg 9"})
 	page := authedRequest(t, a, "multi@example.com", "/demo/app")
 	if page.Code != http.StatusOK {
 		t.Fatalf("portal status = %d", page.Code)

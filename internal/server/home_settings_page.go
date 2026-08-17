@@ -14,7 +14,7 @@ import (
 func (a *app) renderHomeIdentitySettingsTempl(w http.ResponseWriter, r *http.Request, ac authCtx, profile energy.HomeProfile, data map[string]any) {
 	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.HomeSettingsPage(web.HomeSettingsPageData{
 		Portal:              a.settingsPortalContext(ac, data["Title"].(string), "settings"),
-		HomeIdentity:        a.homeIdentityFromProfile(profile),
+		HomeIdentity:        a.homeIdentityFromProfile(ac.tenantRef, profile),
 		HouseholdName:       profile.HouseholdName,
 		HomeType:            profile.HomeType,
 		HomeTypeLabel:       data["HomeTypeLabel"].(string),

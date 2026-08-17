@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/version"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
@@ -37,11 +38,11 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
 	msg, msgOK := eventMessage(r.URL.Query().Get("event"))
-	upcomingViews := a.eventViews(tenant.Slug, upcoming, now, email, role)
+	upcomingViews := a.eventViews(ac.tenantRef, upcoming, now, email, role)
 	if len(upcomingViews) > 0 {
 		upcomingViews[0].IsNext = true
 	}
-	pastViews := a.eventViews(tenant.Slug, past, now, email, role)
+	pastViews := a.eventViews(ac.tenantRef, past, now, email, role)
 	if a.portalTemplEnabled {
 		monthGroups := eventMonthGroups(upcoming, upcomingViews, time.Local)
 		months := make([]web.EventsMonth, 0, len(monthGroups))
@@ -104,7 +105,7 @@ func (a *app) eventsPortalContext(ac authCtx) web.PortalPageData {
 	}
 	openIssues := 0
 	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(tenant.Slug, email, role))
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, email, role))
 	}
 	canUseResidentAreas := roleCanUseResidentAreas(role)
 	canSeeParking := modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking))
@@ -399,14 +400,15 @@ func eventViews(items []houseEvent, now time.Time) []houseEventView {
 	return views
 }
 
-func (a *app) eventViews(tenantSlug string, items []houseEvent, now time.Time, actorEmail string, role string) []houseEventView {
+func (a *app) eventViews(tenant store.TenantRef, items []houseEvent, now time.Time, actorEmail string, role string) []houseEventView {
+	tenantSlug := tenant.Slug
 	views := eventViews(items, now)
 	for i := range views {
 		views[i].CanManage = canManageEvents(actorFor(actorEmail, tenantSlug, role), resourceFor(items[i].TenantSlug))
 		if a == nil || a.attachmentStore == nil {
 			continue
 		}
-		attachments := a.attachmentViewsForEntity(tenantSlug, "event", views[i].ID, actorEmail, role)
+		attachments := a.attachmentViewsForEntity(tenant, "event", views[i].ID, actorEmail, role)
 		if len(attachments) == 0 {
 			continue
 		}

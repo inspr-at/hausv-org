@@ -26,7 +26,7 @@ func TestContactBookStorageParity(t *testing.T) {
 
 	for name, build := range backends {
 		t.Run(name, func(t *testing.T) {
-			s, ok := BindContactBookRepository(build(t), "demo")
+			s, ok := BindContactBookRepository(build(t), testTenantRef("demo"))
 			if !ok {
 				t.Fatal("bind contact repository")
 			}
@@ -95,7 +95,7 @@ func TestSQLContactImportFromJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json store: %v", err)
 	}
-	jsonRepo, _ := BindContactBookRepository(jsonStore, "demo")
+	jsonRepo, _ := BindContactBookRepository(jsonStore, testTenantRef("demo"))
 	a, _, _ := jsonRepo.Upsert(ManagedContact{TenantSlug: "demo", Kind: "dienstleister", Name: "Alpha", Phone: "+43 1 1", Active: true})
 	_, _, _ = jsonRepo.Upsert(ManagedContact{TenantSlug: "demo", Kind: "notdienst", Company: "Beta GmbH", Email: "b@example.com", Active: true})
 
@@ -108,7 +108,7 @@ func TestSQLContactImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	sqlRepo, _ := BindContactBookRepository(sqlStore, "demo")
+	sqlRepo, _ := BindContactBookRepository(sqlStore, testTenantRef("demo"))
 	list := sqlRepo.List(true)
 	if len(list) != 2 {
 		t.Fatalf("imported %d contacts, want 2: %+v", len(list), list)

@@ -37,7 +37,7 @@ func TestDeactivatedUserCannotLogIn(t *testing.T) {
 	if a.isAuthMethodAllowed("invitee@example.com", "demo", authMethodEmail) || a.isAuthMethodAllowed("invitee@example.com", "demo", authMethodOIDC) {
 		t.Fatal("deactivated user must not pass any auth-method check")
 	}
-	row := userRowForEmail(t, a.userRows("demo"), "invitee@example.com")
+	row := userRowForEmail(t, a.userRows(testTenantRef("demo")), "invitee@example.com")
 	if !row.Deactivated || row.Status != "Deaktiviert" {
 		t.Fatalf("roster should show Deaktiviert: %+v", row)
 	}

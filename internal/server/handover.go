@@ -113,7 +113,7 @@ func handoverUnitOptions(units []unit, selected string) []selectOption {
 }
 
 func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, email, role := ac.tenant, ac.email, ac.role
+	email, role := ac.email, ac.role
 	if !canManageHandovers(ac.actor(), ac.resource()) {
 		http.Error(w, "Übergabeprotokolle sind der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
@@ -123,7 +123,7 @@ func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		items = ac.repositories.handovers.List()
 	}
 	msg, okMsg := handoverMessage(r.URL.Query().Get("handover"))
-	views := a.handoverViewsForActor(tenant.Slug, email, role, items)
+	views := a.handoverViewsForActor(ac.tenantRef, email, role, items)
 	sections := handoverSections(views)
 	if a.portalTemplEnabled {
 		a.renderHandoversTempl(w, r, web.HandoversPageData{
@@ -182,7 +182,7 @@ func (a *app) handoverPortalContext(ac authCtx) web.PortalPageData {
 	}
 	openIssues := 0
 	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenant.Slug, ac.email, ac.role))
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, ac.email, ac.role))
 	}
 	return web.PortalPageData{
 		Title:               "Übergaben · " + houseDisplayName(ac.tenant) + " · " + ac.role,
@@ -593,8 +593,13 @@ func (a *app) handoverConfirmPage(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	identity, ok := a.tenantIdentity(tenant.Slug)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
 	confirmation := item.Confirmations[idx]
-	handover := a.handoverViewForActor(item.TenantSlug, "", roleManager, item)
+	handover := a.handoverViewForActor(identity.Ref(), "", roleManager, item)
 	for attachmentIndex := range handover.Attachments {
 		attachment := &handover.Attachments[attachmentIndex]
 		base := "/handover/" + url.PathEscape(token) + "/attachments/" + url.PathEscape(attachment.ID)
@@ -631,7 +636,12 @@ func (a *app) handoverAttachment(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	attachments, ok := store.BindAttachmentRepository(a.attachmentStore, handover.TenantSlug)
+	identity, ok := a.tenantIdentity(handover.TenantSlug)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	attachments, ok := store.BindAttachmentRepository(a.attachmentStore, identity.Ref())
 	if !ok {
 		http.NotFound(w, r)
 		return
@@ -816,7 +826,7 @@ func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request, ac au
 	// filer re-checks "already filed" inside its transaction, which is the
 	// authoritative guard; the early return above only avoids the wasted PDF.
 	created, _, alreadyFiled, err := a.filerOrFallback().FileHandoverProtocol(
-		tenant.Slug, item.ID,
+		ac.tenantRef, item.ID,
 		documentRecord{
 			TenantSlug: tenant.Slug,
 			Title:      "Übergabeprotokoll " + item.Title,
@@ -853,10 +863,10 @@ func (a *app) fileHandoverProtocol(w http.ResponseWriter, r *http.Request, ac au
 	http.Redirect(w, r, "/app/uebergaben?handover=filed#handover-"+url.PathEscape(item.ID), http.StatusSeeOther)
 }
 
-func (a *app) handoverViewsForActor(tenantSlug string, email string, role string, items []handoverRecord) []handoverView {
+func (a *app) handoverViewsForActor(tenant store.TenantRef, email string, role string, items []handoverRecord) []handoverView {
 	views := make([]handoverView, 0, len(items))
 	for _, item := range items {
-		views = append(views, a.handoverViewForActor(tenantSlug, email, role, item))
+		views = append(views, a.handoverViewForActor(tenant, email, role, item))
 	}
 	return views
 }
@@ -881,18 +891,19 @@ func handoverSections(views []handoverView) []handoverSectionView {
 	return sections
 }
 
-func (a *app) handoverViewForActor(tenantSlug string, email string, role string, item handoverRecord) handoverView {
+func (a *app) handoverViewForActor(tenant store.TenantRef, email string, role string, item handoverRecord) handoverView {
+	tenantSlug := tenant.Slug
 	item = normalizeHandover(item)
 	unitLabel := item.UnitID
 	if a != nil && a.unitStore != nil && item.UnitID != "" {
-		units, _ := store.BindUnitRepository(a.unitStore, tenantSlug)
+		units, _ := store.BindUnitRepository(a.unitStore, tenant)
 		if units != nil {
 			if label := handoverUnitLabel(units.List(), item.UnitID); label != "" {
 				unitLabel = label
 			}
 		}
 	}
-	attachments := a.attachmentViewsForEntity(tenantSlug, "handover", item.ID, email, role)
+	attachments := a.attachmentViewsForEntity(tenant, "handover", item.ID, email, role)
 	for idx := range attachments {
 		attachments[idx].DeleteRedirect = "/app/uebergaben#handover-" + url.PathEscape(item.ID)
 		if !handoverCanChangeFiles(item) {

@@ -40,7 +40,7 @@ func (s *SQLProfileOverlayStore) Get(email string) (ProfileOverlay, bool) {
 	}
 	var (
 		o         ProfileOverlay
-		optIn     int
+		optIn     bool
 		updatedAt string
 	)
 	if err := s.db.QueryRow(
@@ -49,7 +49,7 @@ func (s *SQLProfileOverlayStore) Get(email string) (ProfileOverlay, bool) {
 	).Scan(&o.Title, &o.FirstName, &o.LastName, &o.Phone, &optIn, &updatedAt); err != nil {
 		return ProfileOverlay{}, false
 	}
-	o.DirectoryOptIn = optIn != 0
+	o.DirectoryOptIn = optIn
 	if t, err := time.Parse(time.RFC3339Nano, updatedAt); err == nil {
 		o.UpdatedAt = t.UTC()
 	}
@@ -70,17 +70,13 @@ func (s *SQLProfileOverlayStore) Set(email string, overlay ProfileOverlay) error
 }
 
 func (s *SQLProfileOverlayStore) upsert(email string, o ProfileOverlay) error {
-	optIn := 0
-	if o.DirectoryOptIn {
-		optIn = 1
-	}
 	_, err := s.db.Exec(
 		`INSERT INTO profile_overlays(email, title, first_name, last_name, phone, directory_opt_in, updated_at)
 		 VALUES($1, $2, $3, $4, $5, $6, $7)
 		 ON CONFLICT(email) DO UPDATE SET
 		   title=excluded.title, first_name=excluded.first_name, last_name=excluded.last_name,
 		   phone=excluded.phone, directory_opt_in=excluded.directory_opt_in, updated_at=excluded.updated_at`,
-		email, o.Title, o.FirstName, o.LastName, o.Phone, optIn, o.UpdatedAt.UTC().Format(time.RFC3339Nano),
+		email, o.Title, o.FirstName, o.LastName, o.Phone, o.DirectoryOptIn, o.UpdatedAt.UTC().Format(time.RFC3339Nano),
 	)
 	return err
 }
@@ -103,10 +99,6 @@ func (s *SQLProfileOverlayStore) ImportOverlays(src *ProfileOverlayStore) error 
 		if email == "" {
 			continue
 		}
-		optIn := 0
-		if o.DirectoryOptIn {
-			optIn = 1
-		}
 		updatedAt := o.UpdatedAt.UTC().Format(time.RFC3339Nano)
 		if o.UpdatedAt.IsZero() {
 			updatedAt = time.Now().UTC().Format(time.RFC3339Nano)
@@ -114,7 +106,7 @@ func (s *SQLProfileOverlayStore) ImportOverlays(src *ProfileOverlayStore) error 
 		if _, err := s.db.Exec(
 			`INSERT INTO profile_overlays(email, title, first_name, last_name, phone, directory_opt_in, updated_at)
 			 VALUES($1, $2, $3, $4, $5, $6, $7) ON CONFLICT(email) DO NOTHING`,
-			email, o.Title, o.FirstName, o.LastName, o.Phone, optIn, updatedAt,
+			email, o.Title, o.FirstName, o.LastName, o.Phone, o.DirectoryOptIn, updatedAt,
 		); err != nil {
 			return err
 		}

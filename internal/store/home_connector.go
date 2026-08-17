@@ -233,14 +233,14 @@ func (s *SQLHomeConnectorStore) Heartbeat(credentialHash []byte, heartbeat HomeC
 	if err != nil || count == 0 {
 		return HomeConnector{}, false, err
 	}
-	return getHomeConnector(s.db.QueryRow, "credential_hash=?", credentialHash)
+	return getHomeConnector(s.db.QueryRow, "credential_hash=$1", credentialHash)
 }
 
 func (s *SQLHomeConnectorStore) Get(slug string) (HomeConnector, bool, error) {
 	if s == nil || s.db == nil {
 		return HomeConnector{}, false, fmt.Errorf("home connector store unavailable")
 	}
-	return getHomeConnector(s.db.QueryRow, "slug=?", textutil.Slug(slug))
+	return getHomeConnector(s.db.QueryRow, "slug=$1", textutil.Slug(slug))
 }
 
 func (s *SQLHomeConnectorStore) Revoke(slug string, now time.Time) (HomeConnector, bool, error) {

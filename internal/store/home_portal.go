@@ -10,11 +10,13 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/textutil"
+	"github.com/inspr-at/hausv-org/internal/ulid"
 )
 
 var ErrHomePortalActivationDenied = errors.New("home portal activation denied")
 
 type HomePortal struct {
+	TenantID      string
 	Slug          string
 	HouseholdName string
 	OwnerEmail    string
@@ -98,6 +100,11 @@ func (s *MemoryHomePortalStore) Activate(slug, ownerEmail string, at time.Time) 
 
 	portal, existed := s.items[slug]
 	if !existed {
+		tenantID, err := ulid.New()
+		if err != nil {
+			return HomePortal{}, false, err
+		}
+		portal.TenantID = tenantID
 		portal.ActivatedAt = at
 	}
 	portal.Slug = slug
@@ -175,6 +182,21 @@ func (s *SQLHomePortalStore) Activate(slug, ownerEmail string, at time.Time) (Ho
 		return HomePortal{}, false, ErrHomePortalActivationDenied
 	}
 
+	// A reservation is intentionally pre-tenant. Activation is the promotion
+	// point: mint the stable identity in this transaction. The onboarding rows
+	// remain slug-keyed during the compatibility window.
+	var tenantID string
+	err = tx.QueryRow(`SELECT tenant_id FROM tenant WHERE slug=$1`, slug).Scan(&tenantID)
+	if errors.Is(err, sql.ErrNoRows) {
+		tenantID, err = ulid.New()
+		if err == nil {
+			_, err = tx.Exec(`INSERT INTO tenant(tenant_id,slug,name,created_at,updated_at) VALUES($1,$2,$3,$4,$5)`,
+				tenantID, slug, strings.TrimSpace(reservation.HouseholdName), homeReservationTimestamp(at), homeReservationTimestamp(at))
+		}
+	}
+	if err != nil {
+		return HomePortal{}, false, err
+	}
 	identity := NewSQLIdentityStore(s.db)
 	person, err := scanPerson(tx.QueryRow(`SELECT `+personColumns+` FROM persons WHERE email=$1`, ownerEmail).Scan)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -199,7 +221,6 @@ func (s *SQLHomePortalStore) Activate(slug, ownerEmail string, at time.Time) (Ho
 	if _, err := identity.setMembershipTx(tx, membership, at); err != nil {
 		return HomePortal{}, false, err
 	}
-
 	activatedAt := at
 	if existed {
 		activatedAt = existing.ActivatedAt
@@ -219,7 +240,7 @@ func (s *SQLHomePortalStore) Activate(slug, ownerEmail string, at time.Time) (Ho
 		return HomePortal{}, false, err
 	}
 	return HomePortal{
-		Slug: slug, HouseholdName: strings.TrimSpace(reservation.HouseholdName), OwnerEmail: ownerEmail,
+		TenantID: tenantID, Slug: slug, HouseholdName: strings.TrimSpace(reservation.HouseholdName), OwnerEmail: ownerEmail,
 		ActivatedAt: activatedAt, UpdatedAt: at,
 	}, !existed, nil
 }
@@ -235,8 +256,8 @@ func (s *SQLHomePortalStore) ListByOwner(ownerEmail string) ([]HomePortal, error
 	if s == nil || s.db == nil {
 		return nil, fmt.Errorf("home portal store unavailable")
 	}
-	rows, err := s.db.Query(`SELECT slug,household_name,owner_email,activated_at,updated_at
-		FROM home_portals WHERE owner_email=$1 ORDER BY slug`, textutil.Email(ownerEmail))
+	rows, err := s.db.Query(`SELECT t.tenant_id,p.slug,p.household_name,p.owner_email,p.activated_at,p.updated_at
+		FROM home_portals p JOIN tenant t ON t.slug=p.slug WHERE p.owner_email=$1 ORDER BY p.slug`, textutil.Email(ownerEmail))
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +266,7 @@ func (s *SQLHomePortalStore) ListByOwner(ownerEmail string) ([]HomePortal, error
 	for rows.Next() {
 		var item HomePortal
 		var activatedAt, updatedAt string
-		if err := rows.Scan(&item.Slug, &item.HouseholdName, &item.OwnerEmail, &activatedAt, &updatedAt); err != nil {
+		if err := rows.Scan(&item.TenantID, &item.Slug, &item.HouseholdName, &item.OwnerEmail, &activatedAt, &updatedAt); err != nil {
 			return nil, err
 		}
 		item.ActivatedAt = parseHomeReservationTimestamp(activatedAt)
@@ -258,8 +279,9 @@ func (s *SQLHomePortalStore) ListByOwner(ownerEmail string) ([]HomePortal, error
 func getHomePortal(query homeReservationQueryRow, slug string) (HomePortal, bool, error) {
 	var item HomePortal
 	var activatedAt, updatedAt string
-	err := query(`SELECT slug,household_name,owner_email,activated_at,updated_at FROM home_portals WHERE slug=$1`, slug).
-		Scan(&item.Slug, &item.HouseholdName, &item.OwnerEmail, &activatedAt, &updatedAt)
+	err := query(`SELECT t.tenant_id,p.slug,p.household_name,p.owner_email,p.activated_at,p.updated_at
+		FROM home_portals p JOIN tenant t ON t.slug=p.slug WHERE p.slug=$1`, slug).
+		Scan(&item.TenantID, &item.Slug, &item.HouseholdName, &item.OwnerEmail, &activatedAt, &updatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return HomePortal{}, false, nil
 	}

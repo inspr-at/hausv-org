@@ -27,14 +27,14 @@ func TestDocumentStorageParity(t *testing.T) {
 			if err != nil {
 				t.Fatalf("json store: %v", err)
 			}
-			repository, _ := BindDocumentRepository(s, "demo")
+			repository, _ := BindDocumentRepository(s, testTenantRef("demo"))
 			return repository
 		},
 		"sqlite": func(t *testing.T) DocumentRepository {
 			dir := t.TempDir()
 			database := dbtest.Open(t)
 			t.Cleanup(func() { database.Close() })
-			repository, _ := BindDocumentRepository(NewSQLDocumentStore(database, filepath.Join(dir, "files")), "demo")
+			repository, _ := BindDocumentRepository(NewSQLDocumentStore(database, filepath.Join(dir, "files")), testTenantRef("demo"))
 			return repository
 		},
 	}
@@ -152,7 +152,7 @@ func TestSQLDocumentImportFromJSON(t *testing.T) {
 		t.Fatalf("json store: %v", err)
 	}
 	now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
-	jsonDocuments, _ := BindDocumentRepository(jsonStore, "demo")
+	jsonDocuments, _ := BindDocumentRepository(jsonStore, testTenantRef("demo"))
 	first, err := jsonDocuments.Create(sampleDocumentRecord(), uploadFrom("a.png", onePixelPNG), now)
 	if err != nil {
 		t.Fatalf("seed a: %v", err)
@@ -171,7 +171,7 @@ func TestSQLDocumentImportFromJSON(t *testing.T) {
 			t.Fatalf("import %d: %v", i, err)
 		}
 	}
-	sqlDocuments, _ := BindDocumentRepository(sqlStore, "demo")
+	sqlDocuments, _ := BindDocumentRepository(sqlStore, testTenantRef("demo"))
 	if got := sqlDocuments.List(); len(got) != 2 {
 		t.Fatalf("imported %d, want 2: %+v", len(got), got)
 	}

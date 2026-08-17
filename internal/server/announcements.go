@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/version"
 	"github.com/inspr-at/hausv-org/internal/view"
 	"github.com/inspr-at/hausv-org/internal/web"
@@ -38,7 +39,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		}
 		filtered = filterAnnouncements(archive, selectedCategory, searchQuery)
 	}
-	views := a.announcementViewsWithReadState(tenant.Slug, filtered, now, true, lastSeen, email, role)
+	views := a.announcementViewsWithReadState(ac.tenantRef, filtered, now, true, lastSeen, email, role)
 	pinned, latest := splitPinnedAnnouncements(views)
 	newCount := unreadAnnouncementViewCount(views)
 	pageData := map[string]any{
@@ -109,7 +110,7 @@ func (a *app) announcementPortalContext(ac authCtx) web.PortalPageData {
 	}
 	openIssues := 0
 	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenant.Slug, ac.email, ac.role))
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, ac.email, ac.role))
 	}
 	return web.PortalPageData{
 		Title:               "Aushang · " + houseDisplayName(ac.tenant) + " · " + ac.role,
@@ -391,7 +392,8 @@ func announcementViewsWithReadState(items []announcement, now time.Time, include
 	return views
 }
 
-func (a *app) announcementViewsWithReadState(tenantSlug string, items []announcement, now time.Time, includeStatus bool, lastSeen time.Time, actorEmail string, role string) []announcementView {
+func (a *app) announcementViewsWithReadState(tenant store.TenantRef, items []announcement, now time.Time, includeStatus bool, lastSeen time.Time, actorEmail string, role string) []announcementView {
+	tenantSlug := tenant.Slug
 	views := announcementViewsWithReadState(items, now, includeStatus, lastSeen)
 	for i := range views {
 		views[i].CanManage = canManageAnnouncements(actorFor(actorEmail, tenantSlug, role), resourceFor(items[i].TenantSlug))
@@ -400,7 +402,7 @@ func (a *app) announcementViewsWithReadState(tenantSlug string, items []announce
 		return views
 	}
 	for i := range views {
-		attachments := a.attachmentViewsForEntity(tenantSlug, "announcement", views[i].ID, actorEmail, role)
+		attachments := a.attachmentViewsForEntity(tenant, "announcement", views[i].ID, actorEmail, role)
 		if len(attachments) == 0 {
 			continue
 		}

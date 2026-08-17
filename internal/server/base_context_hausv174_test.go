@@ -16,9 +16,10 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 		AuthMethods: defaultAuthMethods(),
 	})
 	ac := authCtx{
-		email:  "resident@example.com",
-		role:   roleResident,
-		tenant: a.tenants["demo"],
+		email:     "resident@example.com",
+		role:      roleResident,
+		tenant:    a.tenants["demo"],
+		tenantRef: testTenantRef("demo"),
 	}
 
 	got := a.baseContext(ac)
@@ -116,9 +117,10 @@ func TestWithBaseKeepsPageOverridesExplicit(t *testing.T) {
 		AuthMethods: defaultAuthMethods(),
 	})
 	ac := authCtx{
-		email:  "manager@example.com",
-		role:   roleManager,
-		tenant: a.tenants["demo"],
+		email:     "manager@example.com",
+		role:      roleManager,
+		tenant:    a.tenants["demo"],
+		tenantRef: testTenantRef("demo"),
 	}
 
 	got := a.withBase(ac, map[string]any{

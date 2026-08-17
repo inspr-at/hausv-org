@@ -7,6 +7,10 @@ import (
 	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
+func testTenantRef(slug string) TenantRef {
+	return TenantRef{ID: "01ARZ3NDEKTSV4RRFFQ69G5FAV", Slug: slug}
+}
+
 func hausv516DB(t *testing.T) *SQLIdentityStore {
 	t.Helper()
 	database := dbtest.Open(t)
@@ -16,8 +20,8 @@ func hausv516DB(t *testing.T) *SQLIdentityStore {
 
 func TestBoundAnnouncementRepositoryExcludesOtherTenants(t *testing.T) {
 	identity := hausv516DB(t)
-	demo, _ := BindAnnouncementRepository(NewSQLAnnouncementStore(identity.db), "demo")
-	other, _ := BindAnnouncementRepository(NewSQLAnnouncementStore(identity.db), "other")
+	demo, _ := BindAnnouncementRepository(NewSQLAnnouncementStore(identity.db), testTenantRef("demo"))
+	other, _ := BindAnnouncementRepository(NewSQLAnnouncementStore(identity.db), testTenantRef("other"))
 	_, _ = demo.Create(Announcement{TenantSlug: "other", Title: "Demo", Body: "x"})
 	_, _ = other.Create(Announcement{TenantSlug: "demo", Title: "Other", Body: "x"})
 	if got := demo.List(); len(got) != 1 || got[0].Title != "Demo" || got[0].TenantSlug != "demo" {
@@ -25,10 +29,26 @@ func TestBoundAnnouncementRepositoryExcludesOtherTenants(t *testing.T) {
 	}
 }
 
+func TestRepositoryBoundaryValidatesTenantIdentity(t *testing.T) {
+	storage := NewSQLAnnouncementStore(dbtest.Open(t))
+	if _, ok := BindAnnouncementRepository(storage, TenantRef{Slug: "demo"}); ok {
+		t.Fatal("repository accepted an empty tenant id")
+	}
+	if _, ok := BindAnnouncementRepository(storage, TenantRef{ID: "not-a-tenant-id", Slug: "demo"}); ok {
+		t.Fatal("repository accepted a malformed tenant id")
+	}
+	if _, ok := BindAnnouncementRepository(storage, TenantRef{ID: "01ARZ3NDEKTSV4RRFFQ69G5FAV"}); ok {
+		t.Fatal("repository accepted an empty tenant slug")
+	}
+	if _, ok := BindAnnouncementRepository(storage, testTenantRef("demo")); !ok {
+		t.Fatal("repository rejected a valid tenant id")
+	}
+}
+
 func TestBoundEventRepositoryExcludesOtherTenants(t *testing.T) {
 	identity := hausv516DB(t)
-	demo, _ := BindEventRepository(NewSQLEventStore(identity.db), "demo")
-	other, _ := BindEventRepository(NewSQLEventStore(identity.db), "other")
+	demo, _ := BindEventRepository(NewSQLEventStore(identity.db), testTenantRef("demo"))
+	other, _ := BindEventRepository(NewSQLEventStore(identity.db), testTenantRef("other"))
 	start := time.Now().Add(time.Hour)
 	_, _ = demo.Create(HouseEvent{TenantSlug: "other", Title: "Demo", StartsAt: start})
 	_, _ = other.Create(HouseEvent{TenantSlug: "demo", Title: "Other", StartsAt: start})
@@ -39,8 +59,8 @@ func TestBoundEventRepositoryExcludesOtherTenants(t *testing.T) {
 
 func TestBoundContactBookRepositoryExcludesOtherTenants(t *testing.T) {
 	identity := hausv516DB(t)
-	demo, _ := BindContactBookRepository(NewSQLContactBookStore(identity.db), "demo")
-	other, _ := BindContactBookRepository(NewSQLContactBookStore(identity.db), "other")
+	demo, _ := BindContactBookRepository(NewSQLContactBookStore(identity.db), testTenantRef("demo"))
+	other, _ := BindContactBookRepository(NewSQLContactBookStore(identity.db), testTenantRef("other"))
 	_, _, _ = demo.Upsert(ManagedContact{TenantSlug: "other", Kind: "Notdienst", Name: "Demo", Phone: "1", Active: true})
 	_, _, _ = other.Upsert(ManagedContact{TenantSlug: "demo", Kind: "Notdienst", Name: "Other", Phone: "2", Active: true})
 	if got := demo.List(true); len(got) != 1 || got[0].Name != "Demo" || got[0].TenantSlug != "demo" {
@@ -50,8 +70,8 @@ func TestBoundContactBookRepositoryExcludesOtherTenants(t *testing.T) {
 
 func TestBoundHandoverRepositoryExcludesOtherTenants(t *testing.T) {
 	identity := hausv516DB(t)
-	demo, _ := BindHandoverRepository(NewSQLHandoverStore(identity.db), "demo")
-	other, _ := BindHandoverRepository(NewSQLHandoverStore(identity.db), "other")
+	demo, _ := BindHandoverRepository(NewSQLHandoverStore(identity.db), testTenantRef("demo"))
+	other, _ := BindHandoverRepository(NewSQLHandoverStore(identity.db), testTenantRef("other"))
 	_, _ = demo.Create(HandoverRecord{ID: "demo", TenantSlug: "other", Title: "Demo", CreatedBy: "a@example.com"})
 	_, _ = other.Create(HandoverRecord{ID: "other", TenantSlug: "demo", Title: "Other", CreatedBy: "a@example.com"})
 	if got := demo.List(); len(got) != 1 || got[0].Title != "Demo" || got[0].TenantSlug != "demo" {
@@ -70,7 +90,7 @@ func TestBoundIdentityRepositoryExcludesOtherTenants(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	demo, _ := BindIdentityRepository(identity, "demo")
+	demo, _ := BindIdentityRepository(identity, testTenantRef("demo"))
 	if got := demo.ListHouseMembers(); len(got) != 1 || got[0].Membership.TenantSlug != "demo" {
 		t.Fatalf("demo members = %+v", got)
 	}
