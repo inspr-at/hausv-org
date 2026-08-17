@@ -4,8 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func TestContactBookStorageParity(t *testing.T) {
@@ -18,7 +16,7 @@ func TestContactBookStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) ContactBookStorage {
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLContactBookStore(database)
 		},
@@ -99,7 +97,7 @@ func TestSQLContactImportFromJSON(t *testing.T) {
 	a, _, _ := jsonRepo.Upsert(ManagedContact{TenantSlug: "demo", Kind: "dienstleister", Name: "Alpha", Phone: "+43 1 1", Active: true})
 	_, _, _ = jsonRepo.Upsert(ManagedContact{TenantSlug: "demo", Kind: "notdienst", Company: "Beta GmbH", Email: "b@example.com", Active: true})
 
-	database := dbtest.Open(t)
+	database := testDB(t)
 	defer database.Close()
 	sqlStore := NewSQLContactBookStore(database)
 

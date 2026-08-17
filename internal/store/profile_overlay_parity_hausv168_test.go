@@ -3,8 +3,6 @@ package store
 import (
 	"path/filepath"
 	"testing"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 // TestProfileOverlayStorageParity runs the JSON and SQLite backends through
@@ -19,7 +17,7 @@ func TestProfileOverlayStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) ProfileOverlayStorage {
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLProfileOverlayStore(database)
 		},
@@ -72,7 +70,7 @@ func TestSQLProfileOverlayImportFromJSON(t *testing.T) {
 	_ = jsonStore.Set("a@example.com", ProfileOverlay{FirstName: "Aa", DirectoryOptIn: true})
 	_ = jsonStore.Set("b@example.com", ProfileOverlay{Title: "Mag.", LastName: "Bee"})
 
-	database := dbtest.Open(t)
+	database := testDB(t)
 	defer database.Close()
 	sqlStore := NewSQLProfileOverlayStore(database)
 

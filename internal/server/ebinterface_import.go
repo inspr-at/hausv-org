@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/integrations"
+	"github.com/inspr-at/hausv-org/internal/tenantid"
 )
 
 const (
@@ -290,14 +291,21 @@ func (a *app) ebInterfaceImportAlreadyStored(tenantSlug, fileDigest string) bool
 	tenantSlug = normalizeSlug(tenantSlug)
 	fileDigest = strings.TrimSpace(fileDigest)
 	if a != nil && a.db != nil && tenantSlug != "" && fileDigest != "" {
+		// No identity means no rows can reference it, so an unknown slug is a
+		// clean "not imported" rather than a lookup that silently matches on a
+		// label the tenant may since have renamed.
+		tenantID, known := tenantid.Lookup(a.db, tenantSlug)
 		var exists int
-		err := a.db.QueryRow(
-			`SELECT EXISTS(
-				SELECT 1 FROM integration_imports
-				WHERE tenant_slug = ? AND format = ? AND file_digest = ?
-			)`,
-			tenantSlug, string(integrations.FormatEBInterface), fileDigest,
-		).Scan(&exists)
+		var err error
+		if known {
+			err = a.db.QueryRow(
+				`SELECT EXISTS(
+					SELECT 1 FROM integration_imports
+					WHERE tenant_id = ? AND format = ? AND file_digest = ?
+				)`,
+				tenantID, string(integrations.FormatEBInterface), fileDigest,
+			).Scan(&exists)
+		}
 		if err == nil && exists == 1 {
 			return true
 		}
@@ -313,12 +321,23 @@ func (a *app) recordEBInterfaceImportLedger(tenantSlug, actorEmail string, previ
 	if a == nil || a.db == nil {
 		return nil
 	}
-	_, err := a.db.Exec(
+	tenantID, err := tenantid.Ensure(a.db, tenantSlug)
+	if err != nil {
+		return err
+	}
+	// DO NOTHING on everything EXCEPT tenant_id, for the reason spelled out on
+	// the camt.053 ledger: the first application's timestamp and actor must
+	// survive a re-upload, but a row left without an identity is a row the
+	// tenant_id lookup above can never find, so the ledger would keep storing
+	// the same invoice for ever.
+	_, err = a.db.Exec(
 		`INSERT INTO integration_imports(
-			tenant_slug, format, file_digest, source_version, applied_at, applied_by,
+			tenant_id, tenant_slug, format, file_digest, source_version, applied_at, applied_by,
 			assigned, changed, unclear, rejected
-		) VALUES(?, ?, ?, ?, ?, ?, 1, 1, 0, 0)
-		ON CONFLICT(tenant_slug, format, file_digest) DO NOTHING`,
+		) VALUES(?, ?, ?, ?, ?, ?, ?, 1, 1, 0, 0)
+		ON CONFLICT(tenant_slug, format, file_digest) DO UPDATE SET
+		  tenant_id=coalesce(integration_imports.tenant_id, excluded.tenant_id)`,
+		tenantID,
 		normalizeSlug(tenantSlug),
 		string(integrations.FormatEBInterface),
 		strings.TrimSpace(preview.FileDigest),

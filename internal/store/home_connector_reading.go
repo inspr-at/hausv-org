@@ -102,14 +102,22 @@ func (s *SQLHomeConnectorReadingStore) Upsert(slug string, readings []HomeConnec
 		return err
 	}
 	defer tx.Rollback()
+	// Readings arrive from a paired connector, so the house is activated and the
+	// identity exists. Resolving it here keeps the table free of rows the tenant
+	// query layer cannot account for.
+	tenantID, err := ensureTenantID(tx, slug)
+	if err != nil {
+		return err
+	}
 	for _, reading := range readings {
 		_, err = tx.Exec(`INSERT INTO home_connector_readings
-			(slug,entity_id,state,display_name,unit,device_class,state_class,last_updated,received_at)
-			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+			(tenant_id,slug,entity_id,state,display_name,unit,device_class,state_class,last_updated,received_at)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 			ON CONFLICT(slug,entity_id) DO UPDATE SET state=excluded.state,
 			display_name=excluded.display_name,unit=excluded.unit,device_class=excluded.device_class,
-			state_class=excluded.state_class,last_updated=excluded.last_updated,received_at=excluded.received_at`,
-			slug, strings.ToLower(strings.TrimSpace(reading.EntityID)), reading.State, reading.DisplayName,
+			state_class=excluded.state_class,last_updated=excluded.last_updated,received_at=excluded.received_at,
+			tenant_id=coalesce(home_connector_readings.tenant_id,excluded.tenant_id)`,
+			tenantID, slug, strings.ToLower(strings.TrimSpace(reading.EntityID)), reading.State, reading.DisplayName,
 			reading.Unit, reading.DeviceClass, reading.StateClass,
 			homeReservationTimestamp(reading.LastUpdated.UTC()), homeReservationTimestamp(receivedAt.UTC()))
 		if err != nil {

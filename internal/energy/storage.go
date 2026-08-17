@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/inspr-at/hausv-org/internal/tenantid"
 )
 
 type Storage interface {
@@ -772,9 +774,13 @@ func (s *SQLStore) SaveProfile(profile HomeProfile) error {
 	if profile.FreeUntilAt != nil {
 		freeUntil = profile.FreeUntilAt.UTC().Format(time.RFC3339Nano)
 	}
-	_, err := s.db.Exec(`INSERT INTO home_profiles
-		(tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+	tenantID, err := tenantid.Ensure(s.db, profile.TenantSlug)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec(`INSERT INTO home_profiles
+		(tenant_id,tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(tenant_slug,home_key) DO UPDATE SET
 		unit_id=excluded.unit_id, home_type=excluded.home_type, household_name=excluded.household_name,
 		operating_mode=excluded.operating_mode, automation_stage=excluded.automation_stage, onboarding_step=excluded.onboarding_step,
@@ -783,8 +789,9 @@ func (s *SQLStore) SaveProfile(profile HomeProfile) error {
 		recommendation_id=excluded.recommendation_id, recommendation_status=excluded.recommendation_status,
 		free_started_at=COALESCE(home_profiles.free_started_at,excluded.free_started_at),
 		free_until_at=COALESCE(home_profiles.free_until_at,excluded.free_until_at),
+		tenant_id=coalesce(home_profiles.tenant_id,excluded.tenant_id),
 		updated_at=excluded.updated_at`,
-		profile.TenantSlug, profile.HomeKey, profile.UnitID, profile.HomeType, profile.HouseholdName, profile.OperatingMode, profile.AutomationStage,
+		tenantID, profile.TenantSlug, profile.HomeKey, profile.UnitID, profile.HomeType, profile.HouseholdName, profile.OperatingMode, profile.AutomationStage,
 		profile.OnboardingStep, boolInt(profile.OnboardingComplete), target, agreed, profile.RecommendationID, profile.RecommendationStatus, free, freeUntil,
 		profile.CreatedAt.Format(time.RFC3339Nano), profile.UpdatedAt.Format(time.RFC3339Nano))
 	return err
@@ -841,14 +848,19 @@ func (s *SQLStore) UpsertAsset(asset Asset) error {
 		rated = *asset.RatedPowerKW
 	}
 	metadata, _ := json.Marshal(asset.Metadata)
+	tenantID, err := tenantid.Ensure(s.db, asset.TenantSlug)
+	if err != nil {
+		return err
+	}
 	result, err := s.db.Exec(`INSERT INTO energy_assets
-		(id,tenant_slug,home_key,kind,name,rated_power_kw,flexibility,source,confirmed,metadata_json,created_at,updated_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
+		(id,tenant_id,tenant_slug,home_key,kind,name,rated_power_kw,flexibility,source,confirmed,metadata_json,created_at,updated_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,name=excluded.name,rated_power_kw=excluded.rated_power_kw,
 		flexibility=excluded.flexibility,source=excluded.source,confirmed=excluded.confirmed,
-		metadata_json=excluded.metadata_json,updated_at=excluded.updated_at
+		metadata_json=excluded.metadata_json,updated_at=excluded.updated_at,
+		tenant_id=coalesce(energy_assets.tenant_id,excluded.tenant_id)
 		WHERE energy_assets.tenant_slug=excluded.tenant_slug AND energy_assets.home_key=excluded.home_key`,
-		asset.ID, asset.TenantSlug, asset.HomeKey, asset.Kind, asset.Name, rated, asset.Flexibility,
+		asset.ID, tenantID, asset.TenantSlug, asset.HomeKey, asset.Kind, asset.Name, rated, asset.Flexibility,
 		asset.Source, boolInt(asset.Confirmed), string(metadata),
 		asset.CreatedAt.Format(time.RFC3339Nano), asset.UpdatedAt.Format(time.RFC3339Nano))
 	if err != nil {
@@ -968,14 +980,19 @@ func (s *SQLStore) UpsertMapping(mapping EntityMapping) error {
 	if mapping.LastSeenAt != nil {
 		seen = mapping.LastSeenAt.UTC().Format(time.RFC3339Nano)
 	}
-	_, err := s.db.Exec(`INSERT INTO energy_entity_mappings
-		(id,tenant_slug,home_key,entity_id,asset_id,metric,display_name,unit,device_class,confirmed,last_seen_at,created_at,updated_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+	tenantID, err := tenantid.Ensure(s.db, mapping.TenantSlug)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec(`INSERT INTO energy_entity_mappings
+		(id,tenant_id,tenant_slug,home_key,entity_id,asset_id,metric,display_name,unit,device_class,confirmed,last_seen_at,created_at,updated_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(tenant_slug,home_key,entity_id) DO UPDATE SET
 		asset_id=excluded.asset_id,metric=excluded.metric,display_name=excluded.display_name,unit=excluded.unit,
 		device_class=excluded.device_class,confirmed=excluded.confirmed,last_seen_at=excluded.last_seen_at,
+		tenant_id=coalesce(energy_entity_mappings.tenant_id,excluded.tenant_id),
 		updated_at=excluded.updated_at`,
-		mapping.ID, mapping.TenantSlug, mapping.HomeKey, mapping.EntityID, mapping.AssetID, mapping.Metric, mapping.DisplayName,
+		mapping.ID, tenantID, mapping.TenantSlug, mapping.HomeKey, mapping.EntityID, mapping.AssetID, mapping.Metric, mapping.DisplayName,
 		mapping.Unit, mapping.DeviceClass, boolInt(mapping.Confirmed), seen,
 		mapping.CreatedAt.Format(time.RFC3339Nano), mapping.UpdatedAt.Format(time.RFC3339Nano))
 	return err
@@ -1009,13 +1026,18 @@ func (s *SQLStore) PutInterval(interval Interval) error {
 		interval.CreatedAt = time.Now().UTC()
 	}
 	interval.HomeKey = s.scopeHomeKey()
-	_, err := s.db.Exec(`INSERT INTO energy_intervals
-		(tenant_slug,home_key,starts_at,duration_minutes,import_kwh,average_kw,quality,source,created_at)
-		VALUES(?,?,?,?,?,?,?,?,?)
+	tenantID, err := tenantid.Ensure(s.db, interval.TenantSlug)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec(`INSERT INTO energy_intervals
+		(tenant_id,tenant_slug,home_key,starts_at,duration_minutes,import_kwh,average_kw,quality,source,created_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(tenant_slug,home_key,starts_at,source) DO UPDATE SET
 		duration_minutes=excluded.duration_minutes,import_kwh=excluded.import_kwh,
+		tenant_id=coalesce(energy_intervals.tenant_id,excluded.tenant_id),
 		average_kw=excluded.average_kw,quality=excluded.quality,created_at=excluded.created_at`,
-		interval.TenantSlug, interval.HomeKey, interval.StartsAt.Format(time.RFC3339Nano), int(interval.Duration/time.Minute),
+		tenantID, interval.TenantSlug, interval.HomeKey, interval.StartsAt.Format(time.RFC3339Nano), int(interval.Duration/time.Minute),
 		interval.ImportKWh, interval.AverageKW, interval.Quality, interval.Source,
 		interval.CreatedAt.UTC().Format(time.RFC3339Nano))
 	return err
@@ -1067,11 +1089,15 @@ func (s *SQLStore) PutImport(record ImportRecord, intervals []Interval) (bool, e
 		return false, err
 	}
 	defer tx.Rollback()
+	tenantID, err := tenantid.Ensure(tx, record.TenantSlug)
+	if err != nil {
+		return false, err
+	}
 	result, err := tx.Exec(`INSERT INTO energy_imports
-		(id,tenant_slug,home_key,filename,sha256,format,payload,imported_at)
-		VALUES(?,?,?,?,?,?,?,?)
+		(id,tenant_id,tenant_slug,home_key,filename,sha256,format,payload,imported_at)
+		VALUES(?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(tenant_slug,home_key,sha256) DO NOTHING`,
-		record.ID, record.TenantSlug, record.HomeKey, record.Filename, record.SHA256, record.Format,
+		record.ID, tenantID, record.TenantSlug, record.HomeKey, record.Filename, record.SHA256, record.Format,
 		record.Payload, record.ImportedAt.UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return false, err
@@ -1094,12 +1120,13 @@ func (s *SQLStore) PutImport(record ImportRecord, intervals []Interval) (bool, e
 			interval.CreatedAt = record.ImportedAt
 		}
 		if _, err := tx.Exec(`INSERT INTO energy_intervals
-			(tenant_slug,home_key,starts_at,duration_minutes,import_kwh,average_kw,quality,source,created_at)
-			VALUES(?,?,?,?,?,?,?,?,?)
+			(tenant_id,tenant_slug,home_key,starts_at,duration_minutes,import_kwh,average_kw,quality,source,created_at)
+			VALUES(?,?,?,?,?,?,?,?,?,?)
 			ON CONFLICT(tenant_slug,home_key,starts_at,source) DO UPDATE SET
 			duration_minutes=excluded.duration_minutes,import_kwh=excluded.import_kwh,
+			tenant_id=coalesce(energy_intervals.tenant_id,excluded.tenant_id),
 			average_kw=excluded.average_kw,quality=excluded.quality,created_at=excluded.created_at`,
-			record.TenantSlug, record.HomeKey, interval.StartsAt.UTC().Format(time.RFC3339Nano), int(interval.Duration/time.Minute),
+			tenantID, record.TenantSlug, record.HomeKey, interval.StartsAt.UTC().Format(time.RFC3339Nano), int(interval.Duration/time.Minute),
 			interval.ImportKWh, interval.AverageKW, interval.Quality, interval.Source,
 			interval.CreatedAt.UTC().Format(time.RFC3339Nano)); err != nil {
 			return false, err
@@ -1244,11 +1271,15 @@ func (s *SQLStore) DeleteProfile(tenantSlug string) (DeleteSummary, error) {
 		if retainedFreeUntilAt.Valid {
 			freeUntilAt = retainedFreeUntilAt.String
 		}
+		tombstoneTenantID, idErr := tenantid.Ensure(tx, tenantSlug)
+		if idErr != nil {
+			return DeleteSummary{}, idErr
+		}
 		if _, err := tx.Exec(`INSERT INTO home_profiles
-			(tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,
+			(tenant_id,tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,
 			 target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at)
-			VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-			tenantSlug, homeKey, "", HomeApartment, "", ModeObserve, StageObserve, 1, 0,
+			VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			tombstoneTenantID, tenantSlug, homeKey, "", HomeApartment, "", ModeObserve, StageObserve, 1, 0,
 			nil, nil, "", "", freeStartedAt, freeUntilAt, now.Format(time.RFC3339Nano), now.Format(time.RFC3339Nano)); err != nil {
 			return DeleteSummary{}, err
 		}
@@ -1333,14 +1364,19 @@ func (s *SQLStore) UpsertMaintenance(plan MaintenancePlan) error {
 	if normalized.LastCompletedAt != nil {
 		completed = normalized.LastCompletedAt.Format(time.RFC3339Nano)
 	}
+	tenantID, err := tenantid.Ensure(s.db, normalized.TenantSlug)
+	if err != nil {
+		return err
+	}
 	_, err = s.db.Exec(`INSERT INTO energy_maintenance_plans
-		(id,tenant_slug,home_key,asset_id,title,interval_months,last_completed_at,next_due_at,contact_id,document_id,issue_id,evidence_note,active,created_at,updated_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+		(id,tenant_id,tenant_slug,home_key,asset_id,title,interval_months,last_completed_at,next_due_at,contact_id,document_id,issue_id,evidence_note,active,created_at,updated_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(tenant_slug,home_key,asset_id) DO UPDATE SET
 		title=excluded.title,interval_months=excluded.interval_months,last_completed_at=excluded.last_completed_at,
 		next_due_at=excluded.next_due_at,contact_id=excluded.contact_id,document_id=excluded.document_id,
-		issue_id=excluded.issue_id,evidence_note=excluded.evidence_note,active=excluded.active,updated_at=excluded.updated_at`,
-		normalized.ID, normalized.TenantSlug, normalized.HomeKey, normalized.AssetID, normalized.Title, normalized.IntervalMonths, completed,
+		issue_id=excluded.issue_id,evidence_note=excluded.evidence_note,active=excluded.active,
+		tenant_id=coalesce(energy_maintenance_plans.tenant_id,excluded.tenant_id),updated_at=excluded.updated_at`,
+		normalized.ID, tenantID, normalized.TenantSlug, normalized.HomeKey, normalized.AssetID, normalized.Title, normalized.IntervalMonths, completed,
 		normalized.NextDueAt.Format(time.RFC3339Nano), normalized.ContactID, normalized.DocumentID, normalized.IssueID,
 		normalized.EvidenceNote, boolInt(normalized.Active), normalized.CreatedAt.Format(time.RFC3339Nano), normalized.UpdatedAt.Format(time.RFC3339Nano))
 	return err
@@ -1364,10 +1400,14 @@ func (s *SQLStore) SaveTariffAssessment(item TariffAssessment) error {
 	if err != nil {
 		return err
 	}
+	tenantID, err := tenantid.Ensure(s.db, normalized.TenantSlug)
+	if err != nil {
+		return err
+	}
 	_, err = s.db.Exec(`INSERT INTO energy_tariff_assessments
-		(id,tenant_slug,home_key,assessment_month,profile_id,profile_version,profile_status,source_url,peak_kw,billed_kw,annual_power_eur,data_quality,created_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		normalized.ID, normalized.TenantSlug, normalized.HomeKey, normalized.AssessmentMonth, normalized.ProfileID, normalized.ProfileVersion,
+		(id,tenant_id,tenant_slug,home_key,assessment_month,profile_id,profile_version,profile_status,source_url,peak_kw,billed_kw,annual_power_eur,data_quality,created_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		normalized.ID, tenantID, normalized.TenantSlug, normalized.HomeKey, normalized.AssessmentMonth, normalized.ProfileID, normalized.ProfileVersion,
 		normalized.ProfileStatus, normalized.SourceURL, normalized.PeakKW, normalized.BilledKW, normalized.AnnualPowerEUR,
 		normalized.DataQuality, normalized.CreatedAt.Format(time.RFC3339Nano))
 	return err
@@ -1405,19 +1445,24 @@ func (s *SQLStore) UpsertMeasure(item Measure) error {
 		return err
 	}
 	shared, _ := json.Marshal(normalized.SharedFields)
+	tenantID, err := tenantid.Ensure(s.db, normalized.TenantSlug)
+	if err != nil {
+		return err
+	}
 	_, err = s.db.Exec(`INSERT INTO energy_measures
-		(id,tenant_slug,home_key,issue_id,recommendation_id,title,status,contact_id,shared_fields_json,offer_note,appointment_at,
+		(id,tenant_id,tenant_slug,home_key,issue_id,recommendation_id,title,status,contact_id,shared_fields_json,offer_note,appointment_at,
 		 work_note,completed_at,evidence_note,before_from,before_to,after_from,after_to,before_peak_kw,after_peak_kw,
 		 before_quality,after_quality,created_at,updated_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(tenant_slug,home_key,issue_id) DO UPDATE SET
 		recommendation_id=excluded.recommendation_id,title=excluded.title,status=excluded.status,contact_id=excluded.contact_id,
 		shared_fields_json=excluded.shared_fields_json,offer_note=excluded.offer_note,appointment_at=excluded.appointment_at,
 		work_note=excluded.work_note,completed_at=excluded.completed_at,evidence_note=excluded.evidence_note,
 		before_from=excluded.before_from,before_to=excluded.before_to,after_from=excluded.after_from,after_to=excluded.after_to,
 		before_peak_kw=excluded.before_peak_kw,after_peak_kw=excluded.after_peak_kw,
-		before_quality=excluded.before_quality,after_quality=excluded.after_quality,updated_at=excluded.updated_at`,
-		normalized.ID, normalized.TenantSlug, normalized.HomeKey, normalized.IssueID, normalized.RecommendationID, normalized.Title,
+		before_quality=excluded.before_quality,after_quality=excluded.after_quality,
+		tenant_id=coalesce(energy_measures.tenant_id,excluded.tenant_id),updated_at=excluded.updated_at`,
+		normalized.ID, tenantID, normalized.TenantSlug, normalized.HomeKey, normalized.IssueID, normalized.RecommendationID, normalized.Title,
 		normalized.Status, normalized.ContactID, string(shared), normalized.OfferNote, nullableTimePtr(normalized.AppointmentAt),
 		normalized.WorkNote, nullableTimePtr(normalized.CompletedAt), normalized.EvidenceNote,
 		nullableTimePtr(normalized.BeforeFrom), nullableTimePtr(normalized.BeforeTo), nullableTimePtr(normalized.AfterFrom), nullableTimePtr(normalized.AfterTo),

@@ -74,7 +74,7 @@ func (f *SQLProtocolFiler) FileHandoverProtocol(tenant TenantRef, handoverID str
 	// Acquire the handover row's write lock before reading it. SQLite already
 	// serialized these writers at the database level; PostgreSQL otherwise lets
 	// both transactions observe an empty FiledDocumentID and create duplicates.
-	locked, err := tx.Exec(`UPDATE handovers SET data=data WHERE tenant_slug=$1 AND id=$2`, tenantSlug, handoverID)
+	locked, err := tx.Exec(`UPDATE handovers SET data=data WHERE tenant_id=$1 AND id=$2`, resolvedTenant.ID, handoverID)
 	if err != nil {
 		_ = os.Remove(path)
 		return DocumentRecord{}, HandoverRecord{}, false, err
@@ -86,7 +86,7 @@ func (f *SQLProtocolFiler) FileHandoverProtocol(tenant TenantRef, handoverID str
 
 	var raw string
 	if err := tx.QueryRow(
-		`SELECT data FROM handovers WHERE tenant_slug=$1 AND id=$2`, tenantSlug, handoverID,
+		`SELECT data FROM handovers WHERE tenant_id=$1 AND id=$2`, resolvedTenant.ID, handoverID,
 	).Scan(&raw); err != nil {
 		_ = os.Remove(path)
 		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("handover not found")
@@ -104,14 +104,14 @@ func (f *SQLProtocolFiler) FileHandoverProtocol(tenant TenantRef, handoverID str
 		return DocumentRecord{}, CopyHandover(handover), true, nil
 	}
 
-	if err := f.documents.writeTx(tx, record); err != nil {
+	if err := f.documents.writeTx(tx, resolvedTenant, record); err != nil {
 		_ = os.Remove(path)
 		return DocumentRecord{}, HandoverRecord{}, false, err
 	}
 	handover.FiledDocumentID = record.ID
 	handover.UpdatedAt = now.UTC()
 	saved := NormalizeHandover(handover)
-	if err := f.handovers.writeTx(tx, saved); err != nil {
+	if err := f.handovers.writeTx(tx, resolvedTenant, saved); err != nil {
 		_ = os.Remove(path)
 		return DocumentRecord{}, HandoverRecord{}, false, err
 	}
@@ -145,8 +145,7 @@ func (f *SequentialProtocolFiler) FileHandoverProtocol(tenant TenantRef, handove
 	if !tenantOK || handoverID == "" {
 		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("invalid handover reference")
 	}
-	tenantSlug := resolvedTenant.Slug
-	existing, found := f.handovers.get(tenantSlug, handoverID)
+	existing, found := f.handovers.get(resolvedTenant, handoverID)
 	if !found {
 		return DocumentRecord{}, HandoverRecord{}, false, fmt.Errorf("handover not found")
 	}
@@ -161,7 +160,7 @@ func (f *SequentialProtocolFiler) FileHandoverProtocol(tenant TenantRef, handove
 	if err != nil {
 		return DocumentRecord{}, HandoverRecord{}, false, err
 	}
-	updated, _, err := f.handovers.setFiledDocument(tenantSlug, handoverID, created.ID, now)
+	updated, _, err := f.handovers.setFiledDocument(resolvedTenant, handoverID, created.ID, now)
 	if err != nil {
 		return DocumentRecord{}, HandoverRecord{}, false, err
 	}

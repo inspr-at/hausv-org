@@ -36,14 +36,14 @@ var (
 )
 
 type issueBackend interface {
-	create(tenantSlug string, item ResidentIssue) (ResidentIssue, error)
-	listTenant(tenantSlug string) []ResidentIssue
-	listAuthor(tenantSlug string, email string) []ResidentIssue
-	get(tenantSlug string, id string) (ResidentIssue, bool)
-	updateWorkflow(tenantSlug string, id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error)
-	addComment(tenantSlug string, id string, comment IssueComment) (ResidentIssue, bool, error)
-	deleteComment(tenantSlug string, id string, commentID string, at time.Time) (ResidentIssue, bool, error)
-	clearPhotoPaths(tenantSlug string, id string) (bool, error)
+	create(tenant TenantRef, item ResidentIssue) (ResidentIssue, error)
+	listTenant(tenant TenantRef) []ResidentIssue
+	listAuthor(tenant TenantRef, email string) []ResidentIssue
+	get(tenant TenantRef, id string) (ResidentIssue, bool)
+	updateWorkflow(tenant TenantRef, id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error)
+	addComment(tenant TenantRef, id string, comment IssueComment) (ResidentIssue, bool, error)
+	deleteComment(tenant TenantRef, id string, commentID string, at time.Time) (ResidentIssue, bool, error)
+	clearPhotoPaths(tenant TenantRef, id string) (bool, error)
 }
 
 type boundIssueRepository struct {
@@ -61,26 +61,26 @@ func BindIssueRepository(storage IssueStorage, tenant TenantRef) (IssueRepositor
 }
 
 func (r *boundIssueRepository) Create(item ResidentIssue) (ResidentIssue, error) {
-	return r.storage.create(r.tenant.Slug, item)
+	return r.storage.create(r.tenant, item)
 }
-func (r *boundIssueRepository) List() []ResidentIssue { return r.storage.listTenant(r.tenant.Slug) }
+func (r *boundIssueRepository) List() []ResidentIssue { return r.storage.listTenant(r.tenant) }
 func (r *boundIssueRepository) ListAuthor(email string) []ResidentIssue {
-	return r.storage.listAuthor(r.tenant.Slug, email)
+	return r.storage.listAuthor(r.tenant, email)
 }
 func (r *boundIssueRepository) Get(id string) (ResidentIssue, bool) {
-	return r.storage.get(r.tenant.Slug, id)
+	return r.storage.get(r.tenant, id)
 }
 func (r *boundIssueRepository) UpdateWorkflow(id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error) {
-	return r.storage.updateWorkflow(r.tenant.Slug, id, update)
+	return r.storage.updateWorkflow(r.tenant, id, update)
 }
 func (r *boundIssueRepository) AddComment(id string, comment IssueComment) (ResidentIssue, bool, error) {
-	return r.storage.addComment(r.tenant.Slug, id, comment)
+	return r.storage.addComment(r.tenant, id, comment)
 }
 func (r *boundIssueRepository) DeleteComment(id string, commentID string, at time.Time) (ResidentIssue, bool, error) {
-	return r.storage.deleteComment(r.tenant.Slug, id, commentID, at)
+	return r.storage.deleteComment(r.tenant, id, commentID, at)
 }
 func (r *boundIssueRepository) ClearPhotoPaths(id string) (bool, error) {
-	return r.storage.clearPhotoPaths(r.tenant.Slug, id)
+	return r.storage.clearPhotoPaths(r.tenant, id)
 }
 
 // SQLIssueStore keeps each issue — comments and status history included — as
@@ -96,22 +96,23 @@ func NewSQLIssueStore(db *sql.DB, attachmentDir string) *SQLIssueStore {
 
 func (*SQLIssueStore) issueStorage() {}
 
-func (s *SQLIssueStore) writeTx(tx *sql.Tx, item ResidentIssue) error {
+func (s *SQLIssueStore) writeTx(tx *sql.Tx, tenant TenantRef, item ResidentIssue) error {
 	blob, err := json.Marshal(item)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO issues(tenant_slug, id, data) VALUES($1, $2, $3)
-		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
-		textutil.Slug(item.TenantSlug), item.ID, string(blob),
+		`INSERT INTO issues(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4)
+		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data,
+		   tenant_id=coalesce(issues.tenant_id, excluded.tenant_id)`,
+		tenant.ID, tenant.Slug, item.ID, string(blob),
 	)
 	return err
 }
 
-func loadIssueTx(tx *sql.Tx, tenantSlug string, id string) (ResidentIssue, bool) {
+func loadIssueTx(tx *sql.Tx, tenant TenantRef, id string) (ResidentIssue, bool) {
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM issues WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM issues WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return ResidentIssue{}, false
 	}
 	var item ResidentIssue
@@ -121,7 +122,8 @@ func loadIssueTx(tx *sql.Tx, tenantSlug string, id string) (ResidentIssue, bool)
 	return item, true
 }
 
-func (s *SQLIssueStore) create(tenantSlug string, item ResidentIssue) (ResidentIssue, error) {
+func (s *SQLIssueStore) create(tenant TenantRef, item ResidentIssue) (ResidentIssue, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return item, nil
 	}
@@ -174,7 +176,7 @@ func (s *SQLIssueStore) create(tenantSlug string, item ResidentIssue) (ResidentI
 		return ResidentIssue{}, err
 	}
 	defer tx.Rollback()
-	if err := s.writeTx(tx, item); err != nil {
+	if err := s.writeTx(tx, tenant, item); err != nil {
 		return ResidentIssue{}, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -183,8 +185,8 @@ func (s *SQLIssueStore) create(tenantSlug string, item ResidentIssue) (ResidentI
 	return item, nil
 }
 
-func (s *SQLIssueStore) allForTenant(tenantSlug string) []ResidentIssue {
-	rows, err := s.db.Query(`SELECT data FROM issues WHERE tenant_slug=$1`, tenantSlug)
+func (s *SQLIssueStore) allForTenant(tenant TenantRef) []ResidentIssue {
+	rows, err := s.db.Query(`SELECT data FROM issues WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return []ResidentIssue{}
 	}
@@ -204,25 +206,25 @@ func (s *SQLIssueStore) allForTenant(tenantSlug string) []ResidentIssue {
 	return out
 }
 
-func (s *SQLIssueStore) listTenant(tenantSlug string) []ResidentIssue {
+func (s *SQLIssueStore) listTenant(tenant TenantRef) []ResidentIssue {
 	if s == nil {
 		return nil
 	}
 	out := []ResidentIssue{}
-	for _, item := range s.allForTenant(textutil.Slug(tenantSlug)) {
+	for _, item := range s.allForTenant(tenant) {
 		out = append(out, CopyIssue(item))
 	}
 	SortIssues(out)
 	return out
 }
 
-func (s *SQLIssueStore) listAuthor(tenantSlug string, email string) []ResidentIssue {
+func (s *SQLIssueStore) listAuthor(tenant TenantRef, email string) []ResidentIssue {
 	if s == nil {
 		return nil
 	}
 	email = textutil.Email(email)
 	out := []ResidentIssue{}
-	for _, item := range s.allForTenant(textutil.Slug(tenantSlug)) {
+	for _, item := range s.allForTenant(tenant) {
 		if textutil.Email(item.AuthorEmail) == email {
 			out = append(out, CopyIssue(item))
 		}
@@ -231,7 +233,8 @@ func (s *SQLIssueStore) listAuthor(tenantSlug string, email string) []ResidentIs
 	return out
 }
 
-func (s *SQLIssueStore) get(tenantSlug string, id string) (ResidentIssue, bool) {
+func (s *SQLIssueStore) get(tenant TenantRef, id string) (ResidentIssue, bool) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return ResidentIssue{}, false
 	}
@@ -241,7 +244,7 @@ func (s *SQLIssueStore) get(tenantSlug string, id string) (ResidentIssue, bool) 
 		return ResidentIssue{}, false
 	}
 	var data string
-	if err := s.db.QueryRow(`SELECT data FROM issues WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
+	if err := s.db.QueryRow(`SELECT data FROM issues WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return ResidentIssue{}, false
 	}
 	var item ResidentIssue
@@ -251,7 +254,8 @@ func (s *SQLIssueStore) get(tenantSlug string, id string) (ResidentIssue, bool) 
 	return CopyIssue(item), true
 }
 
-func (s *SQLIssueStore) updateWorkflow(tenantSlug string, id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error) {
+func (s *SQLIssueStore) updateWorkflow(tenant TenantRef, id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return ResidentIssue{}, false, nil
 	}
@@ -275,7 +279,7 @@ func (s *SQLIssueStore) updateWorkflow(tenantSlug string, id string, update Issu
 		return ResidentIssue{}, false, err
 	}
 	defer tx.Rollback()
-	existing, found := loadIssueTx(tx, tenantSlug, id)
+	existing, found := loadIssueTx(tx, tenant, id)
 	if !found {
 		return ResidentIssue{}, false, nil
 	}
@@ -343,7 +347,7 @@ func (s *SQLIssueStore) updateWorkflow(tenantSlug string, id string, update Issu
 			ChangedAt:  changedAt,
 		})
 	}
-	if err := s.writeTx(tx, updated); err != nil {
+	if err := s.writeTx(tx, tenant, updated); err != nil {
 		return ResidentIssue{}, false, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -352,7 +356,8 @@ func (s *SQLIssueStore) updateWorkflow(tenantSlug string, id string, update Issu
 	return CopyIssue(updated), true, nil
 }
 
-func (s *SQLIssueStore) addComment(tenantSlug string, id string, comment IssueComment) (ResidentIssue, bool, error) {
+func (s *SQLIssueStore) addComment(tenant TenantRef, id string, comment IssueComment) (ResidentIssue, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return ResidentIssue{}, false, nil
 	}
@@ -383,14 +388,14 @@ func (s *SQLIssueStore) addComment(tenantSlug string, id string, comment IssueCo
 		return ResidentIssue{}, false, err
 	}
 	defer tx.Rollback()
-	existing, found := loadIssueTx(tx, tenantSlug, id)
+	existing, found := loadIssueTx(tx, tenant, id)
 	if !found {
 		return ResidentIssue{}, false, nil
 	}
 	updated := existing
 	updated.Comments = append(updated.Comments, comment)
 	updated.UpdatedAt = comment.CreatedAt
-	if err := s.writeTx(tx, updated); err != nil {
+	if err := s.writeTx(tx, tenant, updated); err != nil {
 		return ResidentIssue{}, false, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -399,7 +404,8 @@ func (s *SQLIssueStore) addComment(tenantSlug string, id string, comment IssueCo
 	return CopyIssue(updated), true, nil
 }
 
-func (s *SQLIssueStore) deleteComment(tenantSlug string, id string, commentID string, at time.Time) (ResidentIssue, bool, error) {
+func (s *SQLIssueStore) deleteComment(tenant TenantRef, id string, commentID string, at time.Time) (ResidentIssue, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return ResidentIssue{}, false, nil
 	}
@@ -419,7 +425,7 @@ func (s *SQLIssueStore) deleteComment(tenantSlug string, id string, commentID st
 		return ResidentIssue{}, false, err
 	}
 	defer tx.Rollback()
-	existing, found := loadIssueTx(tx, tenantSlug, id)
+	existing, found := loadIssueTx(tx, tenant, id)
 	if !found {
 		return ResidentIssue{}, false, nil
 	}
@@ -438,7 +444,7 @@ func (s *SQLIssueStore) deleteComment(tenantSlug string, id string, commentID st
 	}
 	updated.Comments = comments
 	updated.UpdatedAt = at
-	if err := s.writeTx(tx, updated); err != nil {
+	if err := s.writeTx(tx, tenant, updated); err != nil {
 		return ResidentIssue{}, false, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -456,18 +462,23 @@ func (s *SQLIssueStore) ImportIssues(src *IssueStore) error {
 	src.mu.Lock()
 	snapshot := append([]ResidentIssue(nil), src.data.Issues...)
 	src.mu.Unlock()
+	tenants := newTenantIDCache(s.db)
 	for _, item := range snapshot {
-		tenant := textutil.Slug(item.TenantSlug)
-		if tenant == "" || strings.TrimSpace(item.ID) == "" {
+		slug := textutil.Slug(item.TenantSlug)
+		if slug == "" || strings.TrimSpace(item.ID) == "" {
 			continue
+		}
+		tenant, err := tenants.ref(slug)
+		if err != nil {
+			return err
 		}
 		blob, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO issues(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
-			tenant, item.ID, string(blob),
+			`INSERT INTO issues(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {
 			return err
 		}
@@ -475,7 +486,8 @@ func (s *SQLIssueStore) ImportIssues(src *IssueStore) error {
 	return nil
 }
 
-func (s *SQLIssueStore) clearPhotoPaths(tenantSlug string, id string) (bool, error) {
+func (s *SQLIssueStore) clearPhotoPaths(tenant TenantRef, id string) (bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return false, nil
 	}
@@ -486,12 +498,12 @@ func (s *SQLIssueStore) clearPhotoPaths(tenantSlug string, id string) (bool, err
 		return false, err
 	}
 	defer tx.Rollback()
-	existing, found := loadIssueTx(tx, tenantSlug, id)
+	existing, found := loadIssueTx(tx, tenant, id)
 	if !found || len(existing.PhotoPaths) == 0 {
 		return false, nil
 	}
 	existing.PhotoPaths = nil
-	if err := s.writeTx(tx, existing); err != nil {
+	if err := s.writeTx(tx, tenant, existing); err != nil {
 		return false, err
 	}
 	if err := tx.Commit(); err != nil {

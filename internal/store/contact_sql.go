@@ -31,9 +31,9 @@ type boundContactBookRepository struct {
 }
 
 type contactBookBackend interface {
-	upsert(tenantSlug string, item ManagedContact) (ManagedContact, bool, error)
-	deactivate(tenantSlug string, id string, at time.Time) (ManagedContact, error)
-	list(tenantSlug string, includeInactive bool) []ManagedContact
+	upsert(tenant TenantRef, item ManagedContact) (ManagedContact, bool, error)
+	deactivate(tenant TenantRef, id string, at time.Time) (ManagedContact, error)
+	list(tenant TenantRef, includeInactive bool) []ManagedContact
 }
 
 func BindContactBookRepository(storage ContactBookStorage, tenant TenantRef) (ContactBookRepository, bool) {
@@ -46,13 +46,13 @@ func BindContactBookRepository(storage ContactBookStorage, tenant TenantRef) (Co
 }
 
 func (r *boundContactBookRepository) Upsert(item ManagedContact) (ManagedContact, bool, error) {
-	return r.storage.upsert(r.tenant.Slug, item)
+	return r.storage.upsert(r.tenant, item)
 }
 func (r *boundContactBookRepository) Deactivate(id string, at time.Time) (ManagedContact, error) {
-	return r.storage.deactivate(r.tenant.Slug, id, at)
+	return r.storage.deactivate(r.tenant, id, at)
 }
 func (r *boundContactBookRepository) List(includeInactive bool) []ManagedContact {
-	return r.storage.list(r.tenant.Slug, includeInactive)
+	return r.storage.list(r.tenant, includeInactive)
 }
 
 // SQLContactBookStore keeps each contact as a JSON document plus the columns it
@@ -69,20 +69,22 @@ func NewSQLContactBookStore(db *sql.DB) *SQLContactBookStore {
 
 func (*SQLContactBookStore) contactBookStorage() {}
 
-func writeContactTx(tx *sql.Tx, item ManagedContact) error {
+func writeContactTx(tx *sql.Tx, tenant TenantRef, item ManagedContact) error {
 	blob, err := json.Marshal(item)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO contacts(tenant_slug, id, active, data) VALUES($1, $2, $3, $4)
-		 ON CONFLICT(tenant_slug, id) DO UPDATE SET active=excluded.active, data=excluded.data`,
-		item.TenantSlug, item.ID, item.Active, string(blob),
+		`INSERT INTO contacts(tenant_id, tenant_slug, id, active, data) VALUES($1, $2, $3, $4, $5)
+		 ON CONFLICT(tenant_slug, id) DO UPDATE SET active=excluded.active, data=excluded.data,
+		   tenant_id=coalesce(contacts.tenant_id, excluded.tenant_id)`,
+		tenant.ID, tenant.Slug, item.ID, item.Active, string(blob),
 	)
 	return err
 }
 
-func (s *SQLContactBookStore) upsert(tenantSlug string, item ManagedContact) (ManagedContact, bool, error) {
+func (s *SQLContactBookStore) upsert(tenant TenantRef, item ManagedContact) (ManagedContact, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return ManagedContact{}, false, fmt.Errorf("contact store not configured")
 	}
@@ -100,7 +102,7 @@ func (s *SQLContactBookStore) upsert(tenantSlug string, item ManagedContact) (Ma
 
 	if item.ID != "" {
 		var data string
-		if err := tx.QueryRow(`SELECT data FROM contacts WHERE tenant_slug=$1 AND id=$2`, item.TenantSlug, item.ID).Scan(&data); err == nil {
+		if err := tx.QueryRow(`SELECT data FROM contacts WHERE tenant_id=$1 AND id=$2`, tenant.ID, item.ID).Scan(&data); err == nil {
 			var existing ManagedContact
 			if json.Unmarshal([]byte(data), &existing) == nil {
 				item.CreatedAt = existing.CreatedAt
@@ -109,7 +111,7 @@ func (s *SQLContactBookStore) upsert(tenantSlug string, item ManagedContact) (Ma
 				item.CreatedAt = now
 			}
 			item.UpdatedAt = now
-			if err := writeContactTx(tx, item); err != nil {
+			if err := writeContactTx(tx, tenant, item); err != nil {
 				return ManagedContact{}, false, err
 			}
 			if err := tx.Commit(); err != nil {
@@ -128,7 +130,7 @@ func (s *SQLContactBookStore) upsert(tenantSlug string, item ManagedContact) (Ma
 	}
 	item.CreatedAt = now
 	item.UpdatedAt = now
-	if err := writeContactTx(tx, item); err != nil {
+	if err := writeContactTx(tx, tenant, item); err != nil {
 		return ManagedContact{}, false, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -137,7 +139,8 @@ func (s *SQLContactBookStore) upsert(tenantSlug string, item ManagedContact) (Ma
 	return item, true, nil
 }
 
-func (s *SQLContactBookStore) deactivate(tenantSlug string, id string, at time.Time) (ManagedContact, error) {
+func (s *SQLContactBookStore) deactivate(tenant TenantRef, id string, at time.Time) (ManagedContact, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return ManagedContact{}, fmt.Errorf("contact store not configured")
 	}
@@ -157,7 +160,7 @@ func (s *SQLContactBookStore) deactivate(tenantSlug string, id string, at time.T
 	}
 	defer tx.Rollback()
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM contacts WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM contacts WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return ManagedContact{}, nil // not found -> empty, matching the JSON store
 	}
 	var existing ManagedContact
@@ -166,7 +169,7 @@ func (s *SQLContactBookStore) deactivate(tenantSlug string, id string, at time.T
 	}
 	existing.Active = false
 	existing.UpdatedAt = at
-	if err := writeContactTx(tx, existing); err != nil {
+	if err := writeContactTx(tx, tenant, existing); err != nil {
 		return ManagedContact{}, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -175,16 +178,17 @@ func (s *SQLContactBookStore) deactivate(tenantSlug string, id string, at time.T
 	return existing, nil
 }
 
-func (s *SQLContactBookStore) list(tenantSlug string, includeInactive bool) []ManagedContact {
+func (s *SQLContactBookStore) list(tenant TenantRef, includeInactive bool) []ManagedContact {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
 	tenantSlug = textutil.Slug(tenantSlug)
-	query := `SELECT data FROM contacts WHERE tenant_slug = $1`
+	query := `SELECT data FROM contacts WHERE tenant_id = $1`
 	if !includeInactive {
 		query += ` AND active = TRUE`
 	}
-	rows, err := s.db.Query(query, tenantSlug)
+	rows, err := s.db.Query(query, tenant.ID)
 	if err != nil {
 		return []ManagedContact{}
 	}
@@ -221,18 +225,23 @@ func (s *SQLContactBookStore) ImportContacts(src *ContactBookStore) error {
 	src.mu.Lock()
 	snapshot := append([]ManagedContact(nil), src.data.Contacts...)
 	src.mu.Unlock()
+	tenants := newTenantIDCache(s.db)
 	for _, raw := range snapshot {
 		item, err := NormalizeManagedContact(raw)
 		if err != nil || item.ID == "" {
 			continue
+		}
+		tenant, err := tenants.ref(item.TenantSlug)
+		if err != nil {
+			return err
 		}
 		blob, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO contacts(tenant_slug, id, active, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
-			item.TenantSlug, item.ID, item.Active, string(blob),
+			`INSERT INTO contacts(tenant_id, tenant_slug, id, active, data) VALUES($1, $2, $3, $4, $5) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			tenant.ID, tenant.Slug, item.ID, item.Active, string(blob),
 		); err != nil {
 			return err
 		}

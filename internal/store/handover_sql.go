@@ -36,10 +36,10 @@ type boundHandoverRepository struct {
 }
 
 type handoverBackend interface {
-	create(tenantSlug string, item HandoverRecord) (HandoverRecord, error)
-	list(tenantSlug string) []HandoverRecord
-	get(tenantSlug string, id string) (HandoverRecord, bool)
-	setFiledDocument(tenantSlug string, id string, documentID string, at time.Time) (HandoverRecord, bool, error)
+	create(tenant TenantRef, item HandoverRecord) (HandoverRecord, error)
+	list(tenant TenantRef) []HandoverRecord
+	get(tenant TenantRef, id string) (HandoverRecord, bool)
+	setFiledDocument(tenant TenantRef, id string, documentID string, at time.Time) (HandoverRecord, bool, error)
 }
 
 func BindHandoverRepository(storage HandoverStorage, tenant TenantRef) (HandoverRepository, bool) {
@@ -52,14 +52,14 @@ func BindHandoverRepository(storage HandoverStorage, tenant TenantRef) (Handover
 }
 
 func (r *boundHandoverRepository) Create(item HandoverRecord) (HandoverRecord, error) {
-	return r.storage.create(r.tenant.Slug, item)
+	return r.storage.create(r.tenant, item)
 }
-func (r *boundHandoverRepository) List() []HandoverRecord { return r.storage.list(r.tenant.Slug) }
+func (r *boundHandoverRepository) List() []HandoverRecord { return r.storage.list(r.tenant) }
 func (r *boundHandoverRepository) Get(id string) (HandoverRecord, bool) {
-	return r.storage.get(r.tenant.Slug, id)
+	return r.storage.get(r.tenant, id)
 }
 func (r *boundHandoverRepository) SetFiledDocument(id string, documentID string, at time.Time) (HandoverRecord, bool, error) {
-	return r.storage.setFiledDocument(r.tenant.Slug, id, documentID, at)
+	return r.storage.setFiledDocument(r.tenant, id, documentID, at)
 }
 
 // SQLHandoverStore keeps each handover as a JSON document keyed by (tenant, id).
@@ -75,20 +75,22 @@ func NewSQLHandoverStore(db *sql.DB) *SQLHandoverStore {
 
 func (*SQLHandoverStore) handoverStorage() {}
 
-func (s *SQLHandoverStore) writeTx(tx *sql.Tx, item HandoverRecord) error {
+func (s *SQLHandoverStore) writeTx(tx *sql.Tx, tenant TenantRef, item HandoverRecord) error {
 	blob, err := json.Marshal(item)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(
-		`INSERT INTO handovers(tenant_slug, id, data) VALUES($1, $2, $3)
-		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data`,
-		textutil.Slug(item.TenantSlug), item.ID, string(blob),
+		`INSERT INTO handovers(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4)
+		 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data,
+		   tenant_id=coalesce(handovers.tenant_id, excluded.tenant_id)`,
+		tenant.ID, tenant.Slug, item.ID, string(blob),
 	)
 	return err
 }
 
-func (s *SQLHandoverStore) create(tenantSlug string, item HandoverRecord) (HandoverRecord, error) {
+func (s *SQLHandoverStore) create(tenant TenantRef, item HandoverRecord) (HandoverRecord, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return HandoverRecord{}, fmt.Errorf("handover store unavailable")
 	}
@@ -104,13 +106,13 @@ func (s *SQLHandoverStore) create(tenantSlug string, item HandoverRecord) (Hando
 	defer tx.Rollback()
 	var exists int
 	if err := tx.QueryRow(
-		`SELECT 1 FROM handovers WHERE tenant_slug=$1 AND id=$2`, item.TenantSlug, item.ID,
+		`SELECT 1 FROM handovers WHERE tenant_id=$1 AND id=$2`, tenant.ID, item.ID,
 	).Scan(&exists); err == nil {
 		return HandoverRecord{}, fmt.Errorf("handover exists")
 	} else if err != sql.ErrNoRows {
 		return HandoverRecord{}, err
 	}
-	if err := s.writeTx(tx, item); err != nil {
+	if err := s.writeTx(tx, tenant, item); err != nil {
 		return HandoverRecord{}, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -119,12 +121,13 @@ func (s *SQLHandoverStore) create(tenantSlug string, item HandoverRecord) (Hando
 	return CopyHandover(item), nil
 }
 
-func (s *SQLHandoverStore) list(tenantSlug string) []HandoverRecord {
+func (s *SQLHandoverStore) list(tenant TenantRef) []HandoverRecord {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
 	tenantSlug = textutil.Slug(tenantSlug)
-	rows, err := s.db.Query(`SELECT data FROM handovers WHERE tenant_slug=$1`, tenantSlug)
+	rows, err := s.db.Query(`SELECT data FROM handovers WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return []HandoverRecord{}
 	}
@@ -145,7 +148,8 @@ func (s *SQLHandoverStore) list(tenantSlug string) []HandoverRecord {
 	return out
 }
 
-func (s *SQLHandoverStore) get(tenantSlug string, id string) (HandoverRecord, bool) {
+func (s *SQLHandoverStore) get(tenant TenantRef, id string) (HandoverRecord, bool) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return HandoverRecord{}, false
 	}
@@ -153,7 +157,7 @@ func (s *SQLHandoverStore) get(tenantSlug string, id string) (HandoverRecord, bo
 	id = strings.TrimSpace(id)
 	var data string
 	if err := s.db.QueryRow(
-		`SELECT data FROM handovers WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id,
+		`SELECT data FROM handovers WHERE tenant_id=$1 AND id=$2`, tenant.ID, id,
 	).Scan(&data); err != nil {
 		return HandoverRecord{}, false
 	}
@@ -232,7 +236,14 @@ func (s *SQLHandoverStore) ConfirmByToken(token string, name string, note string
 			item.Confirmations[j] = confirmation
 			item.UpdatedAt = at.UTC()
 			saved := NormalizeHandover(item)
-			if err := s.writeTx(tx, saved); err != nil {
+			// Token confirmation is deliberately cross-tenant: the token is the
+			// only thing the confirming party has. The row's own identity is the
+			// tenant here, not a bound one.
+			confirmedTenant, refErr := tenantRefFor(tx, saved.TenantSlug)
+			if refErr != nil {
+				return HandoverRecord{}, HandoverConfirmation{}, true, refErr
+			}
+			if err := s.writeTx(tx, confirmedTenant, saved); err != nil {
 				return HandoverRecord{}, HandoverConfirmation{}, true, err
 			}
 			if err := tx.Commit(); err != nil {
@@ -244,7 +255,8 @@ func (s *SQLHandoverStore) ConfirmByToken(token string, name string, note string
 	return HandoverRecord{}, HandoverConfirmation{}, false, nil
 }
 
-func (s *SQLHandoverStore) setFiledDocument(tenantSlug string, id string, documentID string, at time.Time) (HandoverRecord, bool, error) {
+func (s *SQLHandoverStore) setFiledDocument(tenant TenantRef, id string, documentID string, at time.Time) (HandoverRecord, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return HandoverRecord{}, false, fmt.Errorf("handover store unavailable")
 	}
@@ -257,7 +269,7 @@ func (s *SQLHandoverStore) setFiledDocument(tenantSlug string, id string, docume
 	}
 	defer tx.Rollback()
 	var data string
-	if err := tx.QueryRow(`SELECT data FROM handovers WHERE tenant_slug=$1 AND id=$2`, tenantSlug, id).Scan(&data); err != nil {
+	if err := tx.QueryRow(`SELECT data FROM handovers WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return HandoverRecord{}, false, nil
 	}
 	var item HandoverRecord
@@ -270,7 +282,7 @@ func (s *SQLHandoverStore) setFiledDocument(tenantSlug string, id string, docume
 	}
 	item.UpdatedAt = at.UTC()
 	saved := NormalizeHandover(item)
-	if err := s.writeTx(tx, saved); err != nil {
+	if err := s.writeTx(tx, tenant, saved); err != nil {
 		return HandoverRecord{}, true, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -288,17 +300,22 @@ func (s *SQLHandoverStore) ImportHandovers(src *HandoverStore) error {
 	src.mu.Lock()
 	snapshot := append([]HandoverRecord(nil), src.data.Handovers...)
 	src.mu.Unlock()
+	tenants := newTenantIDCache(s.db)
 	for _, item := range snapshot {
 		if strings.TrimSpace(item.ID) == "" || textutil.Slug(item.TenantSlug) == "" {
 			continue
+		}
+		tenant, err := tenants.ref(item.TenantSlug)
+		if err != nil {
+			return err
 		}
 		blob, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
 		if _, err := s.db.Exec(
-			`INSERT INTO handovers(tenant_slug, id, data) VALUES($1, $2, $3) ON CONFLICT(tenant_slug, id) DO NOTHING`,
-			textutil.Slug(item.TenantSlug), item.ID, string(blob),
+			`INSERT INTO handovers(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {
 			return err
 		}

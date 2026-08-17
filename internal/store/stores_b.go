@@ -363,7 +363,8 @@ func NewVoteStore(path string) (*VoteStore, error) {
 
 func (*VoteStore) voteStorage() {}
 
-func (s *VoteStore) create(tenantSlug string, item Ballot) (Ballot, error) {
+func (s *VoteStore) create(tenant TenantRef, item Ballot) (Ballot, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return Ballot{}, fmt.Errorf("vote store unavailable")
 	}
@@ -395,7 +396,8 @@ func (s *VoteStore) create(tenantSlug string, item Ballot) (Ballot, error) {
 	return CopyBallot(item), nil
 }
 
-func (s *VoteStore) delete(tenantSlug string, id string) (bool, error) {
+func (s *VoteStore) delete(tenant TenantRef, id string) (bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return false, nil
 	}
@@ -419,15 +421,16 @@ func (s *VoteStore) delete(tenantSlug string, id string) (bool, error) {
 	return false, nil
 }
 
-func (s *VoteStore) open(tenantSlug string, id string, at time.Time) (Ballot, bool, error) {
-	return s.setStatus(tenantSlug, id, BallotStatusOpen, at)
+func (s *VoteStore) open(tenant TenantRef, id string, at time.Time) (Ballot, bool, error) {
+	return s.setStatus(tenant, id, BallotStatusOpen, at)
 }
 
-func (s *VoteStore) close(tenantSlug string, id string, at time.Time) (Ballot, bool, error) {
-	return s.setStatus(tenantSlug, id, BallotStatusClosed, at)
+func (s *VoteStore) close(tenant TenantRef, id string, at time.Time) (Ballot, bool, error) {
+	return s.setStatus(tenant, id, BallotStatusClosed, at)
 }
 
-func (s *VoteStore) closeExpiredTenant(tenantSlug string, at time.Time) ([]Ballot, error) {
+func (s *VoteStore) closeExpiredTenant(tenant TenantRef, at time.Time) ([]Ballot, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil, nil
 	}
@@ -465,7 +468,8 @@ func (s *VoteStore) closeExpiredTenant(tenantSlug string, at time.Time) ([]Ballo
 	return closed, nil
 }
 
-func (s *VoteStore) setStatus(tenantSlug string, id string, status string, at time.Time) (Ballot, bool, error) {
+func (s *VoteStore) setStatus(tenant TenantRef, id string, status string, at time.Time) (Ballot, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return Ballot{}, false, nil
 	}
@@ -507,7 +511,8 @@ func (s *VoteStore) setStatus(tenantSlug string, id string, status string, at ti
 	return Ballot{}, false, nil
 }
 
-func (s *VoteStore) castVote(tenantSlug string, id string, email string, option string, weight int, at time.Time) (Ballot, bool, error) {
+func (s *VoteStore) castVote(tenant TenantRef, id string, email string, option string, weight int, at time.Time) (Ballot, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return Ballot{}, false, nil
 	}
@@ -565,7 +570,8 @@ func (s *VoteStore) castVote(tenantSlug string, id string, email string, option 
 	return Ballot{}, false, nil
 }
 
-func (s *VoteStore) markReminderSent(tenantSlug string, id string, recipients []string, at time.Time) (Ballot, bool, error) {
+func (s *VoteStore) markReminderSent(tenant TenantRef, id string, recipients []string, at time.Time) (Ballot, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return Ballot{}, false, nil
 	}
@@ -604,7 +610,8 @@ func (s *VoteStore) markReminderSent(tenantSlug string, id string, recipients []
 	return Ballot{}, false, nil
 }
 
-func (s *VoteStore) listTenant(tenantSlug string) []Ballot {
+func (s *VoteStore) listTenant(tenant TenantRef) []Ballot {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -621,7 +628,8 @@ func (s *VoteStore) listTenant(tenantSlug string) []Ballot {
 	return out
 }
 
-func (s *VoteStore) get(tenantSlug string, id string) (Ballot, bool) {
+func (s *VoteStore) get(tenant TenantRef, id string) (Ballot, bool) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return Ballot{}, false
 	}
@@ -854,7 +862,8 @@ func NewUnitStore(path string) (*UnitStore, error) {
 
 func (*UnitStore) unitStorage() {}
 
-func (s *UnitStore) setTenantUnits(tenantSlug string, units []Unit) error {
+func (s *UnitStore) setTenantUnits(tenant TenantRef, units []Unit) error {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -881,7 +890,8 @@ func (s *UnitStore) setTenantUnits(tenantSlug string, units []Unit) error {
 // overwrite (HAUSV-145). origID is the unit's previous ID ("" for a new unit).
 // It returns duplicate=true if the target ID collides with a different existing
 // unit — mirroring the handler's original check exactly.
-func (s *UnitStore) upsertUnit(tenantSlug, origID string, item Unit) (duplicate bool, err error) {
+func (s *UnitStore) upsertUnit(tenant TenantRef, origID string, item Unit) (duplicate bool, err error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return false, nil
 	}
@@ -931,7 +941,8 @@ func (s *UnitStore) upsertUnit(tenantSlug, origID string, item Unit) (duplicate 
 
 // DeleteUnit removes one unit within one lock acquisition (HAUSV-145). Returns
 // removed=false if no unit had that ID.
-func (s *UnitStore) deleteUnit(tenantSlug, id string) (removed bool, removedUnit Unit, err error) {
+func (s *UnitStore) deleteUnit(tenant TenantRef, id string) (removed bool, removedUnit Unit, err error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return false, Unit{}, nil
 	}
@@ -959,7 +970,8 @@ func (s *UnitStore) deleteUnit(tenantSlug, id string) (removed bool, removedUnit
 	return true, removedUnit, s.saveLocked()
 }
 
-func (s *UnitStore) listTenant(tenantSlug string) []Unit {
+func (s *UnitStore) listTenant(tenant TenantRef) []Unit {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -976,12 +988,12 @@ func (s *UnitStore) listTenant(tenantSlug string) []Unit {
 	return out
 }
 
-func (s *UnitStore) unitCount(tenantSlug string) int {
-	return len(s.listTenant(tenantSlug))
+func (s *UnitStore) unitCount(tenant TenantRef) int {
+	return len(s.listTenant(tenant))
 }
 
-func (s *UnitStore) billableUnitWeight(tenantSlug string) int {
-	return BillableUnitWeight(s.listTenant(tenantSlug))
+func (s *UnitStore) billableUnitWeight(tenant TenantRef) int {
+	return BillableUnitWeight(s.listTenant(tenant))
 }
 
 func BillableUnitWeight(units []Unit) int {
@@ -992,7 +1004,8 @@ func BillableUnitWeight(units []Unit) int {
 	return total
 }
 
-func (s *UnitStore) unitsForEmail(tenantSlug string, email string) []UnitMembership {
+func (s *UnitStore) unitsForEmail(tenant TenantRef, email string) []UnitMembership {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -1024,7 +1037,8 @@ func (s *UnitStore) unitsForEmail(tenantSlug string, email string) []UnitMembers
 	return out
 }
 
-func (s *UnitStore) membersForUnit(tenantSlug string, unitID string) UnitMembers {
+func (s *UnitStore) membersForUnit(tenant TenantRef, unitID string) UnitMembers {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return UnitMembers{}
 	}
@@ -1050,7 +1064,8 @@ func (s *UnitStore) saveLocked() error {
 
 func (*EventStore) eventStorage() {}
 
-func (s *EventStore) create(tenantSlug string, item HouseEvent) (HouseEvent, error) {
+func (s *EventStore) create(tenant TenantRef, item HouseEvent) (HouseEvent, error) {
+	tenantSlug := tenant.Slug
 	item.TenantSlug = tenantSlug
 	if s == nil {
 		return item, nil
@@ -1078,7 +1093,8 @@ func (s *EventStore) create(tenantSlug string, item HouseEvent) (HouseEvent, err
 	return normalized, nil
 }
 
-func (s *EventStore) update(tenantSlug string, id string, updated HouseEvent) (bool, error) {
+func (s *EventStore) update(tenant TenantRef, id string, updated HouseEvent) (bool, error) {
+	tenantSlug := tenant.Slug
 	updated.TenantSlug = tenantSlug
 	if s == nil {
 		return false, nil
@@ -1116,7 +1132,8 @@ func (s *EventStore) update(tenantSlug string, id string, updated HouseEvent) (b
 	return false, nil
 }
 
-func (s *EventStore) delete(tenantSlug string, id string) (bool, error) {
+func (s *EventStore) delete(tenant TenantRef, id string) (bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return false, nil
 	}
@@ -1146,7 +1163,8 @@ func (s *EventStore) delete(tenantSlug string, id string) (bool, error) {
 	return true, nil
 }
 
-func (s *EventStore) list(tenantSlug string) []HouseEvent {
+func (s *EventStore) list(tenant TenantRef) []HouseEvent {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -1163,9 +1181,10 @@ func (s *EventStore) list(tenantSlug string) []HouseEvent {
 	return out
 }
 
-func (s *EventStore) upcoming(tenantSlug string, now time.Time) []HouseEvent {
+func (s *EventStore) upcoming(tenant TenantRef, now time.Time) []HouseEvent {
+	tenantSlug := tenant.Slug
 	tenantSlug = textutil.Slug(tenantSlug)
-	items := s.list(tenantSlug)
+	items := s.list(tenant)
 	out := []HouseEvent{}
 	for _, item := range items {
 		if EventRollsOffAt(item).After(now) {
@@ -1235,7 +1254,8 @@ func SortEvents(items []HouseEvent) {
 
 func (*AnnouncementStore) announcementStorage() {}
 
-func (s *AnnouncementStore) create(tenantSlug string, item Announcement) (Announcement, error) {
+func (s *AnnouncementStore) create(tenant TenantRef, item Announcement) (Announcement, error) {
+	tenantSlug := tenant.Slug
 	item.TenantSlug = tenantSlug
 	now := time.Now().UTC()
 	item.ID = ""
@@ -1261,7 +1281,8 @@ func (s *AnnouncementStore) create(tenantSlug string, item Announcement) (Announ
 	return item, nil
 }
 
-func (s *AnnouncementStore) update(tenantSlug string, id string, updated Announcement) (bool, error) {
+func (s *AnnouncementStore) update(tenant TenantRef, id string, updated Announcement) (bool, error) {
+	tenantSlug := tenant.Slug
 	updated.TenantSlug = tenantSlug
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -1294,7 +1315,8 @@ func (s *AnnouncementStore) update(tenantSlug string, id string, updated Announc
 	return false, nil
 }
 
-func (s *AnnouncementStore) delete(tenantSlug string, id string) (bool, error) {
+func (s *AnnouncementStore) delete(tenant TenantRef, id string) (bool, error) {
+	tenantSlug := tenant.Slug
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -1321,7 +1343,8 @@ func (s *AnnouncementStore) delete(tenantSlug string, id string) (bool, error) {
 	return true, nil
 }
 
-func (s *AnnouncementStore) visible(tenantSlug string, now time.Time) []Announcement {
+func (s *AnnouncementStore) visible(tenant TenantRef, now time.Time) []Announcement {
+	tenantSlug := tenant.Slug
 	tenantSlug = textutil.Slug(tenantSlug)
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -1342,7 +1365,8 @@ func (s *AnnouncementStore) visible(tenantSlug string, now time.Time) []Announce
 	return out
 }
 
-func (s *AnnouncementStore) archive(tenantSlug string, now time.Time) []Announcement {
+func (s *AnnouncementStore) archive(tenant TenantRef, now time.Time) []Announcement {
+	tenantSlug := tenant.Slug
 	tenantSlug = textutil.Slug(tenantSlug)
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -1360,7 +1384,8 @@ func (s *AnnouncementStore) archive(tenantSlug string, now time.Time) []Announce
 	return out
 }
 
-func (s *AnnouncementStore) list(tenantSlug string) []Announcement {
+func (s *AnnouncementStore) list(tenant TenantRef) []Announcement {
+	tenantSlug := tenant.Slug
 	tenantSlug = textutil.Slug(tenantSlug)
 	s.mu.Lock()
 	defer s.mu.Unlock()

@@ -4,8 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func sampleBallot() Ballot {
@@ -29,7 +27,7 @@ func TestVoteStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) VoteStorage {
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLVoteStore(database)
 		},
@@ -162,7 +160,7 @@ func TestVoteCastAfterCloseTimePersistsClosureParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) VoteStorage {
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLVoteStore(database)
 		},
@@ -208,7 +206,7 @@ func TestVoteCloseExpiredTenantParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) VoteStorage {
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLVoteStore(database)
 		},
@@ -287,7 +285,7 @@ func TestSQLVoteImportFromJSON(t *testing.T) {
 		t.Fatalf("cast: %v", err)
 	}
 
-	database := dbtest.Open(t)
+	database := testDB(t)
 	defer database.Close()
 	sqlStore := NewSQLVoteStore(database)
 	sqlRepository, _ := BindVoteRepository(sqlStore, testTenantRef("demo"))

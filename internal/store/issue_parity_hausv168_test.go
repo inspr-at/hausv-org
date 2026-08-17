@@ -4,8 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func sampleIssue() ResidentIssue {
@@ -32,7 +30,7 @@ func TestIssueStorageParity(t *testing.T) {
 		},
 		"sqlite": func(t *testing.T) IssueStorage {
 			dir := t.TempDir()
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLIssueStore(database, filepath.Join(dir, "issue-attachments"))
 		},
@@ -191,7 +189,7 @@ func TestSQLIssueImportFromJSON(t *testing.T) {
 		t.Fatalf("seed comment: %v", err)
 	}
 
-	database := dbtest.Open(t)
+	database := testDB(t)
 	defer database.Close()
 	sqlStore := NewSQLIssueStore(database, filepath.Join(dir, "issue-attachments"))
 

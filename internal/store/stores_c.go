@@ -414,7 +414,8 @@ func NewIssueStore(path string, attachmentDir string) (*IssueStore, error) {
 
 func (*IssueStore) issueStorage() {}
 
-func (s *IssueStore) create(tenantSlug string, item ResidentIssue) (ResidentIssue, error) {
+func (s *IssueStore) create(tenant TenantRef, item ResidentIssue) (ResidentIssue, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return item, nil
 	}
@@ -471,7 +472,8 @@ func (s *IssueStore) create(tenantSlug string, item ResidentIssue) (ResidentIssu
 	return item, nil
 }
 
-func (s *IssueStore) listTenant(tenantSlug string) []ResidentIssue {
+func (s *IssueStore) listTenant(tenant TenantRef) []ResidentIssue {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -488,7 +490,8 @@ func (s *IssueStore) listTenant(tenantSlug string) []ResidentIssue {
 	return out
 }
 
-func (s *IssueStore) listAuthor(tenantSlug string, email string) []ResidentIssue {
+func (s *IssueStore) listAuthor(tenant TenantRef, email string) []ResidentIssue {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -506,7 +509,8 @@ func (s *IssueStore) listAuthor(tenantSlug string, email string) []ResidentIssue
 	return out
 }
 
-func (s *IssueStore) get(tenantSlug string, id string) (ResidentIssue, bool) {
+func (s *IssueStore) get(tenant TenantRef, id string) (ResidentIssue, bool) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return ResidentIssue{}, false
 	}
@@ -525,7 +529,8 @@ func (s *IssueStore) get(tenantSlug string, id string) (ResidentIssue, bool) {
 	return ResidentIssue{}, false
 }
 
-func (s *IssueStore) updateWorkflow(tenantSlug string, id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error) {
+func (s *IssueStore) updateWorkflow(tenant TenantRef, id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return ResidentIssue{}, false, nil
 	}
@@ -623,7 +628,8 @@ func (s *IssueStore) updateWorkflow(tenantSlug string, id string, update IssueWo
 	return ResidentIssue{}, false, nil
 }
 
-func (s *IssueStore) addComment(tenantSlug string, id string, comment IssueComment) (ResidentIssue, bool, error) {
+func (s *IssueStore) addComment(tenant TenantRef, id string, comment IssueComment) (ResidentIssue, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return ResidentIssue{}, false, nil
 	}
@@ -668,7 +674,8 @@ func (s *IssueStore) addComment(tenantSlug string, id string, comment IssueComme
 	return ResidentIssue{}, false, nil
 }
 
-func (s *IssueStore) deleteComment(tenantSlug string, id string, commentID string, at time.Time) (ResidentIssue, bool, error) {
+func (s *IssueStore) deleteComment(tenant TenantRef, id string, commentID string, at time.Time) (ResidentIssue, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return ResidentIssue{}, false, nil
 	}
@@ -795,7 +802,8 @@ func NewAttachmentStore(path string, fileDir string) (*AttachmentStore, error) {
 
 func (*AttachmentStore) attachmentStorage() {}
 
-func (s *AttachmentStore) createUploaded(tenantSlug string, entityType string, entityID string, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error) {
+func (s *AttachmentStore) createUploaded(tenant TenantRef, entityType string, entityID string, uploadedBy string, uploads []UploadedFile, now time.Time) ([]AttachmentRecord, error) {
+	tenantSlug := tenant.Slug
 	if s == nil || len(uploads) == 0 {
 		return nil, nil
 	}
@@ -932,7 +940,8 @@ func saveUploadedAttachmentFileIn(fileDir string, tenantSlug string, id string, 
 	return save, nil
 }
 
-func (s *AttachmentStore) listEntity(tenantSlug string, entityType string, entityID string) []AttachmentRecord {
+func (s *AttachmentStore) listEntity(tenant TenantRef, entityType string, entityID string) []AttachmentRecord {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -956,7 +965,8 @@ func (s *AttachmentStore) listEntity(tenantSlug string, entityType string, entit
 	return items
 }
 
-func (s *AttachmentStore) get(tenantSlug string, id string) (AttachmentRecord, bool) {
+func (s *AttachmentStore) get(tenant TenantRef, id string) (AttachmentRecord, bool) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return AttachmentRecord{}, false
 	}
@@ -972,7 +982,8 @@ func (s *AttachmentStore) get(tenantSlug string, id string) (AttachmentRecord, b
 	return AttachmentRecord{}, false
 }
 
-func (s *AttachmentStore) delete(tenantSlug string, id string, deletedAt time.Time) (AttachmentRecord, bool, error) {
+func (s *AttachmentStore) delete(tenant TenantRef, id string, deletedAt time.Time) (AttachmentRecord, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return AttachmentRecord{}, false, nil
 	}
@@ -1251,7 +1262,8 @@ func NewDocumentStore(path string, fileDir string) (*DocumentStore, error) {
 
 func (*DocumentStore) documentStorage() {}
 
-func (s *DocumentStore) create(tenantSlug string, item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
+func (s *DocumentStore) create(tenant TenantRef, item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
@@ -1350,7 +1362,8 @@ func saveUploadedDocumentFileIn(fileDir string, tenantSlug string, upload Upload
 	}, nil
 }
 
-func (s *DocumentStore) replace(tenantSlug string, id string, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error) {
+func (s *DocumentStore) replace(tenant TenantRef, id string, uploadedBy string, upload UploadedFile, now time.Time) (DocumentRecord, DocumentRecord, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
@@ -1360,7 +1373,7 @@ func (s *DocumentStore) replace(tenantSlug string, id string, uploadedBy string,
 	if tenantSlug == "" || id == "" || uploadedBy == "" {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("invalid document replacement")
 	}
-	existing, found := s.get(tenantSlug, id)
+	existing, found := s.get(tenant, id)
 	if !found || !existing.Current {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document not found")
 	}
@@ -1445,7 +1458,8 @@ func writeDocumentFileIn(fileDir string, tenantSlug string, storedFilename strin
 	return dest, written, nil
 }
 
-func (s *DocumentStore) listTenant(tenantSlug string) []DocumentRecord {
+func (s *DocumentStore) listTenant(tenant TenantRef) []DocumentRecord {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -1462,8 +1476,8 @@ func (s *DocumentStore) listTenant(tenantSlug string) []DocumentRecord {
 	return out
 }
 
-func (s *DocumentStore) listCurrentTenant(tenantSlug string) []DocumentRecord {
-	all := s.listTenant(tenantSlug)
+func (s *DocumentStore) listCurrentTenant(tenant TenantRef) []DocumentRecord {
+	all := s.listTenant(tenant)
 	out := []DocumentRecord{}
 	for _, item := range all {
 		if item.Current {
@@ -1474,7 +1488,8 @@ func (s *DocumentStore) listCurrentTenant(tenantSlug string) []DocumentRecord {
 	return out
 }
 
-func (s *DocumentStore) versions(tenantSlug string, seriesID string) []DocumentRecord {
+func (s *DocumentStore) versions(tenant TenantRef, seriesID string) []DocumentRecord {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -1500,7 +1515,8 @@ func (s *DocumentStore) versions(tenantSlug string, seriesID string) []DocumentR
 	return out
 }
 
-func (s *DocumentStore) get(tenantSlug string, id string) (DocumentRecord, bool) {
+func (s *DocumentStore) get(tenant TenantRef, id string) (DocumentRecord, bool) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return DocumentRecord{}, false
 	}
@@ -1588,7 +1604,8 @@ func prepareGeneratedDocument(fileDir string, item DocumentRecord, filename stri
 	return item, path, nil
 }
 
-func (s *DocumentStore) createGenerated(tenantSlug string, item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
+func (s *DocumentStore) createGenerated(tenant TenantRef, item DocumentRecord, filename string, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
@@ -2389,7 +2406,8 @@ func NewHandoverStore(path string) (*HandoverStore, error) {
 
 func (*HandoverStore) handoverStorage() {}
 
-func (s *HandoverStore) create(tenantSlug string, item HandoverRecord) (HandoverRecord, error) {
+func (s *HandoverStore) create(tenant TenantRef, item HandoverRecord) (HandoverRecord, error) {
+	tenantSlug := tenant.Slug
 	item.TenantSlug = tenantSlug
 	if s == nil {
 		return HandoverRecord{}, fmt.Errorf("handover store unavailable")
@@ -2413,7 +2431,8 @@ func (s *HandoverStore) create(tenantSlug string, item HandoverRecord) (Handover
 	return CopyHandover(item), nil
 }
 
-func (s *HandoverStore) list(tenantSlug string) []HandoverRecord {
+func (s *HandoverStore) list(tenant TenantRef) []HandoverRecord {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
@@ -2430,7 +2449,8 @@ func (s *HandoverStore) list(tenantSlug string) []HandoverRecord {
 	return out
 }
 
-func (s *HandoverStore) get(tenantSlug string, id string) (HandoverRecord, bool) {
+func (s *HandoverStore) get(tenant TenantRef, id string) (HandoverRecord, bool) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return HandoverRecord{}, false
 	}
@@ -2499,7 +2519,8 @@ func (s *HandoverStore) ConfirmByToken(token string, name string, note string, a
 	return HandoverRecord{}, HandoverConfirmation{}, false, nil
 }
 
-func (s *HandoverStore) setFiledDocument(tenantSlug string, id string, documentID string, at time.Time) (HandoverRecord, bool, error) {
+func (s *HandoverStore) setFiledDocument(tenant TenantRef, id string, documentID string, at time.Time) (HandoverRecord, bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return HandoverRecord{}, false, fmt.Errorf("handover store unavailable")
 	}
@@ -2738,7 +2759,8 @@ func SubtleConstantStringCompare(a string, b string) bool {
 // AttachmentDir exposes the issue store's photo directory. main used to reach
 // into the unexported field directly (legacy issue photos are served from disk);
 // crossing a package boundary needs a real accessor.
-func (s *IssueStore) clearPhotoPaths(tenantSlug string, id string) (bool, error) {
+func (s *IssueStore) clearPhotoPaths(tenant TenantRef, id string) (bool, error) {
+	tenantSlug := tenant.Slug
 	if s == nil {
 		return false, nil
 	}

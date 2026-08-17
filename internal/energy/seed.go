@@ -112,7 +112,12 @@ func ApplyProfileSeeds(storage Storage, raw string, knownTenants map[string]stru
 				// Eigene, aber weiterhin deterministische ID: mehrere benannte
 				// Verbraucher derselben Art dürfen sich nicht überschreiben,
 				// und ein Neustart darf sie nicht verdoppeln.
-				discriminator := normalizeSlug(name)
+				// normalizeToken, not normalizeSlug: this is an asset-ID token
+				// derived from a free-text household name, never a tenant slug.
+				// It has to reject a name with no usable characters ("★") and
+				// collapse "Sauna Keller" and "sauna-keller" onto the same id so
+				// the duplicate check below can see the collision.
+				discriminator := normalizeToken(name, "")
 				if discriminator == "" {
 					return fmt.Errorf("home profile seed for tenant %s has an asset name without usable characters: %q", slug, name)
 				}

@@ -355,8 +355,16 @@ func StableAssetIDForHome(tenantSlug, homeKey, kind string) string {
 // NormalizeHomeKey returns the stable, tenant-local key used to isolate one
 // Zuhause. The default keeps every pre-0.78 single-home installation working
 // without new configuration.
+//
+// It deliberately keeps the strict token normalizer rather than following the
+// tenant slug onto textutil.Slug. A home key is tenant-LOCAL: it never resolves
+// to an identity and nothing outside this package agrees on what it means, so
+// there is no second normalizer to reconcile with. Widening it would silently
+// change the stored key of every existing home whose key contains anything
+// outside [a-z0-9-] and make those rows unreachable, which is a data migration,
+// not a cleanup. TestHomeKeyNormalizationIsNotTheTenantNormalizer pins this.
 func NormalizeHomeKey(raw string) string {
-	if normalized := normalizeSlug(raw); normalized != "" {
+	if normalized := normalizeToken(raw, ""); normalized != "" {
 		return normalized
 	}
 	return DefaultHomeKey
@@ -601,6 +609,23 @@ func normalizeToken(raw, fallback string) string {
 	return out
 }
 
+// normalizeSlug canonicalises a TENANT slug, and it is textutil.Slug because
+// that is what every other layer already means by "slug": internal/config
+// accepts textutil.Slug output as the legal form, and internal/tenantid resolves
+// an identity under it.
+//
+// It used to be normalizeToken, which strips everything outside [a-z0-9]. That
+// made two normalizers for one concept, and the moment energy writes started
+// carrying a tenant_id the divergence stopped being cosmetic: for a configured
+// house like "haus.a" or "haus-grün" the boot minted one identity and the first
+// energy write minted a SECOND, stamping the wrong id onto the row. A wrong
+// tenant_id is invisible to the boot-time completeness check, which counts NULLs.
+//
+// It also collided: "haus-a" and "haus.a" both collapsed to "haus-a", so two
+// houses shared one home_profiles row and the second could not store energy data
+// under its own identity at all.
+//
+// TestTenantSlugNormalizersAgree fails if the two ever drift apart again.
 func normalizeSlug(raw string) string {
-	return normalizeToken(raw, "")
+	return textutil.Slug(raw)
 }

@@ -3,8 +3,6 @@ package store
 import (
 	"path/filepath"
 	"testing"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 // HAUSV-169 phase 3: the JSON profile store and the SQLite person/house model
@@ -21,7 +19,7 @@ func profileBackends() map[string]func(t *testing.T) ProfileStorage {
 			return s
 		},
 		"sqlite": func(t *testing.T) ProfileStorage {
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLIdentityStore(database)
 		},

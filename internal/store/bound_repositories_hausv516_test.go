@@ -3,17 +3,11 @@ package store
 import (
 	"testing"
 	"time"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
-
-func testTenantRef(slug string) TenantRef {
-	return TenantRef{ID: "01ARZ3NDEKTSV4RRFFQ69G5FAV", Slug: slug}
-}
 
 func hausv516DB(t *testing.T) *SQLIdentityStore {
 	t.Helper()
-	database := dbtest.Open(t)
+	database := testDB(t)
 	t.Cleanup(func() { database.Close() })
 	return NewSQLIdentityStore(database)
 }
@@ -30,14 +24,14 @@ func TestBoundAnnouncementRepositoryExcludesOtherTenants(t *testing.T) {
 }
 
 func TestRepositoryBoundaryValidatesTenantIdentity(t *testing.T) {
-	storage := NewSQLAnnouncementStore(dbtest.Open(t))
+	storage := NewSQLAnnouncementStore(testDB(t))
 	if _, ok := BindAnnouncementRepository(storage, TenantRef{Slug: "demo"}); ok {
 		t.Fatal("repository accepted an empty tenant id")
 	}
 	if _, ok := BindAnnouncementRepository(storage, TenantRef{ID: "not-a-tenant-id", Slug: "demo"}); ok {
 		t.Fatal("repository accepted a malformed tenant id")
 	}
-	if _, ok := BindAnnouncementRepository(storage, TenantRef{ID: "01ARZ3NDEKTSV4RRFFQ69G5FAV"}); ok {
+	if _, ok := BindAnnouncementRepository(storage, TenantRef{ID: testTenantID("demo")}); ok {
 		t.Fatal("repository accepted an empty tenant slug")
 	}
 	if _, ok := BindAnnouncementRepository(storage, testTenantRef("demo")); !ok {

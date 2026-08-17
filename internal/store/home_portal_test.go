@@ -1,6 +1,7 @@
 package store_test
 
 import (
+	"database/sql"
 	"errors"
 	"path/filepath"
 	"testing"
@@ -56,8 +57,13 @@ func TestSQLHomePortalActivationIsAtomicIdempotentAndPersistent(t *testing.T) {
 	if !ok || owner.ID != person.ID || owner.FirstName != "Eva" || len(owner.AuthMethods) != 1 || owner.AuthMethods[0] != store.AuthMethodOIDC {
 		t.Fatalf("existing identity was not preserved: %+v", owner)
 	}
-	homeIdentity, _ := store.BindIdentityRepository(identity, store.TenantRef{ID: "01ARZ3NDEKTSV4RRFFQ69G5FAV", Slug: "stadtpark-home"})
-	otherIdentity, _ := store.BindIdentityRepository(identity, store.TenantRef{ID: "01ARZ3NDEKTSV4RRFFQ69G5FAV", Slug: "anderes-haus"})
+	// Both references are read back from the database rather than invented. A
+	// fabricated id used to pass here because nothing filtered on it; now it
+	// would address a tenant that does not exist, and the membership lookups
+	// below would come back empty for a reason that had nothing to do with
+	// activation.
+	homeIdentity, _ := store.BindIdentityRepository(identity, tenantRefFromDB(t, database, "stadtpark-home"))
+	otherIdentity, _ := store.BindIdentityRepository(identity, tenantRefFromDB(t, database, "anderes-haus"))
 	membership, ok := homeIdentity.Membership(owner.ID)
 	if !ok || membership.Role != store.RoleOwner || membership.Status != "Aktiv" {
 		t.Fatalf("owner membership = %+v ok=%v", membership, ok)
@@ -150,4 +156,15 @@ func TestSQLHomePortalRejectsForeignUnconfirmedAndRollsBack(t *testing.T) {
 	if reservation.Status != store.HomeReservationEmailConfirmed {
 		t.Fatalf("failed activation changed reservation to %q", reservation.Status)
 	}
+}
+
+// tenantRefFromDB reads a tenant's real identity, so a test addresses rows the
+// same way the application does.
+func tenantRefFromDB(t *testing.T, database *sql.DB, slug string) store.TenantRef {
+	t.Helper()
+	var id string
+	if err := database.QueryRow(`SELECT tenant_id FROM tenant WHERE slug=$1`, slug).Scan(&id); err != nil {
+		t.Fatalf("tenant identity for %s: %v", slug, err)
+	}
+	return store.TenantRef{ID: id, Slug: slug}
 }

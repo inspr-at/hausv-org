@@ -4,8 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func TestTelegramStorageParity(t *testing.T) {
@@ -18,7 +16,7 @@ func TestTelegramStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) TelegramStorage {
-			database := dbtest.Open(t)
+			database := testDB(t)
 			t.Cleanup(func() { database.Close() })
 			return NewSQLTelegramStore(database)
 		},
@@ -153,7 +151,7 @@ func TestSQLTelegramImportFromJSON(t *testing.T) {
 		t.Fatalf("pending code: %v", err)
 	}
 
-	database := dbtest.Open(t)
+	database := testDB(t)
 	defer database.Close()
 	sqlStore := NewSQLTelegramStore(database)
 
