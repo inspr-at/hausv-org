@@ -2078,8 +2078,26 @@ async function assertEnergySafetyAndFlow(viewport) {
     if (!todayAxis.includes(label)) fail(`Energie ${viewport.name}: Heute-Achse enthält ${label} nicht`);
   }
   const todayHitCount = await chart.locator('svg.energy-chart-svg:visible [data-chart-hit]').count();
-  if (todayHitCount < 2 || todayHitCount >= 97) {
-    fail(`Energie ${viewport.name}: zukünftige Heute-Werte sind nicht leer (${todayHitCount} von 97 belegt)`);
+  // "Heute" spans 00:00-24:00, so the number of slots that CAN carry a value depends on how
+  // much of the day has actually elapsed. The old bound was a flat `< 2`, which is unsatisfiable
+  // between 00:00 and 00:30 — the day is one quarter-hour old and one point is all there is.
+  // That made this check fail deterministically just after midnight while passing all day, which
+  // read as flakiness and blocked four merges. Ask the browser for the day it is rendering
+  // rather than the runner's clock, so a timezone difference cannot reintroduce the same gap.
+  const elapsedSlots = await page.evaluate(() => {
+    const now = new Date();
+    return Math.floor((now.getHours() * 60 + now.getMinutes()) / 15);
+  });
+  // Two separate properties, so a failure says which one broke. The old message claimed
+  // "future values are not empty" for BOTH branches, including the one that fires when there is
+  // hardly any data at all — the opposite problem, and it sent the reader hunting the wrong way.
+  if (todayHitCount < 1) {
+    fail(`Energie ${viewport.name}: Heute-Diagramm zeigt keinen einzigen Messwert (${todayHitCount}, ${elapsedSlots} Viertelstunden vergangen)`);
+  }
+  // +1 absorbs the slot in progress and a tick of the clock between render and assertion.
+  const maxPlausible = Math.min(97, elapsedSlots + 2);
+  if (todayHitCount > maxPlausible) {
+    fail(`Energie ${viewport.name}: zukünftige Heute-Werte sind nicht leer (${todayHitCount} von 97 belegt, höchstens ${maxPlausible} plausibel nach ${elapsedSlots} Viertelstunden)`);
   }
   if (process.env.HV_QA_SCREENSHOT_DIR) {
     mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });

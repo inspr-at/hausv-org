@@ -277,9 +277,28 @@ async function assertEnergyConsumerManagement(page, { label, width }) {
     fail(label, 'Löschen verlangt keine explizite zweite Bestätigung');
   }
   await dialog.locator('[data-consumer-delete-cancel]').click();
+  // Cancelling restores the dialog's default state asynchronously. Pressing Escape before that
+  // settles closes nothing, so wait for the confirmation to actually go away first.
+  await dialog.locator('[data-consumer-delete-confirm]').waitFor({ state: 'hidden' });
   await page.keyboard.press('Escape');
-  if (await dialog.isVisible() || !(await editTrigger.evaluate((node) => document.activeElement === node))) {
-    fail(label, 'Escape schließt den Dialog nicht mit Fokus-Rückgabe');
+  // Closing a native <dialog> and restoring focus to its invoker are BOTH asynchronous. The
+  // previous version sampled them the instant after the keypress, so it measured whichever had
+  // happened to finish — passing on an idle machine and failing under CI load. Waiting for each
+  // property asserts the same two things without depending on how fast the runner is.
+  try {
+    await dialog.waitFor({ state: 'hidden', timeout: 5000 });
+  } catch {
+    fail(label, 'Escape schließt den Dialog nicht');
+  }
+  try {
+    await page.waitForFunction((node) => document.activeElement === node,
+      await editTrigger.elementHandle(), { timeout: 5000 });
+  } catch {
+    const active = await page.evaluate(() => {
+      const el = document.activeElement;
+      return el ? `${el.tagName.toLowerCase()}${el.className ? '.' + String(el.className).split(' ')[0] : ''}` : 'none';
+    });
+    fail(label, 'Escape gibt den Fokus nicht an den Auslöser zurück', { activeElement: active });
   }
 
   const addTrigger = page.locator('.energy-flow-big.ghost button.energy-flow-main');
