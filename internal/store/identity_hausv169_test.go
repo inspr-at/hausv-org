@@ -13,9 +13,9 @@ import (
 
 func newIdentityStore(t *testing.T) *SQLIdentityStore {
 	t.Helper()
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	t.Cleanup(func() { database.Close() })
-	return NewSQLIdentityStore(database)
+	return NewSQLIdentityStore(lanes)
 }
 
 func TestPersonIsGlobalAndUniqueByEmail(t *testing.T) {

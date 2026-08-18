@@ -19,9 +19,9 @@ func TestActivityStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) ActivityStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLActivityStore(database)
+			return NewSQLActivityStore(lanes)
 		},
 	}
 
@@ -81,9 +81,9 @@ func TestSQLActivityImportFromJSON(t *testing.T) {
 	_ = jsonStore.Touch("a@example.com", a, "email")
 	_ = jsonStore.Touch("b@example.com", b, "oidc")
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	sqlStore := NewSQLActivityStore(database)
+	sqlStore := NewSQLActivityStore(lanes)
 
 	// Run the import twice: it must be idempotent.
 	for i := 0; i < 2; i++ {

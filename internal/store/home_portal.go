@@ -143,10 +143,10 @@ func (s *MemoryHomePortalStore) ListByOwner(ownerEmail string) ([]HomePortal, er
 }
 
 type SQLHomePortalStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLHomePortalStore(db *sql.DB) *SQLHomePortalStore {
+func NewSQLHomePortalStore(db *TenantDB) *SQLHomePortalStore {
 	return &SQLHomePortalStore{db: db}
 }
 
@@ -159,7 +159,8 @@ func (s *SQLHomePortalStore) Activate(slug, ownerEmail string, at time.Time) (Ho
 	slug = textutil.Slug(slug)
 	ownerEmail = textutil.Email(ownerEmail)
 	at = homeReservationTime(at)
-	tx, err := s.db.Begin()
+	unscoped := s.db.Unscoped("the home portal activation path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
+	tx, err := unscoped.Begin()
 	if err != nil {
 		return HomePortal{}, false, err
 	}
@@ -252,14 +253,16 @@ func (s *SQLHomePortalStore) Get(slug string) (HomePortal, bool, error) {
 	if s == nil || s.db == nil {
 		return HomePortal{}, false, fmt.Errorf("home portal store unavailable")
 	}
-	return getHomePortal(s.db.QueryRow, textutil.Slug(slug))
+	unscoped := s.db.Unscoped("the home portal read path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
+	return getHomePortal(unscoped.QueryRow, textutil.Slug(slug))
 }
 
 func (s *SQLHomePortalStore) ListByOwner(ownerEmail string) ([]HomePortal, error) {
 	if s == nil || s.db == nil {
 		return nil, fmt.Errorf("home portal store unavailable")
 	}
-	rows, err := s.db.Query(`SELECT t.tenant_id,p.slug,p.household_name,p.owner_email,p.activated_at,p.updated_at
+	unscoped := s.db.Unscoped("cross-tenant by design: this answers which houses one owner has, so scoping it to any single one would hide the rest")
+	rows, err := unscoped.Query(`SELECT t.tenant_id,p.slug,p.household_name,p.owner_email,p.activated_at,p.updated_at
 		FROM home_portals p JOIN tenant t ON t.tenant_id=p.tenant_id WHERE p.owner_email=$1 ORDER BY p.slug`, textutil.Email(ownerEmail))
 	if err != nil {
 		return nil, err

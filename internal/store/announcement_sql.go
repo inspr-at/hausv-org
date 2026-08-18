@@ -80,10 +80,10 @@ func (r *boundAnnouncementRepository) List() []Announcement {
 // SQLAnnouncementStore keeps each announcement as a JSON document keyed by
 // (tenant, id). Table from migration 0008.
 type SQLAnnouncementStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLAnnouncementStore(db *sql.DB) *SQLAnnouncementStore {
+func NewSQLAnnouncementStore(db *TenantDB) *SQLAnnouncementStore {
 	return &SQLAnnouncementStore{db: db}
 }
 
@@ -121,7 +121,7 @@ func (s *SQLAnnouncementStore) create(tenant TenantRef, item Announcement) (Anno
 		return Announcement{}, err
 	}
 	item.ID = id
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return Announcement{}, err
 	}
@@ -142,7 +142,7 @@ func (s *SQLAnnouncementStore) update(tenant TenantRef, id string, updated Annou
 	if id == "" {
 		return false, nil
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return false, err
 	}
@@ -183,7 +183,7 @@ func (s *SQLAnnouncementStore) delete(tenant TenantRef, id string) (bool, error)
 	if id == "" {
 		return false, nil
 	}
-	res, err := s.db.Exec(`DELETE FROM announcements WHERE tenant_id=$1 AND id=$2`, tenant.ID, id)
+	res, err := s.db.For(tenant).Exec(`DELETE FROM announcements WHERE tenant_id=$1 AND id=$2`, tenant.ID, id)
 	if err != nil {
 		return false, err
 	}
@@ -194,7 +194,7 @@ func (s *SQLAnnouncementStore) delete(tenant TenantRef, id string) (bool, error)
 func (s *SQLAnnouncementStore) allForTenant(tenant TenantRef) []Announcement {
 	tenantSlug := tenant.Slug
 	tenantSlug = textutil.Slug(tenantSlug)
-	rows, err := s.db.Query(`SELECT data FROM announcements WHERE tenant_id=$1`, tenant.ID)
+	rows, err := s.db.For(tenant).Query(`SELECT data FROM announcements WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return []Announcement{}
 	}
@@ -256,7 +256,8 @@ func (s *SQLAnnouncementStore) ImportAnnouncements(src *AnnouncementStore) error
 	src.mu.Lock()
 	snapshot := append([]Announcement(nil), src.data.Announcements...)
 	src.mu.Unlock()
-	tenants := newTenantIDCache(s.db)
+	imports := s.db.Unscoped("boot import replay of the JSON announcement snapshot: it spans every tenant and runs before the first request")
+	tenants := newTenantIDCache(imports)
 	for _, item := range snapshot {
 		if strings.TrimSpace(item.ID) == "" {
 			continue
@@ -269,7 +270,7 @@ func (s *SQLAnnouncementStore) ImportAnnouncements(src *AnnouncementStore) error
 		if err != nil {
 			return err
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO announcements(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {

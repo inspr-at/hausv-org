@@ -16,9 +16,9 @@ func TestEventStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) EventStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLEventStore(database)
+			return NewSQLEventStore(lanes)
 		},
 	}
 	now := time.Now().UTC()

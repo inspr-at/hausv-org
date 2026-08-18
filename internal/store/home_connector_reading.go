@@ -1,7 +1,6 @@
 package store
 
 import (
-	"database/sql"
 	"fmt"
 	"sort"
 	"strings"
@@ -83,9 +82,9 @@ func (s *MemoryHomeConnectorReadingStore) Clear(slug string) error {
 	return nil
 }
 
-type SQLHomeConnectorReadingStore struct{ db *sql.DB }
+type SQLHomeConnectorReadingStore struct{ db *TenantDB }
 
-func NewSQLHomeConnectorReadingStore(db *sql.DB) *SQLHomeConnectorReadingStore {
+func NewSQLHomeConnectorReadingStore(db *TenantDB) *SQLHomeConnectorReadingStore {
 	return &SQLHomeConnectorReadingStore{db: db}
 }
 
@@ -97,7 +96,8 @@ func (s *SQLHomeConnectorReadingStore) Upsert(slug string, readings []HomeConnec
 	if slug == "" {
 		return fmt.Errorf("home connector reading: slug required")
 	}
-	tx, err := s.db.Begin()
+	unscoped := s.db.Unscoped(healOrphanReason)
+	tx, err := unscoped.Begin()
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,8 @@ func (s *SQLHomeConnectorReadingStore) List(slug string) ([]HomeConnectorReading
 	if s == nil || s.db == nil {
 		return nil, fmt.Errorf("home connector reading store unavailable")
 	}
-	rows, err := s.db.Query(`SELECT slug,entity_id,state,display_name,unit,device_class,state_class,last_updated,received_at
+	unscoped := s.db.Unscoped("the home connector reading list path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
+	rows, err := unscoped.Query(`SELECT slug,entity_id,state,display_name,unit,device_class,state_class,last_updated,received_at
 		FROM home_connector_readings WHERE slug=$1 ORDER BY entity_id`, textutil.Slug(slug))
 	if err != nil {
 		return nil, err
@@ -156,6 +157,7 @@ func (s *SQLHomeConnectorReadingStore) Clear(slug string) error {
 	if s == nil || s.db == nil {
 		return fmt.Errorf("home connector reading store unavailable")
 	}
-	_, err := s.db.Exec(`DELETE FROM home_connector_readings WHERE slug=$1`, textutil.Slug(slug))
+	unscoped := s.db.Unscoped("the home connector reading clear path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
+	_, err := unscoped.Exec(`DELETE FROM home_connector_readings WHERE slug=$1`, textutil.Slug(slug))
 	return err
 }

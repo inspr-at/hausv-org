@@ -27,9 +27,9 @@ func TestAttachmentStorageParity(t *testing.T) {
 		"sqlite": func(t *testing.T) attachmentBackend {
 			dir := t.TempDir()
 			fileDir := filepath.Join(dir, "files")
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(database, fileDir), testTenantRef("demo"))
+			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(lanes, fileDir), testTenantRef("demo"))
 			return attachmentBackend{repository, fileDir}
 		},
 	}
@@ -122,9 +122,9 @@ func TestAttachmentBatchRollbackParity(t *testing.T) {
 		"sqlite": func(t *testing.T) attachmentBackend {
 			dir := t.TempDir()
 			fileDir := filepath.Join(dir, "files")
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(database, fileDir), testTenantRef("demo"))
+			repository, _ := BindAttachmentRepository(NewSQLAttachmentStore(lanes, fileDir), testTenantRef("demo"))
 			return attachmentBackend{repository, fileDir}
 		},
 	}
@@ -172,9 +172,9 @@ func TestSQLAttachmentImportFromJSON(t *testing.T) {
 		t.Fatalf("seed delete: %v", err)
 	}
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	sqlStore := NewSQLAttachmentStore(database, fileDir)
+	sqlStore := NewSQLAttachmentStore(lanes, fileDir)
 
 	for i := 0; i < 2; i++ {
 		if err := sqlStore.ImportAttachments(jsonStore); err != nil {

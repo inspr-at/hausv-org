@@ -141,65 +141,65 @@ func tenantScopedTablesInsertedHere(t *testing.T) []string {
 // identity half: a reservation exists before its house does, so its tenant_id is
 // NULL by design until activation.
 func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	tenant := testTenantRef("demo")
 	now := time.Now().UTC()
 	fileDir := t.TempDir()
 
-	announcements, _ := BindAnnouncementRepository(NewSQLAnnouncementStore(database), tenant)
+	announcements, _ := BindAnnouncementRepository(NewSQLAnnouncementStore(lanes), tenant)
 	if _, err := announcements.Create(Announcement{Title: "A", Body: "b"}); err != nil {
 		t.Fatalf("announcement: %v", err)
 	}
-	reads, _ := BindAnnouncementReadRepository(NewSQLAnnouncementReadStore(database), tenant)
+	reads, _ := BindAnnouncementReadRepository(NewSQLAnnouncementReadStore(lanes), tenant)
 	if err := reads.MarkSeen("a@example.com", now); err != nil {
 		t.Fatalf("announcement read: %v", err)
 	}
-	contacts, _ := BindContactBookRepository(NewSQLContactBookStore(database), tenant)
+	contacts, _ := BindContactBookRepository(NewSQLContactBookStore(lanes), tenant)
 	if _, _, err := contacts.Upsert(ManagedContact{Kind: "Notdienst", Name: "N", Phone: "1", Active: true}); err != nil {
 		t.Fatalf("contact: %v", err)
 	}
-	events, _ := BindEventRepository(NewSQLEventStore(database), tenant)
+	events, _ := BindEventRepository(NewSQLEventStore(lanes), tenant)
 	if _, err := events.Create(HouseEvent{Title: "E", StartsAt: now.Add(time.Hour)}); err != nil {
 		t.Fatalf("event: %v", err)
 	}
-	handovers, _ := BindHandoverRepository(NewSQLHandoverStore(database), tenant)
+	handovers, _ := BindHandoverRepository(NewSQLHandoverStore(lanes), tenant)
 	if _, err := handovers.Create(HandoverRecord{ID: "h1", Title: "H", CreatedBy: "a@example.com"}); err != nil {
 		t.Fatalf("handover: %v", err)
 	}
-	issues, _ := BindIssueRepository(NewSQLIssueStore(database, fileDir), tenant)
+	issues, _ := BindIssueRepository(NewSQLIssueStore(lanes, fileDir), tenant)
 	if _, err := issues.Create(ResidentIssue{
 		AuthorEmail: "a@example.com", Category: "Schaden", LocationType: IssueLocationCommon,
 		Title: "I", Body: "b",
 	}); err != nil {
 		t.Fatalf("issue: %v", err)
 	}
-	units, _ := BindUnitRepository(NewSQLUnitStore(database), tenant)
+	units, _ := BindUnitRepository(NewSQLUnitStore(lanes), tenant)
 	if err := units.SetUnits([]Unit{{ID: "u1", Label: "Top 1"}}); err != nil {
 		t.Fatalf("units: %v", err)
 	}
-	payments, _ := BindUnitPaymentStatusRepository(NewSQLUnitPaymentStatusStore(database), tenant)
+	payments, _ := BindUnitPaymentStatusRepository(NewSQLUnitPaymentStatusStore(lanes), tenant)
 	if _, err := payments.Set(UnitPaymentStatus{UnitID: "u1", Status: UnitPaymentStatusPaid, UpdatedBy: "a@example.com"}); err != nil {
 		t.Fatalf("unit payment status: %v", err)
 	}
-	votes, _ := BindVoteRepository(NewSQLVoteStore(database), tenant)
+	votes, _ := BindVoteRepository(NewSQLVoteStore(lanes), tenant)
 	if _, err := votes.Create(Ballot{
 		Title: "B", Options: []string{"Ja", "Nein"}, Type: BallotTypeCircular,
 		Weighting: BallotWeightingPerHead, CreatedBy: "a@example.com",
 	}); err != nil {
 		t.Fatalf("ballot: %v", err)
 	}
-	documents, _ := BindDocumentRepository(NewSQLDocumentStore(database, filepath.Join(fileDir, "docs")), tenant)
+	documents, _ := BindDocumentRepository(NewSQLDocumentStore(lanes, filepath.Join(fileDir, "docs")), tenant)
 	if _, err := documents.CreateGenerated(DocumentRecord{
 		Title: "D", Category: "Protokoll", Visibility: "alle", UploadedBy: "a@example.com",
 	}, "d.pdf", "application/pdf", []byte("%PDF-1.4 x"), now); err != nil {
 		t.Fatalf("document: %v", err)
 	}
-	attachments, _ := BindAttachmentRepository(NewSQLAttachmentStore(database, filepath.Join(fileDir, "att")), tenant)
+	attachments, _ := BindAttachmentRepository(NewSQLAttachmentStore(lanes, filepath.Join(fileDir, "att")), tenant)
 	if _, err := attachments.CreateUploaded("issue", "i1", "a@example.com",
 		[]UploadedFile{uploadFrom("photo.png", onePixelPNG)}, now); err != nil {
 		t.Fatalf("attachment: %v", err)
 	}
-	identity := NewSQLIdentityStore(database)
+	identity := NewSQLIdentityStore(lanes)
 	person, err := identity.UpsertPerson(Person{Email: "a@example.com"}, now)
 	if err != nil {
 		t.Fatalf("person: %v", err)
@@ -211,7 +211,7 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 	}
 	// home_connectors chains a foreign key to the reservation that created the
 	// house, so the onboarding row has to exist first.
-	reservations := NewSQLHomeReservationStore(database)
+	reservations := NewSQLHomeReservationStore(lanes)
 	if _, err := reservations.Reserve(HomeReservation{
 		Slug: "demo", HouseholdName: "Demo", OwnerEmail: "a@example.com", AuthorizationConfirmed: true,
 	}, now); err != nil {
@@ -224,15 +224,15 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 	if _, _, err := reservations.Confirm("demo", "a@example.com", now); err != nil {
 		t.Fatalf("confirm reservation: %v", err)
 	}
-	portals := NewSQLHomePortalStore(database)
+	portals := NewSQLHomePortalStore(lanes)
 	if _, _, err := portals.Activate("demo", "a@example.com", now); err != nil {
 		t.Fatalf("activate portal: %v", err)
 	}
-	connectors := NewSQLHomeConnectorStore(database)
+	connectors := NewSQLHomeConnectorStore(lanes)
 	if _, err := connectors.StartPairing("demo", []byte("pairing-hash"), now.Add(time.Hour), now); err != nil {
 		t.Fatalf("connector: %v", err)
 	}
-	readings := NewSQLHomeConnectorReadingStore(database)
+	readings := NewSQLHomeConnectorReadingStore(lanes)
 	if err := readings.Upsert("demo", []HomeConnectorReading{{
 		EntityID: "sensor.x", State: "1", LastUpdated: now,
 	}}, now); err != nil {

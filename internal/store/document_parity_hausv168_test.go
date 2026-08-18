@@ -30,9 +30,9 @@ func TestDocumentStorageParity(t *testing.T) {
 		},
 		"sqlite": func(t *testing.T) DocumentRepository {
 			dir := t.TempDir()
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			repository, _ := BindDocumentRepository(NewSQLDocumentStore(database, filepath.Join(dir, "files")), testTenantRef("demo"))
+			repository, _ := BindDocumentRepository(NewSQLDocumentStore(lanes, filepath.Join(dir, "files")), testTenantRef("demo"))
 			return repository
 		},
 	}
@@ -159,10 +159,10 @@ func TestSQLDocumentImportFromJSON(t *testing.T) {
 		t.Fatalf("seed replace: %v", err)
 	}
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
 	// Same fileDir: files already live on disk, only metadata is imported.
-	sqlStore := NewSQLDocumentStore(database, fileDir)
+	sqlStore := NewSQLDocumentStore(lanes, fileDir)
 
 	for i := 0; i < 2; i++ {
 		if err := sqlStore.ImportDocuments(jsonStore); err != nil {

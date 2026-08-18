@@ -71,11 +71,11 @@ func (r *boundAttachmentRepository) FilePath(item AttachmentRecord, variant stri
 // by (tenant, id); the file and its image variants stay on disk. Table from
 // migration 0012.
 type SQLAttachmentStore struct {
-	db      *sql.DB
+	db      *TenantDB
 	fileDir string
 }
 
-func NewSQLAttachmentStore(db *sql.DB, fileDir string) *SQLAttachmentStore {
+func NewSQLAttachmentStore(db *TenantDB, fileDir string) *SQLAttachmentStore {
 	return &SQLAttachmentStore{db: db, fileDir: fileDir}
 }
 
@@ -158,7 +158,7 @@ func (s *SQLAttachmentStore) createUploaded(tenant TenantRef, entityType string,
 		return nil, nil
 	}
 
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		rollback()
 		return nil, err
@@ -178,7 +178,7 @@ func (s *SQLAttachmentStore) createUploaded(tenant TenantRef, entityType string,
 }
 
 func (s *SQLAttachmentStore) allForTenant(tenant TenantRef) []AttachmentRecord {
-	rows, err := s.db.Query(`SELECT data FROM attachments WHERE tenant_id=$1`, tenant.ID)
+	rows, err := s.db.For(tenant).Query(`SELECT data FROM attachments WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return nil
 	}
@@ -229,7 +229,7 @@ func (s *SQLAttachmentStore) get(tenant TenantRef, id string) (AttachmentRecord,
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
 	var data string
-	if err := s.db.QueryRow(`SELECT data FROM attachments WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
+	if err := s.db.For(tenant).QueryRow(`SELECT data FROM attachments WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return AttachmentRecord{}, false
 	}
 	var item AttachmentRecord
@@ -252,7 +252,7 @@ func (s *SQLAttachmentStore) delete(tenant TenantRef, id string, deletedAt time.
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
 
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return AttachmentRecord{}, false, err
 	}
@@ -298,7 +298,8 @@ func (s *SQLAttachmentStore) ImportAttachments(src *AttachmentStore) error {
 	src.mu.Lock()
 	snapshot := append([]AttachmentRecord(nil), src.data.Attachments...)
 	src.mu.Unlock()
-	tenants := newTenantIDCache(s.db)
+	imports := s.db.Unscoped("boot import replay of the JSON attachment snapshot: it spans every tenant and runs before the first request")
+	tenants := newTenantIDCache(imports)
 	for _, item := range snapshot {
 		if strings.TrimSpace(item.ID) == "" || textutil.Slug(item.TenantSlug) == "" {
 			continue
@@ -311,7 +312,7 @@ func (s *SQLAttachmentStore) ImportAttachments(src *AttachmentStore) error {
 		if err != nil {
 			return err
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO attachments(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {
@@ -338,7 +339,8 @@ func (s *SQLAttachmentStore) PurgeDeletedBefore(cutoff time.Time) (int, error) {
 	if s == nil {
 		return 0, nil
 	}
-	rows, err := s.db.Query(`SELECT tenant_id, id, data FROM attachments`)
+	sweep := s.db.Unscoped("retention purge sweeps every tenant's attachments: the scheduler that calls it has no tenant in scope")
+	rows, err := sweep.Query(`SELECT tenant_id, id, data FROM attachments`)
 	if err != nil {
 		return 0, err
 	}
@@ -365,7 +367,7 @@ func (s *SQLAttachmentStore) PurgeDeletedBefore(cutoff time.Time) (int, error) {
 		return 0, err
 	}
 
-	tx, err := s.db.Begin()
+	tx, err := sweep.Begin()
 	if err != nil {
 		return 0, err
 	}

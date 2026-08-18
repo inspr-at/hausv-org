@@ -13,9 +13,10 @@ import (
 
 func TestHomeConnectorStoreParityPairRotateAndRevoke(t *testing.T) {
 	now := time.Date(2026, 8, 14, 12, 0, 0, 0, time.UTC)
-	database := dbtest.Open(t)
+	database, cfg := dbtest.OpenWithConfig(t)
 	defer database.Close()
-	reservations := store.NewSQLHomeReservationStore(database)
+	lanes := store.LanesForTest(t, database, cfg)
+	reservations := store.NewSQLHomeReservationStore(lanes)
 	if _, err := reservations.Reserve(store.HomeReservation{
 		Slug: "sql-home", HouseholdName: "SQL Home", OwnerEmail: "owner@example.com", AuthorizationConfirmed: true,
 	}, now); err != nil {
@@ -30,7 +31,7 @@ func TestHomeConnectorStoreParityPairRotateAndRevoke(t *testing.T) {
 		store store.HomeConnectorStorage
 	}{
 		"memory": {slug: "memory-home", store: store.NewMemoryHomeConnectorStore()},
-		"sqlite": {slug: "sql-home", store: store.NewSQLHomeConnectorStore(database)},
+		"sqlite": {slug: "sql-home", store: store.NewSQLHomeConnectorStore(lanes)},
 	}
 	for name, fixture := range backends {
 		t.Run(name, func(t *testing.T) {
@@ -94,13 +95,14 @@ func TestHomeConnectorPairingExpiresAndSQLitePersists(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	reservations := store.NewSQLHomeReservationStore(database)
+	lanes := store.LanesForTest(t, database, db.Config{})
+	reservations := store.NewSQLHomeReservationStore(lanes)
 	if _, err := reservations.Reserve(store.HomeReservation{
 		Slug: "persisted-home", HouseholdName: "Persisted", OwnerEmail: "owner@example.com", AuthorizationConfirmed: true,
 	}, now); err != nil {
 		t.Fatal(err)
 	}
-	backend := store.NewSQLHomeConnectorStore(database)
+	backend := store.NewSQLHomeConnectorStore(lanes)
 	pairing := bytes.Repeat([]byte{6}, 32)
 	if _, err := backend.StartPairing("persisted-home", pairing, now.Add(time.Minute), now); err != nil {
 		t.Fatal(err)
@@ -118,7 +120,7 @@ func TestHomeConnectorPairingExpiresAndSQLitePersists(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer reopened.Close()
-	item, found, err := store.NewSQLHomeConnectorStore(reopened).Get("persisted-home")
+	item, found, err := store.NewSQLHomeConnectorStore(store.LanesForTest(t, reopened, db.Config{})).Get("persisted-home")
 	if err != nil || !found || item.Status != store.HomeConnectorPairing || item.PairingExpiresAt == nil {
 		t.Fatalf("persisted connector = %+v found=%v err=%v", item, found, err)
 	}
@@ -131,13 +133,14 @@ func TestHomeConnectorReadingsMemoryAndSQLiteParity(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer database.Close()
-	reservations := store.NewSQLHomeReservationStore(database)
+	lanes := store.LanesForTest(t, database, db.Config{})
+	reservations := store.NewSQLHomeReservationStore(lanes)
 	if _, err := reservations.Reserve(store.HomeReservation{
 		Slug: "sql-readings", HouseholdName: "SQL Readings", OwnerEmail: "owner@example.com", AuthorizationConfirmed: true,
 	}, now); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.NewSQLHomeConnectorStore(database).StartPairing("sql-readings", bytes.Repeat([]byte{1}, 32), now.Add(time.Minute), now); err != nil {
+	if _, err := store.NewSQLHomeConnectorStore(lanes).StartPairing("sql-readings", bytes.Repeat([]byte{1}, 32), now.Add(time.Minute), now); err != nil {
 		t.Fatal(err)
 	}
 	backends := map[string]struct {
@@ -145,7 +148,7 @@ func TestHomeConnectorReadingsMemoryAndSQLiteParity(t *testing.T) {
 		store store.HomeConnectorReadingStorage
 	}{
 		"memory": {slug: "memory-readings", store: store.NewMemoryHomeConnectorReadingStore()},
-		"sqlite": {slug: "sql-readings", store: store.NewSQLHomeConnectorReadingStore(database)},
+		"sqlite": {slug: "sql-readings", store: store.NewSQLHomeConnectorReadingStore(lanes)},
 	}
 	for name, fixture := range backends {
 		t.Run(name, func(t *testing.T) {

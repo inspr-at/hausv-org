@@ -63,6 +63,23 @@ func postgresDSN() string {
 // schema, dropped on cleanup, so tests stay independent and can run in parallel.
 func Open(t *testing.T) *sql.DB {
 	t.Helper()
+	database, _ := OpenWithConfig(t)
+	return database
+}
+
+// OpenWithConfig returns the same database Open does, together with the exact
+// db.Config it was opened from — on PostgreSQL that config carries the DSN of
+// this test's isolated schema.
+//
+// It exists because a store now takes a *store.TenantDB instead of a pool, and
+// building one means building a db.Scoped, which needs the DSN: every lane it
+// hands out is a NEW pool dialled from that DSN, with the scope in the startup
+// packet. Handing tests the plain pool instead would let them compile while
+// never opening a lane, so the conversion this supports would be asserted by
+// nothing on the one engine that has RLS. The isolated schema rides along in
+// the DSN's search_path, so lanes land in the same schema the fixtures write.
+func OpenWithConfig(t *testing.T) (*sql.DB, db.Config) {
+	t.Helper()
 	baseDSN := postgresDSN()
 	if baseDSN == "" {
 		database, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
@@ -70,26 +87,32 @@ func Open(t *testing.T) *sql.DB {
 			t.Fatalf("open sqlite test database: %v", err)
 		}
 		t.Cleanup(func() { _ = database.Close() })
-		return database
+		return database, db.Config{Backend: db.BackendSQLite}
 	}
 
-	dsn := isolatedSchema(t, baseDSN)
-	database, err := db.OpenConfig(t.Context(), db.Config{
+	// A lane is a pool of its own, so the per-test connection plan is
+	// MaxOpenConns + LaneCap*LaneMaxConns. Both lane numbers are kept small
+	// deliberately: `go test ./...` runs packages concurrently, and the
+	// disposable test server runs the stock max_connections.
+	cfg := db.Config{
 		Backend:          db.BackendPostgres,
-		DSN:              dsn,
+		DSN:              isolatedSchema(t, baseDSN),
 		ConnectTimeout:   3 * time.Second,
 		StatementTimeout: 15 * time.Second,
 		MaxOpenConns:     2,
 		MaxIdleConns:     2,
 		ConnMaxLifetime:  time.Minute,
 		ConnMaxIdleTime:  time.Minute,
-	})
+		LaneCap:          4,
+		LaneMaxConns:     2,
+	}
+	database, err := db.OpenConfig(t.Context(), cfg)
 	if err != nil {
 		// Never include the DSN: it carries the role password.
 		t.Fatalf("open postgres test database: %v", err)
 	}
 	t.Cleanup(func() { _ = database.Close() })
-	return database
+	return database, cfg
 }
 
 func isolatedSchema(t *testing.T, dsn string) string {

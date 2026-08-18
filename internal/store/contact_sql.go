@@ -60,10 +60,10 @@ func (r *boundContactBookRepository) List(includeInactive bool) []ManagedContact
 // CreatedAt, deactivate) runs in a transaction — the atomicity the JSON store
 // approximates with a mutex, now real. Table from migration 0006.
 type SQLContactBookStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLContactBookStore(db *sql.DB) *SQLContactBookStore {
+func NewSQLContactBookStore(db *TenantDB) *SQLContactBookStore {
 	return &SQLContactBookStore{db: db}
 }
 
@@ -94,7 +94,7 @@ func (s *SQLContactBookStore) upsert(tenant TenantRef, item ManagedContact) (Man
 		return ManagedContact{}, false, err
 	}
 	now := time.Now().UTC()
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return ManagedContact{}, false, err
 	}
@@ -154,7 +154,7 @@ func (s *SQLContactBookStore) deactivate(tenant TenantRef, id string, at time.Ti
 	} else {
 		at = at.UTC()
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return ManagedContact{}, err
 	}
@@ -188,7 +188,7 @@ func (s *SQLContactBookStore) list(tenant TenantRef, includeInactive bool) []Man
 	if !includeInactive {
 		query += ` AND active = TRUE`
 	}
-	rows, err := s.db.Query(query, tenant.ID)
+	rows, err := s.db.For(tenant).Query(query, tenant.ID)
 	if err != nil {
 		return []ManagedContact{}
 	}
@@ -225,7 +225,8 @@ func (s *SQLContactBookStore) ImportContacts(src *ContactBookStore) error {
 	src.mu.Lock()
 	snapshot := append([]ManagedContact(nil), src.data.Contacts...)
 	src.mu.Unlock()
-	tenants := newTenantIDCache(s.db)
+	imports := s.db.Unscoped("boot import replay of the JSON contact snapshot: it spans every tenant and runs before the first request")
+	tenants := newTenantIDCache(imports)
 	for _, raw := range snapshot {
 		item, err := NormalizeManagedContact(raw)
 		if err != nil || item.ID == "" {
@@ -239,7 +240,7 @@ func (s *SQLContactBookStore) ImportContacts(src *ContactBookStore) error {
 		if err != nil {
 			return err
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO contacts(tenant_id, tenant_slug, id, active, data) VALUES($1, $2, $3, $4, $5) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant.ID, tenant.Slug, item.ID, item.Active, string(blob),
 		); err != nil {

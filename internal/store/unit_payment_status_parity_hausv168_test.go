@@ -15,9 +15,9 @@ func TestUnitPaymentStatusStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) UnitPaymentStatusStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLUnitPaymentStatusStore(database)
+			return NewSQLUnitPaymentStatusStore(lanes)
 		},
 	}
 
@@ -88,9 +88,9 @@ func TestSQLUnitPaymentImportFromJSON(t *testing.T) {
 	_, _ = jsonRepository.Set(UnitPaymentStatus{UnitID: "w-01", Status: "bezahlt"})
 	_, _ = jsonRepository.Set(UnitPaymentStatus{UnitID: "w-02", Status: "offen"})
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	sqlStore := NewSQLUnitPaymentStatusStore(database)
+	sqlStore := NewSQLUnitPaymentStatusStore(lanes)
 	sqlRepository, _ := BindUnitPaymentStatusRepository(sqlStore, testTenantRef("demo"))
 
 	// Newer SQLite write survives re-import.

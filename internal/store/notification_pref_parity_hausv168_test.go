@@ -15,9 +15,9 @@ func TestNotificationPrefStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) NotificationPrefStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLNotificationPrefStore(database)
+			return NewSQLNotificationPrefStore(lanes)
 		},
 	}
 
@@ -75,9 +75,9 @@ func TestSQLNotificationPrefImportFromJSON(t *testing.T) {
 	_ = jsonStore.Set("a@example.com", NotificationPreferences{Unsubscribed: true})
 	_ = jsonStore.Set("b@example.com", NotificationPreferences{Email: map[string]bool{"issue": false}})
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	sqlStore := NewSQLNotificationPrefStore(database)
+	sqlStore := NewSQLNotificationPrefStore(lanes)
 
 	// A newer SQLite write must survive re-import.
 	if err := sqlStore.Set("a@example.com", NotificationPreferences{Email: map[string]bool{"x": true}}); err != nil {

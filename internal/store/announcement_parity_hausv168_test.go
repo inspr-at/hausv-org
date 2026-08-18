@@ -16,9 +16,9 @@ func TestAnnouncementStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) AnnouncementStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLAnnouncementStore(database)
+			return NewSQLAnnouncementStore(lanes)
 		},
 	}
 	now := time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC)

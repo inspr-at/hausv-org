@@ -113,7 +113,8 @@ func (s *SQLIdentityStore) Add(profile UserProfile) (bool, error) {
 // to (HAUSV-172). Used by the whole-profile paths (Add/Update/Mutate); the
 // house-scoped paths never call it.
 func (s *SQLIdentityStore) writeProfile(profile UserProfile, at time.Time) error {
-	tx, err := s.db.Begin()
+	unscoped := s.db.Unscoped("a UserProfile spans every house the person belongs to, and the write touches persons, which has no tenant_id")
+	tx, err := unscoped.Begin()
 	if err != nil {
 		return err
 	}
@@ -198,7 +199,8 @@ func (s *SQLIdentityStore) Update(oldEmail string, updated UserProfile) (bool, e
 		}
 	}
 	// Rename and re-reconcile in ONE transaction (HAUSV-172).
-	tx, err := s.db.Begin()
+	unscoped := s.db.Unscoped("a UserProfile spans every house the person belongs to, and the write touches persons, which has no tenant_id")
+	tx, err := unscoped.Begin()
 	if err != nil {
 		return false, err
 	}
@@ -297,15 +299,21 @@ func (s *SQLIdentityStore) MutateTenantPermissions(email string, tenantSlug stri
 	if email == "" || tenantSlug == "" || fn == nil {
 		return UserProfile{}, false, fmt.Errorf("invalid membership permission target")
 	}
-	tx, err := s.db.Begin()
+	// Resolve the slug on the registry lane, then do the work on the tenant's own lane.
+	// This writes house_memberships, the privilege-bearing table, with a plain keyed
+	// UPDATE ... WHERE tenant_id=$n — no ON CONFLICT upsert, so no orphan adoption is
+	// involved and nothing forces the maintenance lane. (persons, also read here, has no
+	// tenant_id and therefore no policy; a tenant lane reads it fine.) An earlier version
+	// went Unscoped with a reason that was false on both counts.
+	tenantID, hasTenant := lookupTenantID(s.db.Unscoped("slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to"), tenantSlug)
+	if !hasTenant {
+		return UserProfile{}, false, nil
+	}
+	tx, err := s.db.For(TenantRef{ID: tenantID, Slug: tenantSlug}).Begin()
 	if err != nil {
 		return UserProfile{}, false, err
 	}
 	defer tx.Rollback()
-	tenantID, hasTenant := lookupTenantID(tx, tenantSlug)
-	if !hasTenant {
-		return UserProfile{}, false, nil
-	}
 	var personID, rawPermissions string
 	if err := tx.QueryRow(
 		`SELECT p.id, m.permissions

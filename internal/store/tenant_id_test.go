@@ -281,11 +281,11 @@ func TestTenantIDBackfillIsIdempotent(t *testing.T) {
 // hard-coded ULID, so filtering by tenant_id would have returned both rows and
 // the test would still have passed.
 func TestBoundRepositoriesSeparateTenantsWithDistinctIdentities(t *testing.T) {
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	if testTenantID("demo") == testTenantID("other") {
 		t.Fatal("the fixture tenants share an identity; isolation cannot be tested")
 	}
-	storage := NewSQLAnnouncementStore(database)
+	storage := NewSQLAnnouncementStore(lanes)
 	demo, _ := BindAnnouncementRepository(storage, testTenantRef("demo"))
 	other, _ := BindAnnouncementRepository(storage, testTenantRef("other"))
 	if _, err := demo.Create(Announcement{Title: "Demo", Body: "x"}); err != nil {

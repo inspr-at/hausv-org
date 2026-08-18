@@ -17,9 +17,9 @@ func TestProfileOverlayStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) ProfileOverlayStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLProfileOverlayStore(database)
+			return NewSQLProfileOverlayStore(lanes)
 		},
 	}
 
@@ -70,9 +70,9 @@ func TestSQLProfileOverlayImportFromJSON(t *testing.T) {
 	_ = jsonStore.Set("a@example.com", ProfileOverlay{FirstName: "Aa", DirectoryOptIn: true})
 	_ = jsonStore.Set("b@example.com", ProfileOverlay{Title: "Mag.", LastName: "Bee"})
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	sqlStore := NewSQLProfileOverlayStore(database)
+	sqlStore := NewSQLProfileOverlayStore(lanes)
 
 	// A newer write already in SQLite must NOT be clobbered by a re-import.
 	if err := sqlStore.Set("a@example.com", ProfileOverlay{FirstName: "SQLITE-NEWER"}); err != nil {
