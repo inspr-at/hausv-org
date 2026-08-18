@@ -837,6 +837,17 @@ type app struct {
 
 	structuredExportMu       sync.Mutex
 	structuredExportPreviews map[string]structuredExportPreview
+
+	// tenantDB is the scoped seam: the object a store will ask for a
+	// tenant-scoped database handle. It is deliberately NOT consumed yet —
+	// converting the stores onto it is a separate, reviewable step — and it is
+	// wired here first so the lane plan is verified against the real server on
+	// every boot before anything depends on it.
+	tenantDB *store.TenantDB
+	// scopedDB owns the lane pools tenantDB hands out. The app holds it purely to
+	// close them on shutdown: TenantDB deliberately has no Close, because its
+	// method set is what stops a store from reaching the database unscoped.
+	scopedDB *db.Scoped
 }
 
 type parkingTelemetry struct {
@@ -1574,7 +1585,20 @@ func newApp() (*app, error) {
 			return nil, fmt.Errorf("DB_BACKEND=postgres requires DATABASE_URL")
 		}
 	}
-	database, err := db.OpenConfig(context.Background(), db.Config{Backend: backend, DSN: dbDSN})
+	// The lane plan is stated before anything opens: how many tenant-pinned
+	// pools may exist at once, and how wide each one is. Both are knobs because
+	// the number that fits depends on the server, and a plan that does not fit
+	// has to stop the boot rather than turn into connection refusals under load.
+	laneCap, err := strconv.Atoi(env("DB_LANE_CAP", "24"))
+	if err != nil || laneCap < 1 {
+		return nil, fmt.Errorf("invalid DB_LANE_CAP")
+	}
+	laneMaxConns, err := strconv.Atoi(env("DB_LANE_MAX_CONNS", "3"))
+	if err != nil || laneMaxConns < 1 {
+		return nil, fmt.Errorf("invalid DB_LANE_MAX_CONNS")
+	}
+	dbConfig := db.Config{Backend: backend, DSN: dbDSN, LaneCap: laneCap, LaneMaxConns: laneMaxConns}
+	database, err := db.OpenConfig(context.Background(), dbConfig)
 	if err != nil {
 		if backend == db.BackendPostgres {
 			// Never echo the DSN: it carries the role password.
@@ -1582,6 +1606,21 @@ func newApp() (*app, error) {
 		}
 		return nil, fmt.Errorf("open sqlite at %s: %w", dbPath, err)
 	}
+	// The scoped seam. Nothing reads from it yet: the stores still take the
+	// process pool, and this batch deliberately converts none of them. It is
+	// constructed here so the lane plan is asserted against the real server on
+	// every boot from the moment the seam exists, rather than on the first boot
+	// that happens to use it.
+	scoped, err := db.NewScoped(dbConfig, database)
+	if err != nil {
+		_ = database.Close()
+		return nil, err
+	}
+	if err := scoped.VerifyBudget(context.Background()); err != nil {
+		_ = database.Close()
+		return nil, err
+	}
+	tenantDB := store.NewTenantDB(scoped)
 	configuredIdentities := make([]store.TenantIdentity, 0, len(tenants))
 	for _, tenant := range tenants {
 		configuredIdentities = append(configuredIdentities, store.TenantIdentity{Slug: tenant.Slug, Name: tenant.Name})
@@ -1752,6 +1791,8 @@ func newApp() (*app, error) {
 		trustedProxies:           trustedProxies,
 		templates:                tmpl,
 		db:                       database,
+		tenantDB:                 tenantDB,
+		scopedDB:                 scoped,
 		dataDir:                  filepath.Dir(dbPath),
 		announcementStore:        annBackend,
 		announcementReadStore:    annReadBackend,
@@ -7120,13 +7161,20 @@ func (a *app) Addr() string { return a.addr }
 
 // Close releases process-lifetime resources. Login mail receives a bounded
 // drain/cancellation window before SQLite closes; JSON stores hold no OS
-// handles between writes.
+// handles between writes. Tenant lanes go before the process pool, since they
+// are the ones holding server connections.
 func (a *app) Close() error {
 	a.closeMagicLinkDelivery()
-	if a.db != nil {
-		return a.db.Close()
+	var firstErr error
+	if a.scopedDB != nil {
+		firstErr = a.scopedDB.Close()
 	}
-	return nil
+	if a.db != nil {
+		if err := a.db.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	return firstErr
 }
 
 // StartEnergyRetentionWorker enforces the published maximum energy-data
